@@ -1,0 +1,28 @@
+#page-blocks-ues_meta_viewer-viewer .search-table table.generaltable input {
+    width: 100%;
+}
+
+#page-blocks-ues_meta_viewer-viewer .search-table table.generaltable {
+    margin: auto auto;
+}
+
+#page-blocks-ues_meta_viewer-viewer .center {
+    text-align: center;
+}
+
+#page-blocks-ues_meta_viewer-viewer .padded {
+    padding: 10px 0px;
+}
+
+#page-blocks-ues_meta_viewer-viewer .results-table table.generaltable {
+    width: 100%;
+}
+
+#page-blocks-ues_meta_viewer-viewer .margin-center {
+    width: 90%;
+    margin: auto auto;
+}
+
+#page-blocks-ues_meta_viewer-viewer .no-results {
+    color: red;
+}

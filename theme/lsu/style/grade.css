@@ -1,0 +1,174 @@
+/** Grades **/
+
+#page-grade-index .grades .header {
+   font-weight: bold;
+   font-size: 0.7em;
+}
+
+#grade-aggregation-help dt {
+   font-weight: bold;
+}
+
+#grade-aggregation-help dd.example {
+   font-style: italic;
+}
+
+#grade-aggregation-help code {
+   font-style: normal;
+}
+
+#page-grade-index .grades {
+   border-color: #ccc;
+}
+
+#page-grade-index .grades td {
+   border-color: #ccc;
+}
+
+#page-grade-index .grades .r0 {
+   background-color: #fff;
+}
+
+#page-grade-index .grades .r1 {
+   background-color: #f0f0f0;
+}
+
+td.grade div.overridden {
+   background-color: #dddddd;
+}
+
+.path-grade-report-grader table#user-grades td.cell span.gradepass {
+   background-color: #c2ebbd;
+}
+
+.path-grade-report-grader table#user-grades td.cell span.gradefail {
+   background-color: #ebc4bd;
+}
+
+.path-grade-report-grader table#user-grades td.clickable {
+   cursor: pointer;
+}
+
+.path-grade-report-grader .graderreportoverlay {
+   background-color: #eeeeee;
+   border: 1px solid #ccc;
+   padding: 10px;
+}
+
+.path-grade-edit-tree .moving {
+   background-color: #e8eef7;
+}
+
+.path-grade-edit-tree .gradetreebox {
+   width: 95%;
+   padding-bottom: 15px;
+}
+
+.path-grade-edit-scale .scale_options,
+#page-admin-grade-edit-scale-index .scale_options {
+   font-size: 0.7em;
+}
+
+.gradetreebox {
+   margin: 10px auto;
+   width: 90%;
+}
+
+.gradetreebox table {
+   font-size: 0.8em;
+   border: 1px solid #ccc;
+}
+
+.gradetreebox tr.category th.cell.rowspan {
+   border-width: 0;
+   border-left: 1px solid #ccc;
+}
+
+.gradetreebox tr.category th.cell.rowspan: hover {
+   background-color: #eee;
+}
+
+.gradetreebox td.name {
+   border-left: 0px;
+}
+
+.gradetreebox td.colspan {
+   border-left: 1px solid #aaa;
+   border-bottom: 1px solid #ccc;
+   border-top: none;
+   background-color: #ddd;
+}
+
+.gradetreebox tr .cell.level1 {
+   background-color: #fcecae;
+   width: 5px;
+}
+
+.gradetreebox tr .cell.level2 {
+   background-color: #80729d;
+   width: 5px;
+}
+
+.gradetreebox tr th.cell.level2, .gradetreebox tr th.cell.level3, .gradetreebox tr th.cell.level4, .gradetreebox tr th.cell.level5 {
+   width: 5px !important;
+   padding: 0;
+   min-width: 0;
+} 
+
+.gradetreebox tr .cell.level3 {
+   background-color: #dae4bd;
+   width: 5px;
+}
+
+.gradetreebox tr .cell.level4 {
+   background-color: #cccccc;
+   width: 5px;
+}
+
+.gradetreebox tr .cell.level5 {
+   background-color: #ffcccc;
+   width: 5px;
+}
+
+.path-grade form#choosepluginreport {
+   margin: 10px;
+   text-align: center;
+}
+
+.path-grade div#graded_users_selector, .path-grade div.no-overflow {
+   margin: 0 10px;
+   width: 100%;
+   text-align: center;
+}
+
+.path-grade div.no-overflow table, .path-grade table.user-grade {
+   width: 800px;
+   margin: 10px auto; 
+   text-align: left;
+}
+
+.path-grade div.gradeparent {
+   margin-left: 10px;
+}
+
+.path-grade .left_scroller, .path-grade .left_scroller #fixed_column, .path-grade .right_scroller #user-grades {
+   vertical-align: top;
+   padding-top: 0;
+   margin-top: 0;
+}
+
+#page-grade-report-grader-preferences div.box {
+   background-color: transparent;
+   border: none;
+   box-shadow: none !important;
+}
+
+.path-grade fieldset.clearfix div.clearfix {
+   padding: 10px;
+   width: auto;
+   text-align: left;
+}
+
+.path-grade div.region-content>form>div {
+   margin-top: -20px;
+}

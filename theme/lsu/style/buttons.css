@@ -1,0 +1,182 @@
+input[type="submit"], button[type="submit"], input[type="button"] {
+   background: #eeeeee url([[pix:theme|input_button]]) 0 -142px repeat-x;
+   padding: 2px 10px;
+   border: 1px solid #461d7c;
+   color: #2e1352;
+   cursor: pointer;
+}
+
+input[type="submit"]:hover, button[type="submit"]:hover, input[type="button"]:hover {
+   background-color: #461d7c;
+   background-position: 0 -50px;
+   color: #ffffff;
+   cursor: pointer;
+}
+
+.region-content div div div input[type="submit"], .region-content div div div button[type="submit"], .region-content div div div input[type="button"] {
+   cursor: pointer;
+}
+
+.region-content input[type="submit"]:hover, .region-content button[type="submit"]:hover, .region-content input[type="button"]:hover {
+   background-color: #ffffff;
+   cursor: pointer;
+}
+
+/*
+select {
+   padding: 1px 25px 1px 5px;
+   background-image: url([[pix:theme|input_select]]),
+                     url([[pix:theme|input_button]]);
+   background-position: right -142px, 0 -142px;
+   background-repeat: no-repeat, repeat-x;
+   background-color: #eeeeee;
+   border: 1px solid #461d7c;
+   cursor: pointer;
+}
+
+select option {
+   color: #000;
+}
+*/
+
+.gecko select, .ie9 select, .ie8 select, .ie7 select, .ie6 select {
+   padding: 0 0 0 5px;
+   background: #eeeeee url([[pix:theme|input_button]]) 0 -142px repeat-x;
+   cursor: pointer;
+    border: 1px solid #461d7c;
+   border-radius: 3px;
+}
+
+select[multiple], .gecko select[multiple], .ie9 select[multiple], .ie8 select[multiple], .ie7 select[multiple], .ie6 select[multiple] {
+   background: #ffffff;
+   width: 250px;
+}
+
+/*
+select:hover {
+   cursor: pointer;
+   background-position: right -42px, 0 -50px;
+   color: #ffffff;
+}
+*/
+
+input[type="text"], input[type="password"] {
+   background-color: #ffffff;
+   padding: 2px 5px;
+   border: 1px solid #461d7c;
+   color: #000000;
+}
+
+input[type="text"][disabled], input[type="password"][disabled] {
+   background-color: #cccccc;
+   padding: 2px 5px;
+   border: 1px solid #461d7c;
+   color: #000000;
+}
+
+input[type="checkbox"] {
+   -moz-appearance: none !important;
+   margin: 0 10px 0 0;
+   background-color: #ffffff;
+   width: 12px;
+   height: 12px;
+   border: 1px solid #461d7c;
+}
+
+input[type="checkbox"]:checked {
+   background-color: #461d7c;
+   border: 3px double #fdd023;
+}
+
+input[type="radio"] {
+   margin: 0 10px 0 0;
+   background-color: #ffffff;
+   width: 12px;
+   height: 12px;
+   border: 1px solid #461d7c;
+}
+
+input[type="radio"]:checked {
+   background-color: #461d7c;
+   border: 3px double #fdd023;
+}
+
+.gecko input[type="submit"], .gecko button[type="submit"] {
+   padding: 1px 5px;
+}
+
+.block button[type="submit"], .block input[type="submit"], .block input[type="text"] {
+}
+
+.block input[type="text"]#adminsearchquery {
+   width: 90px;
+   margin-right: 10px;
+}
+
+.navbar .navbutton .singlebutton input[type="submit"] {
+   background: #cccccc url([[pix:theme|edit_switch]]) left top no-repeat;
+   padding: 3px 10px;
+   margin-top: -3px;
+   padding-left: 50px;
+   border: 1px solid #461d7c;
+   color: #2e1352;
+}
+
+.gecko .navbar .navbutton .singlebutton input[type="submit"] {
+   padding-top: 1px;
+   padding-bottom: 2px;
+}
+
+.navbar .navbutton .singlebutton input[type="submit"]:hover {
+   background-position: left center; 
+   color: #000000;
+}
+
+.editing .navbar .navbutton .singlebutton input[type="submit"] {
+   background-color: #461d7c;
+   background-position: right 0;
+   padding-right: 50px;
+   padding-left: 10px;
+   color: #ffffff;
+}
+
+.editing .navbar .navbutton .singlebutton input[type="submit"]:hover {
+   background-position: right center; 
+   color: #eeeeee;
+}
+
+#page-mod-data-view .navbar .navbutton table {
+   margin-top: -9px;
+}
+
+#page-mod-data-view .navbar .navbutton input[type="submit"] {
+   background: #cccccc url([[pix:theme|edit_switch]]) left top no-repeat;
+   padding: 3px 10px;
+   margin-top: 0;
+   padding-left: 50px;
+   border: 1px solid #461d7c;
+   color: #2e1352;
+}
+
+#page-mod-data-view .gecko .navbar .navbutton input[type="submit"] {
+   padding-top: 1px;
+   padding-bottom: 2px;
+}
+
+#page-mod-data-view .navbar .navbutton input[type="submit"]:hover {
+   background-position: left center;
+   color: #000000;
+}
+
+#page-mod-data-view .editing .navbar .navbutton input[type="submit"] {
+   background-color: #461d7c;
+   background-position: right 0;
+   padding-right: 50px;
+   padding-left: 10px;
+   color: #ffffff;
+}
+
+#page-mod-data-view .editing .navbar .navbutton input[type="submit"]:hover {
+   background-position: right center;
+   color: #eeeeee;
+}
