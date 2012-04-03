@@ -109,10 +109,6 @@ class block_course_overview_plus extends block_base {
         $collapsible = ' ';
 	$courseslist = ' ';
          
-        echo '<style type="text/css">';
-        echo '.hidden {display:none;}';
-        echo '</style>';
-
         if (empty($courses)) {
             $content[] = get_string('nocourses','my');
         } else {
