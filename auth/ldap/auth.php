@@ -1988,10 +1988,7 @@ class auth_plugin_ldap extends auth_plugin_base {
             return $ldapconnection;
         }
 
-        //print_error('auth_ldap_noconnect_all', 'auth_ldap', '', $debuginfo);
-
-	global $CFG;
-	redirect($CFG->wwwroot . $_SERVER['REQUEST_URI']);
+        print_error('auth_ldap_noconnect_all', 'auth_ldap', '', $debuginfo);
     }
 
     /**
