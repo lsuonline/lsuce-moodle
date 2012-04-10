@@ -204,11 +204,6 @@
    color:black;
 }
 
-.path-course-view .dimmed_text img {
-   opacity:0.9;
-   filter: alpha(opacity='90');
-}
-
 .path-course-view .section {
    font-size:0.95em;
    line-height:1.2em;
@@ -518,3 +513,11 @@
 .right.side>div:first-of-type {
    margin-top: 12px;
 }
+
+.path-course-view .dimmed_text img {
+    opacity:0.9;
+    -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=90)";
+    filter: alpha(opacity=90);
+    height: 100%;
+}
+

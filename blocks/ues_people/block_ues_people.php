@@ -28,7 +28,11 @@ class block_ues_people extends block_list {
             ues::require_daos();
             $sections = ues_section::from_course($COURSE);
 
-            $permission = ues_user::is_teacher_in($sections);
+            if (empty($sections)) {
+                $permission = false;
+            } else {
+                $permission = ues_user::is_teacher_in($sections);
+            }
         }
 
         $content = new stdClass;

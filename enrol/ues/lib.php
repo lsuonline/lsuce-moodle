@@ -56,6 +56,82 @@ class enrol_ues_plugin extends enrol_plugin {
         return $this->_provider;
     }
 
+    function course_updated($inserted, $course, $data) {
+        // UES is the one to create the course
+        if ($inserted) {
+            return;
+        }
+
+        // Delete extension handler
+        events_trigger('ues_course_updated', array($course, $data));
+    }
+
+    function course_edit_validation($instance, $data, $context) {
+        $errors = array();
+        if (is_null($instance)) {
+            return $errors;
+        }
+
+        $system = get_context_instance(CONTEXT_SYSTEM);
+        $can_change = has_capability('moodle/course:update', $system);
+
+        $restricted = explode(',', $this->setting('course_restricted_fields'));
+
+        foreach ($restricted as $field) {
+            if ($can_change) {
+                continue;
+            }
+
+            $default = get_config('moodlecourse', $field);
+            if (isset($data[$field]) and $data[$field] != $default) {
+                $errors[$field] = ues::_s('bad_field');
+            }
+        }
+
+        // Delegate extension validation to extensions
+        $event = new stdClass;
+        $event->instance = $instance;
+        $event->data = $data;
+        $event->context = $context;
+        $event->errors = $errors;
+
+        events_trigger('ues_course_edit_validation', $event);
+
+        return $event->errors;
+    }
+
+    function course_edit_form($instance, $form, $data, $context) {
+        if (is_null($instance)) {
+            return;
+        }
+
+        // Allow extension interjection
+        $event = new stdClass;
+        $event->instance = $instance;
+        $event->form = $form;
+        $event->data = $data;
+        $event->context = $context;
+
+        events_trigger('ues_course_edit_form', $event);
+    }
+
+    function add_course_navigation($nodes, $instance) {
+        // Only interfere with UES courses
+        if (is_null($instance)) {
+            return;
+        }
+
+        if ($this->setting('course_form_replace')) {
+            $url = new moodle_url('/enrol/ues/edit.php', array('id' => $instance->courseid));
+
+            $nodes->parent->parent->get(1)->action = $url;
+        }
+
+        // Allow outside interjection
+        $params = array($nodes, $instance);
+        events_trigger('ues_course_settings_navigation', $params);
+    }
+
     public function is_cron_required() {
         $automatic = $this->setting('cron_run');
 
@@ -103,6 +179,13 @@ class enrol_ues_plugin extends enrol_plugin {
         $errors = ues_error::get_all();
 
         $error_threshold = $this->setting('error_threshold');
+
+        $running = (bool)$this->setting('running');
+
+        // Don't reprocess if the module is running
+        if ($running) {
+            return;
+        }
 
         if (count($errors) > $error_threshold) {
             $this->errors[] = ues::_s('error_threshold_log');
@@ -914,7 +997,7 @@ class enrol_ues_plugin extends enrol_plugin {
 
         // Handle system creation defaults
         $settings = array(
-            'visible','format','lang','groupmode','groupmodeforce',
+            'visible','format','lang','groupmode','groupmodeforce', 'hiddensections',
             'newsitems','showgrades','showreports','maxbytes','enablecompletion',
             'completionstartonenrol','numsections', 'legacyfiles'
         );
