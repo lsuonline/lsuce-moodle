@@ -5,6 +5,7 @@
 
 #page-Quickmail select[multiple] {
    min-width: 250px;
+   max-width: 250px;
 }
 
 #page-Quickmail .mform {
@@ -53,4 +54,8 @@
 #page-Quickmail .mform #add_button, #remove_button, #add_all, #remove_all {
    width: 100px;
    height: 25px;
+}
+
+#page-Quickmail .mform input#id_subject {
+  width: 75%;
 }

@@ -1,0 +1,185 @@
+#page-grade-report-gradebook_builder-index select.menutemplate {
+    float: left;
+}
+
+#page-grade-report-gradebook_builder-index h3#template-name{
+    margin-left: 20%;
+}
+
+#page-grade-report-gradebook_builder-index form#category-weights {
+    display: none;
+}
+
+#page-grade-report-gradebook_builder-index div#grade-category-tmpl {
+    display: none;
+}
+
+#page-grade-report-gradebook_builder-index div#grade-item-tmpl {
+    display: none;
+}
+
+#page-grade-report-gradebook_builder-index div#category-weight-tmpl {
+    display: none;
+}
+
+#page-grade-report-gradebook_builder-index div.point-blank {
+    display: inline;
+    margin-bottom: 0px;
+}
+
+#page-grade-report-gradebook_builder-index div.point-blank input {
+    margin-bottom: 0px;
+}
+
+#page-grade-report-gradebook_builder-index span.remove-button {
+    border: 1px solid #333;
+    padding: 0px;
+    border-radius: 4px;
+}
+
+#page-grade-report-gradebook_builder-index span.remove-item-label {
+    display: none;
+    float: right;
+    cursor: pointer;
+}
+
+#page-grade-report-gradebook_builder-index span.remove-category-label {
+    display: none;
+    float: right;
+    cursor: pointer;
+}
+
+#page-grade-report-gradebook_builder-index div.hero-unit {
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+#page-grade-report-gradebook_builder-index div.hero-unit h1 {
+    text-align: center;
+    font-size: 52px;
+}
+
+#page-grade-report-gradebook_builder-index div#builder-start.container {
+   margin: 10px 30px 10px 30px;
+   background-color: #fff;
+   box-shadow: 0 0 15px #bbb;
+}
+
+#page-grade-report-gradebook_builder-index div#builder-start.container {
+  min-height: 450px;
+  padding: 10px;
+}
+
+#page-grade-report-gradebook_builder-index div.row {
+}
+
+#page-grade-report-gradebook_builder-index div#grade-categories.span4 {
+  width: 40%;
+  font-weight: normal;
+  line-height: 1.5em;
+}
+
+#page-grade-report-gradebook_builder-index div.span8 {
+  position: absolute;
+  background-color: #fff;
+  right: 40px;
+  top: 90px;
+  width; 45%;
+}
+
+#page-grade-report-gradebook_builder-index div.nowrap {
+  white-space: nowrap;
+}
+
+#page-grade-report-gradebook_builder-index div#grade-categories.span4 table.table {
+   width: 100%;
+}
+
+#page-grade-report-gradebook_builder-index div table h3 {
+   text-align: left;
+}
+
+#page-grade-report-gradebook_builder-index .input-tiny {
+  width: 30px;
+}
+
+#page-grade-report-gradebook_builder-index .input-mini {
+  width: 60px;
+}
+
+#page-grade-report-gradebook_builder-index .input-small {
+  width: 90px;
+}
+
+#page-grade-report-gradebook_builder-index .input-medium {
+  width: 150px;
+}
+
+#page-grade-report-gradebook_builder-index .input-large {
+  width: 210px;
+}
+
+#page-grade-report-gradebook_builder-index .input-xlarge {
+  width: 270px;
+}
+
+#page-grade-report-gradebook_builder-index .input-xxlarge {
+  width: 530px;
+}
+
+#page-grade-report-gradebook_builder-index td {
+  position: static;
+}
+
+#page-grade-report-gradebook_builder-index .pull-right {
+  position: absolute;
+  left: 40%;
+  margin-left: -7em;
+}
+
+#page-grade-report-gradebook_builder-index .table-striped tbody tr:nth-child(odd) td, #page-grade-report-gradebook_builder-index .table-striped tbody tr:nth-child(odd) th {
+  background-color: #f0f0f0;
+} 
+
+#page-grade-report-gradebook_builder-index .table-bordered {
+  border: 1px solid #dddddd;
+  border-left: 0;
+  border-collapse: separate;
+  *border-collapse: collapsed;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+}
+
+#page-grade-report-gradebook_builder-index .table-bordered th {
+  background-color: #fcecae;
+}
+
+#page-grade-report-gradebook_builder-index .table-bordered th,
+#page-grade-report-gradebook_builder-index .table-bordered td {
+  border-left: 1px solid #dddddd;
+} 
+#page-grade-report-gradebook_builder-index .table-bordered thead:first-child tr:first-child th,
+#page-grade-report-gradebook_builder-index .table-bordered tbody:first-child tr:first-child th,
+#page-grade-report-gradebook_builder-index .table-bordered tbody:first-child tr:first-child td {
+  border-top: 0;
+}
+#page-grade-report-gradebook_builder-index .table-bordered thead:first-child tr:first-child th:first-child,
+#page-grade-report-gradebook_builder-index .table-bordered tbody:first-child tr:first-child td:first-child {
+  -webkit-border-radius: 4px 0 0 0;
+  -moz-border-radius: 4px 0 0 0;
+  border-radius: 4px 0 0 0;
+}
+
+#page-grade-report-gradebook_builder-index .table-bordered thead:last-child tr:last-child th:first-child,
+#page-grade-report-gradebook_builder-index .table-bordered tbody:last-child tr:last-child td:first-child {
+  -webkit-border-radius: 0 0 0 4px;
+  -moz-border-radius: 0 0 0 4px;
+  border-radius: 0 0 0 4px;
+}
+#page-grade-report-gradebook_builder-index .table-bordered thead:last-child tr:last-child th:last-child,
+#page-grade-report-gradebook_builder-index .table-bordered tbody:last-child tr:last-child td:last-child {
+  -webkit-border-radius: 0 0 4px 0;
+  -moz-border-radius: 0 0 4px 0;
+  border-radius: 0 0 4px 0;
+}

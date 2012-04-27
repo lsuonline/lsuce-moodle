@@ -24,6 +24,7 @@ abstract class cps_ues_meta_viewer_handler {
 
         // Play nice, only handle what I need
         $handled = array(
+            'username',
             'user_ferpa',
             'user_reg_status',
             'user_degree',
@@ -31,7 +32,8 @@ abstract class cps_ues_meta_viewer_handler {
             'user_major',
             'user_college',
             'user_keypadid',
-            'user_sport1'
+            'user_sport1',
+            'user_anonymous_number'
         );
 
         if (in_array($handler->ui_element->key(), $handled)) {

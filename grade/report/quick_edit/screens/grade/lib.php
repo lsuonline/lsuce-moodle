@@ -1,10 +1,29 @@
 <?php
 
-class quick_edit_grade extends quick_edit_tablelike implements selectable_items {
+class quick_edit_grade extends quick_edit_tablelike
+    implements selectable_items, item_filtering {
 
-    private $requires_extra;
+    private $requires_extra = false;
 
     var $structure;
+
+    private static $allow_categories;
+
+    public static function allow_categories() {
+        if (is_null(self::$allow_categories)) {
+            self::$allow_categories = get_config('moodle', 'grade_overridecat');
+        }
+
+        return self::$allow_categories;
+    }
+
+    public function filter($item) {
+        return (
+            self::allow_categories() or !(
+                $item->is_course_item() or $item->is_category_item()
+            )
+        );
+    }
 
     public function description() {
         return get_string('users');
@@ -24,6 +43,8 @@ class quick_edit_grade extends quick_edit_tablelike implements selectable_items 
         if ($this->requires_extra) {
             $def[] = 'override';
         }
+
+        $def[] = 'exclude';
 
         return $def;
     }
@@ -47,12 +68,17 @@ class quick_edit_grade extends quick_edit_tablelike implements selectable_items 
 
         $this->item = grade_item::fetch($params);
 
+        $filter_fun = grade_report_quick_edit::filters();
+
+        $allowed = $filter_fun($this->item);
+
+        if (empty($allowed)) {
+            print_error('not_allowed', 'gradereport_quick_edit');
+        }
+
         $this->requires_extra = !$this->item->is_manual_item();
 
-        $this->structure = new grade_structure();
-        $this->structure->modinfo = get_fast_modinfo(
-            $DB->get_record('course', array('id' => $this->courseid))
-        );
+        $this->setup_structure();
     }
 
     public function headers() {
@@ -89,6 +115,8 @@ class quick_edit_grade extends quick_edit_tablelike implements selectable_items 
         if ($this->requires_extra) {
             $headers[] = $this->make_toggle_links('override');
         }
+
+        $headers[] = $this->make_toggle_links('exclude');
 
         return $headers;
     }

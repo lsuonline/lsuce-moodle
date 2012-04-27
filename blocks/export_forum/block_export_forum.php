@@ -24,15 +24,19 @@ class block_export_forum extends block_list {
 
         $this->content = new stdClass;
 
+        $this->content->icons  = array();
+
         $params = array('id' => $COURSE->id);
         $url = new moodle_url('/blocks/export_forum/export.php', $params);
         $link = html_writer::link($url, $_s('pluginname'));
 
-        $icons = array($OUTPUT->pix_icon('t/delete', $_s('pluginname')));
+        $this->content->icons[] = $OUTPUT->pix_icon(
+            'icon', $_s('pluginname'),
+            'block_export_forum', array('class' => 'icon')
+        );
         $items = array($link);
 
         $this->content->items = $items;
-        $this->content->icons = $icons;
         $this->content->footer = '';
 
         return $this->content;

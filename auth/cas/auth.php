@@ -50,6 +50,10 @@ class auth_plugin_cas extends auth_plugin_ldap {
      * @return bool Authentication success or failure.
      */
     function user_login ($username, $password) {
+        if (strpos($username, '@')) {
+            print_error('auth_cas_myproxy_login', 'auth_cas');
+        }
+
         $this->connectCAS();
         return phpCAS::isAuthenticated() && (trim(moodle_strtolower(phpCAS::getUser())) == $username);
     }

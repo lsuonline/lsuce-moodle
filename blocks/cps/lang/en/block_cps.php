@@ -246,7 +246,12 @@ $string['please_wait'] = 'Your settings are being applied. Please be patient as 
 
 $string['application_errors'] = 'The following error occurred while applying the settings: {$a}';
 
+$string['user_field_category'] = 'Profile Category';
+$string['user_field_category_desc'] = 'CPS will attempt to create Moodle user profile fields associated with the user meta information from UES.';
+$string['auto_field_desc'] = 'This field was automatically generated through CPS. Do not change the field settings unless you are absolutely certain of what you are doing.';
+
 // Meta Strings
+$string['username'] = 'Username';
 $string['user_year'] = 'Year';
 $string['user_ferpa'] = 'Ferpa';
 $string['user_reg_status'] = 'Registration';
@@ -255,3 +260,4 @@ $string['user_college'] = 'College';
 $string['user_major'] = 'Major';
 $string['user_keypadid'] = 'Keypad ID';
 $string['user_sport1'] = 'Sport';
+$string['user_anonymous_number'] = 'Anonymous';

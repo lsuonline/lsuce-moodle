@@ -403,6 +403,31 @@ class grade_category extends grade_object {
         $aggoutcomesdiff = $db_item->aggregateoutcomes   != $this->aggregateoutcomes;
         $aggsubcatsdiff  = $db_item->aggregatesubcats    != $this->aggregatesubcats;
 
+        $oldweighted = $db_item->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
+        $newweighted = $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
+
+        if ($aggregationdiff and ($oldweighted or $newweighted)) {
+
+            $children = $this->get_children(true);
+
+            foreach ($children as $element) {
+                $child = $element['object'];
+
+                if ($child instanceof grade_category) {
+                    $child = $child->get_grade_item();
+                }
+
+                if ($child->is_course_item() or (
+                    $db_item->is_item_extra_credit($child) and
+                    $this->is_item_extra_credit($child))) {
+                    continue;
+                }
+
+                $child->aggregationcoef = ($oldweighted) ? 0.00000 : 1.00000;
+                $child->update();
+            }
+        }
+
         return ($aggregationdiff || $keephighdiff || $droplowdiff || $aggonlygrddiff || $aggoutcomesdiff || $aggsubcatsdiff);
     }
 
@@ -912,6 +937,12 @@ class grade_category extends grade_object {
     public function apply_limit_rules(&$grade_values, $items) {
 
         if (!empty($this->droplow)) {
+            $limit = (bool)get_config('moodle', 'grade_droplow_limit');
+
+            if ($limit and count($grade_values) <= $this->droplow) {
+                return;
+            }
+
             asort($grade_values, SORT_NUMERIC);
             $dropped = 0;
 

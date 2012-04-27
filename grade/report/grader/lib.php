@@ -131,6 +131,9 @@ class grade_report_grader extends grade_report {
         // Grab the grade_tree for this course
         $this->gtree = new grade_tree($this->courseid, true, $switch, $this->collapsed, $nooutcomes);
 
+        // Load Anonymous items
+        $this->load_anonymous();
+
         $this->sortitemid = $sortitemid;
 
         // base url for sorting by first/last name
@@ -644,7 +647,7 @@ class grade_report_grader extends grade_report {
         $suspendedstring = null;
         foreach ($this->users as $userid => $user) {
             if ($this->rowcount > 0 and $this->rowcount % $repeat == 0) {
-                $rows = array_merge($rows, $repeatentries);
+                $rows = array_merge($rows, unserialize(serialize($repeatentries)));
             }
 
             $this->rowcount++;
@@ -845,9 +848,11 @@ class grade_report_grader extends grade_report {
                     );
 
                     if ($can_quick_edit) {
+                        $is_anon = isset($this->anonymous_items[$element['object']->id]);
+
                         $url = new moodle_url('/grade/report/quick_edit/index.php', array(
                             'id' => $this->course->id,
-                            'item' => 'grade',
+                            'item' => $is_anon ? 'anonymous' : 'grade',
                             'itemid' => $element['object']->id,
                             'group' => $this->currentgroup
                         ));
@@ -960,6 +965,8 @@ class grade_report_grader extends grade_report {
                     $gradeval = $grade->finalgrade;
                 }
 
+                $is_anon = isset($this->anonymous_items[$itemid]);
+
                 // MDL-11274
                 // Hide grades in the grader report if the current grader doesn't have 'moodle/grade:viewhidden'
                 if (!$this->canviewhidden and $grade->is_hidden()) {
@@ -1002,7 +1009,7 @@ class grade_report_grader extends grade_report {
                 }
 
                 // Do not show any icons if no grade (no record in DB to match)
-                if (!$item->needsupdate and $USER->gradeediting[$this->courseid]) {
+                if (!$item->needsupdate and $USER->gradeediting[$this->courseid] and !$is_anon) {
                     $itemcell->text .= $this->get_icons($element);
                 }
 
@@ -1024,7 +1031,7 @@ class grade_report_grader extends grade_report {
                 if ($item->needsupdate) {
                     $itemcell->text .= html_writer::tag('span', get_string('error'), array('class'=>"gradingerror$hidden"));
 
-                } else if ($USER->gradeediting[$this->courseid]) {
+                } else if ($USER->gradeediting[$this->courseid] and !$is_anon) {
 
                     // Editing means user edit manual item raw
                     if ($item->is_manual_item()) {
@@ -1702,6 +1709,24 @@ class grade_report_grader extends grade_report {
              check_browser_version('Safari', '300'));
     }
 
+    public function load_anonymous() {
+
+        if (empty($this->anonymous_items)) {
+            global $DB;
+            $sql = 'SELECT anon.* FROM {grade_items} gi, {grade_anon_items} anon
+                WHERE anon.itemid = gi.id';
+
+            $this->anonymous_items = array();
+
+            foreach ($DB->get_records_sql($sql) as $item) {
+                $this->anonymous_items[$item->itemid] =
+                    grade_anonymous::fetch(array('id' => $item->id));
+            }
+        }
+
+        return $this->anonymous_items;
+    }
+
     /**
      * Refactored function for generating HTML of sorting links with matching arrows.
      * Returns an array with 'studentname' and 'idnumber' as keys, with HTML ready
@@ -1768,6 +1793,10 @@ class grade_report_grader extends grade_report {
 
         if ($item->is_category_item()) {
             $parent = $parent->get_parent_category();
+        }
+
+        if (!$parent) {
+            return '';
         }
 
         $determine_weight = function($item) use ($parent) {

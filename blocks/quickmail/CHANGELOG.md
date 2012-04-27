@@ -1,3 +1,22 @@
+## v1.2.5
+
+- Receive copy default setting [#31][31]
+- Empty Signature defaults [#30][30]
+- Increase Subject line [45a80cf][45a80cf] 
+
+[31]: https://github.com/lsuits/quickmail/issues/31
+[30]: https://github.com/lsuits/quickmail/issues/30
+[45a80cf]: https://github.com/lsuits/quickmail/commit/45a80cff9ee0f565fe2bd93ea720bbd0ef5897b8
+
+## v1.2.4
+
+- Additional French translation [#28][28] ([luiggisanso][luiggisanso])
+- Style fix for Firefox browsers [#29][29]
+
+[28]: https://github.com/lsuits/quickmail/pull/28
+[29]: https://github.com/lsuits/quickmail/issues/29
+[luiggisanso]: https://github.com/luiggisanso
+
 ## v1.2.3
 
 - Install script differed from upgrade script
