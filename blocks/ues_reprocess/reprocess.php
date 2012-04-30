@@ -37,14 +37,20 @@ if ($type == 'user') {
     $back_url = new moodle_url('/my');
 
     $custom_page = function ($page) use ($blockname, $context, $header) {
+        global $USER;
         $page->set_context($context);
         $page->set_heading($blockname);
         $page->navbar->add($blockname);
         $page->navbar->add($header);
         $page->set_title($header);
+        $page->set_url(new moodle_url('/blocks/ues_reprocess/reprocess.php', array(
+            'id' => $USER->id, 'type' => 'user'
+        )));
     };
 } else {
     $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
+    $context = get_context_instance(CONTEXT_COURSE, $course->id);
+
     $user = $USER;
 
     $filter = function($section) use ($course) {
@@ -55,14 +61,12 @@ if ($type == 'user') {
     $header = $_s('reprocess_course');
 
     $back_url = new moodle_url('/course/view.php', array('id' => $id));
-    $custom_page = function ($page) use ($course, $header, $blockname) {
+    $custom_page = function ($page) use ($course, $context, $header, $blockname) {
         global $USER;
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
 
-        $url = new moodle_url('/blocks/ues_reprocess/reprocess.php', array(
-            'id' => $USER->id,
-            'type' => 'user'
-        ));
+        $base = '/blocks/ues_reprocess/reprocess.php';
+
+        $url = new moodle_url($base, array('id' => $USER->id,'type' => 'user'));
 
         $page->set_context($context);
         $page->set_heading($blockname . ': ' . $header);
@@ -70,12 +74,21 @@ if ($type == 'user') {
         $page->navbar->add($header);
         $page->set_title($header);
         $page->set_course($course);
+        $page->set_url(new moodle_url($base, array(
+            'id' => $course->id, 'type' => 'course'
+        )));
     };
 }
 
 $ues_user = ues_user::upgrade($user);
 
-$owned_sections = array_filter($ues_user->sections(true), $filter);
+if (has_capability('block/ues_reprocess:canreprocess', $context)) {
+    $pre_sections = ues_section::from_course($course);
+} else {
+    $pre_sections = $ues_user->sections(true);
+}
+
+$owned_sections = array_filter($pre_sections, $filter);
 
 $custom_page($PAGE);
 
