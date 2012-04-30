@@ -150,12 +150,12 @@ $unions = array();
 
 $selects = array(
     't' =>
-    "SELECT DISTINCT(t.userid), t.sectionid, '' AS sec_number, 0 AS credit_hours FROM ".
+    "SELECT DISTINCT(t.userid), '' AS sec_number, 0 AS credit_hours FROM ".
     ues_teacher::tablename('t') . ' WHERE ',
     'stu' =>
-    'SELECT DISTINCT(stu.userid), stu.sectionid, sec.sec_number, stu.credit_hours FROM '.
+    'SELECT DISTINCT(stu.userid), sec.sec_number, stu.credit_hours FROM '.
     ues_student::tablename('stu') . ' JOIN '.
-    ues_section::tablename('sec').' ON (sec.id = stu.sectionid) WHERE '
+    ues_section::tablename('sec').' ON (sec.id = stu.sectionid) WHERE ',
 );
 
 $sectionids = array_keys($all_sections);
@@ -170,7 +170,7 @@ foreach ($selects as $key => $union) {
     }) . ')';
 }
 
-$joins[] = 'JOIN ('. implode(' UNION ', $unions) . ') ues ON ues.userid = u.id';
+$joins[] = 'LEFT JOIN ('. implode(' UNION ', $unions) . ') ues ON ues.userid = u.id';
 
 if ($using_meta_sort) {
     $meta_table = ues_user::metatablename('um');
@@ -181,7 +181,7 @@ if ($using_meta_sort) {
 
 $from = implode("\n", $joins);
 
-$wheres = ues::where()->sectionid->in($sectionids);
+$wheres = ues::where();
 
 if ($sifirst != 'all') {
     $wheres->firstname->starts_with($sifirst);
