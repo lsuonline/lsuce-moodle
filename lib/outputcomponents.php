@@ -270,7 +270,7 @@ class user_picture implements renderable {
      * @return moodle_url
      */
     public function get_url(moodle_page $page, renderer_base $renderer = null) {
-        global $CFG;
+        global $CFG, $USER;
 
         if (is_null($renderer)) {
             $renderer = $page->get_renderer('core');
@@ -283,6 +283,15 @@ class user_picture implements renderable {
             // do not use require_login() because it is expensive and not suitable here anyway
             return $renderer->pix_url('u/f1');
         }
+
+        $is_self = $USER->id == $this->user->id;
+
+        $cc = $page->course->id == SITEID ?
+            get_context_instance(CONTEXT_SYSTEM) :
+            get_context_instance(CONTEXT_COURSE, $page->course->id);
+
+        $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
+        $is_teacher = has_capability('moodle/user:viewalldetails', $cc, $this->user->id);
 
         // Sort out the filename and size. Size is only required for the gravatar
         // implementation presently.
@@ -320,7 +329,9 @@ class user_picture implements renderable {
                 $path .= $page->theme->name.'/';
             }
             // Set the image URL to the URL for the uploaded file.
-            $imageurl = moodle_url::make_pluginfile_url($context->id, 'user', 'icon', NULL, $path, $filename);
+            if ($is_self or $is_teacher or $can_view_details) {
+                $imageurl = moodle_url::make_pluginfile_url($context->id, 'user', 'icon', NULL, $path, $filename);
+            }
         } else if (!empty($CFG->enablegravatar)) {
             // Normalise the size variable to acceptable bounds
             if ($size < 1 || $size > 512) {
