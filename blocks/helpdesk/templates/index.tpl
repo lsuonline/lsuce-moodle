@@ -23,13 +23,19 @@
         <table id="participants" class="flexible generaltable generalbox">
              <tr>
                 <th class="header c1" scope="col">{"fullname:moodle"|s}</th>
+                <th class="header c2" scope="col">{"action:moodle"|s}</th>
              </tr>
              {foreach $results as $id => $result}
                 <tr class="r{if $result@iteration is even}0{else}1{/if}">
                       <td class="cell c1">
                         <a class="{if isset($result->visible)}
                                     {if !$result->visible} dimmed {/if}
-                                  {/if}" href="{$follow_link}?id={$id}">{$result->fullname}</a>
+                                  {/if}" href="{$follow_link}?id={$id}">
+                                    {fullname obj=$result}
+                        </a>
+                      </td>
+                      <td class="cell c2">
+                        {helplinks obj=$result}
                       </td>
                 </tr>
              {/foreach}
