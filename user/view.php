@@ -242,6 +242,15 @@ if ($currentuser
     print_row(get_string("email").":", obfuscate_mailto($user->email, ''));
 }
 
+// Show the user's web page if set
+if ($user->url && !isset($hiddenfields['webpage'])) {
+    $url = $user->url;
+    if (strpos($user->url, '://') === false) {
+        $url = 'http://'. $url;
+    }
+    print_row(get_string("webpage") .":", '<a href="'.s($url).'">'.s($user->url).'</a>');
+}
+
 // Show last time this user accessed this course
 if (!isset($hiddenfields['lastaccess'])) {
     if ($lastaccess = $DB->get_record('user_lastaccess', array('userid'=>$user->id, 'courseid'=>$course->id))) {
