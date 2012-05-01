@@ -286,7 +286,7 @@ $has_permission = has_capability('moodle/course:create', $systemcontext) ||
                   has_capability('block/helpdesk:viewenrollments', $systemcontext);
 
 if (!isset($hiddenfields['mycourses'])) {
-    if ($mycourses = enrol_get_users_courses($user->id, true, NULL, 'visible DESC,sortorder ASC') and $has_permission) {
+    if (($mycourses = enrol_get_users_courses($user->id, true, NULL, 'visible DESC,sortorder ASC')) and $has_permission) {
         $shown = 0;
         $courselisting = '';
         foreach ($mycourses as $mycourse) {
