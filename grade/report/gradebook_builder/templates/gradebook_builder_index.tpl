@@ -3,7 +3,7 @@
     <div class="span4">
         {select templates=$templates}
         <h3 id="template-name">
-            <span id="template-toggle-input">{$template->name}</span>
+            <span id="template-toggle-input" class="linky">{$template->name}</span>
         </h3>
     </div>
   </div>
@@ -19,7 +19,7 @@
         </button>
       </form>
       <form id="add-items" class="well form-inline">
-        <h3>Add Grade Item(s)</h3>
+        <h3>Add Graded Item(s)</h3>
         <div class="nowrap">
             <input type="text" class="input-tiny" id="grade-item-num-add" value="1">
             &nbsp;
@@ -89,7 +89,7 @@
           <span class="label label-important remove remove-item-label">X</span>
         </span>
         <div class="input-append point-blank pull-right">
-          <input class="input-tiny"/>
+          <input class="input-tiny" value="100"/>
           <span class="add-on">Points</span>
         </div>
       </td>
