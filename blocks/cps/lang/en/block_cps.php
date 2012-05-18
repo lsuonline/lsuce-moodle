@@ -115,10 +115,10 @@ $string['split_rearrange'] = 'Rearrange sections?';
 $string['customize_name'] = 'Customize name';
 
 $string['shortname_desc'] = 'Split course creation uses these defaults.';
-$string['split_shortname'] = '{year} {name} {department} {course_number} {shell_name} for {fullname}';
+$string['split_shortname'] = '{year} {name}{session} {department} {course_number} {shell_name} for {fullname}';
 
 $string['crosslist'] = 'Cross-listing';
-$string['crosslist_shortname'] = '{year} {name} {shell_name} for {fullname}';
+$string['crosslist_shortname'] = '{year} {name}{session} {shell_name} for {fullname}';
 $string['crosslist_you_have'] = 'You have selected to cross-list';
 
 $string['crosslist_option_taken'] = 'Cross-list option taken';
@@ -137,7 +137,7 @@ $string['crosslist_select'] = 'Select courses to Cross-list';
 // Team Requests
 $string['team_request'] = 'Team Teach Requests';
 
-$string['team_query_for'] = 'Query a course: {$a->year} {$a->name}';
+$string['team_query_for'] = 'Query course: {$a->year} {$a->name} {$a->session_key}';
 
 $string['team_teachers'] = 'Select one or more Instructors';
 
@@ -204,7 +204,7 @@ and sent. Continue to head back to the team teach home.';
 
 $string['team_with'] = 'to be team taught with...';
 
-$string['team_request_shortname'] = '{year} {name} {shell_name}';
+$string['team_request_shortname'] = '{year} {name}{session} {shell_name}';
 
 $string['team_request_approved_subject'] = 'Moodle Team-Teaching Request Accepted';
 $string['team_request_approved_body'] = '
@@ -261,3 +261,5 @@ $string['user_major'] = 'Major';
 $string['user_keypadid'] = 'Keypad ID';
 $string['user_sport1'] = 'Sport';
 $string['user_anonymous_number'] = 'Anonymous';
+
+$string['network_failure'] = 'There was a network error that caused the process to fail. You can either refresh this page or go back to re-apply the settings.';

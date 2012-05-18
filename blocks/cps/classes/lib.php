@@ -226,13 +226,20 @@ class cps_split extends ues_user_section_accessor implements unique, undoable, v
     var $groupingid;
 
     public static function is_valid($courses) {
-        $valids = self::filter_valid($courses);
+        $valids = self::filter_valid_courses($courses);
         return !empty($valids);
     }
 
-    public static function filter_valid($courses) {
+    public static function filter_valid_courses($courses) {
         return array_filter($courses, function ($course) {
             return count($course->sections) > 1;
+        });
+    }
+
+    public static function filter_valid($semesters) {
+        return array_filter($semesters, function($semester) {
+            $semester->courses = cps_split::filter_valid_courses($semester->courses);
+            return count($semester->courses) > 0;
         });
     }
 
@@ -247,6 +254,9 @@ class cps_split extends ues_user_section_accessor implements unique, undoable, v
             $sections = cps_unwant::active_sections_for($teacher, true);
 
             foreach ($sections as $section) {
+                if ($section->courseid != $course->id) {
+                    continue;
+                }
                 $course->sections[$section->id] = $section;
             }
         }
@@ -370,11 +380,12 @@ class cps_crosslist extends ues_user_section_accessor implements unique, undoabl
     function new_idnumber() {
         $section = $this->section();
         $sem = $section->semester();
+        $session_key = $sem->session_key;
 
         $shell = str_replace(' ', '', trim($this->shell_name));
         $userid = $this->userid;
 
-        $idnumber = "$sem->year$sem->name{$shell}{$userid}cl{$this->groupingid}";
+        $idnumber = "$sem->year$sem->name$session_key{$shell}{$userid}cl{$this->groupingid}";
         return $idnumber;
     }
 
@@ -568,8 +579,9 @@ class cps_team_request extends cps_preferences implements application, undoable 
         }
 
         $sem = $this->semester();
+        $session = $sem->get_session_key();
 
-        $label = "$sem->year $sem->name $course->department $course->cou_number";
+        $label = "$sem->year $sem->name$session $course->department $course->cou_number";
 
         return $label . ' with ' . fullname($user);
     }

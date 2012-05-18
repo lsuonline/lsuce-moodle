@@ -1,7 +1,7 @@
 <?php
 
 require_once('../../config.php');
-require_once($CFG->libdir . '/quick_template.php');
+require_once($CFG->libdir . '/quick_template/lib.php');
 
 //
 // Validate params and user
@@ -85,6 +85,6 @@ $tpl_data = array(
     'confirm_str' => $confirm_str,
 );
 
-quick_render('delete.tpl', $tpl_data, 'block_scantron');
+quick_template::render('scantron_delete.tpl', $tpl_data, 'block_scantron');
 
 echo $OUTPUT->footer();

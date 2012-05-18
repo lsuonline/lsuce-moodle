@@ -337,8 +337,9 @@ class enrol_ues_plugin extends enrol_plugin {
     private function process_semester_by_section($semester, $courses) {
         foreach ($courses as $course) {
             foreach ($course->sections as $section) {
+                $ues_section = ues_section::by_id($section->id);
                 $this->process_enrollment(
-                    $semester, $course, $section
+                    $semester, $course, $ues_section
                 );
             }
         }
@@ -357,19 +358,59 @@ class enrol_ues_plugin extends enrol_plugin {
             $semesters = $semester_source->semesters($now);
 
             $this->log('Processing ' . count($semesters) . " Semesters...\n");
-            $this->process_semesters($semesters);
+            $p_semesters = $this->process_semesters($semesters);
 
-            $sems_in = function ($time) {
-                return ues_semester::in_session($time);
+            $v = function($s) { return !empty($s->grades_due); };
+
+            $i = function($s) { return !empty($s->semester_ignore); };
+
+            list($other, $failures) = $this->partition($p_semesters, $v);
+
+            // Notify improper semester
+            foreach ($failures as $failed_sem) {
+                $this->errors[] = ues::_s('failed_sem', $failed_sem);
+            }
+
+            list($ignored, $valids) = $this->partition($other, $i);
+
+            // Ignored sections with semesters will be unenrolled
+            foreach ($ignored as $ignored_sem) {
+                $where_manifested = ues::where()
+                    ->semesterid->equal($ignored_sem->id)
+                    ->status->equal(ues::MANIFESTED);
+
+                $to_drop = array('status' => ues::PENDING);
+
+                // This will be caught in regular process
+                ues_section::update($to_drop, $where_manifested);
+            }
+
+            $sems_in = function ($sem) use ($time, $sub_days) {
+                $end_check = $time < $sem->grades_due;
+
+                return ($sem->classes_start - $sub_days) < $time && $end_check;
             };
 
-            $processed_semesters = $sems_in($time) + $sems_in($time + $sub_days);
-
-            return $processed_semesters;
+            return array_filter($valids, $sems_in);
         } catch (Exception $e) {
             $this->errors[] = $e->getMessage();
             return array();
         }
+    }
+
+    public function partition($collection, $func) {
+        $pass = array();
+        $fail = array();
+
+        foreach ($collection as $key => $single) {
+            if ($func($single)) {
+                $pass[$key] = $single;
+            } else {
+                $fail[$key] = $single;
+            }
+        }
+
+        return array($pass, $fail);
     }
 
     public function get_courses($semester) {
@@ -494,6 +535,9 @@ class enrol_ues_plugin extends enrol_plugin {
                 }
 
                 $ues->save();
+
+                // Fill in additionally set data
+                $ues->fill_meta();
 
                 events_trigger('ues_semester_process', $ues);
 
@@ -1086,6 +1130,8 @@ class enrol_ues_plugin extends enrol_plugin {
     }
 
     private function create_user($u) {
+        $present = !empty($u->idnumber);
+
         $by_idnumber = array('idnumber' => $u->idnumber);
 
         $by_username = array('username' => $u->username);
@@ -1096,7 +1142,7 @@ class enrol_ues_plugin extends enrol_plugin {
 
         if ($prev = ues_user::get($exact_params, true)) {
             $user->id = $prev->id;
-        } else if ($prev = ues_user::get($by_idnumber, true)) {
+        } else if ($present and $prev = ues_user::get($by_idnumber, true)) {
             $user->id = $prev->id;
         } else if ($prev = ues_user::get($by_username, true)) {
             $user->id = $prev->id;

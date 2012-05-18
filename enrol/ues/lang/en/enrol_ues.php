@@ -43,6 +43,12 @@ $string['running_desc'] = 'If this is checked then it either means that the proc
 
 __Note__: One of the easiest ways to know the process has ended is to enable email logs.';
 
+$string['ignore'] = 'Ignore';
+$string['please_note'] = 'The following semesters were selected: {$a}';
+
+$string['be_ignored'] = '{$a} - will be ignored';
+$string['be_recoged'] = '{$a} - will be recognized';
+
 $string['starttime'] = 'Last start time';
 $string['starttime_desc'] = 'This the timestamp of its last started cron run. This timestamp differentiates itself from the _lastcron_, as this field represents when the cron started not finished.';
 
@@ -65,12 +71,15 @@ $string['error_shortname'] = 'Tried to create a course, but failed because the c
 
 $string['error_no_group'] = 'UES tried to add someone to the deleted group (name = {$a->name}) for course (id = {$a->courseid}). UES has reason to believe that this group should not be in existence (no more teachers are enrolled). Please verify the UES enrollment data (unmanifested entries) in the selected course, and file a bug report if the data looks sound and should have been manifested.';
 
+$string['semester_ignore'] = 'Semester Ignore';
+
 $string['general_settings'] = 'General Settings';
 $string['management'] = 'Internal Links';
 $string['management_links'] = '
 Below are some internal links to manage the enrollment data.
 
 * ['.$string['semester_cleanup'].']({$a->cleanup_url})
+* ['.$string['semester_ignore'].']({$a->ignore_url})
 * ['.$string['reprocess_failures'].']({$a->failure_url})
 ';
 
@@ -152,6 +161,8 @@ $string['editingteacher_role_desc'] = 'UES *primary* teachers will be enrolled i
 $string['teacher_role'] = 'Non-Primary Instructor';
 $string['teacher_role_desc'] = 'UES *non-primary* teachers will be enrolled in this Moodle role';
 
+$string['failed_sem'] = 'The following semester does not have an end date: {$a->year} {$a->name} {$a->campus} {$a->session_key}';
+
 /** Behavior Strings go here */
 $string['lsu_name'] = 'LSU Enrollment Provider';
 
@@ -177,6 +188,36 @@ $string['lsu_degree_candidates_desc'] = 'This will enabled processing degree can
 
 $string['lsu_sports_information'] = 'Sports Information';
 $string['lsu_sports_information_desc'] = 'This will enable the pulling of student athletic information in the `postprocess` section of the LSU provider';
+
+$string['lsu_semester_source'] = 'Semester serviceId';
+$string['lsu_semester_source_desc'] = 'The web service id for campus semesters';
+
+$string['lsu_course_source'] = 'Courses serviceId';
+$string['lsu_course_source_desc'] = 'The web service id for courses per semester';
+
+$string['lsu_teacher_by_department'] = 'Dept instructors serviceId';
+$string['lsu_teacher_by_department_desc'] = 'The web service id for all instructors in a given department';
+
+$string['lsu_student_by_department'] = 'Dept students serviceId';
+$string['lsu_student_by_department_desc'] = 'The web service id for all students in a given department';
+
+$string['lsu_teacher_source'] = 'Sec instructor serviceId';
+$string['lsu_teacher_source_desc'] = 'The web service id for all instructors in a given section';
+
+$string['lsu_student_source'] = 'Sec student serviceId';
+$string['lsu_student_source_desc'] = 'The web service id for all students in a given section';
+
+$string['lsu_student_data_source'] = 'Student data serviceId';
+$string['lsu_student_data_source_desc'] = 'the web service id for all student data in a given semester';
+
+$string['lsu_student_degree_source'] = 'Degree candidate serviceId';
+$string['lsu_student_degree_source_desc'] = 'The web service id for degree candidate info for a given semester';
+
+$string['lsu_student_anonymous_source'] = 'Anonymous # serviceId';
+$string['lsu_student_anonymous_source_desc'] = 'The web service id for anonymous numbers';
+
+$string['lsu_student_ath_source'] = 'Athlete info serviceId';
+$string['lsu_student_ath_source_desc'] = 'The web service id for student athletes';
 
 // Fake for testing
 $string['fake_name'] = 'Fake Source Enrollment Provider';

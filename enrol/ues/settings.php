@@ -15,6 +15,7 @@ if ($ADMIN->fulltree) {
     $urls = new stdClass;
     $urls->cleanup_url = $CFG->wwwroot . '/enrol/ues/cleanup.php';
     $urls->failure_url = $CFG->wwwroot . '/enrol/ues/failures.php';
+    $urls->ignore_url = $CFG->wwwroot . '/enrol/ues/ignore.php';
 
     $settings->add(new admin_setting_heading('enrol_ues_internal_links',
         $_s('management'), $_s('management_links', $urls)));
@@ -144,8 +145,8 @@ if ($ADMIN->fulltree) {
 
         $adv_settings = $provider::adv_settings();
 
+        $plugin_name = $_s($provider::get_name() . '_name');
         if ($reg_settings or $adv_settings) {
-            $plugin_name = $_s($provider::get_name() . '_name');
             $settings->add(new admin_setting_heading('provider_settings',
                 $_s('provider_settings', $plugin_name), ''));
         }

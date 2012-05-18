@@ -1,7 +1,7 @@
 <?php
 
 require_once('../../config.php');
-require_once($CFG->libdir . '/quick_template.php');
+require_once($CFG->libdir . '/quick_template/lib.php');
 
 require_once('lib.php');
 
@@ -155,6 +155,6 @@ $tpl_data = array(
     'form_facsimile' => $form_facsimile
 );
 
-quick_render('view.tpl', $tpl_data, 'block_scantron');
+quick_template::render('scantron_view.tpl', $tpl_data, 'block_scantron');
 
 echo $OUTPUT->footer();

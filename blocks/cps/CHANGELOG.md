@@ -1,3 +1,17 @@
+## v1.1.4
+
+- $.ajaxError will report network issues [#30][30]
+- Split and team teach avoid semester colission [#29][29]
+- Cross-list semester fix [#28][28]
+- Improperly formatting Degree cacndidates [40cdf4][40cdf4]
+- Restore entire course config from previous course [5c2de0][5c2de0]
+
+[28]: https://github.com/lsuits/cps/issues/28
+[29]: https://github.com/lsuits/cps/issues/29
+[30]: https://github.com/lsuits/cps/issues/30
+[5c2de0]: https://github.com/lsuits/cps/commit/5c2de03372123aeac64d44e4a356163a512cf802
+[40cdf4]: https://github.com/lsuits/cps/commit/40cdf4391a74905ff00e1fa45c064403bab09670
+
 ## v1.1.3
 
 - Better simple restore handling [20cb74][20cb74]

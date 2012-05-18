@@ -2,7 +2,7 @@
 
 require_once('../../config.php');
 require_once($CFG->libdir . '/uploadlib.php');
-require_once($CFG->libdir . '/quick_template.php');
+require_once($CFG->libdir . '/quick_template/lib.php');
 
 require_once('lib.php');
 
@@ -177,6 +177,6 @@ if ($exams) {
 // Print page template and footer
 //
 
-quick_render('manage.tpl', $tpl_data, 'block_scantron');
+quick_template::render('scantron_manage.tpl', $tpl_data, 'block_scantron');
 
 echo $OUTPUT->footer();

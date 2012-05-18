@@ -13,8 +13,8 @@ interface institution_codes {
     const LSU_SEM = 'CLSB';
     const LAW_SEM = 'LAWB';
 
-    const LSU_FINAL = 'PSTGRD';
-    const LAW_FINAL = 'LFGDF';
+    const LSU_FINAL = 'CLSE';
+    const LAW_FINAL = 'LAWE';
 
     const LSU_CAMPUS = '01';
     const LAW_CAMPUS = '08';
@@ -32,10 +32,11 @@ abstract class lsu_source implements institution_codes, semester_codes {
     var $password;
     var $wsdl;
 
-    function __construct($username, $password, $wsdl) {
+    function __construct($username, $password, $wsdl, $serviceId) {
         $this->username = $username;
         $this->password = $password;
         $this->wsdl = $wsdl;
+        $this->serviceId = $serviceId;
     }
 
     private function build_parameters(array $params) {
