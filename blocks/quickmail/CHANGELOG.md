@@ -1,3 +1,11 @@
+## v1.2.7
+
+- Block now uses icons correctly [213ed0][213ed0]
+- Uses the correct zip in attachments [200fb2][200fb2]
+
+[213ed0]: https://github.com/lsuits/quickmail/commit/213ed09b58a065608d81df83005dccd4f8b6714d
+[200fb2]: https://github.com/lsuits/quickmail/commit/200fb2e07d01c052a398c799d11607eed3f5ac64
+
 ## v1.2.6
 
 - Now uses $CFG->tempdir for the temp directory [741a64][741a64]
@@ -10,7 +18,7 @@
 
 - Receive copy default setting [#31][31]
 - Empty Signature defaults [#30][30]
-- Increase Subject line [45a80cf][45a80cf] 
+- Increase Subject line [45a80cf][45a80cf]
 
 [31]: https://github.com/lsuits/quickmail/issues/31
 [30]: https://github.com/lsuits/quickmail/issues/30
