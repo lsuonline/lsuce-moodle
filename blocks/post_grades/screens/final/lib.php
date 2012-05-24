@@ -1,6 +1,24 @@
 <?php
 
-class post_grades_final extends post_grades_student_table {
+class post_grades_final extends post_grades_student_table
+    implements post_filtered {
+
+    function can_post($section) {
+        $students = $section->students();
+
+        $userid = function($student) { return $student->userid; };
+
+        $filters = ues::where()->id->in(array_map($userid, $students));
+
+        $all_students = ues_user::count($filters);
+
+        $filters->user_degree->equal('Y');
+
+        $degree_students = ues_user::count($filters);
+
+        return ($all_students - $degree_students) > 0;
+    }
+
     function is_acceptable($student) {
         $user = ues_user::upgrade($student)->fill_meta();
 

@@ -48,18 +48,25 @@ class block_post_grades extends block_list {
             $_s('posted'), 'moodle', array('class' => 'icon'));
 
         foreach ($periods as $period) {
+            $found = false;
+
             $bold = html_writer::tag('strong', $_s($period->post_type));
             $screenclass = post_grades::screenclass($period->post_type);
 
-            $filterable = $screenclass instanceof post_filtered;
-
-            $this->content->items[] = $bold;
-            $this->content->icons[] = '';
+            $filterable = method_exists($screenclass, 'can_post');
 
             $params['period'] = $period->id;
             foreach ($sections as $sec) {
                 if ($filterable and !$screenclass::can_post($sec)) {
                     continue;
+                }
+
+                // Hide label if none present
+                if (empty($found)) {
+                    $found = true;
+
+                    $this->content->items[] = $bold;
+                    $this->content->icons[] = '';
                 }
 
                 $group = $sec->group();

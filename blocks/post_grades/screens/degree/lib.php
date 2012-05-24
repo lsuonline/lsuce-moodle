@@ -4,8 +4,10 @@ class post_grades_degree extends post_grades_student_table implements post_filte
     function can_post($section) {
         $students = $section->students();
 
+        $userid = function($student) { return $student->userid; };
+
         $filters = ues::where()
-            ->id->in(array_keys($students))
+            ->id->in(array_map($userid, $students))
             ->user_degree->equal('Y');
 
         // Explicit boolean return

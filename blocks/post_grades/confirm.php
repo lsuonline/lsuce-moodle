@@ -63,9 +63,17 @@ $screen = post_grades::create($period, $course, $group);
 echo $output->header();
 echo $output->heading($heading);
 
-if ($screen->is_ready()) {
+$return = $screen->get_return_state();
+
+if ($return->is_ready()) {
     // Post grade link
+    if ($return instanceof post_grades_delegating_return) {
+        // Instructor can use regular re-routing
+        echo $output->confirm_return($return, false);
+    }
     echo $output->confirm_period($course, $group, $period);
+} else {
+    echo $output->confirm_return($return);
 }
 
 echo $output->box_start();

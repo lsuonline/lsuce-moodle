@@ -39,6 +39,9 @@ if (!in_array($period, post_grades::active_periods($course))) {
     print_error('notactive', 'block_post_grades');
 }
 
+// Need this for LAW types
+$ues_course = $section->course()->fill_meta();
+
 $params = array(
     'periodid' => $period->id,
     'sectionid' => $section->id,
@@ -79,6 +82,19 @@ $export_params = array(
         GRADE_DISPLAY_TYPE_REAL : GRADE_DISPLAY_TYPE_LETTER
 );
 
+if ($ues_course->department == 'LAW') {
+    $domino = get_config('block_post_grades', 'law_domino_application_url');
+    $export_params['decimalpoints'] = 1;
+    $export_params['displaytype'] = GRADE_DISPLAY_TYPE_REAL;
+
+    if (!empty($ues_course->course_first_year)) {
+        $course->visible = 0;
+        $DB->update_record('course', $course);
+    }
+} else {
+    $domino = get_config('block_post_grades', 'domino_application_url');
+}
+
 $export_url = new moodle_url('/grade/export/xml/dump.php', $export_params);
 
 switch($period->post_type) {
@@ -94,13 +110,11 @@ switch($period->post_type) {
 
 $post_params = array(
     'postType' => $post_type,
-    'DeptCode' => $section->course()->department,
-    'CourseNbr' => $section->course()->cou_number,
+    'DeptCode' => $ues_course->department,
+    'CourseNbr' => $ues_course->cou_number,
     'SectionNbr' => $section->sec_number,
     'MoodleGradeURL' => rawurlencode($export_url->out(false))
 );
-
-$domino = get_config('block_post_grades', 'domino_application_url');
 
 // We can't be sure about the configured url, so we are required to be safe
 $transformed = array();

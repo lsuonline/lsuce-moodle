@@ -81,7 +81,7 @@ abstract class post_grades {
     function create($period, $course, $group) {
         $class = self::screenclass($period->post_type);
         if (is_null($class)) {
-            return null;
+            throw new Exception(get_string('notactive', 'block_post_grades'));
         } else {
             return new $class($period, $course, $group);
         }
