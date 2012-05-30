@@ -78,10 +78,10 @@ $THEME->layouts = array(
         'defaultregion' => 'side-post',
     ),
     'admin' => array(
-        'file' => 'general.php',
+        'file' => 'admin.php',
         'regions' => array('side-pre'),
         'defaultregion' => 'side-pre',
-        'options' => array('nofooter'=>false, 'nonavbar'=>false, 'noblocks'=>true),
+        'options' => array('nofooter'=>false, 'nonavbar'=>false, 'noblocks'=>false),
     ),
     'mydashboard' => array(
         'file' => 'general.php',
@@ -142,3 +142,7 @@ $THEME->layouts = array(
 );
 
 $THEME->csspostprocess = 'lsu_process_css';
+
+// NOT READY FOR THIS
+// $THEME->rendererfactory = 'theme_overridden_renderer_factory';
+
