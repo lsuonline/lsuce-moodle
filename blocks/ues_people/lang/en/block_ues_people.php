@@ -2,6 +2,8 @@
 
 $string['pluginname'] = 'UES People';
 
+$string['canonicalname'] = 'Course Roster';
+
 $string['sec_number'] = 'Section #';
 $string['credit_hours'] = 'Credit Hours';
 

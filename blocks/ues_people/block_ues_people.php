@@ -42,14 +42,16 @@ class block_ues_people extends block_list {
 
         $this->content = $content;
 
+        $icon_class = array('class' => 'icon');
+
         if ($permission) {
-            $str = get_string('participants');
+            $str = get_string('canonicalname', 'block_ues_people');
             $url = new moodle_url('/blocks/ues_people/index.php', array(
                 'id' => $COURSE->id
             ));
 
             $this->content->items[] = html_writer::link($url, $str);
-            $this->content->icons[] = $OUTPUT->pix_icon('i/users', $str);
+            $this->content->icons[] = $OUTPUT->pix_icon('i/users', $str, 'moodle', $icon_class);
         }
 
         return $this->content;
