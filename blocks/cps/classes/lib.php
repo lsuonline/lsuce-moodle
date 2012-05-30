@@ -161,13 +161,23 @@ class cps_material extends cps_preferences implements application {
 
             $course = new stdClass;
             $course->visible = 0;
-            $course->numsections = $enrol->setting('course_numsections');
-            $course->format = $enrol->setting('course_format');
+            $course->numsections = get_config('moodlecourse', 'numsections');
+            $course->format = get_config('moodlecourse', 'format');
 
             $course->fullname = $shortname;
             $course->shortname = $shortname;
             $course->summary = $shortname;
             $course->category = $category->id;
+
+            $settings = cps_setting::get_all(ues::where()
+                ->userid->equal($this->userid)
+                ->name->starts_with('creation_')
+            );
+
+            foreach ($settings as $setting) {
+                $key = str_replace('creation_', '', $setting->name);
+                $course->$key = $setting->value;
+            }
 
             $mcourse = create_course($course);
         }
@@ -218,6 +228,20 @@ class cps_creation extends cps_preferences implements application {
 }
 
 class cps_setting extends cps_preferences {
+    var $userid;
+    var $name;
+    var $value;
+
+    public static function get_to_name($params) {
+        $settings = self::get_all($params);
+
+        $to_named_settings = array();
+        foreach ($settings as $setting) {
+            $to_named_settings[$setting->name] = $setting;
+        }
+
+        return $to_named_settings;
+    }
 }
 
 class cps_split extends ues_user_section_accessor implements unique, undoable, verifiable {
@@ -628,7 +652,8 @@ class cps_team_request extends cps_preferences implements application, undoable 
             $subject_key = 'team_request_invite_subject';
             $body_key = 'team_request_invite_body';
 
-            $a->link = new moodle_url('/blocks/cps/team_request.php');
+            $url = new moodle_url('/blocks/cps/team_request.php');
+            $a->link = $url->out();
 
             $to = $this->other_user();
             $from = $this->owner();
