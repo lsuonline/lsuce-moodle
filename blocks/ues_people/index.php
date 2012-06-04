@@ -10,8 +10,14 @@ if (!defined('DEFAULT_PAGE_SIZE')) {
     define('DEFAULT_PAGE_SIZE', 20);
 }
 
+$id = required_param('id', PARAM_INT);
+
+$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
+
+$from_request = optional_param('perpage', ues_people::get_perpage($course), PARAM_INT);
+
 $page = optional_param('page', 0, PARAM_INT);
-$perpage = optional_param('perpage', DEFAULT_PAGE_SIZE, PARAM_INT);
+$perpage = ues_people::set_perpage($course, $from_request);
 $roleid = optional_param('roleid', 0, PARAM_INT);
 $groupid = optional_param('group', 0, PARAM_INT);
 $meta = optional_param('meta', 'lastname', PARAM_TEXT);
@@ -19,8 +25,6 @@ $sortdir = optional_param('dir', 'ASC', PARAM_TEXT);
 
 $silast = optional_param('silast', 'all', PARAM_TEXT);
 $sifirst = optional_param('sifirst', 'all', PARAM_TEXT);
-
-$id = required_param('id', PARAM_INT);
 
 $export_params = array(
     'roleid' => $roleid,
@@ -42,8 +46,6 @@ $PAGE->set_url('/blocks/ues_people/index.php', array(
 
 $PAGE->set_pagelayout('incourse');
 $PAGE->add_body_class('ues_people');
-
-$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 
 $all_sections = ues_section::from_course($course);
 
@@ -139,7 +141,7 @@ $select = 'SELECT u.id, u.firstname, u.lastname, u.email, ues.sec_number, u.dele
                   ues.credit_hours';
 $joins = array('FROM {user} u');
 
-list($esql, $params) = get_enrolled_sql($context, NULL, $groupid, true);
+list($esql, $params) = get_enrolled_sql($context, NULL, $currentgroup, true);
 $joins[] = "JOIN ($esql) e ON e.id = u.id";
 
 list($ccselect, $ccjoin) = context_instance_preload_sql('u.id', CONTEXT_USER, 'ctx');
@@ -418,6 +420,8 @@ echo ues_people::initial_bars(get_string('firstname'), 'sifirst', $firstinitial)
 $lastinitial = $base_with_params($default_params + array('sifirst' => $sifirst));
 echo ues_people::initial_bars(get_string('lastname'), 'silast', $lastinitial);
 
+echo ues_people::show_links($export_params, $count, $perpage);
+
 echo $paging_bar;
 
 echo html_writer::start_tag('div', array('class' => 'no-overflow'));
@@ -426,19 +430,7 @@ echo html_writer::end_tag('div');
 
 echo $paging_bar;
 
-if ($count > DEFAULT_PAGE_SIZE) {
-    if ($perpage == 5000) {
-        $other = DEFAULT_PAGE_SIZE;
-        $str = get_string('showonly', 'moodle') . ' ' . DEFAULT_PAGE_SIZE;
-    } else {
-        $other = 5000;
-        $str = get_string('showall', 'moodle', $count);
-    }
-
-    $url = new moodle_url('/blocks/ues_people/index.php',
-        $export_params + array('perpage' => $other));
-    echo html_writer::link($url, $str);
-}
+echo ues_people::show_links($export_params, $count, $perpage);
 
 echo ues_people::controls($export_params, $meta_names);
 

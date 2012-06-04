@@ -134,6 +134,42 @@ abstract class ues_people {
         return set_user_preference('block_ues_people_filter_'.$meta_name, (int)$value);
     }
 
+    public static function show_links($params, $count, $perpage) {
+        if ($count > DEFAULT_PAGE_SIZE) {
+            if ($perpage == 5000) {
+                $other = DEFAULT_PAGE_SIZE;
+                $str = get_string('showonly', 'moodle') . ' ' . DEFAULT_PAGE_SIZE;
+            } else {
+                $other = 5000;
+                $str = get_string('showall', 'moodle', $count);
+            }
+
+            $url = new moodle_url('/blocks/ues_people/index.php',
+                $params + array('perpage' => $other));
+            echo html_writer::link($url, $str);
+        }
+    }
+
+    public static function set_perpage($course, $perpage) {
+        $current = self::get_perpage($course);
+
+        // Same... do nothing
+        if ($current != $perpage) {
+            set_user_preference(
+                'block_ues_people_perpage_' . $course->id,
+                $perpage
+            );
+        }
+
+        return $perpage;
+    }
+
+    public static function get_perpage($course) {
+        return (int)get_user_preferences(
+            'block_ues_people_perpage_' . $course->id, DEFAULT_PAGE_SIZE
+        );
+    }
+
     public static function is_filtered($meta_name) {
         $pref = self::get_filter($meta_name);
         return $pref === 0;
