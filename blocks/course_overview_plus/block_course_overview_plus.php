@@ -177,12 +177,16 @@ class block_course_overview_plus extends block_base {
             echo $OUTPUT->box_start('coursebox');
             $attributes = array('title' => s($c->fullname));
             if (empty($c->visible)) {
+                // Added by Robert Russo to differentiate between visible courses and unavailable courses
+                $availability = '<span> (' . get_string('unavailablecourses', 'block_course_overview_plus') . ') </span>';
                 $attributes['class'] = 'dimmed';
+            } else {
+                $availability = '';
             }
  
            if($c->hide==0) {
                echo $OUTPUT->heading(html_writer::link(
-                   new moodle_url('/course/view.php', array('id' => $c->id)), format_string($c->fullname), $attributes).
+                   new moodle_url('/course/view.php', array('id' => $c->id)), format_string($c->fullname), $attributes). $availability .
                        ' <div style="text-align: right;"><a href="index.php?hidecourse='.$c->id.'&amp;managehiddencourses='.$managehiddencourses.'" id="hider'.$c->id.'" title="'.get_string('hidecourse', 'block_course_overview_plus').'">'.
                        '<img src="'.$OUTPUT->pix_url('i/hide') . '" class="icon" alt="'.get_string('hidecourse', 'block_course_overview_plus').'" /></a>'.
                        '<a href="index.php?showcourse='.$c->id.'&amp;managehiddencourses='.$managehiddencourses.'" id="shower'.$c->id.'" class="hidden" title="'.get_string('showcourse', 'block_course_overview_plus').'">'.

@@ -8,3 +8,5 @@ $string['youhave'] = 'You have';
 $string['hiddencourses'] = 'hidden courses';
 $string['managehiddencourses'] = 'Manage hidden courses';
 $string['stopmanaginghiddencourses'] = 'Stop managing hidden courses';
+// Added by Robert Russo to differentiate between visible courses and unavailable courses
+$string['unavailablecourses'] = 'Unavailable to students';
