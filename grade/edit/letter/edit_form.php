@@ -60,7 +60,8 @@ class edit_letter_form extends moodleform {
         }
 
         $default_letters = array_reverse(explode(',', $default_letters));
-        $letters = array_combine($default_letters, $default_letters);
+        $letters = array('' => get_string('unused', 'grades')) +
+            array_combine($default_letters, $default_letters);
 
         for($i=1; $i<$num+1; $i++) {
             $gradelettername = 'gradeletter'.$i;
@@ -80,7 +81,11 @@ class edit_letter_form extends moodleform {
             if (!$admin) {
                 $mform->disabledIf($gradelettername, 'override', 'notchecked');
 
-                $mform->disabledIf($gradelettername, $gradeboundaryname, 'eq', -1);
+                if ($custom) {
+                    $mform->disabledIf($gradeboundaryname, $gradelettername, 'eq', '');
+                } else {
+                    $mform->disabledIf($gradelettername, $gradeboundaryname, 'eq', -1);
+                }
             }
 
             if ($custom) {
@@ -88,16 +93,13 @@ class edit_letter_form extends moodleform {
 
                 $mform->addRule($gradeboundaryname, null, 'numeric', '', 'client');
 
-                $mform->setType($gradeboundaryname, PARAM_TEXT);
-
+                $mform->setType($gradeboundaryname, PARAM_FLOAT);
                 $mform->setDefault($gradeboundaryname, '');
             } else {
                 $mform->addElement('select', $gradeboundaryname, $gradeboundary." $i", $percentages);
 
                 $mform->setType($gradeboundaryname, PARAM_INT);
-
                 $mform->setDefault($gradeboundaryname, -1);
-
             }
 
             if ($i == 1) {
