@@ -871,6 +871,9 @@ class grade_report_grader extends grade_report {
                     $percents = $render_percents ?
                         $this->get_weighted_percents($element['object']) : '';
 
+                    $percents = $render_percents ?
+                        $this->get_weighted_percents($element['object']) : '';
+
                     if ($element['object']->is_hidden()) {
                         $itemcell->attributes['class'] .= ' hidden';
                     }

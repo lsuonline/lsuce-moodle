@@ -140,6 +140,7 @@ if (!$edit) {
         redirect($returnurl);
 
     } else if ($data = $mform->get_data()) {
+
         if (!$admin and empty($data->override)) {
             $DB->delete_records('grade_letters', array('contextid' => $context->id));
             redirect($returnurl);
@@ -149,6 +150,12 @@ if (!$edit) {
         for($i=1; $i<$num+1; $i++) {
             $gradelettername = 'gradeletter'.$i;
             $gradeboundaryname = 'gradeboundary'.$i;
+
+            if ($custom and isset($data->$gradeboundaryname)) {
+                if ($data->$gradeboundaryname === '') {
+                    $data->$gradeboundaryname = -1;
+                }
+            }
 
             if (property_exists($data, $gradeboundaryname) and $data->$gradeboundaryname != -1) {
                 $letter = trim($data->$gradelettername);
@@ -166,7 +173,7 @@ if (!$edit) {
             $old_ids = array_keys($records);
         }
 
-        foreach($letters as $boundary=>$letter) {
+        foreach ($letters as $boundary=>$letter) {
             $record = new stdClass();
             $record->letter        = $letter;
             $record->lowerboundary = $boundary;
@@ -180,7 +187,7 @@ if (!$edit) {
             }
         }
 
-        foreach($old_ids as $old_id) {
+        foreach ($old_ids as $old_id) {
             $DB->delete_records('grade_letters', array('id' => $old_id));
         }
 

@@ -88,14 +88,17 @@ class edit_letter_form extends moodleform {
 
                 $mform->addRule($gradeboundaryname, null, 'numeric', '', 'client');
 
-                $mform->setType($gradeboundaryname, PARAM_FLOAT);
+                $mform->setType($gradeboundaryname, PARAM_TEXT);
+
+                $mform->setDefault($gradeboundaryname, '');
             } else {
                 $mform->addElement('select', $gradeboundaryname, $gradeboundary." $i", $percentages);
 
                 $mform->setType($gradeboundaryname, PARAM_INT);
-            }
 
-            $mform->setDefault($gradeboundaryname, -1);
+                $mform->setDefault($gradeboundaryname, -1);
+
+            }
 
             if ($i == 1) {
                 $mform->addHelpButton($gradeboundaryname, 'gradeboundary', 'grades');
