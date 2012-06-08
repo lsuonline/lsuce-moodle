@@ -905,8 +905,8 @@ class course_enrolment_manager {
             $details[$field] = $user->{$field};
         }
 
-        if ($user->lastaccess) {
-            $details['lastseen'] = format_time($now - $user->lastaccess);
+        if ($user->lastseen) {
+            $details['lastseen'] = format_time($now - $user->lastseen);
         }
         return $details;
     }
