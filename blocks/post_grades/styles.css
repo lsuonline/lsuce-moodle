@@ -1,0 +1,69 @@
+.jd_curve_graph {
+    margin: auto;
+    width: 60%;
+}
+
+.jd_curve {
+    width: 100%;
+}
+
+.jd_curve th.c0, .jd_curve th.c1 {
+    width: 12%;
+}
+
+.jd_curve th.c5 {
+    width: 25%;
+}
+
+.law_grade_bar {
+    border: 1px solid #cecece;
+    margin: 5px 0;
+    background-color: #f3ebfa;
+}
+
+.law_grade_bar_row {
+    overflow: hidden;
+    padding: 0 2px 0 5px;
+    border-bottom: 1px solid #cecece;
+}
+
+.law_grade_bar_inner {
+    float: left;
+    width: 33%;
+}
+
+.lower {
+    background-color: #999;
+}
+
+.upper {
+    background-color: #666;
+}
+
+.not_compliant {
+    background-color: red;
+}
+
+.compliant {
+    background-color: green;
+}
+
+.law_grade_legend_row_container {
+    padding-top: 20px;
+    padding-left: 5px;
+}
+
+.law_grade_legend_row {
+    overflow: hidden;
+}
+
+.law_grade_legend.title {
+    width: 60%;
+    font-weight: bold;
+}
+
+.law_grade_legend {
+    width: 30%;
+    float: left;
+    padding: 2px;
+}
