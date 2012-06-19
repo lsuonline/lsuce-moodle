@@ -2,10 +2,27 @@
 
 interface supported_meta {
     public function name();
+    public function wrapped_class();
     public function defaults();
+    public function can_use();
 }
 
-class ues_user_supported_meta implements supported_meta {
+abstract class provided_meta implements supported_meta {
+    public function wrapped_class() {
+        if (preg_match('/(ues_\w+)_supported_meta/', get_class($this), $match)) {
+            return $match[1];
+        }
+
+        throw new Exception('Could not find supported meta class');
+    }
+
+    public function can_use() {
+        $context = get_context_instance(CONTEXT_SYSTEM);
+        return has_capability('block/ues_meta_viewer:access', $context);
+    }
+}
+
+class ues_user_supported_meta extends provided_meta {
     public function name() {
         return get_string('user', 'block_ues_meta_viewer');
     }
@@ -17,7 +34,7 @@ class ues_user_supported_meta implements supported_meta {
     }
 }
 
-class ues_section_supported_meta implements supported_meta {
+class ues_section_supported_meta extends provided_meta {
     public function name() {
         return get_string('section', 'block_ues_meta_viewer');
     }
@@ -29,7 +46,7 @@ class ues_section_supported_meta implements supported_meta {
     }
 }
 
-class ues_course_supported_meta implements supported_meta {
+class ues_course_supported_meta extends provided_meta {
     public function name() {
         return get_string('course', 'block_ues_meta_viewer');
     }
@@ -41,7 +58,7 @@ class ues_course_supported_meta implements supported_meta {
     }
 }
 
-class ues_semester_suppported_meta implements supported_meta {
+class ues_semester_suppported_meta extends provided_meta {
     public function name() {
         return get_string('semester', 'block_ues_meta_viewer');
     }
@@ -53,7 +70,7 @@ class ues_semester_suppported_meta implements supported_meta {
     }
 }
 
-class ues_teacher_supported_meta implements supported_meta {
+class ues_teacher_supported_meta extends provided_meta {
     public function name() {
         return get_string('teacher', 'block_ues_meta_viewer');
     }
@@ -65,7 +82,7 @@ class ues_teacher_supported_meta implements supported_meta {
     }
 }
 
-class ues_student_supported_meta implements supported_meta {
+class ues_student_supported_meta extends provided_meta {
     public function name() {
         return get_string('student', 'block_ues_meta_viewer');
     }

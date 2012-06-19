@@ -73,15 +73,17 @@ abstract class meta_data_ui_element {
 
 class meta_data_text_box extends meta_data_ui_element {
     public function html() {
-        $html = '<input type="text" placeholder="'. $this->name() .'" name="'.$this->key().'"';
+        $params = array(
+            'type' => 'text',
+            'placeholder' => $this->name(),
+            'name' => $this->key()
+        );
 
         if (trim($this->value()) !== '') {
-            $html .= ' value="'. $this->value() .'"';
+            $params['value'] = $this->value();
         }
 
-        $html .= '/>';
-
-        return $html;
+        return html_writer::empty_tag('input', $params);
     }
 
     public function sql($dsl) {

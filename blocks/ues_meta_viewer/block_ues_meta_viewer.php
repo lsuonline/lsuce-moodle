@@ -26,18 +26,18 @@ class block_ues_meta_viewer extends block_list {
 
         $meta_types = ues_meta_viewer::supported_types();
 
-        // Check capability
-        $context = get_context_instance(CONTEXT_SYSTEM);
-        if (has_capability('block/ues_meta_viewer:access', $context)) {
-            $base = '/blocks/ues_meta_viewer/viewer.php';
+        $base = '/blocks/ues_meta_viewer/viewer.php';
 
-            foreach ($meta_types as $type => $support) {
-                $url = new moodle_url($base, array('type' => $type));
-
-                $str = get_string('viewer', 'block_ues_meta_viewer', $support->name());
-
-                $content->items[] = html_writer::link($url, $str);
+        foreach ($meta_types as $type => $support) {
+            if (!$support->can_use()) {
+                continue;
             }
+
+            $url = new moodle_url($base, array('type' => $type));
+
+            $str = get_string('viewer', 'block_ues_meta_viewer', $support->name());
+
+            $content->items[] = html_writer::link($url, $str);
         }
 
         $this->content = $content;

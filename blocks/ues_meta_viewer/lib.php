@@ -54,7 +54,7 @@ abstract class ues_meta_viewer {
         return $handler->ui_element;
     }
 
-    public static function generate_keys($type, $user) {
+    public static function generate_keys($type, $class, $user) {
         $types = self::supported_types();
 
         $fields = new stdClass;
@@ -63,7 +63,7 @@ abstract class ues_meta_viewer {
         $fields->keys = $types[$type]->defaults();
 
         // Auto fill based on system
-        $additional_fields = $type::get_meta_names();
+        $additional_fields = $class::get_meta_names();
         foreach ($additional_fields as $field) {
             $fields->keys[] = $field;
         }
@@ -74,7 +74,6 @@ abstract class ues_meta_viewer {
         return $fields->keys;
     }
 
-    // Make this 
     public static function supported_types() {
         if (!class_exists('supported_meta')) {
             global $CFG;
