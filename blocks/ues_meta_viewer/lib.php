@@ -41,10 +41,13 @@ abstract class ues_meta_viewer {
     }
 
     public static function handler($type, $field) {
-        $name = get_string($field);
+        $cur = current_language();
+        $strs = get_string_manager()->load_component_strings('moodle', $cur);
 
-        if ($name == "[[$field]]") {
-           $name = $field;
+        if (!isset($strs[$field])) {
+            $name = $field;
+        } else {
+            $name = $strs[$field];
         }
 
         $handler = new stdClass;

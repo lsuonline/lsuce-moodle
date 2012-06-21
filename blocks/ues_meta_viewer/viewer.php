@@ -85,7 +85,6 @@ if (!empty($_REQUEST['search'])) {
     $posted = true;
 } else {
     $count = 0;
-    $result = $_s('search');
     $posted = false;
 }
 
