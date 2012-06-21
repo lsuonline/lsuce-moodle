@@ -149,7 +149,6 @@ class grade_report_grader extends grade_report {
         // Persist initials through paging
         $this->pbarurl = new moodle_url('/grade/report/grader/index.php', array(
             'id' => $this->courseid,
-            'perpage' => $studentsperpage,
             'silast' => $this->silast,
             'filast' => $this->filast
         ));
@@ -876,9 +875,11 @@ class grade_report_grader extends grade_report {
                     }
 
                     $itemcell->colspan = $colspan;
+
                     $itemcell->text = $qe_link;
                     $itemcell->text .= shorten_text($headerlink);
                     $itemcell->text .= $percents . $arrow;
+
                     $itemcell->header = true;
                     $itemcell->scope = 'col';
 

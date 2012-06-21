@@ -3196,7 +3196,7 @@ class settings_navigation extends navigation_node {
             $coursenode->add(get_string('editsettings'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/settings', ''));
 
             // Add the course completion settings link
-            if ($CFG->enablecompletion && $course->enablecompletion) {
+            if ($CFG->enablecompletion && $course->enablecompletion && has_capability('moodle/course:create', $coursecontext)) {
                 $url = new moodle_url('/course/completion.php', array('id'=>$course->id));
                 $coursenode->add(get_string('completion', 'completion'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/settings', ''));
             }

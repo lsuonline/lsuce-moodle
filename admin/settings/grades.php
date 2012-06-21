@@ -111,6 +111,8 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     /// Grade category settings
     $temp = new admin_settingpage('gradecategorysettings', get_string('gradecategorysettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
+        $temp->add(new admin_setting_configcheckbox('grade_coursecateditable', get_string('coursecateditable', 'grades'), get_string('coursecateditable_help', 'grades'), 1));
+
         $temp->add(new admin_setting_configcheckbox('grade_hideforcedsettings', get_string('hideforcedsettings', 'grades'), get_string('hideforcedsettings_help', 'grades'), '1'));
 
         $strnoforce = get_string('noforce', 'grades');
@@ -177,13 +179,13 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     /// Grade item settings
     $temp = new admin_settingpage('gradeitemsettings', get_string('gradeitemsettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
-        $temp->add(new admin_setting_configcheckbox('grade_item_manual_recompute',
-            get_string('gradeitemmanualrecompute', 'grades'),
-            get_string('gradeitemmanualrecompute_help', 'grades'), 0));
-
         $temp->add(new admin_setting_configcheckbox('grade_multfactor_alt',
             get_string('multfactor_alt', 'grades'),
             get_string('multfactor_alt_desc', 'grades'), 0));
+
+        $temp->add(new admin_setting_configcheckbox('grade_item_manual_recompute',
+            get_string('gradeitemmanualrecompute', 'grades'),
+            get_string('gradeitemmanualrecompute_help', 'grades'), 0));
 
         $temp->add(new admin_setting_configselect('grade_displaytype', get_string('gradedisplaytype', 'grades'),
                                                   get_string('gradedisplaytype_help', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
