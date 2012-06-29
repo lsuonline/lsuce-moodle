@@ -1,5 +1,6 @@
 # v1.1.0
 
+- Fullname is divided into two fields on export [#8][8]
 - Icons and Better language [d04077][d04077]
 - Show links on top and bottom, and persistent [#4][4]
 - Obey group viewing rules [#5][5]
@@ -7,6 +8,7 @@
 [d04077]: https://github.com/lsuits/ues_people/commit/d04077b2875939133f8531a5cc3a65a8f0f7efb4
 [4]: https://github.com/lsuits/ues_people/issues/4
 [5]: https://github.com/lsuits/ues_people/issues/5
+[8]: https://github.com/lsuits/ues_people/issues/8
 
 # v1.0.3
 

@@ -238,9 +238,12 @@ if ($data = data_submitted()) {
                     continue;
                 }
 
-                $value = $meta == 'fullname' ? fullname($user) : $output->format($user);
-
-                $line[] = '"' . $value . '"';
+                if ($meta == 'fullname') {
+                    $line[] = '"' . $user->firstname . '"';
+                    $line[] = '"' . $user->lastname . '"';
+                } else {
+                    $line[] = '"' . strip_tags($output->format($user)) . '"';
+                }
             }
 
             return implode(',', $line);
