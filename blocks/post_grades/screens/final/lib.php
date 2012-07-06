@@ -6,6 +6,10 @@ class post_grades_final extends post_grades_student_table
     function can_post($section) {
         $students = $section->students();
 
+        if (empty($students)) {
+            return false;
+        }
+
         $userid = function($student) { return $student->userid; };
 
         $filters = ues::where()->id->in(array_map($userid, $students));
