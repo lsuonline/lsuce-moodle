@@ -25,8 +25,13 @@ abstract class post_grades_screen {
         $sections = ues_section::from_course($this->course, true);
         $section = post_grades::find_section($this->group, $sections);
 
+        // Filter Audits at teh screen level
+        $auditers = post_grades::pull_auditing_students($section);
+        foreach ($auditers as $audit) {
+            unset($this->students[$audit->id]);
+        }
+
         // Shim for 1.9
-        $total = count($this->students);
         $course = $section->course()->fill_meta();
 
         $passthrough = array('CLI', 'IND');
@@ -142,6 +147,11 @@ abstract class post_grades_student_table extends post_grades_screen {
             if (empty($grade_grade)) {
                 $grade_grade = new grade_grade();
                 $grade_grade->finalgrade = null;
+            }
+
+            // Don't bother showing incompletes
+            if ($grade_grade->is_overridden() and $grade_grade->finalgrade == null) {
+                continue;
             }
 
             $line->cells[] = html_writer::link($url, $name);

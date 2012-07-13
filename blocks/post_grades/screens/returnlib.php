@@ -18,6 +18,7 @@ interface post_grades_return_process
 
 interface post_grades_return_graphable {
     function get_calc_info();
+
     function get_grading_info();
 }
 
@@ -55,17 +56,39 @@ abstract class post_grades_mean_median implements post_grades_compliance {
         return get_config('block_post_grades', $setting);
     }
 
+    function is_incomplete($student, $course_item) {
+        $grade = $course_item->get_grade($student->id, false);
+
+        if (empty($grade->id)) {
+            return false;
+        }
+
+        return $grade->is_overridden() and $grade->finalgrade == null;
+    }
+
     function get_graded_students($students) {
         global $DB;
 
-        $item = empty($this->itemid) ?
-            grade_item::fetch_course_item($this->course->id) :
-            grade_item::fetch(array('id' => $this->itemid));
+        $ci = grade_item::fetch_course_item($this->course->id);
+
+        if (empty($this->itemid)) {
+            $item = $ci;
+        } else {
+            $item = grade_item::fetch(array('id' => $this->itemid));
+        }
 
         $anon = grade_anonymous::fetch(array('itemid' => $this->itemid));
 
-        $pull_grades = function($student) use ($anon, $item, $DB) {
-            $user_params = array('userid' => $student->id);
+        // Filter audits at the return level, for quick edits
+        $audits = post_grades::pull_auditing_students($this->course);
+
+        $rtn = array();
+        foreach ($students as $stud) {
+            if (isset($audits[$stud->id]) or $this->is_incomplete($stud, $ci)) {
+                continue;
+            }
+
+            $user_params = array('userid' => $stud->id);
             if ($anon) {
                 $params = $user_params + array('anonymous_itemid' => $anon->id);
                 $finalgrade = $DB->get_field(
@@ -76,12 +99,11 @@ abstract class post_grades_mean_median implements post_grades_compliance {
                 $finalgrade = $DB->get_field('grade_grades', 'finalgrade', $params);
             }
 
-            $student->finalgrade = $finalgrade ? $finalgrade : 0.0;
-            return $student;
-        };
+            $stud->finalgrade = $finalgrade ? $finalgrade : 0.0;
+            $rtn[$stud->id] = $stud;
+        }
 
-        // Fill final grade for students
-        return array_map($pull_grades, $students);
+        return $rtn;
     }
 
     function mean_value($students, $total) {
@@ -162,11 +184,12 @@ class post_grades_class_size extends post_grades_mean_median
 
     function __construct($students, $ues, $course, $itemid = null) {
         $this->ues = $ues;
-        $this->size = $this->get_class_size(count($students));
-        $this->required = $this->value_for($this->size . '_required');
-        $this->grading = $this->pull_config();
 
         parent::__construct($students, $course, $itemid);
+
+        $this->size = $this->get_class_size($this->total);
+        $this->required = $this->value_for($this->size . '_required');
+        $this->grading = $this->pull_config();
 
         $this->info = $this->pull_info();
 
@@ -278,7 +301,10 @@ class post_grades_class_size extends post_grades_mean_median
     }
 
     function get_explanation() {
-        return get_string('sizeexplain' . $this->size, 'block_post_grades', $this);
+        $this->description = get_string(
+            $this->size . '_courses', 'block_post_grades'
+        );
+        return get_string('sizeexplain', 'block_post_grades', $this);
     }
 }
 

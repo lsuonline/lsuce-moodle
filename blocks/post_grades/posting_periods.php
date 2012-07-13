@@ -75,7 +75,7 @@ if (empty($periods)) {
 
 $create_link = html_writer::link($create_url, $_s('new_posting'));
 
-echo html_writer::tag('div', $create_link, array('class' => 'controls'));
+echo html_writer::tag('div', $create_link, array('class' => 'centered controls'));
 
 $table = new html_table();
 

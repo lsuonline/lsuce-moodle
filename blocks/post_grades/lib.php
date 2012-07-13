@@ -4,7 +4,26 @@ require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
 ues::require_daos();
 
 abstract class post_grades {
-    function valid_types() {
+
+    public static function pull_auditing_students($course_or_section) {
+        $filters = ues::where()
+            ->join('{enrol_ues_students}', 'stu')->on('id', 'userid')
+            ->join('{enrol_ues_studentmeta}', 'stum')->on('stu.id', 'studentid')
+            ->stum->name->equal('student_audit')
+            ->stum->value->equal(1)
+            ->stu->status->in(ues::ENROLLED, ues::PROCESSED);
+
+        if ($course_or_section instanceof ues_section) {
+            $filters->stu->sectionid->equal($course_or_section->id);
+        } else {
+            $sections = ues_section::from_course($course_or_section);
+            $filters->stu->sectionid->in(array_keys($sections));
+        }
+
+        return ues_user::get_all($filters);
+    }
+
+    public static function valid_types() {
         $type_keys = array_keys(self::screens());
 
         $to_name = function($key) { return get_string($key, 'block_post_grades'); };
@@ -12,7 +31,7 @@ abstract class post_grades {
         return array_combine($type_keys, array_map($to_name, $type_keys));
     }
 
-    function active_periods_for_sections($sections) {
+    public static function active_periods_for_sections($sections) {
         global $DB;
 
         if (empty($sections)) {
@@ -34,23 +53,23 @@ abstract class post_grades {
         return $periods;
     }
 
-    function active_periods($course) {
+    public static function active_periods($course) {
         $sections = ues_section::from_course($course);
 
         return self::active_periods_for_sections($sections);
     }
 
-    function is_active($course) {
+    public static function is_active($course) {
         $period = self::active_periods($course);
 
         return !empty($period);
     }
 
-    function screendir() {
+    public static function screendir() {
         return dirname(__FILE__) . '/screens';
     }
 
-    function screens() {
+    public static function screens() {
         $screendir = self::screendir();
         $screens = scandir($screendir);
 
@@ -65,7 +84,7 @@ abstract class post_grades {
         return $return;
     }
 
-    function screenclass($screen) {
+    public static function screenclass($screen) {
         $screens = self::screens();
 
         if (!isset($screens[$screen])) {
@@ -78,7 +97,7 @@ abstract class post_grades {
         return "post_grades_$screen";
     }
 
-    function create($period, $course, $group) {
+    public static function create($period, $course, $group) {
         $class = self::screenclass($period->post_type);
         if (is_null($class)) {
             throw new Exception(get_string('notactive', 'block_post_grades'));
@@ -87,7 +106,7 @@ abstract class post_grades {
         }
     }
 
-    function valid_groups($course) {
+    public static function valid_groups($course) {
         $groups = groups_get_all_groups($course->id);
 
         $pattern = '/\w{2,4} \d{4} \d{3}/';
@@ -98,7 +117,7 @@ abstract class post_grades {
         return array_filter($groups, $valid_name);
     }
 
-    function find_section($group, $sections) {
+    public static function find_section($group, $sections) {
         $found = false;
         foreach ($sections as $section) {
             if ($section->group()->id == $group->id) {
@@ -110,7 +129,7 @@ abstract class post_grades {
         return $found;
     }
 
-    function already_posted_section($section, $period) {
+    public static function already_posted_section($section, $period) {
         global $USER, $DB;
 
         $params = array(
@@ -122,14 +141,14 @@ abstract class post_grades {
         return $DB->record_exists('block_post_grades_postings', $params);
     }
 
-    function already_posted($course, $group, $period) {
+    public static function already_posted($course, $group, $period) {
         $sections = ues_section::from_course($course, true);
         $section = post_grades::find_section($group, $sections);
 
         return self::already_posted_section($section, $period);
     }
 
-    function find_postings_by_shortname($shortname) {
+    public static function find_postings_by_shortname($shortname) {
         global $DB;
 
         $sql = 'SELECT post.id, u.firstname, u.lastname,

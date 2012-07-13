@@ -85,7 +85,9 @@ $export_params = array(
 if ($ues_course->department == 'LAW') {
     $domino = get_config('block_post_grades', 'law_domino_application_url');
     $export_params['decimalpoints'] = 1;
-    $export_params['displaytype'] = GRADE_DISPLAY_TYPE_REAL;
+    $export_params['displaytype'] = $ues_course->course_grade_type == 'LP' ?
+        GRADE_DISPLAY_TYPE_LETTER :
+        GRADE_DISPLAY_TYPE_REAL;
 
     if (!empty($ues_course->course_first_year)) {
         $course->visible = 0;
@@ -113,7 +115,7 @@ $post_params = array(
     'DeptCode' => $ues_course->department,
     'CourseNbr' => $ues_course->cou_number,
     'SectionNbr' => $section->sec_number,
-    'MoodleGradeURL' => rawurlencode($export_url->out(false))
+    'MoodleGradeURL' => $export_url->out(false)
 );
 
 // We can't be sure about the configured url, so we are required to be safe

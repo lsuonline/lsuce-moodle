@@ -51,6 +51,12 @@ $string['section_compliance'] = 'Section {$a} compliance';
 $string['law_quick_edit_compliance'] = 'QE Compliance';
 $string['law_quick_edit_compliance_help'] = 'This setting allows the quick edit screen to display compliance warnings when grading regular grade items.';
 
+// UES People
+$string['student_audit'] = 'Auditing';
+
+// Quick Edit Strings
+$string['student_incomplete'] = 'Incomplete';
+
 // Form strings
 $string['posting_for'] = '{$a->post_type} for {$a->fullname} {$a->course_name} Section {$a->sec_number}';
 $string['view_gradsheet'] = 'View Gradesheet';
@@ -71,6 +77,18 @@ $string['final'] = 'Finals';
 $string['degree'] = 'Degree Candidates';
 $string['law_upper'] = 'LAW Upper Class';
 $string['law_first'] = 'LAW First Year';
+
+// LAW return lib
+$string['sizeexplain'] = 'Your grades must conform to the {$a->description}
+curve compliance. Once your grades meet the standard, then you will be able
+to post to the mainframe. If you are able to post now, yet you see still see
+red on the graph, then treat this curve compliance graph as a
+<strong>recommendation</strong>.';
+
+$string['semexplain'] = 'Your grades must conform to the Seminar guideline.
+The median value of your grades must be within {$a->upper} - {$a->lower}.
+Your median value is {$a->median}. If you are able to post now, treat the
+guideline as a <strong>recommendation</strong>.';
 
 // LAW config page
 $string['mean'] = 'Mean';

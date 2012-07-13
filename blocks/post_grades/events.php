@@ -1,7 +1,7 @@
 <?php
 
 abstract class post_grades_handler {
-    function ues_semester_drop($semester) {
+    public static function ues_semester_drop($semester) {
         global $DB;
 
         // At this point, I can be sure that only the posting periods remain
@@ -9,16 +9,39 @@ abstract class post_grades_handler {
         return $DB->delete_records('block_post_grades_periods', $params);
     }
 
-    function ues_section_drop($section) {
+    public static function ues_section_drop($section) {
         global $DB;
         $params = array('sectionid' => $section->id);
         return $DB->delete_records('block_post_grades_postings', $params);
     }
 
-    function user_deleted($user) {
+    public static function user_deleted($user) {
         global $DB;
         $params = array('userid' => $user->id);
         return $DB->delete_records('block_post_grades_postings', $params);
+    }
+
+    public static function ues_people_outputs($data) {
+        $sections = ues_section::from_course($data->course);
+
+        // If one of them contains LAW, then display student_audit
+        $is_law = false;
+        foreach ($sections as $section) {
+            if ($is_law) break;
+
+            $is_law = $section->course()->department == 'LAW';
+        }
+
+        // No need to interject
+        if (empty($is_law)) {
+            return true;
+        }
+
+        require_once dirname(__FILE__) . '/peoplelib.php';
+
+        $data->outputs['student_audit'] = new post_grades_audit_people();
+
+        return true;
     }
 
     private static function injection_requirements() {
@@ -33,7 +56,51 @@ abstract class post_grades_handler {
         }
     }
 
-    function quick_edit_grade_edited($data) {
+    private static function apply_incomplete($data) {
+        self::injection_requirements();
+
+        $sections = ues_section::from_course($data->course);
+
+        if (empty($sections)) {
+            return true;
+        }
+
+        $course = reset($sections)->course();
+
+        if ($course->department != 'LAW') {
+            return true;
+        }
+
+        $ci = grade_item::fetch_course_item($data->course->id);
+
+        if (empty($ci)) {
+            return true;
+        }
+
+        $str = get_string('student_incomplete', 'block_post_grades');
+
+        $original_headers = $data->headers();
+        $original_headers[] = $str;
+        $data->set_headers($original_headers);
+
+        $original_definition = $data->definition();
+        $original_definition[] = 'incomplete';
+        $data->set_definition($original_definition);
+
+        return true;
+    }
+
+    public static function quick_edit_anonymous_instantiated($data) {
+        require_once dirname(__FILE__) . '/quick_edit_lib.php';
+        return self::apply_incomplete($data);
+    }
+
+    public static function quick_edit_grade_instantiated($data) {
+        require_once dirname(__FILE__) . '/quick_edit_lib.php';
+        return self::apply_incomplete($data);
+    }
+
+    public static function quick_edit_grade_edited($data) {
         global $PAGE;
 
         $allowed = (bool) get_config('block_post_grades', 'law_quick_edit_compliance');
@@ -89,12 +156,16 @@ abstract class post_grades_handler {
         return true;
     }
 
-    function quick_edit_anonymous_edited($data) {
+    public static function quick_edit_anonymous_edited($data) {
         global $DB, $PAGE;
 
         self::injection_requirements();
 
         $sections = ues_section::from_course($data->instance->course);
+
+        if (empty($sections)) {
+            return true;
+        }
 
         $ues_course = ues_course::by_id(reset($sections)->courseid)->fill_meta();
 

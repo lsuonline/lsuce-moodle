@@ -77,7 +77,7 @@ abstract class ues_people {
         }
     }
 
-    public static function outputs() {
+    public static function outputs($course) {
         $defaults = self::defaults();
 
         $internal = array('sec_number', 'credit_hours');
@@ -100,7 +100,9 @@ abstract class ues_people {
             $outputs[$meta] = $element;
         }
 
+        // Little information about where the user is coming from
         $data = new stdClass;
+        $data->course = $course;
         $data->outputs = $outputs;
 
         // Plugin interference

@@ -10,7 +10,9 @@ $mapper = function($event) {
 
 $events = array(
     'ues_section_drop', 'ues_semester_drop', 'user_deleted',
-    'quick_edit_anonymous_edited', 'quick_edit_grade_edited'
+    'ues_people_outputs', 'quick_edit_anonymous_edited',
+    'quick_edit_grade_edited', 'quick_edit_anonymous_instantiated',
+    'quick_edit_grade_instantiated'
 );
 
 $handlers = array_combine($events, array_map($mapper, $events));

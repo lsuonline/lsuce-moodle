@@ -103,7 +103,7 @@ $isseparategroups = (
 
 add_to_log($course->id, 'ues_people', 'view all', 'index.php?id='.$course->id, '');
 
-$meta_names = ues_people::outputs();
+$meta_names = ues_people::outputs($course);
 
 $using_meta_sort = $using_ues_sort = false;
 
@@ -138,7 +138,7 @@ if ($currentgroup) {
 
 $select = 'SELECT u.id, u.firstname, u.lastname, u.email, ues.sec_number, u.deleted,
                   u.username, u.idnumber, u.picture, u.imagealt, u.lang, u.timezone,
-                  ues.credit_hours';
+                  ues.credit_hours, ues.student_audit';
 $joins = array('FROM {user} u');
 
 list($esql, $params) = get_enrolled_sql($context, NULL, $currentgroup, true);
@@ -152,12 +152,14 @@ $unions = array();
 
 $selects = array(
     't' =>
-    "SELECT DISTINCT(t.userid), '' AS sec_number, 0 AS credit_hours FROM ".
+    "SELECT DISTINCT(t.userid), '' AS sec_number, 0 AS credit_hours, 0 AS student_audit FROM ".
     ues_teacher::tablename('t') . ' WHERE ',
     'stu' =>
-    'SELECT DISTINCT(stu.userid), sec.sec_number, stu.credit_hours FROM '.
-    ues_student::tablename('stu') . ' JOIN '.
-    ues_section::tablename('sec').' ON (sec.id = stu.sectionid) WHERE ',
+    'SELECT DISTINCT(stu.userid), sec.sec_number, stu.credit_hours, stum.value AS student_audit FROM '.
+    ues_student::tablename('stu') . ' JOIN ' .
+    ues_section::tablename('sec') . ' ON (sec.id = stu.sectionid) LEFT JOIN ' .
+    ues_student::metatablename('stum') . " ON (stu.id = stum.studentid
+        AND stum.name = 'student_audit') WHERE "
 );
 
 $sectionids = array_keys($all_sections);
@@ -411,6 +413,7 @@ $to_row = function ($user) use ($OUTPUT, $meta_names, $id) {
 $table->head = $headers;
 
 $offset = $perpage * $page;
+
 $table->data = ues_user::by_sql($sql, $params, $offset, $perpage, $to_row);
 
 $default_params = array(

@@ -140,38 +140,42 @@ if ($ADMIN->fulltree) {
 
     // ------------- Course Settings ------------
 
-    $settings->add(new admin_setting_heading('block_post_grades_law_extra_settings',
-        $_s('law_extra'), ''));
-
     $filters = ues::where()->department->equal('LAW');
 
     $courses = ues_course::get_all($filters);
 
-    $to_name = function($course) { return "$course"; };
+    if (!empty($courses)) {
+        $settings->add(new admin_setting_heading(
+            'block_post_grades_law_extra_settings',
+            $_s('law_extra'), '')
+        );
 
-    $exceptions = new admin_setting_configmultiselect(
-        'block_post_grades/exceptions',
-        $_s('law_exceptions'), $_s('law_exceptions_help'),
-        array(), array_map($to_name, $courses)
-    );
+        $to_name = function($course) { return "$course"; };
 
-    post_grade_settings_callbacks::$exceptions = $exceptions;
-    $exceptions->set_updatedcallback('post_grade_exceptions_callback');
+        $exceptions = new admin_setting_configmultiselect(
+            'block_post_grades/exceptions',
+            $_s('law_exceptions'), $_s('law_exceptions_help'),
+            array(), array_map($to_name, $courses)
+        );
 
-    $settings->add($exceptions);
+        post_grade_settings_callbacks::$exceptions = $exceptions;
+        $exceptions->set_updatedcallback('post_grade_exceptions_callback');
 
-    $filters->cou_number->less_equal(5300);
+        $settings->add($exceptions);
 
-    $courses = ues_course::get_all($filters);
+        $filters->cou_number->less_equal(5300);
 
-    $legal_writing =  new admin_setting_configmultiselect(
-        'block_post_grades/legal_writing',
-        $_s('law_legal_writing'), $_s('law_legal_writing_help'),
-        array(), array_map($to_name, $courses)
-    );
+        $courses = ues_course::get_all($filters);
 
-    post_grade_settings_callbacks::$legal_writing = $legal_writing;
-    $legal_writing->set_updatedcallback('post_grade_legal_writing_callback');
+        $legal_writing =  new admin_setting_configmultiselect(
+            'block_post_grades/legal_writing',
+            $_s('law_legal_writing'), $_s('law_legal_writing_help'),
+            array(), array_map($to_name, $courses)
+        );
 
-    $settings->add($legal_writing);
+        post_grade_settings_callbacks::$legal_writing = $legal_writing;
+        $legal_writing->set_updatedcallback('post_grade_legal_writing_callback');
+
+        $settings->add($legal_writing);
+    }
 }
