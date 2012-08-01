@@ -31,11 +31,14 @@ class quick_edit_user extends quick_edit_tablelike implements selectable_items {
 
         $params = array('courseid' => $this->courseid);
 
-        $seq = new grade_seq($this->courseid, true);
+        $items = grade_item::fetch_all($params);
+        uasort($items, function($itema, $itemb) {
+            return $itema->sortorder > $itemb->sortorder;
+        });
 
-        $this->items = array_filter($seq->items, grade_report_quick_edit::filters());
+        $this->items = array_filter($items, grade_report_quick_edit::filters());
 
-        unset($seq);
+        unset($items);
 
         $this->setup_structure();
 
