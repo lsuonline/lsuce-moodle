@@ -115,9 +115,7 @@ $post_params = array(
     'DeptCode' => $ues_course->department,
     'CourseNbr' => $ues_course->cou_number,
     'SectionNbr' => $section->sec_number,
-    'MoodleGradeURL' => $ues_course->department == 'LAW' ?
-        $export_url->out(false) :
-        rawurlencode($export_url->out(false))
+    'MoodleGradeURL' => $export_url->out(false)
 );
 
 // We can't be sure about the configured url, so we are required to be safe
