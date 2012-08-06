@@ -34,6 +34,21 @@ abstract class post_grades_screen {
         // Shim for 1.9
         $course = $section->course()->fill_meta();
 
+        if ($course->course_grade_type == 'LP') {
+            $scale = get_config('block_post_grades', 'scale');
+
+            $course_item = grade_item::fetch_course_item($this->course->id);
+
+            // Force scale always for pass/fail courses
+            if ($course_item->scaleid != $scale) {
+                $course_item->gradetype = 2;
+                $course_item->scaleid = $scale;
+                $course_item->gradepass = 2.0;
+
+                $course_item->update();
+            }
+        }
+
         $passthrough = array('CLI', 'IND');
 
         $legal_writing = !empty($course->course_legal_writing);
