@@ -3291,7 +3291,7 @@ class settings_navigation extends navigation_node {
         }
 
         // Manage files
-        if ($course->legacyfiles == 2 and has_capability('moodle/course:managefiles', $coursecontext)) {
+        if ($course->legacyfiles == 2 and has_capability('moodle/course:managefiles', $coursecontext) and has_capability('moodle/course:create', $coursecontext)) {
             // hidden in new courses and courses where legacy files were turned off
             $url = new moodle_url('/files/index.php', array('contextid'=>$coursecontext->id));
             $coursenode->add(get_string('courselegacyfiles'), $url, self::TYPE_SETTING, null, 'coursefiles', new pix_icon('i/files', ''));
