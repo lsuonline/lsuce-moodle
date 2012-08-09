@@ -40,6 +40,13 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('block_post_grades/law_quick_edit_compliance',
         $_s('law_quick_edit_compliance'), $_s('law_quick_edit_compliance_help'), 0));
 
+    $options = $DB->get_records_menu('scale', array(), 'name ASC', 'id, name');
+
+    if ($options) {
+        $settings->add(new admin_setting_configselect('block_post_grades/scale',
+            $_s('law_scale'), $_s('law_scale_help'), key($options), $options));
+    }
+
     // ------------ Large Course Settings -------------
     $settings->add(new admin_setting_heading('block_post_grades_law_large_header',
         $_s('large_courses'), ''));

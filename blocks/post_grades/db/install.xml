@@ -7,7 +7,7 @@
     <TABLE NAME="block_post_grades_periods" COMMENT="Post grade period" NEXT="block_post_grades_postings">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" ENUM="false" NEXT="post_type"/>
-        <FIELD NAME="post_type" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" ENUM="true" ENUMVALUES="'midterm', 'final', 'degree', 'law'" PREVIOUS="id" NEXT="semesterid"/>
+        <FIELD NAME="post_type" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" ENUM="true" ENUMVALUES="'midterm', 'final', 'degree', 'law', 'test'" PREVIOUS="id" NEXT="semesterid"/>
         <FIELD NAME="semesterid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" ENUM="false" PREVIOUS="post_type" NEXT="start_time"/>
         <FIELD NAME="start_time" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" ENUM="false" PREVIOUS="semesterid" NEXT="end_time"/>
         <FIELD NAME="end_time" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" ENUM="false" PREVIOUS="start_time" NEXT="export_number"/>

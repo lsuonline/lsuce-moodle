@@ -481,11 +481,16 @@ class post_grades_no_item_return implements post_grades_return_process {
             }
         }
 
+        $course_cat = grade_category::fetch_course_category($this->course->id);
+
         $course_item = grade_item::fetch_course_item($this->course->id);
         $course_item->gradepass = 1.5;
         $course_item->grademax = 4.0;
         $course_item->decimals = 1;
         $course_item->display = 1;
+
+        $params['aggregationcoef'] =
+            $course_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN ? 1 : 0;
 
         $course_item->update();
 

@@ -75,6 +75,7 @@ $string['no_students'] = 'No students for {$a}';
 $string['midterm'] = 'Midterms';
 $string['final'] = 'Finals';
 $string['degree'] = 'Degree Candidates';
+$string['test'] = 'PG Test';
 $string['law_upper'] = 'LAW Upper Class';
 $string['law_first'] = 'LAW First Year';
 
@@ -91,6 +92,8 @@ Your median value is {$a->median}. If you are able to post now, treat the
 guideline as a <strong>recommendation</strong>.';
 
 // LAW config page
+$string['law_scale'] = 'LAW scale';
+$string['law_scale_help'] = 'This scale will be used for LAW courses of the type `LP`.';
 $string['mean'] = 'Mean';
 $string['median'] = 'Median';
 $string['point_range'] = 'Point Range +/-';
