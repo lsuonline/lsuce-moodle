@@ -90,7 +90,7 @@ abstract class ues_meta_viewer {
             'ues_user' => new ues_user_supported_meta(),
             'ues_section' => new ues_section_supported_meta(),
             'ues_course' => new ues_course_supported_meta(),
-            'ues_semester' => new ues_semester_suppported_meta(),
+            'ues_semester' => new ues_semester_supported_meta(),
             'ues_teacher' => new ues_teacher_supported_meta(),
             'ues_student' => new ues_student_supported_meta()
         );

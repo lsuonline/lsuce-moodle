@@ -58,7 +58,7 @@ class ues_course_supported_meta extends provided_meta {
     }
 }
 
-class ues_semester_suppported_meta extends provided_meta {
+class ues_semester_supported_meta extends provided_meta {
     public function name() {
         return get_string('semester', 'block_ues_meta_viewer');
     }
