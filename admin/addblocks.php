@@ -9,8 +9,8 @@ if (!empty($CFG->cronremotepassword)) {
     if ($pass != $CFG->cronremotepassword) {
         // wrong password.
         print_error('cronerrorpassword', 'admin');
-        exit; 
-    }   
+        exit;
+    }
 }
 
 $courses = $DB->get_records('course');

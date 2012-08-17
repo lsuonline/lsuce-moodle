@@ -35,7 +35,7 @@
 
 .course-content ul.weeks li.section .content h3 {
    margin: 0;
-   color: #777;
+   color: #333;
    font-weight: normal;
 }
 
@@ -48,10 +48,9 @@
 }
 
 .course-content ul.weeks li.section .sectionname {
-   float: left;
 }
 
-.course-content ul.weeks li.section .content h3.weekdates {
+.course-content ul.weeks li.section .content h3.sectionname, .course-content li.section .content h3.section-title {
    margin: 0;
    padding: 4px 0 0 2em;
    height: 24px;
@@ -122,10 +121,6 @@
 
 .editing .course-content ul li.section .content ul.section {
    margin-left: 70px;
-}
-
-.editing .course-content a.editing_assign {
-  display: none;
 }
 
 /** Course **/
@@ -283,13 +278,9 @@
    background-color: #eee !important;
 }
 
-.path-course-view .section .weekdates {
-   color: #777777;
-}
-
 .path-course-view .weeks .weekdates ,
 .path-course-view .topics .weekdates {
-   color: #333333;
+   color: #000;
 }
 
 .weeks li.section ,
@@ -530,19 +521,10 @@
 }
 
 
-.left.side>div:first-of-type {
-   margin-bottom: 12px;
-}
-
-
-.right.side>div:first-of-type {
-   margin-top: 12px;
-}
-
 .path-course-view .dimmed_text img {
-    opacity:0.9;
-    -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=90)";
-    filter: alpha(opacity=90);
+    opacity:0.7;
+    -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)";
+    filter: alpha(opacity=70);
     height: 100%;
 }
 
@@ -562,3 +544,105 @@
     font-weight: normal;
 }
 
+
+.single-section div.header {
+   background: transparent;
+}
+
+.single-section div.header>div {
+   background: #fff;
+   margin: -6.5px;
+   height: 2em;
+}
+
+.path-course.editing .section-modchooser {
+   width: 90%;
+}
+
+.path-course.editing .icon.hide {
+   margin-top: .5em;
+}
+
+.path-course.editing .section-handle {
+  display: block;
+  margin-top: -1em;
+}
+
+.path-course .course-content a.editing_assign, .path-course a.editing_groupsnone, .path-course a.editing_groupsseparate, .path-course a.editing_groupsvisible {
+  display: none;
+}
+
+.path-course span.commands {
+  display: inline-block;
+  width: 18em;
+  margin-left: 1em;
+  vertical-align: bottom;
+}
+
+.path-course span.commands a {
+  margin: 0 2px; 
+}
+
+.path-course span.commands a.editing_delete {
+  float: right;
+}
+
+.path-course span.commands img.spinner {
+  float: right;
+}
+
+.path-course div#changenumsections {
+  padding-right: 10px;
+}
+
+/** SINGLE Section Per Page **/
+.path-course .single-section .section-navigation.header {
+   padding: 0;
+   height: 24px;
+   background: transparent;  
+   margin-bottom: 0;
+   border-bottom-width: 0;
+}
+.path-course .single-section .section-navigation.header .mdl-align {
+   margin: 0;
+   padding: 5px;
+   background: transparent url([[pix:theme|navbar]]) 0 -150px repeat-x;
+}
+
+.path-course .single-section .section-navigation .mdl-right, .path-course .single-section .section-navigation .mdl-left {
+   padding: 5px 1em 0 1em;
+}
+
+.path-course .single-section li.section {
+   border-top-width: 0 !important;
+   margin-top: 0 !important;
+}
+
+.path-course .single-section li.section .content span.completionprogress {
+   float: none;
+   margin: 0;
+   padding: 0;
+   right: 2.5em;
+   bottom: 3em;
+   position: absolute;
+}
+
+.path-course .single-section .section-navigation.mdl-bottom {
+   margin-top: 1em;
+   padding-bottom: 15px;
+}
+.path-course .single-section li.section .content {
+   min-height: 2em;
+}
+
+.path-course .content {
+   padding-bottom: .5em !important;
+}
+
+.path-course .section div.right.side, .path-course .section div.left.side, .path-course .section-summary div.left.side, .path-course .section-summary div.right.side {
+  display: none;
+}
+
+.path-course.editing div.right.side {
+  display: block;
+}

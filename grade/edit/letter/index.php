@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * List of grade letters.
  *
- * @package   moodlecore
+ * @package   core_grades
  * @copyright 2008 Nicolas Connault
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -140,7 +139,6 @@ if (!$edit) {
         redirect($returnurl);
 
     } else if ($data = $mform->get_data()) {
-
         if (!$admin and empty($data->override)) {
             $DB->delete_records('grade_letters', array('contextid' => $context->id));
             redirect($returnurl);
@@ -150,12 +148,6 @@ if (!$edit) {
         for($i=1; $i<$num+1; $i++) {
             $gradelettername = 'gradeletter'.$i;
             $gradeboundaryname = 'gradeboundary'.$i;
-
-            if ($custom and isset($data->$gradeboundaryname)) {
-                if ($data->$gradeboundaryname === '') {
-                    $data->$gradeboundaryname = -1;
-                }
-            }
 
             if (property_exists($data, $gradeboundaryname) and $data->$gradeboundaryname != -1) {
                 $letter = trim($data->$gradelettername);

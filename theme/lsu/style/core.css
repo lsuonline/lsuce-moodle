@@ -1,3 +1,4 @@
+html, body#tinymce {background-color:#fff;}
 body {
    font-family: Arial, Verdana, Helvetica, sans-serif;
    padding: 0;
@@ -844,6 +845,20 @@ form.popupform label {
 
 .groupmanagementtable #buttonscell p {
    text-align: center;
+}
+
+.groupmanagementtable #buttonscell p input {
+   min-width: 80px;
+   height: auto;
+   padding: .5em;
+}
+
+.groupmanagementtable #buttonscell p input#add {
+   width: 80px;
+}
+
+.groupmanagementtable #buttonscell p input#remove {
+   width: 80px;
 }
 
 .groupmanagementtable #buttonscell input {

@@ -1108,7 +1108,7 @@ function set_moodle_cookie($username) {
 
     if ($username !== '') {
         // set username cookie for 60 days
-        setcookie($cookiename, rc4encrypt($username, true), time()+(DAYSECS*60), $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $CFG->cookiesecure, $CFG->cookiehttponly);
+        setcookie($cookiename, rc4encrypt($username), time()+(DAYSECS*60), $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $CFG->cookiesecure, $CFG->cookiehttponly);
     }
 }
 
@@ -1133,7 +1133,7 @@ function get_moodle_cookie() {
     if (empty($_COOKIE[$cookiename])) {
         return '';
     } else {
-        $username = rc4decrypt($_COOKIE[$cookiename], true);
+        $username = rc4decrypt($_COOKIE[$cookiename]);
         if ($username === 'guest' or $username === 'nobody') {
             // backwards compatibility - we do not set these cookies any more
             $username = '';
@@ -1155,6 +1155,13 @@ function session_set_user($user) {
     $_SESSION['USER'] = $user;
     unset($_SESSION['USER']->description); // conserve memory
     sesskey(); // init session key
+
+    if (PHPUNIT_TEST) {
+        // phpunit tests use reversed reference
+        global $USER;
+        $USER = $_SESSION['USER'];
+        $_SESSION['USER'] =& $USER;
+    }
 }
 
 /**

@@ -15,17 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Version details for the grader report
  *
- * @package    gradereport
- * @subpackage grader
+ * @package    gradereport_grader
  * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2012040413;
-$plugin->requires  = 2011112900;        // Requires this Moodle version
+$plugin->version   = 2012072413;
+$plugin->requires  = 2012061700;        // Requires this Moodle version
 $plugin->component = 'gradereport_grader'; // Full name of the plugin (used for diagnostics)
 

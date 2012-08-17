@@ -73,11 +73,6 @@ if (!function_exists('iconv')) {
     echo 'Moodle requires the iconv PHP extension. Please install or enable the iconv extension.';
     die();
 }
-if (iconv('UTF-8', 'UTF-8//IGNORE', 'abc') !== 'abc') {
-    // known to be broken in mid-2011 MAMP installations
-    echo 'Broken iconv PHP extension detected, installation can not continue.';
-    die;
-}
 
 if (PHP_INT_SIZE > 4) {
     // most probably 64bit PHP - we need a lot more memory
@@ -419,17 +414,17 @@ if ($config->stage == INSTALL_DATABASE) {
     echo '</div>';
 
     echo '<div class="formrow"><label for="id_dbname" class="formlabel">'.$strdbname.'</label>';
-    echo '<input id="id_dbname" name="dbname" type="text" value="'.s($config->dbname).'" size="30" class="forminput" />';
+    echo '<input id="id_dbname" name="dbname" type="text" value="'.s($config->dbname).'" size="50" class="forminput" />';
     echo '</div>';
 
     $disabled = empty($distro->dbuser) ? '' : 'disabled="disabled';
     echo '<div class="formrow"><label for="id_dbuser" class="formlabel">'.$strdbuser.'</label>';
-    echo '<input id="id_dbuser" name="dbuser" '.$disabled.' type="text" value="'.s($config->dbuser).'" size="30" class="forminput" />';
+    echo '<input id="id_dbuser" name="dbuser" '.$disabled.' type="text" value="'.s($config->dbuser).'" size="50" class="forminput" />';
     echo '</div>';
 
     echo '<div class="formrow"><label for="id_dbpass" class="formlabel">'.$strdbpass.'</label>';
     // no password field here, the password may be visible in config.php if we can not write it to disk
-    echo '<input id="id_dbpass" name="dbpass" type="text" value="'.s($config->dbpass).'" size="30" class="forminput" />';
+    echo '<input id="id_dbpass" name="dbpass" type="text" value="'.s($config->dbpass).'" size="50" class="forminput" />';
     echo '</div>';
 
     echo '<div class="formrow"><label for="id_prefix" class="formlabel">'.$strprefix.'</label>';

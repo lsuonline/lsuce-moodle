@@ -487,7 +487,7 @@ M.core_dock.fixTitleOrientation = function(item, title, text) {
         return title
     }
 
-    if (Y.UA.ie > 0 && Y.UA.ie <= 8) {
+    if (Y.UA.ie > 0 && Y.UA.ie < 8) {
         // IE 6/7 can't rotate text so force ver
         M.str.langconfig.thisdirectionvertical = 'ver';
     }
@@ -505,15 +505,13 @@ M.core_dock.fixTitleOrientation = function(item, title, text) {
             break;
     }
 
-/*  IE8 looks horrible with css rotated text, so include IE8 catch in vertical above.
-    if (Y.UA.ie == 8) {
+    if (Y.UA.ie > 7) {
         // IE8 can flip the text via CSS but not handle SVG
         title.setContent(text);
         title.setAttribute('style', 'writing-mode: tb-rl; filter: flipV flipH;display:inline;');
         title.addClass('filterrotate');
         return title;
     }
-*/
 
     // Cool, we can use SVG!
     var test = Y.Node.create('<h2><span style="font-size:10px;">'+text+'</span></h2>');
