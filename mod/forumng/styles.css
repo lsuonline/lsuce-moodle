@@ -144,10 +144,14 @@ form.forumng-paste-buttons {
     margin-bottom: 1em;
 }
 
-.forumng-subscribe-options {
-    text-align: center;
+.forumng-subscribe-options p,
+.forumng-subscribe-options form,
+.forumng-subscribe-options form div {
+    display:inline;
 }
-
+.forumng-subscribe-options form {
+    margin-left: 1em;
+}
 .forumng-subscribe-admin {
     font-size: 0.85em;
 }
@@ -301,15 +305,8 @@ h2.forumng-author {
     margin-left: 20px;
 }
 
-#forumng-main {
-  margin: 10px 20px 20px 20px;
-  background-color: #fff;
-  padding: 20px;
-  box-shadow: 0 0 15px #bbbbbb;
-}
-
 #forumng-main .forumng-stop-indent .forumng-replies{
-    margin: 0px;
+    margin-left: 0px;
 }
 
 .forumng-nojs
@@ -321,20 +318,16 @@ h2.forumng-author {
 }
 
 .forumng-post {
-    margin-bottom: 1em;
-    border: 1px solid #aaa;
-    padding: 0.5em;
-  -moz-border-radius: 10px;
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
+    margin-bottom:1em;
+    border:1px solid #aaa;
+    padding:0.5em;
+    max-width:800px;
 }
 
 .forumng-pic {
     float:left;
     width:35px;
-    margin: 5px 10px 5px 5px;
 }
-
 .forumng-subject,
 .forumng-info,
 .forumng-summary,
@@ -429,15 +422,14 @@ ul.forumng-commands li.forumng-replylink {
 }
 
 .forumng-post.forumng-important {
-    border: 1px solid #461d7c;
-  box-shadow: 0 0 15px #461d7c;
+    background-color: #F0E1B3;
 }
 
 .forumng-post.forumng-read {
     color:#222;
 }
 .forumng-post.forumng-unread {
-    background: #fcecae;
+    background: #FFD991;
 }
 
 .forumng-post.forumng-unread .forumng-info {
@@ -530,7 +522,7 @@ ul.forumng-commands li.forumng-replylink {
     margin-right: 10px;
 }
 .forumng-selectmode .forumng-post {
-    background-color: white;
+    background-color:white;
 }
 .forumng-selectmode .forumng-post.forumng-deselected {
     background-color:transparent;
@@ -919,6 +911,7 @@ padding-top: 1em;
     vertical-align: -3px;
 }
 
-#page-mod-forumng-editpost input#id_savedraft {
-   display: none;
+
+#delete-form-html {
+	display: none;
 }

@@ -365,23 +365,18 @@ class mod_forumng {
 
     /**
      * Obtains the forum type based on its 'info' object in modinfo (e.g. from
-     * $modinfo->instances['forumng'][1234]). Usually this comes from a CSS
-     * class inserted in the 'extra' field.
-     * <p>
-     * (To be honest the CSS class is not needed, it is mostly there as it's
-     * the only place we could safely throw in random information so that we
-     * can get this data without making extra queries!)
-     * @param object $info Info object
+     * $modinfo->instances['forumng'][1234]). Usually this comes from the
+     * custom data in the cm_info object.
+     *
+     * @param object $info Info object (either cm_info or something else)
      * @return string Forum type
      */
-    private static function get_type_from_modinfo_info($info) {#
+    private static function get_type_from_modinfo_info(cm_info $info) {
         if (isset($info->forumtype)) {
-            // Only set when using get_modinfo_special for shared activity
-            // modules
+            // Only set when using get_modinfo_special for shared activity modules.
             return $info->forumtype;
         }
-        return str_replace('"', '',
-                str_replace('class="forumng-type-', '', $info->extra));
+        return $info->get_custom_data()->type;
     }
 
     // Object variables and accessors
@@ -475,13 +470,14 @@ class mod_forumng {
     }
 
     /**
-     * Retrieves contexts for all the clones of this forum. (If any.)
-     * @return array Array of context objects (each one has an extra ->courseid,
-     *   ->courseshortname, and ->forumname) for clones of this forum
+     * Retrieves basic details for all the clones of this forum. (If any.)
+     * @return array Array of objects (each one has ->context, ->courseid,
+     *   ->courseshortname, ->forumname, and ->sectionid) for clones of this
+     *   forum
      */
-    public function get_clone_contexts() {
+    public function get_clone_details() {
         global $DB;
-        $contexts = $DB->get_records_sql("
+        $recs = $DB->get_records_sql("
 SELECT
     x.*, c.id AS courseid, c.shortname AS courseshortname, f.name AS forumname,
     f.id AS cloneforumngid, cm.section AS sectionid
@@ -497,6 +493,14 @@ WHERE
     AND x.contextlevel = 70
 ORDER BY
     c.shortname, f.name", array($this->cm->id));
+        $contexts = array();
+        foreach ($recs as $id => $rec) {
+            $context = (object)array('courseid' => $rec->courseid,
+                    'courseshortname' => $rec->courseshortname, 'forumname' => $rec->forumname,
+                    'cloneforumngid' => $rec->cloneforumngid, 'sectionid' => $rec->sectionid);
+            $context->context = mod_forumng_context_access::create_instance_from_record_public($rec);
+            $contexts[$id] = $context;
+        }
         return $contexts;
     }
 
@@ -537,20 +541,22 @@ ORDER BY
             }
 
             // See if they can write to any context
-            $contexts = $this->get_clone_contexts();
-            foreach ($contexts as $context) {
-                if (has_capability('mod/forumng:replypost', $context)) {
+            $clones = $this->get_clone_details();
+            foreach ($clones as $clone) {
+                if (has_capability('mod/forumng:replypost', $clone->context)) {
                     $this->clonecm = self::get_modinfo_cm(
-                            $context->instanceid);
+                            $clone->context->instanceid);
                     break;
                 }
             }
 
             // No? Well see if they can read to one
             if (!$this->clonecm) {
-                if (has_capability('moodle/course:view', $context)) {
-                    $this->clonecm = self::get_modinfo_cm($context->instanceid);
-                    break;
+                foreach ($clones as $clone) {
+                    if (has_capability('moodle/course:view', $clone->context)) {
+                        $this->clonecm = self::get_modinfo_cm($clone->context->instanceid);
+                        break;
+                    }
                 }
             }
 
@@ -3561,23 +3567,23 @@ WHERE
 
             // Show links to each clone, if you
             // can see them.
-            $contexts = $this->get_clone_contexts();
-            if (count($contexts) == 0) {
+            $clones = $this->get_clone_details();
+            if (count($clones) == 0) {
                 $out .= get_string('sharedviewinfonone', 'forumng');
             } else {
                 $list = '';
-                foreach ($contexts as $context) {
+                foreach ($clones as $clone) {
                     if ($list) {
                         $list .= ', ';
                     }
 
                     // Make it a link if you have access
-                    if ($link = has_capability('moodle/course:view', $context)) {
+                    if ($link = has_capability('moodle/course:view', $clone->context)) {
                         $list .= '<a href="' . $CFG->wwwroot .
                                 '/mod/forumng/view.php?id=' .
-                                $context->instanceid . '">';
+                                $clone->context->instanceid . '">';
                     }
-                    $list .= s($context->courseshortname);
+                    $list .= s($clone->courseshortname);
                     if ($link) {
                         $list .= '</a>';
                     }
@@ -3642,6 +3648,7 @@ WHERE
                 'jserr_attachments' => null,
                 'confirmdelete' => null,
                 'confirmundelete' => null,
+                'deleteemailpostbutton' => null,
                 'deletepostbutton' => null,
                 'undeletepostbutton' => null,
                 'js_nratings' => null,
@@ -3700,7 +3707,7 @@ WHERE
             if ($ajaxattachments) {
                 // Work out filemanager options. These are the same options that I observed when
                 // calling the below function from the standard 'start discussion' form.
-                $options = (object)array(
+                $filemanageroptions = (object)array(
                     'mainfile' => null,
                     'maxbytes' => $this->get_max_bytes(),
                     'maxfiles' => -1,
@@ -3715,15 +3722,18 @@ WHERE
                 // Include filemanager JS. This is a very, very, very nasty hack to stop it
                 // actually trying to initialise a filemanager that doesn't exist, while
                 // avoiding code duplication.
-                new mod_forumng_filemanager_evilhack();
+                // new mod_forumng_filemanager_evilhack();
                 require_once($CFG->dirroot . '/lib/form/filemanager.php');
-                $filemanagertemplate = form_filemanager_render($options);
+                //$filemanagertemplate = form_filemanager_render($options);
                 // To make it bit shorter, let's remove the noscript part as it will never be used.
-                $filemanagertemplate = preg_replace('~<noscript>.*?</noscript>~', '',
-                        $filemanagertemplate);
+                //$filemanagertemplate = preg_replace('~<noscript>.*?</noscript>~', '',
+                //        $filemanagertemplate);
 
-                $filemanageroptions = reset($PAGE->extraarguments);
-                $PAGE->return_to_goodness();
+                //$filemanageroptions = reset($PAGE->extraarguments);
+                $filemanagertemplate = new form_filemanager($filemanageroptions);
+                $output = $PAGE->get_renderer('core', 'files');
+                $filemanagertemplate = $output->render($filemanagertemplate);
+                // $PAGE->return_to_goodness();
             } else {
                 $filemanagertemplate = null;
                 $filemanageroptions = null;
@@ -3733,10 +3743,8 @@ WHERE
             require_once($CFG->dirroot . '/lib/form/editor.php');
             $editor = new MoodleQuickForm_editor('QQeditorQQ', 'QQlabelQQ',
                     array('id' => 'QQidQQ'),
-                    array('maxbytes' => $this->get_max_bytes(),
-                        'maxfiles' => $this->can_create_attachments() ? EDITOR_UNLIMITED_FILES : 0,
-                        'context' => $this->get_context(true)));
-            $editor->setValue(array('itemid' => 99942));
+                    array('context' => $this->get_context(true)));
+            $editor->setValue(array('itemid' => 99942, 'format' => FORMAT_HTML));
 
             // Render using same evil hack and extract form template, options
             new mod_forumng_filemanager_evilhack();
@@ -3757,9 +3765,8 @@ WHERE
                         $this->is_shared() ? $this->get_course_module_id() : 0,
                         $ratingstars, $this->get_remaining_post_quota(),
                         $out->pix_url('i/ajaxloader')->out(false), $starurls,
-                        $filemanagertemplate, $filemanageroptions,
-                        $editortemplate, $editoroptions, $editorfileoptions),
-                    false, $module);
+                        $filemanagertemplate, $filemanageroptions),
+                    $editortemplate, $module);
         }
     }
 
@@ -4717,7 +4724,7 @@ WHERE
         if (isset($modinfo->instances['forumng'][$targetforumngid])) {
             $targetcm = $modinfo->instances['forumng'][$targetforumngid];
             $targetgroupmode = groups_get_activity_groupmode($targetcm, $this->get_course());
-            $targetgroupingid = $CFG->enablegroupings ? $targetcm->groupingid : 0;
+            $targetgroupingid = $targetcm->groupingid;
             if (!$targetgroupmode) {
                 return true;
             } else {
@@ -4948,6 +4955,10 @@ class mod_forumng_filemanager_evilhack {
         $this->requires = new mod_forumng_filemanager_evilhack_requires($this);
     }
 
+    public function get_renderer($component, $subtype = null, $target = null) {
+        return $this->realpage->get_renderer($component, $subtype, $target);
+    }
+
     public function return_to_goodness() {
         global $PAGE;
         $PAGE = $this->realpage;
@@ -4967,11 +4978,16 @@ class mod_forumng_filemanager_evilhack_requires {
     public function js_init_call($function, array $extraarguments = null,
             $ondomready = false, array $module = null) {
         if (!$module) {
-            if (!preg_match('~^M\.editor_tinymce\.~', $function)) {
+            if (preg_match('~^M\.editor_tinymce\.~', $function)) {
+              $module = array('name'=>'editor_tinymce', 'fullpath'=>'/lib/editor/tinymce/module.js',
+                    'requires'=>array());
+            } else if (preg_match('~^M\.core_filepicker\.~', $function)) {
+              $module = array('name'=>'core_filepicker', 'fullpath'=>'/repository/filepicker.js',
+                    'requires'=>array());
+            } else {
                 throw new coding_exception('This needs changing, unsupported function');
             }
-            $module = array('name'=>'editor_tinymce', 'fullpath'=>'/lib/editor/tinymce/module.js',
-                    'requires'=>array());
+
         }
         $this->js_module($module);
         if ($this->evilhack->extraarguments) {
@@ -4996,5 +5012,20 @@ class mod_forumng_filemanager_evilhack_requires {
 
     public function js($url, $inhead=false) {
         $this->evilhack->realpage->requires->js($url, $inhead);
+    }
+}
+
+/**
+ * Override of context just so that we can access the protected
+ * construct function (wtf).
+ */
+abstract class mod_forumng_context_access extends context {
+    /**
+     * Calls parent create_instance_from_record function.
+     * @param object $record DB record
+     * @return context Context object
+     */
+    public function create_instance_from_record_public($record) {
+        return self::create_instance_from_record($record);
     }
 }

@@ -254,7 +254,7 @@ email.';
 $string['subscribestate_discussionsubscribed'] = 'You receive messages from this discussion via
 email to {$a}.';
 $string['subscribestate_discussionunsubscribed'] = 'You do not currently receive messages from this
-discussion by email. <br /> If you would like to, click &lsquo;Subscribe to discussion&rsquo;.';
+discussion by email. If you would like to, click &lsquo;Subscribe to discussion&rsquo;.';
 $string['replytopost'] = 'Reply to post: {$a}';
 $string['editpost'] = 'Edit post: {$a}';
 $string['editdiscussionoptions'] = 'Edit discussion options: {$a}';
@@ -308,7 +308,30 @@ $string['history'] = 'History';
 $string['historypage'] = 'History: {$a}';
 $string['currentpost'] = 'Current version of post';
 $string['olderversions'] = 'Older versions (most recent first)';
-$string['deletepostbutton'] = 'Delete post';
+$string['deleteemailpostbutton'] = 'Delete and email';
+$string['deleteandemail'] = 'Delete and email author';
+$string['emailmessage'] = 'Message';
+$string['emailcontentplain'] = 'This is a notification to advise you that your forum post with the '.
+'following details has been deleted by \'{$a->firstname} {$a->lastname}\':
+
+Subject: {$a->subject}
+Forum: {$a->forum}
+Module: {$a->course}
+
+To view the discussion visit {$a->deleteurl}';
+$string['emailcontenthtml'] = 'This is a notification to advise you that your forum post with the '.
+'following details has been deleted by \'{$a->firstname} {$a->lastname}\':<br />
+<br />
+Subject: {$a->subject}<br />
+Forum: {$a->forum}<br />
+Module: {$a->course}<br/>
+<br/>
+<a href="{$a->deleteurl}" title="view deleted post">View the discussion</a>';
+$string['copytoself'] = 'Send a copy to yourself';
+$string['deletedforumpost'] = 'Your post has been deleted';
+$string['emailerror'] = 'There was an error sending the email';
+$string['sendanddelete'] = 'Send and delete';
+$string['deletepostbutton'] = 'Delete';
 $string['undeletepostbutton'] = 'Undelete post';
 $string['averagerating'] = 'Average rating: {$a->avg} (from {$a->num})';
 $string['yourrating'] = 'Your rating:';
@@ -612,7 +635,8 @@ $string['alert_reporterdetail'] = '{$a->fullname} ({$a->username}; {$a->email}; 
 $string['invalidalert'] = 'You need to specify the reason for reporting this post.';
 $string['invalidalertcheckbox'] = 'You need to tick at least one of the boxes.';
 $string['alert_submit'] = "Send alert";
-$string['error_sendalert'] = 'There was an error sending your report. Report could not be sent.';
+$string['error_sendalert'] = 'There was an error sending your report to {$a}.
+Report could not be sent.';
 $string['error_portfoliosave'] = 'An error occurred while saving this data to MyStuff.';
 $string['alert_pagename'] = 'Report a post as unacceptable';
 $string['alert_emailsubject'] = 'Alert F{$a->postid}: {$a->coursename} {$a->forumname}';
@@ -705,12 +729,9 @@ $string['nextresults'] = 'Find more results';
 $string['author'] = ' author: \"{$a}\"';
 $string['from'] = ' from: {$a}';
 $string['to'] = ' to: {$a}';
-$string['inappropriatedateortime'] = '<strong>Date range from</strong> is after current date/time.
-Please check and try again!';
-$string['daterangemismatch'] = 'Date range mismatch: <strong>Date range from</strong> is after
-<strong>Date range to</strong>. Please check and try again!';
-$string['nosearchcriteria'] = 'No search criteria: Please use one or more of the above criteria
-and try again!';
+$string['inappropriatedateortime'] = 'From date cannot be after present.';
+$string['daterangemismatch'] = 'To date is before From date.';
+$string['nosearchcriteria'] = 'No search criteria. Please use one or more of the criteria below.';
 $string['searchallforums'] = 'Search all forums';
 
 $string['replies'] = 'Replies';
@@ -779,3 +800,5 @@ To exclude a word insert a hyphen immediately before the word.
 Example: the search term <tt>picasso -sculpture &quot;early works&quot;</tt> will return results for &lsquo;picasso&rsquo; or the phrase &lsquo;early works&rsquo; but will exclude items containing &lsquo;sculpture&rsquo;.
 
 To search by author or date, click &lsquo;More options&rsquo;.';
+
+$string['notext'] = '(no text)';

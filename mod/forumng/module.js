@@ -105,6 +105,10 @@ M.mod_forumng = {
             this.print_page();
             return;
         }
+        if (document.getElementById('page-mod-forumng-deletepost')) {
+            this.init_deletepost();
+            return;
+        }
     },
 
     /**
@@ -198,6 +202,16 @@ M.mod_forumng = {
     },
 
     /**
+     * Initialises all JavaScript for the deletepost page.
+     */
+    init_deletepost : function() {
+        // if JS is enabled then we can copy the html version of the text to
+        // the textarea used by tinymce, otherwise plain text is used by default.
+        var messagehtml = this.Y.one('#delete-form-html').getContent();
+        this.Y.one('#id_forumng_delete_msg').set('innerHTML', messagehtml);
+    },
+
+    /**
      * Initialises 'content' i.e. posts and related. Can be called on the whole page or on
      * a single post.
      * @param node Node to run on (e.g. document node or a post div)
@@ -272,9 +286,9 @@ M.mod_forumng = {
             }
 
             // Magicalise 'Delete' / 'Undelete' links
-            match = href.match(/\/deletepost\.php\?p=([0-9]+)(?:&clone=[0-9]+)?(?:&delete=([0-9]+))?$/);
+            match = href.match(/\/deletepost\.php\?p=([0-9]+)(?:&clone=[0-9]+)?(?:&delete=([0-9]+))?(?:&currentuser=([0-9]))?$/);
             if (match) {
-                this.init_delete(link, parseInt(match[1]), match[2] && match[2]==0);
+                this.init_delete(link, parseInt(match[1]), match[2] && match[2]==0, match[3]);
             }
 
             // Magicalise the hidden parent-post links
@@ -676,6 +690,11 @@ M.mod_forumng = {
                 /&(nbsp|#160|#xa0);/g, '') . replace(
                     new RegExp(String.fromCharCode(160), 'g'), ' ') .
                 replace(/\s+/, ' ') . trim();
+
+            // Allow an image even if no text
+            if (sourceText.indexOf('<img ') != -1) {
+                mungevalue = 'gotimage';
+            }
 
             // When editing discussion first post, subject must also be not blank
             if (mungevalue != '' && form.editpostid && form.isroot) {
@@ -1447,7 +1466,7 @@ M.mod_forumng = {
      * @param postid Post ID
      * @param undeleted True if it's actually undelete
      */
-    init_delete : function(link, postid, undelete) {
+    init_delete : function(link, postid, undelete, currentuser) {
         link.postid = postid;
         link.post = link.ancestor('.forumng-post');
         link.on('click', function(e) {
@@ -1455,12 +1474,12 @@ M.mod_forumng = {
             if (this.are_links_disabled(link)) {
                 return;
             }
-            this.confirm(
-                    undelete ? M.str.forumng.confirmundelete : M.str.forumng.confirmdelete,
-                    undelete ? M.str.forumng.undeletepostbutton : M.str.forumng.deletepostbutton,
-                    M.str.moodle.cancel, link.post,
-                    function() {
-                        var cfg = {
+            var deleteandemail = function() {
+                    window.location = 'deletepost.php' + '?p=' + link.postid + M.mod_forumng.cloneparam +
+                    '&delete=1' + '&ajax=1' + '&email=1'
+                    };
+            var deleteonly = function() {
+                    var cfg = {
                             method: 'POST',
                             data: 'p=' + link.postid + M.mod_forumng.cloneparam +
                                     '&delete=' + (undelete ? 0 : 1) + '&ajax=1',
@@ -1482,7 +1501,20 @@ M.mod_forumng = {
                         link.get('parentNode').appendChild(link.loader);
                         var linkregion = M.mod_forumng.Y.DOM.region(M.mod_forumng.Y.Node.getDOMNode(link));
                         link.loader.setXY([linkregion.right + 3, linkregion.top]);
-                    });
+                    };
+            if (currentuser) {
+                var deletebuttons = new Array(M.str.forumng.deletepostbutton);
+                var deleteoptions = new Array(deleteonly, '');
+            } else {
+                var deletebuttons = new Array(M.str.forumng.deleteemailpostbutton,M.str.forumng.deletepostbutton);
+                var deleteoptions = new Array(deleteandemail, deleteonly, '');
+            }
+            this.confirm(
+                    undelete ? M.str.forumng.confirmundelete : M.str.forumng.confirmdelete,
+                    undelete ? M.str.forumng.undeletepostbutton : deletebuttons,
+                    M.str.moodle.cancel, link.post,
+                    undelete ? deleteonly : deleteoptions
+                    );
         }, this);
     },
 
@@ -1978,6 +2010,8 @@ M.mod_forumng = {
             selectButtons.appendChild(all);
             all.set('value', M.str.moodle.selectall);
             all.on('click', function() {
+                // update the posts oject so it works after expanding a post
+                var posts = this.Y.all('div.forumng-post');
                 for (var i=0; i<posts.size(); i++) {
                     if (!posts.item(i).check.get('checked')) {
                         M.mod_forumng.simulate_click(posts.item(i).check);
@@ -1989,6 +2023,8 @@ M.mod_forumng = {
             selectButtons.appendChild(none);
             none.set('value', M.str.moodle.deselectall);
             none.on('click', function() {
+                // update the posts oject so it works after expanding a post
+                var posts = this.Y.all('div.forumng-post');
                 for (var i=0; i<posts.size(); i++) {
                     if (posts.item(i).check.get('checked')) {
                         M.mod_forumng.simulate_click(posts.item(i).check);
@@ -2025,6 +2061,8 @@ M.mod_forumng = {
         }
 
         window.forumng_select_changed = function() {
+            // update the posts oject so it works after expanding a post
+            var posts = M.mod_forumng.Y.all('div.forumng-post');
             var ok = false;
             for (var i=0; i<posts.size(); i++) {
                 if (posts.item(i).check.get('checked')) {
@@ -2070,10 +2108,13 @@ M.mod_forumng = {
             label.appendChild(document.createTextNode(M.str.forumng.selectlabel));
             this.links_disable(document.body);
 
-            var hidden = this.Y.Node.create('<input type="hidden" value="0"/>');
+            var hidden = this.Y.one("input[name='select" + postid + "']");
+            if (!hidden) {
+                hidden = this.Y.Node.create('<input type="hidden" value="0"/>');
+                hidden.set('name', 'select' + postid);
+                this.select.form.appendChild(hidden);
+            }
             post.forumng_hidden = hidden;
-            hidden.set('name', 'select' + postid);
-            this.select.form.appendChild(hidden);
 
             check.on('click', function() {
                 if (check.get('checked')) {
@@ -2368,12 +2409,12 @@ M.mod_forumng = {
         buttonsDiv.appendChild(document.createTextNode(' '));
         buttonsDiv.appendChild(selectAll);
         var deselectAll = this.Y.Node.create('<input type="button"/>');
-        deselectAll.set('value', M.str.forumng.core_deselectall);
+        deselectAll.set('value', M.str.moodle.deselectall);
         buttonsDiv.appendChild(document.createTextNode(' '));
         buttonsDiv.appendChild(deselectAll);
 
         var unsubscribe;
-        var inputs = selectAll.get('form').all('input');
+        var inputs = this.Y.one('#forumng-subscription-list').all('input');
         var all = [];
         for (var i=0; i<inputs.size(); i++) {
             var input = inputs.item(i);

@@ -334,6 +334,9 @@ class mod_forumng_renderer extends plugin_renderer_base {
 
         $summary = self::get_post_summary($draft->get_subject(),
                 $draft->get_formatted_message($forum));
+        if (trim($summary) === '') {
+            $summary = get_string('notext', 'forumng');
+        }
 
         $result = '<tr class="' . $classes . '">';
         $link = '<a href="editpost.php?draft=' . $draft->get_id() .
@@ -729,7 +732,7 @@ class mod_forumng_renderer extends plugin_renderer_base {
         $deletedhide = $post->get_deleted()
             && !$options[mod_forumng_post::OPTION_VIEW_DELETED_INFO];
         // Hide deleted messages if they have no replies
-        if ($deletedhide && !$email && !$post->has_children()) {
+        if ($deletedhide && ($export || !$email) && !$post->has_children()) {
             // note: !email check is to deal with posts that are deleted
             // between when the mail list finds them, and when it sends out
             // mail. It would be confusing to send out a blank email so let's
@@ -828,8 +831,11 @@ class mod_forumng_renderer extends plugin_renderer_base {
         }
 
         // Pictures (HTML version only)
+        if ($html) {
+            $out .= $lf . html_writer::start_tag('div', array('class' => 'forumng-pic-info'));
+        }
         if ($html && !$export && $options[mod_forumng_post::OPTION_USER_IMAGE]) {
-            $out .= $lf . '<div class="forumng-pic-info"><div class="forumng-pic">';
+            $out .= $lf . html_writer::start_tag('div', array('class' => 'forumng-pic'));
 
             // User picture
             $out .= $deletedhide ? '' : $post->display_user_picture();
@@ -843,7 +849,7 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 }
             }
 
-            $out .=  '</div>';
+            $out .=  html_writer::end_tag('div');
         }
 
         // Link used to expand post
@@ -877,8 +883,8 @@ class mod_forumng_renderer extends plugin_renderer_base {
             }
             if ($postnumber) {
                 if ($options[mod_forumng_post::OPTION_VISIBLE_POST_NUMBERS]) {
-                    $out .= '<span class="accesshide" style="position:static">' .
-                            $info . '</span>';
+                    $out .= html_writer::tag('small', ' ' . $info,
+                            array('class' => 'accesshide', 'style' => 'position:static'));
                 } else {
                     $out .= '<span class="accesshide"> ' . $info . ' </span>';
                 }
@@ -928,15 +934,21 @@ class mod_forumng_renderer extends plugin_renderer_base {
                         ($post->is_flagged() ? 0 : 1) .
                     '"/></div>';
             }
-            $out .= '</div></div>';
+            // End: forumng-info.
+            $out .= html_writer::end_tag('div');
+            // End: forumng-pic-info.
+            $out .=  html_writer::end_tag('div');
         } else {
             $out .= $by->name . ' - ' . $by->date . $lf;
 
             $out .= mod_forumng_cron::EMAIL_DIVIDER;
         }
+
         // Add a outer div to main contents
-        $out .= '<div class="forumng-post-outerbox">';
-        if ($post->get_deleted()) {
+        if ($html) {
+            $out .= '<div class="forumng-post-outerbox">';
+        }
+        if ($html && $post->get_deleted()) {
             $out .= '<p class="forumng-deleted-info"><strong>' .
                 get_string('deletedpost', 'forumng') . '</strong> ';
             if ($deletedhide) {
@@ -1117,6 +1129,8 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 $commandsarray = array();
                 $expires = $post->can_ignore_edit_time_limit() ? '' :
                     '&amp;expires=' . ($post->get_edit_time_limit()-time());
+                $expandparam = !empty($options[mod_forumng_post::OPTION_CHILDREN_EXPANDED]) ?
+                        '&amp;expand=1' : '';
 
                 // Jump box
                 if ($options[mod_forumng_post::OPTION_JUMP_PREVIOUS] ||
@@ -1146,7 +1160,7 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 if ($options[mod_forumng_post::OPTION_COMMAND_REPORT]) {
                     $commandsarray['forumng-alert'] = '<a href="' . $linkprefix . 'alert.php?' .
                             $post->get_link_params(mod_forumng::PARAM_HTML) .
-                            '" title="'.get_string('alert_linktitle', 'forumng').'">' .
+                            $expandparam . '" title="'.get_string('alert_linktitle', 'forumng').'">' .
                             get_string('alert_link', 'forumng', $postnumber) .
                             '</a>';
                 }
@@ -1155,7 +1169,8 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 if ($options[mod_forumng_post::OPTION_COMMAND_SPLIT]) {
                     $commandsarray['forumng-split'] = '<a href="' . $linkprefix .
                             'splitpost.php?' .
-                            $post->get_link_params(mod_forumng::PARAM_HTML) . '">' .
+                            $post->get_link_params(mod_forumng::PARAM_HTML) .
+                            $expandparam . '">' .
                             get_string('split', 'forumng', $postnumber) .
                             '</a>';
                 }
@@ -1164,8 +1179,8 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 if ($options[mod_forumng_post::OPTION_COMMAND_DELETE]) {
                     $commandsarray ['forumng-delete'] = '<a' . $mobileclass . ' href="' . $linkprefix .
                             'deletepost.php?' .
-                            $post->get_link_params(mod_forumng::PARAM_HTML) .
-                            $expires . '">' .
+                            $post->get_link_params(mod_forumng::PARAM_HTML, true) .
+                            $expandparam . $expires . '">' .
                             get_string('delete', 'forumng', $postnumber) .
                             '</a>';
                 }
@@ -1175,7 +1190,7 @@ class mod_forumng_renderer extends plugin_renderer_base {
                     $commandsarray['forumng-undelete'] = '<a href="' . $linkprefix .
                             'deletepost.php?' .
                             $post->get_link_params(mod_forumng::PARAM_HTML) .
-                            '&amp;delete=0">' .
+                            $expandparam . '&amp;delete=0">' .
                             get_string('undelete', 'forumng', $postnumber) .
                             '</a>';
                 }
@@ -1185,7 +1200,7 @@ class mod_forumng_renderer extends plugin_renderer_base {
                     $commandsarray['forumng-edit'] = '<a' . $mobileclass . ' href="' . $linkprefix .
                             'editpost.php?' .
                             $post->get_link_params(mod_forumng::PARAM_HTML) .
-                            $expires. '">' .
+                            $expandparam . $expires. '">' .
                             get_string('edit', 'forumng', $postnumber) .
                             '</a>';
                 }
@@ -1194,7 +1209,8 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 if ($options[mod_forumng_post::OPTION_COMMAND_REPLY]) {
                     $commandsarray['forumng-replylink'] = '<a' . $mobileclass . ' href="' .
                             $linkprefix . 'editpost.php?replyto=' . $post->get_id() .
-                            $post->get_forum()->get_clone_param(mod_forumng::PARAM_HTML) . '">' .
+                            $post->get_forum()->get_clone_param(mod_forumng::PARAM_HTML) .
+                            $expandparam . '">' .
                             get_string('reply', 'forumng', $postnumber) . '</a>';
                 }
 
@@ -1219,21 +1235,29 @@ class mod_forumng_renderer extends plugin_renderer_base {
                 // Only the reply command is available in text mode
             }
 
-            // End of post footer and main section
+            // End: forumng-postfooter and forumng-postmain.
             if ($html) {
-                $out .= '</div></div>';
+                $out .= html_writer::end_tag('div') . html_writer::end_tag('div');
             }
         }
 
         // End of post div
         if ($html) {
-            $out .= '<div class="forumng-endpost"></div></div>';
+            // Useful empty div at end of post.
+            $out .= html_writer::tag('div', '', array('class' => 'forumng-endpost'));
+
+            // End: forumng-post-outerbox.
+            $out .= html_writer::end_tag('div');
+
+            // Export has a couple blank lines after post (but within div, for validity).
             if ($export) {
                 $out .= '<br /><br />';
             }
+
+            // End: forumng-post.
+            $out .= html_writer::end_tag('div');
         }
-        //End of the forum-post-outerbox div
-        $out .= '</div>';
+
         return $out;
     }
 
@@ -1482,5 +1506,67 @@ class mod_forumng_renderer extends plugin_renderer_base {
         $out .= html_writer::end_tag('div');
         $out .= html_writer::end_tag('form');
         return $out;
+    }
+
+    /**
+     * Print a message along with three buttons buttoneone/buttontwo/Cancel
+     *
+     * If a string or moodle_url is given instead of a single_button, method defaults to post.
+     *
+     * @param string $message The question to ask the user.
+     * @param single_button $buttonone The single_button component representing the buttontwo response.
+     * @param single_button $buttontwo The single_button component representing the buttontwo response.
+     * @param single_button $cancel The single_button component representing the Cancel response.
+     * @return string HTML fragment
+     */
+    public function confirm_three_button($message, $buttonone, $buttontwo, $cancel) {
+        if (!($buttonone instanceof single_button)) {
+            throw new coding_exception('The buttonone param must be an instance of a single_button.');
+        }
+
+        if (!($buttontwo instanceof single_button)) {
+            throw new coding_exception('The buttontwo param must be an instance of a single_button.');
+        }
+
+        if (!($cancel instanceof single_button)) {
+            throw new coding_exception('The cancel param must be an instance of a single_button.');
+        }
+
+        $output = $this->box_start('generalbox', 'notice');
+        $output .= html_writer::tag('p', $message);
+        $buttons = $this->render($buttonone) . $this->render($buttontwo) . $this->render($cancel);
+        $output .= html_writer::tag('div', $buttons, array('class' => 'buttons'));
+        $output .= $this->box_end();
+        return $output;
+    }
+
+    /**
+     * Compiles the html message content for the rejection email.
+     *
+     * @param object $group The details of one group
+     * @param string $coursename
+     * @return string HTML
+     */
+    public function deletion_email($messagetext) {
+        $out = '';
+        $out .= html_writer::start_tag('html');
+        $out .= html_writer::start_tag('body');
+        $out .= $messagetext;
+        $out .= html_writer::end_tag('body');
+        $out .= html_writer::end_tag('html');
+
+        return $out;
+    }
+
+    /**
+     * Compiles the html message content for the rejection email.
+     *
+     * @param object $group The details of one group
+     * @param string $coursename
+     * @return string HTML
+     */
+    public function delete_form_html($messagehtml) {
+        return html_writer::tag('div', htmlentities($messagehtml, ENT_QUOTES),
+                array('id' => 'delete-form-html'));
     }
 }
