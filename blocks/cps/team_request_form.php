@@ -149,10 +149,10 @@ class team_request_form_update extends team_request_form {
         if ($is_master) {
             $m->addElement('radio', 'update_option', '',
                 self::_s('team_current'), self::ADD_USER_CURRENT);
-        }
 
-        $m->addElement('radio', 'update_option', '',
-            self::_s('team_add_course'), self::ADD_COURSE);
+            $m->addElement('radio', 'update_option', '',
+                self::_s('team_add_course'), self::ADD_COURSE);
+        }
 
         $limit = get_config('block_cps', 'team_request_limit');
         $shells_range = range(1, $limit - $groupingid);
@@ -618,6 +618,8 @@ class team_request_form_request extends team_request_form {
     }
 
     function definition() {
+        global $USER;
+
         $m =& $this->_form;
 
         $selected_course = $this->_customdata['selected_course'];
@@ -664,6 +666,10 @@ class team_request_form_request extends team_request_form {
             $other_teachers = $other_course->teachers($semester);
 
             foreach ($other_teachers as $teacher) {
+                if ($teacher->userid == $USER->id) {
+                    continue;
+                }
+
                 $user = $teacher->user();
 
                 $section_info = $other_sections[$teacher->sectionid];
