@@ -81,7 +81,7 @@ class block_course_overview_plus extends block_base {
         $courses_limit = $courses_limit + 1;
     }
 
-    $courses = enrol_get_my_courses('id, shortname, modinfo', 'fullname ASC', $courses_limit);
+    $courses = enrol_get_my_courses('id, shortname', 'fullname ASC', $courses_limit);
     $site = get_site();
     $course = $site; //just in case we need the old global $course hack
 
@@ -115,6 +115,7 @@ class block_course_overview_plus extends block_base {
             ob_start();
 
             $htmlarray = array();
+/*
             if ($modules = $DB->get_records('modules')) {
             foreach ($modules as $mod) {
                 if (file_exists($CFG->dirroot.'/mod/'.$mod->name.'/lib.php')) {
@@ -126,6 +127,7 @@ class block_course_overview_plus extends block_base {
                 }
             }
         }
+*/
         $hidden = 0;
         foreach ($courses as $c) {
             user_preference_allow_ajax_update('courseoverviewplushide'.$c->id, PARAM_INT);
