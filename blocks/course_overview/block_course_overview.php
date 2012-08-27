@@ -108,7 +108,7 @@ class block_course_overview extends block_base {
      * @return array
      */
     public function applicable_formats() {
-        return array('site' => true, 'my' => true, 'course' => false);
+        return array('site' => true, 'my-index' => true, 'course' => false);
     }
 
     /**
