@@ -81,7 +81,7 @@ class block_course_overview_plus extends block_base {
         $courses_limit = $courses_limit + 1;
     }
 
-    $courses = enrol_get_my_courses('id, shortname, modinfo, sectioncache', 'fullname ASC', $courses_limit);
+    $courses = enrol_get_my_courses('id, shortname, fullname, modinfo, sectioncache','visible DESC, fullname ASC', $courses_limit);
     $site = get_site();
     $course = $site; //just in case we need the old global $course hack
 
@@ -189,7 +189,7 @@ class block_course_overview_plus extends block_base {
            if($c->hide==0) {
                echo $OUTPUT->heading(html_writer::link(
                    new moodle_url('/course/view.php', array('id' => $c->id)), format_string($c->fullname), $attributes). $availability .
-                       ' <div style="text-align: right;"><a href="index.php?hidecourse='.$c->id.'&amp;managehiddencourses='.$managehiddencourses.'" id="hider'.$c->id.'" title="'.get_string('hidecourse', 'block_course_overview_plus').'">'.
+                       ' <div class="copeyecon" style="text-align: right;"><a href="index.php?hidecourse='.$c->id.'&amp;managehiddencourses='.$managehiddencourses.'" id="hider'.$c->id.'" title="'.get_string('hidecourse', 'block_course_overview_plus').'">'.
                        '<img src="'.$OUTPUT->pix_url('i/hide') . '" class="icon" alt="'.get_string('hidecourse', 'block_course_overview_plus').'" /></a>'.
                        '<a href="index.php?showcourse='.$c->id.'&amp;managehiddencourses='.$managehiddencourses.'" id="shower'.$c->id.'" class="hidden" title="'.get_string('showcourse', 'block_course_overview_plus').'">'.
                        '<img src="'.$OUTPUT->pix_url('i/show') . '" class="icon" alt="'.get_string('showcourse', 'block_course_overview_plus').'" /></a><br /></div>', 3);
