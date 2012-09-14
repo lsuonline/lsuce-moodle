@@ -29,9 +29,9 @@ class block_csv_enrol extends block_base {
     }
 
     function get_content() {
-        global $CFG, $USER, $PAGE, $OUTPUT, $id;
+        global $CFG, $USER, $PAGE, $OUTPUT, $COURSE;
 
-	 $currentcontext = get_context_instance(CONTEXT_COURSE,$id);
+	 $currentcontext = get_context_instance(CONTEXT_COURSE,$COURSE->id);
 
         if ($this->content !== NULL) {
             return $this->content;
@@ -49,7 +49,7 @@ class block_csv_enrol extends block_base {
             $this->content->text = $renderer->csv_enrol_tree($currentcontext);
 
             $this->content->text .= $OUTPUT->single_button(new moodle_url('/blocks/csv_enrol/edit.php',
-                array('returnurl'=>$PAGE->url->out(), 'courseid' => $id )),
+                array('returnurl'=>$PAGE->url->out(), 'courseid' => $COURSE->id )),
 				get_string('manageuploads','block_csv_enrol'), 'get');
 
         }
