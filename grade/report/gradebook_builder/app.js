@@ -43,6 +43,8 @@ $(document).ready(function() {
         $('select#add-item-category')
             .append('<option value="' + id + '">' + name + '</option>');
 
+       // $('div#howto').replaceWith('<div class="help"><a href=http://grok.lsu.edu/Article.aspx?articleid=16094 target="_blank" class="help">help</a></div>');
+
         readjustWeight(function(tw) {
             tw.append(weights);
 
@@ -163,6 +165,8 @@ $(document).ready(function() {
         $(e.currentTarget).parent().parent().parent().remove();
     });
 
+
+/*
     // Hover to show remove button for categories
     $('tr').live({
         mouseenter: function(e) {
@@ -174,6 +178,7 @@ $(document).ready(function() {
     });
 
     // Hover to show remove button for items
+
     $('tr').live({
         mouseenter: function(e) {
             $(e.currentTarget).children().find('span.remove-item-label').show();
@@ -182,15 +187,17 @@ $(document).ready(function() {
             $(e.currentTarget).children().find('span.remove-item-label').hide();
         }
     });
-
+*/
     // Show or hide category weights
     $('select#grading-method').change(function(e) {
         var val = $('select#grading-method').val();
 
         if (val === "10") {
             $('form#category-weights').show();
+        $('div#builder-start.container').addClass('taller');
         } else {
             $('form#category-weights').hide();
+        $('div#builder-start.container').removeClass('taller');
         }
 
     });
