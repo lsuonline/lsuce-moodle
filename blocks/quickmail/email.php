@@ -75,7 +75,12 @@ $allgroups = groups_get_all_groups($courseid);
 $mastercap = true;
 $groups = $allgroups;
 
-if (!has_capability('moodle/site:accessallgroups', $context)) {
+$restricted_view = (
+    !has_capability('moodle/site:accessallgroups', $context) and
+    $course->groupmode == 1
+);
+
+if ($restricted_view) {
     $mastercap = false;
     $mygroups = groups_get_user_groups($courseid);
     $gids = implode(',', array_values($mygroups['0']));
@@ -92,8 +97,12 @@ $users_to_roles = array();
 $users_to_groups = array();
 
 $everyone = get_role_users(0, $context, false, 'u.id, u.firstname, u.lastname,
-    u.email, u.mailformat, u.maildisplay, r.id AS roleid',
+    u.email, u.mailformat, u.suspended, u.maildisplay, r.id AS roleid',
     'u.lastname, u.firstname');
+
+if (count($everyone) == 1) {
+    print_error('no_users', 'block_quickmail');
+}
 
 foreach ($everyone as $userid => $user) {
     $usergroups = groups_get_user_groups($courseid, $userid);
@@ -114,11 +123,13 @@ foreach ($everyone as $userid => $user) {
 
     $users_to_groups[$userid] = array_map($groupmapper, $gids);
     $users_to_roles[$userid] = $filterd;
-    $users[$userid] = $user;
+    if(!$user->suspended) {
+        $users[$userid] = $user;
+    }
 }
 
 if (empty($users)) {
-    print_error('no_users', 'block_quickmail');
+    print_error('no_usergroups', 'block_quickmail');
 }
 
 if (!empty($type)) {
@@ -145,13 +156,16 @@ $email->typeid = $typeid;
 
 $editor_options = array(
     'trusttext' => true,
-    'subdirs' => true,
+    'subdirs' => 1,
     'maxfiles' => EDITOR_UNLIMITED_FILES,
+    'accepted_types' => '*',
     'context' => $context
 );
 
-$email = file_prepare_standard_editor($email, 'message', $editor_options,
-    $context, 'block_quickmail', $type, $email->id);
+$email = file_prepare_standard_editor(
+    $email, 'message', $editor_options,
+    $context, 'block_quickmail', $type, $email->id
+);
 
 $selected = array();
 if (!empty($email->mailto)) {
@@ -209,8 +223,10 @@ if ($form->is_cancelled()) {
             }
         }
 
-        $data = file_postupdate_standard_editor($data, 'message', $editor_options,
-            $context, 'block_quickmail', $table, $data->id);
+        $data = file_postupdate_standard_editor(
+            $data, 'message', $editor_options,
+            $context, 'block_quickmail', $table, $data->id
+        );
 
         $DB->update_record('block_quickmail_'.$table, $data);
 
@@ -222,18 +238,16 @@ if ($form->is_cancelled()) {
         }
 
         // An instance id is needed before storing the file repository
-        file_save_draft_area_files($data->attachments, $context->id,
-            'block_quickmail', 'attachment_' . $table, $data->id);
+        file_save_draft_area_files(
+            $data->attachments, $context->id, 'block_quickmail',
+            'attachment_' . $table, $data->id, $editor_options
+        );
 
         // Send emails
         if (isset($data->send)) {
             if ($type == 'drafts') {
                 quickmail::draft_cleanup($typeid);
             }
-
-            list($zipname, $zip, $actual_zip) = quickmail::process_attachments(
-                $context, $data, $table, $data->id
-            );
 
             if (!empty($sigs) and $data->sigid > -1) {
                 $sig = $sigs[$data->sigid];
@@ -245,10 +259,15 @@ if ($form->is_cancelled()) {
                 $data->message .= $signaturetext;
             }
 
+            // Append links to attachments, if any
+            $data->message .= quickmail::process_attachments(
+                $context, $data, $table, $data->id
+            );
+
             // Prepare html content of message
-            $data->message = file_rewrite_pluginfile_urls($data->message, 'pluginfile.php',
-                $context->id, 'block_quickmail', $table, $data->id,
-                $editor_options);
+            $data->message = file_rewrite_pluginfile_urls($data->message,
+                'pluginfile.php', $context->id, 'block_quickmail', $table,
+                $data->id, $editor_options);
 
             // Same user, alternate email
             if (!empty($data->alternateid)) {
@@ -260,7 +279,7 @@ if ($form->is_cancelled()) {
 
             foreach (explode(',', $data->mailto) as $userid) {
                 $success = email_to_user($everyone[$userid], $user, $subject,
-                    strip_tags($data->message), $data->message, $zip, $zipname);
+                    strip_tags($data->message), $data->message);
 
                 if(!$success) {
                     $warnings[] = get_string("no_email", 'block_quickmail', $everyone[$userid]);
@@ -269,11 +288,7 @@ if ($form->is_cancelled()) {
 
             if ($data->receipt) {
                 email_to_user($USER, $user, $subject,
-                    strip_tags($data->message), $data->message, $zip, $zipname);
-            }
-
-            if (!empty($actual_zip)) {
-                unlink($actual_zip);
+                    strip_tags($data->message), $data->message);
             }
         }
     }

@@ -13,7 +13,7 @@ $string['composenew'] = 'Compose New Email';
 $string['email'] = 'Email';
 $string['drafts'] = 'View Drafts';
 $string['history'] = 'View History';
-$string['log'] = $string['history'];
+$string['log'] = 'View History';
 $string['from'] = 'From';
 $string['selected'] = 'Selected Recipients';
 $string['add_button'] = 'Add';
@@ -46,6 +46,9 @@ $string['no_alternates'] = 'No alternate emails found for {$a->fullname}. Contin
 $string['select_users'] = 'Select Users ...';
 $string['select_groups'] = 'Select Sections ...';
 
+$string['moodle_attachments'] = 'Moodle Attachments ({$a})';
+$string['download_all'] = 'Download All';
+
 // Config form strings
 $string['allowstudents'] = 'Allow students to use Quickmail';
 $string['select_roles'] = 'Roles to filter by';
@@ -58,6 +61,7 @@ $string['no_drafts'] = 'You have no email drafts.';
 $string['no_subject'] = 'You must have a subject';
 $string['no_course'] = 'Invalid Course with id of {$a}';
 $string['no_permission'] = 'You do not have permission to send emails with Quickmail.';
+$string['no_usergroups'] = 'There are no users in your group capable of being emailed.';
 $string['no_users'] = 'There are no users you are capable of emailing.';
 $string['no_selected'] = 'You must select some users for emailing.';
 $string['not_valid'] = 'This is not a valid email log viewer type: {$a}';
