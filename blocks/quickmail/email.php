@@ -3,6 +3,7 @@
 // Written at Louisiana State University
 
 require_once('../../config.php');
+require_once('../../enrol/externallib.php');
 require_once('lib.php');
 require_once('email_form.php');
 
@@ -77,10 +78,16 @@ $groups = $allgroups;
 
 $restricted_view = (
     !has_capability('moodle/site:accessallgroups', $context) and
-    $course->groupmode == 1
+    $config['ferpa'] == 'strictferpa'
 );
 
-if ($restricted_view) {
+$respected_view = (
+    !has_capability('moodle/site:accessallgroups', $context) and
+    $course->groupmode == 1 and
+    $config['ferpa'] == 'courseferpa'
+);
+
+if ($restricted_view || $respected_view) {
     $mastercap = false;
     $mygroups = groups_get_user_groups($courseid);
     $gids = implode(',', array_values($mygroups['0']));
@@ -96,9 +103,7 @@ $users = array();
 $users_to_roles = array();
 $users_to_groups = array();
 
-$everyone = get_role_users(0, $context, false, 'u.id, u.firstname, u.lastname,
-    u.email, u.mailformat, u.suspended, u.maildisplay, r.id AS roleid',
-    'u.lastname, u.firstname');
+$everyone = quickmail::get_non_suspended_users($context, $courseid);
 
 if (count($everyone) == 1) {
     print_error('no_users', 'block_quickmail');
@@ -126,6 +131,7 @@ foreach ($everyone as $userid => $user) {
     if(!$user->suspended) {
         $users[$userid] = $user;
     }
+    //print_r($user);
 }
 
 if (empty($users)) {

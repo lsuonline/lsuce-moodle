@@ -45,13 +45,13 @@ abstract class quickmail {
     private static function flatten_subdirs($tree, $gen_link, $level=0) {
         $attachments = $spaces = '';
         foreach (range(0, $level) as $space) {
-            $spaces .= "&nbsp; ";
+            $spaces .= " - ";
         }
         foreach ($tree['files'] as $filename => $file) {
-            $attachments .= $spaces . "- " . $gen_link($filename) . "\n<br/>";
+            $attachments .= $spaces . " " . $gen_link($filename) . "\n<br/>";
         }
         foreach ($tree['subdirs'] as $dirname => $subdir) {
-            $attachments .= $spaces . "- ". $dirname . "\n<br/>";
+            $attachments .= $spaces . " ". $dirname . "\n<br/>";
             $attachments .= self::flatten_subdirs($subdir, $gen_link, $level + 2);
         }
 
@@ -60,6 +60,7 @@ abstract class quickmail {
 
     static function process_attachments($context, $email, $table, $id) {
         $attachments = '';
+        $filename = '';
 
         if (empty($email->attachment)) {
             return $attachments;
@@ -74,7 +75,13 @@ abstract class quickmail {
 
         $base_url = "/$context->id/block_quickmail/attachment_{$table}/$id";
 
-        $gen_link = function ($filename, $text = '') use ($base_url) {
+        /**
+         * @param string $filename name of the file for which we are generating a download link
+         * @param string $text optional param sets the link text; if not given, filename is used
+         * @param bool $plain if itrue, we will output a clean url for plain text email users
+         *
+         */
+        $gen_link = function ($filename, $text = '', $plain=false) use ($base_url) {
             if (empty($text)) {
                 $text = $filename;
             }
@@ -82,12 +89,30 @@ abstract class quickmail {
                 'forcedownload' => 1,
                 'file' => "/$base_url/$filename"
             ));
+
+            //to prevent double encoding of ampersands in urls for our plaintext users,
+            //we use the out() method of moodle_url
+            //@see http://phpdocs.moodle.org/HEAD/moodlecore/moodle_url.html
+            if($plain){
+                return $url->out(false);    
+            }
+
             return html_writer::link($url, $text);
         };
 
+
+
         $link = $gen_link("{$email->time}_attachments.zip", self::_s('download_all'));
-        $attachments .= self::_s('moodle_attachments', $link);
+
+        //get a plain text version of the link
+        //by calling gen_link with @param $plain set to true
+        $tlink = $gen_link("{$email->time}_attachments.zip", '', true);
+
         $attachments .= "\n<br/>-------\n<br/>";
+        $attachments .= self::_s('moodle_attachments', $link);
+        $attachments .= "\n<br/>".$tlink;
+        $attachments .= "\n<br/>-------\n<br/>";
+        $attachments .= self::_s('qm_contents') . "\n<br />";
 
         return $attachments . self::flatten_subdirs($tree, $gen_link);
     }
@@ -170,12 +195,14 @@ abstract class quickmail {
             $roleselection = get_config($m, 'block_quickmail_roleselection');
             $prepender = get_config($m, 'block_quickmail_prepend_class');
             $receipt = get_config($m, 'block_quickmail_receipt');
+            $ferpa = get_config($m, 'block_quickmail_ferpa');
 
             $config = array(
                 'allowstudents' => $allowstudents,
                 'roleselection' => $roleselection,
                 'prepend_class' => $prepender,
-                'receipt' => $receipt
+                'receipt' => $receipt,
+                'ferpa' => $ferpa
             );
         }
 
@@ -294,6 +321,65 @@ abstract class quickmail {
         $html .= html_writer::table($table);
         $html .= $paging;
         return $html;
+    }
+
+    /**
+     * get all users for a given context
+     * @param $context a moodle context id
+     * @return array of sparse user objects
+     */
+    public static function get_all_users($context){
+        global $DB;
+        $everyone = get_role_users(0, $context, false, 'u.id, u.firstname, u.lastname,
+            u.email, u.mailformat, u.suspended, u.maildisplay, r.id AS roleid',
+            'u.lastname, u.firstname');
+        return $everyone;
+    }
+
+    /**
+     * @TODO this function relies on self::get_all_users, it should not have to
+     *
+     * returns all users enrolled in a gived coure EXCEPT for those whose 
+     * mdl_user_enrolments.status field is 1 (suspended)
+     * @param $context  moodle context id
+     * @param $courseid the course id
+     */
+    public static function get_non_suspended_users($context, $courseid){
+        global $DB;
+        $everyone = self::get_all_users($context);
+
+        $sql = "SELECT u.id, u.firstname, u.lastname, u.email, u.mailformat, u.suspended, u.maildisplay, ue.status  
+            FROM {user} as u  
+                JOIN {user_enrolments} as ue                 
+                    ON u.id = ue.userid 
+                JOIN {enrol} as en
+                    ON en.id = ue.enrolid                     
+                WHERE en.courseid = ?
+                    AND ue.status = ?"; 
+
+        //let's use a recordset in case the enrollment is huge
+        $rs_valids = $DB->get_recordset_sql($sql, array($courseid, 0));
+
+        //container for user_enrolments records
+        $valids = array();
+
+        /**
+         * @TODO use a cleaner mechanism from std lib to do this without iterating over the array
+         * for each chunk of the recordset,
+         * insert the record into the valids container
+         * using the id number as the array key;
+         * this amtches the format used by self::get_all_users
+         */
+        foreach($rs_valids as $rsv){
+            $valids[$rsv->id] = $rsv;
+        }
+        //required to close te recordset
+        $rs_valids->close();
+        
+        //get the intersection of self::all_users and this potentially shorter list
+        $evryone_not_suspended = array_intersect_key($valids, $everyone);
+
+        return $evryone_not_suspended;
     }
 }
 
