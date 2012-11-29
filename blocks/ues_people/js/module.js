@@ -14,5 +14,16 @@ M.block_ues_people.init = function(Y) {
             var checked = checkbox.getDOMNode().checked;
             Y.all('.' + name).each(toggle(checked));
         });
+    }); 
+    Y.one('#export').on('click', function(e) {
+        var ferpa       = Y.one('#ferpa');
+        var ferpa_warn  = Y.one('#ferpa-warning');
+        var agree_ferpa = ferpa.get('checked');
+        if(!agree_ferpa){
+            e.preventDefault();
+            //this sets a style attribute on the element; 
+            //should set a css class or id
+            ferpa_warn.setStyle('color', 'red');
+        }
     });
-};
+}

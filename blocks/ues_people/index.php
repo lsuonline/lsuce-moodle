@@ -26,6 +26,9 @@ $sortdir = optional_param('dir', 'ASC', PARAM_TEXT);
 $silast = optional_param('silast', 'all', PARAM_TEXT);
 $sifirst = optional_param('sifirst', 'all', PARAM_TEXT);
 
+$agree_ferpa = optional_param('FERPA',null,PARAM_INT);
+$disagree = optional_param('disagree',null,PARAM_INT);
+
 $export_params = array(
     'roleid' => $roleid,
     'group' => $groupid,
@@ -222,6 +225,11 @@ if ($using_meta_sort) {
 $sql = "$select $from $where $sort";
 
 if ($data = data_submitted()) {
+
+    if(!$agree_ferpa){        
+        redirect(new moodle_url($PAGE->url, array('disagree' => 1)));
+    }
+
     $controls = ues_people::control_elements($meta_names);
 
     if (isset($data->export)) {
@@ -345,6 +353,7 @@ $user_fields = array(
     'idnumber' => new ues_people_element_output('idnumber', get_string('idnumber'))
 );
 
+
 $meta_names = array_merge($user_fields, $meta_names);
 
 $name = new html_table_cell(
@@ -437,7 +446,6 @@ echo html_writer::end_tag('div');
 echo $paging_bar;
 
 echo ues_people::show_links($export_params, $count, $perpage);
-
-echo ues_people::controls($export_params, $meta_names);
+echo ues_people::controls($export_params, $meta_names, $disagree);
 
 echo $OUTPUT->footer();
