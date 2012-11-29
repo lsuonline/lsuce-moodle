@@ -78,6 +78,7 @@ $string['degree'] = 'Degree Candidates';
 $string['test'] = 'PG Test';
 $string['law_upper'] = 'LAW Upper Class';
 $string['law_first'] = 'LAW First Year';
+$string['law_degree'] = 'LAW Degree Candidates';
 
 // LAW return lib
 $string['sizeexplain'] = 'Your grades must conform to the {$a->description}

@@ -104,8 +104,10 @@ switch($period->post_type) {
     case 'law_first':
     case 'law_upper':
         $post_type = 'F'; break;
+    case 'law_degree':
+        $post_type = 'D'; break;
     case 'degree':
-        $post_type = 'D';
+        $post_type = 'D'; break;
     case 'test':
         $post_type = 'T';
 }
