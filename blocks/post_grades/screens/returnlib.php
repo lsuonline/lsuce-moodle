@@ -456,6 +456,7 @@ class post_grades_no_item_return implements post_grades_return_process {
 
         $params = array(
             'courseid' => $this->course->id,
+            'grademin' => 1.3,
             'grademax' => 4.0,
             'gradepass' => 1.5,
             'itemtype' => 'manual',
