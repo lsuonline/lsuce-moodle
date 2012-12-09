@@ -1298,7 +1298,7 @@ class grade_item extends grade_object {
      * @return mixed float or int fixed grade value
      */
     public function bounded_grade($gradevalue) {
-        global $CFG;
+        global $CFG, $course;
 
         if (is_null($gradevalue)) {
             return null;
@@ -1315,14 +1315,16 @@ class grade_item extends grade_object {
         // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
         $maxcoef = isset($CFG->gradeoverhundredprocentmax) ? $CFG->gradeoverhundredprocentmax : 10; // 1000% max by default
 
-        if (!empty($CFG->unlimitedgrades)) {
-            // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
-            $grademax = $grademax * $maxcoef;
-        } else if ($this->is_category_item() or $this->is_course_item()) {
-            $category = $this->load_item_category();
-            if ($category->aggregation >= 100) {
-                // grade >100% hack
+        if (!grade_anonymous::is_supported($course)) {
+            if (!empty($CFG->unlimitedgrades)) {
+                // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
                 $grademax = $grademax * $maxcoef;
+            } else if ($this->is_category_item() or $this->is_course_item()) {
+                $category = $this->load_item_category();
+                if ($category->aggregation >= 100) {
+                    // grade >100% hack
+                    $grademax = $grademax * $maxcoef;
+                }
             }
         }
 
