@@ -465,6 +465,25 @@ class post_grades_no_item_return implements post_grades_return_process {
             'categoryid' => $parent_cat
         );
 
+        //Need for later
+        $groupid = required_param('group', PARAM_INT);
+        $group = $DB->get_record('groups', array('id' => $groupid), '*', MUST_EXIST);
+        $sections = ues_section::from_course($this->course, true);
+        $section = post_grades::find_section($group, $sections);
+        $course = $section->course()->fill_meta();
+        if ($course->course_grade_type == 'LP') {
+            $scale = get_config('block_post_grades', 'scale');
+            $params = array(
+                'courseid' => $this->course->id,
+                'scaleid' => $scale,
+                'gradepass' => 2.0,
+                'gradetype' => 2,
+                'decimals' => 1,
+                'itemtype' => 'manual',
+                'itemname' => get_string('finalgrade_item', 'block_post_grades'),
+                'categoryid' => $parent_cat
+            );
+        }
         return $params;
     }
 
@@ -486,6 +505,7 @@ class post_grades_no_item_return implements post_grades_return_process {
 
         $course_item = grade_item::fetch_course_item($this->course->id);
         $course_item->gradepass = 1.5;
+        $course_item->grademin = 1.3;
         $course_item->grademax = 4.0;
         $course_item->decimals = 1;
         $course_item->display = 1;
