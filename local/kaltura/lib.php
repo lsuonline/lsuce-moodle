@@ -29,12 +29,14 @@ require_once(dirname(__FILE__) . '/locallib.php');
  * @return - nothing
  */
 function kaltura_extends_navigation($navigation) {
+/*
 
     global $USER, $PAGE, $SITE;
 
     $systemcontext = context_system::instance();
     if (has_capability('moodle/course:create', $systemcontext)) {
-    } else {
+    } 
+else {
         // Finds courses where the user has this capabiltiy
         $courses = get_user_capability_course('local/kaltura:view_report', null, true, 'shortname', 'shortname ASC');
 
@@ -70,6 +72,6 @@ function kaltura_extends_navigation($navigation) {
 
             $i++;
         }
-    }
+    } */
 }
 
