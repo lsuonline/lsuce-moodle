@@ -28,12 +28,14 @@ define('MYMEDIA_ITEMS_PER_PAGE', '9');
 function mymedia_extends_navigation($navigation) {
 
     global $USER;
-    if ($USER->id) {
-        $mymedia = get_string('nav_mymedia', 'local_mymedia');
-        $upload = get_string('nav_upload', 'local_mymedia');
+    
+    if($USER->id){
+    $mymedia = get_string('nav_mymedia', 'local_mymedia');
+    $upload = get_string('nav_upload', 'local_mymedia');
 
-        $node_home = $navigation->get('1');
-
+    //get a reference to a convenient nav item, 'Site Pages', for instance
+    $node_home = $navigation->get('myprofile');
+    
         $context = get_context_instance(CONTEXT_USER, $USER->id);
 
         if ($node_home && has_capability('local/mymedia:view', $context, $USER)) {
