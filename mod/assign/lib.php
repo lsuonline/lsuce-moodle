@@ -262,7 +262,8 @@ function assign_print_overview($courses, &$htmlarray) {
     // get all user submissions, indexed by assignment id
     $mysubmissions = $DB->get_records_sql("SELECT a.id AS assignment, a.nosubmissions AS offline, g.timemodified AS timemarked, g.grader AS grader, g.grade AS grade, s.status AS status
                             FROM {assign} a LEFT JOIN {assign_grades} g ON g.assignment = a.id AND g.userid = ? LEFT JOIN {assign_submission} s ON s.assignment = a.id AND s.userid = ?
-                            WHERE a.id $sqlassignmentids", array($USER->id, $USER->id));
+                            AND a.id $sqlassignmentids", array_merge(array($USER->id, $USER->id), $assignmentidparams));
+//                            WHERE a.id $sqlassignmentids", array($USER->id, $USER->id));
 
     foreach ($assignments as $assignment) {
         $str = '<div class="assign overview"><div class="name">'.$strassignment. ': '.
