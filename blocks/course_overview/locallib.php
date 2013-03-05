@@ -30,10 +30,15 @@
  */
 function block_course_overview_get_overviews($courses) {
     if (!has_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM))) {
+        foreach ($courses as $key=>$course) {
+            if ($course->visible == 1) {
+                $visiblecourses[$key] = $course;
+            }
+        }
         $htmlarray = array();
-        if ($modules = get_plugin_list_with_function('mod', 'print_overview')) {
+        if ((isset($visiblecourses)) && ($modules = get_plugin_list_with_function('mod', 'print_overview'))) {
             foreach ($modules as $fname) {
-                $fname($courses,$htmlarray);
+                $fname($visiblecourses,$htmlarray);
             }
         }
         return $htmlarray;
@@ -127,7 +132,7 @@ function block_course_overview_get_sorted_courses() {
 
     $limit = block_course_overview_get_max_user_courses();
 
-    $courses = enrol_get_my_courses('id, shortname, fullname, modinfo, sectioncache');
+    $courses = enrol_get_my_courses('id, shortname, fullname, modinfo, sectioncache', 'visible DESC, sortorder ASC', $limit);
     $site = get_site();
 
     if (array_key_exists($site->id,$courses)) {
