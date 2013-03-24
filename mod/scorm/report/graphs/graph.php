@@ -106,7 +106,7 @@ if(!$nostudents) {
                     $minmark = $trackdata->$minkey;
                 }
                 if (!isset($trackdata->$maxkey) || empty($trackdata->$maxkey)) {
-                    $maxmark = 100;
+                    $maxmark = 500;
                 } else {
                     $maxmark = $trackdata->$maxkey;
                 }
@@ -114,7 +114,7 @@ if(!$nostudents) {
                 if (empty($range)) {
                     continue;
                 }
-                $percent = round((($score*100)/$range), 2);
+                $percent = round((($score*500)/$range), 2);
                 if (empty($usergrades[$attempt->userid]) || !isset($usergrades[$attempt->userid]) || ($percent > $usergrades[$attempt->userid]) || ($usergrades[$attempt->userid] === '*')) {
                     $usergrades[$attempt->userid] = $percent;
                 }

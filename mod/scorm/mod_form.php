@@ -164,7 +164,7 @@ class mod_scorm_mod_form extends moodleform_mod {
         $mform->setAdvanced('grademethod', $cfg_scorm->grademethod_adv);
 
         // Maximum Grade
-        for ($i=0; $i<=100; $i++) {
+        for ($i=0; $i<=500; $i++) {
             $grades[$i] = "$i";
         }
         $mform->addElement('select', 'maxgrade', get_string('maximumgrade'), $grades);
