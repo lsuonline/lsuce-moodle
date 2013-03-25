@@ -1239,6 +1239,7 @@ WHERE
         $DB->delete_records('forumng_discussions', array('id' => $this->get_id()));
 
         //Delete the entire attachment folder if any
+/*
         $folder = $this->get_attachment_folder();
         if (is_dir($folder)) {
             if (!remove_dir($folder)) {
@@ -1246,6 +1247,7 @@ WHERE
                         "Error deleting attachment folder: $folder");
             }
         }
+*/
         //Log delete
         if ($log) {
             $this->log('permdelete discussion');
