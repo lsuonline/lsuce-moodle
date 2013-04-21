@@ -1919,7 +1919,7 @@ class grade_report_grader extends grade_report {
             if ($parent->is_extracredit_used()) {
                 $discard_weight = (
                     ($parent->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN &&
-                    $item->aggregationcoef > 0) or $item->aggregationcoef < 0
+                    $item->aggregationcoef > 0) or $item->aggregationcoef < 0 or $item->gradetype == 0 or $item->gradetype == 3
                 );
 
                 if ($discard_weight) return 0;
@@ -1961,7 +1961,6 @@ class grade_report_grader extends grade_report {
 
         $decimals = $parent->get_grade_item()->get_decimals();
         $computed = $evaluated / $this->weightedtotals[$parent->id];
-
         return ' (' . format_float($computed * 100, $decimals) . '%) ';
     }
 }
