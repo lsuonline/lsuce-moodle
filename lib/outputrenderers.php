@@ -559,7 +559,7 @@ class core_renderer extends renderer_base {
                           " (<a href=\"$CFG->wwwroot/course/view.php?id=$course->id&amp;switchrole=0&amp;sesskey=".sesskey()."\">".get_string('switchrolereturn').'</a>)';
             } else {
                 $loggedinas = $realuserinfo.get_string('loggedinas', 'moodle', $username).' '.
-                          " (<a href=\"$CFG->wwwroot/login/logout.php?sesskey=".sesskey()."\">".get_string('logout').'</a>)';
+                          " (<a href=\"$CFG->wwwroot/login/logout.php?sesskey=".sesskey()."\"rel=\"nofollow\">".get_string('logout').'</a>)';
             }
         } else {
             $loggedinas = get_string('loggedinnot', 'moodle');
