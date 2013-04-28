@@ -187,7 +187,7 @@ class grade_anonymous extends grade_object {
 
         $sql = 'SELECT d.userid AS id, d.data FROM {user_info_data} d
             WHERE d.userid IN (' . $userids.')
-              AND d.fieldid = :fieldid';
+              AND d.fieldid = :fieldid ORDER BY d.data' ;
 
         $params = array('fieldid' => $profileid);
         $anonymous_users = $DB->get_records_sql($sql, $params);
