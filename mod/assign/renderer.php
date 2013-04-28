@@ -619,7 +619,13 @@ class mod_assign_renderer extends plugin_renderer_base {
                 $plagiarsmlinks = '';
             }
             $image = $this->output->pix_icon(file_file_icon($file), $filename, 'moodle', array('class'=>'icon'));
-            $result .= '<li yuiConfig=\''.json_encode($yuiconfig).'\'><div>'.$image.' '.$file->fileurl.' '.$plagiarsmlinks.$file->portfoliobutton.'</div></li>';
+  
+            $author = html_writer::tag('div', sprintf("Author: %s", $file->get_author()), array('id'=>'file-author'));
+            $license = html_writer::tag('div', sprintf("License: %s", $file->get_license()), array('id'=>'file-license'));
+            
+            $open_li = '<li yuiConfig=\''.json_encode($yuiconfig).'\'><div>';
+            $close_li = '</div></li>';
+            $result .= sprintf("%s %s %s %s %s %s %s %s",$open_li,$image,$file->fileurl,$author,$license,$plagiarsmlinks,$file->portfoliobutton, $close_li);
         }
 
         $result .= '</ul>';
