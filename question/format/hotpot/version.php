@@ -33,4 +33,4 @@ $plugin->component = 'qformat_hotpot';
 $plugin->maturity  = MATURITY_STABLE; // = 200
 $plugin->release   = 'v2.0.13';
 $plugin->requires  = 2010112400; // Moodle 2.0
-$plugin->version   = 2010112413;
+$plugin->version   = 2013081105;
