@@ -54,6 +54,7 @@ class mod_attforblock_add_form extends moodleform {
                 $mform->setDefault('sessiontype', attforblock::SESSION_COMMON);
                 break;
         }
+        $mform->setType('sessiontype', PARAM_INT);
         if ($groupmode == SEPARATEGROUPS or $groupmode == VISIBLEGROUPS) {
             if ($groupmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $modcontext))
                 $groups = groups_get_all_groups ($course->id, $USER->id);

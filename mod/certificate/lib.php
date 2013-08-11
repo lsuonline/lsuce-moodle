@@ -831,11 +831,13 @@ function certificate_get_mods() {
     $strsection = get_string("section");
 
     // Collect modules data
-    get_all_mods($COURSE->id, $mods, $modnames, $modnamesplural, $modnamesused);
+//    get_all_mods($COURSE->id, $mods, $modnames, $modnamesplural, $modnamesused);
 
     $modules = array();
-    $sections = get_all_sections($COURSE->id); // Sort everything the same as the course
-    for ($i=0; $i<=$COURSE->numsections; $i++) {
+    $modinfo = get_fast_modinfo($COURSE->id);
+    $sections = $modinfo->get_section_info_all();
+//    $sections = get_all_sections($COURSE->id); // Sort everything the same as the course
+    for ($i=0; $i<=count($modinfo->sections); $i++) {
         // should always be true
         if (isset($sections[$i])) {
             $section = $sections[$i];

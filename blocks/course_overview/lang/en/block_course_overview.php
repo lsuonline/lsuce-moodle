@@ -21,12 +21,13 @@
  * @copyright  2012 Adam Olley <adam.olley@netspot.com.au>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$string['pluginname'] = 'Course overview';
-$string['activityoverview'] = 'You have at least one {$a} that needs attention';
+
+$string['activityoverview'] = 'You have {$a}s that need attention';
 $string['alwaysshowall'] = 'Always Show All';
 $string['collapseall'] = 'Collapse All Course Lists';
 $string['configotherexpanded'] = 'If enabled, Other Courses will be expanded by default unless overriden by user preferences.';
 $string['configpreservestates'] = 'If enabled, the collapsed/expanded states set by the user are stored and used on each load.';
+$string['course_overview:myaddinstance'] = 'Add a new course overview block to My home';
 $string['defaultmaxcourses'] = 'Default maximum courses';
 $string['defaultmaxcoursesdesc'] = 'Maximum courses which should be displayed on course overview block, 0 will show all courses';
 $string['expandall'] = 'Expand All Course Lists';
@@ -36,9 +37,14 @@ $string['hiddencoursecount'] = 'You have {$a} hidden course';
 $string['hiddencoursecountplural'] = 'You have {$a} hidden courses';
 $string['message'] = 'message';
 $string['messages'] = 'messages';
+$string['movecourse'] = 'Move course: {$a}';
 $string['movecoursehere'] = 'Move course here';
+$string['movetofirst'] = 'Move {$a} course to top';
+$string['moveafterhere'] = 'Move {$a->movingcoursename} course after {$a->currentcoursename}';
+$string['movingcourse'] = 'You are moving: {$a->fullname} ({$a->cancellink})';
 $string['numtodisplay'] = 'Number of courses to display: ';
 $string['otherexpanded'] = 'Other Courses Expanded';
+$string['pluginname'] = 'Course overview';
 $string['preservestates'] = 'Preserve Expanded States';
 $string['shortnameprefix'] = 'Includes {$a}';
 $string['shortnamesufixsingular'] = ' (and {$a} other)';
@@ -51,5 +57,3 @@ $string['view_edit_profile'] = '(View and edit your profile.)';
 $string['welcome'] = 'Welcome {$a}';
 $string['youhavemessages'] = 'You have {$a} unread ';
 $string['youhavenomessages'] = 'You have no unread ';
-// Added by Robert Russo to differentiate between visible courses and unavailable courses
-$string['unavailablecourses'] = '&nbsp;&nbsp;&nbsp;(Unavailable to students)';

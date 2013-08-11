@@ -25,22 +25,20 @@ define('MYMEDIA_ITEMS_PER_PAGE', '9');
 /**
  * This function adds my media links to the navigation block
  */
-function mymedia_extends_navigation($navigation) {
+function local_mymedia_extends_navigation($navigation) {
 
     global $USER;
-    
-    if($USER->id){
+
     $mymedia = get_string('nav_mymedia', 'local_mymedia');
     $upload = get_string('nav_upload', 'local_mymedia');
 
-    //get a reference to a convenient nav item, 'Site Pages', for instance
-    $node_home = $navigation->get('myprofile');
-    
-        $context = get_context_instance(CONTEXT_USER, $USER->id);
+    $node_home = $navigation->get('home');
 
-        if ($node_home && has_capability('local/mymedia:view', $context, $USER)) {
-            $node_mymedia = $node_home->add($mymedia, new moodle_url('/local/mymedia/mymedia.php'),
-                                            navigation_node::NODETYPE_LEAF, $mymedia, 'mymedia');
-        }
+    $context = get_context_instance(CONTEXT_USER, $USER->id);
+
+    if ($node_home && has_capability('local/mymedia:view', $context, $USER)) {
+        $node_mymedia = $node_home->add($mymedia, new moodle_url('/local/mymedia/mymedia.php'),
+                                        navigation_node::NODETYPE_LEAF, $mymedia, 'mymedia');
     }
 }
+

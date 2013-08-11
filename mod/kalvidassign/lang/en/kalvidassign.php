@@ -1,7 +1,7 @@
 <?php
 
 $string['modulenameplural'] = 'Kaltura Video Assignments';
-$string['modulename'] = 'Kaltura Assignment';
+$string['modulename'] = 'Kaltura Video Assignment';
 $string['modulename_help'] = 'The Kaltura Video Assignment enables a teacher to create assignments that require students to upload and submit Kaltura videos. Teachers can grade student submissions and provide feedback.';
 $string['name'] = 'Name';
 $string['availabledate'] = 'Available from';
@@ -16,7 +16,7 @@ $string['emailteachers_help'] = 'If enabled, teachers receive email notification
 Only teachers who are able to grade the particular assignment are notified. So, for example, if the course uses separate groups, '.
 'teachers restricted to particular groups won\'t receive notification about students in other groups.';
 $string['invalidid'] = 'Invalid ID';
-$string['pluginadministration'] = 'Kaltura Assignment';
+$string['pluginadministration'] = 'Kaltura Video Assignment';
 $string['addvideo'] = 'Add media submission';
 $string['submitvideo'] = 'Submit media';
 $string['replacevideo'] = 'Replace media';
@@ -64,7 +64,7 @@ $string['savedchanges'] = 'Changed Saved';
 $string['save'] = 'Save Changes';
 $string['cancel'] = 'Close';
 $string['checkconversionstatus'] = 'Check video conversion status';
-$string['pluginname'] = 'Kaltura Assignment';
+$string['pluginname'] = 'Kaltura Video Assignment';
 $string['video_converting'] = 'The video is still converting.  Please check the status of the video at a later time.';
 $string['emailteachermail'] = '{$a->username} has updated their assignment submission
 for \'{$a->assignment}\' at {$a->timeupdated}

@@ -34,7 +34,7 @@ class feedback_edit_add_question_form extends moodleform {
         $mform = $this->_form;
 
         //headline
-        $mform->addElement('header', 'general', get_string('add_items', 'feedback'));
+        $mform->addElement('header', 'general', get_string('content'));
         // visible elements
         $feedback_names_options = feedback_load_feedback_items_options();
 
@@ -48,7 +48,7 @@ class feedback_edit_add_question_form extends moodleform {
         $mform->setType('position', PARAM_INT);
 
         // buttons
-        $mform->addElement('submit', 'add_item', get_string('add_item', 'feedback'));
+        $mform->addElement('submit', 'add_item', get_string('add_item', 'feedback'), array('class' => 'hiddenifjs'));
     }
 }
 
@@ -83,7 +83,7 @@ class feedback_edit_use_template_form extends moodleform {
 
         $elementgroup = array();
         //headline
-        $mform->addElement('header', '', get_string('using_templates', 'feedback'));
+        $mform->addElement('header', 'using_templates', get_string('using_templates', 'feedback'));
         // hidden elements
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
@@ -123,11 +123,11 @@ class feedback_edit_use_template_form extends moodleform {
             $elementgroup[] = $mform->createElement('submit',
                                                      'use_template',
                                                      get_string('use_this_template', 'feedback'));
+
+            $mform->addGroup($elementgroup, 'elementgroup', '', array(' '), false);
         } else {
             $mform->addElement('static', 'info', get_string('no_templates_available_yet', 'feedback'));
         }
-        $mform->addGroup($elementgroup, 'elementgroup', '', array(' '), false);
-
     }
 }
 
@@ -164,7 +164,7 @@ class feedback_edit_create_template_form extends moodleform {
         $mform->setType('savetemplate', PARAM_INT);
 
         //headline
-        $mform->addElement('header', '', get_string('creating_templates', 'feedback'));
+        $mform->addElement('header', 'creating_templates', get_string('creating_templates', 'feedback'));
 
         // visible elements
         $elementgroup = array();

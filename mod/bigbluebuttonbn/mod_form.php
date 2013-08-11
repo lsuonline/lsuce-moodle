@@ -13,6 +13,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(dirname(__FILE__).'/locallib.php');
+
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
 
 class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
@@ -26,14 +28,9 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         $url = trim(trim($CFG->BigBlueButtonBNServerURL),'/').'/';
         $salt = trim($CFG->BigBlueButtonBNSecuritySalt);
 
-        $serverVersion = BigBlueButtonBN::getServerVersion($url); //
+        $serverVersion = bigbluebuttonbn_getServerVersion($url); 
         if ( !isset($serverVersion) ) {
             print_error( 'general_error_unable_connect', 'bigbluebuttonbn', $CFG->wwwroot.'/admin/settings.php?section=modsettingbigbluebuttonbn' );
-        } else {
-            $xml = BigBlueButtonBN::_wrap_simplexml_load_file( BigBlueButtonBN::getMeetingsURL( $url, $salt ) );
-            if ( $xml->returncode == 'FAILED' ){
-                print_error( 'general_error_unable_connect', 'bigbluebuttonbn', $CFG->wwwroot.'/admin/settings.php?section=modsettingbigbluebuttonbn' );
-            }
         }
 
         $mform =& $this->_form;
@@ -43,6 +40,7 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
 
         $mform->addElement('text', 'name', get_string('mod_form_field_name','bigbluebuttonbn'), 'maxlength="64" size="32"' );
         $mform->addRule( 'name', null, 'required', null, 'client' );
+        $mform->setType('name', PARAM_TEXT);
 
         $mform->addElement('textarea', 'welcome', get_string('mod_form_field_welcome','bigbluebuttonbn'), 'wrap="virtual" rows="5" cols="60"');
         $mform->addHelpButton('welcome', 'mod_form_field_welcome', 'bigbluebuttonbn');
@@ -61,15 +59,12 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         //-------------------------------------------------------------------------------
         // Second block starts here
         //-------------------------------------------------------------------------------
-        if ( $current_activity->section > 0 ) {  //This is not a general activity, it is part of a week, so it can have schedule 
-            $mform->addElement('header', 'general', get_string('mod_form_block_schedule', 'bigbluebuttonbn'));
+        $mform->addElement('header', 'general', get_string('mod_form_block_schedule', 'bigbluebuttonbn'));
 
-            $mform->addElement('date_time_selector', 'timeavailable', get_string('mod_form_field_availabledate', 'bigbluebuttonbn'), array('optional'=>true));
-            $mform->setDefault('timeavailable', time());
-            $mform->addElement('date_time_selector', 'timedue', get_string('mod_form_field_duedate', 'bigbluebuttonbn'), array('optional' => true));
-            $mform->setDefault('timedue', time()+3600);
-          
-        }
+        $mform->addElement('date_time_selector', 'timeavailable', get_string('mod_form_field_availabledate', 'bigbluebuttonbn'), array('optional'=>true));
+        $mform->setDefault('timeavailable', 0);
+        $mform->addElement('date_time_selector', 'timedue', get_string('mod_form_field_duedate', 'bigbluebuttonbn'), array('optional' => true));
+        $mform->setDefault('timedue', 0);
         //-------------------------------------------------------------------------------
         // Second block ends here
         //-------------------------------------------------------------------------------
@@ -78,7 +73,8 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         //-------------------------------------------------------------------------------
         // Third block starts here
         //-------------------------------------------------------------------------------
-        if ( $serverVersion == '0.8' ) {
+        /* Until we can support large recordings
+        if ( floatval($serverVersion) >= 0.8 ) {
             $mform->addElement('header', 'general', get_string('mod_form_block_record', 'bigbluebuttonbn'));
 
             $mform->addElement( 'checkbox', 'record', get_string('mod_form_field_record', 'bigbluebuttonbn') );
@@ -88,7 +84,9 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
             $mform->addElement('duration', 'timeduration', get_string('mod_form_field_duration', 'bigbluebuttonbn')); //Set zero for unlimited
             $mform->setDefault('timeduration', 14400);
             $mform->addHelpButton('timeduration', 'mod_form_field_duration', 'bigbluebuttonbn');
+            $mform->setType('description', PARAM_TEXT);
         }
+        */
         //-------------------------------------------------------------------------------
         // Third block ends here
         //-------------------------------------------------------------------------------
@@ -102,37 +100,22 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         // add standard buttons, common to all modules
         $this->add_action_buttons();
         
-        if ( isset($current_activity->add) ){ 
-            // If is adding the activity, turn off the schedule by default & Take off the option [visible groups]
-            if ( $current_activity->section > 0 ) {  //This is not a general activity, it is part of a week, so it can have schedule 
-                $PAGE->requires->js_init_call('M.mod_bigbluebuttonbn.modform_Adding_withSchedule');
-            } else {
-                $PAGE->requires->js_init_call('M.mod_bigbluebuttonbn.modform_Adding_withoutSchedule');
-            }
-        } else { 
-            // Take off the option [visible groups]
-            $PAGE->requires->js_init_call('M.mod_bigbluebuttonbn.modform_Editting');
-        }
-        
     }
 
-    
+
     public function validation($data, $files) {
         $current_activity =& $this->current;
         
         $errors = parent::validation($data, $files);
 
-        if ( $current_activity->section > 0 ) {  //This is not a general activity, it is part of a week, so it can have schedule 
-            // Check open and close times are consistent.
-            if ($data['timeavailable'] != 0 && $data['timedue'] != 0 && $data['timedue'] < $data['timeavailable']) {
-                $errors['timedue'] = get_string('bbbduetimeoverstartingtime', 'bigbluebuttonbn');
-            }
+        if ($data['timeavailable'] != 0 && $data['timedue'] != 0 && $data['timedue'] < $data['timeavailable']) {
+            $errors['timedue'] = get_string('bbbduetimeoverstartingtime', 'bigbluebuttonbn');
         }
         
         return $errors;
     }
-    
-    
+
+
 }
 
 ?>

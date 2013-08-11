@@ -28,23 +28,63 @@ defined('MOODLE_INTERNAL') || die();
 class mod_folder_renderer extends plugin_renderer_base {
 
     /**
-     * Prints file folder tree view
-     * @param object $folder instance
-     * @param object $cm instance
-     * @param object $course
-     * @return void
+     * Returns html to display the content of mod_folder
+     * (Description, folder files and optionally Edit button)
+     *
+     * @param stdClass $folder record from 'folder' table (please note
+     *     it may not contain fields 'revision' and 'timemodified')
+     * @return string
      */
-    public function folder_tree($folder, $cm, $course) {
-        $this->render(new folder_tree($folder, $cm, $course));
+    public function display_folder(stdClass $folder) {
+        $output = '';
+        $folderinstances = get_fast_modinfo($folder->course)->get_instances_of('folder');
+        if (!isset($folderinstances[$folder->id]) ||
+                !($cm = $folderinstances[$folder->id]) ||
+                !$cm->uservisible ||
+                !($context = context_module::instance($cm->id)) ||
+                !has_capability('mod/folder:view', $context)) {
+            // some error in parameters or module is not visible to the user
+            // don't throw any errors in renderer, just return empty string
+            return $output;
+        }
+
+        if (trim($folder->intro)) {
+            if ($folder->display != FOLDER_DISPLAY_INLINE) {
+                $output .= $this->output->box(format_module_intro('folder', $folder, $cm->id),
+                        'generalbox', 'intro');
+            } else if ($cm->showdescription) {
+                // for "display inline" do not filter, filters run at display time.
+                $output .= format_module_intro('folder', $folder, $cm->id, false);
+            }
+        }
+
+        $output .= $this->output->box($this->render(new folder_tree($folder, $cm)),
+                'generalbox foldertree');
+
+        // Do not append the edit button on the course page.
+        if ($folder->display != FOLDER_DISPLAY_INLINE && has_capability('mod/folder:managefiles', $context)) {
+            $output .= $this->output->container(
+                    $this->output->single_button(new moodle_url('/mod/folder/edit.php',
+                    array('id' => $cm->id)), get_string('edit')),
+                    'mdl-align folder-edit-button');
+        }
+        return $output;
     }
 
     public function render_folder_tree(folder_tree $tree) {
-        global $PAGE;
+        static $treecounter = 0;
 
-        echo '<div id="folder_tree" class="filemanager">';
-        echo $this->htmllize_tree($tree, array('files' => array(), 'subdirs' => array($tree->dir)));
-        echo '</div>';
-        $this->page->requires->js_init_call('M.mod_folder.init_tree', array(true));
+        $content = '';
+        $id = 'folder_tree'. ($treecounter++);
+        $content .= '<div id="'.$id.'" class="filemanager">';
+        $content .= $this->htmllize_tree($tree, array('files' => array(), 'subdirs' => array($tree->dir)));
+        $content .= '</div>';
+        $showexpanded = true;
+        if (empty($tree->folder->showexpanded)) {
+            $showexpanded = false;
+        }
+        $this->page->requires->js_init_call('M.mod_folder.init_tree', array($id, $showexpanded));
+        return $content;
     }
 
     /**
@@ -56,28 +96,29 @@ class mod_folder_renderer extends plugin_renderer_base {
         if (empty($dir['subdirs']) and empty($dir['files'])) {
             return '';
         }
-        $browser = get_file_browser();
         $result = '<ul>';
         foreach ($dir['subdirs'] as $subdir) {
             $image = $this->output->pix_icon(file_folder_icon(24), $subdir['dirname'], 'moodle');
-            $filename = html_writer::tag('span', $image, array('class' => 'fp-icon')). html_writer::tag('span', s($subdir['dirname']), array('class' => 'fp-filename'));
+            $filename = html_writer::tag('span', $image, array('class' => 'fp-icon')).
+                    html_writer::tag('span', s($subdir['dirname']), array('class' => 'fp-filename'));
             $filename = html_writer::tag('div', $filename, array('class' => 'fp-filename-icon'));
             $result .= html_writer::tag('li', $filename. $this->htmllize_tree($tree, $subdir));
         }
         foreach ($dir['files'] as $file) {
-            $fileinfo = $browser->get_file_info($tree->context, $file->get_component(),
-                    $file->get_filearea(), $file->get_itemid(), $file->get_filepath(), $file->get_filename());
-            $url = $fileinfo->get_url(true);
             $filename = $file->get_filename();
-            if ($imageinfo = $fileinfo->get_imageinfo()) {
-                $fileurl = new moodle_url($fileinfo->get_url());
-                $image = $fileurl->out(false, array('preview' => 'tinyicon', 'oid' => $fileinfo->get_timemodified()));
+            $url = moodle_url::make_pluginfile_url($file->get_contextid(), $file->get_component(),
+                    $file->get_filearea(), $file->get_itemid(), $file->get_filepath(), $filename, false);
+            if (file_extension_in_typegroup($filename, 'web_image')) {
+                $image = $url->out(false, array('preview' => 'tinyicon', 'oid' => $file->get_timemodified()));
                 $image = html_writer::empty_tag('img', array('src' => $image));
             } else {
                 $image = $this->output->pix_icon(file_file_icon($file, 24), $filename, 'moodle');
             }
-            $filename = html_writer::tag('span', $image, array('class' => 'fp-icon')). html_writer::tag('span', $filename, array('class' => 'fp-filename'));
-            $filename = html_writer::tag('span', html_writer::link($url, $filename), array('class' => 'fp-filename-icon'));
+            $filename = html_writer::tag('span', $image, array('class' => 'fp-icon')).
+                    html_writer::tag('span', $filename, array('class' => 'fp-filename'));
+            $filename = html_writer::tag('span',
+                    html_writer::link($url->out(false, array('forcedownload' => 1)), $filename),
+                    array('class' => 'fp-filename-icon'));
             $result .= html_writer::tag('li', $filename);
         }
         $result .= '</ul>';
@@ -90,15 +131,13 @@ class folder_tree implements renderable {
     public $context;
     public $folder;
     public $cm;
-    public $course;
     public $dir;
 
-    public function __construct($folder, $cm, $course) {
+    public function __construct($folder, $cm) {
         $this->folder = $folder;
         $this->cm     = $cm;
-        $this->course = $course;
 
-        $this->context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $this->context = context_module::instance($cm->id);
         $fs = get_file_storage();
         $this->dir = $fs->get_area_tree($this->context->id, 'mod_folder', 'content', 0);
     }

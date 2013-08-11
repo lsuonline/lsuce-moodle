@@ -23,6 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['activityoverview'] = 'There are new forum posts';
 $string['addanewdiscussion'] = 'Add a new discussion topic';
 $string['addanewquestion'] = 'Add a new question';
 $string['addanewtopic'] = 'Add a new topic';
@@ -41,6 +42,7 @@ $string['attachment'] = 'Attachment';
 $string['attachment_help'] = 'You can optionally attach one or more files to a forum post. If you attach an image, it will be displayed after the message.';
 $string['attachmentnopost'] = 'You cannot export attachments without a post id';
 $string['attachments'] = 'Attachments';
+$string['attachmentswordcount'] = 'Attachments and word count';
 $string['blockafter'] = 'Post threshold for blocking';
 $string['blockafter_help'] = 'This setting specifies the maximum number of posts which a user can post in the given time period. Users with the capability mod/forum:postwithoutthrottling are exempt from post limits.';
 $string['blockperiod'] = 'Time period for blocking';
@@ -134,6 +136,8 @@ $string['displaymode'] = 'Display mode';
 $string['displayperiod'] = 'Display period';
 $string['displaystart'] = 'Display start';
 $string['displaystart_help'] = 'This setting specifies whether a forum post should be displayed from a certain date. Note that administrators can always view forum posts.';
+$string['displaywordcount'] = 'Display word count';
+$string['displaywordcount_help'] = 'This setting specifies whether the word count of each post should be displayed or not.';
 $string['eachuserforum'] = 'Each person posts one discussion';
 $string['edit'] = 'Edit';
 $string['editedby'] = 'Edited by {$a->name} - original submission {$a->date}';
@@ -155,9 +159,10 @@ $string['forum'] = 'Forum';
 $string['forum:addinstance'] = 'Add a new forum';
 $string['forum:addnews'] = 'Add news';
 $string['forum:addquestion'] = 'Add question';
+$string['forum:allowforcesubscribe'] = 'Allow force subscribe';
 $string['forumauthorhidden'] = 'Author (hidden)';
 $string['forumblockingalmosttoomanyposts'] = 'You are approaching the posting threshold. You have posted {$a->numposts} times in the last {$a->blockperiod} and the limit is {$a->blockafter} posts.';
-$string['forumbodyhidden'] = 'This post cannot be viewed by you, probably because you have not posted in the discussion or the maximum editing time hasn\'t passed yet.';
+$string['forumbodyhidden'] = 'This post cannot be viewed by you, probably because you have not posted in the discussion, the maximum editing time hasn\'t passed yet, the discussion has not started or the discussion has expired.';
 $string['forum:createattachment'] = 'Create attachments';
 $string['forum:deleteanypost'] = 'Delete any posts (anytime)';
 $string['forum:deleteownpost'] = 'Delete own posts (within deadline)';
@@ -165,7 +170,7 @@ $string['forum:editanypost'] = 'Edit any post';
 $string['forum:exportdiscussion'] = 'Export whole discussion';
 $string['forum:exportownpost'] = 'Export own post';
 $string['forum:exportpost'] = 'Export post';
-$string['forumintro'] = 'Forum introduction';
+$string['forumintro'] = 'Description';
 $string['forum:managesubscriptions'] = 'Manage subscriptions';
 $string['forum:movediscussions'] = 'Move discussions';
 $string['forum:postwithoutthrottling'] = 'Exempt from post threshold';
@@ -178,13 +183,12 @@ $string['forums'] = 'Forums';
 $string['forum:splitdiscussions'] = 'Split discussions';
 $string['forum:startdiscussion'] = 'Start new discussions';
 $string['forumsubjecthidden'] = 'Subject (hidden)';
-$string['forum:throttlingapplies'] = 'Throttling applies';
 $string['forumtracked'] = 'Unread posts are being tracked';
 $string['forumtrackednot'] = 'Unread posts are not being tracked';
 $string['forumtype'] = 'Forum type';
 $string['forumtype_help'] = 'There are 5 forum types:
 
-* A single simple discussion - A single discussion topic which everyone can reply to
+* A single simple discussion - A single discussion topic which everyone can reply to (cannot be used with separate groups)
 * Each person posts one discussion - Each student can post exactly one new discussion topic, which everyone can then reply to
 * Q and A forum - Students must first post their perspectives before viewing other students\' posts
 * Standard forum displayed in a blog-like format - An open forum where anyone can start a new discussion at any time, and in which discussion topics are displayed on one page with "Discuss this topic" links
@@ -278,7 +282,6 @@ $string['nopostforum'] = 'Sorry, you are not allowed to post to this forum';
 $string['noposts'] = 'No posts';
 $string['nopostsmadebyuser'] = '{$a} has made no posts';
 $string['nopostsmadebyyou'] = 'You haven\'t made any posts';
-$string['nopostscontaining'] = 'No posts containing \'{$a}\' were found';
 $string['noquestions'] = 'There are no questions yet in this forum';
 $string['nosubscribers'] = 'There are no subscribers yet for this forum';
 $string['notexists'] = 'Discussion no longer exists';
@@ -385,15 +388,16 @@ $string['subscribestart'] = 'Send me email copies of posts to this forum';
 $string['subscribestop'] = 'I don\'t want email copies of posts to this forum';
 $string['subscription'] = 'Subscription';
 $string['subscription_help'] = 'If you are subscribed to a forum it means you will receive email copies of forum posts. Usually you can choose whether you wish to be subscribed, though sometimes subscription is forced so that everyone receives email copies of forum posts.';
+$string['subscriptionandtracking'] = 'Subscription and tracking';
 $string['subscriptionmode'] = 'Subscription mode';
-$string['subscriptionmode_help'] = 'When a participant is subscribed to a forum it means they will receive email copies of forum posts.
-
-There are 4 subscription mode options:
+$string['subscriptionmode_help'] = 'When a participant is subscribed to a forum it means they will receive forum post notifications. There are 4 subscription mode options:
 
 * Optional subscription - Participants can choose whether to be subscribed
 * Forced subscription - Everyone is subscribed and cannot unsubscribe
 * Auto subscription - Everyone is subscribed initially but can choose to unsubscribe at any time
-* Subscription disabled - Subscriptions are not allowed';
+* Subscription disabled - Subscriptions are not allowed
+
+Note: Any subscription mode changes will only affect users who enrol in the course in the future, and not existing users.';
 $string['subscriptionoptional'] = 'Optional subscription';
 $string['subscriptionforced'] = 'Forced subscription';
 $string['subscriptionauto'] = 'Auto subscription';

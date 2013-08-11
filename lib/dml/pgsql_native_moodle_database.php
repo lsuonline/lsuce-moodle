@@ -42,6 +42,9 @@ class pgsql_native_moodle_database extends moodle_database {
 
     protected $last_error_reporting; // To handle pgsql driver default verbosity
 
+    /** @var bool savepoint hack for MDL-35506 - workaround for automatic transaction rollback on error */
+    protected $savepointpresent = false;
+
     /**
      * Detects if all needed PHP stuff installed.
      * Note: can be used before connect()
@@ -181,6 +184,11 @@ class pgsql_native_moodle_database extends moodle_database {
             $sql = "SET bytea_output = 'escape'; ";
         }
 
+        // Select schema if specified, otherwise the first one wins.
+        if (!empty($this->dboptions['dbschema'])) {
+            $sql .= "SET search_path = '".$this->dboptions['dbschema']."'; ";
+        }
+
         // Find out the bytea oid.
         $sql .= "SELECT oid FROM pg_type WHERE typname = 'bytea'";
         $this->query_start($sql, null, SQL_QUERY_AUX);
@@ -236,7 +244,23 @@ class pgsql_native_moodle_database extends moodle_database {
     protected function query_end($result) {
         // reset original debug level
         error_reporting($this->last_error_reporting);
-        parent::query_end($result);
+        try {
+            parent::query_end($result);
+            if ($this->savepointpresent and $this->last_type != SQL_QUERY_AUX and $this->last_type != SQL_QUERY_SELECT) {
+                $res = @pg_query($this->pgsql, "RELEASE SAVEPOINT moodle_pg_savepoint; SAVEPOINT moodle_pg_savepoint");
+                if ($res) {
+                    pg_free_result($res);
+                }
+            }
+        } catch (Exception $e) {
+            if ($this->savepointpresent) {
+                $res = @pg_query($this->pgsql, "ROLLBACK TO SAVEPOINT moodle_pg_savepoint; SAVEPOINT moodle_pg_savepoint");
+                if ($res) {
+                    pg_free_result($res);
+                }
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -292,21 +316,12 @@ class pgsql_native_moodle_database extends moodle_database {
         }
         $this->tables = array();
         $prefix = str_replace('_', '|_', $this->prefix);
-        if ($this->is_min_version('9.1')) {
-            // Use ANSI standard information_schema in recent versions where it is fast enough.
-            $sql = "SELECT table_name
-                      FROM information_schema.tables
-                     WHERE table_name LIKE '$prefix%' ESCAPE '|'
-                       AND table_type IN ('BASE TABLE', 'LOCAL TEMPORARY')";
-        } else {
-            // information_schema is horribly slow in <= 9.0, so use pg internals.
-            // Note the pg_is_other_temp_schema. We only want temp objects from our own session.
-            $sql = "SELECT c.relname
-                      FROM pg_class c
-                     WHERE c.relname LIKE '$prefix%' ESCAPE '|'
+        $sql = "SELECT c.relname
+                  FROM pg_catalog.pg_class c
+                  JOIN pg_catalog.pg_namespace as ns ON ns.oid = c.relnamespace
+                 WHERE c.relname LIKE '$prefix%' ESCAPE '|'
                        AND c.relkind = 'r'
-                       AND NOT pg_is_other_temp_schema(c.relnamespace)";
-        }
+                       AND (ns.nspname = current_schema() OR ns.oid = pg_my_temp_schema())";
         $this->query_start($sql, null, SQL_QUERY_AUX);
         $result = pg_query($this->pgsql, $sql);
         $this->query_end($result);
@@ -336,9 +351,11 @@ class pgsql_native_moodle_database extends moodle_database {
         $indexes = array();
         $tablename = $this->prefix.$table;
 
-        $sql = "SELECT *
-                  FROM pg_catalog.pg_indexes
-                 WHERE tablename = '$tablename'";
+        $sql = "SELECT i.*
+                  FROM pg_catalog.pg_indexes i
+                  JOIN pg_catalog.pg_namespace as ns ON ns.nspname = i.schemaname
+                 WHERE i.tablename = '$tablename'
+                       AND (i.schemaname = current_schema() OR ns.oid = pg_my_temp_schema())";
 
         $this->query_start($sql, null, SQL_QUERY_AUX);
         $result = pg_query($this->pgsql, $sql);
@@ -353,7 +370,14 @@ class pgsql_native_moodle_database extends moodle_database {
                     continue;
                 }
                 $columns = explode(',', $matches[4]);
-                $columns = array_map(array($this, 'trim_quotes'), $columns);
+                foreach ($columns as $k=>$column) {
+                    $column = trim($column);
+                    if ($pos = strpos($column, ' ')) {
+                        // index type is separated by space
+                        $column = substr($column, 0, $pos);
+                    }
+                    $columns[$k] = $this->trim_quotes($column);
+                }
                 $indexes[$row['indexname']] = array('unique'=>!empty($matches[1]),
                                               'columns'=>$columns);
             }
@@ -369,20 +393,26 @@ class pgsql_native_moodle_database extends moodle_database {
      * @return array array of database_column_info objects indexed with column names
      */
     public function get_columns($table, $usecache=true) {
-        if ($usecache and isset($this->columns[$table])) {
-            return $this->columns[$table];
+        if ($usecache) {
+            $properties = array('dbfamily' => $this->get_dbfamily(), 'settings' => $this->get_settings_hash());
+            $cache = cache::make('core', 'databasemeta', $properties);
+            if ($data = $cache->get($table)) {
+                return $data;
+            }
         }
 
-        $this->columns[$table] = array();
+        $structure = array();
 
         $tablename = $this->prefix.$table;
 
         $sql = "SELECT a.attnum, a.attname AS field, t.typname AS type, a.attlen, a.atttypmod, a.attnotnull, a.atthasdef, d.adsrc
                   FROM pg_catalog.pg_class c
+                  JOIN pg_catalog.pg_namespace as ns ON ns.oid = c.relnamespace
                   JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid
                   JOIN pg_catalog.pg_type t ON t.oid = a.atttypid
              LEFT JOIN pg_catalog.pg_attrdef d ON (d.adrelid = c.oid AND d.adnum = a.attnum)
                  WHERE relkind = 'r' AND c.relname = '$tablename' AND c.reltype > 0 AND a.attnum > 0
+                       AND (ns.nspname = current_schema() OR ns.oid = pg_my_temp_schema())
               ORDER BY a.attnum";
 
         $this->query_start($sql, null, SQL_QUERY_AUX);
@@ -437,7 +467,18 @@ class pgsql_native_moodle_database extends moodle_database {
                     $info->auto_increment= false;
                     $info->has_default   = ($rawcolumn->atthasdef === 't');
                 }
-                $info->max_length    = $matches[1];
+                // Return number of decimals, not bytes here.
+                if ($matches[1] >= 8) {
+                    $info->max_length = 18;
+                } else if ($matches[1] >= 4) {
+                    $info->max_length = 9;
+                } else if ($matches[1] >= 2) {
+                    $info->max_length = 4;
+                } else if ($matches[1] >= 1) {
+                    $info->max_length = 2;
+                } else {
+                    $info->max_length = 0;
+                }
                 $info->scale         = null;
                 $info->not_null      = ($rawcolumn->attnotnull === 't');
                 if ($info->has_default) {
@@ -532,12 +573,16 @@ class pgsql_native_moodle_database extends moodle_database {
 
             }
 
-            $this->columns[$table][$info->name] = new database_column_info($info);
+            $structure[$info->name] = new database_column_info($info);
         }
 
         pg_free_result($result);
 
-        return $this->columns[$table];
+        if ($usecache) {
+            $result = $cache->set($table, $structure);
+        }
+
+        return $structure;
     }
 
     /**
@@ -1244,6 +1289,10 @@ class pgsql_native_moodle_database extends moodle_database {
         if (!$this->session_lock_supported()) {
             return;
         }
+        if (!$this->used_for_db_sessions) {
+            return;
+        }
+
         parent::release_session_lock($rowid);
 
         $sql = "SELECT pg_advisory_unlock($rowid)";
@@ -1262,7 +1311,8 @@ class pgsql_native_moodle_database extends moodle_database {
      * @return void
      */
     protected function begin_transaction() {
-        $sql = "BEGIN ISOLATION LEVEL READ COMMITTED";
+        $this->savepointpresent = true;
+        $sql = "BEGIN ISOLATION LEVEL READ COMMITTED; SAVEPOINT moodle_pg_savepoint";
         $this->query_start($sql, NULL, SQL_QUERY_AUX);
         $result = pg_query($this->pgsql, $sql);
         $this->query_end($result);
@@ -1276,7 +1326,8 @@ class pgsql_native_moodle_database extends moodle_database {
      * @return void
      */
     protected function commit_transaction() {
-        $sql = "COMMIT";
+        $this->savepointpresent = false;
+        $sql = "RELEASE SAVEPOINT moodle_pg_savepoint; COMMIT";
         $this->query_start($sql, NULL, SQL_QUERY_AUX);
         $result = pg_query($this->pgsql, $sql);
         $this->query_end($result);
@@ -1290,7 +1341,8 @@ class pgsql_native_moodle_database extends moodle_database {
      * @return void
      */
     protected function rollback_transaction() {
-        $sql = "ROLLBACK";
+        $this->savepointpresent = false;
+        $sql = "RELEASE SAVEPOINT moodle_pg_savepoint; ROLLBACK";
         $this->query_start($sql, NULL, SQL_QUERY_AUX);
         $result = pg_query($this->pgsql, $sql);
         $this->query_end($result);

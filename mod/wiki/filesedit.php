@@ -31,7 +31,7 @@ require_once("$CFG->dirroot/repository/lib.php");
 $subwikiid = required_param('subwiki', PARAM_INT);
 // not being used for file management, we use it to generate navbar link
 $pageid    = optional_param('pageid', 0, PARAM_INT);
-$returnurl = optional_param('returnurl', '', PARAM_URL);
+$returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
 
 if (!$subwiki = wiki_get_subwiki($subwikiid)) {
     print_error('incorrectsubwikiid', 'wiki');
@@ -50,7 +50,7 @@ if (!$cm = get_coursemodule_from_instance("wiki", $subwiki->wikiid)) {
 // Checking course instance
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 
 require_login($course, true, $cm);
 require_capability('mod/wiki:managefiles', $context);

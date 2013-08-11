@@ -56,7 +56,7 @@ M.gradereport_grader = {
                     return;
                 }
 
-                var content = '<div class="graderreportoverlay">';
+                var content = '<div class="graderreportoverlay" role="tooltip" aria-describedby="' + properties.id + '">';
                 content += '<div class="fullname">'+properties.username+'</div><div class="itemname">'+properties.itemname+'</div>';
                 if (properties.feedback) {
                     content += '<div class="feedback">'+properties.feedback+'</div>';
@@ -270,6 +270,7 @@ M.gradereport_grader.classes.report.prototype.get_cell_info = function(arg) {
     }
 
     return {
+        id : cell.getAttribute('id'),
         userid : userid,
         username : this.users[userid],
         itemid : itemid,
@@ -351,9 +352,9 @@ M.gradereport_grader.classes.ajax = function(report, cfg) {
                 this.existingfields[userid][itemid] = new M.gradereport_grader.classes.existingfield(this, userid, itemid);
             }
         }
-        // Hide the Update button
+        // Disable the Update button as we're saving using ajax.
         submitbutton = this.report.Y.one('#gradersubmit');
-        submitbutton.setStyle('visibility', 'hidden');
+        submitbutton.set('disabled', true);
     }
 };
 /**
@@ -769,9 +770,11 @@ M.gradereport_grader.classes.existingfield = function(ajax, userid, itemid) {
     this.editfeedback = ajax.showquickfeedback;
     this.grade = this.report.Y.one('#grade_'+userid+'_'+itemid);
 
-    for(var i = 0; i < this.report.grades.length; i++) {
-        if (this.report.grades[i]['user']==this.userid && this.report.grades[i]['item']==this.itemid) {
-            this.oldgrade = this.report.grades[i]['grade'];
+    if (this.report.grades) {
+        for (var i = 0; i < this.report.grades.length; i++) {
+            if (this.report.grades[i]['user']==this.userid && this.report.grades[i]['item']==this.itemid) {
+                this.oldgrade = this.report.grades[i]['grade'];
+            }
         }
     }
 

@@ -50,6 +50,7 @@ class edit_category_form extends moodleform {
         // visible elements
         $mform->addElement('header', 'headercategory', get_string('gradecategory', 'grades'));
         $mform->addElement('text', 'fullname', get_string('categoryname', 'grades'));
+        $mform->setType('fullname', PARAM_TEXT);
         $mform->addRule('fullname', null, 'required', null, 'client');
 
         $mform->addElement('select', 'aggregation', get_string('aggregation', 'grades'), $this->aggregation_options);
@@ -86,12 +87,14 @@ class edit_category_form extends moodleform {
         }
 
         $mform->addElement('text', 'keephigh', get_string('keephigh', 'grades'), 0);
+        $mform->setType('keephigh', PARAM_INT);
         $mform->addHelpButton('keephigh', 'keephigh', 'grades');
         if ((int)$CFG->grade_keephigh_flag & 2) {
             $mform->setAdvanced('keephigh');
         }
 
         $mform->addElement('text', 'droplow', get_string('droplow', 'grades'), 0);
+        $mform->setType('droplow', PARAM_INT);
         $mform->addHelpButton('droplow', 'droplow', 'grades');
         $mform->disabledIf('droplow', 'keephigh', 'noteq', 0);
         if ((int)$CFG->grade_droplow_flag & 2) {
@@ -106,13 +109,16 @@ class edit_category_form extends moodleform {
         $mform->addElement('header', 'general', get_string('categorytotal', 'grades'));
 
         $mform->addElement('text', 'grade_item_itemname', get_string('categorytotalname', 'grades'));
+        $mform->setType('grade_item_itemname', PARAM_TEXT);
         $mform->setAdvanced('grade_item_itemname');
 
         $mform->addElement('text', 'grade_item_iteminfo', get_string('iteminfo', 'grades'));
         $mform->addHelpButton('grade_item_iteminfo', 'iteminfo', 'grades');
+        $mform->setType('grade_item_iteminfo', PARAM_TEXT);
 
         $mform->addElement('text', 'grade_item_idnumber', get_string('idnumbermod'));
         $mform->addHelpButton('grade_item_idnumber', 'idnumbermod');
+        $mform->setType('grade_item_idnumber', PARAM_RAW);
 
         $options = array(GRADE_TYPE_NONE=>get_string('typenone', 'grades'),
                          GRADE_TYPE_VALUE=>get_string('typevalue', 'grades'),
@@ -151,16 +157,19 @@ class edit_category_form extends moodleform {
         $mform->disabledIf('grade_item_scaleid', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
         $mform->addElement('text', 'grade_item_grademax', get_string('grademax', 'grades'));
+        $mform->setType('grade_item_grademax', PARAM_RAW);
         $mform->addHelpButton('grade_item_grademax', 'grademax', 'grades');
         $mform->disabledIf('grade_item_grademax', 'grade_item_gradetype', 'noteq', GRADE_TYPE_VALUE);
         $mform->disabledIf('grade_item_grademax', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
         $mform->addElement('text', 'grade_item_grademin', get_string('grademin', 'grades'));
+        $mform->setType('grade_item_grademin', PARAM_RAW);
         $mform->addHelpButton('grade_item_grademin', 'grademin', 'grades');
         $mform->disabledIf('grade_item_grademin', 'grade_item_gradetype', 'noteq', GRADE_TYPE_VALUE);
         $mform->disabledIf('grade_item_grademin', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
         $mform->addElement('text', 'grade_item_gradepass', get_string('gradepass', 'grades'));
+        $mform->setType('grade_item_gradepass', PARAM_RAW);
         $mform->addHelpButton('grade_item_gradepass', 'gradepass', 'grades');
         $mform->disabledIf('grade_item_gradepass', 'grade_item_gradetype', 'eq', GRADE_TYPE_NONE);
         $mform->disabledIf('grade_item_gradepass', 'grade_item_gradetype', 'eq', GRADE_TYPE_TEXT);
@@ -174,6 +183,7 @@ class edit_category_form extends moodleform {
             $mform->setAdvanced('curve_to');
 
             $mform->addElement('text', 'grade_item_multfactor', $curve_to);
+            $mform->setType('grade_item_multfactor', PARAM_FLOAT);
 
             $mform->disabledIf('curve_to', 'gradetype', 'eq', GRADE_TYPE_NONE);
             $mform->disabledIf('curve_to', 'gradetype', 'eq', GRADE_TYPE_TEXT);
@@ -193,6 +203,7 @@ class edit_category_form extends moodleform {
         $mform->disabledIf('grade_item_multfactor', 'gradetype', 'eq', GRADE_TYPE_TEXT);
 
         $mform->addElement('text', 'grade_item_plusfactor', get_string('plusfactor', 'grades'));
+        $mform->setType('grade_item_plusfactor', PARAM_FLOAT);
         $mform->addHelpButton('grade_item_plusfactor', 'plusfactor', 'grades');
         $mform->setAdvanced('grade_item_plusfactor');
         $mform->disabledIf('grade_item_plusfactor', 'gradetype', 'eq', GRADE_TYPE_NONE);
@@ -252,7 +263,7 @@ class edit_category_form extends moodleform {
         $mform->addElement('header', 'headerparent', get_string('parentcategory', 'grades'));
 
         $options = array();
-        $default = '';
+        $default = -1;
         $categories = grade_category::fetch_all(array('courseid'=>$COURSE->id));
 
         foreach ($categories as $cat) {
@@ -265,6 +276,7 @@ class edit_category_form extends moodleform {
 
         if (count($categories) > 1) {
             $mform->addElement('select', 'parentcategory', get_string('parentcategory', 'grades'), $options);
+            $mform->setDefault('parentcategory', $default);
             $mform->addElement('static', 'currentparentaggregation', get_string('currentparentaggregation', 'grades'));
         }
 

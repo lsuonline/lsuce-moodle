@@ -17,7 +17,7 @@
 /**
  * Editing form for the OU multiple response question type class.
  *
- * @package    qtypeoumultiresponse
+ * @package    qtype_oumultiresponse
  * @copyright  2008 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -56,10 +56,8 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
     protected function get_per_answer_fields($mform, $label, $gradeoptions,
             &$repeatedoptions, &$answersoption) {
         $repeated = array();
-        $repeated[] = $mform->createElement('header', 'choicehdr',
-                get_string('choiceno', 'qtype_multichoice', '{no}'));
         $repeated[] = $mform->createElement('editor', 'answer',
-                get_string('answer', 'question'), array('rows' => 1), $this->editoroptions);
+                $label, array('rows' => 1), $this->editoroptions);
         $repeated[] = $mform->createElement('checkbox', 'correctanswer',
                 get_string('correctanswer', 'qtype_oumultiresponse'));
         $repeated[] = $mform->createElement('editor', 'feedback',
@@ -128,12 +126,12 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
             }
         }
 
-        // Perform sanity checks on number of correct answers
+        // Perform sanity checks on number of correct answers.
         if ($numberofcorrectanswers == 0) {
             $errors['answer[0]'] = get_string('notenoughcorrectanswers', 'qtype_oumultiresponse');
         }
 
-        // Perform sanity checks on number of answers
+        // Perform sanity checks on number of answers.
         if ($answercount == 0) {
             $errors['answer[0]'] = get_string('notenoughanswers', 'qtype_multichoice', 2);
             $errors['answer[1]'] = get_string('notenoughanswers', 'qtype_multichoice', 2);

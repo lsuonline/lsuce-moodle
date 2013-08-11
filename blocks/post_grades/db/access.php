@@ -15,5 +15,23 @@ $capabilities = array(
         'archetypes' => array(
             'manager' => CAP_ALLOW
         )
-    )
+    ),
+    'block/post_grades:addinstance' => array(
+        'captype'       => 'write',
+        'contextlevel'  => CONTEXT_COURSE,
+        'archetypes'    => array(
+            'manager'           => CAP_ALLOW,
+            'editingteacher'    => CAP_ALLOW,
+            'teacher'           => CAP_ALLOW,
+        )
+    ),
+    'block/post_grades:myaddinstance' => array(
+        'captype'       => 'write',
+        'contextlevel'  => CONTEXT_COURSE,
+        'archetypes'    => array(
+            'manager'           => CAP_PROHIBIT,
+            'editingteacher'    => CAP_PROHIBIT,
+            'teacher'           => CAP_PROHIBIT,
+        )
+    ),
 );

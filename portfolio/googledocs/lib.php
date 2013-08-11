@@ -44,8 +44,9 @@ class portfolio_plugin_googledocs extends portfolio_plugin_push_base {
     }
 
     public function expected_time($callertime) {
-        // We trust what the portfolio says.
-        return $callertime;
+        // We're forcing this to be run 'interactively' because the plugin
+        // does not support running in cron.
+        return PORTFOLIO_TIME_LOW;
     }
 
     public function send_package() {
@@ -108,7 +109,9 @@ class portfolio_plugin_googledocs extends portfolio_plugin_push_base {
         $mform->addElement('static', null, '', get_string('oauthinfo', 'portfolio_googledocs', $a));
 
         $mform->addElement('text', 'clientid', get_string('clientid', 'portfolio_googledocs'));
+        $mform->setType('clientid', PARAM_RAW_TRIMMED);
         $mform->addElement('text', 'secret', get_string('secret', 'portfolio_googledocs'));
+        $mform->setType('secret', PARAM_RAW_TRIMMED);
 
         $strrequired = get_string('required');
         $mform->addRule('clientid', $strrequired, 'required', null, 'client');

@@ -8,7 +8,8 @@ class query_form extends moodleform {
 
         $m->addElement('header', 'header', get_string('find_postings', 'block_post_grades'));
         $m->addElement('text', 'shortname', get_string('shortname'));
-
+        $m->setType('shortname', PARAM_TEXT);
+        
         $this->add_action_buttons();
     }
 }
@@ -19,7 +20,8 @@ class reset_form extends moodleform {
 
         $m->addElement('header', 'header', get_string('reset_posting', 'block_post_grades'));
         $m->addElement('hidden', 'shortname', $this->_customdata['shortname']);
-
+        $m->setType('shortname', PARAM_TEXT);
+        
         $entries = $this->_customdata['entries'];
 
         if (empty($entries)) {
@@ -29,6 +31,7 @@ class reset_form extends moodleform {
         }
 
         foreach ($entries as $entry) {
+            $a = new stdClass();
             $a->post_type = get_string($entry->post_type, 'block_post_grades');
             $a->fullname = fullname($entry);
             $a->course_name = $entry->fullname;

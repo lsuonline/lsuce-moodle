@@ -231,15 +231,20 @@
         if(empty($link)){
             $link = $item->get_id();
         } else {
-            //URLs in our RSS cache will be escaped (correctly as theyre store in XML)
-            //html_writer::link() will re-escape them. To prevent double escaping unescape here.
-            //This can by done using htmlspecialchars_decode() but moodle_url also has that effect
-            $link = new moodle_url($link);
+            try {
+                // URLs in our RSS cache will be escaped (correctly as theyre store in XML)
+                // html_writer::link() will re-escape them. To prevent double escaping unescape here.
+                // This can by done using htmlspecialchars_decode() but moodle_url also has that effect.
+                $link = new moodle_url($link);
+            } catch (moodle_exception $e) {
+                // Catching the exception to prevent the whole site to crash in case of malformed RSS feed
+                $link = '';
+            }
         }
 
         $r = html_writer::start_tag('li');
             $r.= html_writer::start_tag('div',array('class'=>'link'));
-                $r.= html_writer::link(clean_param($link,PARAM_URL), s($title), array('onclick'=>'this.target="_blank"'));
+                $r.= html_writer::link($link, s($title), array('onclick'=>'this.target="_blank"'));
             $r.= html_writer::end_tag('div');
 
             if($this->config->display_description && !empty($description)){

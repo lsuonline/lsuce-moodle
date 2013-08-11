@@ -55,7 +55,7 @@ if ($event->eventtype !== 'user' && $event->eventtype !== 'site') {
 $course = $DB->get_record('course', array('id'=>$courseid));
 require_login($course);
 if (!$course) {
-    $PAGE->set_context(get_context_instance(CONTEXT_SYSTEM)); //TODO: wrong
+    $PAGE->set_context(context_system::instance()); //TODO: wrong
 }
 
 // Check the user has the required capabilities to edit an event
@@ -124,7 +124,7 @@ echo $OUTPUT->box_end();
 $event->time = calendar_format_event_time($event, time(), null, false);
 $renderer = $PAGE->get_renderer('core_calendar');
 echo $renderer->start_layout();
-echo $renderer->event($event);
+echo $renderer->event($event, false);
 echo $renderer->complete_layout();
 
 echo $OUTPUT->box_end();

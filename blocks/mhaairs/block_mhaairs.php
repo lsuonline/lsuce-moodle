@@ -1,130 +1,161 @@
 <?php
+/**
+ * Block MHAAIRS Improved
+ *
+ * @package    block
+ * @subpackage mhaairs
+ * @copyright  2013 Moodlerooms inc.
+ * @author     Teresa Hardy <thardy@moodlerooms.com>
+ */
 
+require_once($CFG->libdir.'/blocklib.php');
+require_once($CFG->dirroot.'/blocks/mhaairs/lib.php');
 require_once($CFG->dirroot.'/blocks/mhaairs/block_mhaairs_util.php');
 
 class block_mhaairs extends block_base {
+    const LINK_SERVICES = 'services';
+    const LINK_HELP     = 'help';
 
-	function init() {
-		$this->title = get_string('mhaairs', 'block_mhaairs');
-	}
-  
-	function get_content() {
-	
-		global $CFG, $COURSE, $USER;
+    public function init() {
+        $this->title = get_string('pluginname', __CLASS__, null, true);
+    }
 
-		if (empty($this->instance))
-		{
-			$this->content = '';
-			return $this->content;
-		}
+    public function has_config() {
+        return true;
+    }
 
-		if (!$currentcontext = get_context_instance(CONTEXT_COURSE, $COURSE->id))
-		{
-			$this->content = '';
-            		return $this->content;
-        	}
-	
-		$this->content         =  new stdClass;
-		$link_type = $this->get_link_type();
+    public function get_content() {
+        global $CFG, $COURSE, $USER;
 
-		if(empty($CFG->block_mhaairs_base_address)||empty($CFG->block_mhaairs_shared_secret) || empty($CFG->block_mhaairs_customer_number))
-		{
-			$ic = "; course is not configured ";
-			if( !empty( $link_type ) ) { 
-				$ic = "; link type:".$link_type;
-			} else {
-				$ic = "; no link type defiened;";
-			}
-			$this->content->text   = 'block is not configured'.$ic;
-		}
-		else
-		{
-			$mhcampus_text = "McGraw-Hill Campus";
-			$type = $link_type;
-			$customer = $CFG->block_mhaairs_customer_number;
-			$shared_secret = $CFG->block_mhaairs_shared_secret;
-			$base = $CFG->block_mhaairs_base_address;
-			$token = mhaairs_create_token2($customer, $USER->username, $COURSE->idnumber, $type);
-			$querystring = '?token='.mhaairs_encode_token2($token, $shared_secret);
-			$this->content->text = '<div style="text-align:center;">'.
-									'<a href="'.$base.$querystring.'" target="_blank">'.
-									$this->get_text().
-									'</a>'.
-									'</div>';
-		}
-		$this->content->footer = '';//'mhaairs Footer';
-	 
-		return $this->content;
-	}
-	
-	function instance_allow_multiple() {
-		return true;
-	}
-	
-	function has_config() {
-		return true;
-	}
-	function hide_header() {
-		return true;
-	}
-	
-	function get_text() {
-		global $CFG;
-		$mhcampus_text = "McGraw-Hill Campus";
-		$tegrity_text = "Tegrity Classes";
-		$text = "no link";
-		$type = $this->get_link_type();
-		if(!empty($type)) {
-			if($type == "tegrity") {
-				$text = $tegrity_text; 
-			} else {
-				$text = $mhcampus_text; 
-			}
-		}
-		if(empty($this->config) || empty($this->config->block_mhaairs_link_type)){
-			$text = $text."";
-		}
-		return $text;
-	}
-	
-	function get_logo() {
-		global $CFG;
-		$path = "";
-		$type = $this->get_link_type();
-		if(!empty($type)) {
-			$logo = ""; 
-			if($type == "tegrity") {
-				$logo = "tegrity_logo.png"; 
-			} else {
-				$logo = "mhcampus_logo.png"; 
-			}
-			$path = "".$CFG->wwwroot."/blocks/mhaairs/".$logo;
-		}
-		return $path;
-	}
+        if ($this->content !== null) {
+            return $this->content;
+        }
 
-	function get_link_type() {
-		// return 'tegrity';
-		global $CFG;
-		$blocklevel_type = '';
-		if(!empty($this->config)){
-			$blocklevel_type = $this->config->block_mhaairs_link_type;
-		}
-		$default_type = $CFG->block_mhaairs_default_link_type ;
-		$type = "";
-		if(!empty($blocklevel_type)){
-			if($blocklevel_type == "tegrity") {
-			       $type = "tegrity"; 
-			} else {
-			       $type = "mhcampus"; 
-			}
-		} else { $type = $default_type; }
-		return $type;
-	}
-	
-	function specialization() {
-	  // Just to make sure that this method exists.
-	}
-	
-} 
-?>
+        $this->content = new stdClass();
+        $this->content->text = '';
+        $this->content->footer = '';
+
+        if (!isloggedin()) {
+            return $this->content;
+        }
+
+        $context = context_course::instance($COURSE->id);
+        $msg_html = '';
+        $can_manipulate_block = has_capability('block/mhaairs:addinstance', $context);
+        if ($can_manipulate_block) {
+            $msg_html = html_writer::tag('div',
+                                         get_string('blocknotconfig', __CLASS__),
+                                         array('class' => 'block_mhaairs_warning'));
+            $msg_html .= html_writer::empty_tag('br');
+        }
+
+        $this->content->text = $msg_html;
+
+        if (empty($CFG->block_mhaairs_customer_number) ||
+            empty($CFG->block_mhaairs_shared_secret)   ||
+            empty($CFG->block_mhaairs_base_address)
+           ) {
+            return $this->content;
+        }
+
+        $servicelinks = $this->get_service_links();
+        if ($servicelinks === false) {
+            return $this->content;
+        }
+
+        $block_links = '';
+        $imagealt = get_string('imagealt');
+        $targetw = array('target' => '_blank');
+        $courseid = empty($COURSE->idnumber) ? $COURSE->id : $COURSE->idnumber;
+        foreach ($servicelinks as $aserv) {
+            $token = mh_create_token2($CFG->block_mhaairs_customer_number,
+                                      $USER->username,
+                                      $courseid,
+                                      $aserv['ServiceID']);
+            $encoded_token = mh_encode_token2($token, $CFG->block_mhaairs_shared_secret);
+            $block_links  .= html_writer::tag('img', '',
+                                              array('src' => $aserv['ServiceIconUrl'],
+                                                    'height' => '16',
+                                                    'width' => '16',
+                                                    'hspace' => '4',
+                                                    'alt' => $imagealt));
+            $lurl = new moodle_url($aserv['ServiceUrl'], array('token' => $encoded_token));
+            $block_links .= html_writer::link($lurl->out(false), $aserv['ServiceName'], $targetw);
+            $block_links .= html_writer::empty_tag('br');
+        }
+
+        $this->content->text = $block_links;
+
+        // Can we see the help links at all?
+        $adminhelp = has_capability('block/mhaairs:viewadmindoc', $context);
+        $teacherhelp = has_capability('block/mhaairs:viewteacherdoc', $context);
+        if (empty($CFG->block_mhaairs_display_helplinks) || !($adminhelp || $teacherhelp)) {
+            return $this->content;
+        }
+
+        // Get Help links
+        $helplinks = block_mhaairs_getlinks(self::LINK_HELP);
+        if ($helplinks === false) {
+            $this->content->footer = $msg_html;
+            return $this->content;
+        }
+
+        // Show help links
+        if ($adminhelp) {
+            $adminhelplink = html_writer::link($helplinks['AdminHelpUrl'],
+                                                get_string('adminhelplabel', __CLASS__),
+                                                $targetw);
+            $this->content->footer .= html_writer::empty_tag('br');
+            $this->content->footer .= $adminhelplink;
+        }
+
+        if ($teacherhelp) {
+            $instrhelplink = html_writer::link($helplinks['InstructorHelpUrl'],
+                                               get_string('instrhelplabel', __CLASS__),
+                                               $targetw);
+            $this->content->footer .= html_writer::empty_tag('br');
+            $this->content->footer .= $instrhelplink;
+        }
+
+        return $this->content;
+    }
+
+    public function get_service_links() {
+        global $CFG;
+
+        $result = false;
+        if (empty($CFG->block_mhaairs_display_services)) {
+            return $result;
+        }
+
+        // Get the links.
+        $services = block_mhaairs_getlinks(self::LINK_SERVICES);
+        if ($services === false) {
+            return $result;
+        }
+
+        // Show the links
+        $permittedlist = explode(',', $CFG->block_mhaairs_display_services);
+        asort($permittedlist);
+        $finallist = $permittedlist;
+        if (!empty($this->config)) {
+            $local_elements = array_keys(get_object_vars($this->config), true);
+            if (empty($local_elements)) {
+                return $result;
+            }
+            $finallist = array_intersect($permittedlist, $local_elements);
+        }
+        natcasesort($finallist);
+
+        $result = array();
+        foreach ($finallist as $serviceid) {
+            foreach ($services['Tools'] as $vset) {
+                if ($vset['ServiceID'] == $serviceid) {
+                    $result[] = $vset;
+                }
+            }
+        }
+
+        return $result;
+    }
+}

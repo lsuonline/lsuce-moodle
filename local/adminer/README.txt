@@ -21,3 +21,22 @@ After that you have to go to http://your-moodle/admin (Site administration -> No
 
 Using:
 To use Moodle Adminer go to "Site administration" -> "Server" -> "Moodle Adminer".
+
+changes in 2012060301
+- it is based on adminer-3.4.0-dev
+- now it works correctly again in google chrome
+- the query textarea can syntax highlighting
+
+changes in 2012060301
+- added missing lib/adminer.css
+
+changes in 2012091801
+- added support for MSSQL 2008 R2
+
+changes in 2013031601
+- it is based on adminer-3.6.4-dev
+- it uses the context_system class since moodle 2.2
+
+changes in 2013061301
+- it is based on adminer-3.7.1-dev
+    look here: https://github.com/vrana/adminer/blob/master/changes.txt

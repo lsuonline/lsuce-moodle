@@ -38,6 +38,7 @@ class kalvidassign_singlesubmission_form extends moodleform {
         $userid = $this->_customdata->userid;
 
         $mform->addElement('hidden', 'cmid', $cm->id);
+        $mform->setType('cmid',PARAM_INT);
         $mform->addelement('hidden', 'userid', $userid);
         $mform->addElement('hidden', 'tifirst', $this->_customdata->tifirst);
         $mform->addElement('hidden', 'tilast', $this->_customdata->tilast);

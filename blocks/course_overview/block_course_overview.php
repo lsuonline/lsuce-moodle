@@ -65,11 +65,8 @@ class block_course_overview extends block_base {
 
         profile_load_custom_fields($USER);
         list($sortedcourses, $sitecourses, $totalcourses) = block_course_overview_get_sorted_courses();
-        if ($this->page->user_is_editing()) {
-            $overviews = '';
-        } else {
-            $overviews = block_course_overview_get_overviews($sitecourses);
-        }
+        $overviews = block_course_overview_get_overviews($sitecourses);
+
         $renderer = $this->page->get_renderer('block_course_overview');
         if (!empty($config->showwelcomearea)) {
             require_once($CFG->dirroot.'/message/lib.php');
@@ -88,9 +85,6 @@ class block_course_overview extends block_base {
             // For each course, build category cache.
             $this->content->text .= $renderer->course_overview($sortedcourses, $overviews);
             $this->content->text .= $renderer->hidden_courses($totalcourses - count($sortedcourses));
-            if ($this->page->user_is_editing() && ajaxenabled()) {
-                $this->page->requires->js_init_call('M.block_course_overview.add_handles');
-            }
         }
 
         return $this->content;
@@ -111,7 +105,7 @@ class block_course_overview extends block_base {
      * @return array
      */
     public function applicable_formats() {
-        return array('site' => true, 'my-index' => true, 'course' => false);
+        return array('my-index' => true);
     }
 
     /**

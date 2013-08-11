@@ -60,6 +60,8 @@ class navigation_node_testcase extends basic_testcase {
 
         $this->node = new navigation_node('Test Node');
         $this->node->type = navigation_node::TYPE_SYSTEM;
+        // We add the first child without key. This way we make sure all keys search by comparision is performed using ===
+        $this->node->add('first child without key', null, navigation_node::TYPE_CUSTOM);
         $demo1 = $this->node->add('demo1', $this->inactiveurl, navigation_node::TYPE_COURSE, null, 'demo1', new pix_icon('i/course', ''));
         $demo2 = $this->node->add('demo2', $this->inactiveurl, navigation_node::TYPE_COURSE, null, 'demo2', new pix_icon('i/course', ''));
         $demo3 = $this->node->add('demo3', $this->inactiveurl, navigation_node::TYPE_CATEGORY, null, 'demo3',new pix_icon('i/course', ''));
@@ -68,7 +70,7 @@ class navigation_node_testcase extends basic_testcase {
         $demo5->add('activity1', null, navigation_node::TYPE_ACTIVITY, null, 'activity1')->make_active();
         $hiddendemo1 = $this->node->add('hiddendemo1', $this->inactiveurl, navigation_node::TYPE_CATEGORY, null, 'hiddendemo1', new pix_icon('i/course', ''));
         $hiddendemo1->hidden = true;
-        $hiddendemo1->add('hiddendemo2', $this->inactiveurl, navigation_node::TYPE_COURSE, null, 'hiddendemo2', new pix_icon('i/course', ''))->helpbutton = 'Here is a help button';;
+        $hiddendemo1->add('hiddendemo2', $this->inactiveurl, navigation_node::TYPE_COURSE, null, 'hiddendemo2', new pix_icon('i/course', ''))->helpbutton = 'Here is a help button';
         $hiddendemo1->add('hiddendemo3', $this->inactiveurl, navigation_node::TYPE_COURSE,null, 'hiddendemo3', new pix_icon('i/course', ''))->display = false;
     }
 
@@ -76,7 +78,6 @@ class navigation_node_testcase extends basic_testcase {
         global $CFG;
         $node = new navigation_node($this->fakeproperties);
         $this->assertEquals($node->text, $this->fakeproperties['text']);
-        $this->assertEquals($node->title, $this->fakeproperties['text']);
         $this->assertTrue(strpos($this->fakeproperties['shorttext'], substr($node->shorttext,0, -3))===0);
         $this->assertEquals($node->key, $this->fakeproperties['key']);
         $this->assertEquals($node->type, $this->fakeproperties['type']);
@@ -252,8 +253,24 @@ class navigation_node_testcase extends basic_testcase {
         $this->assertInstanceOf('navigation_node', $this->node->get('remove2'));
         $this->assertInstanceOf('navigation_node', $remove2->get('remove3'));
 
+        // Remove element and make sure this is no longer a child.
         $this->assertTrue($remove1->remove());
+        $this->assertFalse($this->node->get('remove1'));
+        $this->assertFalse(in_array('remove1', $this->node->get_children_key_list(), true));
+
+        // Make sure that we can insert element after removal
+        $insertelement = navigation_node::create('extra element 4', null, navigation_node::TYPE_CUSTOM, null, 'element4');
+        $this->node->add_node($insertelement, 'remove2');
+        $this->assertNotEmpty($this->node->get('element4'));
+
+        // Remove more elements
         $this->assertTrue($this->node->get('remove2')->remove());
+        $this->assertFalse($this->node->get('remove2'));
+
+        // Make sure that we can add element after removal
+        $this->node->add('extra element 5', null, navigation_node::TYPE_CUSTOM, null, 'element5');
+        $this->assertNotEmpty($this->node->get('element5'));
+
         $this->assertTrue($remove2->get('remove3')->remove());
 
         $this->assertFalse($this->node->get('remove1'));
@@ -354,11 +371,6 @@ class global_navigation_testcase extends basic_testcase {
         $res3 = $section2->add('resource 3', null, navigation_node::TYPE_RESOURCE, null, 'res3');
     }
 
-    public function test_format_display_course_content() {
-        $this->assertTrue($this->node->exposed_format_display_course_content('topic'));
-        $this->assertFalse($this->node->exposed_format_display_course_content('scorm'));
-        $this->assertTrue($this->node->exposed_format_display_course_content('dummy'));
-    }
     public function test_module_extends_navigation() {
         $this->assertTrue($this->node->exposed_module_extends_navigation('data'));
         $this->assertFalse($this->node->exposed_module_extends_navigation('test1'));

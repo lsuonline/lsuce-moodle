@@ -31,6 +31,7 @@ class block_ues_logs extends block_list {
 
         // No sections or ones with enrollment info
         if (empty($sections) or !ues_log::count($by_params($sections))) {
+print_r($sections);
             return $this->content;
         }
 

@@ -257,7 +257,7 @@ class completionlib_testcase extends basic_testcase {
             ->will($this->returnValue(true));
         $c->expects($this->at(1))
             ->method('get_data')
-            ->with($cm, 1337)
+            ->with($cm, false, 1337)
             ->will($this->returnValue((object)array('viewed'=>COMPLETION_NOT_VIEWED)));
         $c->expects($this->at(2))
             ->method('internal_set_data')
@@ -512,31 +512,6 @@ WHERE
             ->method('update_record')
             ->with('course_modules_completion', $d3);
         $c->internal_set_data($cm, $data);
-    }
-
-    function test_get_activities() {
-        global $DB;
-
-        $c = new completion_info((object)array('id'=>42));
-
-        // Try with no activities
-        $DB->expects($this->at(0))
-            ->method('get_records_select')
-            ->with('course_modules', 'course=42 AND completion<>'.COMPLETION_TRACKING_NONE)
-            ->will($this->returnValue(array()));
-        $result = $c->get_activities();
-        $this->assertEquals(array(), $result);
-
-        // Try with an activity (need to fake up modinfo for it as well)
-        $DB->expects($this->at(0))
-            ->method('get_records_select')
-            ->with('course_modules', 'course=42 AND completion<>'.COMPLETION_TRACKING_NONE)
-            ->will($this->returnValue(array(13=>(object)array('id'=>13))));
-        $modinfo = new stdClass;
-        $modinfo->sections = array(array(1, 2, 3), array(12, 13, 14));
-        $modinfo->cms[13] = (object)array('modname'=>'frog', 'name'=>'kermit');
-        $result = $c->get_activities($modinfo);
-        $this->assertEquals(array(13=>(object)array('id'=>13, 'modname'=>'frog', 'name'=>'kermit')), $result);
     }
 
     // get_tracked_users() cannot easily be tested because it uses

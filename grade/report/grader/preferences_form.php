@@ -40,8 +40,7 @@ class grader_report_preferences_form extends moodleform {
         $mform    =& $this->_form;
         $course   = $this->_customdata['course'];
 
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
-        $systemcontext = get_context_instance(CONTEXT_SYSTEM);
+        $context = context_course::instance($course->id);
 
         $canviewhidden = has_capability('moodle/grade:viewhidden', $context);
 
@@ -101,6 +100,9 @@ class grader_report_preferences_form extends moodleform {
         // View capability is the lowest permission. Users with grade:manage or grade:edit must also have grader:view
         if (has_capability('gradereport/grader:view', $context)) {
             $preferences['prefgeneral']['studentsperpage'] = 'text';
+            if (has_capability('moodle/course:viewsuspendedusers', $context)) {
+                $preferences['prefgeneral']['showonlyactiveenrol'] = $checkbox_default;
+            }
             $preferences['prefgeneral']['repeatheaders'] = 'text';
             $preferences['prefgeneral']['aggregationposition'] = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
                                                                        GRADE_REPORT_AGGREGATION_POSITION_FIRST => get_string('positionfirst', 'grades'),
@@ -123,6 +125,7 @@ class grader_report_preferences_form extends moodleform {
 
         foreach ($preferences as $group => $prefs) {
             $mform->addElement('header', $group, get_string($group, 'grades'));
+            $mform->setExpanded($group);
 
             foreach ($prefs as $pref => $type) {
                 // Detect and process dynamically numbered preferences

@@ -3,13 +3,13 @@ M.local_kaltura = {};
 M.local_kaltura.loading_panel = {};
 
 M.local_kaltura.show_loading = function () {
-    loading_panel = new YAHOO.widget.Panel("wait", {width:"240px",  
-                                                    fixedcenter:true,  
-                                                    close:false,  
-                                                    draggable:false,  
-                                                    zindex:4, 
-                                                    modal:true, 
-                                                    visible:false 
+    loading_panel = new Y.YUI2.widget.Panel("wait", {width:"240px",
+                                                    fixedcenter:true,
+                                                    close:false,
+                                                    draggable:false,
+                                                    zindex:4,
+                                                    modal:true,
+                                                    visible:false
                                                    });
 
     loading_panel.setHeader("Loading, please wait..."); 
@@ -57,6 +57,82 @@ M.local_kaltura.get_thumbnail_url = function(entry_id) {
 
     });
     
+
+};
+
+/*
+ * Perform course searching with auto-complete
+ */
+M.local_kaltura.search_course = function() {
+
+    YUI({filter: 'raw'}).use("autocomplete", function(Y) {
+        var search_txt = Y.one('#kaltura_search_txt');
+        var kaltura_search = document.getElementById("kaltura_search_txt");
+        var search_btn = Y.one('#kaltura_search_btn');
+        var clear_btn = Y.one('#kaltura_clear_btn');
+
+        search_txt.plug(Y.Plugin.AutoComplete, {
+            resultTextLocator: 'fullname',
+            enableCache: false,
+            minQueryLength: 2,
+            resultListLocator: 'data.courses',
+            resultFormatter: function (query, results) {
+                return Y.Array.map(results, function(result) {
+                    var course = result.raw;
+                    if (course.shortname) {
+                        return course.fullname + " (" + course.shortname + ")";
+                    }
+                    return course.fullname;
+                });
+            },
+            source: 'courses.php?query={query}&action=autocomplete',
+            on : {
+                select : function(e) {
+                    Y.io('courses.php', {
+                        method: 'POST',
+                        data: {course_id : e.result.raw.id, action: 'select_course'},
+                        on: {
+                            success: function(id, result) {
+                                var data = Y.JSON.parse(result.responseText);
+                                if (data.failure && data.failure == true) {
+                                    alert(data.message);
+                                } else {
+                                    document.getElementById('resourceobject').src = decodeURIComponent(data.url);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        kaltura_search.onkeypress = function(e) {
+            // Enter is pressed
+            if (e.keyCode === 13) {
+                var query = search_txt.get('value');
+                // Don't accept an empty search string
+                if (!(/^\s*$/.test(query))) {
+                    document.getElementById('resourceobject').src = 'courses.php?action=search&query='+query;
+                    // Lose focus of the auto-suggest menu
+                    kaltura_search.blur();
+                }
+            }
+        }
+
+        search_btn.on('click', function(e) {
+            var query = search_txt.get('value');
+            // Don't accept an empty search string
+            if (!(/^\s*$/.test(query))) {
+                document.getElementById('resourceobject').src = 'courses.php?action=search&query='+query;
+                kaltura_search.blur();
+            }
+        });
+
+        clear_btn.on('click', function(e) {
+            search_txt.set("value", "");
+        });
+
+    });
 
 };
 
@@ -457,7 +533,7 @@ M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
     }
 
     // Create panel to hold KCW
-    var widget_panel = new YAHOO.widget.Panel("video_panel", { width: "800px",
+    var widget_panel = new Y.YUI2.widget.Panel("video_panel", { width: "800px",
                                                                height: "470px",
                                                                visible: false,
                                                                constraintoviewport: false,
@@ -536,15 +612,15 @@ M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
     if (null !== Y.one("#id_video_preview")) {
 
         // Create loading panel
-        var loading_panel =  new YAHOO.widget.Panel("wait", { width:"240px",  
-                                                              fixedcenter:true,  
-                                                              close:false,  
-                                                              draggable:false,  
-                                                              zindex:4, 
-                                                              modal:true, 
-                                                              visible:false 
-                                                             }  
-                                                   ); 
+        var loading_panel =  new Y.YUI2.widget.Panel("wait", { width:"240px",
+                                                              fixedcenter:true,
+                                                              close:false,
+                                                              draggable:false,
+                                                              zindex:4,
+                                                              modal:true,
+                                                              visible:false
+                                                             }
+                                                   );
 
         loading_panel.setHeader("Loading, please wait..."); 
         loading_panel.setBody('<img src="http://l.yimg.com/a/i/us/per/gr/gp/rel_interstitial_loading.gif" />');
@@ -552,7 +628,7 @@ M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
 
         
         // Create preview panel
-        var preview_panel  = new YAHOO.widget.Panel("id_video_preview",
+        var preview_panel  = new Y.YUI2.widget.Panel("id_video_preview",
                                         { width: "450px",
                                           height: "430px",
                                           fixedcenter: false,
@@ -671,15 +747,15 @@ M.local_kaltura.video_asignment_submission_view = function (Y, conversion_script
     }
     
     // Create loading panel
-    var loading_panel =  new YAHOO.widget.Panel("wait", { width:"240px",  
-                                                          fixedcenter:true,  
-                                                          close:false,  
-                                                          draggable:false,  
-                                                          zindex:4, 
-                                                          modal:true, 
-                                                          visible:false 
-                                                         }  
-                                               ); 
+    var loading_panel =  new Y.YUI2.widget.Panel("wait", { width:"240px",
+                                                          fixedcenter:true,
+                                                          close:false,
+                                                          draggable:false,
+                                                          zindex:4,
+                                                          modal:true,
+                                                          visible:false
+                                                         }
+                                               );
 
     loading_panel.setHeader("Loading, please wait..."); 
     loading_panel.setBody('<img src="http://l.yimg.com/a/i/us/per/gr/gp/rel_interstitial_loading.gif" />');
@@ -687,7 +763,7 @@ M.local_kaltura.video_asignment_submission_view = function (Y, conversion_script
 
 
     // Create preview panel
-    var preview_panel  = new YAHOO.widget.Panel("id_video_preview",
+    var preview_panel  = new Y.YUI2.widget.Panel("id_video_preview",
                                     { width: "410px",
                                       height: "450px",
                                       fixedcenter: false,
@@ -847,7 +923,7 @@ M.local_kaltura.video_resource = function (Y, conversion_script,
     progress_bar.style.cssFloat = 'left';
 
     // Create panel to hold KCW
-    var widget_panel = new YAHOO.widget.Panel("video_panel", { width: "800px",
+    var widget_panel = new Y.YUI2.widget.Panel("video_panel", { width: "800px",
                                                                height: "470px",
                                                                visible: false,
                                                                constraintoviewport: false,
@@ -1095,7 +1171,7 @@ M.local_kaltura.video_resource = function (Y, conversion_script,
          [Y.Node.getDOMNode(video_property_size), Y.Node.getDOMNode(video_property_dimen)]); 
     
     // Create properties panel instance
-    var prop_panel  = new YAHOO.widget.Dialog("video_properties_panel",
+    var prop_panel  = new Y.YUI2.widget.Dialog("video_properties_panel",
                                                 { width: "400px",
                                                   fixedcenter: true,
                                                   visible: false,
@@ -1132,15 +1208,15 @@ M.local_kaltura.video_resource = function (Y, conversion_script,
     prop_panel.hideEvent.subscribe(handle_cancel);
 
     // Create loading panel
-    var loading_panel =  new YAHOO.widget.Panel("wait", { width:"240px",  
-                                                          fixedcenter:true,  
-                                                          close:false,  
-                                                          draggable:false,  
-                                                          zindex:4, 
-                                                          modal:true, 
-                                                          visible:false 
-                                                         }  
-                                               ); 
+    var loading_panel =  new Y.YUI2.widget.Panel("wait", { width:"240px",
+                                                          fixedcenter:true,
+                                                          close:false,
+                                                          draggable:false,
+                                                          zindex:4,
+                                                          modal:true,
+                                                          visible:false
+                                                         }
+                                               );
 
     loading_panel.setHeader("Loading, please wait..."); 
     loading_panel.setBody('<img src="http://l.yimg.com/a/i/us/per/gr/gp/rel_interstitial_loading.gif" />');
@@ -1148,7 +1224,7 @@ M.local_kaltura.video_resource = function (Y, conversion_script,
 
     // Create preview panel
     
-    var preview_panel  = new YAHOO.widget.Panel("video_preview_panel",
+    var preview_panel  = new Y.YUI2.widget.Panel("video_preview_panel",
                                     { width:  preview_panel_width,
                                       height: preview_panel_height,
                                       fixedcenter: false,
@@ -1322,7 +1398,7 @@ M.local_kaltura.video_presentation = function (Y, conversion_script,
     progress_bar.style.cssFloat = 'left';
     
     // Create panel to hold KCW
-    var widget_panel = new YAHOO.widget.Panel("video_panel", { width: "800px",
+    var widget_panel = new Y.YUI2.widget.Panel("video_panel", { width: "800px",
                                                                height: "470px",
                                                                visible: false,
                                                                constraintoviewport: false,
@@ -1395,15 +1471,15 @@ M.local_kaltura.video_presentation = function (Y, conversion_script,
     kcw_cancel.on("click", kcw_cancel_callback, null, widget_panel);
     
     // Create loading panel
-    var loading_panel =  new YAHOO.widget.Panel("wait", { width:"240px",  
-                                                          fixedcenter:true,  
-                                                          close:false,  
-                                                          draggable:false,  
-                                                          zindex:4, 
-                                                          modal:true, 
-                                                          visible:false 
-                                                         }  
-                                               ); 
+    var loading_panel =  new Y.YUI2.widget.Panel("wait", { width:"240px",
+                                                          fixedcenter:true,
+                                                          close:false,
+                                                          draggable:false,
+                                                          zindex:4,
+                                                          modal:true,
+                                                          visible:false
+                                                         }
+                                               );
 
     loading_panel.setHeader("Loading, please wait..."); 
     loading_panel.setBody('<img src="http://l.yimg.com/a/i/us/per/gr/gp/rel_interstitial_loading.gif" />');
@@ -1468,7 +1544,7 @@ M.local_kaltura.video_presentation = function (Y, conversion_script,
             context: preview_video_context
     };
     
-    var preview_panel  = new YAHOO.widget.Panel("video_preview_panel",
+    var preview_panel  = new Y.YUI2.widget.Panel("video_preview_panel",
                                     { width: "550px",
                                       height: "550px",
                                       fixedcenter: true,
@@ -1670,7 +1746,7 @@ M.local_kaltura.video_presentation_view = function (Y, conversion_script,
     }
 
     // Create preview panel
-    var preview_panel  = new YAHOO.widget.Panel("video_pres_panel",
+    var preview_panel  = new Y.YUI2.widget.Panel("video_pres_panel",
                                     { width: "870px",
                                       height: "440px",
                                       fixedcenter: true,

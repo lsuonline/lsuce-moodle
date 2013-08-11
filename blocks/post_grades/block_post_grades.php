@@ -9,6 +9,13 @@ class block_post_grades extends block_list {
         return array('site' => false, 'my' => false, 'course' => true);
     }
 
+    /**
+     * @return bool true if this block is configurable
+     */
+    function has_config() {
+        return true;
+    }
+
     function get_content() {
         if ($this->content !== null) {
             return $this->content;
@@ -57,7 +64,8 @@ class block_post_grades extends block_list {
 
             $params['period'] = $period->id;
             foreach ($sections as $sec) {
-                if ($filterable and !$screenclass::can_post($sec)) {
+                $sc = new $screenclass($period,$COURSE,$sec->group());
+                if ($filterable and !$sc->can_post($sec)) {
                     continue;
                 }
 

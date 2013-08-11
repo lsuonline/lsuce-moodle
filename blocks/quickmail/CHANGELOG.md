@@ -1,3 +1,21 @@
+## v1.3.2
+
+- adds German translation contributed by [jlackner](https://github.com/lsuits/quickmail/issues/86)
+
+## v1.3.1
+
+- adds form element setType statements missed in the previous release
+
+## v1.3.0
+
+- updates for 2.4 and 2.5 Moodle API changes
+- Swedish translation
+- Hebrew translation
+- configurable FERPA settings
+- Securing email attachments
+- Fixup local css for fixed width themes
+
+
 ## v1.2.9
 
 - Fixes attachment path on Windows servers [#49][49]

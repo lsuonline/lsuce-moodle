@@ -15,7 +15,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
         GROUPSNONE : 'a.editing_groupsnone',
         GROUPSSEPARATE : 'a.editing_groupsseparate',
         GROUPSVISIBLE : 'a.editing_groupsvisible',
-        HASLABEL : 'label',
         HIDE : 'a.editing_hide',
         HIGHLIGHT : 'a.editing_highlight',
         INSTANCENAME : 'span.instancename',
@@ -33,7 +32,11 @@ YUI.add('moodle-course-toolboxes', function(Y) {
         SECTIONIDPREFIX : 'section-',
         SECTIONLI : 'li.section',
         SHOW : 'a.editing_show',
-        SHOWHIDE : 'a.editing_showhide'
+        SHOWHIDE : 'a.editing_showhide',
+        CONDITIONALHIDDEN : 'conditionalhidden',
+        AVAILABILITYINFODIV : 'div.availabilityinfo',
+        SHOWCLASS : 'editing_show',
+        HIDECLASS : 'hide'
     };
 
     /**
@@ -49,41 +52,18 @@ YUI.add('moodle-course-toolboxes', function(Y) {
 
     Y.extend(TOOLBOX, Y.Base, {
         /**
-         * Replace the button click at the selector with the specified
-         * callback
-         *
-         * @param toolboxtarget The selector of the working area
-         * @param selector The 'button' to replace
-         * @param callback The callback to apply
-         * @param cursor An optional cursor style to apply
+         * Toggle the visibility and availability for the specified
+         * resource show/hide button
          */
-        replace_button : function(toolboxtarget, selector, callback, cursor) {
-            if (!cursor) {
-                // Set the default cursor type to pointer to match the
-                // anchor
-                cursor = 'pointer';
-            }
-            var button = Y.one(toolboxtarget).all(selector)
-                .setStyle('cursor', cursor);
-
-            // on isn't chainable and will return an event
-            button.on('click', callback, this);
-
-            return button;
-        },
-          /**
-           * Toggle the visibility and availability for the specified
-           * resource show/hide button
-           */
         toggle_hide_resource_ui : function(button) {
             var element = button.ancestor(CSS.ACTIVITYLI);
             var hideicon = button.one('img');
 
             var dimarea;
             var toggle_class;
-            if (this.is_label(element)) {
+            if (this.get_instance_name(element) == null) {
                 toggle_class = CSS.DIMMEDTEXT;
-                dimarea = element.one(CSS.MODINDENTDIV + ' div');
+                dimarea = element.all(CSS.MODINDENTDIV + ' > div').item(1);
             } else {
                 toggle_class = CSS.DIMCLASS;
                 dimarea = element.one('a');
@@ -91,27 +71,35 @@ YUI.add('moodle-course-toolboxes', function(Y) {
 
             var status = '';
             var value;
-            if (dimarea.hasClass(toggle_class)) {
+            if (button.hasClass(CSS.SHOWCLASS)) {
                 status = 'hide';
                 value = 1;
             } else {
                 status = 'show';
                 value = 0;
             }
-
-            // Change the UI
-            dimarea.toggleClass(toggle_class);
-            // We need to toggle dimming on the description too
-            element.all(CSS.CONTENTAFTERLINK).toggleClass(CSS.DIMMEDTEXT);
+            // Update button info.
             var newstring = M.util.get_string(status, 'moodle');
             hideicon.setAttrs({
                 'alt' : newstring,
-                'title' : newstring,
                 'src'   : M.util.image_url('t/' + status)
             });
             button.set('title', newstring);
             button.set('className', 'editing_'+status);
 
+            // If activity is conditionally hidden, then don't toggle.
+            if (!dimarea.hasClass(CSS.CONDITIONALHIDDEN)) {
+                // Change the UI.
+                dimarea.toggleClass(toggle_class);
+                // We need to toggle dimming on the description too.
+                element.all(CSS.CONTENTAFTERLINK).toggleClass(CSS.DIMMEDTEXT);
+            }
+            // Toggle availablity info for conditional activities.
+            var availabilityinfo = element.one(CSS.AVAILABILITYINFODIV);
+
+            if (availabilityinfo) {
+                availabilityinfo.toggleClass(CSS.HIDECLASS);
+            }
             return value;
         },
         /**
@@ -183,8 +171,19 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             Y.io(uri, config);
             return responsetext;
         },
-        is_label : function(target) {
-            return target.hasClass(CSS.HASLABEL);
+        /**
+         * Return the name of the activity instance
+         *
+         * If activity has no name (for example label) null is returned
+         *
+         * @param element The <li> element to determine a name for
+         * @return string|null Instance name
+         */
+        get_instance_name : function(target) {
+            if (target.one(CSS.INSTANCENAME)) {
+                return target.one(CSS.INSTANCENAME).get('firstChild').get('data');
+            }
+            return null;
         },
         /**
          * Return the module ID for the specified element
@@ -241,6 +240,17 @@ YUI.add('moodle-course-toolboxes', function(Y) {
         initializer : function(config) {
             this.setup_for_resource();
             M.course.coursebase.register_module(this);
+
+            var prefix = CSS.ACTIVITYLI + ' ' + CSS.COMMANDSPAN + ' ';
+            Y.delegate('click', this.edit_resource_title, CSS.PAGECONTENT, prefix + CSS.EDITTITLE, this);
+            Y.delegate('click', this.move_left, CSS.PAGECONTENT, prefix + CSS.MOVELEFT, this);
+            Y.delegate('click', this.move_right, CSS.PAGECONTENT, prefix + CSS.MOVERIGHT, this);
+            Y.delegate('click', this.delete_resource, CSS.PAGECONTENT, prefix + CSS.DELETE, this);
+            Y.delegate('click', this.toggle_hide_resource, CSS.PAGECONTENT, prefix + CSS.HIDE, this);
+            Y.delegate('click', this.toggle_hide_resource, CSS.PAGECONTENT, prefix + CSS.SHOW, this);
+            Y.delegate('click', this.toggle_groupmode, CSS.PAGECONTENT, prefix + CSS.GROUPSNONE, this);
+            Y.delegate('click', this.toggle_groupmode, CSS.PAGECONTENT, prefix + CSS.GROUPSSEPARATE, this);
+            Y.delegate('click', this.toggle_groupmode, CSS.PAGECONTENT, prefix + CSS.GROUPSVISIBLE, this);
         },
 
         /**
@@ -252,43 +262,23 @@ YUI.add('moodle-course-toolboxes', function(Y) {
          */
         setup_for_resource : function(baseselector) {
             if (!baseselector) {
-                var baseselector = CSS.PAGECONTENT + ' ' + CSS.ACTIVITYLI;;
+                var baseselector = CSS.PAGECONTENT + ' ' + CSS.ACTIVITYLI;
             }
 
             Y.all(baseselector).each(this._setup_for_resource, this);
         },
         _setup_for_resource : function(toolboxtarget) {
-            // Edit Title
-            this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.EDITTITLE, this.edit_resource_title);
+            toolboxtarget = Y.one(toolboxtarget);
 
-            // Move left and right
-            this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.MOVELEFT, this.move_left);
-            this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.MOVERIGHT, this.move_right);
-
-            // Delete
-            this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.DELETE, this.delete_resource);
-
-            // Show/Hide
-            var showhide = this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.HIDE, this.toggle_hide_resource);
-            var shown = this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.SHOW, this.toggle_hide_resource);
-
-            showhide = showhide.concat(shown);
-            showhide.each(function(node) {
-                var section = node.ancestor(CSS.SECTIONLI);
-                if (section && section.hasClass(CSS.SECTIONHIDDENCLASS)) {
-                    node.setStyle('cursor', 'auto');
-                }
-            });
-
-            // Change Group Mode
+            // Set groupmode attribute for use by this.toggle_groupmode()
             var groups;
-            groups = this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.GROUPSNONE, this.toggle_groupmode);
+            groups = toolboxtarget.all(CSS.COMMANDSPAN + ' ' + CSS.GROUPSNONE);
             groups.setAttribute('groupmode', this.GROUPS_NONE);
 
-            groups = this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.GROUPSSEPARATE, this.toggle_groupmode);
+            groups = toolboxtarget.all(CSS.COMMANDSPAN + ' ' + CSS.GROUPSSEPARATE);
             groups.setAttribute('groupmode', this.GROUPS_SEPARATE);
 
-            groups = this.replace_button(toolboxtarget, CSS.COMMANDSPAN + ' ' + CSS.GROUPSVISIBLE, this.toggle_groupmode);
+            groups = toolboxtarget.all(CSS.COMMANDSPAN + ' ' + CSS.GROUPSVISIBLE);
             groups.setAttribute('groupmode', this.GROUPS_VISIBLE);
         },
         move_left : function(e) {
@@ -350,19 +340,16 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             // Get the element we're working on
             var element   = e.target.ancestor(CSS.ACTIVITYLI);
 
+            // Create confirm string (different if element has or does not have name)
             var confirmstring = '';
-            if (this.is_label(element)) {
-                // Labels are slightly different to other activities
-                var plugindata = {
-                    type : M.util.get_string('pluginname', 'label')
-                }
-                confirmstring = M.util.get_string('deletechecktype', 'moodle', plugindata)
-            } else {
-                var plugindata = {
-                    type : M.util.get_string('pluginname', element.getAttribute('class').match(/modtype_([^\s]*)/)[1]),
-                    name : element.one(CSS.INSTANCENAME).get('firstChild').get('data')
-                }
+            var plugindata = {
+                type : M.util.get_string('pluginname', element.getAttribute('class').match(/modtype_([^\s]*)/)[1])
+            }
+            if (this.get_instance_name(element) != null) {
+                plugindata.name = this.get_instance_name(element)
                 confirmstring = M.util.get_string('deletechecktypename', 'moodle', plugindata);
+            } else {
+                confirmstring = M.util.get_string('deletechecktype', 'moodle', plugindata)
             }
 
             // Confirm element removal
@@ -405,6 +392,7 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             };
             var spinner = M.util.add_spinner(Y, element.one(CSS.SPINNERCOMMANDSPAN));
             this.send_request(data, spinner);
+            return false; // Need to return false to stop the delegate for the new state firing
         },
         toggle_groupmode : function(e) {
             // Prevent the default button action
@@ -446,7 +434,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             // Change the UI
             icon.setAttrs({
                 'alt' : newtitle,
-                'title' : newtitle,
                 'src' : iconsrc
             });
             button.setAttribute('title', newtitle);
@@ -460,6 +447,7 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             };
             var spinner = M.util.add_spinner(Y, element.one(CSS.SPINNERCOMMANDSPAN));
             this.send_request(data, spinner);
+            return false; // Need to return false to stop the delegate for the new state firing
         },
         /**
          * Add the moveleft button
@@ -469,11 +457,16 @@ YUI.add('moodle-course-toolboxes', function(Y) {
          */
         add_moveleft : function(target) {
             var left_string = M.util.get_string('moveleft', 'moodle');
+            var moveimage = 't/left'; // ltr mode
+            if ( Y.one(document.body).hasClass('dir-rtl') ) {
+                moveimage = 't/right';
+            } else {
+                moveimage = 't/left';
+            }
             var newicon = Y.Node.create('<img />')
                 .addClass(CSS.GENERICICONCLASS)
                 .setAttrs({
-                    'src'   : M.util.image_url('t/left', 'moodle'),
-                    'title' : left_string,
+                    'src'   : M.util.image_url(moveimage, 'moodle'),
                     'alt'   : left_string
                 });
             var moveright = target.one(CSS.MOVERIGHT);
@@ -484,7 +477,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
                 .setAttribute('href', newlink)
                 .setAttribute('title', left_string);
             anchor.appendChild(newicon);
-            anchor.on('click', this.move_left, this);
             moveright.insert(anchor, 'before');
         },
         /**
@@ -493,6 +485,7 @@ YUI.add('moodle-course-toolboxes', function(Y) {
         edit_resource_title : function(e) {
             // Get the element we're working on
             var element = e.target.ancestor(CSS.ACTIVITYLI);
+            var elementdiv = element.one('div');
             var instancename  = element.one(CSS.INSTANCENAME);
             var currenttitle = instancename.get('firstChild');
             var oldtitle = currenttitle.get('data');
@@ -523,23 +516,26 @@ YUI.add('moodle-course-toolboxes', function(Y) {
                 .setAttrs({
                     'name'  : 'title',
                     'value' : titletext,
-                    'autocomplete' : 'off'
+                    'autocomplete' : 'off',
+                    'aria-describedby' : 'id_editinstructions',
+                    'maxLength' : '255'
                 })
                 .addClass('titleeditor');
             var editform = Y.Node.create('<form />')
-                .setStyle('padding', '0')
-                .setStyle('display', 'inline')
+                .addClass('activityinstance')
                 .setAttribute('action', '#');
-
             var editinstructions = Y.Node.create('<span />')
                 .addClass('editinstructions')
+                .setAttrs({'id' : 'id_editinstructions'})
                 .set('innerHTML', M.util.get_string('edittitleinstructions', 'moodle'));
+            var activityicon = element.one('img.activityicon').cloneNode();
 
             // Clear the existing content and put the editor in
             currenttitle.set('data', '');
+            editform.appendChild(activityicon);
             editform.appendChild(editor);
             anchor.replace(editform);
-            element.appendChild(editinstructions);
+            elementdiv.appendChild(editinstructions);
             e.preventDefault();
 
             // Focus and select the editor text
@@ -572,8 +568,9 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             // Cancel the edit if we lose focus or the escape key is pressed
             thisevent = editor.on('blur', cancel_edittitle);
             listenevents.push(thisevent);
-            thisevent = Y.one('document').on('keyup', function(e) {
-                if (e.keyCode == 27) {
+            thisevent = Y.one('document').on('keydown', function(e) {
+                if (e.keyCode === 27) {
+                    e.preventDefault();
                     cancel_edittitle(e);
                 }
             });
@@ -606,6 +603,26 @@ YUI.add('moodle-course-toolboxes', function(Y) {
                 }
             }, this);
             listenevents.push(thisevent);
+        },
+        /**
+         * Set the visibility of the current resource (identified by the element)
+         * to match the hidden parameter (this is not a toggle).
+         * Only changes the visibility in the browser (no ajax update).
+         * @param args An object with 'element' being the A node containing the resource
+         *             and 'visible' being the state that the visiblity should be set to.
+         * @return void
+         */
+        set_visibility_resource_ui: function(args) {
+            var element = args.element;
+            var shouldbevisible = args.visible;
+            var buttonnode = element.one(CSS.SHOW);
+            var visible = (buttonnode === null);
+            if (visible) {
+                buttonnode = element.one(CSS.HIDE);
+            }
+            if (visible != shouldbevisible) {
+                this.toggle_hide_resource_ui(buttonnode);
+            }
         }
     }, {
         NAME : 'course-resource-toolbox',
@@ -632,6 +649,11 @@ YUI.add('moodle-course-toolboxes', function(Y) {
         initializer : function(config) {
             this.setup_for_section();
             M.course.coursebase.register_module(this);
+
+            // Section Highlighting
+            Y.delegate('click', this.toggle_highlight, CSS.PAGECONTENT, CSS.SECTIONLI + ' ' + CSS.HIGHLIGHT, this);
+            // Section Visibility
+            Y.delegate('click', this.toggle_hide_section, CSS.PAGECONTENT, CSS.SECTIONLI + ' ' + CSS.SHOWHIDE, this);
         },
         /**
          * Update any section areas within the scope of the specified
@@ -641,18 +663,15 @@ YUI.add('moodle-course-toolboxes', function(Y) {
          * @return void
          */
         setup_for_section : function(baseselector) {
-            if (!baseselector) {
+            // Left here for potential future use - not currently needed due to YUI delegation in initializer()
+            /*if (!baseselector) {
                 var baseselector = CSS.PAGECONTENT;
             }
 
-            Y.all(baseselector).each(this._setup_for_section, this);
+            Y.all(baseselector).each(this._setup_for_section, this);*/
         },
         _setup_for_section : function(toolboxtarget) {
-            // Section Highlighting
-            this.replace_button(toolboxtarget, CSS.RIGHTSIDE + ' ' + CSS.HIGHLIGHT, this.toggle_highlight);
-
-            // Section Visibility
-            this.replace_button(toolboxtarget, CSS.RIGHTSIDE + ' ' + CSS.SHOWHIDE, this.toggle_hide_section);
+            // Left here for potential future use - not currently needed due to YUI delegation in initializer()
         },
         toggle_hide_section : function(e) {
             // Prevent the default button action
@@ -682,7 +701,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
             var newstring = M.util.get_string(status + 'fromothers', 'format_' + this.get('format'));
             hideicon.setAttrs({
                 'alt' : newstring,
-                'title' : newstring,
                 'src'   : M.util.image_url('i/' + status)
             });
             button.set('title', newstring);
@@ -712,12 +730,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
                 if (Y.Array.indexOf(response.resourcestotoggle, activityid) != -1) {
                     this.toggle_hide_resource_ui(button);
                 }
-
-                if (value == 0) {
-                    button.setStyle('cursor', 'auto');
-                } else {
-                    button.setStyle('cursor', 'pointer');
-                }
             }, this);
         },
         toggle_highlight : function(e) {
@@ -740,7 +752,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
                 .set('title', old_string);
             Y.one(CSS.PAGECONTENT)
                 .all(M.course.format.get_section_selector(Y) + '.current ' + CSS.HIGHLIGHT + ' img')
-                .set('title', old_string)
                 .set('alt', old_string)
                 .set('src', M.util.image_url('i/marker'));
 
@@ -756,7 +767,6 @@ YUI.add('moodle-course-toolboxes', function(Y) {
                 button
                     .set('title', new_string);
                 buttonicon
-                    .set('title', new_string)
                     .set('alt', new_string)
                     .set('src', M.util.image_url('i/marked'));
             }

@@ -149,7 +149,7 @@
                     $user->turnitin_uid = 0;
                     turnitintool_update_record('turnitintool_users',$user);
                 } else {
-                    turnitintool_delete_records('turnitintool_users','id',$userlink);
+                    turnitintool_delete_records_select('turnitintool_users','id',$userlink);
                 }
             }
         }
@@ -574,7 +574,7 @@
 
         turnitintool_header(NULL,NULL,$_SERVER["REQUEST_URI"],get_string("modulenameplural", "turnitintool"), $SITE->fullname);
         turnitintool_box_start('generalbox boxwidthwide boxaligncenter', 'general');
-        if ($rcode>=API_ERROR_START OR empty($rcode)) {
+        if ($rcode>=TURNITINTOOL_API_ERROR_START OR empty($rcode)) {
             if (empty($rmessage)) {
                 $rmessage=get_string('connecttestcommerror','turnitintool');
             }

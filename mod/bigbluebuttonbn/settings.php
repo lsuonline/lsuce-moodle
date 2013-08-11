@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings for bigblueButton
+ * Settings for BigBlueButtonBN
  *
  * Authors:
  *    Fred Dixon  (ffdixon [at] blindsidenetworks [dt] com)
@@ -11,7 +11,11 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v2 or later
  */
 
-$settings->add( new admin_setting_configtext( 'BigBlueButtonBNServerURL', get_string( 'bigbluebuttonbnUrl', 'bigbluebuttonbn' ), get_string( 'bbburl', 'bigbluebuttonbn' ), 'http://test-install.blindsidenetworks.com/bigbluebutton/' ) );
-$settings->add( new admin_setting_configtext( 'BigBlueButtonBNSecuritySalt', get_string( 'bigbluebuttonbnSalt', 'bigbluebuttonbn' ), get_string( 'configsecuritysalt', 'bigbluebuttonbn' ), '8cd8ef52e8e101574e400365b55e11a6' ) );
+defined('MOODLE_INTERNAL') || die;
+
+if ($ADMIN->fulltree) {
+    $settings->add( new admin_setting_configtext( 'BigBlueButtonBNServerURL', get_string( 'bigbluebuttonbnUrl', 'bigbluebuttonbn' ), get_string( 'bbburl', 'bigbluebuttonbn' ), 'http://test-install.blindsidenetworks.com/bigbluebutton/' ) );
+    $settings->add( new admin_setting_configtext( 'BigBlueButtonBNSecuritySalt', get_string( 'bigbluebuttonbnSalt', 'bigbluebuttonbn' ), get_string( 'configsecuritysalt', 'bigbluebuttonbn' ), '8cd8ef52e8e101574e400365b55e11a6' ) );
+}
 
 ?>

@@ -92,7 +92,7 @@ class file_picker implements renderable {
         $options->currentfile = '';
         if (!empty($options->itemid)) {
             $fs = get_file_storage();
-            $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+            $usercontext = context_user::instance($USER->id);
             if (empty($options->filename)) {
                 if ($files = $fs->get_area_files($usercontext->id, 'user', 'draft', $options->itemid, 'id DESC', false)) {
                     $file = reset($files);
@@ -322,6 +322,7 @@ class user_picture implements renderable {
         $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
         $is_teacher = has_capability('moodle/user:viewalldetails', $cc, $this->user->id);
 
+
         // Sort out the filename and size. Size is only required for the gravatar
         // implementation presently.
         if (empty($this->size)) {
@@ -395,68 +396,30 @@ class user_picture implements renderable {
             // Hash the users email address
             $md5 = md5(strtolower(trim($this->user->email)));
             // Build a gravatar URL with what we know.
+
+            // Find the best default image URL we can (MDL-35669)
+            if (empty($CFG->gravatardefaulturl)) {
+                $absoluteimagepath = $page->theme->resolve_image_location('u/'.$filename, 'core');
+                if (strpos($absoluteimagepath, $CFG->dirroot) === 0) {
+                    $gravatardefault = $CFG->wwwroot . substr($absoluteimagepath, strlen($CFG->dirroot));
+                } else {
+                    $gravatardefault = $CFG->wwwroot . '/pix/u/' . $filename . '.png';
+                }
+            } else {
+                $gravatardefault = $CFG->gravatardefaulturl;
+            }
+
             // If the currently requested page is https then we'll return an
             // https gravatar page.
             if (strpos($CFG->httpswwwroot, 'https:') === 0) {
-                return new moodle_url("https://secure.gravatar.com/avatar/{$md5}", array('s' => $size, 'd' => $defaulturl->out(false)));
+                $gravatardefault = str_replace($CFG->wwwroot, $CFG->httpswwwroot, $gravatardefault); // Replace by secure url.
+                return new moodle_url("https://secure.gravatar.com/avatar/{$md5}", array('s' => $size, 'd' => $gravatardefault));
             } else {
-                return new moodle_url("http://www.gravatar.com/avatar/{$md5}", array('s' => $size, 'd' => $defaulturl->out(false)));
+                return new moodle_url("http://www.gravatar.com/avatar/{$md5}", array('s' => $size, 'd' => $gravatardefault));
             }
         }
 
         return $defaulturl;
-    }
-}
-
-/**
- * Data structure representing a help icon.
- *
- * @copyright 2009 Nicolas Connault, 2010 Petr Skoda
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since Moodle 2.0
- * @package core
- * @category output
- */
-class old_help_icon implements renderable {
-
-    /**
-     * @var string Lang pack identifier
-     */
-    public $helpidentifier;
-
-    /**
-     * @var string A descriptive text for title tooltip
-     */
-    public $title = null;
-
-    /**
-     * @var string Component name, the same as in get_string()
-     */
-    public $component = 'moodle';
-
-    /**
-     * @var string Extra descriptive text next to the icon
-     */
-    public $linktext = null;
-
-    /**
-     * Constructor: sets up the other components in case they are needed
-     *
-     * @param string $helpidentifier  The keyword that defines a help page
-     * @param string $title A descriptive text for accessibility only
-     * @param string $component
-     */
-    public function __construct($helpidentifier, $title, $component = 'moodle') {
-        if (empty($title)) {
-            throw new coding_exception('A help_icon object requires a $text parameter');
-        }
-        if (empty($helpidentifier)) {
-            throw new coding_exception('A help_icon object requires a $helpidentifier parameter');
-        }
-
-        $this->helpidentifier  = $helpidentifier;
-        $this->title           = $title;
-        $this->component       = $component;
     }
 }
 
@@ -561,6 +524,10 @@ class pix_icon implements renderable {
         }
         if (!isset($this->attributes['title'])) {
             $this->attributes['title'] = $this->attributes['alt'];
+        } else if (empty($this->attributes['title'])) {
+            // Remove the title attribute if empty, we probably want to use the parent node's title
+            // and some browsers might overwrite it with an empty title.
+            unset($this->attributes['title']);
         }
     }
 }
@@ -726,6 +693,11 @@ class single_select implements renderable {
     var $label = '';
 
     /**
+     * @var array Button label's attributes
+     */
+    var $labelattributes = array();
+
+    /**
      * @var string Form submit method post or get
      */
     var $method = 'get';
@@ -795,12 +767,10 @@ class single_select implements renderable {
     /**
      * Adds help icon.
      *
-     * @param string $helppage  The keyword that defines a help page
-     * @param string $title A descriptive text for accessibility only
-     * @param string $component
+     * @deprecated since Moodle 2.0
      */
     public function set_old_help_icon($helppage, $title, $component = 'moodle') {
-        $this->helpicon = new old_help_icon($helppage, $title, $component);
+        throw new coding_exception('set_old_help_icon() can not be used any more, please see set_help_icon().');
     }
 
     /**
@@ -817,9 +787,12 @@ class single_select implements renderable {
      * Sets select's label
      *
      * @param string $label
+     * @param array $attributes (optional)
      */
-    public function set_label($label) {
+    public function set_label($label, $attributes = array()) {
         $this->label = $label;
+        $this->labelattributes = $attributes;
+
     }
 }
 
@@ -860,6 +833,11 @@ class url_select implements renderable {
      * @var string Button label
      */
     var $label = '';
+
+    /**
+     * @var array Button label's attributes
+     */
+    var $labelattributes = array();
 
     /**
      * @var string Wrapping div class
@@ -911,12 +889,10 @@ class url_select implements renderable {
     /**
      * Adds help icon.
      *
-     * @param string $helppage  The keyword that defines a help page
-     * @param string $title A descriptive text for accessibility only
-     * @param string $component
+     * @deprecated since Moodle 2.0
      */
     public function set_old_help_icon($helppage, $title, $component = 'moodle') {
-        $this->helpicon = new old_help_icon($helppage, $title, $component);
+        throw new coding_exception('set_old_help_icon() can not be used any more, please see set_help_icon().');
     }
 
     /**
@@ -933,9 +909,11 @@ class url_select implements renderable {
      * Sets select's label
      *
      * @param string $label
+     * @param array $attributes (optional)
      */
-    public function set_label($label) {
+    public function set_label($label, $attributes = array()) {
         $this->label = $label;
+        $this->labelattributes = $attributes;
     }
 }
 
@@ -1086,9 +1064,6 @@ class html_writer {
      * @return string HTML fragment
      */
     public static function attribute($name, $value) {
-        if (is_array($value)) {
-            debugging("Passed an array for the HTML attribute $name", DEBUG_DEVELOPER);
-        }
         if ($value instanceof moodle_url) {
             return ' ' . $name . '="' . $value->out() . '"';
         }
@@ -1711,6 +1686,97 @@ class html_writer {
 
         return $label;
     }
+
+    /**
+     * Combines a class parameter with other attributes. Aids in code reduction
+     * because the class parameter is very frequently used.
+     *
+     * If the class attribute is specified both in the attributes and in the
+     * class parameter, the two values are combined with a space between.
+     *
+     * @param string $class Optional CSS class (or classes as space-separated list)
+     * @param array $attributes Optional other attributes as array
+     * @return array Attributes (or null if still none)
+     */
+    private static function add_class($class = '', array $attributes = null) {
+        if ($class !== '') {
+            $classattribute = array('class' => $class);
+            if ($attributes) {
+                if (array_key_exists('class', $attributes)) {
+                    $attributes['class'] = trim($attributes['class'] . ' ' . $class);
+                } else {
+                    $attributes = $classattribute + $attributes;
+                }
+            } else {
+                $attributes = $classattribute;
+            }
+        }
+        return $attributes;
+    }
+
+    /**
+     * Creates a <div> tag. (Shortcut function.)
+     *
+     * @param string $content HTML content of tag
+     * @param string $class Optional CSS class (or classes as space-separated list)
+     * @param array $attributes Optional other attributes as array
+     * @return string HTML code for div
+     */
+    public static function div($content, $class = '', array $attributes = null) {
+        return self::tag('div', $content, self::add_class($class, $attributes));
+    }
+
+    /**
+     * Starts a <div> tag. (Shortcut function.)
+     *
+     * @param string $class Optional CSS class (or classes as space-separated list)
+     * @param array $attributes Optional other attributes as array
+     * @return string HTML code for open div tag
+     */
+    public static function start_div($class = '', array $attributes = null) {
+        return self::start_tag('div', self::add_class($class, $attributes));
+    }
+
+    /**
+     * Ends a <div> tag. (Shortcut function.)
+     *
+     * @return string HTML code for close div tag
+     */
+    public static function end_div() {
+        return self::end_tag('div');
+    }
+
+    /**
+     * Creates a <span> tag. (Shortcut function.)
+     *
+     * @param string $content HTML content of tag
+     * @param string $class Optional CSS class (or classes as space-separated list)
+     * @param array $attributes Optional other attributes as array
+     * @return string HTML code for span
+     */
+    public static function span($content, $class = '', array $attributes = null) {
+        return self::tag('span', $content, self::add_class($class, $attributes));
+    }
+
+    /**
+     * Starts a <span> tag. (Shortcut function.)
+     *
+     * @param string $class Optional CSS class (or classes as space-separated list)
+     * @param array $attributes Optional other attributes as array
+     * @return string HTML code for open span tag
+     */
+    public static function start_span($class = '', array $attributes = null) {
+        return self::start_tag('span', self::add_class($class, $attributes));
+    }
+
+    /**
+     * Ends a <span> tag. (Shortcut function.)
+     *
+     * @return string HTML code for close span tag
+     */
+    public static function end_span() {
+        return self::end_tag('span');
+    }
 }
 
 /**
@@ -2250,15 +2316,14 @@ class paging_bar implements renderable {
                 $lastpage = 1;
             }
 
-            if ($this->page > 15) {
-                $startpage = $this->page - 10;
+            if ($this->page > round(($this->maxdisplay/3)*2)) {
+                $currpage = $this->page - round($this->maxdisplay/3);
 
                 $this->firstlink = html_writer::link(new moodle_url($this->baseurl, array($this->pagevar=>0)), '1', array('class'=>'first'));
             } else {
-                $startpage = 0;
+                $currpage = 0;
             }
 
-            $currpage = $startpage;
             $displaycount = $displaypage = 0;
 
             while ($displaycount < $this->maxdisplay and $currpage < $lastpage) {
@@ -2357,6 +2422,12 @@ class block_contents {
     public $title = '';
 
     /**
+     * @var string The label to use when the block does not, or will not have a visible title.
+     * You should never set this as well as title... it will just be ignored.
+     */
+    public $arialabel = '';
+
+    /**
      * @var string HTML for the content
      */
     public $content = '';
@@ -2436,17 +2507,10 @@ class block_move_target {
     public $url;
 
     /**
-     * @var string label
-     */
-    public $text;
-
-    /**
      * Constructor
-     * @param string $text
      * @param moodle_url $url
      */
-    public function __construct($text, moodle_url $url) {
-        $this->text = $text;
+    public function __construct(moodle_url $url) {
         $this->url  = $url;
     }
 }
@@ -2800,5 +2864,157 @@ class custom_menu extends custom_menu_item {
             return 0;
         }
         return ($itema > $itemb) ? +1 : -1;
+    }
+}
+
+/**
+ * Stores one tab
+ *
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package core
+ */
+class tabobject implements renderable {
+    /** @var string unique id of the tab in this tree, it is used to find selected and/or inactive tabs */
+    var $id;
+    /** @var moodle_url|string link */
+    var $link;
+    /** @var string text on the tab */
+    var $text;
+    /** @var string title under the link, by defaul equals to text */
+    var $title;
+    /** @var bool whether to display a link under the tab name when it's selected */
+    var $linkedwhenselected = false;
+    /** @var bool whether the tab is inactive */
+    var $inactive = false;
+    /** @var bool indicates that this tab's child is selected */
+    var $activated = false;
+    /** @var bool indicates that this tab is selected */
+    var $selected = false;
+    /** @var array stores children tabobjects */
+    var $subtree = array();
+    /** @var int level of tab in the tree, 0 for root (instance of tabtree), 1 for the first row of tabs */
+    var $level = 1;
+
+    /**
+     * Constructor
+     *
+     * @param string $id unique id of the tab in this tree, it is used to find selected and/or inactive tabs
+     * @param string|moodle_url $link
+     * @param string $text text on the tab
+     * @param string $title title under the link, by defaul equals to text
+     * @param bool $linkedwhenselected whether to display a link under the tab name when it's selected
+     */
+    public function __construct($id, $link = null, $text = '', $title = '', $linkedwhenselected = false) {
+        $this->id = $id;
+        $this->link = $link;
+        $this->text = $text;
+        $this->title = $title ? $title : $text;
+        $this->linkedwhenselected = $linkedwhenselected;
+    }
+
+    /**
+     * Travels through tree and finds the tab to mark as selected, all parents are automatically marked as activated
+     *
+     * @param string $selected the id of the selected tab (whatever row it's on),
+     *    if null marks all tabs as unselected
+     * @return bool whether this tab is selected or contains selected tab in its subtree
+     */
+    protected function set_selected($selected) {
+        if ((string)$selected === (string)$this->id) {
+            $this->selected = true;
+            // This tab is selected. No need to travel through subtree.
+            return true;
+        }
+        foreach ($this->subtree as $subitem) {
+            if ($subitem->set_selected($selected)) {
+                // This tab has child that is selected. Mark it as activated. No need to check other children.
+                $this->activated = true;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Travels through tree and finds a tab with specified id
+     *
+     * @param string $id
+     * @return tabtree|null
+     */
+    public function find($id) {
+        if ((string)$this->id === (string)$id) {
+            return $this;
+        }
+        foreach ($this->subtree as $tab) {
+            if ($obj = $tab->find($id)) {
+                return $obj;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Allows to mark each tab's level in the tree before rendering.
+     *
+     * @param int $level
+     */
+    protected function set_level($level) {
+        $this->level = $level;
+        foreach ($this->subtree as $tab) {
+            $tab->set_level($level + 1);
+        }
+    }
+}
+
+/**
+ * Stores tabs list
+ *
+ * Example how to print a single line tabs:
+ * $rows = array(
+ *    new tabobject(...),
+ *    new tabobject(...)
+ * );
+ * echo $OUTPUT->tabtree($rows, $selectedid);
+ *
+ * Multiple row tabs may not look good on some devices but if you want to use them
+ * you can specify ->subtree for the active tabobject.
+ *
+ * @copyright 2013 Marina Glancy
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since Moodle 2.5
+ * @package core
+ * @category output
+ */
+class tabtree extends tabobject {
+    /**
+     * Constuctor
+     *
+     * It is highly recommended to call constructor when list of tabs is already
+     * populated, this way you ensure that selected and inactive tabs are located
+     * and attribute level is set correctly.
+     *
+     * @param array $tabs array of tabs, each of them may have it's own ->subtree
+     * @param string|null $selected which tab to mark as selected, all parent tabs will
+     *     automatically be marked as activated
+     * @param array|string|null $inactive list of ids of inactive tabs, regardless of
+     *     their level. Note that you can as weel specify tabobject::$inactive for separate instances
+     */
+    public function __construct($tabs, $selected = null, $inactive = null) {
+        $this->subtree = $tabs;
+        if ($selected !== null) {
+            $this->set_selected($selected);
+        }
+        if ($inactive !== null) {
+            if (is_array($inactive)) {
+                foreach ($inactive as $id) {
+                    if ($tab = $this->find($id)) {
+                        $tab->inactive = true;
+                    }
+                }
+            } else if ($tab = $this->find($inactive)) {
+                $tab->inactive = true;
+            }
+        }
+        $this->set_level(0);
     }
 }

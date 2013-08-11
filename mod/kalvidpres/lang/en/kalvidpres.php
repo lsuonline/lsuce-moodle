@@ -1,12 +1,12 @@
 <?php
 
-$string['modulenameplural'] = 'Kaltura Presentations';
-$string['modulename'] = 'Kaltura Presentation';
-$string['modulename_help'] = 'The Kaltura Presentation enables a teacher to create a video that is synchronized with a '.
+$string['modulenameplural'] = 'Kaltura Video Presentation';
+$string['modulename'] = 'Kaltura Video Presentation';
+$string['modulename_help'] = 'The Kaltura Video Presentation enables a teacher to create a video that is synchronized with a '.
                              'PowerPoint presentation or a PDF. First upload a video and then upload a document. '.
                              'You must wait until the document has finished converting before saving the resource.';
-$string['pluginadministration'] = 'Kaltura Presentation';
-$string['pluginname'] = 'Kaltura Presentation';
+$string['pluginadministration'] = 'Kaltura Video Presentation';
+$string['pluginname'] = 'Kaltura Video Presentation';
 $string['name'] = 'Name';
 $string['video_hdr'] = 'Video';
 $string['add_video'] = 'Add Media';
@@ -27,7 +27,7 @@ $string['pres_info'] = '<b>In order to create a video presentation resource, ple
                        'The conversion processes may take a few minutes depending on the sizes of the uploaded material. Once both video and '.
                        'document are ready, click \'Preview\' in order to sync the document pages with the timeline of the video. Sync action is '.
                        'also available once the resource is saved.</b>';
-$string['kalvidpres:addinstance'] = 'Add a Kaltura Presentation';
+$string['kalvidpres:addinstance'] = 'Add a Kaltura Video Presentation';
 $string['use_screen_recorder'] = 'Record screen';
 $string['use_kcw'] = 'Upload media or record from webcam';
 $string['media_method'] = 'Media type';

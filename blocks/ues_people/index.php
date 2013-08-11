@@ -320,6 +320,7 @@ $groups_url = $base_with_params(array(
 echo groups_print_course_menu($course, $groups_url);
 
 if ($roleid > 0) {
+    $a = new stdClass();
     $a->number = $count;
     $a->role = $rolenames[$roleid];
 

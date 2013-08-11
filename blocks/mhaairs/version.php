@@ -1,4 +1,14 @@
 <?php
-    $plugin->version = 2012011927;  // YYYYMMDDHH (year, month, day, 24-hr time)
-    $plugin->requires = 2010112400; // YYYYMMDDHH (This is the release version for Moodle 2.0)
-?>
+defined('MOODLE_INTERNAL') || die();
+
+$plugin->version = 2013081007;
+$plugin->requires = 2010112400;
+$plugin->cron      = 0;
+$plugin->component = 'block_mhaairs';
+$plugin->maturity  = MATURITY_STABLE;
+$plugin->release   = '3.0 (2011091316)';
+
+$plugin->dependencies = array(
+        // Requires Moodlerooms Framework.
+        'local_mr' => 2010090200
+);

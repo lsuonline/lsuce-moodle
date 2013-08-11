@@ -33,6 +33,7 @@ switch ($CFG->dbtype) {
     case 'pgsql':
         $adminer_driver = 'pgsql';
         break;
+    case 'sqlsrv':
     case 'mssql':
         $adminer_driver = 'mssql';
         break;
@@ -45,7 +46,7 @@ switch ($CFG->dbtype) {
 }
 
 require_login();
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/site:config', context_system::instance());
 
 admin_externalpage_setup('local_adminer', '', null);
 
@@ -68,7 +69,7 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('pluginname', 'local_adminer'));
 echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthnormal');
 echo '<p align="center">';
-$adminer_url = $CFG->wwwroot.'/local/adminer/lib/adminer.php?'.$adminer_driver.'=&amp;username=';
+$adminer_url = $CFG->wwwroot.'/local/adminer/lib/run_adminer.php?'.$adminer_driver.'=&amp;username=';
 echo '<a id="adminer_starter" href="'.$adminer_url.'" title="Adminer" rel="">Launch Adminer</a>';
 echo '</p>';
 echo $OUTPUT->box_end();

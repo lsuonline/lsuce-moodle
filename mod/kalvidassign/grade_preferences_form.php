@@ -37,6 +37,7 @@ class kalvidassign_gradepreferences_form extends moodleform {
         $mform =& $this->_form;
 
         $mform->addElement('hidden', 'cmid', $this->_customdata['cmid']);
+        $mform->setType('cmid',PARAM_INT);
 
         $mform->addElement('header', 'kal_vid_subm_hdr', get_string('optionalsettings', 'kalvidassign'));
 

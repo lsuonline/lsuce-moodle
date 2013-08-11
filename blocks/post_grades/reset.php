@@ -41,6 +41,7 @@ if ($query_form->is_cancelled()) {
 }
 
 if ($shortname) {
+    $data = new stdClass();
     $data->shortname = $shortname;
     $query_form->set_data($data);
 

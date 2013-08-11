@@ -1,0 +1,2 @@
+student		100.00
+student2	90.00

@@ -103,14 +103,10 @@ if ($ADMIN->fulltree) {
         $_s('course_form_replace'), $_s('course_form_replace_desc'), 0));
 
     $fields = array(
-        'format' => get_string('format'),
-        'numsections' => get_string('numberweeks'),
-        'hiddensections' => get_string('hiddensections'),
         'newsitems' => get_string('newsitemsnumber'),
         'showgrades' => get_string('showgrades'),
         'showreports' => get_string('showreports'),
         'maxbytes' => get_string('maximumupload'),
-        'legacyfiles' => get_string('courselegacyfiles'),
         'groupmode' => get_string('groupmode'),
         'groupmodeforce' => get_string('groupmodeforce'),
         'lang' => get_string('forcelanguage')
@@ -126,7 +122,7 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_heading('enrol_ues_enrol_settings',
         $_s('enrol_settings'), ''));
 
-    $roles = $DB->get_records_menu('role', null, '', 'id, name');
+    $roles = role_get_names(null, null, true);
 
     foreach (array('editingteacher', 'teacher', 'student') as $shortname) {
         $typeid = $DB->get_field('role', 'id', array('shortname' => $shortname));

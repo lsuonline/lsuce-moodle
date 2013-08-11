@@ -42,7 +42,7 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
 }
 
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('moodle/grade:manage', $context);
 
 // default return url
@@ -100,6 +100,7 @@ if ($id) {
 
 $multfactor = $grade_item->multfactor;
 $curve_decimals = 4;
+$decimalpoints = $grade_item->get_decimals();
 
 if ($curve_to) {
     $curve_decimals = $decimalpoints;

@@ -21,7 +21,7 @@ abstract class gradereport_grader_upgrade_state {
 }
 
 class grader_anonymous_grading extends gradereport_grader_upgrade_state {
-    var $version = 2012072413;
+    var $version = 2013052800;
 
     function upgrade($db) {
         $dbman = $db->get_manager();
@@ -124,7 +124,7 @@ class grader_anonymous_grading extends gradereport_grader_upgrade_state {
 }
 
 class grader_manual_items extends gradereport_grader_upgrade_state {
-    var $version = 2012072300;
+    var $version = 2013052800;
 
     function upgrade($db) {
         $base_sql = "%s {grade_grades} gr, {grade_items} gi %s " .

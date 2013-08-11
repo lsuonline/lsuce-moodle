@@ -131,7 +131,6 @@ foreach ($everyone as $userid => $user) {
     if(!$user->suspended) {
         $users[$userid] = $user;
     }
-    //print_r($user);
 }
 
 if (empty($users)) {
@@ -252,7 +251,7 @@ if ($form->is_cancelled()) {
         // Send emails
         if (isset($data->send)) {
             if ($type == 'drafts') {
-                quickmail::draft_cleanup($typeid);
+                quickmail::draft_cleanup($context->id,$typeid);
             }
 
             if (!empty($sigs) and $data->sigid > -1) {

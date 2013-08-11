@@ -12,12 +12,14 @@ class setting_form extends moodleform {
 
         $m->addElement('text', 'user_firstname', $_s('user_firstname'));
         $m->setDefault('user_firstname', $user->firstname);
+        $m->setType('user_firstname', PARAM_TEXT);
 
         $m->addElement('checkbox', 'user_grade_restore', $_s('grade_restore'));
         $m->setDefault('user_grade_restore', 1);
         $m->addHelpButton('user_grade_restore', 'grade_restore', 'block_cps');
 
         $m->addElement('hidden', 'id', $user->id);
+        $m->setType('id', PARAM_INT);
 
         $buttons = array(
             $m->createElement('submit', 'save', get_string('savechanges')),
@@ -33,7 +35,10 @@ class setting_search_form extends moodleform {
         $m =& $this->_form;
 
         $m->addElement('text', 'username', get_string('username'));
+        $m->setType('username',PARAM_ALPHANUMEXT);
+        
         $m->addElement('text', 'idnumber', get_string('idnumber'));
+        $m->setType('idnumber',PARAM_ALPHANUM);
 
         $buttons = array(
             $m->createElement('submit', 'search', get_string('search')),

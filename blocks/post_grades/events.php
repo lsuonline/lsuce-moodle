@@ -120,7 +120,8 @@ abstract class post_grades_handler {
             return true;
         }
 
-        $ues_course = reset(ues_course::merge_sections($sections))->fill_meta();
+        $merged = ues_course::merge_sections($sections);
+        $ues_course = reset($merged)->fill_meta();
 
         // No interested
         if ($ues_course->department != 'LAW') {

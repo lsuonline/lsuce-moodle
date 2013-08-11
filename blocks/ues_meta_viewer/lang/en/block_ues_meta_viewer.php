@@ -17,3 +17,5 @@ $string['no_results'] = 'No Results.';
 $string['found_results'] = 'Found: ';
 
 $string['ues_meta_viewer:access'] = 'Access the Meta viewer';
+$string['ues_meta_viewer:myaddinstance'] = 'Add UES Data Viewer block to the My page';
+$string['ues_meta_viewer:addinstance'] = 'Add UES Data Viewer block';

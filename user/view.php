@@ -46,9 +46,9 @@ $user = $DB->get_record('user', array('id'=>$id), '*', MUST_EXIST);
 $course = $DB->get_record('course', array('id'=>$courseid), '*', MUST_EXIST);
 $currentuser = ($user->id == $USER->id);
 
-$systemcontext = get_context_instance(CONTEXT_SYSTEM);
-$coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
-$usercontext   = get_context_instance(CONTEXT_USER, $user->id, IGNORE_MISSING);
+$systemcontext = context_system::instance();
+$coursecontext = context_course::instance($course->id);
+$usercontext   = context_user::instance($user->id, IGNORE_MISSING);
 
 // Require login first
 if (isguestuser($user)) {
@@ -57,7 +57,13 @@ if (isguestuser($user)) {
 }
 
 if (!empty($CFG->forceloginforprofiles)) {
-    require_login(); // we can not log in to course due to the parent hack below
+    require_login(); // We can not log in to course due to the parent hack below.
+
+    // Guests do not have permissions to view anyone's profile if forceloginforprofiles is set.
+    if (isguestuser()) {
+        $SESSION->wantsurl = $PAGE->url->out(false);
+        redirect(get_login_url());
+    }
 }
 
 $PAGE->set_context($coursecontext);
@@ -148,9 +154,12 @@ if ($currentuser) {
     }
 }
 
+$PAGE->set_title("$course->fullname: $strpersonalprofile: $fullname");
+$PAGE->set_heading($course->fullname);
+$PAGE->set_pagelayout('standard');
 
-/// We've established they can see the user's name at least, so what about the rest?
-
+// Locate the users settings in the settings navigation and force it open.
+// This MUST be done after we've set up the page as it is going to cause theme and output to initialise.
 if (!$currentuser) {
     $PAGE->navigation->extend_for_user($user);
     if ($node = $PAGE->settingsnav->get('userviewingsettings'.$user->id)) {
@@ -163,9 +172,6 @@ if ($node = $PAGE->settingsnav->get('courseadmin')) {
     $node->forceopen = false;
 }
 
-$PAGE->set_title("$course->fullname: $strpersonalprofile: $fullname");
-$PAGE->set_heading($course->fullname);
-$PAGE->set_pagelayout('standard');
 echo $OUTPUT->header();
 
 echo '<div class="userprofile">';
@@ -231,24 +237,19 @@ echo '</div>';
 
 // Print all the little details in a list
 
-echo '<table class="list" summary="">';
-
-//checks were performed above that ensure that if we've got to here either the user
-//is viewing their own profile ($USER->id == $user->id) or $user is enrolled in the course
+echo html_writer::start_tag('dl', array('class'=>'list'));
+// Show email if any of the following conditions match.
+// 1. User is viewing his own profile.
+// 2. Has allowed everyone to see email
+// 3. User has allowed course members to can see email and current user is in same course
+// 4. Has either course:viewhiddenuserfields or site:viewuseridentity capability.
 if ($currentuser
-   or $user->maildisplay == 1 //allow everyone to see email address
-   or ($user->maildisplay == 2 && is_enrolled($coursecontext, $USER)) //fellow course members can see email. Already know $user is enrolled
-   or has_capability('moodle/course:useremail', $coursecontext)) {
-    print_row(get_string("email").":", obfuscate_mailto($user->email, ''));
-}
-
-// Show the user's web page if set
-if ($user->url && !isset($hiddenfields['webpage'])) {
-    $url = $user->url;
-    if (strpos($user->url, '://') === false) {
-        $url = 'http://'. $url;
-    }
-    print_row(get_string("webpage") .":", '<a href="'.s($url).'">'.s($user->url).'</a>');
+   or $user->maildisplay == 1
+   or ($user->maildisplay == 2 && is_enrolled($coursecontext, $USER))
+   or has_capability('moodle/course:viewhiddenuserfields', $coursecontext)
+   or has_capability('moodle/site:viewuseridentity', $coursecontext)) {
+    echo html_writer::tag('dt', get_string('email'));
+    echo html_writer::tag('dd', obfuscate_mailto($user->email, ''));
 }
 
 // Show last time this user accessed this course
@@ -258,12 +259,14 @@ if (!isset($hiddenfields['lastaccess'])) {
     } else {
         $datestring = get_string("never");
     }
-    print_row(get_string("lastaccess").":", $datestring);
+    echo html_writer::tag('dt', get_string('lastaccess'));
+    echo html_writer::tag('dd', $datestring);
 }
 
 // Show roles in this course
 if ($rolestring = get_user_roles_in_course($id, $course->id)) {
-    print_row(get_string('roles').':', $rolestring);
+    echo html_writer::tag('dt', get_string('roles'));
+    echo html_writer::tag('dd', $rolestring);
 }
 
 // Show groups this user is in
@@ -285,23 +288,22 @@ if (!isset($hiddenfields['groups'])) {
             }
         }
         if ($groupstr !== '') {
-            print_row(get_string("group").":", rtrim($groupstr, ', '));
+            echo html_writer::tag('dt', get_string('group'));
+            echo html_writer::tag('dd', rtrim($groupstr, ', '));
         }
     }
 }
 
 // Show other courses they may be in
-$has_permission = has_capability('moodle/course:create', $systemcontext) ||
-                  has_capability('block/helpdesk:viewenrollments', $systemcontext);
-
 if (!isset($hiddenfields['mycourses'])) {
-    if (($mycourses = enrol_get_users_courses($user->id, true, NULL, 'visible DESC,sortorder ASC')) and $has_permission) {
+    if ($mycourses = enrol_get_all_users_courses($user->id, true, NULL, 'visible DESC,sortorder ASC')) {
         $shown = 0;
         $courselisting = '';
         foreach ($mycourses as $mycourse) {
             if ($mycourse->category) {
-                $ccontext = get_context_instance(CONTEXT_COURSE, $mycourse->id);;
-                $cfullname = format_string($mycourse->fullname, true, array('context' => $ccontext));
+                context_helper::preload_from_record($mycourse);
+                $ccontext = context_course::instance($mycourse->id);
+                $cfullname = $ccontext->get_context_name(false);
                 if ($mycourse->id != $course->id){
                     $class = '';
                     if ($mycourse->visible == 0) {
@@ -323,18 +325,19 @@ if (!isset($hiddenfields['mycourses'])) {
                 break;
             }
         }
-        print_row(get_string('courseprofiles').':', rtrim($courselisting,', '));
+        echo html_writer::tag('dt', get_string('courseprofiles'));
+        echo html_writer::tag('dd', rtrim($courselisting,', '));
     }
 }
 
 if (!isset($hiddenfields['suspended'])) {
     if ($user->suspended) {
-        print_row('', get_string('suspended', 'auth'));
+        echo html_writer::tag('dt', "&nbsp;");
+        echo html_writer::tag('dd', get_string('suspended', 'auth'));
     }
 }
-
-echo "</table></div></div>";
-
+echo html_writer::end_tag('dl');
+echo "</div></div>"; // Closing desriptionbox and userprofilebox.
 // Print messaging link if allowed
 if (isloggedin() && has_capability('moodle/site:sendmessage', $usercontext)
     && !empty($CFG->messaging) && !isguestuser() && !isguestuser($user) && ($USER->id != $user->id)) {
@@ -362,11 +365,3 @@ if ($currentuser || has_capability('moodle/user:viewdetails', $usercontext) || h
 echo '</div>';  // userprofile class
 
 echo $OUTPUT->footer();
-
-/// Functions ///////
-
-function print_row($left, $right) {
-    echo "\n<tr><th class=\"label c0\">$left</th><td class=\"info c1\">$right</td></tr>\n";
-}
-
-

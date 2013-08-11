@@ -346,8 +346,7 @@ abstract class restore_dbops {
         global $CFG, $DB;
 
         // Gather various information about roles
-        $coursectx = get_context_instance(CONTEXT_COURSE, $courseid);
-        $allroles = $DB->get_records('role');
+        $coursectx = context_course::instance($courseid);
         $assignablerolesshortname = get_assignable_roles($coursectx, ROLENAME_SHORT, false, $userid);
 
         // Note: under 1.9 we had one function restore_samerole() that performed one complete
@@ -720,7 +719,7 @@ abstract class restore_dbops {
         switch ($contextlevel) {
              // For system is easy, the best context is the system context
              case CONTEXT_SYSTEM:
-                 $targetcontext = get_context_instance(CONTEXT_SYSTEM);
+                 $targetcontext = context_system::instance();
                  break;
 
              // For coursecat, we are going to look for stamps in all the
@@ -740,8 +739,8 @@ abstract class restore_dbops {
                  }
                  $contexts = array();
                  // Build the array of contexts we are going to look
-                 $systemctx = get_context_instance(CONTEXT_SYSTEM);
-                 $coursectx = get_context_instance(CONTEXT_COURSE, $courseid);
+                 $systemctx = context_system::instance();
+                 $coursectx = context_course::instance($courseid);
                  $parentctxs= get_parent_contexts($coursectx);
                  foreach ($parentctxs as $parentctx) {
                      // Exclude system context
@@ -762,14 +761,14 @@ abstract class restore_dbops {
                      $matchingcontexts = $DB->get_records_sql($sql, $params);
                      // Only if ONE and ONLY ONE context is found, use it as valid target
                      if (count($matchingcontexts) == 1) {
-                         $targetcontext = get_context_instance_by_id(reset($matchingcontexts)->contextid);
+                         $targetcontext = context::instance_by_id(reset($matchingcontexts)->contextid);
                      }
                  }
                  break;
 
              // For course is easy, the best context is the course context
              case CONTEXT_COURSE:
-                 $targetcontext = get_context_instance(CONTEXT_COURSE, $courseid);
+                 $targetcontext = context_course::instance($courseid);
                  break;
 
              // For module is easy, there is not best context, as far as the
@@ -778,7 +777,7 @@ abstract class restore_dbops {
              // case is handled by {@link prechek_precheck_qbanks_by_level}
              // in an special way
              case CONTEXT_MODULE:
-                 $targetcontext = get_context_instance(CONTEXT_COURSE, $courseid);
+                 $targetcontext = context_course::instance($courseid);
                  break;
         }
         return $targetcontext;
@@ -819,9 +818,12 @@ abstract class restore_dbops {
      * @param int|null $olditemid
      * @param int|null $forcenewcontextid explicit value for the new contextid (skip mapping)
      * @param bool $skipparentitemidctxmatch
+     * @return array of result object
      */
     public static function send_files_to_pool($basepath, $restoreid, $component, $filearea, $oldcontextid, $dfltuserid, $itemname = null, $olditemid = null, $forcenewcontextid = null, $skipparentitemidctxmatch = false) {
-        global $DB;
+        global $DB, $CFG;
+
+        $results = array();
 
         if ($forcenewcontextid) {
             // Some components can have "forced" new contexts (example: questions can end belonging to non-standard context mappings,
@@ -902,12 +904,24 @@ abstract class restore_dbops {
                 // this is a regular file, it must be present in the backup pool
                 $backuppath = $basepath . backup_file_manager::get_backup_content_file_location($file->contenthash);
 
+                // The file is not found in the backup.
                 if (!file_exists($backuppath)) {
-                    throw new restore_dbops_exception('file_not_found_in_pool', $file);
+                    $result = new stdClass();
+                    $result->code = 'file_missing_in_backup';
+                    $result->message = sprintf('missing file %s%s in backup', $file->filepath, $file->filename);
+                    $result->level = backup::LOG_WARNING;
+                    $results[] = $result;
+                    continue;
                 }
 
                 // create the file in the filepool if it does not exist yet
                 if (!$fs->file_exists($newcontextid, $component, $filearea, $rec->newitemid, $file->filepath, $file->filename)) {
+
+                    // If no license found, use default.
+                    if ($file->license == null){
+                        $file->license = $CFG->sitedefaultlicense;
+                    }
+
                     $file_record = array(
                         'contextid'   => $newcontextid,
                         'component'   => $component,
@@ -960,6 +974,7 @@ abstract class restore_dbops {
             }
         }
         $rs->close();
+        return $results;
     }
 
     /**
@@ -1043,7 +1058,7 @@ abstract class restore_dbops {
 
                 // Most external plugins do not store passwords locally
                 if (!empty($userauth->preventpassindb)) {
-                    $user->password = 'not cached';
+                    $user->password = AUTH_PASSWORD_NOT_CACHED;
 
                 // If Moodle is responsible for storing/validating pwd and reset functionality is available, mark
                 } else if ($userauth->isinternal and $userauth->canresetpwd) {
@@ -1066,7 +1081,7 @@ abstract class restore_dbops {
             // but for deleted users that don't have a context anymore (MDL-30192). We are done for them
             // and nothing else (custom fields, prefs, tags, files...) will be created.
             if (empty($user->deleted)) {
-                $newuserctxid = $user->deleted ? 0 : get_context_instance(CONTEXT_USER, $newuserid)->id;
+                $newuserctxid = $user->deleted ? 0 : context_user::instance($newuserid)->id;
                 self::set_backup_ids_record($restoreid, 'context', $recuser->parentitemid, $newuserctxid);
 
                 // Process custom fields
@@ -1138,14 +1153,16 @@ abstract class restore_dbops {
     *
     *  If restoring users from same site backup:
     *      1A - Normal check: If match by id and username and mnethost  => ok, return target user
-    *      1B - Handle users deleted in DB and "alive" in backup file:
+    *      1B - If restoring an 'anonymous' user (created via the 'Anonymize user information' option) try to find a
+    *           match by username only => ok, return target user MDL-31484
+    *      1C - Handle users deleted in DB and "alive" in backup file:
     *           If match by id and mnethost and user is deleted in DB and
     *           (match by username LIKE 'backup_email.%' or by non empty email = md5(username)) => ok, return target user
-    *      1C - Handle users deleted in backup file and "alive" in DB:
+    *      1D - Handle users deleted in backup file and "alive" in DB:
     *           If match by id and mnethost and user is deleted in backup file
     *           and match by email = email_without_time(backup_email) => ok, return target user
-    *      1D - Conflict: If match by username and mnethost and doesn't match by id => conflict, return false
-    *      1E - None of the above, return true => User needs to be created
+    *      1E - Conflict: If match by username and mnethost and doesn't match by id => conflict, return false
+    *      1F - None of the above, return true => User needs to be created
     *
     *  if restoring from another site backup (cannot match by id here, replace it by email/firstaccess combination):
     *      2A - Normal check: If match by username and mnethost and (email or non-zero firstaccess) => ok, return target user
@@ -1177,7 +1194,16 @@ abstract class restore_dbops {
                 return $rec; // Matching user found, return it
             }
 
-            // 1B - Handle users deleted in DB and "alive" in backup file
+            // 1B - If restoring an 'anonymous' user (created via the 'Anonymize user information' option) try to find a
+            // match by username only => ok, return target user MDL-31484
+            // This avoids username / id mis-match problems when restoring subsequent anonymized backups.
+            if (backup_anonymizer_helper::is_anonymous_user($user)) {
+                if ($rec = $DB->get_record('user', array('username' => $user->username))) {
+                    return $rec; // Matching anonymous user found - return it
+                }
+            }
+
+            // 1C - Handle users deleted in DB and "alive" in backup file
             // Note: for DB deleted users email is stored in username field, hence we
             //       are looking there for emails. See delete_user()
             // Note: for DB deleted users md5(username) is stored *sometimes* in the email field,
@@ -1200,7 +1226,7 @@ abstract class restore_dbops {
                 return $rec; // Matching user, deleted in DB found, return it
             }
 
-            // 1C - Handle users deleted in backup file and "alive" in DB
+            // 1D - Handle users deleted in backup file and "alive" in DB
             // If match by id and mnethost and user is deleted in backup file
             // and match by email = email_without_time(backup_email) => ok, return target user
             if ($user->deleted) {
@@ -1218,7 +1244,7 @@ abstract class restore_dbops {
                 }
             }
 
-            // 1D - If match by username and mnethost and doesn't match by id => conflict, return false
+            // 1E - If match by username and mnethost and doesn't match by id => conflict, return false
             if ($rec = $DB->get_record('user', array('username'=>$user->username, 'mnethostid'=>$user->mnethostid))) {
                 if ($user->id != $rec->id) {
                     return false; // Conflict, username already exists and belongs to another id
@@ -1343,7 +1369,7 @@ abstract class restore_dbops {
         $mnethosts = $DB->get_records('mnet_host', array(), 'wwwroot', 'wwwroot, id');
 
         // Calculate the context we are going to use for capability checking
-        $context = get_context_instance(CONTEXT_COURSE, $courseid);
+        $context = context_course::instance($courseid);
 
         // Calculate if we have perms to create users, by checking:
         // to 'moodle/restore:createuser' and 'moodle/restore:userinfo'
@@ -1495,7 +1521,8 @@ abstract class restore_dbops {
             }
             $currentfullname = $fullname.$suffixfull;
             $currentshortname = substr($shortname, 0, 100 - strlen($suffixshort)).$suffixshort; // < 100cc
-            $coursefull  = $DB->get_record_select('course', 'fullname = ? AND id != ?', array($currentfullname, $courseid));
+            $coursefull  = $DB->get_record_select('course', 'fullname = ? AND id != ?',
+                    array($currentfullname, $courseid), '*', IGNORE_MULTIPLE);
             $courseshort = $DB->get_record_select('course', 'shortname = ? AND id != ?', array($currentshortname, $courseid));
             $counter++;
         } while ($coursefull || $courseshort);
@@ -1511,7 +1538,7 @@ abstract class restore_dbops {
         global $DB;
 
         // Get the course context
-        $coursectx = get_context_instance(CONTEXT_COURSE, $courseid);
+        $coursectx = context_course::instance($courseid);
         // Get all the mapped roles we have
         $rs = $DB->get_recordset('backup_ids_temp', array('backupid' => $restoreid, 'itemname' => 'role'), '', 'itemid');
         foreach ($rs as $recrole) {

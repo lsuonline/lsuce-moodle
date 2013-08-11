@@ -215,7 +215,8 @@ class att_page_with_filter_controls {
     public function init_start_end_date() {
         global $CFG;
 
-        $date = usergetdate($this->curdate);
+        // HOURSECS solves issue for weeks view with Daylight saving time and clocks adjusting by one hour backward
+        $date = usergetdate($this->curdate + HOURSECS);
         $mday = $date['mday'];
         $wday = $date['wday'] - $CFG->calendar_startwday;
         if ($wday < 0) $wday += 7;
@@ -828,7 +829,7 @@ class attforblock {
         $rec->lasttakenby = $USER->id;
         $DB->update_record('attendance_sessions', $rec);
 
-        $this->update_users_grade(array_keys($sesslog));
+        if ($this->grade != 0) $this->update_users_grade(array_keys($sesslog));
 
         $params = array(
                 'sessionid' => $this->pageparams->sessionid,
@@ -1010,6 +1011,7 @@ class attforblock {
         $grades = array();
 
         foreach ($userids as $userid) {
+            $grades[$userid] = new stdClass();
             $grades[$userid]->userid = $userid;
             $grades[$userid]->rawgrade = att_calc_user_grade_fraction($this->get_user_grade($userid), $this->get_user_max_grade($userid)) * $this->grade;
         }
@@ -1049,20 +1051,18 @@ class attforblock {
     public function get_user_filtered_sessions_log_extended($userid) {
         global $DB;
 
-        $groups = array_keys(groups_get_all_groups($this->course->id, $userid));
-        $groups[] = 0;
-        list($gsql, $gparams) = $DB->get_in_or_equal($groups, SQL_PARAMS_NAMED, 'gid0');
+        // all taked sessions (including previous groups)
 
         if ($this->pageparams->startdate && $this->pageparams->enddate) {
             $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND 
-                      ats.sessdate >= :sdate AND ats.sessdate < :edate AND ats.groupid $gsql";
+                      ats.sessdate >= :sdate AND ats.sessdate < :edate";
         } else {
-            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND ats.groupid $gsql";
+            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate";
         }
 
-        $sql = "SELECT ats.id, ats.sessdate, ats.duration, ats.description, al.statusid, al.remarks
+        $sql = "SELECT ats.id, ats.groupid, ats.sessdate, ats.duration, ats.description, al.statusid, al.remarks
                   FROM {attendance_sessions} ats
-             LEFT JOIN {attendance_log} al
+            RIGHT JOIN {attendance_log} al
                     ON ats.id = al.sessionid AND al.studentid = :uid
                  WHERE $where
               ORDER BY ats.sessdate ASC";
@@ -1073,8 +1073,33 @@ class attforblock {
                 'csdate'    => $this->course->startdate,
                 'sdate'     => $this->pageparams->startdate,
                 'edate'     => $this->pageparams->enddate);
-        $params = array_merge($params, $gparams);
         $sessions = $DB->get_records_sql($sql, $params);
+
+
+        // all sessions for current groups
+
+        $groups = array_keys(groups_get_all_groups($this->course->id, $userid));
+        $groups[] = 0;
+        list($gsql, $gparams) = $DB->get_in_or_equal($groups, SQL_PARAMS_NAMED, 'gid0');
+
+        if ($this->pageparams->startdate && $this->pageparams->enddate) {
+            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND
+                      ats.sessdate >= :sdate AND ats.sessdate < :edate AND ats.groupid $gsql";
+        } else {
+            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND ats.groupid $gsql";
+        }
+
+        $sql = "SELECT ats.id, ats.groupid, ats.sessdate, ats.duration, ats.description, al.statusid, al.remarks
+                  FROM {attendance_sessions} ats
+             LEFT JOIN {attendance_log} al
+                    ON ats.id = al.sessionid AND al.studentid = :uid
+                 WHERE $where
+              ORDER BY ats.sessdate ASC";
+
+        $params = array_merge($params, $gparams);
+        $sessions = array_merge($sessions, $DB->get_records_sql($sql, $params));
+
+
         foreach ($sessions as $sess) {
             if (empty($sess->description)) {
                 $sess->description = get_string('nodescription', 'attforblock');
@@ -1290,12 +1315,14 @@ function att_update_all_users_grades($attid, $course, $context) {
     $statuses = att_get_statuses($attid);
     $gradebook_maxgrade = att_get_gradebook_maxgrade($attid);
     foreach ($userids as $userid) {
-        $grades[$userid]->userid = $userid;
+        $grade = new stdClass;
+        $grade->userid = $userid;
         $userstatusesstat = att_get_user_statuses_stat($attid, $course->startdate, $userid);
         $usertakensesscount = att_get_user_taken_sessions_count($attid, $course->startdate, $userid);
         $usergrade = att_get_user_grade($userstatusesstat, $statuses);
         $usermaxgrade = att_get_user_max_grade($usertakensesscount, $statuses);
-        $grades[$userid]->rawgrade = att_calc_user_grade_fraction($usergrade, $usermaxgrade) * $gradebook_maxgrade;
+        $grade->rawgrade = att_calc_user_grade_fraction($usergrade, $usermaxgrade) * $gradebook_maxgrade;
+        $grades[$userid] = $grade;
     }
 
     return grade_update('mod/attforblock', $course->id, 'mod', 'attforblock',

@@ -67,7 +67,7 @@ class profile_field_base {
     function edit_field($mform) {
 
         if ($this->field->visible != PROFILE_VISIBLE_NONE
-          or has_capability('moodle/user:update', get_context_instance(CONTEXT_SYSTEM))) {
+          or has_capability('moodle/user:update', context_system::instance())) {
 
             $this->edit_field_add($mform);
             $this->edit_field_set_default($mform);
@@ -85,7 +85,7 @@ class profile_field_base {
     function edit_after_data($mform) {
 
         if ($this->field->visible != PROFILE_VISIBLE_NONE
-          or has_capability('moodle/user:update', get_context_instance(CONTEXT_SYSTEM))) {
+          or has_capability('moodle/user:update', context_system::instance())) {
             $this->edit_field_set_locked($mform);
             return true;
         }
@@ -129,9 +129,19 @@ class profile_field_base {
         global $DB;
 
         $errors = array();
-        /// Check for uniqueness of data if required
-        if ($this->is_unique()) {
-            $value = (is_array($usernew->{$this->inputname}) and isset($usernew->{$this->inputname}['text'])) ? $usernew->{$this->inputname}['text'] : $usernew->{$this->inputname};
+        // Get input value.
+        if (isset($usernew->{$this->inputname})) {
+            if (is_array($usernew->{$this->inputname}) && isset($usernew->{$this->inputname}['text'])) {
+                $value = $usernew->{$this->inputname}['text'];
+            } else {
+                $value = $usernew->{$this->inputname};
+            }
+        } else {
+            $value = '';
+        }
+
+        // Check for uniqueness of data if required.
+        if ($this->is_unique() && (($value !== '') || $this->is_required())) {
             $data = $DB->get_records_sql('
                     SELECT id, userid
                       FROM {user_info_data}
@@ -183,7 +193,7 @@ class profile_field_base {
         if (!$mform->elementExists($this->inputname)) {
             return;
         }
-        if ($this->is_locked() and !has_capability('moodle/user:update', get_context_instance(CONTEXT_SYSTEM))) {
+        if ($this->is_locked() and !has_capability('moodle/user:update', context_system::instance())) {
             $mform->hardFreeze($this->inputname);
             $mform->setConstant($this->inputname, $this->data);
         }
@@ -283,11 +293,11 @@ class profile_field_base {
                     return true;
                 } else {
                     return has_capability('moodle/user:viewalldetails',
-                            get_context_instance(CONTEXT_USER, $this->userid));
+                            context_user::instance($this->userid));
                 }
             default:
                 return has_capability('moodle/user:viewalldetails',
-                        get_context_instance(CONTEXT_USER, $this->userid));
+                        context_user::instance($this->userid));
         }
     }
 
@@ -359,7 +369,7 @@ function profile_definition($mform, $userid = 0) {
     global $CFG, $DB;
 
     // if user is "admin" fields are displayed regardless
-    $update = has_capability('moodle/user:update', get_context_instance(CONTEXT_SYSTEM));
+    $update = has_capability('moodle/user:update', context_system::instance());
 
     if ($categories = $DB->get_records('user_info_category', null, 'sortorder ASC')) {
         foreach ($categories as $category) {
@@ -442,7 +452,8 @@ function profile_display_fields($userid) {
                     $newfield = 'profile_field_'.$field->datatype;
                     $formfield = new $newfield($field->id, $userid);
                     if ($formfield->is_visible() and !$formfield->is_empty()) {
-                        print_row(format_string($formfield->field->name.':'), $formfield->display_data());
+                        echo html_writer::tag('dt', format_string($formfield->field->name));
+                        echo html_writer::tag('dd', $formfield->display_data());
                     }
                 }
             }
