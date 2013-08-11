@@ -33,4 +33,4 @@ $module->component = 'mod_hotpot';
 $module->maturity  = MATURITY_STABLE; // = 200
 $module->release   = 'v3.0.65';
 $module->requires  = 2010112400; // Moodle 2.0
-$module->version   = 2010080365;
+$module->version   = 2013081105;
