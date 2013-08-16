@@ -431,3 +431,6 @@ $string['update'] = 'Update';
 $string['using_tool_configuration'] = 'Using tool configuration: ';
 $string['validurl'] = 'A valid URL must start with http(s)://';
 $string['viewsubmissions'] = 'View submissions and grading screen';
+$string['default_launch_course_id'] = 'Course Identifier';
+$string['default_launch_course_id_help'] = 'Choose which field in the \'course\' database table will be used 
+    to map Moodle courses to External Tool course records. Possible values are: id, shortname or idnumber';
