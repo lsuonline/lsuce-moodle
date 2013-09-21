@@ -1,13 +1,19 @@
 <?php
+global $CFG;
 
 require_once($CFG->libdir . '/gdlib.php');
 require_once($CFG->libdir . '/filelib.php');
 
+/**
+ * 
+ * @global stdClass $DB
+ * @param int $limit how many to fetch
+ * @return stdClass[]
+ */
 function mypic_get_users_without_pictures($limit=0) {
     global $DB;
-
-    $sql = "SELECT * FROM {user} u WHERE u.picture = 0 AND u.deleted = 0 ORDER BY RAND() LIMIT {$limit}";
-    return $DB->get_records_sql($sql);
+    return $DB->get_records('user',
+            array('picture'=>0, 'deleted'=>0), '', '*', 0, $limit);
 }
 
 /**
@@ -17,6 +23,7 @@ function mypic_get_users_without_pictures($limit=0) {
  * @return mixed array
  */
 function mypic_get_users_updated_pictures($start_time) {
+
     $start_date = strftime("%Y%m%d%H", $start_time);
 
     $ready_url = get_config('block_my_picture', 'ready_url');
@@ -27,15 +34,23 @@ function mypic_get_users_updated_pictures($start_time) {
     $res = json_decode($json);
 
     $to_moodle = function($user) {
-        $user->firstname = $user->first_name;
-        $user->lastname = $user->last_name;
-        $user->idnumber = $user->id_number;
-
-        unset($user->first_name, $user->last_name, $user->id_number);
-        return $user;
+        return $user->id_number;
     };
 
-    return empty($res->users) ? array() : array_map($to_moodle, $res->users);
+    $validUsers = mypic_WebserviceIntersectMoodle(array_map($to_moodle, $res->users));
+
+    return empty($res->users) ? array() : $validUsers;
+}
+
+/**
+ * For a given array of idnumbers, return only the subset that are valid in the database
+ * @global type $DB
+ * @param int[] $idnumbers array of idnumber keys to fetch users with
+ * @return stdClass[] user row objects from the DB
+ */
+function mypic_WebserviceIntersectMoodle($idnumbers = array()){
+    global $DB;
+    return array_values($DB->get_records_list('user', 'idnumber', $idnumbers, '','id, firstname, lastname, idnumber'));
 }
 
 function mypic_insert_picture($userid, $picture_path) {
@@ -43,18 +58,18 @@ function mypic_insert_picture($userid, $picture_path) {
 
     $context = get_context_instance(CONTEXT_USER, $userid);
     
-    $pathparts = explode('/', $picture_path);
-    $file = array_pop($pathparts);
-    $dir  = array_pop($pathparts);
-    $shortpath = $dir.'/'.$file;
+    $pathparts  = explode('/', $picture_path);
+    $file       = array_pop($pathparts);
+    $dir        = array_pop($pathparts);
+    $shortpath  = $dir.'/'.$file;
     
     if(!file_exists($picture_path)){
-        mtrace(sprintf("File %s does not exist", $picture_path));
         add_to_log(0, 'my_pic', "insert picture",'',sprintf("File %s does not exist for user %s", $shortpath, $userid));
         return false;
-    }elseif(filesize($picture_path)<=1){
-        mtrace(sprintf("File %s exists, but filesize is less than or equal to 1 byte", $picture_path));
+    }elseif(filesize($picture_path) == 1){
+        //this should never get called, now that the fetch() method traps for this condition
         add_to_log(0, 'my_pic', "insert picture",'',sprintf("1-byte file %s for user %s", $shortpath, $userid));
+        unlink($picture_path);
         return false;
     }elseif(process_new_icon($context, 'user', 'icon', 0, $picture_path)) {
         return $DB->set_field('user', 'picture', 1, array('id' => $userid));
@@ -113,7 +128,7 @@ function mypic_force_update_picture($idnumber, $hash = null) {
  * This method calls webservice show() method requesting response as jpg
  * @global type $CFG
  * @param type $idnumber 89-number
- * @param type $updating trigger the external service to mark the user photo as updated?
+ * @param type $updating trigger the external service to mark the user photo as updated
  * @return boolean|string
  */
 function mypic_fetch_picture($idnumber, $updating = false) {
@@ -121,28 +136,24 @@ function mypic_fetch_picture($idnumber, $updating = false) {
 
     $hash = hash("sha256", $idnumber);
 
-    $filename = $idnumber . '.jpg';
-    $fullpath = $CFG->dataroot . '/temp/' . $filename;
-    $fp = fopen($fullpath, 'w');
-
-    $curl = new curl();
-
-    // Could not update photo
     if ($updating and !mypic_force_update_picture($idnumber, $hash)) {
+        return false; // Could not update photo.
+    }
+
+    $name = $idnumber . '.jpg';
+    $path = $CFG->dataroot . '/temp/' . $name;
+    $url  = sprintf(get_config('block_my_picture', 'webservice_url'), $hash);
+    $curl = new curl();
+    $file = fopen($path, 'w');
+    $curl->download(array(array('url' => $url, 'file' => $file)));
+    fclose($file);
+
+    if(!empty($curl->response['Status']) and $curl->response['Status'] == '404'){
+        unlink($path);
         return false;
     }
 
-    $url = sprintf(get_config('block_my_picture', 'webservice_url'), $hash);
-    $curl->download(array(array('url' => $url, 'file' => $fp)));
-
-    fclose($fp);
-
-    if (!filesize($fullpath)) {
-        unlink($fullpath);
-        return false;
-    }
-
-    return $fullpath;
+    return $path;
 }
 
 function mypic_is_lsuid($idnumber) {
@@ -155,13 +166,13 @@ function mypic_is_lsuid($idnumber) {
 // 2 - Success, tiger card office picture inserted
 // 3 - Picture not found, 'visit tiger card office' picture inserted
 function mypic_update_picture($user, $updating=false) {
-    
+
     if (!mypic_is_lsuid($user->idnumber)) {
         $u  = isset($user->username) ? $user->username : '<not set>';
         $id = isset($user->idnumber) ? $user->idnumber : '<not set>';
-        
-        add_to_log(0, 'my_pic', "update picture",'',sprintf("bad id %s for user %s", $id, $u));
-        
+
+        add_to_log(0, 'my_pic', "update picture", '', sprintf("bad id %s for user %s", $id, $u));
+
         return (int) mypic_insert_badid($user->id);
     }
 
@@ -215,4 +226,58 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
     }
 
     mtrace($_s('elapsed', $time_diff) . $sep);
+    return array(
+        'count'     => $count,
+        'success'   => $num_success,
+        'error'     => $num_error,
+        'nopic'     => $num_nopic,
+        'badid'     => $num_badid
+        );
+}
+
+function mypic_verifyWebserviceExists(){
+    $ready = get_config('block_my_picture', 'ready_url');
+    $curl  = new curl();
+    $json  = $curl->get(sprintf($ready, time()));
+
+    if(is_null((json_decode($json)))){
+        mypic_emailAdminsFailureMsg();
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Simple email routine for messaging to admins
+ * @global type $CFG
+ * @global stdClass $DB
+ * @global type $USER
+ * @return int number of errors encountered while sending email
+ */
+function mypic_emailAdminsFailureMsg(){
+    global $CFG, $DB, $USER;
+    $subject = get_string('misconfigured_subject', 'block_my_picture');
+    $message = get_string('misconfigured_message', 'block_my_picture');
+
+    $adminIds     = explode(',',$CFG->siteadmins);
+    $admins = $DB->get_records_list('user', 'id',$adminIds);
+    $errors = 0;
+    foreach($admins as $admin){
+        $success = email_to_user(
+                $admin,                 // to
+                $USER,                  // from
+                $subject,               // subj
+                $message,               // body in plain text
+                $message,               // body in HTML
+                '',                     // attachment
+                '',                     // attachment name
+                true,                   // user true address ($USER)
+                $CFG->noreplyaddress,   // reply-to address
+                get_string('pluginname', 'block_my_picture') // reply-to name
+            );
+        if(!$success){
+            $errors++;
+        }
+    }
+    return $errors == 0 ? true : false;
 }
