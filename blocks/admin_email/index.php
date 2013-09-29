@@ -1,24 +1,25 @@
 <?php
 
 // Written at Louisiana State University
-
+global $CFG, $USER, $SESSION, $PAGE, $SITE, $OUTPUT, $DB;
 require_once '../../config.php';
 require_once "$CFG->dirroot/course/lib.php";
 require_once "$CFG->libdir/adminlib.php";
 require_once "$CFG->dirroot/user/filters/lib.php";
+require_once 'lib.php';
 require_once 'email_form.php';
 
 require_login();
 
-$page = optional_param('page', 0, PARAM_INT);
-$perpage = optional_param('perpage', 20, PARAM_INT);
-$sort = optional_param('sort', '', PARAM_ACTION);
-$direction = optional_param('dir', 'ASC', PARAM_ACTION);
+$page       = optional_param('page', 0, PARAM_INT);
+$perpage    = optional_param('perpage', 20, PARAM_INT);
+$sort       = optional_param('sort', '', PARAM_ACTION);
+$direction  = optional_param('dir', 'ASC', PARAM_ACTION);
 
-$blockname = get_string('pluginname', 'block_admin_email');
-$header = get_string('send_email', 'block_admin_email');
+$blockname  = get_string('pluginname', 'block_admin_email');
+$header     = get_string('send_email', 'block_admin_email');
 
-$context = get_context_instance(CONTEXT_SYSTEM);
+$context    = get_context_instance(CONTEXT_SYSTEM);
 
 $PAGE->set_context($context);
 $PAGE->set_url('/blocks/admin_email/');
@@ -26,26 +27,42 @@ $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($header);
 $PAGE->set_heading($SITE->shortname.': '.$blockname);
 
-// Get Oour users
+// Get Our users
 $fields = array(
-    'courserole' => 0,
-    'systemrole' => 0,
-    'realname' => 1,
-    'username' => 1,
-);
-$ufiltering = new user_filtering($fields);
+    'realname'      => 1,
+    'lastname'      => 1,
+    'firstname'     => 1,
+    'email'         => 1,
+    'city'          => 1,
+    'country'       => 1,
+    'confirmed'     => 1,
+    'suspended'     => 1,
+    'profile'       => 1,
+    'courserole'    => 0,
+    'systemrole'    => 0,
+    'username'      => 0,
+    'cohort'        => 1,
+    'firstaccess'   => 1,
+    'lastaccess'    => 0,
+    'neveraccessed' => 1,
+    'timemodified'  => 1,
+    'nevermodified' => 1,
+    'auth'          => 1,
+    'mnethostid'    => 1,
+    );
+
+$ufiltering         = new user_filtering($fields);
 list($sql, $params) = $ufiltering->get_sql_filter();
-$usercount = get_users(false); 
-$usersearchcount = get_users(false, '', true, null, '', '', '', '', '', 
+$usersearchcount    = get_users(false, '', true, null, '', '', '', '', '', 
                 '*', $sql, $params);
 
 if(empty($sort)) $sort = 'lastname';
 
-$display_users = empty($sql) ? array() :
+$display_users  = empty($sql) ? array() :
     get_users_listing($sort, $direction, $page*$perpage, 
     $perpage, '', '', '', $sql, $params);
 
-$users = empty($sql) ? array() :
+$users          = empty($sql) ? array() :
     get_users_listing($sort, $direction, 0, 
     0, '', '', '', $sql, $params);
 
@@ -57,21 +74,12 @@ if ($form->is_cancelled()) {
     redirect(new moodle_url('/blocks/admin_email/'));
 } else if ($data = $form->get_data()) {
 
-    $warnings = array();
-
-    $subject = $data->subject;
-    $text = strip_tags($data->body['text']);
-    $html = $data->body['text'];
-    foreach($users as $user) {
-        $success = email_to_user($user, $USER, $subject, $text, $html, '', '', 
-            true, $data->noreply, $blockname);
-        if(!$success)
-            $warnings[] = get_string('email_error', 'block_admin_email', $user);
-    }
-
+    $message = new Message($data, array_keys($users));
+    $message->send();
+    $message->sendAdminReceipt();
     // Finished processing
     // Empty errors mean that you can go back home
-    if(empty($warnings))
+    if(empty($message->warnings))
         redirect(new moodle_url('/'));
 }
 
@@ -79,8 +87,8 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading($header);
 
 // Notify the admin.
-if(!empty($warnings)) {
-    foreach($warnings as $warning) {
+if(!empty($message->warnings)) {
+    foreach($message->warnings as $warning) {
         echo $OUTPUT->notification($warning);
     }
 }
