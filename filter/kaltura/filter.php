@@ -20,8 +20,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once($CFG->dirroot.'/local/kaltura/locallib.php');
-
 class filter_kaltura extends moodle_text_filter {
 
     // Static class variables are used to generate the same
@@ -47,6 +45,9 @@ class filter_kaltura extends moodle_text_filter {
     /** @var int $playernumber - keeps a count of the number of players rendered on the page in a single page request */
     public static $playernumber = 0;
 
+    /* @var bool $kalturalocal - indicates if local/kaltura has been installed */
+    public static $kalturalocal = false;
+
     /**
      * This function runs once during a single page request and initialzies
      * some data.  This function also resolves KALDEV-201
@@ -55,7 +56,18 @@ class filter_kaltura extends moodle_text_filter {
      * @return void
      */
     public function setup($page, $context) {
-        global $THEME;
+        global $CFG, $THEME;
+
+        // Check if the local Kaltura plug-in exists.
+        if (self::$kalturalocal === false) {
+            if (file_exists($CFG->dirroot.'/local/kaltura/locallib.php')) {
+                require_once($CFG->dirroot.'/local/kaltura/locallib.php');
+                self::$kalturalocal = true;
+            } else {
+                // Leave
+                return;
+            }
+        }
 
         // Determine if the mobile theme is being used
         $theme = get_selected_theme_for_device_type();
@@ -87,10 +99,15 @@ class filter_kaltura extends moodle_text_filter {
      * video player.
      * @param string $text - Text that is to be displayed on the page
      * @param array $options - an array of additional options
-     * @param string - The same text or modified text is returned
+     * @return string - The same text or modified text is returned
      */
     function filter($text, array $options = array()) {
         global $CFG, $PAGE, $DB;
+
+        // Check if the local Kaltura plug-in exists.
+        if (!self::$kalturalocal) {
+            return $text;
+        }
 
         // Clear video list
         self::$videos = array();
@@ -150,7 +167,7 @@ class filter_kaltura extends moodle_text_filter {
 
                 if ($enabled) {
                     // Because the filter() method is called multiple times during a page request (once for every course section or once for every forum post),
-                    // the Kaltura repository library file is included only if the repository plug-in is enabled. 
+                    // the Kaltura repository library file is included only if the repository plug-in is enabled.
                     require_once($CFG->dirroot.'/repository/kaltura/locallib.php');
 
                    // Create the course category

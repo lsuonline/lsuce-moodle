@@ -112,7 +112,7 @@ class mod_kalvidpres_mod_form extends moodleform_mod {
         // Video entry id
         $attr = array('id' => 'video_entry_id');
         $mform->addElement('hidden', 'video_entry_id', '', $attr);
-        $mform->setType('entry_id', PARAM_TEXT);
+        $mform->setType('video_entry_id', PARAM_TEXT);
 
         // Document entry id
         $attr = array('id' => 'doc_entry_id');
@@ -124,7 +124,7 @@ class mod_kalvidpres_mod_form extends moodleform_mod {
         $attr = array('id' => 'id_video_added');
         $mform->addElement('hidden', 'video_added', '', $attr);
         $mform->setDefault('id_video_added', '0');
-        $mform->setType('id_video_added', PARAM_INT);
+        $mform->setType('video_added', PARAM_INT);
 
         // Video title
         $attr = array('id' => 'video_title');
