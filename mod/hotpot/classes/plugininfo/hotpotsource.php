@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,22 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Defines the version of hotpot
+ * Subplugin info class.
  *
- * This code fragment is called by moodle_needs_upgrading() and
- * /admin/index.php
- *
- * @package   mod-hotpot
- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
+ * @package   mod_hotpot
+ * @copyright 2013 Petr Skoda {@link http://skodak.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace mod_hotpot\plugininfo;
 
-// prevent direct access to this script
+use core\plugininfo\base;
+
 defined('MOODLE_INTERNAL') || die();
 
-$module->cron      = 0;
-$module->component = 'mod_hotpot';
-$module->maturity  = MATURITY_STABLE; // ALPHA=50, BETA=100, RC=150, STABLE=200
-$module->release   = '2013.10.21 (83)';
-$module->version   = 2013102183;
-$module->requires  = 2010112400; // Moodle 2.0
+class hotpotsource extends base {
+    public function is_uninstall_allowed() {
+        return true;
+    }
+}

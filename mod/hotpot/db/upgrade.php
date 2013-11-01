@@ -744,7 +744,54 @@ function xmldb_hotpot_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'hotpot');
     }
 
-    $newversion = 2010080365;
+    $newversion = 2010080366;
+    if ($oldversion < $newversion) {
+        if ($hotpots = $DB->get_records_select('hotpot', $DB->sql_like('sourcefile', '?'), array('%http://localhost/19/99/%'))) {
+            foreach ($hotpots as $hotpot) {
+                $sourcefile = str_replace('http://localhost/19/99/', '', $hotpot->sourcefile);
+                $DB->set_field('hotpot', 'sourcefile', $sourcefile, array('id' => $hotpot->id));
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2010080370;
+    if ($oldversion < $newversion) {
+        require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+
+        $reviewoptions = 0;
+        list($times, $items) = hotpot::reviewoptions_times_items();
+        foreach ($times as $timename => $timevalue) {
+            foreach ($items as $itemname => $itemvalue) {
+                $reviewoptions += ($timevalue & $itemvalue);
+            }
+        }
+        // $reviewoptions should now be set to 62415
+        $DB->set_field('hotpot', 'reviewoptions', $reviewoptions);
+
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2010080379;
+    if ($oldversion < $newversion) {
+
+        $table = new xmldb_table('hotpot_cache');
+        $fields = array(
+            new xmldb_field('sourcerepositoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'sourcelocation'),
+            new xmldb_field('configrepositoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'configlocation'),
+        );
+        foreach ($fields as $field) {
+            xmldb_hotpot_fix_previous_field($dbman, $table, $field);
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->change_field_type($table, $field);
+            } else {
+                $dbman->add_field($table, $field);
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2010080380;
     if ($oldversion < $newversion) {
         $empty_cache = true;
         upgrade_mod_savepoint(true, "$newversion", 'hotpot');

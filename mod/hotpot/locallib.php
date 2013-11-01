@@ -364,7 +364,7 @@ class hotpot {
      * @param stdclass $context  The context of the hotpot instance
      * @param stdclass $attempt  attempt data from the {hotpot_attempts} table
      */
-    private function __construct(stdclass $dbrecord, stdclass $cm, stdclass $course, stdclass $context=null, stdclass $attempt=null) {
+    private function __construct($dbrecord, $cm, $course, $context=null, $attempt=null) {
         foreach ($dbrecord as $field => $value) {
             if (property_exists('hotpot', $field)) {
                 $this->$field = $value;
@@ -397,7 +397,7 @@ class hotpot {
      * @param stdclass $course a row from the course table
      * @return hotpot the new hotpot object
      */
-    static public function create(stdclass $dbrecord, stdclass $cm, stdclass $course, stdclass $context=null, stdclass $attempt=null) {
+    static public function create($dbrecord, $cm, $course, $context=null, $attempt=null) {
         return new hotpot($dbrecord, $cm, $course, $context, $attempt);
     }
 
@@ -724,6 +724,27 @@ class hotpot {
             );
         }
         return array();
+    }
+
+    /**
+     * reviewoptions_timesitems
+     *
+     * @return xxx
+     */
+    public static function reviewoptions_times_items() {
+        return array(
+            array( // times
+                'duringattempt' => self::REVIEW_DURINGATTEMPT,
+                'afterattempt'  => self::REVIEW_AFTERATTEMPT,
+                'afterclose'    => self::REVIEW_AFTERCLOSE
+            ),
+            array( // items
+                'responses'     => self::REVIEW_RESPONSES,
+                'answers'       => self::REVIEW_ANSWERS,
+                'scores'        => self::REVIEW_SCORES,
+                'feedback'      => self::REVIEW_FEEDBACK
+            )
+        );
     }
 
     /**
@@ -1252,6 +1273,81 @@ class hotpot {
     }
 
     /**
+     * can_reviewattempt
+     *
+     * @param object $attempt (optional, default=null) record from "hotpot_attempts" table
+     * @return integer $reviewoptions currently available for this user at this attempt
+     */
+    function can_reviewhotpot() {
+        if ($this->can_reviewallattempts()) {
+            // teacher can view always review everything
+            return (self::REVIEW_DURINGATTEMPT | self::REVIEW_AFTERATTEMPT | self::REVIEW_AFTERCLOSE);
+        }
+        if ($this->can_reviewmyattempts()) {
+            if ($this->timeclose && $this->timeclose > $this->time) {
+                // quiz is still open
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_DURINGATTEMPT)) {
+                    return $reviewoptions;
+                }
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_AFTERATTEMPT)) {
+                    return $reviewoptions;
+                }
+            } else {
+                // quiz is already closed
+                if ($reviewoptions = $this->reviewoptions & self::REVIEW_AFTERCLOSE) {
+                    return $reviewoptions;
+                }
+            }
+        }
+        return 0; // review not available (to this user)
+    }
+
+    /**
+     * can_reviewattempt
+     *
+     * @param object $attempt (optional, default=null) record from "hotpot_attempts" table
+     * @return integer $reviewoptions currently available for this user at this attempt
+     */
+    function can_reviewattempt($attempt=null) {
+        if ($this->can_reviewattempts()) {
+            if ($attempt===null && isset($this->attempt)) {
+                $attempt = $this->attempt;
+            }
+            if ($attempt) {
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_DURINGATTEMPT)) {
+                    // during attempt
+                    if ($attempt->status==self::STATUS_INPROGRESS) {
+                        return $reviewoptions;
+                    }
+                }
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_AFTERATTEMPT)) {
+                    // after attempt (but before quiz closes)
+                    if ($attempt->status==self::STATUS_COMPLETED) {
+                        return $reviewoptions;
+                    }
+                    if ($attempt->status==self::STATUS_ABANDONED) {
+                        return $reviewoptions;
+                    }
+                    if ($attempt->status==self::STATUS_TIMEDOUT) {
+                        return $reviewoptions;
+                    }
+                    if ($attempt->status==self::STATUS_INPROGRESS) {
+                        return $reviewoptions;
+                    }
+                }
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_AFTERCLOSE)) {
+                    // after the quiz closes
+                    if ($this->timeclose < $this->time) {
+                        return $reviewoptions;
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+
+    /**
      * can_view
      *
      * @return xxx
@@ -1499,7 +1595,7 @@ class hotpot {
             }
 
             // set previous "in progress" attempt(s) to adandoned
-            $select = 'hotpotid=? AND userid=? AND attempt<=? AND status=?';
+            $select = 'hotpotid=? AND userid=? AND attempt<? AND status=?';
             $params = array($this->id, $USER->id, $max_attempt, self::STATUS_INPROGRESS);
             if ($attempts = $DB->get_records_select('hotpot_attempts', $select, $params)) {
                 foreach ($attempts as $attempt) {

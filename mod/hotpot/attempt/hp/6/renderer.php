@@ -179,7 +179,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // Each function name requires an corresponding function called:
         // fix_js_{$name}
 
-        return 'Client,ShowElements,GetViewportHeight,PageDim,TrimString,RemoveBottomNavBarForIE,StartUp,GetUserName,PreloadImages,ShowMessage,HideFeedback,SendResults,Finish,WriteToInstructions,ShowSpecialReadingForQuestion';
+        return 'Client,ShowElements,GetViewportHeight,SuppressBackspace,PageDim,TrimString,RemoveBottomNavBarForIE,StartUp,GetUserName,PreloadImages,ShowMessage,HideFeedback,SendResults,Finish,WriteToInstructions,ShowSpecialReadingForQuestion';
     }
 
     /**
@@ -456,6 +456,58 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."}"
         ;
         $str = substr_replace($str, $replace, $start, $length);
+    }
+
+    /**
+     * fix_js_SuppressBackspace
+     *
+     * @param xxx $str (passed by reference)
+     * @param xxx $start
+     * @param xxx $length
+     * @return xxx
+     */
+    function fix_js_SuppressBackspace(&$str, $start, $length)  {
+        // could also check "window.InTextBox" which is HP's standard way of detecting INPUT and TEXTAREA
+        $replace = ''
+            ."function SuppressBackspace(evt) {\n"
+            ."	if (evt==null) {\n"
+            ."		evt = window.event;\n"
+            ."	}\n"
+            ."	if (evt.target) {\n"
+            ."		var evtTarget = evt.target;\n"
+            ."	} else if (evt.srcElement) {\n"
+            ."		var evtTarget = evt.srcElement;\n"
+            ."	} else {\n"
+            ."		return true;\n" // shouldn't happen !!
+            ."	}\n"
+            ."	if (evt.keyCode != 8) {\n"
+            ."		return true;\n" // not the delete key
+            ."	}\n"
+            ."	if (evtTarget.nodeType==3) {\n" // Safari quirk
+            ."		evtTarget = evtTarget.parentNode;\n"
+            ."	}\n"
+            ."	if (evtTarget.tagName=='INPUT' || evtTarget.tagName=='TEXTAREA') {\n"
+            ."		return true;\n" // allow delete key in text input / textarea
+            ."	}\n"
+            ."	if (evt.preventDefault) {\n"
+            ."		evt.preventDefault();\n"
+            ."	} else if (window.event) {\n"
+            ."		window.event.returnValue = false;\n"
+            ."		window.event.cancelBubble = true;\n"
+            ."	}\n"
+            ."	return false;\n"
+            ."}\n"
+        ;
+        $str = substr_replace($str, $replace, $start, $length);
+
+        // remove standard HP code that assigns event keypress/keydown handler
+        $offset = $start + strlen($replace);
+        list($start, $finish) = $this->locate_js_block('if', 'C.ie', $str, true, $offset);
+
+        if ($finish) {
+            $length = $finish - $start;
+            $str = substr_replace($str, '', $start, $length);
+        }
     }
 
     /**
@@ -768,9 +820,14 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
 
         if ($pos = strrpos($substr, '}')) {
             if ($this->hotpot->delay3==hotpot::TIME_DISABLE) {
-                $forceajax = 1;
+                $ajax = 1;
             } else {
-                $forceajax = 0;
+                $ajax = 0;
+            }
+            if ($this->can_clickreport()) {
+                $sendallclicks = 1;
+            } else {
+                $sendallclicks = 0;
             }
             if ($this->can_continue()==hotpot::CONTINUE_RESUMEQUIZ) {
                 $onunload_status = hotpot::STATUS_INPROGRESS;
@@ -802,25 +859,13 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                 ."		FDiv.style.display = 'none';\n"
                 ."	}\n"
                 ."\n"
-                ."// create HP object (to collect and send responses)\n"
-                ."	window.HP = new ".$this->js_object_type."('".$this->can_clickreport()."','".$forceajax."');\n"
+                ."	// create HP object (to collect and send responses)\n"
+                ."	window.HP = new ".$this->js_object_type."($sendallclicks,$ajax);\n"
                 ."\n"
-                //."// call HP.onunload to send results when this page unloads\n"
-                //."	var s = '';\n"
-                //."	if (typeof(window.onunload)=='function'){\n"
-                //."		window.onunload_StartUp = onunload;\n"
-                //."		s += 'window.onunload_StartUp();'\n"
-                //."	}\n"
-                //."	window.onunload = new Function(s + 'if(window.HP){HP.status=$onunload_status;HP.onunload();object_destroy(HP);}return true;');\n"
-                //."\n"
-                ."	window.onunload = function() {\n"
-                ."		if (window.HP) {\n"
-                ."			HP.status=$onunload_status;\n"
-                ."			HP.onunload();\n"
-                ."			object_destroy(HP);\n"
-                ."		}\n"
-                ."		return true;\n"
-                ."	}\n"
+                ."	// define event handlers to try to send results if quiz finishes unexpectedly\n"
+                ."	HP_add_listener(window, 'beforeunload', HP_send_results);\n" // modern browsers
+                ."	HP_add_listener(window, 'pagehide', HP_send_results);\n"     // modern browsers that don't allow actions in "onbeforeunload"
+                ."	HP_add_listener(window, 'unload', HP_send_results);\n"       // old browsers that don't have "onbeforeunload" or "pagehide"
                 ."\n"
             ;
             $substr = substr_replace($substr, $append, $pos, 0);
@@ -926,8 +971,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
 
         $search = '/('.'\s*if \(Finished == true\){\s*)(?:.*?)(\s*})/s';
         if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-            // -1 : send form only (do not set form values, as that has already been done)
-            $replace = '$1'.'HP.onunload(HP.status,-1);'.'$2';
+            $replace = '$1'.'HP_send_results(HP.EVENT_SENDVALUES);'.'$2';
         } else {
             $replace = ''; // i.e. remove this if-block
         }
@@ -1069,9 +1113,9 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function fix_js_CheckAnswers_arguments($match)  {
         if (empty($match[2])) {
-            return $match[1].'ForceQuizStatus'.$match[3];
+            return $match[1].'ForceQuizEvent'.$match[3];
         } else {
-            return $match[1].$match[2].',ForceQuizStatus'.$match[3];
+            return $match[1].$match[2].',ForceQuizEvent'.$match[3];
         }
     }
 
@@ -1084,7 +1128,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         if ($name = $this->get_stop_function_name()) {
             return 'if('.$this->get_stop_function_confirm().')'.$name.'('.$this->get_stop_function_args().')';
         } else {
-            return 'if(window.HP)HP.onunload('.hotpot::STATUS_ABANDONED.')';
+            return 'HP_send_results(HP.EVENT_ABANDONED)';
         }
     }
 
@@ -1098,7 +1142,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         return ''
             ."confirm("
             ."'".$this->hotpot->source->js_value_safe(get_string('confirmstop', 'hotpot'), true)."'"
-            ."+'\\n\\n'+(window.onbeforeunload &amp;&amp; onbeforeunload()?(onbeforeunload()+'\\n\\n'):'')+"
+            ."+'\\n\\n'+(window.HP_beforeunload &amp;&amp; HP_beforeunload()?(HP_beforeunload()+'\\n\\n'):'')+"
             ."'".$this->hotpot->source->js_value_safe(get_string('pressoktocontinue', 'hotpot'), true)."'"
             .")"
         ;
@@ -1121,7 +1165,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function get_stop_function_args()  {
         // the arguments required by the javascript function which the stop_function() code calls
-        return hotpot::STATUS_ABANDONED;
+        return 'HP.EVENT_ABANDONED';
     }
 
     /**
@@ -1160,27 +1204,18 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // $1 : name of the "all correct/done" variable
         // $2 : opening curly brace of if-block plus any following text to be kept
 
-        if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-            $flag = 1; // set form values only
-        } else {
-            $flag = 0; // set form values and send form
-        }
-        if ($this->hotpot->delay3==hotpot::TIME_DISABLE) {
-            $forceredirect = '(ForceQuizStatus ? 1 : 0)';
-        } else {
-            $forceredirect = 1;
-        }
+        $event = $this->get_send_results_event();
         return "\n"
             ."	if ($1){\n"
-            ."		var QuizStatus = 4; // completed\n"
-            ."	} else if (ForceQuizStatus){\n"
-            ."		var QuizStatus = ForceQuizStatus; // 3=abandoned\n"
+            ."		var QuizEvent = $event;\n" // COMPLETED or SETVALUES
+            ."	} else if (ForceQuizEvent){\n"
+            ."		var QuizEvent = ForceQuizEvent;\n" // TIMEDOUT or ABANDONED
             ."	} else if (TimeOver){\n"
-            ."		var QuizStatus = 2; // timed out\n"
+            ."		var QuizEvent = HP.EVENT_TIMEDOUT;\n"
             ."	} else {\n"
-            ."		var QuizStatus = 1; // in progress\n"
+            ."		var QuizEvent = HP.EVENT_CHECK;\n"
             ."	}\n"
-            ."	if (QuizStatus > 1) $2\n"
+            ."	if (HP.end_of_quiz(QuizEvent)) $2\n"
             ."		if (window.Interval) {\n"
             ."			clearInterval(window.Interval);\n"
             ."		}\n"
@@ -1189,13 +1224,12 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."		Finished = true;\n"
             ."	}\n"
             ."	if (Finished || HP.sendallclicks){\n"
-            ."		var ForceRedirect = $forceredirect;\n"
-            ."		if (ForceQuizStatus || QuizStatus==1){\n"
-            ."			// send results immediately\n"
-            ."			HP.onunload(QuizStatus, 0, ForceRedirect);\n"
+            ."		if (QuizEvent==HP.EVENT_COMPLETED){\n"
+            ."			// send results after delay (quiz completed as expected)\n"
+            ."			setTimeout('HP_send_results('+QuizEvent+')', SubmissionTimeout);\n"
             ."		} else {\n"
-            ."			// send results after delay\n"
-            ."			setTimeout('HP.onunload('+QuizStatus+',$flag,'+ForceRedirect+')', SubmissionTimeout);\n"
+            ."			// send results immediately (quiz finished unexpectedly)\n"
+            ."			HP_send_results(QuizEvent);\n"
             ."		}\n"
             ."	}\n"
         ;
@@ -1664,7 +1698,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      * fix_reviewoptions
      */
     function fix_reviewoptions()  {
-        // enable / disable review options
+        // enable/disable review options
     }
 
     /**
