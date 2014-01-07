@@ -1,2 +1,0 @@
-student, F, L, M, shortname, data, time, XX, XX, 100.00
-student1, F, L, M, shortname, data, time, XX, XX, 90.00
