@@ -47,8 +47,12 @@ if ($ADMIN->fulltree) {
                        get_string('configmanydiscussions', 'hsuforum'), 100, PARAM_INT));
 
     if (isset($CFG->maxbytes)) {
+        $maxbytes = 0;
+        if (isset($CFG->hsuforum_maxbytes)) {
+            $maxbytes = $CFG->hsuforum_maxbytes;
+        }
         $settings->add(new admin_setting_configselect('hsuforum_maxbytes', get_string('maxattachmentsize', 'hsuforum'),
-                           get_string('configmaxbytes', 'hsuforum'), 512000, get_max_upload_sizes($CFG->maxbytes)));
+                           get_string('configmaxbytes', 'hsuforum'), 512000, get_max_upload_sizes($CFG->maxbytes, 0, 0, $maxbytes)));
     }
 
     // Default number of attachments allowed per post in all forums
@@ -76,7 +80,7 @@ if ($ADMIN->fulltree) {
                        get_string('configcleanreadtime', 'hsuforum'), 2, $options));
 
     // Default time (hour) to send digest email
-    $settings->add(new admin_setting_configselect('digestmailtime', get_string('digestmailtime', 'hsuforum'),
+    $settings->add(new admin_setting_configselect('hsuforum_digestmailtime', get_string('digestmailtime', 'hsuforum'),
                        get_string('configdigestmailtime', 'hsuforum'), 17, $options));
 
     if (empty($CFG->enablerssfeeds)) {
