@@ -93,7 +93,7 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
      * "wwwroot" is not stored explicitly because it is included in the md5key
      */
     protected $cache_CFG_fields = array(
-        'slasharguments','hotpot_enableobfuscate','hotpot_enableswf'
+        'slasharguments','hotpot_bodystyles','hotpot_enableobfuscate','hotpot_enableswf'
     );
 
     /**
@@ -186,7 +186,7 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
      *
      * @return array of source file types
      */
-    public static function sourcetypes() {
+    static public function sourcetypes() {
         return array();
     }
 
@@ -727,7 +727,7 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
 
         // transfer $CFG fields to cache record
         foreach ($this->cache_CFG_fields as $field) {
-            $this->cache->$field = $CFG->$field;
+            $this->cache->$field = trim($CFG->$field);
         }
 
         // transfer quiz fields to cache record
@@ -1019,8 +1019,7 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
      */
     function remove_blank_lines($str)  {
         // standardize line endings and remove trailing white space and blank lines
-        $str = preg_replace('/\s+[\r\n]/s', "\n", $str);
-        return $str;
+        return preg_replace('/\s+[\r\n]/s', "\n", $str);
     }
 
     /**
@@ -1081,6 +1080,9 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
         $container = '#'.$this->themecontainer;
         $css_selector = $match[1];
         $css_definition = $match[2];
+
+        // standardize indent to a single tab
+        $css_definition = preg_replace('/^[\t ]*(?=[^\n\r\t ])/m', "\t", $css_definition);
 
         // additional CSS for list items
         $listitem_css = '';
@@ -1147,7 +1149,16 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
                             if (preg_match($search, $css_definition, $matches)) {
                                 $listitem_css .= "\n$container $selector li {\n".$matches[0].";\n}";
                             }
+                        } else {
+                            // we need to override the Moodle theme's background-image of buttons
+                            // because these have hitherto played an important role in HP styles
+                            $count = 0;
+                            $selector = preg_replace('/\.FuncButton/', 'button$0', $selector, -1, $count);
+                            if ($count && strpos($css_definition, 'background-image')===false) {
+                                $css_definition .= "\n\tbackground-image: none;\n";
+                            }
                         }
+
                         // restrict other CSS selectors to affect only the content of the container element
                         $selectors[] = "$container $selector";
                 }
@@ -1179,6 +1190,12 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
         } else {
             // only do this once per quiz
             $attacheventid = $this->hotpot->id;
+
+            if ($this->hotpot->allowpaste) {
+                $allowpaste = 'true';
+            } else {
+                $allowpaste = 'false';
+            }
             $str .= ''
                 ."function HP_add_listener(obj, evt, fnc, useCapture) {\n"
                 ."	// obj : an HTML element\n"
@@ -1261,7 +1278,7 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
                 // By default, pasting of answers is NOT allowed.
                 // To allow it: window.allow_paste_input = true;
                 ."function HP_setup_input_and_textarea() {\n"
-                ."	if (window.allow_paste_input || window.enable_paste_input) {\n"
+                ."	if (window.allow_paste_input || window.enable_paste_input || $allowpaste) {\n"
                 ."		var disablepaste = false;\n"
                 ."	} else {\n"
                 ."		var disablepaste = true;\n"
@@ -1272,8 +1289,8 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
                 ."		for (var i=0; i<i_max; i++) {\n"
                 ."			if (obj[i].type=='text') {\n"
                 ."				if (disablepaste) {\n"
-                ."						HP_add_listener(obj[i], 'drop', HP_disable_event);\n"
-                ."						HP_add_listener(obj[i], 'paste', HP_disable_event);\n"
+                ."					HP_add_listener(obj[i], 'drop', HP_disable_event);\n"
+                ."					HP_add_listener(obj[i], 'paste', HP_disable_event);\n"
                 ."				}\n"
                 ."				HP_add_listener(obj[i], 'focus', HP_send_results);\n" // keydown, mousedown ?
                 ."			}\n"
@@ -1284,8 +1301,8 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
                 ."		var i_max = obj.length;\n"
                 ."		for (var i=0; i<i_max; i++) {\n"
                 ."			if (disablepaste) {\n"
-                ."					HP_add_listener(obj[i], 'drop', HP_disable_event);\n"
-                ."					HP_add_listener(obj[i], 'paste', HP_disable_event);\n"
+                ."				HP_add_listener(obj[i], 'drop', HP_disable_event);\n"
+                ."				HP_add_listener(obj[i], 'paste', HP_disable_event);\n"
                 ."			}\n"
                 ."			HP_add_listener(obj[i], 'focus', HP_send_results);\n"
                 ."		}\n"
@@ -1668,13 +1685,15 @@ class mod_hotpot_attempt_renderer extends mod_hotpot_renderer {
                 $url = $matches[2];
             }
             // add subdirectory, $dir, to $baseurl, if necessary
-            if ($dir && $dir!='.') {
-                $baseurl .= '/'.ltrim($dir, '/');
+            if ($dir=='' || $dir=='/' || $dir=='.' || $dir=='..') {
+                // do nothing
+            } else {
+                $baseurl .= '/'.trim($dir, '/');
             }
             // prefix $url with $baseurl
             $url = "$baseurl/$url";
         }
 
         return $before.$url.$after;
-    } // end function : convert_url
+    }
 }

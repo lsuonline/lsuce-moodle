@@ -16,8 +16,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Class to represent the source of a HotPot quiz
- * Source type: hp_6_jmatch_xml
+ * Review results of an attempt at a HotPot quiz
+ * Output format: hp_6_jmatch_xml_sort
  *
  * @package   mod-hotpot
  * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
@@ -27,25 +27,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 // get parent class
-require_once($CFG->dirroot.'/mod/hotpot/source/hp/6/jmatch/class.php');
+require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/6/jmatch/xml/review.php');
 
 /**
- * hotpot_source_hp_6_jmatch_xml
+ * mod_hotpot_attempt_hp_6_jmatch_xml_sort_review
  *
  * @copyright 2010 Gordon Bateson
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since     Moodle 2.0
  */
-class hotpot_source_hp_6_jmatch_xml extends hotpot_source_hp_6_jmatch {
-    public $best_outputformat = 'hp_6_jmatch_xml_v6_plus';
-
-    /**
-     * is_quizfile
-     *
-     * @param xxx $sourcefile
-     * @return xxx
-     */
-    static public function is_quizfile($sourcefile)  {
-        return preg_match('/\.jmt$/', $sourcefile->get_filename());
-    }
+class mod_hotpot_attempt_hp_6_jmatch_xml_sort_review extends mod_hotpot_attempt_hp_6_jmatch_xml_review {
 }

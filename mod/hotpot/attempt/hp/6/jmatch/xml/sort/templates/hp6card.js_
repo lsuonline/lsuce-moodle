@@ -1,3 +1,5 @@
+// v 6.3.0.4
+//complété par Agnes Simonet pour HighlightIfWrong
 
 function Card(ID, OverlapTolerance){
 	this.elm=document.getElementById(ID);
@@ -68,6 +70,16 @@ function CardUnhighlight(){
 }
 Card.prototype.Unhighlight=CardUnhighlight;
 
+// ajout par AS
+
+function CardHighlightIfWrong(){
+	this.css.backgroundColor='[strLinkColor]';
+	this.css.color='[strTextColor]';
+}
+Card.prototype.HighlightIfWrong=CardHighlightIfWrong;
+
+// fin de l'ajout
+
 function CardOverlap(OtherCard){
 	var smR=(this.GetR()<(OtherCard.GetR()+this.OverlapTolerance))? this.GetR(): (OtherCard.GetR()+this.OverlapTolerance);
 	var lgL=(this.GetL()>OtherCard.GetL())? this.GetL(): OtherCard.GetL();
@@ -110,6 +122,8 @@ function CardSetHTML(HTML){
 	}
 }
 Card.prototype.SetHTML = CardSetHTML;
+
+// ***************************************************************
 
 function doDrag(e) {
 	if (CurrDrag == -1) {return};

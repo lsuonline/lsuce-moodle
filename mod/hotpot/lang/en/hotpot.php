@@ -56,6 +56,8 @@ $string['addquizchain_help'] = 'Should all the quizzes in a quiz chain be added?
 If the source file is a **folder**, all recognizable quizzes in the folder will be added to the course to form a chain of quizzes with identical settings.
 
 If the source file is a **unit file**, such as a Hot Potatoes masher file or index.html, quizzes listed in the unit file will be added to the course as a chain of quizzes with identical settings.';
+$string['allowpaste'] = 'Allow paste';
+$string['allowpaste_help'] = 'If this setting is enabled, students will be allowed to copy, paste and drag text into text input boxes.';
 $string['allowreview'] = 'Allow review';
 $string['allowreview_help'] = 'If enabled, students may review their quiz attempts after the quiz is closed.';
 $string['analysisreport'] = 'Item Analysis';
@@ -395,6 +397,7 @@ $string['outputformat_hp_6_jcross_xml_v6'] = 'JCross (v6) from xml';
 $string['outputformat_hp_6_jmatch_html'] = 'JMatch (v6) from html';
 $string['outputformat_hp_6_jmatch_xml_flashcard'] = 'JMatch (flashcard) from xml';
 $string['outputformat_hp_6_jmatch_xml_jmemori'] = 'JMemori from xml';
+$string['outputformat_hp_6_jmatch_xml_sort'] = 'JMatch Sort from xml';
 $string['outputformat_hp_6_jmatch_xml_v6'] = 'JMatch (v6) from xml';
 $string['outputformat_hp_6_jmatch_xml_v6_plus'] = 'JMatch (v6+) from xml';
 $string['outputformat_hp_6_jmix_html'] = 'JMix (v6) from html';

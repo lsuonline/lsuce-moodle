@@ -233,7 +233,7 @@ class hotpot_source {
      * @param int $getquizchain the "Add/Edit quiz chain?" value from mod_form.php
      * @return array $quizfiles ($path => $type) of HotPot quiz files
      */
-    public static function get_quizfiles($sourcefile, $getquizchain) {
+    static public function get_quizfiles($sourcefile, $getquizchain) {
         if (! $quizfiles = self::get_quizfiles_in_unitfolder($sourcefile)) {
             if (! $quizfiles = self::get_quizfiles_in_unitfile($sourcefile)) {
                 if (! $quizfiles = self::get_quizfiles_in_quizchain($sourcefile, $getquizchain)) {
@@ -416,7 +416,7 @@ class hotpot_source {
      * @param string a hotpot file/output class name
      * @return string class name without the leading "hotpot_source_"
      */
-    public static function get_type($class='') {
+    static public function get_type($class='') {
         return preg_replace('/^hotpot_[a-z]+_/', '', $class);
     }
 
@@ -426,7 +426,7 @@ class hotpot_source {
      * @param stdclass $sourcefile a Moodle stored_file object representing the source file
      * @return boolean true if the file is a recognized quiz file, or false otherwise
      */
-    public static function is_quizfile($sourcefile) {
+    static public function is_quizfile($sourcefile) {
         return false;
     }
 
@@ -436,7 +436,7 @@ class hotpot_source {
      * @param stdclass $sourcefile a Moodle stored_file object representing the source file
      * @return boolean true if the file is a recognized quiz file, or false otherwise
      */
-    public static function is_unitfile($sourcefile) {
+    static public function is_unitfile($sourcefile) {
         return false;
     }
 
@@ -446,7 +446,7 @@ class hotpot_source {
      * @param xxx $sourcefile
      * @return xxx
      */
-    public static function get_content($file, $hotpot=null)  {
+    static public function get_content($file, $hotpot=null)  {
         global $CFG, $DB;
 
         if ($content = $file->get_content()) {
@@ -467,7 +467,7 @@ class hotpot_source {
      * @param object $hotpot (optional, default=null)
      * @return string
      */
-    public static function get_real_path($file, $hotpot=null) {
+    static public function get_real_path($file, $hotpot=null) {
         global $CFG, $PAGE;
 
         // sanity check
@@ -506,7 +506,11 @@ class hotpot_source {
         // get path according to repository $type
         switch ($type) {
             case 'filesystem':
-                $path = $repository->root_path.'/'.$file->get_reference();
+                if (method_exists($repository, 'get_rootpath')) {
+                    $path = $repository->get_rootpath().'/'.$file->get_reference();
+                } else if (isset($repository->root_path)) {
+                    $path = $repository->root_path.'/'.$file->get_reference();
+                }
                 break;
             case 'user':
             case 'coursefiles':
