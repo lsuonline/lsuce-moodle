@@ -170,8 +170,8 @@ if (groups_get_activity_groupmode($cm) == 0) {  //No groups mode
     $bbbsession['meetingid'] = $bigbluebuttonbn->meetingid.'-'.$bbbsession['courseid'].'-'.$bbbsession['bigbluebuttonbnid'];
 } else {                                        // Separate groups mode
     //If doesnt have group
-    $bbbsession['group'] = (!$group) ? groups_get_activity_group($cm) : $group;
-    $bbbsession['meetingid'] = $bigbluebuttonbn->meetingid.'-'.$bbbsession['courseid'].'-'.$bbbsession['bigbluebuttonbnid']; // removed until fixed .'-'.$bbbsession['group'];
+    $bbbsession['group'] = (!$group)?groups_get_activity_group($cm): $group;
+    $bbbsession['meetingid'] = $bigbluebuttonbn->meetingid.'-'.$bbbsession['courseid'].'-'.$bbbsession['bigbluebuttonbnid'].'['.$bbbsession['group'].']';
 }
 
 if( $moderator) 

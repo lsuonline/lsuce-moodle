@@ -27,6 +27,7 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         //BigBlueButton server data
         $url = trim(trim($CFG->BigBlueButtonBNServerURL),'/').'/';
         $salt = trim($CFG->BigBlueButtonBNSecuritySalt);
+        $allowRecording = ($CFG->BigBlueButtonBNAllowRecording=='1') ? true : false;
 
         $serverVersion = bigbluebuttonbn_getServerVersion($url); 
         if ( !isset($serverVersion) ) {
@@ -73,8 +74,8 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         //-------------------------------------------------------------------------------
         // Third block starts here
         //-------------------------------------------------------------------------------
-        /* Until we can support large recordings
-        if ( floatval($serverVersion) >= 0.8 ) {
+        if ( floatval($serverVersion) >= 0.8 && $allowRecording ) {
+
             $mform->addElement('header', 'general', get_string('mod_form_block_record', 'bigbluebuttonbn'));
 
             $mform->addElement( 'checkbox', 'record', get_string('mod_form_field_record', 'bigbluebuttonbn') );
@@ -86,7 +87,6 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
             $mform->addHelpButton('timeduration', 'mod_form_field_duration', 'bigbluebuttonbn');
             $mform->setType('description', PARAM_TEXT);
         }
-        */
         //-------------------------------------------------------------------------------
         // Third block ends here
         //-------------------------------------------------------------------------------
