@@ -12,8 +12,8 @@ require_once($CFG->libdir . '/filelib.php');
  */
 function mypic_get_users_without_pictures($limit=0) {
     global $DB;
-    $select = "picture <> 1 AND deleted = 0 AND suspended = 0 ORDER BY RAND() LIMIT " . $limit;
-    return $DB->get_records_select('user', $select);
+    return $DB->get_records('user',
+            array('picture'=>0, 'deleted'=>0), '', '*', 0, $limit);
 }
 
 /**
@@ -54,7 +54,7 @@ function mypic_WebserviceIntersectMoodle($idnumbers = array()){
 }
 
 function mypic_insert_picture($userid, $picture_path) {
-    global $DB, $CFG;
+    global $DB;
 
     $context = get_context_instance(CONTEXT_USER, $userid);
     
@@ -66,10 +66,11 @@ function mypic_insert_picture($userid, $picture_path) {
     if(!file_exists($picture_path)){
         add_to_log(0, 'my_pic', "insert picture",'',sprintf("File %s does not exist for user %s", $shortpath, $userid));
         return false;
-    }elseif($picture_path == $CFG->dirroot . '/blocks/my_picture/images/nopic.png'){
+    }elseif(filesize($picture_path) == 1){
+        //this should never get called, now that the fetch() method traps for this condition
         add_to_log(0, 'my_pic', "insert picture",'',sprintf("1-byte file %s for user %s", $shortpath, $userid));
-        process_new_icon($context, 'user', 'icon', 0, $picture_path);
-        return $DB->set_field('user', 'picture', 2, array('id' => $userid));
+        unlink($picture_path);
+        return false;
     }elseif(process_new_icon($context, 'user', 'icon', 0, $picture_path)) {
         return $DB->set_field('user', 'picture', 1, array('id' => $userid));
     }else{
@@ -98,9 +99,12 @@ function mypic_insert_badid($userid) {
  * This method calls the webservice show() method, requests return as json
  * @param type $idnumber 89-number
  * @param type $hash 
+ * @deprecated no longer need update functionality
  * @return boolean
  */
 function mypic_force_update_picture($idnumber, $hash = null) {
+    throw new coding_exception("There is no longer any need to 'update' photos; please do not call this function");
+    
     $url = get_config('block_my_picture', 'update_url');
 
     if (empty($url)) {
@@ -134,11 +138,6 @@ function mypic_fetch_picture($idnumber, $updating = false) {
     global $CFG;
 
     $hash = hash("sha256", $idnumber);
-
-    if ($updating and !mypic_force_update_picture($idnumber, $hash)) {
-        return false; // Could not update photo.
-    }
-
     $name = $idnumber . '.jpg';
     $path = $CFG->dataroot . '/temp/' . $name;
     $url  = sprintf(get_config('block_my_picture', 'webservice_url'), $hash);
@@ -149,6 +148,7 @@ function mypic_fetch_picture($idnumber, $updating = false) {
 
     if(!empty($curl->response['Status']) and $curl->response['Status'] == '404'){
         add_to_log(0, 'my_pic', "insert picture",'',sprintf("404 for user %s", $idnumber));
+        mtrace(sprintf("404 for user %s", $idnumber));
         unlink($path);
         return false;
     }
@@ -181,7 +181,6 @@ function mypic_update_picture($user, $updating=false) {
     }
 
     return (int) mypic_insert_nopic($user->id) * 3;
-    return 0;
 }
 
 function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
@@ -194,7 +193,7 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
     $count = $num_success = $num_error = $num_nopic = $num_badid = 0;
 
     foreach ($users as $user) {
-        mtrace('Processing image for (' . $user->idnumber . ') ');
+        mtrace('Processing image for (' . $user->idnumber . ') ' . $sep);
 
         // Keys are error codes, values are counter variables to increment
         $result_map = array(
@@ -204,11 +203,7 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
             3 => 'num_nopic'
         );
 
-        $mypicreturncode = mypic_update_picture($user, $updating);
-
-        mtrace($result_map[$mypicreturncode] . $sep);
-
-        $$result_map[$mypicreturncode]++;
+        $$result_map[mypic_update_picture($user, $updating)]++;
 
         $count++;
 
@@ -243,10 +238,10 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
 function mypic_verifyWebserviceExists(){
     $ready = get_config('block_my_picture', 'ready_url');
     $curl  = new curl();
-    $json  = $curl->get(sprintf($ready, time()));
+    $json  = $curl->get(sprintf($ready));
 
     if(is_null((json_decode($json)))){
-        mypic_emailAdminsFailureMsg();
+        mypic_emailAdminsFailureMsg($ready);
         return false;
     }
     return true;
@@ -259,10 +254,13 @@ function mypic_verifyWebserviceExists(){
  * @global type $USER
  * @return int number of errors encountered while sending email
  */
-function mypic_emailAdminsFailureMsg(){
+function mypic_emailAdminsFailureMsg($address='<none given>'){
     global $CFG, $DB, $USER;
+    
     $subject = get_string('misconfigured_subject', 'block_my_picture');
-    $message = get_string('misconfigured_message', 'block_my_picture');
+    $message = get_string('misconfigured_message', 'block_my_picture', $address);
+    
+    mtrace(sprintf('addr arg = %s, message = %s', $address, $message));
 
     $adminIds     = explode(',',$CFG->siteadmins);
     $admins = $DB->get_records_list('user', 'id',$adminIds);
