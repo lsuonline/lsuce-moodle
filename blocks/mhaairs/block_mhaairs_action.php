@@ -28,6 +28,7 @@ switch($action){
     case "test"             :    $result = "OK"; break;
     case "ValidateLogin"    :    $result = mh_validate_login($token, $secret, $username, $password); break;
     case "GetUserInfo"      :    $result = mh_get_user_info($token, $secret); break;
+	case "GetServerTime"	:	 $result = mh_get_time_stamp(); break;
     default : break;
 }
 

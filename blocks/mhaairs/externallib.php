@@ -10,6 +10,7 @@
 
 require_once($CFG->libdir . "/externallib.php");
 require_once($CFG->libdir . "/gradelib.php");
+require_once($CFG->dirroot."/blocks/mhaairs/block_mhaairs_util.php");
 
 class block_mhaairs_gradebookservice_external extends external_api {
 
@@ -72,37 +73,42 @@ class block_mhaairs_gradebookservice_external extends external_api {
 
             if ((!is_string($itemdetails['categoryid']) || strpbrk($itemdetails['categoryid'], $badchars) !== false) && $itemdetails['categoryid'] != null) throw new Exception('Parameter categoryid is of incorrect type');
 			if (!is_string($itemdetails['courseid']) && $itemdetails['courseid'] != null) throw new Exception('Parameter courseid is of incorrect type');
-            if ((!is_string($itemdetails['itemname']) || strpbrk($itemdetails['itemname'], $badchars) !== false) && $itemdetails['itemname'] != null) throw new Exception('Parameter itemname is of incorrect type');
+			if (!is_string($itemdetails['identity_type']) && $itemdetails['identity_type'] != null) throw new Exception('Parameter identity_type is of incorrect type');
+            if (!is_string($itemdetails['itemname']) && $itemdetails['itemname'] != null) throw new Exception('Parameter itemname is of incorrect type');
             if ((!is_string($itemdetails['itemtype']) || strpbrk($itemdetails['itemtype'], $badchars) !== false) && $itemdetails['itemtype'] != null) throw new Exception('Parameter itemtype is of incorrect type');
-            if (!is_numeric($itemdetails['idnumber']) && $itemdetails['idnumber'] != null) throw new Exception('Parameter idnumber is of incorrect type');
+            if (!is_numeric($itemdetails['idnumber']) && ($grades == "null" || $grades == null)) throw new Exception('Parameter idnumber is of incorrect type');
             if (!is_numeric($itemdetails['gradetype']) && $itemdetails['gradetype'] != null) throw new Exception('Parameter gradetype is of incorrect type');
             if (!is_numeric($itemdetails['grademax']) && $itemdetails['grademax'] != null) throw new Exception('Parameter grademax is of incorrect type');
             if (!is_numeric($itemdetails['needsupdate']) && $itemdetails['needsupdate'] != null) throw new Exception('Parameter needsupdate is of incorrect type');
 
-            //remove SQL chars from strings
+			//remove SQL chars from strings
+			//$itemdetails['itemname'] = handle_illegal_chars($itemdetails['itemname']);
             //$itemdetails['categoryid'] = str_replace(array(';','-',"'"), '', clean_param($itemdetails['categoryid'], PARAM_TEXT));
             //$itemdetails['itemtype'] = str_replace(array(';','-',"'"), '', clean_param($itemdetails['itemtype'], PARAM_TEXT));
 
             //enable use of ID or IDnumber
-            if (!$DB->record_exists('course', array('id'=>$courseid)))
+            if ($itemdetails['identity_type'] === 'internal' || $itemdetails['identity_type'] === 'lti')
+			{
+				$course->id = $courseid;
+			}
+			else if (!$DB->record_exists('course', array('id'=>$courseid)))
             {
 
                 //map to numerical courseID
                 $course = $DB->get_record('course', array('idnumber'=>$courseid));
                 $courseid = $course->id;
                 $itemdetails['courseid'] = $course->id;
-
-            } else
-            {
-                $course->id = $courseid;
-
             }
+			else
+			{
+				$course->id = $courseid;
+			}
 
             if ($itemdetails['categoryid'] != null && $itemdetails['categoryid'] != '' && $itemdetails['categoryid'] != 'null')
             {
 
                 //convert category into something moodle can use
-                $category = $DB->get_record_sql('SELECT id FROM {grade_categories} WHERE fullname = ? and courseid = ?', array($itemdetails['categoryid'], $courseid));
+                $category = $DB->get_record_sql('SELECT id FROM {grade_categories} WHERE fullname = ? and courseid = ?', array($itemdetails['categoryid'], $course->id));
 
                 //if the category exists
                 if ($category->id != null && $category->id != '')
@@ -115,9 +121,21 @@ class block_mhaairs_gradebookservice_external extends external_api {
                     if ($itemdetails['categoryid'] != null && $itemdetails['categoryid'] != '')
                     {
                         //find parent record
-                        $parent = $DB->get_record_sql('SELECT id FROM {grade_categories} WHERE (fullname = ? or fullname = ?) and courseid = ?', array('Default', '?', $course->id));
+                        $parent = $DB->get_record_sql('SELECT id FROM {grade_categories} WHERE (fullname = ? or fullname = ?) and courseid = ?', array('Default', '?', $courseid));
 
-                        //to avoid the parent keyword in PHP
+                        if ($parent->id == null || $parent->id == '')
+						{
+							$parentcategory = new stdClass();
+							$parentcategory->fullname = '?';
+							$parentcategory->courseid = $course->id;
+							$parentcategory->id = null;
+							$parentcategory->timecreated = 1337064766;
+							$parentcategory->timemodified = 1337064766;
+							$parentcategory->hidden = 0;
+							$parent->id = $DB->insert_record('grade_categories', $parentcategory, true);
+						}
+						
+						//to avoid the parent keyword in PHP
                         $parentname = 'parent';
 
                         //create new category record
@@ -171,8 +189,13 @@ class block_mhaairs_gradebookservice_external extends external_api {
 
 
             //map userID to numerical userID
-            $user = $DB->get_record('user', array('username'=>$grades['userid']));
-            $grades['userid'] = $user->id;
+            if ($itemdetails['identity_type'] === 'lti')
+			{
+			}
+            else if ($DB->record_exists('user', array('username'=>$grades['userid']))) {
+				$user = $DB->get_record('user', array('username'=>$grades['userid']));
+				$grades['userid'] = $user->id;
+			}
 
             //get real gradeItemId
 

@@ -9,7 +9,6 @@ $string['mhaairs'   ] = 'MH AAIRS';
 $string['mhaairs:viewadmindoc'  ] = 'View Administrator Documentation';
 $string['mhaairs:viewteacherdoc'] = 'View Teacher Documentation';
 $string['mhaairs:addinstance'   ] = 'Add a new McGraw-Hill AAIRS block';
-$string['mhaairs:myaddinstance'   ] = 'Add a new McGraw-Hill AAIRS block';
 
 // Strings for the edit_form file.
 $string['linktype'         ] = 'Link Type';

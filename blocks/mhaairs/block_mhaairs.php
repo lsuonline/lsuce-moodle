@@ -66,23 +66,19 @@ class block_mhaairs extends block_base {
         $block_links = '';
         $imagealt = get_string('imagealt');
         $targetw = array('target' => '_blank');
-        $courseid = empty($COURSE->idnumber) ? $COURSE->id : $COURSE->idnumber;
         foreach ($servicelinks as $aserv) {
-            $token = mh_create_token2($CFG->block_mhaairs_customer_number,
-                                      $USER->username,
-                                      $courseid,
-                                      $aserv['ServiceID']);
-            $encoded_token = mh_encode_token2($token, $CFG->block_mhaairs_shared_secret);
             $block_links  .= html_writer::tag('img', '',
                                               array('src' => $aserv['ServiceIconUrl'],
                                                     'height' => '16',
                                                     'width' => '16',
                                                     'hspace' => '4',
                                                     'alt' => $imagealt));
-            $lurl = new moodle_url($aserv['ServiceUrl'], array('token' => $encoded_token));
+            $lurl = new moodle_url('../blocks/mhaairs/redirect.php', array('url' => mh_hex_encode($aserv['ServiceUrl']), 'id' => mh_hex_encode($aserv['ServiceID'])));
             $block_links .= html_writer::link($lurl->out(false), $aserv['ServiceName'], $targetw);
             $block_links .= html_writer::empty_tag('br');
         }
+		session_start();
+		$_SESSION['course'] = $COURSE;
 
         $this->content->text = $block_links;
 

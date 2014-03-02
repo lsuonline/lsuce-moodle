@@ -1,7 +1,8 @@
 <?php
+define('token_validity_interval', 300);
 
 function mh_get_time_stamp() {
-    return date("Y-m-d\TH:i:sP");
+    return gmdate("Y-m-d\TH:i:sP");
 }
 
 function mh_create_token($user_id, $course_id = false) {
@@ -12,17 +13,29 @@ function mh_create_token($user_id, $course_id = false) {
     return $result;
 }
 
-function mh_create_token2($customer, $user_id, $course_id = false, $link_type = null) {
+function mh_create_token2($customer, $user_id, $user_name, $course_id = false, $course_internal_id = false, $link_type = null, $role_name = null, $course_name = null) {
     $parameters = array('customer' => $customer,
                         'userid'   => $user_id,
+						'username' => $user_name,
                         'time'     => mh_get_time_stamp());
 
     if (!empty($course_id)) {
         $parameters['courseid'] = $course_id;
     }
+    if (!empty($course_internal_id)) {
+        $parameters['courseinternalid'] = $course_internal_id;
+    }
     if (!empty($link_type)) {
         $parameters['linktype'] = $link_type;
     }
+
+	if (!empty($role_name)) {
+		$parameters['role'] = $role_name;
+	}
+
+	if (!empty($course_name)) {
+		$parameters['coursename'] = $course_name;
+	}
 
     $result = '';
     foreach ($parameters as $name => $value) {
@@ -112,6 +125,7 @@ function mh_is_token_valid($token_text, $secret, $delay = 25200, $alg = 'md5', &
         }
     }
     catch(Exception $e){
+		$trace = $trace.'Exception in is_token_valid:'.$e->getMessage();
     }
     return FALSE;
 }
@@ -199,6 +213,14 @@ function mh_hex2bin($str) {
     return $bin;
 }
 
+function handle_illegal_chars($str) {
+	if (strpos($str, "-") !== false) {
+		$str = '`'.$str.'`';
+	}
+	$str = str_replace(";", "\;", str_replace("'", "''", $str));
+	return $str;
+}
+
 class MHUserInfo
 {
     const SUCCESS = 0;
@@ -247,25 +269,27 @@ class MHAuthenticationResult
     public $EffectiveUserId;
     public $RedirectURL;
     public $Attributes;
-    function __construct($Status, $EffectiveUserId)
+	public $Message;
+    function __construct($Status, $EffectiveUserId, $ErrorDetails)
     {
         $this->Status = $Status;
         $this->EffectiveUserId = $EffectiveUserId;
         $this->Attributes = array();
+		$this->Message = $ErrorDetails;
     }
 }
 
 function mh_validate_login($token, $secret, $username, $password)
 {
     $trace = '';
-    $result = new MHAuthenticationResult(MHAuthenticationResult::FAILURE, '');
-    if(mh_is_token_valid($token, $secret, 90, 'md5', $trace) || empty($secret)){
+    $result = new MHAuthenticationResult(MHAuthenticationResult::FAILURE, '', '');
+    if(mh_is_token_valid($token, $secret, token_validity_interval, 'md5', $trace) || empty($secret)){
         $user = authenticate_user_login($username, $password);
         if($user != false){
-            $result = new MHAuthenticationResult(MHAuthenticationResult::SUCCESS, $user->username);
+            $result = new MHAuthenticationResult(MHAuthenticationResult::SUCCESS, $user->username, '');
         }
         else{
-            $result = new MHAuthenticationResult(MHAuthenticationResult::FAILURE, ''.$trace);
+            $result = new MHAuthenticationResult(MHAuthenticationResult::FAILURE, '', $trace.'User Authentication Failed');
         }
     }
     return $result;
@@ -278,7 +302,7 @@ function mh_get_user_info($token, $secret)
     $userinfo = new MHUserInfo(MHUserInfo::FAILURE);
     $userinfo->Message = 'error:token is invalid';
     $userid = NULL;
-    if(mh_is_token_valid($token, $secret, 90, 'md5', $trace) || empty($secret))
+    if(mh_is_token_valid($token, $secret, token_validity_interval, 'md5', $trace) || empty($secret))
     {
         try{
             $userinfo = new MHUserInfo(MHUserInfo::SUCCESS);
@@ -323,7 +347,7 @@ function mh_get_user_info($token, $secret)
                     }
                 }
                 $trace = $trace.';courses are set';
-                $userinfo->Message = $trace;
+                $userinfo->Message = '';
             }
         }
         catch(Exception $e)
