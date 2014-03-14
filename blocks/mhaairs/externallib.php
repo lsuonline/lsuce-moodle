@@ -120,21 +120,8 @@ class block_mhaairs_gradebookservice_external extends external_api {
                 {
                     if ($itemdetails['categoryid'] != null && $itemdetails['categoryid'] != '')
                     {
-                        //find parent record
-                        $parent = $DB->get_record_sql('SELECT id FROM {grade_categories} WHERE (fullname = ? or fullname = ?) and courseid = ?', array('Default', '?', $courseid));
-
-                        if ($parent->id == null || $parent->id == '')
-						{
-							$parentcategory = new stdClass();
-							$parentcategory->fullname = '?';
-							$parentcategory->courseid = $course->id;
-							$parentcategory->id = null;
-							$parentcategory->timecreated = 1337064766;
-							$parentcategory->timemodified = 1337064766;
-							$parentcategory->hidden = 0;
-							$parent->id = $DB->insert_record('grade_categories', $parentcategory, true);
-						}
-						
+						$parent = grade_category::fetch_course_category($course->id);
+											
 						//to avoid the parent keyword in PHP
                         $parentname = 'parent';
 
