@@ -29,8 +29,18 @@ class block_signinsheet extends block_list {
         $cid = optional_param('id', '', PARAM_INT);
         $sheetstr = get_string('genlist', 'block_signinsheet');
         $picstr = get_string('genpics', 'block_signinsheet');
+
         $sheeturl = new moodle_url('/blocks/signinsheet/genlist/show.php', array('cid' => $COURSE->id));
         $picurl = new moodle_url('/blocks/signinsheet/genpics/show.php', array('cid' => $COURSE->id));
+
+        $membergroups = groups_get_user_groups($COURSE->id);
+        $membergroups = $membergroups[0];
+        if(count($membergroups) == 1) {
+            $selectgroupsec = implode("", $membergroups);
+            $sheeturl .= '&rendertype=group&selectgroupsec=' . $selectgroupsec;
+            $picurl .= '&rendertype=group&selectgroupsec=' . $selectgroupsec;
+        }
+
         if ($permission) {
             $content->items[] = html_writer::link($sheeturl, $sheetstr);
             $content->items[] = html_writer::link($picurl, $picstr);

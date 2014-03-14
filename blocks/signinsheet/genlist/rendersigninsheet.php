@@ -83,7 +83,7 @@ function renderRollsheet(){
 	$courseName = $DB->get_record('course', array('id'=>$cid), 'fullname', $strictness=IGNORE_MISSING); 
 
         $totalUsers = count($result);
-
+        $usernumber = 0;
         while(!empty($result)){
             $pageCounter++;
 
@@ -112,15 +112,17 @@ function renderRollsheet(){
             $userdatas = array();
 
 	    foreach($result as $face){
+                $usernumber++;
 	        $j++;	
-		$userdata = array($face->firstname . ' ' . $face->lastname);
+		$userdata = array($usernumber);
+		$userdata[] = ($face->firstname . ' ' . $face->lastname);
 
                 if($addIdField){
-                    $userdata[1] = $face->idnumber;
+                    $userdata[2] = $face->idnumber;
                 }
 
                 if($addTextField){
-                    $userdata[2] = ' ';
+                    $userdata[3] = ' ';
                 }
 
 		for ($i = 0; $i < $numExtraFields; $i++) {
@@ -138,16 +140,17 @@ function renderRollsheet(){
 
             }
 
-	$table->head = array(get_string('fullName', 'block_signinsheet'));
+	$table->head = array(null);
+	$table->head[1] = get_string('fullName', 'block_signinsheet');
 
         // Id number field
         if($addIdField){
-                $table->head[1] = get_string('idnumber', 'block_signinsheet');
+                $table->head[2] = get_string('idnumber', 'block_signinsheet');
         }
 
         // Additional custom text field
         if($addTextField){
-                $table->head[2] = get_config('block_signinsheet', 'customtext');
+                $table->head[3] = get_config('block_signinsheet', 'customtext');
         }
 
         for ($i = 0; $i < $numExtraFields; $i++) {

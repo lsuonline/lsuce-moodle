@@ -99,8 +99,8 @@ function buildMenu($cid){
 
 	$outputHTML = '<div class = "floatright"><form action="'.$CFG->wwwroot. '/blocks/signinsheet/genlist/show.php?cid='.$cid.'" method="post">
 				 Order By: <select name="orderby" id="orderby">
-								<option value="firstname">' .get_string('firstname', 'block_signinsheet').'</option>
 								<option value="lastname">'.get_string('lastname', 'block_signinsheet').'</option>
+								<option value="firstname">' .get_string('firstname', 'block_signinsheet').'</option>
 						  </select>
 						  
 				 Filter: <select id="selectgroupsec" name="selectgroupsec">
@@ -187,7 +187,7 @@ $selectgroupsec = optional_param('selectgroupsec', '', PARAM_TEXT);
  			  
  			  if($orderItem == ""){
  			  	echo '<script>
- 				document.getElementById("orderby").value = "firstname";
+ 				document.getElementById("orderby").value = "lastname";
  			  </script>';
  				
  			  }
