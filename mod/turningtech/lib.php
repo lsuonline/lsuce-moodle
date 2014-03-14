@@ -44,8 +44,8 @@ define('TURNINGTECH_CUSTOM_RESPONSEWARE', 3);
 define('TURNINGTECH_ENCRYPTION_FORMAT_ECB', 1);
 define('TURNINGTECH_ENCRYPTION_FORMAT_CBC', 2);
 // The type of gradebook items to use.
-define('TURNINGTECH_GRADE_ITEM_TYPE', 'mod');
-define('TURNINGTECH_GRADE_ITEM_MODULE', 'turningtech');
+define('TURNINGTECH_GRADE_ITEM_TYPE', 'manual');
+define('TURNINGTECH_GRADE_ITEM_MODULE', null);
 // Different modes of saving scores.
 define('TURNINGTECH_SAVE_NO_OVERRIDE', 1);
 define('TURNINGTECH_SAVE_ONLY_OVERRIDE', 2);
