@@ -44,9 +44,9 @@ M.local_mr.init_filter_selectmultiplus = function(Y, args) {
     };
 
     // prepopulate div with already selected options
-    var seloptions = selectfield.get('options');
-    if (!seloptions.isEmpty()) {
-        var selectedoptions = Y.Array.filter(seloptions, function(opt) {
+    var seloptions = selectfield.all('option');
+    if (seloptions instanceof Y.NodeList && !seloptions.isEmpty()) {
+        var selectedoptions = seloptions.filter(function(opt) {
             return opt.selected;
         });
 
@@ -73,7 +73,7 @@ M.local_mr.init_filter_selectmultiplus = function(Y, args) {
         var optionidx = sidid.split('smpidx_smpidx').pop();
 
         // deselect that option in our selectbox
-        if (!seloptions.isEmpty()) {
+        if (seloptions instanceof Y.NodeList && !seloptions.isEmpty()) {
             var selectedoption = seloptions.item(optionidx);
             if (selectedoption) {
                 selectedoption.set('selected', '');
@@ -96,6 +96,7 @@ M.local_mr.init_filter_selectmultiplus = function(Y, args) {
         activateFirstItem: true,
         minimumQueryLength: 0,
         queryDelay: 0,
+        render: 'body',
         source: selectfield,
         resultFilters: [
             function(query, results) {
@@ -153,6 +154,9 @@ M.local_mr.init_filter_selectmultiplus = function(Y, args) {
     });
 
     var pagecontent = Y.one('#report-content');
+    if (pagecontent == null) {
+        pagecontent = Y.one('.mr_report');
+    }
     // May need to resize the report content div based on size of the auto complete list
     actextfield.ac.on('visibleChange', function(e) {
         if (pagecontent && !e.newVal && e.prevVal) {
@@ -160,7 +164,6 @@ M.local_mr.init_filter_selectmultiplus = function(Y, args) {
             pagecontent.setStyle('min-height', 600);
         } else if (pagecontent && e.newVal && !e.prevVal) {
             // hidden to visible
-            var pagecontentypos;
             var pagecontentypos = pagecontent.getY();
             var pagecontentheight = pagecontent.get('offsetHeight');
             var acheight = actextfield.ac.get('boundingBox').get('offsetHeight');
@@ -203,8 +206,8 @@ M.local_mr.init_mr_html_autocomplete = function(Y, args) {
 
     if (args.url != null) {
         // Use a remote datasource
-        var myDataSource             = new YAHOO.util.XHRDataSource(args.url);
-        myDataSource.responseType    = YAHOO.util.XHRDataSource.TYPE_JSON;
+        var myDataSource             = new Y.YUI2.util.XHRDataSource(args.url);
+        myDataSource.responseType    = Y.YUI2.util.XHRDataSource.TYPE_JSON;
         myDataSource.maxCacheEntries = 5;
         myDataSource.responseSchema  = {
             resultsList: "results",
@@ -212,12 +215,12 @@ M.local_mr.init_mr_html_autocomplete = function(Y, args) {
         };
     } else {
         // Use a local datasource
-        var myDataSource = new YAHOO.util.LocalDataSource(args.data);
+        var myDataSource = new Y.YUI2.util.LocalDataSource(args.data);
         myDataSource.responseSchema = {fields : args.fields};
     }
 
     // Instantiate the AutoComplete
-    var myAutoComplete = new YAHOO.widget.AutoComplete(myInputField, myContainerId, myDataSource);
+    var myAutoComplete = new Y.YUI2.widget.AutoComplete(myInputField, myContainerId, myDataSource);
     myAutoComplete.useShadow           = true;
     myAutoComplete.maxResultsDisplayed = 20;
     myAutoComplete.applyLocalFilter    = true;
@@ -238,7 +241,7 @@ M.local_mr.init_mr_html_autocomplete = function(Y, args) {
     }
 
     if (args.hiddenfieldname != '') {
-        var myHiddenField = YAHOO.util.Dom.get('id_' + args.hiddenfieldname);
+        var myHiddenField = Y.YUI2.util.Dom.get('id_' + args.hiddenfieldname);
         var mySelectHandler = function(sType, aArgs) {
             // Selected item's result data
             var oData = aArgs[2];
