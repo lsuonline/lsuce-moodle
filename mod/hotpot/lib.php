@@ -480,42 +480,47 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
     //     view.php    : view
     // all these actions have a record in the "log_display" table
 
-    $select = "time>? AND course=? AND module=? AND action IN (?, ?, ?, ?, ?)";
+    $select = "time > ? AND course = ? AND module = ? AND action IN (?, ?, ?, ?, ?)";
     $params = array($timestart, $course->id, 'hotpot', 'add', 'update', 'view', 'attempt', 'submit');
 
     if ($logs = $DB->get_records_select('log', $select, $params, 'time ASC')) {
 
-        $coursecontext = hotpot_get_context(CONTEXT_COURSE, $course->id);
-        $viewhiddensections = has_capability('moodle/course:viewhiddensections', $coursecontext);
-
-        if ($modinfo = unserialize($course->modinfo)) {
-            $coursemoduleids = array_keys($modinfo);
-        } else {
-            $coursemoduleids = array();
-        }
+        $modinfo = get_fast_modinfo($course);
+        $cmids   = array_keys($modinfo->get_cms());
 
         $stats = array();
         foreach ($logs as $log) {
             $cmid = $log->cmid;
-            if (! array_key_exists($cmid, $modinfo)) {
+            if (! in_array($cmid, $cmids)) {
                 continue; // invalid $cmid - shouldn't happen !!
             }
-            if (! $viewhiddensections && ! $modinfo[$cmid]->visible) {
+            $cm = $modinfo->get_cm($cmid);
+            if (! $cm->uservisible) {
                 continue; // coursemodule is hidden from user
             }
-            $sortorder = array_search($cmid, $coursemoduleids);
+            $sortorder = array_search($cmid, $cmids);
             if (! array_key_exists($sortorder, $stats)) {
-                $context = hotpot_get_context(CONTEXT_MODULE, $cmid);
-                if (has_capability('mod/hotpot:reviewmyattempts', $context) || has_capability('mod/hotpot:reviewallattempts', $context)) {
+                if (has_capability('mod/hotpot:reviewmyattempts', $cm->context) || has_capability('mod/hotpot:reviewallattempts', $cm->context)) {
                     $viewreport = true;
                 } else {
                     $viewreport = false;
                 }
+                $options = array('context' => $cm->context);
+                if (method_exists($cm, 'get_formatted_name')) {
+                    $name = $cm->get_formatted_name($options);
+                } else {
+                    $name = format_string($cm->name, true,  $options);
+                }
                 $stats[$sortorder] = (object)array(
-                    'name' => format_string(urldecode($modinfo[$cmid]->name)),
-                    'cmid' => $cmid, 'add'=>0, 'update'=>0, 'view'=>0, 'attempt'=>0, 'submit'=>0,
-                    'viewreport' => $viewreport,
-                    'users' => array()
+                    'name'    => $name,
+                    'cmid'    => $cmid,
+                    'add'     => 0,
+                    'update'  => 0,
+                    'view'    => 0,
+                    'attempt' => 0,
+                    'submit'  => 0,
+                    'users'   => array(),
+                    'viewreport' => $viewreport
                 );
             }
             $action = $log->action;
@@ -629,14 +634,6 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
 function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $courseid, $coursemoduleid=0, $userid=0, $groupid=0) {
     global $CFG, $DB, $USER;
 
-    if (! $course = $DB->get_record('course', array('id'=>$courseid))) {
-        return; // invalid course id - shouldn't happen !!
-    }
-
-    if (! $modinfo = unserialize($course->modinfo)) {
-        return; // no activity mods
-    }
-
     // CONTRIB-4025 don't allow students to see each other's scores
     $coursecontext = hotpot_get_context(CONTEXT_COURSE, $courseid);
     if (! has_capability('mod/hotpot:reviewmyattempts', $coursecontext)) {
@@ -646,17 +643,35 @@ function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $cour
         $userid = $USER->id; // force this user only
     }
 
-    $hotpots = array(); // hotpotid => cmid
+    // we want to detect Moodle >= 2.4
+    // method_exists('course_modinfo', 'get_used_module_names')
+    // method_exists('cm_info', 'get_modue_type_name')
+    // method_exists('cm_info', 'is_user_access_restricted_by_capability')
 
-    foreach (array_keys($modinfo) as $cmid) {
-        if ($modinfo[$cmid]->mod=='hotpot' && ($coursemoduleid==0 || $coursemoduleid==$cmid)) {
+    $reflector = new ReflectionFunction('get_fast_modinfo');
+    if ($reflector->getNumberOfParameters() >= 3) {
+        // Moodle >= 2.4 has 3rd parameter ($resetonly)
+        $modinfo = get_fast_modinfo($courseid);
+        $course  = $modinfo->get_course();
+    } else {
+        // Moodle <= 2.3
+        $course = $DB->get_record('course', array('id' => $courseid));
+        $modinfo = get_fast_modinfo($course);
+    }
+    $cms = $modinfo->get_cms();
+
+    $hotpots = array(); // hotpotid => cmid
+    $users   = array(); // cmid => array(userids)
+
+    foreach ($cms as $cmid => $cm) {
+        if ($cm->modname=='hotpot' && ($coursemoduleid==0 || $coursemoduleid==$cmid)) {
             // save mapping from hotpotid => coursemoduleid
-            $hotpots[$modinfo[$cmid]->id] = $cmid;
+            $hotpots[$cm->instance] = $cmid;
             // initialize array of users who have recently attempted this HotPot
-            $modinfo[$cmid]->users = array();
+            $users[$cmid] = array();
         } else {
             // we are not interested in this mod
-            unset($modinfo[$cmid]);
+            unset($cms[$cmid]);
         }
     }
 
@@ -695,58 +710,58 @@ function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $cour
         if (! array_key_exists($attempt->hotpotid, $hotpots)) {
             continue; // invalid hotpotid - shouldn't happen !!
         }
+
         $cmid = $hotpots[$attempt->hotpotid];
-
-        if (! array_key_exists($cmid, $modinfo)) {
-            continue; // invalid cmid - shouldn't happen !!
-        }
-        $mod = &$modinfo[$cmid];
-
         $userid = $attempt->userid;
-        if (! array_key_exists($userid, $mod->users)) {
-            $mod->users[$userid] = (object)array(
-                'id' => $userid,
-                'userid' => $userid,
+        if (! array_key_exists($userid, $users[$cmid])) {
+            $users[$cmid][$userid] = (object)array(
+                'id'        => $userid,
+                'userid'    => $userid,
                 'firstname' => $attempt->firstname,
-                'lastname' => $attempt->lastname,
-                'fullname' => fullname($attempt),
-                'picture' => $attempt->picture,
-                'imagealt' => $attempt->imagealt,
-                'email' => $attempt->email,
-                'attempts' => array()
+                'lastname'  => $attempt->lastname,
+                'fullname'  => fullname($attempt),
+                'picture'   => $attempt->picture,
+                'imagealt'  => $attempt->imagealt,
+                'email'     => $attempt->email,
+                'attempts'  => array()
             );
         }
         // add this attempt by this user at this course module
-        $mod->users[$userid]->attempts[$attempt->attempt] = &$attempt;
+        $users[$cmid][$userid]->attempts[$attempt->attempt] = &$attempt;
     }
 
-    foreach (array_keys($modinfo) as $cmid) {
-        $mod = &$modinfo[$cmid];
-        if (empty($mod->users)) {
+    foreach ($cms as $cmid => $cm) {
+        if (empty($users[$cmid])) {
             continue;
         }
         // add an activity object for each user's attempts at this hotpot
-        foreach (array_keys($mod->users) as $userid) {
-            $user = &$mod->users[$userid];
+        foreach ($users[$cmid] as $userid => $user) {
 
             // get index of last (=most recent) attempt
             $max_unumber = max(array_keys($user->attempts));
 
+            $options = array('context' => $cm->context);
+            if (method_exists($cm, 'get_formatted_name')) {
+                $name = $cm->get_formatted_name($options);
+            } else {
+                $name = format_string($cm->name, true,  $options);
+            }
+
             $activities[$index++] = (object)array(
                 'type' => 'hotpot',
                 'cmid' => $cmid,
-                'name' => format_string(urldecode($mod->name)),
+                'name' => $name,
                 'user' => (object)array(
-                    'id' => $user->id,
-                    'userid' => $user->userid,
+                    'id'        => $user->id,
+                    'userid'    => $user->userid,
                     'firstname' => $user->firstname,
-                    'lastname' => $user->lastname,
-                    'fullname' => $user->fullname,
-                    'picture' => $user->picture,
-                    'imagealt' => $user->imagealt,
-                    'email' => $user->email
+                    'lastname'  => $user->lastname,
+                    'fullname'  => $user->fullname,
+                    'picture'   => $user->picture,
+                    'imagealt'  => $user->imagealt,
+                    'email'     => $user->email
                 ),
-                'attempts' => $user->attempts,
+                'attempts'  => $user->attempts,
                 'timestamp' => $user->attempts[$max_unumber]->timemodified
             );
         }
@@ -961,6 +976,7 @@ function hotpot_grade_item_update($hotpot, $grades=null) {
         return;
     }
 
+    // set up params for grade_update()
     $params = array(
         'itemname' => $hotpot->name
     );
@@ -968,17 +984,23 @@ function hotpot_grade_item_update($hotpot, $grades=null) {
         $params['reset'] = true;
         $grades = null;
     }
-    if (property_exists($hotpot, 'cmidnumber')) {
+    if (isset($hotpot->cmidnumber)) {
         //cmidnumber may not be always present
         $params['idnumber'] = $hotpot->cmidnumber;
     }
-    if ($hotpot->gradeweighting > 0) {
+    if ($hotpot->gradeweighting) {
         $params['gradetype'] = GRADE_TYPE_VALUE;
         $params['grademax']  = $hotpot->gradeweighting;
         $params['grademin']  = 0;
-
     } else {
         $params['gradetype'] = GRADE_TYPE_NONE;
+        // Note: when adding a new activity, a gradeitem will *not*
+        // be created in the grade book if gradetype==GRADE_TYPE_NONE
+        // A gradeitem will be created later if gradetype changes to GRADE_TYPE_VALUE
+        // However, the gradeitem will *not* be deleted if the activity's
+        // gradetype changes back from GRADE_TYPE_VALUE to GRADE_TYPE_NONE
+        // Therefore, we force the removal of empty gradeitems
+        $params['deleted'] = true;
     }
     return grade_update('mod/hotpot', $hotpot->course, 'mod', 'hotpot', $hotpot->id, 0, $grades, $params);
 }
@@ -988,19 +1010,75 @@ function hotpot_grade_item_update($hotpot, $grades=null) {
  *
  * Needed by grade_update_mod_grades() in lib/gradelib.php
  *
- * @param stdclass $hotpot instance object with extra cmidnumber and modname property
- * @param int $userid update grade of specific user only, 0 means all participants
+ * @param stdclass  $hotpot      instance object with extra cmidnumber and modname property
+ * @param integer   $userid      >0 update grade of specific user only, 0 means all participants
+ * @param boolean   $nullifnone  TRUE = force creation of NULL grade if this user has no grade
+ * @return boolean  TRUE if successful, FALSE otherwise
  * @return void
  */
-function hotpot_update_grades($hotpot, $userid=0, $nullifnone=true) {
+function hotpot_update_grades($hotpot=null, $userid=0, $nullifnone=true) {
     global $CFG, $DB;
 
     // get hotpot object
     require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
 
+    if ($hotpot===null) {
+        // update/create grades for all hotpots
+
+        // set up sql strings
+        $strupdating = get_string('updatinggrades', 'hotpot');
+        $select = 'h.*, cm.idnumber AS cmidnumber';
+        $from   = '{hotpot} h, {course_modules} cm, {modules} m';
+        $where  = 'h.id = cm.instance AND cm.module = m.id AND m.name = ?';
+        $params = array('hotpot');
+
+        // get previous record index (if any)
+        if (! $config = $DB->get_record('config', array('name'=>'hotpot_update_grades'))) {
+            $config = (object)array('id'=>0, 'name'=>'hotpot_update_grades', 'value'=>'0');
+        }
+        $i_min = intval($config->value);
+
+        if ($i_max = $DB->count_records_sql("SELECT COUNT('x') FROM $from WHERE $where", $params)) {
+            if ($rs = $DB->get_recordset_sql("SELECT $select FROM $from WHERE $where", $params)) {
+                $bar = new progress_bar('hotpotupgradegrades', 500, true);
+                $i = 0;
+                foreach ($rs as $hotpot) {
+
+                    // update grade
+                    if ($i >= $i_min) {
+                        upgrade_set_timeout(); // apply for more time (3 mins)
+                        hotpot_update_grades($hotpot, $userid, $nullifnone);
+                    }
+
+                    // update progress bar
+                    $i++;
+                    $bar->update($i, $i_max, $strupdating.": ($i/$i_max)");
+
+                    // update record index
+                    if ($i > $i_min) {
+                        $config->value = "$i";
+                        if ($config->id) {
+                            $DB->update_record('config', $config);
+                        } else {
+                            $config->id = $DB->insert_record('config', $config);
+                        }
+                    }
+                }
+                $rs->close();
+            }
+        }
+
+        // delete the record index
+        if ($config->id) {
+            $DB->delete_records('config', array('id'=>$config->id));
+        }
+
+        return; // finish here
+    }
+
     // sanity check on $hotpot->id
     if (! isset($hotpot->id)) {
-        return;
+        return false;
     }
 
     if ($hotpot->grademethod==hotpot::GRADEMETHOD_AVERAGE || $hotpot->gradeweighting<100) {
