@@ -134,6 +134,7 @@ class block_mhaairs_gradebookservice_external extends external_api {
                         $newcategory->timecreated = 1337064766;
                         $newcategory->timemodified = 1337064766;
                         $newcategory->hidden = 0;
+                        $newcategory->aggregation = $CFG->grade_aggregation;
 
                         if ($newcategory->$parentname != null && $newcategory->$parentname != '')
                         {
