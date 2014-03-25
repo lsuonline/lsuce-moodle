@@ -6,6 +6,7 @@ require_once('../../config.php');
 require_once('../../enrol/externallib.php');
 require_once('lib.php');
 require_once('email_form.php');
+require_once('../../lib/weblib.php');
 
 require_login();
 
@@ -146,10 +147,8 @@ if (!empty($type)) {
 
     $email = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
 
-    $email->additional_emails = array();
-
-    
     if ($messageIDresend == 1) {
+        $email->additional_emails = array();
         $email->failuserids = explode(',', $email->failuserids);        
     
         foreach ($email->failuserids as $failed_address_or_id) {
@@ -160,8 +159,7 @@ if (!empty($type)) {
         }
         
         $email->additional_emails = implode(',', $email->additional_emails);
-    
-        $email->mailto = implode( ',' , $email->failuserids);
+        $email->mailto 		  = implode(',', $email->failuserids);
 
     }
 } else {
@@ -199,11 +197,6 @@ $email = file_prepare_standard_editor(
 $selected = array();
 if (!empty($email->mailto)) {
     foreach (explode(',', $email->mailto) as $id) {
-
-        if (is_string($id)) {
-            continue;
-        }
-
         $selected[$id] = $users[$id];
         unset($users[$id]);
     }
@@ -320,15 +313,28 @@ if ($form->is_cancelled()) {
             }
 
 
+        $additional_email_array = explode(',', $data->additional_emails);
+
+
             $i = 0;
-            foreach (explode(',', $data->additional_emails) as $additional_email) {
-                
+
+            foreach ($additional_email_array as $additional_email) {
+                $additional_email = trim($additional_email); 
+                if( ! (validate_email($additional_email))){
+		    if($additional_email !== ''){
+                        $warnings[] = get_string("no_email_address", 'block_quickmail', $additional_email);
+		    }
+		    continue;
+		}
+
+
                 $fakeuser = new object();
                 $fakeuser->id = 99999900 + $i;
-                $fakeuser->email = trim($additional_email);
+                $fakeuser->email = $additional_email;
+
 
                 $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->message), $data->message);
-                
+
                 //force fail
 
                 if (!$additional_email_success) {
@@ -340,6 +346,7 @@ if ($form->is_cancelled()) {
 
                 $i++;
             }
+            
 
             $data->failuserids = implode(',', $data->failuserids);
             $DB->update_record('block_quickmail_log', $data);
