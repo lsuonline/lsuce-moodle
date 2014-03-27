@@ -20,6 +20,10 @@ class block_mhaairs extends block_base {
         $this->title = get_string('pluginname', __CLASS__, null, true);
     }
 
+    function applicable_formats() {
+        return array('site' => false, 'my' => false, 'course-view' => true);
+    }
+
     public function has_config() {
         return true;
     }
