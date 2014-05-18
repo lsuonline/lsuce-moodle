@@ -16,7 +16,7 @@ if (!ues_user::is_teacher()) {
 
 $teacher = ues_teacher::get(array('userid' => $USER->id));
 
-//prevents previous semesters from being presented for user-creation
+// We're only concerned with active sections.
 $all        = $teacher->sections(true);
 $filter     = ues::where()->grades_due->greater_equal(time());
 $valids     = array_keys(ues_semester::get_all($filter));
@@ -37,7 +37,7 @@ $_s = ues::gen_str('block_cps');
 $blockname = $_s('pluginname');
 $heading = cps_creation::name();
 
-$context = get_context_instance(CONTEXT_SYSTEM);
+$context = context_system::instance();
 
 $PAGE->set_context($context);
 $PAGE->set_heading($blockname . ': '. $heading);
@@ -55,8 +55,7 @@ $setting_params = ues::where()
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/my'));
 } else if ($data = $form->get_data()) {
-    $settings = cps_setting::get_to_name($setting_params);
-
+    $settings  = cps_setting::get_to_name($setting_params);
     $creations = cps_creation::get_all(array('userid' => $USER->id));
 
     if (isset($data->creation_defaults)) {
@@ -81,6 +80,7 @@ if ($form->is_cancelled()) {
         $setting->save();
     }
 
+    $moodle_course_visibilities = array();
     foreach ($form->create_days as $semesterid => $courses) {
         foreach ($courses as $courseid => $create_days) {
             if (empty($create_days)) {
@@ -101,13 +101,45 @@ if ($form->is_cancelled()) {
                 $creation->fill_params($params);
             }
 
-            $creation->create_days = $create_days;
-            $creation->enroll_days = $enroll_days;
-
-            $creation->save();
-            $creation->apply();
-
+            
+            $same_value = $creation->create_days == $create_days && $creation->enroll_days == $enroll_days;
+            $no_value   = $creation->create_days == null && $creation->enroll_days == null;
+            if($same_value){
+                // If nothing has changed, skip the rest of the loop:
+                // apply will perform unenroll/enroll, causing course visibility = 0;
+                unset($creations[$creation->id]);
+                continue;
+            }else{
+                global $DB;
+                $creation->create_days = $create_days;
+                $creation->enroll_days = $enroll_days;
+                $creation->save();
+                
+                // populate the moodle_course_visibilities map for all courses in which the current user is primary.
+                $course = ues_course::by_id($courseid);
+                $sections = $course->sections(ues_semester::by_id($semesterid));
+                foreach($sections as $section){
+                    if($USER->id != $section->primary()->userid){
+                        continue;
+                    }
+                    $moodle_course = $section->moodle();
+                    if($moodle_course and !array_key_exists($moodle_course->id, $moodle_course_visibilities)){
+                        $moodle_course_visibilities[$moodle_course->id] = $moodle_course->visible;
+                    }
+                }
+                
+                $creation->apply();
+            }
             unset($creations[$creation->id]);
+        }
+    }
+
+    // reset the visibility for courses made invisible by $creation->apply(); HACK!
+    $moodle_courses = $DB->get_records_list('course', 'id', array_keys($moodle_course_visibilities));
+    foreach($moodle_courses as $id => $course){
+        if($course->visible != $moodle_course_visibilities[$id]){
+            $course->visible = $moodle_course_visibilities[$id];
+            $DB->update_record('course', $course);
         }
     }
 
@@ -120,7 +152,7 @@ if ($form->is_cancelled()) {
 }
 
 $creations = cps_creation::get_all(array('userid' => $USER->id));
-$settings = cps_setting::get_all($setting_params);
+$settings  = cps_setting::get_all($setting_params);
 
 $form_data = array();
 
@@ -134,14 +166,12 @@ foreach ($settings as $setting) {
 
 foreach ($creations as $creation) {
     $semesterid = $creation->semesterid;
-    $courseid = $creation->courseid;
+    $courseid   = $creation->courseid;
 
     $id = "_{$semesterid}_{$courseid}";
 
-    $form_data["create_group{$id}"] = array(
-        "create_days{$id}" => $creation->create_days,
-        "enroll_days{$id}" => $creation->enroll_days
-    );
+    $form_data["create_group{$id}[create_days{$id}]"] = $creation->create_days;
+    $form_data["create_group{$id}[enroll_days{$id}]"] = $creation->enroll_days;
 }
 
 echo $OUTPUT->header();

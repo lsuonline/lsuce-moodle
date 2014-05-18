@@ -124,7 +124,7 @@ class enrol_ues_plugin extends enrol_plugin {
             return $errors;
         }
 
-        $system = get_context_instance(CONTEXT_SYSTEM);
+        $system = context_system::instance();
         $can_change = has_capability('moodle/course:update', $system);
 
         $restricted = explode(',', $this->setting('course_restricted_fields'));
@@ -182,7 +182,7 @@ class enrol_ues_plugin extends enrol_plugin {
             return;
         }
 
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $coursecontext = context_course::instance($COURSE->id);
         $can_change = has_capability('moodle/course:update', $coursecontext);
         if ($can_change) {
             if ($this->setting('course_form_replace')) {
@@ -351,14 +351,11 @@ class enrol_ues_plugin extends enrol_plugin {
     public function handle_enrollments() {
         // will be unenrolled
         $pending = ues_section::get_all(array('status' => ues::PENDING));
-
         $this->handle_pending_sections($pending);
 
         // will be enrolled
         $processed = ues_section::get_all(array('status' => ues::PROCESSED));
-
         $this->handle_processed_sections($processed);
-
     }
 
     /**
@@ -963,7 +960,7 @@ class enrol_ues_plugin extends enrol_plugin {
      * @param ues_section[] $sections
      */
     public function handle_pending_sections($sections) {
-        global $DB;
+        global $DB, $USER;
 
         if ($sections) {
             $this->log('Found ' . count($sections) . ' Sections that will not be manifested.');
@@ -999,7 +996,13 @@ class enrol_ues_plugin extends enrol_plugin {
                 }
 
                 if ($last_section) {
-                    $course->visible = 0;
+                    // set course visibility according to user preferences (block_cps)
+                    $setting_params = ues::where()
+                        ->userid->equal($USER->id)
+                        ->name->starts_with('creation_');
+
+                    $settings  = cps_setting::get_to_name($setting_params);
+                    $course->visible = $settings['creation_visible']->value;
 
                     $DB->update_record('course', $course);
 
@@ -1294,7 +1297,7 @@ class enrol_ues_plugin extends enrol_plugin {
             $roleid = $this->setting($shortname . '_role');
 
             // Ignore pending statuses for users who have no role assignment
-            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            $context = context_course::instance($course->id);
             if (!is_enrolled($context, $user->userid)) {
                 continue;
             }
