@@ -1001,8 +1001,12 @@ class enrol_ues_plugin extends enrol_plugin {
                         ->userid->equal($USER->id)
                         ->name->starts_with('creation_');
 
-                    $settings  = cps_setting::get_to_name($setting_params);
-                    $course->visible = $settings['creation_visible']->value;
+                    $settings        = cps_setting::get_to_name($setting_params);
+                    $setting         = !empty($settings['creation_visible']) ? $settings['creation_visible'] : false;
+
+                    //@todo1 Use the site default rather tham hard-coding '0'.
+                    $course->visible = isset($setting->value) ? $setting->value : 0;
+
 
                     $DB->update_record('course', $course);
 
