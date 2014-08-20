@@ -16,9 +16,9 @@
         <FIELD NAME="typeid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Basic LTI type"/>
         <FIELD NAME="toolurl" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Remote tool url"/>
         <FIELD NAME="securetoolurl" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="instructorchoicesendusername" TYPE="int" LENGTH="1" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Added to send username to LTI"/>
         <FIELD NAME="instructorchoicesendname" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="Send user's name"/>
         <FIELD NAME="instructorchoicesendemailaddr" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="Send user's email"/>
+        <FIELD NAME="instructorchoicesendusername" TYPE="int" LENGTH="1" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Added to send username to LTI"/>
         <FIELD NAME="instructorchoiceallowroster" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="Allow the roster to be retrieved"/>
         <FIELD NAME="instructorchoiceallowsetting" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="Allow a tool to store a setting"/>
         <FIELD NAME="instructorcustomparameters" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Additional custom parameters provided by the instructor"/>

@@ -18,7 +18,7 @@ class block_rollsheet extends block_list {
         }
 
         global $PAGE, $COURSE, $OUTPUT, $CFG;
-        $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $context = context_course::instance($COURSE->id);
         $permission = (
             has_capability('block/rollsheet:viewblock', $context)
         );

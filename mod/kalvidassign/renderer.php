@@ -16,8 +16,8 @@
 /**
  * Kaltura video assignment renderer class
  *
- * @package    mod
- * @subpackage kalvidassign
+ * @package    mod_kalvidassign
+ * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -84,6 +84,10 @@ class submissions_table extends table_sql {
         $user->picture      = $data->picture;
         $user->imagealt     = $data->imagealt;
         $user->firstname    = $data->firstname;
+        $user->firstnamephonetic    = $data->firstnamephonetic;
+        $user->lastnamephonetic    = $data->lastnamephonetic;
+        $user->middlename   = $data->middlename;
+        $user->alternatename   = $data->alternatename;
         $user->lastname     = $data->lastname;
         $user->email        = $data->email;
 
@@ -506,7 +510,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         // Check of KSR is enabled via config or capability
         $enable_ksr = get_config(KALTURA_PLUGIN_NAME, 'enable_screen_recorder');
-        $context    = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context    = context_module::instance($cm->id);
         
 
         if ($enable_ksr && has_capability('mod/kalvidassign:screenrecorder', $context)) {
@@ -620,7 +624,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         // Check of KSR is enabled via config or capability
         $enable_ksr = get_config(KALTURA_PLUGIN_NAME, 'enable_screen_recorder');
-        $context    = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context    = context_module::instance($cm->id);
         
 
         if ($enable_ksr && has_capability('mod/kalvidassign:screenrecorder', $context)) {
@@ -811,11 +815,17 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
         $groups_join   = '';
         $groups        = array();
         $group_ids     = '';
-        $context       = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $context       = context_course::instance($COURSE->id);
 
         // Get all groups that the user belongs to, check if the user has capability to access all groups
         if (!has_capability('moodle/site:accessallgroups', $context, $USER->id)) {
             $groups    = groups_get_all_groups($COURSE->id, $USER->id);
+
+            if (empty($groups)) {
+                $message = get_string('nosubmissions', 'kalvidassign');
+                echo html_writer::tag('center', $message);
+                return;
+            }
         } else {
             $groups = groups_get_all_groups($COURSE->id);            
         }
@@ -827,7 +837,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         $group_ids = rtrim($group_ids, ',');
 
-        switch ($cm->groupmode) {
+        switch (groups_get_activity_groupmode($cm)) {
             case NOGROUPS:
                 // No groups, do nothing
                 break;
@@ -874,11 +884,11 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         // In order for the sortable first and last names to work.  User ID has to be the first column returned and must be
         // returned as id.  Otherwise the table will display links to user profiles that are incorrect or do not exist
-        $columns        = 'u.id, kvs.id AS submitid, u.firstname, u.lastname, u.picture, u.imagealt, u.email, '.
+        $mainuserfields = user_picture::fields('u', array('id'), 'userid');
+        $columns        = 'u.id,' . $mainuserfields . ', kvs.id AS submitid, ' . 
                           ' kvs.grade, kvs.submissioncomment, kvs.timemodified, kvs.entry_id, kvs.timemarked, '.
                           '1 AS status, 1 AS selectgrade' . $groups_column;
         $where          .= ' u.deleted = 0 AND u.id IN ('.implode(',', $users).') ' . $groups_where;
-
 
         $param['instanceid'] = $cm->instance;
         $from = "{user} u LEFT JOIN {kalvidassign_submission} kvs ON kvs.userid = u.id AND kvs.vidassignid = :instanceid ".
@@ -1191,10 +1201,10 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
         $slider_border = html_writer::tag('div', $progress_bar, $attr);
 
         $attr          = array('id' => 'loading_text');
-        $loading_text  = html_writer::tag('div', get_string('scr_loading', 'mod_kalvidassign'), $attr);
+        $loading_text  = html_writer::tag('div', get_string('checkingforjava', 'mod_kalvidassign'), $attr);
 
         $attr   = array('id' => 'progress_bar_container',
-                        'style' => 'width:100px; padding-left:10px; padding-right:10px; visibility: hidden');
+                        'style' => 'width:100%; padding-left:10px; padding-right:10px; visibility: hidden');
         $output = '<br /><center>' .html_writer::tag('span', $slider_border . $loading_text, $attr) . '</center>';
 
         return $output;

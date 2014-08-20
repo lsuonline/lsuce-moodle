@@ -7,7 +7,7 @@
  *    Jesus Federico  (jesus [at] blindsidenetworks [dt] com)    
  * 
  * @package   mod_bigbluebuttonbn
- * @copyright 2010-2012 Blindside Networks 
+ * @copyright 2010-2014 Blindside Networks Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v2 or later
  */
 
@@ -31,7 +31,7 @@ if ($id) {
 
 require_login($course, true, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 $PAGE->set_context($context);
 
 $PAGE->set_url('/mod/bigbluebuttonbn/view_end.php', array('id' => $cm->id));

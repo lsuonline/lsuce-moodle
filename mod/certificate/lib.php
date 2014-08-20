@@ -62,6 +62,7 @@ function certificate_add_instance($certificate) {
         $event->eventtype = 'course';
         $event->modulename  = 'certificate';
         $event->instance = $certificateid;
+        $event->timestart = time();
 
         add_event($event);
     }
@@ -130,7 +131,7 @@ function certificate_delete_instance($id) {
     }
 
     // Delete any files associated with the certificate
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $fs = get_file_storage();
     $fs->delete_area_files($context->id);
 
@@ -306,7 +307,7 @@ function certificate_cron () {
 function certificate_get_teachers($certificate, $user, $course, $cm) {
     global $USER, $DB;
 
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $potteachers = get_users_by_capability($context, 'mod/certificate:manage', '', '', '', '', '', '', false, false);
     if (empty($potteachers)) {
         return array();
@@ -692,7 +693,7 @@ function certificate_get_issues($certificateid, $sort="ci.timecreated ASC", $gro
     global $CFG, $DB;
 
     // get all users that can manage this certificate to exclude them from the report.
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $certmanagers = get_users_by_capability($context, 'mod/certificate:manage', 'u.id');
 
     $limitsql = '';
@@ -1392,4 +1393,18 @@ function certificate_print_image($pdf, $certificate, $type, $x, $y, $w, $h) {
 function certificate_generate_code() {
     return (random_string(10));
 }
+
+/**
+ * cert_add_to_log is a quick hack to avoid add_to_log debugging
+ */
+function cert_add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0) {
+    if (function_exists('get_log_manager')) {
+        $manager = get_log_manager();
+        $manager->legacy_add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    } else if (function_exists('add_to_log')) {
+        add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    }
+}
+
+
 

@@ -34,7 +34,7 @@ abstract class quick_edit_screen {
         $this->itemid = $itemid;
         $this->groupid = $groupid;
 
-        $this->context = get_context_instance(CONTEXT_COURSE, $this->courseid);
+        $this->context = context_course::instance($this->courseid);
         $this->course = $DB->get_record('course', array('id' => $courseid));
 
         $this->page = optional_param('page', 0, PARAM_INT);
@@ -217,7 +217,7 @@ abstract class quick_edit_screen {
         $event_data->post_data = $data;
         $event_data->instance = $this;
 
-        events_trigger(get_class($this) . '_edited', $event_data);
+        qe_events_trigger(get_class($this) . '_edited', $event_data);
 
         return $event_data->warnings;
     }
@@ -355,7 +355,7 @@ abstract class quick_edit_tablelike extends quick_edit_screen implements tabbabl
         $data->table = $table;
         $data->instance = $this;
 
-        events_trigger($underlying . '_table_built', $data);
+        qe_events_trigger($underlying . '_table_built', $data);
 
         $button_attr = array('class' => 'quick_edit_buttons submit');
         $button_html = implode(' ', $this->buttons());

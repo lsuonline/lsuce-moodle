@@ -4,10 +4,14 @@
  *
  * @package    block
  * @subpackage mhaairs
- * @copyright  2013 Moodlerooms inc.
+ * @copyright  2013-2014 Moodlerooms inc.
  * @author     Teresa Hardy <thardy@moodlerooms.com>
+ * @author     Darko Miletic <dmiletic@moodlerooms.com>
  */
 
+defined('MOODLE_INTERNAL') or die();
+
+global $CFG;
 require_once($CFG->libdir.'/blocklib.php');
 require_once($CFG->dirroot.'/blocks/mhaairs/lib.php');
 require_once($CFG->dirroot.'/blocks/mhaairs/block_mhaairs_util.php');
@@ -17,11 +21,7 @@ class block_mhaairs extends block_base {
     const LINK_HELP     = 'help';
 
     public function init() {
-        $this->title = get_string('pluginname', __CLASS__, null, true);
-    }
-
-    function applicable_formats() {
-        return array('site' => false, 'my' => false, 'course-view' => true);
+        $this->title = get_string('pluginname', __CLASS__);
     }
 
     public function has_config() {
@@ -29,7 +29,7 @@ class block_mhaairs extends block_base {
     }
 
     public function get_content() {
-        global $CFG, $COURSE, $USER;
+        global $CFG, $COURSE;
 
         if ($this->content !== null) {
             return $this->content;
@@ -55,10 +55,7 @@ class block_mhaairs extends block_base {
 
         $this->content->text = $msg_html;
 
-        if (empty($CFG->block_mhaairs_customer_number) ||
-            empty($CFG->block_mhaairs_shared_secret)   ||
-            empty($CFG->block_mhaairs_base_address)
-           ) {
+        if (empty($CFG->block_mhaairs_customer_number) || empty($CFG->block_mhaairs_shared_secret)) {
             return $this->content;
         }
 
@@ -77,12 +74,13 @@ class block_mhaairs extends block_base {
                                                     'width' => '16',
                                                     'hspace' => '4',
                                                     'alt' => $imagealt));
-            $lurl = new moodle_url('../blocks/mhaairs/redirect.php', array('url' => mh_hex_encode($aserv['ServiceUrl']), 'id' => mh_hex_encode($aserv['ServiceID'])));
+            $lurl = new moodle_url('/blocks/mhaairs/redirect.php',
+                                   array('url' => mh_hex_encode($aserv['ServiceUrl']),
+                                         'id'  => mh_hex_encode($aserv['ServiceID']),
+                                         'cid' => $COURSE->id));
             $block_links .= html_writer::link($lurl->out(false), $aserv['ServiceName'], $targetw);
             $block_links .= html_writer::empty_tag('br');
         }
-		session_start();
-		$_SESSION['course'] = $COURSE;
 
         $this->content->text = $block_links;
 
@@ -93,14 +91,14 @@ class block_mhaairs extends block_base {
             return $this->content;
         }
 
-        // Get Help links
+        // Get Help links.
         $helplinks = block_mhaairs_getlinks(self::LINK_HELP);
         if ($helplinks === false) {
             $this->content->footer = $msg_html;
             return $this->content;
         }
 
-        // Show help links
+        // Show help links.
         if ($adminhelp) {
             $adminhelplink = html_writer::link($helplinks['AdminHelpUrl'],
                                                 get_string('adminhelplabel', __CLASS__),
@@ -134,7 +132,7 @@ class block_mhaairs extends block_base {
             return $result;
         }
 
-        // Show the links
+        // Show the links.
         $permittedlist = explode(',', $CFG->block_mhaairs_display_services);
         asort($permittedlist);
         $finallist = $permittedlist;

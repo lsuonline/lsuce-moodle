@@ -16,8 +16,7 @@
 /**
  * Kaltura video assignment
  *
- * @package    mod
- * @subpackage kalvidassign
+ * @package    mod_kalvidassign
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -78,7 +77,7 @@ $PAGE->set_url('/mod/kalvidassign/view.php', array('id'=>$id));
 $PAGE->set_title(format_string($kalvidassign->name));
 $PAGE->set_heading($course->fullname);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 
 add_to_log($course->id, 'kalvidassign', 'view assignment details', 'view.php?id='.$cm->id, $kalvidassign->id, $cm->id);
 
@@ -188,26 +187,31 @@ if (!has_capability('mod/kalvidassign:gradesubmission', $context)) {
                 array('upload_successful', 'local_kaltura'),
                 array('video_converting', 'kalvidassign'),
                 array('previewvideo', 'kalvidassign'),
-                array('javanotenabled', 'kalvidassign')
-                )
-        );
+                array('javanotenabled', 'kalvidassign'),
+                array('checkingforjava', 'kalvidassign')
+        )
+    );
 
-    $courseid               = get_courseid_from_context($PAGE->context);
+    $courseid               = $COURSE->id;
     $conversion_script      = '';
     $kcw                    = local_kaltura_get_kcw('assign_uploader', true);
     $markup                 = $renderer->display_all_panel_markup();
     $properties             = kalvidassign_get_video_properties();
     $conversion_script      = "../../local/kaltura/check_conversion.php?courseid={$courseid}&entry_id=";
     $login_session          = '';
+    $modalwidth             = 0;
+    $modalheight            = 0;
     
     if ($connection) {
         $login_session      = $connection->getKs();
     }
 
-    $PAGE->requires->js_init_call('M.local_kaltura.video_assignment', array($conversion_script, $markup,
-                                                                            $properties, $kcw,
-                                                                            $login_session, $partner_id,
-                                                                            $conversion_script), false, $jsmodule);
+    list($modalwidth, $modalheight) = kalvidassign_get_player_dimensions();
+
+    $properties['width'] = $modalwidth - KALTURA_POPUP_WIDTH_ADJUSTMENT;
+    $properties['height'] = $modalheight - KALTURA_POPUP_HEIGHT_ADJUSTMENT;
+    $PAGE->requires->js_init_call('M.local_kaltura.video_assignment', array($conversion_script, $markup, $properties, $kcw, $login_session, $partner_id,
+            $conversion_script, $modalwidth, $modalheight), false, $jsmodule);
 
 } else {
     echo $renderer->display_instructor_buttons($cm, $USER->id);

@@ -7,7 +7,7 @@ function mh_get_time_stamp() {
 
 function mh_create_token($user_id, $course_id = false) {
     $result = 'userid='.$user_id.';time='.mh_get_time_stamp();
-    if($course_id){
+    if ($course_id) {
         $result = 'courseid='.$course_id.';'.$result;
     }
     return $result;
@@ -16,7 +16,7 @@ function mh_create_token($user_id, $course_id = false) {
 function mh_create_token2($customer, $user_id, $user_name, $course_id = false, $course_internal_id = false, $link_type = null, $role_name = null, $course_name = null) {
     $parameters = array('customer' => $customer,
                         'userid'   => $user_id,
-						'username' => $user_name,
+                        'username' => $user_name,
                         'time'     => mh_get_time_stamp());
 
     if (!empty($course_id)) {
@@ -58,95 +58,86 @@ function mh_encode_token2($token, $secret, $alg = 'md5') {
 
 function mh_get_token($token)
 {
-    try{
+    try {
         $pos = strpos($token, ';');
         return substr($token, $pos + 1, strlen($token) - $pos);
-    }catch(Exception $e)
-    {
+    } catch (Exception $e) {
         return '';
     }
 }
 
 function mh_get_hash($token)
 {
-    try{
+    try {
         $pos = strpos($token, ';');
         return substr($token, 0, $pos);
-    }catch(Exception $e)
-    {
+    } catch (Exception $e) {
         return '';
     }
 }
 
-function mh_get_token_value($token, $name)
-{
-    try
-    {
-        $parts = explode(';',$token);
-        foreach($parts as $part)
-        {
+function mh_get_token_value($token, $name) {
+    try {
+        $parts = explode(';', $token);
+        foreach ($parts as $part) {
             $pair = explode('=', $part);
-            if(count($pair)>0)
-            {
-                if(0===strcasecmp($pair[0],$name))
-                {
+            if (count($pair) > 0) {
+                if (0 === strcasecmp($pair[0], $name)) {
                     return $pair[1];
                 }
             }
         }
+    } catch (Exception $e) {
+        // Ignore.
     }
-    catch(Exception $e){
-    }
-    return FALSE;
+    return false;
 }
 
-function mh_is_token_valid($token_text, $secret, $delay = 25200, $alg = 'md5', &$trace = '')
-{
-    //return true;
+function mh_is_token_valid($token_text, $secret, $delay = 25200, $alg = 'md5', &$trace = '') {
     $trace = $trace.";token validation";
-    try{
+    try {
         $decoded_token = mh_hex_decode($token_text);
         $trace = $trace.";decoded_token=".$decoded_token;
         $token = mh_get_token($decoded_token);
         $hash = mh_get_hash($decoded_token);
         $trace = $trace.";hash=".$hash;
         $true_hash = md5($token.$secret);
-        if($true_hash === $hash)
-        {
+        if ($true_hash === $hash) {
             $trace = $trace."the hash is good;";
-            $token_time_text = mh_get_token_value($decoded_token,"time");
-            $token_time = strtotime($token_time_text);//new DateTime($token_time_text);
+            $token_time_text = mh_get_token_value($decoded_token, "time");
+            $token_time = strtotime($token_time_text);
             $current_time = time();
-            $interval = ((int)$current_time) - ((int)$token_time) ;
+            $interval = ((int)$current_time) - ((int)$token_time);
             $trace = $trace.";interval=".$interval;
             return $interval < $delay && $interval >= -$delay;
         } else {
             $trace = $trace."the hash is bad;";
         }
+    } catch (Exception $e) {
+        $trace = $trace.'Exception in is_token_valid:'.$e->getMessage();
     }
-    catch(Exception $e){
-		$trace = $trace.'Exception in is_token_valid:'.$e->getMessage();
-    }
-    return FALSE;
+    return false;
 }
 
-function mh_hex_encode($data)
-{
-    try
-    {
-        return bin2hex($data);
+/**
+ * @param $data
+ * @return bool|string
+ */
+function mh_hex_encode($data) {
+    $result = false;
+    try {
+        $result = bin2hex($data);
+    } catch (Exception $e) {
+        // Ignore.
     }
-    catch(Exception $e){
-        return FALSE;
-    }
+    return $result;
 }
 
-function mh_hex_decode($data)
-{
-    try{
+function mh_hex_decode($data) {
+    try {
         return mh_hex2bin($data);
-    }
-    catch(Exception $e){
+    } catch (Exception $e) {
+        // Ignore.
     }
 }
 
@@ -320,7 +311,7 @@ function mh_get_user_info($token, $secret)
 
                 $courses = enrol_get_users_courses($userid, true);
                 foreach ($courses as $course) {
-                    $context = get_context_instance(CONTEXT_COURSE, $course->id);
+                    $context = context_course::instance($course->id);
                     foreach ($editingTeacherRoles as $role)
                     {
                         $roleid = $role->id;

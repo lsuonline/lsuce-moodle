@@ -80,11 +80,12 @@ class mod_kalvidres_mod_form extends moodleform_mod {
                         array('upload_successful', 'kalvidres'),
                         array('video_converting', 'kalvidres'),
                         array('previewvideo', 'kalvidres'),
-                        array('javanotenabled', 'kalvidres')
-                        )
-                );
+                        array('javanotenabled', 'kalvidres'),
+                        array('checkingforjava', 'kalvidres')
+                )
+            );
     
-            $courseid = get_courseid_from_context($PAGE->context);
+            $courseid = $COURSE->id;
     
             $conversion_script = "../local/kaltura/check_conversion.php?courseid={$courseid}&entry_id=";
     
@@ -170,10 +171,10 @@ class mod_kalvidres_mod_form extends moodleform_mod {
         $slider_border = html_writer::tag('div', $progress_bar, $attr);
 
         $attr          = array('id' => 'loading_text');
-        $loading_text  = html_writer::tag('div', get_string('scr_loading', 'mod_kalvidres'), $attr);
+        $loading_text  = html_writer::tag('div', get_string('checkingforjava', 'mod_kalvidres'), $attr);
 
         $attr   = array('id' => 'progress_bar_container',
-                        'style' => 'width:100px; padding-left:10px; padding-right:10px; visibility: hidden');
+                        'style' => 'width:100%; padding-left:10px; padding-right:10px; visibility: hidden');
         $output = html_writer::tag('span', $slider_border . $loading_text, $attr);
 
         return $output;
@@ -199,10 +200,10 @@ class mod_kalvidres_mod_form extends moodleform_mod {
 
         // Check of KSR is enabled via config or capability
         if (!empty($this->_cm)) {
-            $context       = get_context_instance(CONTEXT_MODULE, $this->_cm->id);
+            $context       = context_module::instance($this->_cm->id);
         } else {
 
-            $context       = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+            $context       = context_course::instance($COURSE->id);
         }
 
         if ($enable_ksr && has_capability('mod/kalvidres:screenrecorder', $context)) {

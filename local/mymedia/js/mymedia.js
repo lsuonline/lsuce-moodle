@@ -135,7 +135,7 @@ M.local_mymedia.init_config = function (Y, panel_markup, dialog, conversion_scri
     var tab_view = new Y.TabView({srcNode:'#id_video_details_tab',
                                   visible: false,
                                   width: "500px",
-                                  height: "480px"});
+                                  height: "400px"});
 
     tab_view.render();
 
@@ -492,5 +492,13 @@ M.local_mymedia.init_config = function (Y, panel_markup, dialog, conversion_scri
         }
 
     }, 'a');
+
+    var mymediasort = Y.one("#mymediasort");
+    var mymediasortoptions = mymediasort.get("options");
+    Y.on("change", function () {
+        var index = mymediasort.get("selectedIndex");
+        var url = mymediasortoptions.item(index).get("value");
+        window.location.href = url;
+     }, mymediasort);
     
 };

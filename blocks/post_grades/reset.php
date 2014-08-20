@@ -8,7 +8,7 @@ require_login();
 
 $system = $DB->get_record('course', array('id' => SITEID), '*', MUST_EXIST);
 
-$context = get_context_instance(CONTEXT_SYSTEM);
+$context = context_system::instance();
 
 $shortname = optional_param('shortname', null, PARAM_TEXT);
 $flash = optional_param('flash', null, PARAM_INT);

@@ -406,14 +406,29 @@ function repository_kaltura_category_id_path_exists($connection, $category_id, $
  * a KalturaCategory object.  Otherwise false.  The API does not allow searching
  * for categories (using the 'category' service) by name
  *
- * @param obj - Kaltura connection object
- * @param string - category fullName path
- * @return mixed - KalturaCategory if path exists, otherwise false
+ * @param kaltura_connection $connection An instance of the kaltura_connection class
+ * @param string $path The Kaltura repository root path
+ * @return bool|KalturaCategory - A KalturaCategory if path exists, otherwise false
  */
 function repository_kaltura_category_path_exists($connection, $path) {
+    global $SESSION;
 
     if (empty($path)) {
         return false;
+    }
+
+    // Retrieve access data from the session global
+    if (isset($SESSION->kalrepo)) {
+
+        if (isset($SESSION->kalrepo["$path"]) && !empty($SESSION->kalrepo["$path"])) {
+            // Gonen - 2nd change - unserialize the found object before returning.
+            $obj = unserialize($SESSION->kalrepo["$path"]);
+            if($obj !== false) {
+                return $obj;
+            }
+        }
+    } else {
+        $SESSION->kalrepo = array(array());
     }
 
     $filter = new KalturaCategoryFilter();
@@ -425,6 +440,8 @@ function repository_kaltura_category_path_exists($connection, $path) {
         1 <= $result->totalCount) {
 
         if ($result->objects[0] instanceof KalturaCategory) {
+            // Gonen - 1st change - save serialized object to session.
+            $SESSION->kalrepo["$path"] = serialize($result->objects[0]);
             return $result->objects[0];
         }
     }
@@ -501,7 +518,7 @@ function repository_kaltura_get_course_access_list($capability = '') {
     $user_role_access = repository_kaltura_get_user_kaltura_repo_access($USER->id, $capability);
 
     // Find roles that have this capability in the system context
-    $roles_with_cap = get_roles_with_caps_in_context(get_context_instance(CONTEXT_SYSTEM), array($capability));
+    $roles_with_cap = get_roles_with_caps_in_context(context_system::instance(), array($capability));
 
     $courses       = array();
     $final_courses = array();
@@ -511,7 +528,7 @@ function repository_kaltura_get_course_access_list($capability = '') {
         $context_path           = $role_assign_context_path;
         $context_path           = explode('/', $context_path);
         $role_assign_context_id = end($context_path);
-        $role_assign_context    = get_context_instance_by_id($role_assign_context_id);
+        $role_assign_context    = context::instance_by_id($role_assign_context_id);
 
         // Check if the user has a role assignment with the capability set to allowed
         $user_role_with_cap = array_intersect($roles_array, $roles_with_cap);
@@ -566,7 +583,7 @@ function repository_kaltura_get_course_access_list($capability = '') {
                         if (array_key_exists($courseid, $final_courses)) {
 
                             // Flag the course to have it's capability checked at the course level
-                            $course_context = get_context_instance(CONTEXT_COURSE, $courseid);
+                            $course_context = context_course::instance($courseid);
 
                             if (!has_capability($capability, $course_context)) {
                                 unset($final_courses[$courseid]);
@@ -594,7 +611,7 @@ function repository_kaltura_get_course_access_list($capability = '') {
             foreach ($final_courses as $id => $data) {
 
                 // Flag the course to have it's capability checked at the course level
-                $course_context = get_context_instance(CONTEXT_COURSE, $id);
+                $course_context = context_course::instance($id);
 
                 if (!has_capability($capability, $course_context)) {
                     unset($final_courses[$id]);
@@ -617,7 +634,7 @@ function repository_kaltura_get_course_access_list($capability = '') {
 function repository_kaltura_get_all_courses_in_context($context_id) {
     global $DB;
 
-    $context = get_context_instance_by_id($context_id);
+    $context = context::instance_by_id($context_id);
     $result  = array();
     $records = array();
 
@@ -1283,22 +1300,22 @@ function repository_kaltura_search_own_videos($connection, $name, $tags, $page_i
  * Refactored code from @see search_own_videos(), except it also returns videos
  * that are still being converted.
  *
- * @param obj - Kaltura connection object
- * @param string - search string (optional)
- * @param int - pager index
- * @param int - number of videos to display on a single page (optional override)
+ * @param obj $connection Kaltura connection object
+ * @param string $search Search string (optional)
+ * @param int $page_index Pager index
+ * @param int $search Number of videos to display on a single page (optional override)
+ * @param string $sort Optional sort (most recent or alphabetical)
  *
- *
- * @return array
+ * @return array List of videos
  */
-function repository_kaltura_search_mymedia_videos($connection, $search = '', $page_index = 0, $videos_per_page = 0) {
+function repository_kaltura_search_mymedia_videos($connection, $search = '', $page_index = 0, $videos_per_page = 0, $sort = null) {
 
     global $USER;
 
     $results = array();
 
     // Create filter
-    $filter = repository_kaltura_create_mymedia_filter($search);
+    $filter = repository_kaltura_create_mymedia_filter($search, $sort);
 
     // Filter vidoes with the user's username as the user id
     $filter->userIdEqual = $USER->username;
@@ -1630,11 +1647,12 @@ function repository_kaltura_create_media_filter($name, $tags, $multi_override = 
  * PRECONVERT, KalturaEntryStatus::IMPORT to retrieve videos that are still
  * being converted.
  *
- * @param string - video search string (separated by spaces
+ * @param string $search Video search string (separated by spaces)
+ * @param string $sort Optional sort (most recent or alphabetical)
  *
  * @return KalturaMediaEntryFilter - filter object
  */
-function repository_kaltura_create_mymedia_filter($search) {
+function repository_kaltura_create_mymedia_filter($search, $sort = null) {
 
     $filter = new KalturaMediaEntryFilter();
 
@@ -1647,7 +1665,18 @@ function repository_kaltura_create_mymedia_filter($search) {
     $filter->statusIn = KalturaEntryStatus::READY .','.
                         KalturaEntryStatus::PRECONVERT .','.
                         KalturaEntryStatus::IMPORT;
-    $filter->orderBy = KalturaBaseEntryOrderBy::NAME_ASC;
+
+    if ($sort == 'recent') {
+        $filter->orderBy = KalturaBaseEntryOrderBy::CREATED_AT_DESC;
+    } else if ($sort == 'old') {
+        $filter->orderBy = KalturaBaseEntryOrderBy::CREATED_AT_ASC;
+    } else if ($sort == 'name_asc') {
+         $filter->orderBy = KalturaBaseEntryOrderBy::NAME_ASC;
+    } else if ($sort == 'name_desc') {
+         $filter->orderBy = KalturaBaseEntryOrderBy::NAME_DESC;
+    } else {
+        $filter->orderBy = KalturaBaseEntryOrderBy::CREATED_AT_DESC;
+    }
 
     return $filter;
 }

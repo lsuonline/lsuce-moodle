@@ -41,7 +41,7 @@ $PAGE->set_title($strcertificates);
 $PAGE->set_heading($course->fullname);
 
 // Add the page view to the Moodle log
-add_to_log($course->id, 'certificate', 'view all', 'index.php?id='.$course->id, '');
+cert_add_to_log($course->id, 'certificate', 'view all', 'index.php?id='.$course->id, '');
 
 // Get the certificates, if there are none display a notice
 if (!$certificates = get_all_instances_in_course('certificate', $course)) {

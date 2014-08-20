@@ -27,7 +27,7 @@ require_once($CFG->dirroot . '/mod/turningtech/lib/forms/turningtech_admin_searc
 // Verify admin user.
 if (0) {
     require_login(0, false);
-    $context = get_context_instance(CONTEXT_SYSTEM);
+    $context = context_system::instance();
     require_capability('moodle/site:config', $context);
 }
 admin_externalpage_setup('editusers');

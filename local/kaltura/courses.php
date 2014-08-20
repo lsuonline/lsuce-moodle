@@ -33,7 +33,7 @@ $id = optional_param('course_id', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_TEXT);
 $query = optional_param('query', '', PARAM_TEXT);
 
-$PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));
+$PAGE->set_context(context_system::instance());
 
 if ($action == 'search') {
     if (($courses = search_course($query)) === false) {

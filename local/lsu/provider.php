@@ -10,8 +10,6 @@ class lsu_enrollment_provider extends enrollment_provider {
     var $username;
     var $password;
 
-    var $testing;
-
     var $settings = array(
         'credential_location' => 'https://secure.web.lsu.edu/credentials.php',
         'wsdl_location' => 'webService.wsdl',
@@ -56,7 +54,7 @@ class lsu_enrollment_provider extends enrollment_provider {
         $curl = new curl(array('cache' => true));
         $resp = $curl->post($this->url, array('credentials' => 'get'));
 
-        list($username, $password) = $this->testing ? array('hello','world1') : explode("\n", $resp);
+        list($username, $password) = explode("\n", $resp);
 
         if (empty($username) or empty($password)) {
             throw new Exception('bad_resp');
@@ -72,8 +70,6 @@ class lsu_enrollment_provider extends enrollment_provider {
         $this->url = $this->get_setting('credential_location');
 
         $this->wsdl = $CFG->dataroot . '/'. $this->get_setting('wsdl_location');
-
-        $this->testing = get_config('local_lsu', 'testing');
 
         if ($init_on_create) {
             $this->init();
@@ -267,7 +263,7 @@ class lsu_enrollment_provider extends enrollment_provider {
 
             $user->save();
 
-            events_trigger('ues_' . $name . '_updated', $user);
+            events_trigger_legacy('ues_' . $name . '_updated', $user);
         }
     }
     
@@ -397,6 +393,7 @@ class lsu_enrollment_provider extends enrollment_provider {
      * Takes the output of @see lsu_enrollment_provider::findOrphanedGroups 
      * and prepares it for unenrollment.
      * 
+     * @todo parameterize queries for semester prefix- remove hardcoded course prefeix!!!
      * @global object $DB
      * @param object[] $groupMembers rows from 
      * @see lsu_enrollment_provider::findOrphanedGroups

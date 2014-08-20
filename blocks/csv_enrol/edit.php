@@ -20,7 +20,7 @@ GLOBAL $USER;
 require_login();
 
 $courseid = optional_param('id', '', PARAM_INT);  
-$context = get_context_instance(CONTEXT_COURSE,$courseid);
+$context = context_course::instance($courseid);
 if (!has_capability('block/csv_enrol:uploadcsv',$context,$USER->id)) {
     die("Unauthorized.");
 }

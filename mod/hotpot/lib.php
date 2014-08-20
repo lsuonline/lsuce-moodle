@@ -46,30 +46,38 @@ defined('MOODLE_INTERNAL') || die();
  * @return mixed true if the feature is supported, null if unknown
  */
 function hotpot_supports($feature) {
-    switch($feature) {
-        // enable features whose default is "false"
-        case FEATURE_GRADE_HAS_GRADE:   return true;
-        case FEATURE_GROUPINGS:         return true;
-        case FEATURE_GROUPMEMBERSONLY:  return true;
-        case FEATURE_BACKUP_MOODLE2:    return true;
 
-        // use default for these features whose default is "false"
-        //case FEATURE_RATE:              return false;
-        //case FEATURE_GRADE_HAS_GRADE:   return false;
-        //case FEATURE_COMPLETION_TRACKS_VIEWS: return false;
-
-        // disable features whose default is "true"
-        case FEATURE_MOD_INTRO:         return false;
-
-        // use default for these features whose default is "true"
-        //case FEATURE_GROUPS:            return true;
-        //case FEATURE_IDNUMBER:          return true;
-        //case FEATURE_GRADE_OUTCOMES:    return true;
-        //case FEATURE_MODEDIT_DEFAULT_COMPLETION: return true;
-
-        // otherwise, this is some feature we do not know about
-        default:                        return null;
+    // these constants are defined in "lib/moodlelib.php"
+    // they are not all defined in Moodle 2.0, so we
+    // check each one is defined before trying to use it
+    $constants = array(
+        'FEATURE_ADVANCED_GRADING' => true, // default=false
+        'FEATURE_BACKUP_MOODLE2'   => true, // default=false
+        'FEATURE_COMMENT'          => true,
+        'FEATURE_COMPLETION_HAS_RULES' => true,
+        'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
+        'FEATURE_CONTROLS_GRADE_VISIBILITY' => true,
+        'FEATURE_GRADE_HAS_GRADE'  => true, // default=false
+        'FEATURE_GRADE_OUTCOMES'   => true,
+        'FEATURE_GROUPINGS'        => true, // default=false
+        'FEATURE_GROUPMEMBERSONLY' => true, // default=false
+        'FEATURE_GROUPS'           => true,
+        'FEATURE_IDNUMBER'         => true,
+        'FEATURE_MOD_ARCHETYPE'    => MOD_ARCHETYPE_OTHER,
+        'FEATURE_MOD_INTRO'        => false, // default=true
+        'FEATURE_MODEDIT_DEFAULT_COMPLETION' => true,
+        'FEATURE_NO_VIEW_LINK'     => false,
+        'FEATURE_PLAGIARISM'       => false,
+        'FEATURE_RATE'             => false,
+        'FEATURE_SHOW_DESCRIPTION' => true, // default=false (Moodle 2.2)
+        'FEATURE_USES_QUESTIONS'   => false
+    );
+    foreach ($constants as $constant => $value) {
+        if (defined($constant) && $feature==constant($constant)) {
+            return $value;
+        }
     }
+    return false;
 }
 
 /**
@@ -468,7 +476,7 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
     //     log_timcoumodact_ix : time, course, module, action
 
     // log records are added by the following function in "lib/datalib.php":
-    //     add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0)
+    //     hotpot_add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0)
 
     // log records are added by the following HotPot scripts:
     //     (scriptname : log action)
@@ -1946,4 +1954,35 @@ function hotpot_textlib() {
     $method = array_shift($args);
     $callback = array($textlib, $method);
     return call_user_func_array($callback, $args);
+}
+
+/**
+ * hotpot_add_to_log
+ */
+function hotpot_add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0) {
+    if (function_exists('get_log_manager')) {
+        $manager = get_log_manager();
+        $manager->legacy_add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    } else if (function_exists('add_to_log')) {
+        add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    }
+}
+
+/**
+ * Obtains the automatic completion state for this hotpot based on the condition
+ * in hotpot settings.
+ *
+ * @param object  $course record from "course" table
+ * @param object  $cm     record from "course_modules" table
+ * @param integer $userid id from "user" table
+ * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
+ * @return bool True if completed, false if not, $type if conditions not set
+ */
+function hotpot_get_completion_state($course, $cm, $userid, $type) {
+    global $CFG, $DB;
+    require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+    $params = array('hotpotid'   => $cm->instance,
+                    'userid'     => $userid,
+                    'status'     => hotpot::STATUS_COMPLETED);
+    return $DB->record_exists('hotpot_attempts', $params);
 }

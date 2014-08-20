@@ -1,3 +1,9 @@
+
+# v1.2.0
+
+- update deprecated function calls to comply with Moodle 2.7.
+- Remove dependence on LSU gradebook for lang string.
+
 # v1.1.0
 
 - Adding student_audit information in left join [e7f307][e7f307]

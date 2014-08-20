@@ -48,7 +48,7 @@ class lightboxgallery_image {
         $this->gallery = &$gallery;
         $this->cm = &$cm;
         $this->cmid = $cm->id;
-        $this->context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $this->context = context_module::instance($cm->id);
 
         /*if (!$this->stored_file->is_valid_image()) {
           // Error? continue.

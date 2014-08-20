@@ -11,7 +11,7 @@ $id = optional_param('id', null, PARAM_INT);
 
 $system = $DB->get_record('course', array('id' => SITEID), '*', MUST_EXIST);
 
-$context = get_context_instance(CONTEXT_SYSTEM);
+$context = context_system::instance();
 
 require_capability('block/post_grades:canconfigure', $context);
 
@@ -35,7 +35,7 @@ $PAGE->set_title($title);
 $PAGE->navbar->add($pluginname, $admin_url);
 $PAGE->navbar->add($heading);
 
-$semesters = ues_semester::get_all();
+$semesters = ues_semester::get_all(array(), false, 'classes_start DESC');
 
 $form = new posting_period_form(null, array('semesters' => $semesters));
 

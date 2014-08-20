@@ -154,7 +154,7 @@ function lightboxgallery_index_thumbnail($courseid, $gallery, $newimage = null) 
 
     require_once(dirname(__FILE__).'/imageclass.php');
     $cm = get_coursemodule_from_instance("lightboxgallery", $gallery->id, $courseid);
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
 
     $imageid = 'Gallery Index Image';
 

@@ -70,7 +70,7 @@ class filter_kaltura extends moodle_text_filter {
         }
 
         // Determine if the mobile theme is being used
-        $theme = get_selected_theme_for_device_type();
+        $theme = core_useragent::get_device_type_theme();
 
         if (0 == strcmp($theme, 'mymobile')) {
             self::$mobilethemeused = true;
@@ -102,7 +102,7 @@ class filter_kaltura extends moodle_text_filter {
      * @return string - The same text or modified text is returned
      */
     function filter($text, array $options = array()) {
-        global $CFG, $PAGE, $DB;
+        global $CFG, $COURSE, $PAGE, $DB;
 
         // Check if the local Kaltura plug-in exists.
         if (!self::$kalturalocal) {
@@ -130,7 +130,7 @@ class filter_kaltura extends moodle_text_filter {
             $uri = rtrim($uri, '/');
             $uri = str_replace(array('.', '/', 'https'), array('\.', '\/', 'https?'), $uri);
 
-            $search = '/<a\s[^>]*href="('.$uri.')\/index\.php\/kwidget\/wid\/_([0-9]+)\/uiconf_id\/([0-9]+)\/entry_id\/([\d]+_([a-z0-9]+))\/v\/flash"[^>]*>([^>]*)<\/a>/is';
+            $search = '/<a\s[^>]*href="('.$uri.')\/index\.php\/kwidget\/wid\/_([0-9]+)\/uiconf_id\/([0-9]+)\/entry_id\/([\d]+_([a-z0-9]+))\/v\/flas.+?"[^>]*>([^>]*)<\/a>/is';
 
             // Update the static array of videos, so that later on in the code we can create generate a viewing session for each video
             preg_replace_callback($search, 'update_video_list', $newtext);
@@ -147,7 +147,7 @@ class filter_kaltura extends moodle_text_filter {
 
             // Get the course id of the current context
             if (empty(self::$courseid)) {
-                self::$courseid = get_courseid_from_context($PAGE->context);
+                self::$courseid = $COURSE->id;
             }
 
             try {

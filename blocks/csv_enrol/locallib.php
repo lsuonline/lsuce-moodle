@@ -29,7 +29,7 @@ function block_csv_enrol_enrol_users($courseid,$csvcontent)
 
 	//get enrolment plugin
 	$manual = enrol_get_plugin('manual');
-	$context = get_context_instance(CONTEXT_COURSE,$courseid);
+	$context = context_course::instance($courseid);
 
 	$stats = new StdClass();
 	$stats->success = $stats->failed = 0; //init counters

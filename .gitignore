@@ -10,7 +10,6 @@
 # See gitignore(5) man page for more details
 #
 /config.php
-/config_local.php
 /lib/editor/tinymce/extra/tools/temp/
 *~
 *.swp
@@ -34,3 +33,5 @@ composer.lock
 /behat.yml
 */yui/build/*/*-coverage.js
 /lib/yuilib/*/build/*/*-coverage.js
+# lib/yuilib/version/module/module-coverage.js
+/lib/yuilib/*/*/*-coverage.js

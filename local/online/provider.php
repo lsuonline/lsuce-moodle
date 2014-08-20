@@ -252,7 +252,7 @@ class online_enrollment_provider extends enrollment_provider {
 
             $user->save();
 
-            events_trigger('ues_' . $name . '_updated', $user);
+            events_trigger_legacy('ues_' . $name . '_updated', $user);
         }
     }
 }

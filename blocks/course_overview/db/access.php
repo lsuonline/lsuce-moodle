@@ -32,6 +32,7 @@ $capabilities = array(
         'archetypes' => array(
             'user' => CAP_ALLOW
         ),
+
         'clonepermissionsfrom' => 'moodle/my:manageblocks'
     ),
 

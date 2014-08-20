@@ -51,7 +51,7 @@ M.gradereport_grader = {
             show : function(e, report) {
                 e.halt();
 
-                var properties = report.get_image_or_cell_info(e.target);
+                var properties = report.get_cell_info(e.target);
                 if (!properties) {
                     return;
                 }
@@ -134,12 +134,6 @@ M.gradereport_grader.classes.report = function(Y, id, cfg, items, users, feedbac
         if (tr.getAttribute('id').match(/^(fixed_)?user_(\d+)$/)) {
             // Highlight rows
             tr.all('th.cell').on('click', this.table_highlight_row, this, tr);
-            // Popout image
-            tr.all('th.cell img.userpicture').each(function(img) {
-                if (img.get('className') === "userpicture") {
-                    M.gradereport_grader.tooltip.attach(img, this);
-                }
-            }, this);
             // Display tooltips
             tr.all('td.cell').each(function(cell){
                 M.gradereport_grader.tooltip.attach(cell, this);
@@ -178,29 +172,6 @@ M.gradereport_grader.classes.report.prototype.users = [];             // Array c
 M.gradereport_grader.classes.report.prototype.feedback = [];          // Array containing feedback items
 M.gradereport_grader.classes.report.prototype.ajaxenabled = false;    // True is AJAX is enabled for the report
 M.gradereport_grader.classes.report.prototype.ajax = null;            // An instance of the ajax class or null
-
-M.gradereport_grader.classes.report.prototype.get_image_or_cell_info = function(arg) {
-    if (arg instanceof this.Y.Node && arg.get('nodeName').toUpperCase() === 'IMG') {
-        return this.get_image_info(arg);
-    } else {
-        return this.get_cell_info(arg);
-    }
-};
-
-M.gradereport_grader.classes.report.prototype.get_image_info = function(img) {
-    var src = img.getAttribute('src');
-
-    var userid = img.ancestor('tr').getAttribute('id').split('_')[2];
-
-    var img_source = "<img class='profile_popout' src='" + src.replace("f2", "f1") + "'/>";
-
-    return {
-        username: this.users[userid],
-        itemname: img_source,
-        cell: img
-    };
-};
-
 /**
  * Highlights a row in the report
  *
@@ -212,18 +183,19 @@ M.gradereport_grader.classes.report.prototype.table_highlight_row = function (e,
     tr.all('.cell').toggleClass('hmarked');
 };
 /**
- * Highlights a cell in the table
+ * Highlights a column in the table
  *
  * @function
  * @param {Event} e
  * @param {Y.Node} cell
  */
 M.gradereport_grader.classes.report.prototype.table_highlight_column = function(e, cell) {
-    var column = 0;
-    while (cell = cell.previous('.cell')) {
-        column += parseFloat(cell.getAttribute('colspan')) || 1;
+    // Among cell classes find the one that matches pattern / i[\d]+ /
+    var itemclass = (' '+cell.getAttribute('class')+' ').match(/ (i[\d]+) /);
+    if (itemclass) {
+        // Toggle class .vmarked for all cells in the table with the same class
+        this.table.all('.cell.'+itemclass[1]).toggleClass('vmarked');
     }
-    this.table.all('.c'+column).toggleClass('vmarked');
 };
 /**
  * Builds an object containing information at the relevant cell given either
@@ -406,6 +378,12 @@ M.gradereport_grader.classes.ajax.prototype.make_editable = function(e) {
             break;
     }
     this.current.replace().attach_key_events();
+
+    // Making a field editable changes the grade table width.
+    // Update the top scroll bar to reflect the new table width.
+    Y.use('moodle-gradereport_grader-scrollview', function() {
+        M.gradereport_grader.scrollview.resize();
+    });
 };
 /**
  * Callback function for the user pressing the enter key on an editable field

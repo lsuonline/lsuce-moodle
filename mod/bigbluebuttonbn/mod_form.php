@@ -7,7 +7,7 @@
  *    Jesus Federico  (jesus [at] blindsidenetworks [dt] com)    
  * 
  * @package   mod_bigbluebuttonbn
- * @copyright 2010-2012 Blindside Networks 
+ * @copyright 2010-2014 Blindside Networks Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v2 or later
  */
 
@@ -27,7 +27,14 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         //BigBlueButton server data
         $url = trim(trim($CFG->BigBlueButtonBNServerURL),'/').'/';
         $salt = trim($CFG->BigBlueButtonBNSecuritySalt);
-        $allowRecording = ($CFG->BigBlueButtonBNAllowRecording=='1') ? true : false;
+
+        if (isset($CFG->BigBlueButtonBNAllowRecording) && isset($CFG->BigBlueButtonBNAllowAllModerators)) {
+            $allowRecording = ($CFG->BigBlueButtonBNAllowRecording=='1') ? true : false;
+            $allowAllModerators = ($CFG->BigBlueButtonBNAllowAllModerators=='1') ? true : false;
+        } else {
+            $allowRecording = false;
+            $allowAllModerators = false;
+        }
 
         $serverVersion = bigbluebuttonbn_getServerVersion($url); 
         if ( !isset($serverVersion) ) {
@@ -49,13 +56,17 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         //$mform->addElement('text', 'voicebridge', get_string('mod_form_field_voicebridge','bigbluebuttonbn'), 'maxlength="5" size="10"' );
         //$mform->setDefault( 'voicebridge', 0 );
         //$mform->addHelpButton('voicebridge', 'mod_form_field_voicebridge', 'bigbluebuttonbn');
-        
+
         $mform->addElement( 'checkbox', 'newwindow', get_string('mod_form_field_newwindow', 'bigbluebuttonbn') );
         $mform->setDefault( 'newwindow', 0 );
-        
+
         $mform->addElement( 'checkbox', 'wait', get_string('mod_form_field_wait', 'bigbluebuttonbn') );
         $mform->setDefault( 'wait', 1 );
-	
+
+        if ($allowAllModerators) {
+            $mform->addElement( 'checkbox', 'allmoderators', get_string('mod_form_field_allmoderators', 'bigbluebuttonbn') );
+            $mform->setDefault( 'allmoderators', 0 );
+        }
 
         //-------------------------------------------------------------------------------
         // Second block starts here
@@ -75,7 +86,6 @@ class mod_bigbluebuttonbn_mod_form extends moodleform_mod {
         // Third block starts here
         //-------------------------------------------------------------------------------
         if ( floatval($serverVersion) >= 0.8 && $allowRecording ) {
-
             $mform->addElement('header', 'general', get_string('mod_form_block_record', 'bigbluebuttonbn'));
 
             $mform->addElement( 'checkbox', 'record', get_string('mod_form_field_record', 'bigbluebuttonbn') );

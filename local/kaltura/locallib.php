@@ -40,6 +40,12 @@ define('KALTURA_PLAYER_KSU',                            1002613); // KSU
 
 define('KALTURA_FILTER_VIDEO_WIDTH', 400);
 define('KALTURA_FILTER_VIDEO_HEIGHT', 300);
+define('KALTURA_ASSIGN_VIDEO_WIDTH', 400);
+define('KALTURA_ASSIGN_VIDEO_HEIGHT', 365);
+
+// YUI panel popup border adjustments to make the embedded video look centered
+define('KALTURA_POPUP_WIDTH_ADJUSTMENT', 30);
+define('KALTURA_POPUP_HEIGHT_ADJUSTMENT', 50);
 
 define('KALTURA_SESSION_LENGTH', 10800); // 3 hours
 
@@ -259,7 +265,7 @@ function local_kaltura_generate_weak_kaltura_session($courseid, $course_name) {
     $kaltura_version = get_config(KALTURA_PLUGIN_NAME, 'version');
     $kal_category    = repository_kaltura_create_course_category($connection, $courseid);
 
-    $context     = get_context_instance(CONTEXT_COURSE, $courseid);
+    $context     = context_course::instance($courseid);
     $students    = count_enrolled_users($context, 'moodle/grade:view');
 
     $secret = get_config(KALTURA_PLUGIN_NAME, 'adminsecret');

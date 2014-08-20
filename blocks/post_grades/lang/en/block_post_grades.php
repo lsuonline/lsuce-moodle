@@ -10,8 +10,8 @@ $string['notvalidgroup'] = '{$a} is not a valid posting group';
 
 $string['post_grades:canpost'] = 'User can post grades to the external web service.';
 $string['post_grades:canconfigure'] = 'User can create posting periods.';
-$string['block/post_grades:addinstance'] = 'Add block to page';
-$string['block/post_grades:myaddinstance'] = 'Add block to page';
+$string['post_grades:addinstance'] = 'Add block to page';
+$string['post_grades:myaddinstance'] = 'Add block to page';
 $string['domino_application_url'] = 'Domino post grade application URL';
 $string['mylsu_gradesheet_url'] = 'myLSU Gradesheet URL';
 

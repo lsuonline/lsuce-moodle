@@ -23,18 +23,25 @@ $string['customernumberlabel'] = 'Customer Number';
 $string['sslonlylabel'] = 'SSL Only';
 $string['conskeylabel'] = 'Consumer Key';
 $string['baseaddresslabel'] = 'Service Address';
-$string['service_down_msg'] = 'One or more of the web services is currently down or your client access data are not correctly configured. Please contact McGraw-Hill help for further action.';
+$string['service_down_msg'] = 'One or more of the web services is currently down or your client access data are not '.
+                              'correctly configured. Please contact McGraw-Hill help for further action.';
 $string['services_displaylabel'] = 'Available Services';
-$string['services_desc'] = 'The services above will display as links in the MH AAIRS block. Select which system(s) should be available ';
-$string['services_desc'] .= 'to courses on your site. The service(s) selected will appear as options in the block\'s instance settings.';
+$string['services_desc'] = 'The services above will display as links in the MH AAIRS block. Select which system(s) '.
+                           'should be available ';
+$string['services_desc'] .= 'to courses on your site. The service(s) selected will appear as options in the block\'s '.
+                            'instance settings.';
 $string['connected_displaylabel'] = ' ConnectEd';
 $string['tegrity_displaylabel'] = ' Tegrity Campus';
 $string['mhaairs_displaylabel'] = ' McGraw-Hill Campus';
 $string['mhaairs_syncgradebook'] = 'Gradebook Sync';
-$string['mhaairs_syncgradebookdesc'] = 'Gradebook Sync provides the ability to push scores from MH Campus directly to the Moodle gradebook. ';
+$string['mhaairs_syncgradebookdesc'] = 'Gradebook Sync provides the ability to push scores from MH Campus directly to '.
+                                       'the Moodle gradebook. ';
 $string['mhaairs_syncgradebookdesc'] .= 'Note: If only Tegrity is enabled on your site, this is irrelevant.';
 $string['mhaairs_displayhelp'] = 'Help links';
-$string['mhaairs_displayhelpdesc'] = 'Select this option if you wish help links to appear in the block appropriate to admin and teacher roles.';
+$string['mhaairs_displayhelpdesc'] = 'Select this option if you wish help links to appear in the block appropriate to '.
+                                     'admin and teacher roles.';
+$string['mhaairs_locktype'] = 'Select locking type';
+$string['mhaairs_locktypedesc'] = 'Choose locking type appropriate for your server setup.';
 
 // Strings for the main block display file.
 $string['linktypelabel'] = ' Link type: ';
@@ -49,7 +56,7 @@ $string['nolinkdefined'] = ' No link type defined. ';
 $string['error_tokeninvalid'] = 'Error: Token is invalid.';
 $string['error_notsecuressl'] = 'Error: Connection must be secured with SSL.';
 
-// Strings that may be needed by the gradebook test client
+// Strings that may be needed by the gradebook test client.
 $string['get_completion_course_desc'] = 'Course for which to get the completion status';
 $string['get_completion_user_desc'] = 'User for which to get the completion status';
 $string['get_completion_completion_desc'] = 'Course Completion status';
@@ -65,3 +72,12 @@ $string['error_no_user'] = 'User does not exist!';
 $string['error_no_course_completion'] = 'Completion is not enabled for this course!';
 $string['error_no_system_completion'] = 'Completion is not enabled on this instance!';
 $string['error_invalid_course_param'] = 'Invalid course parameter passed!';
+$string['mhaairs:myaddinstance'] = 'Add an instance of McGraw-Hill AAIRS block to the my page.';
+$string['mhaairs_gradelog'] = 'Grade exchange log';
+$string['mhaairs_gradelogdesc'] = 'Log grade exchange raw data for debugging purporses.
+Should be disabled on production sistes. Log files are stored in moodledata directory [moodledata]/mhaairs.
+Every individual web service request generates separate log file with filename format
+mhaairs_year-month-day_hour-min-sec_randomkey.log';
+$string['mhaairs_resetlog'] = 'Reset grade exchange log';
+$string['mhaairs_resetlogdesc'] = 'Flushes all currently stored log data.';
+

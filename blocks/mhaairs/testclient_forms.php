@@ -4,13 +4,14 @@
  *
  * @package    block
  * @subpackage mhaairs
- * @copyright  2013 Moodlerooms inc.
+ * @copyright  2013-2014 Moodlerooms inc.
  * @author     Teresa Hardy <thardy@moodlerooms.com>
+ * @author     Darko Miletic <dmiletic@moodlerooms.com>
  */
 
+defined('MOODLE_INTERNAL') or die();
 
-defined('MOODLE_INTERNAL') || die();
-
+global $CFG;
 require_once($CFG->libdir.'/formslib.php');
 
 class block_mhaairs_generic_form extends moodleform {
@@ -29,23 +30,25 @@ class block_mhaairs_generic_form extends moodleform {
      * @return array
      */
     protected function format_params($data) {
+        $data;
         return array();
     }
 
     public function definition() {
-        global $CFG;
-
         $mform = $this->_form;
 
         $mform->addElement('header', 'mhtestclienthdr', get_string('testclient', 'webservice'));
 
-        //note: these values are intentionally PARAM_RAW - we want users to test any rubbish as parameters
+        // Note: these values are intentionally PARAM_RAW - we want users to test any rubbish as parameters.
         $data = $this->_customdata;
         if ($data['authmethod'] == 'simple') {
             $mform->addElement('text', 'mhusername', 'mhusername');
+            $mform->setType('mhusername', PARAM_USERNAME);
             $mform->addElement('text', 'mhpassword', 'mhpassword');
-        } else  if ($data['authmethod'] == 'token') {
+            $mform->setType('mhpassword', PARAM_RAW);
+        } else if ($data['authmethod'] == 'token') {
             $mform->addElement('text', 'token', 'token', array('size' => '32'));
+            $mform->setType('token', PARAM_BASE64);
         }
 
         $mform->addElement('hidden', 'authmethod', $data['authmethod']);
@@ -67,12 +70,11 @@ class block_mhaairs_generic_form extends moodleform {
             return null;
         }
 
-        //set customfields
         if (!empty($data->customfieldtype)) {
             $data->customfields = array(array('type' => $data->customfieldtype, 'value' => $data->customfieldvalue));
         }
 
-        // remove unused from form data
+        // Remove unused from form data.
         unset($data->submitbutton);
         unset($data->protocol);
         unset($data->function);
@@ -94,17 +96,24 @@ class block_mhaairs_gradebookservice_form extends block_mhaairs_generic_form {
 
     protected function custom_definition(MoodleQuickForm &$mform) {
         $mform->addElement('text', 'source', 'source of grade');
+        $mform->setType('source', PARAM_TEXT);
         $mform->addElement('text', 'courseid', 'course id');
+        $mform->setType('courseid', PARAM_TEXT);
         $mform->addElement('text', 'itemtype', 'type of item');
+        $mform->setType('itemtype', PARAM_TEXT);
         $mform->addElement('text', 'itemmodule', 'module');
+        $mform->setType('itemmodule', PARAM_TEXT);
         $mform->addElement('text', 'iteminstance', 'instance');
+        $mform->setType('iteminstance', PARAM_TEXT);
         $mform->addElement('text', 'itemnumber', 'number');
+        $mform->setType('itemnumber', PARAM_TEXT);
         $mform->addElement('text', 'grades', 'grades');
+        $mform->setType('grades', PARAM_TEXT);
         $mform->addElement('text', 'itemdetails', 'item details');
+        $mform->setType('itemdetails', PARAM_RAW);
     }
 
     protected function format_params($data) {
         return (array)$data;
     }
 }
-

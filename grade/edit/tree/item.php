@@ -162,8 +162,9 @@ if ($mform->is_cancelled()) {
 
     $grade_item = new grade_item(array('id'=>$id, 'courseid'=>$courseid));
     grade_item::set_properties($grade_item, $data);
-    unset($grade_item->anonymous);
     $grade_item->outcomeid = null;
+
+    unset($grade_item->anonymous);
 
     // Handle null decimals value
     if (!property_exists($data, 'decimals') or $data->decimals < 0) {

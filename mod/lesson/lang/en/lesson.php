@@ -18,8 +18,7 @@
 /**
  * Strings for component 'lesson', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -142,7 +141,9 @@ $string['displayleftmenu_help'] = 'If enabled, a list of pages is displayed.';
 $string['displayofgrade'] = 'Display of grade (for students only)';
 $string['displayreview'] = 'Provide option to try a question again';
 $string['displayreview_help'] = 'If enabled, when a question is answered incorrectly, the student is given the option to try it again for no point credit, or continue with the lesson.';
-$string['displayscorewithessays'] = 'You earned {$a->score} out of {$a->tempmaxgrade} for the automatically graded questions.<br />Your {$a->essayquestions} essay question(s) will be graded and added<br />into your final score at a later date.<br /><br />Your current grade without the essay question(s) is {$a->score} out of {$a->grade}';
+$string['displayscorewithessays'] = '<p>You earned {$a->score} out of {$a->tempmaxgrade} for the automatically graded questions.</p>
+<p>Your {$a->essayquestions} essay question(s) will be graded and added into your final score at a later date.</p>
+<p>Your current grade without the essay question(s) is {$a->score} out of {$a->grade}.</p>';
 $string['displayscorewithoutessays'] = 'Your score is {$a->score} (out of {$a->grade}).';
 $string['edit'] = 'Edit';
 $string['editingquestionpage'] = 'Editing {$a} question page';
@@ -169,6 +170,12 @@ $string['essayemailmessage2'] = '<p>Essay prompt:<blockquote>{$a->question}</blo
 $string['essayemailsubject'] = 'Your grade for {$a} question';
 $string['essays'] = 'Essays';
 $string['essayscore'] = 'Essay score';
+$string['eventessayassessed'] = 'Essay assessed';
+$string['eventessayattemptviewed'] = 'Essay attempt viewed';
+$string['eventhighscoreadded'] = 'Highscore added';
+$string['eventhighscoresviewed'] = 'Highscores viewed';
+$string['eventlessonended'] = 'Lesson ended';
+$string['eventlessonstarted'] = 'Lesson started';
 $string['fileformat'] = 'File format';
 $string['finish'] = 'Finish';
 $string['firstanswershould'] = 'First answer should jump to the "Correct" page';
@@ -236,7 +243,7 @@ $string['maxgrade'] = 'Maximum grade';
 $string['maxgrade_help'] = 'This setting specifies the maximum grade for the lesson. If set to 0, the lesson does not appear in the grades pages.';
 $string['maxhighscores'] = 'Number of high scores displayed';
 $string['maximumnumberofanswersbranches'] = 'Maximum number of answers';
-$string['maximumnumberofanswersbranches_help'] = 'This setting specifies the maximum number of answers that may be used in the lesson. If only true/false questions are used, it can be set to 2. The setting may be changed at any time, since it only effects what the teacher sees, not the data.';
+$string['maximumnumberofanswersbranches_help'] = 'This setting specifies the maximum number of answers that may be used in the lesson. If only true/false questions are used, it can be set to 2. The setting may be changed at any time, since it only affects what the teacher sees, not the data.';
 $string['maximumnumberofattempts'] = 'Maximum number of attempts';
 $string['maximumnumberofattempts_help'] = 'This setting specifies the maximum number of attempts allowed for each question. If answered incorrectly repeatedly, when the maximum is reached, the next page of the lesson is displayed.';
 $string['maximumnumberofattemptsreached'] = 'Maximum number of attempts reached - Moving to next page';
@@ -378,6 +385,7 @@ $string['savechanges'] = 'Save changes';
 $string['savechangesandeol'] = 'Save all changes and go to the end of the lesson.';
 $string['savepage'] = 'Save page';
 $string['score'] = 'Score';
+$string['score_help'] = 'Score is only used when custom scoring is enabled. Each answer can then be given a numerical point value (positive or negative).';
 $string['scores'] = 'Scores';
 $string['secondpluswrong'] = 'Not quite.  Would you like to try again?';
 $string['selectaqtype'] = 'Select a question type';

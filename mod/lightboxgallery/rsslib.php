@@ -49,7 +49,7 @@ function lightboxgallery_rss_get_feed($context, $args) {
     $galleryid = clean_param($args[3], PARAM_INT);
     $cm = get_coursemodule_from_instance('lightboxgallery', $galleryid, 0, false, MUST_EXIST);
     if ($cm) {
-        $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $modcontext = context_module::instance($cm->id);
 
         // Context id from db should match the submitted one.
         if ($context->id != $modcontext->id) {

@@ -34,6 +34,11 @@ require_once(__DIR__.'/../../testing/classes/util.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class phpunit_util extends testing_util {
+    /**
+     * @var int last value of db writes counter, used for db resetting
+     */
+    public static $lastdbwrites = null;
+
     /** @var array An array of original globals, restored after each test */
     protected static $globals = array();
 
@@ -42,6 +47,12 @@ class phpunit_util extends testing_util {
 
     /** @var phpunit_message_sink alternative target for moodle messaging */
     protected static $messagesink = null;
+
+    /** @var phpunit_phpmailer_sink alternative target for phpmailer messaging */
+    protected static $phpmailersink = null;
+
+    /** @var phpunit_message_sink alternative target for moodle messaging */
+    protected static $eventsink = null;
 
     /**
      * @var array Files to skip when resetting dataroot folder
@@ -69,7 +80,7 @@ class phpunit_util extends testing_util {
             initialise_cfg();
             return;
         }
-        if ($dbhash !== self::get_version_hash()) {
+        if ($dbhash !== core_component::get_all_versions_hash()) {
             // do not set CFG - the only way forward is to drop and reinstall
             return;
         }
@@ -95,8 +106,14 @@ class phpunit_util extends testing_util {
         // Stop any message redirection.
         phpunit_util::stop_message_redirection();
 
-        // Release memory and indirectly call destroy() methods to release resource handles, etc.
-        gc_collect_cycles();
+        // Stop any message redirection.
+        phpunit_util::stop_phpmailer_redirection();
+
+        // Stop any message redirection.
+        phpunit_util::stop_event_redirection();
+
+        // We used to call gc_collect_cycles here to ensure desctructors were called between tests.
+        // This accounted for 25% of the total time running phpunit - so we removed it.
 
         // Show any unhandled debugging messages, the runbare() could already reset it.
         self::display_debugging_messages();
@@ -160,6 +177,10 @@ class phpunit_util extends testing_util {
         $_SERVER = self::get_global_backup('_SERVER');
         $CFG = self::get_global_backup('CFG');
         $SITE = self::get_global_backup('SITE');
+        $_GET = array();
+        $_POST = array();
+        $_FILES = array();
+        $_REQUEST = array();
         $COURSE = $SITE;
 
         // reinitialise following globals
@@ -168,25 +189,22 @@ class phpunit_util extends testing_util {
         $FULLME = null;
         $ME = null;
         $SCRIPT = null;
-        $SESSION = new stdClass();
-        $_SESSION['SESSION'] =& $SESSION;
 
-        // set fresh new not-logged-in user
-        $user = new stdClass();
-        $user->id = 0;
-        $user->mnethostid = $CFG->mnet_localhost_id;
-        session_set_user($user);
+        // Empty sessison and set fresh new not-logged-in user.
+        \core\session\manager::init_empty_session();
 
         // reset all static caches
+        \core\event\manager::phpunit_reset();
         accesslib_clear_all_caches(true);
         get_string_manager()->reset_caches(true);
         reset_text_filters_cache(true);
         events_get_handlers('reset');
-        textlib::reset_caches();
-        if (class_exists('repository')) {
-            repository::reset_caches();
-        }
+        core_text::reset_caches();
+        get_message_processors(false, true);
         filter_manager::reset_caches();
+        // Reset internal users.
+        core_user::reset_internal_users();
+
         //TODO MDL-25290: add more resets here and probably refactor them to new core function
 
         // Reset course and module caches.
@@ -197,14 +215,14 @@ class phpunit_util extends testing_util {
         get_fast_modinfo(0, 0, true);
 
         // Reset other singletons.
-        if (class_exists('plugin_manager')) {
-            plugin_manager::reset_caches(true);
+        if (class_exists('core_plugin_manager')) {
+            core_plugin_manager::reset_caches(true);
         }
-        if (class_exists('available_update_checker')) {
-            available_update_checker::reset_caches(true);
+        if (class_exists('\core\update\checker')) {
+            \core\update\checker::reset_caches(true);
         }
-        if (class_exists('available_update_deployer')) {
-            available_update_deployer::reset_caches(true);
+        if (class_exists('\core\update\deployer')) {
+            \core\update\deployer::reset_caches(true);
         }
 
         // purge dataroot directory
@@ -229,6 +247,27 @@ class phpunit_util extends testing_util {
             $warnings = implode("\n", $warnings);
             trigger_error($warnings, E_USER_WARNING);
         }
+    }
+
+    /**
+     * Reset all database tables to default values.
+     * @static
+     * @return bool true if reset done, false if skipped
+     */
+    public static function reset_database() {
+        global $DB;
+
+        if (!is_null(self::$lastdbwrites) and self::$lastdbwrites == $DB->perf_get_writes()) {
+            return false;
+        }
+
+        if (!parent::reset_database()) {
+            return false;
+        }
+
+        self::$lastdbwrites = $DB->perf_get_writes();
+
+        return true;
     }
 
     /**
@@ -257,63 +296,7 @@ class phpunit_util extends testing_util {
      * @return void
      */
     public static function bootstrap_moodle_info() {
-        global $CFG;
-
-        // All developers have to understand English, do not localise!
-
-        $release = null;
-        require("$CFG->dirroot/version.php");
-
-        echo "Moodle $release, $CFG->dbtype";
-        if ($hash = self::get_git_hash()) {
-            echo ", $hash";
-        }
-        echo "\n";
-    }
-
-    /**
-     * Try to get current git hash of the Moodle in $CFG->dirroot.
-     * @return string null if unknown, sha1 hash if known
-     */
-    public static function get_git_hash() {
-        global $CFG;
-
-        // This is a bit naive, but it should mostly work for all platforms.
-
-        if (!file_exists("$CFG->dirroot/.git/HEAD")) {
-            return null;
-        }
-
-        $ref = file_get_contents("$CFG->dirroot/.git/HEAD");
-        if ($ref === false) {
-            return null;
-        }
-
-        $ref = trim($ref);
-
-        if (strpos($ref, 'ref: ') !== 0) {
-            return null;
-        }
-
-        $ref = substr($ref, 5);
-
-        if (!file_exists("$CFG->dirroot/.git/$ref")) {
-            return null;
-        }
-
-        $hash = file_get_contents("$CFG->dirroot/.git/$ref");
-
-        if ($hash === false) {
-            return null;
-        }
-
-        $hash = trim($hash);
-
-        if (strlen($hash) != 40) {
-            return null;
-        }
-
-        return $hash;
+        echo self::get_site_info();
     }
 
     /**
@@ -425,6 +408,13 @@ class phpunit_util extends testing_util {
 
         install_cli_database($options, false);
 
+        // Disable all logging for performance and sanity reasons.
+        set_config('enabled_stores', '', 'tool_log');
+
+        // We need to keep the installed dataroot filedir files.
+        // So each time we reset the dataroot before running a test, the default files are still installed.
+        self::save_original_data_files();
+
         // install timezone info
         $timezones = get_records_csv($CFG->libdir.'/timezone.txt', 'timezone');
         update_timezone_records($timezones);
@@ -452,10 +442,10 @@ class phpunit_util extends testing_util {
 
         $suites = '';
 
-        $plugintypes = get_plugin_types();
+        $plugintypes = core_component::get_plugin_types();
         ksort($plugintypes);
         foreach ($plugintypes as $type=>$unused) {
-            $plugs = get_plugin_list($type);
+            $plugs = core_component::get_plugin_list($type);
             ksort($plugs);
             foreach ($plugs as $plug=>$fullplug) {
                 if (!file_exists("$fullplug/tests/")) {
@@ -583,6 +573,7 @@ class phpunit_util extends testing_util {
      */
     public static function reset_debugging() {
         self::$debuggings = array();
+        set_debugging(DEBUG_DEVELOPER);
     }
 
     /**
@@ -654,6 +645,108 @@ class phpunit_util extends testing_util {
     public static function message_sent($message) {
         if (self::$messagesink) {
             self::$messagesink->add_message($message);
+        }
+    }
+
+    /**
+     * Start phpmailer redirection.
+     *
+     * Note: Do not call directly from tests,
+     *       use $sink = $this->redirectEmails() instead.
+     *
+     * @return phpunit_phpmailer_sink
+     */
+    public static function start_phpmailer_redirection() {
+        if (self::$phpmailersink) {
+            self::stop_phpmailer_redirection();
+        }
+        self::$phpmailersink = new phpunit_phpmailer_sink();
+        return self::$phpmailersink;
+    }
+
+    /**
+     * End phpmailer redirection.
+     *
+     * Note: Do not call directly from tests,
+     *       use $sink->close() instead.
+     */
+    public static function stop_phpmailer_redirection() {
+        self::$phpmailersink = null;
+    }
+
+    /**
+     * Are messages for phpmailer redirected to some sink?
+     *
+     * Note: to be called from moodle_phpmailer.php only!
+     *
+     * @return bool
+     */
+    public static function is_redirecting_phpmailer() {
+        return !empty(self::$phpmailersink);
+    }
+
+    /**
+     * To be called from messagelib.php only!
+     *
+     * @param stdClass $message record from message_read table
+     * @return bool true means send message, false means message "sent" to sink.
+     */
+    public static function phpmailer_sent($message) {
+        if (self::$phpmailersink) {
+            self::$phpmailersink->add_message($message);
+        }
+    }
+
+    /**
+     * Start event redirection.
+     *
+     * @private
+     * Note: Do not call directly from tests,
+     *       use $sink = $this->redirectEvents() instead.
+     *
+     * @return phpunit_event_sink
+     */
+    public static function start_event_redirection() {
+        if (self::$eventsink) {
+            self::stop_event_redirection();
+        }
+        self::$eventsink = new phpunit_event_sink();
+        return self::$eventsink;
+    }
+
+    /**
+     * End event redirection.
+     *
+     * @private
+     * Note: Do not call directly from tests,
+     *       use $sink->close() instead.
+     */
+    public static function stop_event_redirection() {
+        self::$eventsink = null;
+    }
+
+    /**
+     * Are events redirected to some sink?
+     *
+     * Note: to be called from \core\event\base only!
+     *
+     * @private
+     * @return bool
+     */
+    public static function is_redirecting_events() {
+        return !empty(self::$eventsink);
+    }
+
+    /**
+     * To be called from \core\event\base only!
+     *
+     * @private
+     * @param \core\event\base $event record from event_read table
+     * @return bool true means send event, false means event "sent" to sink.
+     */
+    public static function event_triggered(\core\event\base $event) {
+        if (self::$eventsink) {
+            self::$eventsink->add_event($event);
         }
     }
 }

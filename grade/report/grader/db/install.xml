@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <XMLDB PATH="grade/report/grader/db" VERSION="20120409" COMMENT="XMLDB file for Moodle anonymous grading"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
->
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd">
   <TABLES>
     <TABLE NAME="grade_anon_items" COMMENT="Anonymous grade items" NEXT="grade_anon_grades">
       <FIELDS>

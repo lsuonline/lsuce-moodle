@@ -5,7 +5,7 @@ class block_post_grades extends block_list {
         $this->title = get_string('pluginname', 'block_post_grades');
     }
 
-    function applicable_format() {
+    function applicable_formats() {
         return array('site' => false, 'my' => false, 'course' => true);
     }
 
@@ -28,7 +28,7 @@ class block_post_grades extends block_list {
         $this->content->icons = array();
         $this->content->footer = '';
 
-        $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $context = context_course::instance($COURSE->id);
 
         if (!has_capability('block/post_grades:canpost', $context)) {
             return $this->content;

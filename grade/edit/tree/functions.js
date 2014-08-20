@@ -69,8 +69,6 @@ function update_category_aggregation(e, args) {
     window.location = 'index.php?id='+args.courseid+'&category='+args.category+'&aggregationtype='+selectmenu.get('value')+'&sesskey='+args.sesskey;
 }
 
-
-
 YUI().use("node-base", function(Y)
 {
     function add_grademax_change_listeners(){
@@ -94,7 +92,7 @@ YUI().use("node-base", function(Y)
             }
         );
     }
-    
+
     function compute_multfactors(){
         Y.all('.grademax').each(function(node, index)
             {
@@ -115,18 +113,17 @@ YUI().use("node-base", function(Y)
             }
         );
     };
-    
+
     function setup_curveto(){
         compute_multfactors();
         add_grademax_change_listeners();
     };
-    
+
     Y.on(
         "domready",
         setup_curveto()
     );
 });
-
 
 /* TODO: finish and rewrite for YUI3...
 Y.YUI2.namespace('grade_edit_tree');
@@ -136,19 +133,6 @@ Y.YUI2.namespace('grade_edit_tree');
     var DDM = Y.YUI2.util.DragDropMgr;
     var Event = Y.YUI2.util.Event;
     var gretree = Y.YUI2.grade_edit_tree;
-
-    var curving = Dom.getElementsByClassName('curving', 'input');
-    var changer = function(index, maxgrade) {
-        return function() { curving[index].value = maxgrade.value; };
-    };
-
-    for (var j = 0; j < curving.length; j ++) {
-        var id = curving[j].name.split('_')[1];
-        var maxgrade = Dom.get('grademax' + id);
-        if (maxgrade) {
-            maxgrade.onkeyup = changer(j, maxgrade);
-        }
-    }
 
     gretree.DDApp = {
 

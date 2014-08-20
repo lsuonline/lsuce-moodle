@@ -4,9 +4,12 @@
  *
  * @package    block
  * @subpackage mhaairs
- * @copyright  2013 Moodlerooms inc.
+ * @copyright  2013-2014 Moodlerooms inc.
  * @author     Teresa Hardy <thardy@moodlerooms.com>
+ * @author     Darko Miletic <dmiletic@moodlerooms.com>
  */
+
+defined('MOODLE_INTERNAL') or die();
 
 class block_mhaairs_edit_form extends block_edit_form {
 

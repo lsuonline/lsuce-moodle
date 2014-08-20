@@ -15,4 +15,7 @@ $string['excluded_courses_description'] = "Comma-separated list of course IDs th
 $string['landing_course'] = "Redirect course id";
 $string['landing_course_description'] = 'ID of the course to which blocked users whould be redirected; for example, a required Orientation course';
 
+$string['sentinel:addinstance'] = 'Add a new sentinel block';
+$string['sentinel:myaddinstance'] = 'Add a new sentinel block to My home';
+
 ?>

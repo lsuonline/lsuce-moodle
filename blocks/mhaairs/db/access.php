@@ -4,8 +4,9 @@
  *
  * @package    block
  * @subpackage mhaairs
- * @copyright  2013 Moodlerooms inc.
+ * @copyright  2013-2014 Moodlerooms inc.
  * @author     Teresa Hardy <thardy@moodlerooms.com>
+ * @author     Darko Miletic <dmiletic@moodlerooms.xom>
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -38,5 +39,14 @@ $capabilities = array(
                     'coursecreator' => CAP_ALLOW,
                     'manager' => CAP_ALLOW
             )
-    )
+     ),
+     'block/mhaairs:myaddinstance' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'user' => CAP_ALLOW
+        ),
+
+        'clonepermissionsfrom' => 'moodle/my:manageblocks'
+     )
 );

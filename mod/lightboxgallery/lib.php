@@ -113,7 +113,7 @@ function lightboxgallery_delete_instance($id) {
     }
 
     $cm = get_coursemodule_from_instance('lightboxgallery', $gallery->id);
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     // Files.
     $fs = get_file_storage();
     $fs->delete_area_files($context->id, 'mod_lightboxgallery');
@@ -129,38 +129,6 @@ function lightboxgallery_delete_instance($id) {
 }
 
 /**
- * Return a small object with summary information about what a
- * user has done with a given particular instance of this module
- * Used for user activity reports.
- * $return->time = the time they did it
- * $return->info = a short text description
- *
- * @return null
- * @todo Finish documenting this function
- */
-function lightboxgallery_user_outline($course, $user, $mod, $resource) {
-    global $DB;
-
-    $conditions = array('userid' => $user->id,  'module' => 'lightboxgallery', 'action' => 'view', 'info' => $resource->id);
-
-    if ($logs = $DB->get_records('log', $conditions, 'time ASC', '*', '0', '1')) {
-        $numviews = $DB->count_records('log', $conditions);
-        $lastlog = array_pop($logs);
-
-        $result = new object;
-        $result->info = get_string('numviews', '', $numviews);
-        $result->time = $lastlog->time;
-
-        return $result;
-
-    } else {
-
-        return null;
-
-    }
-}
-
-/**
  * Print a detailed representation of what a user has done with
  * a given particular instance of this module, for user activity reports.
  *
@@ -170,33 +138,21 @@ function lightboxgallery_user_outline($course, $user, $mod, $resource) {
 function lightboxgallery_user_complete($course, $user, $mod, $resource) {
     global $DB, $CFG;
 
-    $conditions = array('userid' => $user->id,  'module' => 'lightboxgallery', 'action' => 'view', 'info' => $resource->id);
-
-    if ($logs = $DB->get_records('log', $conditions, 'time ASC', '*', '0', '1')) {
-        $numviews = $DB->count_records('log', $conditions);
-        $lastlog = array_pop($logs);
-
-        $strnumviews = get_string('numviews', '', $numviews);
-        $strmostrecently = get_string('mostrecently');
-
-        echo $strnumviews.' - '.$strmostrecently.' '.userdate($lastlog->time);
-
-        $sql = "SELECT c.*
-                  FROM {lightboxgallery_comments} c
-                       JOIN {lightboxgallery} l ON l.id = c.gallery
-                       JOIN {user}            u ON u.id = c.userid
-                 WHERE l.id = :mod AND u.id = :userid
-              ORDER BY c.timemodified ASC";
-        $params = array('mod' => $mod->instance, 'userid' => $user->id);
-        if ($comments = $DB->get_records_sql($sql, $params)) {
-            $cm = get_coursemodule_from_id('lightboxgallery', $mod->id);
-            $context = get_context_instance(CONTEXT_MODULE, $cm->id);
-            foreach ($comments as $comment) {
-                lightboxgallery_print_comment($comment, $context);
-            }
+    $sql = "SELECT c.*
+              FROM {lightboxgallery_comments} c
+                   JOIN {lightboxgallery} l ON l.id = c.gallery
+                   JOIN {user}            u ON u.id = c.userid
+             WHERE l.id = :mod AND u.id = :userid
+          ORDER BY c.timemodified ASC";
+    $params = array('mod' => $mod->instance, 'userid' => $user->id);
+    if ($comments = $DB->get_records_sql($sql, $params)) {
+        $cm = get_coursemodule_from_id('lightboxgallery', $mod->id);
+        $context = context_module::instance($cm->id);
+        foreach ($comments as $comment) {
+            lightboxgallery_print_comment($comment, $context);
         }
     } else {
-        print_string('neverseen', 'resource');
+        print_string('nocomments', 'lightboxgallery');
     }
 }
 
@@ -218,11 +174,13 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
         $course = $DB->get_record('course', array('id' => $courseid));
     }
 
-    $modinfo =& get_fast_modinfo($course);
+    $modinfo = get_fast_modinfo($course);
 
     $cm = $modinfo->cms[$cmid];
 
-    $sql = "SELECT c.*, l.name, u.firstname, u.lastname, u.picture
+    $userfields = user_picture::fields('u', null, 'userid');
+    $userfieldsnoalias = user_picture::fields();
+    $sql = "SELECT c.*, l.name, $userfields
               FROM {lightboxgallery_comments} c
                    JOIN {lightboxgallery} l ON l.id = c.gallery
                    JOIN {user}            u ON u.id = c.userid
@@ -246,11 +204,16 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
             $activity->content->id      = $comment->id;
             $activity->content->comment = $display;
 
-            $activity->user = new object();
-            $activity->user->id        = $comment->userid;
-            $activity->user->firstname = $comment->firstname;
-            $activity->user->lastname  = $comment->lastname;
-            $activity->user->picture   = $comment->picture;
+            $activity->user = new stdClass();
+            $activity->user->id = $comment->userid;
+
+            $fields = explode(',', $userfieldsnoalias);
+            foreach ($fields as $field) {
+                if ($field == 'id') {
+                    continue;
+                }
+                $activity->user->$field = $comment->$field;
+            }
 
             $activities[$index++] = $activity;
 
@@ -293,7 +256,8 @@ function lightboxgallery_print_recent_mod_activity($activity, $courseid, $detail
 function lightboxgallery_print_recent_activity($course, $viewfullnames, $timestart) {
     global $DB, $CFG, $OUTPUT;
 
-    $sql = "SELECT c.*, l.name, u.firstname, u.lastname
+    $userfields = get_all_user_name_fields(true, 'u');
+    $sql = "SELECT c.*, l.name, $userfields
               FROM {lightboxgallery_comments} c
                    JOIN {lightboxgallery} l ON l.id = c.gallery
                    JOIN {user}            u ON u.id = c.userid

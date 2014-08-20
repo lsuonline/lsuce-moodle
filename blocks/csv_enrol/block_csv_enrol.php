@@ -38,7 +38,7 @@ class block_csv_enrol extends block_base {
         if(optional_param('course', 0, PARAM_INT)!=0)
             $id = optional_param('course', 0, PARAM_INT);
 
-    	$currentcontext = get_context_instance(CONTEXT_COURSE,$id);
+    	$currentcontext = context_course::instance($id);
 	
         if ($this->content !== NULL) {
             return $this->content;

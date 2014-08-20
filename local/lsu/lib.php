@@ -32,19 +32,11 @@ abstract class lsu_source implements institution_codes, semester_codes {
     var $password;
     var $wsdl;
 
-    // testing vars
-    protected $testing;
-    protected $testdir;
-
     function __construct($username, $password, $wsdl, $serviceId) {
         $this->username  = $username;
         $this->password  = $password;
         $this->wsdl      = $wsdl;
         $this->serviceId = $serviceId;
-
-        // assign these vars in case we're in testing mode
-        $this->testdir   = get_config('local_lsu', 'testdir').DIRECTORY_SEPARATOR;
-        $this->testing   = get_config('local_lsu', 'testing');
     }
 
     protected function build_parameters(array $params) {

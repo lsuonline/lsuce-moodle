@@ -29,6 +29,7 @@ require_login();
 global $SESSION, $USER;
 
 $page          = optional_param('page', 0, PARAM_INT);
+$sort          = optional_param('sort', 'recent', PARAM_TEXT);
 $simple_search = '';
 $videos        = 0;
 
@@ -39,7 +40,7 @@ if ($enabled) {
 }
 
 $mymedia = get_string('heading_mymedia', 'local_mymedia');
-$PAGE->set_context(get_system_context());
+$PAGE->set_context(context_system::instance());
 $header  = format_string($SITE->shortname).": $mymedia";
 
 $PAGE->set_url('/local/mymedia/mymedia.php');
@@ -75,7 +76,7 @@ $url = new moodle_url("{$host}/p/{$partner_id}/sp/{$partner_id}/ksr/uiconfId/{$u
 $PAGE->requires->js($url, true);
 $PAGE->requires->js('/local/kaltura/js/screenrecorder.js', true);
 
-$courseid = get_courseid_from_context($PAGE->context);
+$courseid = $COURSE->id;
 
 if (local_kaltura_has_mobile_flavor_enabled() && local_kaltura_get_enable_html5()) {
     $uiconf_id = local_kaltura_get_player_uiconf('player_resource');
@@ -106,7 +107,7 @@ if ($data = data_submitted() and confirm_sesskey()) {
     }
 }
 
-$context = get_context_instance(CONTEXT_USER, $USER->id);
+$context = context_user::instance($USER->id);
 
 require_capability('local/mymedia:view', $context, $USER);
 
@@ -129,11 +130,13 @@ if ($enabled) {
             $per_page = MYMEDIA_ITEMS_PER_PAGE;
         }
 
+        $SESSION->mymediasort = $sort;
+
         // Check if the sesison data is set
         if (isset($SESSION->mymedia) && !empty($SESSION->mymedia)) {
-            $videos = repository_kaltura_search_mymedia_videos($connection, $SESSION->mymedia, $page + 1, $per_page);
+            $videos = repository_kaltura_search_mymedia_videos($connection, $SESSION->mymedia, $page + 1, $per_page, $sort);
         } else {
-            $videos = repository_kaltura_search_mymedia_videos($connection, '', $page + 1, $per_page);
+            $videos = repository_kaltura_search_mymedia_videos($connection, '', $page + 1, $per_page, $sort);
         }
 
         $total = $videos->totalCount;
@@ -146,7 +149,7 @@ if ($enabled) {
             $page = $OUTPUT->paging_bar($total,
                                         $page,
                                         $per_page,
-                                        new moodle_url('/local/mymedia/mymedia.php'));
+                                        new moodle_url('/local/mymedia/mymedia.php', array('sort' => $sort)));
 
 
             echo $renderer->create_options_table_upper($page, $partner_id, $login_session);

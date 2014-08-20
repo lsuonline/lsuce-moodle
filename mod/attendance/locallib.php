@@ -807,8 +807,16 @@ class attendance {
             }
             $i++;
         }
-        add_to_log($this->course->id, 'attendance', 'sessions added', $this->url_manage(),
-            implode(',', $info_array), $this->cm->id);
+        // Trigger a report viewed event.
+        $event = \mod_attendance\event\session_added::create(array(
+            'objectid' => $this->id,
+            'context' => $this->context,
+            'other' => array('info' => implode(',', $info_array))
+        ));
+        $event->add_record_snapshot('course_modules', $this->cm);
+        $event->add_record_snapshot('attendance', $this);
+        $event->trigger();
+
     }
 
     public function update_session_from_form_data($formdata, $sessionid) {
@@ -828,9 +836,14 @@ class attendance {
         $sess->timemodified = time();
         $DB->update_record('attendance_sessions', $sess);
 
-        $url = $this->url_sessions(array('sessionid' => $sessionid, 'action' => att_sessions_page_params::ACTION_UPDATE));
         $info = construct_session_full_date_time($sess->sessdate, $sess->duration);
-        add_to_log($this->course->id, 'attendance', 'session updated', $url, $info, $this->cm->id);
+        $event = \mod_attendance\event\session_updated::create(array(
+            'objectid' => $this->id,
+            'context' => $this->context,
+            'other' => array('info' => $info, 'sessionid' => $sessionid, 'action' => att_sessions_page_params::ACTION_UPDATE)));
+        $event->add_record_snapshot('course_modules', $this->cm);
+        $event->add_record_snapshot('attendance', $this);
+        $event->trigger();
     }
 
     public function take_from_form_data($formdata) {
@@ -883,8 +896,13 @@ class attendance {
         $params = array(
                 'sessionid' => $this->pageparams->sessionid,
                 'grouptype' => $this->pageparams->grouptype);
-        $url = $this->url_take($params);
-        add_to_log($this->course->id, 'attendance', 'taken', $url, '', $this->cm->id);
+        $event = \mod_attendance\event\attendance_taken::create(array(
+            'objectid' => $this->id,
+            'context' => $this->context,
+            'other' => $params));
+        $event->add_record_snapshot('course_modules', $this->cm);
+        $event->add_record_snapshot('attendance', $this);
+        $event->trigger();
 
         $group = 0;
         if ($this->pageparams->grouptype != attendance::SESSION_COMMON) {
@@ -1073,13 +1091,28 @@ class attendance {
 
     public function get_user_taken_sessions_count($userid) {
         if (!array_key_exists($userid, $this->usertakensesscount)) {
-            $this->usertakensesscount[$userid] = att_get_user_taken_sessions_count($this->id, $this->course->startdate, $userid, $this->cm);
+            if (!empty($this->pageparams->startdate) && !empty($this->pageparams->enddate)) {
+                $this->usertakensesscount[$userid] = att_get_user_taken_sessions_count($this->id, $this->course->startdate, $userid, $this->cm, $this->pageparams->startdate, $this->pageparams->enddate);
+            } else {
+                $this->usertakensesscount[$userid] = att_get_user_taken_sessions_count($this->id, $this->course->startdate, $userid, $this->cm);
+            }
         }
         return $this->usertakensesscount[$userid];
     }
 
     public function get_user_statuses_stat($userid) {
         global $DB;
+        $params = array(
+            'aid'           => $this->id,
+            'cstartdate'    => $this->course->startdate,
+            'uid'           => $userid);
+
+        $period = '';
+        if (!empty($this->pageparams->startdate) && !empty($this->pageparams->enddate)) {
+            $period = ' AND ats.sessdate >= :sdate AND ats.sessdate < :edate ';
+            $params['sdate'] = $this->pageparams->startdate;
+            $params['edate'] = $this->pageparams->enddate;
+        }
 
         if (!array_key_exists($userid, $this->userstatusesstat)) {
             if ($this->get_group_mode()) {
@@ -1090,12 +1123,8 @@ class attendance {
                      WHERE ats.attendanceid = :aid AND
                            ats.sessdate >= :cstartdate AND
                            al.studentid = :uid AND
-                           (ats.groupid = 0 or gm.id is NOT NULL)
+                           (ats.groupid = 0 or gm.id is NOT NULL)".$period."
                   GROUP BY al.statusid";
-                $params = array(
-                    'aid'           => $this->id,
-                    'cstartdate'    => $this->course->startdate,
-                    'uid'           => $userid);
             } else {
                 $qry = "SELECT al.statusid, count(al.statusid) AS stcnt
                       FROM {attendance_log} al
@@ -1103,13 +1132,11 @@ class attendance {
                         ON al.sessionid = ats.id
                      WHERE ats.attendanceid = :aid AND
                            ats.sessdate >= :cstartdate AND
-                           al.studentid = :uid
+                           al.studentid = :uid".$period."
                   GROUP BY al.statusid";
-                $params = array(
-                    'aid'           => $this->id,
-                    'cstartdate'    => $this->course->startdate,
-                    'uid'           => $userid);
+
             }
+
 
             $this->userstatusesstat[$userid] = $DB->get_records_sql($qry, $params);
         }
@@ -1272,8 +1299,13 @@ class attendance {
         list($sql, $params) = $DB->get_in_or_equal($sessionsids);
         $DB->delete_records_select('attendance_log', "sessionid $sql", $params);
         $DB->delete_records_list('attendance_sessions', 'id', $sessionsids);
-        add_to_log($this->course->id, 'attendance', 'sessions deleted', $this->url_manage(),
-            get_string('sessionsids', 'attendance').implode(', ', $sessionsids), $this->cm->id);
+        $event = \mod_attendance\event\session_deleted::create(array(
+            'objectid' => $this->id,
+            'context' => $this->context,
+            'other' => array('info' => implode(', ', $sessionsids))));
+        $event->add_record_snapshot('course_modules', $this->cm);
+        $event->add_record_snapshot('attendance', $this);
+        $event->trigger();
     }
 
     public function update_sessions_duration($sessionsids, $duration) {
@@ -1287,8 +1319,13 @@ class attendance {
             $DB->update_record('attendance_sessions', $sess);
         }
         $sessions->close();
-        add_to_log($this->course->id, 'attendance', 'sessions duration updated', $this->url_manage(),
-            get_string('sessionsids', 'attendance').implode(', ', $sessionsids), $this->cm->id);
+        $event = \mod_attendance\event\session_duration_updated::create(array(
+            'objectid' => $this->id,
+            'context' => $this->context,
+            'other' => array('info' => implode(', ', $sessionsids))));
+        $event->add_record_snapshot('course_modules', $this->cm);
+        $event->add_record_snapshot('attendance', $this);
+        $event->trigger();
     }
 
     public function remove_status($statusid) {
@@ -1309,8 +1346,13 @@ class attendance {
             $rec->grade = $grade;
             $DB->insert_record('attendance_statuses', $rec);
 
-            add_to_log($this->course->id, 'attendance', 'status added', $this->url_preferences(),
-                $acronym.': '.$description.' ('.$grade.')', $this->cm->id);
+            $event = \mod_attendance\event\status_added::create(array(
+                'objectid' => $this->id,
+                'context' => $this->context,
+                'other' => array('acronym' => $acronym, 'description' => $description, 'grade' => $grade)));
+            $event->add_record_snapshot('course_modules', $this->cm);
+            $event->add_record_snapshot('attendance', $this);
+            $event->trigger();
         } else {
             print_error('cantaddstatus', 'attendance', $this->url_preferences());
         }
@@ -1341,8 +1383,13 @@ class attendance {
         }
         $DB->update_record('attendance_statuses', $status);
 
-        add_to_log($this->course->id, 'attendance', 'status updated', $this->url_preferences(),
-            implode(' ', $updated), $this->cm->id);
+        $event = \mod_attendance\event\status_updated::create(array(
+            'objectid' => $this->id,
+            'context' => $this->context,
+            'other' => array('acronym' => $acronym, 'description' => $description, 'grade' => $grade, 'updated' => implode(' ', $updated))));
+        $event->add_record_snapshot('course_modules', $this->cm);
+        $event->add_record_snapshot('attendance', $this);
+        $event->trigger();
     }
 }
 
@@ -1361,7 +1408,7 @@ function att_get_statuses($attid, $onlyvisible=true) {
     return $statuses;
 }
 
-function att_get_user_taken_sessions_count($attid, $coursestartdate, $userid, $coursemodule) {
+function att_get_user_taken_sessions_count($attid, $coursestartdate, $userid, $coursemodule, $startdate = '', $enddate = '') {
     global $DB, $COURSE;
     $groupmode = groups_get_activity_groupmode($coursemodule, $COURSE);
     if (!empty($groupmode)) {
@@ -1383,9 +1430,15 @@ function att_get_user_taken_sessions_count($attid, $coursestartdate, $userid, $c
                    al.studentid = :uid";
     }
     $params = array(
-            'aid'           => $attid,
-            'cstartdate'    => $coursestartdate,
-            'uid'           => $userid);
+        'aid'           => $attid,
+        'cstartdate'    => $coursestartdate,
+        'uid'           => $userid);
+
+    if (!empty($startdate) && !empty($enddate)) {
+        $qry .= ' AND sessdate >= :sdate AND sessdate < :edate ';
+        $params['sdate'] = $startdate;
+        $params['edate'] = $enddate;
+    }
 
     return $DB->count_records_sql($qry, $params);
 }
@@ -1511,6 +1564,14 @@ function att_log_convert_url(moodle_url $fullurl) {
 function attforblock_upgrade() {
     global $DB, $CFG;
     $module = $DB->get_record('modules', array('name' => 'attforblock'));
+
+    // Deal with Moodle versions above 2013092001.02, where version is in config
+    $versioninmodtable = true;
+    if (!isset($module->version)) {
+        $versioninmodtable = false;
+        $module->version = get_config('mod_attforblock', 'version');
+    }
+
     if ($module->version <= '2011061800') {
         print_error("noupgradefromthisversion", 'attendance');
     }
@@ -1529,6 +1590,10 @@ function attforblock_upgrade() {
     }
     // Now convert module record.
     $module->name = 'attendance';
+    if (!$versioninmodtable) {
+        set_config('version', $module->version, 'mod_attendance');
+        unset($module->version);
+    }
     $DB->update_record('modules', $module);
 
     // Now convert grade items to 'attendance'

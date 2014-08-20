@@ -41,7 +41,7 @@ $PAGE->set_course($course);
 add_to_log($course->id, 'turningtech', 'view devices', "index.php?id=$course->id", '');
 
 global $USER;
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 $title   = get_string('pluginname', 'turningtech');
 $PAGE->navbar->add($title);
 $PAGE->set_heading($course->fullname);

@@ -279,7 +279,6 @@ if ($data = data_submitted() and confirm_sesskey()) {
                 // better not allow values lower than grade min
                 $value = $grade_item->grademin;
             }
-
             $grade_item->$param = $value;
 
             $grade_item->update();

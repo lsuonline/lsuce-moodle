@@ -40,10 +40,8 @@ class edit_scale_form extends moodleform {
         $mform->addRule('name', get_string('required'), 'required', null, 'client');
         $mform->setType('name', PARAM_TEXT);
 
-        if (has_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM))) {
-            $mform->addElement('advcheckbox', 'standard', get_string('scalestandard'));
-            $mform->addHelpButton('standard', 'scalestandard');
-        }
+        $mform->addElement('advcheckbox', 'standard', get_string('scalestandard'));
+        $mform->addHelpButton('standard', 'scalestandard');
 
         $mform->addElement('static', 'used', get_string('used'));
 
@@ -90,7 +88,7 @@ class edit_scale_form extends moodleform {
             if (empty($courseid)) {
                 $mform->hardFreeze('standard');
 
-            } else if (!has_capability('moodle/course:create', context_system::instance())) {
+            } else if (!has_capability('moodle/course:managescales', context_system::instance())) {
                 //if they dont have managescales at system level the shouldnt be allowed to make scales standard (or not standard)
                 $mform->hardFreeze('standard');
 
@@ -104,7 +102,7 @@ class edit_scale_form extends moodleform {
 
         } else {
             $mform->removeElement('used');
-            if (empty($courseid) or !has_capability('moodle/course:create', context_system::instance())) {
+            if (empty($courseid) or !has_capability('moodle/course:managescales', context_system::instance())) {
                 $mform->hardFreeze('standard');
             }
         }
@@ -143,7 +141,7 @@ class edit_scale_form extends moodleform {
                 $thescale = implode(',',$scalearray);
 
                 //this check strips out whitespace from the scale we're validating but not from those already in the DB
-                $count = $DB->count_records_select('scale', "courseid=:courseid AND ".$DB->sql_compare_text('scale', textlib::strlen($thescale)).'=:scale',
+                $count = $DB->count_records_select('scale', "courseid=:courseid AND ".$DB->sql_compare_text('scale', core_text::strlen($thescale)).'=:scale',
                     array('courseid'=>$courseid, 'scale'=>$thescale));
 
                 if ($count) {

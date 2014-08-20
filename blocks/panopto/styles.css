@@ -1,0 +1,163 @@
+/* Copyright Panopto 2009 - 2013 / With contributions from Spenser Jones (sjones@ambrose.edu)
+ * 
+ * This file is part of the Panopto plugin for Moodle.
+ * 
+ * The Panopto plugin for Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The Panopto plugin for Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the Panopto plugin for Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+/* Provisioning pages */
+
+.block_panopto .courseProvisionResult
+{
+    border: solid 1px #C0C0C0;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+
+.block_panopto .courseProvisionResult .attribute
+{
+    font-weight: bold;
+}
+
+.block_panopto .courseProvisionResult .value
+{
+    margin-left: 15px;
+    margin-bottom: 5px;
+}
+
+.block_panopto .courseProvisionResult .successMessage
+{
+    color: green;
+}
+
+.block_panopto .courseProvisionResult .errorMessage
+{
+    color: red;
+}
+
+
+/* Block sidebar */
+
+.block_panopto .sectionHeader
+{
+    margin-top: 10px;
+}
+
+.block_panopto #hiddenLecturesDiv
+{
+    display: none;
+}
+
+.block_panopto #showAllDiv
+{
+    margin-top: 5px;
+}
+
+.block_panopto #showAllToggle
+{
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.block_panopto .listItem
+{
+    margin-top: 3px;
+    font-size: 0.8em;
+}
+
+.block_panopto .listItemAlt
+{
+    background: #F0F0F0;
+}
+
+.block_panopto .rssLink
+{
+    font-size: 0.8em;
+}
+
+.block_panopto .rssParen
+{
+    font-size: 0.7em;
+}
+
+.block_panopto .nowrap
+{
+    white-space: nowrap;
+}
+
+.block_panopto .error
+{
+    color: red;
+}
+
+.panopto_link {
+    display: inline-block;
+    padding: 10px;
+    margin-left: 20px;
+}
+
+.block_panopto .courseProvisionResult, .panopto_center {
+    margin: 0 auto;
+    width: 70%;
+}
+
+.panopto_center {
+   display: block;
+   margin: 10px auto 20px auto;
+}
+
+.block_panopto div.content div.provision a {
+   background: #5bb833; /* Old browsers */
+   background: -moz-linear-gradient(top, #5bb833 0%, #1f9225 100%); /* FF3.6+ */
+   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#5bb833), color-stop(100%,#1f9225)); /* Chrome,Safari4+ */
+   background: -webkit-linear-gradient(top, #5bb833 0%,#1f9225 100%); /* Chrome10+,Safari5.1+ */
+   background: -o-linear-gradient(top, #5bb833 0%,#1f9225 100%); /* Opera 11.10+ */
+   background: -ms-linear-gradient(top, #5bb833 0%,#1f9225 100%); /* IE10+ */
+   background: linear-gradient(to bottom, #5bb833 0%,#1f9225 100%); /* W3C */
+   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#5bb833', endColorstr='#1f9225',GradientType=0 ); /* IE6-8 */
+   background: linear-gradient(to bottom, #5bb833 0%,#1f9225 100%);
+   padding: 2px 10px;
+   border: 1px solid #1b2a35;
+   border-radius: 4px;
+   color: #ffffff;
+   cursor: pointer;
+}
+
+.block_panopto div.content div.provision a:hover {
+   background: #1f9225; /* Old browsers */
+   background: -moz-linear-gradient(top, #1f9225 0%, #18731d 100%); /* FF3.6+ */
+   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#1f9225), color-stop(100%,#18731d)); /* Chrome,Safari4+ */
+   background: -webkit-linear-gradient(top, #1f9225 0%,#18731d 100%); /* Chrome10+,Safari5.1+ */
+   background: -o-linear-gradient(top, #1f9225 0%,#18731d 100%); /* Opera 11.10+ */
+   background: -ms-linear-gradient(top, #1f9225 0%,#18731d 100%); /* IE10+ */
+   background: linear-gradient(to bottom, #1f9225 0%,#18731d 100%); /* W3C */
+   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1f9225', endColorstr='#18731d',GradientType=0 ); /* IE6-9 */
+   color: #ffffff;
+   border-color: #1b2a35;
+   text-decoration: none;
+}
+
+.block_panopto div.content div.provision a:active {
+   background: #006079; /* Old browsers */
+   -moz-box-shadow:    inset 0 0 5px #000000;
+   -webkit-box-shadow: inset 0 0 5px #000000;
+   box-shadow:         inset 0 0 5px #000000;
+   color: #cccccc;
+}
+
+.block_panopto div.provision {
+   margin: 10px auto 5px auto;
+   text-align: center;
+}

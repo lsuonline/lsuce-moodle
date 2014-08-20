@@ -1,3 +1,9 @@
+## v2.7.0
+
+- MDL 2.7 compatibility
+- Update deprecated function calls to get_context_instance().
+- TODO remove dependence on legacy events system.
+
 ## v1.2.0
 
 - More flexible interface (for events) [de27ae][de27ae]

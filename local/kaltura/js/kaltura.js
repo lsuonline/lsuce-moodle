@@ -501,7 +501,7 @@ M.local_kaltura.init_config = function (Y, test_script) {
 
 M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
                                              video_properties, kcw_code, kaltura_session,
-                                             kaltura_partner_id, script_location) {
+                                             kaltura_partner_id, script_location, modalwidth, modalheight) {
 
     // Adding makup to the body of the page for the kalvidassign
     if (null !== Y.one("#page-mod-kalvidassign-view")) { // Body tag for kalvidassign
@@ -555,14 +555,18 @@ M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
             widget_panel.setBody(kcw_code);
             widget_panel.show();
         } else {
-        	
             Y.one("#progress_bar_container").setStyle("visibility", "visible");
             Y.one("#slider_border").setStyle("borderStyle", "none");
+
+            Y.one("#loading_text").setContent(M.util.get_string("checkingforjava", "kalvidassign"));
+            kalturaScreenRecord.setDetectResultErrorMessageElementId('loading_text');
+            kalturaScreenRecord.startCallBack.detection_in_progress = true;
+            kalturaScreenRecord.startCallBack.detection_process = setTimeout('kalturaScreenRecord.clearDetectionFlagAndDisplayError()', 30000);
 
             kalturaScreenRecord.setDetectTextJavaDisabled(M.util.get_string("javanotenabled", "kalvidassign"));
             kalturaScreenRecord.setDetectTextmacLionNeedsInstall(M.util.get_string("javanotenabled", "kalvidassign"));
             kalturaScreenRecord.setDetectTextjavaNotDetected(M.util.get_string("javanotenabled", "kalvidassign"));
-            kalturaScreenRecord.startKsr(kaltura_partner_id, kaltura_session, 'false');
+            kalturaScreenRecord.startKsr(kaltura_partner_id, kaltura_session, 'true');
             
             var java_disabled = function (message) {
             	Y.one('#id_media_method_0').set("checked", true);
@@ -628,17 +632,16 @@ M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
 
         
         // Create preview panel
-        var preview_panel  = new Y.YUI2.widget.Panel("id_video_preview",
-                                        { width: "450px",
-                                          height: "430px",
-                                          fixedcenter: false,
-                                          constraintoviewport: true,
-                                          dragable: false,
-                                          visible: false,
-                                          close: true,
-                                          modal: true,
-                                          context: ["region-main", "tl", "tl", ["beforeShow", "windowResize"]]
-                                        });
+        var preview_panel  = new Y.YUI2.widget.Panel("id_video_preview", {
+                width: modalwidth+"px",
+                height: modalheight+"px",
+                fixedcenter: false,
+                constraintoviewport: true,
+                dragable: false,
+                visible: false,
+                close: true,
+                modal: true,
+                context: ["region-main", "tl", "tl", ["beforeShow", "windowResize"]]});
 
         preview_panel.render();
 
@@ -735,7 +738,7 @@ M.local_kaltura.video_assignment = function (Y, conversion_script, panel_markup,
     
 };
 
-M.local_kaltura.video_asignment_submission_view = function (Y, conversion_script, panel_markup, uiconf_id) {
+M.local_kaltura.video_asignment_submission_view = function (Y, conversion_script, panel_markup, uiconf_id, modalwidth, modalheight, videowidth, videoheight) {
 
     // Adding makup to the body of the page for the video assignment - grade submissions page
     if (null !== Y.one("#page-mod-kalvidassign-grade_submissions")) { // Body tag for grade submissions page
@@ -763,16 +766,15 @@ M.local_kaltura.video_asignment_submission_view = function (Y, conversion_script
 
 
     // Create preview panel
-    var preview_panel  = new Y.YUI2.widget.Panel("id_video_preview",
-                                    { width: "410px",
-                                      height: "450px",
-                                      fixedcenter: false,
-                                      visible: false,
-                                      constraintoviewport: true,
-                                      close: true,
-                                      modal: true,
-                                      context: ["region-main", "tl", "tl", ["beforeShow", "windowResize"]]
-                                    });
+    var preview_panel  = new Y.YUI2.widget.Panel("id_video_preview", {
+            width: modalwidth+"px",
+            height: modalheight+"px",
+            fixedcenter: false,
+            visible: false,
+            constraintoviewport: true,
+            close: true,
+            modal: true,
+            context: ["region-main", "tl", "tl", ["beforeShow", "windowResize"]]});
 
     preview_panel.render();
 
@@ -834,7 +836,7 @@ M.local_kaltura.video_asignment_submission_view = function (Y, conversion_script
 
         Y.io(conversion_script + entry_id  + "&" +
                 "uiconf_id=" + uiconf_id + "&" +
-                "height=400&width=365"/*, vid_assign_preview_cfg*/);
+                "height="+videoheight+"&width="+videowidth/*, vid_assign_preview_cfg*/);
 
     }
     
@@ -959,11 +961,17 @@ M.local_kaltura.video_resource = function (Y, conversion_script,
 
             Y.one("#progress_bar_container").setStyle("visibility", "visible");
             Y.one("#slider_border").setStyle("borderStyle", "none");
-            kalturaScreenRecord.startKsr(kaltura_partner_id, kaltura_session, "false");
+
+            Y.one("#loading_text").setContent(M.util.get_string("checkingforjava", "kalvidres"));
+            kalturaScreenRecord.setDetectResultErrorMessageElementId('loading_text');
+            kalturaScreenRecord.startCallBack.detection_in_progress = true;
+            kalturaScreenRecord.startCallBack.detection_process = setTimeout('kalturaScreenRecord.clearDetectionFlagAndDisplayError()', 30000);
+
             kalturaScreenRecord.setDetectTextJavaDisabled(M.util.get_string("javanotenabled", "kalvidres"));
             kalturaScreenRecord.setDetectTextmacLionNeedsInstall(M.util.get_string("javanotenabled", "kalvidres"));
             kalturaScreenRecord.setDetectTextjavaNotDetected(M.util.get_string("javanotenabled", "kalvidres"));
-            
+            kalturaScreenRecord.startKsr(kaltura_partner_id, kaltura_session, "true");
+
             var java_disabled = function (message) {
             	Y.one('#id_media_method_0').set("checked", true);
             	Y.one('#id_media_method_1').set("disabled", true);
@@ -1433,11 +1441,16 @@ M.local_kaltura.video_presentation = function (Y, conversion_script,
             Y.one("#progress_bar_container").setStyle("visibility", "visible");
             Y.one("#slider_border").setStyle("borderStyle", "none");
 
-            kalturaScreenRecord.startKsr(kaltura_partner_id, kaltura_session, 'false');
+            Y.one("#loading_text").setContent(M.util.get_string("checkingforjava", "kalvidpres"));
+            kalturaScreenRecord.setDetectResultErrorMessageElementId('loading_text');
+            kalturaScreenRecord.startCallBack.detection_in_progress = true;
+            kalturaScreenRecord.startCallBack.detection_process = setTimeout('kalturaScreenRecord.clearDetectionFlagAndDisplayError()', 30000);
+
             kalturaScreenRecord.setDetectTextJavaDisabled(M.util.get_string("javanotenabled", "kalvidpres"));
             kalturaScreenRecord.setDetectTextmacLionNeedsInstall(M.util.get_string("javanotenabled", "kalvidpres"));
             kalturaScreenRecord.setDetectTextjavaNotDetected(M.util.get_string("javanotenabled", "kalvidpres"));
-            
+            kalturaScreenRecord.startKsr(kaltura_partner_id, kaltura_session, 'true');
+
             var java_disabled = function (message) {
             	Y.one('#id_media_method_0').set("checked", true);
             	Y.one('#id_media_method_1').set("disabled", true);

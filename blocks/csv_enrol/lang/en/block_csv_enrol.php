@@ -15,6 +15,7 @@ $string['manageuploads'] = 'Manage uploaded files';
 $string['pluginname'] = 'Enrol users with CSV';
 $string['csvenrol'] = 'Enrol users CSV';
 $string['uploadcsv'] = 'Upload your CSV here:';
+$string['csv_enrol:uploadcsv'] = 'Upload your CSV here:';
 $string['resultfiles'] = 'Result of your CSV enrolment:';
 $string['title'] = 'Enrol users into {$a}';
 $string['description'] = 'You can upload your CSV file with email adresses of Moodle users here, so that they can be enrolled into the course "{$a}".';

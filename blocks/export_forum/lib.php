@@ -73,7 +73,7 @@ abstract class ExportForumPDF {
 
         $content = htmlspecialchars_decode(stripslashes($content));
 
-        $c_id = get_context_instance(CONTEXT_MODULE, $this->forum_id)->id;
+        $c_id = context_module::instance($this->forum_id)->id;
 
         $search = '%2F' . $c_id . '%2Fmod_forum';
         $replace = '%2F' . $c_id . '%2Fblock_export_forum%2Fexport%2Fmod_forum';
@@ -136,7 +136,7 @@ abstract class ExportForumPDF {
 
     function anonymize($content) {
         // User pictures
-        $pattern = '/pluginfile\.php[\?file=]*%2F\d+%2Fuser%2Ficon%2F\w+%2Ff2/';
+        $pattern = '/pluginfile\.php\/\d+[\?file=]*\/user\/icon\/\w+\/\w\d[\?[\w=\d]*]*/';
         $replace = 'blocks/export_forum/pix/user.png';
 
         $content = preg_replace($pattern, $replace, $content);

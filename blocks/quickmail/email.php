@@ -51,6 +51,7 @@ $alternates = $DB->get_records_menu('block_quickmail_alternate', $alt_params, ''
 
 $blockname = quickmail::_s('pluginname');
 $header = quickmail::_s('email');
+$returnurl = '/blocks/quickmail/email.php?courseid=' . $courseid;
 
 $PAGE->set_context($context);
 $PAGE->set_course($course);
@@ -58,7 +59,7 @@ $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($header);
 $PAGE->set_title($blockname . ': ' . $header);
 $PAGE->set_heading($blockname . ': ' . $header);
-$PAGE->set_url('/course/view.php', array('courseid' => $courseid));
+$PAGE->set_url('/course/view.php', array('id' => $courseid, 'return' => $returnurl));
 $PAGE->set_pagetype($blockname);
 $PAGE->set_pagelayout('standard');
 
@@ -105,13 +106,6 @@ $users_to_groups = array();
 
 $everyone = quickmail::get_non_suspended_users($context, $courseid);
 
-// DWE -> Check to see if there are email addresses
-// DWE -> MOVING THIS CHECK DOWN TO WHERE $DATA-> ADDITIONAL_EMAILS is available. 
-//if (count($everyone) == 1)
-//{
-//    print_error('no_users', 'block_quickmail');
-//}
-
 foreach ($everyone as $userid => $user) {
     $usergroups = groups_get_user_groups($courseid, $userid);
 
@@ -144,23 +138,10 @@ if (empty($users)) {
 // we are presenting the form with values populated from either the log or drafts table in the db
 if (!empty($type)) {
     
-
     $email = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
-
+    //$emailmailto = array();
     if ($messageIDresend == 1) {
-        $email->additional_emails = array();
-        $email->failuserids = explode(',', $email->failuserids);        
-    
-        foreach ($email->failuserids as $failed_address_or_id) {
-            if ( ! is_numeric($failed_address_or_id)) {
-                $email->additional_emails [] = $failed_address_or_id;
-                unset($failed_address_or_id);
-            }
-        }
-        
-        $email->additional_emails = implode(',', $email->additional_emails);
-        $email->mailto 		  = implode(',', $email->failuserids);
-
+        list($email->mailto, $email->additional_emails) = quickmail::clean($email->failuserids);
     }
 } else {
     $email = new stdClass;
@@ -197,7 +178,10 @@ $email = file_prepare_standard_editor(
 $selected = array();
 if (!empty($email->mailto)) {
     foreach (explode(',', $email->mailto) as $id) {
-        $selected[$id] = $users[$id];
+        $selected[$id] = (object) array('id'=>$id,'firstname'=>null,'lastname'=>null,'email'=>$id,'mailformat'=>'1','suspended'=>'0','maildisplay'=>'2','status'=>'0'); 
+        if(is_numeric($selected[$id]->id)) {
+            $selected[$id] = $users[$id];
+        } 
         unset($users[$id]);
     }
 }
@@ -218,7 +202,7 @@ $warnings = array();
 
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/course/view.php?id=' . $courseid));
-    // DWE -> DATA IS ABOUT TO BE INITIALIZED, we should check if we have selected users or emails around here. 
+    // DWE we should check if we have selected users or emails around here. 
 } else if ($data = $form->get_data()) {
     if (empty($data->subject)) {
         $warnings[] = get_string('no_subject', 'block_quickmail');
@@ -235,7 +219,7 @@ if ($form->is_cancelled()) {
         $data->format = $data->message_editor['format'];
         $data->message = $data->message_editor['text'];
         $data->attachment = quickmail::attachment_names($data->attachments);
-
+        $data->messageWithSigAndAttach = "";
         // Store data; id is needed for file storage
         if (isset($data->send)) {
             $data->id = $DB->insert_record('block_quickmail_log', $data);
@@ -280,15 +264,18 @@ if ($form->is_cancelled()) {
 
                 $signaturetext = file_rewrite_pluginfile_urls($sig->signature, 'pluginfile.php', $context->id, 'block_quickmail', 'signature', $sig->id, $editor_options);
 
-
-                $data->message .= "\n\n" .$signaturetext;
+                
             }
-
+            if(empty($signaturetext)){
+                $data->messageWithSigAndAttach = $data->message;
+            }
+            else{
+                $data->messageWithSigAndAttach = $data->message . "\n\n" .$signaturetext;
+            }
             // Append links to attachments, if any
-            $data->message .= quickmail::process_attachments(
-                $context, $data, $table, $data->id
-            );
-
+                $data->messageWithSigAndAttach .= quickmail::process_attachments(
+                    $context, $data, $table, $data->id
+                );
             // Prepare html content of message
             $data->message = file_rewrite_pluginfile_urls($data->message, 'pluginfile.php', $context->id, 'block_quickmail', $table, $data->id, $editor_options);
 
@@ -303,8 +290,7 @@ if ($form->is_cancelled()) {
             if(!empty($data->mailto)) {
                 foreach (explode(',', $data->mailto) as $userid) {
                     // WHERE THE ACTUAL EMAILING IS HAPPENING
-                    $success = email_to_user($everyone[$userid], $user, $subject, strip_tags($data->message), $data->message);
-
+                    $success = email_to_user($everyone[$userid], $user, $subject, strip_tags($data->messageWithSigAndAttach), $data->messageWithSigAndAttach);
                     if (!$success) {
                         $warnings[] = get_string("no_email", 'block_quickmail', $everyone[$userid]);
                         $data->failuserids[] = $userid;
@@ -312,47 +298,40 @@ if ($form->is_cancelled()) {
                 }
             }
 
-
-        $additional_email_array = explode(',', $data->additional_emails);
-
-
-            $i = 0;
-
-            foreach ($additional_email_array as $additional_email) {
-                $additional_email = trim($additional_email); 
-                if( ! (validate_email($additional_email))){
-		    if($additional_email !== ''){
-                        $warnings[] = get_string("no_email_address", 'block_quickmail', $additional_email);
-		    }
-		    continue;
-		}
-
-
-                $fakeuser = new object();
-                $fakeuser->id = 99999900 + $i;
-                $fakeuser->email = $additional_email;
-
-
-                $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->message), $data->message);
-
-                //force fail
-
-                if (!$additional_email_success) {
-                    $data->failuserids[] = $additional_email;
-
-                    // will need to notify that an email is incorrect
-                    $warnings[] = get_string("no_email_address", 'block_quickmail', $fakeuser->email);
-                }
-
-                $i++;
-            }
+        if(!empty($data->additional_emails)){
             
+            $additional_email_array = preg_split('/[,;]/', $data->additional_emails);
+
+            
+
+                $i = 0;
+
+                foreach ($additional_email_array as $additional_email) {
+                    $additional_email = trim($additional_email); 
+
+                    $fakeuser = new object();
+                    $fakeuser->id = 99999900 + $i;
+                    $fakeuser->email = $additional_email;
+                    // TODO make this into a menu option
+                    $fakeuser->mailformat = 1;
+
+                    $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->messageWithSigAndAttach), $data->messageWithSigAndAttach);
+                    if (!$additional_email_success) {
+                        $data->failuserids[] = $additional_email;
+
+                        // will need to notify that an email is incorrect
+                        $warnings[] = get_string("no_email_address", 'block_quickmail', $fakeuser->email);
+                    }
+
+                    $i++;
+                }
+        }
 
             $data->failuserids = implode(',', $data->failuserids);
             $DB->update_record('block_quickmail_log', $data);
 
             if ($data->receipt) {
-                email_to_user($USER, $user, $subject, strip_tags($data->message), $data->message);
+                email_to_user($USER, $user, $subject, strip_tags($data->messageWithSigAndAttach), $data->messageWithSigAndAttach);
             }
         }
     }

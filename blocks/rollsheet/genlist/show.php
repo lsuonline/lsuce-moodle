@@ -16,6 +16,7 @@
 require_once("../../../config.php");
 global $CFG, $DB;
 require_login();
+require_once("$CFG->libdir/formslib.php");
 
 require_once('renderrollsheet.php');
 $cid = required_param('cid', PARAM_INT);
@@ -146,7 +147,7 @@ function buildGroups($cid){
         global $DB;
         $warnings = array();
         $groups       = array();
-        $context = get_context_instance(CONTEXT_COURSE, $cid);
+        $context = context_course::instance($cid);
 	$buildHTML = '';
 
         if (!has_capability('moodle/site:accessallgroups', $context)) {

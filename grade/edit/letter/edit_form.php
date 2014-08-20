@@ -31,7 +31,7 @@ require_once $CFG->libdir.'/formslib.php';
 class edit_letter_form extends moodleform {
 
     public function definition() {
-        global $DB;
+	global $DB;
 
         $mform =& $this->_form;
         $num   = $this->_customdata['num'];

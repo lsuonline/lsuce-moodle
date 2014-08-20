@@ -12,7 +12,7 @@ $action = optional_param('action', null, PARAM_TEXT);
 
 $system = $DB->get_record('course', array('id' => SITEID), '*', MUST_EXIST);
 
-$context = get_context_instance(CONTEXT_SYSTEM);
+$context = context_system::instance();
 
 require_capability('block/post_grades:canconfigure', $context);
 

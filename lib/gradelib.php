@@ -327,7 +327,7 @@ function grade_update_outcomes($source, $courseid, $itemtype, $itemmodule, $item
 }
 
 /**
- * Returns grading information for given activity, optionally with user grades
+ * Returns grading information for one or more activities, optionally with user grades
  * Manual, course or category items can not be queried.
  *
  * @category grade
@@ -338,7 +338,7 @@ function grade_update_outcomes($source, $courseid, $itemtype, $itemmodule, $item
  * @param mixed  $userid_or_ids Either a single user ID, an array of user IDs or null. If user ID or IDs are not supplied returns information about grade_item
  * @return array Array of grade information objects (scaleid, name, grade and locked status, etc.) indexed with itemnumbers
  */
-function grade_get_grades($courseid, $itemtype, $itemmodule, $iteminstance, $userid_or_ids=null) {
+function grade_get_grades($courseid, $itemtype = null, $itemmodule = null, $iteminstance = null, $userid_or_ids=null) {
     global $CFG;
 
     $return = new stdClass();
@@ -354,14 +354,28 @@ function grade_get_grades($courseid, $itemtype, $itemmodule, $iteminstance, $use
         }
     }
 
-    if ($grade_items = grade_item::fetch_all(array('itemtype'=>$itemtype, 'itemmodule'=>$itemmodule, 'iteminstance'=>$iteminstance, 'courseid'=>$courseid))) {
+    $params = array('courseid' => $courseid);
+    if (!empty($itemtype)) {
+        $params['itemtype'] = $itemtype;
+    }
+    if (!empty($itemmodule)) {
+        $params['itemmodule'] = $itemmodule;
+    }
+    if (!empty($iteminstance)) {
+        $params['iteminstance'] = $iteminstance;
+    }
+    if ($grade_items = grade_item::fetch_all($params)) {
         foreach ($grade_items as $grade_item) {
             $decimalpoints = null;
 
             if (empty($grade_item->outcomeid)) {
                 // prepare information about grade item
                 $item = new stdClass();
+                $item->id = $grade_item->id;
                 $item->itemnumber = $grade_item->itemnumber;
+                $item->itemtype  = $grade_item->itemtype;
+                $item->itemmodule = $grade_item->itemmodule;
+                $item->iteminstance = $grade_item->iteminstance;
                 $item->scaleid    = $grade_item->scaleid;
                 $item->name       = $grade_item->get_name();
                 $item->grademin   = $grade_item->grademin;
@@ -460,7 +474,11 @@ function grade_get_grades($courseid, $itemtype, $itemmodule, $iteminstance, $use
 
                 // outcome info
                 $outcome = new stdClass();
+                $outcome->id = $grade_item->id;
                 $outcome->itemnumber = $grade_item->itemnumber;
+                $outcome->itemtype   = $grade_item->itemtype;
+                $outcome->itemmodule = $grade_item->itemmodule;
+                $outcome->iteminstance = $grade_item->iteminstance;
                 $outcome->scaleid    = $grade_outcome->scaleid;
                 $outcome->name       = $grade_outcome->get_name();
                 $outcome->locked     = $grade_item->is_locked();
@@ -810,7 +828,7 @@ function grade_get_categories_menu($courseid, $includenew=false) {
     foreach ($categories as $category) {
         $cats[$category->id] = $category->get_name();
     }
-    collatorlib::asort($cats);
+    core_collator::asort($cats);
 
     return ($result+$cats);
 }
@@ -841,7 +859,7 @@ function grade_get_letters($context=null) {
 
     $letters = array();
 
-    $contexts = get_parent_contexts($context);
+    $contexts = $context->get_parent_context_ids();
     array_unshift($contexts, $context->id);
 
     foreach ($contexts as $ctxid) {
@@ -1140,7 +1158,7 @@ function grade_grab_course_grades($courseid, $modname=null, $userid=0) {
         return;
     }
 
-    if (!$mods = get_plugin_list('mod') ) {
+    if (!$mods = core_component::get_plugin_list('mod') ) {
         print_error('nomodules', 'debug');
     }
 
@@ -1366,48 +1384,48 @@ function grade_cron() {
         $grade_grade->update('locktime');
     }
     $rs->close();
-    
+
     // cleanup history tables occaisionally
     if (!isset($CFG->gradehistorylifetime)) {  // value in days; we cannot choose a default for this
         mtrace(sprintf("\n  [WARNING] No value set for '%s'...skipping grade history pruning.\n"
-                ,get_string('gradehistorylifetime', 'grades')
-                ));        
-        
+		,get_string('gradehistorylifetime', 'grades')
+                ));
+
     }elseif($CFG->gradehistorylifetime == 0){
-        mtrace(sprintf("\n  [INFO] Config '%s' is set to '%s'...skipping grade history pruning.\n", 
+        mtrace(sprintf("\n  [INFO] Config '%s' is set to '%s'...skipping grade history pruning.\n",
                 get_string('gradehistorylifetime', 'grades'),
                 get_string('neverdeletehistory', 'grades')
-                ));        
-    }else{  //we can proceed
+                ));
+	}else{  //we can proceed
         require_once($CFG->dirroot.'/lib/statslib.php');
         mtrace(sprintf("  Grade history retention policy '%s' is set to %s days\n  Checking for appropriate time"
                 , get_string('gradehistorylifetime', 'grades')
                 , $CFG->gradehistorylifetime
                 ));
-        
+
         //use default values quietly, if user has not set them in admin/server/cleanup
         //@todo should we explicitly complain and tell the user that they have not set something? even though
         //this condition SHOULD get caught when they try to run without having set a value for 'gradehistorylifetime'
-        $starthour = isset($CFG->gradehistorylifetimestarthour)   ? $CFG->gradehistorylifetimestarthour   : 10; 
+        $starthour = isset($CFG->gradehistorylifetimestarthour)   ? $CFG->gradehistorylifetimestarthour   : 10;
         $startmin  = isset($CFG->gradehistorylifetimestartminute) ? $CFG->gradehistorylifetimestartminute : 0;
-        
+
         //setup time interval for cleanup to occur
         $check_window_start = stats_get_base_daily() + $starthour*60*60 + $startmin*60;
         $check_window_end = $check_window_start + 3600;
-        
+
         if ((time() > $check_window_start) && (time() < $check_window_end)) {
             mtrace("  Begin grade history logs pruning");
-            
+
             $histlifetime = $now - ($CFG->gradehistorylifetime * 3600 * 24);
             $tables = array('grade_outcomes_history', 'grade_categories_history', 'grade_items_history', 'grade_grades_history', 'scale_history');
-            
+
             foreach ($tables as $table) {
                 $DB->delete_records_select($table, "timemodified < ?", array($histlifetime));
-                mtrace("    Deleted old grade history records from '$table'");
+                mtrace("Deleted old grade history records from '$table'");
             }
             mtrace("  Finished pruning grades history");
         }else{
-            mtrace(sprintf("  NOT within the designated window for pruning grade history {%s - %s}...skipping.", 
+            mtrace(sprintf("  NOT within the designated window for pruning grade history {%s - %s}...skipping.",
                     strftime('%l:%M %P', $check_window_start), strftime('%l:%M %P', $check_window_end)));
         }
     }
@@ -1472,7 +1490,7 @@ function grade_floats_different($f1, $f2) {
  * Do not use rounding for 10,5 at the database level as the results may be
  * different from php round() function.
  *
- * @since 2.0
+ * @since Moodle 2.0
  * @param float $f1 Float one to compare
  * @param float $f2 Float two to compare
  * @return bool True if the values should be considered as the same grades

@@ -26,7 +26,7 @@ class grade_edit_tree {
     public $columns = array();
 
     /**
-     * @var object $gtree          @see grade/lib.php
+     * @var grade_tree $gtree   @see grade/lib.php
      */
     public $gtree;
 
@@ -55,8 +55,8 @@ class grade_edit_tree {
     public function __construct($gtree, $moving=false, $gpr) {
         global $USER, $OUTPUT, $COURSE;
 
-        $system_default = get_config('moodle', 'grade_report_showcalculations');
-        $this->show_calculations = get_user_preferences('grade_report_showcalculations', $system_default);
+        $system_default = get_config('moodle', 'grade_report_nocalculations');
+        $this->disable_calculations = get_user_preferences('grade_report_nocalculations', $system_default);
 
         $this->gtree = $gtree;
         $this->moving = $moving;
@@ -141,7 +141,7 @@ class grade_edit_tree {
             $actions .= $this->gtree->get_edit_icon($element, $this->gpr);
         }
 
-        if ($this->show_calculations) {
+        if (!$this->disable_calculations) {
             $actions .= $this->gtree->get_calculation_icon($element, $this->gpr);
         }
 
@@ -804,10 +804,15 @@ class grade_edit_tree_column_range extends grade_edit_tree_column {
 
     public function get_item_cell($item, $params) {
         global $DB, $OUTPUT;
+
         $this->curve_to = get_config('moodle', 'grade_multfactor_alt');
-        // If the parent aggregation is Sum of Grades, this cannot be changed
+
+        // If the parent aggregation is Sum of Grades, we should show the number, even for scales, as that value is used...
+        // ...in the computation. For text grades, the grademax is not used, so we can still show the no value string.
         $parent_cat = $item->get_parent_category();
-        if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM) {
+        if ($item->gradetype == GRADE_TYPE_TEXT) {
+            $grademax = ' - ';
+        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM) {
             $grademax = format_float($item->grademax, $item->get_decimals());
         } elseif ($item->gradetype == GRADE_TYPE_SCALE) {
             $scale = $DB->get_record('scale', array('id' => $item->scaleid));
@@ -992,7 +997,6 @@ class grade_edit_tree_column_droplow extends grade_edit_tree_column_category {
 
     public function get_category_cell($category, $levelclass, $params) {
         // HIDE THIS
-        // $droplow = '<label class="accesshide" for="droplow_' . $category->id.'">' . get_string('droplowestvalue', 'grades') . '</label>';
         $disabled = '';
         if (!empty($category->keephigh)) {
             $disabled = 'DISABLED';
@@ -1032,7 +1036,6 @@ class grade_edit_tree_column_keephigh extends grade_edit_tree_column_category {
 
     public function get_category_cell($category, $levelclass, $params) {
         // HIDE THIS
-        // $keephigh = '<label class="accesshide" for="keephigh_'.$category->id.'">'.get_string('keephigh', 'grades').'</label>';
         $disabled = '';
         if (!empty($category->droplow)) {
             $disabled = 'DISABLED';
@@ -1068,9 +1071,7 @@ class grade_edit_tree_column_multfactor extends grade_edit_tree_column {
     public function get_header_cell() {
         global $OUTPUT;
         $headercell = clone($this->headercell);
-
         $name = $this->curve_to ? 'multfactor_alt' : 'multfactor';
-
         $headercell->text = get_string($name, 'grades').$OUTPUT->help_icon($name, 'grades');
         return $headercell;
     }
@@ -1113,6 +1114,7 @@ class grade_edit_tree_column_multfactor extends grade_edit_tree_column {
         $multfactor = html_writer::empty_tag('input', $params);
 
         $itemcell->text .= $multfactor;
+
         return $itemcell;
     }
 

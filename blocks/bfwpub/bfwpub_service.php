@@ -482,7 +482,7 @@ class bfwpub_service {
     public static function get_students_for_course($course_id) {
         // get_users_by_capability - accesslib - moodle/grade:view
         // search_users - datalib
-        $context = get_context_instance(CONTEXT_COURSE, $course_id);
+        $context = context_course::instance($course_id);
         $results = get_users_by_capability($context, 'moodle/grade:view', 'u.id, u.username, u.firstname, u.lastname, u.email', 'u.lastname', '', '', '', '', FALSE);
         if (isset($results) && !empty($results)) {
             // get the registrations related to these students

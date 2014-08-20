@@ -47,7 +47,7 @@ class mod_kalvidres_renderer extends plugin_renderer_base {
     }
 
     function embed_video($kalvidres) {
-        global $PAGE;
+        global $PAGE, $COURSE;
 
         $output = '';
         $entry_obj = local_kaltura_get_ready_entry_object($kalvidres->entry_id);
@@ -60,7 +60,7 @@ class mod_kalvidres_renderer extends plugin_renderer_base {
                 $kalvidres->uiconf_id = $new_player;
             }
 
-            $courseid = get_courseid_from_context($PAGE->context);
+            $courseid = $COURSE->id;
 
             // Set the session
             $session = local_kaltura_generate_kaltura_session(array($entry_obj->id));
@@ -69,7 +69,7 @@ class mod_kalvidres_renderer extends plugin_renderer_base {
             $entry_obj->height = $kalvidres->height;
 
             // Determine if the mobile theme is being used
-            $theme = get_selected_theme_for_device_type();
+            $theme = core_useragent::get_device_type_theme();
 
             if (0 == strcmp($theme, 'mymobile')) {
 

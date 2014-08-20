@@ -74,7 +74,9 @@ class quick_edit_incomplete_ui extends quick_edit_override_ui {
             ));
 
             foreach ($all_items as $item) {
-                $anon = grade_anonymous::fetch(array('itemid' => $item->id));
+                if (class_exists('grade_anonymous')) {
+                    $anon = grade_anonymous::fetch(array('itemid' => $item->id));
+                }
 
                 if (empty($anon)) {
                     continue;

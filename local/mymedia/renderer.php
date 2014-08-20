@@ -16,8 +16,7 @@
 /**
  * My Media display library
  *
- * @package    local
- * @subpackage mymedia
+ * @package    local_mymedia
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -101,6 +100,48 @@ class local_mymedia_renderer extends plugin_renderer_base {
         echo $output;
     }
 
+    /**
+     * This function creates HTML markup used to sort the video listing.
+     *
+     * @return HTML Markup for sorting pulldown.
+     */
+    public function create_sort_option() {
+        global $CFG, $SESSION;
+
+        $recent = null;
+        $old = null;
+        $nameasc = null;
+        $namedesc = null;
+        $sorturl = $CFG->wwwroot.'/local/mymedia/mymedia.php?sort=';
+
+        if (isset($SESSION->mymediasort) && !empty($SESSION->mymediasort)) {
+            $sort = $SESSION->mymediasort;
+            if ($sort == 'recent') {
+                $recent = "selected";
+            } else if ($sort == 'old') {
+                $old = "selected";
+            } else if ($sort == 'name_asc') {
+                $nameasc = "selected";
+            } else if ($sort == 'name_desc') {
+                $namedesc = "selected";
+            } else {
+                $recent = "selected";
+            }
+        } else {
+            $recent = "selected";
+        }
+
+        $sort = html_writer::tag('label', get_string('sortby', 'local_mymedia').':');
+        $sort .= html_writer::start_tag('select', array('id' => 'mymediasort'));
+        $sort .= html_writer::tag('option', get_string('mostrecent', 'local_mymedia'), array('value' => $sorturl.'recent', 'selected' => $recent));
+        $sort .= html_writer::tag('option', get_string('oldest', 'local_mymedia'), array('value' => $sorturl.'old', 'selected' => $old));
+        $sort .= html_writer::tag('option', get_string('medianameasc', 'local_mymedia'), array('value' => $sorturl.'name_asc', 'selected' => $nameasc));
+        $sort .= html_writer::tag('option', get_string('medianamedesc', 'local_mymedia'), array('value' => $sorturl.'name_desc', 'selected' => $namedesc));
+        $sort .= html_writer::end_tag('select');
+
+        return $sort;
+    }
+
     public function create_options_table_upper($page, $partner_id = '', $login_session = '') {
         global $USER;
 
@@ -122,7 +163,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
         $screenrec     = '';
         $enable_ksr    = get_config(KALTURA_PLUGIN_NAME, 'enable_screen_recorder');
 
-        $context = get_context_instance(CONTEXT_USER, $USER->id);
+        $context = context_user::instance($USER->id);
 
         if (has_capability('local/mymedia:upload', $context, $USER)) {
             $upload = $this->create_upload_markup();
@@ -150,6 +191,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
         $output .= html_writer::start_tag('td', $attr);
 
         if (!empty($page)) {
+            $output .= $this->create_sort_option();
             $output .= $page;
         }
 
@@ -250,7 +292,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video preview container');
+        $attr   = array('class' => 'mymedia video preview');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video preview',
@@ -271,7 +313,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video share container');
+        $attr   = array('class' => 'mymedia video share');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video share',
@@ -292,7 +334,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video edit container');
+        $attr   = array('class' => 'mymedia video edit');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video edit',
@@ -313,7 +355,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video clip container');
+        $attr   = array('class' => 'mymedia video clip');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video clip',
@@ -335,7 +377,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video delete container');
+        $attr   = array('class' => 'mymedia video delete');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video delete',
@@ -390,7 +432,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output .= html_writer::start_tag('div', $attr);
 
-        $context = get_context_instance(CONTEXT_USER, $USER->id);
+        $context = context_user::instance($USER->id);
 
         $output .= $this->create_video_preview_link_markup();
         $output .= '&nbsp;&nbsp;';
@@ -736,7 +778,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
         global $SESSION;
 
         $attr   = array('id' => 'simple_search_container',
-                        'class' => 'mymedia simple search container');
+                        'class' => 'mymedia simple search');
 
         $output = html_writer::start_tag('span', $attr);
 
@@ -793,7 +835,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
     public function create_upload_markup() {
 
         $attr   = array('id' => 'upload_btn_container',
-                        'class' => 'mymedia upload button container');
+                        'class' => 'mymedia upload button');
 
         $output = html_writer::start_tag('span', $attr);
 
@@ -828,10 +870,17 @@ class local_mymedia_renderer extends plugin_renderer_base {
         return $output;
     }
 
+    /**
+     * Generate the screen recorder button markup.
+     *
+     * @param int $partner_id The Kaltura partner ID
+     * @param string $login_session The Kaltura session
+     * @return string HTML Markup for screen recorder button
+     */
     public function create_screenrecorder_markup($partner_id, $login_session) {
 
         $attr   = array('id' => 'screenrecorder_btn_container',
-                        'class' => 'mymedia screenrecorder button container');
+                        'class' => 'mymedia screenrecorder button');
 
         $output = html_writer::start_tag('span', $attr);
 
@@ -842,11 +891,14 @@ class local_mymedia_renderer extends plugin_renderer_base {
                         'title' => get_string('screenrecorder', 'local_mymedia'),
                         'onclick' => "document.getElementById('progress_bar_container').style.visibility = 'visible';".
                                      "document.getElementById('slider_border').style.borderStyle = 'none';".
-                                     "kalturaScreenRecord.setDetectResultErrorMessageElementId('screenrecorder_btn_container');".
+                                     "document.getElementById('loading_text').innerHTML = '".get_string('checkingforjava', 'local_mymedia')."';".
+                                     "kalturaScreenRecord.setDetectResultErrorMessageElementId('loading_text');".
                                      "kalturaScreenRecord.setDetectTextJavaDisabled('".get_string('javanotenabled', 'local_mymedia')."');".
                                      "kalturaScreenRecord.setDetectTextmacLionNeedsInstall('".get_string('javanotenabled', 'local_mymedia')."');".
                                      "kalturaScreenRecord.setDetectTextjavaNotDetected('".get_string('javanotenabled', 'local_mymedia')."');".
-                                     "kalturaScreenRecord.startKsr('{$partner_id}', '{$login_session}', 'false');"
+                                     "kalturaScreenRecord.startCallBack.detection_in_progress = true;".
+                                     "kalturaScreenRecord.startCallBack.detection_process = setTimeout('kalturaScreenRecord.clearDetectionFlagAndDisplayError()', 30000);".
+                                     "kalturaScreenRecord.startKsr('{$partner_id}', '{$login_session}', 'true');"
                        );
 
         $output .= html_writer::empty_tag('input', $attr);
@@ -861,10 +913,9 @@ class local_mymedia_renderer extends plugin_renderer_base {
         $slider_border = html_writer::tag('div', $progress_bar, $attr);
 
         $attr          = array('id' => 'loading_text');
-        $loading_text  = html_writer::tag('div', get_string('scr_loading', 'local_mymedia'), $attr);
+        $loading_text  = html_writer::tag('div', get_string('checkingforjava', 'local_mymedia'), $attr);
 
-        $attr   = array('id' => 'progress_bar_container',
-                        'style' => 'width:100px; padding-left:10px; padding-right:10px; visibility: hidden');
+        $attr   = array('id' => 'progress_bar_container');
         $output = $output . html_writer::tag('span', $slider_border . $loading_text, $attr);
 
         return $output;

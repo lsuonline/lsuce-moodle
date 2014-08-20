@@ -16,8 +16,7 @@
 /**
  * Kaltura video assignment grade submission page
  *
- * @package    mod
- * @subpackage kalvidassign
+ * @package    mod_kalvidassign
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -97,19 +96,26 @@ $jsmodule = array(
 );
 
 
-$courseid               = get_courseid_from_context($PAGE->context);
+$courseid               = $COURSE->id;
 $conversion_script      = "../../local/kaltura/check_conversion.php?courseid={$courseid}&entry_id=";
 $markup                 = $renderer->display_video_preview_markup();
 $markup                 .= $renderer->display_loading_markup();
 $uiconf_id              = local_kaltura_get_player_uiconf('player');
+$modalwidth             = 0;
+$modalheight            = 0;
+$videowidth             = 0;
+$videoheight            = 0;
 
-$PAGE->requires->js_init_call('M.local_kaltura.video_asignment_submission_view',
-                              array($conversion_script,
-                                    $markup, $uiconf_id), true, $jsmodule);
+list($modalwidth, $modalheight) = kalvidassign_get_player_dimensions();
+$videowidth = $modalwidth - KALTURA_POPUP_WIDTH_ADJUSTMENT;
+$videoheight = $modalheight - KALTURA_POPUP_HEIGHT_ADJUSTMENT;
+
+$PAGE->requires->js_init_call('M.local_kaltura.video_asignment_submission_view', array($conversion_script, $markup, $uiconf_id, $modalwidth, $modalheight,
+        $videowidth, $videoheight), true, $jsmodule);
 
 echo $OUTPUT->header();
 
-require_capability('mod/kalvidassign:gradesubmission', get_context_instance(CONTEXT_MODULE, $cm->id));
+require_capability('mod/kalvidassign:gradesubmission', context_module::instance($cm->id));
 
 add_to_log($course->id, 'kalvidassign', 'view submissions page', 'grade_submissions.php?cmid='.$cm->id, $kalvidassignobj->id, $cm->id);
 

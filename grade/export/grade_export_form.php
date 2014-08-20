@@ -110,10 +110,12 @@ class grade_export_form extends moodleform {
             $mform->addElement('text', 'iprestriction', get_string('keyiprestriction', 'userkey'), array('size'=>80));
             $mform->addHelpButton('iprestriction', 'keyiprestriction', 'userkey');
             $mform->setDefault('iprestriction', getremoteaddr()); // own IP - just in case somebody does not know what user key is
+            $mform->setType('iprestriction', PARAM_RAW_TRIMMED);
 
             $mform->addElement('date_time_selector', 'validuntil', get_string('keyvaliduntil', 'userkey'), array('optional'=>true));
             $mform->addHelpButton('validuntil', 'keyvaliduntil', 'userkey');
             $mform->setDefault('validuntil', time()+3600*24*7); // only 1 week default duration - just in case somebody does not know what user key is
+            $mform->setType('validuntil', PARAM_INT);
 
             $mform->disabledIf('iprestriction', 'key', 'noteq', 1);
             $mform->disabledIf('validuntil', 'key', 'noteq', 1);
@@ -151,9 +153,12 @@ class grade_export_form extends moodleform {
             }
         }
 
-        $mform->addElement('header', 'ferpa_header', get_string('ferpa_title', 'grades'));
-        $mform->addElement('checkbox', 'ferpa_required', null, get_string('ferpa_required', 'grades'));
-        $mform->addRule('ferpa_required', get_string('missing_ferpa_required', 'grades'), 'required');
+        if($CFG->privacy_ack) {
+            $mform->addElement('header', 'privacy_ack_header', get_string('privacy_ack', 'grades'));
+            $mform->addElement('checkbox', 'privacy_ack_required', null, get_string('privacy_ack_required', 'grades'));
+            $mform->addRule('privacy_ack_required', get_string('missing_privacy_ack_required', 'grades'), 'required');
+        }
+
         $mform->addElement('hidden', 'id', $COURSE->id);
         $mform->setType('id', PARAM_INT);
         $this->add_action_buttons(false, get_string('submit'));

@@ -4,7 +4,7 @@ global $CFG, $PAGE;
 //$courseid = required_param('id', PARAM_INT);
 $blockname = get_string('pluginname', 'block_sentinel');
 $PAGE->set_url('/blocks/sentinel/index.php');
-$PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));
+$PAGE->set_context(context_system::instance());
 //$PAGE->set_course($course);
 $PAGE->set_heading($blockname);
 $PAGE->set_title($blockname);

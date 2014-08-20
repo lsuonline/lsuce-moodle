@@ -138,18 +138,17 @@ class graded_users_iterator {
         export_verify_grades($this->course->id);
         $course_item = grade_item::fetch_course_item($this->course->id);
         if ($course_item->needsupdate) {
-            // can not calculate all final grades - sorry
+            // Can not calculate all final grades - sorry.
             return false;
         }
 
         $coursecontext = context_course::instance($this->course->id);
-        $relatedcontexts = get_related_contexts_string($coursecontext);
 
-        list($gradebookroles_sql, $params) =
-            $DB->get_in_or_equal(explode(',', $CFG->gradebookroles), SQL_PARAMS_NAMED, 'grbr');
+        list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal($coursecontext->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx');
+        list($gradebookroles_sql, $params) = $DB->get_in_or_equal(explode(',', $CFG->gradebookroles), SQL_PARAMS_NAMED, 'grbr');
         list($enrolledsql, $enrolledparams) = get_enrolled_sql($coursecontext, '', 0, $this->onlyactive);
 
-        $params = array_merge($params, $enrolledparams);
+        $params = array_merge($params, $enrolledparams, $relatedctxparams);
 
         if ($this->groupid) {
             $groupsql = "INNER JOIN {groups_members} gm ON gm.userid = u.id";
@@ -162,7 +161,7 @@ class graded_users_iterator {
         }
 
         if (empty($this->sortfield1)) {
-            // we must do some sorting even if not specified
+            // We must do some sorting even if not specified.
             $ofields = ", u.id AS usrt";
             $order   = "usrt ASC";
 
@@ -174,8 +173,8 @@ class graded_users_iterator {
                 $order   .= ", usrt2 $this->sortorder2";
             }
             if ($this->sortfield1 != 'id' and $this->sortfield2 != 'id') {
-                // user order MUST be the same in both queries,
-                // must include the only unique user->id if not already present
+                // User order MUST be the same in both queries,
+                // must include the only unique user->id if not already present.
                 $ofields .= ", u.id AS usrt";
                 $order   .= ", usrt ASC";
             }
@@ -192,14 +191,13 @@ class graded_users_iterator {
                             LEFT JOIN (SELECT * FROM {user_info_data}
                                 WHERE fieldid = :cf$customfieldscount) cf$customfieldscount
                             ON u.id = cf$customfieldscount.userid";
-                    $userfields .= ", cf$customfieldscount.data AS 'customfield_{$field->shortname}'";
+                    $userfields .= ", cf$customfieldscount.data AS customfield_{$field->shortname}";
                     $params['cf'.$customfieldscount] = $field->customid;
                     $customfieldscount++;
                 }
             }
         }
 
-        // $params contents: gradebookroles and groupid (for $groupwheresql)
         $users_sql = "SELECT $userfields $ofields
                         FROM {user} u
                         JOIN ($enrolledsql) je ON je.id = u.id
@@ -208,7 +206,7 @@ class graded_users_iterator {
                                   SELECT DISTINCT ra.userid
                                     FROM {role_assignments} ra
                                    WHERE ra.roleid $gradebookroles_sql
-                                     AND ra.contextid $relatedcontexts
+                                     AND ra.contextid $relatedctxsql
                              ) rainner ON rainner.userid = u.id
                          WHERE u.deleted = 0
                              $groupwheresql
@@ -226,7 +224,6 @@ class graded_users_iterator {
             $itemids = array_keys($this->grade_items);
             list($itemidsql, $grades_params) = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED, 'items');
             $params = array_merge($params, $grades_params);
-            // $params contents: gradebookroles, enrolledparams, groupid (for $groupwheresql) and itemids
 
             $grades_sql = "SELECT g.* $ofields
                              FROM {grade_grades} g
@@ -237,7 +234,7 @@ class graded_users_iterator {
                                       SELECT DISTINCT ra.userid
                                         FROM {role_assignments} ra
                                        WHERE ra.roleid $gradebookroles_sql
-                                         AND ra.contextid $relatedcontexts
+                                         AND ra.contextid $relatedctxsql
                                   ) rainner ON rainner.userid = u.id
                               WHERE u.deleted = 0
                               AND g.itemid $itemidsql
@@ -418,7 +415,7 @@ function print_graded_users_selector($course, $actionpage, $userid=0, $groupid=0
 }
 
 function grade_get_graded_users_select($report, $course, $userid, $groupid, $includeall) {
-    global $USER;
+    global $USER, $CFG;
 
     if (is_null($userid)) {
         $userid = $USER->id;
@@ -827,8 +824,6 @@ class grade_plugin_return {
     public $courseid;
     public $userid;
     public $page;
-    public $silast;
-    public $filast;
 
     /**
      * Constructor
@@ -842,8 +837,6 @@ class grade_plugin_return {
             $this->courseid = optional_param('gpr_courseid', null, PARAM_INT);
             $this->userid   = optional_param('gpr_userid', null, PARAM_INT);
             $this->page     = optional_param('gpr_page', null, PARAM_INT);
-            $this->silast      = optional_param('gpr_silast', null, PARAM_ALPHAEXT);
-            $this->filast    = optional_param('gpr_filast', null, PARAM_ALPHAEXT);
 
         } else {
             foreach ($params as $key=>$value) {
@@ -881,14 +874,6 @@ class grade_plugin_return {
             $params['page'] = $this->page;
         }
 
-        if (!empty($this->silast)) {
-            $params['silast'] = $this->silast;
-        }
-        
-        if (!empty($this->filast)) {
-            $params['filast'] = $this->filast;
-        }
-
         return $params;
     }
 
@@ -922,16 +907,6 @@ class grade_plugin_return {
 
         if (!empty($this->page)) {
             $url .= $glue.'page='.$this->page;
-            $glue = '&amp;';
-        }
-
-        if (!empty($this->silast)) {
-            $url .= $glue.'silast='.$this->silast;
-            $glue = '&amp;';
-        }
-
-        if (!empty($this->filast)) {
-            $url .= $glue.'filast='.$this->filast;
             $glue = '&amp;';
         }
 
@@ -971,14 +946,6 @@ class grade_plugin_return {
         if (!empty($this->page)) {
             $result .= '<input type="hidden" name="gpr_page" value="'.$this->page.'" />';
         }
-
-        if (!empty($this->silast)) {
-            $result .= '<input type="hidden" name="gpr_silast" value="'.$this->silast.'" />';
-        }
-
-        if (!empty($this->filast)) {
-            $result .= '<input type="hidden" name="gpr_filast" value="'.$this->filast.'" />';
-        }
     }
 
     /**
@@ -1015,16 +982,6 @@ class grade_plugin_return {
             $mform->addElement('hidden', 'gpr_page', $this->page);
             $mform->setType('gpr_page', PARAM_INT);
         }
-
-        if (!empty($this->silast)) {
-            $mform->addElement('hidden', 'gpr_silast', $this->silast);
-            $mform->setType('gpr_silast', PARAM_ALPHAEXT);
-        }
-
-        if (!empty($this->filast)) {
-            $mform->addElement('hidden', 'gpr_filast', $this->filast);
-            $mform->setType('gpr_filast', PARAM_ALPHAEXT);
-        }
     }
 
     /**
@@ -1055,14 +1012,6 @@ class grade_plugin_return {
 
         if (!empty($this->page)) {
             $url->param('gpr_page', $this->page);
-        }
-
-        if (!empty($this->silast)) {
-            $url->param('gpr_silast', $this->silast);
-        }
-
-        if (!empty($this->filast)) {
-            $url->param('gpr_filast', $this->filast);
         }
 
         return $url;
@@ -1591,6 +1540,10 @@ class grade_structure {
      */
     public function get_hiding_icon($element, $gpr) {
         global $CFG, $OUTPUT;
+
+        if (!$element['object']->can_control_visibility()) {
+            return '';
+        }
 
         if (!has_capability('moodle/grade:manage', $this->context) and
             !has_capability('moodle/grade:hide', $this->context)) {
@@ -2561,7 +2514,7 @@ abstract class grade_helper {
         $context = context_course::instance($courseid);
         $gradereports = array();
         $gradepreferences = array();
-        foreach (get_plugin_list('gradereport') as $plugin => $plugindir) {
+        foreach (core_component::get_plugin_list('gradereport') as $plugin => $plugindir) {
             //some reports make no sense if we're not within a course
             if ($courseid==$SITE->id && ($plugin=='grader' || $plugin=='user')) {
                 continue;
@@ -2727,7 +2680,7 @@ abstract class grade_helper {
         $context = context_course::instance($courseid);
 
         if (has_capability('moodle/grade:import', $context)) {
-            foreach (get_plugin_list('gradeimport') as $plugin => $plugindir) {
+            foreach (core_component::get_plugin_list('gradeimport') as $plugin => $plugindir) {
                 if (!has_capability('gradeimport/'.$plugin.':view', $context)) {
                     continue;
                 }
@@ -2765,7 +2718,7 @@ abstract class grade_helper {
         $context = context_course::instance($courseid);
         $exportplugins = array();
         if (has_capability('moodle/grade:export', $context)) {
-            foreach (get_plugin_list('gradeexport') as $plugin => $plugindir) {
+            foreach (core_component::get_plugin_list('gradeexport') as $plugin => $plugindir) {
                 if (!has_capability('gradeexport/'.$plugin.':view', $context)) {
                     continue;
                 }

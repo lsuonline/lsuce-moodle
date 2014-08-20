@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+
+/**
+ *
+ * @package    block_ues_people
+ * @copyright  2014 Louisiana State University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 abstract class ues_people {
     public static function primary_role() {
@@ -106,14 +128,14 @@ abstract class ues_people {
         $data->outputs = $outputs;
 
         // Plugin interference
-        events_trigger('ues_people_outputs', $data);
+        events_trigger_legacy('ues_people_outputs', $data);
 
         return $data->outputs;
     }
 
     public static function control_elements($meta_names) {
         $defaults = array(
-            'fullname' => get_string('fullname'),
+            'fullname' => get_string('alternatename') . ' (' . get_string('firstname') . ') ' . get_string('lastname'),
             'username' => get_string('username'),
             'idnumber' => get_string('idnumber')
         );
@@ -184,7 +206,7 @@ abstract class ues_people {
         );
         $attr['style'] = is_null($disagree) ? null : "color:red"; 
 
-        $ferpa_warning  = html_writer::tag('span',get_string('ferpa_required', 'grades'), $attr); 
+        $ferpa_warning  = html_writer::tag('span',get_string('downloadconfirm', 'block_ues_people'), $attr); 
         unset($attr);
 
         //build checkbox

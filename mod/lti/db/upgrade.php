@@ -35,8 +35,7 @@
 /**
  * This file keeps track of upgrades to the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -91,9 +90,14 @@ function xmldb_lti_upgrade($oldversion) {
         }
 
         // Lti savepoint reached.
-        upgrade_mod_savepoint(true, 2013100900, 'lti');
+        upgrade_mod_savepoint(true, 2014051200, 'lti');
     }
 
+    // Moodle v2.6.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Moodle v2.7.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

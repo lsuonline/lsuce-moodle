@@ -10,7 +10,12 @@ class block_quickmail extends block_list {
     }
 
     function applicable_formats() {
-        return array('site' => false, 'my' => false, 'course-view' => true);
+        global $USER;
+        if(is_siteadmin($USER->id) || has_capability('block/quickmail:myaddinstance', context_system::instance())) {
+            return array('site' => true, 'my' => true, 'course-view' => true);
+        } else {
+            return array('site' => false, 'my' => false, 'course-view' => true);
+        }
     }
     function has_config() {
         return true;
@@ -24,7 +29,7 @@ class block_quickmail extends block_list {
     }
     
     function get_content() {
-        global $CFG, $COURSE, $OUTPUT;
+        global $USER, $CFG, $COURSE, $OUTPUT;
 
         if ($this->content !== NULL) {
             return $this->content;
@@ -45,8 +50,8 @@ class block_quickmail extends block_list {
         $icon_class = array('class' => 'icon');
 
         $cparam = array('courseid' => $COURSE->id);
-        
-        if ($can_send) {
+
+        if ($can_send && $COURSE->id > 1) {
             $send_email_str = quickmail::_s('composenew');
             $send_email = html_writer::link(
                 new moodle_url('/blocks/quickmail/email.php', $cparam),
@@ -79,28 +84,50 @@ class block_quickmail extends block_list {
             );
             $this->content->items[] = $history;
             $this->content->icons[] = $OUTPUT->pix_icon('i/settings', $history_str, 'moodle', $icon_class);
-        }
 
-        if (has_capability('block/quickmail:allowalternate', $context)) {
-            $alt_str = quickmail::_s('alternate');
-            $alt = html_writer::link(
-                new moodle_url('/blocks/quickmail/alternate.php', $cparam),
-                $alt_str
-            );
+            if (has_capability('block/quickmail:allowalternate', $context)) {
+                $alt_str = quickmail::_s('alternate');
+                $alt = html_writer::link(
+                    new moodle_url('/blocks/quickmail/alternate.php', $cparam),
+                    $alt_str
+                );
 
-            $this->content->items[] = $alt;
-            $this->content->icons[] = $OUTPUT->pix_icon('i/edit', $alt_str, 'moodle', $icon_class);
-        }
-
-        if (has_capability('block/quickmail:canconfig', $context)) {
+                $this->content->items[] = $alt;
+                $this->content->icons[] = $OUTPUT->pix_icon('i/edit', $alt_str, 'moodle', $icon_class);
+            }
+            
+            if (has_capability('block/quickmail:canconfig', $context)) {
             $config_str = quickmail::_s('config');
             $config = html_writer::link(
-                new moodle_url('/blocks/quickmail/config.php', $cparam),
+                new moodle_url('/blocks/quickmail/config_qm.php', $cparam),
                 $config_str
             );
             $this->content->items[] = $config;
             $this->content->icons[] = $OUTPUT->pix_icon('i/settings', $config_str, 'moodle', $icon_class);
         }
+
+
+        }
+
+        if((has_capability('block/quickmail:myaddinstance', context_system::instance()) || is_siteadmin($USER->id)) && $COURSE->id == 1) {
+            $send_adminemail_str = quickmail::_s('sendadmin');
+            $send_adminemail = html_writer::link(
+                new moodle_url('/blocks/quickmail/admin_email.php'),
+                $send_adminemail_str
+            );
+            $this->content->items[] = $send_adminemail;
+            $this->content->icons[] = $OUTPUT->pix_icon('t/email', $send_adminemail_str, 'moodle', $icon_class);
+        } 
+        if (is_siteadmin($USER->id) && $COURSE->id == 1) {
+            $history_str = quickmail::_s('history');
+            $history = html_writer::link(
+                new moodle_url('/blocks/quickmail/emaillog.php', $cparam),
+                $history_str
+            );
+            $this->content->items[] = $history;
+            $this->content->icons[] = $OUTPUT->pix_icon('i/settings', $history_str, 'moodle', $icon_class);
+        }
+
 
         return $this->content;
     }

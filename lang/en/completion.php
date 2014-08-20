@@ -65,12 +65,14 @@ A tick next to the activity name on the course page indicates when the activity 
 $string['completion_link'] = 'activity/completion';
 $string['completion_manual'] = 'Students can manually mark the activity as completed';
 $string['completion_none'] = 'Do not indicate activity completion';
+$string['completionactivitydefault'] = 'Use activity default';
+$string['completiondefault'] = 'Default completion tracking';
 $string['completiondisabled'] = 'Disabled, not shown in activity settings';
 $string['completionenabled'] = 'Enabled, control via completion and activity settings';
 $string['completionexpected'] = 'Expect completed on';
 $string['completionexpected_help'] = 'This setting specifies the date when the activity is expected to be completed. The date is not shown to students and is only displayed in the activity completion report.';
 $string['completionicons'] = 'Completion tick boxes';
-$string['completionicons_help'] = 'A tick next an activity name may be used to indicate when the activity is complete.
+$string['completionicons_help'] = 'A tick next to an activity name may be used to indicate when the activity is complete.
 
 If a box with a dotted border is shown, a tick will appear automatically when you have completed the activity according to conditions set by the teacher.
 
@@ -88,6 +90,7 @@ $string['completionusegrade_desc'] = 'Student must receive a grade to complete t
 $string['completionusegrade_help'] = 'If enabled, the activity is considered complete when a student receives a grade. Pass and fail icons may be displayed if a pass grade for the activity has been set.';
 $string['completionview'] = 'Require view';
 $string['completionview_desc'] = 'Student must view this activity to complete it';
+$string['configcompletiondefault'] = 'The default setting for completion tracking when creating new activities.';
 $string['configenablecompletion'] = 'When enabled, this lets you turn on completion tracking (progress) features at course level.';
 $string['confirmselfcompletion'] = 'Confirm self completion';
 $string['courseaggregation'] = 'Condition requires';
@@ -108,6 +111,7 @@ $string['criteriarequiredany'] = 'Any criteria below are required';
 $string['csvdownload'] = 'Download in spreadsheet format (UTF-8 .csv)';
 $string['datepassed'] = 'Date passed';
 $string['days'] = 'Days';
+$string['daysoftotal'] = '{$a->days} of {$a->total}';
 $string['deletecompletiondata'] = 'Delete completion data';
 $string['dependencies'] = 'Dependencies';
 $string['dependenciescompleted'] = 'Completion of other courses';
@@ -121,8 +125,11 @@ $string['err_nocourses'] = 'Course completion is not enabled for any other cours
 $string['err_nograde'] = 'A course pass grade has not been set for this course. To enable this criteria type you must create a pass grade for this course.';
 $string['err_noroles'] = 'There are no roles with the capability moodle/course:markcomplete in this course.';
 $string['err_nousers'] = 'There are no students on this course or group for whom completion information is displayed. (By default, completion information is displayed only for students, so if there are no students, you will see this error. Administrators can alter this option via the admin screens.)';
-$string['err_settingslocked'] = 'One or more students have already completed a criteria so the settings have been locked. Unlocking the completion criteria settings will delete any existing user data and may cause confusion.';
+$string['err_settingslocked'] = 'One or more students have already completed a criterion so the settings have been locked. Unlocking the completion criteria settings will delete any existing user data and may cause confusion.';
 $string['err_system'] = 'An internal error occurred in the completion system. (System administrators can enable debugging information to see more detail.)';
+$string['eventcoursecompleted'] = 'Course completed';
+$string['eventcoursecompletionupdated'] = 'Course completion updated';
+$string['eventcoursemodulecompletionupdated'] = 'Course module completion updated';
 $string['excelcsvdownload'] = 'Download in Excel-compatible format (.csv)';
 $string['fraction'] = 'Fraction';
 $string['graderequired'] = 'Required course grade';

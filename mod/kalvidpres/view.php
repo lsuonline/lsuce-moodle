@@ -63,7 +63,7 @@ $PAGE->requires->js('/local/kaltura/js/swfobject.js', true);
 $PAGE->requires->js('/local/kaltura/js/kcwcallback.js', true);
 
 // Check if the user has the capability to manage activites
-$context = get_context_instance(CONTEXT_COURSE, $cm->course);
+$context = context_course::instance($cm->course);
 if (has_capability('moodle/course:manageactivities', $context)) {
     $admin_mode = '1';
 }

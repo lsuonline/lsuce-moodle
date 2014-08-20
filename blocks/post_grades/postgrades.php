@@ -16,7 +16,7 @@ $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 $group = $DB->get_record('groups', array('id' => $groupid), '*', MUST_EXIST);
 $period = $DB->get_record('block_post_grades_periods', array('id' => $periodid), '*', MUST_EXIST);
 
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 
 require_capability('block/post_grades:canpost', $context);
 

@@ -55,7 +55,10 @@ class grader_report_preferences_form extends moodleform {
         if (has_capability('moodle/grade:manage', $context)) {
 
             $preferences['prefshow'] = array();
-            $preferences['prefshow']['showcalculations']  = $checkbox_default;
+            // if no calculations setting is turned on, don't show this option
+            if(!get_config('moodle', 'grade_report_nocalculations')){
+                $preferences['prefshow']['showcalculations']  = $checkbox_default;
+            }
             $preferences['prefshow']['showeyecons']       = $checkbox_default;
             if ($canviewhidden) {
                 $preferences['prefshow']['showaverages']  = $checkbox_default;
@@ -94,7 +97,6 @@ class grader_report_preferences_form extends moodleform {
         // quickgrading and showquickfeedback are conditional on grade:edit capability
         if (has_capability('moodle/grade:edit', $context)) {
             $preferences['prefgeneral']['quickgrading'] = $checkbox_default;
-            $preferences['prefgeneral']['integrate_quick_edit'] = $checkbox_default;
             $preferences['prefgeneral']['showquickfeedback'] = $checkbox_default;
         }
 

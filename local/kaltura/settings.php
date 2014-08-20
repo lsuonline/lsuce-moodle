@@ -16,8 +16,7 @@
 /**
  * Kaltura video assignment grade preferences form
  *
- * @package    local
- * @subpackage kaltura
+ * @package    local_kaltura
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -46,10 +45,10 @@ $param = optional_param('section', '', PARAM_TEXT);
 $settings_page = !strcmp(KALTURA_PLUGIN_NAME, $param);
 
 // Check if the upgrade page is being displayed
-$upgrade_page = strpos($_SERVER['REQUEST_URI'], "/admin/upgradesettings.php");
+$upgrade_page = isset($_SERVER['REQUEST_URI']) ? strpos($_SERVER['REQUEST_URI'], "/admin/upgradesettings.php") : false;
 
 // Check if a global search was performed
-$global_search_page = strpos($_SERVER['REQUEST_URI'], "/admin/search.php");
+$global_search_page = isset($_SERVER['REQUEST_URI']) ? strpos($_SERVER['REQUEST_URI'], "/admin/search.php") : false;
 
 $enable_api_calls = $settings_page || $upgrade_page || $global_search_page;
 
@@ -226,6 +225,15 @@ if ($hassiteconfig) {
     $adminsetting->plugin = KALTURA_PLUGIN_NAME;
     $settings->add($adminsetting);
 
+    $adminsetting = new admin_setting_configtext('kalvidassign_player_width', get_string('kalvidassign_player_width', 'local_kaltura'),
+            get_string('kalvidassign_player_width_desc', 'local_kaltura'), '400', PARAM_INT);
+    $adminsetting->plugin = KALTURA_PLUGIN_NAME;
+    $settings->add($adminsetting);
+
+    $adminsetting = new admin_setting_configtext('kalvidassign_player_height', get_string('kalvidassign_player_height', 'local_kaltura'),
+            get_string('kalvidassign_player_height_desc', 'local_kaltura'), '365', PARAM_INT);
+    $adminsetting->plugin = KALTURA_PLUGIN_NAME;
+    $settings->add($adminsetting);
 
     // Kaltura resource regular player
     $settings->add(new admin_setting_heading('kaltura_kalvidres_heading',

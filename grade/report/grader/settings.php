@@ -65,8 +65,12 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('grade_report_enableajax', get_string('enableajax', 'grades'),
                                                 get_string('enableajax_help', 'grades'), 0));
 
-    $settings->add(new admin_setting_configcheckbox('grade_report_showcalculations', get_string('showcalculations', 'grades'),
+    if(!get_config('moodle', 'grade_report_nocalculations')){
+        $settings->add(new admin_setting_configcheckbox('grade_report_showcalculations', get_string('showcalculations', 'grades'),
                                                 get_string('showcalculations_help', 'grades'), 0));
+    } else {
+        $settings->add(new admin_setting_configempty('grade_report_showcalculations', get_string('showcalculations', 'grades'), get_string('showcalculationsWITH_NO_CALC_help', 'grades'), 0));
+    }
 
     $settings->add(new admin_setting_configcheckbox('grade_report_showeyecons', get_string('showeyecons', 'grades'),
                                                 get_string('showeyecons_help', 'grades'), 0));
@@ -128,4 +132,6 @@ if ($ADMIN->fulltree) {
                                                      '4' => '4',
                                                      '5' => '5')));
 
+    $settings->add(new admin_setting_configcheckbox('grade_report_nameswap', get_string('nameswap', 'grades'),
+                                                get_string('nameswap_help', 'grades'), 0));
 }

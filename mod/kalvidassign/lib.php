@@ -286,8 +286,6 @@ function kalvidassign_supports($feature) {
  * @return int, 0 if ok, error code otherwise
  */
 function kalvidassign_grade_item_update($kalvidassign, $grades=NULL) {
-    global $CFG;
-
     require_once(dirname(dirname(dirname(__FILE__))) . '/lib/gradelib.php');
 
     $params = array('itemname'=>$kalvidassign->name, 'idnumber'=>$kalvidassign->cmidnumber);

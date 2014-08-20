@@ -11,24 +11,64 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * mh_add_to_log is a quick hack to avoid add_to_log debugging
+ */
+function mh_add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0) {
+    if (function_exists('get_log_manager')) {
+        $manager = get_log_manager();
+        $manager->legacy_add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    } else if (function_exists('add_to_log')) {
+        add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    }
+}
+
+/**
  *
  * @param string $linktype
+ * @param bool $forcefetch
  * @return bool|array|string
  */
-function block_mhaairs_getlinks($linktype) {
-    global $COURSE, $PAGE, $USER, $CFG;
-
-    if (empty($CFG->block_mhaairs_customer_number)) { // Do we have number?
+function block_mhaairs_getlinks($linktype, $forcefetch=false) {
+    $customer_number = get_config('core', 'block_mhaairs_customer_number');
+    if ($customer_number === false) { // Do we have number?
         return false;
     }
 
-    require($CFG->dirroot.'/local/mr/bootstrap.php');
+    $cachename = "block_mhaairs_cache{$linktype}";
+    if (!$forcefetch) {
+        $cached = get_config('core', $cachename);
+        if ($cached !== false) {
+            $result = unserialize($cached);
+            return $result;
+        }
+    }
 
-    mr_bootstrap::zend();
+    static $zendready = false;
+    if (!$zendready) {
+        $dir = get_config('core', 'dirroot');
+        // Use MR framework Zend if installed otherwise rewert to local copy of Zend.
+        try {
+            $bootstrapfile = "{$dir}/local/mr/bootstrap.php";
+            if (file_exists($bootstrapfile)) {
+                require($bootstrapfile);
+                mr_bootstrap::zend();
+                $zendready = true;
+            }
+        } catch (Exception $e) {
+            // Silence any exception.
+        }
 
+        if (!$zendready) {
+            set_include_path(get_include_path().PATH_SEPARATOR.$dir.'/blocks/mhaairs/lib');
+            $zendready = true;
+        }
+    }
+
+    // @codingStandardsIgnoreStart
     require_once('Zend/Json.php');
     require_once('Zend/Oauth/Consumer.php');
     require_once('Zend/Oauth/Client.php');
+    // @codingStandardsIgnoreEnd
 
     $endpoint = 'GetHelpLinks';
     if ($linktype == 'services') {
@@ -36,7 +76,7 @@ function block_mhaairs_getlinks($linktype) {
     }
 
     $baseurl = 'http://mhaairs.tegrity.com/v1/Config/';
-    $url = $baseurl.$CFG->block_mhaairs_customer_number.'/'.$endpoint;
+    $url = $baseurl.$customer_number.'/'.$endpoint;
 
     $aconfig = array(
             'requestScheme'   => Zend_Oauth::REQUEST_SCHEME_QUERYSTRING,
@@ -49,15 +89,15 @@ function block_mhaairs_getlinks($linktype) {
     $result_data = false;
     try {
         $tacc = new Zend_Oauth_Token_Access();
-        $client = $tacc->getHttpClient($aconfig);
-        $client->setUri($url);
-        $client->setMethod(Zend_Http_Client::GET);
+        $client = $tacc->getHttpClient($aconfig, $url);
+        $client->setMethod(Zend_Oauth_Client::GET);
+        $client->setEncType(Zend_Oauth_Client::ENC_URLENCODED);
 
         $response    = $client->request();
         $result_data = $response->getBody();
 
         // Get content type.
-        $result_type = $response->getHeader('Content-Type');
+        $result_type = $response->getHeader(Zend_Oauth_Client::CONTENT_TYPE);
 
         // Is this Json encoded data?
         if (stripos($result_type, 'application/json') !== false) {
@@ -76,7 +116,10 @@ function block_mhaairs_getlinks($linktype) {
     }
 
     $logmsg = $status . ": " . $description;
-    add_to_log(SITEID, 'mhaairs', 'block mhaairs_getlinks', '', $logmsg);
+    mh_add_to_log(SITEID, 'mhaairs', 'block mhaairs_getlinks', '', $logmsg);
+
+    $tostore = serialize($result_data);
+    set_config($cachename, $tostore);
 
     return $result_data;
 }

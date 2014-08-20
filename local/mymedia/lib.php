@@ -34,11 +34,10 @@ function local_mymedia_extends_navigation($navigation) {
 
     if (isloggedin()) {
         $node_home = $navigation->get('myprofile');
+        $context = context_user::instance($USER->id);
     } else {
         $node_home = $navigation->get('home');
     }
-
-    $context = get_context_instance(CONTEXT_USER, $USER->id);
 
     if ($node_home && has_capability('local/mymedia:view', $context, $USER)) {
         $node_mymedia = $node_home->add($mymedia, new moodle_url('/local/mymedia/mymedia.php'),

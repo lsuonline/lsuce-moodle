@@ -217,9 +217,7 @@ class block_bfwpub extends block_base {
      * @return array an array of all course areas this block should be allowed to appear
      */
     function applicable_formats() {
-        return array(
-            'all' => true
-        );
+        return array('site' => false, 'my' => false, 'course-view' => true);
     }
 
 }

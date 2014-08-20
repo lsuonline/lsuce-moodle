@@ -11,9 +11,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 function xmldb_block_mhaairs_upgrade($oldversion = 0) {
-
-    global $CFG, $DB;
-    $dbman = $DB->get_manager();
+    global $DB;
 
     $result = true;
 
@@ -49,13 +47,34 @@ function xmldb_block_mhaairs_upgrade($oldversion = 0) {
                         $DB->delete_records_list($tbl, 'id', $delete_arr);
                         $transaction->allow_commit();
                     } catch (Exception $e) {
-                        $transaction->rollback($e);
+                        if (!empty($transaction) && !$transaction->is_disposed()) {
+                            $transaction->rollback($e);
+                        }
                     }
                 } catch (Exception $e) {
                     $result = false;
                 }
             }
         }
+    }
+
+    if ($result && $oldversion < 2013120203) {
+        global $CFG;
+        require_once($CFG->dirroot.'/lib/externallib.php');
+        external_delete_descriptions('local_aairsgradebook');
+        upgrade_block_savepoint($result, 2013120203, 'mhaairs');
+    }
+
+    if ($result && ($oldversion < 2013120204)) {
+        // Is Redis extension present?
+        if (class_exists('Redis')) {
+            $redisrv = get_config('core', 'local_mr_redis_server');
+            if (!empty($redisrv)) {
+                set_config('block_mhaairs_locktype', 'redislock');
+            }
+        }
+
+        upgrade_block_savepoint($result, 2013120204, 'mhaairs');
     }
 
     return $result;

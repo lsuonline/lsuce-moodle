@@ -49,6 +49,7 @@ require_capability('moodle/grade:manage', $context);
 $gpr = new grade_plugin_return();
 $returnurl = $gpr->get_return_url('index.php?id='.$course->id);
 
+
 $heading = get_string('categoryedit', 'grades');
 
 $curve_to = get_config('moodle', 'grade_multfactor_alt');
@@ -74,6 +75,7 @@ if ($id) {
     $category->grade_item_grademax   = format_float($category->grade_item_grademax, $decimalpoints);
     $category->grade_item_grademin   = format_float($category->grade_item_grademin, $decimalpoints);
     $category->grade_item_gradepass  = format_float($category->grade_item_gradepass, $decimalpoints);
+    $category->grade_item_multfactor = format_float($category->grade_item_multfactor, 4);
     $category->grade_item_plusfactor = format_float($category->grade_item_plusfactor, 4);
 
     if (!$parent_category) {
@@ -178,7 +180,7 @@ if ($mform->is_cancelled()) {
         }
     }
 
-    // Special handling of curve to
+    // Special handling of curve-to
     if ($curve_to) {
         if (empty($itemdata->multfactor) || $itemdata->multfactor <= 0.0000) {
             $itemdata->multfactor = 1.0000;

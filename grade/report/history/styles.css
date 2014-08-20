@@ -1,0 +1,49 @@
+/* History */
+
+#page-grade-report-history-index th#excludedheader {
+    white-space: normal;
+}
+
+#page-grade-report-history-index th#excludedheader p {
+    width: 75px;
+}
+
+#page-grade-report-history-index table#gradestable th.header.selected {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.path-grade-report-history div.gradeparent {
+    overflow-x: scroll;
+}
+
+.path-grade-report-history .singlebutton div {
+    margin-bottom: 0px;
+}
+
+.path-grade-report-history .singlebutton div input[type="button"] {
+    margin-bottom: 0px;
+}
+
+#page-grade-report-history-index div.region-content {
+   text-align: center;
+}
+
+#page-grade-report-history-index form.mform {
+    text-align: left;
+    width: 850px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+
+#page-grade-report-history-index div.gradeparent {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 0;
+    overflow-x: auto;
+}
+
+#page-grade-report-history-index div.gradeparent table.gradestable.flexible.boxaligncenter.generaltable {
+    margin: 0;
+}

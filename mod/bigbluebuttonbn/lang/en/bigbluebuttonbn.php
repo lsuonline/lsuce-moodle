@@ -6,13 +6,14 @@
  *    Fred Dixon  (ffdixon [at] blindsidenetworks [dt] com)
  *    Jesus Federico  (jesus [at] blindsidenetworks [dt] com)
  *    
- *
  * @package   mod_bigbluebuttonbn
- * @copyright 2010-2012 Blindside Networks
+ * @copyright 2010-2014 Blindside Networks Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v2 or later
  */
 defined('MOODLE_INTERNAL') || die();
 
+$string['bbballowallmoderators'] = 'Show setting that will allow the teacher to allow all students to moderate the session';
+$string['bbballowrecording'] = 'Show setting that will allow the user to record the session';
 $string['bbbduetimeoverstartingtime'] = 'The due time for this activity must be greater than the starting time';
 $string['bbbdurationwarning'] = 'The maximum duration for this session is %duration% minutes.';
 $string['bbbfinished'] = 'This activity is over.';
@@ -20,15 +21,15 @@ $string['bbbinprocess'] = 'This activity is in process.';
 $string['bbbnorecordings'] = 'There is no recording yet, please come back later.';
 $string['bbbnotavailableyet'] = 'Sorry, this session is not yet available.';
 $string['bbbrecordwarning'] = 'This session is being recorded.';
-$string['bbballowrecording'] = 'Show setting that will allow the user to record the session';
 $string['bbburl'] = 'The URL of your BigBlueButton server must end with /bigbluebutton/. (This default URL is for a BigBlueButton server provided by Blindside Networks that you can use for testing.)';
 $string['bigbluebuttonbn:join'] = 'Join a meeting';
 $string['bigbluebuttonbn:moderate'] = 'Moderate a meeting';
 $string['bigbluebuttonbn:addinstance'] = 'Add a new meeting';
 $string['bigbluebuttonbn'] = 'BigBlueButton';
+$string['bigbluebuttonbnAllowAllModerators'] = 'Allow All Students To Moderate';
+$string['bigbluebuttonbnAllowRecording'] = 'BigBlueButton Allow Recording';
 $string['bigbluebuttonbnfieldset'] = 'Custom example field set';
 $string['bigbluebuttonbnintro'] = 'BigBlueButton Intro';
-$string['bigbluebuttonbnAllowRecording'] = 'BigBlueButton Allow Recording';
 $string['bigbluebuttonbnSalt'] = 'BigBlueButton Shared Secret';
 $string['bigbluebuttonbnUrl'] = 'BigBlueButton Server URL';
 $string['bigbluebuttonbnWait'] = 'User has to wait';
@@ -67,6 +68,7 @@ $string['mod_form_field_record'] = 'Record';
 $string['mod_form_field_voicebridge_help'] = 'Voice conference number that participants enter to join the voice conference.';
 $string['mod_form_field_voicebridge'] = 'Voice bridge';
 $string['mod_form_field_wait'] = 'Students must wait until a moderator joins';
+$string['mod_form_field_allmoderators'] = "Allow all participants to be moderators";
 $string['mod_form_field_welcome_default'] = '<br>Welcome to <b>%%CONFNAME%%</b>!<br><br>To understand how BigBlueButton works see our <a href="event:http://www.bigbluebutton.org/content/videos"><u>tutorial videos</u></a>.<br><br>To join the audio bridge click the headset icon (upper-left hand corner). <b>Please use a headset to avoid causing noise for others.</b>';
 $string['mod_form_field_welcome_help'] = 'Replaces the default message setted up for the BigBlueButton server. The message can includes keywords  (%%CONFNAME%%, %%DIALNUM%%, %%CONFNUM%%) which will be substituted automatically, and also html tags like <b>...</b> or <i></i> ';
 $string['mod_form_field_welcome'] = 'Welcome message';

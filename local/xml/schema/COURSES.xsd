@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:element name="rows">
+        <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="ROW" type="rowType"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    
+    
+    <xs:complexType name="rowType">
+        <xs:all>
+            <!-- This element is not currently used, but there is
+            every reason to think it may be useful in the future. -->
+            <xs:element name="CAMPUS_CODE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="DEPT_CODE" type="xs:string"/>
+            <xs:element name="COURSE_NBR" type="courseNumberType"/>
+            <xs:element name="SECTION_NBR" type="xs:string"/>
+            <xs:element name="CLASS_TYPE" type="xs:string"/>
+            <xs:element name="COURSE_TITLE" type="xs:string"/>
+            <xs:element name="GRADE_SYSTEM_CODE" type="xs:string"/>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:simpleType name="departmentType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="10"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="courseNumberType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="4"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="fullnameType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="255"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="sectionNumberType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="3"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="classTypeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="LAB" />
+            <xs:enumeration value="LEC" />
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

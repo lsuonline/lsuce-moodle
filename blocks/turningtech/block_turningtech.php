@@ -61,8 +61,8 @@ class block_turningtech extends block_base {
             $block = block_instance('turningtech', $instance);
 
             //get the course object 
-            $context = get_context_instance_by_id($block->parentcontextid);
-            $course = get_course(get_courseid_from_context($context));
+            $context = $block->parentcontextid->get_course_context(false);
+            $course = get_course($context->instanceid);
             
             //get the enrollment of the course
             $enrolleduserids = get_enrolled_users('', '', 0, 'u.id');
@@ -129,7 +129,7 @@ class block_turningtech extends block_base {
               title = '{$tooltip}'>" .
                                              get_string('managemydevices', 'block_turningtech') . "</a></div>\n";
         } else if (TurningTechMoodleHelper::isuserinstructorincourse($USER, $COURSE)) {
-            $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+            $context = context_course::instance($COURSE->id);
             if (!has_capability('moodle/site:config', $context)) {
                 $this->content->text = "<a href='{$CFG->wwwroot}/mod/turningtech/device_lookup.php?id={$COURSE->id}'>" .
                  get_string('searchturningtechcourse', 'block_turningtech') .

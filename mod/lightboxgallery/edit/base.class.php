@@ -41,7 +41,7 @@ class edit_base {
         $this->image = $_image;
         $this->tab = $_tab;
         $this->showthumb = $_showthumb;
-        $this->context = get_context_instance(CONTEXT_MODULE, $this->cm->id);
+        $this->context = context_module::instance($this->cm->id);
     }
 
     public function processing() {

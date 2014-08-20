@@ -150,8 +150,9 @@ abstract class post_grades {
 
     public static function find_postings_by_shortname($shortname) {
         global $DB;
+        $mainuserfields = user_picture::fields('u', array('id'), 'userid');
 
-        $sql = 'SELECT post.id, u.firstname, u.lastname,
+        $sql = 'SELECT post.id, ' . $mainuserfields . ',
                        sec.sec_number, p.post_type, c.fullname
             FROM {course} c,
                  {enrol_ues_sections} sec,

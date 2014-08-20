@@ -57,8 +57,7 @@ class edit_item_form extends moodleform {
         $mform->addHelpButton('idnumber', 'idnumbermod');
         $mform->setType('idnumber', PARAM_RAW);
 
-        $options = array(//GRADE_TYPE_NONE=>get_string('typenone', 'grades'),
-                         GRADE_TYPE_VALUE=>get_string('typevalue', 'grades'),
+        $options = array(GRADE_TYPE_VALUE=>get_string('typevalue', 'grades'),
                          GRADE_TYPE_SCALE=>get_string('typescale', 'grades'),
                          GRADE_TYPE_TEXT=>get_string('typetext', 'grades'));
 
@@ -126,7 +125,6 @@ class edit_item_form extends moodleform {
             $mform->addElement('text', 'multfactor', get_string('multfactor', 'grades'));
             $mform->addHelpButton('multfactor', 'multfactor', 'grades');
         }
-
         $mform->setAdvanced('multfactor');
         $mform->disabledIf('multfactor', 'gradetype', 'eq', GRADE_TYPE_NONE);
         $mform->disabledIf('multfactor', 'gradetype', 'eq', GRADE_TYPE_TEXT);
@@ -266,7 +264,6 @@ class edit_item_form extends moodleform {
             if (!$grade_item->is_raw_used()) {
                 $mform->removeElement('plusfactor');
                 $mform->removeElement('multfactor');
-
                 if ($mform->elementExists('curve_to')) {
                     $mform->removeElement('curve_to');
                 }
@@ -343,6 +340,11 @@ class edit_item_form extends moodleform {
                     }
                 }
             }
+
+        } else {
+            // all new items don't need these options
+            $mform->removeElement('plusfactor');
+            $mform->removeElement('multfactor');
         }
 
         // no parent header for course category

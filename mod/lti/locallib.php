@@ -35,8 +35,7 @@
 /**
  * This file contains the library of functions and constants for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -185,6 +184,19 @@ function lti_view($instance) {
 
     if (!empty($key) && !empty($secret)) {
         $parms = lti_sign_parameters($requestparams, $endpoint, "POST", $key, $secret);
+
+        $endpointurl = new moodle_url($endpoint);
+        $endpointparams = $endpointurl->params();
+
+        // Strip querystring params in endpoint url from $parms to avoid duplication.
+        if (!empty($endpointparams) && !empty($parms)) {
+            foreach (array_keys($endpointparams) as $paramname) {
+                if (isset($parms[$paramname])) {
+                    unset($parms[$paramname]);
+                }
+            }
+        }
+
     } else {
         //If no key and secret, do the launch unsigned.
         $parms = $requestparams;
@@ -237,7 +249,7 @@ function lti_build_request($instance, $typeconfig, $course) {
 
     $role = lti_get_ims_role($USER, $instance->cmid, $instance->course);
 
-//    if (find the vlue for the setting->shortname or ignore the if/else and add it below in the 'context_label' => $course->my special value here) {
+//  if (find the vlue for the setting->shortname or ignore the if/else and add it below in the 'context_label' => $course->my special value here) {
     if(isset($typeconfig['courseidoptions'])) {
         switch ($typeconfig['courseidoptions']) {
             case 0:
@@ -255,16 +267,16 @@ function lti_build_request($instance, $typeconfig, $course) {
     }
 
     $requestparams = array(
-            'resource_link_id' => $instance->id,
-            'resource_link_title' => $instance->name,
-            'resource_link_description' => $instance->intro,
-            'user_id' => $USER->id,
-            'roles' => $role,
-            'context_id' => $course->id,
-            'context_label' => $label,
-            'context_title' => $course->fullname,
-            'launch_presentation_locale' => current_language()
-        );
+        'resource_link_id' => $instance->id,
+        'resource_link_title' => $instance->name,
+        'resource_link_description' => $instance->intro,
+        'user_id' => $USER->id,
+        'roles' => $role,
+        'context_id' => $course->id,
+        'context_label' => $course->shortname,
+        'context_title' => $course->fullname,
+        'launch_presentation_locale' => current_language()
+    );
 
     $placementsecret = $instance->servicesalt;
 
@@ -378,7 +390,7 @@ function lti_get_tool_table($tools, $id) {
         ";
 
         foreach ($tools as $type) {
-            $date = userdate($type->timecreated);
+            $date = userdate($type->timecreated, get_string('strftimedatefullshort', 'core_langconfig'));
             $accept = get_string('accept', 'lti');
             $update = get_string('update', 'lti');
             $delete = get_string('delete', 'lti');
@@ -408,13 +420,13 @@ function lti_get_tool_table($tools, $id) {
             $updateurl = clone($baseurl);
             $updateurl->param('action', 'update');
             $updatehtml = $OUTPUT->action_icon($updateurl,
-                    new pix_icon('t/edit', $accept, '', array('class' => 'iconsmall')), null,
+                    new pix_icon('t/edit', $update, '', array('class' => 'iconsmall')), null,
                     array('title' => $update, 'class' => 'editing_update'));
 
             $deleteurl = clone($baseurl);
             $deleteurl->param('action', $deleteaction);
             $deletehtml = $OUTPUT->action_icon($deleteurl,
-                    new pix_icon('t/delete', $accept, '', array('class' => 'iconsmall')), null,
+                    new pix_icon('t/delete', $delete, '', array('class' => 'iconsmall')), null,
                     array('title' => $delete, 'class' => 'editing_delete'));
             $html .= "
             <tr>
@@ -456,8 +468,8 @@ function lti_split_custom_parameters($customstr) {
         if ( $pos === false || $pos < 1 ) {
             continue;
         }
-        $key = trim(textlib::substr($line, 0, $pos));
-        $val = trim(textlib::substr($line, $pos+1, strlen($line)));
+        $key = trim(core_text::substr($line, 0, $pos));
+        $val = trim(core_text::substr($line, $pos+1, strlen($line)));
         $key = lti_map_keyname($key);
         $retval['custom_'.$key] = $val;
     }
@@ -473,7 +485,7 @@ function lti_split_custom_parameters($customstr) {
  */
 function lti_map_keyname($key) {
     $newkey = "";
-    $key = textlib::strtolower(trim($key));
+    $key = core_text::strtolower(trim($key));
     foreach (str_split($key) as $ch) {
         if ( ($ch >= 'a' && $ch <= 'z') || ($ch >= '0' && $ch <= '9') ) {
             $newkey .= $ch;
@@ -536,7 +548,7 @@ function lti_get_type_config($typeid) {
                 FROM {lti_types_config}
                WHERE typeid = :typeid1
            UNION ALL
-              SELECT 'toolurl' AS name, baseurl AS value
+              SELECT 'toolurl' AS name, " . $DB->sql_compare_text('baseurl', 1333) . " AS value
                 FROM {lti_types}
                WHERE id = :typeid2";
 
@@ -633,7 +645,7 @@ function lti_get_types_for_add_instance() {
     $admintypes = $DB->get_records_sql($query, array('siteid' => $SITE->id, 'courseid' => $COURSE->id, 'active' => LTI_TOOL_STATE_CONFIGURED));
 
     $types = array();
-    $types[0] = (object)array('name' => get_string('automatic', 'lti'), 'course' => $SITE->id);
+    $types[0] = (object)array('name' => get_string('automatic', 'lti'), 'course' => 0);
 
     foreach ($admintypes as $type) {
         $types[$type->id] = $type;
@@ -812,7 +824,7 @@ function lti_get_type_config_from_instance($id) {
     if (isset($config['instructorchoicesendusername'])) {
         $type->lti_sendusername = $config['instructorchoicesendusername'];
     }
-    if (isset($config['instructorchoicesendname'])) {
+    if (isset($config['instructorchoice ndname'])) {
         $type->lti_sendname = $config['instructorchoicesendname'];
     }
     if (isset($config['instructorchoicesendemailaddr'])) {
@@ -824,6 +836,7 @@ function lti_get_type_config_from_instance($id) {
     if (isset($config['instructorchoiceallowroster'])) {
         $type->lti_allowroster = $config['instructorchoiceallowroster'];
     }
+
     if (isset($config['instructorcustomparameters'])) {
         $type->lti_allowsetting = $config['instructorcustomparameters'];
     }
@@ -857,7 +870,6 @@ function lti_get_type_type_config($id) {
     if (isset($config['password'])) {
         $type->lti_password = $config['password'];
     }
-
     if (isset($config['sendusername'])) {
         $type->lti_sendusername = $config['sendusername'];
     }
@@ -888,15 +900,12 @@ function lti_get_type_type_config($id) {
     if (isset($config['instructorchoiceallowroster'])) {
         $type->lti_instructorchoiceallowroster = $config['instructorchoiceallowroster'];
     }
-
     if (isset($config['customparameters'])) {
         $type->lti_customparameters = $config['customparameters'];
     }
-
     if (isset($config['forcessl'])) {
         $type->lti_forcessl = $config['forcessl'];
     }
-
     if (isset($config['organizationid'])) {
         $type->lti_organizationid = $config['organizationid'];
     }
@@ -909,19 +918,15 @@ function lti_get_type_type_config($id) {
     if (isset($config['launchcontainer'])) {
         $type->lti_launchcontainer = $config['launchcontainer'];
     }
-
     if (isset($config['coursevisible'])) {
         $type->lti_coursevisible = $config['coursevisible'];
     }
-
     if (isset($config['debuglaunch'])) {
         $type->lti_debuglaunch = $config['debuglaunch'];
     }
-
     if (isset($config['module_class_type'])) {
         $type->lti_module_class_type = $config['module_class_type'];
     }
-
     if (isset($config['courseidoptions'])) {
         $type->lti_courseidoptions = $config['courseidoptions'];
     }
@@ -945,7 +950,7 @@ function lti_prepare_type_for_save($type, $config) {
     if(isset($config->lti_courseidoptions)){
         $type->courseidoptions = $config->lti_courseidoptions;
     }
-    
+
     unset ($config->lti_typename);
     unset ($config->lti_toolurl);
 }
@@ -1179,12 +1184,12 @@ function lti_get_launch_container($lti, $toolconfig) {
         $launchcontainer = LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS;
     }
 
-    $devicetype = get_device_type();
+    $devicetype = core_useragent::get_device_type();
 
     //Scrolling within the object element doesn't work on iOS or Android
     //Opening the popup window also had some issues in testing
     //For mobile devices, always take up the entire screen to ensure the best experience
-    if ($devicetype === 'mobile' || $devicetype === 'tablet' ) {
+    if ($devicetype === core_useragent::DEVICETYPE_MOBILE || $devicetype === core_useragent::DEVICETYPE_TABLET ) {
         $launchcontainer = LTI_LAUNCH_CONTAINER_REPLACE_MOODLE_WINDOW;
     }
 
@@ -1202,7 +1207,7 @@ function lti_ensure_url_is_https($url) {
     } else {
         //If the URL starts with http, replace with https
         if (stripos($url, 'http://') === 0) {
-            $url = 'https://' . substr($url, 8);
+            $url = 'https://' . substr($url, 7);
         }
     }
 

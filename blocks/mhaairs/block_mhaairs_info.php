@@ -1,6 +1,7 @@
 <?php
 
 require_once('../../config.php');
+global $CFG;
 require_once($CFG->libdir .'/accesslib.php');
 require_once($CFG->libdir .'/datalib.php');
 require_once($CFG->libdir .'/moodlelib.php');

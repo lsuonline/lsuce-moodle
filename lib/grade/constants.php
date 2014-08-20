@@ -239,7 +239,6 @@ define('GRADE_REPORT_MEAN_ALL', 0);
  */
 define('GRADE_REPORT_MEAN_GRADED', 1);
 
-
 /**
  * GRADE_REPORT_MEAN_GRADED_NO_ZEROS - Only include grade items where the student has a grade greater than 0 when calculating the mean.
  */

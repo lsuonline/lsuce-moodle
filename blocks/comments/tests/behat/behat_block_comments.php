@@ -17,7 +17,7 @@
 /**
  * Commenting system steps definitions.
  *
- * @package    core_comment
+ * @package    block_comments
  * @category   test
  * @copyright  2013 David Monllaó
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -33,7 +33,7 @@ use Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException,
 /**
  * Steps definitions to deal with the commenting system
  *
- * @package    core_comment
+ * @package    block_comments
  * @category   test
  * @copyright  2013 David Monllaó
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -63,10 +63,7 @@ class behat_block_comments extends behat_base {
             $commentstextarea = $this->find('css', '.comment-area textarea', $exception);
             $commentstextarea->setValue($comment);
 
-            $this->find_link('Save comment')->click();
-
-            // Wait for the AJAX request.
-            $this->getSession()->wait(4 * 1000, false);
+            $this->find_link(get_string('savecomment'))->click();
 
         } else {
 
@@ -91,8 +88,11 @@ class behat_block_comments extends behat_base {
 
         $exception = new ElementNotFoundException($this->getSession(), '"' . $comment . '" comment ');
 
-        $commentxpath = "//div[contains(concat(' ', @class, ' '), ' block_comments ')]" .
-            "/descendant::div[@class='comment-message'][contains(., '" . $comment . "')]";
+        // Using xpath liternal to avoid possible problems with comments containing quotes.
+        $commentliteral = $this->getSession()->getSelectorsHandler()->xpathLiteral($comment);
+
+        $commentxpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' block_comments ')]" .
+            "/descendant::div[@class='comment-message'][contains(., $commentliteral)]";
         $commentnode = $this->find('xpath', $commentxpath, $exception);
 
         // Click on delete icon.
@@ -100,11 +100,7 @@ class behat_block_comments extends behat_base {
         $deleteicon = $this->find('css', '.comment-delete a img', $deleteexception, $commentnode);
         $deleteicon->click();
 
-        // Yes confirm.
-        $confirmnode = $this->find('xpath', "//div[@class='comment-delete-confirm']/descendant::a[contains(., 'Yes')]");
-        $confirmnode->click();
-
-        // Wait for the AJAX request.
+        // Wait for the animation to finish, in theory is just 1 sec, adding 4 just in case.
         $this->getSession()->wait(4 * 1000, false);
     }
 

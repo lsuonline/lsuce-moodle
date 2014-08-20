@@ -108,7 +108,7 @@ abstract class post_grades_student_table extends post_grades_screen {
 
         $groupid = empty($this->group) ? 0 : $this->group->id;
 
-        $this->context = get_context_instance(CONTEXT_COURSE, $this->course->id);
+        $this->context = context_course::instance($this->course->id);
         $graded = get_config('moodle', 'gradebookroles');
 
         $this->students = get_role_users(explode(',', $graded), $this->context,
@@ -129,7 +129,7 @@ abstract class post_grades_student_table extends post_grades_screen {
         $table = new html_table();
 
         $table->head = array(
-            get_string('fullname'),
+            get_string('lastname') . ', ' . get_string('firstname') . ' (' . get_string('alternatename') . ')',
             get_string('idnumber'),
             get_string('grade', 'grades')
         );
@@ -146,7 +146,11 @@ abstract class post_grades_student_table extends post_grades_screen {
 
             $line = new html_table_row();
 
-            $name = "$student->lastname, $student->firstname";
+            if (isset($student->alternatename)) {
+                $name = "$student->lastname, $student->alternatename ($student->firstname)";
+            } else {
+                $name = "$student->lastname, $student->firstname";
+            }
             $url = new moodle_url('/grade/report/quick_edit/index.php', array(
                 'item' => 'user',
                 'itemid' => $student->id,

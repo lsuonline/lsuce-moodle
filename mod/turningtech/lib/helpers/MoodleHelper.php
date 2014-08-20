@@ -273,7 +273,7 @@ class TurningTechMoodleHelper {
         // Iterate through courses and verify that this user is
         // the instructor, not a student, for each course.
         foreach ($mycourses as $course) {
-            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            $context = context_course::instance($course->id);
             $role_users = array ();
             $inst_roles = explode(',', TURNINGTECH_DEFAULT_TEACHER_ROLE);
             foreach ($inst_roles as $index => $roleid) {
@@ -301,7 +301,7 @@ class TurningTechMoodleHelper {
         // Iterate through courses and verify that this user is
         // the instructor, not a student, for each course.
         foreach ($mycourses as $course) {
-            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            $context = context_course::instance($course->id);
             $role_users = array ();
             $inst_roles = explode(',', TURNINGTECH_DEFAULT_TEACHER_ROLE);
             foreach ($inst_roles as $index => $roleid) {
@@ -335,7 +335,7 @@ class TurningTechMoodleHelper {
      * @return bool
      */
     public static function isuserinstructorincourse($user, $course) {
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        $context = context_course::instance($course->id);
         return has_capability('mod/turningtech:manage', $context, $user->id);
     }
     /**
@@ -347,7 +347,7 @@ class TurningTechMoodleHelper {
      */
     public static function userhasrosterpermission($user, $course) {
         $allowed = false;
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        $context = context_course::instance($course->id);
         if ($context) {
             $allowed = has_capability('moodle/course:viewparticipants', $context, $user->id);
         }
@@ -362,7 +362,7 @@ class TurningTechMoodleHelper {
      */
     public static function userhasgradeitempermission($user, $course) {
         $allowed = false;
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        $context = context_course::instance($course->id);
         if ($context) {
             $allowed = has_capability('moodle/grade:manage', $context, $user->id);
         }

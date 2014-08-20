@@ -28,7 +28,7 @@ function xmldb_gradereport_grader_upgrade($oldversion) {
     $dbman = $DB->get_manager();
 
     // Create tables to support anonymous grading.
-    if ($oldversion < 2013052800) {
+    if (!$dbman->table_exists('grade_anon_items')) {
         // Define table grade_anonymous_items to be created.
         $table = new xmldb_table('grade_anon_items');
 
@@ -122,18 +122,7 @@ function xmldb_gradereport_grader_upgrade($oldversion) {
             $dbman->create_table($table);
         }
 
-        upgrade_plugin_savepoint(true, 2013052800, 'gradereport', 'grader');
-    }
-
-    // Set rawgrade on manual grade items so that multiplicator and offset
-    // works on them like any other grade item.
-    if ($oldversion < 2013052801) {
-        $sql = "UPDATE  {grade_grades} gr, {grade_items} gi
-                SET     gr.rawgrade = gr.finalgrade
-                WHERE   gi.id = gr.itemid AND gi.itemtype = 'manual'";
-        $DB->execute($sql);
-
-        upgrade_plugin_savepoint(true, 2013052801, 'gradereport', 'grader');
+        upgrade_plugin_savepoint(true, 2014060400, 'gradereport', 'grader');
     }
 
     return true;

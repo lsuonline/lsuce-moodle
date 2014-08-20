@@ -29,10 +29,6 @@ if ($hassiteconfig) {
             $_s('pluginname_desc', $a))
         );
 
-        // testing controls
-        $settings->add(new admin_setting_configcheckbox('local_lsu/testing', $_s('local_lsu_testing_name'), $_s('local_lsu_testing_description'), 1));
-        $settings->add(new admin_setting_configtext('local_lsu/testdir', $_s('testdir'), $_s('testdir_desc'), ''));
-
         $provider->settings($settings);
 
         $ADMIN->add('localplugins', $settings);

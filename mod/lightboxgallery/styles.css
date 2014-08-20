@@ -5,6 +5,9 @@
 .lightbox-gallery .lightbox-gallery-image-container {
 	float:		left;
 }
+.dir-rtl .lightbox-gallery .lightbox-gallery-image-container {
+float: right;
+}
 
 .lightbox-gallery .lightbox-gallery-image-frame {
 	background-color:#fff;

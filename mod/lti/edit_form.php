@@ -35,8 +35,7 @@
 /**
  * This file defines de main basiclti configuration form
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -112,7 +111,6 @@ class mod_lti_edit_types_form extends moodleform{
         $courseidoptions[LTI_LAUNCH_COURSE_ID_SHORTNAME] = get_string('shortnamecourse', 'moodle');
         $courseidoptions[LTI_LAUNCH_COURSE_ID_IDNUMBER] = get_string('idnumbercourse', 'moodle');
         $courseidoptions[LTI_LAUNCH_COURSE_ID_ID] = get_string('courseid', 'lti');
-        
 
         $mform->addElement('select', 'lti_courseidoptions', get_string('default_launch_course_id', 'lti'), $courseidoptions);
         $mform->setDefault('lti_courseidoptions', LTI_LAUNCH_COURSE_ID_SHORTNAME);

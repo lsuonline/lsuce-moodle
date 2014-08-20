@@ -7,7 +7,7 @@
  *    Jesus Federico  (jesus [at] blindsidenetworks [dt] com)    
  * 
  * @package   mod_bigbluebuttonbn
- * @copyright 2010-2012 Blindside Networks 
+ * @copyright 2010-2014 Blindside Networks Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v2 or later
  */
 
@@ -50,9 +50,10 @@ function bigbluebuttonbn_add_instance($bigbluebuttonbn) {
     $bigbluebuttonbn->viewerpass = bigbluebuttonbn_rand_string();
     $bigbluebuttonbn->meetingid = bigbluebuttonbn_rand_string();
 
-    if (! isset($bigbluebuttonbn->newwindow))   $bigbluebuttonbn->newwindow = 0;
-    if (! isset($bigbluebuttonbn->wait))        $bigbluebuttonbn->wait = 0;
-    if (! isset($bigbluebuttonbn->record))      $bigbluebuttonbn->record = 0;
+    if (! isset($bigbluebuttonbn->newwindow))     $bigbluebuttonbn->newwindow = 0;
+    if (! isset($bigbluebuttonbn->wait))          $bigbluebuttonbn->wait = 0;
+    if (! isset($bigbluebuttonbn->record))        $bigbluebuttonbn->record = 0;
+    if (! isset($bigbluebuttonbn->allmoderators)) $bigbluebuttonbn->allmoderators = 0;
 
     $returnid = $DB->insert_record('bigbluebuttonbn', $bigbluebuttonbn);
     
@@ -93,9 +94,10 @@ function bigbluebuttonbn_update_instance($bigbluebuttonbn) {
     $bigbluebuttonbn->timemodified = time();
     $bigbluebuttonbn->id = $bigbluebuttonbn->instance;
 
-    if (! isset($bigbluebuttonbn->newwindow))   $bigbluebuttonbn->newwindow = 0;
-    if (! isset($bigbluebuttonbn->wait))        $bigbluebuttonbn->wait = 0;
-    if (! isset($bigbluebuttonbn->record))      $bigbluebuttonbn->record = 0;
+    if (! isset($bigbluebuttonbn->newwindow))     $bigbluebuttonbn->newwindow = 0;
+    if (! isset($bigbluebuttonbn->wait))          $bigbluebuttonbn->wait = 0;
+    if (! isset($bigbluebuttonbn->record))        $bigbluebuttonbn->record = 0;
+    if (! isset($bigbluebuttonbn->allmoderators)) $bigbluebuttonbn->allmoderators = 0;
 
     $returnid = $DB->update_record('bigbluebuttonbn', $bigbluebuttonbn);
     
@@ -351,5 +353,18 @@ function bigbluebuttonbn_get_coursemodule_info($coursemodule) {
     return $info;
 
 }
+
+/**
+ * bbb_add_to_log hack for using legacy add to log without debug screaming at us
+ */
+function bbb_add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0) {
+    if (function_exists('get_log_manager')) {
+        $manager = get_log_manager();
+        $manager->legacy_add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    } else if (function_exists('add_to_log')) {
+        add_to_log($courseid, $module, $action, $url, $info, $cm, $user);
+    }
+}
+
 
 ?>

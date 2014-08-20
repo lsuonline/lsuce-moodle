@@ -42,7 +42,14 @@ if (empty($CFG->enablebadges)) {
     print_error('badgesdisabled', 'badges');
 }
 
+$url = new moodle_url('/badges/mybadges.php');
+$PAGE->set_url($url);
+
 if (isguestuser()) {
+    $PAGE->set_context(context_system::instance());
+    echo $OUTPUT->header();
+    echo $OUTPUT->box(get_string('error:guestuseraccess', 'badges'), 'notifyproblem');
+    echo $OUTPUT->footer();
     die();
 }
 
@@ -56,10 +63,10 @@ if ($clearsearch) {
 
 if ($hide) {
     require_sesskey();
-    $DB->set_field('badge_issued', 'visible', 0, array('id' => $hide));
+    $DB->set_field('badge_issued', 'visible', 0, array('id' => $hide, 'userid' => $USER->id));
 } else if ($show) {
     require_sesskey();
-    $DB->set_field('badge_issued', 'visible', 1, array('id' => $show));
+    $DB->set_field('badge_issued', 'visible', 1, array('id' => $show, 'userid' => $USER->id));
 } else if ($download && $hash) {
     require_sesskey();
     $badge = new badge($download);
@@ -80,9 +87,6 @@ if ($hide) {
 $context = context_user::instance($USER->id);
 require_capability('moodle/badges:manageownbadges', $context);
 
-$url = new moodle_url('/badges/mybadges.php');
-
-$PAGE->set_url($url);
 $PAGE->set_context($context);
 
 $title = get_string('mybadges', 'badges');
@@ -90,11 +94,8 @@ $PAGE->set_title($title);
 $PAGE->set_heading($title);
 $PAGE->set_pagelayout('mydashboard');
 
-// TODO: Better way of pushing badges to Mozilla backpack?
-if (!empty($CFG->badges_allowexternalbackpack)) {
-    $PAGE->requires->js(new moodle_url('http://backpack.openbadges.org/issuer.js'), true);
-    $PAGE->requires->js('/badges/backpack.js', true);
-}
+// Include JS files for backpack support.
+badges_setup_backpack_js();
 
 $output = $PAGE->get_renderer('core', 'badges');
 $badges = badges_get_user_badges($USER->id);

@@ -24,13 +24,7 @@ class lsu_semesters extends lsu_source implements semester_processor {
         if (is_numeric($date_threshold)) {
             $date_threshold = ues::format_time($date_threshold);
         }
-
-        if($this->testing == 1){
-            $response      = file_get_contents($this->testdir.'SEMESTERS');
-            $xml_semesters = new SimpleXmlElement($this->clean_response($response));
-        }else{
-            $xml_semesters = $this->invoke(array());
-        }
+        $xml_semesters = $this->invoke(array());
 
         $lookup = array();
         $semesters = array();
@@ -106,12 +100,7 @@ class lsu_courses extends lsu_source implements course_processor {
 
         $courses = array();
 
-        if($this->testing == 1){
-            $response    = file_get_contents($this->testdir.'COURSES');
-            $xml_courses = new SimpleXmlElement($this->clean_response($response));
-        }else{
-            $xml_courses = $this->invoke(array($semester_term, $semester->session_key));
-        }
+        $xml_courses = $this->invoke(array($semester_term, $semester->session_key));
 
         foreach ($xml_courses->ROW as $xml_course) {
             $department = (string) $xml_course->DEPT_CODE;
@@ -125,11 +114,13 @@ class lsu_courses extends lsu_source implements course_processor {
                 continue;
             }
 
+            // @todo this may never get called, considering the conditional below.
             $is_unique = function ($course) use ($department, $course_number) {
                 return ($course->department != $department or
                     $course->cou_number != $course_number);
             };
 
+            // @todo why is this checking the emptiness of an uninitialized var ?
             if (empty($course) or $is_unique($course)) {
                 $course = new stdClass;
                 $course->department = $department;
@@ -172,12 +163,7 @@ class lsu_teachers_by_department extends lsu_teacher_format implements teacher_b
 
         $params = array($semester->session_key, $department, $semester_term, $campus);
 
-        if($this->testing == 1){
-            $response     = file_get_contents($this->testdir.'INSTRUCTORS');
-            $xml_teachers = new SimpleXmlElement($this->clean_response($response));
-        }else{
-            $xml_teachers = $this->invoke($params);
-        }
+        $xml_teachers = $this->invoke($params);
 
         foreach ($xml_teachers->ROW as $xml_teacher) {
             $teacher = $this->format_teacher($xml_teacher);
@@ -205,12 +191,7 @@ class lsu_students_by_department extends lsu_student_format implements student_b
 
         $params = array($campus, $semester_term, $department, $inst, $semester->session_key);
 
-        if($this->testing == 1){
-            $response = file_get_contents($this->testdir.'STUDENTS');
-            $xml_students = new SimpleXmlElement($this->clean_response($response));
-        }else{
-            $xml_students = $this->invoke($params);
-        }
+        $xml_students = $this->invoke($params);
 
         $students = array();
         foreach ($xml_students->ROW as $xml_student) {

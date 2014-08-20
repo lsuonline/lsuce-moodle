@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+    <xs:element name="rows">
+        <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="ROW" type="rowType"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="rowType">
+        <xs:all>
+            <xs:element name="YEAR" type="yearType"/>
+            <xs:element name="NAME" type="lengthTwenty-FiveStringReqd"/>
+            <xs:element name="CAMPUS" type="lengthTenStringReqd"/>
+            <xs:element name="SESSION_KEY" type="lengthTenStringOpt"/>
+            <!-- Note that UES is selective about the semesters it processses -->
+            <!-- Especially, it will not process semesters whose grade_due    -->
+            <!-- value is less than now().                                    -->
+            <xs:element name="CLASSES_START" type="xs:unsignedInt"/>
+            <xs:element name="GRADES_DUE" type="xs:unsignedInt"/>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:simpleType name="yearType">
+        <xs:restriction base="xs:int">
+            <xs:totalDigits value="4"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="lengthTwenty-FiveStringReqd">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="25"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="lengthTenStringReqd">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="10"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="lengthTenStringOpt">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="10"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>
