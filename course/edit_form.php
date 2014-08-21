@@ -251,7 +251,7 @@ class course_edit_form extends moodleform {
         $mform->setDefault('maxbytes', $courseconfig->maxbytes);
 
         // Completion tracking.
-        if (completion_info::is_enabled_for_site() && has_capability('moodle/course:create', $coursecontext)) {
+        if (completion_info::is_enabled_for_site() && has_capability('moodle/course:create', context_system::instance())) {
             $mform->addElement('header', 'completionhdr', get_string('completion', 'completion'));
             $mform->addElement('selectyesno', 'enablecompletion', get_string('enablecompletion', 'completion'));
             $mform->setDefault('enablecompletion', $courseconfig->enablecompletion);
