@@ -205,7 +205,7 @@ $event->add_record_snapshot('user', $user);
 $event->trigger();
 
 // Get the hidden field list.
-if (has_capability('moodle/user:viewhiddendetails', $coursecontext)) {
+if ($currentuser || has_capability('moodle/user:viewhiddendetails', $coursecontext)) {
     $hiddenfields = array();
 } else {
     $hiddenfields = array_flip(explode(',', $CFG->hiddenuserfields));
@@ -319,19 +319,19 @@ if (!isset($hiddenfields['mycourses'])) {
                 $ccontext = context_course::instance($mycourse->id);
                 $cfullname = $ccontext->get_context_name(false);
                 if ($mycourse->id != $course->id) {
-                    $class = '';
+                    $linkattributes = null;
                     if ($mycourse->visible == 0) {
                         if (!has_capability('moodle/course:viewhiddencourses', $ccontext)) {
                             continue;
                         }
-                        $class = 'class="dimmed"';
+                        $linkattributes['class'] = 'dimmed';
                     }
                     $params = array('id' => $user->id, 'course' => $mycourse->id);
                     if ($showallcourses) {
                         $params['showallcourses'] = 1;
                     }
                     $url = new moodle_url('/user/view.php', $params);
-                    $courselisting .= html_writer::link($url, $ccontext->get_context_name(false), array('class' => $class));
+                    $courselisting .= html_writer::link($url, $ccontext->get_context_name(false), $linkattributes);
                     $courselisting .= ', ';
                 } else {
                     $courselisting .= $cfullname . ", ";
