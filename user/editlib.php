@@ -355,11 +355,13 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
 
     // Display user name fields that are not currenlty enabled here if there are any.
     $disabledusernamefields = useredit_get_disabled_name_fields($enabledusernamefields);
-    if (count($disabledusernamefields) > 0) {
-        $mform->addElement('header', 'moodle_additional_names', get_string('additionalnames'));
-        foreach ($disabledusernamefields as $allname) {
-            $mform->addElement('text', $allname, get_string($allname), 'maxlength="100" size="30"');
-            $mform->setType($allname, PARAM_NOTAGS);
+    if(has_capability('moodle/course:create', context_system::instance())) {
+        if (count($disabledusernamefields) > 0) {
+            $mform->addElement('header', 'moodle_additional_names', get_string('additionalnames'));
+            foreach ($disabledusernamefields as $allname) {
+                $mform->addElement('text', $allname, get_string($allname), 'maxlength="100" size="30"');
+                $mform->setType($allname, PARAM_NOTAGS);
+            }
         }
     }
 
