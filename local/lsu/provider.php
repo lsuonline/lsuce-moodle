@@ -171,14 +171,20 @@ class lsu_enrollment_provider extends enrollment_provider {
     }
 
     function preprocess($enrol = null) {
+        $semesters_in_session = ues_semester::in_session();
 
-        // cleanup orphaned groups- https://trello.com/c/lQqVUrpQ
-        $orphanedGroupMemebers = $this-> findOrphanedGroups();
-        $this->unenrollGroupsUsers($orphanedGroupMemebers);
-        
-        // find and remove any duplicate group membership records
-        $duplicateGroupMemberships = $this->findDuplicateGroupMembers();
-        $this->removeGroupDupes($duplicateGroupMemberships);
+        foreach($semesters_in_session as $semester){
+
+            $semesterprefix = sprintf("%s %s", $semester->year, $semester->name);
+
+            // cleanup orphaned groups- https://trello.com/c/lQqVUrpQ
+            $orphanedGroupMemebers = $this-> findOrphanedGroups($semesterprefix);
+            $this->unenrollGroupsUsers($orphanedGroupMemebers);
+
+            // find and remove any duplicate group membership records
+            $duplicateGroupMemberships = $this->findDuplicateGroupMembers($semesterprefix);
+            $this->removeGroupDupes($duplicateGroupMemberships);
+        }
 
         // Clear student auditing flag on each run; It'll be set in processor
         return (
@@ -266,10 +272,10 @@ class lsu_enrollment_provider extends enrollment_provider {
             events_trigger_legacy('ues_' . $name . '_updated', $user);
         }
     }
-    
-    public function findOrphanedGroups() {
+
+    public function findOrphanedGroups($semesterprefix) {
                 global $DB;
-        
+
         $sql = "SELECT
             CONCAT(u.id, '-', gg.id, '-', cc.id, '-', gg.name) as uid,
             u.id AS userId,
@@ -290,13 +296,13 @@ class lsu_enrollment_provider extends enrollment_provider {
                     count(g.name) as gcount
                 FROM {groups} g
                 INNER JOIN {course} c ON g.courseid = c.id
-                WHERE c.fullname like '2014 Spring %'
+                WHERE c.fullname like '$semesterprefix %'
                 GROUP BY g.name
                 HAVING gcount > 1
             ) AS dupes
             LEFT JOIN {groups} grp ON grp.name = dupes.name
             INNER JOIN {course} c ON c.id = grp.courseid
-            WHERE c.fullname like '2014 Spring %'
+            WHERE c.fullname like '$semesterprefix %'
                 AND (
                         SELECT count(id) AS memcount
                         FROM {groups_members} 
@@ -329,13 +335,13 @@ class lsu_enrollment_provider extends enrollment_provider {
                     count(g.name) as gcount
                 FROM {groups} g
                 INNER JOIN {course} c ON g.courseid = c.id
-                WHERE c.fullname like '2014 Spring %'
+                WHERE c.fullname like '$semesterprefix %'
                 GROUP BY g.name
                 HAVING gcount > 1
             ) AS dupes
             LEFT JOIN {groups} grp ON grp.name = dupes.name
             INNER JOIN {course} c ON c.id = grp.courseid
-            WHERE c.fullname like '2014 Spring %'
+            WHERE c.fullname like '$semesterprefix %'
                 AND (
                         SELECT count(id) AS memcount
                         FROM {groups_members} 
@@ -364,13 +370,13 @@ class lsu_enrollment_provider extends enrollment_provider {
                     count(g.name) as gcount
                 FROM {groups} g
                 INNER JOIN {course} c ON g.courseid = c.id
-                WHERE c.fullname like '2014 Spring %'
+                WHERE c.fullname like '$semesterprefix %'
                 GROUP BY g.name
                 HAVING gcount > 1
             ) AS dupes
             LEFT JOIN {groups} grp ON grp.name = dupes.name
             INNER JOIN {course} c ON c.id = grp.courseid
-            WHERE c.fullname like '2014 Spring %'
+            WHERE c.fullname like '$semesterprefix %'
                 AND (
                         SELECT count(id) AS memcount
                         FROM {groups_members} 
@@ -381,8 +387,8 @@ class lsu_enrollment_provider extends enrollment_provider {
             WHERE sem.name = 'Spring'
             AND sem.year = 2014)
         AND cc.visible = 1
-        AND cc.shortname LIKE '2014 Spring %';";
-        
+        AND cc.shortname LIKE '$semesterprefix %';";
+
         return $DB->get_records_sql($sql);
     }
 
@@ -406,7 +412,7 @@ class lsu_enrollment_provider extends enrollment_provider {
         }
     }
 
-    public function findDuplicateGroupMembers() {
+    public function findDuplicateGroupMembers($semesterprefix) {
         global $DB;
         $sql = "SELECT CONCAT (u.firstname, ' ', u.lastname) AS UserFullname, u.username, g.name, u.id userid, c.id courseid, g.id, c.fullname, COUNT(g.name) AS groupcount
                 FROM {groups_members} gm
@@ -414,7 +420,7 @@ class lsu_enrollment_provider extends enrollment_provider {
                     INNER JOIN {course} c ON g.courseid = c.id
                     INNER JOIN {user} u ON gm.userid =u.id
                 WHERE c.fullname NOT LIKE CONCAT('%', u.firstname, ' ', u.lastname)
-                    AND c.fullname LIKE '2014 Spring%'
+                    AND c.fullname LIKE '$semesterprefix %'
                 GROUP BY gm.groupid, u.username
                 HAVING groupcount > 1;";
         return $DB->get_records_sql($sql);
