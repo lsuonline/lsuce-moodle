@@ -283,7 +283,7 @@ if ($data = data_submitted()) {
                 }
 
                 if ($meta == 'fullname') {
-                    if (isset($user->alternatename)) {
+                    if (!empty($user->alternatename)) {
                         $line[] = '"' . $user->alternatename . ' (' . $user->firstname . ')' . '"';
                         $line[] = '"' . $user->lastname . '"';
                     } else {
@@ -438,7 +438,7 @@ $to_row = function ($user) use ($OUTPUT, $meta_names, $id) {
     $pic = new html_table_cell($OUTPUT->user_picture($underlying, array('course' => $id)));
     $pic->attributes['class'] = 'fullname';
 
-    if (isset($user->alternatename)) { 
+    if (!empty($user->alternatename)) { 
         $cell= new html_table_cell(html_writer::link($user_url, $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname));
     } else {
         $cell= new html_table_cell(html_writer::link($user_url, fullname($user)));
