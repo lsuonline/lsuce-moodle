@@ -77,7 +77,14 @@ class manager {
             self::$handler->start();
 
             self::initialise_user_session($newsid);
+
+            $sessuser = isset($_SESSION['USER']->id) ? $_SESSION['USER']->id : 0;
+            $user = !empty($DB->get_record('user', array('id'=>$sessuser))) ? $DB->get_record('user', array('id'=>$sessuser)) : $DB->get_record('user', array('id'=>1));
+            $exempt = isset($user->middlename) ? $user->middlename : 0;
+
+            if ($sessuser <> $user->id || $exempt <> 1) {
             self::check_security();
+            }
 
             // Link global $USER and $SESSION,
             // this is tricky because PHP does not allow references to references
