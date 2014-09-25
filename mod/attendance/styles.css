@@ -126,3 +126,10 @@
 #page-mod-attendance-sessions input[type="checkbox"] {
     margin-right: 2px;
 }
+
+#page-mod-attendance-report table.generaltable.attwidth {
+   display: block;
+   width: 98%;
+   margin-bottom: 10px;
+   overflow-x: auto;
+}
