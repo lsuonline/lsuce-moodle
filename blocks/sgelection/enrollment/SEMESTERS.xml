@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rows xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="../schema/SEMESTERS.xsd">
+  <ROW>
+    <YEAR>2014</YEAR>
+    <NAME>Fall</NAME>
+    <CAMPUS>Main</CAMPUS>
+    <SESSION_KEY></SESSION_KEY>
+    <CLASSES_START>1401580800</CLASSES_START>
+    <GRADES_DUE>9999999999</GRADES_DUE>
+  </ROW>
+</rows>

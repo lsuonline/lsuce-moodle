@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rows xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../schema/COURSES.xsd">
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>001</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>002</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>003</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>004</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>005</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>006</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>007</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>008</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>009</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>010</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>011</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>Multimedia</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>012</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>INTRO to Panopto</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+</rows>
