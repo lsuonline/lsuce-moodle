@@ -61,19 +61,25 @@ if($voter->already_voted($election)){
             }
     }
         $candidatesbyofficevotedfor = candidate::candidates_by_office($election, $voter,$candidatevotearray);
-
+        echo html_writer::start_div('review_content');
+        echo html_writer::start_div('office_area');
         foreach($candidatesbyofficevotedfor as $officeid => $office){
             $renderer->print_office_title($office);
             foreach($office->candidates as $c){
                 $renderer-> candidate_review($c);
             }
         }
+        echo html_writer::end_div();
+        echo html_writer::start_div('resolution_area');
         foreach($resolutionvotedfor as $k => $v){
             $renderer->print_resolution_review($k, $v);
         }
-
+        echo html_writer::end_div();
+        echo html_writer::start_div('button_area');
         $submitballotlink = new moodle_url('ballot.php', array('election_id'=>$election->id, 'submitfinalvote' => 1, 'voterid' => $voter->id));
         $editballotlink = new moodle_url('ballot.php', array('election_id'=>$election->id, 'submitfinalvote' => 0, 'voterid' => $voter->id));
         echo '<a href = "' . $submitballotlink . '">click here to submit ballot </a>';
         echo '<br /><a href = "' . $editballotlink . '">click here to edit ballot </a>';
+        echo html_writer::end_div();
+        echo html_writer::end_div();
         echo $OUTPUT->footer();

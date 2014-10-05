@@ -425,27 +425,29 @@ class block_sgelection_renderer extends plugin_renderer_base {
         $OUTPUT->continue_button("/");
     }
     public static function print_office_title($office){
-        echo get_string('office_title', 'block_sgelection',$office);
+        $officetitle = get_string('office_title', 'block_sgelection',$office);
+        echo html_writer::div($officetitle, 'office_title_div');
     }
     public static function candidate_review($candidate){
-        echo get_string('you_voted_for', 'block_sgelection',$candidate);
-        echo '<br/>';
+        $youvotedfor =  get_string('you_voted_for', 'block_sgelection',$candidate);
+        echo html_writer::div($youvotedfor, 'candidate_div');
     }
     public static function print_resolution_review($k, $v){
         $a = new stdClass();
         $a->name = $k;
         $a->value = $v;
-        echo '<br />';
-        echo get_string('you_voted_on_res', 'block_sgelection', $a);
-        echo '<br />';
+        $votedonres = get_string('you_voted_on_res', 'block_sgelection', $a);
+        echo html_writer::div($votedonres, 'resolution_div');
 
     }
     public static function print_thank_you_message($election){
         global $DB, $CFG;
+        echo html_writer::start_div('thank_you_message');
         echo html_writer::tag('h1', $election->thanksforvoting);
         echo html_writer::link($CFG->wwwroot, get_string('continue'));
         $numberOfVotesTotal = $DB->count_records('block_sgelection_voted', array('election_id'=>$election->id));
         echo html_writer::tag('p', 'Number of votes cast so far ' . $numberOfVotesTotal);
+        echo html_writer::end_div();
         require_once 'socialmediabuttons.php';
     }
 }

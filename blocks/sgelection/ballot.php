@@ -178,8 +178,10 @@ if($submitfinalvote == true){
     }
 
     echo $OUTPUT->header();
+    echo html_writer::start_div('final_page_content');
     echo $renderer->get_debug_info($voter->is_privileged_user, $voter, $election);
     echo $renderer->print_thank_you_message($election);
+    echo html_writer::end_div();
     echo $OUTPUT->footer();
 
 }
