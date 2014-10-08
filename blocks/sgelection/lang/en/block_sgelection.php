@@ -94,6 +94,8 @@ $string['hours_census_start'] = 'Date to pull student eligibility data';
 $string['hours_census_start_help'] = 'This time setting defines the first second in which Moodle may calculate enrollment eligibility (enrolled hours) for users.';
 $string['thanks_for_voting_message'] = 'Message you want displayed after student votes';
 $string['common_college_offices'] = "Offices for each college in this election";
+$string['test_users'] = "Test Users";
+
 // errors
 $string['err_user_nonexist'] = 'User {$a} does not exist.';
 $string['err_user_nonunique'] = 'User {$a->username} already running for office {$a->office} in the {$a->semestername} election (election id {$a->eid}).';

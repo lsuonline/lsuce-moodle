@@ -107,14 +107,16 @@ class candidate_class_testcase extends block_sgelection_base {
         $this->office1 = new office(array(
             'name' => 'sweeper',
             'number' => 2,
-            'college' => 'Ag'
+            'college' => 'Ag',
+            'weight' => 3
         ));
         $this->office1->save();
 
         $this->office2 = new office(array(
             'name' => 'striker',
             'number' => 1,
-            'college' => 'HUEC'
+            'college' => 'HUEC',
+            'weight' => 4
         ));
         $this->office2->save();
 

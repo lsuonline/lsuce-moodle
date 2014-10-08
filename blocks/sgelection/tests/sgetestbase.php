@@ -113,6 +113,7 @@ abstract class block_sgelection_base extends advanced_testcase{
         $e->end_date   = $end;
         $e->hours_census_start = $e->start_date - 86400;
         $e->hours_census_complete = $e->hours_census_start + 200;
+        $e->thanksforvoting = 'THX';
 
         $election = new election($e);
         $election->save();
@@ -155,6 +156,7 @@ abstract class block_sgelection_base extends advanced_testcase{
         $o->college = $random ? $colleges[rand(0, count($colleges)-1)] : '';
 
         $o->number = $random ? rand(1, 25) : 1;
+        $o->weight = rand(0,9999);
         $office = new office($o);
         $office->save();
         return $office;
@@ -236,6 +238,7 @@ abstract class block_sgelection_base extends advanced_testcase{
             'end_date'   => time() + 10000,
             'hours_census_start' => time() + 1000 - 86400,
             'hours_census_complete' => time() + 1000 - 86300,
+            'thanksforvoting' => 'Thanks',
         );
         $fn = 'create_'.$class;
 
@@ -264,6 +267,7 @@ abstract class block_sgelection_base extends advanced_testcase{
             'name'  => 'President',
             'college' => '',
             'number'  => 1,
+            'weight'  => 4
         );
 
         $instance = $this->create_office($params);

@@ -34,7 +34,8 @@ class election extends sge_database_object {
             $end_date,
             $id,
             $ballot,
-            $thanksforvoting;
+            $thanksforvoting,
+            $test_users;
 
     public static $tablename = 'block_sgelection_election';
 
@@ -242,7 +243,7 @@ class election extends sge_database_object {
         $sql = 'SELECT res.title, '
         . '(SELECT count(id) FROM {block_sgelection_votes} as v WHERE v.typeid = res.id AND v.type = "'.resolution::$type.'" AND vote = 2) AS yes, '
         . '(SELECT count(id) FROM {block_sgelection_votes} as v WHERE v.typeid = res.id AND v.type = "'.resolution::$type.'" AND vote = 1) AS against, '
-        . '(SELECT count(id) FROM {block_sgelection_votes} as v WHERE v.typeid = res.id AND v.type = "'.resolution::$type.'" AND vote = 0) AS abstain '
+        . '(SELECT count(id) FROM {block_sgelection_votes} as v WHERE v.typeid = res.id AND v.type = "'.resolution::$type.'" AND vote = 3) AS abstain '
         . 'FROM {block_sgelection_resolution} AS res WHERE res.election_id = :eid';
         $params = array('eid' => $this->id);
         return $DB->get_records_sql($sql, $params);
@@ -268,4 +269,12 @@ class election extends sge_database_object {
         return $this->end_date < time();
     }
 
+    public function is_test_election(){
+        return !empty($this->test_users);
+    }
+
+    public function is_test_user($username){
+        $usernames = explode(',',$this->test_users);
+        return in_array($username, $usernames);
+    }
 }

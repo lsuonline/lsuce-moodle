@@ -44,6 +44,7 @@ if($form->is_cancelled()){
 } else if($fromform = $form->get_data()){
     $election = new election($fromform);
     $election->thanksforvoting = $fromform->thanksforvoting_editor['text'];
+    $election->test_users = str_replace(' ', '', $fromform->test_users);
     $election->save();
 
     $collegemap = array();

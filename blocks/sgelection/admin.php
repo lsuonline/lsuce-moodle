@@ -24,7 +24,6 @@ $voter    = new voter($USER->id);
 $renderer = $PAGE->get_renderer('block_sgelection');
 $renderer->set_nav(null, $voter);
 
-$customdata['default_results_recips'] = sge::config('facadv') . ',' . sge::config('commissioner');
 $customdata['default_results_interval'] = 60;
 $form = new sg_admin_form(null, $customdata);
 

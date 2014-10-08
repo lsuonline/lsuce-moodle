@@ -27,13 +27,13 @@ class ballot_item_form extends moodleform {
         }
 
         $number_of_office_votes_allowed = array();
- 
+
         foreach($candidates as $office){
             $officeid = $office->id;
 
 
             $mform->addElement('static', 'name', NULL);
-            $mform->addElement('html', html_writer::tag('h1', $office->name, array('class'=>'itemtitle')));
+            $mform->addElement('html', html_writer::tag('h1', $office->name.' '.$office->college, array('class'=>'itemtitle')));
 
             $number_of_office_votes_allowed[$officeid] = $office->number;
 
@@ -46,8 +46,8 @@ class ballot_item_form extends moodleform {
                 $mform->addElement('html', '<div class="candidates">');
 
             foreach($office->candidates as $c){
-           
-                if($voter->is_privileged_user() && !$this->_customdata['preview']){
+
+                if($voter->is_privileged_user()){
                     $editurl = new moodle_url('candidates.php', array('id'=>$c->cid, 'election_id'=>$election->id));
                     $edita   = html_writer::link($editurl, 'edit', array('class'=>'editlink'));
                     $mform->addElement('html', $edita);

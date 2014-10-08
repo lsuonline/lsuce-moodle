@@ -139,7 +139,7 @@ if(!$voter->is_privileged_user && !$voter->eligible($election)){
 
 
 // SG Admin status determines PAGE layout.
-$layout  = $voter->is_privileged_user && !$preview ? 'standard' : 'base';
+$layout  = $voter->is_privileged_user && !$preview ? 'social' : 'socialnb';
 $PAGE->set_pagelayout($layout);
 
 // Now that layout is selected, we can get our renderer.
@@ -148,13 +148,13 @@ $renderer->set_nav(null, $voter);
 
 // Setup resolutions, based on user courseload.
 $resparams = array('election_id' => $election->id);
-if($preview && $voter->courseload == VOTER::VOTER_PART_TIME){
-   $resparams['restrict_fulltime'] = '';
+if($voter->courseload == VOTER::VOTER_PART_TIME){
+   $resparams['restrict_fulltime'] = 0;
 }
 $resolutionsToForm  = resolution::get_all($resparams);
 
 // Get candidates for the election which are appropriate for the voter.
-$candidatesbyoffice = candidate::candidates_by_office($election, $voter);
+$candidatesbyoffice = candidate::candidates_by_office($election, $voter, null, $preview);
 
 $customdata        = array(
     'resolutions' => $resolutionsToForm,
@@ -169,12 +169,13 @@ $ballot_item_form  = new ballot_item_form(new moodle_url('ballot.php', array('el
 // Ballot has been reviewed and user has pressed vote!
 if($submitfinalvote == true){
     $voter->id = $voterid;
+    // @TODO perhaps wait to mark as voted until a transaction has completed.
+    $voter->mark_as_voted($election);
     $collectionofvotes = $DB->get_records('block_sgelection_votes', array('voterid'=>$voter->id));
     foreach($collectionofvotes as $indvote){
         $vote = new vote($indvote);
         $vote->finalvote = 1;
         $vote->save();
-        $voter->mark_as_voted($election);
     }
 
     echo $OUTPUT->header();

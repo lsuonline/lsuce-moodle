@@ -84,7 +84,7 @@ class block_sgelection extends block_list {
             } else {
                 $semester = $ae->shortname();
                 $numberOfVotesTotal = $DB->count_records('block_sgelection_voted', array('election_id'=>$ae->id));
-                $numberOfVotesTotalString =  html_writer::tag('p', 'votes cast so far ' . $numberOfVotesTotal);
+                $numberOfVotesTotalString =  html_writer::tag('p', 'Ballots cast so far ' . $numberOfVotesTotal);
                 if(!$voter->already_voted($ae)){
                     $this->content->items[] = html_writer::link( new moodle_url('/blocks/sgelection/ballot.php', array('election_id' => $ae->id)), 'Ballot for ' . $semester, array('class'=>'election')) . ' ' . $numberOfVotesTotalString;
                     $this->content->icons[] = html_writer::empty_tag('img', array('src'=>$wwwroot . '/blocks/sgelection/pix/w_check.svg', 'class' => 'icon'));

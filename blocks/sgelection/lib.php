@@ -48,8 +48,11 @@ class sge {
         }
     }
 
-    public static function validate_results_recipients($data, $fieldname){
+    public static function validate_csv_usernames($data, $fieldname){
         $errors = array();
+        if(empty($data[$fieldname])){
+            return $errors;
+        }
 
         foreach(explode(',', $data[$fieldname]) as $name){
             $username_check = self::validate_username(array($fieldname => $name), $fieldname);

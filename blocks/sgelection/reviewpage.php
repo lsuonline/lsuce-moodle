@@ -31,15 +31,16 @@ if($voter->already_voted($election)){
         // Save vote values for each resolution.
         foreach(array_keys($resolutionsToForm) as $resid){
             $fieldname = 'resvote_'.$resid;
-            if(isset($fromform->$fieldname)){
-                $vote = new vote(array('voterid'=>$voter->id));
-                $vote->finalvote = 0;
-                $vote->typeid = $resid;
-                $vote->type = resolution::$type;
-                $vote->vote = $fromform->$fieldname;
-                $storedvotes[] = $vote->save();
-            }
+            // store a value for abstentions.
+            $resvote = isset($fromform->$fieldname) ? $fromform->$fieldname : resolution::ABSTAIN;
+            $vote = new vote(array('voterid'=>$voter->id));
+            $vote->finalvote = 0;
+            $vote->typeid = $resid;
+            $vote->type = resolution::$type;
+            $vote->vote = $resvote;
+            $storedvotes[] = $vote->save();
         }
+
         $candidatevotearray = array();
         echo $OUTPUT->header();
         echo $renderer->get_debug_info($voter->is_privileged_user, $voter, $election);

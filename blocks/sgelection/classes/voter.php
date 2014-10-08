@@ -48,6 +48,14 @@ class voter extends sge_database_object {
     const VOTER_PART_TIME = 'P';
     const VOTER_FULL_TIME = 'F';
 
+    /**
+     * Instantiate a Voter object using params from the {user} and
+     * {enrol_ues_usermeta} tables. ip-address is populated from moodle lib fn.
+     *
+     * @global stdClass $DB
+     * @param int $userid
+     * @throws Exception param type check; userid must be int
+     */
     public function __construct($userid){
         if(!is_numeric($userid)){
             throw new Exception(sprintf("rar! userid {$userid} is not an int!!!"));
@@ -60,8 +68,7 @@ class voter extends sge_database_object {
         $params = $DB->get_record_sql($usersql, array('userid'=>$userid));
 
         $uessql = "SELECT name, value FROM {enrol_ues_usermeta} WHERE userid = :userid";
-
-        $keyvalues = $DB->get_records_sql($uessql, array('userid'=>$userid));
+        $keyvalues = $DB->get_records('enrol_ues_usermeta', array('userid'=>$userid), '', 'name,value');
 
         foreach($keyvalues as $pair){
             $name = sge::trim_prefix($pair->name, 'user_');
@@ -71,6 +78,13 @@ class voter extends sge_database_object {
         $this->ip_address = getremoteaddr();
     }
 
+    /**
+     *
+     * @return string, one of
+     * sge::VOTER_NO_TIME
+     * sge::VOTER_PART_TIME
+     * sge::VOTER_FULL_TIME
+     */
     public function at_least_parttime(){
         $pt = sge::config('parttime');
         return $this->hours >= $pt;
@@ -135,6 +149,11 @@ class voter extends sge_database_object {
         $excl_curric_codes = sge::config('excluded_curr_codes');
         $excl_curric_codes = $excl_curric_codes ? explode(',', $excl_curric_codes) : array();
         $curric_code       = $this->curric_code();
+
+        if($election->is_test_election() && !$election->is_test_user($this->username)){
+            return false;
+        }
+
         if(in_array($curric_code, $excl_curric_codes)){
             return false;
         }
