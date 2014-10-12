@@ -35,7 +35,7 @@ $election_id = optional_param('election_id', false, PARAM_INT);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/blocks/sgelection/officelist.php');
 $PAGE->set_pagelayout('standard');
-$PAGE->set_heading(get_string('office_page_header', 'block_sgelection'));
+$PAGE->set_heading(sge::_str('office_page_header'));
 
 require_login();
 

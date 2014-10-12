@@ -16,7 +16,7 @@ $PAGE->set_context($context);
 $PAGE->set_url('/blocks/sgelection/lookupvoter.php');
 $PAGE->set_pagelayout('standard');
 $semester = $election->fullname();
-$PAGE->set_heading(get_string('ballot_page_header', 'block_sgelection', $semester));
+$PAGE->set_heading(sge::_str('ballot_page_header', $semester));
 
 require_login();
 
@@ -35,16 +35,16 @@ if($form->is_cancelled()) {
     $voter->userid = $userid;
     $didvote = $DB->get_records('block_sgelection_voted',array('userid'=>$userid, 'election_id'=>$election_id));
     if(empty($didvote)){
-        $stringforresults .= $voter->username . ' ' . get_string('didntvote', 'block_sgelection');
+        $stringforresults .= $voter->username . ' ' . sge::_str('didntvote');
     }
     else{
-        $stringforresults .= $voter->username . ' ' . get_string('didvote', 'block_sgelection');
+        $stringforresults .= $voter->username . ' ' . sge::_str('didvote');
     }
 }
 
     // form didn't validate or this is the first display
     echo $OUTPUT->header();
-    echo html_writer::tag('h1', get_string('check_vote_status', 'block_sgelection', $election->fullname()));
+    echo html_writer::tag('h1', sge::_str('check_vote_status', $election->fullname()));
     $form->display();
     echo $stringforresults;
     echo $OUTPUT->footer();

@@ -38,7 +38,7 @@ class resolution_testcase extends block_sgelection_base {
         $result = resolution::validate_unique_title((array)$r2);
         $this->assertNotEmpty($result);
         $this->assertEquals(
-                get_string('err_resolution_title_nonunique', 'block_sgelection'),
+                sge::_str('err_resolution_title_nonunique'),
                 $result['title']
                 );
         $r3 = $this->create_resolution(array('title' => 'uniq', 'text'=>'hello', 'election_id' => 2, 'restrict_fulltime'=>0));

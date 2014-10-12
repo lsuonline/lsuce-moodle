@@ -19,7 +19,7 @@ $PAGE->set_context($context);
 $PAGE->set_url('/blocks/sgelection/candidates.php');
 $PAGE->set_pagelayout('standard');
 $semester = $election->fullname();
-$PAGE->set_heading(get_string('ballot_page_header', 'block_sgelection', $semester));
+$PAGE->set_heading(sge::_str('ballot_page_header', $semester));
 
 require_login();
 

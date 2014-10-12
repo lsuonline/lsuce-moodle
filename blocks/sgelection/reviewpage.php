@@ -75,9 +75,9 @@ if($voter->already_voted($election)){
         }
         if(!empty($resolutionvotedfor)) {
             if(count($resolutionvotedfor) < 2) {
-                echo html_writer::start_div('resolution_area') . html_writer::tag('div', html_writer::tag('h1', get_string('resolution', 'block_sgelection')), array('class'=>'office_title_div'));
+                echo html_writer::start_div('resolution_area') . html_writer::tag('div', html_writer::tag('h1', sge::_str('resolution')), array('class'=>'office_title_div'));
             } else {
-                echo html_writer::start_div('resolution_area') . html_writer::tag('div', html_writer::tag('h1', get_string('resolutions', 'block_sgelection')), array('class'=>'office_title_div'));
+                echo html_writer::start_div('resolution_area') . html_writer::tag('div', html_writer::tag('h1', sge::_str('resolutions')), array('class'=>'office_title_div'));
             }
             foreach($resolutionvotedfor as $k => $v){
                 $renderer->print_resolution_review($k, $v);

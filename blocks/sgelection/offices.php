@@ -15,7 +15,7 @@ $rtn = optional_param('rtn', '/', PARAM_ALPHAEXT);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/blocks/sgelection/offices.php');
 $PAGE->set_pagelayout('standard');
-$PAGE->set_heading(get_string('office_page_header', 'block_sgelection'));
+$PAGE->set_heading(sge::_str('office_page_header'));
 
 require_login();
 sge::allow_only(sge::FACADVISOR, sge::COMMISSIONER);

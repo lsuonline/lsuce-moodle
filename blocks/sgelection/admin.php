@@ -5,6 +5,7 @@ require_once('admin_form.php');
 require_once 'lib.php';
 
 global $DB, $OUTPUT, $PAGE;
+require_login();
 sge::allow_only(sge::FACADVISOR);
 
 $done    = optional_param('done', 0, PARAM_TEXT);
@@ -15,9 +16,7 @@ $PAGE->requires->js('/blocks/sgelection/js/autouserlookup.js');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url($selfurl);
 $PAGE->set_pagelayout('standard');
-$PAGE->set_heading(get_string('admin_page_header', 'block_sgelection'));
-
-require_login();
+$PAGE->set_heading(sge::_str('admin_page_header'));
 
 // Setup nav, depending on voter.
 $voter    = new voter($USER->id);
@@ -49,7 +48,7 @@ if($form->is_cancelled()){
     echo $OUTPUT->header();
 
 
-    echo $done == true ? $OUTPUT->notification('changes saved', 'notifysuccess') : '';
+    echo $done == true ? $OUTPUT->notification(sge::_str('savesuccess'), 'notifysuccess') : '';
     $form->display();
     $listofusers = sge::get_list_of_usernames();
     $PAGE->requires->js_init_call('autouserlookup', array($listofusers, '#id_commissioner'));

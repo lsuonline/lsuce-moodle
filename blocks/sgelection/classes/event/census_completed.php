@@ -38,11 +38,11 @@ class census_completed extends \core\event\base {
     }
 
     public static function get_name() {
-        return get_string('censuscompleted', 'block_sgelection');
+        return \sge::_str('censuscompleted');
     }
 
     public function get_description() {
-        return get_string('censuscompleted_msg', 'block_sgelection', $this->data);
+        return \sge::_str('censuscompleted_msg', $this->data);
     }
 
     public function get_url() {

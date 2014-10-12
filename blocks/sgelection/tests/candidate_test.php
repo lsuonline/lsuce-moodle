@@ -187,7 +187,7 @@ class candidate_class_testcase extends block_sgelection_base {
         $result   = $form->validation($data, $files);
         $this->assertNotEmpty($result);
 
-        $message = get_string('err_user_nonexist', 'block_sgelection',  $username);
+        $message = sge::_str('err_user_nonexist',  $username);
         $this->assertEquals($message, $result['username']);
 
         $user = $this->getDataGenerator()->create_user();
@@ -219,7 +219,7 @@ class candidate_class_testcase extends block_sgelection_base {
         $a->semestername = $election->fullname();
         $a->office = sprintf("%s [id: %d] ", $office->name, $office->id);
         $a->office .= sprintf(" and %s [id: %d] ", $office2->name, $office2->id);
-        $expectedmsg = get_string('err_user_nonunique', 'block_sgelection', $a);
+        $expectedmsg = sge::_str('err_user_nonunique', $a);
         $this->assertEquals($expectedmsg, $result['username']);
 
         $user3 = $this->getDataGenerator()->create_user();

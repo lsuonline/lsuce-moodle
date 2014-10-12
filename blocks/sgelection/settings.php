@@ -33,32 +33,32 @@ if ($ADMIN->fulltree) {
     $settings->add(
             new admin_setting_configtext(
                     'block_sgelection/facadv',
-                    get_string('facadv', 'block_sgelection'),
-                    get_string('facadv_desc', 'block_sgelection'),
+                    sge::_str('facadv'),
+                    sge::_str('facadv_desc'),
                     '',
                     PARAM_ALPHANUM)
             );
     $settings->add(
             new admin_setting_configtext(
                     'block_sgelection/earliest_start',
-                    get_string('earliest_start', 'block_sgelection'),
-                    get_string('earliest_start_desc', 'block_sgelection'),
+                    sge::_str('earliest_start'),
+                    sge::_str('earliest_start_desc'),
                     14,
                     PARAM_INT)
             );
     $settings->add(
             new admin_setting_configtext(
                     'block_sgelection/census_window',
-                    get_string('census_window', 'block_sgelection'),
-                    get_string('census_window_desc', 'block_sgelection'),
+                    sge::_str('census_window'),
+                    sge::_str('census_window_desc'),
                     24,
                     PARAM_INT)
             );
     $settings->add(
             new admin_setting_configtext(
                     'block_sgelection/latest_end',
-                    get_string('latest_end', 'block_sgelection'),
-                    get_string('latest_end_desc', 'block_sgelection'),
+                    sge::_str('latest_end'),
+                    sge::_str('latest_end_desc'),
                     14,
                     PARAM_INT)
             );

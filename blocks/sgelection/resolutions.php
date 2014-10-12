@@ -23,7 +23,7 @@ $context = context_system::instance();
 $PAGE->set_context($context);
 $PAGE->set_url('/blocks/sgelection/resolutions.php', array('election_id' => $election_id));
 $PAGE->set_pagelayout('standard');
-$PAGE->set_heading(get_string('resolution_page_header', 'block_sgelection'));
+$PAGE->set_heading(sge::_str('resolution_page_header'));
 
 require_login();
 

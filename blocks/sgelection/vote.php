@@ -9,8 +9,8 @@ require_once('../../lib/weblib.php');
 require_once("{$CFG->libdir}/formslib.php");
 
 require_login();
-$blockname = get_string('sgelection', 'block_sgelection');
-$header = get_string('vote', 'block_sgelection');
+$blockname = sge::_str('sgelection');
+$header = sge::_str('vote');
 $context = context_system::instance();
 
 $PAGE->set_context($context);

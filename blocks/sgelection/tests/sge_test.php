@@ -52,7 +52,7 @@ class sge_testcase extends sge_database_object_testcase {
         $this->assertEmpty($gudresult);
         $this->assertNotEmpty($badresult);
 
-        $badmsg    = get_string('err_user_nonexist', 'block_sgelection', $nosuchusername);
+        $badmsg    = sge::_str('err_user_nonexist', $nosuchusername);
         $this->assertEquals($badmsg, $badresult['uname']);
     }
 

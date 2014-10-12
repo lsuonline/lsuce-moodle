@@ -18,7 +18,7 @@ $selfurl = '/blocks/sgelection/commissioner.php';
 $PAGE->set_context($context);
 $PAGE->set_url($selfurl);
 $PAGE->set_pagelayout('standard');
-$PAGE->set_heading(get_string('admin_page_header', 'block_sgelection'));
+$PAGE->set_heading(sge::_str('admin_page_header'));
 
 // Setup nav, depending on voter.
 $voter    = new voter($USER->id);
@@ -111,7 +111,7 @@ if($form->is_cancelled()){
         $form->set_data($election);
 
         $lookupvoter = new moodle_url('/blocks/sgelection/lookupvoter.php', array('election_id' => $id));
-        echo html_writer::link($lookupvoter, html_writer::tag('h1', get_string('check_to_see', 'block_sgelection')));
+        echo html_writer::link($lookupvoter, html_writer::tag('h1', sge::_str('check_to_see')));
     }
     if(empty($data['semesters'])){
         // In the extremely rare case that there are no available semesters, redirect to /my.

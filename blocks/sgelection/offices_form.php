@@ -18,20 +18,20 @@ class office_form extends moodleform {
         $mform->setType('rtn', PARAM_ALPHAEXT);
 
         // add office header
-        $mform->addElement('header', 'displayinfo', get_string('create_new_office', 'block_sgelection'));
+        $mform->addElement('header', 'displayinfo', sge::_str('create_new_office'));
 
         $attributes = array('size' => '50', 'maxlength' => '100');
-        $mform->addElement('text', 'name', get_string('title_of_office', 'block_sgelection'), $attributes);
+        $mform->addElement('text', 'name', sge::_str('title_of_office'), $attributes);
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->setType('name', PARAM_TEXT);
 
         $attributes = array('size' => '50', 'maxlength' => '100');
-        $mform->addElement('text', 'number', get_string('number_of_openings', 'block_sgelection'), $attributes);
+        $mform->addElement('text', 'number', sge::_str('number_of_openings'), $attributes);
         $mform->addRule('number', null, 'required', null, 'client');
         $mform->setType('number', PARAM_INT);
 
         $attributes = array('size' => '5', 'maxlength' => '4');
-        $mform->addElement('text', 'weight', get_string('weight', 'block_sgelection'), $attributes);
+        $mform->addElement('text', 'weight', sge::_str('weight'), $attributes);
         $mform->setType('weight', PARAM_INT);
         $mform->setDefault('weight', 3);
 

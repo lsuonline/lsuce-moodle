@@ -31,7 +31,7 @@ class resolution_form extends moodleform {
         $id = isset($this->_customdata['id']) ? $this->_customdata['id'] : null;
 
         // add resolution header
-        $mform->addElement('header', 'displayinfo', get_string('create_new_resolution', 'block_sgelection'));
+        $mform->addElement('header', 'displayinfo', sge::_str('create_new_resolution'));
 
         $mform->addElement('hidden', 'election_id', $election->id);
         $mform->setType('election_id', PARAM_INT);
@@ -40,19 +40,19 @@ class resolution_form extends moodleform {
         $mform->setType('id', PARAM_INT);
 
         $attributes = array('size' => '50');
-        $mform->addElement('text', 'title', get_string('title_of_resolution', 'block_sgelection'), $attributes);
+        $mform->addElement('text', 'title', sge::_str('title_of_resolution'), $attributes);
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
 
-        $mform->addElement('editor', 'text_editor', get_string('resolution_text', 'block_sgelection'));
+        $mform->addElement('editor', 'text_editor', sge::_str('resolution_text'));
         $mform->setType('text', PARAM_RAW);
         $mform->addRule('text_editor', null, 'required', null, 'client');
 
         $attributes = array('size' => '50', 'maxlength' => '100');
-        $mform->addElement('text', 'link', get_string('link_to_fulltext', 'block_sgelection'), $attributes);
+        $mform->addElement('text', 'link', sge::_str('link_to_fulltext'), $attributes);
         $mform->setType('link', PARAM_TEXT);
 
-        $mform->addElement('checkbox', 'restrict_fulltime', NULL, '<span></span>' . get_string('restrict_to_fulltime', 'block_sgelection'));
+        $mform->addElement('checkbox', 'restrict_fulltime', NULL, '<span></span>' . sge::_str('restrict_to_fulltime'));
 
         $buttons = array(
             $mform->createElement('submit', 'save_resolution', get_string('savechanges')),

@@ -40,11 +40,11 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $table = new html_table();
             $table->id = 'plugins-check';
             $table->head = array(
-                get_string('id', 'block_sgelection'),
-                get_string('userid', 'block_sgelection'),
-                get_string('office', 'block_sgelection'),
-                get_string('affiliation', 'block_sgelection'),
-                get_string('election_id', 'block_sgelection'),
+                sge::_str('id'),
+                sge::_str('userid'),
+                sge::_str('office'),
+                sge::_str('affiliation'),
+                sge::_str('election_id'),
             );
 
             $offices        = $DB->get_records('block_sgelection_office');
@@ -80,11 +80,11 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $table = new html_table();
             $table->id = 'plugins-check';
             $table->head = array(
-                get_string('id', 'block_sgelection'),
-                get_string('userid', 'block_sgelection'),
-                get_string('office', 'block_sgelection'),
-                get_string('affiliation', 'block_sgelection'),
-                get_string('election_id', 'block_sgelection'),
+                sge::_str('id'),
+                sge::_str('userid'),
+                sge::_str('office'),
+                sge::_str('affiliation'),
+                sge::_str('election_id'),
             );
 
 
@@ -202,7 +202,7 @@ class block_sgelection_renderer extends plugin_renderer_base {
 
     public function commissioner_link_parts(voter $voter){
         $url = new moodle_url('/blocks/sgelection/commissioner.php');
-        $txt = get_string('create_election', 'block_sgelection');
+        $txt = sge::_str('create_election');
         return array($txt, $url);
     }
 
@@ -278,7 +278,7 @@ class block_sgelection_renderer extends plugin_renderer_base {
         $resolution_vote_count = $election->get_resolution_votes();
 
         $resolution_table = new html_table();
-        $resolution_table->head = array(get_string('resolution', 'block_sgelection'), get_string('for', 'block_sgelection'), get_string('against', 'block_sgelection'), get_string('abstain', 'block_sgelection'));
+        $resolution_table->head = array(sge::_str('resolution'), sge::_str('for'), sge::_str('against'), sge::_str('abstain'));
 
         foreach($resolution_vote_count as $r){
 
@@ -326,7 +326,7 @@ class block_sgelection_renderer extends plugin_renderer_base {
         $timearray=array();
 
         $thehtml = '<br /><br />';
-        $thehtml .=  html_writer::div('<h1>Election Report</h1>', 'datatablesdiv', array('id' => 'tophat'));
+        $thehtml .=  html_writer::div(html_writer::tag('h1', sge::_str('resultsreport')), 'datatablesdiv', array('id' => 'tophat'));
         foreach($result as $r){
             $collegearray[] = $r->college;
             $majorarray[] = $r->major;
@@ -446,22 +446,22 @@ class block_sgelection_renderer extends plugin_renderer_base {
 
     public static function print_readonly(){
         global $OUTPUT;
-        print_error(get_string('readonly', 'block_sgelection'));
+        print_error(sge::_str('readonly'));
         $OUTPUT->continue_button("/");
     }
     public static function print_office_title($office){
-        $officetitle = get_string('office_title', 'block_sgelection',$office);
+        $officetitle = sge::_str('office_title',$office);
         echo html_writer::div($officetitle, 'office_title_div');
     }
     public static function candidate_review($candidate){
-        $youvotedfor =  get_string('you_voted_for', 'block_sgelection',$candidate);
+        $youvotedfor =  sge::_str('you_voted_for',$candidate);
         echo html_writer::div($youvotedfor, 'candidate_div');
     }
     public static function print_resolution_review($k, $v){
         $a = new stdClass();
         $a->name = $k;
         $a->value = $v;
-        $votedonres = get_string('you_voted_on_res', 'block_sgelection', $a);
+        $votedonres = sge::_str('you_voted_on_res', $a);
         echo html_writer::div($votedonres, 'resolution_div');
 
     }

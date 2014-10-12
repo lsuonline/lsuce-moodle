@@ -34,6 +34,7 @@ require_once('classes/candidate.php');
 require_once('classes/election.php');
 require_once('classes/voter.php');
 require_once('classes/vote.php');
+require_once('classes/securelib.php');
 require_once('renderer.php');
 require_once($CFG->dirroot.'/enrol/ues/publiclib.php');
 ues::require_daos();
@@ -63,7 +64,7 @@ $context  = context_system::instance();
 // Begin initialize PAGE and local param vars.
 $PAGE->set_context($context);
 $PAGE->set_url('/blocks/sgelection/ballot.php');
-$heading = get_string('ballot_page_header', 'block_sgelection', $election->fullname());
+$heading = sge::_str('ballot_page_header', $election->fullname());
 $PAGE->set_heading($heading);
 $PAGE->set_title($heading);
 // End PAGE init.
@@ -96,46 +97,8 @@ if($preview && $voter->is_privileged_user){
     $voter->college = $college;
 }
 
-// ----------------- Security Checks ---------------------------//
+ballotsecurity::allchecks($voter, $preview, $election);
 
-/**
- * If the polls aren't open, allow only voters with doanything status
- * to use this form (including especially the ballot editing features).
- */
-if(!$voter->is_privileged_user && !$election->polls_are_open()){
-    print_error(sge::_str('err_pollsclosed'));
-}
-
-/**
- * If a voter doesn't have at least part-time enrollment, deny access
- * unless the voter has doanything status.
- */
-if(!$voter->is_privileged_user && !$voter->at_least_parttime()){
-    print_error(sge::_str('err_notevenparttime'));
-}
-
-/**
- * Only allow voters with doanything status to use the preview form.
- */
-if(!$voter->is_privileged_user && $preview){
-    print_error(sge::_str('err_nopreviewpermission'));
-}
-
-/**
- * Don't allow a second vote.
- */
-if($voter->already_voted($election) && !$voter->is_privileged_user()){
-    print_error(sge::_str('err_alreadyvoted'));
-}
-
-if(!$voter->is_privileged_user && $voter->is_missing_metadata()){
-    print_error(sge::_str('err_missingmeta', $voter->is_missing_metadata()));
-}
-
-if(!$voter->is_privileged_user && !$voter->eligible($election)){
-    print_error(sge::_str('err_ineligible'));
-}
-// ----------------- End Security Checks -----------------------//
 
 
 // SG Admin status determines PAGE layout.

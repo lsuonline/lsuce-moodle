@@ -39,7 +39,7 @@ class office extends sge_database_object {
         unset($alloff[$data['id']]);
         foreach($alloff as $off){
             if($off->name == $data['name'] && $data['college'] == $off->college){
-                return array('name'=> get_string('err_office_name_nonunique', 'block_sgelection'));
+                return array('name'=> sge::_str('err_office_name_nonunique'));
             }
         }
         return array();
@@ -51,7 +51,7 @@ class office extends sge_database_object {
     public function delete(){
         global $DB;
         if($DB->record_exists(candidate::$tablename, array('office'=>$this->id))){
-            print_error('There are candidates for this office. Please delete them first.');
+            print_error(sge::_str('err_deletedependenciesoff'));
         }else{
             parent::delete();
         }

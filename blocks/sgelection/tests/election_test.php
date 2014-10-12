@@ -49,7 +49,7 @@ class election_testcase extends block_sgelection_base {
         $fmt = election::get_date_format();
         $a->start = strftime($fmt, $e1->start_date);
         $a->end   = strftime($fmt, $e1->end_date);
-        $msg = get_string('err_start_end_disorder', 'block_sgelection', $a);
+        $msg = sge::_str('err_start_end_disorder', $a);
 
         $this->assertEquals($msg, $result['start_date']);
     }

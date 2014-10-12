@@ -42,6 +42,6 @@ abstract class base extends \core\event\base {
     }
 
     public function get_description() {
-        return get_string('defaultlogmessage', 'block_sgelection', $this->data);
+        return \sge::_str('defaultlogmessage', $this->data);
     }
 }

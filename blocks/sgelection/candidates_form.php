@@ -33,18 +33,18 @@ class candidate_form extends moodleform {
             $mform->addElement('hidden', 'election_id', $election->id);
             $mform->setType('election_id', PARAM_INT);
 
-            $mform->addElement('header', 'displayinfo', get_string('create_new_candidate', 'block_sgelection'));
+            $mform->addElement('header', 'displayinfo', sge::_str('create_new_candidate'));
 
             $attributes = array('size' => '50', 'maxlength' => '100');
-            $mform->addElement('text', 'username', get_string('paws_id_of_candidate', 'block_sgelection'), $attributes);
+            $mform->addElement('text', 'username', sge::_str('paws_id_of_candidate'), $attributes);
             $mform->setType('username', PARAM_ALPHANUM);
             $mform->addRule('username', null, 'required', null, 'client');
 
             //add office dropdown
-            $mform->addElement('text', 'affiliation', get_string('affiliation', 'block_sgelection'));
+            $mform->addElement('text', 'affiliation', sge::_str('affiliation'));
             $mform->setType('affiliation', PARAM_TEXT);
             // add affiliation dropdown
-            $mform->addElement('select', 'office', get_string('office_candidate_is_running_for', 'block_sgelection'),$options);
+            $mform->addElement('select', 'office', sge::_str('office_candidate_is_running_for'),$options);
 
             $buttons = array(
                 $mform->createElement('submit', 'save_candidate', get_string('savechanges')),

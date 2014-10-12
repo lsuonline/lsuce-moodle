@@ -45,7 +45,7 @@ $election = Election::get_by_id(required_param('election_id', PARAM_INT));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/blocks/sgelection/results.php');
 $PAGE->set_pagelayout('standard');
-$PAGE->set_heading(get_string('results_page_header', 'block_sgelection'));
+$PAGE->set_heading(sge::_str('results_page_header'));
 $renderer = $PAGE->get_renderer('block_sgelection');
 
 $PAGE->requires->js('/blocks/sgelection/js/datatableforstudentdata.js');

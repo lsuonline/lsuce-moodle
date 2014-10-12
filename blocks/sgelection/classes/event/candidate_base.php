@@ -36,7 +36,7 @@ class candidate_base extends base {
     }
 
     public function get_description() {
-        return get_string('candidatelogmessage', 'block_sgelection', $this->data);
+        return \sge::_str('candidatelogmessage', $this->data);
     }
 
     public function get_url() {

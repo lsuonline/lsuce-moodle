@@ -67,7 +67,7 @@ class resolution extends ballot_item{
         if(($count == 1 && $update) || $count == 0){
             return array();
         }else{
-            return array('title'=> get_string('err_resolution_title_nonunique', 'block_sgelection'));
+            return array('title'=> sge::_str('err_resolution_title_nonunique'));
         }
     }
 
@@ -77,7 +77,7 @@ class resolution extends ballot_item{
     public function delete(){
         global $DB;
         if($DB->record_exists(vote::$tablename, array('type'=>resolution::$type, 'typeid'=>$this->id))){
-            print_error('Votes have been cast for this resolution, cannot delete.');
+            print_error(sge::_str('err_deletedependenciesres'));
         }else{
             parent::delete();
         }

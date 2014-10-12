@@ -21,7 +21,7 @@
         <div class="fb-share-button" data-href= "<?php echo $CFG->wwwroot . '/blocks/sgelection/fb.php';?>"></div>    
     </div>
     <div class="twitterbutton">
-        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://sg.lsu.edu/elections" data-lang="en" data-text="I just voted in the LSU Student Government Elections!">Tweet</a>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://sg.lsu.edu/elections" data-lang="en" data-text="I just voted in the LSU Student Government Elections! #lsusgelections">Tweet</a>
         <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
     </div> 
     <div class='tumblrbutton'>
