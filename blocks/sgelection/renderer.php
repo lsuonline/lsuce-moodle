@@ -307,7 +307,14 @@ class block_sgelection_renderer extends plugin_renderer_base {
 
     public static function print_analytics_tables(election $election){
         global $DB, $PAGE;
-        $result = $DB->get_records('block_sgelection_voters');
+        $sql = "SELECT vr.* "
+                . "FROM {block_sgelection_voters} vr "
+                . "JOIN {block_sgelection_votes} vs "
+                . "  ON vr.id = vs.voterid "
+                . "WHERE vs.finalvote = :final "
+                  . "AND vr.election_id = :eid "
+                . "GROUP BY vr.id";
+        $result = $DB->get_records_sql($sql, array('final'=>1, 'eid'=>$election->id));
 
         $dataarray=array();
         // EXCESSIVE AMOUNT OF ARRAYS -> ARRAY ORIENTATED PROGRAMMING -> http://www.epixa.com/2012/04/array-oriented-programming.html
@@ -341,67 +348,79 @@ class block_sgelection_renderer extends plugin_renderer_base {
         $iparraycount = array_count_values($iparray);
         $timearraycount = array_count_values($timearray);
 //college
-        $collegedata =  array();
-        foreach($collegearraycount as $key => $value){
-            $collegeobject = new stdClass();
-            $collegeobject->college = $key;
-            $collegeobject->count = $value;
-            $collegedata[]=$collegeobject;
+        if(!empty($collegearraycount)){
+            $collegedata =  array();
+            foreach($collegearraycount as $key => $value){
+                $collegeobject = new stdClass();
+                $collegeobject->college = $key;
+                $collegeobject->count = $value;
+                $collegedata[]=$collegeobject;
+            }
+            $collegedata  = json_encode($collegedata);
+            $collegeobject = json_encode($collegeobject);
         }
-        $collegedata  = json_encode($collegedata);
-        $collegeobject = json_encode($collegeobject);
 //major
-        $majordata =  array();
-        foreach($majorarraycount as $key => $value){
-            $majorobject = new stdClass();
-            $majorobject->major = $key;
-            $majorobject->count = $value;
-            $majordata[]=$majorobject;
+        if(!empty($majorarraycount)){
+            $majordata =  array();
+            foreach($majorarraycount as $key => $value){
+                $majorobject = new stdClass();
+                $majorobject->major = $key;
+                $majorobject->count = $value;
+                $majordata[]=$majorobject;
+            }
+            $majordata  = json_encode($majordata);
+            $majorobject = json_encode($majorobject);
         }
-        $majordata  = json_encode($majordata);
-        $majorobject = json_encode($majorobject);
 //year
-        $yeardata =  array();
-        foreach($yeararraycount as $key => $value){
-            $yearobject = new stdClass();
-            $yearobject->year = $key;
-            $yearobject->count = $value;
-            $yeardata[]=$yearobject;
+        if(!empty($yeararraycount)){
+            $yeardata =  array();
+            foreach($yeararraycount as $key => $value){
+                $yearobject = new stdClass();
+                $yearobject->year = $key;
+                $yearobject->count = $value;
+                $yeardata[]=$yearobject;
 
+            }
+            $yeardata  = json_encode($yeardata);
+            $yearobject = json_encode($yearobject);
         }
-        $yeardata  = json_encode($yeardata);
-        $yearobject = json_encode($yearobject);
 //courseload
-        $courseloaddata =  array();
-        foreach($courseloadarraycount as $key => $value){
-            $courseloadobject = new stdClass();
-            $courseloadobject->courseload = $key;
-            $courseloadobject->count = $value;
-            $courseloaddata[]=$courseloadobject;
+        if(!empty($courseloadarraycount)){
+            $courseloaddata =  array();
+            foreach($courseloadarraycount as $key => $value){
+                $courseloadobject = new stdClass();
+                $courseloadobject->courseload = $key;
+                $courseloadobject->count = $value;
+                $courseloaddata[]=$courseloadobject;
 
+            }
+            $courseloaddata  = json_encode($courseloaddata);
+            $courseloadobject = json_encode($courseloadobject);
         }
-        $courseloaddata  = json_encode($courseloaddata);
-        $courseloadobject = json_encode($courseloadobject);
 //ip
-        $ipdata =  array();
-        foreach($iparraycount as $key => $value){
-            $ipobject = new stdClass();
-            $ipobject->ip_address = $key;
-            $ipobject->count = $value;
-            $ipdata[]=$ipobject;
+        if(!empty($iparraycount)){
+            $ipdata =  array();
+            foreach($iparraycount as $key => $value){
+                $ipobject = new stdClass();
+                $ipobject->ip_address = $key;
+                $ipobject->count = $value;
+                $ipdata[]=$ipobject;
+            }
+            $ipdata  = json_encode($ipdata);
+            $ipobject = json_encode($ipobject);
         }
-        $ipdata  = json_encode($ipdata);
-        $ipobject = json_encode($ipobject);
 //time
-        $timedata =  array();
-        foreach($timearraycount as $key => $value){
-            $timeobject = new stdClass();
-            $timeobject->time = $key;
-            $timeobject->count = $value;
-            $timedata[]=$timeobject;
+        if(!empty($timearraycount)){
+            $timedata =  array();
+            foreach($timearraycount as $key => $value){
+                $timeobject = new stdClass();
+                $timeobject->time = $key;
+                $timeobject->count = $value;
+                $timedata[]=$timeobject;
+            }
+            $timedata  = json_encode($timedata);
+            $timeobject = json_encode($timeobject);
         }
-        $timedata  = json_encode($timedata);
-        $timeobject = json_encode($timeobject);
 
 
         $cols = 'college';

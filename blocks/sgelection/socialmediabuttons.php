@@ -18,8 +18,7 @@
 
 <div class = "socialmediabuttons">
     <div class ="facingbooksharebutton">
-        <div class="fb-share-button" data-href= "<?php echo $CFG->wwwroot . '/blocks/sgelection/fb.php';?>"
-                ></div>    
+        <div class="fb-share-button" data-href= "<?php echo $CFG->wwwroot . '/blocks/sgelection/fb.php';?>"></div>    
     </div>
     <div class="twitterbutton">
         <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://sg.lsu.edu/elections" data-lang="en" data-text="I just voted in the LSU Student Government Elections!">Tweet</a>

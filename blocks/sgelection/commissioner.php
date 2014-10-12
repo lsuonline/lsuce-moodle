@@ -44,6 +44,7 @@ if($form->is_cancelled()){
 } else if($fromform = $form->get_data()){
     $election = new election($fromform);
     $election->thanksforvoting = $fromform->thanksforvoting_editor['text'];
+    //@TODO update str_replace to handle newlines too
     $election->test_users = str_replace(' ', '', $fromform->test_users);
     $election->save();
 

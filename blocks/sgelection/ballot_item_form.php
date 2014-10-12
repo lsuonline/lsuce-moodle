@@ -93,7 +93,7 @@ class ballot_item_form extends moodleform {
         $mform->addElement('html', '</div>');
 
         $buttons = array(
-        $mform->createElement('submit', 'vote', get_string('vote', 'block_sgelection')),
+        $mform->createElement('submit', 'vote', get_string('review_vote', 'block_sgelection')),
         $mform->createElement('cancel', 'cancel', get_string('cancel', 'moodle'))
         );
         $mform->addGroup($buttons, 'buttons', 'actions', array(' '), false);
