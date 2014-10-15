@@ -13,6 +13,10 @@ class ballot_item_form extends moodleform {
         $candidates = $this->_customdata['candidates'];
         $voter      = $this->_customdata['voter'];
 
+        if(!empty($voter->id)){
+            $mform->addElement('hidden', 'voterid', $voter->id);
+            $mform->setType('voterid', PARAM_INT);
+        }
         // Setup preview controls.
         if($voter->is_privileged_user()){
 

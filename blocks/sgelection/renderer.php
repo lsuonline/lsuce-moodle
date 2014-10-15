@@ -317,7 +317,6 @@ class block_sgelection_renderer extends plugin_renderer_base {
         $result = $DB->get_records_sql($sql, array('final'=>1, 'eid'=>$election->id));
 
         $dataarray=array();
-        // EXCESSIVE AMOUNT OF ARRAYS -> ARRAY ORIENTATED PROGRAMMING -> http://www.epixa.com/2012/04/array-oriented-programming.html
         $collegearray=array();
         $majorarray=array();
         $yeararray=array();
@@ -341,11 +340,18 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $timearray[] = $r->time;
             $dataarray[]=$r;
         }
+        //  sort IP array
+        $iparray = array_count_values($iparray);
+        foreach($iparray as $key => $value){
+            if($key > 1){
+                $newIParray[$value] = $key;
+            }
+        }
         $collegearraycount = array_count_values($collegearray);
         $majorarraycount = array_count_values($majorarray);
         $yeararraycount = array_count_values($yeararray);
         $courseloadarraycount = array_count_values($courseloadarray);
-        $iparraycount = array_count_values($iparray);
+        $iparraycount = array_count_values($newIParray);
         $timearraycount = array_count_values($timearray);
 //college
         if(!empty($collegearraycount)){
@@ -398,13 +404,15 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $courseloadobject = json_encode($courseloadobject);
         }
 //ip
-        if(!empty($iparraycount)){
+        if(!empty($newIParray)){
             $ipdata =  array();
-            foreach($iparraycount as $key => $value){
-                $ipobject = new stdClass();
-                $ipobject->ip_address = $key;
-                $ipobject->count = $value;
-                $ipdata[]=$ipobject;
+            foreach($newIParray as $key => $value){
+                if($key > 1){
+                    $ipobject = new stdClass();
+                    $ipobject->ip_address = $value;
+                    $ipobject->count = $key;
+                    $ipdata[]=$ipobject;
+                }
             }
             $ipdata  = json_encode($ipdata);
             $ipobject = json_encode($ipobject);

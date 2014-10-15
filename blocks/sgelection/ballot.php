@@ -72,6 +72,9 @@ $PAGE->set_title($heading);
 
 // Establish SG admin status.
 $voter = new voter($USER->id);
+if($voterid){
+    $voter->id = $voterid;
+}
 $voter->courseload = $voter->courseload(ues_semester::by_id($election->semesterid)); //Specific to this election!!
 $voter->is_privileged_user = $voter->is_privileged_user();
 

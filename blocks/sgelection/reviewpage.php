@@ -20,7 +20,12 @@ if($voter->already_voted($election)){
         foreach(candidate::get_full_candidates($election, $voter) as $c){
             $fieldname = 'candidate_checkbox_' . $c->cid . '_' . $c->oid;
             if(isset($fromform->$fieldname)){
-                $vote = new vote(array('voterid'=>$voter->id));
+                $previous = $DB->get_record('block_sgelection_votes', array('type' => 'C', 'voterid' => $voter->id, 'typeid'=>$c->cid));
+                if($previous){
+                    $vote = new vote($previous);
+                }else{
+                    $vote = new vote(array('voterid'=>$voter->id));
+                }
                 $vote->finalvote = 0;
                 $vote->typeid = $c->cid;
                 $vote->type = candidate::$type;
@@ -33,7 +38,12 @@ if($voter->already_voted($election)){
             $fieldname = 'resvote_'.$resid;
             // store a value for abstentions.
             $resvote = isset($fromform->$fieldname) ? $fromform->$fieldname : resolution::ABSTAIN;
-            $vote = new vote(array('voterid'=>$voter->id));
+            $previous = $DB->get_record('block_sgelection_votes', array('type' => 'R', 'voterid' => $voter->id, 'typeid'=>$resid));
+            if($previous){
+                $vote = new vote($previous);
+            }else{
+                $vote = new vote(array('voterid'=>$voter->id));
+            }
             $vote->finalvote = 0;
             $vote->typeid = $resid;
             $vote->type = resolution::$type;
