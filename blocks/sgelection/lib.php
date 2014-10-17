@@ -308,8 +308,13 @@ class sge {
                 . " FROM {enrol_ues_students} as ustu"
                 . "    JOIN {enrol_ues_sections} usec ON usec.id = ustu.sectionid"
                 . "    JOIN {enrol_ues_semesters} usem ON usem.id = usec.semesterid"
-                . " WHERE ustu.status = 'enrolled'"
-                . "    AND usem.id = :semid"
+                . " WHERE usem.id = :semid"
+                . "    AND "
+                . "    (
+                          usec.status = 'skipped'  AND ustu.status = 'processed'
+                          OR
+                          usec.status = 'manifested'  AND ustu.status = 'enrolled'
+                       )"
                 . " GROUP BY ustu.userid;";
 
         return $DB->get_records_sql($sql, array('semid'=>$s->id));
