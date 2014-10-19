@@ -58,6 +58,15 @@
   margin: 0 10px 0 10px;
 } 
 
+#page-blocks-sgelection-ballot div.resolution fieldset.hidden>div {
+  width: auto;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
+  text-align: left;
+  margin: 0;
+}
+
 #page-blocks-sgelection-ballot div.candidates, #page-blocks-sgelection-ballot div.resolutions {
   background-color: #fff;
   display: block;
@@ -87,7 +96,7 @@
   margin-top: 2em;
 }
 
-#page-blocks-sgelection-ballot div.candidate .fitemtitle, #page-blocks-sgelection-ballot div.resolutions .fitemtitle {
+#page-blocks-sgelection-ballot div.candidate .fitemtitle, #page-blocks-sgelection-ballot div.resolution .fitemtitle {
   display: none!important;
 }
 
@@ -137,7 +146,7 @@
   padding-left: 1em;
 }
 
-#page-blocks-sgelection-ballot div.candidate .felement, #page-blocks-sgelection-ballot div.resolutions .felement {
+#page-blocks-sgelection-ballot div.candidate .felement, #page-blocks-sgelection-ballot div.resolution .felement {
   padding: 0;
   margin:0;
 }
@@ -226,6 +235,7 @@
 #page-blocks-sgelection-ballot .fitem_actionbuttons div.fgroup {
   width: 100%;
   margin: 10px auto;
+  text-align:center;
 }
 
 #page-blocks-sgelection-ballot div.region-content > div[role="main"] {

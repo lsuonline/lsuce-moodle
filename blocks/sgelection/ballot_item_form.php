@@ -95,6 +95,9 @@ class ballot_item_form extends moodleform {
 
             $mform->addGroup($radioarray, 'radioar', '', array(' '), false);
             $mform->addElement('html', '</div>');
+            if (empty($candidates)) {
+            $mform->addElement('html', '</div>');
+            }
         }
         $mform->addElement('html', '</div>');
 
