@@ -1567,7 +1567,7 @@ class grade_item extends grade_object {
         }
 
         // Manual Item raw-grade support
-        if ($this->is_manual_item()) {
+        if ($this->is_manual_item() and $CFG->grade_item_manual_recompute) {
             return $this->update_raw_grade(
                 $userid, $finalgrade, $source, $feedback, $feedbackformat,
                 $usermodified, null, null, $grade
