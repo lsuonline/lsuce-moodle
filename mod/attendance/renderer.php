@@ -104,9 +104,10 @@ class mod_attendance_renderer extends plugin_renderer_base {
         }
 
         $totalusers = count_enrolled_users(context_module::instance($fcontrols->cm->id), 'mod/attendance:canbelisted', $group);
-        $usersperpage = $fcontrols->pageparams->perpage;
-        if (empty($fcontrols->pageparams->page) || !$fcontrols->pageparams->page || !$totalusers || !$usersperpage) {
+        if (empty($fcontrols->pageparams->page) || !$fcontrols->pageparams->page || !$totalusers) {
             return $paging_controls;
+        } else { 
+            $usersperpage = $fcontrols->pageparams->perpage;
         }
 
         $numberofpages = ceil($totalusers / $usersperpage);
@@ -655,9 +656,11 @@ class mod_attendance_renderer extends plugin_renderer_base {
                         $userdata->url()->out(true, array('mode' => att_view_page_params::MODE_THIS_COURSE)),
                         get_string('thiscourse', 'attendance'));
 
+/* REMOVE FOR FERPA
         $tabs[] = new tabobject(att_view_page_params::MODE_ALL_COURSES,
                         $userdata->url()->out(true, array('mode' => att_view_page_params::MODE_ALL_COURSES)),
                         get_string('allcourses', 'attendance'));
+*/
 
         return print_tabs(array($tabs), $userdata->pageparams->mode, null, null, true);
     }
@@ -674,7 +677,9 @@ class mod_attendance_renderer extends plugin_renderer_base {
             $o .= $this->render_attendance_filter_controls($userdata->filtercontrols);
 
             $o .= $this->construct_user_sessions_log($userdata);
-        } else {
+        } 
+/* REMOVE FOR FERPA
+        else {
             $prevcid = 0;
             foreach ($userdata->coursesatts as $ca) {
                 if ($prevcid != $ca->courseid) {
@@ -690,7 +695,7 @@ class mod_attendance_renderer extends plugin_renderer_base {
                             $userdata->maxgrade[$ca->attid], $userdata->decimalpoints);
             }
         }
-
+*/
         return $o;
     }
 
