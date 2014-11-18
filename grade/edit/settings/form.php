@@ -35,7 +35,7 @@ require_once($CFG->libdir.'/formslib.php');
 class course_settings_form extends moodleform {
 
     function definition() {
-        global $USER, $CFG;
+        global $USER, $CFG, $COURSE;
 
         $mform =& $this->_form;
 
