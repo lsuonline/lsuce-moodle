@@ -242,22 +242,22 @@ class lmsEnrollment extends apreport{
                log.id AS logid
                ,usect.id AS sectionid
                ,usect.semesterid AS semesterid
-               ,log.time AS time
+               ,log.timecreated
                ,log.userid
-               ,log.course
+               ,log.courseid
                ,log.action
             FROM 
                 {enrol_ues_sections} usect
             LEFT JOIN
                 {course} course ON course.idnumber = usect.idnumber
             LEFT JOIN
-                {log} log on course.id = log.course
-            WHERE 
-                log.time > %s 
-                AND 
-                log.time < %s AND (log.course > 1 OR log.action = 'login')
+                {logstore_standard_log} log on course.id = log.courseid
+            WHERE
+                log.timecreated > %s
+                AND
+                log.timecreated < %s AND (log.courseid > 1 OR log.action = 'loggedin')
             GROUP BY logid
-            ORDER BY sectionid, log.time ASC
+            ORDER BY sectionid, log.timecreated ASC
             ;"
                 ,array($this->proc_start, $this->proc_end));
         $logs = $DB->get_records_sql($sql);
@@ -265,11 +265,11 @@ class lmsEnrollment extends apreport{
         $ulogs =array();
         
         foreach($logs as $log){
-            if(!isset($ulogs[$log->userid.'-'.$log->course])){
-                $ulogs[$log->userid.'-'.$log->course] = array();
+            if(!isset($ulogs[$log->userid.'-'.$log->courseid])){
+                $ulogs[$log->userid.'-'.$log->courseid] = array();
             }
-            
-            $ulogs[$log->userid.'-'.$log->course][] = $log;
+
+            $ulogs[$log->userid.'-'.$log->courseid][] = $log;
         }
         
         return $this->logs = $ulogs;
@@ -391,25 +391,25 @@ class lmsEnrollment extends apreport{
                 );
         return $DB->get_records_sql($sql);
     }
-    
+
     public function fetchUserLogsKeysByUserid($keyUserId){
         return preg_grep("/{$keyUserId}\-[0-9]+/", array_keys($this->logs));
     }
-    
+
     public function fetchUserLogsByUserid($keyUserId){
         $arrUserLogs = array();
-        
+
         //make one array containing log row objects for all of the student's courses
         foreach($this->fetchUserLogsKeysByUserid($keyUserId) as $keyUserLogs){
             $arrUserLogs = array_merge($arrUserLogs,$this->logs[$keyUserLogs]);
         }
-        
+
         //sort by time
         usort($arrUserLogs,function($a,$b){
-            if($a->time == $b->time){
+            if($a->timecreated == $b->timecreated){
                 return 0;
             }else{
-                return $a->time < $b->time ? -1 : 1;
+                return $a->timecreated < $b->timecreated ? -1 : 1;
             }
         });
         return $arrUserLogs;
@@ -423,9 +423,9 @@ class lmsEnrollment extends apreport{
         $arrUserLogs = $this->fetchUserLogsByUserid($keyUserId);
         foreach($arrUserLogs as $objLog){
 
-            $keyCurrentUserCourse       = $objLog->userid.'-'.$objLog->course;
-            $blnToIgnore                = $objLog->course == 1 && $objLog->action  !== "login";
-            $blnIsLogin                 = $objLog->course == 1 && $objLog->action  == 'login';
+            $keyCurrentUserCourse       = $objLog->userid.'-'.$objLog->courseid;
+            $blnToIgnore                = $objLog->courseid == 1 && $objLog->action  !== "loggedin";
+            $blnIsLogin                 = $objLog->courseid == 1 && $objLog->action  == 'loggedin';
             $blnIsNewSequence           = !$blnIsLogin && !isset($keyActiveUserCourse);
             $blnIsSessionContinuation   = !$blnIsLogin &&  isset($keyActiveUserCourse);
 
@@ -461,7 +461,7 @@ class lmsEnrollment extends apreport{
             }
             elseif($blnIsSessionContinuation){
                 if($keyActiveUserCourse == $keyCurrentUserCourse){ //same sequence
-                    $arrOutput[$keyActiveUserCourse]->timespentinclass += $objLog->time - $arrOutput[$keyActiveUserCourse]->lastcounter;
+                    $arrOutput[$keyActiveUserCourse]->timespentinclass += $objLog->timecreated - $arrOutput[$keyActiveUserCourse]->lastcounter;
                 }else{
                     unset($arrOutput[$keyActiveUserCourse]->lastcounter);
                 $keyActiveUserCourse  = $keyCurrentUserCourse;
@@ -471,7 +471,7 @@ class lmsEnrollment extends apreport{
                 Throw new Exception("Unhandled case");
             }
 
-            $arrOutput[$keyActiveUserCourse]->lastcounter = $arrOutput[$keyActiveUserCourse]->lastcourseaccess = $objLog->time;
+            $arrOutput[$keyActiveUserCourse]->lastcounter = $arrOutput[$keyActiveUserCourse]->lastcourseaccess = $objLog->timecreated;
         }
         return $arrOutput;
     }
@@ -1178,56 +1178,8 @@ class coursework_queries{
                         AND mgi2.itemtype = 'category')
                     cats ON cats.catscourse = c.id AND mgc.id = cats.catcatid
             WHERE c.id = '%d'",
-        
-        'forumng' =>
-            "SELECT
-                DISTINCT(CONCAT(usem.year,u.idnumber,LPAD(c.id,5,'0'),us.sec_number,mm.id,'00000000',(IFNULL(mma.id, '0')))) AS uniqueId,
-                mma.id AS modAttemptId,
-                mm.id AS courseModuleId,
-                mgi.id AS gradeItemid,
-                mm.id AS itemId,
-                CONCAT(usem.year,u.idnumber,LPAD(c.id,5,'0'),us.sec_number) AS enrollmentId,
-                u.username as pawsId,
-                u.idnumber AS studentId,
-                CONCAT(RPAD(uc.department,4,' '),'  ',uc.cou_number) AS courseId,
-                us.sec_number AS sectionId,
-                'forumng' AS itemType,
-                mm.name AS itemName,
-                mm.ratinguntil AS dueDate,
-                mmap.modified AS dateSubmitted,
-                mm.ratingscale AS pointsPossible,
-                mgg.finalgrade AS pointsReceived,
-                mgc.fullname AS gradeCategory,
-                cats.categoryWeight AS categoryWeight,
-                NULL AS extensions
-            FROM {course} c
-                INNER JOIN {forumng} mm ON mm.course = c.id
-                INNER JOIN {enrol_ues_sections} us ON c.idnumber = us.idnumber
-                INNER JOIN {enrol_ues_students} ustu ON ustu.sectionid = us.id AND ustu.status = 'enrolled'
-                INNER JOIN {user} u ON ustu.userid = u.id
-                INNER JOIN {enrol_ues_semesters} usem ON usem.id = us.semesterid
-                INNER JOIN {enrol_ues_courses} uc ON uc.id = us.courseid
-                INNER JOIN {grade_items} mgi ON
-                    mgi.courseid = c.id AND
-                    mgi.itemtype = 'mod' AND
-                    mgi.itemmodule = 'forumng' AND
-                    mgi.iteminstance = mm.id
-                INNER JOIN {grade_categories} mgc ON (mgc.id = mgi.iteminstance OR mgc.id = mgi.categoryid) AND mgc.courseid = c.id
-                LEFT JOIN {grade_grades} mgg ON mgi.id = mgg.itemid AND mgg.userid = u.id
-                INNER JOIN {forumng_discussions} mma ON mm.id = mma.forumngid
-                LEFT JOIN {forumng_posts} mmap ON mma.id = mmap.discussionid AND u.id = mmap.userid
-                LEFT JOIN
-                    (SELECT
-                        mgi2.courseid AS catscourse,
-                        mgi2.id AS catsid,
-                        mgi2.iteminstance AS catcatid,
-                        mgi2.aggregationcoef AS categoryWeight
-                    FROM {grade_items} mgi2
-                        INNER JOIN {grade_categories} mgc2 ON mgc2.id = mgi2.iteminstance AND mgc2.courseid = '%d'
-                        AND mgi2.itemtype = 'category')
-                    cats ON cats.catscourse = c.id AND mgc.id = cats.catcatid
-            WHERE c.id = '%d'",
-        
+
+
         'glossary' =>
             "SELECT
                 DISTINCT(CONCAT(usem.year,u.idnumber,LPAD(c.id,5,'0'),us.sec_number,mm.id,'00000000',(IFNULL(mma.id, '0')))) AS uniqueId,
