@@ -29,6 +29,9 @@
 function cron_run() {
     global $DB, $CFG, $OUTPUT;
 
+/*  REMOVED AT THE REQUEST OF MOODLEROOMS
+//  They are getting rid of REDIS locking
+
     require_once($CFG->dirroot.'/local/mr/framework/lock.php');
     $redis = new Redis();
     $redis->connect($CFG->local_mr_redis_server);
@@ -45,6 +48,9 @@ function cron_run() {
             die;
         }
     }
+
+//  REMOVED AT THE REQUEST OF MOODLEROOMS
+*/
 
     if (CLI_MAINTENANCE) {
         echo "CLI maintenance mode active, cron execution suspended.\n";
@@ -146,9 +152,17 @@ function cron_run() {
     mtrace('Cron completed at ' . date('H:i:s') . '. Memory used ' . display_size(memory_get_usage()) . '.');
     $difftime = microtime_diff($starttime, microtime());
     mtrace("Execution took ".$difftime." seconds");
+
+/*  REMOVED AT THE REQUEST OF MOODLEROOMS
+//  They are getting rid of REDIS locking
+
     if (!isset($redise)) {
         $mrlock->release();
     }
+
+//  REMOVED AT THE REQUEST OF MOODLEROOMS
+*/
+
 }
 
 /**
