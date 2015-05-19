@@ -68,10 +68,11 @@ class file_lock_factory implements lock_factory {
         } else {
             $this->lockdirectory = $CFG->file_lock_root;
         }
-        $this->verbose = false;
-        if ($CFG->debugdeveloper) {
-            $this->verbose = true;
-        }
+        $this->verbose = true; // MOODLEROOMS: Always be verbose.
+        // $this->verbose = false;
+        // if ($CFG->debugdeveloper) {
+        //     $this->verbose = true;
+        // }
     }
 
     /**
@@ -118,8 +119,11 @@ class file_lock_factory implements lock_factory {
      * Get some info that might be useful for debugging.
      * @return boolean - string
      */
-    protected function get_debug_info() {
-        return 'host:' . php_uname('n') . ', pid:' . getmypid() . ', time:' . time();
+    // MOODLEROOMS protected function get_debug_info() {
+        // return 'host:' . php_uname('n') . ', pid:' . getmypid() . ', time:' . time();
+    protected function get_debug_info($resource = null) {
+        return 'host:' . php_uname('n') . ', pid:' . getmypid() . ', time:' . time() .
+            ', type: ' . $this->type . (!is_null($resource) ? ', resource: ' . $resource : '');
     }
 
     /**
@@ -163,7 +167,8 @@ class file_lock_factory implements lock_factory {
             return false;
         }
         if ($this->verbose) {
-            fwrite($filehandle, $this->get_debug_info());
+            // MOODLEROOMS fwrite($filehandle, $this->get_debug_info());
+            fwrite($filehandle, $this->get_debug_info($resource));
         }
         return new lock($filehandle, $this);
     }
