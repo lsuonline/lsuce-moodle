@@ -433,6 +433,10 @@ abstract class grade_report {
             return $finalgrade;
         }
 
+        if ($this->showtotalsifcontainhidden[$courseid] == GRADE_REPORT_SHOW_TOTAL_IF_CONTAINS_HIDDEN) {
+            return $finalgrade;
+        }
+
         // If we've moved on to another course or user, reload the grades.
         if ($previous_userid != $this->user->id || $previous_courseid != $courseid) {
             $hiding_affected = null;
