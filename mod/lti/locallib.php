@@ -824,7 +824,7 @@ function lti_get_type_config_from_instance($id) {
     if (isset($config['instructorchoicesendusername'])) {
         $type->lti_sendusername = $config['instructorchoicesendusername'];
     }
-    if (isset($config['instructorchoice ndname'])) {
+    if (isset($config['instructorchoicesendname'])) {
         $type->lti_sendname = $config['instructorchoicesendname'];
     }
     if (isset($config['instructorchoicesendemailaddr'])) {
