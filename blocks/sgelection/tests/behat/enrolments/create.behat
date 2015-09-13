@@ -1,0 +1,222 @@
+And I set the following fields to these values:
+         | Title of Resolution | res1 |
+         | Resolution Text | This resolution is open only to Full-time students |
+      And I click on "Restrict to Full Time?" "text"
+      And I press "save_resolution"
+
+      And I set the following fields to these values:
+         | Title of Resolution | res2 |
+         | Resolution Text | This resolution is open to all students |
+      And I press "save_resolution"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | adsn1 |
+                    | Office the Candidate is running for | College Council President [ADSN] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | adsn2 |
+                    | Office the Candidate is running for | College Council President [ADSN] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | adsn3 |
+                    | Office the Candidate is running for | College Council President [ADSN] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | agri1 |
+                    | Office the Candidate is running for | College Council President [AGRI] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | agri2 |
+                    | Office the Candidate is running for | College Council President [AGRI] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | agri3 |
+                    | Office the Candidate is running for | College Council President [AGRI] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | badm1 |
+                    | Office the Candidate is running for | College Council President [BADM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | badm2 |
+                    | Office the Candidate is running for | College Council President [BADM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | badm3 |
+                    | Office the Candidate is running for | College Council President [BADM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | engr1 |
+                    | Office the Candidate is running for | College Council President [ENGR] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | engr2 |
+                    | Office the Candidate is running for | College Council President [ENGR] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | engr3 |
+                    | Office the Candidate is running for | College Council President [ENGR] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | grad1 |
+                    | Office the Candidate is running for | College Council President [GRAD] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | grad2 |
+                    | Office the Candidate is running for | College Council President [GRAD] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | grad3 |
+                    | Office the Candidate is running for | College Council President [GRAD] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | hse1 |
+                    | Office the Candidate is running for | College Council President [HSE] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | hse2 |
+                    | Office the Candidate is running for | College Council President [HSE] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | hse3 |
+                    | Office the Candidate is running for | College Council President [HSE] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | hss1 |
+                    | Office the Candidate is running for | College Council President [HSS] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | hss2 |
+                    | Office the Candidate is running for | College Council President [HSS] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | hss3 |
+                    | Office the Candidate is running for | College Council President [HSS] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | mcom1 |
+                    | Office the Candidate is running for | College Council President [MCOM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | mcom2 |
+                    | Office the Candidate is running for | College Council President [MCOM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | mcom3 |
+                    | Office the Candidate is running for | College Council President [MCOM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | mda1 |
+                    | Office the Candidate is running for | College Council President [MDA] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | mda2 |
+                    | Office the Candidate is running for | College Council President [MDA] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | mda3 |
+                    | Office the Candidate is running for | College Council President [MDA] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | sce1 |
+                    | Office the Candidate is running for | College Council President [SCE] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | sce2 |
+                    | Office the Candidate is running for | College Council President [SCE] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | sce3 |
+                    | Office the Candidate is running for | College Council President [SCE] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | sci1 |
+                    | Office the Candidate is running for | College Council President [SCI] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | sci2 |
+                    | Office the Candidate is running for | College Council President [SCI] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | sci3 |
+                    | Office the Candidate is running for | College Council President [SCI] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | ucac1 |
+                    | Office the Candidate is running for | College Council President [UCAC] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | ucac2 |
+                    | Office the Candidate is running for | College Council President [UCAC] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | ucac3 |
+                    | Office the Candidate is running for | College Council President [UCAC] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | ucfy1 |
+                    | Office the Candidate is running for | College Council President [UCFY] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | ucfy2 |
+                    | Office the Candidate is running for | College Council President [UCFY] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | ucfy3 |
+                    | Office the Candidate is running for | College Council President [UCFY] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | vetm1 |
+                    | Office the Candidate is running for | College Council President [VETM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | vetm2 |
+                    | Office the Candidate is running for | College Council President [VETM] |
+                    And I press "save_candidate"
+
+And I set the following fields to these values:
+                    | paws ID of Candidate | vetm3 |
+                    | Office the Candidate is running for | College Council President [VETM] |
+                    And I press "save_candidate"
+
+And I log out

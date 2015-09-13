@@ -341,10 +341,11 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $dataarray[]=$r;
         }
         //  sort IP array
+        $newIParray = array();
         $iparray = array_count_values($iparray);
         foreach($iparray as $key => $value){
-            if($key > 1){
-                $newIParray[$value] = $key;
+            if($value > 1){
+                $newIParray[$key] = $value;
             }
         }
         $collegearraycount = array_count_values($collegearray);
@@ -354,8 +355,8 @@ class block_sgelection_renderer extends plugin_renderer_base {
         $iparraycount = array_count_values($newIParray);
         $timearraycount = array_count_values($timearray);
 //college
+        $collegedata =  array();
         if(!empty($collegearraycount)){
-            $collegedata =  array();
             foreach($collegearraycount as $key => $value){
                 $collegeobject = new stdClass();
                 $collegeobject->college = $key;
@@ -366,8 +367,8 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $collegeobject = json_encode($collegeobject);
         }
 //major
+        $majordata =  array();
         if(!empty($majorarraycount)){
-            $majordata =  array();
             foreach($majorarraycount as $key => $value){
                 $majorobject = new stdClass();
                 $majorobject->major = $key;
@@ -378,8 +379,8 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $majorobject = json_encode($majorobject);
         }
 //year
+        $yeardata =  array();
         if(!empty($yeararraycount)){
-            $yeardata =  array();
             foreach($yeararraycount as $key => $value){
                 $yearobject = new stdClass();
                 $yearobject->year = $key;
@@ -391,8 +392,8 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $yearobject = json_encode($yearobject);
         }
 //courseload
+        $courseloaddata =  array();
         if(!empty($courseloadarraycount)){
-            $courseloaddata =  array();
             foreach($courseloadarraycount as $key => $value){
                 $courseloadobject = new stdClass();
                 $courseloadobject->courseload = $key;
@@ -404,22 +405,24 @@ class block_sgelection_renderer extends plugin_renderer_base {
             $courseloadobject = json_encode($courseloadobject);
         }
 //ip
+        $ipdata =  array();
         if(!empty($newIParray)){
-            $ipdata =  array();
             foreach($newIParray as $key => $value){
                 if($key > 1){
                     $ipobject = new stdClass();
-                    $ipobject->ip_address = $value;
-                    $ipobject->count = $key;
+                    $ipobject->ip_address = $key;
+                    $ipobject->count = $value;
                     $ipdata[]=$ipobject;
                 }
             }
-            $ipdata  = json_encode($ipdata);
-            $ipobject = json_encode($ipobject);
+            if(!empty($ipdata)){
+                $ipdata   = json_encode($ipdata);
+                $ipobject = json_encode($ipobject);
+            }
         }
 //time
+        $timedata =  array();
         if(!empty($timearraycount)){
-            $timedata =  array();
             foreach($timearraycount as $key => $value){
                 $timeobject = new stdClass();
                 $timeobject->time = $key;

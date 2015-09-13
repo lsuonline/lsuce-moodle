@@ -110,7 +110,7 @@ class candidate extends sge_database_object{
             $offices = array();
             foreach($candidates as $c){
                 $office = office::get_by_id($c->oid);
-                $offices[] = $office->name . sprintf(" %s [id: %d] ", $office->college, $c->oid);
+                $offices[] = sprintf("%s %s [id: %d]", $office->name, $office->college, $c->oid);
             }
             // @todo There should never be more than one office in the db per cand/election.
             $a->office = implode(' and ', $offices);

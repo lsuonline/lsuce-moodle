@@ -114,6 +114,7 @@ abstract class block_sgelection_base extends advanced_testcase{
         $e->hours_census_start = $e->start_date - 86400;
         $e->hours_census_complete = $e->hours_census_start + 200;
         $e->thanksforvoting = 'THX';
+        $e->test_users = 'jpeak5,admin';
 
         $election = new election($e);
         $election->save();
@@ -239,6 +240,7 @@ abstract class block_sgelection_base extends advanced_testcase{
             'hours_census_start' => time() + 1000 - 86400,
             'hours_census_complete' => time() + 1000 - 86300,
             'thanksforvoting' => 'Thanks',
+            'test_users' => 'jpeak5,admin',
         );
         $fn = 'create_'.$class;
 

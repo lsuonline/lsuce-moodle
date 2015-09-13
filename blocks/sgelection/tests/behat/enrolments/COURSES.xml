@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rows xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../schema/COURSES.xsd">
+    <ROW>
+        <DEPT_CODE>TEST</DEPT_CODE>
+        <COURSE_NBR>1001</COURSE_NBR>
+        <SECTION_NBR>001</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>Behat test course</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+    <ROW>
+        <DEPT_CODE>TEST</DEPT_CODE>
+        <COURSE_NBR>9000</COURSE_NBR>
+        <SECTION_NBR>001</SECTION_NBR>
+        <CLASS_TYPE>LEC</CLASS_TYPE>
+        <COURSE_TITLE>Behat test seminar</COURSE_TITLE>
+        <GRADE_SYSTEM_CODE>L</GRADE_SYSTEM_CODE>
+    </ROW>
+</rows>

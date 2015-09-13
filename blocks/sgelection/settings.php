@@ -62,4 +62,12 @@ if ($ADMIN->fulltree) {
                     14,
                     PARAM_INT)
             );
+    $settings->add(
+            new admin_setting_configtext(
+                    'block_sgelection/archive_after',
+                    sge::_str('archive_after'),
+                    sge::_str('archive_after_desc'),
+                    14,
+                    PARAM_INT)
+            );
 }

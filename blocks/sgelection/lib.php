@@ -289,8 +289,11 @@ class sge {
         $result = array();
         $where  = "hours_census_start < :now "
                 . "AND (hours_census_complete IS NULL "
-                .    "OR hours_census_complete = 0) " // May never actually be null (@see commissioner_form).
-                . "AND start_date > :then";
+                .    "OR hours_census_complete = 0) "; // May never actually be null (@see commissioner_form).
+              // Removing this constraint to ease testing, but we probably
+              // don't want this being computed on every cron run during an
+              // election.
+              //. "AND start_date > :then";
         $raw    = $DB->get_records_select(Election::$tablename, $where, array('now'=>time(), 'then'=>time()));
         foreach($raw as $r){
             $s = ues_semester::by_id($r->semesterid);

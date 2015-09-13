@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rows xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../schema/INSTRUCTORS.xsd">
+    <ROW>
+       <IDNUMBER>testinst001</IDNUMBER>
+        <PRIMARY_INSTRUCTOR>Y</PRIMARY_INSTRUCTOR>
+        <CLASS_DEPT_CODE>TEST</CLASS_DEPT_CODE>
+        <CLASS_COURSE_NBR>1001</CLASS_COURSE_NBR>
+        <SECTION_NBR>001</SECTION_NBR>
+        <INDIV_NAME>instructor001, test</INDIV_NAME>
+        <PRIMARY_ACCESS_ID>testinst001</PRIMARY_ACCESS_ID>
+    </ROW>
+    <ROW>
+       <IDNUMBER>testinst001</IDNUMBER>
+        <PRIMARY_INSTRUCTOR>Y</PRIMARY_INSTRUCTOR>
+        <CLASS_DEPT_CODE>TEST</CLASS_DEPT_CODE>
+        <CLASS_COURSE_NBR>9000</CLASS_COURSE_NBR>
+        <SECTION_NBR>001</SECTION_NBR>
+        <INDIV_NAME>instructor001, test</INDIV_NAME>
+        <PRIMARY_ACCESS_ID>testinst001</PRIMARY_ACCESS_ID>
+    </ROW>
+</rows>

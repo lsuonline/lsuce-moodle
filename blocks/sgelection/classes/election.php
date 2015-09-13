@@ -57,6 +57,22 @@ class election extends sge_database_object {
         return self::classify_rows($elections);
     }
 
+    /**
+     * Get all elections whose end_dates are newer than the archive threshold
+     * as defined by config 'archive_after'.
+     *
+     * @global stdClass $DB
+     * @return election[]
+     */
+    public static function get_all_not_archived(){
+        global $DB;
+        $threshold = time() - sge::config('archive_after')*86400;
+        $where     = 'end_date > :archive_threshold';
+        $params    = array('archive_threshold' => $threshold);
+        $elections = $DB->get_records_select(self::$tablename, $where, $params);
+        return self::classify_rows($elections);
+    }
+
     public static function get_links($activeonly = true, $useshortname = true){
         $elections = $activeonly ? self::get_active() : self::get_all();
         $links = array();
@@ -179,7 +195,10 @@ class election extends sge_database_object {
                 }
             }
             $msg = sge::_str('err_census_future_start');
-            return array('hours_census_start' => $msg);
+            // This check makes it difficult to test
+            // and is not really necessary...
+            //return array('hours_census_start' => $msg);
+            return array();
         }else{
             return array();
         }

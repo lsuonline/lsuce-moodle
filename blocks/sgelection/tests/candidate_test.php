@@ -217,8 +217,25 @@ class candidate_class_testcase extends block_sgelection_base {
         $a->username = $user->username;
         $a->eid = $election->id;
         $a->semestername = $election->fullname();
-        $a->office = sprintf("%s [id: %d] ", $office->name, $office->id);
-        $a->office .= sprintf(" and %s [id: %d] ", $office2->name, $office2->id);
+        $office1string = sprintf("%s %s [id: %d]", $office->name, $office->college, $office->id);
+        $office2string = sprintf("%s %s [id: %d]", $office2->name, $office2->college, $office2->id);
+
+        //Since the results are ordered by college, then by weight, we need to account for that.
+        $strcompare = strcmp($office->college, $office2->college);
+        if($strcompare == 0){
+            if($office->weight < $office2->weight){
+                $a->office = $office1string." and ".$office2string;
+            }else{
+                $a->office = $office2string." and ".$office1string;
+            }
+        }else{
+            if($strcompare < 0){
+                $a->office = $office1string." and ".$office2string;
+            }else{
+                $a->office = $office2string." and ".$office1string;
+            }
+        }
+        $a->office =
         $expectedmsg = sge::_str('err_user_nonunique', $a);
         $this->assertEquals($expectedmsg, $result['username']);
 

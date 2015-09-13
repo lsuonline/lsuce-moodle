@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rows xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../schema/INIT_PASSWD.xsd">
+    <ROW>
+        <IDNUMBER>89its002</IDNUMBER>
+        <INIT_PASSWD>howitzer</INIT_PASSWD>
+    </ROW>
+</rows>
