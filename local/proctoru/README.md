@@ -1,4 +1,4 @@
-# block_proctoru
+# local_proctoru
 
 Provides a library of functions oriented towards establishing ProctorU registration status for users.
 Creates a custom profile field in `user_info_field` which stores a status code corresponding to an enumeration 
@@ -22,3 +22,5 @@ and navigate to the _Notifications_ page.
 Admin settings determine whether the module processes users during cron, define roles to consider 
 `ProctorU::EXEMPT` and all of the connection details required for communication with the various webservices.
 
+## Cron Phases 
+Documented in Cronlib.php 
