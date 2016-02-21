@@ -964,11 +964,28 @@ ORDER BY
     /**
      * Change the maxmark for the question_attempt with number in usage $slot
      * for all the specified question_attempts.
+     *
+     * You should call {@link question_engine::set_max_mark_in_attempts()}
+     * rather than calling this method directly.
+     *
      * @param qubaid_condition $qubaids Selects which usages are updated.
      * @param int $slot the number is usage to affect.
      * @param number $newmaxmark the new max mark to set.
      */
     public function set_max_mark_in_attempts(qubaid_condition $qubaids, $slot, $newmaxmark) {
+        if ($this->db->get_dbfamily() == 'mysql') {
+            // MySQL's query optimiser completely fails to cope with the
+            // set_field_select call below, so we have to give it a clue. See MDL-32616.
+            // TODO MDL-29589 encapsulate this MySQL-specific code with a $DB method.
+            $this->db->execute("
+                    UPDATE " . $qubaids->from_question_attempts('qa') . "
+                       SET qa.maxmark = :newmaxmark
+                     WHERE " . $qubaids->where() . "
+                       AND slot = :slot
+                    ", $qubaids->from_where_params() + array('newmaxmark' => $newmaxmark, 'slot' => $slot));
+            return;
+        }
+        // Normal databases.
         $this->db->set_field_select('question_attempts', 'maxmark', $newmaxmark,
                 "questionusageid {$qubaids->usage_id_in()} AND slot = :slot",
                 $qubaids->usage_id_in_params() + array('slot' => $slot));
