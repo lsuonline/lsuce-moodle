@@ -24,23 +24,32 @@ $renderer = $PAGE->get_renderer('block_sgelection');
 $renderer->set_nav(null, $voter);
 
 $customdata['default_results_interval'] = 60;
+$customdata['currently_excluded_curr_codes'] = explode(',', sge::config('excluded_curr_codes'));
+
 $form = new sg_admin_form(null, $customdata);
 
 if($form->is_cancelled()){
     redirect('/');
 } else if($fromform = $form->get_data()){
+    
     //We need to add code to appropriately act on and store the submitted data
     sge::config('commissioner', $fromform->commissioner);
     sge::config('fulltime', $fromform->fulltime);
     sge::config('parttime', $fromform->parttime);
     sge::config('results_recipients', str_replace(' ', '', $fromform->results_recipients));
     sge::config('results_interval', $fromform->results_interval);
-    // @TODO if excl_curr_codes is not set, we have a problem.
-    // Probably, supply a default value here.
-    // Alternatively, provide a 'none' option in the form that will need to be checked here.
-    if(!empty($fromform->excluded_curr_codes)){
-        sge::config('excluded_curr_codes', implode(',', $fromform->excluded_curr_codes));
+    
+    // handle posted excluded curriculum codes (if any)
+    $excl_curr_codes = empty($fromform->excl_curr_codes) ? '' : $fromform->excl_curr_codes;
+
+    if(is_array($excl_curr_codes)) {
+        foreach ($excl_curr_codes as $key => $value) {
+            $codes[] = $key;
+        }
+        $excl_curr_codes = implode(',', $codes);
     }
+
+    sge::config('excluded_curr_codes', $excl_curr_codes);
 
     redirect(new moodle_url($selfurl, array('done'=>'true')));
 } else {

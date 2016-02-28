@@ -35,20 +35,25 @@ class sg_admin_form extends moodleform {
         $mform->setDefault('results_interval', $this->_customdata['default_results_interval']);
         $mform->addHelpButton('results_interval', 'results_interval', 'block_sgelection');
 
+        // construct excluded curriculum codes selection
         $sql = "SELECT id, value "
                 . "FROM {enrol_ues_usermeta} "
                 . "WHERE name = :name "
                 . "GROUP BY value;";
-        $curriculum_codes = $DB->get_records_sql_menu($sql, array('name' => 'user_major'));
-        $currCodesArray = array();
+        
+        $all_curr_codes = $DB->get_records_sql_menu($sql, array('name' => 'user_major'));
 
-        foreach($curriculum_codes as $k => $v){
-            $currCodesArray[$v] = $v;
+        $excl_curr_codes = array();
+
+        foreach($all_curr_codes as $k => $v){
+            if ($v) {
+                $excl_curr_codes[] =& $mform->createElement('checkbox', $v, '', $v, null, array(0, 1));
+                $mform->setDefault('excl_curr_codes['.$v.']', (in_array($v, $this->_customdata['currently_excluded_curr_codes'])));
+            }
         }
 
-        $select = $mform->addElement('select', 'excluded_curr_codes', sge::_str('excluded_curriculum_code'), $currCodesArray);
-        $select->setMultiple(true);
-        $mform->setDefault('excluded_curr_codes', array('CCUR', 'LLM'));
+        $mform->addGroup($excl_curr_codes, 'excl_curr_codes', sge::_str('excluded_curriculum_codes'), array('<br>'), true);
+        
         $mform->addElement('html', '</div>');
         $this->add_action_buttons();
     }

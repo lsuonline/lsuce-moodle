@@ -83,6 +83,7 @@ $string['results_interval'] = "Results Email Interval";
 $string['results_interval_help'] = "Specify an interval (in minutes) that must elapse between email summaries";;
 $string['election_tool_administration'] = ' Election Tool Administration';
 $string['excluded_curriculum_code'] = 'Excluded Curriculum Code';
+$string['excluded_curriculum_codes'] = 'Excluded Curriculum Codes';
 
 // Commissioner Page / building election object
 $string['start_date'] = 'Start Date';
@@ -172,3 +173,7 @@ $string['check_vote_status'] = 'Check vote status for election:   {$a}';
 
 //misc
 $string['savesuccess'] = 'changes saved';
+
+$string['people_voted'] = 'people voted.';
+$string['did_not_vote'] = 'Did not vote';
+$string['total'] = 'Total';
