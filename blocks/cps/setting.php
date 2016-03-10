@@ -74,7 +74,9 @@ function processnamechange($user){
 
     if((!$isteacher && !$altexists) || is_siteadmin()){
         $user->alternatename = $user->firstname;
+        $warning = get_string('notice', 'block_cps');
     }
+
     return $user;
 }
 
@@ -163,7 +165,7 @@ if ($form->is_cancelled()) {
         foreach ($current_settings as $setting) {
             cps_setting::delete($setting->id);
         }
-        events_trigger('user_updated', $user);
+        events_trigger_legacy('user_updated', $user);
 
         $note = $OUTPUT->notification(get_string('settings_changessaved', 'block_cps'), 'notifysuccess');
         $base_url->param('id', $user->id);
@@ -174,9 +176,14 @@ if ($form->is_cancelled()) {
 $settings = cps_setting::get_to_name($setting_params);
 $to_value = function($setting) { return $setting->value; };
 $form->set_data(array_map($to_value, $settings));
+$warning = get_string('notice', 'block_cps');
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading_with_help($heading, 'setting', 'block_cps');
+
+if (!cps_setting::is_valid(ues_user::sections(true))) {
+    echo $OUTPUT->container($warning, 'important', 'notice');
+}
 
 if (!empty($note)) {
     echo $note;
