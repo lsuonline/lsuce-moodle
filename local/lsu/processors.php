@@ -366,7 +366,7 @@ class lsu_sports extends lsu_source {
     function find_season($time) {
         $now = getdate($time);
 
-        $june = 610;
+        $june = 604;
         $dec = 1231;
 
         $cur = (int)(sprintf("%d%02d", $now['mon'], $now['mday']));
