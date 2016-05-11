@@ -163,7 +163,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
         $screenrec     = '';
         $enable_ksr    = get_config(KALTURA_PLUGIN_NAME, 'enable_screen_recorder');
 
-        $context = context_user::instance($USER->id);
+        $context = get_context_instance(CONTEXT_USER, $USER->id);
 
         if (has_capability('local/mymedia:upload', $context, $USER)) {
             $upload = $this->create_upload_markup();
@@ -292,7 +292,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video preview');
+        $attr   = array('class' => 'mymedia video preview container');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video preview',
@@ -313,7 +313,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video share');
+        $attr   = array('class' => 'mymedia video share container');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video share',
@@ -334,7 +334,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video edit');
+        $attr   = array('class' => 'mymedia video edit container');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video edit',
@@ -355,7 +355,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video clip');
+        $attr   = array('class' => 'mymedia video clip container');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video clip',
@@ -377,7 +377,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
 
         $output = '';
 
-        $attr   = array('class' => 'mymedia video delete');
+        $attr   = array('class' => 'mymedia video delete container');
         $output .= html_writer::start_tag('span', $attr);
 
         $attr   = array('class' => 'mymedia video delete',
@@ -778,7 +778,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
         global $SESSION;
 
         $attr   = array('id' => 'simple_search_container',
-                        'class' => 'mymedia simple search');
+                        'class' => 'mymedia simple search container');
 
         $output = html_writer::start_tag('span', $attr);
 
@@ -835,7 +835,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
     public function create_upload_markup() {
 
         $attr   = array('id' => 'upload_btn_container',
-                        'class' => 'mymedia upload button');
+                        'class' => 'mymedia upload button container');
 
         $output = html_writer::start_tag('span', $attr);
 
@@ -880,7 +880,7 @@ class local_mymedia_renderer extends plugin_renderer_base {
     public function create_screenrecorder_markup($partner_id, $login_session) {
 
         $attr   = array('id' => 'screenrecorder_btn_container',
-                        'class' => 'mymedia screenrecorder button');
+                        'class' => 'mymedia screenrecorder button container');
 
         $output = html_writer::start_tag('span', $attr);
 
