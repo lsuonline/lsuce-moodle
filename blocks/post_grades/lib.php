@@ -162,10 +162,10 @@ abstract class post_grades {
            WHERE c.shortname LIKE "%'.$shortname.'%"
              AND sec.idnumber = c.idnumber
              AND sec.id = post.sectionid
-             AND sec.idnumber <> ''
+             AND sec.idnumber <> ""
              AND u.id = post.userid
              AND p.id = post.periodid
-           ORDER BY p.post_type, sec.sec_number ASC, u.lastname DESC;
+           ORDER BY p.post_type, sec.sec_number ASC, u.lastname DESC';
 
         return $DB->get_records_sql($sql);
     }
