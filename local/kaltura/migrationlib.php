@@ -30,6 +30,8 @@ if (!defined('MOODLE_INTERNAL')) {
     die('Direct access to this script is forbidden.');
 }
 
+ini_set('max_execution_time','36000');
+
 /* This constant is used in the recursive functions as a hard stop flag.  The recursive functions will not go any deeper than this value. */
 define('KALTURA_MIGRATION_HARD_STOP', 5);
 /* Constants used for padding height and witch values when migrating kaltura entries for video resource, presentation and media assignment. */

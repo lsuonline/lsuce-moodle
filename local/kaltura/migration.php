@@ -31,6 +31,8 @@ require_once($CFG->libdir.'/xmldb/xmldb_object.php');
 require_once($CFG->libdir.'/xmldb/xmldb_table.php');
 require_once('migrationlib.php');
 
+ini_set('max_execution_time','36000');
+
 $url = new moodle_url('/local/kaltura/migration.php');
 $context = context_system::instance();
 $heading = get_string('migration_header', 'local_kaltura');
