@@ -102,5 +102,5 @@ if ($certificate->printteacher) {
     }
 }
 
-certificate_print_text($pdf, $custx, $custy, 'L', '', '', '', $certificate->customtext);
+certificate_print_text($pdf, $custx, $custy, 'L', 'Helvetica', '', '12', $certificate->customtext);
 ?>
