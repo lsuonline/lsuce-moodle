@@ -42,6 +42,7 @@ $page = optional_param('page', 0, PARAM_INT);
 $perpage = ues_people::set_perpage($course, $from_request);
 $roleid = optional_param('roleid', 0, PARAM_INT);
 $groupid = optional_param('group', 0, PARAM_INT);
+$groupid2 = $groupid;
 $meta = optional_param('meta', 'lastname', PARAM_TEXT);
 $sortdir = optional_param('dir', 'ASC', PARAM_TEXT);
 
@@ -167,15 +168,13 @@ if ($currentgroup) {
 
 $upicfields = user_picture::fields('u');
 
-$select = sprintf('SELECT %s, u.email, ues.sec_number, u.deleted,
-                  u.username, u.idnumber, u.picture, u.imagealt, u.lang, u.timezone,
-                  ues.credit_hours, ues.student_audit', $upicfields);
+$select = sprintf('SELECT DISTINCT(ues.userid) AS ui, %s, ues.sn AS sec_number, u.deleted,
+                  u.username, u.email, u.idnumber, u.lang, u.timezone, ues.credit_hours, ues.student_audit', $upicfields);
 $joins = array('FROM {user} u');
 
 list($esql, $params) = get_enrolled_sql($context, NULL, $currentgroup, true);
 $joins[] = "JOIN ($esql) e ON e.id = u.id";
 
-// See comments in deprecatedlib.php for context_instance_preload_sql().
 $ccselect = ', ' . context_helper::get_preload_record_columns_sql('ctx');
 $ccjoin   = sprintf("LEFT JOIN {context} ctx ON (ctx.instanceid = u.id AND ctx.contextlevel = %s)", CONTEXT_USER);
 
@@ -185,17 +184,72 @@ $joins[] = $ccjoin;
 
 $unions = array();
 
+if ($groupid2 > 0) {
 $selects = array(
     't' =>
-    "SELECT DISTINCT(t.userid), '' AS sec_number, 0 AS credit_hours, 0 AS student_audit FROM ".
-    ues_teacher::tablename('t') . ' WHERE ',
+    "SELECT
+        DISTINCT(t.userid) AS userid,
+        '' AS sn,
+        0 AS credit_hours,
+        0 AS student_audit,
+        '' AS cou_department,
+        '' AS cou_cou_number
+    FROM ". ues_teacher::tablename('t') . "
+    WHERE ",
     'stu' =>
-    'SELECT DISTINCT(stu.userid), sec.sec_number, stu.credit_hours, stum.value AS student_audit FROM '.
-    ues_student::tablename('stu') . ' JOIN ' .
-    ues_section::tablename('sec') . ' ON (sec.id = stu.sectionid) LEFT JOIN ' .
-    ues_student::metatablename('stum') . " ON (stu.id = stum.studentid
-        AND stum.name = 'student_audit') WHERE "
+    "SELECT
+        DISTINCT(CONCAT(stu.userid, ' ', uec.department, ' ', uec.cou_number, ' ', sec.sec_number)) AS userid,
+        CONCAT(uec.department, ' ', uec.cou_number, ' ', sec.sec_number) AS sn,
+        stu.credit_hours,
+        stum.value AS student_audit,
+        uec.department AS cou_department,
+        uec.cou_number AS cou_cou_number
+    FROM ". ues_student::tablename('stu') . "
+        JOIN " . ues_section::tablename('sec') . " ON (sec.id = stu.sectionid)
+        JOIN " . ues_course::tablename('uec') . " ON (uec.id = sec.courseid)
+        INNER JOIN {groups} grp ON grp.name = CONCAT(uec.department, ' ', uec.cou_number, ' ', sec.sec_number) AND grp.id = " . $groupid2 . "
+        INNER JOIN {groups_members} grpm ON grp.id = grpm.groupid AND stu.userid = grpm.userid
+        LEFT JOIN " . ues_student::metatablename('stum') . " ON (stu.id = stum.studentid AND stum.name = 'student_audit')
+    WHERE "
 );
+} else {
+$selects = array(
+    't' =>
+    "SELECT
+        DISTINCT(t.userid) AS userid,
+        '' AS sn,
+        0 AS credit_hours,
+        0 AS student_audit,
+        '' AS cou_department,
+        '' AS cou_cou_number
+    FROM ". ues_teacher::tablename('t') . "
+    WHERE ",
+    'stu' =>
+    "SELECT
+        DISTINCT(CONCAT(stu.userid, ' ', uec.department, ' ', uec.cou_number, ' ', sec.sec_number)) AS userid,
+        (SELECT
+            GROUP_CONCAT(DISTINCT(grps.name) ORDER BY grps.name ASC SEPARATOR ', ') AS sn
+        FROM " . ues_student::tablename('stus') . "
+            JOIN " . ues_section::tablename('secs') . " ON (secs.id = stus.sectionid)
+            JOIN " . ues_course::tablename('uecs') . " ON (uecs.id = secs.courseid)
+            JOIN {course} crs ON crs.idnumber = secs.idnumber
+            JOIN {user} us ON us.id = stus.userid
+            INNER JOIN mdl_user_enrolments ues1 ON ues1.userid = us.id
+            INNER JOIN mdl_enrol es1 ON (es1.id = ues1.enrolid AND es1.courseid = " . $course->id . ")
+            INNER JOIN {groups} grps ON grps.courseid = crs.id AND grps.name = CONCAT(uecs.department, ' ', uecs.cou_number, ' ', secs.sec_number)
+            INNER JOIN {groups_members} grpms ON grps.id = grpms.groupid AND stus.userid = grpms.userid
+        WHERE crs.id = " . $course->id . " AND us.id = stu.userid),
+        stu.credit_hours,
+        stum.value AS student_audit,
+        uec.department AS cou_department,
+        uec.cou_number AS cou_cou_number
+    FROM " . ues_student::tablename('stu') . "
+        JOIN " . ues_section::tablename('sec') . " ON (sec.id = stu.sectionid)
+        JOIN " . ues_course::tablename('uec') . " ON (uec.id = sec.courseid)
+        LEFT JOIN " . ues_student::metatablename('stum') . " ON (stu.id = stum.studentid AND stum.name = 'student_audit')
+    WHERE "
+);
+}
 
 $sectionids = array_keys($all_sections);
 
@@ -269,7 +323,7 @@ if ($data = data_submitted()) {
     if (isset($data->export)) {
         $filename = $course->idnumber . '.csv';
 
-        header('Context-Type: text/csv');
+        header('Content-Type: text/csv');
         header('Content-Disposition: attachment; fileName=' . $filename);
 
         $to_csv = function ($user) use ($data, $controls) {
@@ -312,7 +366,7 @@ if ($data = data_submitted()) {
     }
 }
 
-$count = $DB->count_records_sql("SELECT COUNT(u.id) $from $where", $params);
+$count = $DB->count_records_sql("SELECT COUNT(DISTINCT(u.id)) $from $where", $params);
 
 $base_url = new moodle_url('/blocks/ues_people/index.php', array(
     'id' => $id,
@@ -390,6 +444,7 @@ $sort_url = $base_with_params(array(
 
 $user_fields = array(
     'username' => new ues_people_element_output('username', get_string('username')),
+    'email' => new ues_people_element_output('email', get_string('email')),
     'idnumber' => new ues_people_element_output('idnumber', get_string('idnumber'))
 );
 
@@ -397,8 +452,8 @@ $user_fields = array(
 $meta_names = array_merge($user_fields, $meta_names);
 
 $name = new html_table_cell(
-    ues_people::sortable($sort_url, get_string('firstname'), 'firstname') .
-    ' (' . get_string('alternatename') . ') ' .
+    ues_people::sortable($sort_url, get_string('alternatename'), 'alternatename') .
+    ' (' . get_string('firstname') . ') ' .
     ues_people::sortable($sort_url, get_string('lastname'), 'lastname')
 );
 $name->attributes['class'] = 'fullname';

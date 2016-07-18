@@ -29,29 +29,6 @@
 function cron_run() {
     global $DB, $CFG, $OUTPUT;
 
-/*  REMOVED AT THE REQUEST OF MOODLEROOMS
-//  They are getting rid of REDIS locking
-
-    require_once($CFG->dirroot.'/local/mr/framework/lock.php');
-    $redis = new Redis();
-    $redis->connect($CFG->local_mr_redis_server);
-    try {
-        $redis->ping();
-    } catch (Exception $redise) { }
-    if(isset($redise)) {
-        mtrace("You do not seem to be running Redis\n\n");
-        die;
-    } else {
-        $mrlock = new mr_lock('admin_cron');
-        if (!$mrlock->get()) {
-            mtrace('Cron is currently running');
-            die;
-        }
-    }
-
-//  REMOVED AT THE REQUEST OF MOODLEROOMS
-*/
-
     if (CLI_MAINTENANCE) {
         echo "CLI maintenance mode active, cron execution suspended.\n";
         exit(1);
@@ -87,18 +64,23 @@ function cron_run() {
     // Run all scheduled tasks.
     while (!\core\task\manager::static_caches_cleared_since($timenow) &&
            $task = \core\task\manager::get_next_scheduled_task($timenow)) {
-        mtrace("Execute scheduled task: " . $task->get_name());
+        $fullname = $task->get_name() . ' (' . get_class($task) . ')';
+        mtrace('Execute scheduled task: ' . $fullname);
         cron_trace_time_and_memory();
         $predbqueries = null;
         $predbqueries = $DB->perf_get_queries();
         $pretime      = microtime(1);
         try {
+            get_mailer('buffer');
             $task->execute();
+            if ($DB->is_transaction_started()) {
+                throw new coding_exception("Task left transaction open");
+            }
             if (isset($predbqueries)) {
                 mtrace("... used " . ($DB->perf_get_queries() - $predbqueries) . " dbqueries");
                 mtrace("... used " . (microtime(1) - $pretime) . " seconds");
             }
-            mtrace("Scheduled task complete: " . $task->get_name());
+            mtrace('Scheduled task complete: ' . $fullname);
             \core\task\manager::scheduled_task_complete($task);
         } catch (Exception $e) {
             if ($DB && $DB->is_transaction_started()) {
@@ -109,9 +91,18 @@ function cron_run() {
                 mtrace("... used " . ($DB->perf_get_queries() - $predbqueries) . " dbqueries");
                 mtrace("... used " . (microtime(1) - $pretime) . " seconds");
             }
-            mtrace("Scheduled task failed: " . $task->get_name() . "," . $e->getMessage());
+            mtrace('Scheduled task failed: ' . $fullname . ',' . $e->getMessage());
+            if ($CFG->debugdeveloper) {
+                 if (!empty($e->debuginfo)) {
+                    mtrace("Debug info:");
+                    mtrace($e->debuginfo);
+                }
+                mtrace("Backtrace:");
+                mtrace(format_backtrace($e->getTrace(), true));
+            }
             \core\task\manager::scheduled_task_failed($task);
         }
+        get_mailer('close');
         unset($task);
     }
 
@@ -124,7 +115,11 @@ function cron_run() {
         $predbqueries = $DB->perf_get_queries();
         $pretime      = microtime(1);
         try {
+            get_mailer('buffer');
             $task->execute();
+            if ($DB->is_transaction_started()) {
+                throw new coding_exception("Task left transaction open");
+            }
             if (isset($predbqueries)) {
                 mtrace("... used " . ($DB->perf_get_queries() - $predbqueries) . " dbqueries");
                 mtrace("... used " . (microtime(1) - $pretime) . " seconds");
@@ -141,8 +136,17 @@ function cron_run() {
                 mtrace("... used " . (microtime(1) - $pretime) . " seconds");
             }
             mtrace("Adhoc task failed: " . get_class($task) . "," . $e->getMessage());
+            if ($CFG->debugdeveloper) {
+                 if (!empty($e->debuginfo)) {
+                    mtrace("Debug info:");
+                    mtrace($e->debuginfo);
+                }
+                mtrace("Backtrace:");
+                mtrace(format_backtrace($e->getTrace(), true));
+            }
             \core\task\manager::adhoc_task_failed($task);
         }
+        get_mailer('close');
         unset($task);
     }
 
@@ -152,17 +156,6 @@ function cron_run() {
     mtrace('Cron completed at ' . date('H:i:s') . '. Memory used ' . display_size(memory_get_usage()) . '.');
     $difftime = microtime_diff($starttime, microtime());
     mtrace("Execution took ".$difftime." seconds");
-
-/*  REMOVED AT THE REQUEST OF MOODLEROOMS
-//  They are getting rid of REDIS locking
-
-    if (!isset($redise)) {
-        $mrlock->release();
-    }
-
-//  REMOVED AT THE REQUEST OF MOODLEROOMS
-*/
-
 }
 
 /**

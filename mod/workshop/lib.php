@@ -46,7 +46,6 @@ function workshop_supports($feature) {
         case FEATURE_GRADE_HAS_GRADE:   return true;
         case FEATURE_GROUPS:            return true;
         case FEATURE_GROUPINGS:         return true;
-        case FEATURE_GROUPMEMBERSONLY:  return true;
         case FEATURE_MOD_INTRO:         return true;
         case FEATURE_BACKUP_MOODLE2:    return true;
         case FEATURE_COMPLETION_TRACKS_VIEWS:
@@ -81,6 +80,22 @@ function workshop_add_instance(stdclass $workshop) {
     $workshop->latesubmissions       = (int)!empty($workshop->latesubmissions);
     $workshop->phaseswitchassessment = (int)!empty($workshop->phaseswitchassessment);
     $workshop->evaluation            = 'best';
+
+    if (isset($workshop->gradinggradepass)) {
+        $workshop->gradinggradepass = unformat_float($workshop->gradinggradepass);
+    }
+
+    if (isset($workshop->submissiongradepass)) {
+        $workshop->submissiongradepass = unformat_float($workshop->submissiongradepass);
+    }
+
+    if (isset($workshop->submissionfiletypes)) {
+        $workshop->submissionfiletypes = workshop::clean_file_extensions($workshop->submissionfiletypes);
+    }
+
+    if (isset($workshop->overallfeedbackfiletypes)) {
+        $workshop->overallfeedbackfiletypes = workshop::clean_file_extensions($workshop->overallfeedbackfiletypes);
+    }
 
     // insert the new record so we get the id
     $workshop->id = $DB->insert_record('workshop', $workshop);
@@ -141,6 +156,22 @@ function workshop_update_instance(stdclass $workshop) {
     $workshop->useselfassessment     = (int)!empty($workshop->useselfassessment);
     $workshop->latesubmissions       = (int)!empty($workshop->latesubmissions);
     $workshop->phaseswitchassessment = (int)!empty($workshop->phaseswitchassessment);
+
+    if (isset($workshop->gradinggradepass)) {
+        $workshop->gradinggradepass = unformat_float($workshop->gradinggradepass);
+    }
+
+    if (isset($workshop->submissiongradepass)) {
+        $workshop->submissiongradepass = unformat_float($workshop->submissiongradepass);
+    }
+
+    if (isset($workshop->submissionfiletypes)) {
+        $workshop->submissionfiletypes = workshop::clean_file_extensions($workshop->submissionfiletypes);
+    }
+
+    if (isset($workshop->overallfeedbackfiletypes)) {
+        $workshop->overallfeedbackfiletypes = workshop::clean_file_extensions($workshop->overallfeedbackfiletypes);
+    }
 
     // todo - if the grading strategy is being changed, we may want to replace all aggregated peer grades with nulls
 
@@ -249,12 +280,45 @@ function workshop_delete_instance($id) {
 }
 
 /**
+ * List the actions that correspond to a view of this module.
+ * This is used by the participation report.
+ *
+ * Note: This is not used by new logging system. Event with
+ *       crud = 'r' and edulevel = LEVEL_PARTICIPATING will
+ *       be considered as view action.
+ *
+ * @return array
+ */
+function workshop_get_view_actions() {
+    return array('view', 'view all', 'view submission', 'view example');
+}
+
+/**
+ * List the actions that correspond to a post of this module.
+ * This is used by the participation report.
+ *
+ * Note: This is not used by new logging system. Event with
+ *       crud = ('c' || 'u' || 'd') and edulevel = LEVEL_PARTICIPATING
+ *       will be considered as post action.
+ *
+ * @return array
+ */
+function workshop_get_post_actions() {
+    return array('add', 'add assessment', 'add example', 'add submission',
+                 'update', 'update assessment', 'update example', 'update submission');
+}
+
+/**
  * Return a small object with summary information about what a
  * user has done with a given particular instance of this module
  * Used for user activity reports.
  * $return->time = the time they did it
  * $return->info = a short text description
  *
+ * @param stdClass $course The course record.
+ * @param stdClass $user The user record.
+ * @param cm_info|stdClass $mod The course module info object or record.
+ * @param stdClass $workshop The workshop instance record.
  * @return stdclass|null
  */
 function workshop_user_outline($course, $user, $mod, $workshop) {
@@ -294,6 +358,10 @@ function workshop_user_outline($course, $user, $mod, $workshop) {
  * Print a detailed representation of what a user has done with
  * a given particular instance of this module, for user activity reports.
  *
+ * @param stdClass $course The course record.
+ * @param stdClass $user The user record.
+ * @param cm_info|stdClass $mod The course module info object or record.
+ * @param stdClass $workshop The workshop instance record.
  * @return string HTML
  */
 function workshop_user_complete($course, $user, $mod, $workshop) {
@@ -1133,10 +1201,20 @@ function workshop_grade_item_category_update($workshop) {
     if (!empty($gradeitems)) {
         foreach ($gradeitems as $gradeitem) {
             if ($gradeitem->itemnumber == 0) {
+                if (isset($workshop->submissiongradepass) &&
+                        $gradeitem->gradepass != $workshop->submissiongradepass) {
+                    $gradeitem->gradepass = $workshop->submissiongradepass;
+                    $gradeitem->update();
+                }
                 if ($gradeitem->categoryid != $workshop->gradecategory) {
                     $gradeitem->set_parent($workshop->gradecategory);
                 }
             } else if ($gradeitem->itemnumber == 1) {
+                if (isset($workshop->gradinggradepass) &&
+                        $gradeitem->gradepass != $workshop->gradinggradepass) {
+                    $gradeitem->gradepass = $workshop->gradinggradepass;
+                    $gradeitem->update();
+                }
                 if ($gradeitem->categoryid != $workshop->gradinggradecategory) {
                     $gradeitem->set_parent($workshop->gradinggradecategory);
                 }
@@ -1684,4 +1762,81 @@ function workshop_calendar_update(stdClass $workshop, $cmid) {
         $oldevent = calendar_event::load($oldevent);
         $oldevent->delete();
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Course reset API                                                           //
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Extends the course reset form with workshop specific settings.
+ *
+ * @param MoodleQuickForm $mform
+ */
+function workshop_reset_course_form_definition($mform) {
+
+    $mform->addElement('header', 'workshopheader', get_string('modulenameplural', 'mod_workshop'));
+
+    $mform->addElement('advcheckbox', 'reset_workshop_submissions', get_string('resetsubmissions', 'mod_workshop'));
+    $mform->addHelpButton('reset_workshop_submissions', 'resetsubmissions', 'mod_workshop');
+
+    $mform->addElement('advcheckbox', 'reset_workshop_assessments', get_string('resetassessments', 'mod_workshop'));
+    $mform->addHelpButton('reset_workshop_assessments', 'resetassessments', 'mod_workshop');
+    $mform->disabledIf('reset_workshop_assessments', 'reset_workshop_submissions', 'checked');
+
+    $mform->addElement('advcheckbox', 'reset_workshop_phase', get_string('resetphase', 'mod_workshop'));
+    $mform->addHelpButton('reset_workshop_phase', 'resetphase', 'mod_workshop');
+}
+
+/**
+ * Provides default values for the workshop settings in the course reset form.
+ *
+ * @param stdClass $course The course to be reset.
+ */
+function workshop_reset_course_form_defaults(stdClass $course) {
+
+    $defaults = array(
+        'reset_workshop_submissions'    => 1,
+        'reset_workshop_assessments'    => 1,
+        'reset_workshop_phase'          => 1,
+    );
+
+    return $defaults;
+}
+
+/**
+ * Performs the reset of all workshop instances in the course.
+ *
+ * @param stdClass $data The actual course reset settings.
+ * @return array List of results, each being array[(string)component, (string)item, (string)error]
+ */
+function workshop_reset_userdata(stdClass $data) {
+    global $CFG, $DB;
+
+    if (empty($data->reset_workshop_submissions)
+            and empty($data->reset_workshop_assessments)
+            and empty($data->reset_workshop_phase) ) {
+        // Nothing to do here.
+        return array();
+    }
+
+    $workshoprecords = $DB->get_records('workshop', array('course' => $data->courseid));
+
+    if (empty($workshoprecords)) {
+        // What a boring course - no workshops here!
+        return array();
+    }
+
+    require_once($CFG->dirroot . '/mod/workshop/locallib.php');
+
+    $course = $DB->get_record('course', array('id' => $data->courseid), '*', MUST_EXIST);
+    $status = array();
+
+    foreach ($workshoprecords as $workshoprecord) {
+        $cm = get_coursemodule_from_instance('workshop', $workshoprecord->id, $course->id, false, MUST_EXIST);
+        $workshop = new workshop($workshoprecord, $cm, $course);
+        $status = array_merge($status, $workshop->reset_userdata($data));
+    }
+
+    return $status;
 }

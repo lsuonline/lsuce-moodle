@@ -53,8 +53,8 @@ class condition extends \core_availability\condition {
      */
     public function __construct($structure) {
         // Get cmid.
-        if (isset($structure->cm) && is_int($structure->cm)) {
-            $this->cmid = $structure->cm;
+        if (isset($structure->cm) && is_number($structure->cm)) {
+            $this->cmid = (int)$structure->cm;
         } else {
             throw new \coding_exception('Missing or invalid ->cm for completion condition');
         }
@@ -72,6 +72,21 @@ class condition extends \core_availability\condition {
     public function save() {
         return (object)array('type' => 'completion',
                 'cm' => $this->cmid, 'e' => $this->expectedcompletion);
+    }
+
+    /**
+     * Returns a JSON object which corresponds to a condition of this type.
+     *
+     * Intended for unit testing, as normally the JSON values are constructed
+     * by JavaScript code.
+     *
+     * @param int $cmid Course-module id of other activity
+     * @param int $expectedcompletion Expected completion value (COMPLETION_xx)
+     * @return stdClass Object representing condition
+     */
+    public static function get_json($cmid, $expectedcompletion) {
+        return (object)array('type' => 'completion', 'cm' => (int)$cmid,
+                'e' => (int)$expectedcompletion);
     }
 
     public function is_available($not, \core_availability\info $info, $grabthelot, $userid) {

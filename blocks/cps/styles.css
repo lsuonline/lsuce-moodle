@@ -27,14 +27,3 @@
 .split_bucket_sections {
     float: left;
 }
-
-#page-blocks-cps-setting .important {
-   margin: 0 auto;
-   width: 40em;
-   text-align: left;
-   border-radius: 10px;
-   background-color: #fff;
-   border: 1px solid red;
-   padding: 20px 30px;
-   line-height: 2em;
-}

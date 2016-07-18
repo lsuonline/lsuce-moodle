@@ -41,14 +41,22 @@ $settings->add(
 
 // enable caching of browser content for each quiz (default=1)
 $str = get_string('clearcache', 'mod_hotpot');
-$url = new moodle_url('/mod/hotpot/utilities/clear_cache.php', array('sesskey' => sesskey()));
+$url = new moodle_url('/mod/hotpot/tools/clear_cache.php', array('sesskey' => sesskey()));
 $link = html_writer::link($url, $str, array('class' => 'small', 'style'=> 'white-space: nowrap', 'onclick' => "this.target='_blank'"))."\n";
 $settings->add(
     new admin_setting_configcheckbox('hotpot_enablecache', get_string('enablecache', 'mod_hotpot'), get_string('configenablecache', 'mod_hotpot').' '.$link, 1)
 );
 
 // restrict cron job to certain hours of the day (default=never)
-$timezone = get_user_timezone_offset();
+if (class_exists('core_date') && method_exists('core_date', 'get_user_timezone')) {
+    // Moodle >= 2.9
+    $timezone = core_date::get_user_timezone(99);
+    $datetime = new DateTime('now', new DateTimeZone($timezone));
+    $timezone = ($datetime->getOffset() - dst_offset_on(time(), $timezone)) / (3600.0);
+} else {
+    // Moodle <= 2.8
+    $timezone = get_user_timezone_offset();
+}
 if (abs($timezone) > 13) {
     $timezone = 0;
 } else if ($timezone>0) {
@@ -94,7 +102,7 @@ $settings->add(
 
 // store raw xml details of HotPot quiz attempts (default=1)
 $str = get_string('cleardetails', 'mod_hotpot');
-$url = new moodle_url('/mod/hotpot/utilities/clear_details.php', array('sesskey' => sesskey()));
+$url = new moodle_url('/mod/hotpot/tools/clear_details.php', array('sesskey' => sesskey()));
 $link = html_writer::link($url, $str, array('class' => 'small', 'style'=> 'white-space: nowrap', 'onclick' => "this.target='_blank'"))."\n";
 $settings->add(
     new admin_setting_configcheckbox('hotpot_storedetails', get_string('storedetails', 'mod_hotpot'), get_string('configstoredetails', 'mod_hotpot').' '.$link, 0)
@@ -105,4 +113,4 @@ $setting = new admin_setting_configtext('hotpot_maxeventlength', get_string('max
 $setting->set_updatedcallback('hotpot_refresh_events');
 $settings->add($setting);
 
-unset($i, $link, $options, $setting, $str, $timezone, $url);
+unset($i, $link, $options, $setting, $str, $timezone, $datetime, $url);

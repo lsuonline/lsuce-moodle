@@ -14,10 +14,10 @@
  */
 class OAuthSimple {
 
-    private $_secrets;
-    private $_default_signature_method;
-    private $_action;
-    private $_nonce_chars;
+    protected $_secrets;
+    protected $_default_signature_method;
+    protected $_action;
+    protected $_nonce_chars;
 
     /**
      * Constructor
@@ -368,9 +368,10 @@ class OAuthSimple {
         $result = '';
         $cLength = strlen($this->_nonce_chars);
         for ($i = 0; $i < $length; $i++) {
-            $rnum = rand(0, $cLength);
+            $rnum = mt_rand(0, $cLength);
             $result .= substr($this->_nonce_chars, $rnum, 1);
         }
+        $result .= getmypid();
         $this->_parameters['oauth_nonce'] = sha1($result);
 
         return $result;
@@ -461,7 +462,7 @@ class OAuthSimple {
 }
 
 /**
- * @ignore 
+ * @ignore
  */
 class OAuthSimpleException extends Exception {
 
@@ -485,4 +486,4 @@ class OAuthSimpleException extends Exception {
 
 }
 
-/*?>*/
+//?>

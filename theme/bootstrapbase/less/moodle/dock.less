@@ -20,6 +20,7 @@
 body.has_dock {
     #page {
         padding-left: (@dockWidth + (@dockTitleMargin * 3));
+        padding-right: @gridGutterWidth;
     }
     div#dock {
         display: inline;
@@ -27,6 +28,7 @@ body.has_dock {
 }
 
 #dock {
+    z-index: 12000; // Required to place the dock panel above the fixed pos navbar.
     width: (@dockWidth + (@dockTitleMargin * 2));
     position: fixed;
     top: 0;
@@ -77,7 +79,6 @@ body.has_dock {
 }
 
 #dockeditempanel {
-    z-index: 12000; /** Required to place the dock panel above the fixed pos navbar */
     &.dockitempanel_hidden {
         display: none;
     }
@@ -123,8 +124,11 @@ body.has_dock {
                 vertical-align: middle;
                 margin-right: 1px;
             }
-            .hidepanemicon img {
+            .hidepanelicon img {
                 cursor: pointer;
+            }
+            img.actionmenu {
+                width: auto;
             }
         }
     }
@@ -132,7 +136,7 @@ body.has_dock {
 
 .dir-rtl {
     &.has_dock #page {
-        padding-left: 0;
+        padding-left: @gridGutterWidth;
         padding-right: (@dockWidth + (@dockTitleMargin * 3));
     }
     #dock {

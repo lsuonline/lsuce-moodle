@@ -20,47 +20,70 @@
  */
 
 if ($ADMIN->fulltree) {
-    include_once($CFG->dirroot.'/mod/turnitintooltwo/lib.php');
+    include_once(__DIR__.'/lib.php');
+    require_once(__DIR__.'/settingslib.php');
+    require_once(__DIR__."/turnitintooltwo_view.class.php");
 
-    require_once("turnitintooltwo_view.class.php");
     $turnitintooltwoview = new turnitintooltwo_view();
 
     $config = turnitintooltwo_admin_config();
 
     $library_warning = '';
     if (!extension_loaded('XMLWriter')) {
-        $library_warning = html_writer::tag('div', get_string('noxmlwriterlibrary', 'turnitintooltwo'), 
-                                                array('class' => 'library_not_present_warning'));
+        $library_warning .= html_writer::tag('div', get_string('noxmlwriterlibrary', 'turnitintooltwo'),
+                                                array('class' => 'tii_library_not_present_warning'));
+    }
+    if (!extension_loaded('mbstring')) {
+        $library_warning .= html_writer::tag('div', get_string('nombstringlibrary', 'turnitintooltwo'),
+                                                array('class' => 'tii_library_not_present_warning'));
     }
 
     $tabmenu = $turnitintooltwoview->draw_settings_menu($module, 'settings').
                 html_writer::tag('noscript', get_string('noscript', 'turnitintooltwo')).$library_warning.
                 html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
-                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/styles.css"));
+                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/styles.css"));
 
-    if ($CFG->branch <= 25) {
-        $tabmenu .= html_writer::tag('script', '', array("type" => "text/javascript",
-                                                "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-1.8.2.min.js")).
-                    html_writer::tag('script', '', array("type" => "text/javascript",
-                                                "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo_settings.js"));
-    } else {
-        $current_section = optional_param('section', '', PARAM_ALPHAEXT);
-        // Only include jquery if actually on settings page.
-        if ($current_section == 'modsettingturnitintooltwo') {
+    $current_section = optional_param('section', '', PARAM_ALPHAEXT);
+
+    $version = (empty($module->version)) ? $module->versiondisk : $module->version;
+
+    if ($current_section == 'modsettingturnitintooltwo') {
+        if ($CFG->branch <= 25) {
+            $tabmenu .= html_writer::tag('script', '', array("type" => "text/javascript",
+                                                    "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-1.8.2.min.js")).
+                        html_writer::tag('script', '', array("type" => "text/javascript",
+                                                    "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo_settings.min.js"));
+        } else {
             $PAGE->requires->jquery();
             $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo_settings', 'mod_turnitintooltwo');
         }
+
+        $PAGE->requires->string_for_js('upgradeavailable', 'turnitintooltwo');
+
+        if (is_siteadmin()) {
+            $data = turnitintooltwo_updateavailable($version);
+
+            if ($data['update']) {
+                $upgrade = html_writer::tag('a', get_string('upgradeavailable', 'turnitintooltwo'), array('href' => $data['file']));
+            } else {
+                $upgrade = html_writer::tag('span', get_string('upgradenotavailable', 'turnitintooltwo'), array('class' => 'tii_no_upgrade'));
+                $upgrade .= html_writer::tag('a', $OUTPUT->pix_icon('refresh', get_string('checkingupgrade', 'turnitintooltwo'), 'mod_turnitintooltwo'), array('href' => '#', 'class' => 'tii_upgrade_check', 'id' => 'version_'.$version));
+            }
+        }
+
+        $upgrade .= html_writer::tag('span', $OUTPUT->pix_icon('loader', get_string('checkingupgrade', 'turnitintooltwo'), 'mod_turnitintooltwo'), array('class' => 'tii_upgrading_check'));
     }
 
-    $version = (empty($module->version)) ? $module->versiondisk : $module->version;
-    $upgrade = html_writer::tag('span', get_string('checkupgrade', 'turnitintooltwo'), 
-                    array('class' => 'tii_upgrade_check', 'id' => 'version_'.$version));
-    $upgrade .= html_writer::tag('span', $OUTPUT->pix_icon('loader', get_string('checkingupgrade', 'turnitintooltwo'),
-                                                    'mod_turnitintooltwo')." ".get_string('checkingupgrade', 'turnitintooltwo'), 
-                                                    array('class' => 'tii_upgrading_check'));
+    // Offline mode provided by Androgogic. Set tiioffline in config.php.
+    $offlinecomment = '';
+    if (!empty($CFG->tiioffline)) {
+        $offlinecomment = html_writer::start_tag('div', array('class' => 'offline_status'));
+        $offlinecomment .= $OUTPUT->box(get_string('offlinestatus', 'turnitintooltwo'), 'offline');
+        $offlinecomment .= html_writer::end_tag('div');
+    }
 
     // Test connection to turnitin link
-    $testconnection = html_writer::start_tag('div', array('class' => 'test_connection'));
+    $testconnection = html_writer::start_tag('div', array('class' => 'test_connection', 'style' => 'display: none;'));
     $testconnection .= $OUTPUT->box($OUTPUT->pix_icon('globe', get_string('connecttest', 'turnitintooltwo'),
                                                 'mod_turnitintooltwo')." ".
                                                     html_writer::tag('span',
@@ -74,26 +97,72 @@ if ($ADMIN->fulltree) {
     $testconnection .= $OUTPUT->box('', '', 'test_result');
     $testconnection .= html_writer::end_tag('div');
 
-    $desc = '('.get_string('moduleversion', 'turnitintooltwo').': '.$version.') - '.$upgrade;
+    $desc = '('.get_string('moduleversion', 'turnitintooltwo').': '.$version.')';
+
+    if ($current_section == 'modsettingturnitintooltwo') {
+        $desc .= ' - '.$upgrade;
+    }
 
     $settings->add(new admin_setting_heading('turnitintooltwo_header', $desc, $tabmenu));
 
-    $settings->add(new admin_setting_configtext('turnitintooltwo/accountid',
+    // Turnitin account configuration.
+    $settings->add(new admin_setting_heading('turnitintooltwo_accountconfig',
+                                            get_string('tiiaccountconfig', 'turnitintooltwo'), ''));
+
+    $settings->add(new admin_setting_configtext_int_only('turnitintooltwo/accountid',
                                                     get_string("turnitinaccountid", "turnitintooltwo"),
-                                                    get_string("turnitinaccountid_desc", "turnitintooltwo").$testconnection, ''));
+                                                    get_string("turnitinaccountid_desc", "turnitintooltwo"), ''));
 
-    $settings->add(new admin_setting_configpasswordunmask('turnitintooltwo/secretkey',
+    $settings->add(new admin_setting_config_tii_secret_key('turnitintooltwo/secretkey',
                                                         get_string("turnitinsecretkey", "turnitintooltwo"),
-                                                        get_string("turnitinsecretkey_desc", "turnitintooltwo"), ''));
+                                                        get_string("turnitinsecretkey_desc", "turnitintooltwo"), '', 'PARAM_TEXT'));
 
-    $settings->add(new admin_setting_configtext('turnitintooltwo/apiurl',
+    $testoptions = array(
+        'https://api.turnitin.com' => 'https://api.turnitin.com',
+        'https://api.turnitinuk.com' => 'https://api.turnitinuk.com',
+        'https://sandbox.turnitin.com' => 'https://sandbox.turnitin.com'
+    );
+
+    // Add to moodle config.php file
+    //
+    // $CFG->turnitinqa = true;
+    // $CFG->turnitinqaurls = array(
+    //     'https://sprint.turnitin.com'
+    // );
+    if (!empty($CFG->turnitinqa)) {
+        foreach ($CFG->turnitinqaurls as $url) {
+            $testoptions[$url] = $url;
+        }
+    }
+
+    $settings->add(new admin_setting_configselect('turnitintooltwo/apiurl',
                                                     get_string("turnitinapiurl", "turnitintooltwo"),
-                                                    get_string("turnitinapiurl_desc", "turnitintooltwo"), ''));
+                                                    get_string("turnitinapiurl_desc", "turnitintooltwo").$offlinecomment.$testconnection, 0, $testoptions));
+
+    // Miscellaneous settings.
+    $settings->add(new admin_setting_heading('turnitintooltwo_debugginglogs',
+                                            get_string('tiidebugginglogs', 'turnitintooltwo'), ''));
 
     $ynoptions = array(0 => get_string('no'), 1 => get_string('yes'));
+    $diagnosticoptions = array(
+            0 => get_string('diagnosticoptions_0', 'turnitintooltwo'),
+            1 => get_string('diagnosticoptions_1', 'turnitintooltwo'),
+            2 => get_string('diagnosticoptions_2', 'turnitintooltwo')
+        );
 
     $settings->add(new admin_setting_configselect('turnitintooltwo/enablediagnostic', get_string('turnitindiagnostic', 'turnitintooltwo'),
-                       get_string('turnitindiagnostic_desc', 'turnitintooltwo'), 0, $ynoptions));
+                        get_string('turnitindiagnostic_desc', 'turnitintooltwo'), 0, $diagnosticoptions));
+
+    $settings->add(new admin_setting_configselect('turnitintooltwo/enableperformancelogs', get_string('enableperformancelogs', 'turnitintooltwo'),
+                        get_string('enableperformancelogs_desc', 'turnitintooltwo'), 0, $ynoptions));
+
+    // Turnitin account settings.
+    $accountnote = html_writer::tag('div',
+                            get_string('tiiaccountsettings_desc', 'turnitintooltwo'),
+                            array('class' => 'tii_checkagainstnote')
+        );
+    $settings->add(new admin_setting_heading('turnitintooltwo_accountsettings',
+                                            get_string('tiiaccountsettings', 'turnitintooltwo'), $accountnote));
 
     $settings->add(new admin_setting_configselect('turnitintooltwo/usegrademark',
                                                     get_string('turnitinusegrademark', 'turnitintooltwo'),
@@ -110,11 +179,6 @@ if ($ADMIN->fulltree) {
                                                     get_string('turnitinuseerater_desc', 'turnitintooltwo'),
                                                     0, $ynoptions));
 
-    $settings->add(new admin_setting_configselect('turnitintooltwo/userepository',
-                                                    get_string('turnitinuserepository', 'turnitintooltwo'),
-                                                    get_string('turnitinuserepository_desc', 'turnitintooltwo'),
-                                                    0, $ynoptions));
-
     $settings->add(new admin_setting_configselect('turnitintooltwo/useanon',
                                                     get_string('turnitinuseanon', 'turnitintooltwo'),
                                                     get_string('turnitinuseanon_desc', 'turnitintooltwo'),
@@ -125,6 +189,22 @@ if ($ADMIN->fulltree) {
                                                     get_string('transmatch_desc', 'turnitintooltwo'),
                                                     0, $ynoptions));
 
+    $repositoryoptions = array(
+            0 => get_string('repositoryoptions_0', 'turnitintooltwo'),
+            1 => get_string('repositoryoptions_1', 'turnitintooltwo'),
+            2 => get_string('repositoryoptions_2', 'turnitintooltwo'),
+            3 => get_string('repositoryoptions_3', 'turnitintooltwo')
+        );
+
+    $settings->add(new admin_setting_configselect('turnitintooltwo/repositoryoption',
+                                                    get_string('turnitinrepositoryoptions', 'turnitintooltwo'),
+                                                    get_string('turnitinrepositoryoptions_desc', 'turnitintooltwo'),
+                                                    0, $repositoryoptions));
+
+    // Miscellaneous settings.
+    $settings->add(new admin_setting_heading('turnitintooltwo_miscsettings',
+                                            get_string('tiimiscsettings', 'turnitintooltwo'), ''));
+
     if (empty($config->agreement)) {
         $config->agreement = get_string('turnitintooltwoagreement_default', 'turnitintooltwo');
     }
@@ -133,13 +213,28 @@ if ($ADMIN->fulltree) {
                                                     get_string('turnitintooltwoagreement', 'turnitintooltwo'),
                                                     get_string('turnitintooltwoagreement_desc', 'turnitintooltwo'), ''));
 
-    // Following are values for student privacy settings.
+    $layoutoptions = array(
+            0 => get_string('layoutoptions_0', 'turnitintooltwo'),
+            1 => get_string('layoutoptions_1', 'turnitintooltwo')
+        );
 
+    $settings->add(new admin_setting_configselect('turnitintooltwo/inboxlayout',
+                                                    get_string('turnitininboxlayout', 'turnitintooltwo'),
+                                                    get_string('turnitininboxlayout_desc', 'turnitintooltwo'),
+                                                    0, $layoutoptions));
+
+    $settings->add(new admin_setting_configselect('turnitintooltwo/helpdeskwizard',
+                                                    get_string('turnitinsettingshelpwizard', 'turnitintooltwo'),
+                                                    get_string('turnitinsettingshelpwizard_desc', 'turnitintooltwo'),
+                                                    0, $ynoptions
+                                                ));
+
+    // Following are values for student privacy settings.
     $settings->add(new admin_setting_heading('turnitintooltwo_privacy', get_string('studentdataprivacy', 'turnitintooltwo'),
                        get_string('studentdataprivacy_desc', 'turnitintooltwo')));
 
-    if ($DB->count_records('turnitintooltwo_users') > 0 AND isset($onfig->enablepseudo)) {
-        $selectionarray = ($onfig->enablepseudo == 1) ? array(1 => get_string('yes')) : array(0 => get_string('no'));
+    if ($DB->count_records('turnitintooltwo_users') > 0 AND isset($config->enablepseudo)) {
+        $selectionarray = ($config->enablepseudo == 1) ? array(1 => get_string('yes')) : array(0 => get_string('no'));
         $pseudoselect = new admin_setting_configselect('turnitintooltwo/enablepseudo',
                                                         get_string('enablepseudo', 'turnitintooltwo'),
                                                         get_string('enablepseudo_desc', 'turnitintooltwo'),
@@ -159,13 +254,10 @@ if ($ADMIN->fulltree) {
     $settings->add($pseudoselect);
 
     if (isset($config->enablepseudo) AND $config->enablepseudo) {
-        $config->pseudofirstname = ( isset( $config->pseudofirstname ) ) ?
-                                        $config->pseudofirstname : get_string('defaultcoursestudent');
-
         $settings->add(new admin_setting_configtext('turnitintooltwo/pseudofirstname',
                                                         get_string('pseudofirstname', 'turnitintooltwo'),
                                                         get_string('pseudofirstname_desc', 'turnitintooltwo'),
-                                                        get_string('defaultcoursestudent')));
+                                                        TURNITINTOOLTWO_DEFAULT_PSEUDO_FIRSTNAME));
 
         $lnoptions = array( 0 => get_string('user') );
 
@@ -180,8 +272,8 @@ if ($ADMIN->fulltree) {
                                                         0, $lnoptions));
 
         $settings->add(new admin_setting_configselect('turnitintooltwo/lastnamegen',
-                                                        get_string('psuedolastnamegen', 'turnitintooltwo'),
-                                                        get_string('psuedolastnamegen_desc', 'turnitintooltwo' ),
+                                                        get_string('pseudolastnamegen', 'turnitintooltwo'),
+                                                        get_string('pseudolastnamegen_desc', 'turnitintooltwo' ),
                                                         0, $ynoptions));
 
         $settings->add(new admin_setting_configtext('turnitintooltwo/pseudosalt',
@@ -218,12 +310,12 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_grade', get_string('overallgrade', 'turnitintooltwo'),
                        '', 100, $options));
 
-    if (!empty($config->useanon)) {
+    if (!empty($config->useanon) && $current_section == 'modsettingturnitintooltwo') {
         $settings->add(new admin_setting_configselect('turnitintooltwo/default_anon', get_string('anon', 'turnitintooltwo'),
                         '', 0, $ynoptions ));
     }
 
-    if (!empty($config->transmatch)) {
+    if (!empty($config->transmatch) && $current_section == 'modsettingturnitintooltwo') {
         $settings->add(new admin_setting_configselect('turnitintooltwo/default_transmatch',
                                                         get_string('transmatch', 'turnitintooltwo'),
                                                         '', 0, $ynoptions ));
@@ -232,6 +324,12 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_studentreports',
                                                     get_string('studentreports', 'turnitintooltwo'),
                                                     '', 0, $ynoptions ));
+
+    $gradedisplayoptions = array(1 => get_string('displaygradesaspercent', 'turnitintooltwo'),
+                                 2 => get_string('displaygradesasfraction', 'turnitintooltwo'));
+    $settings->add(new admin_setting_configselect('turnitintooltwo/default_gradedisplay',
+                                                    get_string('displaygradesas', 'turnitintooltwo'),
+                                                    '', 2, $gradedisplayoptions ));
 
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_allownonor',
                                                     get_string('allownonor', 'turnitintooltwo'),
@@ -248,15 +346,27 @@ if ($ADMIN->fulltree) {
                                                     get_string('reportgenspeed', 'turnitintooltwo'),
                                                     '', 0, $genoptions ));
 
-    $suboptions = array( 0 => get_string('norepository', 'turnitintooltwo'), 1 =>
-                                            get_string('standardrepository', 'turnitintooltwo'));
-    if (!empty($config->userepository)) {
-        array_push($suboptions, get_string('institutionalrepository', 'turnitintooltwo'));
+    $suboptions = array( 0 => get_string('norepository', 'turnitintooltwo'),
+                        1 => get_string('standardrepository', 'turnitintooltwo'));
+
+    if (!isset($config->repositoryoption)) {
+        $config->repositoryoption = 0;
     }
 
-    $settings->add(new admin_setting_configselect('turnitintooltwo/default_submitpapersto',
+    switch ($config->repositoryoption) {
+        case 0; // Standard options
+            $settings->add(new admin_setting_configselect('turnitintooltwo/default_submitpapersto',
                                                     get_string('submitpapersto', 'turnitintooltwo'),
                                                     '', 1, $suboptions ));
+            break;
+        case 1; // Standard options + Allow Instituional Repository
+            $suboptions[2] = get_string('institutionalrepository', 'turnitintooltwo');
+
+            $settings->add(new admin_setting_configselect('turnitintooltwo/default_submitpapersto',
+                                                    get_string('submitpapersto', 'turnitintooltwo'),
+                                                    '', 1, $suboptions ));
+            break;
+    }
 
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_spapercheck',
                                                     get_string('spapercheck', 'turnitintooltwo'),

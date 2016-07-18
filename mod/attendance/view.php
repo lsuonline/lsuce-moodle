@@ -26,11 +26,11 @@
 require_once(dirname(__FILE__).'/../../config.php');
 require_once(dirname(__FILE__).'/locallib.php');
 
-$pageparams = new att_view_page_params();
+$pageparams = new mod_attendance_view_page_params();
 
 $id                     = required_param('id', PARAM_INT);
 $pageparams->studentid  = optional_param('studentid', null, PARAM_INT);
-$pageparams->mode       = optional_param('mode', att_view_page_params::MODE_THIS_COURSE, PARAM_INT);
+$pageparams->mode       = optional_param('mode', mod_attendance_view_page_params::MODE_THIS_COURSE, PARAM_INT);
 $pageparams->view       = optional_param('view', null, PARAM_INT);
 $pageparams->curdate    = optional_param('curdate', null, PARAM_INT);
 
@@ -39,21 +39,26 @@ $course         = $DB->get_record('course', array('id' => $cm->course), '*', MUS
 $attendance    = $DB->get_record('attendance', array('id' => $cm->instance), '*', MUST_EXIST);
 
 require_login($course, true, $cm);
+$context = context_module::instance($cm->id);
+require_capability('mod/attendance:view', $context);
 
 $pageparams->init($cm);
-$att = new attendance($attendance, $cm, $course, $PAGE->context, $pageparams);
+$att = new mod_attendance_structure($attendance, $cm, $course, $context, $pageparams);
 
 // Not specified studentid for displaying attendance?
 // Redirect to appropriate page if can.
 if (!$pageparams->studentid) {
-    if ($att->perm->can_manage() || $att->perm->can_take() || $att->perm->can_change()) {
+    $capabilities = array(
+        'mod/attendance:manageattendances',
+        'mod/attendance:takeattendances',
+        'mod/attendance:changeattendances'
+    );
+    if (has_any_capability($capabilities, $context)) {
         redirect($att->url_manage());
-    } else if ($att->perm->can_view_reports()) {
+    } else if (has_capability('mod/attendance:viewreports', $context)) {
         redirect($att->url_report());
     }
 }
-
-$att->perm->require_view_capability();
 
 $PAGE->set_url($att->url_view());
 $PAGE->set_title($course->shortname. ": ".$att->name);
@@ -65,7 +70,7 @@ $output = $PAGE->get_renderer('mod_attendance');
 
 if (isset($pageparams->studentid) && $USER->id != $pageparams->studentid) {
     // Only users with proper permissions should be able to see any user's individual report.
-    require_capability('mod/attendance:viewreports', $PAGE->context);
+    require_capability('mod/attendance:viewreports', $context);
     $userid = $pageparams->studentid;
 } else {
     // A valid request to see another users report has not been sent, show the user's own.

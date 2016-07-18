@@ -171,7 +171,7 @@ abstract class TurningModel {
         global $DB;
         $result = false;
         if (!$this->id) {
-            $this->created = mktime();
+            $this->created = time();
             $data = $this->getdata();
             $result = $DB->insert_record($this->tablename, $data);
             if ($result) {

@@ -22,6 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+define('BLOCKS_COURSE_OVERVIEW_SHOWCATEGORIES_NONE', '0');
+define('BLOCKS_COURSE_OVERVIEW_SHOWCATEGORIES_ONLY_PARENT_NAME', '1');
+define('BLOCKS_COURSE_OVERVIEW_SHOWCATEGORIES_FULL_PATH', '2');
+
 /**
  * Display overview for courses
  *
@@ -29,29 +33,22 @@
  * @return array html overview
  */
 function block_course_overview_get_overviews($courses) {
-    if (!has_capability('moodle/course:create', context_system::instance())) {
-        foreach ($courses as $key=>$course) {
-            if ($course->visible == 1) {
-                $visiblecourses[$key] = $course;
+    $htmlarray = array();
+    if ($modules = get_plugin_list_with_function('mod', 'print_overview')) {
+        // Split courses list into batches with no more than MAX_MODINFO_CACHE_SIZE courses in one batch.
+        // Otherwise we exceed the cache limit in get_fast_modinfo() and rebuild it too often.
+        if (defined('MAX_MODINFO_CACHE_SIZE') && MAX_MODINFO_CACHE_SIZE > 0 && count($courses) > MAX_MODINFO_CACHE_SIZE) {
+            $batches = array_chunk($courses, MAX_MODINFO_CACHE_SIZE, true);
+        } else {
+            $batches = array($courses);
+        }
+        foreach ($batches as $courses) {
+            foreach ($modules as $fname) {
+                $fname($courses, $htmlarray);
             }
         }
-        $htmlarray = array();
-        if ((isset($visiblecourses)) && ($modules = get_plugin_list_with_function('mod', 'print_overview'))) {
-            // Split courses list into batches with no more than MAX_MODINFO_CACHE_SIZE courses in one batch.
-            // Otherwise we exceed the cache limit in get_fast_modinfo() and rebuild it too often.
-            if (defined('MAX_MODINFO_CACHE_SIZE') && MAX_MODINFO_CACHE_SIZE > 0 && count($courses) > MAX_MODINFO_CACHE_SIZE) {
-                $batches = array_chunk($courses, MAX_MODINFO_CACHE_SIZE, true);
-            } else {
-                $batches = array($courses);
-            }
-            foreach ($batches as $courses) {
-                foreach ($modules as $fname) {
-                    $fname($courses, $htmlarray);
-                }
-            }
-        }
-        return $htmlarray;
     }
+    return $htmlarray;
 }
 
 /**
@@ -66,7 +63,7 @@ function block_course_overview_update_mynumber($number) {
 /**
  * Sets user course sorting preference in course_overview block
  *
- * @param array $sortorder sort order of course
+ * @param array $sortorder list of course ids
  */
 function block_course_overview_update_myorder($sortorder) {
     $value = implode(',', $sortorder);

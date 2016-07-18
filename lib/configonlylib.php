@@ -168,6 +168,8 @@ function min_enable_zlib_compression() {
  * Note: ".php" is NOT allowed in slasharguments,
  *       it is intended for ASCII characters only.
  *
+ * @param boolean $clean - Should we do cleaning on this path argument. If you set this
+ *                         to false you MUST be very careful and do the cleaning manually.
  * @return string
  */
 function min_get_slash_argument($clean = true) {

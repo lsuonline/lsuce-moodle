@@ -93,6 +93,11 @@ function xmldb_turningtech_upgrade($oldversion = 0) {
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
         }
+        
+        if ($module = $DB->get_record("modules", array("name" => "turningtech"))) {
+            $DB->set_field("modules", "visible", "0", array("id" => $module->id)); // Hide module.
+        }
+        
         $field = new xmldb_field('name', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'course');
         // Conditionally launch add field name.
         if (! $dbman->field_exists($table, $field)) {
@@ -101,6 +106,40 @@ function xmldb_turningtech_upgrade($oldversion = 0) {
         // Turningtech savepoint reached.
         upgrade_mod_savepoint(true, 2012101223, 'turningtech');
     }
+        /* if ($oldversion < 2014011201) {
+
+        // Define table turningtech_device_types to be dropped.
+        $table = new xmldb_table('turningtech_device_types');
+
+        // Conditionally launch drop table for turningtech_device_types.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+        // Define table turningtech_device_mapping to be dropped.
+        $table = new xmldb_table('turningtech_device_mapping');
+
+        // Conditionally launch drop table for turningtech_device_mapping.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+        // Define table turningtech_escrow to be dropped.
+        $table = new xmldb_table('turningtech_escrow');
+
+        // Conditionally launch drop table for turningtech_escrow.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+         // Define table turningtech to be dropped.
+        $table = new xmldb_table('turningtech');
+
+        // Conditionally launch drop table for turningtech.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        // Turningtech savepoint reached.
+        upgrade_mod_savepoint(true, 2014011201, 'turningtech');
+    } */
     return true;
     // And upgrade begins here. For each one, you'll need one
     // block of code similar to the next one. Please, delete

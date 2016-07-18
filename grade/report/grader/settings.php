@@ -38,23 +38,11 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('grade_report_showonlyactiveenrol', get_string('showonlyactiveenrol', 'grades'),
                                                 get_string('showonlyactiveenrol_help', 'grades'), 1));
 
-    $settings->add(new admin_setting_configtext('grade_report_repeatheaders', get_string('repeatheaders', 'grades'),
-                                            get_string('repeatheaders_help', 'grades'), 10));
-
     $settings->add(new admin_setting_configcheckbox('grade_report_quickgrading', get_string('quickgrading', 'grades'),
                                                 get_string('quickgrading_help', 'grades'), 1));
 
-    $settings->add(new admin_setting_configcheckbox(
-        'grade_report_integrate_quick_edit',
-        get_string('quick_edit', 'gradereport_grader'),
-        get_string('quick_edit_desc', 'gradereport_grader'), 0
-    ));
-
     $settings->add(new admin_setting_configcheckbox('grade_report_showquickfeedback', get_string('quickfeedback', 'grades'),
                                                 get_string('showquickfeedback_help', 'grades'), 0));
-
-    $settings->add(new admin_setting_configcheckbox('grade_report_fixedstudents', get_string('fixedstudents', 'grades'),
-                                                get_string('fixedstudents_help', 'grades'), 0));
 
     $settings->add(new admin_setting_configselect('grade_report_meanselection', get_string('meanselection', 'grades'),
                                               get_string('meanselection_help', 'grades'), GRADE_REPORT_MEAN_GRADED,
@@ -65,12 +53,9 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('grade_report_enableajax', get_string('enableajax', 'grades'),
                                                 get_string('enableajax_help', 'grades'), 0));
 
-    if(!get_config('moodle', 'grade_report_nocalculations')){
-        $settings->add(new admin_setting_configcheckbox('grade_report_showcalculations', get_string('showcalculations', 'grades'),
-                                                get_string('showcalculations_help', 'grades'), 0));
-    } else {
-        $settings->add(new admin_setting_configempty('grade_report_showcalculations', get_string('showcalculations', 'grades'), get_string('showcalculationsWITH_NO_CALC_help', 'grades'), 0));
-    }
+    $settings->add(new admin_setting_configcheckbox('grade_report_showcalculations',
+                                                    get_string('showcalculations', 'grades'),
+                                                    get_string('showcalculations_help', 'grades'), 1));
 
     $settings->add(new admin_setting_configcheckbox('grade_report_showeyecons', get_string('showeyecons', 'grades'),
                                                 get_string('showeyecons_help', 'grades'), 0));
@@ -86,9 +71,6 @@ if ($ADMIN->fulltree) {
 
     $settings->add(new admin_setting_configcheckbox('grade_report_showanalysisicon', get_string('showanalysisicon', 'core_grades'),
                                                 get_string('showanalysisicon_desc', 'core_grades'), 1));
-
-    $settings->add(new admin_setting_configcheckbox('grade_report_showweightedpercents', get_string('showweightedpercents', 'grades'),
-        get_string('showweightedpercents_help', 'grades'), 0));
 
     $settings->add(new admin_setting_configcheckbox('grade_report_showuserimage', get_string('showuserimage', 'grades'),
                                                 get_string('showuserimage_help', 'grades'), 1));
@@ -132,6 +114,4 @@ if ($ADMIN->fulltree) {
                                                      '4' => '4',
                                                      '5' => '5')));
 
-    $settings->add(new admin_setting_configcheckbox('grade_report_nameswap', get_string('nameswap', 'grades'),
-                                                get_string('nameswap_help', 'grades'), 0));
 }

@@ -20,6 +20,9 @@ class Soap extends SoapClient {
     private $httpheaders;
     private $language;
 
+    private $integrationversion;
+    private $pluginversion;
+
     private $proxyhost;
     private $proxyport;
     private $proxytype;
@@ -27,6 +30,9 @@ class Soap extends SoapClient {
     private $proxypassword;
     private $proxybypass;
     private $sslcertificate;
+
+    private $testingconnection;
+    private $performancelog;
 
     protected $extensions;
 
@@ -38,6 +44,22 @@ class Soap extends SoapClient {
 
     public function setLanguage($language) {
         $this->language = $language;
+    }
+
+    public function setIntegrationVersion( $integrationversion = null ) {
+        $this->integrationversion = $integrationversion;
+    }
+
+    public function getIntegrationVersion() {
+        return (empty($this->integrationversion)) ? 'Not provided' : $this->integrationversion;
+    }
+
+    public function setPluginVersion( $pluginversion = null ) {
+        $this->pluginversion = $pluginversion;
+    }
+
+    public function getPluginVersion() {
+        return (empty($this->pluginversion)) ? 'Not provided' : $this->pluginversion;
     }
 
     public function setIntegrationId( $product ) {
@@ -139,6 +161,22 @@ class Soap extends SoapClient {
         $this->sslcertificate = $sslcertificate;
     }
 
+    public function getTestingConnection() {
+        return $this->$testingconnection;
+    }
+
+    public function setTestingConnection($testingconnection) {
+        $this->testingconnection = $testingconnection;
+    }
+
+    public function getPerformanceLog() {
+        return $this->performancelog;
+    }
+
+    public function setPerformanceLog($performancelog) {
+        $this->performancelog = $performancelog;
+    }
+
     public function genUuid() {
         return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand( 0, 0xffff ),
@@ -231,8 +269,17 @@ class Soap extends SoapClient {
                         'AllowNonOrSubmissions' => 'Boolean',
                         'Submitter' => 'Integer',
                         'OriginalityReportCapable' => 'Boolean',
-                        'AcceptNothingSubmission' => 'Boolean'
+                        'AcceptNothingSubmission' => 'Boolean',
+                        'EraterPromptId' => 'String',
+                        'EraterClientId' => 'String',
+                        'EraterUsername' => 'String',
+                        'EraterPassword' => 'String'
                         );
+        $this->testingconnection = false;
+        $this->performancelog = null;
+        $this->integrationversion = '';
+        $this->pluginversion = '';
+
         parent::__construct( $wsdl, $options );
     }
 
@@ -245,6 +292,8 @@ class Soap extends SoapClient {
             'Pragma: no-cache',
             'SOAPAction: "'.$action.'"',
             'Content-length: '.strlen($request),
+            'X-Integration-Version: '.$this->getIntegrationVersion(),
+            'X-Plugin-Version: '.$this->getPluginVersion()
         );
 
         $location .= ( !is_null( $this->language ) ) ? '?lang='.$this->language : '';
@@ -277,10 +326,18 @@ class Soap extends SoapClient {
 
         $this->setHttpHeaders( join( PHP_EOL, $curl_headers ) );
 
+        if ($this->performancelog !== null) {
+            $this->performancelog->start_timer();
+        }
+
         $result = curl_exec($ch);
 
+        if ($this->performancelog !== null) {
+            $this->performancelog->stop_timer($ch);
+        }
+
         if( $result === false) {
-            $logger = new Logger( $this->logpath );
+            $logger = new TurnitinLogger( $this->logpath );
             if ( $logger ) $logger->logError( 'Curl Error: ' . curl_error($ch)  );
             throw new TurnitinSDKException( 'Curl Error', curl_error($ch), $this->logpath );
         } else {
@@ -302,4 +359,4 @@ class Soap extends SoapClient {
 
 }
 
-?>
+//?>

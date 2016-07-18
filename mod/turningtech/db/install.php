@@ -13,30 +13,31 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-// This file replaces:
-//   * STATEMENTS section in db/install.xml
-//   * lib.php/modulename_install() post installation hook
-//   * partially defaults.php.
+
 /**
- * Inserts records for responsecard and responseware
+ * Disable the turningtech module for new installs
  *
- * @package    mod_turningtech
- * @copyright  2012 Turning Technologies
+ * @package mod_turningtech
+ * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+defined('MOODLE_INTERNAL') || die();
+
+
 /**
  * Code run after the mod_turningtech module database tables have been created.
- * @return void
+ * Disables this plugin for new installs
+ * @return bool
  */
 function xmldb_turningtech_install() {
     global $DB;
 
-    // Insert turningtech data.
-    $device_type       = new stdClass();
-    $device_type->type = 'Response Card';
-    $device_type->id   = $DB->insert_record('turningtech_device_types', $device_type);
+    // do the install
+    $DB->set_field('modules', 'visible', '0', array('name'=>'turningtech')); // Hide main module
 
-    $device_type       = new stdClass();
-    $device_type->type = 'Response Ware';
-    $device_type->id   = $DB->insert_record('turningtech_device_types', $device_type);
+    // Should not need to modify course modinfo because this is a new install
+
+    return true;
 }
+
+

@@ -19,17 +19,15 @@
  * @copyright 2012 iParadigms LLC
  */
 
-require_once('../../config.php');
-require_once('../../course/lib.php');
+require_once(__DIR__.'/../../config.php');
+require_once($CFG->dirroot.'/course/lib.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/tablelib.php');
-require_once("lib.php");
-
-require_once($CFG->dirroot.'/mod/turnitintooltwo/lib.php');
+require_once(__DIR__."/lib.php");
+require_once(__DIR__."/turnitintooltwo_view.class.php");
 
 admin_externalpage_setup('managemodules');
 
-require_once("turnitintooltwo_view.class.php");
 $turnitintooltwoview = new turnitintooltwo_view();
 $turnitintooltwoview->load_page_components();
 
@@ -136,8 +134,9 @@ switch ($cmd) {
 
     case "apilog":
     case "activitylog":
+    case "perflog":
 
-        $logsdir = $CFG->dataroot . "/temp/turnitintooltwo/logs/";
+        $logsdir = $CFG->tempdir . "/turnitintooltwo/logs/";
         $savefile = $cmd.'_'.$filedate.'.txt';
 
         if (!is_null($filedate)) {
@@ -147,10 +146,13 @@ switch ($cmd) {
 
             $label = 'apilog';
             $tabs[] = new tabobject( $label, $CFG->wwwroot.'/mod/turnitintooltwo/settings_extras.php?cmd='.$label,
-                ucfirst( $label ), ucfirst( $label ), false );
+                                        ucfirst( $label ), ucfirst( $label ), false );
             $label = 'activitylog';
             $tabs[] = new tabobject( $label, $CFG->wwwroot.'/mod/turnitintooltwo/settings_extras.php?cmd='.$label,
-                ucfirst( $label ), ucfirst( $label ), false );
+                                        ucfirst( $label ), ucfirst( $label ), false );
+            $label = 'perflog';
+            $tabs[] = new tabobject( $label, $CFG->wwwroot.'/mod/turnitintooltwo/settings_extras.php?cmd='.$label,
+                                        ucfirst( $label ), ucfirst( $label ), false );
             $inactive = array($cmd);
             $selected = $cmd;
             $output .= "";
@@ -203,7 +205,13 @@ switch ($cmd) {
                     }
 
                     // Unlink user from Turnitin.
-                    $user = new turnitintooltwo_user($muser->id);
+                    $user = new turnitintooltwo_user(
+                        $muser->id,
+                        $role = null,
+                        $enrol = null,
+                        $workflowcontext = null,
+                        $finduser = false
+                    );
                     $user->unlink_user($tiiid);
 
                     // Relink user.
@@ -216,7 +224,7 @@ switch ($cmd) {
                     $DB->delete_records('turnitintooltwo_users', array('id' => $tiiid));
                 }
             }
-            header("Location: ".$CFG->wwwroot."/mod/turnitintooltwo/settings_extras.php?cmd=unlinkusers");
+            redirect(new moodle_url('/mod/turnitintooltwo/settings_extras.php', array('cmd' => 'unlinkusers')));
             exit;
         }
 
@@ -229,7 +237,7 @@ switch ($cmd) {
         // Do the table headers.
         $cells = array();
         $cells[0] = new html_table_cell(html_writer::checkbox('selectallcb', 1, false));
-        $cells[0]->attributes['class'] = 'centered_cell';
+        $cells[0]->attributes['class'] = 'centered_cell centered_cb_cell';
         $cells['turnitinid'] = new html_table_cell(get_string('turnitinid', 'turnitintooltwo'));
         $cells['lastname'] = new html_table_cell(get_string('lastname'));
         $cells['firstname'] = new html_table_cell(get_string('firstname'));
@@ -290,7 +298,7 @@ switch ($cmd) {
     case "courses":
         $jsrequired = true;
 
-        $output .= html_writer::tag('h2', get_string('coursebrowser', 'turnitintooltwo'));
+        $output .= html_writer::tag('h2', get_string('restorationheader', 'turnitintooltwo'));
         $output .= html_writer::tag('p', get_string('coursebrowserdesc', 'turnitintooltwo'));
 
         $coursesearchform = html_writer::label(get_string('coursetitle', 'turnitintooltwo').': ', 'search_course_title');
@@ -298,7 +306,7 @@ switch ($cmd) {
                                                                         'name' => 'search_course_title'));
 
         $coursesearchform .= html_writer::label(get_string('integration', 'turnitintooltwo').': ', 'search_course_integration');
-        $coursesearchform .= html_writer::select($integrationids, 'search_course_integration', '', array('' => 'choosedots'),
+        $coursesearchform .= html_writer::select($tiiintegrationids, 'search_course_integration', '', array('' => 'choosedots'),
                                                                 array('id' => 'search_course_integration'));
 
         $coursesearchform .= html_writer::label(get_string('ced', 'turnitintooltwo').': ', 'search_course_end_date');
@@ -313,7 +321,6 @@ switch ($cmd) {
         $displaylist = array();
         $parentlist = array();
 
-        require_once("../../course/lib.php");
         if (file_exists($CFG->libdir.'/coursecatlib.php')) {
             require_once($CFG->libdir.'/coursecatlib.php');
             $displaylist = coursecat::make_categories_list('');
@@ -342,7 +349,7 @@ switch ($cmd) {
 
         // Make up json array for drop down in table.
         $integrationidsjson = array();
-        foreach ($integrationids as $k => $v) {
+        foreach ($tiiintegrationids as $k => $v) {
             $integrationidsjson[] = array('value' => $k, 'label' => $v);
         }
         $output .= html_writer::script('var integration_ids = '.json_encode($integrationidsjson));
@@ -370,6 +377,8 @@ switch ($cmd) {
             throw new moodle_exception('invalidsesskey', 'error');
         }
 
+        $PAGE->set_pagelayout('embedded');
+
         $assignments = optional_param('assignments', 0, PARAM_INT);
         $category = optional_param('category', 0, PARAM_INT);
         $classids = '';
@@ -395,6 +404,8 @@ switch ($cmd) {
         if (!confirm_sesskey()) {
             throw new moodle_exception('invalidsesskey', 'error');
         }
+
+        $PAGE->set_pagelayout('embedded');
 
         $tiicourseid = optional_param('id', 0, PARAM_INT);
 
@@ -426,11 +437,7 @@ if ($cmd != 'class_recreation' && $cmd != 'multiple_class_recreation') {
     echo html_writer::tag('noscript', get_string('noscript', 'turnitintooltwo'), array("class" => "warning"));
 }
 
-$class = "";
-if ($jsrequired) {
-    $class = " js_required";
-}
-
+$class = ($jsrequired) ? " js_required" : "";
 if ($cmd == 'viewreport') {
     echo $OUTPUT->box($output, 'generalbox scrollbox'.$class);
 } else if ($cmd == 'class_recreation') {

@@ -34,14 +34,14 @@ abstract class post_grades_handler {
 
         // No need to interject
         if (empty($is_law)) {
-            return true;
+            return $data;
         }
 
         require_once dirname(__FILE__) . '/peoplelib.php';
 
         $data->outputs['student_audit'] = new post_grades_audit_people();
 
-        return true;
+        return $data;
     }
 
     private static function injection_requirements() {

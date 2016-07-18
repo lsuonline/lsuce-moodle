@@ -30,7 +30,7 @@ class mod_library_mod_form extends moodleform_mod {
     function definition() {
         $mform = $this->_form;
         $mform->addElement('header', 'generalhdr', get_string('general'));
-        $this->add_intro_editor(false, get_string('librarytext', 'library'));
+        $this->standard_intro_elements(false, get_string('librarytext', 'library'));
         $this->standard_coursemodule_elements();
         $this->add_action_buttons(true, false, null);
     }

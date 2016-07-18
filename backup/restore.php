@@ -6,6 +6,7 @@ require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
 
 $contextid   = required_param('contextid', PARAM_INT);
 $stage       = optional_param('stage', restore_ui::STAGE_CONFIRM, PARAM_INT);
+$cancel      = optional_param('cancel', '', PARAM_ALPHA);
 
 list($context, $course, $cm) = get_context_info_array($contextid);
 
@@ -30,7 +31,10 @@ $PAGE->set_title($courseshortname . ': ' . get_string('restore'));
 $PAGE->set_heading($coursefullname);
 
 $renderer = $PAGE->get_renderer('core','backup');
-echo $OUTPUT->header();
+if (empty($cancel)) {
+    // Do not print the header if user cancelled the process, as we are going to redirect the user.
+    echo $OUTPUT->header();
+}
 
 // Prepare a progress bar which can display optionally during long-running
 // operations while setting up the UI.
@@ -106,7 +110,9 @@ if (!$restore->is_independent()) {
             // Do actual restore.
             $restore->execute();
             // Get HTML from logger.
-            $loghtml = $logger->get_html();
+            if ($CFG->debugdisplay) {
+                $loghtml = $logger->get_html();
+            }
             // Hide this section because we are now going to make the page show 'finished'.
             echo html_writer::end_div();
             echo html_writer::script('document.getElementById("executionprogress").style.display = "none";');

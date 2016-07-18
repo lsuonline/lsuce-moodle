@@ -31,7 +31,9 @@ require_once $CFG->libdir.'/formslib.php';
 class edit_letter_form extends moodleform {
 
     public function definition() {
+	// BEGIN LSU Better Letters
 	global $DB;
+	// END LSU Better Letters
 
         $mform =& $this->_form;
         $num   = $this->_customdata['num'];
@@ -48,14 +50,7 @@ class edit_letter_form extends moodleform {
         $gradeletter       = get_string('gradeletter', 'grades');
         $gradeboundary     = get_string('gradeboundary', 'grades');
 
-        $unused_str = get_string('unused', 'grades');
-
-        $percentages = array(-1 => $unused_str);
-        for ($i=100; $i > -1; $i--) {
-            $percentages[$i] = "$i %";
-        }
-
-        $custom = get_config('moodle', 'grade_letters_custom');
+        // BEGIN LSU Better Letters
         $strict = get_config('moodle', 'grade_letters_strict');
 
         $default = get_config('moodle', 'grade_letters_names');
@@ -63,59 +58,45 @@ class edit_letter_form extends moodleform {
         if ($default and $scale = $DB->get_record('scale', array('id' => $default))) {
             $default_letters = $scale->scale;
         } else {
-            $default_letters = get_string('lettersdefaultletters', 'grades');
+           $default_letters = get_string('lettersdefaultletters', 'grades');
         }
 
         $default_letters = array_reverse(explode(',', $default_letters));
         $letters = array('' => get_string('unused', 'grades')) +
             array_combine($default_letters, $default_letters);
+        // END LSU Better Letters
 
-        for($i=1; $i<$num+1; $i++) {
+        for ($i=1; $i<$num+1; $i++) {
             $gradelettername = 'gradeletter'.$i;
             $gradeboundaryname = 'gradeboundary'.$i;
 
+            $entry = array();
             if ($strict) {
-                $mform->addElement('select', $gradelettername, $gradeletter." $i", $letters);
+                $entry[] = $mform->createElement('select', $gradelettername, $gradeletter . " $i", $letters);
             } else {
-                $mform->addElement('text', $gradelettername, $gradeletter." $i");
-            }
-
-            if ($i == 1) {
-                $mform->addHelpButton($gradelettername, 'gradeletter', 'grades');
+                $entry[] = $mform->createElement('text', $gradelettername, $gradeletter . " $i");
             }
             $mform->setType($gradelettername, PARAM_TEXT);
 
             if (!$admin) {
                 $mform->disabledIf($gradelettername, 'override', 'notchecked');
-
-                if ($custom) {
-                    $mform->disabledIf($gradeboundaryname, $gradelettername, 'eq', '');
-                } else {
-                    $mform->disabledIf($gradelettername, $gradeboundaryname, 'eq', -1);
-                }
+                $mform->disabledIf($gradelettername, $gradeboundaryname, 'eq', -1);
             }
 
-            if ($custom) {
-                $mform->addElement('text', $gradeboundaryname, $gradeboundary." $i");
+            $entry[] = $mform->createElement('static', '', '', '&ge;');
+            $entry[] = $mform->createElement('text', $gradeboundaryname, $gradeboundary." $i");
+            $entry[] = $mform->createElement('static', '', '', '%');
+            $mform->addGroup($entry, 'gradeentry'.$i, $gradeletter." $i", array(' '), false);
 
-                $mform->addRule($gradeboundaryname, null, 'numeric', '', 'client');
-
-                $mform->setType($gradeboundaryname, PARAM_FLOAT);
-                $mform->setDefault($gradeboundaryname, '');
-            } else {
-                $mform->addElement('select', $gradeboundaryname, $gradeboundary." $i", $percentages);
-
-                $mform->setType($gradeboundaryname, PARAM_INT);
-                $mform->setDefault($gradeboundaryname, -1);
-            }
-
-            if ($i == 1) {
-                $mform->addHelpButton($gradeboundaryname, 'gradeboundary', 'grades');
-            }
+            $mform->setType($gradeboundaryname, PARAM_FLOAT);
 
             if (!$admin) {
                 $mform->disabledIf($gradeboundaryname, 'override', 'notchecked');
             }
+        }
+
+        if ($num > 0) {
+            $mform->addHelpButton('gradeentry1', 'gradeletter', 'grades');
         }
 
         // hidden params

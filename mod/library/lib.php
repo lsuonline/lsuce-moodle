@@ -130,10 +130,17 @@ function library_get_coursemodule_info($coursemodule) {
         
         // no filtering hre because this info is cached and filtered later
         $info->content = format_module_intro('library', $library, $coursemodule->id, false);
+        
+        $PAGE->requires->js_init_call('M.mod_library.init'); 
+        $jsmodule = array(
+                'name' => 'mod_library',
+                'fullpath' => '/mod/library/module.js',
+                'requires' => array('node', 'moodle-core-notification')); //on this line you are loading three other YUI modules
+                
+        
 
         $info->content .= 
         $info->name  = $library->name;
-        $info->icon = null;
         
         return $info;
     } else {
@@ -146,48 +153,19 @@ function library_get_coursemodule_info($coursemodule) {
  *
  * https://github.com/mudrd8mz/moodle-mod_subcourse/blob/master/lib.php
  *
- * @param cm_info $cm
+ * @param $cm
  * @return void
  */
-function mod_library_cm_info_view(cm_info $cm) {
-   global $PAGE, $CFG;
-    $html = '
-        <style>
-.btn {
-  -webkit-border-radius: 0;
-  -moz-border-radius: 0;
-  border-radius: 0px;
-  text-shadow: 1px 1px 3px #666666;
-  -webkit-box-shadow: 0px 1px 3px #000000;
-  -moz-box-shadow: 0px 1px 3px #000000;
-  box-shadow: 0px 1px 3px #000000;
-  font-family: Arial;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: bold;
-  background: #472F92;
-  padding: 3px 7px 4px 6px;
-  border: solid #641f8c 1px;
-  text-decoration: none;
-}
-
-.btn:hover {
-  background: #b59bdb;
-  text-decoration: none;
-}
-</style>
-<p><strong>'. get_string('headline', 'library') . '</strong></p>
-
-<table>
-   <tbody>
-      <tr>
-         <td style="float:right; padding: 3px;"><a href="'.get_string('alt_image_text', 'library') .'"><img src="' . $CFG->wwwroot  . '/mod/library/pix/LaptopUser_icon2.svg" padding = "2px" width = "50px" alt="'. get_string('alt_image_text','library').'" border="0"></a></td>
-         <td>'.get_string('library_activity_description', 'library') . '</td>
-      </tr>
-   </tbody>
-</table>
-<p></p>
-';
+function mod_library_cm_info_view($cm) {
+   global $CFG;
+    $imgurl = $CFG->wwwroot . '/mod/library/pix/LaptopUser_icon2.svg';
+    $imgalt = get_string('alt_image_text', 'library');
+    $link = get_string('library_activity_link', 'library');
+    $linktext = get_string('library_activity_text', 'library');
+    $html = html_writer::tag('h5', get_string('headline', 'library'), array('class' => 'library_headline'));
+    $html .= html_writer::empty_tag('img', array('src' => $imgurl, 'alt' => $imgalt));
+    $html .= html_writer::link($link, $linktext);
+    $html .= html_writer::tag('p', get_string('library_activity_description', 'library'), array('class' => 'library_text'));
     $cm->set_content($html);
 }
 
@@ -232,7 +210,7 @@ function library_supports($feature) {
         case FEATURE_COMPLETION_TRACKS_VIEWS: return false;
         case FEATURE_GRADE_HAS_GRADE:         return false;
         case FEATURE_GRADE_OUTCOMES:          return false;
-        case FEATURE_MOD_ARCHETYPE:           return MOD_ARCHETYPE_RESOURCE;
+        case FEATURE_MOD_ARCHETYPE:           return 'MOD_ARCHETYPE_ACTIVITY';
         case FEATURE_BACKUP_MOODLE2:          return false;
         case FEATURE_NO_VIEW_LINK:            return true;
         default: return null;

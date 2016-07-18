@@ -86,8 +86,14 @@ abstract class TurningTechSoapService {
      * @return unknown_type
      */
     protected function getcoursefromrequest($request, $field = 'siteId') {
+        global $CFG;
         if ($course = $this->service->getCourseById($request->$field)) {
-            $context    = context_course::instance($course->id);
+            //  Check Version.
+            if ($CFG->version >= '2013111800.00') {
+                $context = context_course::instance($course->id);
+            } else {
+                $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            }
             $role_users = array();
             $inst_roles = explode(',', TURNINGTECH_DEFAULT_TEACHER_ROLE);
             foreach ($inst_roles as $index => $roleid) {

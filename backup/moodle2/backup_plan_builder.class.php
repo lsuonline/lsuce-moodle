@@ -44,6 +44,7 @@ require_once($CFG->dirroot . '/backup/moodle2/backup_theme_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_report_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_coursereport_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_plagiarism_plugin.class.php');
+require_once($CFG->dirroot . '/backup/moodle2/backup_enrol_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_subplugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_settingslib.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_stepslib.php');
@@ -161,7 +162,7 @@ abstract class backup_plan_builder {
         // For the given section, add as many activity tasks as necessary
         $coursemodules = backup_plan_dbops::get_modules_from_sectionid($id);
         foreach ($coursemodules as $coursemodule) {
-            if (plugin_supports('mod', $coursemodule->modname, FEATURE_BACKUP_MOODLE2) && ($coursemodule->modname != 'turnitintooltwo')) { // Check we support the format
+            if (plugin_supports('mod', $coursemodule->modname, FEATURE_BACKUP_MOODLE2)) { // Check we support the format
                 self::build_activity_plan($controller, $coursemodule->id);
             } else {
                 // TODO: Debug information about module not supported

@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * @property-read array $other {
  *      Extra information about event properties.
  *
- *      @string mode Mode of the report viewed.
+ *      string mode Mode of the report viewed.
  * }
  * @package    mod_attendance
  * @since      Moodle 2.7
@@ -44,9 +44,9 @@ class session_updated extends \core\event\base {
      * Init method.
      */
     protected function init() {
-        $this->data['crud'] = 'r';
+        $this->data['crud'] = 'u';
         $this->data['edulevel'] = self::LEVEL_TEACHING;
-        $this->data['objecttable'] = 'attendance';
+        $this->data['objecttable'] = 'attendance_sessions';
     }
 
     /**

@@ -33,7 +33,7 @@ if (file_exists(dirname(dirname(__FILE__)).'/config.php')) {
 // MDL-43839 IE9 cannot handle all of our css.
 // Once IE9 is no longer supported we can include 'bootstrapbase/style/moodle.css'
 // and remove some of the CSS in $content.
-$files = array('');
+$files = array();
 
 $content = '';
 
@@ -132,7 +132,9 @@ and remove the following.
     width: 245px;
     text-align: right;
 }
-
+html[dir=rtl] .fitemtitle {
+    float: right;
+}
 label {
     font-weight: bold;
     display: inline-block;
@@ -142,7 +144,11 @@ label {
 .fitemelement {
     margin-left: 265px;
 }
-
+html[dir=rtl] .fitemelement {
+    margin-right: 265px;
+    margin-left: 0;
+    direction: ltr;
+}
 .alert, .alert h4 {
     color: #c09853;
 }

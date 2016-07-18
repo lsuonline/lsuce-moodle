@@ -14,22 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
- * @package   plugintype_pluginname
- * @copyright 2014, Louisiana State University
+ * @package   block_ues_people
+ * @copyright 2016, Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
+
 defined('MOODLE_INTERNAL') || die();
 
-
-$plugin->version   = 2013062818;
-$plugin->requires  = 2013051400;
 $plugin->component = 'block_ues_people';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.2.0';
+$plugin->version = 2016040800;
+$plugin->requires = 2015111600;
+$plugin->release = 'v3.0.0';
 
 $plugin->dependencies = array(
-    'enrol_ues' => 2013081007,
+    'enrol_ues' => 2016040800,
 );

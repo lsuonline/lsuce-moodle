@@ -69,8 +69,7 @@ class format_singleactivity extends format_base {
     public function extend_course_navigation($navigation, navigation_node $node) {
         // Display orphaned activities for the users who can see them.
         $context = context_course::instance($this->courseid);
-        if (has_all_capabilities(array('moodle/course:viewhiddensections',
-                'moodle/course:viewhiddenactivities'), $context)) {
+        if (has_capability('moodle/course:viewhiddensections', $context)) {
             $modinfo = get_fast_modinfo($this->courseid);
             if (!empty($modinfo->sections[1])) {
                 $section1 = $modinfo->get_section_info(1);
@@ -80,7 +79,9 @@ class format_singleactivity extends format_base {
                 $orphanednode->nodetype = navigation_node::NODETYPE_BRANCH;
                 $orphanednode->add_class('orphaned');
                 foreach ($modinfo->sections[1] as $cmid) {
-                    $this->navigation_add_activity($orphanednode, $modinfo->cms[$cmid]);
+                    if (has_capability('moodle/course:viewhiddenactivities', context_module::instance($cmid))) {
+                        $this->navigation_add_activity($orphanednode, $modinfo->cms[$cmid]);
+                    }
                 }
             }
         }
@@ -229,8 +230,16 @@ class format_singleactivity extends format_base {
         }
 
         // Make sure the current activity is in the 0-section.
+        $changed = false;
         if ($activity && $activity->sectionnum != 0) {
             moveto_module($activity, $modinfo->get_section_info(0));
+            $changed = true;
+        }
+        if ($activity && !$activity->visible) {
+            set_coursemodule_visible($activity->id, 1);
+            $changed = true;
+        }
+        if ($changed) {
             // Cache was reset so get modinfo again.
             $modinfo = get_fast_modinfo($this->courseid);
         }
@@ -332,21 +341,23 @@ class format_singleactivity extends format_base {
     }
 
     /**
-     * Checks if the activity type requires subtypes.
+     * Checks if the activity type has multiple items in the activity chooser.
+     * This may happen as a result of defining callback modulename_get_shortcuts()
+     * or [deprecated] modulename_get_types() - TODO MDL-53697 remove this line.
      *
      * @return bool|null (null if the check is not possible)
      */
     public function activity_has_subtypes() {
-        global $CFG;
         if (!($modname = $this->get_activitytype())) {
             return null;
         }
-        $libfile = "$CFG->dirroot/mod/$modname/lib.php";
-        if (!file_exists($libfile)) {
-            return null;
+        $metadata = get_module_metadata($this->get_course(), self::get_supported_activities());
+        foreach ($metadata as $key => $moduledata) {
+            if (preg_match('/^'.$modname.':/', $key)) {
+                return true;
+            }
         }
-        include_once($libfile);
-        return function_exists($modname. '_get_types');
+        return false;
     }
 
     /**
@@ -396,7 +407,7 @@ class format_singleactivity extends format_base {
                 if ($this->can_add_activity()) {
                     // This is a user who has capability to create an activity.
                     if ($this->activity_has_subtypes()) {
-                        // Activity that requires subtype can not be added automatically.
+                        // Activity has multiple items in the activity chooser, it can not be added automatically.
                         if (optional_param('addactivity', 0, PARAM_INT)) {
                             return;
                         } else {

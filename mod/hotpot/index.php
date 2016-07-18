@@ -29,12 +29,12 @@ require_once(dirname(__FILE__).'/locallib.php');
 $id = required_param('id', PARAM_INT);   // course
 
 if (! $course = $DB->get_record('course', array('id' => $id))) {
-    error('Course ID is incorrect');
+    print_error('invalidcourseid');
 }
 
 require_course_login($course);
 
-hotpot_add_to_log($course->id, 'hotpot', 'index', "index.php?id=$course->id", '');
+hotpot_add_to_log($course->id, 'hotpot', 'view all', "index.php?id=$course->id", '');
 
 $PAGE->set_url('/mod/hotpot/index.php', array('id' => $course->id));
 $PAGE->set_title($course->fullname);

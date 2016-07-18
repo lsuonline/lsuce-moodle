@@ -16,7 +16,7 @@
 
 
 /**
- * 
+ *
  * @package    block_ues_meta_viewer
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,6 +26,40 @@ require_once $CFG->dirroot . '/blocks/ues_meta_viewer/classes/lib.php';
 require_once $CFG->dirroot . '/blocks/cps/events/ues_meta_viewer.php';
 
 abstract class ues_meta_viewer {
+
+    /**
+     * Helper structure for eliminating events_trigger_legacy()
+     * @var array map from types to an array of event handlers having the form:
+     * array(include_file => listener_classname, ...).
+     */
+    private static $handlermap = array(
+            'ues_user'     => array('/blocks/cps/events/ues_meta_viewer.php' => 'cps_ues_meta_viewer_handler'),
+            'sports_grade' => array('/blocks/student_gradeviewer/events/lib.php' => 'student_gradeviewer_handlers'),
+            );
+
+    /**
+     * Helper function for eliminating events_trigger_legacy().
+     * All input params go towards building the following function
+     * invocation:
+     *
+     * $class::{$type . '_data_ui_'.$fn}($params);
+     * @global stdClass $CFG
+     * @param string $type
+     * @param objcet $params
+     * @param string $fn
+     */
+    private static function mock_event($type, $params, $fn){
+        global $CFG;
+        if(array_key_exists($type, self::$handlermap)){
+            foreach(self::$handlermap[$type] as $file => $class){
+                if(file_exists($CFG->dirroot.$file)){
+                    require_once($CFG->dirroot.$file);
+                    $class::{$type . '_data_ui_'.$fn}($params);
+                }
+            }
+        }
+    }
+
     public static function sql($handlers) {
         $flatten = function($dsl, $handler) {
             return $handler->sql($dsl);
@@ -76,7 +110,7 @@ abstract class ues_meta_viewer {
         $handler = new stdClass;
         $handler->ui_element = new meta_data_text_box($field, $name);
 
-        events_trigger_legacy($type . '_data_ui_element', $handler);
+        self::mock_event($type, $handler, 'element');
         return $handler->ui_element;
     }
 
@@ -95,7 +129,7 @@ abstract class ues_meta_viewer {
         }
 
         // Should this user see appropriate fields?
-        events_trigger_legacy($type . '_data_ui_keys', $fields);
+        self::mock_event($type, $fields, 'keys');
 
         return $fields->keys;
     }
@@ -118,7 +152,8 @@ abstract class ues_meta_viewer {
             'ues_student' => new ues_student_supported_meta()
         );
 
-        events_trigger_legacy('ues_meta_supported_types', $supported_types);
+        require_once $CFG->dirroot.'/blocks/student_gradeviewer/events/lib.php';
+        $supported_types = student_gradeviewer_handlers::ues_meta_supported_types($supported_types);
 
         return $supported_types->types;
     }

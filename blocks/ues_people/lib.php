@@ -128,7 +128,21 @@ abstract class ues_people {
         $data->outputs = $outputs;
 
         // Plugin interference
-        events_trigger_legacy('ues_people_outputs', $data);
+        /**
+         * Refactoring of 
+         * events_trigger_legacy('ues_people_outputs', $data);
+         */
+        global $CFG;
+
+        if(file_exists($CFG->dirroot.'/blocks/cps/events/ues_people.php')){
+            require_once $CFG->dirroot.'/blocks/cps/events/ues_people.php';
+            $data = cps_ues_people_handler::ues_people_outputs($data);
+        }
+
+        if(file_exists($CFG->dirroot.'/blocks/post_grades/events.php')){
+            require_once $CFG->dirroot.'/blocks/post_grades/events.php';
+            $data = post_grades_handler::ues_people_outputs($data);
+        }
 
         return $data->outputs;
     }
@@ -137,6 +151,7 @@ abstract class ues_people {
         $defaults = array(
             'fullname' => get_string('alternatename') . ' (' . get_string('firstname') . ') ' . get_string('lastname'),
             'username' => get_string('username'),
+            'email' => get_string('email'),
             'idnumber' => get_string('idnumber')
         );
 

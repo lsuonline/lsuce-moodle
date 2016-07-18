@@ -36,28 +36,28 @@ $att            = $DB->get_record('attendance', array('id' => $cm->instance), '*
 
 require_login($course, true, $cm);
 
-$att = new attendance($att, $cm, $course, $PAGE->context);
+$context = context_module::instance($cm->id);
+require_capability('mod/attendance:export', $context);
 
-$att->perm->require_export_capability();
+$att = new mod_attendance_structure($att, $cm, $course, $context);
 
 $PAGE->set_url($att->url_export());
 $PAGE->set_title($course->shortname. ": ".$att->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_cacheable(true);
 $PAGE->set_button($OUTPUT->update_module_button($cm->id, 'attendance'));
-$PAGE->navbar->add(get_string('export', 'quiz'));
+$PAGE->navbar->add(get_string('export', 'attendance'));
 
-$formparams = array('course' => $course, 'cm' => $cm, 'modcontext' => $PAGE->context);
+$formparams = array('course' => $course, 'cm' => $cm, 'modcontext' => $context);
 $mform = new mod_attendance_export_form($att->url_export(), $formparams);
 
-if ($mform->is_submitted()) {
-    $formdata = $mform->get_data();
+if ($formdata = $mform->get_data()) {
 
-    $pageparams = new att_page_with_filter_controls();
+    $pageparams = new mod_attendance_page_with_filter_controls();
     $pageparams->init($cm);
     $pageparams->page = 0;
     $pageparams->group = $formdata->group;
-    $pageparams->set_current_sesstype($formdata->group ? $formdata->group : att_page_with_filter_controls::SESSTYPE_ALL);
+    $pageparams->set_current_sesstype($formdata->group ? $formdata->group : mod_attendance_page_with_filter_controls::SESSTYPE_ALL);
     if (isset($formdata->includeallsessions)) {
         if (isset($formdata->includenottaken)) {
             $pageparams->view = ATT_VIEW_ALL;
@@ -69,6 +69,9 @@ if ($mform->is_submitted()) {
     } else {
         $pageparams->startdate = $formdata->sessionstartdate;
         $pageparams->enddate = $formdata->sessionenddate;
+    }
+    if ($formdata->selectedusers) {
+        $pageparams->userids = $formdata->users;
     }
     $att->pageparams = $pageparams;
 
@@ -88,6 +91,14 @@ if ($mform->is_submitted()) {
         if (isset($formdata->ident['uname'])) {
             $data->tabhead[] = get_string('username');
         }
+
+        $optional = array('idnumber', 'institution', 'department');
+        foreach ($optional as $opt) {
+            if (isset($formdata->ident[$opt])) {
+                $data->tabhead[] = get_string($opt);
+            }
+        }
+
         $data->tabhead[] = get_string('lastname');
         $data->tabhead[] = get_string('firstname');
         $groupmode = groups_get_activity_groupmode($cm, $course);
@@ -95,23 +106,26 @@ if ($mform->is_submitted()) {
             $data->tabhead[] = get_string('groups');
         }
 
-
         if (count($reportdata->sessions) > 0) {
             foreach ($reportdata->sessions as $sess) {
                 $text = userdate($sess->sessdate, get_string('strftimedmyhm', 'attendance'));
                 $text .= ' ';
-                $text .= $sess->groupid ? $reportdata->groups[$sess->groupid]->name : get_string('commonsession', 'attendance');
+                if (!empty($sess->groupid) && empty($reportdata->groups[$sess->groupid])) {
+                    $text .= get_string('deletedgroup', 'attendance');
+                } else {
+                    $text .= $sess->groupid ? $reportdata->groups[$sess->groupid]->name : get_string('commonsession', 'attendance');
+                }
                 $data->tabhead[] = $text;
                 if (isset($formdata->includeremarks)) {
-                    $data->tabhead[] = get_string('remark', 'attendance', $text);
+                    $data->tabhead[] = ''; // Space for the remarks.
                 }
             }
         } else {
             print_error('sessionsnotfound', 'attendance', $att->url_manage());
         }
-        if ($reportdata->gradable) {
-            $data->tabhead[] = get_string('grade');
-        }
+        $data->tabhead[] = get_string('takensessions', 'attendance');
+        $data->tabhead[] = get_string('points', 'attendance');
+        $data->tabhead[] = get_string('percentage', 'attendance');
 
         $i = 0;
         $data->table = array();
@@ -122,6 +136,14 @@ if ($mform->is_submitted()) {
             if (isset($formdata->ident['uname'])) {
                 $data->table[$i][] = $user->username;
             }
+
+            $optionalrow = array('idnumber', 'institution', 'department');
+            foreach ($optionalrow as $opt) {
+                if (isset($formdata->ident[$opt])) {
+                    $data->table[$i][] = $user->$opt;
+                }
+            }
+
             $data->table[$i][] = $user->lastname;
             $data->table[$i][] = $user->firstname;
             if (!empty($groupmode)) {
@@ -135,9 +157,13 @@ if ($mform->is_submitted()) {
             }
             $cellsgenerator = new user_sessions_cells_text_generator($reportdata, $user);
             $data->table[$i] = array_merge($data->table[$i], $cellsgenerator->get_cells(isset($formdata->includeremarks)));
-            if ($reportdata->gradable) {
-                $data->table[$i][] = $reportdata->grades[$user->id].' / '.$reportdata->maxgrades[$user->id];
-            }
+
+            $usersummary = $reportdata->summary->get_taken_sessions_summary_for($user->id);
+            $data->table[$i][] = $usersummary->numtakensessions;
+            $data->table[$i][] = format_float($usersummary->takensessionspoints, 1, true, true) . ' / ' .
+                                    format_float($usersummary->takensessionsmaxpoints, 1, true, true);
+            $data->table[$i][] = format_float($usersummary->takensessionspercentage * 100);
+
             $i++;
         }
 
@@ -155,7 +181,7 @@ if ($mform->is_submitted()) {
 $output = $PAGE->get_renderer('mod_attendance');
 $tabs = new attendance_tabs($att, attendance_tabs::TAB_EXPORT);
 echo $output->header();
-echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .$course->fullname);
+echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .format_string($course->fullname));
 echo $output->render($tabs);
 
 $mform->display();
@@ -191,7 +217,13 @@ function exporttotableed($data, $filename, $format) {
     $i = 3;
     $j = 0;
     foreach ($data->tabhead as $cell) {
-        $myxls->write($i, $j++, $cell, $formatbc);
+        // Merge cells if the heading would be empty (remarks column).
+        if (empty($cell)) {
+            $myxls->merge_cells($i, $j - 1, $i, $j);
+        } else {
+            $myxls->write($i, $j, $cell, $formatbc);
+        }
+        $j++;
     }
     $i++;
     $j = 0;

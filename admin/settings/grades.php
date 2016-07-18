@@ -23,51 +23,9 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     $temp = new admin_settingpage('gradessettings', new lang_string('generalsettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
 
-       $temp->add(new admin_setting_heading('grade_anonymous_header',
-            get_string('anonymousgrading', 'grades'), ''));
-
-        $temp->add(new admin_setting_configcheckbox('grade_anonymous_grading',
-            get_string('anonymousgrading', 'grades'),
-            get_string('anonymousgrading_help', 'grades'), 0));
-
-        $course_cats = $DB->get_records_menu(
-            'course_categories', null, 'name ASC', 'id, name'
-        );
-
-        $temp->add(new admin_setting_configmultiselect('grade_anonymous_cats',
-            get_string('anonymouscategories', 'grades'),
-            get_string('anonymouscategories_help', 'grades'),
-            array(), $course_cats));
-
-        $fields = $DB->get_records_menu(
-            'user_info_field', null, 'name ASC', 'id, name'
-        );
-
-        $url = new moodle_url('/user/profile/index.php', array(
-            'id' => 0,
-            'action' => 'editfield',
-            'datatype' => 'text'
-        ));
-
-        if (!empty($fields)) {
-            $temp->add(new admin_setting_configselect('grade_anonymous_field',
-                get_string('anonymousfield', 'grades'),
-                get_string('anonymousfield_help', 'grades', $url->out()),
-                current(array_keys($fields)), $fields));
-        } else {
-            $temp->add(new admin_setting_heading('grade_anonymous_field',
-                get_string('anonymousfield', 'grades'),
-                get_string('anonymousfield_help', 'grades', $url->out())));
-        }
-
-        $temp->add(new admin_setting_configtext('grade_anonymous_adjusts',
-            get_string('anonymousadjusts', 'grades'),
-            get_string('anonymousadjusts_help', 'grades'), '0.0'));
-
-        $temp->add(new admin_setting_heading('grade_general_settings',
-            get_string('generalsettings', 'grades'), ''));
-
+        // BEGIN LSU Course Category Editable Patch
         $temp->add(new admin_setting_configcheckbox('grade_coursecateditable', new lang_string('coursecateditable', 'grades'), new lang_string('coursecateditable_help', 'grades'), 1));
+        // END LSU Course Category Editable Patch
 
         // new CFG variable for gradebook (what roles to display)
         $temp->add(new admin_setting_special_gradebookroles());
@@ -114,13 +72,20 @@ if (has_capability('moodle/grade:manage', $systemcontext)
 
         $temp->add(new admin_setting_special_gradelimiting());
 
-        $temp->add(new admin_setting_configcheckbox('grade_report_nocalculations', get_string('nocalculations', 'grades'), get_string('nocalculations_help', 'grades'), 0));
-
-        $temp->add(new admin_setting_configcheckbox('privacy_ack', new lang_string('privacy_ack', 'grades'), new lang_string('privacy_ack_help', 'grades'), 0));
+        $temp->add(new admin_setting_configcheckbox('grade_report_showmin',
+                                                    get_string('minimum_show', 'grades'),
+                                                    get_string('minimum_show_help', 'grades'), '1'));
 
         $temp->add(new admin_setting_special_gradepointmax());
 
         $temp->add(new admin_setting_special_gradepointdefault());
+
+        $temp->add(new admin_setting_special_grademinmaxtouse());
+
+        $temp->add(new admin_setting_my_grades_report());
+
+        $temp->add(new admin_setting_configtext('gradereport_mygradeurl', new lang_string('externalurl', 'grades'),
+                new lang_string('externalurl_desc', 'grades'), ''));
     }
     $ADMIN->add('grades', $temp);
 
@@ -142,23 +107,15 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                          GRADE_AGGREGATE_MODE            =>new lang_string('aggregatemode', 'grades'),
                          GRADE_AGGREGATE_SUM             =>new lang_string('aggregatesum', 'grades'));
 
-        $defaultvisible = array(GRADE_AGGREGATE_MEAN, GRADE_AGGREGATE_WEIGHTED_MEAN, GRADE_AGGREGATE_WEIGHTED_MEAN2,
-                                GRADE_AGGREGATE_EXTRACREDIT_MEAN, GRADE_AGGREGATE_MEDIAN, GRADE_AGGREGATE_MIN,
-                                GRADE_AGGREGATE_MAX, GRADE_AGGREGATE_MODE, GRADE_AGGREGATE_SUM);
+        $defaultvisible = array(GRADE_AGGREGATE_SUM);
 
-        $defaults = array('value'=>GRADE_AGGREGATE_WEIGHTED_MEAN2, 'forced'=>false, 'adv'=>false);
+        $defaults = array('value' => GRADE_AGGREGATE_SUM, 'forced' => false, 'adv' => false);
         $temp->add(new admin_setting_gradecat_combo('grade_aggregation', new lang_string('aggregation', 'grades'), new lang_string('aggregation_help', 'grades'), $defaults, $options));
 
         $temp->add(new admin_setting_configmultiselect('grade_aggregations_visible', new lang_string('aggregationsvisible', 'grades'),
                                                        new lang_string('aggregationsvisiblehelp', 'grades'), $defaultvisible, $options));
 
-        // Weighted Extra Credit handling
-        $temp->add(new admin_setting_configcheckbox('grade_w_extra_credit', new lang_string('w_ec', 'grades'), new lang_string('w_ec_help', 'grades'), '1'));
-
         $options = array(0 => new lang_string('no'), 1 => new lang_string('yes'));
-
-        $temp->add(new admin_setting_configcheckbox('grade_overridecat', new lang_string('overridecat', 'grades'),
-            new lang_string('overridecat_help', 'grades'), 1));
 
         $defaults = array('value'=>1, 'forced'=>false, 'adv'=>true);
         $temp->add(new admin_setting_gradecat_combo('grade_aggregateonlygraded', new lang_string('aggregateonlygraded', 'grades'),
@@ -166,8 +123,6 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $defaults = array('value'=>0, 'forced'=>false, 'adv'=>true);
         $temp->add(new admin_setting_gradecat_combo('grade_aggregateoutcomes', new lang_string('aggregateoutcomes', 'grades'),
                     new lang_string('aggregateoutcomes_help', 'grades'), $defaults, $options));
-        $temp->add(new admin_setting_gradecat_combo('grade_aggregatesubcats', new lang_string('aggregatesubcats', 'grades'),
-                    new lang_string('aggregatesubcats_help', 'grades'), $defaults, $options));
 
         $options = array(0 => new lang_string('none'));
         for ($i=1; $i<=20; $i++) {
@@ -182,10 +137,8 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_gradecat_combo('grade_droplow', new lang_string('droplow', 'grades'),
                     new lang_string('droplow_help', 'grades'), $defaults, $options));
 
-        $temp->add(new admin_setting_configcheckbox('grade_droplow_limit',
-            new lang_string('droplow_limit', 'grades'),
-            new lang_string('droplow_limit_help', 'grades'), 0)
-        );
+        $temp->add(new admin_setting_configcheckbox('grade_overridecat', new lang_string('overridecat', 'grades'),
+                   new lang_string('overridecat_help', 'grades'), 1));
     }
     $ADMIN->add('grades', $temp);
 
@@ -193,22 +146,8 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     /// Grade item settings
     $temp = new admin_settingpage('gradeitemsettings', new lang_string('gradeitemsettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
-        $temp->add(new admin_setting_configcheckbox('grade_multfactor_alt',
-            new lang_string('multfactor_alt', 'grades'),
-            new lang_string('multfactor_alt_desc', 'grades'), 0));
-
         $temp->add(new admin_setting_configselect('grade_displaytype', new lang_string('gradedisplaytype', 'grades'),
                                                   new lang_string('gradedisplaytype_help', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
-
-        $temp->add(new admin_setting_configcheckbox('grade_item_manual_recompute',
-            new lang_string('gradeitemmanualrecompute', 'grades'),
-            new lang_string('gradeitemmanualrecompute_help', 'grades'), 0));
-
-        if ($CFG->grade_item_manual_recompute) {
-            $temp->add(new admin_setting_configcheckbox('manipulate_categories',
-                new lang_string('manipulatecategories', 'grades'),
-                new lang_string('manipulatecategories_help', 'grades'), 0));
-        }
 
         $temp->add(new admin_setting_configselect('grade_decimalpoints', new lang_string('decimalpoints', 'grades'),
                                                   new lang_string('decimalpoints_help', 'grades'), 2,
@@ -238,8 +177,6 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                                                              'locktime' => new lang_string('locktime', 'grades'),
                                                              'aggregationcoef' => new lang_string('aggregationcoef', 'grades'),
                                                              'parentcategory' => new lang_string('parentcategory', 'grades'))));
-
-        $temp->add(new admin_setting_configcheckbox('grade_min_hide', new lang_string('minimum_hide', 'grades'), new lang_string('minimum_hide_help', 'grades'), '0'));
     }
     $ADMIN->add('grades', $temp);
 
@@ -253,18 +190,18 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $ADMIN->add('grades', $outcomes);
     }
 
+    // BEGIN LSU Better Letter Grades
     $letters_str = new lang_string('letters', 'grades');
     $letters_base = $CFG->wwwroot.'/grade/edit/letter';
     $letters = new admin_externalpage('letters', $letters_str, $letters_base . '/index.php', 'moodle/grade:manageletters');
+    // END LSU Better Letter Grades
 
     $ADMIN->add('grades', $letters);
 
+    // BEGIN LSU Better Letter Grades
     $letters_settings_str = new lang_string('letter', 'grades') . ' ' . new lang_string('edit') . ' ' . new lang_string('settings');
     $temp = new admin_settingpage('letterssettings', $letters_settings_str, 'moodle/grade:manageletters');
     if ($ADMIN->fulltree) {
-        $temp->add(new admin_setting_configcheckbox('grade_letters_custom',
-            new lang_string('letterscustompercents', 'grades'), new lang_string('letterscustompercents_help', 'grades'), 0));
-
         $temp->add(new admin_setting_configcheckbox('grade_letters_strict',
             new lang_string('lettersstrictletter', 'grades'), new lang_string('lettersstrictletter_help', 'grades'), 0));
 
@@ -278,7 +215,9 @@ if (has_capability('moodle/grade:manage', $systemcontext)
             new lang_string('lettersnames', 'grades'),
             new lang_string('lettersname_help', 'grades'), 0, $scales));
     }
+
     $ADMIN->add('grades', $temp);
+    // END LSU Better Letter Grades
 
     // The plugins must implement a settings.php file that adds their admin settings to the $settings object
 

@@ -175,14 +175,14 @@ class lsu_enrollment_provider extends enrollment_provider {
 
         foreach($semesters_in_session as $semester){
 
-            $semesterprefix = sprintf("%s %s", $semester->year, $semester->name);
+
 
             // cleanup orphaned groups- https://trello.com/c/lQqVUrpQ
-            $orphanedGroupMemebers = $this-> findOrphanedGroups($semesterprefix);
+            $orphanedGroupMemebers = $this-> findOrphanedGroups($semester);
             $this->unenrollGroupsUsers($orphanedGroupMemebers);
 
             // find and remove any duplicate group membership records
-            $duplicateGroupMemberships = $this->findDuplicateGroupMembers($semesterprefix);
+            $duplicateGroupMemberships = $this->findDuplicateGroupMembers($semester);
             $this->removeGroupDupes($duplicateGroupMemberships);
         }
 
@@ -273,8 +273,11 @@ class lsu_enrollment_provider extends enrollment_provider {
         }
     }
 
-    public function findOrphanedGroups($semesterprefix) {
-                global $DB;
+    public function findOrphanedGroups(ues_semester $semester) {
+        global $DB;
+        $semesterprefix = $this->get_semester_prefix($semester);
+        $year = $semester->year;
+        $name = $semester->name;
 
         $sql = "SELECT
             CONCAT(u.id, '-', gg.id, '-', cc.id, '-', gg.name) as uid,
@@ -349,8 +352,8 @@ class lsu_enrollment_provider extends enrollment_provider {
                     ) > 0
             ORDER BY c.fullname
             ) g ON mc.id = g.courseid AND g.name = CONCAT(c.department, ' ', c.cou_number, ' ', s.sec_number)
-            WHERE sem.name = 'Spring'
-            AND sem.year = 2014)
+            WHERE sem.name = '$name'
+            AND sem.year = $year)
         AND gg.name IN (
             SELECT DISTINCT(g.name)
             FROM {enrol_ues_sections} s
@@ -384,8 +387,8 @@ class lsu_enrollment_provider extends enrollment_provider {
                     ) > 0
             ORDER BY c.fullname
             ) g ON mc.id = g.courseid AND g.name = CONCAT(c.department, ' ', c.cou_number, ' ', s.sec_number)
-            WHERE sem.name = 'Spring'
-            AND sem.year = 2014)
+            WHERE sem.name = '$name'
+            AND sem.year = $year)
         AND cc.visible = 1
         AND cc.shortname LIKE '$semesterprefix %';";
 
@@ -412,8 +415,10 @@ class lsu_enrollment_provider extends enrollment_provider {
         }
     }
 
-    public function findDuplicateGroupMembers($semesterprefix) {
+    public function findDuplicateGroupMembers(ues_semester $semester) {
         global $DB;
+        $semesterprefix = $this->get_semester_prefix($semester);
+
         $sql = "SELECT CONCAT (u.firstname, ' ', u.lastname) AS UserFullname, u.username, g.name, u.id userid, c.id courseid, g.id, c.fullname, COUNT(g.name) AS groupcount
                 FROM {groups_members} gm
                     INNER JOIN {groups} g ON g.id = gm.groupid
@@ -423,6 +428,8 @@ class lsu_enrollment_provider extends enrollment_provider {
                     AND c.fullname LIKE '$semesterprefix %'
                 GROUP BY gm.groupid, u.username
                 HAVING groupcount > 1;";
+
+
         return $DB->get_records_sql($sql);
     }
 
@@ -439,6 +446,10 @@ class lsu_enrollment_provider extends enrollment_provider {
                 $DB->delete_records('groups_members',array('id'=>$toDelete->id));
             }
         }
+    }
+
+    private function get_semester_prefix(ues_semester $semester) {
+        return sprintf("%s %s", $semester->year, $semester->name);
     }
 
 }

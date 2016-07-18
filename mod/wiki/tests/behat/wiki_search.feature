@@ -7,9 +7,9 @@ Feature: Users can search wikis
   Background:
     Given the following "users" exist:
       | username | firstname | lastname | email |
-      | teacher1 | Teacher | 1 | teacher1@asd.com |
-      | student1 | Student | 1 | student1@asd.com |
-      | student2 | Student | 2 | student2@asd.com |
+      | teacher1 | Teacher | 1 | teacher1@example.com |
+      | student1 | Student | 1 | student1@example.com |
+      | student2 | Student | 2 | student2@example.com |
     And the following "courses" exist:
       | fullname | shortname | category |
       | Course 1 | C1 | 0 |
@@ -49,6 +49,10 @@ Feature: Users can search wikis
     Then I should see "New page created by student1"
     And I should see "Collaborative teacher1 page"
     And I set the field "searchstring" to "teacher1"
+    And I press "Search wikis"
+    And I should not see "New page created by student1"
+    And I should see "Collaborative teacher1 page"
+    And I set the field "searchstring" to "teacher1 page"
     And I press "Search wikis"
     And I should not see "New page created by student1"
     And I should see "Collaborative teacher1 page"

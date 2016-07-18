@@ -26,11 +26,14 @@
 
 
 if (isset($CFG->turningtech_encryption_format) && $CFG->turningtech_encryption_format == TURNINGTECH_ENCRYPTION_FORMAT_ECB) {
+     if (!defined('TURNINGTECH_ENCRYPTION_FORMAT')) {
     define('TURNINGTECH_ENCRYPTION_FORMAT', MCRYPT_MODE_ECB);
+    }
 } else {
+ if (!defined('TURNINGTECH_ENCRYPTION_FORMAT')) {
     define('TURNINGTECH_ENCRYPTION_FORMAT', MCRYPT_MODE_CBC);
 }
-
+}
 /**
  * decrypt a single string for ResponseWare
  * @param unknown_type $str

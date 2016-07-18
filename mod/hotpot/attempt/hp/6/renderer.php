@@ -19,22 +19,27 @@
  * Render an attempt at a HotPot quiz
  * Output format: hp_6
  *
- * @package   mod-hotpot
- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage hotpot
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
  */
 
+/** Prevent direct access to this script */
 defined('MOODLE_INTERNAL') || die();
 
-// get parent class
+/** Include required files */
 require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/renderer.php');
 
 /**
  * mod_hotpot_attempt_hp_6_renderer
  *
- * @copyright 2010 Gordon Bateson
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since     Moodle 2.0
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
+ * @package    mod
+ * @subpackage hotpot
  */
 class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
 
@@ -361,11 +366,11 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."	switch (type){\n"
             ."		case 'Width':\n"
             ."		case 'Height':\n"
-            ."			return eval('(obj.offset'+type+'||0)');\n"
+            ."			return (obj['offset'+type]||0);\n"
             ."\n"
             ."		case 'Top':\n"
             ."		case 'Left':\n"
-            ."			return eval('(obj.offset'+type+'||0) + getOffset(obj.offsetParent, type)');\n"
+            ."			return (obj['offset'+type]||0) + getOffset(obj.offsetParent, type);\n"
             ."\n"
             ."		case 'Right':\n"
             ."			return getOffset(obj, 'Left') + getOffset(obj, 'Width');\n"
@@ -962,6 +967,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
     /**
      * fix_js_HideFeedback
      *
+     * @uses $CFG
      * @param xxx $str (passed by reference)
      * @param xxx $start
      * @param xxx $length
@@ -1387,27 +1393,31 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      *
      * @param string $str
      * @param string $target
+     * @param string $e (optional, default="Ev")
+     * @param string $x (optional, default="x")
+     * @param string $y (optional, default="y")
      * @return string
      * @todo Finish documenting this function
      */
-     public function fix_js_clientXY($str, $target) {
+    function fix_js_clientXY($str, $target, $e='Ev', $x='x', $y='y') {
         // replace Ev.client(X|Y) with "x" and "y" variables
-        $search = array('Ev.clientX', 'Ev.clientY');
-        $replace = array('x', 'y');
+        $search = array("$e.clientX", "$e.clientY");
+        $replace = array($x, $y);
         $str = str_replace($search, $replace, $str);
 
         // set "x" and "y" for mouse or touch device
         $search = '/(\s*)'.preg_quote($target, '/').'/s';
-        $replace = '$1'.'if (Ev.changedTouches) {'.
-                   '$1'."\t".'var x = Ev.changedTouches[0].clientX;'.
-                   '$1'."\t".'var y = Ev.changedTouches[0].clientY'.
-                   '$1'.'} else {'.
-                   '$1'."\t".'var x = Ev.clientX;'.
-                   '$1'."\t".'var y = Ev.clientY;'.
+        $replace = '$1'."if ($e.changedTouches) {".
+                   '$1'."	var $x = $e.changedTouches[0].clientX;".
+                   '$1'."	var $y = $e.changedTouches[0].clientY".
+                   '$1'."} else {".
+                   '$1'."	var $x = $e.clientX;".
+                   '$1'."	var $y = $e.clientY;".
                    '$1'.'}'.
                    '$0';
+
         return preg_replace($search, $replace, $str, 1);
-     }
+    }
 
     /**
      * fix_js_if_then_else
@@ -1418,7 +1428,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      * @todo Finish documenting this function
      */
     public function fix_js_if_then_else($str)  {
-        $search = '/(\s*)if *\(C.ie\) *\{(.*?);?\} *else *\{(.*?);?\}/s';
+        $search = '/(\s*)if *\(C.ie\) *\{(.*?);?\}[\n\r\t ]*else *\{(.*?);?\}/is';
         $replace = '$1if (C.ie) {$1'."\t".'$2;$1} else {$1'."\t".'$3;$1}';
         return preg_replace($search, $replace, $str);
     }
@@ -1709,9 +1719,8 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         $search = '/\\\\u([0-9a-f]{4})/i';
         $str = $this->filter_text_to_utf8($str, $search);
 
-        // convert html entities
-        $search = '/&#x([0-9a-f]+);/i';
-        $str = $this->filter_text_to_utf8($str, $search);
+        // convert dec, hex and named entities to unicode chars
+        $str = hotpot_textlib('entities_to_utf8', $str, true);
 
         // fix relative urls
         $str = $this->fix_relativeurls($str);
@@ -1748,6 +1757,12 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      * filter_text_bodycontent
      */
     function filter_text_bodycontent()  {
+
+        // prevent faulty conversion of HTML entities with leading zero in Moodle <= 2.5
+        // specifically, this affects non-breaking spaces (&#0160;) in a JCloze WordList
+        if (hotpot_textlib('entities_to_utf8', '&#0160;')=='p') {
+            $this->bodycontent = preg_replace('/(?<=&#)0+([0-9]+)(?=;)/', '$1', $this->bodycontent);
+        }
 
         // convert entities to utf8
         $this->bodycontent = hotpot_textlib('entities_to_utf8', $this->bodycontent);

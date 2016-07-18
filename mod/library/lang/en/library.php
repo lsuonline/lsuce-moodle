@@ -44,4 +44,8 @@ $string['library_URL'] = 'http://askus.lib.lsu.edu/';
 
 $string['alt_image_text'] = 'Ask the Library';
 
-$string['library_activity_description'] = '<strong> <a href="http://askus.lib.lsu.edu/" target="_blank"> Consult with a librarian by calling (225-578-8875), or through chat, text, or email. </strong></a>Assistance includes focusing a research topic, developing a search strategy, locating and evaluating sources, and using these resources effectively and ethically.';
+$string['library_activity_link'] = 'http://askus.lib.lsu.edu';
+
+$string['library_activity_text'] = 'Consult with a librarian by calling (225-578-8875), or through chat, text, or email.';
+
+$string['library_activity_description'] = 'Assistance includes focusing a research topic, developing a search strategy, locating and evaluating sources, and using these resources effectively and ethically.';

@@ -25,7 +25,7 @@
 require_once(dirname(__FILE__).'/../../config.php');
 require_once(dirname(__FILE__).'/locallib.php');
 
-$pageparams = new att_manage_page_params();
+$pageparams = new mod_attendance_manage_page_params();
 
 $id                         = required_param('id', PARAM_INT);
 $from                       = optional_param('from', null, PARAM_ALPHANUMEXT);
@@ -39,11 +39,19 @@ $att            = $DB->get_record('attendance', array('id' => $cm->instance), '*
 
 require_login($course, true, $cm);
 
-$pageparams->init($cm);
-$att = new attendance($att, $cm, $course, $PAGE->context, $pageparams);
-if (!$att->perm->can_manage() && !$att->perm->can_take() && !$att->perm->can_change()) {
-    redirect($att->url_view());
+$context = context_module::instance($cm->id);
+$capabilities = array(
+    'mod/attendance:manageattendances',
+    'mod/attendance:takeattendances',
+    'mod/attendance:changeattendances'
+);
+if (!has_any_capability($capabilities, $context)) {
+    $url = new moodle_url('/mod/attendance/view.php', array('id' => $cm->id));
+    redirect($url);
 }
+
+$pageparams->init($cm);
+$att = new mod_attendance_structure($att, $cm, $course, $context, $pageparams);
 
 // If teacher is coming from block, then check for a session exists for today.
 if ($from === 'block') {
@@ -51,8 +59,8 @@ if ($from === 'block') {
     $size = count($sessions);
     if ($size == 1) {
         $sess = reset($sessions);
-        $nottaken = !$sess->lasttaken && has_capability('mod/attendance:takeattendances', $PAGE->context);
-        $canchange = $sess->lasttaken && has_capability('mod/attendance:changeattendances', $PAGE->context);
+        $nottaken = !$sess->lasttaken && has_capability('mod/attendance:takeattendances', $context);
+        $canchange = $sess->lasttaken && has_capability('mod/attendance:changeattendances', $context);
         if ($nottaken || $canchange) {
             redirect($att->url_take(array('sessionid' => $sess->id, 'grouptype' => $sess->groupid)));
         }
@@ -78,7 +86,8 @@ $sesstable = new attendance_manage_data($att);
 // Output starts here.
 
 echo $output->header();
-echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .$course->fullname);
+echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .format_string($course->fullname));
+mod_attendance_notifyqueue::show();
 echo $output->render($tabs);
 echo $output->render($filtercontrols);
 echo $output->render($sesstable);

@@ -29,7 +29,11 @@
 // prevent direct access to this script
 defined('MOODLE_INTERNAL') || die();
 
-if (floatval($GLOBALS['CFG']->release) <= 2.6) {
+if (empty($CFG)) {
+    global $CFG;
+}
+
+if (empty($CFG->branch) || $CFG->branch <= 26) {
     $plugin = new stdClass();
 }
 
@@ -37,9 +41,9 @@ $plugin->cron      = 0;
 $plugin->component = 'mod_hotpot';
 $plugin->maturity  = MATURITY_STABLE; // ALPHA=50, BETA=100, RC=150, STABLE=200
 $plugin->requires  = 2010112400;      // Moodle 2.0
-$plugin->release   = '2014.09.19 (31)';
-$plugin->version   = 2014091931;
+$plugin->release   = '2016-06-14 (96)';
+$plugin->version   = 2016061496;
 
-if (floatval($GLOBALS['CFG']->release) <= 2.6) {
+if (empty($CFG->branch) || $CFG->branch <= 26) {
     $module = clone($plugin);
 }

@@ -25,27 +25,28 @@
 require_once(dirname(__FILE__).'/../../config.php');
 require_once(dirname(__FILE__).'/locallib.php');
 
-$pageparams = new att_report_page_params();
+$pageparams = new mod_attendance_report_page_params();
 
 $id                     = required_param('id', PARAM_INT);
 $from                   = optional_param('from', null, PARAM_ACTION);
 $pageparams->view       = optional_param('view', null, PARAM_INT);
 $pageparams->curdate    = optional_param('curdate', null, PARAM_INT);
 $pageparams->group      = optional_param('group', null, PARAM_INT);
-$pageparams->sort       = optional_param('sort', null, PARAM_INT);
+$pageparams->sort       = optional_param('sort', ATT_SORT_DEFAULT, PARAM_INT);
 $pageparams->page       = optional_param('page', 1, PARAM_INT);
 $pageparams->perpage    = get_config('attendance', 'resultsperpage');
 
 $cm             = get_coursemodule_from_id('attendance', $id, 0, false, MUST_EXIST);
 $course         = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-$att            = $DB->get_record('attendance', array('id' => $cm->instance), '*', MUST_EXIST);
+$attrecord = $DB->get_record('attendance', array('id' => $cm->instance), '*', MUST_EXIST);
 
 require_login($course, true, $cm);
 
-$pageparams->init($cm);
-$att = new attendance($att, $cm, $course, $PAGE->context, $pageparams);
+$context = context_module::instance($cm->id);
+require_capability('mod/attendance:viewreports', $context);
 
-$att->perm->require_view_reports_capability();
+$pageparams->init($cm);
+$att = new mod_attendance_structure($attrecord, $cm, $course, $context, $pageparams);
 
 $PAGE->set_url($att->url_report());
 $PAGE->set_pagelayout('report');
@@ -57,7 +58,7 @@ $PAGE->navbar->add(get_string('report', 'attendance'));
 
 $output = $PAGE->get_renderer('mod_attendance');
 $tabs = new attendance_tabs($att, attendance_tabs::TAB_REPORT);
-$filtercontrols = new attendance_filter_controls($att);
+$filtercontrols = new attendance_filter_controls($att, true);
 $reportdata = new attendance_report_data($att);
 
 // Trigger a report viewed event.
@@ -67,13 +68,13 @@ $event = \mod_attendance\event\report_viewed::create(array(
     'other' => array()
 ));
 $event->add_record_snapshot('course_modules', $cm);
-$event->add_record_snapshot('attendance', $att);
+$event->add_record_snapshot('attendance', $attrecord);
 $event->trigger();
 
 // Output starts here.
 
 echo $output->header();
-echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .$course->fullname);
+echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .format_string($course->fullname));
 echo $output->render($tabs);
 echo $output->render($filtercontrols);
 echo $output->render($reportdata);

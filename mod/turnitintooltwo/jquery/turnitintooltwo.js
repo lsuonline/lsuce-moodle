@@ -3,12 +3,6 @@ jQuery(document).ready(function($) {
     $(".js_required").show();
     $(".js_hide").hide();
 
-    // Hide the header and footer on the modal boxes
-    if ($("#view_context").html() == "box" || $("#view_context").html() == "box_solid") {
-        $("#page-header").hide();
-        $("#page-footer").hide();
-    }
-
     // Configure submit paper form elements depending on what submission type is allowed
     if ($("#id_submissiontype").val() == 1) {
         $("#id_submissiontext").parent().parent().hide();
@@ -18,15 +12,35 @@ jQuery(document).ready(function($) {
         $("#id_submissionfile").parent().parent().hide();
     }
 
+    //Disable assignment submission if a submission agreement exists and is not checked.
+    if (($("#id_submissionagreement").length)) {
+        $('#id_submitbutton').attr('disabled', 'disabled');
+    }
+
+    //Disable/enable assignment submission when the submission checkbox is checked/unchecked.
+    $('#id_submissionagreement').on('click', function() {
+        if ($(this).is(':checked')) {
+            $('#id_submissionagreement').each(function() {
+                $('#id_submitbutton').removeAttr('disabled');
+            });
+        } else {
+            $('#id_submissionagreement').each(function() {
+                $('#id_submitbutton').attr('disabled', 'disabled');
+            });
+        }
+    });
+
     $(document).on('click', '.submit_nothing', function() {
         if ( $(this).hasClass("disabled") ) return;
         $(this).addClass('disabled');
         var part_id = $(this).prop('id').split('_')[2];
         var student_id = $(this).prop('id').split('_')[3];
-        var message = $('.nothingsubmit_warning').first().html().replace(/<br>/g, "\n");
+        var message = M.str.turnitintooltwo.submitnothingwarning.replace(/<br>/g, "\n").replace(/&#39;/g, "\'");
         var cookieseen = $.cookie('submitnothingaccept');
         if ( cookieseen || confirm( message ) ) {
             submitNothing(student_id, part_id);
+        } else {
+            $(this).removeClass("disabled");
         }
         return;
     });
@@ -44,11 +58,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // If we are in submission window then show close window text
-    if ($('.submission_form_container').length > 0) {
-        $('.upload #cboxClose', top.document).css("display", "block");
-    }
-
     // Show loading if submission passes validation
     $(document).on('submit', '.submission_form_container form', function() {
         try {
@@ -62,6 +71,7 @@ jQuery(document).ready(function($) {
         if (validated) {
 
             $("#general").slideUp('slow');
+            $(".mod_turnitintooltwo .noticebox").slideUp('slow');
             $(".submission_form_container form").slideUp('slow');
             $("#submitting_loader").slideDown('slow');
 
@@ -88,7 +98,7 @@ jQuery(document).ready(function($) {
         }
 
         // Toggle Summary display on Inbox
-        $('.toggle_summary img').click(function() {
+        $('.toggle_summary i').click(function() {
             if ($(this).hasClass('show_summary_'+$('#assignment_id').html())) {
                 $.cookie('show_summary_'+$('#assignment_id').html(), true, { expires: 30 });
                 $('.show_summary_'+$('#assignment_id').html()).hide();
@@ -120,7 +130,7 @@ jQuery(document).ready(function($) {
         }
 
         // Toggle Peermarks display on Inbox
-        $('.toggle_peermarks img').click(function() {
+        $('.toggle_peermarks i').click(function() {
             if ($(this).hasClass('show_peermarks_'+$('#assignment_id').html())) {
                 $.cookie('show_peermarks_'+$('#assignment_id').html(), true, { expires: 30 });
                 $('.show_peermarks_'+$('#assignment_id').html()).hide();
@@ -178,7 +188,13 @@ jQuery(document).ready(function($) {
 
     // Activate datatable tabs on submission inbox
     if ($("#tabs").length > 0) {
+        // Set tab position.
+        var activeTab = 0
+        if ($("#tab_position").length > 0) {
+            var activeTab = $('#tab_position').text();
+        }
         $("#tabs").tabs( {
+            "active": activeTab,
             "show": function(event, ui) {
                 var table = $.fn.dataTable.fnTables(true);
                 if ( table.length > 0 ) {
@@ -206,6 +222,10 @@ jQuery(document).ready(function($) {
                     "data": {action: "get_members", assignment: $('#assignment_id').html(), role: $('#user_role').html()},
                     "success": function(result) {
                         fnCallback(result);
+                    },
+                    "error": function(data, response) {
+                        $('.dataTables_processing').attr('style', 'visibility: hidden');
+                        $('.dataTables_empty').html(M.str.turnitintooltwo.membercheckerror);
                     }
                 });
             }
@@ -216,23 +236,33 @@ jQuery(document).ready(function($) {
     // There are tabs to toggle which part table is displayed.
 
     // Define column definitions as there can be different number of columns
-    var submissionsDataTableColumnDefs = [];
+    var submissionsDataTableColumns = [];
+    var visibleCols = [];
     var noOfColumns = $('table.submissionsDataTable th').length / $('table.submissionsDataTable').length;
     var showOrigReport = ($('table.submissionsDataTable th.creport').length > 0) ? true : false;
-    var useGrademark = ($('table.submissionsDataTable th.cgrade').length > 0) ? true : false;
+    var useGradeMark = ($('table.submissionsDataTable th.cgrade').length > 0) ? true : false;
     var multipleParts = ($('table.submissionsDataTable th.coverallgrade').length > 0) ? true : false;
     for (var i=0; i < noOfColumns; i++) {
-        if (i == 2 || i == 3) {
-            submissionsDataTableColumnDefs.push({"aTargets": [ i ]});
-        } else if (i == 4 || i == 5) {
-            submissionsDataTableColumnDefs.push({"sClass": "right", "aTargets": [ i ]});
-        } else if ((i == 7 && showOrigReport) || ((i == 7 && !showOrigReport) || (i == 9 && useGrademark))) {
-            submissionsDataTableColumnDefs.push({"sClass": "right", "aTargets": [ i ], "iDataSort": [ i-1 ], "sType":"numeric"});
-        } else if (i == 1 || ((i >= 6 && !showOrigReport && !useGrademark)
-                                || (i >= 8 && (!showOrigReport && useGrademark) || (showOrigReport && !useGrademark)) || (i >= 10 && showOrigReport && useGrademark))) {
-            submissionsDataTableColumnDefs.push({"sClass": "center", "bSortable": false, "aTargets": [ i ]});
-        } else if ((i == 0) || (i == 6 && showOrigReport) || (i == 6 && !showOrigReport) || (i == 8 && useGrademark)) {
-            submissionsDataTableColumnDefs.push({"bVisible": false, "aTargets": [ i ]});
+        if (i == 2) {
+            submissionsDataTableColumns.push(null);
+            visibleCols.push(true);
+        } else if (i == 4) {
+            submissionsDataTableColumns.push({"iDataSort": i-1, "sType":"string"});
+            visibleCols.push(true);
+        } else if (i == 5) {
+            submissionsDataTableColumns.push({"sClass": "right"});
+            visibleCols.push(true);
+        } else if (i == 7 || (i == 9 && showOrigReport) || ((i == 9 && !showOrigReport) || (i == 11 && useGradeMark))) {
+            submissionsDataTableColumns.push({"sClass": "right", "iDataSort": i-1, "sType":"numeric"});
+            visibleCols.push(true);
+        } else if (i == 1 || ((i >= 8 && !showOrigReport && !useGradeMark)
+                                || (i >= 10 && ((!showOrigReport && useGradeMark) || (showOrigReport && !useGradeMark)))
+                                || (i >= 12 && showOrigReport && useGradeMark))) {
+            submissionsDataTableColumns.push({"sClass": "center", "bSortable": false});
+            visibleCols.push(true);
+        } else if ((i == 0) || (i == 3) || (i == 6) || (i == 8 && showOrigReport) || ((i == 8 && !showOrigReport) || (i == 10 && useGradeMark))) {
+            submissionsDataTableColumns.push({"bVisible": false});
+            visibleCols.push(false);
         }
     }
 
@@ -245,11 +275,12 @@ jQuery(document).ready(function($) {
 
         partTables[part_id] = $('table#'+part_id).dataTable({
             "bProcessing": true,
-            "aoColumnDefs": submissionsDataTableColumnDefs,
-            "aaSorting": [[ 3, "desc" ],[1, "asc"]],
+            "aoColumns": submissionsDataTableColumns,
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "aaSorting": [[ 2, "asc" ],[ 4, "asc" ]],
             "sAjaxSource": "ajax.php",
             "oLanguage": dataTablesLang,
-            "sDom": "r<\"top navbar\"lf><\"dt_pagination\"pi>t<\"bottom\"><\"dt_pagination\"pi>",
+            "sDom": 'r<"listbar-container"<"top listbar clearfix"lf>><"dt_pagination clearfix"pi>t<"bottom"><"dt_pagination clearfix"pi>',
             "fnServerData": function ( sSource, aoData, fnCallback ) {
                 $.ajax({
                     "dataType": 'json',
@@ -261,24 +292,31 @@ jQuery(document).ready(function($) {
                         // We need to force showing of loading bar as if we place fnCallback after the table is populated it is wiped when refreshing
                         fnCallback(result);
                         $('#'+part_id+"_processing").attr('style', 'visibility: visible');
-                        getSubmissions(partTables[part_id], $('#assignment_id').html(), part_id, 0, refreshRequested[part_id], 0);
+                        getSubmissions(partTables[part_id], $('#assignment_id').html(), part_id, 0, refreshRequested, 0);
                     }
                 });
             },
             "bStateSave": true,
             "fnStateSave": function (oSettings, oData) {
                 try {
-                    localStorage.setItem( uid+'DataTables', JSON.stringify(oData) );
+                    localStorage.setItem( part_id+'DataTables', JSON.stringify(oData) );
                 } catch ( e ) {
                 }
+            },
+            "fnStateSaveParams": function(oSettings, oData) {
+                oData.abVisCols = visibleCols;
             },
             "fnStateLoad": function (oSettings) {
                 try {
-                    return JSON.parse( localStorage.getItem(uid+'DataTables') );
+                    return JSON.parse( localStorage.getItem(part_id+'DataTables') );
                 } catch ( e ) {
                 }
             },
+            "fnStateLoadParams": function(oSettings, oData) {
+                oData.abVisCols = visibleCols;
+            },
             "fnDrawCallback":  function( oSettings ) {
+                initialiseDigitalReceipt();
                 initialiseDVLaunchers("all", 0, part_id, 0);
                 initialiseRefreshRow("all", 0, part_id, 0);
                 initialiseUploadBox("all", 0, 0, 0);
@@ -301,15 +339,25 @@ jQuery(document).ready(function($) {
     }
 
     // Reposition links/divs
-    var tii_table_functions = $("#tii_table_functions").html();
-    $('#tii_table_functions').remove();
-    $('.dataTables_length').after(tii_table_functions);
-    $('.messages_inbox').show();
-    $('.refresh_link').show();
+    $('.tii_table_functions').each(function() {
+        var part_id = $(this).attr('id').split('tii_table_functions_')[1];
 
-    var zip_downloads = $("#zip_downloads");
-    $('#zip_downloads').remove();
-    $('.dataTables_length').after(zip_downloads);
+        var tii_table_functions = $("#tii_table_functions_" + part_id).html();
+        $('#tii_table_functions_' + part_id).remove();
+        $('#'+part_id+'_length').after(tii_table_functions);
+        $('.messages_inbox').show();
+
+        $('#refresh_' + part_id).show();
+        $('#refreshing_' + part_id).hide();
+    });
+
+    var zip_downloads = $(".zip_downloads");
+
+    $.each(zip_downloads, function() {
+        var part_id = $(this).attr('id').split('_')[1];
+        $(this).remove();
+        $('#' + part_id + '_length').after($(this));
+    });
 
     if ($("#user_role").html() == "Learner") {
         $(".dataTables_length, .dataTables_filter, .dt_pagination").hide();
@@ -317,54 +365,30 @@ jQuery(document).ready(function($) {
 
     // When the refresh submissions link is clicked, the data in each datatable needs to be reloaded
     $(".refresh_link").click(function () {
-        $(this).hide();
-        $('table.submissionsDataTable').each(function() {
-            refreshRequested[$(this).attr("id")] = 1;
-            partTables[$(this).attr("id")].fnReloadAjax();
-            partTables[$(this).attr("id")].fnStandingRedraw();
-        });
+        if ($(this).is(":visible")) {
+            $(".refresh_link").hide();
+            $(".refreshing_link").show();
+
+            $('table.submissionsDataTable').each(function() {
+                refreshRequested[$(this).attr("id")] = 1;
+                partTables[$(this).attr("id")].fnReloadAjax();
+                partTables[$(this).attr("id")].fnStandingRedraw();
+            });
+        }
         return false;
     });
 
-    // Show the Turnitin user agreement if necessary
-    if ($(".turnitin_ula").length > 0) {
-        $('#id_submitbutton').attr('disabled', 'disabled');
-    }
-
-    $(document).on('click', '.turnitin_ula', function () {
-        $.ajax({
-            type: "POST",
-            url: "ajax.php",
-            dataType: "json",
-            data: {action: 'useragreement', assignment: $('input[name="submissionassignment"]').val()},
-            success: function(data) {
-                $('#useragreement_form form').html('');
-                $.each(data, function(key, val) {
-                    $('#useragreement_form form').append('<input name="'+key+'" value="'+val+'" type="hidden" />');
-                });
-                $('#useragreement_form form').append('<input type="submit" value="Submit" />');
-
-                $("#useragreement_form form").on("submit", function(event) {
-                    eulaWindow = window.open('', 'eula');
-                    eulaWindow.document.write('<frameset><frame id="eulaWindow" name="eulaWindow"></frame></frameset>');
-                    $(eulaWindow).on("message", function(ev) {
-                        eulaWindow.close();
-                    });
-                    $(eulaWindow).bind('beforeunload', function() {
-                        window.$('.submission_form_container').html('');
-                        window.$("#refresh_loading").show();
-                        window.location.reload();
-                    });
-                });
-
-                $('#useragreement_form form').submit();
-                $('#useragreement_inputs').html('');
-            }
+    // Resize window if submission has failed.
+    if ($('.submission_failure_msg').length > 0) {
+        window.parent.$('.upload_box').colorbox.resize({
+            width: "800px",
+            height: "240px"
         });
-    });
+    }
 
     // Enrol all students link on the enrolled students page
     $(".enrol_link").click(function () {
+        $("#enrolling_error").hide();
         $(".enrol_link").hide();
         $(".enrolling_container").show();
         $.ajax({
@@ -374,6 +398,11 @@ jQuery(document).ready(function($) {
             data: {action: "enrol_all_students", assignment: $('#assignment_id').html(), sesskey: M.cfg.sesskey},
             success: function(data) {
                 window.location.href = window.location.href;
+            },
+            error: function(data, response) {
+                $(".enrol_link").show();
+                $(".enrolling_container").hide();
+                $("#enrolling_error").show();
             }
         });
     });
@@ -382,13 +411,17 @@ jQuery(document).ready(function($) {
     if ($('.rubric_manager_launch').length > 0) {
         $('.rubric_manager_launch').colorbox({
             iframe:true, width:"832px", height:"682px", opacity: "0.7", className: "rubric_manager", transition: "none",
-            onLoad: function() { getLoadingGif(); },
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
             onCleanup:function() {
                 hideLoadingGif();
                 // Refresh Rubric drop down in add/update form
                 if ($(this).attr("id") != 'rubric_manager_inbox_launch') {
                     refreshRubricSelect();
                 }
+                $('#tii_close_bar').remove();
             }
         });
     }
@@ -397,8 +430,14 @@ jQuery(document).ready(function($) {
     if ($('.rubric_view_launch').length > 0) {
         $('.rubric_view_launch').colorbox({
             iframe:true, width:"832px", height:"682px", opacity: "0.7", className: "rubric_view", transition: "none",
-            onLoad: function() { getLoadingGif(); },
-            onCleanup: function() { hideLoadingGif(); }
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            }
         });
     }
 
@@ -414,18 +453,30 @@ jQuery(document).ready(function($) {
     // Open an iframe light box containing the Quickmark Manager
     if ($('.quickmark_manager_launch').length > 0 || $('.plagiarism_turnitin_quickmark_manager_launch').length > 0) {
         $('.quickmark_manager_launch, .plagiarism_turnitin_quickmark_manager_launch').colorbox({
-            iframe:true, width:"700px", height:"432px", opacity: "0.7", className: "quickmark_manager", transition: "none",
-            onLoad: function() { getLoadingGif(); },
-            onCleanup: function() { hideLoadingGif(); }
+            iframe:true, width:"770px", height:"600px", opacity: "0.7", className: "quickmark_manager", transition: "none",
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            }
         });
     }
 
     // Open an iframe light box containing the Peermark Manager
-    if ($('.peermark_manager_launch').length > 0) {
-        $('.peermark_manager_launch').colorbox({
+    if ($('.tii_peermark_manager_launch').length > 0) {
+        $('.tii_peermark_manager_launch').colorbox({
             iframe:true, width:"802px", height:"772px", opacity: "0.7", className: "peermark_manager", transition: "none",
-            onLoad: function() { getLoadingGif(); },
-            onCleanup:function() { hideLoadingGif(); },
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup:function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            },
             onClosed:function() {
                 var idStr = $(this).attr("id").split("_");
                 refreshPeermarkAssignments(idStr[2], 1);
@@ -434,25 +485,119 @@ jQuery(document).ready(function($) {
     }
 
     // Open an iframe light box containing the Peermark Reviews
-    if ($('.peermark_reviews_launch').length > 0) {
-        $('.peermark_reviews_launch').colorbox({
+    if ($('.tii_peermark_reviews_launch').length > 0) {
+        $('.tii_peermark_reviews_launch').colorbox({
             iframe:true, width:"802px", height:"772px", opacity: "0.7", className: "peermark_reviews", transition: "none",
-            onLoad: function() { getLoadingGif(); },
-            onCleanup: function() { hideLoadingGif(); }
-        });
-    }
-
-    // Open an iframe light box containing the turnitin message inbox
-    if ($(".messages_inbox").length > 0) {
-        $(".messages_inbox").colorbox({
-            iframe:true, width:"772px", height:"772px", opacity: "0.7", className: "messages", transition: "none", closeButton: false,
-            onLoad: function() { getLoadingGif(); },
-            onCleanup: function() { hideLoadingGif(); },
-            onClosed:function() {
-                refreshUserMessages();
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
             }
         });
     }
+
+    // Open an iframe light box containing the turnitin message inbox.
+    if ($(".messages_inbox").length > 0) {
+        $(".messages_inbox").colorbox({
+            iframe:true, width:"772px", height:"772px", opacity: "0.7", className: "messages", transition: "none", closeButton: false,
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            }
+        });
+    }
+
+    // Open an iframe light box containing the form to message non submitters.
+    if ($(".nonsubmitters_link").length > 0) {
+        $(".nonsubmitters_link").colorbox({
+            iframe:true, width:"740px", height:"540px", opacity: "0.7", className: "nonsubmitters", transition: "none", closeButton: false,
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            }
+        });
+    }
+
+    // Resize window when email has been sent.
+    if ($('.nonsubmittersformsuccessmsg').length > 0) {
+        hideLoadingGif();
+        window.parent.$('.nonsubmitters').colorbox.resize({
+            width: "740px",
+            height: "120px"
+        });
+    }
+
+    // Open an iframe light box containing the Email non submitters form.
+    if ($('.rubric_view_launch').length > 0) {
+        $('.rubric_view_launch').colorbox({
+            iframe:true, width:"832px", height:"682px", opacity: "0.7", className: "rubric_view", transition: "none",
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            }
+        });
+    }
+
+    // Open the DV in a new window in such a way as to not be blocked by popups.
+    $(document).on('click', '.default_open, .origreport_open, .grademark_open', function() {
+        var proceed = true;
+        var idStr = $(this).attr("id").split("_");
+        var due_date = $('#date_due_'+idStr[2]).html();
+        var due_date_unix = moment(due_date).unix();
+
+        var dvtype = idStr[0];
+        var submission_id = idStr[1];
+        var part_id = idStr[2];
+        var user_id = idStr[3];
+
+        // Show resubmission grade warning if the due date has not passed.
+        if (due_date_unix > moment().unix()) {
+            if ($(this).hasClass('graded_warning')) {
+                if (!confirm(M.str.turnitintooltwo.resubmissiongradewarn)) {
+                     proceed = false;
+                }
+            }
+        }
+
+        if (proceed) {
+            dvWindow = window.open('', '_blank');
+            var loading = '<div style="text-align:center;">';
+            loading += '<img src="'+M.cfg.wwwroot+'/mod/turnitintooltwo/pix/tiiIcon.svg" style="width:100px; height: 100px">';
+            loading += '<p style="font-family: Arial, Helvetica, sans-serif;">'+M.str.turnitintooltwo.loadingdv+'</p>';
+            loading += '</div>';
+            $(dvWindow.document.body).html(loading);
+
+            // Get html to launch DV
+            $.ajax({
+                type: "POST",
+                url: M.cfg.wwwroot+"/mod/turnitintooltwo/ajax.php",
+                dataType: "json",
+                data: {action: dvtype, submission: submission_id, assignment: $('#assignment_id').html()},
+                success: function(data) {
+                    $(dvWindow.document.body).html(loading+data);
+                    dvWindow.document.forms[0].submit();
+                    dvWindow.document.close();
+
+                    checkDVClosed(part_id);
+                }
+            });
+        }
+    });
 
     if ($("#id_rubric, #id_plagiarism_rubric").length > 0) {
         refreshRubricSelect();
@@ -465,6 +610,12 @@ jQuery(document).ready(function($) {
         $('html').css('background', '#FFF');
     }
 
+    $('.editable_postdue').on("click", function() {
+        if ($(this).data('anon') == 1) {
+            alert(M.str.turnitintooltwo.postdate_warning);
+        }
+    });
+
     if ($('.editable_text').length > 0) {
         $.fn.editable.defaults.mode = 'inline';
         $.fn.editable.defaults.url = 'ajax.php';
@@ -475,13 +626,41 @@ jQuery(document).ready(function($) {
         }
 
         $('.editable_text').editable({
+            validate: function(value) {
+                if ($(this).attr('id').indexOf("marks_") >= 0 && (Math.floor(value) != value || !$.isNumeric(value) || value.indexOf(".") != -1)) {
+                    return M.str.turnitintooltwo.maxmarkserror;
+                }
+            },
             success: function(response, newValue) {
                 if(!response.success) {
                     return response.msg;
                 } else if (response.field == "maxmarks") {
                     $('#refresh_'+response.partid).click();
+                } else if (response.field == "partname") {
+                    var tabId = $(this).parentsUntil('.ui-tabs-panel').parent().attr('aria-labelledby');
+                    $('#'+tabId).text(newValue);
                 }
             }
+        });
+
+        if ($('#export_options').hasClass('tii_export_options_hide')) {
+            $('#export_options').hide();
+            $('.export_data').html('<span class="empty-dash">--</span>');
+        }
+
+        $('.editable_postdue').on("click", function() {
+            var $this = $(this);
+            $.ajax({
+                type: "POST",
+                url: "ajax.php",
+                dataType: "json",
+                data: {action: 'check_anon', part: $this.data('pk'), assignment: $('#assignment_id').html()},
+                success: function(data) {
+                    $this.data('anon', data['anon']);
+                    $this.data('unanon', data['unanon']);
+                    $this.data('submitted', data['submitted']);
+                }
+            });
         });
 
         var theDate = new Date();
@@ -491,15 +670,38 @@ jQuery(document).ready(function($) {
             'viewformat': 'D MMM YYYY, HH:mm',
             'template': 'D MMM YYYY  HH:mm',
             'combodate': {
-                            'minuteStep': 1,
-                            'minYear': 2000,
-                            'maxYear': theDate.getFullYear()+2
-                        },
+                'minuteStep': 1,
+                'minYear': 2000,
+                'maxYear': theDate.getFullYear()+2,
+                'smartDays': true
+            },
+            validate: function(value) {
+                if( value.format("X") < moment().unix() &&
+                    $(this).hasClass('editable_postdue') &&
+                    $(this).data('anon') == 1 &&
+                    $(this).data('unanon') == 0 &&
+                    $(this).data('submitted') == 1 )
+                {
+                    if ( ! confirm(M.str.turnitintooltwo.disableanonconfirm)) {
+                        $('.editable-open').editableContainer('hide');
+                        // Validation only fails if string is returned (We need a string).
+                        return ' ';
+                    }
+                }
+            },
             success: function(response, newValue) {
                 if(!response.success) {
                     return response.msg;
                 } else {
                     $('#refresh_'+response.partid).click();
+
+                    if (response.export_option == "tii_export_options_hide") {
+                        $('#export_options').hide();
+                        $('.export_data').html('<span class="empty-dash">--</span>');
+                    } else {
+                        $('.empty-dash').remove();
+                        $('#export_options').show();
+                    }
                 }
             }
         });
@@ -510,32 +712,44 @@ jQuery(document).ready(function($) {
             }
         });
 
-        // Disable other editable fields when an editable form is opened
+        // Disable other editable fields & Grading template submissions when an editable form is opened.
         $('.editable_date, .editable_text').on('shown', function(e, editable) {
             var current = ($(this).prop('id'));
             $('.editable_date, .editable_text').not('#'+current).editable('disable');
+            $('.submit_nothing').addClass('disabled');
         });
 
-        // Enable other editable fields when an editable form is closed
-        $('.editable_date, .editable_text').on('hidden', function(e, reason) {
-            if (reason == 'nochange') {
-                var current = ($(this).prop('id'));
-                $('.editable_date, .editable_text').not('#'+current).editable('enable');
-            }
+        // Enable other editable fields & Grading template submissions when an editable form is closed.
+        $('.editable_date, .editable_text').on('hidden', function() {
+            var current = ($(this).prop('id'));
+            $('.editable_date, .editable_text').not('#'+current).editable('enable');
+            $('.submit_nothing').removeClass('disabled');
         });
     }
 
     $('#inbox_form form, .launch_form form').submit();
 
-    // Update the DB value for EULA accepted
-    function userAgreementAccepted( user_id ){
-        $.ajax({
-            type: "POST",
-            url: "ajax.php",
-            dataType: "json",
-            data: {action: 'acceptuseragreement', user_id: user_id},
-            success: function(data) {
-                window.location.href = window.location.href;
+    // Open an iframe light box containing the EULA View
+    if ($('.turnitin_eula_link').length > 0) {
+        $('.turnitin_eula_link').colorbox({
+            iframe:true, width:"766px", height:"596px", opacity: "0.7", className: "eula_view", scrolling: "false",
+            onLoad: function() { getLoadingGif(); },
+            onComplete: function() {
+                $(window).on("message", function(ev) {
+                    var message = typeof ev.data === 'undefined' ? ev.originalEvent.data : ev.data;
+
+                    $.ajax({
+                        type: "POST",
+                        url: M.cfg.wwwroot +"/mod/turnitintooltwo/ajax.php",
+                        dataType: "json",
+                        data: {action: "acceptuseragreement", message: message, sesskey: M.cfg.sesskey},
+                        success: function(data) { window.location.reload(); },
+                        error: function(data) { window.location.reload(); }
+                    });
+                });
+            },
+            onCleanup: function() {
+                hideLoadingGif();
             }
         });
     }
@@ -568,7 +782,7 @@ jQuery(document).ready(function($) {
             "url": "ajax.php",
             "async": true,
             "data": {action: "get_submissions", assignment: assignment_id, part: part_id, start: start,
-                        refresh_requested: refresh_requested, sesskey: M.cfg.sesskey, total: total},
+                        refresh_requested: refresh_requested[part_id], sesskey: M.cfg.sesskey, total: total},
             "success": function(result) {
                 eval(result);
                 start = result.end;
@@ -581,8 +795,29 @@ jQuery(document).ready(function($) {
                     getSubmissions(table, assignment_id, part_id, start, refresh_requested, result.total);
                 } else {
                     $('#'+part_id+"_processing").attr('style', 'visibility: hidden');
-                    $('#refresh_'+part_id).show();
+
+                    refresh_requested[part_id] = 0;
+                    var allrefreshed = 1;
+
+                    $.each(refresh_requested, function(k, v) {
+                        if (v == 1) {
+                            allrefreshed = 0;
+                        }
+                    });
+
+                    if (allrefreshed == 1) {
+                        $('.refreshing_link').hide();
+                        $('.refresh_link').show();
+                    }
+
+                    submitVisibility();
+
                     enableEditingText(part_id);
+
+                    // Enable Email non submitters link if there is any non submitters.
+                    if (result.nonsubmitters > 0) {
+                        $('.nonsubmitters_link').attr('style', 'display: block');
+                    }
                 }
             },
             "error": function(data, response) {
@@ -590,6 +825,16 @@ jQuery(document).ready(function($) {
                 $('.dataTables_empty').html(M.str.turnitintooltwo.tiisubmissionsgeterror);
             }
         });
+    }
+
+    // Show or hide the submission link depending on whether the EULA has been accepted.
+    function submitVisibility() {
+        if (($(".upload_box").data("user-type") == 1) || ($(".upload_box").data("eula") == 1)) {
+            $(".upload_box").show();
+        }
+        else {
+            $(".upload_box").hide();
+        }
     }
 
     // Get the rubrics belonging to a user from Turnitin and refresh menu accordingly
@@ -644,7 +889,7 @@ jQuery(document).ready(function($) {
     // Refresh the Peermark Assignments from Turnitin and show in Part Details section of inbox
     function refreshPeermarkAssignments(part_id, refresh_requested) {
 
-        var user_role = ($('.peermark_manager_launch').length > 0) ? 'Instructor' : 'Learner'
+        var user_role = ($('.tii_peermark_manager_launch').length > 0) ? 'Instructor' : 'Learner'
 
         if ($('#tabs-'+part_id+' .peermark_assignments_container').length > 0) {
 
@@ -689,19 +934,23 @@ jQuery(document).ready(function($) {
 
     // Show light box with form to reveal the student's name on an anonymised submission
     function initialiseUnanoymiseForm(scope, assignment_id, submission_id) {
-        var identifier = 'a.unanonymise'
+        var identifier = 'a.unanonymise';
         if (scope == "row") {
             identifier = '#submission_'+submission_id;
         }
         $(identifier).colorbox({
-            inline:true, width:"50%", top: "100px", height:"260px", opacity: "0.7", className: "unanonymise_reveal_form",
+            inline:true, width:"50%", top: "100px", height:"260px", opacity: "0.7", className: "tii_unanonymise_reveal_form",
             onComplete : function() {
                 var idStr = $(this).attr("id").split("_");
                 if (submission_id == 0 || submission_id == undefined) {
                     var submission_id = idStr[1];
                 }
+                if (assignment_id == 0) {
+                    assignment_id = $('#assignment_id').html();
+                }
                 $("#submission_id").html(submission_id);
                 $('#cboxLoadedContent .unanonymise_form').show();
+                $('#id_reveal').unbind("click");
                 $('#id_reveal').click(function() {
                     $.ajax({
                         "dataType": 'json',
@@ -712,8 +961,10 @@ jQuery(document).ready(function($) {
                         success: function(data) {
                             eval(data);
                             if (data.status == "success") {
-                                parent.$.fn.colorbox.close();
+                                $.colorbox.close()
+                                $('#submission_'+submission_id).attr('href', M.cfg.wwwroot+"/user/view.php?id="+data.userid+"&course="+data.courseid);
                                 $('#submission_'+submission_id).html(data.name);
+                                $('#submission_'+submission_id).removeClass('unanonymise cboxElement');
                             } else {
                                 var current_msg = $('#unanonymise_desc').html;
                                 $('#unanonymise_desc').html(current_msg+" "+data.msg);
@@ -734,26 +985,24 @@ jQuery(document).ready(function($) {
             identifier = "#upload_"+submission_id+"_"+part_id+"_"+user_id;
         }
 
-        var windowWidth = $(window).width();
-
         var colorBoxWidth = "80%";
-        if (windowWidth < 1000) {
-            colorBoxWidth = "860px";
-        }
+        var colorBoxHeight = "80%";
 
         $(identifier).colorbox({
             onLoad: function() {
-                $('.upload #cboxClose').hide();
                 getLoadingGif();
+                lightBoxCloseButton();
+                $(this).hide();
             },
             onClosed: function() { hideLoadingGif(); },
             onCleanup:function() {
                 hideLoadingGif();
                 var idStr = $(this).attr("id").split("_");
                 refreshInboxRow("upload", idStr[1], idStr[2], idStr[3]);
+
+                $('#tii_close_bar').remove();
             },
-            iframe:true, width:colorBoxWidth, height:"556px", opacity: "0.7", className: "upload", transition: "none",
-            close: '<div class="closeText">'+M.str.turnitintooltwo.close+'</div>'
+            iframe:true, width:colorBoxWidth, height:colorBoxHeight, opacity: "0.7", className: "upload", transition: "none"
         });
     }
 
@@ -775,8 +1024,14 @@ jQuery(document).ready(function($) {
         // Open an iframe light box which requests all the submissions as pdfs from Turnitin
         $('#tabs-'+part_id+' .downloadpdf_box').colorbox({
             iframe:true, width:"40%", height:"60%", opacity: "0.7", className: "downloadpdf_window", transition: "none",
-            onLoad: function() { getLoadingGif(); },
-            onCleanup: function() { hideLoadingGif(); },
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            },
             onClosed: function() {
                 refreshUserMessages();
             }
@@ -790,7 +1045,7 @@ jQuery(document).ready(function($) {
                             var submission_ids = "";
                             var i = 0;
 
-                            $('.inbox_checkbox:checked').each(function(i){
+                            $('#tabs-' + part_id + ' .inbox_checkbox:checked').each(function(i){
                                 submission_ids += "&submission_id"+i+"="+$(this).val();
                                 i++;
                             });
@@ -807,13 +1062,37 @@ jQuery(document).ready(function($) {
         });
     }
 
+    function lightBoxCloseButton() {
+        $('body').append('<div id="tii_close_bar"><a href="#" onclick="$.colorbox.close(); return false;">' + M.str.turnitintooltwo.closebutton + '</a></div>');
+    }
+
+    function initialiseDigitalReceipt() {
+        if ($('.tii_digital_receipt').length > 0) {
+            $('.tii_digital_receipt').colorbox({
+                iframe:true, width:"832px", height:"482px", opacity: "0.7", className: "rubric_view", transition: "none",
+                onLoad: function() {
+                    lightBoxCloseButton();
+                    getLoadingGif();
+                },
+                onCleanup: function() {
+                    $('#tii_close_bar').remove();
+                    hideLoadingGif();
+                }
+            });
+        }
+    }
+
+    $('#tii_receipt_print').click(function() {
+        window.print();
+    });
+
     function initialiseHiddenZipDownloads(part_id) {
         // Unbind the event first to stop it being binded multiple times
         $('#tabs-'+part_id+' .origchecked_zip_open').unbind("click");
         // Seperate binder for hidden zip file link
         $('#tabs-'+part_id+' .origchecked_zip_open').click(function() {
             var idStr = $(this).attr("id").split("_");
-            downloadZipFile(idStr[0]+"_"+idStr[1], idStr[2]);
+            downloadZipFile(idStr[0]+"_"+idStr[1], part_id);
             return false;
         });
     }
@@ -830,7 +1109,7 @@ jQuery(document).ready(function($) {
 
         $(identifier).click(function() {
             $(this).hide();
-            $(this).siblings('.fa-spinner').css("display","inline-block");
+            $(this).siblings('.fa-spinner').css("display","inline-block").addClass('fa-lg');
             var idStr = $(this).parent().attr("id").split("_");
             refreshInboxRow(idStr[0], idStr[1], idStr[2], idStr[3]);
         });
@@ -838,9 +1117,10 @@ jQuery(document).ready(function($) {
 
     // Initialise the events to open the document viewer as the links are loaded after the page
     function initialiseDVLaunchers(scope, submission_id, part_id, user_id) {
-        var identifier = '#'+part_id+' .origreport_open, #'+part_id+' .grademark_open, #'+part_id+' .download_original_open';
+        var identifier = '#'+part_id+' .download_original_open';//#'+part_id+' .origreport_open, #'+part_id+' .grademark_open,
         if (scope == "row") {
-            identifier = '#origreport_'+submission_id+'_'+part_id+'_'+user_id+', #grademark_'+submission_id+'_'+part_id+'_'+user_id+', #downloadoriginal_'+submission_id+'_'+part_id+'_'+user_id;
+            identifier = '#downloadoriginal_'+submission_id+'_'+part_id+'_'+user_id;
+            //#origreport_'+submission_id+'_'+part_id+'_'+user_id+', #grademark_'+submission_id+'_'+part_id+'_'+user_id+',
         }
 
         // Unbind the event first to stop it being binded multiple times
@@ -850,7 +1130,7 @@ jQuery(document).ready(function($) {
             var idStr = $(this).attr("id").split("_");
             // Don't open OR DV if score is pending.
             if (!$(this).children('.score_colour').hasClass('score_colour_')) {
-                openDV(idStr[0], idStr[1], idStr[2], idStr[3]);
+                downloadOriginalFile(idStr[0], idStr[1], idStr[2], idStr[3]);
             }
         });
     }
@@ -859,8 +1139,9 @@ jQuery(document).ready(function($) {
     // This will download the relevant zip file
     function downloadZipFile(downloadtype, part_id) {
         var submission_ids = [];
+
         if (downloadtype == "origchecked_zip" || downloadtype == "gmpdf_zip") {
-            $('.inbox_checkbox:checked').each(function(i){
+            $('#tabs-' + part_id + ' .inbox_checkbox:checked').each(function(i){
                 submission_ids[i] = $(this).val();
             });
         }
@@ -878,45 +1159,37 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Open the document viewer within a frame in a new tab
-    function openDV(dvtype, submission_id, part_id, user_id) {
-        var proceed = true;
-        if ($('#grademark_'+submission_id+'_'+part_id+'_'+user_id).hasClass('graded_warning') && dvtype != 'downloadoriginal') {
-            if (!confirm(M.str.turnitintooltwo.resubmissiongradewarn)) {
-                proceed = false;
+    // Put the form in to the submissions table row and submit it.
+    // This will download the relevant original file
+    function downloadOriginalFile(dvtype, submission_id, part_id, user_id) {
+        // Get html to launch DV
+        $.ajax({
+            type: "POST",
+            url: M.cfg.wwwroot+"/mod/turnitintooltwo/ajax.php",
+            dataType: "html",
+            data: {action: dvtype, submission: submission_id, assignment: $('#assignment_id').html()},
+            success: function(data) {
+                $("#"+dvtype+"_form_"+submission_id).html(data);
+                $("#"+dvtype+"_form_"+submission_id).children("form").submit();
+                $("#"+dvtype+"_form_"+submission_id).html("");
             }
-        }
+        });
+    }
 
-        if (proceed) {
-            $.ajax({
-                type: "POST",
-                url: "ajax.php",
-                dataType: "html",
-                data: {action: dvtype, assignment: $('#assignment_id').html(), submission: submission_id},
-                success: function(data) {
-                    $("#"+dvtype+"_form_"+submission_id).html(data);
-                    if (dvtype == "downloadoriginal") {
-                        $("#"+dvtype+"_form_"+submission_id).children("form").submit();
-                    } else {
-                        $("#"+dvtype+"_form_"+submission_id).children("form").on("submit", function(event) {
-                            dvWindow = window.open('', 'dv_'+submission_id);
-                            dvWindow.document.write('<frameset><frame id="dvWindow" name="dvWindow"></frame></frameset>');
-                            dvWindow.document.close();
-                            $(dvWindow).bind('beforeunload', function() {
-                                refreshInboxRow(dvtype, submission_id, part_id, user_id);
-                            });
-                        });
-                        $("#"+dvtype+"_form_"+submission_id).children("form").submit();
-                    }
-                    $("#"+dvtype+"_form_"+submission_id).html("");
-                }
-            });
+    // Check whether the DV is still open, refresh the opening window when it closes.
+    function checkDVClosed(part_id) {
+        if (window.dvWindow.closed) {
+            $("#refresh_"+part_id).click();
+        } else {
+            setTimeout( function(){
+                            checkDVClosed(part_id);
+                        }, 500);
         }
     }
 
     // Initiate a nothing submission
     function submitNothing( user_id, part_id ) {
-        $("#submitnothing_0_"+part_id+"_"+user_id+" img").attr('src','pix/loader.gif');
+        $("#submitnothing_0_"+part_id+"_"+user_id+" i").attr('class','fa fa-spin fa-spinner fa-lg');
         $.ajax({
             type: "POST",
             url: "ajax.php",
@@ -926,9 +1199,10 @@ jQuery(document).ready(function($) {
             success: function(data) {
                 eval(data);
                 $.cookie( 'submitnothingaccept', true, { expires: 365 } );
+                $('table#' + part_id + ' .select_all_checkbox').attr('checked', false);
             },
             error: function(data) {
-                $("#submitnothing_0_"+part_id+"_"+user_id+" img").attr('src','pix/icon-edit-grey.png');
+                $("#submitnothing_0_"+part_id+"_"+user_id+" i").attr('class','fa fa-pencil fa-lg');
                 $("#submitnothing_0_"+part_id+"_"+user_id).removeClass('disabled');
                 alert( data.responseText );
             },
@@ -947,11 +1221,14 @@ jQuery(document).ready(function($) {
             data: {action: "refresh_submission_row", assignment: $('#assignment_id').html(),
                     part: part_id, user: user_id, sesskey: M.cfg.sesskey},
             success: function(data) {
+                $('table#' + part_id + ' .select_all_checkbox').attr('checked', false);
                 eval(data);
                 var i = 0;
                 if (submission_id == 0) {
                     link += "_0";
                     submission_id = data.submission_id;
+                } else if (data.submission_id == null && submission_id != 0) {
+                    link = link+"_"+submission_id;
                 } else {
                     link = link+"_"+data.submission_id;
                 }
@@ -959,10 +1236,15 @@ jQuery(document).ready(function($) {
                 if (submission_id != 0) {
                     $('#export_links').removeClass('hidden_class');
                 }
-                $("#"+link+"_"+part_id+'_'+user_id).parent().parent().children().each(function() {
-                    i++;
-                    $(this).html(data.row[i]);
-                });
+
+                // Delete the row and re-add.
+                oTable = $('table#'+part_id).dataTable();
+                var tr = $("#"+link+"_"+part_id+'_'+user_id).parent().parent();
+                var rowindex = tr.index();
+                oTable.fnDeleteRow(tr);
+                oTable.fnAddData(data.row);
+
+                submitVisibility();
 
                 initialiseUploadBox("row", data.submission_id, part_id, user_id);
                 initialiseDVLaunchers("row", data.submission_id, part_id, user_id);
@@ -975,17 +1257,22 @@ jQuery(document).ready(function($) {
 
     // Show download links when checkboxes have been ticked
     function initialiseCheckboxes(submission_id, part_id) {
-        var identifier = 'input.inbox_checkbox';
+        var identifier = '#tabs-' + part_id + ' .inbox_checkbox';
         if (submission_id != 0) {
             identifier = 'check_'+submission_id;
         }
-        $(document).on('click', identifier, function() {
-            if ($('.inbox_checkbox:checked').length > 0) {
-                $('#zip_downloads').slideDown();
+
+        $('#tabs-' + part_id + ' .inbox_checkbox').click(function() {
+            $('table#' + part_id + ' .select_all_checkbox').attr('checked', false);
+        });
+
+        $(document).on('click', identifier + ', .select_all_checkbox', function() {
+            if ($('#tabs-' + part_id + ' .inbox_checkbox:checked').length > 0) {
+                $('#tabs-' + part_id + ' .zip_downloads').slideDown();
                 initialiseHiddenZipDownloads(part_id)
             } else {
                 $('#tabs-'+part_id+' .origchecked_zip_open').unbind('click');
-                $('#zip_downloads').slideUp();
+                $('#tabs-' + part_id + ' .zip_downloads').slideUp();
             }
         });
     }
@@ -999,5 +1286,60 @@ jQuery(document).ready(function($) {
                 $('fieldset[id$="partdates'+i+'"]').slideUp();
             }
         }
+    }
+
+    $('.select_all_checkbox').on('click', function() {
+        var id = $(this).parent().parent().parent().parent().attr('id');
+
+        if ($(this).is(':checked')) {
+            if ( $('#' + id + ' .inbox_checkbox').length ) {
+                $('#tabs-' + id + ' .zip_downloads').slideDown();
+            }
+            $('#' + id + ' .inbox_checkbox').each(function() {
+                $(this).prop('checked', true);
+            });
+        } else {
+            $('#' + id + ' .inbox_checkbox').each(function() {
+                $(this).prop('checked', false);
+            });
+            if ( $('#' + id + ' .inbox_checkbox').length ) {
+                $('#tabs-' + id + ' .zip_downloads').slideUp();
+            }
+        }
+    });
+
+    // Settings page parts warning
+    $('[id^=fitem_id_dtpost] select').change(function() {
+        // Get part id from title
+        var dataEl = $(this).parent().parent().parent();
+        var post_date = buildUnixDate('#fitem_id_dtpost', dataEl.data('partId'));
+
+        if ( post_date < moment().unix() && dataEl.data('anon') == 1 && dataEl.data('unanon') == 0 && dataEl.data('submitted') == 1 ) {
+            alert(M.str.turnitintooltwo.anonalert);
+        }
+
+    });
+
+    var buildUnixDate = function(el, part_id) {
+        // option id's
+        var start = [ '_day', '_month', '_year', '_hour', '_minute' ];
+
+        $this = $(el + part_id);
+
+        // build date:time string
+        var date = '';
+        $.each(start, function(k, v) {
+            date += $this.find('[id$=' + part_id + v + '] option:selected').text();
+            if (v === '_year') {
+                date += ' ';
+            } else if (v === '_hour') {
+                date += ':';
+            } else if ( v !== '_minute') {
+                date += '-';
+            }
+        });
+
+        // return converted moment object
+        return moment(date, "DD-MMMM-YYYY hh:mm").unix();
     }
 });

@@ -66,7 +66,8 @@ class panopto_provision_form extends moodleform {
         global $aserverarray;
 
         $mform = & $this->_form;
-        $coursesraw = $DB->get_records('course', null, '', 'id, shortname, fullname');
+        $select_query = "id <> 1";
+        $coursesraw = $DB->get_records_select('course', $select_query, null, 'id, shortname, fullname');
         $courses = array();
         if ($coursesraw) {
             foreach ($coursesraw as $course) {
@@ -75,13 +76,13 @@ class panopto_provision_form extends moodleform {
         }
         asort($courses);
 
-        $serverselect = $mform->addElement('select', 'servers', 'Select a Panopto server', $aserverarray);
+        $serverselect = $mform->addElement('select', 'servers', get_string('select_server', 'block_panopto'), $aserverarray);
         $select = $mform->addElement('select', 'courses', get_string('provisioncourseselect', 'block_panopto'), $courses);
         $select->setMultiple(true);
         $select->setSize(32);
         $mform->addHelpButton('courses', 'provisioncourseselect', 'block_panopto');
 
-        $this->add_action_buttons(true, 'Provision');
+        $this->add_action_buttons(true, get_string('provision', 'block_panopto'));
     }
 
 }
@@ -146,7 +147,7 @@ if ($mform->is_cancelled()) {
 
     echo $OUTPUT->header();
 
-    if (isset($courses)) {
+    if ($courses) {
         $provisioned = array();
         $panoptodata = new panopto_data(null);
         foreach ($courses as $courseid) {
@@ -163,6 +164,7 @@ if ($mform->is_cancelled()) {
             } else {
                 $panoptodata->servername = $panoptodata->get_panopto_servername($panoptodata->moodlecourseid);
             }
+             
             if (isset($selectedkey)) {
                 $panoptodata->applicationkey = $selectedkey;
             } else {
@@ -172,7 +174,7 @@ if ($mform->is_cancelled()) {
             $provisioneddata = $panoptodata->provision_course($provisioningdata);
             include('views/provisioned_course.html.php');
         }
-        echo "<a class='panopto_center' href='$returnurl'>" . get_string('backto', 'block_panopto') . "</a>";
+        echo "<a href='$returnurl'>" . get_string('back_to_config', 'block_panopto') . "</a>";
     } else {
         $mform->display();
     }

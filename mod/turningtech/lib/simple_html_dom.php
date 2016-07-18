@@ -60,6 +60,7 @@
  * @copyright 2012 Turning Technologies
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+ if (!defined('TT_HDOM_TYPE_ELEMENT')) {
 define('TT_HDOM_TYPE_ELEMENT', 1);
 define('TT_HDOM_TYPE_COMMENT', 2);
 define('TT_HDOM_TYPE_TEXT', 3);
@@ -81,6 +82,7 @@ define('TT_DEFAULT_TARGET_CHARSET', 'UTF-8');
 define('TT_DEFAULT_BR_TEXT', "\r\n");
 define('TT_DEFAULT_SPAN_TEXT', " ");
 define('TT_MAX_FILE_SIZE', 600000);
+}
 /**
  * simple html dom node class
  * 
@@ -88,6 +90,7 @@ define('TT_MAX_FILE_SIZE', 600000);
  * @copyright 2012 Turning Technologies
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+ if (!class_exists('simple_html_dom_node')) {
 class simple_html_dom_node {
     /**
      *
@@ -2241,4 +2244,5 @@ function shdom_str_get_html($str, $lowercase = true, $forcetagsclosed = true,
  */
 function shdom_dump_html_tree($node, $show_attr = true, $deep = 0) {
     $node->dump($node);
+}
 }

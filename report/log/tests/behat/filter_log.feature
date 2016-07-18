@@ -10,7 +10,7 @@ Feature: In a report, admin can filter log data
       | Course 1 | C1 | 0 | 1 |
     And the following "users" exist:
       | username | firstname | lastname | email |
-      | student1 | Student | 1 | student1@asd.com |
+      | student1 | Student | 1 | student1@example.com |
     And the following "course enrolments" exist:
       | user | course | role |
       | admin | C1 | editingteacher |
@@ -21,8 +21,8 @@ Feature: In a report, admin can filter log data
   Scenario: Filter log report for standard and legacy log reader
     Given I navigate to "Manage log stores" node in "Site administration > Plugins > Logging"
     And I click on "Enable" "link" in the "Legacy log" "table_row"
-    And I set the following administration settings values:
-      | Log legacy data | 1 |
+    And the following config values are set as admin:
+      | loglegacy | 1 | logstore_legacy |
     And I follow "Home"
     And I follow "Course 1"
     And I navigate to "Participants" node in "Current course > C1"
@@ -32,7 +32,7 @@ Feature: In a report, admin can filter log data
     And I log out
     And I log in as "admin"
     When I navigate to "Logs" node in "Site administration > Reports"
-    And I set the field "id" to "Site logs"
+    And I set the field "id" to "Acceptance test site (Site)"
     And I set the field "user" to "All participants"
     And I set the field "logreader" to "Standard log"
     And I press "Get these logs"
@@ -52,7 +52,7 @@ Feature: In a report, admin can filter log data
     And I log out
     And I log in as "admin"
     When I navigate to "Logs" node in "Site administration > Reports"
-    And I set the field "id" to "Site logs"
+    And I set the field "id" to "Acceptance test site (Site)"
     And I set the field "user" to "All participants"
     And I press "Get these logs"
     Then I should see "User logged in as another user"
@@ -62,8 +62,8 @@ Feature: In a report, admin can filter log data
     Given I navigate to "Manage log stores" node in "Site administration > Plugins > Logging"
     And I click on "Enable" "link" in the "Legacy log" "table_row"
     And I click on "Disable" "link" in the "Standard log" "table_row"
-    And I set the following administration settings values:
-      | Log legacy data | 1 |
+    And the following config values are set as admin:
+      | loglegacy | 1 | logstore_legacy |
     And I follow "Home"
     And I follow "Course 1"
     And I follow "Home"
@@ -76,7 +76,7 @@ Feature: In a report, admin can filter log data
     And I log out
     And I log in as "admin"
     When I navigate to "Logs" node in "Site administration > Reports"
-    And I set the field "id" to "Site logs"
+    And I set the field "id" to "Acceptance test site (Site)"
     And I set the field "user" to "All participants"
     And I press "Get these logs"
     Then I should see "user login"

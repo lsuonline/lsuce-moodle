@@ -31,7 +31,7 @@ class auth_db_testcase extends advanced_testcase {
     /** @var string Original error log */
     protected $oldlog;
 
-    public function init_auth_database() {
+    protected function init_auth_database() {
         global $DB, $CFG;
         require_once("$CFG->dirroot/auth/db/auth.php");
 
@@ -52,14 +52,9 @@ class auth_db_testcase extends advanced_testcase {
             set_config('host', $CFG->dbhost.':'.$CFG->dboptions['dbport'], 'auth/db');
         }
 
-        switch (get_class($DB)) {
-            case 'mssql_native_moodle_database':
-                set_config('type', 'mssql_n', 'auth/db');
-                set_config('sybasequoting', '1', 'auth/db');
-                break;
+        switch ($DB->get_dbfamily()) {
 
-            case 'mariadb_native_moodle_database':
-            case 'mysqli_native_moodle_database':
+            case 'mysql':
                 set_config('type', 'mysqli', 'auth/db');
                 set_config('setupsql', "SET NAMES 'UTF-8'", 'auth/db');
                 set_config('sybasequoting', '0', 'auth/db');
@@ -72,12 +67,12 @@ class auth_db_testcase extends advanced_testcase {
                 }
                 break;
 
-            case 'oci_native_moodle_database':
+            case 'oracle':
                 set_config('type', 'oci8po', 'auth/db');
                 set_config('sybasequoting', '1', 'auth/db');
                 break;
 
-            case 'pgsql_native_moodle_database':
+            case 'postgres':
                 set_config('type', 'postgres7', 'auth/db');
                 $setupsql = "SET NAMES 'UTF-8'";
                 if (!empty($CFG->dboptions['dbschema'])) {
@@ -98,13 +93,17 @@ class auth_db_testcase extends advanced_testcase {
                 }
                 break;
 
-            case 'sqlsrv_native_moodle_database':
-                set_config('type', 'mssqlnative', 'auth/db');
+            case 'mssql':
+                if (get_class($DB) == 'mssql_native_moodle_database') {
+                    set_config('type', 'mssql_n', 'auth/db');
+                } else {
+                    set_config('type', 'mssqlnative', 'auth/db');
+                }
                 set_config('sybasequoting', '1', 'auth/db');
                 break;
 
             default:
-                throw new exception('Unknown database driver '.get_class($DB));
+                throw new exception('Unknown database family ' . $DB->get_dbfamily());
         }
 
         $table = new xmldb_table('auth_db_users');
@@ -122,7 +121,9 @@ class auth_db_testcase extends advanced_testcase {
         set_config('table', $CFG->prefix.'auth_db_users', 'auth/db');
         set_config('fielduser', 'name', 'auth/db');
         set_config('fieldpass', 'pass', 'auth/db');
-
+        set_config('field_map_lastname', 'lastname', 'auth/db');
+        set_config('field_updatelocal_lastname', 'oncreate', 'auth/db');
+        set_config('field_lock_lastname', 'unlocked', 'auth/db');
         // Setu up field mappings.
 
         set_config('field_map_email', 'email', 'auth/db');
@@ -150,7 +151,7 @@ class auth_db_testcase extends advanced_testcase {
     public function test_plugin() {
         global $DB, $CFG;
 
-        $this->resetAfterTest(false);
+        $this->resetAfterTest(true);
 
         // NOTE: It is strongly discouraged to create new tables in advanced_testcase classes,
         //       but there is no other simple way to test ext database enrol sync, so let's
@@ -307,6 +308,13 @@ class auth_db_testcase extends advanced_testcase {
         $DB->update_record('auth_db_users', $user3);
         $this->assertTrue($auth->user_login('u3', 'heslo'));
 
+        require_once($CFG->libdir.'/password_compat/lib/password.php');
+        set_config('passtype', 'saltedcrypt', 'auth/db');
+        $auth->config->passtype = 'saltedcrypt';
+        $user3->pass = password_hash('heslo', PASSWORD_BCRYPT);
+        $DB->update_record('auth_db_users', $user3);
+        $this->assertTrue($auth->user_login('u3', 'heslo'));
+
         set_config('passtype', 'internal', 'auth/db');
         $auth->config->passtype = 'internal';
         create_user_record('u3', 'heslo', 'db');
@@ -372,6 +380,68 @@ class auth_db_testcase extends advanced_testcase {
         $this->assertTrue($auth->user_exists('admin'));
         $this->assertFalse($auth->user_exists('u3'));
         $this->assertTrue($auth->user_exists('u4'));
+
+        $this->cleanup_auth_database();
+    }
+
+    /**
+     * Testing the function _colonscope() from ADOdb.
+     */
+    public function test_adodb_colonscope() {
+        global $CFG;
+        require_once($CFG->libdir.'/adodb/adodb.inc.php');
+        require_once($CFG->libdir.'/adodb/drivers/adodb-odbc.inc.php');
+        require_once($CFG->libdir.'/adodb/drivers/adodb-db2ora.inc.php');
+
+        $this->resetAfterTest(false);
+
+        $sql = "select * from table WHERE column=:1 AND anothercolumn > :0";
+        $arr = array('b', 1);
+        list($sqlout, $arrout) = _colonscope($sql,$arr);
+        $this->assertEquals("select * from table WHERE column=? AND anothercolumn > ?", $sqlout);
+        $this->assertEquals(array(1, 'b'), $arrout);
+    }
+
+    /**
+     * Testing the clean_data() method.
+     */
+    public function test_clean_data() {
+        global $DB;
+
+        $this->resetAfterTest(false);
+        $this->preventResetByRollback();
+        $this->init_auth_database();
+        $auth = get_auth_plugin('db');
+        $auth->db_init();
+
+        // Create users on external table.
+        $extdbuser1 = (object)array('name'=>'u1', 'pass'=>'heslo', 'email'=>'u1@example.com');
+        $extdbuser1->id = $DB->insert_record('auth_db_users', $extdbuser1);
+
+        // User with malicious data on the name (won't be imported).
+        $extdbuser2 = (object)array('name'=>'user<script>alert(1);</script>xss', 'pass'=>'heslo', 'email'=>'xssuser@example.com');
+        $extdbuser2->id = $DB->insert_record('auth_db_users', $extdbuser2);
+
+        $extdbuser3 = (object)array('name'=>'u3', 'pass'=>'heslo', 'email'=>'u3@example.com',
+                'lastname' => 'user<script>alert(1);</script>xss');
+        $extdbuser3->id = $DB->insert_record('auth_db_users', $extdbuser3);
+        $trace = new null_progress_trace();
+
+        // Let's test user sync make sure still works as expected..
+        $auth->sync_users($trace, true);
+        $this->assertDebuggingCalled("The property 'lastname' has invalid data and has been cleaned.");
+        // User with correct data, should be equal to external db.
+        $user1 = $DB->get_record('user', array('email'=> $extdbuser1->email, 'auth'=>'db'));
+        $this->assertEquals($extdbuser1->name, $user1->username);
+        $this->assertEquals($extdbuser1->email, $user1->email);
+
+        // Get the user on moodle user table.
+        $user2 = $DB->get_record('user', array('email'=> $extdbuser2->email, 'auth'=>'db'));
+        $user3 = $DB->get_record('user', array('email'=> $extdbuser3->email, 'auth'=>'db'));
+
+        $this->assertEmpty($user2);
+        $this->assertEquals($extdbuser3->name, $user3->username);
+        $this->assertEquals('useralert(1);xss', $user3->lastname);
 
         $this->cleanup_auth_database();
     }

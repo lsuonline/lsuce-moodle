@@ -20,8 +20,8 @@
  * @copyright Turning Technologies
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$string['pluginname']           = 'TurningTechnologies';
-$string['pluginnamegeneral']           = 'TurningTechnologies';
+$string['pluginname']           = 'TurningTech';
+$string['pluginnamegeneral']           = 'TurningTech';
 $string['pluginadministration'] = 'TurningTech administration';
 $string['turningtech']          = 'TurningTech';
 $string['modulename']           = 'TurningTech';
@@ -30,7 +30,7 @@ $string['turningtechfieldset']  = 'Custom example fieldset';
 $string['turningtechintro']     = 'Introduction';
 $string['turningtechname']      = 'TurningTech Activity Name';
 $string['turningtech:manage']   = 'Manage TurningTech';
-$string['remindermessage']      = 'You have not yet registered a TurningTechnologies device for this course.  Click "Manage my Device IDs" to register a device.';
+$string['remindermessage']      = 'You have not yet registered a TurningTech device for this course.  Click "Manage my Device IDs" to register a device.';
 $string['turningtech:addinstance'] = 'Add a new TurningTech instance';
 /*********** ADMIN PAGE **********************/
 $string['deviceidformat']                  = 'Device ID Format';
@@ -81,7 +81,7 @@ $string['editdevicemap']              = 'Edit Device ID';
 $string['nostudentsfound']            = 'No students were found for this course.';
 $string['assignmenttitle']            = 'Assignment Title';
 $string['filetoimport']               = 'File to import';
-$string['importformtitle']            = 'Import TurningPoint Session File (TXT) Into Moodle Gradebook';
+$string['importformtitle']            = 'Import TurningPoint Session File (TPZX) Into Moodle Gradebook';
 $string['overrideallexisting']        = 'Override all existing';
 $string['purgecourseheader']          = 'Purge Device Ids for this Course';
 $string['purgecourseinstructions']    = 'Click on the checkbox to verify that this is what you want to do, then click on the &quot;Purge&quot; button to continue';
@@ -132,9 +132,7 @@ $string['regrctype']                  = 'Register ResponseCard';
 $string['regrwtype']                  = 'Register ResponseWare';
 $string['deviceidlabel']              = 'Response Device ID : ';
 $string['devicesearchhead']           = 'Please enter Response Device ID in the field provided below.';
-$string['fieldid']              = 'Field ID : ';
-$string['fieldiddescription']              = 'Input the Field ID number for Device ID : ';
-$string['fieldiddefault']              = '1';
+
 /********** DEVICE MAP FORM ***************/
 $string['editdevicemap']      = 'Edit DeviceID relationships';
 $string['createdevicemap']    = 'Create DeviceID relationship';

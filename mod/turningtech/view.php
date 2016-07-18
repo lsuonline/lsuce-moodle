@@ -38,32 +38,32 @@ if ($id) {
     if (!$course = $DB->get_record('course', array(
         'id' => $cm->course
     ))) {
-        error('Course is misconfigured');
+        print_error('Course is misconfigured');
     }
 
     if (!$turningtech = $DB->get_record('turningtech', array(
         'id' => $cm->instance
     ))) {
-        error('Course module is incorrect');
+        print_error('Course module is incorrect');
     }
 
 } else if ($a) {
     if (!$turningtech = $DB->get_record('turningtech', array(
         'id' => $a
     ))) {
-        error('Course module is incorrect');
+        print_error('Course module is incorrect');
     }
     if (!$course = $DB->get_record('course', array(
         'id' => $turningtech->course
     ))) {
-        error('Course is misconfigured');
+        print_error('Course is misconfigured');
     }
     if (!$cm = get_coursemodule_from_instance('turningtech', $turningtech->id, $course->id)) {
-        error('Course Module ID was incorrect');
+        print_error('Course Module ID was incorrect');
     }
 
 } else {
-    error('You must specify a course_module ID or an instance ID');
+    print_error('You must specify a course_module ID or an instance ID');
 }
 
 require_login($course, true, $cm);

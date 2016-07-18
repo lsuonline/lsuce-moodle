@@ -88,13 +88,13 @@ class core_weblib_testcase extends advanced_testcase {
     }
 
     public function test_format_text_email() {
-        $this->assertSame("This is a TEST",
+        $this->assertSame("This is a TEST\n",
             format_text_email('<p>This is a <strong>test</strong></p>', FORMAT_HTML));
-        $this->assertSame("This is a TEST",
+        $this->assertSame("This is a TEST\n",
             format_text_email('<p class="frogs">This is a <strong class=\'fishes\'>test</strong></p>', FORMAT_HTML));
         $this->assertSame('& so is this',
             format_text_email('&amp; so is this', FORMAT_HTML));
-        $this->assertSame('Two bullets: '.core_text::code2utf8(8226).' *',
+        $this->assertSame('Two bullets: ' . core_text::code2utf8(8226) . ' ' . core_text::code2utf8(8226),
             format_text_email('Two bullets: &#x2022; &#8226;', FORMAT_HTML));
         $this->assertSame(core_text::code2utf8(0x7fd2).core_text::code2utf8(0x7fd2),
             format_text_email('&#x7fd2;&#x7FD2;', FORMAT_HTML));
@@ -117,15 +117,41 @@ class core_weblib_testcase extends advanced_testcase {
     }
 
     public function test_highlight() {
-        $this->assertSame('This is <span class="highlight">good</span>', highlight('good', 'This is good'));
-        $this->assertSame('<span class="highlight">span</span>', highlight('SpaN', 'span'));
-        $this->assertSame('<span class="highlight">SpaN</span>', highlight('span', 'SpaN'));
-        $this->assertSame('<span><span class="highlight">span</span></span>', highlight('span', '<span>span</span>'));
-        $this->assertSame('He <span class="highlight">is</span> <span class="highlight">good</span>', highlight('good is', 'He is good'));
-        $this->assertSame('This is <span class="highlight">good</span>', highlight('+good', 'This is good'));
-        $this->assertSame('This is good', highlight('-good', 'This is good'));
-        $this->assertSame('This is goodness', highlight('+good', 'This is goodness'));
-        $this->assertSame('This is <span class="highlight">good</span>ness', highlight('good', 'This is goodness'));
+        $this->assertSame('This is <span class="highlight">good</span>',
+                highlight('good', 'This is good'));
+
+        $this->assertSame('<span class="highlight">span</span>',
+                highlight('SpaN', 'span'));
+
+        $this->assertSame('<span class="highlight">SpaN</span>',
+                highlight('span', 'SpaN'));
+
+        $this->assertSame('<span><span class="highlight">span</span></span>',
+                highlight('span', '<span>span</span>'));
+
+        $this->assertSame('He <span class="highlight">is</span> <span class="highlight">good</span>',
+                highlight('good is', 'He is good'));
+
+        $this->assertSame('This is <span class="highlight">good</span>',
+                highlight('+good', 'This is good'));
+
+        $this->assertSame('This is good',
+                highlight('-good', 'This is good'));
+
+        $this->assertSame('This is goodness',
+                highlight('+good', 'This is goodness'));
+
+        $this->assertSame('This is <span class="highlight">good</span>ness',
+                highlight('good', 'This is goodness'));
+
+        $this->assertSame('<p><b>test</b> <b>1</b></p><p><b>1</b></p>',
+                highlight('test 1', '<p>test 1</p><p>1</p>', false, '<b>', '</b>'));
+
+        $this->assertSame('<p><b>test</b> <b>1</b></p><p><b>1</b></p>',
+                    highlight('test +1', '<p>test 1</p><p>1</p>', false, '<b>', '</b>'));
+
+        $this->assertSame('<p><b>test</b> 1</p><p>1</p>',
+                    highlight('test -1', '<p>test 1</p><p>1</p>', false, '<b>', '</b>'));
     }
 
     public function test_replace_ampersands() {
@@ -220,6 +246,24 @@ class core_weblib_testcase extends advanced_testcase {
         $this->assertSame($strurl, $url->out(false));
     }
 
+    /**
+     * Test set good scheme on Moodle URL objects.
+     */
+    public function test_moodle_url_set_good_scheme() {
+        $url = new moodle_url('http://moodle.org/foo/bar');
+        $url->set_scheme('myscheme');
+        $this->assertSame('myscheme://moodle.org/foo/bar', $url->out());
+    }
+
+    /**
+     * Test set bad scheme on Moodle URL objects.
+     */
+    public function test_moodle_url_set_bad_scheme() {
+        $url = new moodle_url('http://moodle.org/foo/bar');
+        $this->setExpectedException('coding_exception');
+        $url->set_scheme('not a valid $ scheme');
+    }
+
     public function test_moodle_url_round_trip_array_params() {
         $strurl = 'http://example.com/?a%5B1%5D=1&a%5B2%5D=2';
         $url = new moodle_url($strurl);
@@ -256,6 +300,16 @@ class core_weblib_testcase extends advanced_testcase {
 
         $url2 = new moodle_url('index.php', array('var2' => 2, 'var1' => 1));
 
+        $this->assertTrue($url1->compare($url2, URL_MATCH_BASE));
+        $this->assertTrue($url1->compare($url2, URL_MATCH_PARAMS));
+        $this->assertTrue($url1->compare($url2, URL_MATCH_EXACT));
+
+        $url1->set_anchor('test');
+        $this->assertTrue($url1->compare($url2, URL_MATCH_BASE));
+        $this->assertTrue($url1->compare($url2, URL_MATCH_PARAMS));
+        $this->assertFalse($url1->compare($url2, URL_MATCH_EXACT));
+
+        $url2->set_anchor('test');
         $this->assertTrue($url1->compare($url2, URL_MATCH_BASE));
         $this->assertTrue($url1->compare($url2, URL_MATCH_PARAMS));
         $this->assertTrue($url1->compare($url2, URL_MATCH_EXACT));
@@ -529,6 +583,58 @@ Anchor + ext. img:<a title="bananas" href="../logo-240x60.gif"></a>
 Ext. anchor + img:<img alt="Moodle" src="https://moodle.org/logo/logo-240x60.gif" />
 EXPECTED;
         $this->assertSame($expected, strip_pluginfile_content($source));
+    }
+
+    public function test_purify_html_ruby() {
+
+        $this->resetAfterTest();
+
+        $ruby =
+            "<p><ruby><rb>京都</rb><rp>(</rp><rt>きょうと</rt><rp>)</rp></ruby>は" .
+            "<ruby><rb>日本</rb><rp>(</rp><rt>にほん</rt><rp>)</rp></ruby>の" .
+            "<ruby><rb>都</rb><rp>(</rp><rt>みやこ</rt><rp>)</rp></ruby>です。</p>";
+        $illegal = '<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>';
+
+        $cleaned = purify_html($ruby . $illegal);
+        $this->assertEquals($ruby, $cleaned);
+
+    }
+
+    /**
+     * Tests for content_to_text.
+     *
+     * @param string    $content   The content
+     * @param int|false $format    The content format
+     * @param string    $expected  Expected value
+     * @dataProvider provider_content_to_text
+     */
+    public function test_content_to_text($content, $format, $expected) {
+        $content = content_to_text($content, $format);
+        $this->assertEquals($expected, $content);
+    }
+
+    /**
+     * Data provider for test_content_to_text.
+     */
+    public static function provider_content_to_text() {
+        return array(
+            array('asd', false, 'asd'),
+            // Trim '\r\n '.
+            array("Note that:\n\n3 > 1 ", FORMAT_PLAIN, "Note that:\n\n3 > 1"),
+            array("Note that:\n\n3 > 1\r\n", FORMAT_PLAIN, "Note that:\n\n3 > 1"),
+            // Multiple spaces to one.
+            array('<span class="eheh">京都</span>  ->  hehe', FORMAT_HTML, '京都 -> hehe'),
+            array('<span class="eheh">京都</span>  ->  hehe', false, '京都 -> hehe'),
+            array('asd    asd', false, 'asd asd'),
+            // From markdown to html and html to text.
+            array('asd __lera__ con la', FORMAT_MARKDOWN, 'asd LERA con la'),
+            // HTML to text.
+            array('<p class="frogs">This is a <strong class=\'fishes\'>test</strong></p>', FORMAT_HTML, 'This is a TEST'),
+            array("<span lang='en' class='multilang'>english</span>
+<span lang='ca' class='multilang'>català</span>
+<span lang='es' class='multilang'>español</span>
+<span lang='fr' class='multilang'>français</span>", FORMAT_HTML, "english català español français")
+        );
     }
 
 }

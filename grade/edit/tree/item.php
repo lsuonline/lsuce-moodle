@@ -37,6 +37,8 @@ if ($id !== 0) {
 }
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('admin');
+navigation_node::override_active_url(new moodle_url('/grade/edit/tree/index.php',
+    array('id'=>$courseid)));
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
@@ -51,8 +53,6 @@ $gpr = new grade_plugin_return();
 $returnurl = $gpr->get_return_url('index.php?id='.$course->id);
 
 $heading = get_string('itemsedit', 'grades');
-
-$curve_to = get_config('moodle', 'grade_multfactor_alt');
 
 if ($grade_item = grade_item::fetch(array('id'=>$id, 'courseid'=>$courseid))) {
     // redirect if outcomeid present
@@ -88,24 +88,19 @@ if ($item->hidden > 1) {
 
 $item->locked = !empty($item->locked);
 
-$multfactor = $item->multfactor;
-$curve_decimals = 4;
-
-if ($curve_to) {
-    $curve_decimals = $decimalpoints;
-    $multfactor *= $item->grademax;
-}
-
 $item->grademax        = format_float($item->grademax, $decimalpoints);
 $item->grademin        = format_float($item->grademin, $decimalpoints);
 $item->gradepass       = format_float($item->gradepass, $decimalpoints);
-$item->multfactor      = format_float($multfactor, $curve_decimals);
+$item->multfactor      = format_float($item->multfactor, 4);
 $item->plusfactor      = format_float($item->plusfactor, 4);
 
 if ($parent_category->aggregation == GRADE_AGGREGATE_SUM or $parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2) {
     $item->aggregationcoef = $item->aggregationcoef == 0 ? 0 : 1;
 } else {
     $item->aggregationcoef = format_float($item->aggregationcoef, 4);
+}
+if ($parent_category->aggregation == GRADE_AGGREGATE_SUM) {
+    $item->aggregationcoef2 = format_float($item->aggregationcoef2 * 100.0);
 }
 $item->cancontrolvisibility = $grade_item->can_control_visibility();
 
@@ -115,13 +110,19 @@ if ($mform->is_cancelled()) {
     redirect($returnurl);
 
 } else if ($data = $mform->get_data(false)) {
-    // If unset, give the aggregationcoef a default based on parent aggregation method
+
+    // This is a new item, and the category chosen is different than the default category.
+    if (empty($grade_item->id) && isset($data->parentcategory) && $parent_category->id != $data->parentcategory) {
+        $parent_category = grade_category::fetch(array('id' => $data->parentcategory));
+    }
+
+    // If unset, give the aggregation values a default based on parent aggregation method.
+    $defaults = grade_category::get_default_aggregation_coefficient_values($parent_category->aggregation);
     if (!isset($data->aggregationcoef) || $data->aggregationcoef == '') {
-        if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
-            $data->aggregationcoef = 1;
-        } else {
-            $data->aggregationcoef = 0;
-        }
+        $data->aggregationcoef = $defaults['aggregationcoef'];
+    }
+    if (!isset($data->weightoverride)) {
+        $data->weightoverride = $defaults['weightoverride'];
     }
 
     if (!isset($data->gradepass) || $data->gradepass == '') {
@@ -142,29 +143,23 @@ if ($mform->is_cancelled()) {
     unset($data->locked);
     unset($data->locktime);
 
-    $convert = array('grademax', 'grademin', 'gradepass', 'multfactor', 'plusfactor', 'aggregationcoef');
+    $convert = array('grademax', 'grademin', 'gradepass', 'multfactor', 'plusfactor', 'aggregationcoef', 'aggregationcoef2');
     foreach ($convert as $param) {
         if (property_exists($data, $param)) {
             $data->$param = unformat_float($data->$param);
         }
     }
-
-    // Special handling of curve to
-    if ($curve_to) {
-        if (empty($data->multfactor) || $data->multfactor <= 0.0000) {
-            $data->multfactor = 1.0000;
-        } else if (!isset($data->curve_to) and isset($item->multfactor)) {
-            $data->multfactor = $grade_item->multfactor;
-        } else {
-            $data->multfactor = $data->multfactor / $data->grademax;
-        }
+    if (isset($data->aggregationcoef2) && $parent_category->aggregation == GRADE_AGGREGATE_SUM) {
+        $data->aggregationcoef2 = $data->aggregationcoef2 / 100.0;
+    } else {
+        $data->aggregationcoef2 = $defaults['aggregationcoef2'];
     }
 
     $grade_item = new grade_item(array('id'=>$id, 'courseid'=>$courseid));
+    $oldmin = $grade_item->grademin;
+    $oldmax = $grade_item->grademax;
     grade_item::set_properties($grade_item, $data);
     $grade_item->outcomeid = null;
-
-    unset($grade_item->anonymous);
 
     // Handle null decimals value
     if (!property_exists($data, 'decimals') or $data->decimals < 0) {
@@ -175,22 +170,19 @@ if ($mform->is_cancelled()) {
         $grade_item->itemtype = 'manual'; // all new items to be manual only
         $grade_item->insert();
 
-        // Anonymous check
-        if (isset($data->anonymous) and grade_anonymous::is_supported($course)) {
-            $anon = new grade_anonymous(array('itemid' => $grade_item->id));
-
-            if (empty($anon->id)) {
-                $anon->insert();
-            }
-        }
-
         // set parent if needed
         if (isset($data->parentcategory)) {
-            $grade_item->set_parent($data->parentcategory, 'gradebook');
+            $grade_item->set_parent($data->parentcategory, false);
         }
 
     } else {
         $grade_item->update();
+
+        if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {
+            $newmin = $grade_item->grademin;
+            $newmax = $grade_item->grademax;
+            $grade_item->rescale_grades_keep_percentage($oldmin, $oldmax, $newmin, $newmax, 'gradebook');
+        }
     }
 
     // update hiding flag
@@ -206,10 +198,8 @@ if ($mform->is_cancelled()) {
     redirect($returnurl);
 }
 
-$return = false;
-$buttons = false;
-$shownavigation = false;
-print_grade_page_head($courseid, 'edittree', null, $heading, $return, $buttons, $shownavigation);
+$PAGE->navbar->add($heading);
+print_grade_page_head($courseid, 'settings', null, $heading, false, false, false);
 
 $mform->display();
 

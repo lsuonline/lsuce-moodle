@@ -53,20 +53,90 @@ class core_test_generator_testcase extends advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('core_completion');
     }
 
-    public function test_create() {
-        global $DB;
+    public function test_create_user() {
+        global $DB, $CFG;
+        require_once($CFG->dirroot.'/user/lib.php');
 
         $this->resetAfterTest(true);
         $generator = $this->getDataGenerator();
 
         $count = $DB->count_records('user');
+        $this->setCurrentTimeStart();
         $user = $generator->create_user();
-        $this->assertEquals($count+1, $DB->count_records('user'));
-        $this->assertSame($user->username, clean_param($user->username, PARAM_USERNAME));
-        $this->assertSame($user->email, clean_param($user->email, PARAM_EMAIL));
-        $user = $generator->create_user(array('firstname'=>'Žluťoučký', 'lastname'=>'Koníček'));
-        $this->assertSame($user->username, clean_param($user->username, PARAM_USERNAME));
-        $this->assertSame($user->email, clean_param($user->email, PARAM_EMAIL));
+        $this->assertEquals($count + 1, $DB->count_records('user'));
+        $this->assertSame($user->username, core_user::clean_field($user->username, 'username'));
+        $this->assertSame($user->email, core_user::clean_field($user->email, 'email'));
+        $this->assertSame(AUTH_PASSWORD_NOT_CACHED, $user->password);
+        $this->assertNotEmpty($user->firstnamephonetic);
+        $this->assertNotEmpty($user->lastnamephonetic);
+        $this->assertNotEmpty($user->alternatename);
+        $this->assertNotEmpty($user->middlename);
+        $this->assertSame('manual', $user->auth);
+        $this->assertSame('en', $user->lang);
+        $this->assertSame('1', $user->confirmed);
+        $this->assertSame('0', $user->deleted);
+        $this->assertTimeCurrent($user->timecreated);
+        $this->assertSame($user->timecreated, $user->timemodified);
+        $this->assertSame('0.0.0.0', $user->lastip);
+
+        $record = array(
+            'auth' => 'email',
+            'firstname' => 'Žluťoučký',
+            'lastname' => 'Koníček',
+            'firstnamephonetic' => 'Zhlutyoucky',
+            'lastnamephonetic' => 'Koniiczek',
+            'middlename' => 'Hopper',
+            'alternatename' => 'horse',
+            'idnumber' => 'abc1',
+            'mnethostid' => (string)$CFG->mnet_localhost_id,
+            'username' => 'konic666',
+            'password' => 'password1',
+            'email' => 'email@example.com',
+            'confirmed' => '1',
+            'lang' => 'cs',
+            'maildisplay' => '1',
+            'mailformat' => '0',
+            'maildigest' => '1',
+            'autosubscribe' => '0',
+            'trackforums' => '0',
+            'deleted' => '0',
+            'timecreated' => '666',
+        );
+        $user = $generator->create_user($record);
+        $this->assertEquals($count + 2, $DB->count_records('user'));
+        foreach ($record as $k => $v) {
+            if ($k === 'password') {
+                $this->assertTrue(password_verify($v, $user->password));
+            } else {
+                $this->assertSame($v, $user->{$k});
+            }
+        }
+
+        $record = array(
+            'firstname' => 'Some',
+            'lastname' => 'User',
+            'idnumber' => 'def',
+            'username' => 'user666',
+            'email' => 'email666@example.com',
+            'deleted' => '1',
+        );
+        $user = $generator->create_user($record);
+        $this->assertEquals($count + 3, $DB->count_records('user'));
+        $this->assertSame('', $user->idnumber);
+        $this->assertSame(md5($record['username']), $user->email);
+        $this->assertFalse(context_user::instance($user->id, IGNORE_MISSING));
+
+        // Test generating user with interests.
+        $user = $generator->create_user(array('interests' => 'Cats, Dogs'));
+        $userdetails = user_get_user_details($user);
+        $this->assertSame('Cats, Dogs', $userdetails['interests']);
+    }
+
+    public function test_create() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $generator = $this->getDataGenerator();
 
         $count = $DB->count_records('course_categories');
         $category = $generator->create_category();
@@ -103,6 +173,9 @@ class core_test_generator_testcase extends advanced_testcase {
         $section = $generator->create_course_section(array('course'=>$course->id, 'section'=>3));
         $this->assertEquals($course->id, $section->course);
 
+        $course = $generator->create_course(array('tags' => 'Cat, Dog'));
+        $this->assertEquals(array('Cat', 'Dog'), array_values(core_tag_tag::get_item_tags_array('core', 'course', $course->id)));
+
         $scale = $generator->create_scale();
         $this->assertNotEmpty($scale);
     }
@@ -126,12 +199,15 @@ class core_test_generator_testcase extends advanced_testcase {
         $cm = get_coursemodule_from_instance('page', $page->id, $SITE->id, true);
         $this->assertEquals(3, $cm->sectionnum);
 
+        $page = $generator->create_module('page', array('course' => $SITE->id, 'tags' => 'Cat, Dog'));
+        $this->assertEquals(array('Cat', 'Dog'),
+            array_values(core_tag_tag::get_item_tags_array('core', 'course_modules', $page->cmid)));
+
         // Prepare environment to generate modules with all possible options.
 
         // Enable advanced functionality.
         $CFG->enablecompletion = 1;
         $CFG->enableavailability = 1;
-        $CFG->enablegroupmembersonly = 1;
         $CFG->enableoutcomes = 1;
         require_once($CFG->libdir.'/gradelib.php');
         require_once($CFG->libdir.'/completionlib.php');
@@ -161,10 +237,8 @@ class core_test_generator_testcase extends advanced_testcase {
             'cmidnumber' => 'IDNUM', // Note: alternatively can have key 'idnumber'.
             // Module supports FEATURE_GROUPS;
             'groupmode' => SEPARATEGROUPS, // Note: will be reset to 0 if course groupmodeforce is set.
-            // Module supports FEATURE_GROUPINGS or module supports FEATURE_GROUPMEMBERSONLY:
+            // Module supports FEATURE_GROUPINGS.
             'groupingid' => $grouping->id,
-            // Module supports FEATURE_GROUPMEMBERSONLY:
-            'groupmembersonly' => 1,
         );
 
         // In case completion is enabled on site and for course every module can have manual completion.
@@ -233,7 +307,6 @@ class core_test_generator_testcase extends advanced_testcase {
         $this->assertEquals($optionsgeneral['cmidnumber'], $cm1->idnumber); // Note difference in key.
         $this->assertEquals($optionsgeneral['groupmode'], $cm1->groupmode);
         $this->assertEquals($optionsgeneral['groupingid'], $cm1->groupingid);
-        $this->assertEquals($optionsgeneral['groupmembersonly'], $cm1->groupmembersonly);
 
         $cm2 = $modinfo->cms[$m2->cmid];
         $this->assertEquals($featurecompletionmanual['completion'], $cm2->completion);
@@ -302,6 +375,7 @@ class core_test_generator_testcase extends advanced_testcase {
         $user1 = $this->getDataGenerator()->create_user();
         $user2 = $this->getDataGenerator()->create_user();
         $user3 = $this->getDataGenerator()->create_user();
+        $user4 = $this->getDataGenerator()->create_user();
 
         $this->assertEquals(3, $DB->count_records('enrol', array('enrol'=>'self')));
         $instance1 = $DB->get_record('enrol', array('courseid'=>$course1->id, 'enrol'=>'self'), '*', MUST_EXIST);
@@ -333,6 +407,13 @@ class core_test_generator_testcase extends advanced_testcase {
         $this->assertTrue($DB->record_exists('user_enrolments', array('enrolid'=>$maninstance2->id, 'userid'=>$user1->id)));
         $this->assertTrue($DB->record_exists('role_assignments', array('contextid'=>$context2->id, 'userid'=>$user1->id, 'roleid'=>$teacherrole->id)));
 
+        $result = $this->getDataGenerator()->enrol_user($user4->id, $course2->id, 'teacher', 'manual');
+        $this->assertTrue($result);
+        $this->assertTrue($DB->record_exists('user_enrolments',
+                array('enrolid' => $maninstance2->id, 'userid' => $user4->id)));
+        $this->assertTrue($DB->record_exists('role_assignments',
+                array('contextid' => $context2->id, 'userid' => $user4->id, 'roleid' => $teacherrole->id)));
+
         $result = $this->getDataGenerator()->enrol_user($user1->id, $course3->id, 0, 'manual');
         $this->assertTrue($result);
         $this->assertTrue($DB->record_exists('user_enrolments', array('enrolid'=>$maninstance3->id, 'userid'=>$user1->id)));
@@ -350,5 +431,35 @@ class core_test_generator_testcase extends advanced_testcase {
         $DB->delete_records('enrol', array('enrol'=>'self', 'courseid'=>$course3->id));
         $result = $this->getDataGenerator()->enrol_user($user2->id, $course3->id, null, 'self');
         $this->assertFalse($result);
+    }
+
+    public function test_create_grade_category() {
+        global $DB, $CFG;
+        require_once $CFG->libdir . '/grade/constants.php';
+
+        $this->resetAfterTest(true);
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+
+        // Generate category and make sure number of records in DB table increases.
+        // Note we only count grade cats with depth > 1 because the course grade category
+        // is lazily created.
+        $count = $DB->count_records_select('grade_categories', 'depth <> 1');
+        $gradecategory = $generator->create_grade_category(array('courseid'=>$course->id));
+        $this->assertEquals($count+1, $DB->count_records_select('grade_categories', 'depth <> 1'));
+        $this->assertEquals(2, $gradecategory->depth);
+        $this->assertEquals($course->id, $gradecategory->courseid);
+        $this->assertEquals('Grade category 1', $gradecategory->fullname);
+
+        // Generate category and make sure aggregation is set.
+        $gradecategory = $generator->create_grade_category(
+                array('courseid' => $course->id, 'aggregation' => GRADE_AGGREGATE_MEDIAN));
+        $this->assertEquals(GRADE_AGGREGATE_MEDIAN, $gradecategory->aggregation);
+
+        // Generate category and make sure parent is set.
+        $gradecategory2 = $generator->create_grade_category(
+                array('courseid' => $course->id,
+                    'parent' => $gradecategory->id));
+        $this->assertEquals($gradecategory->id, $gradecategory2->parent);
     }
 }

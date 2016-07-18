@@ -39,6 +39,8 @@ class mysqli_native_moodle_database extends moodle_database {
 
     /** @var mysqli $mysqli */
     protected $mysqli = null;
+    /** @var bool is compressed row format supported cache */
+    protected $compressedrowformatsupported = null;
 
     private $transactions_supported = null;
 
@@ -178,13 +180,13 @@ class mysqli_native_moodle_database extends moodle_database {
             return $engine;
         }
 
-        // get the default database engine
-        $sql = "SELECT @@storage_engine";
+        // Get the default database engine.
+        $sql = "SELECT @@default_storage_engine engine";
         $this->query_start($sql, NULL, SQL_QUERY_AUX);
         $result = $this->mysqli->query($sql);
         $this->query_end($result);
         if ($rec = $result->fetch_assoc()) {
-            $engine = $rec['@@storage_engine'];
+            $engine = $rec['engine'];
         }
         $result->close();
 
@@ -281,6 +283,73 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     /**
+     * Get the row format from the database schema.
+     *
+     * @param string $table
+     * @return string row_format name or null if not known or table does not exist.
+     */
+    public function get_row_format($table) {
+        $rowformat = null;
+        $table = $this->mysqli->real_escape_string($table);
+        $sql = "SELECT row_format
+                  FROM INFORMATION_SCHEMA.TABLES
+                 WHERE table_schema = DATABASE() AND table_name = '{$this->prefix}$table'";
+        $this->query_start($sql, NULL, SQL_QUERY_AUX);
+        $result = $this->mysqli->query($sql);
+        $this->query_end($result);
+        if ($rec = $result->fetch_assoc()) {
+            $rowformat = $rec['row_format'];
+        }
+        $result->close();
+
+        return $rowformat;
+    }
+
+    /**
+     * Is this database compatible with compressed row format?
+     * This feature is necessary for support of large number of text
+     * columns in InnoDB/XtraDB database.
+     *
+     * @param bool $cached use cached result
+     * @return bool true if table can be created or changed to compressed row format.
+     */
+    public function is_compressed_row_format_supported($cached = true) {
+        if ($cached and isset($this->compressedrowformatsupported)) {
+            return($this->compressedrowformatsupported);
+        }
+
+        $engine = strtolower($this->get_dbengine());
+        $info = $this->get_server_info();
+
+        if (version_compare($info['version'], '5.5.0') < 0) {
+            // MySQL 5.1 is not supported here because we cannot read the file format.
+            $this->compressedrowformatsupported = false;
+
+        } else if ($engine !== 'innodb' and $engine !== 'xtradb') {
+            // Other engines are not supported, most probably not compatible.
+            $this->compressedrowformatsupported = false;
+
+        } else if (!$filepertable = $this->get_record_sql("SHOW VARIABLES LIKE 'innodb_file_per_table'")) {
+            $this->compressedrowformatsupported = false;
+
+        } else if ($filepertable->value !== 'ON') {
+            $this->compressedrowformatsupported = false;
+
+        } else if (!$fileformat = $this->get_record_sql("SHOW VARIABLES LIKE 'innodb_file_format'")) {
+            $this->compressedrowformatsupported = false;
+
+        } else  if ($fileformat->value !== 'Barracuda') {
+            $this->compressedrowformatsupported = false;
+
+        } else {
+            // All the tests passed, we can safely use ROW_FORMAT=Compressed in sql statements.
+            $this->compressedrowformatsupported = true;
+        }
+
+        return $this->compressedrowformatsupported;
+    }
+
+    /**
      * Returns localised database type name
      * Note: can be used before connect()
      * @return string
@@ -372,13 +441,10 @@ class mysqli_native_moodle_database extends moodle_database {
         if ($dbhost and !empty($this->dboptions['dbpersist'])) {
             $dbhost = "p:$dbhost";
         }
-        ob_start();
-        $this->mysqli = new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport, $dbsocket);
-        $dberr = ob_get_contents();
-        ob_end_clean();
-        $errorno = @$this->mysqli->connect_errno;
+        $this->mysqli = @new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport, $dbsocket);
 
-        if ($errorno !== 0) {
+        if ($this->mysqli->connect_errno !== 0) {
+            $dberr = $this->mysqli->connect_error;
             $this->mysqli = null;
             throw new dml_connection_exception($dberr);
         }
@@ -510,12 +576,15 @@ class mysqli_native_moodle_database extends moodle_database {
      * @return database_column_info[] array of database_column_info objects indexed with column names
      */
     public function get_columns($table, $usecache=true) {
-
         if ($usecache) {
-            $properties = array('dbfamily' => $this->get_dbfamily(), 'settings' => $this->get_settings_hash());
-            $cache = cache::make('core', 'databasemeta', $properties);
-            if ($data = $cache->get($table)) {
-                return $data;
+            if ($this->temptables->is_temptable($table)) {
+                if ($data = $this->get_temp_tables_cache()->get($table)) {
+                    return $data;
+                }
+            } else {
+                if ($data = $this->get_metacache()->get($table)) {
+                    return $data;
+                }
             }
         }
 
@@ -620,7 +689,11 @@ class mysqli_native_moodle_database extends moodle_database {
         }
 
         if ($usecache) {
-            $cache->set($table, $structure);
+            if ($this->temptables->is_temptable($table)) {
+                $this->get_temp_tables_cache()->set($table, $structure);
+            } else {
+                $this->get_metacache()->set($table, $structure);
+            }
         }
 
         return $structure;
@@ -823,10 +896,11 @@ class mysqli_native_moodle_database extends moodle_database {
     /**
      * Do NOT use in code, to be used by database_manager only!
      * @param string|array $sql query
+     * @param array|null $tablenames an array of xmldb table names affected by this request.
      * @return bool true
      * @throws ddl_change_structure_exception A DDL specific exception is thrown for any errors.
      */
-    public function change_database_structure($sql) {
+    public function change_database_structure($sql, $tablenames = null) {
         $this->get_manager(); // Includes DDL exceptions classes ;-)
         if (is_array($sql)) {
             $sql = implode("\n;\n", $sql);
@@ -849,11 +923,11 @@ class mysqli_native_moodle_database extends moodle_database {
             while (@$this->mysqli->more_results()) {
                 @$this->mysqli->next_result();
             }
-            $this->reset_caches();
+            $this->reset_caches($tablenames);
             throw $e;
         }
 
-        $this->reset_caches();
+        $this->reset_caches($tablenames);
         return true;
     }
 
@@ -1430,16 +1504,23 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     public function sql_cast_char2real($fieldname, $text=false) {
-        return ' CAST(' . $fieldname . ' AS DECIMAL) ';
+        // Set to 65 (max mysql 5.5 precision) with 7 as scale
+        // because we must ensure at least 6 decimal positions
+        // per casting given that postgres is casting to that scale (::real::).
+        // Can be raised easily but that must be done in all DBs and tests.
+        return ' CAST(' . $fieldname . ' AS DECIMAL(65,7)) ';
     }
 
     /**
      * Returns 'LIKE' part of a query.
      *
+     * Note that mysql does not support $casesensitive = true and $accentsensitive = false.
+     * More information in http://bugs.mysql.com/bug.php?id=19567.
+     *
      * @param string $fieldname usually name of the table column
      * @param string $param usually bound query parameter (?, :named)
      * @param bool $casesensitive use case sensitive search
-     * @param bool $accensensitive use accent sensitive search (not all databases support accent insensitive)
+     * @param bool $accensensitive use accent sensitive search (ignored if $casesensitive is true)
      * @param bool $notlike true means "NOT LIKE"
      * @param string $escapechar escape char for '%' and '_'
      * @return string SQL code fragment
@@ -1451,14 +1532,24 @@ class mysqli_native_moodle_database extends moodle_database {
         $escapechar = $this->mysqli->real_escape_string($escapechar); // prevents problems with C-style escapes of enclosing '\'
 
         $LIKE = $notlike ? 'NOT LIKE' : 'LIKE';
+
         if ($casesensitive) {
+            // Current MySQL versions do not support case sensitive and accent insensitive.
             return "$fieldname $LIKE $param COLLATE utf8_bin ESCAPE '$escapechar'";
+
+        } else if ($accentsensitive) {
+            // Case insensitive and accent sensitive, we can force a binary comparison once all texts are using the same case.
+            return "LOWER($fieldname) $LIKE LOWER($param) COLLATE utf8_bin ESCAPE '$escapechar'";
+
         } else {
-            if ($accentsensitive) {
-                return "LOWER($fieldname) $LIKE LOWER($param) COLLATE utf8_bin ESCAPE '$escapechar'";
-            } else {
-                return "$fieldname $LIKE $param ESCAPE '$escapechar'";
+            // Case insensitive and accent insensitive.
+            $collation = '';
+            if ($this->get_dbcollation() == 'utf8_bin') {
+                // Force a case insensitive comparison if using utf8_bin.
+                $collation = 'COLLATE utf8_unicode_ci';
             }
+
+            return "$fieldname $LIKE $param $collation ESCAPE '$escapechar'";
         }
     }
 
@@ -1530,6 +1621,37 @@ class mysqli_native_moodle_database extends moodle_database {
      */
     public function sql_cast_2signed($fieldname) {
         return ' CAST(' . $fieldname . ' AS SIGNED) ';
+    }
+
+    /**
+     * Returns the SQL that allows to find intersection of two or more queries
+     *
+     * @since Moodle 2.8
+     *
+     * @param array $selects array of SQL select queries, each of them only returns fields with the names from $fields
+     * @param string $fields comma-separated list of fields
+     * @return string SQL query that will return only values that are present in each of selects
+     */
+    public function sql_intersect($selects, $fields) {
+        if (count($selects) <= 1) {
+            return parent::sql_intersect($selects, $fields);
+        }
+        $fields = preg_replace('/\s/', '', $fields);
+        static $aliascnt = 0;
+        $falias = 'intsctal'.($aliascnt++);
+        $rv = "SELECT $falias.".
+            preg_replace('/,/', ','.$falias.'.', $fields).
+            " FROM ($selects[0]) $falias";
+        for ($i = 1; $i < count($selects); $i++) {
+            $alias = 'intsctal'.($aliascnt++);
+            $rv .= " JOIN (".$selects[$i].") $alias ON ".
+                join(' AND ',
+                    array_map(
+                        create_function('$a', 'return "'.$falias.'.$a = '.$alias.'.$a";'),
+                        preg_split('/,/', $fields))
+                );
+        }
+        return $rv;
     }
 
     /**

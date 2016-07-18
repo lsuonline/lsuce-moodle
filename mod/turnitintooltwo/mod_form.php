@@ -25,7 +25,7 @@ if (!defined('MOODLE_INTERNAL')) {
 }
 
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once($CFG->dirroot.'/mod/turnitintooltwo/lib.php');
+require_once(__DIR__.'/lib.php');
 
 class mod_turnitintooltwo_mod_form extends moodleform_mod {
 
@@ -34,25 +34,39 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
     private $turnitintooltwo;
 
     public function definition() {
-        global $CFG, $DB, $USER;
-
+        global $CFG, $DB, $USER, $COURSE;
+        $config = turnitintooltwo_admin_config();
 
         // Module string is useful for product support.
-        if ($CFG->branch >= 26) {
-            $pluginman = \core_plugin_manager::instance();
-            $plugins = $pluginman->get_plugins();
-            $module = $plugins['mod']['turnitintooltwo'];
-        } else {
-            $module = $DB->get_record('modules', array('name' => 'turnitintooltwo'));
-        }
-        $version = (empty($module->version)) ? $module->versiondisk : $module->version;
+        $modulestring = '<!-- Turnitin Moodle Direct Version: '.turnitintooltwo_get_version().' - (';
 
-        $modulestring = '<!-- Turnitin Moodle Direct Version: '.$version.' - (';
-        $this->numsubs = 0;
+        // Get Moodle Course Object.
+        $course = turnitintooltwo_assignment::get_course_data($COURSE->id);
+
+        // Create or edit the class in Turnitin.
+        if ($course->turnitin_cid == 0) {
+            $tiicoursedata = turnitintooltwo_assignment::create_tii_course($course, $USER->id);
+            $course->turnitin_cid = $tiicoursedata->turnitin_cid;
+            $course->turnitin_ctl = $tiicoursedata->turnitin_ctl;
+        } else {
+            turnitintooltwo_assignment::edit_tii_course($course);
+            $course->turnitin_ctl = $course->fullname . " (Moodle TT)";
+        }
+
+        // Join this user to the class as an instructor and get their rubrics.
         $instructor = new turnitintooltwo_user($USER->id, 'Instructor');
+        $instructor->join_user_to_class($course->turnitin_cid);
         $instructor->set_user_values_from_tii();
         $instructorrubrics = $instructor->get_instructor_rubrics();
 
+        // Get rubrics that are shared on the account.
+        $turnitinclass = new turnitintooltwo_class($course->id);
+        $turnitinclass->read_class_from_tii();
+
+        // Merge the arrays, prioitising instructor owned arrays.
+        $rubrics = $instructorrubrics + $turnitinclass->sharedrubrics;
+
+        $this->numsubs = 0;
         if (isset($this->_cm->id)) {
 
             $turnitintooltwoassignment = new turnitintooltwo_assignment($this->_cm->instance);
@@ -97,14 +111,25 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
             }
         }
 
+        // Overwrite instructor default repository if admin is forcing repository setting
+        switch ($config->repositoryoption) {
+            case 2; // Force Standard Repository
+                $this->current->submitpapersto = 1;
+                break;
+            case 3; // Force No Repository
+                $this->current->submitpapersto = 0;
+                break;
+        }
+
         $modulestring .= ') -->';
 
-        $this->show_form($instructorrubrics, $modulestring);
+        $this->show_form($rubrics, $modulestring, $course->turnitin_cid);
     }
 
-    public function show_form($instructorrubrics, $modulestring = '') {
+    public function show_form($instructorrubrics, $modulestring = '', $tiicourseid) {
         global $CFG, $OUTPUT, $COURSE, $PAGE;
         $PAGE->requires->string_for_js('changerubricwarning', 'turnitintooltwo');
+        $PAGE->requires->string_for_js('closebutton', 'turnitintooltwo');
 
         $config = turnitintooltwo_admin_config();
 
@@ -116,27 +141,39 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
             $script .= html_writer::tag('script', '', array("type" => "text/javascript",
                                                 "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-1.8.2.min.js"));
             $script .= html_writer::tag('script', '', array("id" => "plugin_turnitin_script", "type" => "text/javascript",
-                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo.js"));
+                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo.min.js"));
             $script .= html_writer::tag('script', '', array("type" => "text/javascript",
                                             "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-ui-1.10.4.custom.min.js"));
             $script .= html_writer::tag('script', '', array("type" => "text/javascript",
                                             "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery.colorbox.js"));
+            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
+                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery.colorbox.js"));
+            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
+                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/moment.js"));
         } else {
             $PAGE->requires->jquery();
             $PAGE->requires->jquery_plugin('ui');
             $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo', 'mod_turnitintooltwo');
             $PAGE->requires->jquery_plugin('turnitintooltwo-colorbox', 'mod_turnitintooltwo');
+            $PAGE->requires->jquery_plugin('turnitintooltwo-moment', 'mod_turnitintooltwo');
         }
 
+        $PAGE->requires->string_for_js('anonalert', 'turnitintooltwo');
+
         $script .= html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
-                                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/styles.css"));
+                                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/styles.css"));
         $script .= html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
                                                             "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/colorbox.css"));
+        $script .= html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
+                                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/tii-icon-webfont.css"));
+        $script .= html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
+                                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/font-awesome.min.css"));
+
         $mform->addElement('html', $script);
 
         $config_warning = '';
         if (empty($config->accountid) || empty($config->secretkey) || empty($config->apiurl)) {
-            $config_warning = html_writer::tag('div', get_string('configureerror', 'turnitintooltwo'), 
+            $config_warning = html_writer::tag('div', get_string('configureerror', 'turnitintooltwo'),
                                                 array('class' => 'library_not_present_warning'));
         }
 
@@ -172,7 +209,12 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $mform->addRule('name', get_string('maxlength', 'turnitintooltwo', $input), 'maxlength', 40, 'client');
         $mform->addRule('name', get_string('maxlength', 'turnitintooltwo', $input), 'maxlength', 40, 'server');
 
-        $this->add_intro_editor(true, get_string('turnitintooltwointro', 'turnitintooltwo'));
+        if ($CFG->branch >= 29) {
+            $this->standard_intro_elements(get_string('turnitintooltwointro', 'turnitintooltwo'));
+        } else {
+            $this->add_intro_editor(true, get_string('turnitintooltwointro', 'turnitintooltwo'));
+        }
+
         $typeoptions = turnitintooltwo_filetype_array(true);
 
         $mform->addElement('select', 'type', get_string('type', 'turnitintooltwo'), $typeoptions);
@@ -197,12 +239,12 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $mform->addElement('hidden', 'portfolio', 0);
         $mform->setType('portfolio', PARAM_INT);
 
-        $maxbytes1 = ($CFG->maxbytes === 0 || $CFG->maxbytes > TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE) ?
+        $maxbytessite = ($CFG->maxbytes == 0 || $CFG->maxbytes > TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE) ?
                             TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE : $CFG->maxbytes;
-        $maxbytes2 = ($COURSE->maxbytes > TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE) ?
+        $maxbytescourse = ($COURSE->maxbytes == 0 || $COURSE->maxbytes > TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE) ?
                             TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE : $COURSE->maxbytes;
 
-        $options = get_max_upload_sizes($maxbytes1, $maxbytes2);
+        $options = get_max_upload_sizes($maxbytessite, $maxbytescourse, TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE);
 
         $mform->addElement('select', 'maxfilesize', get_string('maxfilesize', 'turnitintooltwo'), $options);
         $mform->addHelpButton('maxfilesize', 'maxfilesize', 'turnitintooltwo');
@@ -211,9 +253,6 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         for ($i = 0; $i <= 100; $i++) {
             $options[$i] = $i;
         }
-        $mform->addElement('modgrade', 'grade', get_string('overallgrade', 'turnitintooltwo'));
-        $mform->addHelpButton('grade', 'overallgrade', 'turnitintooltwo');
-        $mform->setDefault('grade', $config->default_grade);
 
         $ynoptions = array( 0 => get_string('no'), 1 => get_string('yes'));
 
@@ -241,6 +280,12 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $mform->addHelpButton('studentreports', 'studentreports', 'turnitintooltwo');
         $mform->setDefault('studentreports', $config->default_studentreports);
 
+        $gradedisplayoptions = array(1 => get_string('displaygradesaspercent', 'turnitintooltwo'),
+                                     2 => get_string('displaygradesasfraction', 'turnitintooltwo'));
+        $mform->addElement('select', 'gradedisplay', get_string('displaygradesas', 'turnitintooltwo'), $gradedisplayoptions);
+        $mform->addHelpButton('gradedisplay', 'displaygradesas', 'turnitintooltwo');
+        $mform->setDefault('gradedisplay', $config->default_gradedisplay);
+
         $refreshoptions = array(1 => get_string('yesgrades', 'turnitintooltwo'), 0 => get_string('nogrades', 'turnitintooltwo'));
 
         $mform->addElement('select', 'autoupdates', get_string('autorefreshgrades', 'turnitintooltwo'), $refreshoptions);
@@ -254,13 +299,28 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $dateoptions = array('startyear' => date( 'Y', strtotime( '-6 years' )), 'stopyear' => date( 'Y', strtotime( '+6 years' )),
                     'timezone' => 99, 'applydst' => true, 'step' => 1, 'optional' => false);
 
-        for ($i = 1; $i <= 5; $i++) {
+        $this->standard_grading_coursemodule_elements();
 
+        if (isset($this->_cm->id)) {
+            $turnitintooltwoassignment = new turnitintooltwo_assignment($this->_cm->instance);
+            $parts = $turnitintooltwoassignment->get_parts();
+
+            $partsArray = array();
+            foreach ($parts as $key => $value) {
+                $partsArray[] = $value;
+            }
+        }
+
+        for ($i = 1; $i <= 5; $i++) {
             $mform->addElement('header', 'partdates'.$i, get_string('partname', 'turnitintooltwo')." ".$i);
+
+            if (isset($this->_cm->id) && isset($partsArray[$i-1])) {
+                    $partdetails = $turnitintooltwoassignment->get_part_details($partsArray[$i-1]->id);
+                    $mform->addElement('html', '<div class="assignment-part-' . $i . '" data-anon="' . $turnitintooltwoassignment->turnitintooltwo->anon . '" data-unanon="' . $partdetails->unanon . '" data-submitted="' . $partdetails->submitted . '" data-part-id="' . $i . '">');
+            }
 
             // Delete part link.
             if ($this->updating && $this->current->numparts > 1 && $i <= $this->current->numparts) {
-
                 $attributes = array('class' => 'delete_link');
                 $numsubsattribute = "numsubs".$i;
                 if ($this->current->$numsubsattribute > 0) {
@@ -274,9 +334,8 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
                 $url = new moodle_url($CFG->wwwroot."/mod/turnitintooltwo/view.php",
                                         array('id' => $this->_cm->id, 'action' => 'delpart',
                                             'part' => $this->current->$partidattribute, 'sesskey' => sesskey()));
-                $deletelink = html_writer::link($url, get_string('deletepart', 'turnitintooltwo')." ".
-                                                $OUTPUT->pix_icon('delete', get_string('delete'),
-                                                    'mod_turnitintooltwo'), $attributes);
+                $deletelink = html_writer::link($url, html_writer::tag('i', '', array('class' => 'fa fa-trash fa-lg icon_smallmargin')).
+                        get_string('deletepart', 'turnitintooltwo'), $attributes);
                 $mform->addElement('html', $deletelink);
             }
 
@@ -284,6 +343,11 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
             $mform->setType('partname'.$i, PARAM_RAW);
             $mform->setDefault('partname'.$i, get_string('turnitinpart', 'turnitintooltwo', $i));
             $mform->addRule('partname'.$i, null, 'required', null, 'client');
+            $input = new stdClass();
+            $input->length = 40;
+            $input->field =  get_string('partname', 'turnitintooltwo')." ".get_string('name');
+            $mform->addRule('partname'.$i, get_string('maxlength', 'turnitintooltwo', $input), 'maxlength', 40, 'client');
+            $mform->addRule('partname'.$i, get_string('maxlength', 'turnitintooltwo', $input), 'maxlength', 40, 'server');
 
             $mform->addElement('date_time_selector', 'dtstart'.$i, get_string('dtstart', 'turnitintooltwo'), $dateoptions);
             $mform->setDefault('dtstart'.$i, time());
@@ -312,15 +376,35 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $mform->addHelpButton('reportgenspeed', 'reportgenspeed', 'turnitintooltwo');
         $mform->setDefault('reportgenspeed', $config->default_reportgenspeed);
 
+        $mform->addElement('html', html_writer::tag('div', get_string('genspeednote', 'turnitintooltwo'), array('class' => 'tii_genspeednote')));
+
         $suboptions = array(0 => get_string('norepository', 'turnitintooltwo'),
                             1 => get_string('standardrepository', 'turnitintooltwo'));
-        if ($config->userepository == "1") {
-            $suboptions[2] = get_string('institutionalrepository', 'turnitintooltwo');
+        switch ($config->repositoryoption) {
+            case 0; // Standard options
+                $mform->addElement('select', 'submitpapersto', get_string('submitpapersto', 'turnitintooltwo'), $suboptions);
+                $mform->addHelpButton('submitpapersto', 'submitpapersto', 'turnitintooltwo');
+                $mform->setDefault('submitpapersto', $config->default_submitpapersto);
+                break;
+            case 1; // Standard options + Allow Instituional Repository
+                $suboptions[2] = get_string('institutionalrepository', 'turnitintooltwo');
+
+                $mform->addElement('select', 'submitpapersto', get_string('submitpapersto', 'turnitintooltwo'), $suboptions);
+                $mform->addHelpButton('submitpapersto', 'submitpapersto', 'turnitintooltwo');
+                $mform->setDefault('submitpapersto', $config->default_submitpapersto);
+
+                break;
+            case 2; // Force Standard Repository
+                $mform->addElement('hidden', 'submitpapersto', 1);
+                $mform->setType('submitpapersto', PARAM_RAW);
+                break;
+            case 3; // Force No Repository
+                $mform->addElement('hidden', 'submitpapersto', 0);
+                $mform->setType('submitpapersto', PARAM_RAW);
+                break;
         }
 
-        $mform->addElement('select', 'submitpapersto', get_string('submitpapersto', 'turnitintooltwo'), $suboptions);
-        $mform->addHelpButton('submitpapersto', 'submitpapersto', 'turnitintooltwo');
-        $mform->setDefault('submitpapersto', $config->default_submitpapersto);
+        $mform->addElement('html', html_writer::tag('div', get_string('checkagainstnote', 'turnitintooltwo'), array('class' => 'tii_checkagainstnote')));
 
         $mform->addElement('select', 'spapercheck', get_string('spapercheck', 'turnitintooltwo'), $ynoptions);
         $mform->addHelpButton('spapercheck', 'spapercheck', 'turnitintooltwo');
@@ -334,7 +418,7 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $mform->addHelpButton('journalcheck', 'journalcheck', 'turnitintooltwo');
         $mform->setDefault('journalcheck', $config->default_journalcheck);
 
-        if ($config->userepository == "1") {
+        if ($config->repositoryoption == "1") {
             $mform->addElement('select', 'institution_check', get_string('institutionalcheck', 'turnitintooltwo'), $ynoptions);
             $mform->setDefault('institution_check', $config->default_institutioncheck);
         }
@@ -410,7 +494,8 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
             $rubricline[] = $mform->createElement('select', 'rubric', '', $rubricoptions);
             $rubricline[] = $mform->createElement('static', 'rubric_link', '',
                                                     html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/extras.php?'.
-                                                                    'cmd=rubricmanager&view_context=box',
+                                                                    'cmd=rubricmanager&tiicourseid='.$tiicourseid.'&view_context=box',
+                                                                        html_writer::tag('i', '', array('class' => 'tiiicon icon-rubric icon-lg icon_margin')).
                                                                         get_string('launchrubricmanager', 'turnitintooltwo'),
                                                                 array('class' => 'rubric_manager_launch',
                                                                     'title' => get_string('launchrubricmanager', 'turnitintooltwo'))).
@@ -498,7 +583,25 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
+        $partnames = array();
+
+        foreach ($data as $name => $value) {
+            // Get part names from array of data
+            if (strstr($name, 'partname')) $partnames[$name] = strtolower(trim($value));
+            // We only need part names for number of parts being used
+            if (count($partnames) == $data['numparts']) break;
+        }
+
         for ($i = 1; $i <= $data['numparts']; $i++) {
+            // Get a copy of the array for unsetting purposes
+            $partnamescopy = $partnames;
+
+            $partname = 'partname'.$i;
+            unset($partnamescopy[$partname]);
+
+            if (in_array(strtolower($partnames[$partname]), $partnamescopy)) {
+                $errors[$partname] = get_string('uniquepartname', 'turnitintooltwo');
+            }
 
             $dtstart = $data['dtstart'.$i];
             $dtdue = $data['dtdue'.$i];

@@ -3,11 +3,11 @@
     margin-left: 2px;
     margin-right: 2px;
     padding: 5px;
-    border-radius: 5px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
     -opera-border-radius: 5px;
     -khtml-border-radius: 5px;
+    border-radius: 5px;
 }
 
 .path-mod-attendance .attcurbtn {
@@ -17,7 +17,7 @@
 }
 
 .path-mod-attendance .attfiltercontrols {
-    margin-bottom: 10px;
+    margin-bottom: 10px !important;
     margin-right:auto;
     margin-left:auto;
 }
@@ -51,7 +51,7 @@
 }
 
 .path-mod-attendance .takegrid input {
-    margin: 0px 3px 0px 6px;
+    margin: 0 3px 0 6px;
 }
 
 .path-mod-attendance .takegrid .fullname {
@@ -69,10 +69,7 @@
 
 .path-mod-attendance table.controls td.right,
 .path-mod-attendance table.controls td.left {
-    padding-bottom: 4px;
-    padding-left: 4px;
-    padding-right: 4px;
-    padding-top: 4px;
+    padding: 4px;
 }
 
 .path-mod-attendance table.controls .right {
@@ -85,10 +82,10 @@
 
 .path-mod-attendance .takecontrols {
     width: 800px;
-    margin: 0px auto 20px auto;
+    margin: 0 auto 20px auto;
 }
 .path-mod-attendance .takecontrols table{
-    margin: 0px auto;
+    margin: 0 auto;
 }
 .path-mod-attendance .takecontrols .c0 {
     width: 500px;
@@ -106,7 +103,7 @@
 
 .path-mod-attendance table.userinfobox {
     border: 1px solid #EEEEEE;
-    padding: 0px;
+    padding: 0;
 }
 .path-mod-attendance table.userinfobox td.left {
     background-color: #EEEEEE;
@@ -127,9 +124,56 @@
     margin-right: 2px;
 }
 
-#page-mod-attendance-report table.generaltable.attwidth {
-   display: block;
-   width: 98%;
-   margin-bottom: 10px;
-   overflow-x: auto;
+.path-mod-attendance .setallstatuses {
+    text-align: right;
+}
+
+.path-mod-attendance .remarkholder {
+    position: relative;
+}
+
+.path-mod-attendance .remarkholder .remarkcontent {
+    display: none;
+    position: absolute;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-shadow: 3px 3px 5px #ccc;
+    background-color: white;
+    left: 20px;
+    top: 0;
+    padding: 5px;
+    width: 150px;
+    z-index: 5000;
+}
+
+.path-mod-attendance .remarkholder:hover .remarkcontent {
+    display: inline-block;
+}
+
+.path-mod-attendance .attendancestatus-P {
+    color: green;
+}
+
+.path-mod-attendance .attendancestatus-E {
+    color: #00AEE3;
+}
+
+.path-mod-attendance .attendancestatus-L {
+    color: #F7931E;
+}
+
+.path-mod-attendance .attendancestatus-A {
+    color: red;
+}
+
+.path-mod-attendance .summaryreport .c5 {
+    background-color: #EAEAEA;
+}
+
+.path-mod-attendance .summaryreport .c6 {
+    background-color: #EAEAEA;
+}
+
+.path-mod-attendance .summaryreport .c7 {
+    background-color: #EAEAEA;
 }

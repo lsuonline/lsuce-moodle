@@ -22,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
 
 
@@ -71,10 +70,26 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
     }
 
     protected function get_hint_fields($withclearwrong = false, $withshownumpartscorrect = false) {
-        list($repeated, $repeatedoptions) =
-                parent::get_hint_fields($withclearwrong, $withshownumpartscorrect);
-        $repeated[] = $this->_form->createElement('advcheckbox', 'hintshowchoicefeedback', '',
+        list($repeated, $repeatedoptions) = parent::get_hint_fields(
+                $withclearwrong, $withshownumpartscorrect);
+
+        // Add the new option the the last group in repeat if there is one, otherwise
+        // as a new element.
+        $lastgroup = null;
+        foreach ($repeated as $element) {
+            if ($element->getType() == 'group') {
+                $lastgroup = $element;
+            }
+        }
+
+        $showchoicefeedback = $this->_form->createElement('advcheckbox', 'hintshowchoicefeedback', '',
                 get_string('showeachanswerfeedback', 'qtype_oumultiresponse'));
+        if ($lastgroup) {
+            $lastgroup->_elements[] = $showchoicefeedback;
+        } else {
+            $repeated[] = $showchoicefeedback;
+        }
+
         return array($repeated, $repeatedoptions);
     }
 
@@ -101,8 +116,8 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
         }
 
         if (!empty($question->options)) {
-            $question->shuffleanswers =  $question->options->shuffleanswers;
-            $question->answernumbering =  $question->options->answernumbering;
+            $question->shuffleanswers = $question->options->shuffleanswers;
+            $question->answernumbering = $question->options->answernumbering;
         }
 
         return $question;

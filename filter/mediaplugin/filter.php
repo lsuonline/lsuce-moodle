@@ -69,7 +69,6 @@ class filter_mediaplugin extends moodle_text_filter {
         $this->trusted = !empty($options['noclean']) or !empty($CFG->allowobjectembed);
 
         // Looking for tags.
-        $matches = preg_split('/(<a\s[^>]*>)/i', $text, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
         $matches = preg_split('/(<[^>]*>)/i', $text, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
         if (!$matches) {
@@ -93,7 +92,7 @@ class filter_mediaplugin extends moodle_text_filter {
                 // Given we now have a valid <a> tag to process it's time for
                 // ReDoS protection. Stop processing if a word is too large.
                 if (strlen($validtag) < 4096) {
-                   $processed = preg_replace_callback($re, array($this, 'callback'), $validtag);
+                    $processed = preg_replace_callback($re, array($this, 'callback'), $validtag);
                 }
                 // Rebuilding the string with our new processed text.
                 $newtext .= !empty($processed) ? $processed : $validtag;
@@ -115,7 +114,7 @@ class filter_mediaplugin extends moodle_text_filter {
         }
 
         // Return the same string except processed by the above.
-         return $newtext;
+        return $newtext;
     }
 
     /**

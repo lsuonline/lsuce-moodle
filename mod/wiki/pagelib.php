@@ -34,7 +34,6 @@
  */
 
 require_once($CFG->dirroot . '/mod/wiki/edit_form.php');
-require_once($CFG->dirroot . '/tag/lib.php');
 
 /**
  * Class page_wiki contains the common code between all pages
@@ -111,7 +110,7 @@ abstract class page_wiki {
         $PAGE->set_activity_record($wiki);
         // the search box
         if (!empty($subwiki->id)) {
-            $search = optional_param('searchstring', null, PARAM_ALPHANUMEXT);
+            $search = optional_param('searchstring', null, PARAM_TEXT);
             $PAGE->set_button(wiki_search_form($cm, $search, $subwiki));
         }
     }
@@ -136,7 +135,7 @@ abstract class page_wiki {
 
         echo $OUTPUT->header();
         $wiki = $PAGE->activityrecord;
-        echo $OUTPUT->heading($wiki->name);
+        echo $OUTPUT->heading(format_string($wiki->name));
 
         echo $this->wikioutput->wiki_info();
 
@@ -381,7 +380,12 @@ class page_wiki_edit extends page_wiki {
     function __construct($wiki, $subwiki, $cm) {
         global $CFG, $PAGE;
         parent::__construct($wiki, $subwiki, $cm);
-        self::$attachmentoptions = array('subdirs' => false, 'maxfiles' => - 1, 'maxbytes' => $CFG->maxbytes, 'accepted_types' => '*');
+        $showfilemanager = false;
+        if (has_capability('mod/wiki:managefiles', context_module::instance($cm->id))) {
+            $showfilemanager = true;
+        }
+        self::$attachmentoptions = array('subdirs' => false, 'maxfiles' => - 1, 'maxbytes' => $CFG->maxbytes,
+                'accepted_types' => '*', 'enable_filemanagement' => $showfilemanager);
         $PAGE->requires->js_init_call('M.mod_wiki.renew_lock', null, true);
     }
 
@@ -565,18 +569,9 @@ class page_wiki_edit extends page_wiki {
             $params['filearea']   = 'attachments';
         }
 
+        $data->tags = core_tag_tag::get_item_tags_array('mod_wiki', 'wiki_pages', $this->page->id);
+
         $form = new mod_wiki_edit_form($url, $params);
-
-        if ($formdata = $form->get_data()) {
-            if (!empty($CFG->usetags)) {
-                $data->tags = $formdata->tags;
-            }
-        } else {
-            if (!empty($CFG->usetags)) {
-                $data->tags = tag_get_tags_array('wiki_pages', $this->page->id);
-            }
-        }
-
         $form->set_data($data);
         $form->display();
     }
@@ -633,6 +628,7 @@ class page_wiki_comments extends page_wiki {
             $by->date = userdate($comment->timecreated);
 
             $t = new html_table();
+            $t->id = 'wiki-comments';
             $cell1 = new html_table_cell($OUTPUT->user_picture($user, array('popup' => true)));
             $cell2 = new html_table_cell(get_string('bynameondate', 'forum', $by));
             $cell3 = new html_table_cell();
@@ -662,21 +658,30 @@ class page_wiki_comments extends page_wiki {
 
             $t->data = array($row1, $row2);
 
-            $actionicons = false;
+            $canedit = $candelete = false;
+            if ((has_capability('mod/wiki:editcomment', $this->modcontext)) and ($USER->id == $user->id)) {
+                $candelete = $canedit = true;
+            }
             if ((has_capability('mod/wiki:managecomment', $this->modcontext))) {
-                $urledit = new moodle_url('/mod/wiki/editcomments.php', array('commentid' => $comment->id, 'pageid' => $page->id, 'action' => 'edit'));
-                $urldelet = new moodle_url('/mod/wiki/instancecomments.php', array('commentid' => $comment->id, 'pageid' => $page->id, 'action' => 'delete'));
-                $actionicons = true;
-            } else if ((has_capability('mod/wiki:editcomment', $this->modcontext)) and ($USER->id == $user->id)) {
-                $urledit = new moodle_url('/mod/wiki/editcomments.php', array('commentid' => $comment->id, 'pageid' => $page->id, 'action' => 'edit'));
-                $urldelet = new moodle_url('/mod/wiki/instancecomments.php', array('commentid' => $comment->id, 'pageid' => $page->id, 'action' => 'delete'));
-                $actionicons = true;
+                $candelete = true;
             }
 
-            if ($actionicons) {
-                $cell6 = new html_table_cell($OUTPUT->action_icon($urledit, new pix_icon('t/edit', get_string('edit'),
-                        '', array('class' => 'iconsmall'))) . $OUTPUT->action_icon($urldelet, new pix_icon('t/delete',
-                        get_string('delete'), '', array('class' => 'iconsmall'))));
+            $editicon = $deleteicon = '';
+            if ($canedit) {
+                $urledit = new moodle_url('/mod/wiki/editcomments.php', array('commentid' => $comment->id, 'pageid' => $page->id, 'action' => 'edit'));
+                $editicon = $OUTPUT->action_icon($urledit, new pix_icon('t/edit', get_string('edit'), '', array('class' => 'iconsmall')));
+            }
+            if ($candelete) {
+                $urldelete = new moodle_url('/mod/wiki/instancecomments.php', array('commentid' => $comment->id, 'pageid' => $page->id, 'action' => 'delete'));
+                $deleteicon = $OUTPUT->action_icon($urldelete,
+                                                  new pix_icon('t/delete',
+                                                               get_string('delete'),
+                                                               '',
+                                                               array('class' => 'iconsmall')));
+            }
+
+            if ($candelete || $canedit) {
+                $cell6 = new html_table_cell($editicon.$deleteicon);
                 $row3 = new html_table_row();
                 $row3->cells[] = $cell5;
                 $row3->cells[] = $cell6;
@@ -2045,9 +2050,7 @@ class page_wiki_save extends page_wiki_edit {
         }
 
         if ($save && $data) {
-            if (!empty($CFG->usetags)) {
-                tag_set('wiki_pages', $this->page->id, $data->tags, 'mod_wiki', $this->modcontext->id);
-            }
+            core_tag_tag::set_item_tags('mod_wiki', 'wiki_pages', $this->page->id, $this->modcontext, $data->tags);
 
             $message = '<p>' . get_string('saving', 'wiki') . '</p>';
 
@@ -2252,23 +2255,29 @@ class page_wiki_handlecomments extends page_wiki {
         global $CFG, $PAGE, $USER;
 
         if ($this->action == 'add') {
-            if (has_capability('mod/wiki:editcomment', $this->modcontext)) {
-                $this->add_comment($this->content, $this->commentid);
-            }
+            require_capability('mod/wiki:editcomment', $this->modcontext);
+            $this->add_comment($this->content, $this->commentid);
         } else if ($this->action == 'edit') {
+            require_capability('mod/wiki:editcomment', $this->modcontext);
+
             $comment = wiki_get_comment($this->commentid);
-            $edit = has_capability('mod/wiki:editcomment', $this->modcontext);
             $owner = ($comment->userid == $USER->id);
-            if ($owner && $edit) {
+
+            if ($owner) {
                 $this->add_comment($this->content, $this->commentid);
             }
         } else if ($this->action == 'delete') {
             $comment = wiki_get_comment($this->commentid);
+
             $manage = has_capability('mod/wiki:managecomment', $this->modcontext);
+            $edit = has_capability('mod/wiki:editcomment', $this->modcontext);
             $owner = ($comment->userid == $USER->id);
-            if ($owner || $manage) {
+
+            if ($manage || ($owner && $edit)) {
                 $this->delete_comment($this->commentid);
                 redirect($CFG->wwwroot . '/mod/wiki/comments.php?pageid=' . $this->page->id, get_string('deletecomment', 'wiki'), 2);
+            } else {
+                print_error('nopermissiontoeditcomment');
             }
         }
 

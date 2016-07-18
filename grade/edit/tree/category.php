@@ -36,6 +36,8 @@ if ($id !== 0) {
 }
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('admin');
+navigation_node::override_active_url(new moodle_url('/grade/edit/tree/index.php',
+    array('id'=>$courseid)));
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
@@ -51,8 +53,6 @@ $returnurl = $gpr->get_return_url('index.php?id='.$course->id);
 
 
 $heading = get_string('categoryedit', 'grades');
-
-$curve_to = get_config('moodle', 'grade_multfactor_alt');
 
 if ($id) {
     if (!$grade_category = grade_category::fetch(array('id'=>$id, 'courseid'=>$course->id))) {
@@ -77,6 +77,7 @@ if ($id) {
     $category->grade_item_gradepass  = format_float($category->grade_item_gradepass, $decimalpoints);
     $category->grade_item_multfactor = format_float($category->grade_item_multfactor, 4);
     $category->grade_item_plusfactor = format_float($category->grade_item_plusfactor, 4);
+    $category->grade_item_aggregationcoef2 = format_float($category->grade_item_aggregationcoef2 * 100.0, 4);
 
     if (!$parent_category) {
         // keep as is
@@ -84,6 +85,32 @@ if ($id) {
         $category->grade_item_aggregationcoef = $category->grade_item_aggregationcoef == 0 ? 0 : 1;
     } else {
         $category->grade_item_aggregationcoef = format_float($category->grade_item_aggregationcoef, 4);
+    }
+    // Check to see if the gradebook is frozen. This allows grades to not be altered at all until a user verifies that they
+    // wish to update the grades.
+    $gradebookcalculationsfreeze = get_config('core', 'gradebook_calculations_freeze_' . $courseid);
+    // Stick with the original code if the grade book is frozen.
+    if ($gradebookcalculationsfreeze && (int)$gradebookcalculationsfreeze <= 20150627) {
+        if ($category->aggregation == GRADE_AGGREGATE_SUM) {
+            // Input fields for grademin and grademax are disabled for the "Natural" category,
+            // this means they will be ignored if user does not change aggregation method.
+            // But if user does change aggregation method the default values should be used.
+            $category->grademax = 100;
+            $category->grade_item_grademax = 100;
+            $category->grademin = 0;
+            $category->grade_item_grademin = 0;
+        }
+    } else {
+        if ($category->aggregation == GRADE_AGGREGATE_SUM && !$grade_item->is_calculated()) {
+            // Input fields for grademin and grademax are disabled for the "Natural" category,
+            // this means they will be ignored if user does not change aggregation method.
+            // But if user does change aggregation method the default values should be used.
+            // This does not apply to calculated category totals.
+            $category->grademax = 100;
+            $category->grade_item_grademax = 100;
+            $category->grademin = 0;
+            $category->grade_item_grademin = 0;
+        }
     }
 
 } else {
@@ -99,17 +126,6 @@ if ($id) {
         $category->{"grade_item_$key"} = $value;
     }
 }
-
-$multfactor = $grade_item->multfactor;
-$curve_decimals = 4;
-$decimalpoints = $grade_item->get_decimals();
-
-if ($curve_to) {
-    $curve_decimals = $decimalpoints;
-    $multfactor *= $category->grade_item_grademax;
-}
-
-$category->grade_item_multfactor = format_float($multfactor, $curve_decimals);
 
 $mform = new edit_category_form(null, array('current'=>$category, 'gpr'=>$gpr));
 
@@ -173,22 +189,14 @@ if ($mform->is_cancelled()) {
     unset($itemdata->locked);
     unset($itemdata->locktime);
 
-    $convert = array('grademax', 'grademin', 'gradepass', 'multfactor', 'plusfactor', 'aggregationcoef');
+    $convert = array('grademax', 'grademin', 'gradepass', 'multfactor', 'plusfactor', 'aggregationcoef', 'aggregationcoef2');
     foreach ($convert as $param) {
         if (property_exists($itemdata, $param)) {
             $itemdata->$param = unformat_float($itemdata->$param);
         }
     }
-
-    // Special handling of curve-to
-    if ($curve_to) {
-        if (empty($itemdata->multfactor) || $itemdata->multfactor <= 0.0000) {
-            $itemdata->multfactor = 1.0000;
-        } else if (!isset($data->curve_to) and isset($grade_item->multfactor)) {
-            $itemdata->multfactor = $grade_item->multfactor;
-        } else {
-            $itemdata->multfactor = $itemdata->multfactor / $itemdata->grademax;
-        }
+    if (isset($itemdata->aggregationcoef2)) {
+        $itemdata->aggregationcoef2 = $itemdata->aggregationcoef2 / 100.0;
     }
 
     // When creating a new category, a number of grade item fields are filled out automatically, and are required.
@@ -219,7 +227,20 @@ if ($mform->is_cancelled()) {
         $grade_item->decimals = null;
     }
 
+    // Change weightoverride flag. Check if the value is set, because it is not when the checkbox is not ticked.
+    $itemdata->weightoverride = isset($itemdata->weightoverride) ? $itemdata->weightoverride : 0;
+    if ($grade_item->weightoverride != $itemdata->weightoverride && $grade_category->aggregation == GRADE_AGGREGATE_SUM) {
+        // If we are using natural weight and the weight has been un-overriden, force parent category to recalculate weights.
+        $grade_category->force_regrading();
+    }
+    $grade_item->weightoverride = $itemdata->weightoverride;
+
     $grade_item->outcomeid = null;
+
+    if (!empty($data->grade_item_rescalegrades) && $data->grade_item_rescalegrades == 'yes') {
+        $grade_item->rescale_grades_keep_percentage($grade_item_copy->grademin, $grade_item_copy->grademax, $grade_item->grademin,
+                $grade_item->grademax, 'gradebook');
+    }
 
     // update hiding flag
     if ($hiddenuntil) {
@@ -241,10 +262,8 @@ if ($mform->is_cancelled()) {
     redirect($returnurl);
 }
 
-$return = false;
-$buttons = false;
-$shownavigation = false;
-print_grade_page_head($courseid, 'edittree', null, $heading, $return, $buttons, $shownavigation);
+$PAGE->navbar->add($heading);
+print_grade_page_head($courseid, 'settings', null, $heading, false, false, false);
 
 $mform->display();
 

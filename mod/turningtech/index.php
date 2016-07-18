@@ -23,28 +23,20 @@
 require_once('../../config.php');
 require_once('../../course/lib.php');
 require_once($CFG->dirroot . '/mod/turningtech/lib.php');
-require_once($CFG->dirroot . '/mod/turningtech/lib/helpers/EncryptionHelper.php');
-require_once($CFG->dirroot . '/mod/turningtech/lib/helpers/HttpPostHelper.php');
-global $PAGE;
-$id = required_param('id', PARAM_INT); // Course.
-global $DB;
-if (!$course = $DB->get_record('course', array(
-                'id' => $id
-))) {
-    error(get_string('courseidincorrect', 'turningtech'));
-}
-require_login($course);
-$PAGE->set_url('/mod/turningtech/index.php', array(
-                'id' => $id
-));
-$PAGE->set_course($course);
-add_to_log($course->id, 'turningtech', 'view devices', "index.php?id=$course->id", '');
+global $PAGE, $DB, $COURSE;
+require_login($COURSE);
+$PAGE->set_url('/mod/turningtech/index.php');
+$PAGE->set_course($COURSE);
 
 global $USER;
-$context = context_course::instance($course->id);
-$title   = get_string('pluginname', 'turningtech');
+if ($CFG->version >= '2013111800.00') {
+    $context = context_course::instance($COURSE->id);
+} else {
+    $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+}
+$title   = get_string('turningtech', 'turningtech');
 $PAGE->navbar->add($title);
-$PAGE->set_heading($course->fullname);
+$PAGE->set_heading($COURSE->fullname);
 $PAGE->requires->css('/mod/turningtech/css/style.css');
 
 // Print the header.

@@ -1,8 +1,0 @@
-{
-    "moodle-gradereport_unenrolled-scrollview": {
-        "requires": [
-            "base",
-            "node"
-        ]
-    }
-}

@@ -69,8 +69,8 @@ class turnitintooltwo_form extends moodleform {
             }
 
             // Set form data. Only used for submission form.
-            if (isset($_SESSION['form_data']->$element[1])) {
-                $mform->setDefault($element[1], $_SESSION['form_data']->$element[1]);
+            if (isset($_SESSION['form_data']->{$element[1]})) {
+                $mform->setDefault($element[1], $_SESSION['form_data']->{$element[1]});
             }
 
             if (!empty($element[3])) {
@@ -151,7 +151,7 @@ class turnitin_plagiarism_plugin_form extends moodleform {
         require_once($CFG->dirroot.'/plagiarism/turnitin/turnitinplugin_view.class.php');
 
         $turnitinpluginview = new turnitinplugin_view();
-        $turnitinpluginview->add_elements_to_settings_form($mform, "defaults");
+        $turnitinpluginview->add_elements_to_settings_form($mform, array(), "defaults");
 
         $this->add_action_buttons(true);
     }

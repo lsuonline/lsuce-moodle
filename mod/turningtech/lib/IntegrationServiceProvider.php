@@ -61,6 +61,7 @@ class TurningTechIntegrationServiceProvider extends TurningTechServiceProvider {
      * @see docroot/mod/turningtech/lib/ServiceProvider#getclassroster()
      */
     public function getclassroster($course) {
+    // To be Done with different
         $roster = array ();
         if ($participants = TurningTechMoodleHelper::getclassroster($course, false, false, "d.created")) {
             foreach ($participants as $participant) {
@@ -262,6 +263,10 @@ class TurningTechIntegrationServiceProvider extends TurningTechServiceProvider {
     public function savegradebookitem($course, $dto, $mode = TURNINGTECH_SAVE_NO_OVERRIDE) {
         // Prepare the error just in case.
         $error = new stdClass();
+        if (strlen($dto->deviceId)<6) {
+            $deviceid = str_pad($dto->deviceId, 6, "0", STR_PAD_LEFT);
+            $dto->deviceId = $deviceid;
+        }
         $error->deviceId = $dto->deviceId;
         $error->itemTitle = $dto->itemTitle;
         // Get the gradebook item for this transaction.
@@ -452,18 +457,16 @@ class TurningTechIntegrationServiceProvider extends TurningTechServiceProvider {
      * check the escrow table to see if there are any entries that correspond to
      * the given device map.
      * If so, move them into the database
-     * 
      * @param mixed $devicemap
+     * @param mixed $course
      * @return unknown_type
      */
-    public static function migrateescowgrades($devicemap) {
+    public static function migrateescowgrades($devicemap, $course) {
         global $DB;
         $conditions = array ();
         $conditions['deviceid'] = "'{$devicemap->getfield('deviceid')}'";
         $conditions['migrated'] = '0';
-        if (! $devicemap->isAllCourses()) {
-            $conditions['courseid'] = $devicemap->getfield('courseid');
-        }
+        $conditions['courseid'] = $course;
         $sql = TurningModel::buildwhereclause($conditions);
         $items = $DB->get_records_select('turningtech_escrow', $sql);
         if ($items) {

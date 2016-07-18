@@ -19,6 +19,28 @@ class online_semesters extends online_source implements semester_processor {
         }
     }
 
+
+    /**
+     * @param string $semesterName English name of the the semester
+     * @return online_semester_data the value of the constant
+     * representing the incoming semester name
+     * @throws Exception if the incoming semester name is not valid
+     */
+    public static function semesterCode($semesterName){
+        $map = array(
+            'First Fall'    => self::Fall1,
+            'Second Fall'   => self::FALL2,
+            'First Spring'  => self::SPRING1,
+            'Second Spring' => self::SPRING2,
+            'First Summer'  => self::SUMMER1,
+            'Second Summer' => self::SUMMER2,
+            );
+        if(!array_key_exists($semesterName, $map)){
+            throw new Exception(sprintf("No such semester named '%d'.", $semesterName));
+        }
+        return $map[$semesterName];
+    }
+
     function semesters($date_threshold) {
 
         if (is_numeric($date_threshold)) {

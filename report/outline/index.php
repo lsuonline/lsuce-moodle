@@ -93,7 +93,7 @@ $outlinetable->cellpadding = 5;
 $outlinetable->id = 'outlinetable';
 $outlinetable->head = array($stractivity, $strviews);
 
-if ($CFG->useblogassociations) {
+if (!empty($CFG->enableblogs) && $CFG->useblogassociations) {
     $outlinetable->head[] = $strrelatedblogentries;
 }
 
@@ -110,7 +110,6 @@ if ($uselegacyreader) {
     $limittime = '';
     if (!empty($minloginternalreader)) {
         $limittime = ' AND time < :timeto ';
-        $params['timeto'] = $minloginternalreader;
     }
     // Check if we need to show the last access.
     $sqllasttime = '';
@@ -118,7 +117,7 @@ if ($uselegacyreader) {
         $sqllasttime = ", MAX(time) AS lasttime";
     }
     $logactionlike = $DB->sql_like('l.action', ':action');
-    $sql = "SELECT cm.id, COUNT('x') AS numviews $sqllasttime
+    $sql = "SELECT cm.id, COUNT('x') AS numviews, COUNT(DISTINCT userid) AS distinctusers $sqllasttime
               FROM {course_modules} cm
               JOIN {modules} m
                 ON m.id = cm.module
@@ -129,17 +128,20 @@ if ($uselegacyreader) {
                AND m.visible = :visible $limittime
           GROUP BY cm.id";
     $params = array('courseid' => $course->id, 'action' => 'view%', 'visible' => 1);
+    if (!empty($minloginternalreader)) {
+        $params['timeto'] = $minloginternalreader;
+    }
     $views = $DB->get_records_sql($sql, $params);
 }
 
-// Get record from sql_internal_reader and merge with records obtained from legacy log (if needed).
+// Get record from sql_internal_table_reader and merge with records obtained from legacy log (if needed).
 if ($useinternalreader) {
     // Check if we need to show the last access.
     $sqllasttime = '';
     if ($showlastaccess) {
         $sqllasttime = ", MAX(timecreated) AS lasttime";
     }
-    $sql = "SELECT contextinstanceid as cmid, COUNT('x') AS numviews $sqllasttime
+    $sql = "SELECT contextinstanceid as cmid, COUNT('x') AS numviews, COUNT(DISTINCT userid) AS distinctusers $sqllasttime
               FROM {" . $logtable . "} l
              WHERE courseid = :courseid
                AND anonymous = 0
@@ -156,6 +158,9 @@ if ($useinternalreader) {
         foreach ($v as $key => $value) {
             if (isset($views[$key]) && !empty($views[$key]->numviews)) {
                 $views[$key]->numviews += $value->numviews;
+                if ($value->lasttime > $views[$key]->lasttime) {
+                    $views[$key]->lasttime = $value->lasttime;
+                }
             } else {
                 $views[$key] = $value;
             }
@@ -210,14 +215,14 @@ foreach ($modinfo->sections as $sectionnum=>$section) {
         $numviewscell->attributes['class'] = 'numviews';
 
         if (!empty($views[$cm->id]->numviews)) {
-            $numviewscell->text = $views[$cm->id]->numviews;
+            $numviewscell->text = get_string('numviews', 'report_outline', $views[$cm->id]);
         } else {
             $numviewscell->text = '-';
         }
 
         $reportrow->cells[] = $numviewscell;
 
-        if ($CFG->useblogassociations) {
+        if (!empty($CFG->enableblogs) && $CFG->useblogassociations) {
             require_once($CFG->dirroot.'/blog/lib.php');
             $blogcell = new html_table_cell();
             $blogcell->attributes['class'] = 'blog';

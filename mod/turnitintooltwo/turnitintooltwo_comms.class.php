@@ -19,7 +19,8 @@
  * and open the template in the editor.
  */
 
-require_once($CFG->dirroot.'/mod/turnitintooltwo/sdk/api.class.php');
+require_once(__DIR__.'/sdk/api.class.php');
+require_once(__DIR__.'/turnitintooltwo_perflog.class.php');
 
 class turnitintooltwo_comms {
 
@@ -29,15 +30,17 @@ class turnitintooltwo_comms {
     private $tiiintegrationid;
     private $diagnostic;
     private $langcode;
-    
-    public function __construct() {
+
+    public function __construct($accountid = null, $accountshared = null, $url = null) {
         $config = turnitintooltwo_admin_config();
 
+        $tiiapiurl = (substr($config->apiurl, -1) == '/') ? substr($config->apiurl, 0, -1) : $config->apiurl;
+
         $this->tiiintegrationid = 12;
-        $this->tiiaccountid = $config->accountid;
-        $this->tiiapiurl = (substr($config->apiurl, -1) == '/') ? substr($config->apiurl, 0, -1) : $config->apiurl;
-        $this->tiisecretkey = $config->secretkey;
-        
+        $this->tiiaccountid = is_null($accountid) ? $config->accountid : $accountid;
+        $this->tiiapiurl = is_null($url) ? $tiiapiurl : $url;
+        $this->tiisecretkey = is_null($accountshared) ? $config->secretkey : $accountshared;
+
         if (empty($this->tiiaccountid) || empty($this->tiiapiurl) || empty($this->tiisecretkey)) {
             turnitintooltwo_print_error( 'configureerror', 'turnitintooltwo' );
         }
@@ -51,8 +54,8 @@ class turnitintooltwo_comms {
      *
      * @return object \APITurnitin
      */
-    public function initialise_api() {
-        global $CFG;
+    public function initialise_api( $testingconnection = false ) {
+        global $CFG, $tiipp;
 
         $api = new TurnitinAPI($this->tiiaccountid, $this->tiiapiurl, $this->tiisecretkey,
                                 $this->tiiintegrationid, $this->langcode);
@@ -86,10 +89,21 @@ class turnitintooltwo_comms {
             $api->setProxyBypass($CFG->proxybypass);
         }
 
+        $plugin_version = turnitintooltwo_get_version();
+        $api->setIntegrationVersion($CFG->version);
+        $api->setPluginVersion($plugin_version);
+
         if (is_readable("$CFG->dataroot/moodleorgca.crt")) {
             $certificate = realpath("$CFG->dataroot/moodleorgca.crt");
             $api->setSSLCertificate($certificate);
         }
+
+        // Offline mode provided by Androgogic
+        if (!empty($CFG->tiioffline) && !$istestingconnection && empty($tiipp->in_use)) {
+            turnitintooltwo_print_error('turnitintoolofflineerror', 'turnitintooltwo');
+        }
+        $api->setTestingConnection($testingconnection);
+        $api->setPerformanceLog(new turnitintooltwo_performancelog());
 
         return $api;
     }
@@ -101,10 +115,13 @@ class turnitintooltwo_comms {
      * @param string $tterrorstr
      * @param boolean $toscreen
      */
-    public static function handle_exceptions($e, $tterrorstr = "", $toscreen = true) {
+    public static function handle_exceptions($e, $tterrorstr = "", $toscreen = true, $embedded = false) {
         $errorstr = "";
         if (!empty($tterrorstr)) {
             $errorstr = get_string($tterrorstr, 'turnitintooltwo')."<br/><br/>";
+            if ($embedded == true) {
+                $errorstr .= get_string('tii_submission_failure', 'turnitintooltwo')."<br/><br/>";
+            }
         }
 
         if (is_callable(array($e, 'getFaultCode'))) {
@@ -130,6 +147,8 @@ class turnitintooltwo_comms {
         turnitintooltwo_activitylog($errorstr, "API_ERROR");
         if ($toscreen) {
             turnitintooltwo_print_error($errorstr, null);
+        } else if ($embedded) {
+            return $errorstr;
         }
     }
 
@@ -165,5 +184,12 @@ class turnitintooltwo_comms {
         );
         $langcode = (isset($langarray[$langcode])) ? $langarray[$langcode] : 'en_us';
         return $langcode;
+    }
+
+    /**
+    * @param int $diagnostic Set diagnostic setting.
+    */
+    public function setDiagnostic($diagnostic) {
+        $this->diagnostic = $diagnostic;
     }
 }

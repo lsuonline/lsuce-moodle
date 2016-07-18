@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * @property-read array $other {
  *      Extra information about event properties.
  *
- *      @string mode Mode of the report viewed.
+ *      string mode Mode of the report viewed.
  * }
  * @package    mod_attendance
  * @since      Moodle 2.7
@@ -44,9 +44,9 @@ class status_updated extends \core\event\base {
      * Init method.
      */
     protected function init() {
-        $this->data['crud'] = 'r';
+        $this->data['crud'] = 'u';
         $this->data['edulevel'] = self::LEVEL_TEACHING;
-        $this->data['objecttable'] = 'attendance';
+        $this->data['objecttable'] = 'attendance_statuses';
     }
 
     /**
@@ -85,15 +85,5 @@ class status_updated extends \core\event\base {
     protected function get_legacy_logdata() {
         return array($this->courseid, 'attendance', 'status updated', $this->get_url(),
             $this->other['updated'], $this->contextinstanceid);
-    }
-
-    /**
-     * Custom validation.
-     *
-     * @throws \coding_exception
-     * @return void
-     */
-    protected function validate_data() {
-        parent::validate_data();
     }
 }

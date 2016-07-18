@@ -54,8 +54,8 @@ $string['cou_number'] = 'Course Number';
 $string['material_shortname'] = 'Master Course {department} {course_number} for {fullname}';
 
 $string['setting'] = 'User preferences';
-$string['setting_help'] = 'Users are allowed to change their first name to a preferred name once. It can then only be reset or edited by a Moodle administrator. Please contact the help desk for assistance with preferred name.';
-$string['notice'] = 'Users are allowed to change their first name to a preferred name <strong>only once</strong>.<br />Your preferred name can then only be reset or edited by a Moodle administrator.<br />Please contact the help desk for additional assistance with preferred name.';
+$string['setting_help'] = 'Faculty are allowed to change their first name to a
+preferred name. This change will be permanent until otherwise specified.';
 
 $string['user_firstname'] = 'Preferred firstname';
 $string['settings_changessaved'] = 'Your changes have been saved.<br />Please log out and back in to see any name changes.';
@@ -354,3 +354,6 @@ $string['user_sport1'] = 'Sport';
 $string['user_anonymous_number'] = 'Anonymous';
 
 $string['network_failure'] = 'There was a network error that caused the process to fail. You can either refresh this page or go back to re-apply the settings.';
+$string['sec_number'] = 'Section';
+$string['credit_hours'] = 'Credit Hours';
+$string['student_audit'] = 'Auditing';

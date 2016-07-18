@@ -64,8 +64,8 @@ class TurningTechMoodleHelper {
                 $hostname = $authplug->config->hostname;
                 $port = $authplug->config->port;
                 $serv = get_config('moodle', null);
-                $service = $serv->wwwroot;
-                if ($port == '443' || $port == '443') {
+                $service = $serv->wwwroot."/login/index.php";
+                if ($port == '443' || $port == '8443') {
                     $prefix = "https://";
                 } else {
                     $prefix = "http://";
@@ -119,7 +119,7 @@ class TurningTechMoodleHelper {
                 $result = curl_exec($curl_connection);
                 // Close the connection.
                 curl_close($curl_connection);
-                if (strpos($result, '?ticket=ST') !== false) {
+                if (strpos($result, 'ticket=ST') !== false) {
                     $mnetid = get_config('moodle', 'mnet_localhost_id');
                     if ($user = get_complete_user_data('username', $username, $mnetid)) {
                         $auth = 'cas';
@@ -268,12 +268,18 @@ class TurningTechMoodleHelper {
      * @return unknown_type
      */
     public static function getinstructorcourses($user) {
+        global $CFG;
         $courses = array ();
         $mycourses = enrol_get_users_courses($user->id, false);
         // Iterate through courses and verify that this user is
         // the instructor, not a student, for each course.
         foreach ($mycourses as $course) {
-            $context = context_course::instance($course->id);
+            // Check Version.
+            if ($CFG->version >= '2013111800.00') {
+                $context = context_course::instance($course->id);
+            } else {
+                $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            }
             $role_users = array ();
             $inst_roles = explode(',', TURNINGTECH_DEFAULT_TEACHER_ROLE);
             foreach ($inst_roles as $index => $roleid) {
@@ -289,6 +295,40 @@ class TurningTechMoodleHelper {
         return $courses;
     }
     /**
+     * returns all courses for which the given user is
+     * in the "student" role
+     * 
+     * @param unknown_type $user
+     * @return unknown_type
+     */
+    public static function getstudentcourses($user) {
+        global $CFG;
+        $courses = array ();
+        $mycourses = enrol_get_users_courses($user, false);
+        // Iterate through courses and verify that this user is
+        // the instructor, not a student, for each course.
+        foreach ($mycourses as $course) {
+            //  Check Version.
+            if ($CFG->version >= '2013111800.00') {
+                $context = context_course::instance($course->id);
+            } else {
+                $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            }
+            $role_users = array ();
+            $inst_roles = explode(',', TURNINGTECH_DEFAULT_STUDENT_ROLE);
+            foreach ($inst_roles as $index => $roleid) {
+                $role_users = array_merge($role_users, get_role_users($roleid, $context));
+            }
+            foreach ($role_users as $ru) {
+                if ($ru->id == $user) {
+                    $courses[] = $course;
+                    break;
+                }
+            }
+        }
+        return $courses;
+    }
+    /**
      * returns extended list of all courses for which the given user is
      * in the "teacher" role
      * 
@@ -296,12 +336,18 @@ class TurningTechMoodleHelper {
      * @return unknown_type
      */
     public static function getextinstructorcourses($user) {
+        global $CFG;
         $courses = array ();
         $mycourses = enrol_get_users_courses($user->id, false);
         // Iterate through courses and verify that this user is
         // the instructor, not a student, for each course.
         foreach ($mycourses as $course) {
-            $context = context_course::instance($course->id);
+            //  Check Version.
+            if ($CFG->version >= '2013111800.00') {
+                $context = context_course::instance($course->id);
+            } else {
+                $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            }
             $role_users = array ();
             $inst_roles = explode(',', TURNINGTECH_DEFAULT_TEACHER_ROLE);
             foreach ($inst_roles as $index => $roleid) {
@@ -335,7 +381,12 @@ class TurningTechMoodleHelper {
      * @return bool
      */
     public static function isuserinstructorincourse($user, $course) {
-        $context = context_course::instance($course->id);
+        global $CFG;
+        if ($CFG->version >= '2013111800.00') {
+            $context = context_course::instance($course->id);
+        } else {
+            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        }
         return has_capability('mod/turningtech:manage', $context, $user->id);
     }
     /**
@@ -346,8 +397,14 @@ class TurningTechMoodleHelper {
      * @return bool
      */
     public static function userhasrosterpermission($user, $course) {
+        global $CFG;
         $allowed = false;
-        $context = context_course::instance($course->id);
+        //  Check Version.
+        if ($CFG->version >= '2013111800.00') {
+            $context = context_course::instance($course->id);
+        } else {
+            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        }
         if ($context) {
             $allowed = has_capability('moodle/course:viewparticipants', $context, $user->id);
         }
@@ -362,7 +419,12 @@ class TurningTechMoodleHelper {
      */
     public static function userhasgradeitempermission($user, $course) {
         $allowed = false;
-        $context = context_course::instance($course->id);
+        //  Check Version.
+        if ($CFG->version >= '2013111800.00') {
+            $context = context_course::instance($course->id);
+        } else {
+            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        }
         if ($context) {
             $allowed = has_capability('moodle/grade:manage', $context, $user->id);
         }
@@ -381,24 +443,44 @@ class TurningTechMoodleHelper {
      */
     public static function getclassroster($course, $roles = false, $userid = false, $order = 'u.lastname',
                                      $asc = true, $type = false) {
-        global $CFG, $DB;
-        $params = array ();
-        $contextcourse = CONTEXT_COURSE;
+          global $CFG, $DB;
         if (! $roles) {
             $roles = array (TURNINGTECH_DEFAULT_STUDENT_ROLE);
         }
-		$fieldid = get_config('moodle', 'turningtech_fieldid');
-        $sqls = "SELECT u.id, u.firstname, u.lastname, u.username, u.email, '1' as all_courses,  
-        d.id AS devicemapid, d.data as deviceid, u.deleted
-        FROM {user_info_data} d
-		INNER JOIN {user} u ON u.id = d.userid
-		LEFT JOIN {role_assignments} r ON r.userid = u.id 
-		LEFT JOIN {context} c ON r.contextid = c.id  
-		
-		WHERE r.roleid IN (" . $roles[0] . ") AND d.fieldid = :fieldid AND u.deleted = 0 AND c.contextlevel = {$contextcourse} AND c.instanceid = {$course->id}";
-		$params['fieldid']=$fieldid;
-        $result =  $DB->get_records_sql($sqls, $params);
-        return $result;
+        // Fix for PostgreSql compatibility.
+        $sql = "SELECT u.id, u.firstname, u.lastname, u.username, u.email, r.roleid AS Role ";
+        $sql .= "FROM {user} u ";
+        $sql .= "LEFT JOIN {role_assignments} r ON r.userid = u.id ";
+        $sql .= "LEFT JOIN {context} c ON r.contextid = c.id ";
+        $where = "r.roleid IN (" . $roles[0] . ")";
+        $params = array ();
+        $params['courseid2'] = $course->id;
+        $params['contextcourse'] = CONTEXT_COURSE;
+        $params['udeleted'] = 0;
+        $where .= " AND u.deleted= :udeleted AND c.contextlevel= :contextcourse AND
+                                         c.instanceid= :courseid2 ";
+        $groupby = "GROUP BY u.id, r.roleid";
+        if ($userid) {
+            $where .= "AND u.id= :uid ";
+            $params['uid'] = $userid;
+        }
+        $orderby = "ORDER BY :order ";
+        $order = ($asc ? 'ASC' : 'DESC');
+        $params['order'] = $order;
+        $sql = "{$sql} WHERE {$where} {$groupby} {$orderby}";
+        $classrosters = $DB->get_records_sql($sql, $params);
+        $classroster = array ();
+        foreach ($classrosters as $classros) {
+            $varobj = new stdClass();
+            $varobj->id = $classros->id;
+            $varobj->firstname = $classros->firstname;
+            $varobj->lastname = $classros->lastname;
+            $varobj->username = $classros->username;
+            $varobj->email = $classros->email;
+            $varobj->Role = $classros->Role;
+            $classroster[$classros->id] = $varobj;
+        }
+        return $classroster;
     }
     /**
      * fetches the extended class roster with multiple device ids.
@@ -415,84 +497,40 @@ class TurningTechMoodleHelper {
         if (! $roles) {
             $roles = array (TURNINGTECH_DEFAULT_STUDENT_ROLE);
         }
-		$fieldid = get_config('moodle', 'turningtech_fieldid');
         // Fix for PostgreSql compatibility.
-        $contextcourse = CONTEXT_COURSE;
-        $sql1 = "SELECT u.id, u.firstname, u.lastname, u.username, u.email, '1' as devicetype, r.roleid as Role";
-        $sql1 .=" FROM {user_info_data} d ";
-		$sql1 .=" INNER JOIN {user} u ON u.id = d.userid ";
-		$sql1 .=" LEFT JOIN {role_assignments} r ON r.userid = u.id ";
-		$sql1 .=" LEFT JOIN {context} c ON r.contextid = c.id ";
-		$sql1 .=" LEFT JOIN {user_enrolments} mue ON mue.userid = u.id ";
-		$sql1 .=" LEFT JOIN {enrol} me ON me.id = mue.enrolid ";
-		$sql1 .=" WHERE r.roleid IN (" . $roles[0] . ") AND d.fieldid = :fieldid AND u.deleted = 0 AND c.contextlevel = {$contextcourse} AND c.instanceid = {$course->id}";
+        $sql = "SELECT u.id, u.firstname, u.lastname, u.username, u.email, r.roleid AS Role ";
+        $sql .= "FROM {user} u ";
+        $sql .= "LEFT JOIN {role_assignments} r ON r.userid = u.id ";
+        $sql .= "LEFT JOIN {context} c ON r.contextid = c.id ";
+        $where = "r.roleid IN (" . $roles[0] . ")";
         $params = array ();
-        $params['fieldid'] = $fieldid;
-		$classrosters = $DB->get_records_sql($sql1, $params);
-		foreach ($classrosters as $classros) {
-            $sqlsubs = "SELECT dd.id as devicemapid, dd.data as deviceid, '0' as deleted, 
-            		'1' as all_courses, mee.courseid
-            		FROM {user_info_data} dd
-            		INNER JOIN {user} uu ON uu.id = dd.userid
-            		LEFT JOIN {user_enrolments} muee ON muee.userid = uu.id
-            		LEFT JOIN {enrol} mee ON mee.id = muee.enrolid
-			WHERE dd.fieldid = {$fieldid} AND uu.deleted = 0 and uu.id = {$classros->id}";
-            $paramssub['userid'] = $classros->id;
-            $paramssub['deleted'] = 0;
-            $deviceidmaps = $DB->get_records_sql($sqlsubs);
-         	$varobj = new stdClass();
+        $params['courseid2'] = $course->id;
+        $params['contextcourse'] = CONTEXT_COURSE;
+        $params['udeleted'] = 0;
+        $where .= " AND u.deleted= :udeleted AND c.contextlevel= :contextcourse AND
+                                         c.instanceid= :courseid2 ";
+        $groupby = "GROUP BY u.id, r.roleid";
+        if ($userid) {
+            $where .= "AND u.id= :uid ";
+            $params['uid'] = $userid;
+        }
+        $orderby = "ORDER BY :order ";
+        $order = ($asc ? 'ASC' : 'DESC');
+        $params['order'] = $order;
+        $sql = "{$sql} WHERE {$where} {$groupby} {$orderby}";
+        $classrosters = $DB->get_records_sql($sql, $params);
+        $classroster = array ();
+        foreach ($classrosters as $classros) {
+            $varobj = new stdClass();
             $varobj->id = $classros->id;
             $varobj->firstname = $classros->firstname;
             $varobj->lastname = $classros->lastname;
             $varobj->username = $classros->username;
             $varobj->email = $classros->email;
-            $varobj->deviceid = '';
-            foreach ($deviceidmaps as $deviceidmap) {
-                $varobj->devicemapid = $deviceidmap->devicemapid;
-                if ($deviceidmap->deviceid) {
-                    $varobj->deviceid .= $deviceidmap->deviceid . ',';
-                }
-                $varobj->deleted = $deviceidmap->deleted;
-                $varobj->all_courses = $deviceidmap->all_courses;
-                $varobj->courseid = $deviceidmap->courseid;
-            }
-            if (count($deviceidmaps) >= 1) {
-                $varobj->deviceid = rtrim($varobj->deviceid, ',');
-            }
-            $varobj->devicetype = $classros->devicetype;
             $varobj->Role = $classros->Role;
             $classroster[$classros->id] = $varobj;
         }
         return $classroster;
-    }
-    /**
-     * searches for users by username
-     * 
-     * @param string $str
-     * @return unknown_type
-     */
-    public static function adminstudentsearch($str) {
-        global $CFG, $DB;
-        $roles = array (TURNINGTECH_DEFAULT_STUDENT_ROLE);
-        $str = strtolower($str);
-        $select = "SELECT u.id, u.firstname, u.lastname, u.username, u.email, d.id AS devicemapid,
-                                         d.deviceid, d.deleted, d.all_courses, d.courseid ";
-        $select .= "FROM {user} u ";
-        $select .= "LEFT JOIN {turningtech_device_mapping} d ON (d.userid=u.id AND
-                                         d.deleted= :dalldeleted) ";
-        $select .= "LEFT JOIN {role_assignments} r ON r.userid=u.id ";
-        $select .= "LEFT JOIN {context} c ON r.contextid=c.id ";
-        $params = array ();
-        $params['dalldeleted'] = 0;
-        $params['username'] = $str;
-        $params['contextcourse'] = CONTEXT_COURSE;
-        $where = array ();
-        $where[] = "r.roleid IN(" . $roles[0] . ")";
-        $where[] = 'c.contextlevel= :contextcourse';
-        $where[] = 'lower(u.username) LIKE :username';
-        $wheresql = implode(' AND ', $where);
-        $sql = "{$select} WHERE {$wheresql} ORDER BY u.username";
-        return $DB->get_records_sql($sql, $params);
     }
     /**
      * fetches a user object by id
@@ -512,114 +550,6 @@ class TurningTechMoodleHelper {
     public static function getuserbyusername($username) {
         global $DB;
         return $DB->get_record("user", array ("username" => $username));
-    }
-    /**
-     * fetches the class roster
-     * @param unknown_type $devicesearch
-     * @param object $course
-     * @param unknown_type $roles array of role ids
-     * @param unknown_type $userid optional id of user to quickly check if they are enrolled
-     * @param unknown_type $order
-     * @param unknown_type $asc
-     * @return unknown_type
-     */
-    public static function getsearchresult($devicesearch, $course, $roles = false, $userid = false,
-                                     $order = 'u.lastname', $asc = true) {
-        global $CFG, $DB;
-        $params = array ();
-        if (! $roles) {
-            $roles = array (TURNINGTECH_DEFAULT_STUDENT_ROLE);
-        }
-        $sql = "SELECT u.id, u.firstname, u.lastname, u.username, u.email, d.id AS devicemapid,
-                                         d.deviceid, d.deleted, d.all_courses, d.courseid, r.roleid AS Role ";
-        $sql .= "FROM {user} u ";
-        $sql .= "LEFT JOIN {turningtech_device_mapping} dall ON ( dall.userid = u.id AND
-                                         dall.deleted = :dalldeleted1 AND dall.all_courses = :dallcourses1 ) ";
-        $sql .= "LEFT JOIN {turningtech_device_mapping} dcrs ON ( dcrs.userid = u.id AND
-                                         dcrs.deleted = :dalldeleted2 AND dcrs.all_courses = :dallcourses2 ) ";
-        $sql .= "LEFT JOIN {turningtech_device_mapping} d ON ( ( dcrs.id IS NOT null AND
-                                         dcrs.id = d.id ) OR ( dcrs.id IS null AND dall.id = d.id ) ) ";
-        $sql .= "LEFT JOIN {role_assignments} r ON r.userid = u.id ";
-        $sql .= "LEFT JOIN {context} c ON r.contextid = c.id ";
-        $where = "r.roleid IN (" . $roles[0] . ")";
-        $where .= " AND u.deleted = :udeleted AND c.contextlevel = :contextcourse";
-        $where .= " AND d.deviceid = :deviceid";
-        if ($userid) {
-            $where .= "AND u.id= :uid ";
-            $params['uid'] = $userid;
-        }
-        $orderby = "ORDER BY :order ";
-        $order .= ($asc ? ' ASC' : ' DESC');
-        $params['dalldeleted1'] = 0;
-        $params['dallcourses1'] = 1;
-        $params['dalldeleted2'] = 0;
-        $params['dallcourses2'] = 0;
-        $params['deviceid'] = $devicesearch;
-        $params['courseid1'] = $course->id;
-        $params['courseid2'] = $course->id;
-        $params['contextcourse'] = CONTEXT_COURSE;
-        $params['udeleted'] = 0;
-        $params['order'] = $order;
-        $sql = "{$sql} WHERE {$where} GROUP BY u.id, d.id, r.roleid {$orderby}";
-        return $DB->get_records_sql($sql, $params);
-    }
-    /**
-     * fetches the class roster for XML
-     * 
-     * @param object $course
-     * @param unknown_type $roles array of role ids
-     * @param unknown_type $userid optional id of user to quickly check if they are enrolled
-     * @param unknown_type $order
-     * @param unknown_type $asc
-     * @return unknown_type
-     */
-    public static function getclassrosterxml($course, $roles = false, $userid = false, $order = 'u.lastname', $asc = true) {
-        global $CFG, $DB;
-        $params = array ();
-        if (! $roles) {
-            $roles = array (TURNINGTECH_DEFAULT_STUDENT_ROLE);
-        }
-        $sql = "SELECT u.id, u.firstname, u.lastname, u.username, u.email,
-        		dcrs.id AS devicemapid, d.deviceid,
-        		d.deleted, d.all_courses,
-        		d.courseid, r.roleid AS Role,
-				(select deviceid from {turningtech_device_mapping} where userid = u.id AND
-                                         typeid =1 and deleted = 0) as rcard,
-        		(select deviceid from {turningtech_device_mapping} where userid = u.id AND
-                                         typeid =2 and deleted = 0) as rware
-        		";
-        $sql .= "FROM {user} u ";
-        $sql .= "LEFT JOIN {turningtech_device_mapping} dall ON ( dall.userid = u.id AND
-                                         dall.deleted = :dalldeleted1 ) ";
-        $sql .= "LEFT JOIN {turningtech_device_mapping} dcrs ON ( dcrs.userid = u.id AND
-                                         dcrs.deleted = :dalldeleted2  AND
-                                         dcrs.courseid = :courseid1 ) ";
-        $sql .= "LEFT JOIN {turningtech_device_mapping} d ON ( ( dcrs.id IS NOT null AND dcrs.id = d.id ) OR
-                                         ( dcrs.id IS null AND dall.id = d.id ) ) ";
-        $sql .= "LEFT JOIN {role_assignments} r ON r.userid = u.id ";
-        $sql .= "LEFT JOIN {context} c ON r.contextid = c.id ";
-        $where = "r.roleid IN (" . $roles[0] . ")";
-        $where .= " AND u.deleted = :udeleted AND c.contextlevel = :contextcourse AND c.instanceid = :courseid2";
-        if ($userid) {
-            $where .= "AND u.id= :uid ";
-            $params['uid'] = $userid;
-        }
-        $orderby = "ORDER BY :order ";
-        $groupby = "GROUP BY :group ";
-        $order .= ($asc ? ' ASC' : ' DESC');
-        $group = "userid";
-        $params['dalldeleted1'] = 0;
-        $params['dallcourses1'] = 1;
-        $params['dalldeleted2'] = 0;
-        $params['dallcourses2'] = 0;
-        $params['courseid1'] = $course->id;
-        $params['courseid2'] = $course->id;
-        $params['contextcourse'] = CONTEXT_COURSE;
-        $params['udeleted'] = 0;
-        $params['order'] = $order;
-        $params['group'] = $group;
-        $sql = "{$sql} WHERE {$where} GROUP BY u.id,dcrs.id, d.deviceid, d.deleted, d.all_courses, dall.created, d.courseid, r.roleid ORDER BY {$order}";
-        return $DB->get_records_sql($sql, $params);
     }
     /**
      * creates a gradebook item
@@ -675,6 +605,8 @@ class TurningTechMoodleHelper {
                 }
             }
             grade_item::set_properties($grade_item, $data);
+			$grade_item->itemtype = TURNINGTECH_GRADE_ITEM_TYPE;
+            $grade_item->itemmodule = TURNINGTECH_GRADE_ITEM_MODULE;
             $grade_item->update();
         }
         return false;

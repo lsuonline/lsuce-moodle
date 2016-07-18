@@ -147,8 +147,13 @@ function theme_more_set_logo($css, $logo) {
  * @return bool
  */
 function theme_more_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
-    if ($context->contextlevel == CONTEXT_SYSTEM && ($filearea === 'logo' || $filearea === 'backgroundimage')) {
+    if ($context->contextlevel == CONTEXT_SYSTEM &&
+            ($filearea === 'logo' || $filearea === 'smalllogo' || $filearea === 'backgroundimage')) {
         $theme = theme_config::load('more');
+        // By default, theme files must be cache-able by both browsers and proxies.
+        if (!array_key_exists('cacheability', $options)) {
+            $options['cacheability'] = 'public';
+        }
         return $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
     } else {
         send_file_not_found();

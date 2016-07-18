@@ -29,7 +29,6 @@ require_once($CFG->libdir.'/eventslib.php');
 defined('MOODLE_INTERNAL') || die();
 
 // File areas for file submission assignment.
-define('ASSIGNSUBMISSION_FILE_MAXFILES', 20);
 define('ASSIGNSUBMISSION_FILE_MAXSUMMARYFILES', 5);
 define('ASSIGNSUBMISSION_FILE_FILEAREA', 'submission_files');
 
@@ -75,7 +74,7 @@ class assign_submission_file extends assign_submission_plugin {
 
         $settings = array();
         $options = array();
-        for ($i = 1; $i <= ASSIGNSUBMISSION_FILE_MAXFILES; $i++) {
+        for ($i = 1; $i <= get_config('assignsubmission_file', 'maxfiles'); $i++) {
             $options[$i] = $i;
         }
 
@@ -131,6 +130,10 @@ class assign_submission_file extends assign_submission_plugin {
                                 'maxfiles'=>$this->get_config('maxfilesubmissions'),
                                 'accepted_types'=>'*',
                                 'return_types'=>FILE_INTERNAL);
+        if ($fileoptions['maxbytes'] == 0) {
+            // Use module default.
+            $fileoptions['maxbytes'] = get_config('assignsubmission_file', 'maxbytes');
+        }
         return $fileoptions;
     }
 
@@ -301,7 +304,7 @@ class assign_submission_file extends assign_submission_plugin {
                                      false);
 
         foreach ($files as $file) {
-            $result[$file->get_filename()] = $file;
+            $result[$file->get_filepath().$file->get_filename()] = $file;
         }
         return $result;
     }
@@ -525,7 +528,8 @@ class assign_submission_file extends assign_submission_plugin {
         return array(
             'files_filemanager' => new external_value(
                 PARAM_INT,
-                'The id of a draft area containing files for this submission.'
+                'The id of a draft area containing files for this submission.',
+                VALUE_OPTIONAL
             )
         );
     }

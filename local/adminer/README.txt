@@ -48,3 +48,11 @@ changes in 2014011601
 
 changes in 2014011602
 - ports other than default port are supported now - thanks to Ian Tasker
+
+changes in 2014111800
+- it is based on adminer-4.1.0
+    for more infos see here: https://github.com/vrana/adminer/blob/master/changes.txt
+
+changes in 2015052700
+- it is based on adminer-4.2.1
+    for more infos see here: https://github.com/vrana/adminer/blob/master/changes.txt

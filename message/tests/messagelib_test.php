@@ -62,6 +62,7 @@ class core_message_messagelib_testcase extends advanced_testcase {
      * @param stdClass $userfrom user object of the one sending the message.
      * @param stdClass $userto user object of the one receiving the message.
      * @param string $message message to send.
+     * @return int the id of the message
      */
     protected function send_fake_message($userfrom, $userto, $message = 'Hello world!') {
         global $DB;
@@ -71,8 +72,10 @@ class core_message_messagelib_testcase extends advanced_testcase {
         $record->useridto = $userto->id;
         $record->subject = 'No subject';
         $record->fullmessage = $message;
+        $record->smallmessage = $message;
         $record->timecreated = time();
-        $insert = $DB->insert_record('message', $record);
+
+        return $DB->insert_record('message', $record);
     }
 
     /**
@@ -95,6 +98,10 @@ class core_message_messagelib_testcase extends advanced_testcase {
         // Block other user.
         message_block_contact($user1->id);
         $this->assertCount(2, message_get_blocked_users());
+
+        // Test deleting users.
+        delete_user($user1);
+        $this->assertCount(1, message_get_blocked_users());
     }
 
     /**
@@ -151,6 +158,15 @@ class core_message_messagelib_testcase extends advanced_testcase {
         $this->assertCount(0, $onlinecontacts);
         $this->assertCount(1, $offlinecontacts);
         $this->assertCount(2, $strangers);
+
+        // Test deleting users.
+        delete_user($user1);
+        delete_user($user3);
+
+        list($onlinecontacts, $offlinecontacts, $strangers) = message_get_contacts();
+        $this->assertCount(0, $onlinecontacts);
+        $this->assertCount(0, $offlinecontacts);
+        $this->assertCount(1, $strangers);
     }
 
     /**
@@ -357,5 +373,501 @@ class core_message_messagelib_testcase extends advanced_testcase {
         $this->assertEquals(false, message_search(array('Message'), true, true, ''));
         $this->assertEquals(false, message_search(array('Message'), true, true, 2));
         $this->assertCount(5, message_search(array('Message'), true, true, SITEID));
+    }
+
+    /**
+     * The data provider for message_get_recent_conversations.
+     *
+     * This provides sets of data to for testing.
+     * @return array
+     */
+    public function message_get_recent_conversations_provider() {
+        return array(
+            'Test that conversations with messages contacts is correctly ordered.' => array(
+                'users' => array(
+                    'user1',
+                    'user2',
+                    'user3',
+                ),
+                'contacts' => array(
+                ),
+                'messages' => array(
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'unread',
+                        'subject'       => 'S1',
+                    ),
+                    array(
+                        'from'          => 'user2',
+                        'to'            => 'user1',
+                        'state'         => 'unread',
+                        'subject'       => 'S2',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'unread',
+                        'timecreated'   => 0,
+                        'subject'       => 'S3',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user3',
+                        'state'         => 'read',
+                        'timemodifier'  => 1,
+                        'subject'       => 'S4',
+                    ),
+                    array(
+                        'from'          => 'user3',
+                        'to'            => 'user1',
+                        'state'         => 'read',
+                        'timemodifier'  => 1,
+                        'subject'       => 'S5',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user3',
+                        'state'         => 'read',
+                        'timecreated'   => 0,
+                        'subject'       => 'S6',
+                    ),
+                ),
+                'expectations' => array(
+                    'user1' => array(
+                        // User1 has conversed most recently with user3. The most recent message is M5.
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user3',
+                            'subject'           => 'S5',
+                        ),
+                        // User1 has also conversed with user2. The most recent message is S2.
+                        array(
+                            'messageposition'   => 1,
+                            'with'              => 'user2',
+                            'subject'           => 'S2',
+                        ),
+                    ),
+                    'user2' => array(
+                        // User2 has only conversed with user1. Their most recent shared message was S2.
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user1',
+                            'subject'           => 'S2',
+                        ),
+                    ),
+                    'user3' => array(
+                        // User3 has only conversed with user1. Their most recent shared message was S5.
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user1',
+                            'subject'           => 'S5',
+                        ),
+                    ),
+                ),
+            ),
+            'Test that users with contacts and messages to self work as expected' => array(
+                'users' => array(
+                    'user1',
+                    'user2',
+                    'user3',
+                ),
+                'contacts' => array(
+                    'user1' => array(
+                        'user2' => 0,
+                        'user3' => 0,
+                    ),
+                    'user2' => array(
+                        'user3' => 0,
+                    ),
+                ),
+                'messages' => array(
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user1',
+                        'state'         => 'unread',
+                        'subject'       => 'S1',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user1',
+                        'state'         => 'unread',
+                        'subject'       => 'S2',
+                    ),
+                ),
+                'expectations' => array(
+                    'user1' => array(
+                        // User1 has conversed most recently with user1. The most recent message is S2.
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user1',
+                            'subject'           => 'S2',
+                        ),
+                    ),
+                ),
+            ),
+            'Test conversations with a single user, where some messages are read and some are not.' => array(
+                'users' => array(
+                    'user1',
+                    'user2',
+                ),
+                'contacts' => array(
+                ),
+                'messages' => array(
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'read',
+                        'subject'       => 'S1',
+                    ),
+                    array(
+                        'from'          => 'user2',
+                        'to'            => 'user1',
+                        'state'         => 'read',
+                        'subject'       => 'S2',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'unread',
+                        'timemodifier'  => 1,
+                        'subject'       => 'S3',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'unread',
+                        'timemodifier'  => 1,
+                        'subject'       => 'S4',
+                    ),
+                ),
+                'expectations' => array(
+                    // The most recent message between user1 and user2 was S4.
+                    'user1' => array(
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user2',
+                            'subject'           => 'S4',
+                        ),
+                    ),
+                    'user2' => array(
+                        // The most recent message between user1 and user2 was S4.
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user1',
+                            'subject'           => 'S4',
+                        ),
+                    ),
+                ),
+            ),
+            'Test conversations with a single user, where some messages are read and some are not, and messages ' .
+            'are out of order' => array(
+            // This can happen through a combination of factors including multi-master DB replication with messages
+            // read somehow (e.g. API).
+                'users' => array(
+                    'user1',
+                    'user2',
+                ),
+                'contacts' => array(
+                ),
+                'messages' => array(
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'read',
+                        'subject'       => 'S1',
+                        'timemodifier'  => 1,
+                    ),
+                    array(
+                        'from'          => 'user2',
+                        'to'            => 'user1',
+                        'state'         => 'read',
+                        'subject'       => 'S2',
+                        'timemodifier'  => 2,
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'unread',
+                        'subject'       => 'S3',
+                    ),
+                    array(
+                        'from'          => 'user1',
+                        'to'            => 'user2',
+                        'state'         => 'unread',
+                        'subject'       => 'S4',
+                    ),
+                ),
+                'expectations' => array(
+                    // The most recent message between user1 and user2 was S2, even though later IDs have not been read.
+                    'user1' => array(
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user2',
+                            'subject'           => 'S2',
+                        ),
+                    ),
+                    'user2' => array(
+                        array(
+                            'messageposition'   => 0,
+                            'with'              => 'user1',
+                            'subject'           => 'S2',
+                        ),
+                    ),
+                ),
+            ),
+        );
+    }
+
+    /**
+     * Test message_get_recent_conversations with a mixture of messages.
+     *
+     * @dataProvider message_get_recent_conversations_provider
+     * @param array $usersdata The list of users to create for this test.
+     * @param array $messagesdata The list of messages to create.
+     * @param array $expectations The list of expected outcomes.
+     */
+    public function test_message_get_recent_conversations($usersdata, $contacts, $messagesdata, $expectations) {
+        global $DB;
+
+        // Create all of the users.
+        $users = array();
+        foreach ($usersdata as $username) {
+            $users[$username] = $this->getDataGenerator()->create_user(array('username' => $username));
+        }
+
+        foreach ($contacts as $username => $contact) {
+            foreach ($contact as $contactname => $blocked) {
+                $record = new stdClass();
+                $record->userid     = $users[$username]->id;
+                $record->contactid  = $users[$contactname]->id;
+                $record->blocked    = $blocked;
+                $record->id = $DB->insert_record('message_contacts', $record);
+            }
+        }
+
+        $defaulttimecreated = time();
+        foreach ($messagesdata as $messagedata) {
+            $from       = $users[$messagedata['from']];
+            $to         = $users[$messagedata['to']];
+            $subject    = $messagedata['subject'];
+
+            if (isset($messagedata['state']) && $messagedata['state'] == 'unread') {
+                $table = 'message';
+                $messageid = $this->send_fake_message($from, $to, $subject, FORMAT_PLAIN);
+            } else {
+                // If there is no state, or the state is not 'unread', assume the message is read.
+                $table = 'message_read';
+                $messageid = message_post_message($from, $to, $subject, FORMAT_PLAIN);
+            }
+
+            $updatemessage = new stdClass();
+            $updatemessage->id = $messageid;
+            if (isset($messagedata['timecreated'])) {
+                $updatemessage->timecreated = $messagedata['timecreated'];
+            } else if (isset($messagedata['timemodifier'])) {
+                $updatemessage->timecreated = $defaulttimecreated + $messagedata['timemodifier'];
+            } else {
+                $updatemessage->timecreated = $defaulttimecreated;
+            }
+            $DB->update_record($table, $updatemessage);
+        }
+
+        foreach ($expectations as $username => $data) {
+            // Get the recent conversations for the specified user.
+            $user = $users[$username];
+            $conversations = message_get_recent_conversations($user);
+            foreach ($data as $expectation) {
+                $otheruser = $users[$expectation['with']];
+                $conversation = $conversations[$expectation['messageposition']];
+                $this->assertEquals($otheruser->id, $conversation->id);
+                $this->assertEquals($expectation['subject'], $conversation->smallmessage);
+            }
+        }
+    }
+
+    /**
+     * Test message_get_recent_notifications.
+     */
+    public function test_message_get_recent_notifications() {
+        global $DB, $USER;
+
+        // Set this user as the admin.
+        $this->setAdminUser();
+
+        // Create a user to send messages from.
+        $user1 = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'user1'));
+
+        // Add two messages - will mark them as notifications later.
+        $m1 = message_post_message($user1, $USER, 'Message 1', FORMAT_PLAIN);
+        $m2 = message_post_message($user1, $USER, 'Message 2', FORMAT_PLAIN);
+
+        // Mark the second message as a notification.
+        $updatemessage = new stdClass();
+        $updatemessage->id = $m2;
+        $updatemessage->notification = 1;
+        $DB->update_record('message_read', $updatemessage);
+
+        // Mark the first message as a notification and change the timecreated to 0.
+        $updatemessage->id = $m1;
+        $updatemessage->notification = 1;
+        $updatemessage->timecreated = 0;
+        $DB->update_record('message_read', $updatemessage);
+
+        $notifications = message_get_recent_notifications($USER);
+
+        // Get the messages.
+        $firstmessage = array_shift($notifications);
+        $secondmessage = array_shift($notifications);
+
+        // Confirm that we have received the notifications with the maximum timecreated, rather than the max id.
+        $this->assertEquals('Message 2', $firstmessage->smallmessage);
+        $this->assertEquals('Message 1', $secondmessage->smallmessage);
+    }
+
+    /**
+     * Test that message_can_post_message returns false if the sender does not have the
+     * moode/site:sendmessage capability.
+     */
+    public function test_message_can_post_message_returns_false_without_capability() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+        $context = context_system::instance();
+        $roleid = $this->getDataGenerator()->create_role();
+        $this->getDataGenerator()->role_assign($roleid, $sender->id, $context->id);
+
+        assign_capability('moodle/site:sendmessage', CAP_PROHIBIT, $roleid, $context);
+
+        $this->assertFalse(message_can_post_message($recipient, $sender));
+    }
+
+    /**
+     * Test that message_can_post_message returns false if the receiver only accepts
+     * messages from contacts and the sender isn't a contact.
+     */
+    public function test_message_can_post_message_returns_false_non_contact_blocked() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        set_user_preference('message_blocknoncontacts', true, $recipient);
+
+        $this->assertFalse(message_can_post_message($recipient, $sender));
+    }
+
+    /**
+     * Test that message_can_post_message returns false if the receiver has blocked the
+     * sender from messaging them.
+     */
+    public function test_message_can_post_message_returns_false_if_blocked() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        $this->setUser($recipient);
+        message_block_contact($sender->id);
+
+        $this->assertFalse(message_can_post_message($recipient, $sender));
+    }
+
+    /**
+     * Test that message_can_post_message returns false if the receiver has blocked the
+     * sender from messaging them.
+     */
+    public function test_message_can_post_message_returns_true() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        $this->assertTrue(message_can_post_message($recipient, $sender));
+    }
+
+    /**
+     * Test that message_is_user_non_contact_blocked returns false if the recipient allows
+     * messages from non-contacts.
+     */
+    public function test_message_is_user_non_contact_blocked_false_without_preference() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        set_user_preference('message_blocknoncontacts', false, $recipient);
+
+        $this->assertFalse(message_is_user_non_contact_blocked($recipient, $sender));
+    }
+
+    /**
+     * Test that message_is_user_non_contact_blocked returns true if the recipient doesn't
+     * allow messages from non-contacts and the sender isn't a contact.
+     */
+    public function test_message_is_user_non_contact_blocked_true_with_preference() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        set_user_preference('message_blocknoncontacts', true, $recipient);
+
+        $this->assertTrue(message_is_user_non_contact_blocked($recipient, $sender));
+    }
+
+    /**
+     * Test that message_is_user_non_contact_blocked returns false if the recipient doesn't
+     * allow messages from non-contacts but the sender is a contact.
+     */
+    public function test_message_is_user_non_contact_blocked_false_with_if_contact() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        $this->setUser($recipient);
+        set_user_preference('message_blocknoncontacts', true, $recipient);
+        message_add_contact($sender->id);
+
+        $this->assertFalse(message_is_user_non_contact_blocked($recipient, $sender));
+    }
+
+    /**
+     * Test that message_is_user_blocked returns false if the sender is not a contact of
+     * the recipient.
+     */
+    public function test_message_is_user_blocked_false_no_contact() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        $this->assertFalse(message_is_user_blocked($recipient, $sender));
+    }
+
+    /**
+     * Test that message_is_user_blocked returns false if the sender is a contact that is
+     * blocked by the recipient but has the moodle/site:readallmessages capability.
+     */
+    public function test_message_is_user_blocked_false_if_readallmessages() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        $this->setUser($recipient);
+        message_block_contact($sender->id);
+
+        $context = context_system::instance();
+        $roleid = $this->getDataGenerator()->create_role();
+        $this->getDataGenerator()->role_assign($roleid, $sender->id, $context->id);
+
+        assign_capability('moodle/site:readallmessages', CAP_ALLOW, $roleid, $context);
+
+        $this->assertFalse(message_is_user_blocked($recipient, $sender));
+    }
+
+    /**
+     * Test that message_is_user_blocked returns true if the sender is a contact that is
+     * blocked by the recipient and does not have the moodle/site:readallmessages capability.
+     */
+    public function test_message_is_user_blocked_true_if_blocked() {
+        $sender = $this->getDataGenerator()->create_user(array('firstname' => 'Test1', 'lastname' => 'User1'));
+        $recipient = $this->getDataGenerator()->create_user(array('firstname' => 'Test2', 'lastname' => 'User2'));
+
+        $this->setUser($recipient);
+        message_block_contact($sender->id);
+
+        $context = context_system::instance();
+        $roleid = $this->getDataGenerator()->create_role();
+        $this->getDataGenerator()->role_assign($roleid, $sender->id, $context->id);
+
+        assign_capability('moodle/site:readallmessages', CAP_PROHIBIT, $roleid, $context);
+
+        $this->assertTrue(message_is_user_blocked($recipient, $sender));
     }
 }

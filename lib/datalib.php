@@ -741,9 +741,11 @@ function get_courses_page($categoryid="all", $sort="c.sortorder ASC", $fields="c
  * @param int $page The page number to get
  * @param int $recordsperpage The number of records per page
  * @param int $totalcount Passed in by reference.
+ * @param array $requiredcapabilities Extra list of capabilities used to filter courses
  * @return object {@link $COURSE} records
  */
-function get_courses_search($searchterms, $sort, $page, $recordsperpage, &$totalcount) {
+function get_courses_search($searchterms, $sort, $page, $recordsperpage, &$totalcount,
+                            $requiredcapabilities = array()) {
     global $CFG, $DB;
 
     if ($DB->sql_regex_supported()) {
@@ -798,8 +800,7 @@ function get_courses_search($searchterms, $sort, $page, $recordsperpage, &$total
     }
 
     if (empty($searchcond)) {
-        $totalcount = 0;
-        return array();
+        $searchcond = array('1 = 1');
     }
 
     $searchcond = implode(" AND ", $searchcond);
@@ -823,11 +824,14 @@ function get_courses_search($searchterms, $sort, $page, $recordsperpage, &$total
 
     $rs = $DB->get_recordset_sql($sql, $params);
     foreach($rs as $course) {
-        if (!$course->visible) {
-            // preload contexts only for hidden courses or courses we need to return
-            context_helper::preload_from_record($course);
-            $coursecontext = context_course::instance($course->id);
-            if (!has_capability('moodle/course:viewhiddencourses', $coursecontext)) {
+        // Preload contexts only for hidden courses or courses we need to return.
+        context_helper::preload_from_record($course);
+        $coursecontext = context_course::instance($course->id);
+        if (!$course->visible && !has_capability('moodle/course:viewhiddencourses', $coursecontext)) {
+            continue;
+        }
+        if (!empty($requiredcapabilities)) {
+            if (!has_all_capabilities($requiredcapabilities, $coursecontext)) {
                 continue;
             }
         }
@@ -1157,35 +1161,6 @@ function get_my_remotehosts() {
     return false;
 }
 
-/**
- * This function creates a default separated/connected scale
- *
- * This function creates a default separated/connected scale
- * so there's something in the database.  The locations of
- * strings and files is a bit odd, but this is because we
- * need to maintain backward compatibility with many different
- * existing language translations and older sites.
- *
- * @global object
- * @return void
- */
-function make_default_scale() {
-    global $DB;
-
-    $defaultscale = new stdClass();
-    $defaultscale->courseid = 0;
-    $defaultscale->userid = 0;
-    $defaultscale->name  = get_string('separateandconnected');
-    $defaultscale->description = get_string('separateandconnectedinfo');
-    $defaultscale->scale = get_string('postrating1', 'forum').','.
-                           get_string('postrating2', 'forum').','.
-                           get_string('postrating3', 'forum');
-    $defaultscale->timemodified = time();
-
-    $defaultscale->id = $DB->insert_record('scale', $defaultscale);
-    $DB->execute("UPDATE {forum} SET scale = ?", array($defaultscale->id));
-}
-
 
 /**
  * Returns a menu of all available scales from the site as well as the given course
@@ -1203,37 +1178,7 @@ function get_scales_menu($courseid=0) {
           ORDER BY courseid ASC, name ASC";
     $params = array($courseid);
 
-    if ($scales = $DB->get_records_sql_menu($sql, $params)) {
-        return $scales;
-    }
-
-    make_default_scale();
-
-    return $DB->get_records_sql_menu($sql, $params);
-}
-
-
-
-/**
- * Given a set of timezone records, put them in the database,  replacing what is there
- *
- * @global object
- * @param array $timezones An array of timezone records
- * @return void
- */
-function update_timezone_records($timezones) {
-    global $DB;
-
-/// Clear out all the old stuff
-    $DB->delete_records('timezone');
-
-/// Insert all the new stuff
-    foreach ($timezones as $timezone) {
-        if (is_array($timezone)) {
-            $timezone = (object)$timezone;
-        }
-        $DB->insert_record('timezone', $timezone);
-    }
+    return $scales = $DB->get_records_sql_menu($sql, $params);
 }
 
 /**
@@ -1319,6 +1264,10 @@ function get_coursemodule_from_id($modulename, $cmid, $courseid=0, $sectionnum=f
                                                 WHERE cm.id = :cmid", $params, $strictness)) {
             return false;
         }
+    } else {
+        if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+            throw new coding_exception('Invalid modulename parameter');
+        }
     }
 
     $params['modulename'] = $modulename;
@@ -1368,6 +1317,10 @@ function get_coursemodule_from_id($modulename, $cmid, $courseid=0, $sectionnum=f
 function get_coursemodule_from_instance($modulename, $instance, $courseid=0, $sectionnum=false, $strictness=IGNORE_MISSING) {
     global $DB;
 
+    if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+        throw new coding_exception('Invalid modulename parameter');
+    }
+
     $params = array('instance'=>$instance, 'modulename'=>$modulename);
 
     $courseselect = "";
@@ -1406,6 +1359,10 @@ function get_coursemodule_from_instance($modulename, $instance, $courseid=0, $se
 function get_coursemodules_in_course($modulename, $courseid, $extrafields='') {
     global $DB;
 
+    if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+        throw new coding_exception('Invalid modulename parameter');
+    }
+
     if (!empty($extrafields)) {
         $extrafields = ", $extrafields";
     }
@@ -1430,7 +1387,7 @@ function get_coursemodules_in_course($modulename, $courseid, $extrafields='') {
  * in the course. Returns an empty array on any errors.
  *
  * The returned objects includle the columns cw.section, cm.visible,
- * cm.groupmode and cm.groupingid, cm.groupmembersonly, and are indexed by cm.id.
+ * cm.groupmode, and cm.groupingid, and are indexed by cm.id.
  *
  * @global object
  * @global object
@@ -1444,6 +1401,10 @@ function get_coursemodules_in_course($modulename, $courseid, $extrafields='') {
 function get_all_instances_in_courses($modulename, $courses, $userid=NULL, $includeinvisible=false) {
     global $CFG, $DB;
 
+    if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+        throw new coding_exception('Invalid modulename parameter');
+    }
+
     $outputarray = array();
 
     if (empty($courses) || !is_array($courses) || count($courses) == 0) {
@@ -1454,7 +1415,7 @@ function get_all_instances_in_courses($modulename, $courses, $userid=NULL, $incl
     $params['modulename'] = $modulename;
 
     if (!$rawmods = $DB->get_records_sql("SELECT cm.id AS coursemodule, m.*, cw.section, cm.visible AS visible,
-                                                 cm.groupmode, cm.groupingid, cm.groupmembersonly
+                                                 cm.groupmode, cm.groupingid
                                             FROM {course_modules} cm, {course_sections} cw, {modules} md,
                                                  {".$modulename."} m
                                            WHERE cm.course $coursessql AND
@@ -1499,7 +1460,7 @@ function get_all_instances_in_courses($modulename, $courses, $userid=NULL, $incl
  * in the course. Returns an empty array on any errors.
  *
  * The returned objects includle the columns cw.section, cm.visible,
- * cm.groupmode and cm.groupingid, cm.groupmembersonly, and are indexed by cm.id.
+ * cm.groupmode, and cm.groupingid, and are indexed by cm.id.
  *
  * Simply calls {@link all_instances_in_courses()} with a single provided course
  *
@@ -1520,7 +1481,7 @@ function get_all_instances_in_course($modulename, $course, $userid=NULL, $includ
  *
  * Given a valid module object with info about the id and course,
  * and the module's type (eg "forum") returns whether the object
- * is visible or not, groupmembersonly visibility not tested
+ * is visible or not according to the 'eye' icon only.
  *
  * NOTE: This does NOT take into account visibility to a particular user.
  * To get visibility access for a specific user, use get_fast_modinfo, get a
@@ -1538,7 +1499,7 @@ function instance_is_visible($moduletype, $module) {
 
     if (!empty($module->id)) {
         $params = array('courseid'=>$module->course, 'moduletype'=>$moduletype, 'moduleid'=>$module->id);
-        if ($records = $DB->get_records_sql("SELECT cm.instance, cm.visible, cm.groupingid, cm.id, cm.groupmembersonly, cm.course
+        if ($records = $DB->get_records_sql("SELECT cm.instance, cm.visible, cm.groupingid, cm.id, cm.course
                                                FROM {course_modules} cm, {modules} m
                                               WHERE cm.course = :courseid AND
                                                     cm.module = m.id AND
@@ -1684,7 +1645,19 @@ function user_accesstime_log($courseid=0) {
             $last->userid     = $USER->id;
             $last->courseid   = $courseid;
             $last->timeaccess = $timenow;
-            $DB->insert_record_raw('user_lastaccess', $last, false);
+            try {
+                $DB->insert_record_raw('user_lastaccess', $last, false);
+            } catch (dml_write_exception $e) {
+                // During a race condition we can fail to find the data, then it appears.
+                // If we still can't find it, rethrow the exception.
+                $lastaccess = $DB->get_field('user_lastaccess', 'timeaccess', array('userid' => $USER->id,
+                                                                                    'courseid' => $courseid));
+                if ($lastaccess === false) {
+                    throw $e;
+                }
+                // If we did find it, the race condition was true and another thread has inserted the time for us.
+                // We can just continue without having to do anything.
+            }
 
         } else if ($timenow - $lastaccess <  LASTACCESS_UPDATE_SECS) {
             // no need to update now, it was updated recently in concurrent login ;-)
@@ -1765,7 +1738,10 @@ function get_logs_usercourse($userid, $courseid, $coursestart) {
         $params['courseid'] = $courseid;
     }
     $params['userid'] = $userid;
-    $$coursestart = (int)$coursestart; // note: unfortunately pg complains if you use name parameter or column alias in GROUP BY
+    // We have to sanitize this param ourselves here instead of relying on DB.
+    // Postgres complains if you use name parameter or column alias in GROUP BY.
+    // See MDL-27696 and 51c3e85 for details.
+    $coursestart = (int)$coursestart;
 
     return $DB->get_records_sql("SELECT FLOOR((time - $coursestart)/". DAYSECS .") AS day, COUNT(*) AS num
                                    FROM {log}

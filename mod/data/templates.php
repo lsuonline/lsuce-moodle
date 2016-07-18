@@ -218,6 +218,7 @@ if ($mode == 'listtemplate'){
     echo '<div class="template_heading"><label for="edit-listtemplateheader">'.get_string('header','data').'</label></div>';
 
     $field = 'listtemplateheader';
+    $editor->set_text($data->listtemplateheader);
     $editor->use_editor($field, $options);
     echo '<div><textarea id="'.$field.'" name="'.$field.'" rows="15" cols="80">'.s($data->listtemplateheader).'</textarea></div>';
 
@@ -234,7 +235,7 @@ if ($mode != 'csstemplate' and $mode != 'jstemplate') {
     echo $OUTPUT->help_icon('availabletags', 'data');
     echo '<br />';
 
-
+    echo '<div class="no-overflow" id="availabletags_wrapper">';
     echo '<select name="fields1[]" id="availabletags" size="12" onclick="insert_field_tags(this)">';
 
     $fields = $DB->get_records('data_fields', array('dataid'=>$data->id));
@@ -276,6 +277,8 @@ if ($mode != 'csstemplate' and $mode != 'jstemplate') {
         echo '<option value="##timeadded##">'.get_string('timeadded', 'data'). ' - ##timeadded##</option>';
         echo '<option value="##timemodified##">'.get_string('timemodified', 'data'). ' - ##timemodified##</option>';
         echo '<option value="##user##">' .get_string('user'). ' - ##user##</option>';
+        echo '<option value="##userpicture##">' . get_string('userpic') . ' - ##userpicture##</option>';
+        echo '<option value="##approvalstatus##">' .get_string('approvalstatus', 'data'). ' - ##approvalstatus##</option>';
         if ($mode != 'singletemplate') {
             // more points to single template - not useable there
             echo '<option value="##comments##">' .get_string('comments', 'data'). ' - ##comments##</option>';
@@ -291,6 +294,7 @@ if ($mode != 'csstemplate' and $mode != 'jstemplate') {
     }
 
     echo '</select>';
+    echo '</div>';
     echo '<br /><br /><br /><br /><input type="submit" name="defaultform" value="'.get_string('resettemplate','data').'" />';
     echo '<br /><br />';
     if ($usehtmleditor) {
@@ -313,6 +317,7 @@ if ($mode == 'listtemplate'){
 }
 
 $field = 'template';
+$editor->set_text($data->{$mode});
 $editor->use_editor($field, $options);
 echo '<div><textarea id="'.$field.'" name="'.$field.'" rows="15" cols="80">'.s($data->{$mode}).'</textarea></div>';
 echo '</td>';
@@ -325,6 +330,7 @@ if ($mode == 'listtemplate'){
     echo '<div class="template_heading"><label for="edit-listtemplatefooter">'.get_string('footer','data').'</label></div>';
 
     $field = 'listtemplatefooter';
+    $editor->set_text($data->listtemplatefooter);
     $editor->use_editor($field, $options);
     echo '<div><textarea id="'.$field.'" name="'.$field.'" rows="15" cols="80">'.s($data->listtemplatefooter).'</textarea></div>';
     echo '</td>';
@@ -336,6 +342,7 @@ if ($mode == 'listtemplate'){
     echo '<div class="template_heading"><label for="edit-rsstitletemplate">'.get_string('rsstitletemplate','data').'</label></div>';
 
     $field = 'rsstitletemplate';
+    $editor->set_text($data->rsstitletemplate);
     $editor->use_editor($field, $options);
     echo '<div><textarea id="'.$field.'" name="'.$field.'" rows="15" cols="80">'.s($data->rsstitletemplate).'</textarea></div>';
     echo '</td>';

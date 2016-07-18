@@ -21,23 +21,12 @@
  */
 global $CFG;
 require_once($CFG->dirroot . '/mod/turningtech/lib.php');
-if ($messages = turningtech_show_messages()) {
-    $settings->add(new admin_setting_heading('turningtechmeessages', '', $messages));
-}
 defined('MOODLE_INTERNAL') || die;
 if ($ADMIN->fulltree) {
     require_once("$CFG->libdir/resourcelib.php");
     // Select device ID format.
-    $settings->add(new admin_setting_configselect('turningtech_deviceid_format',
-                     get_string('deviceidformat', 'turningtech'),
-                     get_string('deviceidformatdescription', 'turningtech'),
-                     TURNINGTECH_DEVICE_ID_FORMAT_HEX, turningtech_get_device_id_format_options()));
     $settings->add(new admin_setting_configselect('turningtech_encryption_format',
                      get_string('encryptionformat', 'turningtech'),
                      get_string('encryptionformatdescription', 'turningtech'),
                      TURNINGTECH_ENCRYPTION_FORMAT_ECB, turningtech_get_encryption_format_options()));
-    $settings->add(new admin_setting_configtext('turningtech_fieldid',
-                     get_string('fieldid', 'turningtech'),
-                     get_string('fieldiddescription', 'turningtech'),
-                     get_string('fieldiddefault', 'turningtech'), PARAM_INT));   
-    }
+}

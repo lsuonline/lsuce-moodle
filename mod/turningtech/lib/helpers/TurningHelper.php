@@ -100,17 +100,14 @@ class TurningTechTurningHelper {
      * @return unknown_type
      */
     public static function getstudentbycourseanddeviceid($course, $deviceid) {
-        $params = array ('courseid' => $course->id, 'deviceid' => $deviceid, 'deleted' => 0 );
-        $map = TurningTechDeviceMap::fetch($params);
-        // If no course-specific map found, look for global.
-        if (! $map) {
-            // Do not search for specific course.
-            unset($params['courseid']);
-            $params['all_courses'] = 1;
+        $params = array ('deviceid' => $deviceid, 'deleted' => 0 );
+        $count = TurningTechDeviceMap::countstudents($course->id, $deviceid);
+        if ($count==1) {
             $map = TurningTechDeviceMap::fetch($params);
-        }
-        if ($map) {
-            return TurningTechMoodleHelper::getuserbyid($map->getField('userid'));
+            // If no course-specific map found, look for global.
+            if ($map) {
+                return TurningTechMoodleHelper::getuserbyid($map->getField('userid'));
+            }
         }
         return false;
     }
@@ -224,10 +221,10 @@ class TurningTechTurningHelper {
      */
     public static function getstudentswithoutdevices($course) {
         $students = array ();
-        $roster = TurningTechMoodleHelper::getclassroster($course);
+        $roster = TurningTechMoodleHelper::getclassrosterxml($course);
         if (! empty($roster)) {
             foreach ($roster as $r) {
-                if (empty($r->devicemapid) && ! isset($students[$r->id])) {
+                if (empty($r->deviceid) && ! isset($students[$r->id])) {
                     $students[$r->id] = $r;
                 }
             }
@@ -276,7 +273,7 @@ class TurningTechTurningHelper {
             self::processsessiondata($objturnextsession);
             $objstatus->ExportedData->error->code = 0;
             $objstatus->ExportedData->error->desc = "";
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             $objstatus->ExportedData->error->code = $ex->getcustomcode();
             $objstatus->ExportedData->error->desc = $ex->getcustomdesc();
         } catch ( SoapFault $ex ) {
@@ -293,17 +290,17 @@ class TurningTechTurningHelper {
      * Process Session XML
      * @param unknown_type $exportdata
      * @param unknown_type $objturnextsession
-     * @throws CustomException
+     * @throws CustomExceptionTT
      * @throws SoapFault
      */
-    private function processsessionxml($exportdata, &$objturnextsession) {
+    private static function processsessionxml($exportdata, &$objturnextsession) {
         global $usercourses, $instructor;
         try {
             $objturnextsession->loadXML($exportdata);
             $objturnextsession->validateXML();
             $objcourse = TurningTechMoodleHelper::getcoursebyid($objturnextsession->getCourseId());
             if (is_null($objcourse) || $objcourse == "") {
-                throw new CustomException("", 0, 5, "Course id is unknown");
+                throw new CustomExceptionTT("", 0, 5, "Course id is unknown");
             }
             $intcrclen = count($usercourses);
             $blncrcfound = false;
@@ -317,41 +314,41 @@ class TurningTechTurningHelper {
                 throw new SoapFault('AuthenticationException', get_string('userisnotinstructor', 'turningtech'));
             }
             $objturnextsession->preparedatafromxml();
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( SoapFault $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), - 1, "An unknown exception occurred");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), - 1, "An unknown exception occurred");
         }
     }
     /**
      * process session data
      * @param unknown_type $objturnextsession
-     * @throws CustomException
+     * @throws CustomExceptionTT
      * @return unknown
      */
-    private function processsessiondata($objturnextsession) {
+    private static function processsessiondata($objturnextsession) {
         try {
             // The following code has been commented till all questions types info is ready and email is ready to be sent to users.
             /*
              * switch ($objturnextsession->getExportObjectType()) { case "non-session": $objturnextsession->saveupdatescoredata();
              * break; case "session"; $objturnextsession->saveupdatescoredata(); self::sendperformanceemail($objturnextsession);
-             * break; default: throw new CustomException("", 0, 4, "Unknown export type specified"); }
+             * break; default: throw new CustomExceptionTT("", 0, 4, "Unknown export type specified"); }
              */
             // The following code will be used till all questions types info is ready and email is ready to be sent to users.
             $objturnextsession->saveupdatescoredata();
             return $objturnextsession;
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), - 1, "An unknown exception occurred");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), - 1, "An unknown exception occurred");
         }
     }
     /**
      * Send performance email
      * @param unknown_type $objturnextsession
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function sendperformanceemail($objturnextsession) {
         // If email is not to be sent to student.
@@ -361,18 +358,18 @@ class TurningTechTurningHelper {
         try {
             // Get the Email Template Content.
             $arremailtemplates = self::getemailtemplatecontent();
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Email Template could not be read");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Email Template could not be read");
         }
         try {
             // Set the Email Configurations.
             $objmailer = self::configemailsettings($objturnextsession->getEmailInfo());
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Email Configuration could not be set");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Email Configuration could not be set");
         }
         $arrparticipants = $objturnextsession->getParticipantsList();
         $arrquestions = $objturnextsession->getQuestionsList();
@@ -446,7 +443,7 @@ class TurningTechTurningHelper {
     }
     /**
      * Get the Email template
-     * @throws CustomException
+     * @throws CustomExceptionTT
      * @return multitype:
      */
     private function getemailtemplatecontent() {
@@ -454,16 +451,16 @@ class TurningTechTurningHelper {
         try {
             return explode("<!-- ~| PLEASE DO NOT REMOVE THIS COMMENT |~ -->", file_get_contents($CFG->wwwroot .
                                              '/mod/turningtech/lib/templates/ImportSessionEmailTemplate.html'));
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Email Template could not be read.");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Email Template could not be read.");
         }
     }
     /**
      * Configure email settings
      * @param unknown_type $objemail
-     * @throws CustomException
+     * @throws CustomExceptionTT
      * @return Ambigous <moodle_phpmailer, NULL, unknown>
      */
     private function configemailsettings($objemail) {
@@ -478,10 +475,10 @@ class TurningTechTurningHelper {
             $objmailer->CharSet = 'UTF-16';
             $objmailer->AltBody = "\n\n";
             return $objmailer;
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Email Settings could not be configured.");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Email Settings could not be configured.");
         }
     }
     /**
@@ -491,76 +488,13 @@ class TurningTechTurningHelper {
     public static function getdefaultmaxgrade() {
         return 9999;
     }
-    /**
-     * Checks and upgrade Moodle w.r.t Turning Tech Device Types.
-     */
-    public static function updateuserdevicemappings() {
-        global $CFG, $DB, $USER;
-        $tblmapping = "turningtech_device_mapping";
-        $arrresponsecarddevice = array ();
-        $arrresponsewaredevice = array ();
-        // Update all of the existing records of device type mapping for the current user.
-        $sql = "SELECT id, courseid, typeid  FROM {" . $tblmapping . "} tdm WHERE userid = :userid ORDER BY id DESC";
-        $params = array ();
-        $params['userid'] = $USER->id;
-        $arrmapping = $DB->get_records_sql($sql, $params);
-        if (is_array($arrmapping) && count($arrmapping)) {
-            foreach ($arrmapping as $key => $map) {
-                if ($map->typeid == 0) {
-                    $objdata = new stdClass();
-                    $objdata->id = $map->id;
-                    $objdata->all_courses = 1;
-                    $objdata->deleted = 1; // Initially let all of the Response Card devices as dead.
-                    if (is_null($map->courseid)) { // If device registered as Response Ware.
-                        $objdata->typeid = 2;
-                        $arrresponsewaredevice[] = $objdata;
-                    } else { // If device registered as Response Card.
-                        $objdata->typeid = 1;
-                        $arrresponsecarddevice[] = $objdata;
-                    }
-                }
-            }
-            // If at-least one Response Card Device need to be upgraded.
-            if (count($arrresponsecarddevice)) {
-                // The very first i.e. recently added device only should be alive.
-                $arrresponsecarddevice[0]->deleted = 0;
-                foreach ($arrresponsecarddevice as $key => $responsecarddevice) {
-                    $DB->update_record($tblmapping, $responsecarddevice);
-                }
-            }
-            // If at-least one Response Ware Device need to be upgraded.
-            if (count($arrresponsewaredevice)) {
-                // The very first i.e. recently added device only should be alive.
-                $arrresponsewaredevice[0]->deleted = 0;
-                foreach ($arrresponsewaredevice as $key => $responsewaredevice) {
-                    $DB->update_record($tblmapping, $responsewaredevice);
-                }
-            }
-        }
-    }
-    /**
-     * Check if imported session file is valid.
-     * @param unknown_type $arrfileinfo
-     * @return number
-     */
-    public static function isimportsessionfilevalid($arrfileinfo) {
-        $arrvalidfiletype = array ("text/plain" );
-        $strfileextension = strtoupper(array_pop(explode(".", $arrfileinfo["name"])));
-        // Validate that the media type of the file is lying under Valid File Types and the file extension of the file is "TXT"
-        // only.
-        if (! in_array($arrfileinfo["type"], $arrvalidfiletype) || $strfileextension != "TXT") {
-            return - 1;
-        }
-        return 1;
-    }
-
 }
 /**
  * Exception Handler
  * @copyright  2012 Turning Technologies
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class CustomException extends Exception {
+class CustomExceptionTT extends Exception {
     /**
      * @var unknown_type
      */

@@ -19,16 +19,20 @@
  * @copyright 2010 iParadigms LLC
  */
 
-require_once("../../config.php");
-require_once("lib.php");
+require_once(__DIR__."/../../config.php");
+require_once(__DIR__."/lib.php");
+require_once(__DIR__."/turnitintooltwo_view.class.php");
 
-require_once("turnitintooltwo_view.class.php");
 $turnitintooltwoview = new turnitintooltwo_view();
 
 // Load Javascript and CSS.
 $turnitintooltwoview->load_page_components();
 
-$id = required_param('id', PARAM_INT);   // Course id.
+$id = required_param('id', PARAM_INT); // Course id.
+
+// Configure URL correctly.
+$urlparams = array('id' => $id);
+$url = new moodle_url('/mod/turnitintooltwo/index.php', $urlparams);
 
 // Get course data.
 if (!$course = $DB->get_record("course", array("id" => $id))) {
@@ -39,7 +43,7 @@ require_login($course->id);
 
 // Print the header.
 $extranavigation = array(array('title' => get_string("modulenameplural", "turnitintooltwo"), 'url' => null));
-$turnitintooltwoview->output_header(null, $course, $_SERVER["REQUEST_URI"], get_string("modulenameplural", "turnitintooltwo"),
+$turnitintooltwoview->output_header(null, $course, $url, get_string("modulenameplural", "turnitintooltwo"),
                                         $SITE->fullname, $extranavigation, '', '', true);
 
 echo $turnitintooltwoview->show_assignments($course);

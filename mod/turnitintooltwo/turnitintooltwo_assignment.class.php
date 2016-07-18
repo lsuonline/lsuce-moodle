@@ -19,9 +19,9 @@
  * @copyright 2012 iParadigms LLC *
  */
 
-require_once($CFG->dirroot . '/mod/turnitintooltwo/turnitintooltwo_comms.class.php');
-require_once($CFG->dirroot . '/mod/turnitintooltwo/turnitintooltwo_user.class.php');
-require_once($CFG->dirroot . '/mod/turnitintooltwo/turnitintooltwo_submission.class.php');
+require_once(__DIR__.'/turnitintooltwo_comms.class.php');
+require_once(__DIR__.'/turnitintooltwo_user.class.php');
+require_once(__DIR__.'/turnitintooltwo_submission.class.php');
 
 class turnitintooltwo_assignment {
 
@@ -140,14 +140,17 @@ class turnitintooltwo_assignment {
      *
      * @param int $courseid The ID of the course to get the data for
      * @param string $coursetype whether the course is TT (Turnitintool) or PP (Plagiarism Plugin)
+     * @param string $workflowcontext whether we are in a cron context (from PP) or using the site as normal.
      * @return object The course object with the Turnitin Class data if it's been created
      */
-    public static function get_course_data($courseid, $coursetype = "TT") {
+    public static function get_course_data($courseid, $coursetype = "TT", $workflowcontext = "site") {
         global $DB;
 
         if (!$course = $DB->get_record("course", array("id" => $courseid))) {
-            turnitintooltwo_print_error('coursegeterror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
-            exit();
+            if ($workflowcontext != "cron") {
+                turnitintooltwo_print_error('coursegeterror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
+                exit;
+            }
         }
 
         $course->turnitin_cid = 0;
@@ -186,7 +189,7 @@ class turnitintooltwo_assignment {
         $newassignment["turnitintooltwo"]->course = $courseid;
         $newassignment["turnitintooltwo"]->name = $assignmentname;
         $newassignment["turnitintooltwo"]->numparts = count($partids);
-        $newassignment["turnitintooltwo"]->gradedisplay = 1;
+        $newassignment["turnitintooltwo"]->gradedisplay = $config->default_gradedisplay;
         $newassignment["turnitintooltwo"]->shownonsubmission = 1;
         $newassignment["turnitintooltwo"]->usegrademark = $config->usegrademark;
         // Get maximum grade.
@@ -206,7 +209,7 @@ class turnitintooltwo_assignment {
         }
 
         $module = $DB->get_record("modules", array("name" => "turnitintooltwo"));
-        $coursemodule = new object();
+        $coursemodule = new stdClass();
         $coursemodule->course = $courseid;
         $coursemodule->module = $module->id;
         $coursemodule->added = time();
@@ -272,14 +275,14 @@ class turnitintooltwo_assignment {
         global $DB, $CFG, $USER;
         require_once($CFG->dirroot."/course/lib.php");
 
-        $data = new object;
+        $data = new stdClass();
         $data->category = $coursecategory;
         $data->fullname = $coursename;
         $data->shortname = "Turnitin (".$tiicourseid.")";
         $data->maxbytes = 2097152;
 
         if ($course = create_course($data)) {
-            $turnitincourse = new object();
+            $turnitincourse = new stdClass();
             $turnitincourse->courseid = $course->id;
             $turnitincourse->turnitin_cid = $tiicourseid;
             $turnitincourse->turnitin_ctl = $tiicoursetitle;
@@ -335,21 +338,28 @@ class turnitintooltwo_assignment {
      * @param string $coursetype whether the course is TT (Turnitintool) or PP (Plagiarism Plugin)
      * @return object the turnitin course if created
      */
-    public function create_tii_course($course, $ownerid, $coursetype = "TT") {
+    public static function create_tii_course($course, $ownerid, $coursetype = "TT", $workflowcontext = "site") {
         global $DB;
 
         $turnitincomms = new turnitintooltwo_comms();
         $turnitincall = $turnitincomms->initialise_api();
 
         $class = new TiiClass();
-        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100)
-        $class->setTitle( mb_strlen( $course->fullname ) > 80 ? mb_substr( $course->fullname, 0, 80 ) . "..." : $course->fullname . " (Moodle " . $coursetype . ")" );
+        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100).
+        $title = "";
+        if ( mb_strlen( $course->fullname, 'UTF-8' ) > 80 ) {
+            $title .= mb_substr( $course->fullname, 0, 80, 'UTF-8' ) . "...";
+        } else {
+            $title .= $course->fullname;
+        }
+        $title .= " (Moodle " . $coursetype . ")";
+        $class->setTitle( $title );
 
         try {
             $response = $turnitincall->createClass($class);
             $newclass = $response->getClass();
 
-            $turnitincourse = new object();
+            $turnitincourse = new stdClass();
             $turnitincourse->courseid = $course->id;
             $turnitincourse->ownerid = $ownerid;
             $turnitincourse->turnitin_cid = $newclass->getClassId();
@@ -377,7 +387,12 @@ class turnitintooltwo_assignment {
 
             return $turnitincourse;
         } catch (Exception $e) {
-            $turnitincomms->handle_exceptions($e, 'classcreationerror');
+            $toscreen = true;
+            if ($workflowcontext == "cron") {
+                mtrace(get_string('pp_classcreationerror', 'turnitintooltwo'));
+                $toscreen = false;
+            }
+            $turnitincomms->handle_exceptions($e, 'classcreationerror', $toscreen);
         }
     }
 
@@ -388,7 +403,7 @@ class turnitintooltwo_assignment {
      * @param var $course The course object
      * @param string $coursetype whether the course is TT (Turnitintool) or PP (Plagiarism Plugin)
      */
-    public function edit_tii_course($course, $coursetype = "TT") {
+    public static function edit_tii_course($course, $coursetype = "TT") {
         global $DB;
 
         $turnitincomms = new turnitintooltwo_comms();
@@ -396,13 +411,20 @@ class turnitintooltwo_assignment {
 
         $class = new TiiClass();
         $class->setClassId($course->turnitin_cid);
-        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100)
-        $class->setTitle( mb_strlen( $course->fullname ) > 80 ? mb_substr( $course->fullname, 0, 80 ) . "..." : $course->fullname . " (Moodle " . $coursetype . ")" );
+        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100).
+        $title = "";
+        if ( mb_strlen( $course->fullname, 'UTF-8' ) > 80 ) {
+            $title .= mb_substr( $course->fullname, 0, 80, 'UTF-8' ) . "...";
+        } else {
+            $title .= $course->fullname;
+        }
+        $title .= " (Moodle " . $coursetype . ")";
+        $class->setTitle( $title );
 
         try {
             $turnitincall->updateClass($class);
 
-            $turnitincourse = new object();
+            $turnitincourse = new stdClass();
 
             $turnitintooltwocourse = $DB->get_record("turnitintooltwo_courses",
                                 array("courseid" => $course->id, "course_type" => $coursetype));
@@ -413,7 +435,7 @@ class turnitintooltwo_assignment {
             $turnitincourse->turnitin_ctl = $course->fullname . " (Moodle ".$coursetype.")";
             $turnitincourse->course_type = $coursetype;
 
-            if (!$insertid = $DB->update_record('turnitintooltwo_courses', $turnitincourse)) {
+            if (!$insertid = $DB->update_record('turnitintooltwo_courses', $turnitincourse) && $coursetype != "PP") {
                 turnitintooltwo_print_error('classupdateerror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
                 exit();
             } else {
@@ -421,7 +443,8 @@ class turnitintooltwo_assignment {
                                                 " (".$turnitincourse->id.")", "REQUEST");
             }
         } catch (Exception $e) {
-            $turnitincomms->handle_exceptions($e, 'classupdateerror');
+            $toscreen = ($coursetype == "PP") ? false : true;
+            $turnitincomms->handle_exceptions($e, 'classupdateerror', $toscreen);
         }
     }
 
@@ -458,9 +481,12 @@ class turnitintooltwo_assignment {
      * and loops through them to get each user
      *
      * @param string $role the user has in the class
+     * @param string $idkey whether to use moodle or turnitin ids as the array key
      * @return array $users
      */
-    public function get_tii_users_by_role($role = "Learner") {
+    public function get_tii_users_by_role($role = "Learner", $idkey = "tii") {
+        global $DB;
+
         $users = array();
         // Get Moodle Course Object.
         $course = $this->get_course_data($this->turnitintooltwo->course);
@@ -472,13 +498,27 @@ class turnitintooltwo_assignment {
         $membership = new TiiMembership();
         $membership->setMembershipIds($classmembers);
 
+        // Get Enrolled users from Turnitin.
         try {
             $response = $turnitincall->readMemberships($membership);
             $readmemberships = $response->getMemberships();
-            foreach ($readmemberships as $readmembership) {
+        } catch (Exception $e) {
+            $turnitincomms->handle_exceptions($e, 'membercheckerror');
+        }
 
-                if ($readmembership->getRole() == $role) {
+        // Add each user to an array.
+        foreach ($readmemberships as $readmembership) {
+            if ($readmembership->getRole() == $role) {
 
+                // Check user is a Moodle user. Otherwise we have to go to Turnitin for their name.
+                $moodleuserid = turnitintooltwo_user::get_moodle_user_id($readmembership->getUserId());
+                if (!empty($moodleuserid)) {
+                    $user = $DB->get_record('user', array('id' => $moodleuserid));
+                    $arraykey = ($idkey == "mdl") ? $user->id : $readmembership->getUserId();
+                    $users[$arraykey]["firstname"] = $user->firstname;
+                    $users[$arraykey]["lastname"] = $user->lastname;
+                    $users[$arraykey]["membership_id"] = $readmembership->getMembershipId();
+                } else {
                     $user = new TiiUser();
                     $user->setUserId($readmembership->getUserId());
 
@@ -490,16 +530,38 @@ class turnitintooltwo_assignment {
                         $users[$readmembership->getUserId()]["lastname"] = $readuser->getLastName();
                         $users[$readmembership->getUserId()]["membership_id"] = $readmembership->getMembershipId();
 
-                    } catch (InnerException $e) {
-                        $turnitincomms->handle_exceptions($e, 'tiiusergeterror');
+                    } catch (Exception $e) {
+                        // A read user exception occurs when users are inactive. Re-enrol user to make them active.
+                        $membership = new TiiMembership();
+                        $membership->setClassId($course->turnitin_cid);
+                        $membership->setUserId($readmembership->getUserId());
+                        $membership->setRole($role);
+
+                        try {
+                            $turnitincall->createMembership($membership);
+                        } catch ( InnerException $e ) {
+                            // Ignore excepion.
+                        }
+
+                        try {
+                            $user = new TiiUser();
+                            $user->setUserId($readmembership->getUserId());
+
+                            $response = $turnitincall->readUser($user);
+                            $readuser = $response->getUser();
+
+                            $users[$readmembership->getUserId()]["firstname"] = $readuser->getFirstName();
+                            $users[$readmembership->getUserId()]["lastname"] = $readuser->getLastName();
+                            $users[$readmembership->getUserId()]["membership_id"] = $readmembership->getMembershipId();
+                        } catch ( InnerException $e ) {
+                            $turnitincomms->handle_exceptions($e, 'tiiusergeterror');
+                        }
                     }
                 }
             }
-            return $users;
-
-        } catch (Exception $e) {
-            $turnitincomms->handle_exceptions($e, 'membercheckerror');
         }
+
+        return $users;
     }
 
     /**
@@ -610,7 +672,6 @@ class turnitintooltwo_assignment {
         // Insert the default options for the assignment.
         $this->turnitintooltwo->timecreated = time();
         $this->turnitintooltwo->dateformat = "d/m/Y";
-        $this->turnitintooltwo->gradedisplay = 1;
         $this->turnitintooltwo->commentedittime = 1800;
         $this->turnitintooltwo->commentmaxsize = 800;
         $this->turnitintooltwo->autosubmission = 1;
@@ -651,7 +712,7 @@ class turnitintooltwo_assignment {
             }
             $assignment->setAllowNonOrSubmissions($this->turnitintooltwo->allownonor);
             $assignment->setLateSubmissionsAllowed($this->turnitintooltwo->allowlate);
-            if ($config->userepository) {
+            if ($config->repositoryoption == 1) {
                 $assignment->setInstitutionCheck((isset($this->turnitintooltwo->institution_check)) ?
                                                         $this->turnitintooltwo->institution_check : 0);
             }
@@ -726,7 +787,7 @@ class turnitintooltwo_assignment {
     public function create_event($toolid, $partname, $duedate) {
         global $CFG;
 
-        $properties = new object();
+        $properties = new stdClass();
         $properties->name = $this->turnitintooltwo->name . ' - ' . $partname;
         $properties->description = ($this->turnitintooltwo->intro == null) ? '' : $this->turnitintooltwo->intro;
         $properties->courseid = $this->turnitintooltwo->course;
@@ -750,7 +811,8 @@ class turnitintooltwo_assignment {
      * @param object $assignment add assignment instance
      * @param var $toolid turnitintooltwo id
      */
-    public static function create_tii_assignment($assignment, $toolid, $partnumber, $usecontext = "turnitintooltwo") {
+    public static function create_tii_assignment($assignment, $toolid, $partnumber,
+                                                $usecontext = "turnitintooltwo", $workflowcontext = "site") {
         global $DB;
         // Initialise Comms Object.
         $turnitincomms = new turnitintooltwo_comms();
@@ -772,7 +834,12 @@ class turnitintooltwo_assignment {
             if ($partnumber == 1 && $usecontext == "turnitintooltwo") {
                 $DB->delete_records('turnitintooltwo', array('id' => $toolid));
             }
-            $turnitincomms->handle_exceptions($e, 'createassignmenterror');
+            $toscreen = true;
+            if ($workflowcontext == "cron") {
+                mtrace(get_string('ppassignmentcreateerror', 'turnitintooltwo'));
+                $toscreen = false;
+            }
+            $turnitincomms->handle_exceptions($e, 'createassignmenterror', $toscreen);
         }
     }
 
@@ -781,7 +848,7 @@ class turnitintooltwo_assignment {
      *
      * @param object $assignment edit assignment instance
      */
-    public function edit_tii_assignment($assignment) {
+    public function edit_tii_assignment($assignment, $workflowcontext = "site") {
         // Initialise Comms Object.
         $turnitincomms = new turnitintooltwo_comms();
         $turnitincall = $turnitincomms->initialise_api();
@@ -792,8 +859,33 @@ class turnitintooltwo_assignment {
             $_SESSION["assignment_updated"][$assignment->getAssignmentId()] = time();
 
             turnitintooltwo_activitylog("Turnitin Assignment part updated - id: ".$assignment->getAssignmentId(), "REQUEST");
+
+            return array('success' => true, 'tiiassignmentid' => $assignment->getAssignmentId());
+
         } catch (Exception $e) {
-            $turnitincomms->handle_exceptions($e, 'editassignmenterror');
+            $toscreen = true;
+
+            // Separate error handling for the Plagiarism plugin.
+            if ($workflowcontext == "cron") {
+
+                $error = new stdClass();
+                $error->title = $assignment->getTitle();
+                $error->assignmentid = $assignment->getAssignmentId();
+                $errorstr = get_string('ppassignmentediterror', 'turnitintooltwo', $error);
+
+                mtrace($errorstr);
+                $toscreen = false;
+            }
+
+            $turnitincomms->handle_exceptions($e, 'editassignmenterror', $toscreen);
+
+            // Return error string as we use this in the plagiarism plugin.
+            if ($workflowcontext == "cron") {
+                return array('success' => false, 'error' => $errorstr,
+                            'tiiassignmentid' => $assignment->getAssignmentId());
+            } else {
+                return array('success' => false, 'error' => get_string('editassignmenterror', 'turnitintooltwo'));
+            }
         }
     }
 
@@ -823,7 +915,14 @@ class turnitintooltwo_assignment {
         }
 
         // Delete events for this assignment / part.
-        $DB->delete_records('event', array('modulename' => 'turnitintooltwo', 'instance' => $id));
+        $dbselect = " modulename = ? AND instance = ? ";
+        // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+        // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+        if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+            $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? ";
+        }
+
+        $DB->delete_records_select('event', $dbselect, array('turnitintooltwo', $id));
         if (!$DB->delete_records("turnitintooltwo", array("id" => $id))) {
             $result = false;
         }
@@ -848,7 +947,7 @@ class turnitintooltwo_assignment {
         }
 
         // Define grade settings.
-        @include_once($CFG->dirroot . "/lib/gradelib.php");
+        @include_once($CFG->libdir . "/gradelib.php");
         $params = array('deleted' => 1);
         grade_update('mod/turnitintooltwo', $turnitintooltwo->course, 'mod', 'turnitintooltwo', $id, 0, null, $params);
 
@@ -863,7 +962,7 @@ class turnitintooltwo_assignment {
      * @return boolean
      */
     public function delete_moodle_assignment_part($toolid, $partid) {
-        global $DB;
+        global $DB, $CFG;;
 
         // Delete submissions.
         $DB->delete_records('turnitintooltwo_submissions', array('turnitintooltwoid' => $toolid, 'submission_part' => $partid));
@@ -879,13 +978,20 @@ class turnitintooltwo_assignment {
 
         // Delete event.
         $turnitintooltwonow = $DB->get_record("turnitintooltwo", array("id" => $toolid));
-        $DB->delete_records_select('event', " modulename = 'turnitintooltwo' AND instance = ? AND name = ? ",
-                        array($toolid, $turnitintooltwonow->name.' - '.$part->partname));
+        $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+        // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+        // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+        if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+            $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? AND CAST(name AS nvarchar(max)) = ? ";
+        }
+        $DB->delete_records_select('event', $dbselect,
+                        array('turnitintooltwo', $toolid, $turnitintooltwonow->name.' - '.$part->partname));
 
         // Update number of parts for the turnitintooltwo.
-        $turnitintooltwo = new object();
+        $turnitintooltwo = new stdClass();
         $turnitintooltwo->id = $toolid;
         $turnitintooltwo->numparts = $turnitintooltwonow->numparts - 1;
+        $turnitintooltwo->needs_updating = 1;
         $DB->update_record("turnitintooltwo", $turnitintooltwo);
         return true;
     }
@@ -913,13 +1019,17 @@ class turnitintooltwo_assignment {
      * Get the assignment parts for this assignment
      *
      * @global type $DB
+     * @param bool $peermarks get peer mark assignments
      * @return array Returns the parts or empty array if no parts are found
      */
-    public function get_parts() {
+    public function get_parts($peermarks = true) {
         global $DB;
-        if ($parts = $DB->get_records("turnitintooltwo_parts", array("turnitintooltwoid" => $this->turnitintooltwo->id))) {
-            foreach ($parts as $part) {
-                $parts[$part->id]->peermark_assignments = $this->get_peermark_assignments($part->tiiassignid);
+        if ($parts = $DB->get_records("turnitintooltwo_parts",
+                                        array("turnitintooltwoid" => $this->turnitintooltwo->id), 'id ASC')) {
+            if ($peermarks) {
+                foreach ($parts as $part) {
+                    $parts[$part->id]->peermark_assignments = $this->get_peermark_assignments($part->tiiassignid);
+                }
             }
             return $parts;
         } else {
@@ -997,9 +1107,25 @@ class turnitintooltwo_assignment {
         $return["field"] = $fieldname;
         switch ($fieldname) {
             case "partname":
-                if (empty($fieldvalue)) {
+                $fieldvalue = trim($fieldvalue);
+                $partnames = $DB->get_records_select('turnitintooltwo_parts', 
+                                                    ' turnitintooltwoid = ? AND id != ? ',
+                                                    array($partdetails->turnitintooltwoid, $partid), '', 'partname');
+
+                $names = array();
+                foreach ($partnames as $part) {
+                    $names[] = strtolower($part->partname);
+                }
+
+                if (empty($fieldvalue) || ctype_space($fieldvalue)) {
                     $return['success'] = false;
                     $return['msg'] = get_string('partnameerror', 'turnitintooltwo');
+                } else if (in_array(trim(strtolower($fieldvalue)), $names)) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('uniquepartname', 'turnitintooltwo');
+                } else if (strlen($fieldvalue) > 40) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('partnametoolarge', 'turnitintooltwo');
                 } else {
                     $assignment->setTitle($this->turnitintooltwo->name.' - '.$fieldvalue);
                 }
@@ -1015,46 +1141,49 @@ class turnitintooltwo_assignment {
                 break;
 
             case "dtstart":
+                if ($fieldvalue <= strtotime('1 year ago')) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('startdatenotyearago', 'turnitintooltwo');
+                } else if ($fieldvalue >= $partdetails->dtdue) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('partdueerror', 'turnitintooltwo');
+                } else if ($fieldvalue > $partdetails->dtpost) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('partposterror', 'turnitintooltwo');
+                }
+
+                $assignment->setStartDate(gmdate("Y-m-d\TH:i:s\Z", $fieldvalue));
+                break;
+
             case "dtdue":
+                if ($fieldvalue <= $partdetails->dtstart) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('partdueerror', 'turnitintooltwo');
+                }
+
+                $assignment->setDueDate(gmdate("Y-m-d\TH:i:s\Z", $fieldvalue));
+                break;
+
             case "dtpost":
-                switch ($fieldname) {
-                    case "dtstart":
-                        if ($fieldvalue <= strtotime('1 year ago')) {
-                            $return['success'] = false;
-                            $return['msg'] = get_string('startdatenotyearago', 'turnitintooltwo');
-                        } else if ($fieldvalue >= $partdetails->dtdue) {
-                            $return['success'] = false;
-                            $return['msg'] = get_string('partdueerror', 'turnitintooltwo');
-                        } else if ($fieldvalue > $partdetails->dtpost) {
-                            $return['success'] = false;
-                            $return['msg'] = get_string('partposterror', 'turnitintooltwo');
-                        }
-
-                        $setmethod = "setStartDate";
-                        break;
-
-                    case "dtdue":
-                        if ($fieldvalue <= $partdetails->dtstart) {
-                            $return['success'] = false;
-                            $return['msg'] = get_string('partdueerror', 'turnitintooltwo');
-                        }
-
-                        $setmethod = "setDueDate";
-                        break;
-
-                    case "dtpost":
-                        if ($fieldvalue <= $partdetails->dtstart) {
-                            $return['success'] = false;
-                            $return['msg'] = get_string('partposterror', 'turnitintooltwo');
-                        }
-
-                        $setmethod = "setFeedbackReleaseDate";
-                        break;
+                if ($fieldvalue < $partdetails->dtstart) {
+                    $return['success'] = false;
+                    $return['msg'] = get_string('partposterror', 'turnitintooltwo');
                 }
-                if ($CFG->ostype != 'WINDOWS') {
-                    $fieldvalue = userdate($fieldvalue, '%s');
+
+                // Disable anonymous marking in Moodle if the post date has passed.
+                if ($this->turnitintooltwo->anon && $partdetails->submitted == 1 && $fieldvalue < time()) {
+                    $partdetails->unanon = 1;
                 }
-                $assignment->$setmethod(gmdate("Y-m-d\TH:i:s\Z", $fieldvalue));
+
+                // If post date is moved beyond the current time, reset anon gradebook flag.
+                if ($fieldvalue > time()) {
+                    $update_assignment = new stdClass();
+                    $update_assignment->id = $partdetails->turnitintooltwoid;
+                    $update_assignment->anongradebook = 0;
+                    $DB->update_record("turnitintooltwo", $update_assignment);
+                }
+
+                $assignment->setFeedbackReleaseDate(gmdate("Y-m-d\TH:i:s\Z", $fieldvalue));
                 break;
         }
 
@@ -1088,13 +1217,22 @@ class turnitintooltwo_assignment {
 
         // Update existing events for this assignment part if title or due date changed.
         if ($fieldname == "partname" || $fieldname == "dtdue") {
-            $event = $DB->get_record_select("event", " modulename = 'turnitintooltwo' AND instance = ? AND name = ?",
-                                                        array($this->turnitintooltwo->id, $currenteventname));
 
-            $event->name = $this->turnitintooltwo->name." - ".$partdetails->partname;
-            $event->timestart = $partdetails->dtdue;
-            $event->userid = $USER->id;
-            $DB->update_record('event', $event);
+            $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+            // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+            // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+            if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+                $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? AND CAST(name AS nvarchar(max)) = ? ";
+            }
+
+            if ($event = $DB->get_record_select("event", $dbselect,
+                                                array('turnitintooltwo', $this->turnitintooltwo->id, $currenteventname))) {
+
+                $event->name = $this->turnitintooltwo->name." - ".$partdetails->partname;
+                $event->timestart = $partdetails->dtdue;
+                $event->userid = $USER->id;
+                $DB->update_record('event', $event);
+            }
         }
 
         // Update grade settings.
@@ -1108,9 +1246,10 @@ class turnitintooltwo_assignment {
      *
      * @global type $USER
      * @global type $DB
+     * @param boolean $createevent - setting to determine whether to create a calendar event.
      * @return boolean
      */
-    public function edit_moodle_assignment() {
+    public function edit_moodle_assignment($createevent = true) {
         global $USER, $DB, $CFG;
 
         $config = turnitintooltwo_admin_config();
@@ -1146,6 +1285,9 @@ class turnitintooltwo_assignment {
         }
         $partids = array_keys($parts);
 
+        // Update GradeMark setting depending on config setting.
+        $this->turnitintooltwo->usegrademark = $config->usegrademark;
+
         // Set the checkbox settings for updates.
         $this->turnitintooltwo->erater_spelling = (isset($this->turnitintooltwo->erater_spelling)) ?
                                                         $this->turnitintooltwo->erater_spelling : 0;
@@ -1175,11 +1317,8 @@ class turnitintooltwo_assignment {
             $assignment->setQuotedExcluded($this->turnitintooltwo->excludequoted);
             $assignment->setSmallMatchExclusionType($this->turnitintooltwo->excludetype);
             $assignment->setSmallMatchExclusionThreshold((int) $this->turnitintooltwo->excludevalue);
-            if ($config->useanon) {
-                $assignment->setAnonymousMarking($this->turnitintooltwo->anon);
-            }
             $assignment->setLateSubmissionsAllowed($this->turnitintooltwo->allowlate);
-            if ($config->userepository) {
+            if ($config->repositoryoption == 1) {
                 $assignment->setInstitutionCheck((isset($this->turnitintooltwo->institution_check)) ?
                                                         $this->turnitintooltwo->institution_check : 0);
             }
@@ -1214,21 +1353,8 @@ class turnitintooltwo_assignment {
             $attribute = "partname".$i;
             $assignment->setTitle($this->turnitintooltwo->name." ".$this->turnitintooltwo->$attribute." (Moodle TT)");
 
-            $parttiiassignid = 0;
-            if ($i <= count($partids) && !empty($partids[$i - 1])) {
-                $partdetails = $this->get_part_details($partids[$i - 1]);
-                $parttiiassignid = $partdetails->tiiassignid;
-            }
-
-            if ($parttiiassignid > 0) {
-                $assignment->setAssignmentId($parttiiassignid);
-                $this->edit_tii_assignment($assignment);
-            } else {
-                $parttiiassignid = $this->create_tii_assignment($assignment, $this->id, $i);
-            }
-
+            // Initialise part.
             $part = new stdClass();
-            $part->tiiassignid = $parttiiassignid;
             $part->turnitintooltwoid = $this->id;
             $part->partname = $this->turnitintooltwo->$attribute;
             $part->deleted = 0;
@@ -1237,7 +1363,37 @@ class turnitintooltwo_assignment {
             $part->dtdue = strtotime($assignment->getDueDate());
             $part->dtpost = strtotime($assignment->getFeedbackReleaseDate());
 
-            $properties = new object();
+            $parttiiassignid = 0;
+            if ($i <= count($partids) && !empty($partids[$i - 1])) {
+                $partdetails = $this->get_part_details($partids[$i - 1]);
+                $part->submitted = $partdetails->submitted;
+                $part->unanon = $partdetails->unanon;
+                // Set anonymous marking depending on whether part has been unanonymised.
+                if ($config->useanon
+                    && $partdetails->unanon != 1
+                    && $partdetails->submitted != 1 ) {
+                    $assignment->setAnonymousMarking($this->turnitintooltwo->anon);
+                }
+                $parttiiassignid = $partdetails->tiiassignid;
+            }
+
+            if ($parttiiassignid > 0) {
+                $assignment->setAssignmentId($parttiiassignid);
+
+                $this->edit_tii_assignment($assignment);
+            } else {
+                $parttiiassignid = $this->create_tii_assignment($assignment, $this->id, $i);
+                $part->submitted = 0;
+            }
+
+            $part->tiiassignid = $parttiiassignid;
+
+            // Unanonymise part if necessary.
+            if ($part->dtpost < time() && $part->submitted == 1) {
+                $part->unanon = 1;
+            }
+
+            $properties = new stdClass();
             $properties->name = $this->turnitintooltwo->name.' - '.$part->partname;
             $properties->description = $this->turnitintooltwo->intro;
             $properties->courseid = $this->turnitintooltwo->course;
@@ -1267,8 +1423,14 @@ class turnitintooltwo_assignment {
 
                 // Delete existing events for this assignment part.
                 $eventname = $turnitintooltwonow->name." - ".$partnow->partname;
-                $DB->delete_records_select('event', " modulename = 'turnitintooltwo' AND instance = ? AND name = ? ",
-                                            array($this->id, $eventname));
+                $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+                // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+                // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+                if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+                    $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? AND CAST(name AS nvarchar(max)) = ? ";
+                }
+
+                $DB->delete_records_select('event', $dbselect, array('turnitintooltwo', $this->id, $eventname));
             } else {
                 if (!$dbpart = $DB->insert_record('turnitintooltwo_parts', $part)) {
                     turnitintooltwo_print_error('partdberror', 'turnitintooltwo', null, $i, __FILE__, __LINE__);
@@ -1276,9 +1438,11 @@ class turnitintooltwo_assignment {
                 }
             }
 
-            require_once($CFG->dirroot.'/calendar/lib.php');
-            $event = new calendar_event($properties);
-            $event->update($properties, false);
+            if ($createevent == true) {
+                require_once($CFG->dirroot.'/calendar/lib.php');
+                $event = new calendar_event($properties);
+                $event->update($properties, false);
+            }
         }
 
         $this->turnitintooltwo->timemodified = time();
@@ -1298,7 +1462,7 @@ class turnitintooltwo_assignment {
      * @param object $cm the course module
      * @return array of course users or empty array if none
      */
-    private function get_moodle_course_users($cm) {
+    public function get_moodle_course_users($cm) {
         $courseusers = get_users_by_capability(context_module::instance($cm->id),
                                 'mod/turnitintooltwo:submit', '', 'u.lastname, u.firstname');
 
@@ -1312,10 +1476,10 @@ class turnitintooltwo_assignment {
      * @param int $userid
      * @return array of parts or empty array if there are none
      */
-    public function get_parts_available_to_submit($userid = 0) {
+    public function get_parts_available_to_submit($userid = 0, $istutor = null) {
         global $DB;
 
-        if ($this->turnitintooltwo->allowlate == 1) {
+        if ($this->turnitintooltwo->allowlate == 1 || $istutor) {
             $partsavailable = $DB->get_records_select('turnitintooltwo_parts', " turnitintooltwoid = ? AND dtstart < ? ",
                                         array($this->turnitintooltwo->id, time()));
         } else {
@@ -1389,7 +1553,7 @@ class turnitintooltwo_assignment {
             foreach ($readsubmissions as $readsubmission) {
                 $turnitintooltwosubmission = new turnitintooltwo_submission($readsubmission->getSubmissionId(),
                                                                                 "turnitin", $this, $part->id);
-                $turnitintooltwosubmission->save_updated_submission_data($readsubmission, $this, true);
+                $turnitintooltwosubmission->save_updated_submission_data($readsubmission, true);
             }
 
         } catch (Exception $e) {
@@ -1481,7 +1645,7 @@ class turnitintooltwo_assignment {
             $assignmentdetails = "";
             $newparts = array();
             foreach ($readassignments as $readassignment) {
-                $part = new object();
+                $part = new stdClass();
                 $part->dtstart = strtotime($readassignment->getStartDate());
                 $part->dtdue = strtotime($readassignment->getDueDate());
                 $part->dtpost = strtotime($readassignment->getFeedbackReleaseDate());
@@ -1501,7 +1665,7 @@ class turnitintooltwo_assignment {
 
                 // Update main turnitintooltwo details but only once.
                 if (empty($assignmentdetails)) {
-                    $assignmentdetails = new object();
+                    $assignmentdetails = new stdClass();
                     if ($assignmentids == 0) {
                         $assignmentdetails->id = $this->turnitintooltwo->id;
                     } else {
@@ -1514,7 +1678,6 @@ class turnitintooltwo_assignment {
                         $assignmentdetails->timemodified = time();
                         $assignmentdetails->intro = $readassignment->getInstructions();
                     }
-                    $assignmentdetails->anon = (int)$readassignment->getAnonymousMarking();
                     $assignmentdetails->allowlate = $readassignment->getLateSubmissionsAllowed();
                     $assignmentdetails->reportgenspeed = $readassignment->getResubmissionRule();
                     $assignmentdetails->submitpapersto = $readassignment->getSubmitPapersTo();
@@ -1545,7 +1708,7 @@ class turnitintooltwo_assignment {
                     $peermarkids = array();
 
                     foreach ($peermarkassignments as $peermarkassignment) {
-                        $peermark = new object();
+                        $peermark = new stdClass();
                         $peermark->tiiassignid = $peermarkassignment->getAssignmentId();
                         $peermark->parent_tii_assign_id = $part->tiiassignid;
                         $peermark->dtstart = strtotime($peermarkassignment->getStartDate());
@@ -1616,15 +1779,18 @@ class turnitintooltwo_assignment {
      *
      * @param array $submissions array of user's submissions
      * @param $submissions
+     * @param $cm
      * @return array
      */
-    public function get_overall_grade($submissions) {
+    public function get_overall_grade($submissions, $cm = '') {
         global $USER, $DB;
 
         $overallgrade = null;
         $parts = $this->get_parts();
 
-        $cm = get_coursemodule_from_instance("turnitintooltwo", $this->id, $this->turnitintooltwo->course);
+        if( empty($cm) ) {
+            $cm = get_coursemodule_from_instance("turnitintooltwo", $this->id, $this->turnitintooltwo->course);
+        }
         $istutor = has_capability('mod/turnitintooltwo:grade', context_module::instance($cm->id));
 
         foreach ($parts as $part) {
@@ -1721,7 +1887,7 @@ class turnitintooltwo_assignment {
         foreach ($parts as $part) {
             $submissions[$part->id] = array();
             foreach ($users as $user) {
-                $emptysubmission = new object();
+                $emptysubmission = new stdClass();
                 $emptysubmission->userid = $user->id;
                 $emptysubmission->firstname = $user->firstname;
                 $emptysubmission->lastname = $user->lastname;
@@ -1785,7 +1951,7 @@ class turnitintooltwo_assignment {
         $parts = $this->get_parts();
 
         foreach ($parts as $part) {
-            $tiipart = new object();
+            $tiipart = new stdClass();
             $tiipart->id = $part->id;
             $tiipart->tiiassignid = 0;
 

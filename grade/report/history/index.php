@@ -23,20 +23,18 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../../config.php');
+require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir.'/gradelib.php');
-require_once($CFG->dirroot.'/user/renderer.php');
 require_once($CFG->dirroot.'/grade/lib.php');
-require_once($CFG->dirroot.'/grade/report/history/lib.php');
-require_once($CFG->libdir.'/csvlib.class.php');
 
+$download      = optional_param('download', '', PARAM_ALPHA);
 $courseid      = required_param('id', PARAM_INT);        // Course id.
 $page          = optional_param('page', 0, PARAM_INT);   // Active page.
-$sortitemid    = optional_param('sortitemid', 0, PARAM_ALPHANUM);
-$export = optional_param('exportbutton', false, PARAM_BOOL);
+$showreport    = optional_param('showreport', 0, PARAM_INT);
 
 $PAGE->set_pagelayout('report');
-$PAGE->set_url(new moodle_url('/grade/report/history/index.php', array('id' => $courseid)));
+$url = new moodle_url('/grade/report/history/index.php', array('id' => $courseid, 'showreport' => 1));
+$PAGE->set_url($url);
 
 $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 require_login($course);
@@ -45,35 +43,20 @@ $context = context_course::instance($course->id);
 require_capability('gradereport/history:view', $context);
 require_capability('moodle/grade:viewall', $context);
 
-// Return tracking object.
-$gpr = new grade_plugin_return(array('type' => 'report', 'plugin' => 'history', 'courseid' => $courseid, 'page' => $page));
-
 // Last selected report session tracking.
 if (!isset($USER->grade_last_report)) {
     $USER->grade_last_report = array();
 }
 $USER->grade_last_report[$course->id] = 'history';
 
-$select = "itemtype != 'course' AND itemname != '' AND courseid = :courseid";
+$select = "itemtype <> 'course' AND courseid = :courseid AND " . $DB->sql_isnotempty('grade_items', 'itemname', true, true);
 $itemids = $DB->get_records_select_menu('grade_items', $select, array('courseid' => $course->id), 'itemname ASC', 'id, itemname');
 $itemids = array(0 => get_string('allgradeitems', 'gradereport_history')) + $itemids;
 
-$sql = "SELECT u.id, ".$DB->sql_concat('u.lastname', "' '", 'u.firstname')."
-        FROM {user} u
-        JOIN {grade_grades_history} ggh ON ggh.usermodified = u.id
-        JOIN {grade_items} gi ON gi.id = ggh.itemid
-        WHERE gi.courseid = :courseid
-        GROUP BY u.id
-        ORDER BY u.lastname ASC, u.firstname ASC";
-
-$graders = $DB->get_records_sql_menu($sql, array('courseid' => $course->id));
-$graders = array(0 => get_string('allgraders', 'gradereport_history')) + $graders;
-
 $output = $PAGE->get_renderer('gradereport_history');
-
-$button = grade_report_history::get_user_select_button($course->id);
+$graders = \gradereport_history\helper::get_graders($course->id);
 $params = array('course' => $course, 'itemids' => $itemids, 'graders' => $graders, 'userbutton' => null);
-$mform = new gradereport_history_filter_form(null, $params);
+$mform = new \gradereport_history\filter_form(null, $params);
 $filters = array();
 if ($data = $mform->get_data()) {
     $filters = (array)$data;
@@ -93,48 +76,47 @@ if ($data = $mform->get_data()) {
     );
 }
 
-
-
-$report = new grade_report_history($courseid, $gpr, $context, $filters, $page, $sortitemid);
-
-$report->load_users();
-
-$historytable = $report->get_history_table();
-$numrows = $report->numrows;
+$table = new \gradereport_history\output\tablelog('gradereport_history', $context, $url, $filters, $download, $page);
 
 $names = array();
-foreach ($report->get_selected_users() as $key => $user) {
-    $names[$key] = $user->firstname.' '.$user->lastname;
+foreach ($table->get_selected_users() as $key => $user) {
+    $names[$key] = fullname($user);
 }
 $filters['userfullnames'] = implode(',', $names);
 
+// Set up js.
+\gradereport_history\helper::init_js($course->id, $names);
+
 // Now that we have the names, reinitialise the button so its able to control them.
-$button = grade_report_history::get_user_select_button($course->id, $names);
-$userbutton = $output->render_select_user_button($button);
+$button = new \gradereport_history\output\user_button($PAGE->url, get_string('selectusers', 'gradereport_history'), 'get');
+
+$userbutton = $output->render($button);
 $params = array('course' => $course, 'itemids' => $itemids, 'graders' => $graders, 'userbutton' => $userbutton);
-$mform = new gradereport_history_filter_form(null, $params);
+$mform = new \gradereport_history\filter_form(null, $params);
 $mform->set_data($filters);
 
-if ($export) {
-    $filename = $COURSE->shortname;
-
-    $data = $report->get_table_data();
-    csv_export_writer::download_array($filename, $data);
+if ($table->is_downloading()) {
+    // Download file and exit.
+    \core\session\manager::write_close();
+    echo $output->render($table);
+    die();
 }
 
-$reportname = $output->report_title($report->get_selected_users());
 // Print header.
-print_grade_page_head($COURSE->id, 'report', 'history', $reportname, false, '');
-
-if (!empty($report->perpage) && $report->perpage < $report->numrows) {
-    echo $OUTPUT->paging_bar($numrows, $report->page, $report->perpage, $report->pbarurl);
-}
-
+print_grade_page_head($COURSE->id, 'report', 'history', get_string('pluginname', 'gradereport_history'), false, '');
 $mform->display();
-echo $historytable;
 
-// Prints paging bar at bottom for large pages.
-if (!empty($report->perpage) && $report->perpage < $report->numrows) {
-    echo $OUTPUT->paging_bar($numrows, $report->page, $report->perpage, $report->pbarurl);
+if ($showreport) {
+    // Only display report after form has been submitted.
+    echo $output->render($table);
+
+    $event = \gradereport_history\event\grade_report_viewed::create(
+        array(
+            'context' => $context,
+            'courseid' => $courseid
+        )
+    );
+    $event->trigger();
 }
+
 echo $OUTPUT->footer();

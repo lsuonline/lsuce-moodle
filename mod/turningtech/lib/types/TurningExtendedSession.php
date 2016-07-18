@@ -26,6 +26,7 @@
  * @copyright  2012 Turning Technologies
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+ if (!class_exists('TurningExtendedSession')) {
 class TurningExtendedSession {
     /**
      * @var unknown_type
@@ -140,7 +141,7 @@ class TurningExtendedSession {
     /**
      * load xml
      * @param unknown_type $exportdata
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     public function loadxml($exportdata) {
         try {
@@ -150,12 +151,12 @@ class TurningExtendedSession {
             }
             $this->objxml = simplexml_load_string($exportdata);
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 1, "XML could not be loaded.");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 1, "XML could not be loaded.");
         }
     }
     /**
      * validate xml
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     public function validatexml() {
         try {
@@ -165,10 +166,10 @@ class TurningExtendedSession {
             {
             try {
                 $this->validatexmlstructure();
-            } catch ( CustomException $ex ) {
+            } catch ( CustomExceptionTT $ex ) {
                 throw $ex;
             } catch ( Exception $ex ) {
-                throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "XML schema not correct");
+                throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "XML schema not correct");
             }
             }
             // Validating -> "Object's Type: should not be blank and unknown"
@@ -176,20 +177,20 @@ class TurningExtendedSession {
             {
             try {
                 $this->validateexportobject();
-            } catch ( CustomException $ex ) {
+            } catch ( CustomExceptionTT $ex ) {
                 throw $ex;
             } catch ( Exception $ex ) {
-                throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "Export object is not valid");
+                throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "Export object is not valid");
             }
             }
             // Validating -> "XML Object Type dependent Structure: should be valid".
             {
             try {
                 $this->validateexportobjecttypexmlstructure();
-            } catch ( CustomException $ex ) {
+            } catch ( CustomExceptionTT $ex ) {
                 throw $ex;
             } catch ( Exception $ex ) {
-                throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "XML schema not correct");
+                throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "XML schema not correct");
             }
             }
             // Validating -> "Course: should not be blank".
@@ -197,10 +198,10 @@ class TurningExtendedSession {
             try {
                 $this->intcourseid = trim($objxml->courseId);
                 $this->validatecourse($this->intcourseid);
-            } catch ( CustomException $ex ) {
+            } catch ( CustomExceptionTT $ex ) {
                 throw $ex;
             } catch ( Exception $ex ) {
-                throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "Course id is not valid");
+                throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "Course id is not valid");
             }
             }
             // Validating -> "Email -> From: should not be blank".
@@ -212,27 +213,27 @@ class TurningExtendedSession {
                 } else {
                     $this->objemail = null;
                 }
-            } catch ( CustomException $ex ) {
+            } catch ( CustomExceptionTT $ex ) {
                 throw $ex;
             } catch ( Exception $ex ) {
-                throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "From email is not valid");
+                throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "From email is not valid");
             }
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "XML could not be validated");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "XML could not be validated");
         }
     }
     /**
      * validate xml structure
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function validatexmlstructure() {
         $objxml = $this->objxml;
         try {
             if (! isset($objxml->exportobject) || ! isset($objxml->participants)) {
-                throw new CustomException("", 0, 5, "XML schema not correct");
+                throw new CustomExceptionTT("", 0, 5, "XML schema not correct");
             }
             $arrexportvars = get_object_vars($objxml->exportobject);
             if (! is_array($arrexportvars) || empty($arrexportvars) ||
@@ -244,7 +245,7 @@ class TurningExtendedSession {
                                              * !isset($arrexportvars['@attributes']['type']) ||
                                              */
                                             ! isset($objxml->participants->participant)) {
-                throw new CustomException("", 0, 5, "XML schema not correct");
+                throw new CustomExceptionTT("", 0, 5, "XML schema not correct");
             }
             // The following code has been commented till all questions types info is ready
             //  and email is ready to be sent to users.
@@ -253,32 +254,32 @@ class TurningExtendedSession {
              */
             $this->strexportobjectname = trim($arrexportvars['@attributes']['name']);
             $this->strexportobjectmaxscore = trim($arrexportvars['@attributes']['maxscore']);
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "XML schema not correct");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "XML schema not correct");
         }
     }
     /**
      * validate export object
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function validateexportobject() {
         // The following code has been commented till all questions types info is ready and email is ready to be sent to users.
         /*
          * try { if (is_null($this->strexportobjecttype) || $this->strexportobjecttype == "" ||
-         * !in_array($this->strexportobjecttype, $this->arrExportObjectTypeOptions)) { throw new CustomException("", 0, 5, "Export
-         * object type is not valid"); } } catch (CustomException $ex) { throw $ex; } catch (Exception $ex) { throw new
-         * CustomException($ex->getMessage(), $ex->getCode(), 5, "Export object type is not valid"); }
+         * !in_array($this->strexportobjecttype, $this->arrExportObjectTypeOptions)) { throw new CustomExceptionTT("", 0, 5, "Export
+         * object type is not valid"); } } catch (CustomExceptionTT $ex) { throw $ex; } catch (Exception $ex) { throw new
+         * CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "Export object type is not valid"); }
          */
         try {
             if (is_null($this->strexportobjectname) || $this->strexportobjectname == "") {
-                throw new CustomException("", 0, 5, "Export object name is blank");
+                throw new CustomExceptionTT("", 0, 5, "Export object name is blank");
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "Export object is not valid");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "Export object is not valid");
         }
     }
     /**
@@ -289,46 +290,46 @@ class TurningExtendedSession {
         /*
          * try { switch ($this->strexportobjecttype) { case "session": $objxml = $this->objxml; try { $arrexportvars =
          * get_object_vars($objxml->exportobject); if (!isset($arrexportvars['questions']) ||
-         * !isset($arrexportvars['questions']->question)) { throw new CustomException("", 0, 5, "XML schema not correct"); } } catch
-         * (CustomException $ex) { throw $ex; } catch (Exception $ex) { throw new CustomException($ex->getMessage(), $ex->getCode(),
+         * !isset($arrexportvars['questions']->question)) { throw new CustomExceptionTT("", 0, 5, "XML schema not correct"); } } catch
+         * (CustomExceptionTT $ex) { throw $ex; } catch (Exception $ex) { throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(),
          * 5, "XML schema not correct"); } break; case "non-session": // Nothing required right now .... break; } } catch
-         * (CustomException $ex) { throw $ex; } catch (Exception $ex) { throw new CustomException($ex->getMessage(), $ex->getCode(),
+         * (CustomExceptionTT $ex) { throw $ex; } catch (Exception $ex) { throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(),
          * 5, "XML schema not correct"); }
          */
     }
     /**
      * validate course
      * @param unknown_type $intcourseid
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function validatecourse($intcourseid) {
         try {
             if (is_null($intcourseid) || $intcourseid == "") {
-                throw new CustomException("", 0, 5, "Course id is blank");
+                throw new CustomExceptionTT("", 0, 5, "Course id is blank");
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "Course id is not valid");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "Course id is not valid");
         }
     }
     /**
      * validate email info
      * @param unknown_type $objemail
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function validateemailinfo($objemail) {
         try {
             if (! is_null($objemail) && $objemail != "") {
                 $fromemail = $objemail->from;
                 if ($fromemail == "" || is_null($fromemail)) {
-                    throw new CustomException("", 0, 5, "From email not specified");
+                    throw new CustomExceptionTT("", 0, 5, "From email not specified");
                 }
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 5, "From email is not valid");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 5, "From email is not valid");
         }
     }
     /**
@@ -343,7 +344,7 @@ class TurningExtendedSession {
     }
     /**
      * prepare participant list
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function prepareparticipantslist() {
         try {
@@ -383,15 +384,15 @@ class TurningExtendedSession {
                     $this->arrparticipants[] = $objparticipant;
                 }
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Participant list could not be read");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Participant list could not be read");
         }
     }
     /**
      * prepare question list
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     private function preparequestionslist() {
         try {
@@ -431,15 +432,15 @@ class TurningExtendedSession {
                     $this->arrquestions[] = $objquestion;
                 }
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Question list could not be read");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Question list could not be read");
         }
     }
     /**
      * save and update
-     * @throws CustomException
+     * @throws CustomExceptionTT
      */
     public function saveupdatescoredata() {
         $objcourse = new stdClass();
@@ -458,10 +459,10 @@ class TurningExtendedSession {
                     TurningTechMoodleHelper::updategradebookitem($objgradeitem->id, $arrgradeitem);
                 }
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3,
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3,
                                              "Session existence could not be checked or Session could not be created");
         }
         try {
@@ -514,10 +515,10 @@ class TurningExtendedSession {
                     $this->arrparticipants = array_values($this->arrparticipants);
                 }
             }
-        } catch ( CustomException $ex ) {
+        } catch ( CustomExceptionTT $ex ) {
             throw $ex;
         } catch ( Exception $ex ) {
-            throw new CustomException($ex->getMessage(), $ex->getCode(), 3, "Session score could not be saved/updated");
+            throw new CustomExceptionTT($ex->getMessage(), $ex->getCode(), 3, "Session score could not be saved/updated");
         }
     }
     /**
@@ -543,6 +544,9 @@ class TurningExtendedSession {
         // Save the grade.
         if ($grade_item->update_final_grade($objparticipant->id, $objparticipant->score, 'gradebook')) {
             // Everything is fine, no error to return.
+			$grade_item->itemtype = TURNINGTECH_GRADE_ITEM_TYPE;
+			$grade_item->itemmodule = TURNINGTECH_GRADE_ITEM_MODULE;
+			$grade_item->update();
             $error = false;
         } else {
             // Could not save in gradebook.
@@ -550,4 +554,5 @@ class TurningExtendedSession {
         }
         return $error;
     }
+}
 }
