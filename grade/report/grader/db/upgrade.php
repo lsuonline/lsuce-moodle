@@ -15,15 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details for the grader report
+ * Upgrade code for gradebook grader report.
  *
- * @package    gradereport_grader
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @package   gradereport_grader
+ * @copyright 2013 Moodle Pty Ltd (http://moodle.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version   = 2016052301;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2016051900;        // Requires this Moodle version
-$plugin->component = 'gradereport_grader'; // Full name of the plugin (used for diagnostics)
+function xmldb_gradereport_grader_upgrade($oldversion) {
+    global $CFG, $DB;
+    // Set rawgrade on manual grade items so that multiplicator and offset
+    // works on them like any other grade item.
+    $sql = "UPDATE  {grade_grades} gr, {grade_items} gi
+            SET     gr.rawgrade = gr.finalgrade
+            WHERE   gi.id = gr.itemid AND gi.itemtype = 'manual' AND gr.rawgrade IS NULL";
+    $DB->execute($sql);
+    upgrade_plugin_savepoint(true, 2016052301, 'gradereport', 'grader');
+    return true;
+}

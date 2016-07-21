@@ -347,7 +347,7 @@ class edit_item_form extends moodleform {
                 $coefstring = $grade_item->get_coefstring();
 
                 if ($coefstring !== '') {
-                    if ($coefstring == 'aggregationcoefextrasum' || $coefstring == 'aggregationcoefextraweightsum') {
+                    if ($coefstring == 'aggregationcoefextrasum' || ($coefstring == 'aggregationcoefweight' && $grade_item->aggregationcoef < 0) || $coefstring == 'aggregationcoefextraweightsum') {
                         // advcheckbox is not compatible with disabledIf!
                         $coefstring = 'aggregationcoefextrasum';
                         $element =& $mform->createElement('checkbox', 'aggregationcoef', get_string($coefstring, 'grades'));
@@ -361,6 +361,7 @@ class edit_item_form extends moodleform {
                     }
                     $mform->addHelpButton('aggregationcoef', $coefstring, 'grades');
                 }
+                $mform->disabledIf('aggregationcoef', 'weightoverride');
                 $mform->disabledIf('aggregationcoef', 'gradetype', 'eq', GRADE_TYPE_NONE);
                 $mform->disabledIf('aggregationcoef', 'gradetype', 'eq', GRADE_TYPE_TEXT);
                 $mform->disabledIf('aggregationcoef', 'parentcategory', 'eq', $parent_category->id);
@@ -370,11 +371,27 @@ class edit_item_form extends moodleform {
             // Or if the item is a scale and scales are not used in aggregation.
             if ($parent_category->aggregation != GRADE_AGGREGATE_SUM
                     || (empty($CFG->grade_includescalesinaggregation) && $grade_item->gradetype == GRADE_TYPE_SCALE)) {
-                if ($mform->elementExists('weightoverride')) {
-                    $mform->removeElement('weightoverride');
+                if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $grade_item->aggregationcoef >= 0) {
+                    if ($mform->elementExists('aggregationcoef2')) {
+                        $mform->removeElement('aggregationcoef2');
+                    }
+                    $mform->addElement('checkbox', 'extracred', get_string('aggregationcoefextrasum', 'grades'));
+                } else {
+                    if ($mform->elementExists('weightoverride')) {
+                        $mform->removeElement('weightoverride');
+                    }
+                    if ($mform->elementExists('aggregationcoef2')) {
+                        $mform->removeElement('aggregationcoef2');
+                    }
                 }
-                if ($mform->elementExists('aggregationcoef2')) {
-                    $mform->removeElement('aggregationcoef2');
+            } else if ($parent_category->aggregation == GRADE_AGGREGATE_SUM) { 
+                if ($grade_item->weightoverride == 1) {
+                    if ($mform->elementExists('weightoverride')) {
+                        $mform->removeElement('weightoverride');
+                    }
+                    if ($mform->elementExists('aggregationcoef2')) {
+                        $mform->removeElement('aggregationcoef2');
+                    }
                 }
             }
 
@@ -463,6 +480,9 @@ class edit_item_form extends moodleform {
         }
         if ($grade_item) {
             if ($grade_item->gradetype == GRADE_TYPE_VALUE) {
+                if (!isset($data['grademin'])) {
+                    $data['grademin'] = 0;
+                }
                 if (grade_floats_different($data['grademin'], $grade_item->grademin) ||
                     grade_floats_different($data['grademax'], $grade_item->grademax)) {
                     if ($grade_item->has_grades() && empty($data['rescalegrades'])) {

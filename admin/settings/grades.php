@@ -49,6 +49,16 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_configselect('grade_export_displaytype', new lang_string('gradeexportdisplaytype', 'grades'),
                                                   new lang_string('gradeexportdisplaytype_desc', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
 
+        $temp->add(new admin_setting_configcheckbox('grade_item_manual_recompute',
+            new lang_string('gradeitemmanualrecompute', 'grades'),
+            new lang_string('gradeitemmanualrecompute_help', 'grades'), 0));
+
+        if ($CFG->grade_item_manual_recompute) {
+            $temp->add(new admin_setting_configcheckbox('manipulate_categories',
+                new lang_string('manipulatecategories', 'grades'),
+                new lang_string('manipulatecategories_help', 'grades'), 0));
+        }
+
         $temp->add(new admin_setting_configselect('grade_export_decimalpoints', new lang_string('gradeexportdecimalpoints', 'grades'),
                                                   new lang_string('gradeexportdecimalpoints_desc', 'grades'), 2,
                                                   array( '0' => '0',
@@ -71,6 +81,8 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_special_gradeexport());
 
         $temp->add(new admin_setting_special_gradelimiting());
+
+        $temp->add(new admin_setting_configcheckbox('privacy_ack', new lang_string('privacy_ack', 'grades'), new lang_string('privacy_ack_help', 'grades'), 0));
 
         $temp->add(new admin_setting_configcheckbox('grade_report_showmin',
                                                     get_string('minimum_show', 'grades'),
@@ -115,6 +127,9 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_configmultiselect('grade_aggregations_visible', new lang_string('aggregationsvisible', 'grades'),
                                                        new lang_string('aggregationsvisiblehelp', 'grades'), $defaultvisible, $options));
 
+        // Weighted Extra Credit handling
+        $temp->add(new admin_setting_configcheckbox('grade_w_extra_credit', new lang_string('w_ec', 'grades'), new lang_string('w_ec_help', 'grades'), '1'));
+
         $options = array(0 => new lang_string('no'), 1 => new lang_string('yes'));
 
         $defaults = array('value'=>1, 'forced'=>false, 'adv'=>true);
@@ -136,6 +151,11 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $defaults['forced'] = false;
         $temp->add(new admin_setting_gradecat_combo('grade_droplow', new lang_string('droplow', 'grades'),
                     new lang_string('droplow_help', 'grades'), $defaults, $options));
+
+        $temp->add(new admin_setting_configcheckbox('grade_droplow_limit',
+            new lang_string('droplow_limit', 'grades'),
+            new lang_string('droplow_limit_help', 'grades'), 0)
+        );
 
         $temp->add(new admin_setting_configcheckbox('grade_overridecat', new lang_string('overridecat', 'grades'),
                    new lang_string('overridecat_help', 'grades'), 1));

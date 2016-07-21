@@ -176,6 +176,10 @@ if ($mform->is_cancelled()) {
         }
 
     } else {
+           $ec_test = isset($data->extracred);
+           if ($ec_test == 1) {
+               $grade_item->aggregationcoef = abs($grade_item->aggregationcoef) * -1;
+           }
         $grade_item->update();
 
         if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {
