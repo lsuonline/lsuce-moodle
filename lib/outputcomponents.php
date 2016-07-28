@@ -334,11 +334,24 @@ class user_picture implements renderable {
      * @return moodle_url
      */
     public function get_url(moodle_page $page, renderer_base $renderer = null) {
-        global $CFG;
+        global $CFG, $USER;
 
         if (is_null($renderer)) {
             $renderer = $page->get_renderer('core');
         }
+
+        $is_self = $USER->id == $this->user->id;
+
+        if (isset($this->courseid) && $this->courseid != $page->course->id) {
+            $page->course->id = $this->courseid;
+        }
+
+        $cc = $page->course->id == SITEID ?
+            context_system::instance() :
+            context_course::instance($page->course->id);
+
+        $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
+        $is_teacher = has_capability('moodle/course:update', $cc, $USER->id);
 
         // Sort out the filename and size. Size is only required for the gravatar
         // implementation presently.
@@ -398,9 +411,11 @@ class user_picture implements renderable {
                 $path .= $page->theme->name.'/';
             }
             // Set the image URL to the URL for the uploaded file and return.
-            $url = moodle_url::make_pluginfile_url($contextid, 'user', 'icon', NULL, $path, $filename);
-            $url->param('rev', $this->user->picture);
-            return $url;
+            if ($is_self or $is_teacher or $can_view_details) {
+                $url = moodle_url::make_pluginfile_url($context->id, 'user', 'icon', NULL, $path, $filename);
+                $url->param('rev', $this->user->picture);
+                return $url;
+            }
         }
 
         if ($this->user->picture == 0 and !empty($CFG->enablegravatar)) {

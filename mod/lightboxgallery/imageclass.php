@@ -222,8 +222,6 @@ class lightboxgallery_image {
         $timemodified = strftime(get_string('strftimedatetimeshort', 'langconfig'), $this->storedfile->get_timemodified());
         $filesize = round($this->storedfile->get_filesize() / 100) / 10;
 
-        $width = round(100 / $this->gallery->perrow);
-
         // Hide the caption.
         if ($this->gallery->captionpos == LIGHTBOXGALLERY_POS_HID) {
             $caption = ''; // Hide by cleaning the content (looks better than cleaning the whole div).

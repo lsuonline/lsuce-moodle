@@ -76,6 +76,8 @@ function lightboxgallery_add_instance($gallery) {
         $gallery->rss = 0;
     }
 
+    lightboxgallery_set_sizing($gallery);
+
     return $DB->insert_record('lightboxgallery', $gallery);
 }
 
@@ -97,12 +99,22 @@ function lightboxgallery_update_instance($gallery) {
         $gallery->rss = 0;
     }
 
+    lightboxgallery_set_sizing($gallery);
+
+    return $DB->update_record('lightboxgallery', $gallery);
+}
+
+/**
+ * Given a gallery object from mod_form, determine the autoresize and resize params.
+ *
+ * @param object $gallery
+ * @return void
+ */
+function lightboxgallery_set_sizing($gallery) {
     if (isset($gallery->autoresizedisabled)) {
         $gallery->autoresize = 0;
         $gallery->resize = 0;
     }
-
-    return $DB->update_record('lightboxgallery', $gallery);
 }
 
 /**
@@ -200,7 +212,7 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
         foreach ($comments as $comment) {
             $display = lightboxgallery_resize_text(trim(strip_tags($comment->commenttext)), MAX_COMMENT_PREVIEW);
 
-            $activity = new object();
+            $activity = new stdClass();
 
             $activity->type         = 'lightboxgallery';
             $activity->cmid         = $cm->id;
@@ -208,7 +220,7 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
             $activity->sectionnum   = $cm->sectionnum;
             $activity->timestamp    = $comment->timemodified;
 
-            $activity->content = new object();
+            $activity->content = new stdClass();
             $activity->content->id      = $comment->id;
             $activity->content->comment = $display;
 
@@ -313,8 +325,8 @@ function lightboxgallery_get_participants($galleryid) {
     global $DB, $CFG;
 
     return $DB->get_records_sql("SELECT DISTINCT u.id, u.id
-                                   FROM {$CFG->prefix}user u,
-                                        {$CFG->prefix}lightboxgallery_comments c
+                                   FROM {user} u,
+                                        {lightboxgallery_comments} c
                                   WHERE c.gallery = $galleryid AND u.id = c.userid");
 }
 
@@ -341,7 +353,11 @@ function lightboxgallery_pluginfile($course, $cm, $context, $filearea, $args, $f
     global $CFG, $DB, $USER;
 
     require_once($CFG->libdir.'/filelib.php');
-    require_login($course, false, $cm);
+
+    $gallery = $DB->get_record('lightboxgallery', array('id' => $cm->instance));
+    if (!$gallery->ispublic) {
+        require_login($course, false, $cm);
+    }
 
     $relativepath = implode('/', $args);
     $fullpath = '/'.$context->id.'/mod_lightboxgallery/'.$filearea.'/'.$relativepath;
@@ -408,8 +424,6 @@ function lightboxgallery_get_file_info($browser, $areas, $course, $cm, $context,
         return new lightboxgallery_content_file_info($browser, $context, $storedfile, $urlbase, $areas[$filearea],
                                                         true, true, false, false);
     }
-
-    // Note: folder_intro handled in file_browser automatically.
 
     return null;
 }

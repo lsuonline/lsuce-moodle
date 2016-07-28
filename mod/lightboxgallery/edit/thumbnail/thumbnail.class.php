@@ -65,16 +65,20 @@ class edit_thumbnail extends edit_base {
             $offset = optional_param('offset', 20, PARAM_INT);
             switch ($move) {
                 case 1:
-                    $offsetx = 0; $offsety = -$offset;
+                    $offsetx = 0;
+                    $offsety = -$offset;
                     break;
                 case 2:
-                    $offsetx = 0; $offsety = $offset;
+                    $offsetx = 0;
+                    $offsety = $offset;
                     break;
                 case 3:
-                    $offsetx = -$offset; $offsety = 0;
+                    $offsetx = -$offset;
+                    $offsety = 0;
                     break;
                 case 4:
-                    $offsetx = $offset; $offsety = 0;
+                    $offsetx = $offset;
+                    $offsety = 0;
                     break;
                 default:
                     $domove = false;

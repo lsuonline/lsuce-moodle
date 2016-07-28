@@ -52,8 +52,6 @@ if ($id) {
 }
 
 
-require_login($course, true, $cm);
-
 if ($gallery->ispublic) {
     $userid = (isloggedin() ? $USER->id : 0);
 } else {

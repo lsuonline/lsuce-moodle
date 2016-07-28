@@ -74,3 +74,4 @@ $string['CASform'] = 'Authentication choice';
 $string['noldapserver'] = 'No LDAP server configured for CAS! Syncing disabled.';
 $string['pluginname'] = 'CAS server (SSO)';
 $string['synctask'] = 'CAS users sync job';
+$string['auth_cas_myproxy_login'] = 'myProxy users can not use Moodle.';
