@@ -24,6 +24,7 @@ if(!$course = $DB->get_record('course', array('id' => $courseid))) {
 // check permissions.
 require_login();
 
+
 // set context and require capabilities depending on archive_mode
 if($archive_mode){
     $context = context_system::instance();
@@ -125,7 +126,7 @@ if ($is_admin) {
 }
 $data->lists = array();
 
-simple_restore_utils::get_backup_list($data);
+events_trigger_legacy('simple_restore_backup_list', $data);
 
 $display_list = function($in, $list) {
     echo $list->html;

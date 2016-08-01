@@ -65,7 +65,6 @@ abstract class simple_restore_utils {
         }
     }
 
-    // PRESUMAPLY WHERE SIMPLE_RESTORE_SELECTED_USER is called. How would I have known that? Other than reading through code? THIS IS SOME GDBS
     public static function prep_restore($fileid, $name, $courseid) {
         global $USER, $CFG;
 
@@ -85,26 +84,7 @@ abstract class simple_restore_utils {
         $data->fileid = $fileid;
         $data->to_path = $pathname;
 
-        // CONVERSION FROM OTHER SIMPLE_RESTORE_SELECTED_USER function from event to events 2 farther on down in this file. the - lines are events 1
-//        -        // It's important to pass the previous course's config
-// -        $course_settings = array(
-// -            'restore_to' => $this->restore_to,
-// -            'course' => $this->course
-// -        );
-// -
-// -        events_trigger('simple_restore_complete', array(
-// -            'userid' => $this->userid,
-// -            'course_settings' => $course_settings
-// -        ));
-// +        // trigger Simple Restore event
-// +        \block_simple_restore\event\simple_restore_complete::create(array(
-// +            'other' => array (
-// +                'userid' => $this->userid,
-// +                'restore_to' => $restore_to
-// +                'courseid' => $this->course->id
-// +            )
-// +        ))->trigger();
-        // trigger course, user, backadel
+        // Handlers do the correct copying
         events_trigger('simple_restore_selected_' . $name , $data);
 
         if (empty($data->filename)) {
@@ -112,106 +92,6 @@ abstract class simple_restore_utils {
         }
 
         return $filename;
-    }
-
-    public static function get_backup_list($data)
-    {
-        return (
-            self::course_backups($data) and
-            self::user_backups($data)
-        );
-    }
-
-    private function course_backups($data)
-    {
-        if (isset($data->shortname)) {
-            $courses = simple_restore_utils::filter_courses($data->shortname);
-        } else {
-            $courses = enrol_get_my_courses();
-        }
-
-        $to_html = function($in, $course) use ($data) {
-            global $DB, $OUTPUT;
-
-            $ctx = context_course::instance($course->id);
-
-            $backups = $DB->get_records('files', array(
-                'component' => 'backup',
-                'contextid' => $ctx->id,
-                'filearea' => 'course',
-                'mimetype' => 'application/vnd.moodle.backup'
-            ), 'timemodified DESC');
-
-            if (empty($backups)) return $in;
-
-            return $in . (
-                $OUTPUT->heading($course->shortname) .
-                simple_restore_utils::build_table(
-                    $backups,
-                    'course',
-                    $data->courseid,
-                    $data->restore_to
-                )
-            );
-        };
-
-        $list = new stdClass;
-        $list->html = array_reduce($courses, $to_html, '');
-        $list->backups = !empty($list->html);
-        $list->order = 100;
-
-        $data->lists[] = $list;
-
-        return true;
-    }
-
-    private function user_backups($data) {
-        global $USER, $DB, $PAGE, $OUTPUT;
-
-        $user_context = context_user::instance($USER->id);
-        $context = context_course::instance($data->courseid);
-
-        $params = array(
-            'component' => 'user',
-            'filearea' => 'backup',
-            'contextid' => $user_context->id,
-        );
-        $correct_files = function($file) { return $file->filename != '.'; };
-        $backup_files = $DB->get_records('files', $params);
-
-        $params = array(
-            'contextid' => $user_context->id,
-            'currentcontext' => $context->id,
-            'filearea' => 'backup',
-            'component' => 'user',
-            'returnurl' => $PAGE->url->out(false)
-        );
-
-        $str = get_string('managefiles', 'backup');
-        $url = new moodle_url('/backup/backupfilesedit.php', $params);
-
-        $list = new stdClass;
-        $list->header = get_string('choosefilefromuserbackup', 'backup');
-        $list->backups = array_filter($backup_files, $correct_files);
-        $list->order = 200;
-
-        $list->html = (
-            $OUTPUT->heading($list->header) .
-            $OUTPUT->single_button($url, $str, 'post', array('class' => 'center padded'))
-        );
-
-        if ($list->backups) {
-            $list->html .= simple_restore_utils::build_table(
-                $list->backups,
-                'user',
-                $data->courseid,
-                $data->restore_to
-            );
-        }
-
-        $data->lists[] = $list;
-
-        return true;
     }
 }
 
@@ -402,14 +282,16 @@ class simple_restore {
             blocks_add_default_course_blocks($this->course);
         }
 
-        // trigger Simple Restore event
-        \block_simple_restore\event\simple_restore_complete::create(array(
-            'other' => array (
-                'userid' => $this->userid,
-                'restore_to' => $restore_to,
-                'courseid' => $this->course->id
-            )
-        ))->trigger();
+        // It's important to pass the previous course's config
+        $course_settings = array(
+            'restore_to' => $this->restore_to,
+            'course' => $this->course
+        );
+
+        events_trigger('simple_restore_complete', array(
+            'userid' => $this->userid,
+            'course_settings' => $course_settings
+        ));
 
         return true;
     }
