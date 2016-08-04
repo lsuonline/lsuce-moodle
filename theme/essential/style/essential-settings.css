@@ -406,6 +406,13 @@ a.marketing-button:hover {
 #essentialCarousel.carousel .carousel-inner .carousel-caption div {
   color: [[setting:slidecaptiontextcolor]];
 }
+#essentialCarousel.carousel .carousel-inner.pagebackground .the-side-caption-content {
+  background-color: [[setting:slidecaptionbackgroundcolor]];
+}
+#essentialCarousel.carousel .carousel-inner.pagebackground .the-side-caption-content h4,
+#essentialCarousel.carousel .carousel-inner.pagebackground .the-side-caption-content div {
+  color: [[setting:slidecaptiontextcolor]];
+}
 #essentialCarousel.carousel .carousel-control {
   color: [[setting:slidebuttoncolor]];
 }
@@ -814,12 +821,6 @@ body#page-grade-grading-pick #region-main form #fgroup_id_buttonar label {
 #page-header div.titlearea {
   border-left: 1px dotted [[setting:themecolor]];
 }
-@media (min-width: 980px) {
-  #page-header.nologo {
-    height: 57px;
-    max-height: 57px;
-  }
-}
 /* @end */
 /* @group Social Buttons */
 button.website:hover,
@@ -1046,7 +1047,7 @@ button.website:focus {
   color: [[setting:themetextcolor]];
 }
 .path-grade-report-grader .gradeparent .user.cell .userpicture {
-  background-color: #fff;
+  background-color: #ffffff;
 }
 table#explaincaps tbody > tr:nth-child(odd) > td,
 table#defineroletable tbody > tr:nth-child(odd) > td,
@@ -1269,6 +1270,20 @@ table.flexible tbody > tr:nth-child(odd) > th a.toggle-display:visited,
 .generaltable tbody > tr:nth-child(odd) > th a.toggle-display:visited {
   color: inherit;
 }
+table#explaincaps tbody > tr:nth-child(odd) > td h3,
+table#defineroletable tbody > tr:nth-child(odd) > td h3,
+table.grading-report tbody > tr:nth-child(odd) > td h3,
+table#listdirectories tbody > tr:nth-child(odd) > td h3,
+table.rolecaps tbody > tr:nth-child(odd) > td h3,
+table.userenrolment tbody > tr:nth-child(odd) > td h3,
+table#form tbody > tr:nth-child(odd) > td h3,
+form#movecourses table tbody > tr:nth-child(odd) > td h3,
+#page-admin-course-index .editcourse tbody > tr:nth-child(odd) > td h3,
+.forumheaderlist tbody > tr:nth-child(odd) > td h3,
+table.flexible tbody > tr:nth-child(odd) > td h3,
+.generaltable tbody > tr:nth-child(odd) > td h3 {
+  color: inherit;
+}
 #page-admin-plugins #plugins-control-panel tbody > tr:nth-child(odd) > td.displayname .plugindir,
 #plugins-check-page #plugins-check tbody > tr:nth-child(odd) > td.displayname .plugindir,
 #page-admin-plugins #plugins-control-panel tbody > tr:hover > td.displayname .plugindir,
@@ -1321,6 +1336,15 @@ table.flexible tbody tr:hover > td > a:not(.btn),
 .category_subcategories tbody tr:hover > td > a:not(.btn),
 table#modules tbody tr:hover > td > a:not(.btn),
 table#permissions tbody tr:hover > td > a:not(.btn),
+.user-enroller-panel .uep-search-results .users tbody tr:hover > td > h3,
+.user-enroller-panel .uep-search-results .cohorts tbody tr:hover > td > h3,
+table.grading-report tbody tr:hover > td > h3,
+.forumheaderlist tbody tr:hover > td > h3,
+.generaltable tbody tr:hover > td > h3,
+table.flexible tbody tr:hover > td > h3,
+.category_subcategories tbody tr:hover > td > h3,
+table#modules tbody tr:hover > td > h3,
+table#permissions tbody tr:hover > td > h3,
 .user-enroller-panel .uep-search-results .users tbody tr:hover > th,
 .user-enroller-panel .uep-search-results .cohorts tbody tr:hover > th,
 table.grading-report tbody tr:hover > th,

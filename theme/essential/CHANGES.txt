@@ -1,3 +1,16 @@
+New in 3.1.0.6
+==============
+- FIX: Issue #697: Floating gradebook headers do not account for navbar height.
+- FIX: Issue #698: Accessibility: role=main-content ("Role must be one of the valid ARIA roles").
+- FIX: Issue #699: Assignment grading toolbar missing.
+- FIX: Issue #702: Header title - Fullname and summary option - language span tags.
+- FIX: Two column layout in RTL - M3.1.
+- FIX: Theme selector images not responsive.
+- FIX: Fixed height header when no logo for header background image now that the navbar calculates height in the old position.
+- FIX: Theme selector table odd rows text colour - M3.1.
+- FIX: Hover on dialog close button when using an alternative colour scheme.
+- FIX: Notification templates location and tidy up.
+
 New in 3.1.0.5
 ==============
 - FIX: Issue #684: Navigation block: English tree item icons should be right aligned in RTL mode.
@@ -6,8 +19,11 @@ New in 3.1.0.5
 - FIX: Issue #688: FA block icons are not right aligned using Firefox, in RTL mode.
 - FIX: Issue #690: Google fonts not working in quiz with Javascript Security.
 - FIX: Issue #691: Cyrillic support for truncated return to section names.  Fixed by Evgeny Logunow.
+- FIX: Issue #692: Page background and 'beside' carousel text clash.
 - FIX: Issue #693: Pixelated user picture.
 - FIX: Issue #694: Folder state in blocks and icons.
+- FIX: Issue #695: Large logo, old navbar position and affix.
+- FIX: Issue #696: Double height navbar blocks content.
 - FIX: Mod assign styles very tricky to override so exluding and including own changed copy despite potential maintenance issues.
 - FIX: Button font.
 - FIX: Content first three column layout in RTL.

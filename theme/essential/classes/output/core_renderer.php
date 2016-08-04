@@ -1365,13 +1365,11 @@ class core_renderer extends \core_renderer {
             }
 
             // Check if user is allowed to manage files.
-            /* Removed due to not including the tool
             if (has_capability('moodle/user:manageownfiles', $context)) {
                 $branchlabel = '<em>'.$this->getfontawesomemarkup('file').get_string('privatefiles', 'block_private_files').'</em>';
                 $branchurl = new moodle_url('/user/files.php');
                 $usermenu .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
             }
-            */
 
             // Check if user is allowed to view discussions.
             if (has_capability('mod/forum:viewdiscussion', $context)) {
@@ -1514,13 +1512,11 @@ class core_renderer extends \core_renderer {
             $branchurl = new moodle_url('/user/edit.php', array('id' => $USER->id));
             $preferences .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
         }
-        /* Removed due to not applicable
         if (has_capability('moodle/user:changeownpassword', $context)) {
             $branchlabel = '<em>'.$this->getfontawesomemarkup('key').get_string('changepassword').'</em>';
             $branchurl = new moodle_url('/login/change_password.php');
             $preferences .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
         }
-        */
         if (has_capability('moodle/user:editownmessageprofile', $context)) {
             $branchlabel = '<em>'.$this->getfontawesomemarkup('comments').get_string('message', 'message').'</em>';
             $branchurl = new moodle_url('/message/edit.php', array('id' => $USER->id));
@@ -2023,12 +2019,12 @@ class core_renderer extends \core_renderer {
                 case 3:
                     $title = '<h1 id="smalltitle">'.format_string($SITE->fullname, true,
                                     array('context' => context_course::instance(SITEID))).'</h2>';
-                    $title .= '<h2 id="subtitle">'.strip_tags($SITE->summary).'</h3>';
+                    $title .= '<h2 id="subtitle">'.format_text($SITE->summary).'</h3>';
                     break;
                 case 4:
                     $title = '<h1 id="smalltitle">'.format_string($SITE->shortname, true,
                                     array('context' => context_course::instance(SITEID))).'</h2>';
-                    $title .= '<h2 id="subtitle">'.strip_tags($SITE->summary).'</h3>';
+                    $title .= '<h2 id="subtitle">'.format_text($SITE->summary).'</h3>';
                     break;
                 default:
                     break;

@@ -559,6 +559,9 @@
                 div.editor_atto_toolbar button {
                     background: none;
                 }
+                .moodle-dialogue-base .closebutton:hover {
+                    background-image: url(~"[[pix:theme|sprite]]");
+                }
 
                 #tinymce {
                     color: ~"[[setting:alternativethemetextcolor@{index}]]";
@@ -640,6 +643,15 @@
                             .opacity(75);
                             h4, p {
                                 color: ~"[[setting:alternativethemeslidecaptiontextcolor@{index}]]";
+                            }
+                        }
+                        // Caption for text when there is a background image.
+                        &.pagebackground {
+                            .the-side-caption-content {
+                                background-color: ~"[[setting:alternativethemeslidecaptionbackgroundcolor@{index}]]";
+                                h4, div {
+                                    color: ~"[[setting:alternativethemeslidecaptiontextcolor@{index}]]";
+                                }
                             }
                         }
                     }
@@ -1143,7 +1155,7 @@
                 }
 
                 &.path-grade-report-grader .gradeparent .user.cell .userpicture {
-                    background-color: #fff;
+                    background-color: @white;
                 }
 
                 table#explaincaps,
