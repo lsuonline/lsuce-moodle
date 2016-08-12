@@ -1323,6 +1323,9 @@ class grade_category extends grade_object {
                 $this->load_grade_item();
                 $num = count($grade_values);
                 $sum = 0;
+                $extrasum  = 0;
+
+                $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
 
                 // This setting indicates if we should use algorithm prior to MDL-49257 fix for calculating extra credit weights.
                 // Even though old algorith has bugs in it, we need to preserve existing grades.
@@ -1363,7 +1366,7 @@ class grade_category extends grade_object {
                 // percentage of weights missing from the category.
                 foreach ($grade_values as $itemid => $gradevalue) {
                     if ($items[$itemid]->weightoverride) {
-                        if ($items[$itemid]->aggregationcoef2 <= 0) {
+                        if ($items[$itemid]->aggregationcoef2 <= 0 || ($items[$itemid]->weightoverride && $items[$itemid]->aggregationcoef > 0)) {
                             // Records the weight of 0 and continue.
                             $userweights[$itemid] = 0;
                             continue;
@@ -1434,23 +1437,16 @@ class grade_category extends grade_object {
                 // right values there, and restore them afterwards.
                 $oldgrademax = $this->grade_item->grademax;
                 $oldgrademin = $this->grade_item->grademin;
-                $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
-                $extrasum  = 0;
-                $normalextrasum  = $extrasum;
                 foreach ($grade_values as $itemid => $gradevalue) {
+
                     if (!isset($extracredititems[$itemid])) {
                         continue;
                     }
                     $oldsum = $sum;
                     $weightedgrade = $gradevalue * $userweights[$itemid] * $grademax;
-                    if (!empty($weighted_ec)) {
-                        $sum += $weightedgrade;
-                    } else {
-                         if (isset($extracredititems[$itemid])) {
-                            $extrasum += $gradevalue * $userweights[$itemid] * $grademax;
-                         } else {
-                             $sum += $gradevalue;
-                         }
+                    $sum += $weightedgrade;
+                    if (empty($ec_test)) {
+                       $extrasum += $gradevalue * $extracredititems[$itemid]->grademax;
                     }
 
                     // Only go through this when we need to record the weights.
@@ -1480,16 +1476,18 @@ class grade_category extends grade_object {
                 }
                 $this->grade_item->grademax = $oldgrademax;
                 $this->grade_item->grademin = $oldgrademin;
-                $normalextrasum = ($extrasum / $grademax); // Normalize Extra Credit
+
                 if ($grademax > 0) {
-                    $agg_grade = ($sum / $grademax); // Re-normalize score.
-                    $agg_grade += $normalextrasum; // Add Extra Credit.
+                    $agg_grade = $sum / $grademax; // Re-normalize score.
                 } else {
                     // Every item in the category is extra credit.
                     $agg_grade = $sum;
                     $grademax = $sum;
                 }
-
+                if (isset($extrasum) > 0) {
+                    $nextrasum = $extrasum / $grademax;
+                }
+                $agg_grade = $agg_grade + $nextrasum;
                 break;
 
             case GRADE_AGGREGATE_MEAN:    // Arithmetic average of all grade items (if ungraded aggregated, NULL counted as minimum)

@@ -151,6 +151,10 @@ if ($mform->is_cancelled()) {
         $grade_category->insert();
 
     } else {
+           $ec_test = isset($data->grade_item_extracred);
+           if ($ec_test == 1) {
+               $data->grade_item_aggregationcoef = -1;
+           }
         $grade_category->update();
     }
 
