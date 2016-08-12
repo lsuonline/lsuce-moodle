@@ -130,16 +130,6 @@ function library_get_coursemodule_info($coursemodule) {
         
         // no filtering hre because this info is cached and filtered later
         $info->content = format_module_intro('library', $library, $coursemodule->id, false);
-        
-        $PAGE->requires->js_init_call('M.mod_library.init'); 
-        $jsmodule = array(
-                'name' => 'mod_library',
-                'fullpath' => '/mod/library/module.js',
-                'requires' => array('node', 'moodle-core-notification')); //on this line you are loading three other YUI modules
-                
-        
-
-        $info->content .= 
         $info->name  = $library->name;
         
         return $info;
