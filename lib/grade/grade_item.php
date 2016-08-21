@@ -840,7 +840,9 @@ class grade_item extends grade_object {
 
             // Convert scale if needed
             // NOTE: skip if the activity provides a manual rescaling option.
-            $manuallyrescale = (component_callback_exists('mod_' . $this->itemmodule, 'rescale_activity_grades') !== false);
+            if (!$this->is_manual_item()) {
+                $manuallyrescale = (component_callback_exists('mod_' . $this->itemmodule, 'rescale_activity_grades') !== false);
+            }
             if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
                 // This should never happen because scales are locked if they are in use.
                 $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
