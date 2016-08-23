@@ -141,6 +141,7 @@ try {
                                                      <div class='listItem'>
                                                         <a href='$courseinfo->CourseSettingsURL' onclick='return panopto_startSSO(this)'
                                                             >" . get_string('course_settings', 'block_panopto') . "</a>
+                                                        <br /><a href='" . $CFG->wwwroot . "/blocks/panopto/provision_course_internal.php?id=" . $courseid . "'>Provision Course</a>
                                                      </div>\n";
                             $systeminfo = $panoptodata->get_system_info();
                             $content->text .= "<div class='listItem'>
