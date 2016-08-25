@@ -1307,11 +1307,7 @@ class core_renderer extends \core_renderer {
             $caret = $this->getfontawesomemarkup('caret-right');
             $userclass = array('class' => 'dropdown-toggle', 'data-toggle' => 'dropdown');
 
-            if (!empty($USER->alternatename)) {
-                $usermenu .= html_writer::link($userurl, $userpic.$USER->alternatename.$caret, $userclass);
-            } else {
-                $usermenu .= html_writer::link($userurl, $userpic.$USER->firstname.$caret, $userclass);
-            }
+            $usermenu .= html_writer::link($userurl, $userpic.$USER->firstname.$caret, $userclass);
 
             // Start dropdown menu items.
             $classes = 'dropdown-menu';
