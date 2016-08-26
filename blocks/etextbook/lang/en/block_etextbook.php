@@ -16,3 +16,10 @@ $string['etextbook'] = 'E-Textbooks';
 $string['etextbook:addinstance'] = 'Add a new E-Textbook block';
 $string['etextbook:myaddinstance'] = 'Add a new E-Textbook block to the My Moodle Page';
 $string['linktolsulibraries'] = '<hr><p><br />Free access through LSU Libraries!</p>';
+
+
+$string['headerconfig'] = 'LSU E-Textbooks Options';
+$string['descconfig'] = 'Options';
+$string['labellibrarylink'] = 'link for xml data - http://lib.lsu.edu/ebooks/xml';
+$string['desclibrarylink'] = 'URL where the XML data for etextbooks can be found';
+$string['retrieve_etextbooks'] = 'RETRIEVE ETEXTBOOKS FROM LIBRARY';
