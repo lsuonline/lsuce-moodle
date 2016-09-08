@@ -291,7 +291,7 @@ if ($form->is_cancelled()) {
             $messagetext = format_text_email($data->messageWithSigAndAttach, $data->format);
 
             // HTML
-            $messagehtml = format_text($data->messageWithSigAndAttach, $data->format);
+            $messagehtml = format_text($data->messageWithSigAndAttach, $data->format, array('filter' => false));
 
             if(!empty($data->mailto)) {
                 foreach (explode(',', $data->mailto) as $userid) {
