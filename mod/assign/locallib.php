@@ -567,7 +567,7 @@ class assign {
         } else if ($action == 'editsubmission') {
             $o .= $this->view_edit_submission_page($mform, $notices);
         } else if ($action == 'grader') {
-            $o .= $this->view_grader();
+            $o .= $this->view_single_grade_page($mform);
         } else if ($action == 'grading') {
             $o .= $this->view_grading_page();
         } else if ($action == 'downloadall') {
