@@ -43,6 +43,7 @@ module_selector.prototype.add_checkboxes = function() {
     var self = this;
 
     var section_number = 0;
+    var section = Y.one('#section-0');
 
     if (Y.one('div.single-section')) {
         self.add_section(section_number);
@@ -56,6 +57,23 @@ module_selector.prototype.add_checkboxes = function() {
             section_number = id[1];
             self.add_section(section_number);
         });      
+    }
+
+    while (section) {
+        // Add the section to the registry.
+        self.sections[section_number] = [];
+        // Find all LI with class 'activity' or 'resource'.
+        var LIs = section.all('li.activity');
+        LIs.each(function(module_el) {
+            var module_id = module_el.getAttribute('id');
+            // Verify if it's a module container.
+            if (module_id == null || module_id.substring(0, 7) != 'module-') {
+                return false;
+            }
+            self.add_module_checkbox(section_number, module_el);
+        });
+        section_number++;  // Advance the loop.
+        section = Y.one('#section-' + section_number);
     }
 };
 
@@ -124,6 +142,9 @@ module_selector.prototype.get_section_structure = function() {
 
 module_selector.prototype.init = function() {
     var self = this;
+
+    Y.one('div.block_massaction_jsdisabled').addClass('hidden');
+    Y.one('div.block_massaction_jsenabled').removeClass('hidden');
 
     self.add_checkboxes();
 };
