@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rows xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../schema/DEGREE.xsd">
+    <ROW>
+        <IDNUMBER>89its002</IDNUMBER>
+    </ROW>
+    <ROW>
+        <IDNUMBER>89its003</IDNUMBER>
+    </ROW>
+</rows>

@@ -1,0 +1,35 @@
+2014-09-05 Questions
+
+* Commissioner Voting Status
+** When the polls open:
+   - [ ] does the commissioner get to vote ?
+   - [ ] should we freeze all editing capability ?
+   - [ ] should they be treated as an ordinary student ?
+
+** Does the commissioner have to be enrolled full-time ?
+
+* Part-time vs Fulltime
+
+** a student must have PT status to vote at all
+
+** PT vs FT only matters on some resolutions
+
+* Selecting the order of ballot elements
+  What is the priority ?
+* We are planning to skip the CSV import, for now.
+* Eligibility criteria:
+  Besides pt/ft, is there any other eligibility criteria that you would need to take into consideration ?
+* Real Time results
+* Voting Analytics:
+** by student classification
+** by full-time v part-time
+** device type
+** votes by time
+* email reports ?
+  will likely be just the same as what you can find in the UI
+* What should voters see ?
+  Display the vote count in the block.
+
+  Once students have voted, links to vote will dissappear from the block, but this count should remain, perhaps with a "thanks for voting" message.
+
+  The block should still not be visible at all for ineligible users. 

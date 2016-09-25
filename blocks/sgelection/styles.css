@@ -1,0 +1,324 @@
+.mobiletheme .block_sgelection.list_block {
+  padding: 0;
+}
+
+.block_sgelection.list_block .content {
+}
+
+.block_sgelection.list_block .header, .mobiletheme .block_sgelection.list_block .header {
+}
+
+.block_sgelection.list_block .header h2, .mobiletheme .block_sgelection.list_block .header h2 {
+  text-shadow: none;
+  text-align: center;
+  font-weight: normal;
+}
+
+.block_sgelection.list_block .content a {
+}
+
+.block_sgelection.list_block .header .block_action {
+  display: none;
+}
+
+.candidatebox{
+
+}
+
+#page-blocks-sgelection-results .winnerresolution{
+    background-color: #aaffaa;
+}
+
+#page-blocks-sgelection-admin .yui3-aclist-content .yui3-aclist-list{
+    color: #461d7c;
+}
+
+#page-blocks-sgelection-ballot .fitem.femptylabel {
+}
+
+#page-blocks-sgelection-ballot a.editlink {
+ float: left;
+ padding: 10px;
+}
+
+#page-blocks-sgelection-ballot fieldset.hidden>div {
+  width: 100%;
+  background-color: #fff;
+  display: block;
+  border: 1px solid #aaa;
+  border-radius: 10px;
+  text-align: center;
+  margin: 0 10px 0 10px;
+} 
+
+#page-blocks-sgelection-ballot div.resolution fieldset.hidden>div {
+  width: auto;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
+  text-align: left;
+  margin: 0;
+}
+
+#page-blocks-sgelection-ballot div.candidates, #page-blocks-sgelection-ballot div.resolutions {
+  background-color: #fff;
+  display: block;
+  width: auto;
+  margin: 0 10px 0 10px;
+  border: 1px solid #aaa;
+  border-radius: 10px;
+} 
+
+#page-blocks-sgelection-ballot.mobiletheme fieldset.hidden>div {
+  width: 100%;
+  width: calc(100% + 10px);
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  margin: 0 0 0 -15px;
+  padding: 0;
+}
+
+#page-blocks-sgelection-ballot.mobiletheme div.candidates, #page-blocks-sgelection-ballot.mobiletheme div.resolutions {
+  width: auto;
+  margin: 0 2px;
+  border: 1px solid #aaa;
+  border-radius: 10px;
+}
+
+#page-blocks-sgelection-ballot div.resolutions, #page-blocks-sgelection-ballot.mobiletheme div.resolutions {
+  margin-top: 2em;
+}
+
+#page-blocks-sgelection-ballot div.candidate .fitemtitle, #page-blocks-sgelection-ballot div.resolution .fitemtitle {
+  display: none!important;
+}
+
+#page-blocks-sgelection-ballot h1.itemtitle {
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-size: 18px;
+  line-height: 33px;
+  -webkit-margin-before: 0px;
+  -webkit-margin-after: 0px;
+  -webkit-margin-start: 0px;
+  -webkit-margin-end: 0px;
+  margin-before: 0px;
+  margin-after: 0px;
+  margin-start: 0px;
+  margin-end: 0px;
+  margin-bottom: .5em;
+}
+
+#page-blocks-sgelection-ballot h3.itemtitle {
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-size: 18px;
+  line-height: 33px;
+  -webkit-margin-before: 0px;
+  -webkit-margin-after: 0px;
+  -webkit-margin-start: 0px;
+  -webkit-margin-end: 0px;
+  margin-before: 0px;
+  margin-after: 0px;
+  margin-start: 0px;
+  margin-end: 0px;
+  margin-bottom: .5em;
+}
+
+#page-blocks-sgelection-ballot.mobiletheme #page-header>h1 {
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-size: 18px;
+  line-height: 33px;
+  -webkit-margin-before: 0px;
+  -webkit-margin-after: 0px;
+  -webkit-margin-start: 0px;
+  -webkit-margin-end: 0px;
+  margin-before: 0px;
+  margin-after: 0px;
+  margin-start: 0px;
+  margin-end: 0px;
+  margin-bottom: .5em;
+}
+
+#page-blocks-sgelection-ballot div.resolution>p {
+}
+
+#page-blocks-sgelection-ballot div.candidate, #page-blocks-sgelection-ballot div.resolution {
+  padding-bottom: .25em;
+  padding-top: .25em;
+  text-align: left;
+  padding-left: 1em;
+}
+
+#page-blocks-sgelection-ballot div.candidate .felement, #page-blocks-sgelection-ballot div.resolution .felement {
+  padding: 0;
+  margin:0;
+}
+
+#page-blocks-sgelection-ballot div.candidates>div, #page-blocks-sgelection-ballot div.resolutions>div {
+  border-bottom: 1px solid #aaa;
+}
+
+#page-blocks-sgelection-ballot div.candidates>div:first-of-type, #page-blocks-sgelection-ballot div.resolutions>div:first-of-type {
+  -webkit-border-top-left-radius: 10px;
+  -webkit-border-top-right-radius: 10px;
+  -moz-border-radius-topleft: 10px;
+  -moz-border-radius-topright: 10px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+#page-blocks-sgelection-ballot div.candidates>div:last-of-type, #page-blocks-sgelection-ballot div.resolutions>div:last-of-type {
+  border: none;
+  -webkit-border-bottom-left-radius: 10px;
+  -webkit-border-bottom-right-radius: 10px;
+  -moz-border-radius-bottomleft: 10px;
+  -moz-border-radius-bottomright: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+#page-blocks-sgelection-ballot div.candidates>div:nth-of-type(odd), #page-blocks-sgelection-ballot div.resolutions>div:nth-of-type(odd) {
+  background-color: #ece8f2;
+}
+
+#page-blocks-sgelection-ballot div.candidates>div:nth-of-type(even), #page-blocks-sgelection-ballot div.resolutions>div:nth-of-type(even) {
+  background-color: #fff;
+}
+
+#page-blocks-sgelection-ballot fieldset.hidden>div>div.fitem {
+  text-align: center;
+}
+
+
+
+
+#page-blocks-sgelection-ballot input[type="checkbox"] {
+  display: none;
+}
+
+#page-blocks-sgelection-ballot input[type="checkbox"] + label {
+  display: block;
+  padding-left: 23px;
+  margin: 0;
+
+}
+
+#page-blocks-sgelection-ballot input[type="checkbox"] + label span {
+  display: inline-block;
+  width: 19px;
+  height: 19px;
+  margin: -1px 4px 0 -23px;
+  vertical-align: middle;
+  background: url([[pix:block_sgelection|button_sheet]]) 0px 0px no-repeat;
+  cursor: pointer;
+}
+
+#page-blocks-sgelection-ballot input[type="checkbox"]:checked + label span {
+  background-position: -19px 0px;
+}
+
+#page-blocks-sgelection-ballot input[type="radio"] {
+  display: none;
+}
+
+#page-blocks-sgelection-ballot input[type="radio"] + label span {
+  display: inline-block;
+  width: 19px;
+  height: 19px;
+  margin: -1px 4px 0 0;
+  vertical-align: middle;
+  background:url([[pix:block_sgelection|button_sheet]]) -38px 0px no-repeat;
+  cursor:pointer;
+}
+
+#page-blocks-sgelection-ballot input[type="radio"]:checked + label span {
+  background-position: -57px 0px;
+}
+
+#page-blocks-sgelection-ballot .fitem_actionbuttons div.fgroup {
+  width: 100%;
+  margin: 10px auto;
+  text-align:center;
+}
+
+#page-blocks-sgelection-ballot div.region-content > div[role="main"] {
+  text-align: center;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent, #page-blocks-sgelection-ballot div.final_page_content {
+  display: inline-block;
+  margin: 20px auto;
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #fff;
+  border: 1px solid #aaa;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent p.ballotreview_title {
+  display: inline-block;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 2em;
+  text-transform: uppercase; 
+  background-color: #9b1f03;
+  color: #fff;
+  width: auto;
+  border: 1px solid #aaa;
+  margin: 0;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent div.candidate_div, #page-blocks-sgelection-ballot .ballotreview_parent div.resolution_div, #page-blocks-sgelection-ballot div.facingbooksharebutton, #page-blocks-sgelection-ballot div.twitterbutton, #page-blocks-sgelection-ballot div.tumblrbutton {
+  border-radius: 5px;
+  background-color: #fff;
+  padding: 5px 10px;
+  margin: 10px 0;
+  box-shadow: 0px 0px 10px 0px rgba(0,0,0,.25);
+  text-align: left;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent .office_area {
+  margin-bottom: 20px;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent .review_content .button_area {
+  margin-top: 20px;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent .review_content .button_area span.votebuttonlink > a, #page-blocks-sgelection-ballot div.final_page_content div.thank_you_message > a {
+   display: inline-block;
+   background: #eeeeee url([[pix:theme|input_button]]) 0 -142px repeat-x;
+   padding: 2px 10px;
+   border: 1px solid #461d7c;
+   color: #2e1352;
+   cursor: pointer;
+   border-radius: 3px;
+   margin-right: 2em;
+}
+
+#page-blocks-sgelection-ballot div.final_page_content div.thank_you_message > a {
+   margin-right: 0;
+   margin-bottom: 10px;
+}
+
+#page-blocks-sgelection-ballot .ballotreview_parent .review_content .button_area span.votebuttonlink > a:hover {
+   background-color: #461d7c;
+   background-position: 0 -50px;
+   color: #ffffff;
+   cursor: pointer;
+   text-decoration: none;
+}
+
+#page-blocks-sgelection-ballot div.final_page_content div.thank_you_message h1 p {
+  margin: 0;
+  padding: 0;
+}
