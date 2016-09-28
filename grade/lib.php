@@ -682,8 +682,9 @@ function print_natural_aggregation_upgrade_notice($courseid, $context, $thispage
             $fixurl = new moodle_url($thispage, $urlparams);
             $fixbutton = $OUTPUT->single_button($fixurl, $fixmessage, 'get');
 
-            $html .= $OUTPUT->notification($message);
-            $html .= $fixbutton;
+//            This is REALLY annoying for those of us without grade issues.
+//            $html .= $OUTPUT->notification($message);
+//            $html .= $fixbutton;
         }
     }
 
