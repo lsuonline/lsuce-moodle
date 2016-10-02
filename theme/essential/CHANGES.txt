@@ -1,15 +1,69 @@
+New in 3.1.0.9
+==============
+- FIX: Issue #737: Rubric pop-out on assignment grading page doesn't use full height.
+- FIX: Issue #740: Rubric in assignment view styling.
+- FIX: Issue #746: Category icon tiles sometimes don't line up.
+- FIX: Issue #747: Profile picture in user profile missing.
+- FIX: Issue #748: "Page Top" blocks area, in edit mode, display blocks one under the other, in RTL mode.
+- FIX: Issue #749: Course item action edit menu has redundant padding, in RTL mode.
+- FIX: Issue #753: Accessibility: missing aria-label attribute in "back-to-top" element.  Thanks to Nadav Kavalerchik.
+- FIX: Issue #754: Accessibility: missing aria-label attribute in "prev"/"next" elements.  Thanks to Nadav Kavalerchik.
+- FIX: Issue #755: Accessibility: missing aria-label attribute in "socialicon" elements.  Thanks to Nadav Kavalerchik.
+- FIX: Issue #757: Custom icon colour doesn't seem to apply correctly to icons in drop-downs.
+- FIX: Issue #762: Course fullname repeated above and below breadcrumbs.
+- FIX: Issue #763: Custom EOT files don't work.
+- FIX: Issue #765: Link font family is wrong.
+- FIX: Breadcrumb style two fixes.
+- NEW: Issue #738: Fixes #736 add extra urlcolor for stripes.
+- NEW: Improvements to 'essential_edit_button' for child themes.
+
+New in 3.1.0.8
+==============
+- FIX: Issue #320: Group editing icons do not update on click to reflect new group status.
+- FIX: Issue #722: Assignment grading page lacking styling.
+- FIX: Issue #724: Main content does not expand.
+- FIX: Issue #726: New "page top" block region is not properly margined in RTL mode.
+- FIX: Issue #727: MyDashboard layout not flipping in RTL.
+- FIX: Issue #729: New "page top" block region looks weird, when adding a new module.
+- FIX: Issue #731: Assignment overview options.
+- FIX: Remove MyDashboard layout to avoid duplicated code.
+- NEW: Issue #713: Grading page has no navigation.
+
+New in 3.1.0.7
+==============
+- FIX: Issue #710: Wrong profile image used.
+- FIX: Issue #711: Space when blocks are docked.
+- FIX: Issue #712: My Courses overflow.
+- FIX: Issue #714: Enrol users page needs tidying up.
+- FIX: Issue #715: Grading status page 'Grade' button and file submission line.
+- FIX: Issue #716: Information alert close difficult to see.
+- FIX: Issue #717: Notifications hover.
+- FIX: Issue #718: Affix top offset height when reload down page.
+- FIX: Issue #720: Block titles when editing and a page background are difficult to see.
+- FIX: Issue #721: Notification template close inconsistent with alerts on frontpage.
+- FIX: Table tidy up.
+
 New in 3.1.0.6
 ==============
 - FIX: Issue #697: Floating gradebook headers do not account for navbar height.
 - FIX: Issue #698: Accessibility: role=main-content ("Role must be one of the valid ARIA roles").
 - FIX: Issue #699: Assignment grading toolbar missing.
+- FIX: Issue #700: Header height - M3.1.
 - FIX: Issue #702: Header title - Fullname and summary option - language span tags.
+- FIX: Issue #703: Group images are not well displayed.
+- FIX: Issue #704: Vertical space between the header title and header subtitle is to small.
+- FIX: Issue #707: Marketing setting header.
 - FIX: Two column layout in RTL - M3.1.
 - FIX: Theme selector images not responsive.
 - FIX: Fixed height header when no logo for header background image now that the navbar calculates height in the old position.
 - FIX: Theme selector table odd rows text colour - M3.1.
 - FIX: Hover on dialog close button when using an alternative colour scheme.
 - FIX: Notification templates location and tidy up.
+- FIX: Missing forum icons.
+- FIX: Revert to default grey SVG icons.
+- FIX: Navbar and menus LTR / RTL icons - M3.1.
+- NEW: Issue #606: Allowing blocks placed at the top of the content column.  Gratefully funded by: Servei de Recursos Educatius <http://www.sre.urv.cat>, Universitat Rovira i Virgili.
+- NEW: Display block region names when editing.
 
 New in 3.1.0.5
 ==============

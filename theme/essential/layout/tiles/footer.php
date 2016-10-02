@@ -27,7 +27,7 @@
 if (empty($PAGE->layout_options['nofooter'])) { ?>
     <footer role="contentinfo" id="page-footer">
         <div class="container-fluid">
-            <?php echo $OUTPUT->essential_edit_button('theme_essential_footer'); ?>
+            <?php echo $OUTPUT->essential_edit_button('footer'); ?>
             <div class="row-fluid footerblocks">
                 <div class="footerblock span4">
                     <?php echo $OUTPUT->blocks('footer-left'); ?>
@@ -57,6 +57,7 @@ if (empty($PAGE->layout_options['nofooter'])) { ?>
             </div>
         </div>
     </footer>
-    <a href="#top" class="back-to-top" ><span aria-hidden="true" class="fa fa-angle-up "></span></a>
+    <a href="#top" class="back-to-top" aria-label="<?php echo get_string('backtotop', 'theme_essential'); ?>">
+        <span aria-hidden="true" class="fa fa-angle-up "></span></a>
 <?php }
 echo $OUTPUT->standard_end_of_body_html();

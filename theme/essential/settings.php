@@ -38,8 +38,10 @@ if ($ADMIN->fulltree) {
     global $CFG;
     if (file_exists("{$CFG->dirroot}/theme/essential/essential_admin_setting_configselect.php")) {
         require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configselect.php');
+        require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configinteger.php');
     } else if (!empty($CFG->themedir) && file_exists("{$CFG->themedir}/essential/essential_admin_setting_configselect.php")) {
         require_once($CFG->themedir . '/essential/essential_admin_setting_configselect.php');
+        require_once($CFG->themedir . '/essential/essential_admin_setting_configinteger.php');
     }
 
     $sponsor = new moodle_url('http://moodle.org/user/profile.php?id=442195');
@@ -93,6 +95,28 @@ if ($ADMIN->fulltree) {
         100 => get_string('variablewidth', 'theme_essential'));
     $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
     $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsgeneric->add($setting);
+
+    // Page top blocks per row.
+    $name = 'theme_essential/pagetopblocksperrow';
+    $title = get_string('pagetopblocksperrow', 'theme_essential');
+    $default = 1;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('pagetopblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $essentialsettingsgeneric->add($setting);
+
+    // Page bottom blocks per row.
+    $name = 'theme_essential/pagebottomblocksperrow';
+    $title = get_string('pagebottomblocksperrow', 'theme_essential');
+    $default = 4;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('pagebottomblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $essentialsettingsgeneric->add($setting);
 
     // Custom favicon.
@@ -337,6 +361,16 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingscolour->add($setting);
 
+    // Theme stripe url colour setting.
+    $name = 'theme_essential/themestripeurlcolour';
+    $title = get_string('themestripeurlcolour', 'theme_essential');
+    $description = get_string('themestripeurlcolourdesc', 'theme_essential');
+    $default = '#25849f';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
     // This is the descriptor for the footer.
     $name = 'theme_essential/footercolorinfo';
     $heading = get_string('footercolors', 'theme_essential');
@@ -453,6 +487,9 @@ if ($ADMIN->fulltree) {
 
     $defaultalternativethemecolors = array('#a430d1', '#d15430', '#5dd130', '#006b94');
     $defaultalternativethemehovercolors = array('#9929c4', '#c44c29', '#53c429', '#4090af');
+    $defaultalternativethemestripetextcolors = array('#bdfdb7', '#c3fdd0', '#9f5bfb', '#ff1ebd');
+    $defaultalternativethemestripebackgroundcolors = array('#c1009f', '#bc2800', '#b4b2fd', '#0336b4');
+    $defaultalternativethemestripeurlcolors = array('#bef500', '#30af67', '#ffe9a6', '#ffab00');
 
     foreach (range(1, 4) as $alternativethemenumber) {
         // Enables the user to select an alternative colours choice.
@@ -579,7 +616,7 @@ if ($ADMIN->fulltree) {
         $name = 'theme_essential/alternativethemestripetextcolour' . $alternativethemenumber;
         $title = get_string('alternativethemestripetextcolour', 'theme_essential', $alternativethemenumber);
         $description = get_string('alternativethemestripetextcolourdesc', 'theme_essential', $alternativethemenumber);
-        $default = '#ffffff';
+        $default = $defaultalternativethemestripetextcolors[$alternativethemenumber - 1];
         $previewconfig = null;
         $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
         $setting->set_updatedcallback('theme_reset_all_caches');
@@ -589,7 +626,17 @@ if ($ADMIN->fulltree) {
         $name = 'theme_essential/alternativethemestripebackgroundcolour' . $alternativethemenumber;
         $title = get_string('alternativethemestripebackgroundcolour', 'theme_essential', $alternativethemenumber);
         $description = get_string('alternativethemestripebackgroundcolourdesc', 'theme_essential', $alternativethemenumber);
-        $default = '#ff9a34';
+        $default = $defaultalternativethemestripebackgroundcolors[$alternativethemenumber - 1];
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Theme stripe url colour setting.
+        $name = 'theme_essential/alternativethemestripeurlcolour' . $alternativethemenumber;
+        $title = get_string('alternativethemestripeurlcolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemestripeurlcolourdesc', 'theme_essential', $alternativethemenumber);
+        $default = $defaultalternativethemestripeurlcolors[$alternativethemenumber - 1];
         $previewconfig = null;
         $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
         $setting->set_updatedcallback('theme_reset_all_caches');
@@ -1306,7 +1353,7 @@ if ($ADMIN->fulltree) {
         $name = 'theme_essential/fontfileeotheading';
         $title = get_string('fontfileeotheading', 'theme_essential');
         $description = '';
-        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileweotheading');
+        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileeotheading');
         $setting->set_updatedcallback('theme_reset_all_caches');
         $essentialsettingsfont->add($setting);
 
@@ -1355,7 +1402,7 @@ if ($ADMIN->fulltree) {
         $name = 'theme_essential/fontfileeotbody';
         $title = get_string('fontfileeotbody', 'theme_essential');
         $description = '';
-        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileweotbody');
+        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileeotbody');
         $setting->set_updatedcallback('theme_reset_all_caches');
         $essentialsettingsfont->add($setting);
 
@@ -1466,7 +1513,7 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsfrontpage->add($setting);
 
-    // Toggle frontpage middle blocks.
+    // Toggle frontpage home (was middle) blocks.
     $name = 'theme_essential/frontpagemiddleblocks';
     $title = get_string('frontpagemiddleblocks', 'theme_essential');
     $description = get_string('frontpagemiddleblocksdesc', 'theme_essential');
@@ -1480,10 +1527,34 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsfrontpage->add($setting);
 
+    // Home blocks per row.
+    $name = 'theme_essential/frontpagehomeblocksperrow';
+    $title = get_string('frontpagehomeblocksperrow', 'theme_essential');
+    $default = 3;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('frontpagehomeblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $essentialsettingsfrontpage->add($setting);
+
+    // Toggle frontpage page top blocks.
+    $name = 'theme_essential/fppagetopblocks';
+    $title = get_string('fppagetopblocks', 'theme_essential');
+    $description = get_string('fppagetopblocksdesc', 'theme_essential');
+    $alwaysdisplay = get_string('alwaysdisplay', 'theme_essential');
+    $displaybeforelogin = get_string('displaybeforelogin', 'theme_essential');
+    $displayafterlogin = get_string('displayafterlogin', 'theme_essential');
+    $dontdisplay = get_string('dontdisplay', 'theme_essential');
+    $default = 3;
+    $choices = array(1 => $alwaysdisplay, 2 => $displaybeforelogin, 3 => $displayafterlogin, 0 => $dontdisplay);
+    $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsfrontpage->add($setting);
 
     // Marketing spot settings.
     $essentialsettingsfrontpage->add(new admin_setting_heading('theme_essential_marketing',
-        get_string('marketingheadingsub', 'theme_essential'),
+        get_string('marketingheading', 'theme_essential'),
         format_text(get_string('marketingdesc', 'theme_essential'), FORMAT_MARKDOWN)));
 
     // Toggle marketing spots.

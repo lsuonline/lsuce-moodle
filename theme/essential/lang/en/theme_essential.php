@@ -156,6 +156,11 @@ $string['stylefixed'] = 'Fixed';
 $string['styletiled'] = 'Tiled';
 $string['stylestretch'] = 'Stretch';
 
+$string['pagetopblocksperrow'] = 'Page top blocks per row';
+$string['pagetopblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for pages with \'Page top blocks\'.  Current pages are: Admin, Course, Course Category, Dashboard, Frontpage, My Public.';
+$string['pagebottomblocksperrow'] = 'Page bottom blocks per row';
+$string['pagebottomblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for pages with \'Page bottom blocks\'.  Current pages are: Admin, Course management, Grading and Quiz edit.';
+
 $string['customcss'] = 'Custom CSS';
 $string['customcssdesc'] = 'Whatever CSS rules you add to this text area will be reflected in every page, making for easier customisation of this theme.';
 
@@ -250,9 +255,8 @@ $string['nobreadcrumb'] = 'Hide';
 // Regions.
 $string['region-side-post'] = 'Right';
 $string['region-side-pre'] = 'Left';
-$string['region-home-left'] = 'Home (Left)';
-$string['region-home-middle'] = 'Home (Middle)';
-$string['region-home-right'] = 'Home (Right)';
+$string['region-home'] = 'Home';
+$string['region-page-top'] = 'Page top';
 $string['region-footer-left'] = 'Footer (Left)';
 $string['region-footer-middle'] = 'Footer (Middle)';
 $string['region-footer-right'] = 'Footer (Right)';
@@ -318,6 +322,8 @@ $string['themenavcolor'] = 'Navigation text colour';
 $string['themenavcolordesc'] = 'Set the text colour for navigation.  Being the navigation bar and the breadcrumb fancy style.';
 $string['themestripetextcolour'] = 'Stripe text colour';
 $string['themestripetextcolourdesc'] = 'Set the text colour for stripes in tables.';
+$string['themestripeurlcolour'] = 'Stripe url colour';
+$string['themestripeurlcolourdesc'] = 'Set the url colour for stripes in tables.';
 $string['themestripebackgroundcolour'] = 'Stripe background colour';
 $string['themestripebackgroundcolourdesc'] = 'Set the background colour for stripes in tables.';
 
@@ -374,6 +380,8 @@ $string['alternativethemehovercolor'] = 'Alternative theme hover colour {$a}';
 $string['alternativethemehovercolordesc'] = 'What colour should your theme hovers be for the alternative theme colours {$a}.';
 $string['alternativethemestripetextcolour'] = 'Alternative stripe text colour {$a}';
 $string['alternativethemestripetextcolourdesc'] = 'Set the alternative {$a} text colour for stripes in tables.';
+$string['alternativethemestripeurlcolour'] = 'Alternative stripe url colour {$a}';
+$string['alternativethemestripeurlcolourdesc'] = 'Set the alternative {$a} url colour for stripes in tables.';
 $string['alternativethemestripebackgroundcolour'] = 'Alternative stripe background colour {$a}';
 $string['alternativethemestripebackgroundcolourdesc'] = 'Set the alternative {$a} background colour for stripes in tables.';
 
@@ -433,8 +441,12 @@ $string['frontpageblocksdesc'] = 'Here you can determine if the standard Moodle 
 $string['beforecontent'] = 'Before content';
 $string['aftercontent'] = 'After content';
 
-$string['frontpagemiddleblocks'] = 'Enable additional front page middle blocks';
-$string['frontpagemiddleblocksdesc'] = 'If enabled this will display three additional block locations just under the marketing spots.';
+$string['frontpagemiddleblocks'] = 'Enable additional front page \'Home\' (was \'Middle\') blocks';
+$string['frontpagemiddleblocksdesc'] = 'If enabled this will display an additional block location just under the marketing spots.';
+$string['frontpagehomeblocksperrow'] = 'Home (was \'Middle\') blocks per row';
+$string['frontpagehomeblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for the \'Home blocks\'.';
+$string['fppagetopblocks'] = 'Enable additional front page \'Page top\' blocks';
+$string['fppagetopblocksdesc'] = 'If enabled this will display an additional block location beside the side blocks and above the content area.  Note: The number of blocks per row depends on the setting \'pagetopblocksperrow\'.';
 
 // Slideshow.
 $string['slideshowheading'] = 'Slide show';
@@ -506,7 +518,7 @@ $string['slideurltargetparent'] = 'Parent frame';
 // Marketing Spots.
 $string['marketingheading'] = 'Marketing spots';
 $string['marketinginfodesc'] = 'Enter the settings for your marketing spot.';
-$string['marketingheadingsub'] = 'Three locations on the front page to add information and links';
+$string['marketingheadingsub'] = 'Three locations on the front page to add information and links.'; // Legacy only.
 
 $string['marketingheight'] = 'Height of marketing spot container (px)';
 $string['marketingheightdesc'] = 'Specify the height of the marketing spot container in pixels.  Adjust this to suit your content.  If any spot has an image or link, then that will be added to this for all spots.';

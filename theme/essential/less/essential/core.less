@@ -11,11 +11,7 @@ body {
     padding: 0;
 }
 
-a {
-    font-family: inherit;
-    text-decoration: none;
-}
-
+a,
 a:hover,
 a:focus {
     text-decoration: none;
@@ -64,6 +60,10 @@ ins {
             background-color: @white;
             padding: @paddingSmall;
             margin-bottom: 20px;
+        }
+
+        #region-main {
+            box-sizing: border-box;
         }
 
         #region-main > div[role="main"] {
@@ -135,6 +135,43 @@ body {
 .resourcecontent .mediaplugin.mediaplugin_mp3 object {
     width: 600px;
     height: 25px;
+}
+
+// Table icons.
+.userenrolment .unassignrolelink,
+.generaltable {
+    img {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: @baseBorderRadius;
+        padding: 2px;
+    }
+}
+.generaltable {
+    img[src$="spacer"] {
+        background-color: transparent;
+    }
+}
+
+// User enrolment page.
+.userenrolment {
+    img {
+        &.userpicture, &.profilepicture {
+            height: 44px;
+            width: 44px;
+        }
+    }
+    .unassignrolelink {
+        vertical-align: text-bottom;
+    }
+    .col_userdetails, .col_lastcourseaccess {
+        padding: 6px;
+    }
+}
+
+#page-enrol-users .enrol_user_buttons {
+    float: none;
+    margin-top: 4px;
+    text-align: right;
 }
 
 /* @end */
