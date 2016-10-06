@@ -454,7 +454,7 @@ function print_edit_link($courseid, $grade_item, $grade_gradeid) {
 
         return html_writer::link($url, $icon);
     } else {
-        return $OUTPUT->pix_icon('i/cross_red_big', get_string('edit', 'grades'));
+        return $OUTPUT->pix_icon('i/invalid', get_string('edit', 'grades'));
     }
 }
 
@@ -467,6 +467,7 @@ function find_rank($context, $grade_item, $grade_grade, $groupid) {
         'contextid' => $context->id
     );
 
+    $gradebookroles = get_config('moodle', 'gradebookroles');
     $group_select = '';
     $group_where = '';
 
@@ -488,7 +489,7 @@ function find_rank($context, $grade_item, $grade_grade, $groupid) {
                 AND g.itemid = :itemid
                 $group_where
                 AND (r.contextid = :contextid
-                AND r.roleid IN ({$this->gradebookroles}))";
+                AND r.roleid IN ({$gradebookroles}))";
 
     return $DB->count_records_sql($sql, $params) + 1;
 }
