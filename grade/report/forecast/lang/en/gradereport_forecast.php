@@ -24,5 +24,13 @@
 
 $string['eventgradereportviewed'] = 'Grade forecast report viewed';
 $string['pluginname'] = 'Forecast report';
-$string['user:view'] = 'View your own grade report';
+$string['forecast:view'] = 'View your own grade report';
 $string['tablesummary'] = 'The table is arranged as a list of graded items including categories of graded items. When items are in a category they will be indicated as such.';
+
+// settings
+$string['enabled_for_students'] = 'Enable for students';
+$string['enabled_for_students_desc'] = 'Enable students to view this report?';
+$string['must_make_enabled'] = 'Must Make table enabled';
+$string['must_make_enabled_desc'] = 'Enable the report to display a "must make" pop-up when only one grade input is missing from calculation';
+$string['must_make_modal_heading'] = 'Projected Grades';
+$string['nopermissiontouseforecast'] = 'Projected Final Grade has been disabled for this course by your instructor.';
