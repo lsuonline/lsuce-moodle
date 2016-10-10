@@ -173,6 +173,10 @@ abstract class post_grades_student_table extends post_grades_screen {
                 continue;
             }
 
+            if ($grade_grade->itemid) {
+                $course_item->grademax = $grade_grade->get_grade_max();
+            }
+
             $line->cells[] = html_writer::link($url, $name);
             $line->cells[] = $student->idnumber;
             $line->cells[] = grade_format_gradevalue(
