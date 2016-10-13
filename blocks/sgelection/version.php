@@ -1,7 +1,7 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016091001;
+$plugin->version = 2016092302;
 $plugin->requires = 2010112400;
 $plugin->component = 'block_sgelection';
 $plugin->maturity = MATURITY_STABLE;

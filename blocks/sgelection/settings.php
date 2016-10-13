@@ -36,7 +36,7 @@ if ($ADMIN->fulltree) {
                     sge::_str('facadv'),
                     sge::_str('facadv_desc'),
                     '',
-                    PARAM_ALPHANUM)
+                    PARAM_TEXT)
             );
     $settings->add(
             new admin_setting_configtext(

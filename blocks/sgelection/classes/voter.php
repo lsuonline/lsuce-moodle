@@ -193,7 +193,11 @@ class voter extends sge_database_object {
      * @return boolean
      */
     public function is_faculty_advisor() {
-        if($this->username == sge::config('facadv')){
+        $trimmedfacadv = preg_replace('/\s+/', '', sge::config('facadv'));
+        $explode_facadvstring = explode(",",$trimmedfacadv);
+        $userinfacadv = in_array($this->username,$explode_facadvstring);
+
+        if($userinfacadv){
            return true;
         }
         return false;
