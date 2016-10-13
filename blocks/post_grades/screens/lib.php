@@ -110,9 +110,15 @@ abstract class post_grades_student_table extends post_grades_screen {
 
         $this->context = context_course::instance($this->course->id);
         $graded = get_config('moodle', 'gradebookroles');
+        $roleids = explode(',', $graded);
 
-        $this->students = get_role_users(explode(',', $graded), $this->context,
-            false, '', 'u.lastname, u.firstname', null, $groupid);
+        foreach ($roleids as $roleid) {
+            // Keeping the first user appearance.
+            $this->students = get_role_users(
+                $roleid, $this->context, false, '',
+                'u.id, u.lastname, u.firstname', null, $groupid
+            );
+        }
     }
 
     function constructor() {
@@ -151,7 +157,7 @@ abstract class post_grades_student_table extends post_grades_screen {
             } else {
                 $name = "$student->lastname, $student->firstname";
             }
-            $url = new moodle_url('/grade/report/quick_edit/index.php', array(
+            $url = new moodle_url('/grade/report/singleview/index.php', array(
                 'item' => 'user',
                 'itemid' => $student->id,
                 'group' => $this->group->id,
