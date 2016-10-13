@@ -71,3 +71,8 @@
 .path-grade-report-forecast .modal {
     display: none;
 }
+
+.path-grade-report-forecast.mobiledevice .modal {
+    height: 90%;
+    overflow-y: auto;
+}
