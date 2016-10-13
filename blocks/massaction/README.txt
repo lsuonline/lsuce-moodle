@@ -1,4 +1,4 @@
-This is the Mass Actions block for Moodle 2.4 and up. Its appearance and behaviors
+This is the Mass Actions block for Moodle 2.8 and up. Its appearance and behaviors
 are largely the same as the version for Moodle 1.9.
 
 Created at University of Minnesota by the Custom Solutions team.
@@ -16,8 +16,23 @@ Once installed, capability "block/massaction:use" needs to be added to the roles
 
 
 RELEASE NOTE
+[2016101301]
+- Enable compatibility with OneTopic course format
+- Bump version to 2.0.0 to signal this has diverged from the version of this
+  plugin that is compatible with Moodle 2.7 and earlier
+- Change three variables in action.php::print_deletion_confirmation to be
+  arguments instead of global variables
+
+[2016101300]
+- Integrate with Travis CI and fix errors and warnings
+
+[2016101000]
+- Fixed a regression created when I added the Javascript-disabled functionality
+  that caused checkboxes not to be drawn in Flexible Sections formatted courses
+
 [2016052401]
 - Moved the string displayed when Javascript is disabled into the language file.
+
 [2016052400]
 - Enabled the block to inform the user, when Javascript is disabled, that Javascript
   is required in order to use the block
