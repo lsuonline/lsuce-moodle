@@ -304,11 +304,11 @@ function postGradeInputs() {
     $.post('io.php', inputs, function(data) {
         var response = JSON.parse(data);
         
+        handleGradeInputResponse(response);
+
         if (response.showMustMake) {
             renderMustMakeModal(response.mustMakeArray);
         }
-
-        handleGradeInputResponse(response);
     });
 }
 
@@ -322,7 +322,10 @@ function renderMustMakeModal(values) {
         getMustMakeElement(id).html(values[id]);
     }
 
-    $('#mustMakeModal').modal('show');
+    // set a slight delay in triggering the modal to account for calculation time
+    setTimeout(function() {
+        $('#mustMakeModal').modal('show');
+    }, 500);
 }
 
 /**

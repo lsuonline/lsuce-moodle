@@ -501,8 +501,8 @@ class grade_report_forecast extends grade_report {
         $boundaries = array_reverse(array_keys($this->letters));
 
         foreach ($boundaries as $boundary) {
-            // find the passing grade value for this boundary and add to results
-            $mustMakeArray[$this->getMustMakeLetterId($boundary)] = $this->getPassingGradeResult($boundary, $missingItem->grademax);
+            // find the passing grade value for this item and this boundary and add to results
+            $mustMakeArray[$this->getMustMakeLetterId($boundary)] = $this->getPassingGradeItemValue($boundary, $missingItem->grademin, $missingItem->grademax);
         }
 
         // set must make array
@@ -510,45 +510,49 @@ class grade_report_forecast extends grade_report {
     }
 
     /**
-     * Performs a binary search of attempts against the given boundary and returns
-     * the minimum whole number grade needed to achieve that boundary value
-     * 
-     * @param  int  $boundary  minimum grade value for a letter
-     * @param  int  $maxGrade  maximum grade
+     * Returns the minimum passing grade value necessary (within given bounds) to achieve to given minimum grade value threshold,
+     * or notification of an outright pass or fail (in the form of html symbols)
+
+     * @param  int  $minimumGradeValueBoundary  minimum grade value for a letter
+     * @param  int  $minValue   minimum grade value possible for this search attempt
+     * @param  int  $maxValue   maximum grade value possible for this search attempt
      * @return string
      */
-    private function getPassingGradeResult($boundary, $maxGrade) {
+    private function getPassingGradeItemValue($minimumGradeValueBoundary, $minValue, $maxValue) {
 
-        // first, determine if the user will outright pass the boundary with a zero
-        if ($this->calculateTotalWithUngradedValue(0) >= $boundary) {
-            // check mark
+        // first, determine if the user will outright meet the minimum with the minimum value possible
+        if ($this->calculateTotalWithUngradedValue($minValue) >= $minimumGradeValueBoundary) {
+            // return pass symbol
             return $this->getSymbolCheckMark();
+        } elseif ($this->calculateTotalWithUngradedValue($maxValue) < $minimumGradeValueBoundary) {
+            // return fail symbol
+            return $this->getSymbolXMark();
         }
 
-        // if not, try a binary search attempt (with possible attempts at 0 - 99) and return result
-        $left = 0;
-        $right = $maxGrade - 1;
+        // if not, try a binary search attempt and return result
+        $left = $minValue;
+        $right = $maxValue;
 
         while ($left <= $right) {
             $attempt = floor(($left + $right)/2);
 
             $calc = $this->calculateTotalWithUngradedValue($attempt);
             
-            if ($calc == $boundary) {
+            if ($calc == $minimumGradeValueBoundary) {
                 // once we find a good result, decrement the attempt value until we hit the floor
-                while ($this->calculateTotalWithUngradedValue($attempt - 1) >= $boundary) {
+                while ($this->calculateTotalWithUngradedValue($attempt - 1) >= $minimumGradeValueBoundary) {
                     $attempt--;
                 }
 
                 return $attempt;
-            } elseif ($calc > $boundary) {
+            } elseif ($calc > $minimumGradeValueBoundary) {
                 $right = $attempt - 1;
-            } elseif ($calc < $boundary) {
+            } elseif ($calc < $minimumGradeValueBoundary) {
                 $left = $attempt + 1;
             }
         }
 
-        // "X" symbol
+        // return fail notification
         return $this->getSymbolXMark();
     }
 
@@ -647,14 +651,27 @@ class grade_report_forecast extends grade_report {
      * @return string
      */
     private function getMustMakeModalTable() {
-        $modalTable = '<table class="table table-striped">';
+        $modalTable = '
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>' . get_string('must_make_modal_letter_column_heading', 'gradereport_forecast') . '</th>
+                        <th>' . get_string('must_make_modal_grade_column_heading', 'gradereport_forecast') . '</th>
+                        <th></th>
+                    </tr>
+                </thead>';
 
         foreach ($this->letters as $boundary => $letter) {
             $modalTable .= '
-                <tr>
-                    <td width="50%">' . $letter . '</td>
-                    <td width="50%" id="' . $this->getMustMakeLetterId($boundary) . '"></td>
-                </tr>';
+                <tbody>
+                    <tr>
+                        <td width="10%"></td>
+                        <td width="40%">' . $letter . '</td>
+                        <td width="40%" id="' . $this->getMustMakeLetterId($boundary) . '"></td>
+                        <td width="10%"></td>
+                    </tr>
+                </tbody>';
         }
 
         $modalTable .= '</table>';
@@ -1004,7 +1021,7 @@ class grade_report_forecast extends grade_report {
         $grades = [];
         $totalUngradedItemCount = 0;
 
-        // itereate through each POSTed form element
+        // iterate through each POSTed form element
         foreach ($data as $key => $value) {
             // if this is a legitimate grade item input element
             if (strpos($key, $this->getGradeItemInputPrefix()) == 0) {
@@ -1012,7 +1029,7 @@ class grade_report_forecast extends grade_report {
                 $totalUngradedItemCount++;
 
                 // if a value has been input, format and add to results array
-                if ( ! empty($value)) {
+                if ($value != '') {
                     $grades[str_replace($this->getGradeItemInputPrefix(), '', $key)] = $value;
                 }
             }
@@ -1539,8 +1556,6 @@ function grade_report_forecast_settings_definition(&$mform) {
 
     $mform->addElement('select', 'report_forecast_enabledforstudents', get_string('enabled_for_students', 'gradereport_forecast'), $options);
 
-/*  Taking this out because it does not work reliably enough
-
     $options = array(-1 => get_string('default', 'grades'),
                       0 => get_string('no'),
                       1 => get_string('yes'));
@@ -1552,9 +1567,6 @@ function grade_report_forecast_settings_definition(&$mform) {
     }
 
     $mform->addElement('select', 'report_forecast_mustmakeenabled', get_string('must_make_enabled', 'gradereport_forecast'), $options);
-
-*/
-
 }
 
 /**
