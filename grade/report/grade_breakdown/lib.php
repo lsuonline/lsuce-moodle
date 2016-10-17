@@ -221,7 +221,7 @@ class grade_report_grade_breakdown extends grade_report {
                 $params['groupid'] = $this->group->id;
 
                 // Get all the grades for that grade item, for this group
-                $sql = "SELECT g.* FROM
+                $sql = "SELECT DISTINCT(g.id) AS uniqueid, g.* FROM
                             {grade_grades} g,
                             {groups_members} gm
                             $role_select
