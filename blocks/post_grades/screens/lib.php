@@ -110,14 +110,20 @@ abstract class post_grades_student_table extends post_grades_screen {
 
         $this->context = context_course::instance($this->course->id);
         $graded = get_config('moodle', 'gradebookroles');
-        $roleids = explode(',', $graded);
-
-        foreach ($roleids as $roleid) {
-            // Keeping the first user appearance.
-            $this->students = get_role_users(
-                $roleid, $this->context, false, '',
-                'u.id, u.lastname, u.firstname', null, $groupid
-            );
+        $this->students = array();
+        if (COUNT(explode(',', $graded)) > 1) {
+            $roleids = explode(',', $graded);
+            foreach ($roleids as $roleid) {
+                // Keeping the first user appearance.
+                $this->students = $this->students + get_role_users(
+                    $roleid, $this->context, false, '',
+                    'u.id, u.lastname, u.firstname', null, $groupid
+                );
+            }
+        } else {
+            $roleids = $graded;
+            $this->students = get_role_users($graded, $this->context,
+                false, '', 'u.lastname, u.firstname', null, $groupid);
         }
     }
 
