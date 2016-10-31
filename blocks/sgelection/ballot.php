@@ -143,9 +143,11 @@ if($submitfinalvote == true){
     // @TODO perhaps wait to mark as voted until a transaction has completed.
     $collectionofvotes = $DB->get_records('block_sgelection_votes', array('voterid'=>$voter->id));
 
+    /* This may be causing a bug with more complex elections
     if ( COUNT($collectionofvotes) > $_SESSION['number_of_office_votes_allowed']) {
         redirect(sge::ballot_url($election->id));
     }
+    */
 
     foreach($collectionofvotes as $indvote){
         $vote = new vote($indvote);
