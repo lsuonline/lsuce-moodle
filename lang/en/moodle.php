@@ -2027,3 +2027,6 @@ $string['zippingbackup'] = 'Zipping backup';
 // Deprecated since Moodle 3.1.
 $string['filetoolarge'] = 'is too large to upload';
 $string['maxbytesforfile'] = 'The file {$a} is larger than the maximum size allowed.';
+
+// LSU HACK
+$string['mystuff'] = 'Kaltura';
