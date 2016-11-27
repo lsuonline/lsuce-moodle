@@ -24,11 +24,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 
-$plugin->version = 2015110414;
+$plugin->version = 2016110300;
 $plugin->requires = 2015051102;
 $plugin->component = 'block_post_grades';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v0.0.2';
+$plugin->release = 'v0.0.3';
 
 $plugin->dependencies = array(
     'enrol_ues' => 2015110414,

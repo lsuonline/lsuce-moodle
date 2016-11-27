@@ -400,6 +400,12 @@ class grade_item extends grade_object {
      * @return bool success
      */
     public function delete($source=null) {
+        // BEGIN LSU Anonymous Grades
+        if ($anon = grade_anonymous::fetch(array('itemid' => $this->id))) {
+            $anon->delete($source);
+        }
+        // END LSU Anonymous Grades
+
         $this->delete_all_grades($source);
         return parent::delete($source);
     }
@@ -1567,7 +1573,7 @@ class grade_item extends grade_object {
      * @return mixed float or int fixed grade value
      */
     public function bounded_grade($gradevalue) {
-        global $CFG;
+        global $CFG, $COURSE;
 
         if (is_null($gradevalue)) {
             return null;
@@ -1584,14 +1590,16 @@ class grade_item extends grade_object {
         // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
         $maxcoef = isset($CFG->gradeoverhundredprocentmax) ? $CFG->gradeoverhundredprocentmax : 10; // 1000% max by default
 
-        if (!empty($CFG->unlimitedgrades)) {
-            // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
-            $grademax = $grademax * $maxcoef;
-        } else if ($this->is_category_item() or $this->is_course_item()) {
-            $category = $this->load_item_category();
-            if ($category->aggregation >= 100) {
-                // grade >100% hack
+        if (!grade_anonymous::is_supported($COURSE)) {
+            if (!empty($CFG->unlimitedgrades)) {
+                // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
                 $grademax = $grademax * $maxcoef;
+            } else if ($this->is_category_item() or $this->is_course_item()) {
+                $category = $this->load_item_category();
+                if ($category->aggregation >= 100) {
+                    // grade >100% hack
+                    $grademax = $grademax * $maxcoef;
+                }
             }
         }
 

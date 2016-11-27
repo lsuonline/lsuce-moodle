@@ -435,7 +435,7 @@ class post_grades_no_item_return implements post_grades_return_process {
                 'id' => $this->course->id
             ));
         } else {
-            return new moodle_url('/grade/report/quick_edit/index.php', array(
+            return new moodle_url('/grade/report/singleview/index.php', array(
                 'id' => $this->course->id,
                 'itemid' => $processed->id,
                 'item' => 'grade'
@@ -459,6 +459,7 @@ class post_grades_no_item_return implements post_grades_return_process {
             'grademin' => 1.3,
             'grademax' => 4.0,
             'gradepass' => 1.5,
+            'display' => 1,
             'itemtype' => 'manual',
             'decimals' => 1,
             'itemname' => get_string('finalgrade_item', 'block_post_grades'),
@@ -539,6 +540,7 @@ class post_grades_no_anonymous_item_return extends post_grades_no_item_return {
         return new moodle_url('/grade/report/quick_edit/index.php', array(
             'id' => $this->course->id,
             'item' => 'anonymous',
+            'group' => required_param('group', PARAM_INT),
             'itemid' => $processed->itemid
         ));
     }

@@ -161,6 +161,11 @@ if ($mform->is_cancelled()) {
     grade_item::set_properties($grade_item, $data);
     $grade_item->outcomeid = null;
 
+    // BEGIN LSU Anonymous Grades
+    unset($grade_item->anonymous);
+    // END LSU Anonymous Grades
+
+
     // Handle null decimals value
     if (!property_exists($data, 'decimals') or $data->decimals < 0) {
         $grade_item->decimals = null;
@@ -169,6 +174,16 @@ if ($mform->is_cancelled()) {
     if (empty($grade_item->id)) {
         $grade_item->itemtype = 'manual'; // all new items to be manual only
         $grade_item->insert();
+
+        // BEGIN LSU Anonymous Grades check
+        if (isset($data->anonymous) and grade_anonymous::is_supported($course)) {
+            $anon = new grade_anonymous(array('itemid' => $grade_item->id));
+
+            if (empty($anon->id)) {
+                $anon->insert();
+            }
+        }
+        // END LSU Anonymous Grades check
 
         // set parent if needed
         if (isset($data->parentcategory)) {

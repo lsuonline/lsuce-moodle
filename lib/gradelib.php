@@ -32,6 +32,9 @@ require_once($CFG->libdir . '/grade/grade_item.php');
 require_once($CFG->libdir . '/grade/grade_grade.php');
 require_once($CFG->libdir . '/grade/grade_scale.php');
 require_once($CFG->libdir . '/grade/grade_outcome.php');
+// BEGIN LSU Anonymous Grades
+require_once($CFG->libdir . '/grade/grade_anonymous.php');
+// END LSU Anonymous Grades
 
 /////////////////////////////////////////////////////////////////////
 ///// Start of public API for communication with modules/blocks /////

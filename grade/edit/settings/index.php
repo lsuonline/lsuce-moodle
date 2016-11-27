@@ -58,13 +58,22 @@ if ($mform->is_cancelled()) {
 
 } else if ($data = $mform->get_data()) {
     $data = (array)$data;
-    $general = array('displaytype', 'decimalpoints', 'aggregationposition', 'minmaxtouse');
+    // BEGIN LSU ANonymous Grades
+    $general = array('displaytype', 'decimalpoints', 'anonymous_adjusts', 'aggregationposition', 'minmaxtouse');
+    // END LSU ANonymous Grades
     foreach ($data as $key=>$value) {
         if (!in_array($key, $general) and strpos($key, 'report_') !== 0
                                       and strpos($key, 'import_') !== 0
                                       and strpos($key, 'export_') !== 0) {
             continue;
         }
+        // BEGIN LSU ANonymous Grades
+        if ($key == 'anonymous_adjusts' and
+            !is_numeric($value) or trim($value) === '') {
+            $value = -1;
+        }
+        // END LSU ANonymous Grades
+
         if ($value == -1) {
             $value = null;
         }

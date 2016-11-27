@@ -22,10 +22,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
 namespace gradereport_singleview\local\screen;
 
 use gradereport_singleview;
 use moodle_url;
+use grade_anonymous;
 
 defined('MOODLE_INTERNAL') || die;
 
@@ -80,8 +82,11 @@ class select extends screen {
         $html = '';
 
         $types = gradereport_singleview::valid_screens();
-
         foreach ($types as $type) {
+            if (grade_anonymous::is_supported($this->course) && $type != 'user') {
+                continue;
+            }
+
             $classname = "gradereport_singleview\\local\\screen\\${type}";
 
             $screen = new $classname($this->courseid, null, $this->groupid);
@@ -98,12 +103,12 @@ class select extends screen {
 
             $params = array(
                 'id' => $this->courseid,
-                'item' => $screen->item_type(),
+                'item' => !grade_anonymous::is_supported($this->course) ? $screen->item_type() : 'anonymous',
                 'group' => $this->groupid
             );
 
-            $url = new moodle_url('/grade/report/singleview/index.php', $params);
-
+            $path = !grade_anonymous::is_supported($this->course) ? '/grade/report/singleview/index.php' : '/grade/report/quick_edit/index.php';
+            $url = new moodle_url($path, $params);
             $select = new \single_select($url, 'itemid', $options, '', array('' => $screen->select_label()));
             $select->set_label($screen->select_label(), array('class'=>'accesshide'));
             $html .= $OUTPUT->render($select);

@@ -3935,7 +3935,7 @@ function events_queue_handler($handler, $event, $errormessage) {
 function events_dispatch($handler, $eventdata, &$errormessage) {
     global $CFG;
 
-    debugging('Events API using $handlers array has been deprecated in favour of Events 2 API, please use it instead.', DEBUG_DEVELOPER);
+//    debugging('Events API using $handlers array has been deprecated in favour of Events 2 API, please use it instead.', DEBUG_DEVELOPER);
 
     $function = unserialize($handler->handlerfunction);
 
@@ -4047,7 +4047,7 @@ function events_update_definition($component='moodle') {
     $filehandlers = events_load_def($component);
 
     if ($filehandlers) {
-        debugging('Events API using $handlers array has been deprecated in favour of Events 2 API, please use it instead.', DEBUG_DEVELOPER);
+//        debugging('Events API using $handlers array has been deprecated in favour of Events 2 API, please use it instead.', DEBUG_DEVELOPER);
     }
 
     // load event definitions from db tables
@@ -4136,7 +4136,7 @@ function events_cron($eventname='') {
 
     $rs = $DB->get_recordset_sql($sql, $params);
     if ($rs->valid()) {
-        debugging('Events API using $handlers array has been deprecated in favour of Events 2 API, please use it instead.', DEBUG_DEVELOPER);
+//        debugging('Events API using $handlers array has been deprecated in favour of Events 2 API, please use it instead.', DEBUG_DEVELOPER);
     }
 
     foreach ($rs as $qhandler) {
@@ -4293,8 +4293,8 @@ function events_trigger_legacy($eventname, $eventdata) {
 function events_is_registered($eventname, $component) {
     global $DB;
 
-    debugging('events_is_registered() has been deprecated along with all Events 1 API in favour of Events 2 API,' .
-        ' please use it instead.', DEBUG_DEVELOPER);
+//    debugging('events_is_registered() has been deprecated along with all Events 1 API in favour of Events 2 API,' .
+//        ' please use it instead.', DEBUG_DEVELOPER);
 
     return $DB->record_exists('events_handlers', array('component'=>$component, 'eventname'=>$eventname));
 }
@@ -4310,8 +4310,8 @@ function events_is_registered($eventname, $component) {
 function events_pending_count($eventname) {
     global $DB;
 
-    debugging('events_pending_count() has been deprecated along with all Events 1 API in favour of Events 2 API,' .
-        ' please use it instead.', DEBUG_DEVELOPER);
+//    debugging('events_pending_count() has been deprecated along with all Events 1 API in favour of Events 2 API,' .
+//        ' please use it instead.', DEBUG_DEVELOPER);
 
     $sql = "SELECT COUNT('x')
               FROM {events_queue_handlers} qh

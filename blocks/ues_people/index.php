@@ -448,6 +448,9 @@ $user_fields = array(
     'idnumber' => new ues_people_element_output('idnumber', get_string('idnumber'))
 );
 
+if ($meta_names['user_keypadid']) {
+  unset($meta_names['user_keypadid']);
+}
 
 $meta_names = array_merge($user_fields, $meta_names);
 

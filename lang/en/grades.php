@@ -839,5 +839,22 @@ $string['lettersnames'] = 'Letter names';
 $string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
 // END LSU Better Letters
 
+// BEGIN LSU Anonymous Grades
+$string['anonymous'] = 'Anonymous';
+$string['anonymousadjusts'] = 'Anonymous adjusts +/-';
+$string['anonymousadjusts_help'] = 'In anonymous grading, final grades cannot be changed once committed. Adjustments allow changes within the specified constraints.';
+$string['anonymouscategories'] = 'Anonymous categories';
+$string['anonymouscategories_help'] = 'Anonymous grading will be limited to these course categories. If none are selected, then all categories will be allowed to use anonymous grading.';
+$string['anonymousfield'] = 'Anonymous field';
+$string['anonymousfield_help'] = 'The selected profile field will store the anonymous number. Create one [here]({$a}).';
+$string['anonymousgrading'] = 'Anonymous grading';
+$string['anonymousgrading_help'] = 'Enable anonymous grading in Moodle';
+$string['anonymousitem'] = 'Anonymous item';
+$string['anonymouslessthanmin'] = 'The adjustment entered for {$a->itemname} for {$a->username} is less than -{$a->boundary}.<br />Anonymous graded courses do not allow for unlimited grading.';
+$string['anonymousmorethanmax'] = 'The adjustment entered for {$a->itemname} for {$a->username} is more than {$a->boundary}.<br />Anonymous graded courses do not allow for unlimited grading.';
+$string['anonymousnotallowed'] = 'Directly editing anonymous grades is not allowed.';
+// END LSU Anonymous Grades
+
+
 // Deprecated since 3.0.
 $string['categoriesanditems'] = 'Categories and items';

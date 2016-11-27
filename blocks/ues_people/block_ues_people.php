@@ -34,6 +34,8 @@ class block_ues_people extends block_list {
         return array('course' => true, 'site' => false, 'my' => false);
     }
 
+    function has_config() {return true;}
+
     function get_content() {
         if ($this->content !== NULL) {
             return $this->content;

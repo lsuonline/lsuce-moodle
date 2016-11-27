@@ -24,6 +24,7 @@
 
 require_once($CFG->dirroot . '/grade/report/lib.php');
 require_once($CFG->libdir.'/tablelib.php');
+require_once($CFG->libdir.'/grade/grade_anonymous.php');
 
 /**
  * Class providing an API for the grader report building and displaying.
@@ -139,6 +140,10 @@ class grade_report_grader extends grade_report {
 
         // Grab the grade_tree for this course
         $this->gtree = new grade_tree($this->courseid, true, $switch, $this->collapsed, $nooutcomes);
+
+        // BEGIN LSU Anonymous Grades - Load Anonymous items
+        $this->load_anonymous();
+        // END LSU Anonymous Grades - Load Anonymous items
 
         $this->sortitemid = $sortitemid;
 
@@ -716,7 +721,7 @@ class grade_report_grader extends grade_report {
                 $userreportcell->text .= $OUTPUT->action_icon($url, new pix_icon('t/grades', $strgradesforuser));
             }
 
-            if ($canseesingleview) {
+            if ($canseesingleview && !grade_anonymous::is_supported($this->course)) {
                 $url = new moodle_url('/grade/report/singleview/index.php', array('id' => $this->course->id, 'itemid' => $user->id, 'item' => 'user'));
                 $singleview = $OUTPUT->action_icon($url, new pix_icon('t/editstring', get_string('singleview', 'grades', $fullname)));
                 $userreportcell->text .= $singleview;
@@ -753,7 +758,7 @@ class grade_report_grader extends grade_report {
      * @return array Array of html_table_row objects
      */
     public function get_right_rows($displayaverages) {
-        global $CFG, $USER, $OUTPUT, $DB, $PAGE;
+        global $CFG, $COURSE, $USER, $OUTPUT, $DB, $PAGE;
 
         $rows = array();
         $this->rowcount = 0;
@@ -869,11 +874,13 @@ class grade_report_grader extends grade_report {
                     if (get_capability_info('gradereport/singleview:view')) {
                         if (has_all_capabilities(array('gradereport/singleview:view', 'moodle/grade:viewall',
                             'moodle/grade:edit'), $this->context)) {
-
-                            $url = new moodle_url('/grade/report/singleview/index.php', array(
-                                'id' => $this->course->id,
-                                'item' => 'grade',
-                                'itemid' => $element['object']->id));
+                             $is_anon = isset($this->anonymous_items[$element['object']->id]);
+                             $path = $is_anon ? '/grade/report/quick_edit/index.php' : '/grade/report/singleview/index.php';
+                             $url = new moodle_url($path, array(
+                                 'id' => $this->course->id,
+                                 'item' => $is_anon ? 'anonymous' : 'grade',
+                                 'group' => $this->currentgroup,
+                                 'itemid' => $element['object']->id));
                             $singleview = $OUTPUT->action_icon(
                                 $url,
                                 new pix_icon('t/editstring', get_string('singleview', 'grades', $element['object']->get_name()))
@@ -974,6 +981,10 @@ class grade_report_grader extends grade_report {
                     $jsarguments['grades'][] = array('user'=>$userid, 'item'=>$itemid, 'grade'=>$gradevalforjs);
                 }
 
+                // BEGIN LSU Anonymous Grades
+                $is_anon = isset($this->anonymous_items[$itemid]);
+                // END LSU Anonymous Grades
+
                 // MDL-11274
                 // Hide grades in the grader report if the current grader doesn't have 'moodle/grade:viewhidden'
                 if (!$this->canviewhidden and $grade->is_hidden()) {
@@ -1017,7 +1028,7 @@ class grade_report_grader extends grade_report {
                 }
 
                 // Do not show any icons if no grade (no record in DB to match)
-                if (!$item->needsupdate and $USER->gradeediting[$this->courseid]) {
+                if (!$item->needsupdate and $USER->gradeediting[$this->courseid] and !$is_anon) {
                     $itemcell->text .= $this->get_icons($element);
                 }
 
@@ -1130,7 +1141,7 @@ class grade_report_grader extends grade_report {
                     }
 
                     // Only allow edting if the grade is editable (not locked, not in a unoverridable category, etc).
-                    if ($enableajax && $grade->is_editable()) {
+                    if ($enableajax && $grade->is_editable() && !grade_anonymous::is_supported($COURSE)) {
                         // If a grade item is type text, and we don't have show quick feedback on, it can't be edited.
                         if ($item->gradetype != GRADE_TYPE_TEXT || $showquickfeedback) {
                             $itemcell->attributes['class'] .= ' clickable';
@@ -1155,7 +1166,7 @@ class grade_report_grader extends grade_report {
                 }
 
                 // Enable keyboard navigation if the grade is editable (not locked, not in a unoverridable category, etc).
-                if ($enableajax && $grade->is_editable()) {
+                if ($enableajax && $grade->is_editable() && !grade_anonymous::is_supported($COURSE)) {
                     // If a grade item is type text, and we don't have show quick feedback on, it can't be edited.
                     if ($item->gradetype != GRADE_TYPE_TEXT || $showquickfeedback) {
                         $itemcell->attributes['class'] .= ' gbnavigable';
@@ -1354,6 +1365,10 @@ class grade_report_grader extends grade_report {
             $iconsrow->attributes['class'] = 'controls';
 
             foreach ($this->gtree->items as $itemid => $unused) {
+                // BEGIN LSU Anonymous Grades
+                $is_anon = isset($this->anonymous_items[$itemid]);
+                // END LSU Anonymous Grades
+
                 // emulate grade element
                 $item = $this->gtree->get_item($itemid);
 
@@ -1361,7 +1376,13 @@ class grade_report_grader extends grade_report {
                 $element = $this->gtree->locate_element($eid);
                 $itemcell = new html_table_cell();
                 $itemcell->attributes['class'] = 'controls icons i'.$itemid;
-                $itemcell->text = $this->get_icons($element);
+
+                // BEGIN LSU Anonymous Grades
+                if (!$is_anon) {
+                    $itemcell->text = $this->get_icons($element);
+                }
+                // END LSU Anonymous Grades
+
                 $iconsrow->cells[] = $itemcell;
             }
             $rows[] = $iconsrow;
@@ -1860,6 +1881,30 @@ class grade_report_grader extends grade_report {
 
         return true;
     }
+
+
+    /**
+     * Public function for loading anonymous grades
+     * Returns an array of grade items which are anonymously graded
+     */
+    public function load_anonymous() {
+
+        if (empty($this->anonymous_items)) {
+            global $DB;
+            $sql = 'SELECT anon.* FROM {grade_items} gi, {grade_anon_items} anon
+                WHERE anon.itemid = gi.id';
+
+            $this->anonymous_items = array();
+
+            foreach ($DB->get_records_sql($sql) as $item) {
+                $this->anonymous_items[$item->itemid] =
+                    grade_anonymous::fetch(array('id' => $item->id));
+            }
+        }
+
+        return $this->anonymous_items;
+    }
+
 
     /**
      * Refactored function for generating HTML of sorting links with matching arrows.

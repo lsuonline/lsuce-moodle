@@ -38,8 +38,16 @@ class edit_item_form extends moodleform {
 
         $item = $this->_customdata['current'];
 
-/// visible elements
+// visible elements
         $mform->addElement('header', 'general', get_string('gradeitem', 'grades'));
+
+        // BEGIN LSU Anonymous Grades check
+        if (grade_anonymous::is_supported($COURSE)) {
+            $mform->addElement(
+                'checkbox', 'anonymous', get_string('anonymousitem', 'grades')
+            );
+        }
+        // END LSU Anonymous Grades check
 
         $mform->addElement('text', 'itemname', get_string('itemname', 'grades'));
         $mform->setType('itemname', PARAM_TEXT);
@@ -264,6 +272,20 @@ class edit_item_form extends moodleform {
         $mform =& $this->_form;
 
         if ($id = $mform->getElementValue('id')) {
+
+            // BEGIN LSU Anonymous Grades
+            if ($mform->elementExists('anonymous')) {
+                $anon = grade_anonymous::fetch(array('itemid' => $id));
+
+                if ($anon) {
+                    $mform->setDefault('anonymous', 1);
+                    $mform->hardFreeze('anonymous');
+                } else {
+                    $mform->removeElement('anonymous');
+                }
+            }
+            // END LSU Anonymous Grades
+
             $grade_item = grade_item::fetch(array('id'=>$id));
 
             if (!$grade_item->is_raw_used()) {

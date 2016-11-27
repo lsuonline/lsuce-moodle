@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->dirroot . '/grade/report/lib.php');
+require_once($CFG->libdir . '/grade/grade_anonymous.php');
 
 /**
  * This class is the main class that must be implemented by a grade report plugin.

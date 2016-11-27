@@ -1484,7 +1484,8 @@ class grade_category extends grade_object {
                     $agg_grade = $sum;
                     $grademax = $sum;
                 }
-                if (isset($extrasum) > 0) {
+                $nextrasum = 0;
+                if ((isset($extrasum) > 0) && ($grademax > 0)) {
                     $nextrasum = $extrasum / $grademax;
                 }
                 $agg_grade = $agg_grade + $nextrasum;

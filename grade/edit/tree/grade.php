@@ -48,6 +48,13 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
 }
 
+// BEGIN LSU Anonymous Grades
+$p = array('itemid' => $itemid);
+if (grade_anonymous::is_supported($course) and grade_anonymous::fetch($p)) {
+    print_error('anonymousnotallowed', 'grades');
+}
+// END LSU Anonymous Grades
+
 $PAGE->set_pagelayout('incourse');
 require_login($course);
 $context = context_course::instance($course->id);
