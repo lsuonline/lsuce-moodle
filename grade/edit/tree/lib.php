@@ -715,7 +715,27 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
         $categorycell = parent::get_category_cell($category, $levelclass, $params);
         $categorycell->text = grade_edit_tree::get_weight_input($item);
         $parent_cat = $item->load_parent_category();
-        $grandparent_cat = $parent_cat->load_parent_category();
+        $isextracredit = false;
+        if ($item->aggregationcoef > 0) {
+            // For category grade items, we need the grandparent category.
+            // The parent is just category the grade item represents.
+            if ($item->is_category_item()) {
+                $grandparent_cat = $parent_cat->get_parent_category();
+                if ($grandparent_cat->is_extracredit_used() && $grandparent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                    $isextracredit = true;
+                }
+            } else if ($parent_cat->is_extracredit_used() && $parent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                $isextracredit = true;
+            }
+        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $item->aggregationcoef < 0) {
+            $isextracredit = true;
+        } else if ($item->aggregationcoef < 0) {
+            $isextracredit = true;
+        }
+        if ($isextracredit) {
+                $categorycell->text = get_string('aggregationhintextra', 'grades');
+        }
+/* REMOVING OLD METHOD
         if (isset($grandparent_cat->aggregation)) {
             if (($parent_cat->aggregation == GRADE_AGGREGATE_SUM && $grandparent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN && $item->aggregationcoef == 1 && ($item->aggregationcoef2 == 0 || $item->weightoverride == 1))) {
                 $categorycell->text = get_string('aggregationhintextra', 'grades');
@@ -725,7 +745,7 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
                 $categorycell->text = get_string('aggregationhintextra', 'grades');
             }
         }
-        return $categorycell;
+*/        return $categorycell;
     }
 
     public function get_item_cell($item, $params) {
@@ -745,16 +765,59 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
         }
 
         $parent_cat = $object->load_parent_category();
-        $grandparent_cat = $parent_cat->load_parent_category();
-        if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM && $object->itemtype != 'category' && $item->aggregationcoef == 1 && ($item->aggregationcoef2 == 0 || $item->weightoverride == 1)) {
-            $itemcell->text = get_string('aggregationhintextra', 'grades');
+        $isextracredit = false;
+        if ($item->aggregationcoef > 0) {
+            // For category grade items, we need the grandparent category.
+            // The parent is just category the grade item represents.
+            if ($item->is_category_item()) {
+                $grandparent_cat = $parent_cat->get_parent_category();
+                if ($grandparent_cat->is_extracredit_used() && $grandparent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                    $isextracredit = true;
+                }
+            } else if ($parent_cat->is_extracredit_used() && $parent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                $isextracredit = true;
+            }
+        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $item->aggregationcoef < 0) {
+            $isextracredit = true;
+        } else if ($item->aggregationcoef < 0) {
+            $isextracredit = true;
+        }
+        if ($isextracredit) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
         }
 
-        if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $item->aggregationcoef == 1) {
-            $itemcell->text = get_string('aggregationhintextra', 'grades');
+/* REMOVING OLD METHOD
+        if (isset($grandparent_cat->aggregation)) {
+            if ($grandparent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $item->aggregationcoef == 1) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($grandparent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $item->aggregationcoef < 0) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($grandparent_cat->aggregation == GRADE_AGGREGATE_SUM && $parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $item->aggregationcoef == 1 && ($item->aggregationcoef2 == 0 || $item->weightoverride == 1)) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM && $object->itemtype != 'category' && $item->aggregationcoef == 1 && ($item->aggregationcoef2 == 0 || $item->weightoverride == 1)) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $object->itemtype != 'category' && $item->aggregationcoef == 1) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $object->itemtype != 'category' && $item->aggregationcoef == 1) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+        } else {
+            if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM && $object->itemtype != 'category' && $item->aggregationcoef == 1 && ($item->aggregationcoef2 == 0 || $item->weightoverride == 1)) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $object->itemtype != 'category' && $item->aggregationcoef == 1) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
+            if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $object->itemtype != 'category' && $item->aggregationcoef == 1) {
+                $itemcell->text = get_string('aggregationhintextra', 'grades');
+            }
         }
-
-        return $itemcell;
+ */           return $itemcell;
     }
 }
 
