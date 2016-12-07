@@ -36,12 +36,12 @@ function getCategories() {
 /**
  * Fetches all grade item input HTML elements from forecast form
  *
- * Optionally returns a given class type, defaults to all "dynamic-item" classed-items
+ * Optionally returns a given input type, "scale-selects", defaults to all "dynamic-item" classed-items
  * 
- * @param string  type  all(default)|scale-selects
+ * @param string  type  values(default)|scale-selects
  * @return object
  */
-function getGradeInputs(type = 'all') {
+function getGradeInputs(type = 'values') {
     if (type == 'scale-selects') {
         return getElementsByType('dynamic-scale-item');
     }
@@ -208,20 +208,23 @@ function collectFormInput() {
  * 
  * @return void
  */
-function listenForInputChanges() {
-    var debouncedHandleInputChange = function(event) {
+function listenForInputChanges(debounceWaitTime = 1000) {
+
+    // validate grade (text) input on @keyup
+    getGradeInputs('values').keyup(function(event) {
         handleInputChange(event);
+    });
 
-        return;
-    }
-
-    var debouncedPostGradeInputs = function(event) {
+    // create single invokation for debouncing
+    var debouncedPostGradeInputs = function() {
         postGradeInputs();
     }
 
-    getGradeInputs().keyup(debounce(debouncedHandleInputChange, 500));
+    // post grade inputs for calculation on grade (text) input @keyup
+    getGradeInputs('values').keyup(debounce(debouncedPostGradeInputs, debounceWaitTime));
 
-    getGradeInputs('scale-selects').change(debounce(debouncedPostGradeInputs, 500));
+    // post grade inputs for calculation on grade (scale selects) input @keyup
+    getGradeInputs('scale-selects').change(debounce(debouncedPostGradeInputs, debounceWaitTime));
 }
 
 /**
@@ -277,12 +280,6 @@ function handleInputChange(event) {
 
     hideGradeError(event.currentTarget, 'invalid');
     hideGradeError(event.currentTarget, 'range');
-
-    if (inputErrorsExist()) {
-        return;
-    }
-
-    postGradeInputs();
 }
 
 /**
@@ -354,10 +351,19 @@ function updateCourseTotal(value) {
  * @return void
  */
 function postGradeInputs() {
+    if (inputErrorsExist())
+        return false;
+
     var inputs = collectFormInput();
 
+    getCategories().each(function() {
+        $(this).html('<img class="transparent" src="assets/frspinner.svg">');
+    });
+
+    getCourseCategory().html('<img class="transparent" src="assets/frspinner.svg">');
+
     $.post('io.php', inputs, function(data) {
-        console.log('posting');
+        console.log('posting forecast grade input');
         
         var response = JSON.parse(data);
         
@@ -394,9 +400,3 @@ function renderMustMakeModal(values) {
 function handleGradeInputResponse(response) {
     updateTotals(response);
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-$(document).ready(function() {
-    listenForInputChanges();
-});
