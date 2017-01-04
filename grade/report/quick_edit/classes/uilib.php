@@ -386,11 +386,18 @@ class quick_edit_finalgrade_ui extends quick_edit_grade_attribute_format impleme
         if (is_null($finalgrade)) {
             // ok
         } else {
-            $bounded = $grade_item->bounded_grade($finalgrade);
-            if ($bounded > $finalgrade) {
-                $errorstr = 'lessthanmin';
-            } else if ($bounded < $finalgrade) {
-                $errorstr = 'morethanmax';
+
+            if (filter_var($value, FILTER_VALIDATE_FLOAT) || $value == '0') {
+                $bounded = $grade_item->bounded_grade($finalgrade);
+                if ($bounded > $finalgrade) {
+                    $errorstr = 'lessthanmin';
+                } else if ($bounded < $finalgrade) {
+                    $errorstr = 'morethanmax';
+                }
+            } else {
+                $finalgrade = '0.0';
+                $errorstr = 'notagrade';
+                $bounded = $grade_item->bounded_grade($finalgrade);
             }
         }
 

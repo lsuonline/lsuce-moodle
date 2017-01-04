@@ -503,6 +503,7 @@ $string['modgradetypenone'] = 'None';
 $string['modgradetypepoint'] = 'Point';
 $string['modgradetypescale'] = 'Scale';
 $string['morethanmax'] = 'The grade entered for {$a->itemname} for {$a->username} is more than the maximum allowed';
+$string['notagrade'] = 'The grade entered for {$a->itemname} for {$a->username} is not a valid number';
 $string['moveselectedto'] = 'Move selected items to';
 $string['movingelement'] = 'Moving {$a}';
 $string['multfactor'] = 'Multiplicator';

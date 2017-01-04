@@ -49,10 +49,9 @@ abstract class quick_edit_screen {
     }
 
     public function format_link($screen, $itemid, $display = null) {
-        $url = new moodle_url('/grade/report/quick_edit/index.php', array(
+        $url = new moodle_url('/grade/report/user/index.php', array(
             'id' => $this->courseid,
-            'item' => $screen,
-            'itemid' => $itemid,
+            'userid' => $itemid,
             'group' => $this->groupid
         ));
 

@@ -82,13 +82,18 @@ class anonymous_quick_edit_adjust_value extends quick_edit_finalgrade_ui {
 
     public function set($value) {
         global $DB;
-        $bounded = $this->grade->bound_adjust_value($value);
-
         $code = '';
-        if ($bounded < $value) {
-            $code = 'anonymousmorethanmax';
-        } else if($bounded > $value) {
-            $code = 'anonymouslessthanmin';
+        if (filter_var($value, FILTER_VALIDATE_FLOAT) || $value == '0') {
+            $bounded = $this->grade->bound_adjust_value($value);
+            if ($bounded < $value) {
+                $code = 'anonymousmorethanmax';
+            } else if($bounded > $value) {
+                $code = 'anonymouslessthanmin';
+            }
+        } else {
+            $value = '0.0';
+            $code = 'notagrade';
+            $bounded = $this->grade->bound_adjust_value($value);
         }
 
         // Diff checker will fail on screen
