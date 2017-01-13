@@ -112,6 +112,13 @@ class block_course_overview_renderer extends plugin_renderer_base {
                 $coursefullname = format_string(get_course_display_name_for_list($course), true, $course->id);
                 $link = html_writer::link($courseurl, $coursefullname, $attributes);
                 $html .= $this->output->heading($link, 2, 'title');
+                // Add CAS links
+                if (class_exists('local_cas_help_links_url_generator')) {
+                    $help_url_array = \local_cas_help_links_url_generator::getUrlArrayForCourse($course);
+                    if ($help_url_array['display']) {
+                        $html .= '<a class="btn cas_help" href="' . $help_url_array['url'] . '" target="_blank">' . $help_url_array['label'] . '</a>';
+                     }
+                 }
             } else {
                 $html .= $this->output->heading(html_writer::link(
                     new moodle_url('/auth/mnet/jump.php', array('hostid' => $course->hostid, 'wantsurl' => '/course/view.php?id='.$course->remoteid)),

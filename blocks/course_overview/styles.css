@@ -104,3 +104,7 @@
 .block_course_overview .content .course_list .movehere{
     margin-bottom: 15px;
 }
+
+.block_course_overview .content .course_list .btn.cas_help {
+    float: right;
+}

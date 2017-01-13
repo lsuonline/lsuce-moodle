@@ -1,0 +1,45 @@
+h1 {
+  color: blue; }
+
+.toggle.ios,
+.toggle-on.ios,
+.toggle-off.ios {
+  border-radius: 20px; }
+
+.toggle.ios .toggle-handle {
+  border-radius: 20px; }
+
+.course-list-container,
+.category-list-container,
+.user-container {
+  padding-left: 20px; }
+  .course-list-container table td,
+  .category-list-container table td,
+  .user-container table td {
+    padding-right: 50px; }
+    .course-list-container table td > p,
+    .category-list-container table td > p,
+    .user-container table td > p {
+      padding-top: 15px; }
+  .course-list-container div.checkbox label,
+  .category-list-container div.checkbox label,
+  .user-container div.checkbox label {
+    padding-top: 11px; }
+
+.course-list-container .current-user-course-url,
+.course-list-container .current-user-category-url,
+.category-list-container .current-user-course-url,
+.category-list-container .current-user-category-url {
+  color: blue; }
+  .course-list-container .current-user-course-url.default-url,
+  .course-list-container .current-user-category-url.default-url,
+  .category-list-container .current-user-course-url.default-url,
+  .category-list-container .current-user-category-url.default-url {
+    color: #cdcdcd; }
+  .course-list-container .current-user-course-url span.url,
+  .course-list-container .current-user-category-url span.url,
+  .category-list-container .current-user-course-url span.url,
+  .category-list-container .current-user-category-url span.url {
+    text-decoration: underline; }
+
+/*# sourceMappingURL=style.css.map */

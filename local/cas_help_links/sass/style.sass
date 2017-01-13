@@ -1,0 +1,41 @@
+h1
+    color: blue
+
+.toggle, 
+.toggle-on, 
+.toggle-off
+    &.ios
+        border-radius: 20px
+
+.toggle.ios 
+    .toggle-handle
+        border-radius: 20px
+
+.course-list-container,
+.category-list-container,
+.user-container
+    padding-left: 20px
+
+    table
+        td
+            padding-right: 50px
+
+            & > p
+                padding-top: 15px
+
+    div.checkbox
+        label
+            padding-top: 11px
+
+.course-list-container,
+.category-list-container
+
+    .current-user-course-url,
+    .current-user-category-url
+        color: blue
+
+        &.default-url
+            color: lighten(gray, 30%)
+
+        span.url
+            text-decoration: underline
