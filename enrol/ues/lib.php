@@ -1267,8 +1267,16 @@ class enrol_ues_plugin extends enrol_plugin {
         }
 
         // For certain we are working with a real course
-        $moodle_course = $this->manifest_course($semester, $course, $section);
+        try {
+            // @quickfix 1/13/17 - if this fails, let's throw an exception, log, and then continue
+            $moodle_course = $this->manifest_course($semester, $course, $section);
+        } catch (Exception $e) {
+            $this->log($e->getMessage());
 
+            // was not successful, so return false (?)
+            return false;
+        }
+        
         $this->manifest_course_enrollment($moodle_course, $course, $section);
 
         return true;
@@ -1491,6 +1499,14 @@ class enrol_ues_plugin extends enrol_plugin {
         if (!$primary_teacher) {
 
             $primary_teacher = current($section->teachers()); //arbitrary ? send email notice
+
+            // @quickfix 1/13/17 - if there is still no primary teacher at this point,
+            // let's throw an exception to the parent manifestation method (which will log)
+            if ( ! $primary_teacher) {
+                throw new Exception('Cannot find primary teacher for section id: ' . $section->id);
+
+                return;
+            }
         }
 
         $assumed_idnumber = $semester->year . $semester->name .
