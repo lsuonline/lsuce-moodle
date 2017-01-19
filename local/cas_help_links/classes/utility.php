@@ -70,15 +70,22 @@ class local_cas_help_links_utility {
     private static function get_primary_instructor_course_data($user_id)
     {
         global $DB;
+        $offset = (get_config('enrol_ues', 'sub_days') * 86400);
 
-        $result = $DB->get_records_sql('SELECT DISTINCT u.id, c.id, c.fullname, c.shortname, c.idnumber, c.category FROM mdl_enrol_ues_teachers t
-            INNER JOIN mdl_user u ON u.id = t.userid
-            INNER JOIN mdl_enrol_ues_sections sec ON sec.id = t.sectionid
-            INNER JOIN mdl_course c ON c.idnumber = sec.idnumber
+        $result = $DB->get_records_sql('SELECT DISTINCT u.id, c.id, c.fullname, c.shortname, c.idnumber, c.category, cc.name FROM {enrol_ues_teachers} t
+            INNER JOIN {user} u ON u.id = t.userid
+            INNER JOIN {enrol_ues_sections} sec ON sec.id = t.sectionid
+            INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+            INNER JOIN {enrol_ues_semesters} sem ON sem.id = sec.semesterid
+            INNER JOIN {course} c ON c.idnumber = sec.idnumber
+            INNER JOIN {course_categories} cc ON cc.id = c.category
             WHERE sec.idnumber IS NOT NULL
             AND sec.idnumber <> ""
+            AND cou.cou_number < "5000"
             AND t.primary_flag = "1"
             AND t.status = "enrolled"
+            AND sem.classes_start < ' . (time() + $offset) . ' 
+            AND sem.grades_due > ' . time() . ' 
             AND u.id = ?', array($user_id));
 
         return $result;
@@ -93,16 +100,22 @@ class local_cas_help_links_utility {
     private static function get_primary_instructor_category_data($user_id)
     {
         global $DB;
+        $offset = (get_config('enrol_ues', 'sub_days') * 86400);
 
-        $result = $DB->get_records_sql('SELECT DISTINCT u.id, cc.id, cc.name FROM mdl_enrol_ues_teachers t
-            INNER JOIN mdl_user u ON u.id = t.userid
-            INNER JOIN mdl_enrol_ues_sections sec ON sec.id = t.sectionid
-            INNER JOIN mdl_course c ON c.idnumber = sec.idnumber
-            INNER JOIN mdl_course_categories cc ON cc.id = c.category
+        $result = $DB->get_records_sql('SELECT DISTINCT u.id, cc.id, cc.name FROM {enrol_ues_teachers} t
+            INNER JOIN {user} u ON u.id = t.userid
+            INNER JOIN {enrol_ues_sections} sec ON sec.id = t.sectionid
+            INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+            INNER JOIN {enrol_ues_semesters} sem ON sem.id = sec.semesterid
+            INNER JOIN {course} c ON c.idnumber = sec.idnumber
+            INNER JOIN {course_categories} cc ON cc.id = c.category
             WHERE sec.idnumber IS NOT NULL
             AND sec.idnumber <> ""
             AND t.primary_flag = "1"
             AND t.status = "enrolled"
+            AND cou.cou_number < "5000"
+            AND sem.classes_start < ' . (time() + $offset) . '
+            AND sem.grades_due > ' . time() . '
             AND u.id = ?', array($user_id));
 
         return $result;
@@ -132,7 +145,7 @@ class local_cas_help_links_utility {
     {
         global $DB;
 
-        $result = $DB->get_records_sql('SELECT DISTINCT id, name FROM mdl_course_categories');
+        $result = $DB->get_records_sql('SELECT DISTINCT id, name FROM {course_categories}');
 
         return $result;
     }
@@ -165,6 +178,7 @@ class local_cas_help_links_utility {
                 'course_shortname' => $course->shortname,
                 'course_idnumber' => $course->idnumber,
                 'course_category_id' => $course->category,
+                'course_category_name' => $courseArray->name,
                 'link_id' => $linkId,
                 'link_display' => $linkExistsForCourse ? $userCourseLinks[$course->id]->display : '0',
                 'link_checked' => $isChecked ? 'checked' : '',
@@ -371,13 +385,19 @@ class local_cas_help_links_utility {
     public static function getPrimaryInstructorId($idnumber)
     {
         global $DB;
+        $offset = (get_config('enrol_ues', 'sub_days') * 86400);
 
-        $result = $DB->get_records_sql('SELECT DISTINCT(t.userid), cts.requesterid FROM mdl_enrol_ues_sections sec
-            INNER JOIN mdl_enrol_ues_teachers t ON t.sectionid = sec.id
-            LEFT JOIN mdl_enrol_cps_team_sections cts ON cts.sectionid = sec.id
+        $result = $DB->get_records_sql('SELECT DISTINCT(t.userid), cts.requesterid FROM {enrol_ues_sections} sec
+            INNER JOIN {enrol_ues_semesters} sem ON sem.id = sec.semesterid
+            INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+            INNER JOIN {enrol_ues_teachers} t ON t.sectionid = sec.id
+            LEFT JOIN {enrol_cps_team_sections} cts ON cts.sectionid = sec.id
             WHERE t.primary_flag = 1
             AND sec.idnumber IS NOT NULL
             AND sec.idnumber <> ""
+            AND cou.cou_number < "5000"
+            AND sem.classes_start < ' . (time() + $offset) . '
+            AND sem.grades_due > ' . time() . '
             AND sec.idnumber = ?', array($idnumber));
 
         // if no query results, assume there is no primary user id
@@ -510,7 +530,7 @@ class local_cas_help_links_utility {
         
         $whereClause = self::buildPrefsWhereClause($course_id, $category_id, $primary_instructor_user_id);
 
-        $result = $DB->get_records_sql("SELECT * FROM mdl_local_cas_help_links links WHERE " . $whereClause);
+        $result = $DB->get_records_sql("SELECT * FROM {local_cas_help_links} links WHERE " . $whereClause);
 
         return $result;
     }
