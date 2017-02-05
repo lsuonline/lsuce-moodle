@@ -333,11 +333,11 @@ class block_course_overview_renderer extends plugin_renderer_base {
      */
     public function welcome_area($msgcount) {
         global $CFG, $USER;
+        $user_id = $USER->id;
         $output = $this->output->box_start('welcome_area');
 
         $picture = $this->output->user_picture($USER, array('size' => 75, 'class' => 'welcome_userpicture'));
         $output .= html_writer::tag('div', $picture, array('class' => 'profilepicture'));
-
         $output .= $this->output->box_start('welcome_message');
         $output .= $this->output->heading(get_string('welcome', 'block_course_overview', $USER->firstname));
 
@@ -354,7 +354,15 @@ class block_course_overview_renderer extends plugin_renderer_base {
             $output .= html_writer::link(new moodle_url('/message/index.php'),
                     get_string('message'.$plural, 'block_course_overview'));
         }
+
         $output .= $this->output->box_end();
+        // Add CAS links
+        if (class_exists('local_cas_help_links_url_generator')) {
+            $help_url_array = \local_cas_help_links_url_generator::getUrlForUser($user_id);
+            if ($help_url_array['display']) {
+                $output .= '<a class="btn cas_edit_help" href="' . $help_url_array['url'] . '" target="_blank">' . $help_url_array['label'] . '</a>';
+            }
+        }
         $output .= $this->output->box('', 'flush');
         $output .= $this->output->box_end();
 

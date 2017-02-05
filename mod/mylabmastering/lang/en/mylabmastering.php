@@ -30,3 +30,4 @@ This integration provides:
 
 * Single sign-on (SSO) from the Moodle course into the MyLab & Mastering course. This standards-based integration uses IMS Learning Tools Interoperability (LTI), a proven integration protocol.
 * Links to Pearson MyLab & Mastering courses ensure the student is presented with the educational materials they need within the context of the Moodle course frame.';
+$string['mylabmastering:addinstance'] = 'Add mylab & mastering';

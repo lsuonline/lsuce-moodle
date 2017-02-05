@@ -70,8 +70,8 @@ class local_cas_help_links_utility {
     private static function get_primary_instructor_course_data($user_id)
     {
         global $DB;
-        $offset = (get_config('enrol_ues', 'sub_days') * 86400);
 
+        // @TODO: make cou_number variable
         $result = $DB->get_records_sql('SELECT DISTINCT u.id, c.id, c.fullname, c.shortname, c.idnumber, c.category, cc.name FROM {enrol_ues_teachers} t
             INNER JOIN {user} u ON u.id = t.userid
             INNER JOIN {enrol_ues_sections} sec ON sec.id = t.sectionid
@@ -84,8 +84,8 @@ class local_cas_help_links_utility {
             AND cou.cou_number < "5000"
             AND t.primary_flag = "1"
             AND t.status = "enrolled"
-            AND sem.classes_start < ' . (time() + $offset) . ' 
-            AND sem.grades_due > ' . time() . ' 
+            AND sem.classes_start < ' . self::get_course_start_time() . ' 
+            AND sem.grades_due > ' . self::get_course_end_time() . ' 
             AND u.id = ?', array($user_id));
 
         return $result;
@@ -100,8 +100,8 @@ class local_cas_help_links_utility {
     private static function get_primary_instructor_category_data($user_id)
     {
         global $DB;
-        $offset = (get_config('enrol_ues', 'sub_days') * 86400);
-
+        
+        // @TODO: make cou_number variable
         $result = $DB->get_records_sql('SELECT DISTINCT u.id, cc.id, cc.name FROM {enrol_ues_teachers} t
             INNER JOIN {user} u ON u.id = t.userid
             INNER JOIN {enrol_ues_sections} sec ON sec.id = t.sectionid
@@ -114,8 +114,8 @@ class local_cas_help_links_utility {
             AND t.primary_flag = "1"
             AND t.status = "enrolled"
             AND cou.cou_number < "5000"
-            AND sem.classes_start < ' . (time() + $offset) . '
-            AND sem.grades_due > ' . time() . '
+            AND sem.classes_start < ' . self::get_course_start_time() . '
+            AND sem.grades_due > ' . self::get_course_end_time() . '
             AND u.id = ?', array($user_id));
 
         return $result;
@@ -163,28 +163,28 @@ class local_cas_help_links_utility {
         $userCourseLinks = self::get_user_course_link_data($user_id);
 
         foreach ($courseData as $courseArray) {
-            $course = get_course($courseArray->id);
-
             $linkExistsForCourse = array_key_exists($courseArray->id, $userCourseLinks);
 
-            $isChecked = $linkExistsForCourse ? $userCourseLinks[$course->id]->display : true;
+            // if a link record exists for the user/course, show/hide depending on 'display',
+            // otherwise, do not hide
+            $hideLink = $linkExistsForCourse ? ! $userCourseLinks[$courseArray->id]->display : false;
 
-            $linkId = $linkExistsForCourse ? $userCourseLinks[$course->id]->id : '0';
+            $linkId = $linkExistsForCourse ? $userCourseLinks[$courseArray->id]->id : '0';
 
-            $output[$course->id] = [
+            $output[$courseArray->id] = [
                 'user_id' => $user_id,
-                'course_id' => $course->id,
-                'course_fullname' => $course->fullname,
-                'course_shortname' => $course->shortname,
-                'course_idnumber' => $course->idnumber,
-                'course_category_id' => $course->category,
+                'course_id' => $courseArray->id,
+                'course_fullname' => $courseArray->fullname,
+                'course_shortname' => $courseArray->shortname,
+                'course_idnumber' => $courseArray->idnumber,
+                'course_category_id' => $courseArray->category,
                 'course_category_name' => $courseArray->name,
                 'link_id' => $linkId,
-                'link_display' => $linkExistsForCourse ? $userCourseLinks[$course->id]->display : '0',
-                'link_checked' => $isChecked ? 'checked' : '',
-                'link_url' => $linkExistsForCourse ? $userCourseLinks[$course->id]->link : '',
-                'display_input_name' => \local_cas_help_links_input_handler::encode_input_name('display', 'course', $linkId, $course->id),
-                'link_input_name' => \local_cas_help_links_input_handler::encode_input_name('link', 'course', $linkId, $course->id)
+                'link_display' => $linkExistsForCourse ? $userCourseLinks[$courseArray->id]->display : '0',
+                'hide_link' => $hideLink ? 1 : 0,
+                'link_url' => $linkExistsForCourse ? $userCourseLinks[$courseArray->id]->link : '',
+                'display_input_name' => \local_cas_help_links_input_handler::encode_input_name('display', 'course', $linkId, $courseArray->id),
+                'link_input_name' => \local_cas_help_links_input_handler::encode_input_name('link', 'course', $linkId, $courseArray->id)
             ];
         }
 
@@ -204,24 +204,24 @@ class local_cas_help_links_utility {
         $categoryLinks = $user_id ? self::get_user_category_link_data($user_id) : self::get_category_link_data();
 
         foreach ($categoryData as $categoryArray) {
-            $category = self::get_category($categoryArray->id);
-
             $linkExistsForCategory = array_key_exists($categoryArray->id, $categoryLinks);
 
-            $isChecked = $linkExistsForCategory ? $categoryLinks[$category->id]->display : true;
+            // if a link record exists for the user/category, show/hide depending on 'display',
+            // otherwise, do not hide
+            $hideLink = $linkExistsForCategory ? ! $categoryLinks[$categoryArray->id]->display : false;
 
-            $linkId = $linkExistsForCategory ? $categoryLinks[$category->id]->id : '0';
+            $linkId = $linkExistsForCategory ? $categoryLinks[$categoryArray->id]->id : '0';
 
-            $output[$category->id] = [
+            $output[$categoryArray->id] = [
                 'user_id' => $user_id,
-                'category_id' => $category->id,
-                'category_name' => $category->name,
+                'category_id' => $categoryArray->id,
+                'category_name' => $categoryArray->name,
                 'link_id' => $linkId,
-                'link_display' => $linkExistsForCategory ? $categoryLinks[$category->id]->display : '0',
-                'link_checked' => $isChecked ? 'checked' : '',
-                'link_url' => $linkExistsForCategory ? $categoryLinks[$category->id]->link : '',
-                'display_input_name' => \local_cas_help_links_input_handler::encode_input_name('display', 'category', $linkId, $category->id),
-                'link_input_name' => \local_cas_help_links_input_handler::encode_input_name('link', 'category', $linkId, $category->id)
+                'link_display' => $linkExistsForCategory ? $categoryLinks[$categoryArray->id]->display : '0',
+                'hide_link' => $hideLink ? 1 : 0,
+                'link_url' => $linkExistsForCategory ? $categoryLinks[$categoryArray->id]->link : '',
+                'display_input_name' => \local_cas_help_links_input_handler::encode_input_name('display', 'category', $linkId, $categoryArray->id),
+                'link_input_name' => \local_cas_help_links_input_handler::encode_input_name('link', 'category', $linkId, $categoryArray->id)
             ];
         }
 
@@ -236,7 +236,9 @@ class local_cas_help_links_utility {
      */
     private static function transform_user_data($link, $user_id)
     {
-        $isChecked = is_object($link) ? $link->display : true;
+        // if a link record exists for the user, show/hide depending on 'display',
+        // otherwise, do not hide
+        $hideLink = is_object($link) ? ! $link->display : false;
 
         $linkId = is_object($link) ? $link->id : '0';
 
@@ -244,7 +246,7 @@ class local_cas_help_links_utility {
             'user_id' => $user_id,
             'link_id' => is_object($link) ? $link->id : '',
             'link_display' => is_object($link) ? $link->display : '',
-            'link_checked' => $isChecked ? 'checked' : '',
+            'hide_link' => $hideLink ? 1 : 0,
             'link_url' => is_object($link) ? $link->link : '',
             'display_input_name' => \local_cas_help_links_input_handler::encode_input_name('display', 'user', $linkId, $user_id),
             'link_input_name' => \local_cas_help_links_input_handler::encode_input_name('link', 'user', $linkId, $user_id)
@@ -385,8 +387,8 @@ class local_cas_help_links_utility {
     public static function getPrimaryInstructorId($idnumber)
     {
         global $DB;
-        $offset = (get_config('enrol_ues', 'sub_days') * 86400);
 
+        // @TODO: make cou_number variable
         $result = $DB->get_records_sql('SELECT DISTINCT(t.userid), cts.requesterid FROM {enrol_ues_sections} sec
             INNER JOIN {enrol_ues_semesters} sem ON sem.id = sec.semesterid
             INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
@@ -396,8 +398,8 @@ class local_cas_help_links_utility {
             AND sec.idnumber IS NOT NULL
             AND sec.idnumber <> ""
             AND cou.cou_number < "5000"
-            AND sem.classes_start < ' . (time() + $offset) . '
-            AND sem.grades_due > ' . time() . '
+            AND sem.classes_start < ' . self::get_course_start_time() . '
+            AND sem.grades_due > ' . self::get_course_end_time() . '
             AND sec.idnumber = ?', array($idnumber));
 
         // if no query results, assume there is no primary user id
@@ -575,18 +577,25 @@ class local_cas_help_links_utility {
     }
 
     /**
-     * Returns a moodle course_category object for the given id
+     * Returns a start time for use in filtering courses
      * 
-     * @param  int $category_id
-     * @return object
+     * @return int
      */
-    private static function get_category($category_id)
+    private static function get_course_start_time()
     {
-        global $DB;
+        $offset = get_config('enrol_ues', 'sub_days') * 86400;
 
-        $result = $DB->get_record('course_categories', ['id' => $category_id]);
+        return time() + $offset;
+    }
 
-        return $result;
+    /**
+     * Returns an end time for use in filtering courses
+     * 
+     * @return int
+     */
+    private static function get_course_end_time()
+    {
+        return time();
     }
 
 }

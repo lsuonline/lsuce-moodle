@@ -30,3 +30,8 @@ $string['app.title']            = 'BFW LMS integration';
 $string['config_general'] = 'General';
 $string['config_shared_key'] = 'BFW-LMS shared key';
 $string['config_shared_key_desc'] = 'This is the same shared key used for BFW-LMS Basic LTI. It is also used for grade transfer from BFW-LMS. This must be set or the grade transfer will not work.';
+
+//missing strings
+$string['bfwpub:viewadmindoc'] = 'View administrative docs.';
+$string['bfwpub:viewteacherdoc'] = 'View teacher docs.';
+$string['bfwpub:addinstance'] = 'Add instance of BFWPub';

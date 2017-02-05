@@ -108,3 +108,7 @@
 .block_course_overview .content .course_list .btn.cas_help {
     float: right;
 }
+
+.block_course_overview .content .btn.cas_edit_help {
+    float: right;
+}

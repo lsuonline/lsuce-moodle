@@ -7,10 +7,9 @@ class local_cas_help_links_input_handler {
      * 
      * @param  array $post_data
      * @param  int $user_id
-     * @return void
+     * @return boolean
      */
-    public static function handle_user_settings_input($post_data, $user_id)
-    {
+    public static function handle_user_settings_input($post_data, $user_id) {
         $link_objects = self::get_link_input_objects($post_data, $user_id);
 
         // iterate through all link objects
@@ -19,20 +18,21 @@ class local_cas_help_links_input_handler {
             if ($link->id) {
                 // update the cas_help_link record
                 self::update_link_record($link, true);
-
             // otherwise, if input is given for a non-exisitent link
             } else {
-                if (self::link_should_be_persisted($link))
+                if (self::link_should_be_persisted($link, true))
                     self::insert_link_record($link);
             }
         }
+
+        return true;
     }
 
     /**
      * Accepts a given array of posted category link setting data and persists appropriately
      * 
      * @param  array $post_data
-     * @return void
+     * @return boolean
      */
     public static function handle_category_settings_input($post_data)
     {
@@ -47,10 +47,12 @@ class local_cas_help_links_input_handler {
 
             // otherwise, if input is given for a non-exisitent link
             } else {
-                if (self::link_should_be_persisted($link))
+                if (self::link_should_be_persisted($link, true))
                     self::insert_link_record($link);
             }
         }
+
+        return true;
     }
 
     /**
@@ -81,11 +83,49 @@ class local_cas_help_links_input_handler {
      * Reports whether or not the given link object should be persisted
      * 
      * @param  object $link
+     * @param  boolean $check_for_duplicate_record
      * @return bool
      */
-    private static function link_should_be_persisted($link)
-    {
+    private static function link_should_be_persisted($link, $check_for_duplicate_record = false)
+    {        
+        if ($check_for_duplicate_record && self::identical_link_exists($link)) {
+            return false;
+        }
+
         return ($link->display && ! $link->link) ? false : true;
+    }
+
+    /**
+     * Reports whether or not identical link record(s) exist for this link object
+     * 
+     * @param  object $link link record to be persisted
+     * @return boolean
+     */
+    private static function identical_link_exists($link)
+    {
+        global $DB;
+
+        $params = [
+            'type' => $link->type,
+            'display' => $link->display,
+            'link' => $link->link,
+        ];
+
+        if (property_exists($link, 'category_id')) {
+            $params['category_id'] = $link->category_id;
+        }
+
+        if (property_exists($link, 'course_id')) {
+            $params['course_id'] = $link->course_id;
+        }
+
+        if (property_exists($link, 'user_id')) {
+            $params['user_id'] = $link->user_id;
+        }
+
+        $existing_records = $DB->get_records(self::get_link_table_name(), $params);
+
+        return ! $existing_records ? false : true;
     }
 
     /**
@@ -161,6 +201,8 @@ class local_cas_help_links_input_handler {
         $output = [];
 
         foreach ($link_inputs as $input) {
+            $input = self::sanitize_link_input($input);
+
             // if this input has not been added to output yet
             if ( ! array_key_exists($input['id'], $output)) {
                 $output[$input['id']] = self::transform_link_input_to_object($input);
@@ -172,6 +214,47 @@ class local_cas_help_links_input_handler {
         }
 
         return $output;
+    }
+
+    /**
+     * Checks whether the given input array contains link information,
+     * if so, asserts that the url contains an appropriate prefix
+     * 
+     * @param  array $input
+     * @return array
+     */
+    private static function sanitize_link_input($input)
+    {
+        if (array_key_exists('field', $input)) {
+            if ($input['field'] == 'link' && $input['input_value']) {
+                $input['input_value'] = self::format_url(trim($input['input_value']));
+            }
+        }
+
+        return $input;
+    }
+
+    /**
+     * Returns the given URL with an apprpriate prefix (defaults to: http://)
+     * 
+     * @param  string $url
+     * @return string
+     */
+    private static function format_url($url)
+    {
+        $invalid_url = get_string('invalid_url', 'local_cas_help_links');
+        $url = filter_var($url, FILTER_SANITIZE_URL);
+        if (substr($url, 0, 7) == 'http://' || substr($url, 0, 8) == 'https://') {
+            if (filter_var($url, FILTER_VALIDATE_URL) && preg_match('/http[s]?:\/\/[^\.|^\,][-a-zA-Z0-9@:%._\+~#=]{0,256}\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*/i' ,$url)) {
+                return $url;
+            } else {
+                throw new Exception($invalid_url . $url);
+            }
+        } else if (filter_var('http://' . $url, FILTER_VALIDATE_URL) && preg_match('/http[s]?:\/\/[^\.|^\,][-a-zA-Z0-9@:%._\+~#=]{0,256}\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*/i' ,'http://' . $url)) {
+                return 'http://' . $url;
+            } else {
+                throw new Exception($invalid_url . $url);
+        }
     }
 
     /**
@@ -227,7 +310,7 @@ class local_cas_help_links_input_handler {
             $decodedInput['input_name'] = $name;
             
             if ($decodedInput['field'] == 'display') {
-                $decodedInput['input_value'] = $value ? 1 : 0;
+                $decodedInput['input_value'] = $value ? 0 : 1;
             } else {
                 $decodedInput['input_value'] = $value;
             }
@@ -299,5 +382,4 @@ class local_cas_help_links_input_handler {
             'field' => (string) $exploded[4],
         ];
     }
-
 }

@@ -14,3 +14,7 @@ $string['mylabmastering'] = 'Pearson MyLab & Mastering';
 $string['mylabmastering_notconfigured'] =  'This Moodle installation has not been configured for Pearson MyLab & Mastering integrations.';
 $string['mylabmastering_blocknotconfigured'] =  'This course has not been configured for Pearson MyLab & Mastering integrations.';
     
+// Missing strings
+$string['mylabmastering:addinstance'] = 'Add Pearson MyLab & Mastering';
+$string['mylabmastering:manage'] = 'Manage MyLab & Mastering';
+$string['mylabmastering:view'] = 'View MyLab & Mastering';

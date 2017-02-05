@@ -22,7 +22,7 @@
  
 defined('MOODLE_INTERNAL') || die();
 
-if (is_siteadmin() || has_capability('local/cas_help_links:editglobalsettings', context_system::instance())) {
+if (is_siteadmin()) {
 
     require_once(dirname(__FILE__) . '/../../config.php');
     require_once($CFG->libdir . '/adminlib.php');

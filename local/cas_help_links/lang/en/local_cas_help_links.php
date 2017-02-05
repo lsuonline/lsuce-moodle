@@ -37,3 +37,16 @@ $string['setting_show_links_global_description'] = 'Choose whether or not to dis
 $string['setting_default_help_link_title'] = 'Default CAS Help URL';
 $string['setting_default_help_link_description'] = 'A default "catch-all" URL that will be displayed if no other relative links.';
 $string['setting_default_help_link_default'] = 'https://moodle.org';
+
+$string['pcourse_header'] = 'Course Personal Preferences';
+$string['hide_course_link'] = 'Hide course link: ';
+$string['pcategory_header'] = 'Category Personal Preferences';
+$string['category_header'] = 'Category Defaults';
+$string['hide_category_links'] = 'Hide category links: ';
+$string['user_header'] = 'User Personal Preferences';
+$string['hide_user_links'] = 'Hide all my links: ';
+$string['my_default_link'] = 'My default link';
+
+$string['submit_success'] = 'You preferences have been successfully updated.';
+$string['submit_error'] = 'Please make sure your links are in the proper URL format';
+$string['invalid_url'] = 'Invalid URL: ';
