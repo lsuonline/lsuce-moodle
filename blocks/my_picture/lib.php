@@ -12,7 +12,7 @@ require_once($CFG->libdir . '/filelib.php');
  */
 function mypic_get_users_without_pictures($limit=0) {
     global $DB;
-    $select = "picture <> 1 AND deleted = 0 AND suspended = 0 ORDER BY RAND() LIMIT " . $limit;
+    $select = "picture IN (0,2) AND idnumber LIKE '89%' AND deleted = 0 AND suspended = 0 ORDER BY RAND() LIMIT " . $limit;
     return $DB->get_records_select('user', $select);
 }
 
@@ -124,7 +124,8 @@ function mypic_force_update_picture($idnumber, $hash = null) {
     }
 
     if (empty($hash)) {
-        $hash = hash("sha256", $idnumber);
+        //$hash = hash("sha256", $idnumber);
+        $hash = $idnumber;
     }
 
     $curl = new curl();
@@ -149,7 +150,8 @@ function mypic_force_update_picture($idnumber, $hash = null) {
 function mypic_fetch_picture($idnumber, $updating = false) {
     global $CFG;
 
-    $hash = hash("sha256", $idnumber);
+    //$hash = hash("sha256", $idnumber);
+    $hash = $idnumber;
     $name = $idnumber . '.jpg';
     $path = $CFG->dataroot . '/temp/' . $name;
     $url  = sprintf(get_config('block_my_picture', 'webservice_url'), $hash);
@@ -158,10 +160,16 @@ function mypic_fetch_picture($idnumber, $updating = false) {
     $curl->download(array(array('url' => $url, 'file' => $file)));
     fclose($file);
 
-    if(!empty($curl->response['Status']) and $curl->response['Status'] == '404'){
+    if(!empty($curl->response['HTTP/1.1']) and $curl->response['HTTP/1.1'] == '404 Not Found'){
 //        Removed until we migrate to the new events system.
 //        add_to_log(0, 'my_pic', "insert picture",'',sprintf("404 for user %s", $idnumber));
-        mtrace(sprintf("404 for user %s", $idnumber));
+//        do not show this to end users. testing only
+//        mtrace(sprintf("404 for user %s", $idnumber));
+        unlink($path);
+        return false;
+    }
+
+    if(!isset($curl->response['HTTP/1.1'])){
         unlink($path);
         return false;
     }
@@ -256,10 +264,12 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
 
 function mypic_verifyWebserviceExists(){
     $ready = get_config('block_my_picture', 'ready_url');
-    $curl  = new curl();
-    $json  = $curl->get(sprintf($ready));
+    $curl  = curl_init($ready);
+    curl_setopt($curl, CURLOPT_NOBODY, true);
+    curl_exec($curl);
+    $isImage = curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
 
-    if(is_null((json_decode($json)))){
+    if(!$isImage == 'image/jpeg'){
         mypic_emailAdminsFailureMsg($ready);
         return false;
     }
