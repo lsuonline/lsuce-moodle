@@ -62,6 +62,83 @@ class local_cas_help_links_utility {
     }
 
     /**
+     * Returns an array of all existing "coursematch" settings data
+     * 
+     * @return array
+     */
+    public static function get_all_coursematch_settings()
+    {
+        global $DB;
+
+        $results = $DB->get_records('local_cas_help_links', ['type' => 'coursematch']);
+
+        return $results;
+    }
+
+
+    /**
+     * Fetches the usage for the system
+     *
+     * @return array
+     */
+    private static function get_usage_data()
+    {
+        global $DB;
+
+        $result = $DB->get_records_sql('SELECT Department, Course_Number, Full_Name_of_User, Link_Type, External_URL, Time_Clicked FROM (
+            SELECT
+                llog.id AS uniqer,
+                uec.department AS Department,
+                uec.cou_number AS Course_Number,
+                CONCAT(u.firstname, " ", u.lastname) AS Full_Name_of_User,
+                link.type AS Link_Type,
+                link.link AS External_URL,
+                FROM_UNIXTIME(llog.time_clicked) AS Time_Clicked
+            FROM {course} c
+                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                INNER JOIN {enrol_ues_courses} uec ON uec.id = sec.courseid
+                INNER JOIN {local_cas_help_links_log} llog ON c.id = llog.course_id
+                INNER JOIN {user} u ON u.id = llog.user_id
+                INNER JOIN {local_cas_help_links} link ON link.id = llog.link_id
+            WHERE c.idnumber <> "" AND c.idnumber IS NOT NULL AND link.user_id = 0
+            UNION ALL
+            SELECT
+                llog.id AS uniqer,
+                uec.department AS Department,
+                uec.cou_number AS Course_Number,
+                CONCAT(u.firstname, " ", u.lastname) AS Full_Name_of_User,
+                "Site" AS Link_Type,
+                NULL AS External_URL,
+                FROM_UNIXTIME(llog.time_clicked) AS Time_Clicked
+            FROM {course} c
+                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                INNER JOIN {enrol_ues_courses} uec ON uec.id = sec.courseid
+                INNER JOIN {local_cas_help_links_log} llog ON c.id = llog.course_id
+                INNER JOIN {user} u ON u.id = llog.user_id
+                LEFT JOIN {local_cas_help_links} link ON link.id = llog.link_id
+            WHERE c.idnumber <> "" AND c.idnumber IS NOT NULL AND link.id IS NULL
+            UNION ALL
+            SELECT
+               llog.id AS uniqer,
+               uec.department AS Department,
+               uec.cou_number AS Course_Number,
+               CONCAT(u.firstname, " ", u.lastname) AS Full_Name_of_User,
+               IF(link.user_id>0,"User Category", IFNULL(link.type, "Site")) AS Link_Type,
+               link.link AS External_URL,
+               FROM_UNIXTIME(llog.time_clicked) AS Time_Clicked
+            FROM {course} c
+                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                INNER JOIN {enrol_ues_courses} uec ON uec.id = sec.courseid
+                INNER JOIN {local_cas_help_links_log} llog ON c.id = llog.course_id
+                INNER JOIN {user} u ON u.id = llog.user_id
+                INNER JOIN {local_cas_help_links} link ON link.id = llog.link_id
+            WHERE c.idnumber <> "" AND c.idnumber IS NOT NULL AND link.user_id > 0) t
+            GROUP BY uniqer
+        ');
+        return $result;
+    }
+
+    /**
      * Fetches the given primary's current course data
      * 
      * @param  int $user_id
@@ -436,14 +513,18 @@ class local_cas_help_links_utility {
      * @param  int  $course_id
      * @param  int  $category_id
      * @param  int  $primary_instructor_user_id
+     * @param  string  $course_full_name
      * @return mixed array|bool
      */
-    public static function getSelectedPref($course_id, $category_id, $primary_instructor_user_id)
+    public static function getSelectedPref($course_id, $category_id, $primary_instructor_user_id, $course_full_name)
     {
         // pull all of the preference data relative to the course, category, user
         $prefs = self::getRelatedPrefData($course_id, $category_id, $primary_instructor_user_id);
 
         $selectedPref = false;
+
+        $coursematch_dept = self::get_coursematch_dept_from_name($course_full_name);
+        $coursematch_number = self::get_coursematch_number_from_name($course_full_name);
 
         // first, keep only prefs with this primary associated
         if ($primaryUserPrefs = array_where($prefs, function ($key, $pref) use ($primary_instructor_user_id) {
@@ -497,6 +578,11 @@ class local_cas_help_links_utility {
                     });
                 }
             }
+        // otherwise, attempt to find a "coursematch"
+        } else if ($selectedPref = array_where($prefs, function ($key, $pref) use ($coursematch_dept, $coursematch_number) {
+                return $pref->type == 'coursematch' && $pref->dept == $coursematch_dept && $pref->number == $coursematch_number;
+            })) {
+
         // otherwise, keep only this category's prefs
         } else if ($categoryPrefs = array_where($prefs, function ($key, $pref) use ($category_id) {
                 return $pref->type == 'category' && $pref->category_id == $category_id && $pref->user_id == 0;
@@ -570,8 +656,8 @@ class local_cas_help_links_utility {
             return $carry;
         });
         
-        // remove the final "or" from the where clause
-        $whereClause = substr($whereClause, 0, -4);
+        // include all 'coursematch' prefs
+        $whereClause .= "(links.type = 'coursematch')";
 
         return $whereClause;
     }
@@ -596,6 +682,32 @@ class local_cas_help_links_utility {
     private static function get_course_end_time()
     {
         return time();
+    }
+
+    /**
+     * Returns a "department number" string given a moodle course full name
+     * 
+     * @param  string $course_fullname  ex: '2017 Spring MUS 1751 for teacher...'
+     * @return string
+     */
+    private static function get_coursematch_dept_from_name($course_fullname)
+    {
+        $exploded = explode(' ', $course_fullname);
+
+        return $exploded[2];
+    }
+    
+    /**
+     * Returns a "course number" string given a moodle course full name
+     * 
+     * @param  string $course_fullname  ex: '2017 Spring MUS 1751 for teacher...'
+     * @return string
+     */
+    private static function get_coursematch_number_from_name($course_fullname)
+    {
+        $exploded = explode(' ', $course_fullname);
+
+        return $exploded[3];
     }
 
 }

@@ -113,12 +113,9 @@ class block_course_overview_renderer extends plugin_renderer_base {
                 $link = html_writer::link($courseurl, $coursefullname, $attributes);
                 $html .= $this->output->heading($link, 2, 'title');
                 // Add CAS links
-                if (class_exists('local_cas_help_links_url_generator')) {
-                    $help_url_array = \local_cas_help_links_url_generator::getUrlArrayForCourse($course);
-                    if ($help_url_array['display']) {
-                        $html .= '<a class="btn cas_help" href="' . $help_url_array['url'] . '" target="_blank">' . $help_url_array['label'] . '</a>';
-                     }
-                 }
+                if (class_exists('local_cas_help_links_button_renderer')) {
+                    $html .= \local_cas_help_links_button_renderer::get_html_for_course($course, ['class' => 'btn cas_help']);
+                }
             } else {
                 $html .= $this->output->heading(html_writer::link(
                     new moodle_url('/auth/mnet/jump.php', array('hostid' => $course->hostid, 'wantsurl' => '/course/view.php?id='.$course->remoteid)),
@@ -357,11 +354,8 @@ class block_course_overview_renderer extends plugin_renderer_base {
 
         $output .= $this->output->box_end();
         // Add CAS links
-        if (class_exists('local_cas_help_links_url_generator')) {
-            $help_url_array = \local_cas_help_links_url_generator::getUrlForUser($user_id);
-            if ($help_url_array['display']) {
-                $output .= '<a class="btn cas_edit_help" href="' . $help_url_array['url'] . '" target="_blank">' . $help_url_array['label'] . '</a>';
-            }
+        if (class_exists('local_cas_help_links_button_renderer')) {
+            $output .= \local_cas_help_links_button_renderer::get_html_for_user_id($user_id, ['class' => 'btn cas_edit_help']);
         }
         $output .= $this->output->box('', 'flush');
         $output .= $this->output->box_end();

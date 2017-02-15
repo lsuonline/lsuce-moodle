@@ -29,6 +29,7 @@ require_once $CFG->libdir.'/outputcomponents.php';
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/local/cas_help_links/user_settings_form.php');
 require_once($CFG->dirroot.'/local/cas_help_links/category_settings_form.php');
+require_once($CFG->dirroot.'/local/cas_help_links/delete_coursematch_setting_form.php');
 
 class local_cas_help_links_renderer extends plugin_renderer_base {
 
@@ -43,6 +44,18 @@ class local_cas_help_links_renderer extends plugin_renderer_base {
     public function cas_category_links($categorySettingsData) {
         global $USER;
         $mform = new cas_cat_form(null, array('categorySettingsData' => $categorySettingsData));
+
+        $out = $mform->display();
+        return $out;
+    }
+
+    public function cas_delete_coursematch($coursematch) {
+        $mform = new cas_delete_coursematch_form(null, [
+            'coursematch_id' => $coursematch->id,
+            'coursematch_dept' => $coursematch->dept,
+            'coursematch_number' => $coursematch->number,
+            'coursematch_link' => $coursematch->link,
+        ]);
 
         $out = $mform->display();
         return $out;

@@ -29,12 +29,29 @@ class local_cas_help_links_input_handler {
     }
 
     /**
-     * Accepts a given array of posted category link setting data and persists appropriately
+     * Accepts a given array of posted category link setting AND course match setting data and persists appropriately
      * 
      * @param  array $post_data
      * @return boolean
      */
     public static function handle_category_settings_input($post_data)
+    {
+        // first, handle category link inputs
+        self::handle_category_settings_link_input($post_data);
+
+        // second, handle "coursematch" inputs
+        self::handle_category_settings_coursematch_input($post_data);
+
+        return true;
+    }
+
+    /**
+     * Accepts a given array of posted category link setting data and persists appropriately
+     * 
+     * @param  array $post_data
+     * @return void
+     */
+    private static function handle_category_settings_link_input($post_data)
     {
         $link_objects = self::get_link_input_objects($post_data);
 
@@ -51,8 +68,20 @@ class local_cas_help_links_input_handler {
                     self::insert_link_record($link);
             }
         }
+    }
 
-        return true;
+    /**
+     * Accepts a given array of posted category setting "coursematch" data and persists appropriately
+     * 
+     * @param  array $post_data
+     * @return void
+     */
+    private static function handle_category_settings_coursematch_input($post_data)
+    {
+        $coursematch_object = self::get_coursematch_input_object($post_data);
+
+        if (self::coursematch_should_be_persisted($coursematch_object, true))
+            self::insert_coursematch_record($coursematch_object);
     }
 
     /**
@@ -79,6 +108,16 @@ class local_cas_help_links_input_handler {
         return $link_input_objects;
     }
 
+    private static function get_coursematch_input_object($post_data)
+    {
+        $coursematch_input_arrays = self::get_coursematch_input_arrays($post_data);
+
+        // combine and convert coursematch input arrays to a single object
+        $coursematch_input_object = self::objectify_coursematch_inputs($coursematch_input_arrays);
+
+        return $coursematch_input_object;
+    }
+
     /**
      * Reports whether or not the given link object should be persisted
      * 
@@ -93,6 +132,20 @@ class local_cas_help_links_input_handler {
         }
 
         return ($link->display && ! $link->link) ? false : true;
+    }
+
+    /**
+     * Reports whether or not the given coursematch object should be persisted
+     * 
+     * @param  object $coursematch
+     * @return bool
+     */
+    private static function coursematch_should_be_persisted($coursematch)
+    {        
+        if (self::identical_coursematch_exists($coursematch))
+            return false;
+
+        return ( ! $coursematch->dept || ! $coursematch->number || ! $coursematch->link) ? false : true;
     }
 
     /**
@@ -122,6 +175,27 @@ class local_cas_help_links_input_handler {
         if (property_exists($link, 'user_id')) {
             $params['user_id'] = $link->user_id;
         }
+
+        $existing_records = $DB->get_records(self::get_link_table_name(), $params);
+
+        return ! $existing_records ? false : true;
+    }
+
+    /**
+     * Reports whether or not an identical coursematch record exists for this coursematch object
+     * 
+     * @param  object $coursematch  coursematch record to be persisted
+     * @return boolean
+     */
+    private static function identical_coursematch_exists($coursematch)
+    {
+        global $DB;
+
+        $params = [
+            'type' => 'coursematch',
+            'dept' => $coursematch->dept,
+            'number' => $coursematch->number,
+        ];
 
         $existing_records = $DB->get_records(self::get_link_table_name(), $params);
 
@@ -161,6 +235,19 @@ class local_cas_help_links_input_handler {
     }
 
     /**
+     * Insert the given coursematch record
+     * 
+     * @param  object $coursematch_record
+     * @return void
+     */
+    private static function insert_coursematch_record($coursematch_record)
+    {
+        global $DB;
+
+        $DB->insert_record(self::get_link_table_name(), $coursematch_record);
+    }
+
+    /**
      * Returns the name of the 'help links' table
      * 
      * @return string
@@ -193,14 +280,14 @@ class local_cas_help_links_input_handler {
     /**
      * Returns an array of combined, formatted link objects from the given array of individual inputs
      * 
-     * @param  array $link_inputs
+     * @param  array $input_arrays
      * @return array
      */
-    private static function objectify_link_inputs($link_inputs)
+    private static function objectify_link_inputs($input_arrays)
     {
         $output = [];
 
-        foreach ($link_inputs as $input) {
+        foreach ($input_arrays as $input) {
             $input = self::sanitize_link_input($input);
 
             // if this input has not been added to output yet
@@ -209,11 +296,37 @@ class local_cas_help_links_input_handler {
 
             // otherwise, this link exists in output and needs missing field (display/link) to be updated
             } else {
-                $output[$input['id']] = self::update_link_object($output[$input['id']], $input);
+                $output[$input['id']] = self::update_object($output[$input['id']], $input);
             }
         }
 
         return $output;
+    }
+
+    /**
+     * Returns a formatted coursematch object from the given array of individual inputs
+     * 
+     * @param  array $input_arrays
+     * @return array
+     */
+    private static function objectify_coursematch_inputs($input_arrays)
+    {
+        $output = [];
+
+        foreach ($input_arrays as $input) {
+            $input = self::sanitize_link_input($input);
+
+            // if this input has not been added to output yet
+            if ( ! array_key_exists($input['id'], $output)) {
+                $output[$input['id']] = self::transform_coursematch_input_to_object($input);
+
+            // otherwise, this link exists in output and needs missing field (dept/number/link) to be updated
+            } else {
+                $output[$input['id']] = self::update_object($output[$input['id']], $input);
+            }
+        }
+
+        return current($output);
     }
 
     /**
@@ -258,17 +371,17 @@ class local_cas_help_links_input_handler {
     }
 
     /**
-     * Returns a link object with the given input property updated
+     * Returns an object with the given input property updated
      * 
-     * @param  object $link_object
+     * @param  object $object
      * @param  array $input
      * @return object
      */
-    private static function update_link_object($link_object, $input)
+    private static function update_object($object, $input)
     {
-        $link_object->$input['field'] = $input['input_value'];
+        $object->$input['field'] = $input['input_value'];
 
-        return $link_object;
+        return $object;
     }
 
     /**
@@ -292,6 +405,23 @@ class local_cas_help_links_input_handler {
     }
 
     /**
+     * Returns a formatted coursematch object from the given input array
+     * 
+     * @param  array $input
+     * @return object
+     */
+    private static function transform_coursematch_input_to_object($input)
+    {
+        $coursematch_object = new stdClass();
+        $coursematch_object->type = 'coursematch';
+        $coursematch_object->dept = $input['field'] == 'dept' ? strtoupper($input['input_value']) : '';
+        $coursematch_object->number = $input['field'] == 'number' ? $input['input_value'] : '';
+        $coursematch_object->link = $input['field'] == 'link' ? $input['input_value'] : '';
+
+        return $coursematch_object;
+    }
+
+    /**
      * Returns an array of all formatted link input data
      * 
      * @param  array $post_data
@@ -304,7 +434,7 @@ class local_cas_help_links_input_handler {
         foreach ((array) $post_data as $name => $value) {
             $decodedInput = self::decode_input_name($name);
 
-            if ( ! $decodedInput['is_link_input'])
+            if ( ! array_key_exists('is_link_input', $decodedInput) || ! $decodedInput['is_link_input'])
                 continue;
 
             $decodedInput['input_name'] = $name;
@@ -314,6 +444,31 @@ class local_cas_help_links_input_handler {
             } else {
                 $decodedInput['input_value'] = $value;
             }
+
+            $output[$name] = $decodedInput;
+        }
+
+        return $output;
+    }
+
+    /**
+     * Returns an array of all formatted link input data
+     * 
+     * @param  array $post_data
+     * @return array
+     */
+    private static function get_coursematch_input_arrays($post_data)
+    {
+        $output = [];
+        
+        foreach ((array) $post_data as $name => $value) {
+            $decodedInput = self::decode_input_name($name);
+
+            if ( ! array_key_exists('is_coursematch_input', $decodedInput) || ! $decodedInput['is_coursematch_input'])
+                continue;
+
+            $decodedInput['input_name'] = $name;
+            $decodedInput['input_value'] = $value;
 
             $output[$name] = $decodedInput;
         }
@@ -350,10 +505,16 @@ class local_cas_help_links_input_handler {
                 return self::decode_link_input_name($name);
                 
                 break;
+
+            case 'coursematch':
+                return self::decode_coursematch_input_name($name);
+                
+                break;
             
             default:
                 return [
-                    'is_link_input' => false
+                    'is_link_input' => false,
+                    'is_coursematch_input' => false
                 ];
 
                 break;
@@ -381,5 +542,44 @@ class local_cas_help_links_input_handler {
             'entity_id' => (int) $exploded[3],
             'field' => (string) $exploded[4],
         ];
+    }
+
+    /**
+     * Returns an array of data representing given link input name
+     * 
+     * @param  string $name
+     * @return array
+     */
+    public static function decode_coursematch_input_name($name)
+    {
+        $exploded = explode('_', $name);
+
+        $inputId = substr($name, 0, strrpos($name,'_'));
+
+        return [
+            'id' => $inputId,
+            'is_coursematch_input' => true,
+            'field' => (string) $exploded[1],
+        ];
+    }
+
+    /**
+     * Accepts a given array of posted coursematch deletion data and handles appropriately
+     * 
+     * @param  array $post_data
+     * @return boolean
+     */
+    public static function handle_coursematch_deletion_input($post_data)
+    {
+        // @TODO - authorization here?
+
+        global $DB;
+
+        $DB->delete_records(self::get_link_table_name(), [
+            'type' => 'coursematch', 
+            'id' => $post_data->id
+        ]);
+        
+        return true;
     }
 }
