@@ -1,3 +1,50 @@
+### Date:		2017-January-25
+### Release:	v2017012501
+
+- This release and future releases will no longer work on Moodle 2.6.
+- The language strings have been updated across all supported languages.
+- The implementation of submission deletion has been changed so that it is no longer a link.
+- Data dump display has been optimised to help with large databases.
+- If the required fileinfo extension is missing it will now be mentioned on the plugin settings page.
+- The plugin will now not make excessive calls to Turnitin when using the bulk enrolment tool.
+- Suspended users now no longer appear in the assignment inbox.
+- Non-submitter e-mails will no longer be sent to inactive students. (Thanks to @junwan6)
+- Travis-CI has been aded to the plugin as an extra QA resource to help flag any issues with the code.
+- Inclusion paths were consolidated for the ./sdk directory. (Thanks to @eviweb)
+- Fixes:
+	- Fixed an issue with duplicate submission rows showing in the Moodle database.
+	- Fixed an issue with anonymous marking where the overall grade would sometimes not appear.
+	- The assignment edit API call no longer fails if repository settings don't match the plugin settings.
+	- The submission processing message that was missing in Moodle 3.1 is now visible again.
+	- Fixed a bug where the submission inbox would not load if an enrolled student has been deleted in Turnitin.
+	- Characters that cannot be used in a file name in Windows are now removed from submission titles to prevent submission errors.
+
+---
+
+### Date:		2016-December-21
+### Release:	v2016122101
+
+- Fixes:
+	- Changed the language codes to correctly recognise Simplified Chinese in Moodle.
+	- Pass the correct Simplified Chinese language code to Turnitin.
+
+---
+
+### Date:		2016-September-14
+### Release:	v2016091401
+
+- Remove leftover counter variable from get_submission_inbox function.
+- Refactored the get users functionality in several places to not include users with roles inherited from site level.
+- Fixes:
+	- Add missing string to email non submitters.
+	- Check $CFG exists before using in version.php (Thanks to @micaherne).
+	- Assignments starting more than a year ago can now be restored without user info.
+	- Check for GradeMark feedback changes when saving submission.
+	- Only show GradeMark launch to student if the paper has feedback or grade.
+	- Slight tweak to overall grade to show overall grade on normal assignments.
+
+---
+
 ### Date: 		2016-July-26
 ### Release:	v2016072601
 
@@ -383,8 +430,8 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date:       2014-September-04
-###Release:    v2014012407
+### Date:       2014-September-04
+### Release:    v2014012407
 
 - Remove Grademark settings if GradeMark is disabled. (Thanks to Alex Rowe)
 - Date handling reconfigured in PP to prevent erros (Thanks to Dan Marsden)
@@ -398,8 +445,8 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date:       2014-August-19
-###Release:    v2014012406
+### Date:       2014-August-19
+### Release:    v2014012406
 
 - Error reporting added for files that are too large, small submissions and any other submission errors.
 - Error reporting added to cron.
@@ -419,8 +466,8 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date:       2014-June-11
-###Release:    v2014012405
+### Date:       2014-June-11
+### Release:    v2014012405
 
 - Course reset functionality added to remove Turnitin data when a class/module is reset.
 - Ability added to enable/disable Turnitin in individual modules.
@@ -467,15 +514,15 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date:       2014-June-11
-###Release:    v2014012404
+### Date:       2014-June-11
+### Release:    v2014012404
 
 - EULA acceptance is now stored locally for submissions.
 
 ---
 
-###Date:       2014-April-17
-###Release:    v2014012403
+### Date:       2014-April-17
+### Release:    v2014012403
 
 - Grademark link removed for student if a grade has not been set in Plagiarism Plugin.
 - Feedback release date changed on forum with plagiarism plugin to be the same as start date.
@@ -492,8 +539,8 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date:       2014-February-26
-###Release:    v2014012402
+### Date:       2014-February-26
+### Release:    v2014012402
 
 - Vietnamese Language pack added.
 - Option to send draft submissions to Turnitin in Plagiarism Plugin reinstated.
@@ -516,8 +563,8 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date:       2014-January-24
-###Release:    v2014012401
+### Date:       2014-January-24
+### Release:    v2014012401
 
 - File type limit removed.
 - Ability to accept no file added so that marks / grades can be allocated to non file submissions
@@ -527,8 +574,8 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 
 ---
 
-###Date: 		2013-December-18
-###Release:	v2013121801
+### Date: 		2013-December-18
+### Release:	v2013121801
 
 - Supports Turnitin Originality Checking, GradeMark and PeerMark
 - Allows access to the Rubric Manager and Quickmark Manager from within the Moodle environment
