@@ -158,23 +158,20 @@ function mypic_fetch_picture($idnumber, $updating = false) {
     $curl = new curl();
     $file = fopen($path, 'w');
     $curl->download(array(array('url' => $url, 'file' => $file)));
+    $contentType = isset($curl->response['Content-Type']) ? $curl->response['Content-Type'] : NULL;
+    $responseCode = isset($curl->response['HTTP/1.1']) ? $curl->response['HTTP/1.1'] : NULL;
     fclose($file);
 
-    if(!empty($curl->response['HTTP/1.1']) and $curl->response['HTTP/1.1'] == '404 Not Found'){
-//        Removed until we migrate to the new events system.
-//        add_to_log(0, 'my_pic', "insert picture",'',sprintf("404 for user %s", $idnumber));
-//        do not show this to end users. testing only
-//        mtrace(sprintf("404 for user %s", $idnumber));
+    if($responseCode == '200 OK' && $contentType == 'image/jpeg'){
+        echo'<p style="text-align: center;"><img src = "' . $url . '" alt="photo" style="border: 1px solid #666666; margin: 0 auto; border-radius: 10px;" width="auto" height="100px" /></p>';
+        return $path;
+    } else if ($responseCode != '404 Not Found') {
+        echo(get_string('cron_webservice_err', 'block_my_picture')); 
+        exit;
+    } else {
         unlink($path);
         return false;
     }
-
-    if(!isset($curl->response['HTTP/1.1'])){
-        unlink($path);
-        return false;
-    }
-
-    return $path;
 }
 
 function mypic_is_lsuid($idnumber) {

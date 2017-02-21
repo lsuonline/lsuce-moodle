@@ -23,7 +23,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016020100;
+$plugin->version = 2017022100;
 $plugin->requires = 2015051102;
 $plugin->cron = 3600;
 $plugin->component = 'block_my_picture';
