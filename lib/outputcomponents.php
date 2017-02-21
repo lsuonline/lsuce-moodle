@@ -351,7 +351,7 @@ class user_picture implements renderable {
             context_course::instance($page->course->id);
 
         $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
-        $is_teacher = has_capability('moodle/course:update', $cc, $USER->id);
+        $is_teacher = has_capability('moodle/course:update', $cc, $USER->id) || has_capability('moodle/course:update', $cc, $this->user->id);
 
         // Sort out the filename and size. Size is only required for the gravatar
         // implementation presently.
@@ -410,6 +410,7 @@ class user_picture implements renderable {
                 // picture for the correct theme.
                 $path .= $page->theme->name.'/';
             }
+
             // Set the image URL to the URL for the uploaded file and return.
             if ($is_self or $is_teacher or $can_view_details) {
                 $url = moodle_url::make_pluginfile_url($context->id, 'user', 'icon', NULL, $path, $filename);
