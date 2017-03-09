@@ -61,7 +61,6 @@ class cas_form extends moodleform {
         $pcourseheader = get_string('pcourse_header', 'local_cas_help_links');
         $hide_course_link = get_string('hide_course_link', 'local_cas_help_links');
         $pcategory_header = get_string('pcategory_header', 'local_cas_help_links');
-        $hide_category_links = get_string('hide_category_links', 'local_cas_help_links');
         $user_header = get_string('user_header', 'local_cas_help_links');
         $hide_user_links = get_string('hide_user_links', 'local_cas_help_links');
         $my_default_link = get_string('my_default_link', 'local_cas_help_links');
@@ -103,6 +102,7 @@ class cas_form extends moodleform {
             } else {
                 $defaultlink = $category['link_url'];
             }
+            $hide_category_links = get_string('hide_category_links', 'local_cas_help_links', $category['category_name']);
             // "hide" checkbox
             $mform->addElement('advcheckbox', $category['display_input_name'], $hide_category_links, null, $attributes, array(0, 1));
             $mform->setDefault($category['display_input_name'], $category['hide_link']);

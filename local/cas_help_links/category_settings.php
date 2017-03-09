@@ -44,8 +44,6 @@ $submit_success = false;
 if ($data = data_submitted() and confirm_sesskey()) {
     
     try {
-        // @TODO - is there a better way of determining which form was submitted?
-
         // if category settings page was submitted
         if (property_exists($data, '_qf__cas_cat_form')) {
             $submit_success = \local_cas_help_links_input_handler::handle_category_settings_input($data);
@@ -91,6 +89,10 @@ if (isset($e)) {
 } else if ($submit_success) {
     echo $OUTPUT->notification(get_string('submit_success', 'local_cas_help_links'), 'notifysuccess');
 }
+
+echo $output->heading(get_string('category_settings_heading', 'local_cas_help_links'));
+echo $output->action_link('category_analytics.php', get_string('analytics_link_label', 'local_cas_help_links'));
+
 echo $output->cas_category_links($categorySettingsData);
 
 foreach ($coursematchSettingsData as $coursematch) {

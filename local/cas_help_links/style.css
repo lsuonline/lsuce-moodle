@@ -4,4 +4,14 @@
 input.url-input.has-error {
   border: 2px solid red; }
 
+#page-local-cas_help_links-analytics h2.casstattitle {
+  text-align: center; }
+#page-local-cas_help_links-analytics canvas#chart {
+  margin: 0 auto;
+  width: 60%;
+  height: auto; }
+#page-local-cas_help_links-analytics div.singleselect {
+  display: inline;
+  text-align: center; }
+
 /*# sourceMappingURL=style.css.map */

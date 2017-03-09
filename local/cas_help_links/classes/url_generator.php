@@ -23,7 +23,7 @@ class local_cas_help_links_url_generator {
             return self::getEmptyHelpUrlArray();
         } else {
             //  otherwise return link pref data
-            return self::getDisplayHelpUrlArray($course_id, $category_id, $primary_instructor_user_id, $course->fullname);
+            return self::getDisplayHelpUrlArray($course_id, $category_id, $primary_instructor_user_id);
         }
     }
 
@@ -115,13 +115,12 @@ class local_cas_help_links_url_generator {
      * @param  int  $course_id
      * @param  int  $category_id
      * @param  int  $primary_instructor_user_id
-     * @param  string  $course_full_name
      * @return array
      */
-    private static function getDisplayHelpUrlArray($course_id, $category_id, $primary_instructor_user_id, $course_full_name)
+    private static function getDisplayHelpUrlArray($course_id, $category_id, $primary_instructor_user_id)
     {
         // get appropriate pref from db
-        if ( ! $selectedPref = \local_cas_help_links_utility::getSelectedPref($course_id, $category_id, $primary_instructor_user_id, $course_full_name)) {
+        if ( ! $selectedPref = \local_cas_help_links_utility::getSelectedPref($course_id, $category_id, $primary_instructor_user_id)) {
             // if no pref can be resolved, return default settings using system config
             $urlArray = self::getDefaultHelpUrlArray($course_id);
         } else {
@@ -133,7 +132,8 @@ class local_cas_help_links_url_generator {
                 'url' => $selectedPref->link,
                 'label' => get_string('help_button_label', 'local_cas_help_links'),
                 'course_id' => $course_id,
-                'link_id' => $selectedPref->id
+                'link_id' => $selectedPref->id,
+                'is_default_display' => (bool) ! $selectedPref->user_id
             ];
         }
 
@@ -152,7 +152,8 @@ class local_cas_help_links_url_generator {
             'url' => get_config('local_cas_help_links', 'default_help_link'),
             'label' => get_string('help_button_label', 'local_cas_help_links'),
             'course_id' => $course_id,
-            'link_id' => '0'
+            'link_id' => '0',
+            'is_default_display' => true
         ];
     }
 
@@ -168,7 +169,8 @@ class local_cas_help_links_url_generator {
             'url' => '',
             'label' => '',
             'course_id' => 0,
-            'link_id' => 0
+            'link_id' => 0,
+            'is_default_display' => true
         ];
     }
 }

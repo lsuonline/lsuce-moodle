@@ -24,7 +24,6 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-//require_once $CFG->libdir.'/tablelib.php';
 require_once $CFG->libdir.'/outputcomponents.php';
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/local/cas_help_links/user_settings_form.php');
@@ -32,6 +31,14 @@ require_once($CFG->dirroot.'/local/cas_help_links/category_settings_form.php');
 require_once($CFG->dirroot.'/local/cas_help_links/delete_coursematch_setting_form.php');
 
 class local_cas_help_links_renderer extends plugin_renderer_base {
+
+    public function link_to_analytics() {
+        return $this->action_link('category_analytics.php', get_string('analytics_link_label', 'local_cas_help_links'));
+    }
+
+    public function link_to_category_settings() {
+        return $this->action_link('category_settings.php', get_string('category_settings_link_label', 'local_cas_help_links'));
+    }
 
     public function cas_help_links($courseSettingsData,$categorySettingsData,$userSettingsData) {
         global $USER;
@@ -58,6 +65,11 @@ class local_cas_help_links_renderer extends plugin_renderer_base {
         ]);
 
         $out = $mform->display();
+        return $out;
+    }
+
+    public function semester_usage_chart() {
+        $out = html_writer::tag('canvas', null, array('id'=>'chart'));
         return $out;
     }
 

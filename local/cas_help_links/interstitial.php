@@ -45,8 +45,6 @@ require_login();
 
 // if a URL was provided
 if ($redirect_url) {
-    // verify link record?
-
     // loggen the linken here
     \local_cas_help_links_logger::log_link_click($USER->id, $course_id, $link_id);
     

@@ -43,7 +43,8 @@ $string['hide_course_link'] = 'Hide course link: ';
 $string['pcategory_header'] = 'Category Personal Preferences';
 $string['category_header'] = 'Category Defaults';
 $string['course_match_header'] = 'Course Match Defaults';
-$string['hide_category_links'] = 'Hide category links: ';
+$string['hide_coursematch_links'] = 'Hide links for this course';
+$string['hide_category_links'] = 'Hide {$a} links: ';
 $string['user_header'] = 'User Personal Preferences';
 $string['hide_user_links'] = 'Hide all my links: ';
 $string['my_default_link'] = 'My default link';
@@ -54,3 +55,12 @@ $string['coursematch_link'] = 'URL';
 $string['submit_success'] = 'You preferences have been successfully updated.';
 $string['submit_error'] = 'Please make sure your links are in the proper URL format';
 $string['invalid_url'] = 'Invalid URL: ';
+
+$string['category_settings_heading'] = 'Category Settings';
+$string['category_settings_link_label'] = 'Back to Edit category settings';
+
+$string['analytics_heading'] = 'CAS Help Links Usage';
+$string['analytics_link_label'] = 'View usage';
+
+$string['user_settings_heading'] = 'User Settings';
+$string['user_settings_link_label'] = 'Back to Edit user settings';

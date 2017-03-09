@@ -10,6 +10,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-contrib-sass");
     grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.loadNpmTasks("grunt-contrib-clean");
+    grunt.loadNpmTasks("grunt-contrib-copy");
  
     grunt.initConfig({
         sass: {
@@ -18,6 +19,19 @@ module.exports = function (grunt) {
                     'style.css' : 'sass/style.sass'
                 }
             }
+        },
+        copy: {
+            main: {
+                files: [
+                    {
+                        expand: true, 
+                        src: ['node_modules/chart.js/dist/Chart.js', 'node_modules/chart.js/dist/Chart.min.js'], 
+                        dest: 'amd/src/', 
+                        flatten: true,
+                        filter: 'isFile'
+                    },
+                ],
+            },
         },
         watch: {
             files: '**/*.sass',

@@ -296,7 +296,7 @@ class local_cas_help_links_input_handler {
 
             // otherwise, this link exists in output and needs missing field (display/link) to be updated
             } else {
-                $output[$input['id']] = self::update_object($output[$input['id']], $input);
+                $output[$input['id']] = self::update_object('link', $output[$input['id']], $input);
             }
         }
 
@@ -322,7 +322,7 @@ class local_cas_help_links_input_handler {
 
             // otherwise, this link exists in output and needs missing field (dept/number/link) to be updated
             } else {
-                $output[$input['id']] = self::update_object($output[$input['id']], $input);
+                $output[$input['id']] = self::update_object('coursematch', $output[$input['id']], $input);
             }
         }
 
@@ -371,15 +371,20 @@ class local_cas_help_links_input_handler {
     }
 
     /**
-     * Returns an object with the given input property updated
+     * Returns an object with the given input property updated based on the type of object to be created
      * 
+     * @param  string $inputType
      * @param  object $object
      * @param  array $input
      * @return object
      */
-    private static function update_object($object, $input)
+    private static function update_object($inputType, $object, $input)
     {
-        $object->$input['field'] = $input['input_value'];
+        if ($inputType == 'coursematch' && $input['field'] == 'dept') {
+            $object->$input['field'] = strtoupper($input['input_value']);
+        } else {
+            $object->$input['field'] = $input['input_value'];
+        }
 
         return $object;
     }
@@ -414,6 +419,7 @@ class local_cas_help_links_input_handler {
     {
         $coursematch_object = new stdClass();
         $coursematch_object->type = 'coursematch';
+        $coursematch_object->display = $input['field'] == 'display' ? '0' : '1';
         $coursematch_object->dept = $input['field'] == 'dept' ? strtoupper($input['input_value']) : '';
         $coursematch_object->number = $input['field'] == 'number' ? $input['input_value'] : '';
         $coursematch_object->link = $input['field'] == 'link' ? $input['input_value'] : '';
