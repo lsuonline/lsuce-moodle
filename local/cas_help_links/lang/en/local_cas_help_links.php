@@ -28,7 +28,7 @@ $string['pluginname_desc'] = 'This local plugin contains support libraries for r
 $string['cas_help_links:editglobalsettings'] = 'Edit Global Settings';
 $string['cas_help_links:editcategorysettings'] = 'Edit Department Settings';
 
-$string['help_button_label'] = 'Help';
+$string['help_button_label'] = 'Study Help';
 $string['settings_button_label'] = 'Edit Help Settings';
 
 $string['setting_show_links_global_title'] = 'Enable CAS Help Links';
@@ -64,3 +64,6 @@ $string['analytics_link_label'] = 'View usage';
 
 $string['user_settings_heading'] = 'User Settings';
 $string['user_settings_link_label'] = 'Back to Edit user settings';
+
+$string['cas_study_help'] = 'CAS study help for';
+$string['study_help'] = 'study help';

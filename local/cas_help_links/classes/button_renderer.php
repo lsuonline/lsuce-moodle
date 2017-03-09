@@ -58,12 +58,12 @@ class local_cas_help_links_button_renderer {
     private static function build_tooltip_text($course, $helpUrlArray)
     {
         // first, if this is a customized link preference, attempt to get the teacher's name from the course object
-        if ( ! $helpUrlArray['is_default_display'] && $teacherName = self::get_teacher_name_from_course($course))
-            return 'Study help for ' . $teacherName;
+        if ( ! $helpUrlArray['is_default_display'] && $courseName = self::get_course_name_from_course($course))
+            return $courseName . ' ' . get_string('study_help', 'local_cas_help_links');
 
         // otherwise, attempt to get the department name
         if ($deptName = self::get_department_name_from_course($course))
-            return 'CAS Study help for ' . $deptName;
+            return get_string('cas_study_help', 'local_cas_help_links') . ' ' . $deptName;
 
         return self::get_default_tooltip_text();
     }
@@ -74,23 +74,18 @@ class local_cas_help_links_button_renderer {
      * @param  object $course   moodle course
      * @return string
      */
-    private static function get_teacher_name_from_course($course)
+    private static function get_course_name_from_course($course)
     {
         // if we can't get this course's full name, display default text as tooltip
         if ( ! property_exists($course, 'fullname'))
             return '';
 
-        // make sure this course fullname is formatted such that we can grab the teacher's name
-        if ( ! $position = strpos($course->fullname, ' for ') + 5)
+        $courseName = $course->fullname;
+
+        if ( ! $courseName)
             return '';
 
-        // extract the teacher's name from the course name
-        $teacherName = substr($course->fullname, $position);
-
-        if ( ! $teacherName)
-            return '';
-
-        return $teacherName;
+        return $courseName;
     }
 
     /**
