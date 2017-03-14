@@ -89,5 +89,8 @@ if (isset($e)) {
 } else if ($submit_success) {
     echo $OUTPUT->notification(get_string('submit_success', 'local_cas_help_links'), 'notifysuccess');
 }
+echo $output->heading(get_string('user_settings_heading', 'local_cas_help_links'));
+echo $output->action_link('user_analytics.php', get_string('analytics_link_label', 'local_cas_help_links'));
+
 echo $output->cas_help_links($courseSettingsData,$categorySettingsData,$userSettingsData);
 echo $output->footer();

@@ -56,14 +56,14 @@ $string['submit_success'] = 'You preferences have been successfully updated.';
 $string['submit_error'] = 'Please make sure your links are in the proper URL format';
 $string['invalid_url'] = 'Invalid URL: ';
 
-$string['category_settings_heading'] = 'Category Settings';
+$string['category_settings_heading'] = 'CAS Help Link Category Settings';
 $string['category_settings_link_label'] = 'Back to Edit category settings';
 
 $string['analytics_heading'] = 'CAS Help Links Usage';
 $string['analytics_link_label'] = 'View usage';
 
-$string['user_settings_heading'] = 'User Settings';
-$string['user_settings_link_label'] = 'Back to Edit user settings';
+$string['user_settings_heading'] = 'My CAS Help Link Settings';
+$string['user_settings_link_label'] = 'Back to Edit my settings';
 
 $string['cas_study_help'] = 'CAS study help for';
 $string['study_help'] = 'study help';
