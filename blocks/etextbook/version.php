@@ -28,6 +28,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016072515;
+$plugin->version = 2017012403;
 $plugin->requires = 2010112400;
 $plugin->component = 'block_etextbook';

@@ -23,3 +23,15 @@ $string['descconfig'] = 'Options';
 $string['labellibrarylink'] = 'link for xml data - http://lib.lsu.edu/ebooks/xml';
 $string['desclibrarylink'] = 'URL where the XML data for etextbooks can be found';
 $string['retrieve_etextbooks'] = 'RETRIEVE ETEXTBOOKS FROM LIBRARY';
+
+$string['email_report_to'] = 'Person to Email the etextbook report to'; //For now leaving it as just one email address. As it will require less updating if someone leaves, things change, etc...
+
+$string['no_email_address'] = 'Could not email the library admin.';
+
+$string['not_found'] = "Total courses not matched with a book but perhaps shouldve been - ";
+$string['subject'] = 'LSU Library Moodle Etextbook Block Report';
+
+$string['mismatch_error'] = 'Book found but not matched for ';
+$string['library_admin_email_username'] = "Library Etextbook Administrator";
+$string['email_found_books'] = "These courses had books that were found in the xml document - Total Number -  ";
+$string['number_books'] =  " Number of books returned ";

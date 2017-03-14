@@ -48,18 +48,18 @@ class block_etextbook extends block_base {
     public function get_content() {
         GLOBAL $COURSE, $DB;
         $etextbooktable = "block_etextbook";
-
         if($DB->record_exists($etextbooktable, array('courseid'=> $COURSE->id))) {
             $this->content = new \stdClass;
             $this->content->text = '';
             $arrayofbooks = $DB->get_records($etextbooktable, array("courseid" => $COURSE->id));
             $htmldiv = "";
+            $arrayoftitles = [];
             foreach ($arrayofbooks as $book) {
-
-                $htmldiv .= '<a href = "' . $book->book_url . '">' . $book->title;
-                $htmldiv .='<img class = "img-rounded img-responsive etextimg" src = "' . $book->img_url . '"></a>';
-
-
+                if(!in_array($book->title, $arrayoftitles)) {
+                    $htmldiv .= '<a href = "' . $book->book_url . '">' . $book->title;
+                    $htmldiv .= '<img class = "img-rounded img-responsive etextimg" src = "' . $book->img_url . '"></a>';
+                    $arrayoftitles[] = $book->title;
+                }
             }
             $htmldiv .= get_string('linktolsulibraries', 'block_etextbook');
 

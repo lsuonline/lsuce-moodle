@@ -9,5 +9,12 @@ $settings->add(new admin_setting_configtext(
     'etextbook/Library_link',
     get_string('labellibrarylink', 'block_etextbook'),
     get_string('desclibrarylink', 'block_etextbook'),
-    'LINK GOES HERE'
+    get_string('desclibrarylink', 'block_etextbook')
+));
+
+$settings->add(new admin_setting_configtext(
+    'etextbook/Library_admin',
+    get_string('email_report_to', 'block_etextbook'),
+    get_string('email_report_to', 'block_etextbook'),
+    get_string('email_report_to', 'block_etextbook')
 ));
