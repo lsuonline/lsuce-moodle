@@ -60,7 +60,11 @@ class retrieve_etextbooks extends \core\task\scheduled_task
             $tbook->instructor =        (string)$book->Instructor;
             $tbook->term =              (string)$book->Term;
             $termswitcharoo =           explode(" ", $tbook->term);
-            $tbook->term =              $termswitcharoo[1] . " " . $termswitcharoo[0];
+            if (count($termswitcharoo) == 2) {
+                $tbook->term =              $termswitcharoo[1] . " " . $termswitcharoo[0];
+            } else {
+                $tbook->term =              $termswitcharoo[2] . " " . $termswitcharoo[0] . " " . $termswitcharoo[1];
+            }
             $tbook->found =             false; // will get switched to true if found in DB lookup
 
             if(strlen($tbook->section) > 1){
