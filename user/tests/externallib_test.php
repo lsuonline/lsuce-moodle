@@ -494,11 +494,19 @@ class core_user_externallib_testcase extends externallib_advanced_testcase {
             'email' => 'usertest1@example.com',
             'description' => 'This is a description for user 1',
             'city' => 'Perth',
-            'country' => 'AU'
+            'country' => 'AU',
+            'preferences' => [[
+                    'type' => 'htmleditor',
+                    'value' => 'atto'
+                ], [
+                    'type' => 'invalidpreference',
+                    'value' => 'abcd'
+                ]]
             );
 
         $context = context_system::instance();
         $roleid = $this->assignUserCapability('moodle/user:create', $context->id);
+        $this->assignUserCapability('moodle/user:editprofile', $context->id, $roleid);
 
         // Call the external function.
         $createdusers = core_user_external::create_users(array($user1));
@@ -519,6 +527,8 @@ class core_user_externallib_testcase extends externallib_advanced_testcase {
             $this->assertEquals($dbuser->description, $user1['description']);
             $this->assertEquals($dbuser->city, $user1['city']);
             $this->assertEquals($dbuser->country, $user1['country']);
+            $this->assertEquals('atto', get_user_preferences('htmleditor', null, $dbuser));
+            $this->assertEquals(null, get_user_preferences('invalidpreference', null, $dbuser));
         }
 
         // Call without required capability
@@ -582,11 +592,19 @@ class core_user_externallib_testcase extends externallib_advanced_testcase {
             'email' => 'usertest1@example.com',
             'description' => 'This is a description for user 1',
             'city' => 'Perth',
-            'country' => 'AU'
+            'country' => 'AU',
+            'preferences' => [[
+                    'type' => 'htmleditor',
+                    'value' => 'atto'
+                ], [
+                    'type' => 'invialidpreference',
+                    'value' => 'abcd'
+                ]]
             );
 
         $context = context_system::instance();
         $roleid = $this->assignUserCapability('moodle/user:update', $context->id);
+        $this->assignUserCapability('moodle/user:editprofile', $context->id, $roleid);
 
         // Call the external function.
         core_user_external::update_users(array($user1));
@@ -600,6 +618,8 @@ class core_user_externallib_testcase extends externallib_advanced_testcase {
         $this->assertEquals($dbuser->description, $user1['description']);
         $this->assertEquals($dbuser->city, $user1['city']);
         $this->assertEquals($dbuser->country, $user1['country']);
+        $this->assertEquals('atto', get_user_preferences('htmleditor', null, $dbuser));
+        $this->assertEquals(null, get_user_preferences('invalidpreference', null, $dbuser));
 
         // Call without required capability.
         $this->unassignUserCapability('moodle/user:update', $context->id, $roleid);
