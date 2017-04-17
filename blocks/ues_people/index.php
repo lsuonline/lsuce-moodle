@@ -302,9 +302,15 @@ $where = $wheres->is_empty() ? '' : 'WHERE ' . $wheres->sql(function($k) {
 });
 
 if ($using_meta_sort) {
-    $sort = 'ORDER BY um.value ' . $sortdir;
-} else if ($using_ues_sort) {
-    $sort = 'ORDER BY ues.' . $meta . ' ' . $sortdir;
+    $sort = 'ORDER BY um.value ' . $sortdir . ', lastname ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
+} else if ($using_ues_sort && $meta != 'sec_number') {
+    $sort = 'ORDER BY ues.' . $meta . ' ' . $sortdir . ', lastname ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
+} else if ($using_ues_sort && $meta = 'sec_number') {
+    $sort = 'ORDER BY ' . $meta . ' ' . $sortdir . ', lastname ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
+} else if ($meta == 'lastname') {
+    $sort = 'ORDER BY u.' . $meta . ' ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
+} else if ($meta == 'alternatename' || $meta == 'firstname') {
+    $sort = 'ORDER BY u.firstname' . ' ' . $sortdir . ', lastname ' . $sortdir . ', alternatename ' . $sortdir;
 } else {
     $sort = 'ORDER BY u.' . $meta . ' ' . $sortdir;
 }
