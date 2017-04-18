@@ -54,7 +54,7 @@ function assignsubmission_comments_comment_validate(stdClass $options) {
     } else {
         $canview = $assignment->can_view_group_submission($submission->groupid);
     }
-    if (!$canview) {
+    if (!$canview && !has_capability('mod/assign:addinstance', $context, $USER->id)) {
         throw new comment_exception('nopermissiontocomment');
     }
 

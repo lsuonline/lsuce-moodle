@@ -3015,7 +3015,7 @@ class assign {
                     $prefix = str_replace('_', ' ', $groupname . '_' . get_string('participant', 'assign'));
                     $prefix = clean_filename($prefix . '_' . $this->get_uniqueid_for_user($userid));
                 } else {
-                    $prefix = $groupname ? clean_filename($groupname . '_') : '';
+                    $prefix = $groupname ? clean_filename(str_replace('_', ' ', $groupname)) : '';
                     $prefix = clean_filename($prefix . fullname($student));
                     $prefix = clean_filename($prefix . '_' . $student->username);
                     $prefix = clean_filename($prefix . '_' . $this->get_uniqueid_for_user($userid));
@@ -3028,7 +3028,7 @@ class assign {
                                 $subtype = $plugin->get_subtype();
                                 $type = $plugin->get_type();
                                 $prefixedfilename = clean_filename($prefix .
-                                                                   '_' .
+                                                                   '-' .
                                                                    $subtype .
                                                                    '_' .
                                                                    $type .
@@ -4265,6 +4265,8 @@ class assign {
 
             if ($data->operation == 'downloadselected') {
                 $this->download_submissions($userlist);
+            } else if ($data->operation == 'downloadselectedflat') {
+                $this->download_submissionsflat($userlist);
             } else {
                 foreach ($userlist as $userid) {
                     if ($data->operation == 'lock') {
