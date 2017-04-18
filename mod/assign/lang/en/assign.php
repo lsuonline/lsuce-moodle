@@ -137,6 +137,7 @@ $string['defaultteam'] = 'Default group';
 $string['deleteallsubmissions'] = 'Delete all submissions';
 $string['description'] = 'Description';
 $string['downloadall'] = 'Download all submissions';
+$string['downloadallflat'] = 'Download all files (single folder)';
 $string['download all submissions'] = 'Download all submissions in a zip file.';
 $string['downloadselectedsubmissions'] = 'Download selected submissions';
 $string['duedate'] = 'Due date';
