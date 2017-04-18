@@ -713,6 +713,7 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
     $menu = array();
     $count = 0;
     $active = '';
+    $category = isset($PAGE->category->id) ? $PAGE->category->id : '1';
 
     foreach ($plugin_info as $plugin_type => $plugins) {
         if ($plugin_type == 'strings') {
@@ -720,11 +721,15 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
         }
 
         $first_plugin = reset($plugins);
-
         $sectionname = $plugin_info['strings'][$plugin_type];
         $section = array();
-
         foreach ($plugins as $plugin) {
+
+            if ($category != $CFG->grade_anonymous_cats && $plugin->id == 'quick_edit') {
+                unset ($plugin);
+                continue;
+            }
+
             $link = $plugin->link->out(false);
             $section[$link] = $plugin->string;
             $count++;
