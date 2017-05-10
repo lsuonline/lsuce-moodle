@@ -398,6 +398,20 @@ class edit_item_form extends moodleform {
                         $mform->removeElement('aggregationcoef2');
                     }
                     $mform->addElement('checkbox', 'extracred', get_string('aggregationcoefextrasum', 'grades'));
+                } else if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $grade_item->aggregationcoef < 0) {
+                    if ($mform->elementExists('weightoverride')) {
+                        $mform->removeElement('weightoverride');
+                    }
+                    if ($mform->elementExists('aggregationcoef2')) {
+                        $mform->removeElement('aggregationcoef2');
+                    }
+                    if ($mform->elementExists('aggregationcoef')) {
+                        $mform->removeElement('aggregationcoef');
+                    }
+                    $mform->addElement('checkbox', 'extracred', get_string('aggregationcoefextrasum', 'grades'));
+                    if ($grade_item->aggregationcoef < 0) {
+                    $mform->setDefault('extracred','1');
+                    }
                 } else {
                     if ($mform->elementExists('weightoverride')) {
                         $mform->removeElement('weightoverride');
@@ -407,7 +421,7 @@ class edit_item_form extends moodleform {
                     }
                 }
             } else if ($parent_category->aggregation == GRADE_AGGREGATE_SUM) { 
-                if ($grade_item->weightoverride == 1) {
+                if ($grade_item->weightoverride == 1 && $grade_item->aggregationcoef2 == 0 && $grade_item->aggregationcoef == 1) {
                     if ($mform->elementExists('weightoverride')) {
                         $mform->removeElement('weightoverride');
                     }

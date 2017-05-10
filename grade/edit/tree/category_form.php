@@ -518,45 +518,56 @@ class edit_category_form extends moodleform {
                         $coefstring = 'aggregationcoefextrasum';
                         $element =& $mform->createElement('checkbox', 'grade_item_aggregationcoef', get_string($coefstring, 'grades'));
                     } else {
-                        if ($coefstring == 'aggregationcoefweight' && $grade_item->aggregationcoef >= 0) {
-                            $mform->addElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
-                        }
                         $element =& $mform->createElement('text', 'grade_item_aggregationcoef', get_string($coefstring, 'grades'));
                     }
                     $mform->insertElementBefore($element, 'parentcategory');
                     $mform->addHelpButton('grade_item_aggregationcoef', $coefstring, 'grades');
-                    $mform->disabledIf('grade_item_aggregationcoef', 'grade_item_weightoverride');
-                    $mform->disabledIf('grade_item_extracred', 'grade_item_weightoverride');
                 }
 
                 // Remove fields used by natural weighting if the parent category is not using natural weighting.
                 // Or if the item is a scale and scales are not used in aggregation.
-                if ($parent_category->aggregation != GRADE_AGGREGATE_SUM || (empty($CFG->grade_includescalesinaggregation) && $grade_item->gradetype == GRADE_TYPE_SCALE)) {
-                    if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                        if ($mform->elementExists('grade_item_aggregationcoef2')) {
-                            $mform->removeElement('grade_item_aggregationcoef2');
-                        }
-
-                        if ($grade_item->aggregationcoef < 0) {
-                            if ($mform->elementExists('grade_item_aggregationcoef')) {
-                                $mform->removeElement('grade_item_aggregationcoef');
-                            }
-
-                            $mform->addElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
-                            $mform->setDefault('grade_item_extracred', true);
-                        }
-                    } else {
-                        if ($mform->elementExists('grade_item_weightoverride')) {
-                            $mform->removeElement('grade_item_weightoverride');
-                        }
-                        if ($mform->elementExists('grade_item_aggregationcoef2')) {
-                            $mform->removeElement('grade_item_aggregationcoef2');
-                        }
+            if ($parent_category->aggregation != GRADE_AGGREGATE_SUM
+                    || (empty($CFG->grade_includescalesinaggregation) && $grade_item->gradetype == GRADE_TYPE_SCALE)) {
+                if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $grade_item->aggregationcoef >= 0) {
+                    if ($mform->elementExists('grade_item_aggregationcoef2')) {
+                        $mform->removeElement('grade_item_aggregationcoef2');
+                    }
+                    $mform->addElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
+                } else if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $grade_item->aggregationcoef < 0) {
+                    if ($mform->elementExists('grade_item_weightoverride')) {
+                        $mform->removeElement('grade_item_weightoverride');
+                    }
+                    if ($mform->elementExists('grade_item_aggregationcoef2')) {
+                        $mform->removeElement('grade_item_aggregationcoef2');
+                    }
+                    if ($mform->elementExists('grade_item_aggregationcoef')) {
+                        $mform->removeElement('grade_item_aggregationcoef');
+                    }
+                    $mform->addElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
+                    if ($grade_item->aggregationcoef < 0) {
+                    $mform->setDefault('grade_item_extracred','1');
+                    }
+                } else {
+                    if ($mform->elementExists('grade_item_weightoverride')) {
+                        $mform->removeElement('grade_item_weightoverride');
+                    }
+                    if ($mform->elementExists('grade_item_aggregationcoef2')) {
+                        $mform->removeElement('grade_item_aggregationcoef2');
+                    }
+                }
+            } else if ($parent_category->aggregation == GRADE_AGGREGATE_SUM) {
+                if ($grade_item->weightoverride == 1 && $grade_item->aggregationcoef2 == 0 && $grade_item->aggregationcoef == 1) {
+                    if ($mform->elementExists('grade_item_weightoverride')) {
+                        $mform->removeElement('grade_item_weightoverride');
+                    }
+                    if ($mform->elementExists('grade_item_aggregationcoef2')) {
+                        $mform->removeElement('grade_item_aggregationcoef2');
                     }
                 }
             }
         }
     }
+}
 
 /// perform extra validation before submission
     function validation($data, $files) {

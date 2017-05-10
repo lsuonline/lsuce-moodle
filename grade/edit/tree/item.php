@@ -192,9 +192,14 @@ if ($mform->is_cancelled()) {
 
     } else {
            $ec_test = isset($data->extracred);
-           if ($ec_test == 1) {
-               $grade_item->aggregationcoef = abs($grade_item->aggregationcoef) * -1;
+           if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
+               $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
            }
+           if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
+               $grade_item->aggregationcoef2 = 0;
+               $grade_item->weightoverride = 1;
+           }
+
         $grade_item->update();
 
         if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {
