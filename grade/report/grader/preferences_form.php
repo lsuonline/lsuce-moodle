@@ -55,8 +55,10 @@ class grader_report_preferences_form extends moodleform {
         if (has_capability('moodle/grade:manage', $context)) {
 
             $preferences['prefshow'] = array();
-
-            $preferences['prefshow']['showcalculations'] = $checkbox_default;
+            $realuser = isset($USER->realuser) ? $USER->realuser : $USER;
+            if(has_capability('moodle/course:create', $context, $realuser)) {
+                $preferences['prefshow']['showcalculations'] = $checkbox_default;
+            }
 
             $preferences['prefshow']['showeyecons']       = $checkbox_default;
             if ($canviewhidden) {
