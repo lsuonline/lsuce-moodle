@@ -18,15 +18,18 @@
  * Atto panoptobutton  version file.
  *
  * @package    atto_panoptobutton
- * @copyright  COPYRIGHTINFO
+ * @copyright  Panopto 2009 - 2016
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2016072700;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2013110500;        // Requires this Moodle version.
-$plugin->component = 'atto_panoptobutton';  // Full name of the plugin (used for diagnostics).
+// The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2017012500;
+
+// Requires this Moodle version - 2.7.
+$plugin->requires  = 2014051200;
+
+// Full name of the plugin (used for diagnostics).
+$plugin->component = 'atto_panoptobutton';
 $plugin->maturity  = MATURITY_BETA;
-// Human readable version informatiomn
-$plugin->release   = '2016-07-27-00 release';
