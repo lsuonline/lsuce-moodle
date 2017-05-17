@@ -35,6 +35,7 @@ M.block_massaction.init = function(Y, data) {
     var self = this;
     this.Y = Y;        // Keep a ref to YUI instance.
 
+    /* globals Module_selector */
     var mod_sel  = new Module_selector();
 
     var sections = mod_sel.get_section_structure();
@@ -51,34 +52,25 @@ M.block_massaction.init = function(Y, data) {
     for (var section_number in sections) {
         if (data.course_format === 'onetopic') {
             // OneTopic format requires special treatment.
-            // All its sections are named 'Topic X', where X is the section number.
-            section_text = M.util.get_string('topic', 'block_massaction') + ' ' + section_number;
+            section_text = sections[section_number].innertext;
 
-            // Check that we have a div with the class tab_position_X.
-            if (Y.one('div.tab_position_' + section_number)) {
-                // Get its grandparent node so we can check if this is the active section.
-                var parentnode = Y.one('div.tab_position_' + section_number).get('parentNode').get('parentNode');
-
-                if (parentnode.get('className') === 'active') {
-                    /* This is used later to restrict the 'Select all in section'
-                     * drop menu to just the active section. This is done because
-                     * only the active section has any modules in the DOM in the
-                     * OneTopic course format.
-                     */
-                    active_section = section_number;
-                }
+            if (sections[section_number].isactive) {
+                /* This is used later to restrict the 'Select all in section'
+                 * drop menu to just the active section. This is done because
+                 * only the active section has any modules in the DOM in the
+                 * OneTopic course format.
+                 */
+                active_section = section_number;
             }
         } else {
             if (section_number === '0') {    // General/first section.
                 section_text = M.util.get_string('section_zero', 'block_massaction');
             } else {
                 // Find the section name.
-                var sectionname_node = Y.one('#section-' + section_number + ' h3.sectionname');
+                var sectionname_node = Y.one('#section-' + section_number + ' .sectionname');
 
                 if (sectionname_node !== null) {
                     section_text = sectionname_node.get('text');
-                } else if (Y.one('div.single-section')) { // Check for single section view.
-                    section_text = Y.one('div.single-section h3.sectionname').get('text');
                 } else {
                     // Determine the option text depending on course format.
                     switch (data.course_format) {
@@ -108,7 +100,7 @@ M.block_massaction.init = function(Y, data) {
             section_option      = document.createElement('option');
             section_option.text     = section_text;
             section_option.value    = section_number;
-            section_option.disabled = sections[section_number].length === 0; // If has no module to select.
+            section_option.disabled = sections[section_number].modules.length === 0; // If has no module to select.
             section_selector.options[section_selector.options.length] = section_option;
         }
 
@@ -171,23 +163,25 @@ M.block_massaction.set_section_selection = function(value, section_number) {
     // See if we are toggling all sections.
     if (typeof section_number !== 'undefined' && section_number === 'all') {
         for (var sec_id in sections) {
-            for (var  j = 0; j < sections[sec_id].length; j++) {
-                box_ids.push(sections[sec_id][j].box_id);
+            for (var  j = 0; j < sections[sec_id].modules.length; j++) {
+                box_ids.push(sections[sec_id].modules[j].box_id);
             }
         }
     } else {
         section_number = document.getElementById('mod-massaction-control-section-list-select').value;
 
         if (section_number !== 'all') {
-            for (var i = 0; i < sections[section_number].length; i++) {
-                box_ids.push(sections[section_number][i].box_id);
+            for (var i = 0; i < sections[section_number].modules.length; i++) {
+                box_ids.push(sections[section_number].modules[i].box_id);
             }
         }
     }
 
     // Un/check the boxes.
     for (var k = 0; k < box_ids.length; k++) {
-        document.getElementById(box_ids[k]).checked = value;
+        if (typeof box_ids[k] !== 'undefined') {
+            document.getElementById(box_ids[k]).checked = value;
+        }
     }
 };
 
@@ -209,12 +203,12 @@ M.block_massaction.submit_action = function(action) {
 
     // Get the checked box IDs.
     for (var sec_id in sections) {
-        for (var i = 0; i < sections[sec_id].length; i++) {
-            var checkbox = document.getElementById(sections[sec_id][i].box_id);
+        for (var i = 0; i < sections[sec_id].modules.length; i++) {
+            var checkbox = document.getElementById(sections[sec_id].modules[i].box_id);
 
             if (checkbox !== null && checkbox.checked) {
                 // Extract the module ID.
-                var name_comps = sections[sec_id][i].module_id.split('-');
+                var name_comps = sections[sec_id].modules[i].module_id.split('-');
                 submit_data.module_ids.push(name_comps[name_comps.length - 1]);
             }
         }
@@ -222,7 +216,7 @@ M.block_massaction.submit_action = function(action) {
 
     // Verify that at least one checkbox is checked.
     if (submit_data.module_ids.length === 0) {
-        alert(M.util.get_string('noitemselected', 'block_massaction'));
+        window.alert(M.util.get_string('noitemselected', 'block_massaction'));
         return false;
     }
 
@@ -237,7 +231,7 @@ M.block_massaction.submit_action = function(action) {
         case 'delete':
             // Confirm.
             var numItems = submit_data.module_ids.length;
-            if (!confirm(M.util.get_string('confirmation', 'block_massaction', numItems))) {
+            if (!window.confirm(M.util.get_string('confirmation', 'block_massaction', numItems))) {
                 return false;
             }
             break;
@@ -259,7 +253,7 @@ M.block_massaction.submit_action = function(action) {
             break;
 
         default:
-            alert('Unknown action: ' + action + '. Coding error.');
+            window.alert('Unknown action: ' + action + '. Coding error.');
             return false;
     }
 
