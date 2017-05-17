@@ -225,6 +225,7 @@ class block_mhaairs_gradebookservice_useexisting_testcase extends block_mhaairs_
 
         $this->assertEquals(0, $DB->count_records('grade_items'));
 
+        $catname = 'New grade category';
         $itemname = 'Existing grade item';
 
         $service = 'block_mhaairs_gradebookservice_external::update_grade';
@@ -251,7 +252,10 @@ class block_mhaairs_gradebookservice_useexisting_testcase extends block_mhaairs_
         $itemcount = $DB->count_records('grade_items');
         $this->assertEquals(2, $itemcount);
 
-        // Create second item via the service, differnt iteminstance.
+        // Get the item record.
+        $itemrec = $DB->get_record('grade_items', array('itemmodule' => 'mhaairs', 'itemname' => $itemname));
+
+        // Create second item via the service, differnt iteminstance, different category.
         $servicedata = array();
         $servicedata['source'] = 'mhaairs';
         $servicedata['courseid'] = 'tc1';
@@ -260,6 +264,14 @@ class block_mhaairs_gradebookservice_useexisting_testcase extends block_mhaairs_
         $servicedata['iteminstance'] = 3458;
         $servicedata['itemnumber'] = 0;
         $servicedata['grades'] = null;
+        $servicedata['itemdetails'] = null;
+
+        $itemdetails = array(
+            'categoryid' => $catname,
+            'itemname' => $itemname,
+            'useexisting' => 1
+        );
+        $itemdetailsjson = urlencode(json_encode($itemdetails));
         $servicedata['itemdetails'] = $itemdetailsjson;
 
         $result = call_user_func_array($service, $servicedata);
@@ -268,12 +280,17 @@ class block_mhaairs_gradebookservice_useexisting_testcase extends block_mhaairs_
         $itemcount = $DB->count_records('grade_items');
         $this->assertEquals(2, $itemcount);
 
-        // 1 3458 mhaairs item.
+        // 1 3458 mhaairs item in the original category.
         $itemcount = $DB->count_records('grade_items', array(
+            'categoryid' => $itemrec->categoryid,
             'itemtype' => 'manual',
             'itemmodule' => 'mhaairs',
             'iteminstance' => 3458
         ));
         $this->assertEquals(1, $itemcount);
+
+        // The new category was not created.
+        $itemcount = $DB->count_records('grade_categories', array('fullname' => $catname));
+        $this->assertEquals(0, $itemcount);
     }
 }

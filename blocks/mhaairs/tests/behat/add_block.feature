@@ -26,7 +26,7 @@ Feature: Add block
         And I follow "Courses"
         And I follow "Course 1"
 
-        When I follow "Turn editing on"
+        When I turn editing mode on
         And I add the "McGraw-Hill AAIRS" block
 
         Then I should see "The site requires further configuration. Please contact your site admin."
@@ -46,7 +46,7 @@ Feature: Add block
         And I follow "Courses"
         And I follow "Course 1"
 
-        When I follow "Turn editing on"
+        When I turn editing mode on
         And I add the "McGraw-Hill AAIRS" block
 
         Then I should see "The site requires further configuration. Please contact your site admin."
@@ -73,10 +73,10 @@ Feature: Add block
         And I follow "Courses"
         And I follow "Course 1"
 
-        When I follow "Turn editing on"
+        When I turn editing mode on
         And I add the "McGraw-Hill AAIRS" block
 
-        Then I should see "McGraw-Hill Campus" in the "div.block_mhaairs div.servicelink" "css_element"
+        Then I should see "McGraw-Hill Campus" in the ".block.block_mhaairs div.servicelink" "css_element"
         And I follow "McGraw-Hill Campus"
         And I switch to "__mhaairs_service_window" window
         And I should see "C1"
@@ -103,7 +103,7 @@ Feature: Add block
         And I follow "Courses"
         And I follow "Course 1"
 
-        When I follow "Turn editing on"
+        When I turn editing mode on
         And I add the "McGraw-Hill AAIRS" block
         And I configure the "McGraw-Hill AAIRS" block
         And I set the following fields to these values:
@@ -133,27 +133,27 @@ Feature: Add block
         And I follow "Courses"
         And I follow "Course 1"
 
-        When I follow "Turn editing on"
+        When I turn editing mode on
         And I add the "McGraw-Hill AAIRS" block
 
-        Then I should see "Admin documentation" in the "div.block_mhaairs .footer .helplink:nth-child(1)" "css_element"
-        And I should see "Instructor documentation" in the "div.block_mhaairs .footer .helplink:nth-child(2)" "css_element"
+        Then I should see "Admin documentation" in the ".block.block_mhaairs a[target=__mhaairs_adminhelp_window]" "css_element"
+        And I should see "Instructor documentation" in the ".block.block_mhaairs a[target=__mhaairs_teacherhelp_window]" "css_element"
 
         And the mhaairs help page "adminhelp" is not broken
         And I log out
 
         When I log in as "teacher1"
         And I follow "Course 1"
-        Then I should not see "Admin documentation" in the "div.block_mhaairs" "css_element"
-        And I should see "Instructor documentation" in the "div.block_mhaairs .footer .helplink" "css_element"
+        Then I should not see "Admin documentation" in the ".block.block_mhaairs" "css_element"
+        And I should see "Instructor documentation" in the ".block.block_mhaairs a[target=__mhaairs_teacherhelp_window]" "css_element"
 
         And the mhaairs help page "instructorhelp" is not broken
         And I log out
 
         When I log in as "student1"
         And I follow "Course 1"
-        Then I should not see "Admin documentation" in the "div.block_mhaairs" "css_element"
-        And I should not see "Instructor documentation" in the "div.block_mhaairs" "css_element"
+        Then I should not see "Admin documentation" in the ".block.block_mhaairs" "css_element"
+        And I should not see "Instructor documentation" in the ".block.block_mhaairs" "css_element"
 
     #:Scenario
 
@@ -176,9 +176,9 @@ Feature: Add block
         And I follow "Courses"
         And I follow "Course 1"
 
-        When I follow "Turn editing on"
+        When I turn editing mode on
         And I add the "McGraw-Hill AAIRS" block
 
-        Then I should not see "Admin documentation" in the "div.block_mhaairs" "css_element"
-        And I should not see "Instructor documentation" in the "div.block_mhaairs" "css_element"
+        Then I should not see "Admin documentation" in the ".block.block_mhaairs" "css_element"
+        And I should not see "Instructor documentation" in the ".block.block_mhaairs" "css_element"
     #:Scenario

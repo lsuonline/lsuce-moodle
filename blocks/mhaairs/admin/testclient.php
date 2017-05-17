@@ -97,7 +97,7 @@ echo html_writer::tag('h3', $function);
 
 // Process a request if any.
 if ($data = $mform->get_data()) {
-    $functioninfo = external_function_info($function);
+    $functioninfo = external_api::external_function_info($function);
 
     // First load lib of selected protocol.
     require_once("$CFG->dirroot/webservice/$protocol/locallib.php");

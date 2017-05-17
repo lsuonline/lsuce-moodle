@@ -204,10 +204,12 @@ class block_mhaairs_gradebookservice_update_item_testcase extends block_mhaairs_
 
             try {
                 $result = call_user_func_array($callback, $case->servicedata);
+                $this->assertEquals($case->result, $result);
             } catch (Exception $e) {
                 $result = get_class($e);
+                $this->assertEquals($case->result, $result);
+                continue;
             }
-            $this->assertEquals($case->result, $result);
 
             // Fetch the item.
             $giparams = array(
