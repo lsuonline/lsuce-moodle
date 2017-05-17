@@ -33,17 +33,17 @@ if (empty($CFG)) {
     global $CFG;
 }
 
-if (empty($CFG->branch) || $CFG->branch <= 26) {
-    $plugin = new stdClass();
+if (isset($CFG->yui3version) && version_compare($CFG->yui3version, '3.15.0') < 0) {
+    $plugin = new stdClass(); // Moodle <= 2.6
 }
 
 $plugin->cron      = 0;
 $plugin->component = 'mod_hotpot';
 $plugin->maturity  = MATURITY_STABLE; // ALPHA=50, BETA=100, RC=150, STABLE=200
 $plugin->requires  = 2010112400;      // Moodle 2.0
-$plugin->release   = '2016-07-24 (98)';
-$plugin->version   = 2016072498;
+$plugin->release   = '2017-04-27 (07)';
+$plugin->version   = 2017042707;
 
-if (empty($CFG->branch) || $CFG->branch <= 26) {
-    $module = clone($plugin);
+if (isset($CFG->yui3version) && version_compare($CFG->yui3version, '3.15.0') < 0) {
+    $module = clone($plugin); // Moodle <= 2.6
 }
