@@ -1,0 +1,24 @@
+#page-blocks-poll-tabs .singleselect {
+    text-align: left;
+    margin: 0;
+}
+
+#page-blocks-poll-tabs .field_title {
+    float: left;
+}
+
+#page-blocks-poll-tabs a img {
+   background: transparent;
+   padding: 0 5px;
+}
+
+.block_poll div.center {
+   padding: 2px;
+   margin-bottom: 0;
+   text-align: center;
+   text-transform: lowercase;
+}
+
+.block_poll div.center:first-letter {
+   text-transform: capitalize;
+}
