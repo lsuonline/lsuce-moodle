@@ -15,8 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * contains the different events panopto can expect to handle
+ *
  * @package block_panopto
- * @copyright  Panopto 2009 - 2015 with contributions from Spenser Jones (sjones@ambrose.edu)
+ * @copyright  Panopto 2009 - 2016 with contributions from Spenser Jones (sjones@ambrose.edu)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,12 +28,17 @@ $observers = array(
     // User enrolled event.
     array(
         'eventname' => '\core\event\user_enrolment_created',
-        'callback' => 'block_panopto_rollingsync::enrolmentcreated',
+        'callback' => 'block_panopto_rollingsync::enrollmentcreated',
     ),
     // User unenrolled event.
     array(
         'eventname' => '\core\event\user_enrolment_deleted',
-        'callback' => 'block_panopto_rollingsync::enrolmentdeleted',
+        'callback' => 'block_panopto_rollingsync::enrollmentdeleted',
+    ),
+    // Event when user has role updated.
+    array(
+        'eventname' => '\core\event\user_enrolment_updated',
+        'callback' => 'block_panopto_rollingsync::enrolmentupdated',
     ),
     // Event when user has role added to enrollment.
     array(
@@ -43,4 +50,13 @@ $observers = array(
         'eventname' => '\core\event\role_unassigned',
         'callback' => 'block_panopto_rollingsync::roledeleted',
     ),
+    array(
+        'eventname' => '\core\event\course_created',
+        'callback' => 'block_panopto_rollingsync::coursecreated',
+    ),
+    // Event when a course is imported or backed up.
+    array(
+        'eventname' => '\core\event\course_restored',
+        'callback' => 'block_panopto_rollingsync::courserestored',
+    )
 );
