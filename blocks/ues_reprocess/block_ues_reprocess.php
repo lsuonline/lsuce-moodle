@@ -30,7 +30,7 @@ class block_ues_reprocess extends block_list {
     }
 
     function applicable_formats() {
-        return array('course' => true, 'my' => true, 'site' => false);
+        return array('course' => true, 'my' => false, 'site' => false);
     }
 
     function get_content() {

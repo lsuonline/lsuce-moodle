@@ -40,6 +40,9 @@ class block_etextbook extends block_base {
     public function init() {
         $this->title = get_string('etextbook', 'block_etextbook');
     }
+    function applicable_formats() {
+        return array('site' => false, 'my' => false, 'course-view' => true);
+    }
     /**
      * Function gets the xml from the library and populates the blocks content
      * @return string $this->content

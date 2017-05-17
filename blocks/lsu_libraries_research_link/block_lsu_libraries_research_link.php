@@ -6,6 +6,10 @@ class block_lsu_libraries_research_link extends block_base {
 		$this->title = get_string('lsu_libraries_research_link', 'block_lsu_libraries_research_link');
 	}
 
+        function applicable_formats() {
+            return array('site' => false, 'my' => false, 'course-view' => true);
+        }
+
 	public function get_content() {
 		global $CFG;
 
