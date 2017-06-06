@@ -75,7 +75,7 @@ abstract class sge_database_object extends sge_object{
     public function delete(){
         global $DB;
         $DB->delete_records(static::$tablename, array('id'=>$this->id));
-        unset($this);
+// FOR NOW. PLEASE FIX THIS CRAP        unset($this);
     }
 
     public function logaction($action, $context = null, $additionalparams = array()){
