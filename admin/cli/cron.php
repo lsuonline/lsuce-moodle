@@ -30,6 +30,10 @@
 
 define('CLI_SCRIPT', true);
 
+if (PHP_MAJOR_VERSION >= 7) {
+    die('Cron is disabled for PHP7 or later.'.PHP_EOL);
+}
+
 require(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once($CFG->libdir.'/clilib.php');      // cli only functions
 require_once($CFG->libdir.'/cronlib.php');
