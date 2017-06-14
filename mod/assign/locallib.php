@@ -3506,7 +3506,6 @@ class assign {
                                     false,
                                     $this->get_course_module()->id,
                                     get_string('grading', 'assign'));
-        $o .= $this->get_renderer()->render($header);
 
         // If userid is passed - we are only grading a single student.
         $rownum = optional_param('rownum', 0, PARAM_INT);
@@ -3531,6 +3530,16 @@ class assign {
         }
 
         $last = false;
+
+        // Avoid a situation where end user tries to grade with users filtered out using a-z filter
+        if (!$useridlist) {
+            $redirect = new moodle_url('/mod/assign/view.php', array('id' => $this->get_course_module()->id, 'action' => 'grading'));
+            $redmessage = get_string('selectsomeusers', 'assign');
+            redirect($redirect, $redmessage, NULL, \core\output\notification::NOTIFY_ERROR);
+        }
+
+        $o .= $this->get_renderer()->render($header);
+
         $userid = $useridlist[$rownum];
         if ($rownum == count($useridlist) - 1) {
             $last = true;
