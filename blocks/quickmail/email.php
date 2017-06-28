@@ -1,5 +1,25 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
 //
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * @package    block_quickmail
+ * @copyright  2008-2017 Louisiana State University
+ * @copyright  2008-2017 Adam Zapletal, Chad Mazilly, Philip Cali, Robert Russo
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 require_once('../../config.php');
 require_once('../../enrol/externallib.php');
@@ -74,6 +94,7 @@ $allgroups = groups_get_all_groups($courseid);
 
 $mastercap = true;
 $groups = $allgroups;
+$attributes = null;
 
 $restricted_view = (
     !has_capability('moodle/site:accessallgroups', $context) and
@@ -128,8 +149,17 @@ foreach ($everyone as $userid => $user) {
     }
 }
 
+// if we have no users to email, show an error page with explanation and a link back
 if (empty($users)) {
-    print_error('no_usergroups', 'block_quickmail');
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading($blockname);
+    echo $OUTPUT->notification(quickmail::_s('no_usergroups'), 'notifyproblem');
+    
+    echo html_writer::start_tag('div', array('class' => 'no-overflow'));
+    echo html_writer::link(new moodle_url('/course/view.php', ['id' => $courseid]), 'Back to previous page', null);
+    echo html_writer::end_tag('div');
+    
+    echo $OUTPUT->footer();
 }
 
 // we are presenting the form with values populated from either the log or drafts table in the db
@@ -137,6 +167,10 @@ if (!empty($type)) {
     
     $email = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
     //$emailmailto = array();
+    if ($type == 'log') {
+        $attributes = array ('id' => "{$typeid}_id_message_editor");
+    }
+
     if ($messageIDresend == 1) {
         list($email->mailto, $email->additional_emails) = quickmail::clean($email->failuserids);
     }
@@ -187,7 +221,8 @@ $form = new email_form(null, array(
     'users_to_roles' => $users_to_roles,
     'users_to_groups' => $users_to_groups,
     'sigs' => array_map(function($sig) { return $sig->title; }, $sigs),
-    'alternates' => $alternates
+    'alternates' => $alternates,
+    'attributes' => $attributes
 ));
 
 $warnings = array();
@@ -248,14 +283,11 @@ if ($form->is_cancelled()) {
             // deal with possible signature, will be appended to message in a little bit.
             if (!empty($sigs) and $data->sigid > -1) {
                 $sig = $sigs[$data->sigid];
-
                 $signaturetext = file_rewrite_pluginfile_urls($sig->signature, 'pluginfile.php', $context->id, 'block_quickmail', 'signature', $sig->id, $editor_options);
-
-                
             }
 
             // Prepare html content of message /////////////////////////////////
-            //$data->message = file_rewrite_pluginfile_urls($data->message, 'pluginfile.php', $context->id, 'block_quickmail', $table, $data->id, $editor_options);
+            $data->message = file_rewrite_pluginfile_urls($data->message, 'pluginfile.php', $context->id, 'block_quickmail', $table, $data->id, $editor_options);
 
             if(empty($signaturetext)){
                 $data->messageWithSigAndAttach = $data->message;
@@ -272,10 +304,6 @@ if ($form->is_cancelled()) {
                     $context, $data, $table, $data->id
                 );
 
-                // Prepare html content of message
-            $data->message = file_rewrite_pluginfile_urls($data->message, 'pluginfile.php', $context->id, 'block_quickmail', $table, $data->id, $editor_options);
-
-
             // Same user, alternate email //////////////////////////////////////
             if (!empty($data->alternateid)) {
                 $user = clone($USER);
@@ -291,11 +319,14 @@ if ($form->is_cancelled()) {
             $messagetext = format_text_email($data->messageWithSigAndAttach, $data->format);
 
             // HTML
-            $messagehtml = format_text($data->messageWithSigAndAttach, $data->format, array('filter' => false));
+            $options = array('filter' => false);
+            $messagehtml = format_text($data->messageWithSigAndAttach, $data->format, $options);
 
             if(!empty($data->mailto)) {
+
                 foreach (explode(',', $data->mailto) as $userid) {
                     // Email gets sent here
+                    if ($everyone[$userid]->value) { $everyone[$userid]->email = $everyone[$userid]->value; }
                     $success = email_to_user($everyone[$userid], $user, $subject,$messagetext, $messagehtml);
                     if (!$success) {
                         $warnings[] = get_string("no_email", 'block_quickmail', $everyone[$userid]);
@@ -305,30 +336,21 @@ if ($form->is_cancelled()) {
             }
 
         if(!empty($data->additional_emails)){
-            
             $additional_email_array = preg_split('/[,;]/', $data->additional_emails);
-
-            
-
                 $i = 0;
-
                 foreach ($additional_email_array as $additional_email) {
                     $additional_email = trim($additional_email); 
-
-                    $fakeuser = new object();
+                    $fakeuser = new stdClass();
                     $fakeuser->id = 99999900 + $i;
                     $fakeuser->email = $additional_email;
                     // TODO make this into a menu option
                     $fakeuser->mailformat = 1;
-
                     $additional_email_success = email_to_user($fakeuser, $user, $subject, $messagetext, $messagehtml);
                     if (!$additional_email_success) {
                         $data->failuserids[] = $additional_email;
-
                         // will need to notify that an email is incorrect
                         $warnings[] = get_string("no_email_address", 'block_quickmail', $fakeuser->email);
                     }
-
                     $i++;
                 }
         }
