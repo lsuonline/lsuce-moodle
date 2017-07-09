@@ -2056,6 +2056,18 @@ class enrol_ues_plugin extends enrol_plugin {
         }
         //events_trigger_legacy('ues_course_settings_navigation', $params);
     }
+
+    /**
+     * Master method for kicking off UES enrollment
+     *
+     * First checks a few top-level requirements to run, and then passes on to a secondary method for handling the process
+     *
+     * @return boolean
+     */
+    public function run_clear_reprocess() {
+    global $DB;
+    $DB->delete_records('enrol_ues_sectionmeta', array('name'=>'section_reprocessed'));
+    }
 }
 
 function enrol_ues_supports($feature) {

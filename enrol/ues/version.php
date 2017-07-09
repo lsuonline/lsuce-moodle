@@ -9,6 +9,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'enrol_ues';
-$plugin->version = 2016040800;
+$plugin->version = 2016040802;
 $plugin->requires = 2015111600;
 $plugin->release = 'v3.0.0';

@@ -44,18 +44,19 @@ function local_mymedia_extend_navigation($navigation) {
         }
     }
 
-     if (!isloggedin()) {
-         $nodehome = $navigation->get('home');
-     } else {
-         $nodehome = $navigation->get('myprofile');
-         if (!is_siteadmin()) {
-             $homenode = $navigation->find('home', navigation_node::NODETYPE_LEAF);
-             if($homenode){
-                 $homenode->remove();
-                 $navigation = $homenode->parent;
-             }
-         }
-     }
+    if (!isloggedin()) {
+        $nodehome = $navigation->get('home');
+    } else {
+        $nodehome = $navigation->get('myprofile');
+        if (!is_siteadmin()) {
+            $homenode = $navigation->find('home', navigation_node::NODETYPE_LEAF);
+            if($homenode){
+                $homenode->remove();
+                $navigation = $homenode->parent;
+            }
+        }
+    }
+
     $context = context_user::instance($USER->id);
 
     if (empty($nodehome) || !has_capability('local/mymedia:view', $context, $USER)) {
