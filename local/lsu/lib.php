@@ -61,12 +61,7 @@ abstract class lsu_source implements institution_codes, semester_codes {
     protected function clean_response($response) {
         $clean = $this->escape_illegals($response);
 
-        $contents = <<<XML
-<?xml version='1.0'?>
-<rows>
-    $clean
-</rows>
-XML;
+        $contents = $clean;
         return $contents;
     }
 
