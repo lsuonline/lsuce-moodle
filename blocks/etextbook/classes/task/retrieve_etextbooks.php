@@ -61,9 +61,9 @@ class retrieve_etextbooks extends \core\task\scheduled_task
             $tbook->term =              (string)$book->Term;
             $termswitcharoo =           explode(" ", $tbook->term);
             if (count($termswitcharoo) == 2) {
-                $tbook->term =              $termswitcharoo[1] . " " . $termswitcharoo[0];
+                $tbook->term =              trim($termswitcharoo[1] . " " . $termswitcharoo[0]);
             } else {
-                $tbook->term =              $termswitcharoo[2] . " " . $termswitcharoo[0] . " " . $termswitcharoo[1];
+                $tbook->term =              trim($termswitcharoo[2] . " " . $termswitcharoo[0] . " " . $termswitcharoo[1]);
             }
             $tbook->found =             false; // will get switched to true if found in DB lookup
 
@@ -118,11 +118,9 @@ class retrieve_etextbooks extends \core\task\scheduled_task
         $notfound = " ";
         $found = " ";
         $tbook->courseid = "";
-        $coursenameregexp = $tbook->term . ' ' . $tbook->dept . ' ' . $tbook->course_number . ' ' . str_pad($tbook->section, 3, "0", STR_PAD_LEFT);
+        $coursenameregexp = trim($tbook->term) . ' ' . trim($tbook->dept) . ' ' . trim($tbook->course_number) . ' ' . trim(str_pad($tbook->section, 3, "0", STR_PAD_LEFT));
 
-        echo "\n\n section is " . $tbook->section;
-        $coursenameregexp = $tbook->term . ' ' . $tbook->dept . ' ' . $tbook->course_number . ' ' . str_pad($tbook->section, 3, "0", STR_PAD_LEFT);
-        echo " \n \n " . $coursenameregexp;
+        echo "\n\n Section is: " . $tbook->section . "\n Course is: " . $coursenameregexp . "\n";
 
         $sqlt = "SELECT DISTINCT(c.id)
                      FROM {enrol_ues_semesters} sem
