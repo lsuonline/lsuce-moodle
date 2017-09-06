@@ -18,10 +18,11 @@ defined('MOODLE_INTERNAL') || die();
 
 function block_analytics_graphs_subtract_student_arrays($estudantes, $acessaram) {
     $encontrou = array();
+    $resultado = array();
     foreach ($estudantes as $estudante) {
         $encontrou = false;
         foreach ($acessaram as $acessou) {
-            if ($estudante['userid'] == $acessou ['userid']) {
+            if ($estudante['userid'] == $acessou['userid']) {
                 $encontrou = true;
                 break;
             }
@@ -81,12 +82,8 @@ function block_analytics_graphs_get_teachers($course) {
 
 
 function block_analytics_graphs_get_resource_url_access($course, $estudantes, $legacy) {
-    global $COURSE;
-    global $DB;
-    foreach ($estudantes as $tupla) {
-            $inclause[] = $tupla->id;
-    }
-    list($insql, $inparams) = $DB->get_in_or_equal($inclause);
+    global $CFG, $COURSE, $DB;
+
     $resource = $DB->get_record('modules', array('name' => 'resource'), 'id');
     $url = $DB->get_record('modules', array('name' => 'url'), 'id');
     $page = $DB->get_record('modules', array('name' => 'page'), 'id');
@@ -95,6 +92,10 @@ function block_analytics_graphs_get_resource_url_access($course, $estudantes, $l
     $quiz = $DB->get_record('modules', array('name' => 'quiz'), 'id');
     $folder = $DB->get_record('modules', array('name' => 'folder'), 'id');
     $startdate = $COURSE->startdate;
+    $courseid = $COURSE->id;
+    $gradebookroles = $CFG->gradebookroles;
+    $gradedroles = explode(',', $gradebookroles);
+    list($insql, $inparams) = $DB->get_in_or_equal($gradedroles);
 
     /* Temp table to order */
     $params = array($course);
@@ -123,19 +124,24 @@ function block_analytics_graphs_get_resource_url_access($course, $estudantes, $l
             $DB->insert_record('tmp_analytics_graphs', $record, false);
         }
     }
-    $params = array_merge(array($startdate), $inparams, array($course, $resource->id, $url->id, $page->id, $assign->id,
+    $params = array_merge($inparams, array($startdate), array($course, $resource->id, $url->id, $page->id, $assign->id,
                                                               $forum->id, $quiz->id, $folder->id));
     if (!$legacy) {
         $sql = "SELECT temp.id+(COALESCE(temp.userid,1)*1000000)as id, temp.id as ident, tag.section, m.name as tipo,
                     r.name as resource, u.name as url, p.name as page,  a.name as assign, f.name as forum, q.name as quiz,
                     fo.name as folder,temp.userid, usr.firstname, usr.lastname, usr.email, temp.acessos, tag.sequence
                     FROM (
-                        SELECT cm.id, log.userid, count(*) as acessos
+                        SELECT cm.id, log.userid, count(DISTINCT(log.id)) as acessos
                         FROM {course_modules} as cm
-                        LEFT JOIN {logstore_standard_log} as log ON log.timecreated >= ?
-                            AND log.userid $insql AND action = 'viewed' AND cm.id=log.contextinstanceid
-                        WHERE cm.course = ? AND (cm.module=? OR cm.module=? OR cm.module=? OR cm.module=? OR cm.module=? OR
-                            cm.module=? OR cm.module=?)
+                        INNER JOIN {course} c ON cm.course = c.id
+                        INNER JOIN {context} ctx ON ctx.instanceid = c.id
+                        INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
+                        INNER JOIN {role} r ON r.id = ra.roleid
+                        INNER JOIN {logstore_standard_log} as log ON log.courseid = c.id 
+                        WHERE r.id $insql AND log.timecreated >= ? AND log.action = 'viewed' AND cm.id = log.contextinstanceid AND c.id = $courseid
+                            AND cm.course = ? AND cm.course = log.courseid 
+                            AND (cm.module=? OR cm.module=? OR cm.module=? OR cm.module=? OR cm.module=? OR cm.module=? OR cm.module=?)
+                            AND log.userid = ra.userid
                         GROUP BY cm.id, log.userid
                         ) as temp
                     LEFT JOIN {course_modules} as cm ON temp.id = cm.id
@@ -157,9 +163,15 @@ function block_analytics_graphs_get_resource_url_access($course, $estudantes, $l
                     FROM (
                         SELECT cm.id, log.userid, count(*) as acessos
                         FROM {course_modules} as cm
-                        LEFT JOIN {log} as log ON log.time >= ?
-                            AND log.userid $insql AND action = 'view' AND cm.id = log.cmid
-                        WHERE cm.course = ? AND (cm.module=? OR cm.module=? OR cm.module=?)
+                        INNER JOIN {course} c ON cm.course = c.id
+                        INNER JOIN {context} ctx ON ctx.instanceid = c.id
+                        INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
+                        INNER JOIN {role} r ON r.id = ra.roleid
+                        INNER JOIN {log} as log ON log.course = c.id
+                        WHERE r.id $insql AND log.time >= ? AND log.action = 'viewed' AND cm.id = log.cmid AND c.id = $courseid
+                        AND cm.course = ? AND cm.course = log.course
+                        AND (cm.module=? OR cm.module=? OR cm.module=?)
+                        AND log.userid = ra.userid
                         GROUP BY cm.id, log.userid
                         ) as temp
                     LEFT JOIN {course_modules} as cm ON temp.id = cm.id
@@ -254,32 +266,36 @@ function block_analytics_graphs_get_quiz_submission($course, $students) {
 
 
 function block_analytics_graphs_get_number_of_days_access_by_week($course, $estudantes, $startdate, $legacy=0) {
-    global $DB;
+    global $DB, $CFG;
     $timezone = new DateTimeZone(core_date::get_server_timezone());
     $timezoneadjust   = $timezone->getOffset(new DateTime);
-    foreach ($estudantes as $tupla) {
-        $inclause[] = $tupla->id;
-    }
-    list($insql, $inparams) = $DB->get_in_or_equal($inclause);
+    $gradebookroles = $CFG->gradebookroles;
+    $gradedroles = explode(',', $gradebookroles);
+    list($insql, $inparams) = $DB->get_in_or_equal($gradedroles);
+
     $params = array_merge(array($timezoneadjust, $timezoneadjust, $startdate, $course, $startdate), $inparams);
     if (!$legacy) {
         $sql = "SELECT temp2.userid+(week*1000000) as id, temp2.userid, firstname, lastname, email, week,
                 number, numberofpageviews
                 FROM (
-                    SELECT temp.userid, week, COUNT(*) as number, SUM(numberofpageviews) as numberofpageviews
+                    SELECT temp.userid, week, COUNT(DISTINCT(temp.id)) as number, SUM(numberofpageviews) as numberofpageviews
                     FROM (
                         SELECT MIN(log.id) as id, log.userid,
                             FLOOR((log.timecreated + ?)/ 86400)   as day,
                             FLOOR( (((log.timecreated  + ?) / 86400) - (?/86400))/7) as week,
-                            COUNT(*) as numberofpageviews
+                            COUNT(DISTINCT(log.id)) as numberofpageviews
                         FROM {logstore_standard_log} as log
-                        WHERE courseid = ? AND action = 'viewed' AND target = 'course'
-                            AND log.timecreated >= ? AND log.userid $insql
+                        INNER JOIN {course} c ON log.courseid = c.id
+                        INNER JOIN {context} ctx ON ctx.instanceid = c.id
+                        INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
+                        INNER JOIN {role} r ON r.id = ra.roleid
+                        WHERE c.id = ? AND log.action = 'viewed' AND log.target = 'course'
+                            AND log.timecreated >= ? AND ra.userid = log.userid AND r.id $insql
                         GROUP BY userid, day, week
                     ) as temp
                     GROUP BY week, temp.userid
                 ) as temp2
-                LEFT JOIN {user} usr ON usr.id = temp2.userid
+                INNER JOIN {user} usr ON usr.id = temp2.userid
                 ORDER BY LOWER(firstname), LOWER(lastname),userid, week";
     } else {
         $sql = "SELECT temp2.userid+(week*1000000) as id, temp2.userid, firstname, lastname, email, week,
@@ -291,9 +307,13 @@ function block_analytics_graphs_get_number_of_days_access_by_week($course, $estu
                             FLOOR((log.time + ?)/ 86400)   as day,
                             FLOOR( (((log.time  + ?) / 86400) - (?/86400))/7) as week,
                             COUNT(*) as numberofpageviews
-                        FROM {log} as log
-                        WHERE course = ? AND action = 'view' AND module = 'course'
-                            AND log.time >= ? AND log.userid $insql
+                        FROM {log} as log 
+                        INNER JOIN {course} c ON log.course = c.id
+                        INNER JOIN {context} ctx ON ctx.instanceid = c.id
+                        INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
+                        INNER JOIN {role} r ON r.id = ra.roleid
+                        WHERE c.id = ? AND log.action = 'view' AND log.module = 'course'
+                            AND log.time >= ? AND log.userid = ra.userid and r.id $insql
                         GROUP BY userid, day, week
                     ) as temp
                     GROUP BY week, temp.userid
