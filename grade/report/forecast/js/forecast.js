@@ -41,7 +41,10 @@ function getCategories() {
  * @param string  type  values(default)|scale-selects
  * @return object
  */
-function getGradeInputs(type = 'values') {
+function getGradeInputs(type) {
+
+    type = type ? type : 'values';
+
     if (type == 'scale-selects') {
         return getElementsByType('dynamic-scale-item');
     }
@@ -208,7 +211,9 @@ function collectFormInput() {
  * 
  * @return void
  */
-function listenForInputChanges(debounceWaitTime = 1000) {
+function listenForInputChanges(debounceWaitTime) {
+
+    debounceWaitTime = debounceWaitTime ? debounceWaitTime : 1000;
 
     // validate grade (text) input on @keyup
     getGradeInputs('values').keyup(function(event) {
