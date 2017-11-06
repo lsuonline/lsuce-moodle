@@ -1,5 +1,7 @@
 <?php
 
+ini_set('default_socket_timeout', 300);
+
 interface semester_codes {
     const FALL = '1S';
     const SPRING = '2S';

@@ -1,5 +1,7 @@
 <?php
 
+ini_set('default_socket_timeout', 300);
+
 interface online_semester_codes {
     const FALL1 = '1L';
     const FALL2 = '1P';
