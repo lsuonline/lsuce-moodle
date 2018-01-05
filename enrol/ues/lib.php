@@ -1424,6 +1424,7 @@ class enrol_ues_plugin extends enrol_plugin {
 
             $is_enrolled = false;
             $same_section = false;
+            $suspend_enrollment = get_config('enrol_ues', 'suspend_enrollment');
 
             foreach ($sections as $section) {
                 if ($section->idnumber == $course->idnumber) {
@@ -1439,8 +1440,11 @@ class enrol_ues_plugin extends enrol_plugin {
             // This user is enrolled as another role (teacher) in the same
             // section so keep groups alive
             if (!$is_enrolled) {
-                $this->unenrol_user($instance, $user->userid, $roleid);
-
+                if ($suspend_enrollment == 0) {
+                    $this->unenrol_user($instance, $user->userid, $roleid);
+                } else {
+                    $this->update_user_enrol($instance, $user->userid, ENROL_USER_SUSPENDED);
+                } 
             } else if ($same_section) {
                 groups_add_member($group->id, $user->userid);
             }

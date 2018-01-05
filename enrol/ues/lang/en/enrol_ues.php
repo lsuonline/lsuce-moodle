@@ -45,6 +45,9 @@ $string['could_not_enroll'] = 'Could not process enrollment for courses in {$a->
 $string['recover_grades'] = 'Recover Grades';
 $string['recover_grades_desc'] = 'Recover grade history grades on enrollment, if grades were present on unenrollment.';
 
+$string['suspend_enrollment'] = 'Inactivate Enrollment';
+$string['suspend_enrollment_desc'] = 'Inactivate enrollment instead of un-enrolling students.';
+
 $string['running'] = 'Currently Running';
 $string['running_desc'] = 'If this is checked then it either means that the process is still running, or the process died unexpectedly. Uncheck this if you think the process should be enabled.
 

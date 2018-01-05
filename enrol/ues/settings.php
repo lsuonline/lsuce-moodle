@@ -133,6 +133,8 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('enrol_ues/recover_grades',
         $_s('recover_grades'), $_s('recover_grades_desc'), 1));
 
+    $settings->add(new admin_setting_configcheckbox('enrol_ues/suspend_enrollment',
+        $_s('suspend_enrollment'), $_s('suspend_enrollment_desc'), 0));
 
     // ------------------ Specific Provider Settings -------------------------
     $provider = ues::provider_class();
