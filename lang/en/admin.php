@@ -1033,6 +1033,7 @@ $string['taskfiletrashcleanup'] = 'Cleanup files in trash';
 $string['taskglobalsearchindex'] = 'Global search indexing';
 $string['taskglobalsearchoptimize'] = 'Global search index optimization';
 $string['taskgradecron'] = 'Background processing for gradebook';
+$string['taskgradecleancron'] = 'Background processing for deleting old gradebook histories';
 $string['tasklegacycron'] = 'Legacy cron processing for plugins';
 $string['taskmessagingcleanup'] = 'Background processing for messaging';
 $string['taskpasswordresetcleanup'] = 'Cleanup password reset attempts';

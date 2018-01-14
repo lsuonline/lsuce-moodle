@@ -109,9 +109,11 @@ class select extends screen {
 
             $path = !grade_anonymous::is_supported($this->course) ? '/grade/report/singleview/index.php' : '/grade/report/quick_edit/index.php';
             $url = new moodle_url($path, $params);
-            $select = new \single_select($url, 'itemid', $options, '', array('' => $screen->select_label()));
-            $select->set_label($screen->select_label(), array('class'=>'accesshide'));
-            $html .= $OUTPUT->render($select);
+            if (!grade_anonymous::is_supported($this->course)) {            
+                $select = new \single_select($url, 'itemid', $options, '', array('' => $screen->select_label()));
+                $select->set_label($screen->select_label(), array('class'=>'accesshide'));
+                $html .= $OUTPUT->render($select);
+            }
         }
         $html = $OUTPUT->container($html, 'selectitems');
 

@@ -23,8 +23,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2017071200;
+$plugin->version = 2017101100;
 $plugin->requires = 2015111600;
 $plugin->component = 'local_natsane';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '0.1';
+$plugin->release = '0.5';

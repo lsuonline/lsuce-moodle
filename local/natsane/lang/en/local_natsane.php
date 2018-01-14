@@ -4,3 +4,4 @@ $string['pluginname_desc'] = "Periodically unweights incorrctly weighted extra c
 
 // task
 $string['fix_courses_task'] = 'Adjust Natural Grades';
+$string['fix_kaltura_task'] = 'Fix restored kaltura items';

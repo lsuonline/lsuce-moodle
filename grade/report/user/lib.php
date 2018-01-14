@@ -527,6 +527,8 @@ class grade_report_user extends grade_report {
                     if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
                         if ($hint['status'] == 'used' && $hint['weight'] == 0) {
                             $data['weight']['content'] = format_float($hint['weight'] * 100.0, 2) . ' %';
+                        } else if ($hint['status'] == 'unknown' && $hint['weight'] == 0 && isset($hint['weight'])) {
+                            $data['weight']['content'] = get_string('aggregationhintdropped', 'grades');
                         } else if ($hint['status'] == 'used'  && $hint['weight'] < 0) {
                             $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
                         }

@@ -64,6 +64,12 @@ if (!$course = $DB->get_record('course', $courseparams)) {
 
 require_login($course);
 
+if (grade_anonymous::fetch(array('itemid' => $itemid))) {
+    $courseurl = new moodle_url('/course/view.php?id=' . $courseid);
+    $USER->grade_last_report[$course->id] = 'grader';
+    redirect($courseurl, 'Editing anonymous items in single view is not allowed.', 0);
+}
+
 if (!in_array($itemtype, gradereport_singleview::valid_screens())) {
     print_error('notvalid', 'gradereport_singleview', '', $itemtype);
 }
@@ -85,7 +91,12 @@ $gpr = new grade_plugin_return(array(
 if (!isset($USER->grade_last_report)) {
     $USER->grade_last_report = array();
 }
-$USER->grade_last_report[$course->id] = 'singleview';
+
+if (!grade_anonymous::is_supported($COURSE)) {
+    $USER->grade_last_report[$course->id] = 'singleview';
+} else {
+    $USER->grade_last_report[$course->id] = 'grader';
+}
 
 // First make sure we have proper final grades.
 grade_regrade_final_grades_if_required($course);
@@ -152,6 +163,7 @@ if (!empty($options)) {
 
     $i = array_search($itemid, $reloptionssorting);
     $navparams = array('item' => $itemtype, 'id' => $courseid, 'group' => $groupid);
+
     if ($i > 0) {
         $navparams['itemid'] = $reloptionssorting[$i - 1];
         $link = new moodle_url('/grade/report/singleview/index.php', $navparams);
@@ -166,11 +178,13 @@ if (!empty($options)) {
     }
 }
 
-if (!is_null($graderleftnav)) {
-    echo $graderleftnav;
-}
-if (!is_null($graderrightnav)) {
-    echo $graderrightnav;
+if (!grade_anonymous::is_supported($COURSE)) {
+    if (!is_null($graderleftnav)) {
+        echo $graderleftnav;
+    }
+    if (!is_null($graderrightnav)) {
+        echo $graderrightnav;
+    }
 }
 
 if ($report->screen->supports_paging()) {

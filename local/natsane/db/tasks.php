@@ -38,5 +38,14 @@ $tasks = array(
         'day' => '*',
         'dayofweek' => '*',
         'month' => '*'
+    ),
+    array(
+        'classname' => 'local_natsane\task\fix_kaltura',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '5',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
     )
 );

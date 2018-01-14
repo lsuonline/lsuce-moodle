@@ -1509,7 +1509,7 @@ function grade_user_unenrol($courseid, $userid) {
 }
 
 /**
- * Grading cron job. Performs background clean up on the gradebook
+ * Grading cron job.
  */
 function grade_cron() {
     global $CFG, $DB;
@@ -1546,8 +1546,16 @@ function grade_cron() {
         $grade_grade->update('locktime');
     }
     $rs->close();
+}
 
-    //TODO: do not run this cleanup every cron invocation
+/**
+ * Performs background clean up on the gradebook
+ */
+function grade_clean_cron() {
+    global $CFG, $DB;
+
+    $now = time();
+
     // cleanup history tables
     if (!empty($CFG->gradehistorylifetime)) {  // value in days
         $histlifetime = $now - ($CFG->gradehistorylifetime * 3600 * 24);

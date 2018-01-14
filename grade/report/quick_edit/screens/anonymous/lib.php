@@ -76,6 +76,27 @@ class quick_edit_anonymous extends quick_edit_tablelike
         return empty($anonid);
     }
 
+    /**
+     * Load a valid list of users for this gradebook as the screen "items".
+     * @return array $users A list of enroled users.
+     */
+    protected function load_users() {
+        global $CFG;
+
+        // Create a graded_users_iterator because it will properly check the groups etc.
+        require_once($CFG->dirroot.'/grade/lib.php');
+        $gui = new \graded_users_iterator($this->course, null, $this->groupid);
+        $gui->require_active_enrolment(TRUE);
+        $gui->init();
+
+        // Flatten the users.
+        $users = array();
+        while ($user = $gui->next_user()) {
+            $users[$user->user->id] = $user->user;
+        }
+        return $users;
+    }
+
     public function init($self_item_is_empty = false) {
         $graded = get_config('moodle', 'gradebookroles');
 
@@ -89,27 +110,28 @@ class quick_edit_anonymous extends quick_edit_tablelike
 
         $this->students = array();
         $this->coursestudents = array();
+        $suspended = array('status', '0');
 
         if (COUNT(explode(',', $graded)) > 1) {
             $roleids = explode(',', $graded);
             foreach ($roleids as $roleid) {
                 $this->students = $this->students + get_role_users(
                     $roleid, $this->context, false, '',
-                    'u.id, u.lastname, u.firstname', null, $this->groupid
+                    'u.id, u.lastname, u.firstname', null, $this->groupid, null, null, null, $suspended
                 );
                 $this->coursestudents = $this->coursestudents + get_role_users(
                     $roleid, $this->context, false, '',
-                    'u.id, u.lastname, u.firstname', null, '0'
+                    'u.id, u.lastname, u.firstname', null, '0', null, null, null, $suspended
                 );
             }
         } else {
             $this->students = get_role_users($graded, $this->context, false, '',
-                'u.id, u.lastname, u.firstname', null, $this->groupid);
+                'u.id, u.lastname, u.firstname', null, $this->groupid, null, null, null, $suspended);
             $this->coursestudents = get_role_users($graded, $this->context, false, '',
-                'u.id, u.lastname, u.firstname', null, '0');
+                'u.id, u.lastname, u.firstname', null, '0', null, null, null, $suspended);
         }
 
-        $this->items = $this->item->is_completed() ? $this->students : grade_anonymous::anonymous_users($this->students);
+        $this->items = $this->item->is_completed() ? $this->load_users() : grade_anonymous::anonymous_users($this->students);
 
         $this->definition = $this->original_definition();
         $this->headers = $this->original_headers();

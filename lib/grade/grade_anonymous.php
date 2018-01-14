@@ -92,10 +92,26 @@ class grade_anonymous extends grade_object {
     }
 
     public function check_completed($course_users, $graded_users) {
-        global $DB;
+        global $DB, $COURSE;
+
+        $courseid = $COURSE->id;
+        $profileid = self::anonymous_profile();
+        if (empty($profileid)) {
+            return array();
+        }
+
+        $params = array('fieldid' => $profileid);
+
+        $sql = 'SELECT DISTINCT(d.userid) AS id, d.data FROM {user_info_data} d
+                INNER JOIN {user_enrolments} ue ON d.userid = ue.userid
+                INNER JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = ' . $courseid . '
+                INNER JOIN {enrol_ues_students} stu ON stu.userid = d.userid
+                WHERE ue.status = 1 AND stu.status = "unenrolled" AND d.fieldid = :fieldid ORDER BY d.data' ;
+
+        $suspended_users = $DB->get_records_sql($sql, $params);
 
         $anon_users = $this->anonymous_users($graded_users);
-        $course_count = count($course_users);
+        $course_count = count($course_users) - count($suspended_users);
         $userids = implode(',', array_keys($course_users));
         $select = 'userid IN (' . $userids . ') AND anonymous_itemid = :itemid AND finalgrade IS NOT NULL AND finalgrade <> ""';
         $params = array('itemid' => $this->id);
@@ -171,8 +187,8 @@ class grade_anonymous extends grade_object {
     }
 
     public static function anonymous_users($real_users) {
-        global $DB;
-
+        global $DB, $COURSE;
+        $courseid = $COURSE->id;
         $profileid = self::anonymous_profile();
 
         if (empty($profileid)) {
@@ -181,8 +197,13 @@ class grade_anonymous extends grade_object {
 
         $userids = implode(',', array_keys($real_users));
 
-        $sql = 'SELECT d.userid AS id, d.data FROM {user_info_data} d
+        $sql = 'SELECT DISTINCT(d.userid) AS id, d.data FROM {user_info_data} d
+            INNER JOIN {user_enrolments} ue ON d.userid = ue.userid
+            INNER JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = ' . $courseid . '
+            INNER JOIN {enrol_ues_students} stu ON stu.userid = d.userid
             WHERE d.userid IN (' . $userids.')
+              AND ue.status = 0
+              AND stu.status = "enrolled"
               AND d.fieldid = :fieldid ORDER BY d.data' ;
 
         $params = array('fieldid' => $profileid);
