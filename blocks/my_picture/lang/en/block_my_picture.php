@@ -22,6 +22,7 @@ $string['elapsed'] = 'Elapsed time: {$a} seconds';
 $string['misconfigured_message'] = 'The My Profile Picture block failed to contact the photos webservice. Please check the settings and verify the webservice is operating normally at the address {$a}';
 $string['misconfigured_subject'] = "MyProfilePicture ERROR";
 $string["cron_webservice_err"]   = "\n!! Webservice communication error.\nIt is possible that the URLs are misconfigured in the Admin settings area.";
+$string["grab_mypictures"]   = "Grab my_picture images";
 
 // Strings for reprocess.php
 $string['reprocess_title'] = 'Reprocess My Picture';
