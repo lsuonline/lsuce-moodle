@@ -22,17 +22,33 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 define('REPORT_CUSTOMSQL_MAX_RECORDS', 5000);
 define('REPORT_CUSTOMSQL_START_OF_WEEK', 6); // Saturday.
 
+function report_customsql_limitnum() {
+    global $CFG;
+
+    if ($CFG->report_customsql_unlimitedresults == 1) {
+        $limitnum = null;
+    } else if ($CFG->report_customsql_unlimitedresults == 0 && !empty($CFG->report_customsql_maxresults)) {
+        $limitnum = $CFG->report_customsql_maxresults;
+    } else {
+        $limitnum = REPORT_CUSTOMSQL_MAX_RECORDS;
+    }
+
+    return $limitnum;
+}
+
 function report_customsql_execute_query($sql, $params = null,
-        $limitnum = REPORT_CUSTOMSQL_MAX_RECORDS) {
+        $querylimit) {
     global $CFG, $DB;
 
     $sql = preg_replace('/\bprefix_(?=\w+)/i', $CFG->prefix, $sql);
 
     // Note: throws Exception if there is an error.
-    return $DB->get_recordset_sql($sql, $params, 0, $limitnum);
+    return $DB->get_recordset_sql($sql, $params, 0, $querylimit);
 }
 
 function report_customsql_prepare_sql($report, $timenow) {
@@ -76,7 +92,17 @@ function report_customsql_generate_csv($report, $timenow) {
     $sql = report_customsql_prepare_sql($report, $timenow);
 
     $queryparams = !empty($report->queryparams) ? unserialize($report->queryparams) : array();
-    $querylimit  = !empty($report->querylimit) ? $report->querylimit : REPORT_CUSTOMSQL_MAX_RECORDS;
+
+    $limitnum = report_customsql_limitnum();
+
+    if (isset($limitnum) && !empty($report->querylimit)) {
+        $querylimit = $report->querylimit < $limitnum ? $report->querylimit : $limitnum;
+    } else if (isset($limitnum)) {
+        $querylimit = $limitnum;
+    } else {
+        $querylimit = !empty($report->querylimit) ? $report->querylimit : $limitnum;
+    }
+
     $rs = report_customsql_execute_query($sql, $queryparams, $querylimit);
 
     $csvfilenames = array();
@@ -135,7 +161,7 @@ function report_customsql_generate_csv($report, $timenow) {
                 report_customsql_email_report($report);
             }
             if (!empty($report->customdir)) {
-                report_customsql_copy_csv_to_customdir($report);
+                report_customsql_copy_csv_to_customdir($report, $timenow);
             }
         }
     }
@@ -144,7 +170,7 @@ function report_customsql_generate_csv($report, $timenow) {
 
 /**
  * @param mixed $value some value
- * @return whether $value is an integer, or a string that looks like an integer.
+ * @return bool whether $value is an integer, or a string that looks like an integer.
  */
 function report_customsql_is_integer($value) {
     return (string) (int) $value === (string) $value;
@@ -318,12 +344,8 @@ function report_customsql_print_reports_for($reports, $type) {
                               array('href' => report_customsql_url('view.php?id='.$report->id))).
              ' '.report_customsql_time_note($report, 'span');
         if ($canedit) {
-            $imgedit = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/edit'),
-                                                         'class' => 'iconsmall',
-                                                         'alt' => get_string('edit')));
-            $imgdelete = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/delete'),
-                                                           'class' => 'iconsmall',
-                                                           'alt' => get_string('delete')));
+            $imgedit = $OUTPUT->pix_icon('t/edit', get_string('edit'));
+            $imgdelete = $OUTPUT->pix_icon('t/delete', get_string('delete'));
             echo ' '.html_writer::tag('span', get_string('availableto', 'report_customsql',
                                       $capabilities[$report->capability]),
                                       array('class' => 'admin_note')).' '.
@@ -362,6 +384,23 @@ function report_customsql_pretify_column_names($row) {
 }
 
 /**
+ * Returns a list of custom placeholders and their banned words.
+ * @return array $customcodes an array of placeholders and their associated banned words.
+ */
+function report_customsql_customcodes() {
+    global $CFG;
+    $customcodes = array();
+    $customcodepairs = !empty($CFG->report_customsql_badwordsexception) ? explode(":",$CFG->report_customsql_badwordsexception) : null;
+    if ($customcodepairs) {
+        foreach ($customcodepairs as $customcodepair) {
+            $ccp = explode(',',$customcodepair);
+            $customcodes[$ccp[0]] = $ccp[1];
+        }
+    }
+    return $customcodes;
+}
+
+/**
  * Writes a CSV row and replaces placeholders.
  * @param resource $handle the file pointer
  * @param array $data a data row
@@ -369,10 +408,17 @@ function report_customsql_pretify_column_names($row) {
 function report_customsql_write_csv_row($handle, $data) {
     global $CFG;
     $escapeddata = array();
+    $customcodes = report_customsql_customcodes();
     foreach ($data as $value) {
         $value = str_replace('%%WWWROOT%%', $CFG->wwwroot, $value);
         $value = str_replace('%%Q%%', '?', $value);
         $value = str_replace('%%C%%', ':', $value);
+        $value = str_replace('%%S%%', ';', $value);
+        if ($customcodes) {
+            array_walk_recursive($customcodes, function ($item, $key) use (& $value) {
+                $value = str_replace('%%' . $key . '%%', $item, $value);
+            });
+        }
         $escapeddata[] = '"'.str_replace('"', '""', $value).'"';
     }
     fwrite($handle, implode(',', $escapeddata)."\r\n");
@@ -488,7 +534,8 @@ function report_customsql_validate_users($userstring, $capability) {
 
 function report_customsql_get_message_no_data($report) {
     // Construct subject.
-    $subject = get_string('emailsubject', 'report_customsql', $report->displayname);
+    $subject = get_string('emailsubject', 'report_customsql',
+            report_customsql_plain_text_report_name($report->displayname));
     $url = new moodle_url('/report/customsql/view.php', array('id' => $report->id));
     $link = get_string('emailink', 'report_customsql', html_writer::tag('a', $url, array('href' => $url)));
     $fullmessage = html_writer::tag('p', get_string('nodatareturned', 'report_customsql') . ' ' . $link);
@@ -520,7 +567,8 @@ function report_customsql_get_message($report, $csvfilename) {
     fclose($handle);
 
     // Construct subject.
-    $subject = get_string('emailsubject', 'report_customsql', $report->displayname);
+    $subject = get_string('emailsubject', 'report_customsql',
+            report_customsql_plain_text_report_name($report->displayname));
 
     // Construct message without the table.
     $fullmessage = '';
@@ -691,3 +739,12 @@ function report_customsql_copy_csv_to_customdir($report, $timenow, $csvfilename 
     mtrace("Exported $csvfilename to $filepath");
 }
 
+/**
+ * Get a report name as plain text, for use in places like cron output and email subject lines.
+ *
+ * @param object $report report settings from the database.
+ */
+function report_customsql_plain_text_report_name($report) {
+    return format_string($report->displayname, true,
+            ['context' => \context_system::instance()]);
+}

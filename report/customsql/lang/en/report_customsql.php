@@ -120,7 +120,8 @@ $string['querynote'] = '<ul>
 <li>For scheduled reports, the tokens <tt>%%STARTTIME%%</tt> and <tt>%%ENDTIME%%</tt> are replaced by the Unix timestamp at the start and end of the reporting week/month in the query before it is executed.</li>
 <li>You can put parameters into the SQL using named placeholders, for example <tt>:parameter_name</tt>. Then, when the report is run, the user can enter values for the parameters to use when running the query.</li>
 <li>If the <tt>:parameter_name</tt> starts or ends with the characters <tt>date</tt> then a date-time selector will be used to input that value, otherwise a plain text-box will be used.</li>
-<li>You cannot use the characters <tt>:</tt> or <tt>?</tt> in strings in your query. If you need them, you can use the tokens <tt>%%C%%</tt> and <tt>%%Q%%</tt> respectively.</li>
+<li>You cannot use the characters <tt>:</tt>, <tt>;</tt> or <tt>?</tt> in strings in your query. If you need them, you can use the tokens <tt>%%C%%</tt>, <tt>%%S%%</tt> and <tt>%%Q%%</tt> respectively.</li>
+<li>Any other custom exceptions to the prohibited word policy must be defined in the administrative settings of the report.</li>
 </ul>';
 $string['queryparameters'] = 'Query parameters';
 $string['queryparams'] = 'Please enter default values for the query parameters.';
@@ -128,7 +129,7 @@ $string['queryparamschanged'] = 'The placeholders in the query have changed.';
 $string['queryrundate'] = 'query run date';
 $string['querysql'] = 'Query SQL';
 $string['querysqlrequried'] = 'You must enter some SQL.';
-$string['recordlimitreached'] = 'This query reached the limit of {$a} rows. Some rows may have been omitted from the end.';
+$string['recordlimitreached'] = 'This query reached the {$a->limiter} limit of {$a->querylimit} rows. Some rows may have been omitted from the end.';
 $string['reportfor'] = 'Query run on {$a}';
 $string['requireint'] = 'Integer required';
 $string['runable'] = 'Run';
@@ -147,3 +148,11 @@ $string['verifyqueryandupdate'] = 'Verify the Query SQL text and update the form
 $string['weeklyheader'] = 'Weekly';
 $string['weeklyheader_help'] = 'These queries are automatically run on the first day of each week, to report on the previous week. These links let you view the results that has already been accumulated.';
 $string['whocanaccess'] = 'Who can access this query';
+$string['unlimitedresults'] = 'Unlimited results';
+$string['unlimitedresults_help'] = 'Allows unlimited results. Limits are set by the report creator. Sets the default max to the number specified below.';
+$string['maxresults'] = 'Maximum results';
+$string['maxresults_help'] = 'The maximum number of results returned. If unlimited results is selected, this value becomes the default max per query.';
+$string['reportlimit'] = 'report';
+$string['adminlimit'] = 'administrative';
+$string['badwords'] = 'Exceptions to prohibited words';
+$string['badwords_help'] = 'Here you can add a colon (:) separated list of key,value pairs of exceptions to the banned words list and their "%%X%%" code where "X" is the letter you choose in the key,value pair. These banned words include ALTER, CREATE, DELETE, DROP, GRANT, INSERT, INTO, TRUNCATE, and UPDATE. These are independent of case. <br />Please make note of whatever case you might need in your results and the case of your code. To return these words in your query results, use the appropriate "%%X%%" code in place of the banned word.<br />Example: Entering the key,value pair of <strong>M,update:I,create</strong> will allow you to use <strong>%%M%%</strong> to return <strong>"update"</strong> and <strong>%%I%%</strong> to return <strong>"create"</strong> in your query results.';
