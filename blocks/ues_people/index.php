@@ -168,7 +168,7 @@ if ($currentgroup) {
 
 $upicfields = user_picture::fields('u');
 
-$select = sprintf('SELECT DISTINCT(ues.userid) AS ui, %s, ues.sn AS sec_number, u.deleted,
+$select = sprintf('SELECT DISTINCT(IFNULL(ues.userid, u.id)) AS ui, %s, ues.sn AS sec_number, u.deleted,
                   u.username, u.email, u.idnumber, u.lang, u.timezone, ues.credit_hours, ues.student_audit', $upicfields);
 $joins = array('FROM {user} u');
 
