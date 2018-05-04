@@ -173,5 +173,19 @@ function xmldb_report_customsql_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2016011800, 'report', 'customsql');
     }
 
+    // Add the database column for further limiting report access.
+    if ($oldversion < 2018041601) {
+
+        // Define field userlimit to be added to report_customsql_queries.
+        $table = new xmldb_table('report_customsql_queries');
+        $field = new xmldb_field('userlimit', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'customdir');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2018041601, 'report', 'customsql');
+    }
+
     return true;
 }

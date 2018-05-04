@@ -156,3 +156,6 @@ $string['reportlimit'] = 'report';
 $string['adminlimit'] = 'administrative';
 $string['badwords'] = 'Exceptions to prohibited words';
 $string['badwords_help'] = 'Here you can add a colon (:) separated list of key,value pairs of exceptions to the banned words list and their "%%X%%" code where "X" is the letter you choose in the key,value pair. These banned words include ALTER, CREATE, DELETE, DROP, GRANT, INSERT, INTO, TRUNCATE, and UPDATE. These are independent of case. <br />Please make note of whatever case you might need in your results and the case of your code. To return these words in your query results, use the appropriate "%%X%%" code in place of the banned word.<br />Example: Entering the key,value pair of <strong>M,update:I,create</strong> will allow you to use <strong>%%M%%</strong> to return <strong>"update"</strong> and <strong>%%I%%</strong> to return <strong>"create"</strong> in your query results.';
+$string['userlimit'] = 'Limit to these users';
+$string['userlimit_help'] = 'Add a comma seperated list of moodle usernames. Case must match the Moodle username. Leave empty for no additional limits. Example: user1,user2,user3';
+$string['noaccess'] = 'You are not allowed to view this report. Please contact your report administrator for assistance.';

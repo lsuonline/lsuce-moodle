@@ -38,8 +38,15 @@ if (!$report) {
 require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
+$permittedusers = !empty($report->userlimit) ? array_map('trim', explode(',', $report->userlimit)) : array($USER->username);
+$mainurl = $CFG->wwwroot . '/report/customsql/index.php';
+
 if (!empty($report->capability)) {
     require_capability($report->capability, $context);
+    $alloweduser = ((has_capability($report->capability, $context) && in_array ($USER->username, $permittedusers)) || is_siteadmin($USER->id));
+    if (!$alloweduser) {
+        redirect($mainurl, get_string('noaccess', 'report_customsql'), 5);
+    }
 }
 
 report_customsql_log_view($id);

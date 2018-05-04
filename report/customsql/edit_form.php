@@ -80,6 +80,13 @@ class report_customsql_edit_form extends moodleform {
         end($capabilityoptions);
         $mform->setDefault('capability', key($capabilityoptions));
 
+        // Add the form fields for further limiting report access per individual report.
+        $mform->addElement('text', 'userlimit', get_string('userlimit', 'report_customsql'));
+        $mform->setType('userlimit', PARAM_NOTAGS);
+        $mform->setDefault('userlimit', NULL);
+        $mform->disabledIf('userlimit', 'capability', 'neq', 'report/customsql:view');
+        $mform->addHelpButton('userlimit', 'userlimit', 'report_customsql');
+
         $querylimit = report_customsql_limitnum();
 
         $mform->addElement('text', 'querylimit', get_string('querylimit', 'report_customsql'));
