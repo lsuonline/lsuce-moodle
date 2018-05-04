@@ -2563,6 +2563,7 @@ class assign {
      * @return string
      */
     protected function view_plugin_content($pluginsubtype) {
+        global $USER;
         $o = '';
 
         $submissionid = optional_param('sid', 0, PARAM_INT);
@@ -2575,9 +2576,14 @@ class assign {
                 throw new coding_exception('Submission id should not be 0');
             }
             $item = $this->get_submission($submissionid);
-
-            // Check permissions.
-            $this->require_view_submission($item->userid);
+            // $item->userid should be set and not be 0.
+            if (isset($this->userid) && $this->userid > 0) {
+                // Check permissions.
+                $this->require_view_submission($item->userid);
+            } else {
+                // Check permissions.
+                $this->require_view_submission($USER->id);
+            }
             $o .= $this->get_renderer()->render(new assign_header($this->get_instance(),
                                                               $this->get_context(),
                                                               $this->show_intro(),
@@ -2599,8 +2605,14 @@ class assign {
                 throw new coding_exception('Grade id should not be 0');
             }
             $item = $this->get_grade($gradeid);
-            // Check permissions.
-            $this->require_view_submission($item->userid);
+            // $item->userid should be set and not be 0.
+            if (isset($this->userid) && $this->userid > 0) {
+                // Check permissions.
+                $this->require_view_submission($item->userid);
+            } else {
+                // Check permissions.
+                $this->require_view_submission($USER->id);
+            }
             $o .= $this->get_renderer()->render(new assign_header($this->get_instance(),
                                                               $this->get_context(),
                                                               $this->show_intro(),
