@@ -2576,13 +2576,13 @@ class assign {
                 throw new coding_exception('Submission id should not be 0');
             }
             $item = $this->get_submission($submissionid);
-            // $item->userid should be set and not be 0.
-            if (isset($this->userid) && $this->userid > 0) {
-                // Check permissions.
-                $this->require_view_submission($item->userid);
+
+            // Check permissions.
+            if (empty($item->userid)) {
+                // Group submission.
+                $this->require_view_group_submission($item->groupid);
             } else {
-                // Check permissions.
-                $this->require_view_submission($USER->id);
+                $this->require_view_submission($item->userid);
             }
             $o .= $this->get_renderer()->render(new assign_header($this->get_instance(),
                                                               $this->get_context(),
@@ -2782,6 +2782,18 @@ class assign {
         }
 
         return '';
+    }
+
+    /**
+     * Throw an error if the permissions to view this users' group submission are missing.
+     *
+     * @param int $groupid Group id.
+     * @throws required_capability_exception
+     */
+    public function require_view_group_submission($groupid) {
+        if (!$this->can_view_group_submission($groupid)) {
+            throw new required_capability_exception($this->context, 'mod/assign:viewgrades', 'nopermission', '');
+        }
     }
 
     /**
