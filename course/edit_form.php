@@ -185,17 +185,30 @@ class course_edit_form extends moodleform {
 
         // Appearance.
         $mform->addElement('header', 'appearancehdr', get_string('appearance'));
-
-        if (!empty($CFG->allowcoursethemes)) {
-            $themeobjects = get_list_of_themes();
-            $themes=array();
-            $themes[''] = get_string('forceno');
-            foreach ($themeobjects as $key=>$theme) {
-                if (empty($theme->hidefromselector)) {
-                    $themes[$key] = get_string('pluginname', 'theme_'.$theme->name);
+        if (get_capability_info('moodle/course:theme')) {
+            if (!empty($CFG->allowcoursethemes) && has_capability('moodle/course:theme', $systemcontext)) {
+                $themeobjects = get_list_of_themes();
+                $themes=array();
+                $themes[''] = get_string('forceno');
+                foreach ($themeobjects as $key=>$theme) {
+                    if (empty($theme->hidefromselector)) {
+                        $themes[$key] = get_string('pluginname', 'theme_'.$theme->name);
+                    }
                 }
+                $mform->addElement('select', 'theme', get_string('forcetheme'), $themes);
             }
-            $mform->addElement('select', 'theme', get_string('forcetheme'), $themes);
+        } else {
+            if (!empty($CFG->allowcoursethemes)) {
+                $themeobjects = get_list_of_themes();
+                $themes=array();
+                $themes[''] = get_string('forceno');
+                foreach ($themeobjects as $key=>$theme) {
+                    if (empty($theme->hidefromselector)) {
+                        $themes[$key] = get_string('pluginname', 'theme_'.$theme->name);
+                    }
+                }
+                $mform->addElement('select', 'theme', get_string('forcetheme'), $themes);
+            }
         }
 
         $languages=array();

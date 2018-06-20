@@ -355,16 +355,30 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
         $mform->setDefault('calendartype', $CFG->calendartype);
     }
 
-    if (!empty($CFG->allowuserthemes)) {
-        $choices = array();
-        $choices[''] = get_string('default');
-        $themes = get_list_of_themes();
-        foreach ($themes as $key => $theme) {
-            if (empty($theme->hidefromselector)) {
-                $choices[$key] = get_string('pluginname', 'theme_'.$theme->name);
+    if (get_capability_info('moodle/course:theme')) {
+        if (!empty($CFG->allowuserthemes) && has_capability('moodle/course:theme', context_system::instance())) {
+            $choices = array();
+            $choices[''] = get_string('default');
+            $themes = get_list_of_themes();
+            foreach ($themes as $key => $theme) {
+                if (empty($theme->hidefromselector)) {
+                    $choices[$key] = get_string('pluginname', 'theme_'.$theme->name);
+                }
             }
+            $mform->addElement('select', 'theme', get_string('preferredtheme'), $choices);
         }
-        $mform->addElement('select', 'theme', get_string('preferredtheme'), $choices);
+    } else {
+        if (!empty($CFG->allowuserthemes)) {
+            $choices = array();
+            $choices[''] = get_string('default');
+            $themes = get_list_of_themes();
+            foreach ($themes as $key => $theme) {
+                if (empty($theme->hidefromselector)) {
+                    $choices[$key] = get_string('pluginname', 'theme_'.$theme->name);
+                }
+            }
+            $mform->addElement('select', 'theme', get_string('preferredtheme'), $choices);
+        }
     }
 
     $mform->addElement('editor', 'description_editor', get_string('userdescription'), null, $editoroptions);
