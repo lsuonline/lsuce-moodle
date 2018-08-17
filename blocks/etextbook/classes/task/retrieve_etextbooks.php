@@ -18,7 +18,16 @@ class retrieve_etextbooks extends \core\task\scheduled_task
     {
         global $DB, $USER;
         $librarylink = get_config('etextbook', 'Library_link');
-        $books = simplexml_load_file($librarylink);
+        $ch = curl_init(); 
+        curl_setopt($ch, CURLOPT_URL, $librarylink); 
+        curl_setopt($ch, CURLOPT_HEADER, FALSE);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE); 
+        $libraryfile = curl_exec($ch);
+        curl_close($ch); 
+
+        $books = simplexml_load_string($libraryfile);
 
         $libraryadmin = get_config('etextbook', 'Library_admin');
         $fakeuser = new \stdClass();
