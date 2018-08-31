@@ -460,6 +460,7 @@ class local_cas_help_links_utility {
             AND sec.idnumber IS NOT NULL
             AND sec.idnumber <> ""
             AND cou.cou_number < "5000"
+            AND t.status = "enrolled"
             AND sem.classes_start < ' . self::get_course_start_time() . '
             AND sem.grades_due > ' . self::get_course_end_time() . '
             AND sec.idnumber = ?', array($idnumber));
