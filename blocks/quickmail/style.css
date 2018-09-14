@@ -1,23 +1,121 @@
 #page-block-quickmail label {
   font-weight: 500;
-  color: dimgray; }
+  color: dimgray;
+}
+
 #page-block-quickmail label[for=id_select_signature_id] {
-  display: block !important; }
+  display: block !important;
+}
+
 #page-block-quickmail .field-label.user-field-label {
   margin: 0 10px 5px 0;
   padding: 0 4px;
   font-size: 12px;
-  font-weight: 500; 
+  font-weight: 500;
   color: #222222;
   font-family: sans-serif;
   border-radius: .25em;
   border: 1px solid #aaaaaa;
   background-color: #f3f3f3;
-  display: inline-block; }
+  display: inline-block;
+}
+
 #page-block-quickmail #create-alternative-modal-container .form-control.has-error {
-  border: 1px solid red; }
+  border: 1px solid red;
+}
+
 #page-block-quickmail div.manage_signatures_component img.spinner-img {
   margin-left: 30px;
-  display: none; }
+  display: none;
+}
+
 #page-block-quickmail ul.pagination>li.page-item {
-  display: inline; }
+  display: inline;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component span.recipients {
+  display: inline-block;
+  background-color: #666666;
+  color: white;
+  border: none;
+  margin: 3px 6px 3px 0;
+  padding: 3px 6px;
+  border-radius: .5em;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component small.success + div span.recipients {
+  background-color: transparent;
+  color: #333333;
+  font-weight: 100;
+  border: 1px solid #999999;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component h6.additional + div span.recipients {
+  background-color: transparent;
+  color: #333333;
+  font-weight: 100;
+  border: 1px solid #999999;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component small.failed + div span.recipients:after, #page-block-quickmail div.block_quickmail_view_message_component small.failed + div span.recipients:after, #page-block-quickmail div.block_quickmail_view_message_component small.pending + div span.recipients:after, #page-block-quickmail div.block_quickmail_view_message_component small.pending + div span.recipients:after {
+  content: " - pending"
+}
+
+#page-block-quickmail div.block_quickmail_sent_message_index tr:nth-child(even) {
+  background-color: #e5e5e5;
+}
+
+#page-block-quickmail small.text-muted {
+  font-weight: bold;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component h6 {
+  margin-bottom: 0;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component h6.failed {
+  color: red;
+}
+
+#page-block-quickmail div.block_quickmail_view_message_component h6.success {
+  color: green;
+}
+
+#page-block-quickmail div.msflex {
+   display: flex; 
+   justify-content: center; 
+   align-items: center; 
+   flex-wrap: nowrap;
+   width: 90%;
+}
+
+#page-block-quickmail div.msflex div.multiselectfrom, #page-block-quickmail div.msflex div.multiselectto {
+  width: auto;
+}
+
+#page-block-quickmail div.msflex div.multiselectfrom select, #page-block-quickmail div.msflex div.multiselectto select {
+  min-width: 10em;
+  width: auto;
+  height: 24.5em;
+  overflow: auto;
+  margin: 0;
+  font-size: .8em;
+}
+
+#page-block-quickmail div.msflex div.msbuttons {
+  text-align: center;
+  width: auto;
+  margin: 0 1em;
+}
+
+#page-block-quickmail div.msflex div.msbuttons div.femptylabel div.fitemtitle {
+  display: none;
+}
+
+#page-block-quickmail div.msflex div.multiselectfrom div.fitem_fselect.multiselectfrom div.fitemtitle, #page-block-quickmail div.msflex div.multiselectto div.fitem_fselect.multiselectto div.fitemtitle {
+  display: none!important;
+}
+
+#page-block-quickmail div.msflex div.femptylabel div.felement {
+  margin: 0;
+}

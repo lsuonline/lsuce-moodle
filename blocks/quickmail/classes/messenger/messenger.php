@@ -42,6 +42,7 @@ use block_quickmail\messenger\factories\course_recipient_send\recipient_send_fac
 use block_quickmail\filemanager\message_file_handler;
 use block_quickmail\filemanager\attachment_appender;
 use block_quickmail\messenger\message\subject_prepender;
+use block_quickmail\messenger\message\signature_appender;
 use block_quickmail\repos\user_repo;
 use moodle_url;
 use html_writer;
@@ -169,15 +170,20 @@ class messenger implements messenger_interface {
         // clear any existing additional emails, and add those that have been recently submitted
         $message->sync_additional_emails($additional_emails);
         
-        // if not configured to send as a task, and not scheduled for delivery later, send now
-        if ( ! $send_as_tasks && ! $message->get_to_send_in_future()) {
-            $message->mark_as_sending();
+        // if not scheduled for delivery later
+        if ( ! $message->get_to_send_in_future()) {
+            // get the block's configured "send now threshold" setting
+            $send_now_threshold = (int) block_quickmail_config::get('send_now_threshold');
             
-            $messenger = new self($message);
+            // if not configured to send as tasks OR the number of recipients is below the send now threshold
+            if ( ! $send_as_tasks || ( ! empty($send_now_threshold) && count($recipient_user_ids) <= $send_now_threshold)) {
+                // begin sending now
+                $message->mark_as_sending();
+                $messenger = new self($message);
+                $messenger->send();
 
-            $messenger->send();
-
-            return $message->read();
+                return $message->read();
+            }
         }
 
         return $message;
@@ -299,7 +305,7 @@ class messenger implements messenger_interface {
         }
 
         // check that the draft belongs to the given user id
-        if ($original_draft->get('user_id') !== $user->id) {
+        if ( ! $original_draft->is_owned_by_user($user->id)) {
             throw new validation_exception(block_quickmail_string::get('must_be_owner_to_duplicate'));
         }
 
@@ -340,6 +346,59 @@ class messenger implements messenger_interface {
 
         // duplicate the message additional emails
         foreach ($original_draft->get_additional_emails() as $additional_email) {
+            message_additional_email::create_new([
+                'message_id' => $new_draft->get('id'),
+                'email' => $additional_email->get('email'),
+            ]);
+        }
+
+        return $new_draft;
+    }
+
+    /**
+     * Creates and returns a new message given a message id
+     *
+     * Note: this does not duplicate the intended recipient data
+     * 
+     * @param  int     $message_id
+     * @param  object  $user         the user duplicating the message
+     * @return message
+     */
+    public static function duplicate_message($message_id, $user)
+    {
+        // get the message to be duplicated
+        if ( ! $original_message = new message($message_id)) {
+            throw new validation_exception(block_quickmail_string::get('could_not_duplicate'));
+        }
+
+        // make sure it's not a draft
+        if ($original_message->is_message_draft()) {
+            throw new validation_exception(block_quickmail_string::get('could_not_duplicate'));
+        }
+
+        // check that the message belongs to the given user id
+        if ( ! $original_message->is_owned_by_user($user->id)) {
+            throw new validation_exception(block_quickmail_string::get('must_be_owner_to_duplicate'));
+        }
+
+        // create a new draft message from the original's data
+        $new_draft = message::create_new([
+            'course_id' => $original_message->get('course_id'),
+            'user_id' => $original_message->get('user_id'),
+            'message_type' => $original_message->get('message_type'),
+            'alternate_email_id' => $original_message->get('alternate_email_id'),
+            'signature_id' => $original_message->get('signature_id'),
+            'subject' => $original_message->get('subject'),
+            'body' => $original_message->get('body'),
+            'editor_format' => $original_message->get('editor_format'),
+            'is_draft' => 1,
+            'send_receipt' => $original_message->get('send_receipt'),
+            'no_reply' => $original_message->get('no_reply'),
+            'usermodified' => $user->id
+        ]);
+
+        // duplicate the message additional emails
+        foreach ($original_message->get_additional_emails() as $additional_email) {
             message_additional_email::create_new([
                 'message_id' => $new_draft->get('id'),
                 'email' => $additional_email->get('email'),
@@ -514,6 +573,13 @@ class messenger implements messenger_interface {
 
         $body = $this->message->get('body'); // @TODO - find some way to clean out any custom data fields for this fake user (??)
         
+        // append a signature to the formatted body, if appropriate
+        $body = signature_appender::append_user_signature_to_body(
+            $body, 
+            $fromuser->id,
+            $this->message->get('signature_id')
+        );
+
         // append attachment download links to the formatted body, if any
         $body = attachment_appender::add_download_links($this->message, $body);
 
@@ -587,16 +653,25 @@ class messenger implements messenger_interface {
     {
         $data = (object) [];
 
-        $course = $this->message->get_course();
+        // get any additional emails as a single string
+        if ($additional_emails = $this->message->get_additional_emails(true)) {
+            $addition_emails_string = implode(', ', $additional_emails);
+        } else {
+            $addition_emails_string = get_string('none');
+        }
 
-        $data->subject = $this->message->get('subject');
-        // TODO - format this course name based off of preference?
-        $data->course_name = $course->fullname;
+        // get subject with any prepend
+        $data->subject = subject_prepender::format_for_receipt_subject(
+            $this->message->get('subject')
+        );
+
+        $data->course_name = $this->message->get_course_property('fullname', ''); // TODO - format this course name based off of preference?
+        $data->message_body = $this->message->get('body');
         $data->recipient_count = $this->message->cached_recipient_count();
         $data->sent_to_mentors = $this->message->get('send_to_mentors') ? get_string('yes') : get_string('no');
-        $data->additional_email_count = $this->message->cached_additional_email_count();
+        $data->addition_emails_string = $addition_emails_string;
         $data->attachment_count = $this->message->cached_attachment_count();
-        $data->sent_message_link = html_writer::link(new moodle_url('/blocks/quickmail/sent.php', ['courseid' => $course->id]), block_quickmail_string::get('here'));
+        $data->sent_message_link = html_writer::link(new moodle_url('/blocks/quickmail/message.php', ['id' => $this->message->get('id')]), block_quickmail_string::get('here'));
 
         return block_quickmail_string::get('receipt_email_body', $data);
     }
