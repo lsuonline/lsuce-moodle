@@ -673,6 +673,17 @@ class shared extends \renderer_base {
             }
         }
 
+        // Quickmail.
+        if (has_capability('block/quickmail:cansend', $coursecontext)) {
+            $iconurl = $OUTPUT->pix_url('t/email', 'core');
+            $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+
+            $links[] = array(
+                'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
+                'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
+            );
+        }
+
          // Edit blocks.
          $editblocks = '';
          if (has_capability('moodle/course:update', $coursecontext)) {
