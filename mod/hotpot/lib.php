@@ -105,6 +105,11 @@ function hotpot_add_instance(stdclass $data, $mform) {
     // update gradebook item
     hotpot_grade_item_update($data);
 
+    if (class_exists('\core_completion\api')) {
+        $completiontimeexpected = (empty($data->completionexpected) ? null : $data->completionexpected);
+        \core_completion\api::update_completion_date_event($data->coursemodule, 'hotpot', $data->id, $completiontimeexpected);
+    }
+
     return $data->id;
 }
 
@@ -133,6 +138,11 @@ function hotpot_update_instance(stdclass $data, $mform) {
     } else {
         // recalculate grades for all users
         hotpot_update_grades($data);
+    }
+
+    if (class_exists('\core_completion\api')) {
+        $completiontimeexpected = (empty($data->completionexpected) ? null : $data->completionexpected);
+        \core_completion\api::update_completion_date_event($data->coursemodule, 'hotpot', $data->id, $completiontimeexpected);
     }
 
     return true;
@@ -1735,6 +1745,7 @@ function hotpot_get_file_info($browser, $areas, $course, $cm, $context, $fileare
 
 /**
  * Extends the global navigation tree by adding hotpot nodes if there is a relevant content
+ * These settings are added to the "Navigation" menu
  *
  * This can be called by an AJAX request so do not rely on $PAGE as it might not be set up properly.
  *
@@ -1745,24 +1756,60 @@ function hotpot_get_file_info($browser, $areas, $course, $cm, $context, $fileare
  */
 function hotpot_extend_navigation(navigation_node $hotpotnode, stdclass $course, stdclass $module, cm_info $cm) {
     global $CFG, $DB;
+
+    // don't add nodes in Moodle >= 2.5, because they will
+    // be added to the Administration menu by
+    // "hotpot_extend_settings_navigation()" ... see below
+    if (isset($CFG->branch) && $CFG->branch >= '25') {
+        return;
+    }
+
+    // make sure we have HotPot's locallib.php
     require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
 
     $hotpot = $DB->get_record('hotpot', array('id' => $cm->instance), '*', MUST_EXIST);
     $hotpot = hotpot::create($hotpot, $cm, $course);
 
-    if ($hotpot->can_reviewattempts()) {
-        $icon = new pix_icon('i/report', '');
+    if ($hotpot->can_preview()) {
+        $text = get_string('preview');
+        $action = $hotpot->attempt_url();
         $type = navigation_node::TYPE_SETTING;
-        foreach ($hotpot->get_report_modes() as $mode) {
-            $url = $hotpot->report_url($mode);
-            $label = get_string($mode.'report', 'mod_hotpot');
-            $hotpotnode->add($label, $url, $type, null, null, $icon);
+        $icon = new pix_icon('t/preview', '');
+        $hotpotnode->add($text, $action, $type, null, 'preview', $icon);
+    }
+
+    if ($hotpot->can_reviewattempts()) {
+        $type = navigation_node::TYPE_SETTING;
+
+        // create report parent node
+        $modes = $hotpot->get_report_modes();
+        $mode = key($modes); // first report
+        $params = array('text' => get_string('reports'),
+                        'action' => $hotpot->report_url($mode),
+                        'key' => 'reports',
+                        'type' => $type,
+                        'icon' => new pix_icon('i/report', ''));
+        $node = new navigation_node($params);
+
+        $icon = new pix_icon('i/item', '');
+        foreach ($modes as $mode) {
+            $text = get_string($mode.'report', 'mod_hotpot');
+            $action = $hotpot->report_url($mode);
+            $node->add($text, $action, $type, null, $mode.'report', $icon);
+        }
+        if (method_exists($hotpotnode, 'add_node')) {
+            $hotpotnode->add_node($node); // Moodle >= 2.2
+        } else {
+            $node->key = $hotpotnode->children->count();
+            $hotpotnode->nodetype = navigation_node::NODETYPE_BRANCH;
+            $hotpotnode->children->add($node);
         }
     }
 }
 
 /**
  * Extends the settings navigation with the Hotpot settings
+ * These settings are added to the "Administration" menu
 
  * This function is called when the context for the page is a hotpot module. This is not called by AJAX
  * so it is safe to rely on the $PAGE.
@@ -1771,6 +1818,110 @@ function hotpot_extend_navigation(navigation_node $hotpotnode, stdclass $course,
  * @param navigation_node $hotpotnode {@link navigation_node}
  */
 function hotpot_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $hotpotnode=null) {
+    global $CFG, $DB, $PAGE;
+
+    // don't add nodes in Moodle <= 2.4, because they were
+    // already added to the Navigation menu by
+    // "hotpot_settings_navigation()" ... see above
+    if (empty($CFG->branch) || $CFG->branch <= '24') {
+        return;
+    }
+
+    require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+
+    $hotpot = $DB->get_record('hotpot', array('id' => $PAGE->cm->instance), '*', MUST_EXIST);
+    $hotpot = hotpot::create($hotpot, $PAGE->cm, $PAGE->course);
+
+    $nodes = array();
+
+    if ($hotpot->can_preview()) {
+        $params = array('text' => get_string('preview'),
+                        'action' => $hotpot->attempt_url(),
+                        'key' => 'preview',
+                        'type' => navigation_node::TYPE_SETTING,
+                        'icon' => new pix_icon('t/preview', ''));
+        $nodes[] = new navigation_node($params);
+    }
+
+    if ($hotpot->can_reviewattempts()) {
+        $type = navigation_node::TYPE_SETTING;
+
+        // create report parent node
+        $modes = $hotpot->get_report_modes();
+        $mode = key($modes); // first report
+        $params = array('text' => get_string('reports'),
+                        'action' => $hotpot->report_url($mode),
+                        'key' => 'reports',
+                        'type' => $type,
+                        'icon' => new pix_icon('i/report', ''));
+        $node = new navigation_node($params);
+
+        // add reports
+        $icon = new pix_icon('i/item', '');
+        foreach ($modes as $mode) {
+            $action = $hotpot->report_url($mode);
+            $text = get_string($mode.'report', 'mod_hotpot');
+            $node->add($text, $action, $type, null, $mode.'report', $icon);
+        }
+        $nodes[] = $node;
+    }
+
+    // only teachers/admins will have new nodes to add
+    if (count($nodes)) {
+
+        // We want to add these new nodes after the Edit settings node,
+        // and before the locally assigned roles node.
+
+        // detect Moodle >= 2.2 (it has an easy way to do what we want)
+        if (method_exists($hotpotnode, 'get_children_key_list')) {
+
+            // in Moodle >= 2.2, we can locate the "Edit settings" node by its key, and
+            // use the key for the node AFTER that as the "beforekey" for the new nodes
+            $keys = $hotpotnode->get_children_key_list();
+            $key = 'modedit';
+            $i = array_search($key, $keys);
+            if ($i===false) {
+                $i = 0; // shouldn't happen !!
+            } else {
+                $i = ($i + 1);
+                $icon = new pix_icon('t/edit', '');
+                $type = navigation_node::TYPE_SETTING;
+                $hotpotnode->find($key, $type)->icon = $icon;
+            }
+            if (array_key_exists($i, $keys)) {
+                $beforekey = $keys[$i];
+            } else {
+                $beforekey = null;
+            }
+            foreach ($nodes as $node) {
+                $hotpotnode->add_node($node, $beforekey);
+            }
+
+        } else {
+            // in Moodle 2.0 - 2.1, we don't have the $beforekey functionality,
+            // so instead, we create a new collection of child nodes by copying
+            // the current child nodes one by one and inserting our news nodes
+            // after the node whose plain url ends with "/course/modedit.php"
+            // Note: this would also work on Moodle >= 2.2, but is obviously
+            // rather a hack and not the way things should to be done
+            $found = false;
+            $children = new navigation_node_collection();
+            $max_i = ($hotpotnode->children->count() - 1);
+            foreach ($hotpotnode->children as $i => $child) {
+                $children->add($child);
+                if ($found==false) {
+                    $action = $child->action->out_omit_querystring();
+                    if (($i==$max_i) || substr($action, -19)=='/course/modedit.php') {
+                        $found = true;
+                        foreach ($nodes as $node) {
+                            $children->add($node);
+                        }
+                    }
+                }
+            }
+            $hotpotnode->children = $children;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2109,8 +2260,22 @@ function hotpot_textlib() {
     }
     $args = func_get_args();
     $method = array_shift($args);
-    $callback = array($textlib, $method);
-    return call_user_func_array($callback, $args);
+    if (method_exists($textlib, $method)) {
+        $callback = array($textlib, $method);
+        return call_user_func_array($callback, $args);
+    }
+    if ($method=='utf8ord') {
+        // Moodle <= 2.4
+        $args = array($args[0], true); // force decimal entity
+        $callback = array($textlib, 'utf8_to_entities');
+        $str = call_user_func_array($callback, $args);
+        if (substr($str, 0, 2)=='&#' && substr($str, -1)==';') {
+            return intval(substr($str, 2, -1));
+        }
+        return ord($str);
+    }
+    debugging("Textlib method does not exist: $method");
+    die;
 }
 
 /**
@@ -2285,3 +2450,32 @@ function hotpot_get_completion_state($course, $cm, $userid, $type) {
     return $state;
 }
 
+/**
+ * This function receives a calendar event and returns the action associated with it, or null if there is none.
+ *
+ * This is used by block_myoverview in order to display the event appropriately. If null is returned then the event
+ * is not displayed on the block.
+ *
+ * @param calendar_event $event
+ * @param \core_calendar\action_factory $factory
+ * @return \core_calendar\local\event\entities\action_interface|null
+ */
+function mod_hotpot_core_calendar_provide_event_action(calendar_event $event,
+                                                            \core_calendar\action_factory $factory) {
+    $cm = get_fast_modinfo($event->courseid)->instances['hotpot'][$event->instance];
+
+    $completion = new \completion_info($cm->get_course());
+
+    $completiondata = $completion->get_data($cm, false);
+
+    if ($completiondata->completionstate != COMPLETION_INCOMPLETE) {
+        return null;
+    }
+
+    return $factory->create_instance(
+            get_string('view'),
+            new \moodle_url('/mod/hotpot/view.php', array('id' => $cm->id)),
+            1,
+            true
+    );
+}
