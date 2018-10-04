@@ -17,8 +17,9 @@
 /**
  * Search area for mod_lightboxgallery activities.
  *
- * @package    mod_lightboxgallery
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_lightboxgallery
+ * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace mod_lightboxgallery\search;
@@ -28,8 +29,9 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Search area for mod_lightboxgallery activities.
  *
- * @package    mod_lightboxgallery
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_lightboxgallery
+ * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class activity extends \core_search\area\base_activity {
 }

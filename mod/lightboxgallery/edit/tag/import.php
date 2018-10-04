@@ -52,7 +52,7 @@ if ($confirm && confirm_sesskey()) {
     // For each image, get tags using iptcparse.
 
     $fs = get_file_storage();
-    $storedfiles = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images');
+    $storedfiles = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images', false, 'itemid', false);
 
     $a = new stdClass();
     $a->tags = 0;

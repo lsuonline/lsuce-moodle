@@ -204,11 +204,14 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
               FROM {lightboxgallery_comments} c
                    JOIN {lightboxgallery} l ON l.id = c.gallery
                    JOIN {user}            u ON u.id = c.userid
-             WHERE c.timemodified > $timestart AND l.id = {$cm->instance}
-                   " . ($userid ? "AND u.id = $userid" : '') . "
+             WHERE c.timemodified > ? AND l.id = ?
+                   " . ($userid ? "AND u.id = ?" : '') . "
           ORDER BY c.timemodified ASC";
-
-    if ($comments = $DB->get_records_sql($sql)) {
+    $params = [$timestart, $cm->instance];
+    if ($userid) {
+        $params[] = $userid;
+    }
+    if ($comments = $DB->get_records_sql($sql, $params)) {
         foreach ($comments as $comment) {
             $display = lightboxgallery_resize_text(trim(strip_tags($comment->commenttext)), MAX_COMMENT_PREVIEW);
 
@@ -280,10 +283,11 @@ function lightboxgallery_print_recent_activity($course, $viewfullnames, $timesta
               FROM {lightboxgallery_comments} c
                    JOIN {lightboxgallery} l ON l.id = c.gallery
                    JOIN {user}            u ON u.id = c.userid
-             WHERE c.timemodified > $timestart AND l.course = {$course->id}
+             WHERE c.timemodified > ? AND l.course = ?
           ORDER BY c.timemodified ASC";
+    $params = [$timestart, $course->id];
 
-    if ($comments = $DB->get_records_sql($sql)) {
+    if ($comments = $DB->get_records_sql($sql, $params)) {
         echo $OUTPUT->heading(get_string('newgallerycomments', 'lightboxgallery').':', 3);
 
         echo '<ul class="unlist">';
@@ -327,7 +331,7 @@ function lightboxgallery_get_participants($galleryid) {
     return $DB->get_records_sql("SELECT DISTINCT u.id, u.id
                                    FROM {user} u,
                                         {lightboxgallery_comments} c
-                                  WHERE c.gallery = $galleryid AND u.id = c.userid");
+                                  WHERE c.gallery = ? AND u.id = c.userid", [$galleryid]);
 }
 
 function lightboxgallery_get_view_actions() {

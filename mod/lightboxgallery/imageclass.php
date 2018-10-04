@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Main image class with all image manipulations as methods
@@ -49,11 +50,6 @@ class lightboxgallery_image {
         $this->cm = &$cm;
         $this->cmid = $cm->id;
         $this->context = context_module::instance($cm->id);
-
-        /*if (!$this->storedfile->is_valid_image()) {
-          // Error? continue.
-          print_error('invalidimage');
-        }*/
 
         $this->imageurl = $CFG->wwwroot.'/pluginfile.php/'.$this->context->id.'/mod_lightboxgallery/gallery_images/'.
                            $this->storedfile->get_itemid().$this->storedfile->get_filepath().$this->storedfile->get_filename();

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Handles all the RSS related tasks for the module
@@ -241,12 +242,6 @@ function lightboxgallery_rss_header($title = null, $link = null, $description = 
         }
         $today = getdate();
         $result .= rss_full_tag('copyright', 2, false, '&#169; '. $today['year'] .' '. format_string($site->fullname));
-        /*
-        if (!empty($USER->email)) {
-            $result .= rss_full_tag('managingEditor', 2, false, fullname($USER));
-            $result .= rss_full_tag('webMaster', 2, false, fullname($USER));
-        }
-        */
 
         // Write image info.
         $rsspix = $OUTPUT->pix_url('i/rsssitelogo');

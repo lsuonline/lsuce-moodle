@@ -86,6 +86,7 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
 
             $dbman->create_table($table);
         }
+        upgrade_mod_savepoint(true, 2007111400, 'lightboxgallery');
     }
 
     if ($oldversion < 2007121700) {
@@ -120,7 +121,7 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
 
             $dbman->create_table($table);
         }
-
+        upgrade_mod_savepoint(true, 2007121700, 'lightboxgallery');
     }
 
     if ($oldversion < 2008110600) {
@@ -161,6 +162,7 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
 
         // Rename table lightboxgallery_captions to lightboxgallery_image_meta.
         $dbman->rename_table($table, 'lightboxgallery_image_meta');
+        upgrade_mod_savepoint(true, 2008110600, 'lightboxgallery');
     }
 
     if ($oldversion < 2009051200) {
@@ -171,6 +173,7 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
         if ($dbman->field_exists($table, $field)) {
             $dbman->rename_field($table, $field, 'ispublic');
         }
+        upgrade_mod_savepoint(true, 2009051200, 'lightboxgallery');
     }
 
     if ($oldversion < 2011040800) {
