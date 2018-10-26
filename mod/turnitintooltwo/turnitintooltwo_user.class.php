@@ -563,7 +563,9 @@ class turnitintooltwo_user {
 
         $instructordefaults = new stdClass();
         foreach ($settingstosave as $setting) {
-            $instructordefaults->$setting = $turnitintooltwo->$setting;
+            if (isset($turnitintooltwo->$setting)) {
+                $instructordefaults->$setting = $turnitintooltwo->$setting;
+            }
         }
 
         $turnitintooltwouser = $DB->get_record("turnitintooltwo_users", array("userid" => $this->id), "id");
@@ -620,7 +622,11 @@ class turnitintooltwo_user {
                 return false;
             }
         } catch (Exception $e) {
-            // User may not be joined to account so we'll join them and recall function.
+            // Avoid API calls when running unit tests.
+            if (defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
+                return true;
+            }
+
             $this->set_user_values_from_tii();
             $this->get_accepted_user_agreement();
         }

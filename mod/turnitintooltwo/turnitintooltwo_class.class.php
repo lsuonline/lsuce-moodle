@@ -46,7 +46,7 @@ class turnitintooltwo_class {
     /**
      * Update class from Turnitin, mainly to get shared rubrics
      *
-     * @return
+     * @return void
      */
     public function read_class_from_tii() {
         // Initialise Comms Object.
@@ -62,9 +62,8 @@ class turnitintooltwo_class {
 
             $rubrics = $readclass->getSharedRubrics();
             $rubricarray = array();
-            $sharedrubricstr = get_string('sharedrubric', 'turnitintooltwo');
             foreach ($rubrics as $rubric) {
-                $rubricarray[$rubric->getRubricId()] = $rubric->getRubricName()." [".$sharedrubricstr."]";
+                $rubricarray[$rubric->getRubricGroupName()][$rubric->getRubricId()] = $rubric->getRubricName();
             }
 
             $this->sharedrubrics = $rubricarray;

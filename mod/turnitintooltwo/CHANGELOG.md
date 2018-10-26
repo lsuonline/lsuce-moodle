@@ -1,15 +1,326 @@
+### Date:	2018-August-28
+### Release:	v2018082801
+
+### :wrench: Fixes and enhancements
+
+---
+
+#### The administrator default option for student paper storage is now visible to instructors
+
+We noticed a blip, where the administrator default option for student paper storage wasn't passed to instructors during assignment creation. We've corrected this problem so that the "Store student papers" drop-down menu now populates with the preferred administrator option.
+
+**Note:** All instructor default settings will override the global settings of an administrator.
+
+#### V2 assignments are now available on the Moodle course overview page
+
+We found that Moodle V2 assignments failed to appear on the Moodle course overview page when using Moodle 3.3+ which made it difficult to access assignments. This issue was a direct result of Moodle making a change to their course overview block. To resolve this, we've implemented Moodle's [release notesCalendar Action Events API](https://docs.moodle.org/dev/Calendar_API#Action_events). All is back to normal.
+
+#### The link to the Moodle support wizard is no longer available in Moodle
+
+Our Moodle support wizard has been broken for some time, and while we try to fix it, we're removing access to it to prevent confusion. But don't worry! You can still contact Turnitin via email at tiisupport@turnitin.com. We're currently thinking about how we can reintroduce a working version of the form in the future.
+
+#### We've removed the plugin update checker from Turnitin administrator settings
+
+Moodle has superseded this update checker with a tool that not only checks for Turnitin plugin updates but updates to all plugins within Moodle!
+
+You can find Moodle's **Check for available updates** button by visiting: Site administration > Plugins > Plugins overview.
+
+---
+### Date:	2018-May-23
+### Release:	v2018052301
+
+#### :zap: What's new
+
+---
+
+#### We now support Moodle 3.5
+
+You can find out more about Moodle 3.5 via Moodle's [release notes](https://docs.moodle.org/dev/Moodle_3.5_release_notes).
+
+#### Turnitin's Moodle V2 plugin is GDPR compliant!
+
+To support upcoming changes to European data protection law, we’ve focused our efforts on refreshing our processes around how we use your data.
+
+##### Repository settings are more transparent
+
+We've made the Moodle V2 repository settings much clearer, by providing easy-to-understand, transparent language behind the Store student papers    help icon. During assignment setup, administrators and instructors can now be completely sure that they're selecting the correct storage options for student papers.
+
+##### We're reporting on the data we store about our users
+
+Moodle has released two plugins with privacy features to assist with GDPR compliance. While we've successfully implemented [Moodle's new privacy features](https://docs.moodle.org/dev/Privacy_API), Moodle's update is only available to those using Moodle 3.3.5+, 3.4.2+, or 3.5. Therefore, if you're using an earlier version, you must upgrade to have access to these new features.
+
+To inform you about the data we store in relation to our users, we now provide a detailed list via the Moodle Privacy and Policies page. Learn more about the data we're reporting on via our [Moodle Plugins and GDPR](https://guides.turnitin.com/03_Integrations/Turnitin_Partner_Integrations/Moodle/Moodle_Plugins_and_GDPR) page.
+
+#### Students can request to download their data
+
+Students have the ability to request an export of their data stored in Moodle. This request can be accepted or declined by their Moodle administrator. If accepted, the student will be able to download all the data held about them, which includes data from Turnitin.
+
+#### Students can request to remove their data
+
+Students can also request their data to be removed from Moodle. This requested can be accepted or declined by their Moodle administrator. If accepted, the administrator will remove the student data from Moodle. However, administrators must contact support@turnitin.com to request that student data be removed from Turnitin itself.
+  
+> If you're a Moodle administrator, and using version 3.3.5+, 3.4.2+, or 3.5, follow the steps on the [Moodle Plugins and GDPR](https://guides.turnitin.com/03_Integrations/Turnitin_Partner_Integrations/Moodle/Moodle_Plugins_and_GDPR) page to view the data we store in Moodle.
+
+
+#### You can now send all papers to your institutional repository by default!
+
+We're aligning Turnitin repository options with our Moodle V2 plugin. If an institutional repository is enabled on their Turnitin account, administrators can now opt to **Submit all papers to the institutional repository**. This submission storage option sends all student submissions to the institutional repository without instructor intervention. For this repository option to work successfully, it must firstly be enabled in Turnitin, before it can be configured in Moodle.
+
+If you're a Moodle administrator, follow the steps below to enable this repository setting in Turnitin:
+
+1. Log into Turnitin.com or TurnitinUK.com.
+2. Under **Edit**, select the cog  icon.
+3. Select **Edit account settings**.
+4. Scroll to **Paper repository options** and select **Submit all papers to the institution repository**.
+6. Select the **Submit** button at the bottom of the page.
+
+Now, it's time to move to Moodle!
+
+1. From the Moodle left-hand side panel, select **Site administration**.
+2. Select **Plugins**.
+3. Select **Activity Modules**.
+4. Then **Manage Activities**.
+5. Scroll to **Turnitin Assignment 2** and select **Settings**.
+6. Scroll to **Paper Repository Assignments** and select **Submit all papers to the institutional repository**.
+
+### :wrench: Fixes and enhancements
+
+#### Assignment titles are now visible in the grade book
+
+This was a bit of an odd one! If an instructor created an assignment with Turnitin GradeMark disabled, the assignment title displayed in the Moodle grade book as the word 'Grade'. We're sure that you'd much rather see the assignment name to be able to distinguish one assignment from the other? Now, you can! Sorry about that!
+
+#### You can now exit lightboxes using the 'Close' button
+       	
+We received a report that the Close button in the Moodle V2 plugin's lightboxes wasn't performing correctly, in that it wasn't actually closing anything! Instead, users saw the following error: 'Uncaught TypeError: Cannot read property 'close' of undefined at HTMLAnchorElement.onclick'. Thanks for the heads up, @Haietza! We've fixed this issue.
+
+> **Lightboxes** display content by filling the screen and dimming out the rest of the web page. They can be closed to find the website contents still available. Items such as the QuickMark manager and the rubric manager are contained inside a lightbox.
+
+---
+
+### 2018-March-12
+### v2018031201
+
+#### Fixes and enhancements
+
+---
+
+#### Manual adjustments to grades now stick during V1 to V2 migration
+
+>Following the migration of a Moodle Direct V1 assignment to V2, grades that had been manually adjusted in the Moodle grade book would be overwritten to match the grade originally set in Turnitin Feedback Studio. With this overwrite being completely unintentional, we've made several backend changes to ensure that future manual adjustments within the grade book always remain fixed during migration.
+
+#### V1 assignments are now removed automatically after migration
+ 	
+>If an administrator failed to delete a Moodle Direct V1 assignment after its migration to V2, the grade of the V1 assignment would remain in the Moodle grade book, causing grades to effectively double. We've now adjusted the behavior of the Moodle Migration Tool to resolve this. So that you no longer need to worry about incorrect grades in the grade book, Moodle V1 assignments are now automatically deleted after migration.
+>
+>There may be instances where you'll still be required to remove V1 assignments manually (for example, the migration has been successful but there are conflicting grades in the grade book).
+
+#### Deleting V1 assignments that were migrated in prior versions 
+
+> You can manually delete your previously migrated assignments from the usual spot in the Moodle Migration Tool; we encourage you to delete these as soon as possible in order to resolve any current issues in the grade book. Any V1 assignments migrated after this update will be automatically deleted.
+
+
+### :snowflake: Date:		2018-January-16
+### :snowflake: Release:	v2018011601
+
+#### :zap: What's new
+
+---
+
+#### Instant Similarity Reports for up to three resubmissions
+
+Feedback Studio allows students to view their Similarity Report results immediately! Students can now view their initial Similarity Report, then revise and resubmit their work up to three times, without having to wait 24 hours for an updated report. After three resubmissions have been made, the 24-hour report generation wait time will be restored. Instantaneous similarity results give students the formative support they need to master paraphrasing and citation conventions efficiently.
+
+> To enable resubmissions for students, you must correctly configure the assignment settings of a new or existing Moodle Direct V2 assignment.
+>
+> 1. Scroll to **Originality Report Options**.
+> 2. Under **Originality Report Generation and Submissions**, select **Generate reports immediately (students can resubmit until due date): After 3 resubmissions, reports generate after 24 hours**. [Read more](https://guides.turnitin.com/03_Integrations/Turnitin_Partner_Integrations/Moodle/03_Moodle_Direct_V2/03_Instructors/Creating_an_assignment#Similarity_Report_options).
+
+#### Genre-specific rubrics in Feedback Studio (North America only)
+
+Revision Assistant's genre-specific rubrics are now available in Feedback Studio for our North American users, designed with 6th - 12th graders in mind! K-12 instructors can assign new rubrics to their assignments to help their students master the art of argumentative, narrative, informative, and analytical writing. If you're actively using Revision Assistant and Feedback Studio together, you can now promote consistency in the classroom by adopting the same rubrics.
+
+> To use a new rubric for grading, you can attach it from within the assignment settings of a new or existing assignment.
+> 
+> 1. Scroll to **GradeMark options**.
+> 2. Under **Attach a rubric to this assignment**, select a new genre-specific rubric from the drop-down list. [Read more](https://guides.turnitin.com/03_Integrations/Turnitin_Partner_Integrations/Moodle/03_Moodle_Direct_V2/03_Instructors/Creating_an_assignment#GradeMark_options).
+> 
+> Alternatively, launch the rubric and grading form manager from the Moodle Direct V2 submission inbox, or alternatively, from within Feedback Studio.
+
+#### K-12 QuickMark sets in Feedback Studio (North America only)
+
+QuickMarks are Turnitin's most popular feedback tool among Feedback Studio instructors! But in finding that many of our default QuickMark sets failed to address the needs of our K-12 instructors and students, we've added two new sets to the Feedback Studio collection, available to our North American users! Our new drag-and-drop (and customizable!) comments will help instructors help their students to engage in revision, save time, and more importantly, achieve learning outcomes. [Read more](https://guides.turnitin.com/01_Manuals_and_Guides/Release_Notes/Turnitin_Release_Notes/Genre-specific_rubrics_in_Feedback_Studio).
+> 
+> To view and edit your new QuickMarks, launch the QuickMark manager from the Moodle Direct V2 submission inbox, or alternatively, from within Feedback Studio.
+
+---
+
+### Date:       2017-November-23
+### Release:    v2017112301
+
+Support for Moodle 3.4
+
+After lots of tests against the release of Moodle 3.4, we're pleased to announce that Turnitin's Moodle Direct V2 plugin now supports it.
+
+---
+
+### Date:       2017-October-30
+### Release:    v2017103001
+
+V1 to V2 Moodle Migration Tool
+
+**The Moodle Migration Tool is now in early access mode!** - Before making the Moodle Migration Tool available to all of our Moodle users, we asked a subset of users to test the tool and advise us of any issues or errors they may have stumbled across during their experimenting. We'd like to thank all of our testers for their useful comments; they've helped us make the tool even better!
+
+Calling all administrators! To access the Moodle migration tool and enable instructor migration, visit our guide.
+
+Below, you can find several updates we've made to the tool based on the issues raised by our testers:
+
+- Updated migration tool setting information
+- We've made improvements to the migration workflow
+- We've made some table adjustments
+- Fixed an issue causing the grade book to unsuccessfully migrate
+
+**Updated migration tool setting information** - We've updated the information behind the question mark icon connected to the 'Migration action at assignment launch' setting; this referred to old functionality in the Moodle Migration Tool. The text now reflects the current state of the tool. Apologies if you became a little confused! 
+
+**We've made improvements to the migration workflow** -  We've made the migration workflow clearer by prompting the user to migrate on all V1 assignments. Even if you navigate away from the assignment, you'll be prompted again when you return. We hope this helps make your migration a smooth and simple one. 
+
+**We've made some table adjustments** - The table of migrated V1 assignments was appearing a little unkempt, so we tidied up by setting the table width. The table now looks much more aesthetically pleasing! 
+
+**Fixed an issue causing the grade book to unsuccessfully migrate** - When migrating we found a potential issue that would cause the migration of grade book to fail which would lead to issues with the migration of assignments. We've preemptively fixed this so you will be able to migrate your assignments without issue. 
+
+We've also been working on...
+
+- Fixed a bug preventing student enrollment
+- Removed the visibility of the delete icon after submission
+- Anonymous marking grades now pass to the grade book in all databases
+- Unit tests now pass successfully
+- Fixed several incorrectly named variables
+
+**Fixed a bug preventing student enrollment** - We received an alert that the Enrol All Students button accessible via the Turnitin Students tab wasn't functioning correctly; this removed the ability for students enrolled in the same class via Turnitin.com or TurnitinUK.com to submit to their Moodle Direct V2 assignment. We identified a missing parameter causing the issue and simply reinserted it. The button now works as intended. Thanks to @neillm for his input!
+
+> A parameter is a piece of information passed to a program by a user or another program; this information can be a name, number, or a selected option. Parameters have an effect on the operation of the program receiving them.
+
+**Removed the visibility of the delete icon after submission** - We received several reports from an institution concerning the presence of the submission delete icon in the student submission inbox. For assignments with resubmissions disabled, students who'd submitted an incorrect file type managed to delete and resubmit their paper. Although this is useful for students who've made a genuine submission error, this was not intended functionality.
+
+We also heard that by allowing late submissions in an assignment, this enabled students to delete and resubmit their paper after the post date. This unintentionally allowed students to resubmit after any instructor marking or grading had taken place. The delete icon has now been removed, meaning students will only be able to submit following the permissions set by their instructor.
+
+**Anonymous marking grades now pass to the grade book** - We noticed that grades failed to populate the grade book for papers submitted to an assignment with anonymous marking enabled. The call to send these grades failed in the Microsoft SQL database and produced an error. Not to worry! All grades now send to the grade book as expected.
+
+> SQL statements are used to perform tasks, such as updating data within a database (updating the grade book with grades!), or retrieving data from a database.
+
+**Unit tests now pass successfully** - With thanks to @danmarsden for his work on fixing some of our broken unit tests. These improvements help to instill user confidence in Moodle Direct V2.
+
+> Unit tests involve testing certain functions and areas – or units – of code. This gives developers the ability to verify that software functions work as intended.
+
+**Fixed several incorrectly named variables** - We've implemented some fixes kindly provided by @sk-unikent which tidied up several variable issues.
+
+> Variables are used to store information for easy manipulation and reference in a computer program. Rather than entering data directly into a program, a variable is used to represent data. When a program is executed, a variable is replaced with actual data. For example, firstName is a variable because it can be referenced and replaced with the actual first name of an individual.
+
+---
+
+### Date:		2017-August-09
+### Release:	v2017080901
+
+**Use new assignment dates during course reset** - We received a report that during a course reset, anonymous marking settings were not carried over if an assignment's due date had already passed.
+
+Now, you can opt to use new assignment dates when initiating a course reset by selecting the **Use new assignment dates** check box. The assignment start date will be set to the date and time of the course reset, while the due and post date will elapse seven days from then.
+
+If you’d rather not use new assignment dates, that’s fine; Turnitin will use the course’s original assignment dates instead. However, any anonymous marking settings will not be carried over for assignments where the post date has passed.
+
+![Reset course feature](https://github.com/turnitin/moodle-mod_turnitintooltwo/blob/master/pix/changelog/resetcourse.png "Reset course feature")
+
+---
+
+### Date:		2017-July-19
+### Release:	v2017071901
+
+This release is for beta testers of the V1 to V2 Migration Tool. Please note that you will also need to update to Moodle Direct V1 (v2017071901) in order for the Migration Tool to work.
+
+---
+
+### Date:		2017-July-03
+### Release:	v2017070301
+
+We now support Moodle 3.3!
+
+- Changed assignment names to be plugin specific
+- Added tool tips to interface icons  (Thanks to @rlorenzo)
+- All settings are preserved when duplicating or restoring an assignment
+- Students no longer see PHP warnings
+- Fixed a code issue for assignment backup and restore (Thanks to @davidscotson)
+
+**Changed assignment names to be plugin specific** - When creating a course that included both V1 and V2 assignments, it was difficult to differentiate between the two plugins during setup, with them both being titled 'Turnitin Assignment'. To resolve this, we've changed the assignment titles to be plugin specific.
+
+**Added tool tips to interface icons**  - We received a request to add a tooltip to the following Turnitin interface icons: trash can, pencil, grade, and download. We also swapped the cloud icon (used for downloading a submission) to an easier-to-identify arrow icon.
+
+**Note:** A tool tip is a message that appears when the cursor is positioned over an icon, image, or any other graphic. The inclusion of icon tooltips increases accessibility for users (particularly those using screen readers!)
+
+**All settings are preserved when duplicating or restoring an assignment** - We've fixed an issue that resulted in the 'Allow submission of any file type' and 'Check against Institutional Repository' settings to be forgotten about when duplicating or restoring from backup. Now, a restored or duplicated assignment will have identical settings to its source assignment. Phew!
+
+**Students no longer see PHP warnings** - We received reports that students were able to see PHP errors if Moodle debugging was set to full developer level by the administrator. We've fixed this to ensure that the PHP error is no longer visible to students.
+
+**Fixed a code issue for assignment backup and restore** - We noticed that in the assignment backup and restore code, the same URL substitution was used for V2 as in V1, which could potentially cause backup and restoration issues. We've corrected this so that 'TURNITINTOOLTWO' is now used to encode links to the module and module list, rather than its V1 counterpart, 'TURNITINTOOL'. 
+
+---
+
+### Date:		2017-May-24
+### Release:	v2017052401
+
+- Modified the name sorting on the assignment inbox to allow sorting by surname and firstname.
+- Escape any HTML or Javascript from submission extract before displaying successful submission message.
+- Strip files and images from description in calendar view.
+- Remove filepaths from error messages unless debugging is set to developer level.
+- Fix bug where checkbox settings weren't being saved.
+- Fix course reset failing due to bug introduced by extending assignment titles.
+- Fix the unpopulated drop down menus in support wizard.
+- Add further unit test infrastructure.
+- No longer send digital receipt message for empty grading template submissions.
+- Assign Mexican Spanish to Spanish in Turnitin rather than defaulting to English. (Thanks to @jobcespedes)
+
+**List order now consistent between Moodle and Turnitin assignments** - The Moodle submission inbox displays student names in the first name/last name format (e.g. John Smith) and allows instructors to order the list by last name. However, Turnitin list entries could only be ordered by first name. Turnitin is now aligned with Moodle's list ordering.
+
+**Digital receipts no longer execute script found in a paper** - If a student inserted HTML, JavaScript, or any other script tags in their paper, this was executed when the digital receipt displayed after submission. Fixed it! The digital receipt will no longer execute the script (if any script is included) for future submissions.
+
+**Rectified broken files and images in Moodle calendar** - As Moodle calendar doesn't support files or images, any files or images added to the assignment description would appear as broken in the calendar. We'll now strip all files and images from the description before its transfer into the calendar.
+
+**Removed unnecessary information from error messages** - We received feedback from users that one or two error messages included irrelevant information. Our engineers have worked their magic to ensure that any messages you see are now meaningful and help you to resolve the error you're encountering.
+
+**Course reset is now working as expected** - We had some problems with the Moodle course reset feature after the release of 2017031301, with student papers remaining in place even after opting to reset the course. With debugging enabled, an error message displayed, confirming the issue. We've thankfully managed to resolve the problem and you can now give the course reset feature another try.
+
+**Support wizard issues resolved** - We noticed that some administrators and instructors were having trouble using the Turnitin support wizard within Moodle. One of the wizard drop-down menus failed to populate, causing difficulty in raising a support ticket with us. Bug targeted and eliminated!
+
+**No more digital receipts sent for grading template submissions** - When an instructor uses a grading template to grade a student's work, this acts as a submission and delivered a digital receipt to students. Students found the receipt confusing as they hadn't personally made a submission to Turnitin, but the receipt was advising otherwise. We've stopped digital receipts from being sent to students for grading template submissions.
+
+---
+
 ### Date:		2017-March-13
 ### Release:	v2017031301
 
 - Minor update Gradebook method refactor so it can be called from other contexts.
-- Allow class and assignment titles to be up to 256 characters in length.
-- Add warning if PHP SOAP extension not installed.
-- Force refresh button added to assignment settings page to sync all submission.
-- Fixes:
-	- Send revealing user rather than submitted user when revealing anonymous submissions.
-	- Stop enrolling unenrolled Moodle students when downloading submissions from Turnitin.
-	- Enforce anonymity on newly created assignment parts.
-	- Only save one submission record per student per assignment part when refreshing submissions from Turnitin.
+- Extended the character limit for class and assignment titles.
+- Added a warning if PHP SOAP extension is not installed.
+- Implemented a 'force refresh button' to assignment settings page.
+- Resolved an issue affecting revealer's name in anonymous submissions.
+- Stopped re-enrolling previously un-enrolled Moodle students.
+- Fixed a bug with anonymity on newly created assignment parts.
+- Resolved bug affecting assignment inbox access.
+- Fixed an issue causing all submissions to refresh upon individual student login.
+
+
+**Extended the character limit for class and assignment titles** - Some users found the character limit for class and assignment titles restrictive; we've extended the title limits to 256 characters, allowing more freedom when setting up classes and assignments.
+
+**Added a warning if PHP SOAP extension is not installed** - We found that installation would fail without PHP SOAP (PHP5-SOAP, PHP7-SOAP) being installed, and although it's a required package, this wasn't listed as being so. We've added a warning in settings if the extension is not installed, saving you from a failed installation. 
+
+**Implemented a 'force refresh button' to assignment settings page** - Some users informed us that grades were failing to appear in the grade book after their insertion in the document viewer, as well as submission updates not transferring to the assignment inbox. To fix this, we've added a button allowing you to force refresh this data, syncing all submission changes to the grade book and inbox.
+
+**Resolved an issue affecting revealer's name in anonymous submissions** - Reports revealed that the student's name appeared as the revealer of an anonymous submission, rather than the name of the instructor. This resulted in Turnitin administrators having no record of the instructor who requested the reveal. This has now been rectified.
+
+**Stopped re-enrolling previously unenrolled Moodle students** - It appeared that unenrolled students would be re-enrolled when instructors downloaded submissions from Turnitin. We've fixed this! Now, when a student who has submitted is removed from a Moodle course, they will not be re-enrolled when the submission is refreshed.
+
+**Fixed a bug with anonymity on newly created assignment parts** - We received reports that when a second (or more parts) were added to a single-part anonymous assignment, the anonymity setting was not passed across. Our engineers have fixed this problem and our testers have ensured that new parts of an anonymous assignment are anonymous. Thanks for your patience with this one!
+
+**Resolved bug affecting assignment inbox access** - If a student had two submissions for one assignment part in Turnitin, the Moodle assignment inbox would continue to load and hang with the error message: Loading data from Turnitin. We resolved this by ensuring that the system only saves one submission record per student per assignment when refreshing submissions from Turnitin.
+
+**Fixed an issue causing all submissions to refresh upon individual student login** - If a student logged into the assignment inbox, all submissions were refreshed, causing students to show as having updated the grade for other graded submission(s) and subsequently appear as graders in grade reports. We've resolved this by ensuring that a student only has an effect on their own submission.
 
 ---
 

@@ -20,10 +20,11 @@
  */
 
 define('AJAX_SCRIPT', 1);
+global $CFG;
 
 require_once(__DIR__."/../../config.php");
 require_once(__DIR__."/lib.php");
-require_once(__DIR__."/turnitintooltwo_view.class.php");
+require_once($CFG->dirroot . '/mod/turnitintooltwo/turnitintooltwo_view.class.php');
 
 require_login();
 $action = required_param('action', PARAM_ALPHAEXT);
@@ -126,7 +127,7 @@ switch ($action) {
         $turnitinuser = $DB->get_record('turnitintooltwo_users', array('userid' => $USER->id));
 
         // Build user object for update.
-        $eulauser = new object();
+        $eulauser = new \stdClass();
         $eulauser->id = $turnitinuser->id;
         $eulauser->user_agreement_accepted = 0;
         if ($message == 'turnitin_eula_accepted') {
@@ -206,6 +207,17 @@ switch ($action) {
         $PAGE->set_context(context_system::instance());
         if (is_siteadmin()) {
             echo json_encode(turnitintooltwo_getusers());
+        } else {
+            throw new moodle_exception('accessdenied', 'admin');
+        }
+        break;
+
+    case "get_assignments":
+        include_once("classes/v1migration/v1migration.php");
+
+        $PAGE->set_context(context_system::instance());
+        if (is_siteadmin()) {
+            echo json_encode(v1migration::turnitintooltwo_getassignments());
         } else {
             throw new moodle_exception('accessdenied', 'admin');
         }
@@ -404,6 +416,10 @@ switch ($action) {
             // Check if student is actually enrolled in the Moodle course.
             if ( !is_enrolled(context_module::instance($cm->id), $submission->userid, '', true) ) {
                 $submission->nmoodle = 1;
+
+                $submission->firstname = $submission->submission_nmfirstname;
+                $submission->lastname = $submission->submission_nmlastname;
+                $submission->fullname = $submission->firstname.' '.$submission->lastname;
             }
 
             $useroverallgrades = array();
@@ -459,7 +475,13 @@ switch ($action) {
                 $turnitinclass = new turnitin_class($courseid);
             }
             $turnitinclass->read_class_from_tii();
-            $options = $options + $turnitinclass->sharedrubrics;
+			$sharedrubrics = $turnitinclass->sharedrubrics;
+
+			foreach ($sharedrubrics as $group => $grouprubrics) {
+				foreach ($grouprubrics as $rubricid => $rubricname) {
+					$options[$group][$rubricid] = $rubricname;
+				}
+			}
 
             // Get assignment details.
             if (!empty($assignmentid)) {
@@ -497,6 +519,7 @@ switch ($action) {
         } else {
             $options = array();
         }
+
         echo json_encode($options);
         break;
 
@@ -752,21 +775,6 @@ switch ($action) {
         echo json_encode($return);
         break;
 
-    case "check_upgrade":
-        if (!confirm_sesskey()) {
-            throw new moodle_exception('invalidsesskey', 'error');
-        }
-        $data = '';
-        $currentversion = required_param('current_version', PARAM_INT);
-
-        $PAGE->set_context(context_system::instance());
-
-        if (is_siteadmin()) {
-            $data = turnitintooltwo_updateavailable($currentversion);
-        }
-        echo json_encode($data);
-        break;
-
     case "test_connection":
         if (!confirm_sesskey()) {
             throw new moodle_exception('invalidsesskey', 'error');
@@ -865,4 +873,71 @@ switch ($action) {
         }
         exit();
         break;
+
+    case "begin_migration":
+
+        if (!confirm_sesskey()) {
+            throw new moodle_exception('invalidsesskey', 'error');
+        }
+
+        $courseid = required_param('courseid', PARAM_INT);
+        $turnitintoolid = required_param('turnitintoolid', PARAM_INT);
+
+        include_once("classes/v1migration/v1migration.php");
+        $turnitintool = $DB->get_record("turnitintool", array("id" => $turnitintoolid));
+
+        $v1migration = new v1migration($courseid, $turnitintool);
+
+        try {
+            $turnitintooltwoid = $v1migration->migrate();
+            $cm = get_coursemodule_from_instance("turnitintooltwo", $turnitintooltwoid);
+
+            // The returned CMID will be used for the redirect.
+            if ((int)$turnitintooltwoid > 0) {
+                echo '{ "id": '.$cm->id.' }';
+                exit();
+            }
+        } catch(Exception $e) {
+            header("HTTP/1.0 400 Bad Request");
+
+            $errorresponse = array(
+                'error' => get_string('migrationtoolerror', 'turnitintooltwo'),
+                'message' => $e->getMessage()
+            );
+
+            if ($CFG->debug == DEBUG_DEVELOPER) {
+                $errorresponse = array_merge($errorresponse, array(
+                    'exception' => $e,
+                    'trace' => $e->getTrace()
+                ));
+            }
+
+            echo json_encode($errorresponse);
+            exit();
+        }
+
+    case "check_migrated":
+        if (!confirm_sesskey()) {
+            throw new moodle_exception('invalidsesskey', 'error');
+        }
+
+        $turnitintoolid = required_param('turnitintoolid', PARAM_INT);
+
+        // Check if v1 id is linked to a v2 id in the session
+        $turnitintooltwoid = 0;
+        if ( isset( $_SESSION["migrationtool"][$turnitintoolid] ) && is_numeric( $_SESSION["migrationtool"][$turnitintoolid] ) ) {
+            $turnitintooltwoid = intval( $_SESSION["migrationtool"][$turnitintoolid] );
+        }
+
+        if ( $turnitintooltwoid != 0 ) {
+            $cm = get_coursemodule_from_instance("turnitintooltwo", $turnitintooltwoid);
+            echo json_encode(array(
+                    'migrated' => true,
+                    'v2id' => $cm->id
+            ));
+        } else {
+            echo json_encode(array(
+                    'migrated' => false
+            ));
+        }
 }

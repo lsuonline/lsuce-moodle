@@ -26,6 +26,7 @@ if ($ADMIN->fulltree) {
     require_once(__DIR__.'/settingslib.php');
     require_once(__DIR__."/turnitintooltwo_view.class.php");
 
+    $migration_activation = optional_param('activation', null, PARAM_ALPHA);
     $turnitintooltwoview = new turnitintooltwo_view();
 
     $config = turnitintooltwo_admin_config();
@@ -49,7 +50,20 @@ if ($ADMIN->fulltree) {
                                                 array('class' => 'tii_library_not_present_warning'));
     }
 
-    $tabmenu = $turnitintooltwoview->draw_settings_menu($module, 'settings').
+
+    $close = html_writer::tag('button', '&times;', array('class' => 'close', 'data-dismiss' => 'alert'));
+
+    // If being directed here from the migration activation page, display appropriate message
+    $migration_message = '';
+    if ($migration_activation == 'failure') {
+        $migration_message = html_writer::tag(
+            'div',
+            $close.get_string('migrationactivationfailure', 'turnitintooltwo'),
+            array('class' => 'alert alert-danger', 'role' => 'alert')
+        );
+    }
+
+    $tabmenu = $turnitintooltwoview->draw_settings_menu('settings').
                 html_writer::tag('noscript', get_string('noscript', 'turnitintooltwo')).$librarywarning.
                 html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
                                             "href" => $CFG->wwwroot."/mod/turnitintooltwo/styles.css"));
@@ -62,25 +76,6 @@ if ($ADMIN->fulltree) {
         // Include javascript.
         $PAGE->requires->jquery();
         $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo_settings', 'mod_turnitintooltwo');
-        $PAGE->requires->string_for_js('upgradeavailable', 'turnitintooltwo');
-
-        if (is_siteadmin()) {
-            $data = turnitintooltwo_updateavailable($version);
-
-            if ($data['update']) {
-                $upgrade = html_writer::tag('a', get_string('upgradeavailable', 'turnitintooltwo'), array('href' => $data['file']));
-            } else {
-                $upgrade = html_writer::tag('span', get_string('upgradenotavailable', 'turnitintooltwo'),
-                                        array('class' => 'tii_no_upgrade'));
-                $upgrade .= html_writer::tag('a', $OUTPUT->pix_icon('refresh',
-                                        get_string('checkingupgrade', 'turnitintooltwo'), 'mod_turnitintooltwo'),
-                                        array('href' => '#', 'class' => 'tii_upgrade_check', 'id' => 'version_'.$version));
-            }
-        }
-
-        $upgrade .= html_writer::tag('span', $OUTPUT->pix_icon('loader',
-                                        get_string('checkingupgrade', 'turnitintooltwo'), 'mod_turnitintooltwo'),
-                                        array('class' => 'tii_upgrading_check'));
     }
 
     // Offline mode provided by Androgogic. Set tiioffline in config.php.
@@ -108,10 +103,11 @@ if ($ADMIN->fulltree) {
 
     $desc = '('.get_string('moduleversion', 'turnitintooltwo').': '.$version.')';
 
-    if ($currentsection == 'modsettingturnitintooltwo') {
-        $desc .= ' - '.$upgrade;
-    }
-
+    $settings->add(new admin_setting_heading(
+        'turnitintooltwo_migration_status_header',
+        '',
+        $migration_message
+    ));
     $settings->add(new admin_setting_heading('turnitintooltwo_header', $desc, $tabmenu));
 
     // Turnitin account configuration.
@@ -197,14 +193,16 @@ if ($ADMIN->fulltree) {
                                                     0, $ynoptions));
 
     $repositoryoptions = array(
-            0 => get_string('repositoryoptions_0', 'turnitintooltwo'),
-            1 => get_string('repositoryoptions_1', 'turnitintooltwo'),
-            2 => get_string('repositoryoptions_2', 'turnitintooltwo'),
-            3 => get_string('repositoryoptions_3', 'turnitintooltwo')
-        );
+        ADMIN_REPOSITORY_OPTION_STANDARD => get_string('repositoryoptions_0', 'turnitintooltwo'),
+        ADMIN_REPOSITORY_OPTION_EXPANDED => get_string('repositoryoptions_1', 'turnitintooltwo'),
+        ADMIN_REPOSITORY_OPTION_FORCE_STANDARD => get_string('repositoryoptions_2', 'turnitintooltwo'),
+        ADMIN_REPOSITORY_OPTION_FORCE_NO => get_string('repositoryoptions_3', 'turnitintooltwo'),
+        ADMIN_REPOSITORY_OPTION_FORCE_INSTITUTIONAL => get_string('repositoryoptions_4', 'turnitintooltwo')
+    );
 
     $settings->add(new admin_setting_configselect('turnitintooltwo/repositoryoption',
-                                                    get_string('turnitinrepositoryoptions', 'turnitintooltwo'),
+                                                    get_string('turnitinrepositoryoptions', 'turnitintooltwo').
+                                                    $OUTPUT->help_icon('turnitinrepositoryoptions', 'turnitintooltwo'),
                                                     get_string('turnitinrepositoryoptions_desc', 'turnitintooltwo'),
                                                     0, $repositoryoptions));
 
@@ -229,12 +227,6 @@ if ($ADMIN->fulltree) {
                                                     get_string('turnitininboxlayout', 'turnitintooltwo'),
                                                     get_string('turnitininboxlayout_desc', 'turnitintooltwo'),
                                                     0, $layoutoptions));
-
-    $settings->add(new admin_setting_configselect('turnitintooltwo/helpdeskwizard',
-                                                    get_string('turnitinsettingshelpwizard', 'turnitintooltwo'),
-                                                    get_string('turnitinsettingshelpwizard_desc', 'turnitintooltwo'),
-                                                    0, $ynoptions
-                                                ));
 
     // Following are values for student privacy settings.
     $settings->add(new admin_setting_heading('turnitintooltwo_privacy', get_string('studentdataprivacy', 'turnitintooltwo'),
@@ -346,8 +338,9 @@ if ($ADMIN->fulltree) {
                                                     get_string('allowlate', 'turnitintooltwo'),
                                                     '', 0, $ynoptions ));
 
+    $genparams = turnitintooltwo_get_report_gen_speed_params();
     $genoptions = array(0 => get_string('genimmediately1', 'turnitintooltwo'),
-                        1 => get_string('genimmediately2', 'turnitintooltwo'),
+                        1 => get_string('genimmediately2', 'turnitintooltwo', $genparams),
                         2 => get_string('genduedate', 'turnitintooltwo'));
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_reportgenspeed',
                                                     get_string('reportgenspeed', 'turnitintooltwo'),
@@ -363,14 +356,16 @@ if ($ADMIN->fulltree) {
     switch ($config->repositoryoption) {
         case 0; // Standard options.
             $settings->add(new admin_setting_configselect('turnitintooltwo/default_submitpapersto',
-                                                    get_string('submitpapersto', 'turnitintooltwo'),
+                                                    get_string('submitpapersto', 'turnitintooltwo').
+                                                    $OUTPUT->help_icon('submitpapersto', 'turnitintooltwo'),
                                                     '', 1, $suboptions ));
             break;
         case 1; // Standard options + Allow Instituional Repository.
             $suboptions[2] = get_string('institutionalrepository', 'turnitintooltwo');
 
             $settings->add(new admin_setting_configselect('turnitintooltwo/default_submitpapersto',
-                                                    get_string('submitpapersto', 'turnitintooltwo'),
+                                                    get_string('submitpapersto', 'turnitintooltwo').
+                                                    $OUTPUT->help_icon('submitpapersto', 'turnitintooltwo'),
                                                     '', 1, $suboptions ));
             break;
     }

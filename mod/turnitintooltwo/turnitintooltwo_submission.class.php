@@ -16,6 +16,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__."/lib.php");
 require_once(__DIR__.'/classes/digitalreceipt/receipt_message.php');
 require_once(__DIR__.'/classes/digitalreceipt/instructor_message.php');
 
@@ -318,7 +319,7 @@ class turnitintooltwo_submission {
 
         // Delete Moodle submission first.
         if (!$DB->delete_records('turnitintooltwo_submissions', array('id' => $this->id))) {
-            $notice["type"] = "error";
+            $notice["type"] = "danger";
             $notice["message"] = get_string('submissiondeleteerror', 'turnitintooltwo');
             return $notice;
         }
@@ -388,7 +389,7 @@ class turnitintooltwo_submission {
                     $this->userid
                 );
 
-                $notice["type"] = "full-error";
+                $notice["type"] = "danger";
                 $notice["message"] = get_string('submissiondeleted', 'turnitintooltwo').
                                         ' ('.get_string('turnitinid', 'turnitintooltwo').
                                             ': '.$this->submission_objectid.')';
@@ -419,7 +420,8 @@ class turnitintooltwo_submission {
         $context = context_module::instance($cm->id);
 
         // Check if user is a member of class, if not then join them to it.
-        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+        $coursetype = turnitintooltwo_get_course_type($turnitintooltwoassignment->turnitintooltwo->legacy);
+        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
         $user = new turnitintooltwo_user($userid, 'Learner');
         $user->join_user_to_class($course->turnitin_cid);
         $user->edit_tii_user();
@@ -457,22 +459,6 @@ class turnitintooltwo_submission {
             $submission->submission_acceptnothing = 1;
             $submission->submission_orcapable = 0;
             $submission->submission_hash = $submission->userid.'_'.$submission->turnitintooltwoid.'_'.$submission->submission_part;
-
-            // Send a message to the user's Moodle inbox with the digital receipt.
-            $partdetails = $turnitintooltwoassignment->get_part_details($partid);
-            $input = array(
-                'firstname' => $user->firstname,
-                'lastname' => $user->lastname,
-                'submission_title' => get_string('gradingtemplate', 'turnitintooltwo'),
-                'assignment_name' => $turnitintooltwoassignment->turnitintooltwo->name,
-                'assignment_part' => $partdetails->partname,
-                'course_fullname' => $course->fullname,
-                'submission_date' => date('d-M-Y h:iA'),
-                'submission_id' => $submission->submission_objectid
-            );
-
-            $message = $this->receipt->build_message($input);
-            $this->receipt->send_message($userid, $message, $course->id);
 
             // Add entry to log.
             turnitintooltwo_add_to_log($turnitintooltwoassignment->turnitintooltwo->course, "add submission",
@@ -522,7 +508,8 @@ class turnitintooltwo_submission {
         $context = context_module::instance($cm->id);
 
         // Check if user is a member of class, if not then join them to it.
-        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+        $coursetype = turnitintooltwo_get_course_type($turnitintooltwoassignment->turnitintooltwo->legacy);
+        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
         $user = new turnitintooltwo_user($this->userid, 'Learner');
         $user->join_user_to_class($course->turnitin_cid);
         $user->edit_tii_user();
@@ -628,7 +615,7 @@ class turnitintooltwo_submission {
 
                 $notice["success"] = true;
                 $notice["message"] = get_string('submissionuploadsuccess', 'turnitintooltwo');
-                $notice["extract"] = $newsubmission->getTextExtract();
+                $notice["extract"] = htmlspecialchars($newsubmission->getTextExtract());
                 $notice["tii_submission_id"] = $submission->submission_objectid;
 
                 // Send a message to the user's Moodle inbox with the digital receipt.
@@ -824,7 +811,7 @@ class turnitintooltwo_submission {
                 $sub->id = $DB->insert_record("turnitintooltwo_submissions", $sub, true, $bulk);
             }
 
-            //Update the Moodle gradebook.
+            // Update the Moodle gradebook.
             $this->update_gradebook($sub, $turnitintooltwoassignment);
         }
     }
@@ -874,10 +861,12 @@ class turnitintooltwo_submission {
      * @return boolean
      */
     public function unanonymise_submission($reason) {
+        global $USER;
+
         // Get user and part details.
         $turnitintooltwoassignment = new turnitintooltwo_assignment($this->turnitintooltwoid);
         $partdetails = $turnitintooltwoassignment->get_part_details($this->submission_part);
-        $user = new turnitintooltwo_user($this->userid);
+        $user = new turnitintooltwo_user($USER->id);
 
         // Initialise Comms Object.
         $turnitincomms = new turnitintooltwo_comms();
