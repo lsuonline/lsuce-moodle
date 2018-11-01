@@ -684,6 +684,17 @@ class shared extends \renderer_base {
             );
         }
 
+        // Kaltura my media.
+        if (has_capability('local/mymedia:view', $coursecontext)) {
+            $iconurl = $OUTPUT->pix_url('t/kaltura', 'core');
+            $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+
+            $links[] = array(
+                'link' => 'local/mymedia/mymedia.php',
+                'title' => $mymediaicon.get_string('nav_mymedia', 'local_mymedia'),
+            );
+        }
+
          // Edit blocks.
          $editblocks = '';
          if (has_capability('moodle/course:update', $coursecontext)) {
