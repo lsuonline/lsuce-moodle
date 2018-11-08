@@ -1,4 +1,4 @@
-.clearfix {
+.eupopup-container .clearfix {
 	clear: both;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .eupopup-body {
-        margin-right: 13em;
+        margin-right: 3em;
         line-height: 1.5em;
         padding: 10px;
         margin-left: 3em;
@@ -131,6 +131,7 @@
         white-space: nowrap;
         border-radius: 4px;
         margin-right: 2em;
+        margin-left: 2em;
 }
 
 .eupopup-button_1:hover {
