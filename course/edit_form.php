@@ -186,7 +186,7 @@ class course_edit_form extends moodleform {
         // Appearance.
         $mform->addElement('header', 'appearancehdr', get_string('appearance'));
         if (get_capability_info('moodle/course:theme')) {
-            if (!empty($CFG->allowcoursethemes) && has_capability('moodle/course:theme', $systemcontext)) {
+            if (!empty($CFG->allowcoursethemes) && (has_capability('moodle/course:theme', $systemcontext) || has_capability('moodle/course:theme', $coursecontext))) {
                 $themeobjects = get_list_of_themes();
                 $themes=array();
                 $themes[''] = get_string('forceno');
