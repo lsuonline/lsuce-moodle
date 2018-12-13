@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * manages the content on the panopto block
+ * manages the content on the Panopto block
  *
  * @package block_panopto
  * @copyright  Panopto 2009 - 2016 /With contributions from Spenser Jones (sjones@ambrose.edu)
@@ -31,14 +31,9 @@ try {
     require_login();
     require_sesskey();
     header('Content-Type: text/html; charset=utf-8');
-    global $CFG;
+    global $CFG, $USER;
 
     $courseid = required_param('courseid', PARAM_INT);
-
-    // Sync role mapping. In case this is the first time block is running we need to load old settings from db.
-    // They will be the default values if this is the first time running.
-    $mapping = panopto_data::get_course_role_mappings($courseid);
-    panopto_data::set_course_role_permissions($courseid, $mapping['publisher'], $mapping['creator']);
 
     $content = new stdClass;
 
@@ -53,7 +48,7 @@ try {
         $content->text = get_string('unprovisioned', 'block_panopto');
 
         if ($panoptodata->can_user_provision($courseid)) {
-            $content->text .= '<br/><br/>' .
+            $content->text .= '<br/>' .
             "<a href='$CFG->wwwroot/blocks/panopto/provision_course_internal.php?id=$courseid'>" .
             get_string('provision_course_link_text', 'block_panopto') . '</a>';
         }
@@ -62,23 +57,46 @@ try {
 
         echo $content->text;
     } else {
+
         try {
             if (!$panoptodata->sessiongroupid) {
                 $content->text = get_string('no_course_selected', 'block_panopto');
+            } else if (!\panopto_data::is_server_alive('https://' . $panoptodata->servername . '/Panopto')) {
+                \panopto_data::print_log(get_string('server_not_available', 'block_panopto', $panoptodata->servername));
+                $content->text .= "<span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
             } else {
-                // Get course info from SOAP service.
-                $courseinfo = $panoptodata->get_course();
+                // We can get by external_id but there is no point because atm it calls this method redundantly anyway.
+                $courseinfo = $panoptodata->get_folders_by_id();
 
-                // Panopto course was deleted, or an exception was thrown while retrieving course data.
-                if (!isset($courseinfo) || $courseinfo->Access == 'Error') {
+                // Panopto course folder was deleted, or an exception was thrown while retrieving course data.
+                if (!isset($courseinfo) || !$courseinfo || $courseinfo === -1) {
                     $content->text .= "<span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
                 } else {
                     // SSO form passes instance name in POST to keep URLs portable.
                     $content->text .= "<form name='SSO' method='post'>" .
                         "<input type='hidden' name='instance' value='$panoptodata->instancename' /></form>";
 
+
+                    // Get all Completed.
+                    $sessionlist = $panoptodata->get_session_list($courseinfo->DeliveriesHaveSpecifiedOrder);
+                    $livesessions = array();
+
+                    if (is_array($sessionlist) && !empty($sessionlist)) {
+                        foreach ($sessionlist as $sessionobj) {
+
+                            // If the session is a live broadcast from the Windows/Mac Recorder or Remote Recorder check if its live
+                            $islivesession = $sessionobj->State === 'Broadcasting';
+
+                            if ($islivesession) {
+                                $livesessions[] = $sessionobj;
+                            } else if (!empty($sessionobj->Duration)) {
+                                $completeddeliveries[] = $sessionobj;
+                            }
+                        }
+                    }
+
                     $content->text .= '<div><b>' . get_string('live_sessions', 'block_panopto') . '</b></div>';
-                    $livesessions = $panoptodata->get_live_sessions();
+
                     if (!empty($livesessions)) {
                         $i = 0;
                         foreach ($livesessions as $livesession) {
@@ -88,11 +106,11 @@ try {
                             $livesessiondisplayname = s($livesession->Name);
                             $content->text .= "<div class='listItem $altclass'>" . $livesessiondisplayname .
                                 "<span class='nowrap'>" .
-                                "[<a href='javascript:panopto_launchNotes(\"$livesession->LiveNotesURL\")'>" .
+                                "[<a href='javascript:panopto_launchNotes(\"$livesession->NotesURL\")'>" .
                                 get_string('take_notes', 'block_panopto') . '</a>]';
 
-                            if ($livesession->BroadcastViewerURL) {
-                                $content->text .= "[<a href='$livesession->BroadcastViewerURL' " .
+                            if ($livesession->ViewerUrl) {
+                                $content->text .= "[<a href='$livesession->ViewerUrl' " .
                                     "onclick='return panopto_startSSO(this)'>" .
                                     get_string('watch_live', 'block_panopto') . '</a>]';
                             }
@@ -108,7 +126,6 @@ try {
                     $content->text .= "<div class='sectionHeader'><b>" .
                         get_string('completed_recordings', 'block_panopto') . '</b></div>';
 
-                    $completeddeliveries = $panoptodata->get_completed_deliveries();
                     if (!empty($completeddeliveries)) {
                         $i = 0;
                         foreach ($completeddeliveries as $completeddelivery) {
@@ -120,9 +137,9 @@ try {
                             // Alternate gray background for readability.
                             $altclass = ($i % 2) ? 'listItemAlt' : '';
 
-                            $completeddeliverydisplayname = s($completeddelivery->DisplayName);
+                            $completeddeliverydisplayname = s($completeddelivery->Name);
                             $content->text .= "<div class='listItem $altclass'>" .
-                                "<a href='$completeddelivery->ViewerURL' onclick='return panopto_startSSO(this)'>" .
+                                "<a href='$completeddelivery->ViewerUrl' onclick='return panopto_startSSO(this)'>" .
                                 $completeddeliverydisplayname .
                                 '</a></div>';
                             $i++;
@@ -139,61 +156,64 @@ try {
                             get_string('no_completed_recordings', 'block_panopto') . '</div>';
                     }
 
-                    if ($courseinfo->AudioPodcastURL) {
+                    if ($courseinfo->AudioPodcastITunesUrl) {
                         $content->text .= "<div class='sectionHeader'><b>" . get_string('podcast_feeds', 'block_panopto') .
                             '</b></div>' .
                             "<div class='listItem'>" .
                                 "<img src='$CFG->wwwroot/blocks/panopto/images/feed_icon.gif' />" .
-                                "<a href='$courseinfo->AudioPodcastURL'>" .
+                                "<a href='$courseinfo->AudioPodcastITunesUrl'>" .
                                     get_string('podcast_audio', 'block_panopto') .
                                 '</a>' .
                                 "<span class='rssParen'>(</span>" .
-                                "<a href='$courseinfo->AudioRssURL' target='_blank' class='rssLink'>RSS</a>" .
+                                "<a href='$courseinfo->AudioRssUrl' target='_blank' class='rssLink'>RSS</a>" .
                                 "<span class='rssParen'>)</span>" .
                             "</div>\n";
 
-                        if ($courseinfo->VideoPodcastURL) {
+                        if ($courseinfo->VideoPodcastITunesUrl) {
                             $content->text .= "<div class='listItem'>" .
                                 "<img src='$CFG->wwwroot/blocks/panopto/images/feed_icon.gif' />" .
-                                "<a href='$courseinfo->VideoPodcastURL'>" .
+                                "<a href='$courseinfo->VideoPodcastITunesUrl'>" .
                                     get_string('podcast_video', 'block_panopto') .
                                 '</a>' .
                                 "<span class='rssParen'>(</span>" .
-                                "<a href='$courseinfo->VideoRssURL' target='_blank' class='rssLink'>RSS</a>" .
+                                "<a href='$courseinfo->VideoRssUrl' target='_blank' class='rssLink'>RSS</a>" .
                                 "<span class='rssParen'>)</span>" .
                                 "</div>\n";
                         }
                     }
                     $context = context_course::instance($courseid, MUST_EXIST);
-                    if (has_capability('moodle/course:update', $context)) {
+
+                    // This does not consider roles.
+                    $isteacheroradmin = has_capability('moodle/course:update', $context);
+
+                    $hascreatoraccess = has_capability('block/panopto:provision_asteacher', $context, $USER->id);
+
+                    // Settings link can only be viewed by Teachers, Admins. If the proper setting is enabled, any creators can also view the link.
+                    if ($hascreatoraccess && ($isteacheroradmin || get_config('block_panopto', 'any_creator_can_view_folder_settings'))) {
                         $content->text .= "<div class='sectionHeader'><b>" . get_string('links', 'block_panopto') .
                             '</b></div>' .
                             "<div class='listItem'>" .
-                                "<a href='$courseinfo->CourseSettingsURL' onclick='return panopto_startSSO(this)'>" .
+                                "<a href='$courseinfo->SettingsUrl' onclick='return panopto_startSSO(this)'>" .
                                     get_string('course_settings', 'block_panopto') .
                                 '</a>' .
                             "</div>\n";
                     }
 
-                    // A the users who can provision are the moodle admin, and enrolled users given a publisher or creator role.
+                    // A the users who can provision are the Moodle admin, and enrolled users given a publisher or creator role.
                     // This makes it so can_user_provision will allow only creators/publishers/admins to see these links.
-                    if ($panoptodata->can_user_provision($courseid)) {
-                        $systeminfo = $panoptodata->get_system_info();
+                    if (get_config('block_panopto', 'anyone_view_recorder_links') || $panoptodata->can_user_provision($courseid)) {
+                        $systeminfo = $panoptodata->get_recorder_download_urls();
                         $content->text .= "<div class='listItem'>" .
                             get_string('download_recorder', 'block_panopto') .
                             "<span class='nowrap'>(" .
-                            "<a href='$systeminfo->RecorderDownloadUrl'>Windows</a>" .
+                            "<a href='$systeminfo->WindowsRecorderDownloadUrl'>Windows</a>" .
                             " | <a href='$systeminfo->MacRecorderDownloadUrl'>Mac</a>)</span>" .
                             "</div>\n";
-
-                        $content->text .= '<br/>' .
-                        "<a href='$CFG->wwwroot/blocks/panopto/provision_course_internal.php?id=$courseid'>" .
-                        get_string('reprovision_course_link_text', 'block_panopto') . '</a>';
                     }
                 }
             }
         } catch (Exception $e) {
-            $content->text .= "<br><br><span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
+            $content->text .= "<br><span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
         }
 
         $content->footer = '';
