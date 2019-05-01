@@ -33,6 +33,9 @@
             <div class="completionstatus outoftotal">{{#str}}progresstotal, completion, {"complete":{{completion.complete}},"total":{{completion.total}} }{{/str}}<span class="pull-right">{{completion.progress}}%</span></div>
             <div class="completion-line" style="width:{{completion.progress}}%"></div>
             {{/completion.render}}
+            {{#cascourselink}}
+            <small>{{{cascourselink}}}</small>
+            {{/cascourselink}}
         </div>
         <div class="courseinfo-teachers">
             <h4 class="sr-only">{{# str }} coursecontacts, theme_snap {{/ str }}</h4>

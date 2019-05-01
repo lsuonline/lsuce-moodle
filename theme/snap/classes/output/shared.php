@@ -27,6 +27,7 @@ namespace theme_snap\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
+use context_system;
 use core_component;
 use html_writer;
 use moodle_url;
@@ -685,7 +686,7 @@ class shared extends \renderer_base {
         }
 
         // Kaltura my media.
-        if (has_capability('local/mymedia:view', $coursecontext)) {
+        if (has_capability('local/mymedia:view', context_system::instance())) {
             $iconurl = $OUTPUT->pix_url('t/kaltura', 'core');
             $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
 

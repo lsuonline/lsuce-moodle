@@ -136,7 +136,7 @@ class local {
                 '&nbsp;',
                 get_string('error')
             ];
-            if (!in_array($coursegrade, $ignoregrades)) {
+            if (!in_array($coursegrade, $ignoregrades) && !preg_match("/.+?ndash.+?/", $coursegrade)) {
                 $feedbackobj->coursegrade = $coursegrade;
             }
         }

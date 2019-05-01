@@ -798,7 +798,11 @@ class core_renderer extends toc_renderer {
             // Create courses array with favorites first.
             $mycourses = $favorited + $notfavorited;
 
-            $courselist .= '<section id="fixy-my-courses"><div class="clearfix"><h2>' .get_string('courses'). '</h2>';
+            $courselist .= '<section id="fixy-my-courses"><div class="clearfix"><h2>' .get_string('courses');
+            if (class_exists('local_cas_help_links_button_renderer')) {
+                $courselist .= $this->apply_cas_user_link($USER->id);
+            }
+            $courselist .= '</h2>';
             $courselist .= '<div id="fixy-visible-courses">';
 
             // Default text when no courses.
@@ -903,6 +907,13 @@ class core_renderer extends toc_renderer {
         return $output;
     }
 
+    /**
+     * Add CAS help links.
+     */
+    private function apply_cas_user_link($userid) {
+        $casuserlink = \local_cas_help_links_button_renderer::get_html_for_snapuser($userid);
+        return $casuserlink;
+    }
 
     /**
      * get section number by section id

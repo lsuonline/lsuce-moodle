@@ -216,6 +216,7 @@ define(
              */
             var lightboxclose = function() { // jshint ignore:line
                 var lbox = lightbox();
+                window.opener.location.reload(true);
                 lbox.remove();
             };
 
