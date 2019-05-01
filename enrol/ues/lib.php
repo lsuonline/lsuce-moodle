@@ -1073,14 +1073,13 @@ class enrol_ues_plugin extends enrol_plugin {
                     $this->unenroll_users($group, $users);
                 }
 
-                // set course visibility according to user preferences (block_cps)
+                // Set course visibility according to user preferences (block_cps).
                 $setting_params = ues::where()
                     ->userid->equal($USER->id)
                     ->name->starts_with('creation_');
 
                 $settings        = cps_setting::get_to_name($setting_params);
                 $setting         = !empty($settings['creation_visible']) ? $settings['creation_visible'] : false;
-
                 $course->visible = isset($setting->value) ? $setting->value : get_config('moodlecourse', 'visible');
 
                 $DB->update_record('course', $course);
@@ -1570,8 +1569,15 @@ class enrol_ues_plugin extends enrol_plugin {
                 $moodle_course->$key = get_config('moodlecourse', $key);
             }
 
-            // Actually needs to happen, before the create call
-            //events_trigger_legacy('ues_course_create', $moodle_course);
+            // Set course theme according to user preferences (block_cps).
+            $setting_params = ues::where()
+                ->userid->equal($primary_teacher->userid)
+                ->name->starts_with('creation_');
+
+            $setting_param        = cps_setting::get_to_name($setting_params);
+            $theme                = !empty($setting_param['creation_theme']) ? $setting_param['creation_theme'] : false;
+            $moodle_course->theme = isset($theme->value) ? $theme->value : '';
+
             /*
              * Refactor events_trigger_legacy call
              */
