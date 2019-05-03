@@ -1384,8 +1384,8 @@ class local {
         $finfo = $newfile->get_imageinfo();
         self::course_card_clean_up($context);
         self::set_course_card_image($context, $originalfile);
-        if ($finfo['mimetype'] == 'image/jpeg' && $finfo['width'] > 1380) {
-            return image::resize($newfile, false, 1280);
+        if ($finfo['mimetype'] == 'image/jpeg' && $finfo['width'] > 3840) {
+            return image::resize($newfile, false, 3840);
         } else {
             return $newfile;
         }
