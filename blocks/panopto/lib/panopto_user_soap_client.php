@@ -77,6 +77,7 @@ class panopto_user_soap_client extends SoapClient {
             $apiuseruserkey);
 
         $this->serviceparams = generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.6/UserManagement.svc?singlewsdl');
+
     }
 
     /**
@@ -89,7 +90,6 @@ class panopto_user_soap_client extends SoapClient {
      * @param boolean $sendemailnotifications whether user gets emails from Panopto updates
      */
     public function sync_external_user($firstname, $lastname, $email, $externalgroupids, $sendemailnotifications = false) {
-
 
         if (!isset($this->usermanagementservicesync)) {
             $this->usermanagementservicesync = new UserManagementServiceSync($this->serviceparams);

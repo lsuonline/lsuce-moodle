@@ -29,6 +29,7 @@
  *
  * @param string $alertmessage - the message the user is supposed to see.
  */
+
 function panopto_alert_user($alertmessage) {
     echo '<script language="javascript">';
     echo 'alert("' . $alertmessage . '")';
@@ -110,6 +111,124 @@ function generate_wsdl_service_params($apiurl) {
     }
 
     return $serviceparams;
+}
+
+/**
+ * Returns a list of objects containing valid servername/appkey pairs we are targeting.
+ *
+ */
+function get_target_panopto_servers() {
+    $ret = array();
+    $targetservers = explode(",", get_config('block_panopto', 'automatic_operation_target_server'));
+
+    $numservers = get_config('block_panopto', 'server_number');
+    $numservers = isset($numservers) ? $numservers : 0;
+
+    // Increment numservers by 1 to take into account starting at 0.
+    ++$numservers;
+
+    for ($serverwalker = 1; $serverwalker <= $numservers; ++$serverwalker) {
+
+        // Generate strings corresponding to potential servernames in the config.
+        $thisservername = get_config('block_panopto', 'server_name' . $serverwalker);
+
+        if (in_array($thisservername, $targetservers)) {
+            $thisappkey = get_config('block_panopto', 'application_key' . $serverwalker);
+            $hasvaliddata = isset($thisappkey) && !empty($thisappkey);
+
+            // If we have valid data for the server then try to ensure the category branch
+            if ($hasvaliddata) {
+
+                $targetserver = new stdClass();
+                $targetserver->name = $thisservername;
+                $targetserver->appkey = $thisappkey;
+                $ret[] = $targetserver;
+            }
+        }
+    }
+    return $ret;
+}
+
+/**
+ *  Retrieve the app key for the target panopto server
+ *
+ * @param string $panoptoservername the server we are trying to get the application key for
+ */
+function get_panopto_app_key($panoptoservername) {
+    $numservers = get_config('block_panopto', 'server_number');
+    $numservers = isset($numservers) ? $numservers : 0;
+
+    // Increment numservers by 1 to take into account starting at 0.
+    ++$numservers;
+
+    for ($serverwalker = 1; $serverwalker <= $numservers; ++$serverwalker) {
+
+        // Generate strings corresponding to potential servernames in the config.
+        $thisservername = get_config('block_panopto', 'server_name' . $serverwalker);
+        $thisappkey = get_config('block_panopto', 'application_key' . $serverwalker);
+
+        $hasservername = isset($thisservername) && !empty($thisservername);
+        if ($thisservername === $panoptoservername) {
+            return $thisappkey;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Used to instantiate a user soap client for a given instance of panopto_data.
+ * Should be called only the first time a soap client is needed for an instance.
+ *
+ * @param string $username the name of the current user
+ * @param string $servername the name of the active server
+ * @param string $applicationkey the key need for the user to be authenticated
+ */
+function instantiate_panopto_user_soap_client($username, $servername, $applicationkey) {
+    // Compute web service credentials for given user.
+    $apiuseruserkey = panopto_decorate_username($username);
+    $apiuserauthcode = panopto_generate_auth_code($apiuseruserkey . '@' . $servername, $applicationkey);
+
+    // Instantiate our SOAP client.
+    return new panopto_user_soap_client($servername, $apiuseruserkey, $apiuserauthcode);
+}
+
+/**
+ * Used to instantiate a session soap client for a given instance of panopto_data.
+ *
+ * @param string $username the name of the current user
+ * @param string $servername the name of the active server
+ * @param string $applicationkey the key need for the user to be authenticated
+ */
+function instantiate_panopto_session_soap_client($username, $servername, $applicationkey) {
+    // Compute web service credentials for given user.
+    $apiuseruserkey = panopto_decorate_username($username);
+    $apiuserauthcode = panopto_generate_auth_code($apiuseruserkey . '@' . $servername, $applicationkey);
+
+    // Instantiate our SOAP client.
+    return new panopto_session_soap_client($servername, $apiuseruserkey, $apiuserauthcode);
+}
+
+/**
+ * Used to instantiate a soap client for calling Panopto's iAuth service.
+ * Should be called only the first time an  auth soap client is needed for an instance.
+ */
+function instantiate_panopto_auth_soap_client($username, $servername, $applicationkey) {
+    // Compute web service credentials for given user.
+    $apiuseruserkey = panopto_decorate_username($username);
+    $apiuserauthcode = panopto_generate_auth_code($apiuseruserkey . '@' . $servername, $applicationkey);
+
+    // Instantiate our SOAP client.
+    return new panopto_auth_soap_client($servername, $apiuseruserkey, $apiuserauthcode);
+}
+
+/**
+ * Returns true if a string is null or empty, false otherwise
+ *
+ * @param string $name the string being checked for null or empty
+ */
+function is_null_or_empty_string($name) {
+    return (!isset($name) || trim($name) === '');
 }
 
 /* End of file block_panopto_lib.php */

@@ -25,11 +25,13 @@
  */
 
 define('CLI_SCRIPT', 1);
-require_once(dirname(__FILE__) . '/../../../../config.php');
-
 global $CFG, $DB;
-require_once("$CFG->libdir/clilib.php");
-require_once("$CFG->libdir/formslib.php");
+if (empty($CFG)) {
+    require_once(dirname(__FILE__) . '/../../../../config.php');
+}
+
+require_once($CFG->libdir . '/clilib.php');
+require_once($CFG->libdir . '/formslib.php');
 require_once(dirname(__FILE__) . '/../panopto_data.php');
 
 $admin = get_admin();
@@ -51,7 +53,7 @@ function upgrade_all_panopto_folders() {
         'block_panopto_foldermap',
         null,
         null,
-        'moodleid'
+        'id,moodleid'
     );
 
     $currindex = 0;

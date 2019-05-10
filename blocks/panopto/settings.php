@@ -22,16 +22,40 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die;
-require_once(dirname(__FILE__) . '/classes/admin/trim_configtext.php');
-require_once('lib/panopto_data.php');
-
 global $CFG;
+if (empty($CFG)) {
+    require_once(dirname(__FILE__) . '/../../config.php');
+}
+
+require_once(dirname(__FILE__) . '/classes/admin/trim_configtext.php');
+require_once(dirname(__FILE__) . '/lib/panopto_data.php');
+
+
+// Populate list of servernames to select from.
+$aserverarray = array();
+$appkeyarray = array();
 
 $numservers = get_config('block_panopto', 'server_number');
 $numservers = isset($numservers) ? $numservers : 0;
 
 // Increment numservers by 1 to take into account starting at 0.
 ++$numservers;
+
+$targetserverarray = array();
+for ($serverwalker = 1; $serverwalker <= $numservers; ++$serverwalker) {
+
+    // Generate strings corresponding to potential servernames in the config.
+    $thisservername = get_config('block_panopto', 'server_name' . $serverwalker);
+    $thisappkey = get_config('block_panopto', 'application_key' . $serverwalker);
+
+    $hasservername = !is_null_or_empty_string($thisservername);
+    if ($hasservername && !is_null_or_empty_string($thisappkey)) {
+        $aserverarray[$serverwalker - 1] = $thisservername;
+        $appkeyarray[$serverwalker - 1] = $thisappkey;
+
+        $targetserverarray[$thisservername] = $thisservername;
+    }
+}
 
 if ($ADMIN->fulltree) {
 
@@ -74,6 +98,30 @@ if ($ADMIN->fulltree) {
             )
         );
     }
+
+    // The next setting requires a Panopto server and appkey combo to be properly set.
+    if (!isset($targetserverarray) || empty($targetserverarray)) {
+        $targetserverarray = array(get_string('add_a_panopto_server', 'block_panopto'));
+    }
+
+    $settings->add(
+        new admin_setting_configselect(
+            'block_panopto/automatic_operation_target_server',
+            get_string('block_panopto_automatic_operation_target_server', 'block_panopto'),
+            get_string('block_panopto_automatic_operation_target_server_desc', 'block_panopto'),
+            0,
+            $targetserverarray
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_panopto/sync_after_login',
+            get_string('block_panopto_sync_after_login', 'block_panopto'),
+            get_string('block_panopto_sync_after_login_desc', 'block_panopto'),
+            0
+        )
+    );
     $settings->add(
         new admin_setting_configcheckbox(
             'block_panopto/sync_after_provisioning',
@@ -95,7 +143,7 @@ if ($ADMIN->fulltree) {
             'block_panopto/async_tasks',
             get_string('block_panopto_async_tasks', 'block_panopto'),
             get_string('block_panopto_async_tasks_desc', 'block_panopto'),
-            1
+            0
         )
     );
 
@@ -105,7 +153,7 @@ if ($ADMIN->fulltree) {
             'block_panopto/folder_name_style',
             get_string('block_panopto_folder_name_style', 'block_panopto'),
             get_string('block_panopto_folder_name_style_desc', 'block_panopto'),
-            $possiblefoldernamestyles['fullname'], // Default to longname only
+            'fullname', // Default to longname only
             $possiblefoldernamestyles
         )
     );
@@ -203,6 +251,15 @@ if ($ADMIN->fulltree) {
     );
 
     $settings->add(
+        new admin_setting_configcheckbox(
+            'block_panopto/enforce_https_on_wsdl',
+            get_string('block_panopto_enforce_https_on_wsdl', 'block_panopto'),
+            get_string('block_panopto_enforce_https_on_wsdl_desc', 'block_panopto'),
+            1
+        )
+    );
+
+    $settings->add(
         new admin_setting_configtext_trimmed(
             'block_panopto/wsdl_proxy_host',
             get_string('block_panopto_wsdl_proxy_host', 'block_panopto'),
@@ -221,6 +278,30 @@ if ($ADMIN->fulltree) {
             PARAM_TEXT
         )
     );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_panopto/enforce_category_structure',
+            get_string('block_panopto_enforce_category_structure', 'block_panopto'),
+            get_string('block_panopto_enforce_category_structure_desc', 'block_panopto'),
+            0
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_panopto/sync_category_after_course_provision',
+            get_string('block_panopto_enforce_category_after_course_provision', 'block_panopto'),
+            get_string('block_panopto_enforce_category_after_course_provision_desc', 'block_panopto'),
+            0
+        )
+    );
+
+    $categorystructurelink = '<a id="panopto_build_category_structure_btn" href="' . $CFG->wwwroot . 
+        '/blocks/panopto/build_category_structure.php">' .
+        get_string('block_global_build_category_structure', 'block_panopto') . '</a>';
+
+    $settings->add(new admin_setting_heading('block_panopto_build_category_structure', '', $categorystructurelink));
 
     $link = '<a id="panopto_provision_course_btn" href="' . $CFG->wwwroot . '/blocks/panopto/provision_course.php">' .
         get_string('block_global_add_courses', 'block_panopto') . '</a>';
