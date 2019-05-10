@@ -162,6 +162,7 @@ class activity {
                     'itemtype' => 'mod',
                     'itemmodule' => $mod->modname,
                     'iteminstance' => $mod->instance,
+                    'itemnumber' => 0,
                 ));
 
                 $grade = new \grade_grade(array('itemid' => $gradeitem->id, 'userid' => $USER->id));
@@ -457,7 +458,7 @@ class activity {
             'gradetypetext' => GRADE_TYPE_TEXT,
         );
 
-        $sql = 'SELECT iteminstance
+        $sql = 'SELECT DISTINCT iteminstance
                 FROM {grade_items}
                 WHERE courseid = ?
                 AND itemtype = ?
@@ -891,6 +892,7 @@ class activity {
                     JOIN {grade_items} gi
                       ON m.id = gi.iteminstance
                      AND gi.itemtype = 'mod'
+                     AND gi.itemnumber = 0
                      AND gi.itemmodule = :modname
                      AND gi.courseid = :courseid1
 
