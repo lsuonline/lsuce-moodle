@@ -45,6 +45,23 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
             };
 
             /**
+             * The ajax call has returned a new course_card renderable.
+             *
+             * @method reloadCourseCardTemplate
+             * @param {object} renderable - coursecard renderable
+             * @param {jQuery} cardEl - coursecard element
+             */
+            var reloadCourseCardTemplate = function(renderable, cardEl) {
+                mview(cardEl, 'theme_snap/course_cards');
+                var callback = function() {
+                    var button = $(cardEl).find('.favoritetogglec');
+                    $(button).removeClass('ajaxing');
+                    $(button).focus();
+                };
+                $(cardEl).trigger('modelUpdate', [renderable, callback]);
+            };
+
+            /**
              * Get course card course id.
              * @param {jQuery} cardEl
              * @returns {int}

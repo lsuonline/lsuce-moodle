@@ -10441,8 +10441,31 @@ fieldset[disabled] a#changenumsections .reduce-sections {
   margin: 0 10% 5%;
 }
 .courseinfo.favorited .favoritetoggle:after {
-  background: url("[[pix:theme|fav_checked]]");
+  background: url("[[pix:theme|fav_checkedc]]");
 }
+.courseinfo .favoritetogglec {
+  width: 2em;
+  height: 2em;
+  padding: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0.25em;
+  z-index: 1;
+}
+.courseinfo .favoritetogglec:after {
+  background: url("[[pix:theme|fav_uncheckedc]]");
+  background-repeat: none;
+  content: ' ';
+  width: 80%;
+  height: 80%;
+  display: block;
+  margin: 0 10% 5%;
+}
+.courseinfo.favorited .favoritetogglec:after {
+  background: url("[[pix:theme|fav_checkedc]]");
+}
+
 @keyframes spinnerrotate {
   from {
     transform: rotate(0deg);

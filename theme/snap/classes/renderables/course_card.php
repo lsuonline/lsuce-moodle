@@ -140,6 +140,7 @@ class course_card implements \renderable {
         if (class_exists('local_cas_help_links_button_renderer')) {
             $this->apply_cas_course_links($this->course);
         }
+        $this->switch_my_toggle();
         $this->apply_contact_avatars();
         $this->apply_image_css();
     }
@@ -219,6 +220,23 @@ class course_card implements \renderable {
     private function apply_cas_course_links($course) {
         $cascourselink = \local_cas_help_links_button_renderer::get_html_for_snap($course);
         $this->cascourselink = $cascourselink;
+    }
+
+    /**
+     * Switch from black favorite toggles.
+     */
+    private function switch_my_toggle() {
+        global $CFG, $USER;
+        require_once($CFG->dirroot.'/user/profile/lib.php');
+        profile_load_custom_fields($USER);
+
+        // Removed due to color issues
+        if ($USER->profile['limitmycolors'] == 1) {
+            $mycolors = 1;
+        } else {
+            $mycolors = 0;
+        }
+        $this->mycolors = $mycolors;
     }
 
     /**

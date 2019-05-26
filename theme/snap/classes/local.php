@@ -1033,7 +1033,16 @@ class local {
      * @return string
      */
     public static function get_course_color($id) {
-        return substr(md5($id), 0, 6);
+        global $CFG, $USER;
+        require_once($CFG->dirroot.'/user/profile/lib.php');
+        profile_load_custom_fields($USER);
+
+        // Removed due to color issues
+        if ($USER->profile['limitmycolors'] == 1) {
+            return str_repeat(substr(md5($id), 1, 2), 3);
+        } else {
+            return substr(md5($id), 0, 6);
+        }
     }
 
     public static function get_course_firstimage($courseid) {

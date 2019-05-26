@@ -24082,6 +24082,9 @@ fieldset[disabled] a#changenumsections .reduce-sections {
   top: 0;
   right: 0;
   margin: 0.25em;
+  box-shadow: inset 0 0 0 1.5em #ffffff;
+  border: 2px solid #3a1867 !important;
+  border-radius: 50%;
   z-index: 1;
 }
 .courseinfo .favoritetoggle:after {
@@ -24134,11 +24137,85 @@ fieldset[disabled] a#changenumsections .reduce-sections {
 }
 button.snap-icon-toggle.favoritetoggle {
   border-radius: 100%;
-  border: 2px solid transparent;
+  border: 2px solid #3a1867;
+}
+button.snap-icon-toggle.favoritetoggle:hover {
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0.5em 0.5em #ffffff !important;
 }
 button.snap-icon-toggle.favoritetoggle:focus {
-  border-color: #FEC111;
+  border-color: #3a1867;
 }
+
+/* Course favoriting for color limiters */
+.courseinfo .favoritetogglec {
+  width: 2em;
+  height: 2em;
+  padding: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0.25em;
+  box-shadow: inset 0 0 0 1.5em #3a1867;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  z-index: 1;
+}
+.courseinfo .favoritetogglec:after {
+  background: url("[[pix:theme|fav_uncheckedc]]");
+  background-repeat: none;
+  content: ' ';
+  width: 80%;
+  height: 80%;
+  display: block;
+  margin: 0 10% 5%;
+}
+.courseinfo.favorited .favoritetogglec:after {
+  background: url("[[pix:theme|fav_checkedc]]");
+}
+@-webkit-keyframes spinnerrotate {
+  from {
+    -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+            transform: rotate(360deg);
+  }
+}
+@keyframes spinnerrotate {
+  from {
+    -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+            transform: rotate(360deg);
+  }
+}
+.courseinfo .favoritetogglec.ajaxing {
+  -webkit-animation-name: spinnerrotate;
+          animation-name: spinnerrotate;
+  -webkit-animation-duration: 2s;
+          animation-duration: 2s;
+  -webkit-animation-iteration-count: infinite;
+          animation-iteration-count: infinite;
+  -webkit-animation-timing-function: linear;
+          animation-timing-function: linear;
+}
+button.snap-icon-toggle.favoritetogglec {
+  border-radius: 100%;
+  border: 2px solid #ffffff;
+}
+button.snap-icon-toggle.favoritetogglec:hover {
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0.5em 0.5em #3a1876 !important;
+}
+
+button.snap-icon-toggle.favoritetogglec:focus {
+  border-color: #ffffff;
+}
+
 /**
  * Snap core swatch.
  *
