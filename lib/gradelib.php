@@ -792,7 +792,9 @@ function grade_format_gradevalue($value, &$grade_item, $localized=true, $display
             return grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized);
 
         case GRADE_DISPLAY_TYPE_LETTER:
-            return grade_format_gradevalue_letter($value, $grade_item);
+            // BEGIN LSU Better Letters.
+            return grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized);
+            // END LSU Better Letters.
 
         case GRADE_DISPLAY_TYPE_REAL_PERCENTAGE:
             return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ' (' .
@@ -800,23 +802,31 @@ function grade_format_gradevalue($value, &$grade_item, $localized=true, $display
 
         case GRADE_DISPLAY_TYPE_REAL_LETTER:
             return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ' (' .
-                    grade_format_gradevalue_letter($value, $grade_item) . ')';
+                    // Begin LSU Better Letters.
+                    grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ')';
+                    // END LSU Better Letters.
 
         case GRADE_DISPLAY_TYPE_PERCENTAGE_REAL:
             return grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized) . ' (' .
                     grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ')';
 
         case GRADE_DISPLAY_TYPE_LETTER_REAL:
-            return grade_format_gradevalue_letter($value, $grade_item) . ' (' .
+            // Begin LSU Better Letters.
+            return grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ' (' .
+            // END LSU Better Letters.
                     grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ')';
 
         case GRADE_DISPLAY_TYPE_LETTER_PERCENTAGE:
-            return grade_format_gradevalue_letter($value, $grade_item) . ' (' .
+            // BEGIN LSU Better Letters.
+            return grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ' (' .
+            // END LSU Better Letters.
                     grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized) . ')';
 
         case GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER:
             return grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized) . ' (' .
-                    grade_format_gradevalue_letter($value, $grade_item) . ')';
+                    // Begin LSU Better Letters.
+                    grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ')';
+                    // END LSU Better Letters.
         default:
             return '';
     }
@@ -873,7 +883,9 @@ function grade_format_gradevalue_percentage($value, $grade_item, $decimals, $loc
  * @param object $grade_item Grade item object
  * @return string
  */
-function grade_format_gradevalue_letter($value, $grade_item) {
+// BEGIN LSU Better Letters.
+function grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) {
+// END LSU Better Letters.
     global $CFG;
     $context = context_course::instance($grade_item->courseid, IGNORE_MISSING);
     if (!$letters = grade_get_letters($context)) {
@@ -886,6 +898,9 @@ function grade_format_gradevalue_letter($value, $grade_item) {
 
     $value = grade_grade::standardise_score($value, $grade_item->grademin, $grade_item->grademax, 0, 100);
     $value = bounded_number(0, $value, 100); // just in case
+    // BEGIN LSU Better Letters.
+    $value = format_float($value, $decimals, $localized);
+    // END LSU Better Letters.
 
     $gradebookcalculationsfreeze = 'gradebook_calculations_freeze_' . $grade_item->courseid;
 

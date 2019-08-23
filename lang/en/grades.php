@@ -865,3 +865,24 @@ $string['xml'] = 'XML';
 $string['yes'] = 'Yes';
 $string['yourgrade'] = 'Your grade';
 
+// BEGIN LSU Better Letters.
+$string['letterscustompercents'] = 'Custom Percentages';
+$string['letterscustompercents_help'] = 'Allows for users to enter a value for the percents.';
+$string['lettersdefaultletters'] = 'F,D,C,B,A';
+$string['lettersstrictletter'] = 'Strict Letter names';
+$string['lettersstrictletter_help'] = 'This setting forces the default letter names defined with the selected Letter names.';
+$string['lettersnames'] = 'Letter names';
+$string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
+// END LSU Better Letters.
+
+// BEGIN LSU Drop Lowest Limit.
+$string['droplow_limit'] = 'Drop the lowest limit';
+$string['droplow_limit_help'] = 'By applying this setting, the drop setting will be ignored until the number of droppable grades are > than the drop number.';
+// END LSU Drop Lowest Limit.
+
+// BEGIN LSU FERPA Student Privacy.
+$string['privacy_ack'] = 'Student privacy';
+$string['privacy_ack_help'] = 'This setting blocks anyone from downloading student grades without confirming they will comply with all laws and policies regarding student rights.';
+$string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
+$string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
+// END LSU FERPA Student Privacy.

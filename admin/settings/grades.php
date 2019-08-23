@@ -81,6 +81,10 @@ if (has_capability('moodle/grade:manage', $systemcontext)
 
         $temp->add(new admin_setting_special_gradelimiting());
 
+        // BEGIN LSU FERPA Student Privacy.
+        $temp->add(new admin_setting_configcheckbox('privacy_ack', new lang_string('privacy_ack', 'grades'), new lang_string('privacy_ack_help', 'grades'), 0));
+        // END LSU FERPA Student Privacy.
+
         $temp->add(new admin_setting_configcheckbox('grade_report_showmin',
                                                     get_string('minimum_show', 'grades'),
                                                     get_string('minimum_show_help', 'grades'), '1'));
@@ -146,6 +150,13 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_gradecat_combo('grade_droplow', new lang_string('droplow', 'grades'),
                     new lang_string('droplow_help', 'grades'), $defaults, $options));
 
+        // BEGIN LSU Drop Lowest Limit.
+        $temp->add(new admin_setting_configcheckbox('grade_droplow_limit',
+            new lang_string('droplow_limit', 'grades'),
+            new lang_string('droplow_limit_help', 'grades'), 0)
+        );
+        // END LSU Drop Lowest Limit.
+
         $temp->add(new admin_setting_configcheckbox('grade_overridecat', new lang_string('overridecat', 'grades'),
                    new lang_string('overridecat_help', 'grades'), 1));
     }
@@ -198,8 +209,35 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $outcomes = new admin_externalpage('outcomes', new lang_string('outcomes', 'grades'), $CFG->wwwroot.'/grade/edit/outcome/index.php', 'moodle/grade:manage');
         $ADMIN->add('grades', $outcomes);
     }
-    $letters = new admin_externalpage('letters', new lang_string('letters', 'grades'), $CFG->wwwroot.'/grade/edit/letter/index.php', 'moodle/grade:manageletters');
+
+    // BEGIN LSU Better Letter Grades.
+    $letters_str = new lang_string('letters', 'grades');
+    $letters_base = $CFG->wwwroot.'/grade/edit/letter';
+    $letters = new admin_externalpage('letters', $letters_str, $letters_base . '/index.php', 'moodle/grade:manageletters');
+    // END LSU Better Letter Grades.
+
     $ADMIN->add('grades', $letters);
+
+    // BEGIN LSU Better Letter Grades.
+    $letters_settings_str = new lang_string('letter', 'grades') . ' ' . new lang_string('edit') . ' ' . new lang_string('settings');
+    $temp = new admin_settingpage('letterssettings', $letters_settings_str, 'moodle/grade:manageletters');
+    if ($ADMIN->fulltree) {
+        $temp->add(new admin_setting_configcheckbox('grade_letters_strict',
+            new lang_string('lettersstrictletter', 'grades'), new lang_string('lettersstrictletter_help', 'grades'), 0));
+
+        $params = array('courseid' => 0);
+
+        $db_scales = $DB->get_records_menu('scale', $params, '', 'id, name');
+
+        $scales = array(0 => new lang_string('lettersdefaultletters', 'grades')) + $db_scales;
+
+        $temp->add(new admin_setting_configselect('grade_letters_names',
+            new lang_string('lettersnames', 'grades'),
+            new lang_string('lettersname_help', 'grades'), 0, $scales));
+    }
+
+    $ADMIN->add('grades', $temp);
+    // END LSU Better Letter Grades.
 
     // The plugins must implement a settings.php file that adds their admin settings to the $settings object
 

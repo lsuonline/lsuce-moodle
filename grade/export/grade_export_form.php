@@ -192,6 +192,14 @@ class grade_export_form extends moodleform {
             $mform->disabledIf('validuntil', 'key', 'noteq', 1);
         }
 
+        // BEGIN LSU FERPA Student Privacy.
+        if($CFG->privacy_ack) {
+            $mform->addElement('header', 'privacy_ack_header', get_string('privacy_ack', 'grades'));
+            $mform->addElement('checkbox', 'privacy_ack_required', null, get_string('privacy_ack_required', 'grades'));
+            $mform->addRule('privacy_ack_required', get_string('missing_privacy_ack_required', 'grades'), 'required', NULL, 'client', 'false', 'false');
+        }
+        // END LSU FERPA Student Privacy.
+
         $mform->addElement('hidden', 'id', $COURSE->id);
         $mform->setType('id', PARAM_INT);
         $submitstring = get_string('download');
@@ -201,7 +209,16 @@ class grade_export_form extends moodleform {
             $submitstring = get_string('export', 'grades');
         }
 
-        $this->add_action_buttons(false, $submitstring);
+        // BEGIN LSU FERPA Student Privacy.
+        if($CFG->privacy_ack) {
+            $buttonarray=array();
+            $buttonarray[] = $mform->createElement('submit', 'submitbutton', $submitstring);
+            $mform->disabledIf('submitbutton', 'privacy_ack_required');
+            $mform->addGroup($buttonarray, 'buttonar', '', ' ', false);
+        } else {
+            $this->add_action_buttons(false, $submitstring);
+        }
+        // END LSU FERPA Student Privacy.
     }
 
     /**
