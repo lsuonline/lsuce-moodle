@@ -52,6 +52,15 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 
 $strmymoodle = get_string('myhome');
 
+// BEGIN LSU /my page redirect.
+$forcehomepage = isset($CFG->forcehomepage) ? $CFG->forcehomepage : 0;
+if ($forcehomepage == 1) {
+    if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
+        redirect(new moodle_url('/', array('redirect' => 0)));
+    }
+}
+// END LSU /my page redirect.
+
 if (isguestuser()) {  // Force them to see system default, no editing allowed
     // If guests are not allowed my moodle, send them to front page.
     if (empty($CFG->allowguestmymoodle)) {

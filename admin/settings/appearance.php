@@ -167,6 +167,11 @@ preferences,moodle|/user/preferences.php|t/preferences',
     );
     $temp->add(new admin_setting_configselect('defaulthomepage', new lang_string('defaulthomepage', 'admin'),
             new lang_string('configdefaulthomepage', 'admin'), HOMEPAGE_MY, $choices));
+
+    // BEGIN LSU /my page redirect.
+    $temp->add(new admin_setting_configcheckbox('forcehomepage', new lang_string('forcehomepage', 'admin'), new lang_string('configforcehomepage', 'admin'), 0));
+    // END LSU /my page redirect.
+
     $temp->add(new admin_setting_configcheckbox('allowguestmymoodle', new lang_string('allowguestmymoodle', 'admin'), new lang_string('configallowguestmymoodle', 'admin'), 1));
     $temp->add(new admin_setting_configcheckbox('navshowfullcoursenames', new lang_string('navshowfullcoursenames', 'admin'), new lang_string('navshowfullcoursenames_help', 'admin'), 0));
     $temp->add(new admin_setting_configcheckbox('navshowcategories', new lang_string('navshowcategories', 'admin'), new lang_string('confignavshowcategories', 'admin'), 1));

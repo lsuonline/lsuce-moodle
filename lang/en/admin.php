@@ -1420,3 +1420,8 @@ $string['loginhttps'] = 'Use HTTPS for logins';
 // Deprecated since Moodle 3.7.
 $string['allowblockstodock'] = 'Allow blocks to use the dock';
 $string['configallowblockstodock'] = 'If enabled and supported by the selected theme users can choose to move blocks to a special dock.';
+
+// BEGIN LSU /my page redirect.
+$string['forcehomepage'] = 'Force redirect to site home';
+$string['configforcehomepage'] = 'If enabled and "Default home page for users" is set to "Site", unpriveleged users will be redirected to the site home when visiting /my.';
+// END LSU /my page redirect.
