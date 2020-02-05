@@ -1,16 +1,14 @@
 <?php
 /**
  * WARNING! Never ever edit this file for local development!
- *
  * Instead, create a config.php in your remote /var/moodledata folder.
- *
  * @author Mark Nielsen, Robert Russo
  */
 
-$_mdl_config_file = '/var/moodledata/config.php';
+$cemdlconfig = '/var/moodledata/config.php';
 
-if (file_exists($_mdl_config_file)) {
-    include $_mdl_config_file;
+if (file_exists($cemdlconfig)) {
+    include_once($cemdlconfig);
 } else {
-    die('There is no site configured for this url');
+    die('There is no site configured for this url yet');
 }
