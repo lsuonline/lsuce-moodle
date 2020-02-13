@@ -17,7 +17,7 @@
 /**
  * Settings link renderable.
  * @author    gthomas2
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -47,9 +47,9 @@ class settings_link implements \renderable {
         // Are we on the main course page?
         $oncoursepage = strpos($PAGE->pagetype, 'course-view') === 0;
 
-        // For any format other than topics, weeks, folderview or singleactivity, always output admin menu on main
+        // For any format other than topics, weeks, or singleactivity, always output admin menu on main
         // course page.
-        $formats = ['topics', 'weeks', 'folderview', 'singleactivity'];
+        $formats = ['topics', 'weeks', 'singleactivity'];
         if ($oncoursepage && !empty($COURSE->format) && !in_array($COURSE->format, $formats)) {
             $this->set_admin_menu_instance();
             return;
@@ -77,11 +77,6 @@ class settings_link implements \renderable {
         }
 
         if (!$PAGE->blocks->is_block_present('settings')) {
-            // Throw error if on front page or course page.
-            // (There are pages that don't have a settings block so we shouldn't throw an error on those pages).
-            if ($oncoursepage || $PAGE->pagetype === 'site-index') {
-                debugging('Settings block was not found on this page', DEBUG_DEVELOPER);
-            }
             return;
         }
 
@@ -91,7 +86,7 @@ class settings_link implements \renderable {
 
     /**
      * Set admin menu instance, if required capability satisfied.
-     * 
+     *
      * @throws \coding_exception
      */
     private function set_admin_menu_instance() {

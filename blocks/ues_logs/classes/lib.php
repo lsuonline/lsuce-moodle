@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_logs
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
 ues::require_daos();
 
 interface ues_log_types {
@@ -30,53 +32,55 @@ interface ues_log_types {
 }
 
 class ues_log extends ues_external implements ues_log_types {
-    var $userid;
-    var $sectionid;
-    var $action;
-    var $timestamp;
+    public $userid;
+    public $sectionid;
+    public $action;
+    public $timestamp;
 
-    public static function add($ues_user) {
-        return self::make(self::ADD, $ues_user);
+    public static function add($uesuser) {
+        return self::make(self::ADD, $uesuser);
     }
 
-    public static function drop($ues_user) {
-        return self::make(self::DROP, $ues_user);
+    public static function drop($uesuser) {
+        return self::make(self::DROP, $uesuser);
     }
 
     public static function get_by_special($params, $order = 'timestamp DESC') {
         global $DB;
 
-        $to_flatten = function($key, $value) {
-            $safe_value = addslashes($value);
+        $toflatten = function($key, $value) {
+            $safevalue = addslashes($value);
 
             if (preg_match('/name$/', $key)) {
-                $filter = " LIKE '$safe_value%'";
+                $filter = " LIKE '$safevalue%'";
             } else {
-                $filter = " = '$safe_value'";
+                $filter = " = '$safevalue'";
             }
 
             return "$key $filter";
         };
 
-        $f = array_map($to_flatten, array_keys($params), array_values($params));
+        $f = array_map($toflatten, array_keys($params), array_values($params));
 
         $where = (!empty($f) ? ' AND ' : '') . implode(' AND ', $f);
         $altnamefields = user_picture::fields('u', array(), "'ignore'");
         $sql = "SELECT l.id, l.userid, {$altnamefields}, u.email, l.action, l.timestamp
-            FROM {enrol_ues_logs} l,
-                 {user} u
-                 WHERE u.id = l.userid $where ORDER BY $order";
-        $upgraded = function($log) { return ues_log::upgrade($log); };
+                FROM {enrol_ues_logs} l,
+                    {user} u
+                WHERE u.id = l.userid $where ORDER BY $order";
+        $upgraded = function($log) {
+            return ues_log::upgrade($log);
+        };
 
         return array_map($upgraded, $DB->get_records_sql($sql));
     }
 
-    private static function make($type, $ues_user) {
+    private static function make($type, $uesuser) {
         $log = new ues_log();
         $log->action = $type;
         $log->timestamp = time();
-        $log->userid = $ues_user->userid;
-        $log->sectionid = $ues_user->sectionid;
+        $log->userid = $uesuser->userid;
+        $log->sectionid = $uesuser->sectionid;
 
         return $log;
     }

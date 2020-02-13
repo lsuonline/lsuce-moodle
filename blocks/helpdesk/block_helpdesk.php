@@ -14,51 +14,54 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_helpdesk
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 class block_helpdesk extends block_list {
-    function init() {
+    public function init() {
         $this->title = get_string('pluginname', 'block_helpdesk');
     }
 
-    function applicable_formats() {
+    public function applicable_formats() {
         return array('site' => true, 'my' => true, 'course' => false);
     }
 
-    function get_content() {
+    public function get_content() {
         global $CFG;
 
-        if($this->content !== NULL) {
+        if ($this->content !== null) {
             return $this->content;
         }
 
         $context = context_system::instance();
-        if(!has_capability('block/helpdesk:viewenrollments', $context)) {
+        if (!has_capability('block/helpdesk:viewenrollments', $context)) {
             return $this->content;
         }
 
-        $this->content = new stdClass;
+        $this->content = new stdClass();
         $this->content->items = array();
         $this->content->icons = array();
         $this->content->footer = '';
 
-        $search_course = get_string('search_courses', 'block_helpdesk');
-        $search_users = get_string('search_users', 'block_helpdesk');
+        // TODO 10/11/19 Remove $searchcourse and $searchusers when refactoring.
+        $searchcourse = get_string('search_courses', 'block_helpdesk');
+        $searchusers = get_string('search_users', 'block_helpdesk');
 
-        $gen_link = function($mode) {
+        $genlink = function ($mode) {
             return html_writer::link(
                 new moodle_url('/blocks/helpdesk/', array('mode' => $mode)),
                 get_string("search_{$mode}s", 'block_helpdesk')
             );
         };
 
-        $this->content->items[] = $gen_link('course');
-        $this->content->items[] = $gen_link('user');
+        $this->content->items[] = $genlink('course');
+        $this->content->items[] = $genlink('user');
 
         return $this->content;
     }

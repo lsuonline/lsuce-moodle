@@ -47,6 +47,13 @@ class grade_report_grader extends grade_report {
     private $allgrades;
 
     /**
+     * Contains all grade items expect GRADE_TYPE_NONE.
+     *
+     * @var array $allgradeitems
+     */
+    private $allgradeitems;
+
+    /**
      * Array of errors for bulk grades updating.
      * @var array $gradeserror
      */
@@ -181,13 +188,14 @@ class grade_report_grader extends grade_report {
             $separategroups = true;
             $mygroups = groups_get_user_groups($this->course->id);
             $mygroups = $mygroups[0]; // ignore groupings
-            // reorder the groups fro better perf below
+            // reorder the groups for better perf below
             $current = array_search($this->currentgroup, $mygroups);
             if ($current !== false) {
                 unset($mygroups[$current]);
                 array_unshift($mygroups, $this->currentgroup);
             }
         }
+        $viewfullnames = has_capability('moodle/site:viewfullnames', $this->context);
 
         // always initialize all arrays
         $queue = array();
@@ -293,7 +301,7 @@ class grade_report_grader extends grade_report {
                             $userfields = 'id, ' . get_all_user_name_fields(true);
                             $user = $DB->get_record('user', array('id' => $userid), $userfields);
                             $gradestr = new stdClass();
-                            $gradestr->username = fullname($user);
+                            $gradestr->username = fullname($user, $viewfullnames);
                             $gradestr->itemname = $gradeitem->get_name();
                             $warnings[] = get_string($errorstr, 'grades', $gradestr);
                             if ($skip) {
@@ -445,22 +453,22 @@ class grade_report_grader extends grade_report {
                     $this->groupwheresql_params, $enrolledparams, $relatedctxparams);
 
             $sortjoin = "LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = $this->sortitemid";
-            $sort = "g.finalgrade $this->sortorder";
+            $sort = "g.finalgrade $this->sortorder, u.idnumber, u.lastname, u.firstname, u.email";
         } else {
             $sortjoin = '';
             switch($this->sortitemid) {
                 case 'lastname':
-                    $sort = "u.lastname $this->sortorder, u.firstname $this->sortorder";
+                    $sort = "u.lastname $this->sortorder, u.firstname $this->sortorder, u.idnumber, u.email";
                     break;
                 case 'firstname':
-                    $sort = "u.firstname $this->sortorder, u.lastname $this->sortorder";
+                    $sort = "u.firstname $this->sortorder, u.lastname $this->sortorder, u.idnumber, u.email";
                     break;
                 case 'email':
-                    $sort = "u.email $this->sortorder";
+                    $sort = "u.email $this->sortorder, u.firstname, u.lastname, u.idnumber";
                     break;
                 case 'idnumber':
                 default:
-                    $sort = "u.idnumber $this->sortorder";
+                    $sort = "u.idnumber $this->sortorder, u.firstname, u.lastname, u.email";
                     break;
             }
 
@@ -525,6 +533,22 @@ class grade_report_grader extends grade_report {
     }
 
     /**
+     * Load all grade items.
+     */
+    protected function get_allgradeitems() {
+        if (!empty($this->allgradeitems)) {
+            return $this->allgradeitems;
+        }
+        $allgradeitems = grade_item::fetch_all(array('courseid' => $this->courseid));
+        // But hang on - don't include ones which are set to not show the grade at all.
+        $this->allgradeitems = array_filter($allgradeitems, function($item) {
+            return $item->gradetype != GRADE_TYPE_NONE;
+        });
+
+        return $this->allgradeitems;
+    }
+
+    /**
      * we supply the userids in this query, and get all the grades
      * pulls out all the grades, this does not need to worry about paging
      */
@@ -547,11 +571,16 @@ class grade_report_grader extends grade_report {
                  WHERE g.itemid = gi.id AND gi.courseid = :courseid {$this->userselect}";
 
         $userids = array_keys($this->users);
+        $allgradeitems = $this->get_allgradeitems();
 
         if ($grades = $DB->get_records_sql($sql, $params)) {
             foreach ($grades as $graderec) {
                 $grade = new grade_grade($graderec, false);
-                $this->allgrades[$graderec->userid][$graderec->itemid] = $grade;
+                if (!empty($allgradeitems[$graderec->itemid])) {
+                    // Note: Filter out grades which have a grade type of GRADE_TYPE_NONE.
+                    // Only grades without this type are present in $allgradeitems.
+                    $this->allgrades[$graderec->userid][$graderec->itemid] = $grade;
+                }
                 if (in_array($graderec->userid, $userids) and array_key_exists($graderec->itemid, $this->gtree->get_items())) { // some items may not be present!!
                     $this->grades[$graderec->userid][$graderec->itemid] = $grade;
                     $this->grades[$graderec->userid][$graderec->itemid]->grade_item = $this->gtree->get_item($graderec->itemid); // db caching
@@ -569,6 +598,18 @@ class grade_report_grader extends grade_report {
                     $this->grades[$userid][$itemid]->grade_item = $this->gtree->get_item($itemid); // db caching
 
                     $this->allgrades[$userid][$itemid] = $this->grades[$userid][$itemid];
+                }
+            }
+        }
+
+        // Pre fill grades for any remaining items which might be collapsed.
+        foreach ($userids as $userid) {
+            foreach ($allgradeitems as $itemid => $gradeitem) {
+                if (!isset($this->allgrades[$userid][$itemid])) {
+                    $this->allgrades[$userid][$itemid] = new grade_grade();
+                    $this->allgrades[$userid][$itemid]->itemid = $itemid;
+                    $this->allgrades[$userid][$itemid]->userid = $userid;
+                    $this->allgrades[$userid][$itemid]->grade_item = $gradeitem;
                 }
             }
         }
@@ -616,6 +657,7 @@ class grade_report_grader extends grade_report {
             'moodle/grade:edit'), $this->context);
         }
         $hasuserreportcell = $canseeuserreport || $canseesingleview;
+        $viewfullnames = has_capability('moodle/site:viewfullnames', $this->context);
 
         $strfeedback  = $this->get_lang_string("feedback");
         $strgrade     = $this->get_lang_string('grade');
@@ -687,11 +729,13 @@ class grade_report_grader extends grade_report {
                 $usercell->text = $OUTPUT->user_picture($user, array('visibletoscreenreaders' => false));
             }
 
+            // LSU Gradebook enhancement - add alt name in parens.
             if (isset($user->alternatename)) {
-                $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;
-            } else {
-                $fullname = fullname($user);
+                $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;		
+	        } else {
+                $fullname = fullname($user, $viewfullnames);
             }
+            // End LSU Enhancement.
 
             $usercell->text .= html_writer::link(new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $this->course->id)), $fullname, array(
                 'class' => 'username',
@@ -704,8 +748,8 @@ class grade_report_grader extends grade_report {
                 if (empty($suspendedstring)) {
                     $suspendedstring = get_string('userenrolmentsuspended', 'grades');
                 }
-                $usercell->text .= html_writer::empty_tag('img', array('src'=>$OUTPUT->pix_url('i/enrolmentsuspended'), 'title'=>$suspendedstring,
-                        'alt'=>$suspendedstring, 'class'=>'usersuspendedicon'));
+                $icon = $OUTPUT->pix_icon('i/enrolmentsuspended', $suspendedstring);
+                $usercell->text .= html_writer::tag('span', $icon, array('class'=>'usersuspendedicon'));
             }
 
             $userrow->cells[] = $usercell;
@@ -713,7 +757,9 @@ class grade_report_grader extends grade_report {
             $userreportcell = new html_table_cell();
             $userreportcell->attributes['class'] = 'userreport';
             $userreportcell->header = false;
-            if ($canseeuserreport) {
+            
+            // LSU Gradebook enhancement: check for anon grading below:
+            if ($canseeuserreport && !grade_anonymous::is_supported($this->course)) {
                 $a = new stdClass();
                 $a->user = $fullname;
                 $strgradesforuser = get_string('gradesforuser', 'grades', $a);
@@ -721,7 +767,7 @@ class grade_report_grader extends grade_report {
                 $userreportcell->text .= $OUTPUT->action_icon($url, new pix_icon('t/grades', $strgradesforuser));
             }
 
-            if ($canseesingleview && !grade_anonymous::is_supported($this->course)) {
+            if ($canseesingleview) {
                 $url = new moodle_url('/grade/report/singleview/index.php', array('id' => $this->course->id, 'itemid' => $user->id, 'item' => 'user'));
                 $singleview = $OUTPUT->action_icon($url, new pix_icon('t/editstring', get_string('singleview', 'grades', $fullname)));
                 $userreportcell->text .= $singleview;
@@ -758,6 +804,7 @@ class grade_report_grader extends grade_report {
      * @return array Array of html_table_row objects
      */
     public function get_right_rows($displayaverages) {
+        // LSU Gradebook Enhancement: added $COURSE.
         global $CFG, $COURSE, $USER, $OUTPUT, $DB, $PAGE;
 
         $rows = array();
@@ -790,6 +837,8 @@ class grade_report_grader extends grade_report {
         $strftimedatetimeshort = get_string('strftimedatetimeshort');
         $strexcludedgrades = get_string('excluded', 'grades');
         $strerror = get_string('error');
+
+        $viewfullnames = has_capability('moodle/site:viewfullnames', $this->context);
 
         foreach ($this->gtree->get_levels() as $key => $row) {
             $headingrow = new html_table_row();
@@ -874,13 +923,17 @@ class grade_report_grader extends grade_report {
                     if (get_capability_info('gradereport/singleview:view')) {
                         if (has_all_capabilities(array('gradereport/singleview:view', 'moodle/grade:viewall',
                             'moodle/grade:edit'), $this->context)) {
-                             $is_anon = isset($this->anonymous_items[$element['object']->id]);
-                             $path = $is_anon ? '/grade/report/quick_edit/index.php' : '/grade/report/singleview/index.php';
-                             $url = new moodle_url($path, array(
-                                 'id' => $this->course->id,
-                                 'item' => $is_anon ? 'anonymous' : 'grade',
-                                 'group' => $this->currentgroup,
-                                 'itemid' => $element['object']->id));
+
+                            // LSU Gradebook enhancement - check for anon grading.
+                            $is_anon = isset($this->anonymous_items[$element['object']->id]);		
+                            $path = $is_anon ? '/grade/report/quick_edit/index.php' : '/grade/report/singleview/index.php';
+
+                            // LSU Gradebook enhancement - added group for anon grading in URL.
+                            $url = new moodle_url('/grade/report/singleview/index.php', array(
+                                'id' => $this->course->id,
+                                'item' => $is_anon ? 'anonymous' : 'grade',
+                                'group' => $this->currentgroup,
+                                'itemid' => $element['object']->id));
                             $singleview = $OUTPUT->action_icon(
                                 $url,
                                 new pix_icon('t/editstring', get_string('singleview', 'grades', $element['object']->get_name()))
@@ -889,7 +942,9 @@ class grade_report_grader extends grade_report {
                     }
 
                     $itemcell->colspan = $colspan;
+                    // LSU Gradebook enhancement? added shorten_text.
                     $itemcell->text = shorten_text($headerlink) . $arrow . $singleview;
+                    // END?
                     $itemcell->header = true;
                     $itemcell->scope = 'col';
 
@@ -930,7 +985,7 @@ class grade_report_grader extends grade_report {
         // grade items (in case one has been hidden) as the course total shown needs to be adjusted for this particular
         // user.
         if (!$this->canviewhidden) {
-            $allgradeitems = grade_item::fetch_all(array('courseid' => $this->courseid));
+            $allgradeitems = $this->get_allgradeitems();
         }
 
         foreach ($this->users as $userid => $user) {
@@ -942,14 +997,14 @@ class grade_report_grader extends grade_report {
                 $usergrades = $this->allgrades[$userid];
                 $hidingaffected = grade_grade::get_hiding_affected($usergrades, $allgradeitems);
                 $altered = $hidingaffected['altered'];
-                $unknown = $hidingaffected['unknown'];
+                $unknown = $hidingaffected['unknowngrades'];
                 unset($hidingaffected);
             }
 
             $itemrow = new html_table_row();
             $itemrow->id = 'user_'.$userid;
 
-            $fullname = fullname($user);
+            $fullname = fullname($user, $viewfullnames);
             $jsarguments['users'][$userid] = $fullname;
 
             foreach ($this->gtree->items as $itemid => $unused) {
@@ -964,7 +1019,7 @@ class grade_report_grader extends grade_report {
                 // Get the decimal points preference for this item
                 $decimalpoints = $item->get_decimals();
 
-                if (in_array($itemid, $unknown)) {
+                if (array_key_exists($itemid, $unknown)) {
                     $gradeval = null;
                 } else if (array_key_exists($itemid, $altered)) {
                     $gradeval = $altered[$itemid];
@@ -1028,6 +1083,7 @@ class grade_report_grader extends grade_report {
                 }
 
                 // Do not show any icons if no grade (no record in DB to match)
+                // LSU Gradebook enhancement - added check for is_anon below.
                 if (!$item->needsupdate and $USER->gradeediting[$this->courseid] and !$is_anon) {
                     $itemcell->text .= $this->get_icons($element);
                 }
@@ -1050,12 +1106,13 @@ class grade_report_grader extends grade_report {
                 if ($item->needsupdate) {
                     $itemcell->text .= "<span class='gradingerror{$hidden}'>" . $strerror . "</span>";
 
-                } else if ($USER->gradeediting[$this->courseid]) {
-
-                    // Editing means user edit manual item raw
-                    if ($item->is_manual_item() and $CFG->grade_item_manual_recompute) {
-                        $gradeval = $grade->rawgrade;
+                } else if ($USER->gradeediting[$this->courseid] and !$is_anon) {
+                    // Editing means user edit manual item raw.
+                    // LSU Gradbook enhancement.
+                    if ($item->is_manual_item() and $CFG->grade_item_manual_recompute) { 
+                         $gradeval = $grade->rawgrade;
                     }
+                    // End addition.
 
                     if ($item->scaleid && !empty($scalesarray[$item->scaleid])) {
                         $itemcell->attributes['class'] .= ' grade_type_scale';
@@ -1141,6 +1198,7 @@ class grade_report_grader extends grade_report {
                     }
 
                     // Only allow edting if the grade is editable (not locked, not in a unoverridable category, etc).
+                    // LSU Gradebook enhancement for anon grade check.
                     if ($enableajax && $grade->is_editable() && !grade_anonymous::is_supported($COURSE)) {
                         // If a grade item is type text, and we don't have show quick feedback on, it can't be edited.
                         if ($item->gradetype != GRADE_TYPE_TEXT || $showquickfeedback) {
@@ -1166,6 +1224,7 @@ class grade_report_grader extends grade_report {
                 }
 
                 // Enable keyboard navigation if the grade is editable (not locked, not in a unoverridable category, etc).
+                // LSU Gradebook enhancement for anon grade check.
                 if ($enableajax && $grade->is_editable() && !grade_anonymous::is_supported($COURSE)) {
                     // If a grade item is type text, and we don't have show quick feedback on, it can't be edited.
                     if ($item->gradetype != GRADE_TYPE_TEXT || $showquickfeedback) {
@@ -1182,7 +1241,8 @@ class grade_report_grader extends grade_report {
             $rows[] = $itemrow;
         }
 
-        if ($enableajax) {
+        // LSU Gradebook enhancement.
+        if ($enableajax && !grade_anonymous::is_supported($COURSE)) {
             $jsarguments['cfg']['ajaxenabled'] = true;
             $jsarguments['cfg']['scales'] = array();
             foreach ($jsscales as $scale) {
@@ -1376,7 +1436,7 @@ class grade_report_grader extends grade_report {
                 $element = $this->gtree->locate_element($eid);
                 $itemcell = new html_table_cell();
                 $itemcell->attributes['class'] = 'controls icons i'.$itemid;
-
+                
                 // BEGIN LSU Anonymous Grades
                 if (!$is_anon) {
                     $itemcell->text = $this->get_icons($element);
@@ -1505,6 +1565,7 @@ class grade_report_grader extends grade_report {
 
             // MDL-10875 Empty grades must be evaluated as grademin, NOT always 0
             // This query returns a count of ungraded grades (NULL finalgrade OR no matching record in grade_grades table)
+            // SQL statement edited for LSU Gradebook.
             $sql = "SELECT gi.id, COUNT(DISTINCT u.id) AS count
                       FROM {grade_items} gi
                       CROSS JOIN {user} u
@@ -1549,6 +1610,7 @@ class grade_report_grader extends grade_report {
                     $ungradedcount = $ungradedcounts[$itemid]->count;
                 }
 
+                // LSU Grabebook enhancement - changed for line below for mean selection check against zeros:
                 if (($meanselection == GRADE_REPORT_MEAN_GRADED) || ($meanselection == GRADE_REPORT_MEAN_GRADED_NO_ZEROS)) {
                     $meancount = $totalcount - $ungradedcount;
                 } else { // Bump up the sum by the number of ungraded items * grademin
@@ -1637,9 +1699,10 @@ class grade_report_grader extends grade_report {
             }
         }
 
-        $name = shorten_text($element['object']->get_name());
+        $name = shorten_text($element['object']->get_name()); // LSU Gradebook edit?
         $courseheaderid = 'courseheader_' . clean_param($name, PARAM_ALPHANUMEXT);
-        $courseheader = html_writer::tag('span', $name, array('id' => $courseheaderid));
+        $courseheader = html_writer::tag('span', $name, array('id' => $courseheaderid,
+                'title' => $name, 'class' => 'gradeitemheader'));
         $courseheader .= html_writer::label($showing, $courseheaderid, false, array('class' => 'accesshide'));
         $courseheader .= $icon;
 
@@ -1882,7 +1945,6 @@ class grade_report_grader extends grade_report {
         return true;
     }
 
-
     /**
      * Public function for loading anonymous grades
      * Returns an array of grade items which are anonymously graded
@@ -1905,7 +1967,6 @@ class grade_report_grader extends grade_report {
         return $this->anonymous_items;
     }
 
-
     /**
      * Refactored function for generating HTML of sorting links with matching arrows.
      * Returns an array with 'studentname' and 'idnumber' as keys, with HTML ready
@@ -1915,37 +1976,46 @@ class grade_report_grader extends grade_report {
      * @return array An associative array of HTML sorting links+arrows
      */
     public function get_sort_arrows(array $extrafields = array()) {
-        global $OUTPUT;
+        global $OUTPUT, $CFG;
         $arrows = array();
 
         $strsortasc   = $this->get_lang_string('sortasc', 'grades');
         $strsortdesc  = $this->get_lang_string('sortdesc', 'grades');
+
+        // LSU Gradebook enhancement?
         $strfirstname = $this->get_lang_string('firstname');
         $strlastname  = $this->get_lang_string('lastname');
+        // End enhancement.
+
         $iconasc = $OUTPUT->pix_icon('t/sort_asc', $strsortasc, '', array('class' => 'iconsmall sorticon'));
         $icondesc = $OUTPUT->pix_icon('t/sort_desc', $strsortdesc, '', array('class' => 'iconsmall sorticon'));
 
-        $firstlink = html_writer::link(new moodle_url($this->baseurl, array('sortitemid'=>'firstname')), $strfirstname);
-        $lastlink = html_writer::link(new moodle_url($this->baseurl, array('sortitemid'=>'lastname')), $strlastname);
-
-        $arrows['studentname'] = $firstlink;
-
-        if ($this->sortitemid === 'firstname') {
-            if ($this->sortorder == 'ASC') {
-                $arrows['studentname'] .= $iconasc;
-            } else {
-                $arrows['studentname'] .= $icondesc;
-            }
+        // Sourced from tablelib.php
+        // Check the full name display for sortable fields.
+        if (has_capability('moodle/site:viewfullnames', $this->context)) {
+            $nameformat = $CFG->alternativefullnameformat;
+        } else {
+            $nameformat = $CFG->fullnamedisplay;
         }
 
-        $arrows['studentname'] .= '&nbsp;&nbsp;' . $lastlink;
+        if ($nameformat == 'language') {
+            $nameformat = get_string('fullnamedisplay');
+        }
 
-        if ($this->sortitemid === 'lastname') {
-            if ($this->sortorder == 'ASC') {
-                $arrows['studentname'] .= $iconasc;
-            } else {
-                $arrows['studentname'] .= $icondesc;
+        $arrows['studentname'] = '';
+        $requirednames = order_in_string(get_all_user_name_fields(), $nameformat);
+        if (!empty($requirednames)) {
+            foreach ($requirednames as $name) {
+                $arrows['studentname'] .= html_writer::link(
+                    new moodle_url($this->baseurl, array('sortitemid' => $name)), $this->get_lang_string($name)
+                );
+                if ($this->sortitemid == $name) {
+                    $arrows['studentname'] .= $this->sortorder == 'ASC' ? $iconasc : $icondesc;
+                }
+                $arrows['studentname'] .= ' / ';
             }
+
+            $arrows['studentname'] = substr($arrows['studentname'], 0, -3);
         }
 
         foreach ($extrafields as $field) {
@@ -1974,4 +2044,3 @@ class grade_report_grader extends grade_report {
         return $this->get_pref('studentsperpage');
     }
 }
-

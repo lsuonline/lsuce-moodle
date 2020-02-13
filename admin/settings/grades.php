@@ -23,9 +23,9 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     $temp = new admin_settingpage('gradessettings', new lang_string('generalsettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
 
-       // BEGIN LSU Anonymous Grade support
+         // BEGIN LSU Anonymous Grade support
        $temp->add(new admin_setting_heading('grade_anonymous_header',
-            get_string('anonymousgrading', 'grades'), ''));
+       get_string('anonymousgrading', 'grades'), ''));
 
         $temp->add(new admin_setting_configcheckbox('grade_anonymous_grading',
             get_string('anonymousgrading', 'grades'),
@@ -67,7 +67,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
 
         $temp->add(new admin_setting_heading('grade_general_settings',
             get_string('generalsettings', 'grades'), ''));
-       // END LSU Anonymous Grade support
+        // END LSU Anonymous Grade support
 
         // BEGIN LSU Course Category Editable Patch
         $temp->add(new admin_setting_configcheckbox('grade_coursecateditable', new lang_string('coursecateditable', 'grades'), new lang_string('coursecateditable_help', 'grades'), 1));
@@ -92,18 +92,23 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         // enable publishing in exports/imports
         $temp->add(new admin_setting_configcheckbox('gradepublishing', new lang_string('gradepublishing', 'grades'), new lang_string('gradepublishing_help', 'grades'), 0));
 
+        $temp->add(new admin_setting_configcheckbox('grade_export_exportfeedback', new lang_string('exportfeedback', 'grades'),
+                                                    new lang_string('exportfeedback_desc', 'grades'), 0));
+
         $temp->add(new admin_setting_configselect('grade_export_displaytype', new lang_string('gradeexportdisplaytype', 'grades'),
                                                   new lang_string('gradeexportdisplaytype_desc', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
 
+        // LSU Gradebook enhancement.
         $temp->add(new admin_setting_configcheckbox('grade_item_manual_recompute',
-            new lang_string('gradeitemmanualrecompute', 'grades'),
-            new lang_string('gradeitemmanualrecompute_help', 'grades'), 0));
-
+                    new lang_string('gradeitemmanualrecompute', 'grades'),
+                    new lang_string('gradeitemmanualrecompute_help', 'grades'), 0));
+                                      
         if ($CFG->grade_item_manual_recompute) {
             $temp->add(new admin_setting_configcheckbox('manipulate_categories',
-                new lang_string('manipulatecategories', 'grades'),
-                new lang_string('manipulatecategories_help', 'grades'), 0));
-        }
+                    new lang_string('manipulatecategories', 'grades'),
+                    new lang_string('manipulatecategories_help', 'grades'), 0));
+        } 
+        // END LSU Gradebook enhancement. 
 
         $temp->add(new admin_setting_configselect('grade_export_decimalpoints', new lang_string('gradeexportdecimalpoints', 'grades'),
                                                   new lang_string('gradeexportdecimalpoints_desc', 'grades'), 2,
@@ -113,14 +118,24 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                                                          '3' => '3',
                                                          '4' => '4',
                                                          '5' => '5')));
-        $temp->add(new admin_setting_configselect('grade_navmethod', new lang_string('navmethod', 'grades'), null, 0,
+        $temp->add(new admin_setting_configselect('grade_navmethod', new lang_string('navmethod', 'grades'), null,
+                                                  GRADE_NAVMETHOD_TABS,
                                                   array(GRADE_NAVMETHOD_DROPDOWN => new lang_string('dropdown', 'grades'),
                                                         GRADE_NAVMETHOD_TABS => new lang_string('tabs', 'grades'),
                                                         GRADE_NAVMETHOD_COMBO => new lang_string('combo', 'grades'))));
 
-        $temp->add(new admin_setting_configtext('grade_export_userprofilefields', new lang_string('gradeexportuserprofilefields', 'grades'), new lang_string('gradeexportuserprofilefields_desc', 'grades'), 'firstname,lastname,idnumber,institution,department,email', PARAM_TEXT));
+        $setting = new admin_setting_configtext('grade_export_userprofilefields',
+            new lang_string('gradeexportuserprofilefields', 'grades'),
+            new lang_string('gradeexportuserprofilefields_desc', 'grades'),
+            'firstname,lastname,idnumber,institution,department,email', PARAM_TEXT);
+        $setting->set_force_ltr(true);
+        $temp->add($setting);
 
-        $temp->add(new admin_setting_configtext('grade_export_customprofilefields', new lang_string('gradeexportcustomprofilefields', 'grades'), new lang_string('gradeexportcustomprofilefields_desc', 'grades'), '', PARAM_TEXT));
+        $setting = new admin_setting_configtext('grade_export_customprofilefields',
+            new lang_string('gradeexportcustomprofilefields', 'grades'),
+            new lang_string('gradeexportcustomprofilefields_desc', 'grades'), '', PARAM_TEXT);
+        $setting->set_force_ltr(true);
+        $temp->add($setting);
 
         $temp->add(new admin_setting_configcheckbox('recovergradesdefault', new lang_string('recovergradesdefault', 'grades'), new lang_string('recovergradesdefault_help', 'grades'), 0));
 
@@ -128,7 +143,9 @@ if (has_capability('moodle/grade:manage', $systemcontext)
 
         $temp->add(new admin_setting_special_gradelimiting());
 
+        // BEGIN LSU FERPA Student Privacy.
         $temp->add(new admin_setting_configcheckbox('privacy_ack', new lang_string('privacy_ack', 'grades'), new lang_string('privacy_ack_help', 'grades'), 0));
+        // END LSU FERPA Student Privacy.
 
         $temp->add(new admin_setting_configcheckbox('grade_report_showmin',
                                                     get_string('minimum_show', 'grades'),
@@ -173,8 +190,9 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_configmultiselect('grade_aggregations_visible', new lang_string('aggregationsvisible', 'grades'),
                                                        new lang_string('aggregationsvisiblehelp', 'grades'), $defaultvisible, $options));
 
-        // Weighted Extra Credit handling
+        // LSU Gradebook enhancement - Weighted Extra Credit handling
         $temp->add(new admin_setting_configcheckbox('grade_w_extra_credit', new lang_string('w_ec', 'grades'), new lang_string('w_ec_help', 'grades'), '1'));
+        // END LSU Gradebook enhancement - Weighted Extra Credit handling
 
         $options = array(0 => new lang_string('no'), 1 => new lang_string('yes'));
 
@@ -198,10 +216,12 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_gradecat_combo('grade_droplow', new lang_string('droplow', 'grades'),
                     new lang_string('droplow_help', 'grades'), $defaults, $options));
 
+        // BEGIN LSU Drop Lowest Limit.
         $temp->add(new admin_setting_configcheckbox('grade_droplow_limit',
             new lang_string('droplow_limit', 'grades'),
             new lang_string('droplow_limit_help', 'grades'), 0)
         );
+        // END LSU Drop Lowest Limit.
 
         $temp->add(new admin_setting_configcheckbox('grade_overridecat', new lang_string('overridecat', 'grades'),
                    new lang_string('overridecat_help', 'grades'), 1));
@@ -212,6 +232,12 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     /// Grade item settings
     $temp = new admin_settingpage('gradeitemsettings', new lang_string('gradeitemsettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
+        // LSU Gradebook enhancement - this was not in PROD, but in the patch. May have to be removed?
+        //$temp->add(new admin_setting_configcheckbox('grade_multfactor_alt',
+        //                                            new lang_string('multfactor_alt', 'grades'),
+        //                                            new lang_string('multfactor_alt_desc', 'grades'), 0));
+        // End LSU Gradebook enhancement. May have to be removed?
+        
         $temp->add(new admin_setting_configselect('grade_displaytype', new lang_string('gradedisplaytype', 'grades'),
                                                   new lang_string('gradedisplaytype_help', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
 
@@ -256,15 +282,15 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $ADMIN->add('grades', $outcomes);
     }
 
-    // BEGIN LSU Better Letter Grades
+    // BEGIN LSU Better Letter Grades.
     $letters_str = new lang_string('letters', 'grades');
     $letters_base = $CFG->wwwroot.'/grade/edit/letter';
     $letters = new admin_externalpage('letters', $letters_str, $letters_base . '/index.php', 'moodle/grade:manageletters');
-    // END LSU Better Letter Grades
+    // END LSU Better Letter Grades.
 
     $ADMIN->add('grades', $letters);
 
-    // BEGIN LSU Better Letter Grades
+    // BEGIN LSU Better Letter Grades.
     $letters_settings_str = new lang_string('letter', 'grades') . ' ' . new lang_string('edit') . ' ' . new lang_string('settings');
     $temp = new admin_settingpage('letterssettings', $letters_settings_str, 'moodle/grade:manageletters');
     if ($ADMIN->fulltree) {
@@ -283,7 +309,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     }
 
     $ADMIN->add('grades', $temp);
-    // END LSU Better Letter Grades
+    // END LSU Better Letter Grades.
 
     // The plugins must implement a settings.php file that adds their admin settings to the $settings object
 

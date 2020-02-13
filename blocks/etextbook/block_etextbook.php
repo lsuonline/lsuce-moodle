@@ -20,8 +20,8 @@
  *
  * @package    block_etextbook
  * @copyright  2016 Lousiana State University - David Elliott, Robert Russo, Chad Mazilly
- * @author     David Elliott <delliott@lsu.edu> - Along with LSU Moodle Development Team (Robert Russo, Chad Mazily) and LSU Libraries Staff (Emily Frank, David Comeaux, and Jason Peak)
- * @tutorial   https://grok.lsu.edu/Browse.aspx?searchString=E-textbooks&pageSize=10&searchDomain=All&parentCategoryId=0 - Stefanie Howell <showel8@lsu.edu>
+ * @author     David Elliott <delliott@lsu.edu> - Along with LSU Moodle Development Team (Robert Russo, Chad Mazily)
+ *             and LSU Libraries Staff (Emily Frank, David Comeaux, and Jason Peak)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -32,6 +32,8 @@
  * @package    block_etextbook
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 class block_etextbook extends block_base {
     /**
      * Function creates block
@@ -40,7 +42,7 @@ class block_etextbook extends block_base {
     public function init() {
         $this->title = get_string('etextbook', 'block_etextbook');
     }
-    function applicable_formats() {
+    public function applicable_formats() {
         return array('site' => false, 'my' => false, 'course-view' => true);
     }
     /**
@@ -51,14 +53,14 @@ class block_etextbook extends block_base {
     public function get_content() {
         GLOBAL $COURSE, $DB;
         $etextbooktable = "block_etextbook";
-        if($DB->record_exists($etextbooktable, array('courseid'=> $COURSE->id))) {
+        if ($DB->record_exists($etextbooktable, array('courseid' => $COURSE->id))) {
             $this->content = new \stdClass;
             $this->content->text = '';
             $arrayofbooks = $DB->get_records($etextbooktable, array("courseid" => $COURSE->id));
             $htmldiv = "";
             $arrayoftitles = [];
             foreach ($arrayofbooks as $book) {
-                if(!in_array($book->title, $arrayoftitles)) {
+                if (!in_array($book->title, $arrayoftitles)) {
                     $htmldiv .= '<a href = "' . $book->book_url . '">' . $book->title;
                     $htmldiv .= '<img class = "img-rounded img-responsive etextimg" src = "' . $book->img_url . '"></a>';
                     $arrayoftitles[] = $book->title;
@@ -67,14 +69,13 @@ class block_etextbook extends block_base {
             $htmldiv .= get_string('linktolsulibraries', 'block_etextbook');
 
             $this->content->text .= html_writer::div($htmldiv, 'lsulib-etext');
-        }
-        else{
-            // No Book for this course
-            return $this->content;
+        } else {
+            return $this->content; // No Book for this course.
 
         }
     }
 
-    function has_config() {return true;}
-
+    public function has_config() {
+        return true;
+    }
 }

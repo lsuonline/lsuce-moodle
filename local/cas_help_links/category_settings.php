@@ -13,14 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 /**
  * @package   local_cas_help_links
  * @copyright 2016, Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
-// defined('MOODLE_INTERNAL') || die();
 
 require_once('../../config.php');
 
@@ -34,23 +32,17 @@ $PAGE->set_context($context);
 require_login();
 require_capability('local/cas_help_links:editcategorysettings', $context);
 
-//////////////////////////////////////////////////////////
-/// 
-/// HANDLE FORM SUBMISSION
-/// 
-//////////////////////////////////////////////////////////
+// HANDLE FORM SUBMISSION.
 $submit_success = false;
 
 if ($data = data_submitted() and confirm_sesskey()) {
-    
+
     try {
-        // if category settings page was submitted
+        // If category settings page was submitted.
         if (property_exists($data, '_qf__cas_cat_form')) {
             $submit_success = \local_cas_help_links_input_handler::handle_category_settings_input($data);
-        }
-
-        // if coursematch delete form was submitted
-        else if (property_exists($data, '_qf__cas_delete_coursematch_form')) {
+        } else if (property_exists($data, '_qf__cas_delete_coursematch_form')) {
+            // If coursematch delete form was submitted.
             $submit_success = \local_cas_help_links_input_handler::handle_coursematch_deletion_input($data);
         }
 
@@ -59,20 +51,14 @@ if ($data = data_submitted() and confirm_sesskey()) {
     }
 }
 
-//////////////////////////////////////////////////////////
-/// 
-/// RENDER PAGE
-///
-/// (NOTE: it is assumed this user is able to edit category links
-/// 
-//////////////////////////////////////////////////////////
+// RENDER PAGE. (NOTE: it is assumed this user is able to edit category links).
 
-// get all data
-$categorySettingsData = \local_cas_help_links_utility::get_all_category_settings();
+// Get all data.
+$categorysettingsdata = \local_cas_help_links_utility::get_all_category_settings();
 
-$coursematchSettingsData = \local_cas_help_links_utility::get_all_coursematch_settings();
+$coursematchsettingsdata = \local_cas_help_links_utility::get_all_coursematch_settings();
 
-// PAGE RENDERING STUFF
+// PAGE RENDERING STUFF.
 $PAGE->set_context($context);
 $PAGE->requires->jquery();
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . "/local/cas_help_links/style.css"));
@@ -93,9 +79,9 @@ if (isset($e)) {
 echo $output->heading(get_string('category_settings_heading', 'local_cas_help_links'));
 echo $output->action_link('category_analytics.php', get_string('analytics_link_label', 'local_cas_help_links'));
 
-echo $output->cas_category_links($categorySettingsData);
+echo $output->cas_category_links($categorysettingsdata);
 
-foreach ($coursematchSettingsData as $coursematch) {
+foreach ($coursematchsettingsdata as $coursematch) {
     echo $output->cas_delete_coursematch($coursematch);
 }
 

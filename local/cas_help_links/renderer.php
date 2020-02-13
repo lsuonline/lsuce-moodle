@@ -24,7 +24,8 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-require_once $CFG->libdir.'/outputcomponents.php';
+
+require_once($CFG->libdir.'/outputcomponents.php');
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/local/cas_help_links/user_settings_form.php');
 require_once($CFG->dirroot.'/local/cas_help_links/category_settings_form.php');
@@ -40,17 +41,24 @@ class local_cas_help_links_renderer extends plugin_renderer_base {
         return $this->action_link('category_settings.php', get_string('category_settings_link_label', 'local_cas_help_links'));
     }
 
-    public function cas_help_links($courseSettingsData,$categorySettingsData,$userSettingsData) {
+    // Old variable name: courseSettingsData.
+    // Old variable name: userSettingsData.
+    // Old variable name: categorySettingsData.
+    public function cas_help_links($coursesettingsdata, $categorysettingsdata, $usersettingsdata) {
         global $USER;
-        $mform = new cas_form(null, array('courseSettingsData' => $courseSettingsData,'categorySettingsData' => $categorySettingsData,'userSettingsData' => $userSettingsData));
+        $mform = new cas_form(null
+                            , array('courseSettingsData' => $coursesettingsdata
+                            , 'categorySettingsData' => $categorysettingsdata
+                            , 'userSettingsData' => $usersettingsdata));
 
         $out = $mform->display();
         return $out;
     }
 
-    public function cas_category_links($categorySettingsData) {
+    // Old variable name: categorySettingsData.
+    public function cas_category_links($categorysettingsdata) {
         global $USER;
-        $mform = new cas_cat_form(null, array('categorySettingsData' => $categorySettingsData));
+        $mform = new cas_cat_form(null, array('categorySettingsData' => $categorysettingsdata));
 
         $out = $mform->display();
         return $out;
@@ -69,8 +77,7 @@ class local_cas_help_links_renderer extends plugin_renderer_base {
     }
 
     public function semester_usage_chart() {
-        $out = html_writer::tag('canvas', null, array('id'=>'chart'));
+        $out = html_writer::tag('canvas', null, array('id' => 'chart'));
         return $out;
     }
-
 }

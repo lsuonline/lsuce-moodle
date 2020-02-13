@@ -20,8 +20,7 @@ Feature: Test duplicating a quiz containing a True/False question
     And quiz "Test quiz" contains the following questions:
       | true-false-001 | 1 |
     And I log in as "admin"
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
   @javascript
   Scenario: Backup and restore a course containing a True/False question
@@ -29,8 +28,8 @@ Feature: Test duplicating a quiz containing a True/False question
       | Confirmation | Filename | test_backup.mbz |
     And I restore "test_backup.mbz" backup into a new course using this options:
       | Schema | Course name | Course 2 |
-    And I navigate to "Question bank" node in "Course administration"
-    And I click on "Edit" "link" in the "true-false-001" "table_row"
+    And I navigate to "Question bank" in current page administration
+    And I choose "Edit question" action for "true-false-001" in the question bank
     Then the following fields match these values:
       | Question name                      | true-false-001                  |
       | Question text                      | The answer is true.             |

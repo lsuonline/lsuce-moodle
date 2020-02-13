@@ -1,26 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-///////////////////////////////////////////////////////////////////////////
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.org                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/grade/report/lib.php');
 require_once($CFG->dirroot . '/grade/report/quick_edit/classes/lib.php');
@@ -30,8 +24,8 @@ class grade_report_quick_edit extends grade_report {
     public static function valid_screens() {
         $screendir = dirname(__FILE__) . '/screens';
 
-        $is_valid = function($filename) use ($screendir) {
-            if (preg_match('/^\./', $filename)){
+        $isvalid = function($filename) use ($screendir) {
+            if (preg_match('/^\./', $filename)) {
                 return false;
             }
 
@@ -45,13 +39,13 @@ class grade_report_quick_edit extends grade_report {
             return file_exists($plugin);
         };
 
-        return array_filter(scandir($screendir), $is_valid);
+        return array_filter(scandir($screendir), $isvalid);
     }
 
     public static function classname($screen) {
         $screendir = dirname(__FILE__) . '/screens/' . $screen;
 
-        require_once $screendir . '/lib.php';
+        require_once($screendir . '/lib.php');
 
         return 'quick_edit_' . $screen;
     }
@@ -73,37 +67,68 @@ class grade_report_quick_edit extends grade_report {
         };
     }
 
-    function process_data($data) {
+    public function process_data($data) {
         return $this->screen->process($data);
     }
 
-    function process_action($target, $action) {
+    public function process_action($target, $action) {
     }
 
-    function _s($key, $a = null) {
+    public function _s($key, $a = null) {
         return get_string($key, 'gradereport_quick_edit', $a);
     }
 
-    function __construct($courseid, $gpr, $context, $itemtype, $itemid, $groupid=null) {
+    public function __construct($courseid, $gpr, $context, $itemtype, $itemid, $groupid=null) {
         parent::__construct($courseid, $gpr, $context);
 
         $class = self::classname($itemtype);
 
         $this->screen = new $class($courseid, $itemid, $groupid);
 
-        // TODO update events to new model
-        qe_events_trigger($class . '_instantiated', $this->screen);
+        $eventdata = array(
+            'contextid' => $context->id,
+            'other' => $this->screen,
+        );
 
-        // Load custom or predifined js
+        if ($class != 'quick_edit_anonymous' && $class != 'quick_edit_grade') {
+            $eventbase = 'quick_edit_other';
+        } else {
+            $eventbase = $class;
+        }
+        
+        global $CFG;
+        // TODO: Refactor the if-statement below to use only Event 2 (with no if-stmt).
+        if ($CFG->removeevent2triggers) {
+            require_once($CFG->dirroot . '/blocks/post_grades/events.php');
+            if ($eventbase == 'quick_edit_anonymous') {
+                post_grades_handler::quick_edit_anonymous_instantiated($this->screen);
+            } else if ($eventbase == 'quick_edit_grade') {
+                post_grades_handler::quick_edit_grade_instantiated($this->screen);
+            } else {
+                post_grades_handler::quick_edit_other_instantiated($this->screen);
+            }
+        } else {
+            require_once("classes/event/{$eventbase}_instantiated.php");
+            if ($eventbase == 'quick_edit_anonymous') {
+                $event = grade_report_quick_edit\event\quick_edit_anonymous_instantiated::create($eventdata);
+            } else if ($eventbase == 'quick_edit_grade') {
+                $event = grade_report_quick_edit\event\quick_edit_grade_instantiated::create($eventdata);
+            } else {
+                $event = grade_report_quick_edit\event\quick_edit_other_instantiated::create($eventdata);
+            }
+            $event->trigger();
+        }
+
+        // Load custom or predefined js.
         $this->screen->js();
 
         $base = '/grade/report/quick_edit/index.php';
 
-        $id_params = array('id' => $courseid);
+        $idparams = array('id' => $courseid);
 
-        $this->baseurl = new moodle_url($base, $id_params);
+        $this->baseurl = new moodle_url($base, $idparams);
 
-        $this->pbarurl = new moodle_url($base, $id_params + array(
+        $this->pbarurl = new moodle_url($base, $idparams + array(
             'item' => $itemtype,
             'itemid' => $itemid
         ));
@@ -111,7 +136,7 @@ class grade_report_quick_edit extends grade_report {
         $this->setup_groups();
     }
 
-    function output() {
+    public function output() {
         global $OUTPUT;
         return $OUTPUT->box($this->screen->html());
     }
@@ -121,18 +146,18 @@ function grade_report_quick_edit_profilereport($course, $user) {
     global $CFG, $OUTPUT;
 
     if (!function_exists('grade_report_user_profilereport')) {
-        require_once $CFG->dirroot . '/grade/report/user/lib.php';
+        require_once($CFG->dirroot . '/grade/report/user/lib.php');
     }
 
     $context = context_course::instance($course->id);
 
-    $can_use = (
+    $canuse = (
         has_capability('gradereport/quick_edit:view', $context) and
         has_capability('moodle/grade:viewall', $context) and
         has_capability('moodle/grade:edit', $context)
     );
 
-    if (!$can_use) {
+    if (!$canuse) {
         grade_report_user_profilereport($course, $user);
     } else {
         $gpr = new grade_plugin_return(array(
@@ -146,16 +171,5 @@ function grade_report_quick_edit_profilereport($course, $user) {
 
         echo $OUTPUT->heading($report->screen->heading());
         echo $report->output();
-    }
-}
-
-/**
- * qe_events_trigger hack for using legacy events without debug screaming at us
- */
-function qe_events_trigger($eventname, $eventdata) {
-    if (function_exists('events_trigger_legacy')) {
-        events_trigger_legacy($eventname, $eventdata);
-    } else {
-        events_trigger($eventname, $eventdata);
     }
 }

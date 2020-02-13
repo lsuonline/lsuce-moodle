@@ -47,11 +47,7 @@ class finalgrade extends grade_attribute_format implements unique_value, be_disa
     public function get_value() {
         $this->label = $this->grade->grade_item->itemname;
 
-        // BEGIN LSU PATCH Manual item rawgrade support
-        $val = $this->grade->grade_item->is_manual_item() && (!is_null($this->grade->rawgrade)) ?
-            $this->grade->rawgrade : $this->grade->finalgrade;
-        // END LSU PATCH Manual item rawgrade support
-
+        $val = $this->grade->finalgrade;
         if ($this->grade->grade_item->scaleid) {
             return $val ? (int)$val : -1;
         } else {
@@ -174,9 +170,11 @@ class finalgrade extends grade_attribute_format implements unique_value, be_disa
             }
             $gradestr->itemname = $this->grade->grade_item->get_name();
             $errorstr = get_string($errorstr, 'grades', $gradestr);
+            return $errorstr;
         }
 
+        // Only update grades if there are no errors.
         $gradeitem->update_final_grade($userid, $finalgrade, 'singleview', $feedback, FORMAT_MOODLE);
-        return $errorstr;
+        return '';
     }
 }

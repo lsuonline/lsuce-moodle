@@ -43,139 +43,138 @@
 defined('MOODLE_INTERNAL') || die();
 
 function xmldb_forum_upgrade($oldversion) {
-    global $CFG, $DB;
+    global $DB;
 
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
-    if ($oldversion < 2014051201) {
+    // Automatically generated Moodle v3.3.0 release upgrade line.
+    // Put any upgrade step following this.
 
-        // Incorrect values that need to be replaced.
-        $replacements = array(
-            11 => 20,
-            12 => 50,
-            13 => 100
-        );
+    if ($oldversion < 2017092200) {
 
-        // Run the replacements.
-        foreach ($replacements as $old => $new) {
-            $DB->set_field('forum', 'maxattachments', $new, array('maxattachments' => $old));
-        }
-
-        // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2014051201, 'forum');
-    }
-
-    if ($oldversion < 2014081500) {
-
-        // Define index course (not unique) to be added to forum_discussions.
-        $table = new xmldb_table('forum_discussions');
-        $index = new xmldb_index('course', XMLDB_INDEX_NOTUNIQUE, array('course'));
-
-        // Conditionally launch add index course.
-        if (!$dbman->index_exists($table, $index)) {
-            $dbman->add_index($table, $index);
-        }
-
-        // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2014081500, 'forum');
-    }
-
-    if ($oldversion < 2014081900) {
-
-        // Define table forum_discussion_subs to be created.
-        $table = new xmldb_table('forum_discussion_subs');
-
-        // Adding fields to table forum_discussion_subs.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('forum', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('discussion', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('preference', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
-
-        // Adding keys to table forum_discussion_subs.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->add_key('forum', XMLDB_KEY_FOREIGN, array('forum'), 'forum', array('id'));
-        $table->add_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
-        $table->add_key('discussion', XMLDB_KEY_FOREIGN, array('discussion'), 'forum_discussions', array('id'));
-        $table->add_key('user_discussions', XMLDB_KEY_UNIQUE, array('userid', 'discussion'));
-
-        // Conditionally launch create table for forum_discussion_subs.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2014081900, 'forum');
-    }
-
-    if ($oldversion < 2014103000) {
-        // Find records with multiple userid/postid combinations and find the lowest ID.
-        // Later we will remove all those which don't match this ID.
+        // Remove duplicate entries from forum_subscriptions.
+        // Find records with multiple userid/forum combinations and find the highest ID.
+        // Later we will remove all those entries.
         $sql = "
-            SELECT MIN(id) as lowid, userid, postid
-            FROM {forum_read}
-            GROUP BY userid, postid
+            SELECT MIN(id) as minid, userid, forum
+            FROM {forum_subscriptions}
+            GROUP BY userid, forum
             HAVING COUNT(id) > 1";
 
         if ($duplicatedrows = $DB->get_recordset_sql($sql)) {
             foreach ($duplicatedrows as $row) {
-                $DB->delete_records_select('forum_read', 'userid = ? AND postid = ? AND id <> ?', array(
-                    $row->userid,
-                    $row->postid,
-                    $row->lowid,
-                ));
+                $DB->delete_records_select('forum_subscriptions',
+                    'userid = :userid AND forum = :forum AND id <> :minid', (array)$row);
             }
         }
         $duplicatedrows->close();
 
-        // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2014103000, 'forum');
-    }
+        // Define key useridforum (primary) to be added to forum_subscriptions.
+        $table = new xmldb_table('forum_subscriptions');
+        $key = new xmldb_key('useridforum', XMLDB_KEY_UNIQUE, array('userid', 'forum'));
 
-    if ($oldversion < 2014110300) {
-
-        // Changing precision of field preference on table forum_discussion_subs to (10).
-        $table = new xmldb_table('forum_discussion_subs');
-        $field = new xmldb_field('preference', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'discussion');
-
-        // Launch change of precision for field preference.
-        $dbman->change_field_precision($table, $field);
+        // Launch add key useridforum.
+        $dbman->add_key($table, $key);
 
         // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2014110300, 'forum');
+        upgrade_mod_savepoint(true, 2017092200, 'forum');
     }
 
-    // Moodle v2.8.0 release upgrade line.
+    // Automatically generated Moodle v3.4.0 release upgrade line.
     // Put any upgrade step following this.
 
-    // Moodle v2.9.0 release upgrade line.
-    // Put any upgrade step following this.
-    if ($oldversion < 2015102900) {
-        // Groupid = 0 is never valid.
-        $DB->set_field('forum_discussions', 'groupid', -1, array('groupid' => 0));
+    if ($oldversion < 2018032900) {
 
-        // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2015102900, 'forum');
-    }
+        // Define field deleted to be added to forum_posts.
+        $table = new xmldb_table('forum_posts');
+        $field = new xmldb_field('deleted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'mailnow');
 
-    // Moodle v3.0.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    if ($oldversion < 2015120800) {
-
-        // Add support for pinned discussions.
-        $table = new xmldb_table('forum_discussions');
-        $field = new xmldb_field('pinned', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'timeend');
-
+        // Conditionally launch add field deleted.
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
 
         // Forum savepoint reached.
-        upgrade_mod_savepoint(true, 2015120800, 'forum');
+        upgrade_mod_savepoint(true, 2018032900, 'forum');
     }
-    // Moodle v3.1.0 release upgrade line.
+
+    // Automatically generated Moodle v3.5.0 release upgrade line.
     // Put any upgrade step following this.
+
+    // Automatically generated Moodle v3.6.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2019031200) {
+        // Define field privatereplyto to be added to forum_posts.
+        $table = new xmldb_table('forum_posts');
+        $field = new xmldb_field('privatereplyto', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'mailnow');
+
+        // Conditionally launch add field privatereplyto.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2019031200, 'forum');
+    }
+
+    if ($oldversion < 2019040400) {
+
+        $table = new xmldb_table('forum');
+
+        // Define field duedate to be added to forum.
+        $field = new xmldb_field('duedate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'introformat');
+
+        // Conditionally launch add field duedate.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field cutoffdate to be added to forum.
+        $field = new xmldb_field('cutoffdate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'duedate');
+
+        // Conditionally launch add field cutoffdate.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2019040400, 'forum');
+    }
+
+    if ($oldversion < 2019040402) {
+        // Define field deleted to be added to forum_posts.
+        $table = new xmldb_table('forum_discussions');
+        $field = new xmldb_field('timelocked', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'pinned');
+
+        // Conditionally launch add field deleted.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Forum savepoint reached.
+        upgrade_mod_savepoint(true, 2019040402, 'forum');
+    }
+
+    // Automatically generated Moodle v3.7.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2019052001) {
+        $sql = "SELECT d.id AS discussionid, p.userid AS correctuser
+                FROM {forum_discussions} d
+                INNER JOIN {forum_posts} p ON p.id = d.firstpost
+                WHERE d.userid <> p.userid";
+        $recordset = $DB->get_recordset_sql($sql);
+        foreach ($recordset as $record) {
+            $object = new stdClass();
+            $object->id = $record->discussionid;
+            $object->userid = $record->correctuser;
+            $DB->update_record('forum_discussions', $object);
+        }
+
+        $recordset->close();
+
+        // Forum savepoint reached.
+        upgrade_mod_savepoint(true, 2019052001, 'forum');
+    }
 
     return true;
 }

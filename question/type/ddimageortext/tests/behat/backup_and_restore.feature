@@ -20,8 +20,7 @@ Feature: Test duplicating a quiz containing a drag and drop onto image question
     And quiz "Test quiz" contains the following questions:
       | Drag onto image | 1 |
     And I log in as "admin"
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
   @javascript
   Scenario: Backup and restore a course containing a drag and drop onto image question
@@ -29,8 +28,8 @@ Feature: Test duplicating a quiz containing a drag and drop onto image question
       | Confirmation | Filename | test_backup.mbz |
     And I restore "test_backup.mbz" backup into a new course using this options:
       | Schema | Course name | Course 2 |
-    And I navigate to "Question bank" node in "Course administration"
-    And I click on "Edit" "link" in the "Drag onto image" "table_row"
+    And I navigate to "Question bank" in current page administration
+    And I choose "Edit question" action for "Drag onto image" in the question bank
     Then the following fields match these values:
       | Question name                       | Drag onto image                                      |
       | General feedback                    | <p>More information about the major features of the Earth's surface can be found in Block 3, Section 6.2.</p> |

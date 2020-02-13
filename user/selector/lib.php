@@ -82,6 +82,9 @@ abstract class user_selector_base {
     /** @var int this is used to define maximum number of users visible in list */
     public $maxusersperpage = 100;
 
+    /** @var boolean Whether to override fullname() */
+    public $viewfullnames = false;
+
     /**
      * Constructor. Each subclass must have a constructor with this signature.
      *
@@ -102,14 +105,17 @@ abstract class user_selector_base {
             $this->accesscontext = context_system::instance();
         }
 
+        // Check if some legacy code tries to override $CFG->showuseridentity.
         if (isset($options['extrafields'])) {
-            $this->extrafields = $options['extrafields'];
-        } else if (!empty($CFG->showuseridentity) &&
-                has_capability('moodle/site:viewuseridentity', $this->accesscontext)) {
-            $this->extrafields = explode(',', $CFG->showuseridentity);
-        } else {
-            $this->extrafields = array();
+            debugging('The user_selector classes do not support custom list of extra identity fields any more. '.
+                'Instead, the user identity fields defined by the site administrator will be used to respect '.
+                'the configured privacy setting.', DEBUG_DEVELOPER);
+            unset($options['extrafields']);
         }
+
+        // Populate the list of additional user identifiers to display.
+        $this->extrafields = get_extra_user_fields($this->accesscontext);
+
         if (isset($options['exclude']) && is_array($options['exclude'])) {
             $this->exclude = $options['exclude'];
         }
@@ -227,19 +233,19 @@ abstract class user_selector_base {
         }
         $output = '<div class="userselector" id="' . $this->name . '_wrapper">' . "\n" .
                 '<select name="' . $name . '" id="' . $this->name . '" ' .
-                $multiselect . 'size="' . $this->rows . '">' . "\n";
+                $multiselect . 'size="' . $this->rows . '" class="form-control no-overflow">' . "\n";
 
         // Populate the select.
         $output .= $this->output_options($groupedusers, $search);
 
         // Output the search controls.
-        $output .= "</select>\n<div>\n";
+        $output .= "</select>\n<div class=\"form-inline\">\n";
         $output .= '<input type="text" name="' . $this->name . '_searchtext" id="' .
-                $this->name . '_searchtext" size="15" value="' . s($search) . '" />';
+                $this->name . '_searchtext" size="15" value="' . s($search) . '" class="form-control"/>';
         $output .= '<input type="submit" name="' . $this->name . '_searchbutton" id="' .
-                $this->name . '_searchbutton" value="' . $this->search_button_caption() . '" />';
+                $this->name . '_searchbutton" value="' . $this->search_button_caption() . '" class="btn btn-secondary"/>';
         $output .= '<input type="submit" name="' . $this->name . '_clearbutton" id="' .
-                $this->name . '_clearbutton" value="' . get_string('clear') . '" />';
+                $this->name . '_clearbutton" value="' . get_string('clear') . '" class="btn btn-secondary"/>';
 
         // And the search options.
         $optionsoutput = false;
@@ -571,11 +577,11 @@ abstract class user_selector_base {
      * @return string a string representation of the user.
      */
     public function output_user($user) {
-        $out = fullname($user);
+        $out = fullname($user, $this->viewfullnames);
         if ($this->extrafields) {
             $displayfields = array();
             foreach ($this->extrafields as $field) {
-                $displayfields[] = $user->{$field};
+                $displayfields[] = s($user->{$field});
             }
             $out .= ' (' . implode(', ', $displayfields) . ')';
         }
@@ -624,11 +630,14 @@ abstract class user_selector_base {
             $checked = '';
         }
         $name = 'userselector_' . $name;
-        $output = '<p><input type="hidden" name="' . $name . '" value="0" />' .
-                // For the benefit of brain-dead IE, the id must be different from the name of the hidden form field above.
-                // It seems that document.getElementById('frog') in IE will return and element with name="frog".
-                '<input type="checkbox" id="' . $name . 'id" name="' . $name . '" value="1"' . $checked . ' /> ' .
-                '<label for="' . $name . 'id">' . $label . "</label></p>\n";
+        // For the benefit of brain-dead IE, the id must be different from the name of the hidden form field above.
+        // It seems that document.getElementById('frog') in IE will return and element with name="frog".
+        $output = '<div class="form-check"><input type="hidden" name="' . $name . '" value="0" />' .
+                    '<label class="form-check-label" for="' . $name . 'id">' .
+                        '<input class="form-check-input" type="checkbox" id="' . $name . 'id" name="' . $name .
+                            '" value="1"' . $checked . ' /> ' . $label .
+                    "</label>
+                   </div>\n";
         user_preference_allow_ajax_update($name, PARAM_BOOL);
         return $output;
     }
@@ -799,12 +808,26 @@ class group_non_members_selector extends groups_user_selector_base {
      *
      * Used by /group/clientlib.js
      *
-     * @global moodle_database $DB
      * @global moodle_page $PAGE
      * @param int $courseid
      */
     public function print_user_summaries($courseid) {
-        global $DB, $PAGE;
+        global $PAGE;
+        $usersummaries = $this->get_user_summaries($courseid);
+        $PAGE->requires->data_for_js('userSummaries', $usersummaries);
+    }
+
+    /**
+     * Construct HTML lists of group-memberships of the current set of users.
+     *
+     * Used in user/selector/search.php to repopulate the userSummaries JS global
+     * that is created in self::print_user_summaries() above.
+     *
+     * @param int $courseid The course
+     * @return string[] Array of HTML lists of groups.
+     */
+    public function get_user_summaries($courseid) {
+        global $DB;
 
         $usersummaries = array();
 
@@ -838,8 +861,7 @@ class group_non_members_selector extends groups_user_selector_base {
                 $usersummaries[] = $usergrouplist;
             }
         }
-
-        $PAGE->requires->data_for_js('userSummaries', $usersummaries);
+        return $usersummaries;
     }
 
     /**
@@ -868,7 +890,15 @@ class group_non_members_selector extends groups_user_selector_base {
         list($searchcondition, $searchparams) = $this->search_sql($search, 'u');
 
         // Build the SQL.
-        list($enrolsql, $enrolparams) = get_enrolled_sql($context);
+        $enrolledjoin = get_enrolled_join($context, 'u.id');
+
+        $wheres = [];
+        $wheres[] = $enrolledjoin->wheres;
+        $wheres[] = 'u.deleted = 0';
+        $wheres[] = 'gm.id IS NULL';
+        $wheres = implode(' AND ', $wheres);
+        $wheres .= ' AND ' . $searchcondition;
+
         $fields = "SELECT r.id AS roleid, u.id AS userid,
                           " . $this->required_fields_sql('u') . ",
                           (SELECT count(igm.groupid)
@@ -876,18 +906,16 @@ class group_non_members_selector extends groups_user_selector_base {
                              JOIN {groups} ig ON igm.groupid = ig.id
                             WHERE igm.userid = u.id AND ig.courseid = :courseid) AS numgroups";
         $sql = "   FROM {user} u
-                   JOIN ($enrolsql) e ON e.id = u.id
+                   $enrolledjoin->joins
               LEFT JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.contextid $relatedctxsql AND ra.roleid $roleids)
               LEFT JOIN {role} r ON r.id = ra.roleid
               LEFT JOIN {groups_members} gm ON (gm.userid = u.id AND gm.groupid = :groupid)
-                  WHERE u.deleted = 0
-                        AND gm.id IS NULL
-                        AND $searchcondition";
+                  WHERE $wheres";
 
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
         $orderby = ' ORDER BY ' . $sort;
 
-        $params = array_merge($searchparams, $roleparams, $enrolparams, $relatedctxparams);
+        $params = array_merge($searchparams, $roleparams, $relatedctxparams, $enrolledjoin->params);
         $params['courseid'] = $this->courseid;
         $params['groupid']  = $this->groupid;
 

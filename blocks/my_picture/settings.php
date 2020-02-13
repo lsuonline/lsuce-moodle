@@ -22,32 +22,34 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Set and get the config variable
+defined('MOODLE_INTERNAL') || die;
+
+// Set and get the config variable.
 global $CFG;
 
-defined('MOODLE_INTERNAL') || die;
 require_once($CFG->dirroot . '/blocks/my_picture/lib.php');
 
-$_s = function($key) { return get_string($key, 'block_my_picture'); };
+$s = function($key) {
+    return get_string($key, 'block_my_picture');
+};
 
 if ($ADMIN->fulltree) {
-
-    $default_url = $CFG->wwwroot;
+    $defaulturl = $CFG->wwwroot;
     $settings->add(new admin_setting_configtext('block_my_picture/webservice_url',
-        $_s('webservice_url'), $_s('url'), $default_url));
+        $s('webservice_url'), $s('url'), $defaulturl));
 
     $settings->add(new admin_setting_configtext('block_my_picture/ready_url',
-        $_s('ready_url'), $_s('url'), $default_url));
+        $s('ready_url'), $s('url'), $defaulturl));
 
     $settings->add(new admin_setting_configcheckbox('block_my_picture/fetch',
-        $_s('fetch'), $_s('fetch_desc'), 1));
+        $s('fetch'), $s('fetch_desc'), 1));
 
     $settings->add(new admin_setting_configtext('block_my_picture/cron_users',
-        $_s('cron_users'), $_s('cron_users_desc'), 100));
+        $s('cron_users'), $s('cron_users_desc'), 100));
 
-    $reprocess_all_link = '<a href = "' . $CFG->wwwroot . '/blocks/my_picture/reprocess_all.php">' . $_s('reprocess_all') . '</a>';
-    $fetch_missing_link = '<a href = "' . $CFG->wwwroot . '/blocks/my_picture/fetch_missing.php">' . $_s('fetch_missing') . '</a>';
+    $reprocessalllink = '<a href = "' . $CFG->wwwroot . '/blocks/my_picture/reprocess_all.php">' . $s('reprocess_all') . '</a>';
+    $fetchmissinglink = '<a href = "' . $CFG->wwwroot . '/blocks/my_picture/fetch_missing.php">' . $s('fetch_missing') . '</a>';
 
-    $settings->add(new admin_setting_heading('block_mypicture_reprocess_all_heading', '', $reprocess_all_link));
-    $settings->add(new admin_setting_heading('block_mypicture_fetch_missing_heading', '', $fetch_missing_link));
+    $settings->add(new admin_setting_heading('block_mypicture_reprocess_all_heading', '', $reprocessalllink));
+    $settings->add(new admin_setting_heading('block_mypicture_fetch_missing_heading', '', $fetchmissinglink));
 }

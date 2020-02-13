@@ -1,6 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Setting strings
+// Setting strings.
 $string['pluginname'] = 'LSU Enrollment Provider';
 $string['pluginname_desc'] = 'LSU enrollment provider enhances the UES enrollment
 process with LSU enrollment information. The provider will give a link to
@@ -57,13 +71,13 @@ $string['student_anonymous_source_desc'] = 'The web service id for anonymous num
 $string['student_ath_source'] = 'Athlete info serviceId';
 $string['student_ath_source_desc'] = 'The web service id for student athletes';
 
-// Error strings
+// Error strings.
 $string['bad_file'] = 'Provide a *.wsdl* file';
 $string['no_file'] = 'The WSDL does not exists in wsdl_location';
 $string['bad_url'] = 'Provide a valid url (define either a http or https protocol)';
 $string['bad_resp'] = 'Invalid credentials in credential location request';
 
-// Reprocess strings
+// Reprocess strings.
 $string['no_permission'] = 'You do no have sufficient permission to access this page.';
 $string['reprocess'] = 'Reprocess Student Data';
 $string['reprocess_confirm'] = 'You are about to reprocess student meta

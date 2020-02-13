@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -22,12 +21,13 @@
  * @copyright  2014 LSU
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 defined('MOODLE_INTERNAL') || die;
 
-require_once ($CFG->dirroot.'/course/moodleform_mod.php');
+require_once($CFG->dirroot.'/course/moodleform_mod.php');
 
 class mod_library_mod_form extends moodleform_mod {
-    function definition() {
+    public function definition() {
         $mform = $this->_form;
         $mform->addElement('header', 'generalhdr', get_string('general'));
         $this->standard_intro_elements(false, get_string('librarytext', 'library'));

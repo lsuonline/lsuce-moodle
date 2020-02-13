@@ -28,9 +28,15 @@
 
 // NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
 
-use Behat\Mink\Exception\ExpectationException as ExpectationException,
-    Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException,
-    Behat\Mink\Element\NodeElement as NodeElement;
+use Behat\Mink\Exception\DriverException;
+use Behat\Mink\Exception\ExpectationException;
+use Behat\Mink\Exception\ElementNotFoundException;
+use Behat\Mink\Element\NodeElement;
+use Behat\Mink\Element\Element;
+use Behat\Mink\Session;
+
+require_once(__DIR__ . '/classes/component_named_selector.php');
+require_once(__DIR__ . '/classes/component_named_replacement.php');
 
 /**
  * Steps definitions base class.
@@ -58,16 +64,28 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * A reduced timeout for cases where self::TIMEOUT is too much
      * and a simple $this->getSession()->getPage()->find() could not
      * be enough.
+     *
+     * @deprecated since Moodle 3.7 MDL-64979 - please use get_reduced_timeout() instead
+     * @todo MDL-64982 This will be deleted in Moodle 4.1
+     * @see behat_base::get_reduced_timeout()
      */
     const REDUCED_TIMEOUT = 2;
 
     /**
      * The timeout for each Behat step (load page, wait for an element to load...).
+     *
+     * @deprecated since Moodle 3.7 MDL-64979 - please use get_timeout() instead
+     * @todo MDL-64982 This will be deleted in Moodle 4.1
+     * @see behat_base::get_timeout()
      */
     const TIMEOUT = 6;
 
     /**
      * And extended timeout for specific cases.
+     *
+     * @deprecated since Moodle 3.7 MDL-64979 - please use get_extended_timeout() instead
+     * @todo MDL-64982 This will be deleted in Moodle 4.1
+     * @see behat_base::get_extended_timeout()
      */
     const EXTENDED_TIMEOUT = 10;
 
@@ -101,14 +119,6 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @return NodeElement
      */
     protected function find($selector, $locator, $exception = false, $node = false, $timeout = false) {
-
-        // Throw exception, so dev knows it is not supported.
-        if ($selector === 'named') {
-            $exception = 'Using the "named" selector is deprecated as of 3.1. '
-                .' Use the "named_partial" or use the "named_exact" selector instead.';
-            throw new ExpectationException($exception, $this->getSession());
-        }
-
         // Returns the first match.
         $items = $this->find_all($selector, $locator, $exception, $node, $timeout);
         return count($items) ? reset($items) : null;
@@ -123,12 +133,11 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @param string $selector The selector type (css, xpath, named...)
      * @param mixed $locator It depends on the $selector, can be the xpath, a name, a css locator...
      * @param Exception $exception Otherwise we throw expcetion with generic info
-     * @param NodeElement $node Spins around certain DOM node instead of the whole page
+     * @param NodeElement $container Restrict the search to just children of the specified container
      * @param int $timeout Forces a specific time out (in seconds). If 0 is provided the default timeout will be applied.
      * @return array NodeElements list
      */
-    protected function find_all($selector, $locator, $exception = false, $node = false, $timeout = false) {
-
+    protected function find_all($selector, $locator, $exception = false, $container = false, $timeout = false) {
         // Throw exception, so dev knows it is not supported.
         if ($selector === 'named') {
             $exception = 'Using the "named" selector is deprecated as of 3.1. '
@@ -138,7 +147,6 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
         // Generic info.
         if (!$exception) {
-
             // With named selectors we can be more specific.
             if (($selector == 'named_exact') || ($selector == 'named_partial')) {
                 $exceptiontype = $locator[0];
@@ -157,15 +165,9 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
             $exception = new ElementNotFoundException($this->getSession(), $exceptiontype, null, $exceptionlocator);
         }
 
-        $params = array('selector' => $selector, 'locator' => $locator);
-        // Pushing $node if required.
-        if ($node) {
-            $params['node'] = $node;
-        }
-
         // How much we will be waiting for the element to appear.
         if (!$timeout) {
-            $timeout = self::TIMEOUT;
+            $timeout = self::get_timeout();
             $microsleep = false;
         } else {
             // Spinning each 0.1 seconds if the timeout was forced as we understand
@@ -174,42 +176,83 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
             $microsleep = true;
         }
 
+        // Normalise the values in order to perform the search.
+        [
+            'selector' => $selector,
+            'locator' => $locator,
+            'container' => $container,
+        ] = $this->normalise_selector($selector, $locator, $container ?: $this->getSession()->getPage());
+
         // Waits for the node to appear if it exists, otherwise will timeout and throw the provided exception.
         return $this->spin(
-            function($context, $args) {
-
-                // If no DOM node provided look in all the page.
-                if (empty($args['node'])) {
-                    return $context->getSession()->getPage()->findAll($args['selector'], $args['locator']);
-                }
-
-                // For nodes contained in other nodes we can not use the basic named selectors
-                // as they include unions and they would look for matches in the DOM root.
-                $elementxpath = $context->getSession()->getSelectorsHandler()->selectorToXpath($args['selector'], $args['locator']);
-
-                // Split the xpath in unions and prefix them with the container xpath.
-                $unions = explode('|', $elementxpath);
-                foreach ($unions as $key => $union) {
-                    $union = trim($union);
-
-                    // We are in the container node.
-                    if (strpos($union, '.') === 0) {
-                        $union = substr($union, 1);
-                    } else if (strpos($union, '/') !== 0) {
-                        // Adding the path separator in case it is not there.
-                        $union = '/' . $union;
-                    }
-                    $unions[$key] = $args['node']->getXpath() . $union;
-                }
-
-                // We can not use usual Element::find() as it prefixes with DOM root.
-                return $context->getSession()->getDriver()->find(implode('|', $unions));
-            },
-            $params,
-            $timeout,
-            $exception,
-            $microsleep
+            function() use ($selector, $locator, $container) {
+                return $container->findAll($selector, $locator);
+            }, [], $timeout, $exception, $microsleep
         );
+    }
+
+    /**
+     * Normalise the locator and selector.
+     *
+     * @param string $selector The type of thing to search
+     * @param mixed $locator The locator value. Can be an array, but is more likely a string.
+     * @param Element $container An optional container to search within
+     * @return array The selector, locator, and container to search within
+     */
+    public function normalise_selector(string $selector, $locator, Element $container): array {
+        // Check for specific transformations for this selector type.
+        $transformfunction = "transform_find_for_{$selector}";
+        if (method_exists('behat_selectors', $transformfunction)) {
+            // A selector-specific transformation exists.
+            // Perform initial transformation of the selector within the current container.
+            [
+                'selector' => $selector,
+                'locator' => $locator,
+                'container' => $container,
+            ] = behat_selectors::{$transformfunction}($this, $locator, $container);
+        }
+
+        // Normalise the css and xpath selector types.
+        if ('css_element' === $selector) {
+            $selector = 'css';
+        } else if ('xpath_element' === $selector) {
+            $selector = 'xpath';
+        }
+
+        // Convert to a named selector where the selector type is not a known selector.
+        $converttonamed = !$this->getSession()->getSelectorsHandler()->isSelectorRegistered($selector);
+        $converttonamed = $converttonamed && 'xpath' !== $selector;
+        if ($converttonamed) {
+            if (behat_partial_named_selector::is_deprecated_selector($selector)) {
+                if ($replacement = behat_partial_named_selector::get_deprecated_replacement($selector)) {
+                    error_log("The '{$selector}' selector has been replaced with {$replacement}");
+                    $selector = $replacement;
+                }
+            } else if (behat_exact_named_selector::is_deprecated_selector($selector)) {
+                if ($replacement = behat_exact_named_selector::get_deprecated_replacement($selector)) {
+                    error_log("The '{$selector}' selector has been replaced with {$replacement}");
+                    $selector = $replacement;
+                }
+            }
+
+            $allowedpartialselectors = behat_partial_named_selector::get_allowed_selectors();
+            $allowedexactselectors = behat_exact_named_selector::get_allowed_selectors();
+            if (isset($allowedpartialselectors[$selector])) {
+                $locator = behat_selectors::normalise_named_selector($allowedpartialselectors[$selector], $locator);
+                $selector = 'named_partial';
+            } else if (isset($allowedexactselectors[$selector])) {
+                $locator = behat_selectors::normalise_named_selector($allowedexactselectors[$selector], $locator);
+                $selector = 'named_exact';
+            } else {
+                throw new ExpectationException("The '{$selector}' selector type is not registered.", $this->getSession()->getDriver());
+            }
+        }
+
+        return [
+            'selector' => $selector,
+            'locator' => $locator,
+            'container' => $container,
+        ];
     }
 
     /**
@@ -235,27 +278,14 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @return NodeElement
      */
     public function __call($name, $arguments) {
-
-        if (substr($name, 0, 5) !== 'find_') {
-            throw new coding_exception('The "' . $name . '" method does not exist');
+        if (substr($name, 0, 5) === 'find_') {
+            return call_user_func_array([$this, 'find'], array_merge(
+                [substr($name, 5)],
+                $arguments
+            ));
         }
 
-        // Only the named selector identifier.
-        $cleanname = substr($name, 5);
-
-        // All named selectors shares the interface.
-        if (count($arguments) !== 1) {
-            throw new coding_exception('The "' . $cleanname . '" named selector needs the locator as it\'s single argument');
-        }
-
-        // Redirecting execution to the find method with the specified selector.
-        // It will detect if it's pointing to an unexisting named selector.
-        return $this->find('named_partial',
-            array(
-                $cleanname,
-                behat_context_helper::escape($arguments[0])
-            )
-        );
+        throw new coding_exception("The '{$name}' method does not exist");
     }
 
     /**
@@ -306,22 +336,13 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
         // Using default timeout which is pretty high.
         if (!$timeout) {
-            $timeout = self::TIMEOUT;
-        }
-        if ($microsleep) {
-            // Will sleep 1/10th of a second by default for self::TIMEOUT seconds.
-            $loops = $timeout * 10;
-        } else {
-            // Will sleep for self::TIMEOUT seconds.
-            $loops = $timeout;
+            $timeout = self::get_timeout();
         }
 
-        // DOM will never change on non-javascript case; do not wait or try again.
-        if (!$this->running_javascript()) {
-            $loops = 1;
-        }
+        $start = microtime(true);
+        $end = $start + $timeout;
 
-        for ($i = 0; $i < $loops; $i++) {
+        do {
             // We catch the exception thrown by the step definition to execute it again.
             try {
                 // We don't check with !== because most of the time closures will return
@@ -335,18 +356,15 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
                 if (!$exception) {
                     $exception = $e;
                 }
-                // We wait until no exception is thrown or timeout expires.
-                continue;
             }
 
-            if ($this->running_javascript()) {
-                if ($microsleep) {
-                    usleep(100000);
-                } else {
-                    sleep(1);
-                }
+            if (!$this->running_javascript()) {
+                break;
             }
-        }
+
+            usleep(100000);
+
+        } while (microtime(true) < $end);
 
         // Using coding_exception as is a development issue if no exception has been provided.
         if (!$exception) {
@@ -368,12 +386,7 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @return NodeElement
      */
     protected function get_selected_node($selectortype, $element) {
-
-        // Getting Mink selector and locator.
-        list($selector, $locator) = $this->transform_selector($selectortype, $element);
-
-        // Returns the NodeElement.
-        return $this->find($selector, $locator);
+        return $this->find($selectortype, $element);
     }
 
     /**
@@ -385,7 +398,6 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @return NodeElement
      */
     protected function get_text_selector_node($selectortype, $element) {
-
         // Getting Mink selector and locator.
         list($selector, $locator) = $this->transform_text_selector($selectortype, $element);
 
@@ -404,18 +416,13 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @return NodeElement
      */
     protected function get_node_in_container($selectortype, $element, $containerselectortype, $containerelement) {
-
         // Gets the container, it will always be text based.
         $containernode = $this->get_text_selector_node($containerselectortype, $containerelement);
 
-        list($selector, $locator) = $this->transform_selector($selectortype, $element);
-
-        // Specific exception giving info about where can't we find the element.
         $locatorexceptionmsg = $element . '" in the "' . $containerelement. '" "' . $containerselectortype. '"';
         $exception = new ElementNotFoundException($this->getSession(), $selectortype, null, $locatorexceptionmsg);
 
-        // Looks for the requested node inside the container node.
-        return $this->find($selector, $locator, $exception, $containernode);
+        return $this->find($selectortype, $element, $exception, $containernode);
     }
 
     /**
@@ -434,14 +441,18 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @return array Contains the selector and the locator expected by Mink.
      */
     protected function transform_selector($selectortype, $element) {
-
         // Here we don't know if an allowed text selector is being used.
         $selectors = behat_selectors::get_allowed_selectors();
         if (!isset($selectors[$selectortype])) {
             throw new ExpectationException('The "' . $selectortype . '" selector type does not exist', $this->getSession());
         }
 
-        return behat_selectors::get_behat_selector($selectortype, $element, $this->getSession());
+        [
+            'selector' => $selector,
+            'locator' => $locator,
+        ] = $this->normalise_selector($selectortype, $element, $this->getSession()->getPage());
+
+        return [$selector, $locator];
     }
 
     /**
@@ -475,67 +486,87 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
     }
 
     /**
+     * Checks if the current page is part of the mobile app.
+     *
+     * @return bool True if it's in the app
+     */
+    protected function is_in_app() : bool {
+        // Cannot be in the app if there's no @app tag on scenario.
+        if (!$this->has_tag('app')) {
+            return false;
+        }
+
+        // Check on page to see if it's an app page. Safest way is to look for added JavaScript.
+        return $this->getSession()->evaluateScript('typeof window.behat') === 'object';
+    }
+
+    /**
      * Spins around an element until it exists
      *
      * @throws ExpectationException
-     * @param string $element
+     * @param string $locator
      * @param string $selectortype
      * @return void
      */
-    protected function ensure_element_exists($element, $selectortype) {
-
-        // Getting the behat selector & locator.
-        list($selector, $locator) = $this->transform_selector($selectortype, $element);
-
+    protected function ensure_element_exists($locator, $selectortype) {
         // Exception if it timesout and the element is still there.
-        $msg = 'The "' . $element . '" element does not exist and should exist';
+        $msg = "The '{$locator}' element does not exist and should";
         $exception = new ExpectationException($msg, $this->getSession());
+
+        // Normalise the values in order to perform the search.
+        [
+            'selector' => $selector,
+            'locator' => $locator,
+            'container' => $container,
+        ] = $this->normalise_selector($selectortype, $locator, $this->getSession()->getPage());
 
         // It will stop spinning once the find() method returns true.
         $this->spin(
-            function($context, $args) {
-                // We don't use behat_base::find as it is already spinning.
-                if ($context->getSession()->getPage()->find($args['selector'], $args['locator'])) {
+            function() use ($selector, $locator, $container) {
+                if ($container->find($selector, $locator)) {
                     return true;
                 }
                 return false;
             },
-            array('selector' => $selector, 'locator' => $locator),
-            self::EXTENDED_TIMEOUT,
+            [],
+            self::get_extended_timeout(),
             $exception,
             true
         );
-
     }
 
     /**
      * Spins until the element does not exist
      *
      * @throws ExpectationException
-     * @param string $element
+     * @param string $locator
      * @param string $selectortype
      * @return void
      */
-    protected function ensure_element_does_not_exist($element, $selectortype) {
-
-        // Getting the behat selector & locator.
-        list($selector, $locator) = $this->transform_selector($selectortype, $element);
-
+    protected function ensure_element_does_not_exist($locator, $selectortype) {
         // Exception if it timesout and the element is still there.
-        $msg = 'The "' . $element . '" element exists and should not exist';
+        $msg = "The '{$locator}' element exists and should not exist";
         $exception = new ExpectationException($msg, $this->getSession());
+
+        // Normalise the values in order to perform the search.
+        [
+            'selector' => $selector,
+            'locator' => $locator,
+            'container' => $container,
+        ] = $this->normalise_selector($selectortype, $locator, $this->getSession()->getPage());
 
         // It will stop spinning once the find() method returns false.
         $this->spin(
-            function($context, $args) {
-                // We don't use behat_base::find() as we are already spinning.
-                if (!$context->getSession()->getPage()->find($args['selector'], $args['locator'])) {
-                    return true;
+            function() use ($selector, $locator, $container) {
+                if ($container->find($selector, $locator)) {
+                    return false;
                 }
-                return false;
+                return true;
             },
-            array('selector' => $selector, 'locator' => $locator),
-            self::EXTENDED_TIMEOUT,
+            // Note: We cannot use $this because the find will then be $this->find(), which leads us to a nested spin().
+            // We cannot nest spins because the outer spin times out before the inner spin completes.
+            [],
+            self::get_extended_timeout(),
             $exception,
             true
         );
@@ -567,7 +598,42 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
                 return false;
             },
             $node,
-            self::EXTENDED_TIMEOUT,
+            self::get_extended_timeout(),
+            $exception,
+            true
+        );
+    }
+
+    /**
+     * Ensures that the provided node has a attribute value set. This step can be used to check if specific
+     * JS has finished modifying the node.
+     *
+     * @throws ExpectationException
+     * @param NodeElement $node
+     * @param string $attribute attribute name
+     * @param string $attributevalue attribute value to check.
+     * @return void Throws an exception if it times out without the element being visible
+     */
+    protected function ensure_node_attribute_is_set($node, $attribute, $attributevalue) {
+
+        if (!$this->running_javascript()) {
+            return;
+        }
+
+        // Exception if it timesout and the element is still there.
+        $msg = 'The "' . $node->getXPath() . '" xpath node is not visible and it should be visible';
+        $exception = new ExpectationException($msg, $this->getSession());
+
+        // It will stop spinning once the $args[1]) == $args[2], and method returns true.
+        $this->spin(
+            function($context, $args) {
+                if ($args[0]->getAttribute($args[1]) == $args[2]) {
+                    return true;
+                }
+                return false;
+            },
+            array($node, $attribute, $attributevalue),
+            self::get_extended_timeout(),
             $exception,
             true
         );
@@ -613,6 +679,16 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
     }
 
     /**
+     * Checks if the current scenario, or its feature, has a specified tag.
+     *
+     * @param string $tag Tag to check
+     * @return bool True if the tag exists in scenario or feature
+     */
+    public function has_tag(string $tag) : bool {
+        return array_key_exists($tag, behat_hooks::get_tags_for_scenario());
+    }
+
+    /**
      * Change browser window size.
      *   - small: 640x480
      *   - medium: 1024x768
@@ -630,11 +706,11 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
         switch ($windowsize) {
             case "small":
-                $width = 640;
-                $height = 480;
+                $width = 1024;
+                $height = 768;
                 break;
             case "medium":
-                $width = 1024;
+                $width = 1366;
                 $height = 768;
                 break;
             case "large":
@@ -675,24 +751,31 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
     /**
      * Waits for all the JS to be loaded.
      *
-     * @throws \Exception
-     * @throws NoSuchWindow
-     * @throws UnknownError
-     * @return bool True or false depending whether all the JS is loaded or not.
+     * @return  bool Whether any JS is still pending completion.
      */
     public function wait_for_pending_js() {
-        // Waiting for JS is only valid for JS scenarios.
         if (!$this->running_javascript()) {
-            return;
+            // JS is not available therefore there is nothing to wait for.
+            return false;
         }
 
+        return static::wait_for_pending_js_in_session($this->getSession());
+    }
+
+    /**
+     * Waits for all the JS to be loaded.
+     *
+     * @param   Session $session The Mink Session where JS can be run
+     * @return  bool Whether any JS is still pending completion.
+     */
+    public static function wait_for_pending_js_in_session(Session $session) {
         // We don't use behat_base::spin() here as we don't want to end up with an exception
         // if the page & JSs don't finish loading properly.
-        for ($i = 0; $i < self::EXTENDED_TIMEOUT * 10; $i++) {
+        for ($i = 0; $i < self::get_extended_timeout() * 10; $i++) {
             $pending = '';
             try {
-                $jscode = '
-                    return function() {
+                $jscode = trim(preg_replace('/\s+/', ' ', '
+                    return (function() {
                         if (typeof M === "undefined") {
                             if (document.readyState === "complete") {
                                 return "";
@@ -706,8 +789,8 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
                         } else {
                             return "incomplete"
                         }
-                    }();';
-                $pending = $this->getSession()->evaluateScript($jscode);
+                    }());'));
+                $pending = $session->evaluateScript($jscode);
             } catch (NoSuchWindow $nsw) {
                 // We catch an exception here, in case we just closed the window we were interacting with.
                 // No javascript is running if there is no window right?
@@ -728,12 +811,14 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
             usleep(100000);
         }
 
-        // Timeout waiting for JS to complete. It will be catched and forwarded to behat_hooks::i_look_for_exceptions().
-        // It is unlikely that Javascript code of a page or an AJAX request needs more than self::EXTENDED_TIMEOUT seconds
+        // Timeout waiting for JS to complete. It will be caught and forwarded to behat_hooks::i_look_for_exceptions().
+        // It is unlikely that Javascript code of a page or an AJAX request needs more than get_extended_timeout() seconds
         // to be loaded, although when pages contains Javascript errors M.util.js_complete() can not be executed, so the
         // number of JS pending code and JS completed code will not match and we will reach this point.
-        throw new \Exception('Javascript code and/or AJAX requests are not ready after ' . self::EXTENDED_TIMEOUT .
-            ' seconds. There is a Javascript error or the code is extremely slow.');
+        throw new \Exception('Javascript code and/or AJAX requests are not ready after ' .
+                self::get_extended_timeout() .
+                ' seconds. There is a Javascript error or the code is extremely slow (' . $pending .
+                '). If you are using a slow machine, consider setting $CFG->behat_increasetimeout.');
     }
 
     /**
@@ -764,6 +849,17 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
             // Joined xpath expression. Most of the time there will be no exceptions, so this pre-check
             // is faster than to send the 4 xpath queries for each step.
             if (!$this->getSession()->getDriver()->find($joinedxpath)) {
+                // Check if we have recorded any errors in driver process.
+                $phperrors = behat_get_shutdown_process_errors();
+                if (!empty($phperrors)) {
+                    foreach ($phperrors as $error) {
+                        $errnostring = behat_get_error_string($error['type']);
+                        $msgs[] = $errnostring . ": " .$error['message'] . " at " . $error['file'] . ": " . $error['line'];
+                    }
+                    $msg = "PHP errors found:\n" . implode("\n", $msgs);
+                    throw new \Exception(htmlentities($msg));
+                }
+
                 return;
             }
 
@@ -772,12 +868,28 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
                 // Getting the debugging info and the backtrace.
                 $errorinfoboxes = $this->getSession()->getPage()->findAll('css', 'div.alert-error');
+                // If errorinfoboxes is empty, try find alert-danger (bootstrap4) class.
+                if (empty($errorinfoboxes)) {
+                    $errorinfoboxes = $this->getSession()->getPage()->findAll('css', 'div.alert-danger');
+                }
                 // If errorinfoboxes is empty, try find notifytiny (original) class.
                 if (empty($errorinfoboxes)) {
                     $errorinfoboxes = $this->getSession()->getPage()->findAll('css', 'div.notifytiny');
                 }
-                $errorinfo = $this->get_debug_text($errorinfoboxes[0]->getHtml()) . "\n" .
-                    $this->get_debug_text($errorinfoboxes[1]->getHtml());
+
+                // If errorinfoboxes is empty, try find ajax/JS exception in dialogue.
+                if (empty($errorinfoboxes)) {
+                    $errorinfoboxes = $this->getSession()->getPage()->findAll('css', 'div.moodle-exception-message');
+
+                    // If ajax/JS exception.
+                    if ($errorinfoboxes) {
+                        $errorinfo = $this->get_debug_text($errorinfoboxes[0]->getHtml());
+                    }
+
+                } else {
+                    $errorinfo = $this->get_debug_text($errorinfoboxes[0]->getHtml()) . "\n" .
+                        $this->get_debug_text($errorinfoboxes[1]->getHtml());
+                }
 
                 $msg = "Moodle exception: " . $errormsg->getText() . "\n" . $errorinfo;
                 throw new \Exception(html_entity_decode($msg));
@@ -821,6 +933,8 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
         } catch (NoSuchWindow $e) {
             // If we were interacting with a popup window it will not exists after closing it.
+        } catch (DriverException $e) {
+            // Same reason as above.
         }
     }
 
@@ -862,5 +976,229 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
         // Look for exceptions.
         $this->look_for_exceptions();
+    }
+
+    /**
+     * Get the actual user in the behat session (note $USER does not correspond to the behat session's user).
+     * @return mixed
+     * @throws coding_exception
+     */
+    protected function get_session_user() {
+        global $DB;
+
+        $sid = $this->getSession()->getCookie('MoodleSession');
+        if (empty($sid)) {
+            throw new coding_exception('failed to get moodle session');
+        }
+        $userid = $DB->get_field('sessions', 'userid', ['sid' => $sid]);
+        if (empty($userid)) {
+            throw new coding_exception('failed to get user from seession id '.$sid);
+        }
+        return $DB->get_record('user', ['id' => $userid]);
+    }
+
+    /**
+     * Set current $USER, reset access cache.
+     *
+     * In some cases, behat will execute the code as admin but in many cases we need to set an specific user as some
+     * API's might rely on the logged user to take some action.
+     *
+     * @param null|int|stdClass $user user record, null or 0 means non-logged-in, positive integer means userid
+     */
+    public static function set_user($user = null) {
+        global $DB;
+
+        if (is_object($user)) {
+            $user = clone($user);
+        } else if (!$user) {
+            // Assign valid data to admin user (some generator-related code needs a valid user).
+            $user = $DB->get_record('user', array('username' => 'admin'));
+        } else {
+            $user = $DB->get_record('user', array('id' => $user));
+        }
+        unset($user->description);
+        unset($user->access);
+        unset($user->preference);
+
+        // Ensure session is empty, as it may contain caches and user specific info.
+        \core\session\manager::init_empty_session();
+
+        \core\session\manager::set_user($user);
+    }
+    /**
+     * Trigger click on node via javascript instead of actually clicking on it via pointer.
+     *
+     * This function resolves the issue of nested elements with click listeners or links - in these cases clicking via
+     * the pointer may accidentally cause a click on the wrong element.
+     * Example of issue: clicking to expand navigation nodes when the config value linkadmincategories is enabled.
+     * @param NodeElement $node
+     */
+    protected function js_trigger_click($node) {
+        if (!$this->running_javascript()) {
+            $node->click();
+        }
+        $this->ensure_node_is_visible($node); // Ensures hidden elements can't be clicked.
+        $xpath = $node->getXpath();
+        $driver = $this->getSession()->getDriver();
+        if ($driver instanceof \Moodle\BehatExtension\Driver\MoodleSelenium2Driver) {
+            $script = "Syn.click({{ELEMENT}})";
+            $driver->triggerSynScript($xpath, $script);
+        } else {
+            $driver->click($xpath);
+        }
+    }
+
+    /**
+     * Convert page names to URLs for steps like 'When I am on the "[page name]" page'.
+     *
+     * You should override this as appropriate for your plugin. The method
+     * {@link behat_navigation::resolve_core_page_url()} is a good example.
+     *
+     * Your overridden method should document the recognised page types with
+     * a table like this:
+     *
+     * Recognised page names are:
+     * | Page            | Description                                                    |
+     *
+     * @param string $page name of the page, with the component name removed e.g. 'Admin notification'.
+     * @return moodle_url the corresponding URL.
+     * @throws Exception with a meaningful error message if the specified page cannot be found.
+     */
+    protected function resolve_page_url(string $page): moodle_url {
+        throw new Exception('Component "' . get_class($this) .
+                '" does not support the generic \'When I am on the "' . $page .
+                '" page\' navigation step.');
+    }
+
+    /**
+     * Convert page names to URLs for steps like 'When I am on the "[identifier]" "[page type]" page'.
+     *
+     * A typical example might be:
+     *     When I am on the "Test quiz" "mod_quiz > Responses report" page
+     * which would cause this method in behat_mod_quiz to be called with
+     * arguments 'Responses report', 'Test quiz'.
+     *
+     * You should override this as appropriate for your plugin. The method
+     * {@link behat_navigation::resolve_core_page_instance_url()} is a good example.
+     *
+     * Your overridden method should document the recognised page types with
+     * a table like this:
+     *
+     * Recognised page names are:
+     * | Type      | identifier meaning | Description                                     |
+     *
+     * @param string $type identifies which type of page this is, e.g. 'Attempt review'.
+     * @param string $identifier identifies the particular page, e.g. 'Test quiz > student > Attempt 1'.
+     * @return moodle_url the corresponding URL.
+     * @throws Exception with a meaningful error message if the specified page cannot be found.
+     */
+    protected function resolve_page_instance_url(string $type, string $identifier): moodle_url {
+        throw new Exception('Component "' . get_class($this) .
+                '" does not support the generic \'When I am on the "' . $identifier .
+                '" "' . $type . '" page\' navigation step.');
+    }
+
+    /**
+     * Gets the required timeout in seconds.
+     *
+     * @param int $timeout One of the TIMEOUT constants
+     * @return int Actual timeout (in seconds)
+     */
+    protected static function get_real_timeout(int $timeout) : int {
+        global $CFG;
+        if (!empty($CFG->behat_increasetimeout)) {
+            return $timeout * $CFG->behat_increasetimeout;
+        } else {
+            return $timeout;
+        }
+    }
+
+    /**
+     * Gets the default timeout.
+     *
+     * The timeout for each Behat step (load page, wait for an element to load...).
+     *
+     * @return int Timeout in seconds
+     */
+    public static function get_timeout() : int {
+        return self::get_real_timeout(6);
+    }
+
+    /**
+     * Gets the reduced timeout.
+     *
+     * A reduced timeout for cases where self::get_timeout() is too much
+     * and a simple $this->getSession()->getPage()->find() could not
+     * be enough.
+     *
+     * @return int Timeout in seconds
+     */
+    public static function get_reduced_timeout() : int {
+        return self::get_real_timeout(2);
+    }
+
+    /**
+     * Gets the extended timeout.
+     *
+     * A longer timeout for cases where the normal timeout is not enough.
+     *
+     * @return int Timeout in seconds
+     */
+    public static function get_extended_timeout() : int {
+        return self::get_real_timeout(10);
+    }
+
+    /**
+     * Return a list of the exact named selectors for the component.
+     *
+     * Named selectors are what make Behat steps like
+     *   Then I should see "Useful text" in the "General" "fieldset"
+     * work. Here, "fieldset" is the named selector, and "General" is the locator.
+     *
+     * If you override this method in your plugin (e.g. mod_mymod), to define
+     * new selectors specific to your plugin. For example, if you returned
+     *   new behat_component_named_selector('Thingy',
+     *           [".//some/xpath//img[contains(@alt, %locator%)]/.."])
+     * then
+     *   Then I should see "Useful text" in the "Whatever" "mod_mymod > Thingy"
+     * would work.
+     *
+     * This method should return a list of {@link behat_component_named_selector} and
+     * the docs on that class explain how it works.
+     *
+     * @return behat_component_named_selector[]
+     */
+    public static function get_exact_named_selectors(): array {
+        return [];
+    }
+
+    /**
+     * Return a list of the partial named selectors for the component.
+     *
+     * Like the exact named selectors above, but the locator only
+     * needs to match part of the text. For example, the standard
+     * "button" is a partial selector, so:
+     *   When I click "Save" "button"
+     * will activate "Save changes".
+     *
+     * @return behat_component_named_selector[]
+     */
+    public static function get_partial_named_selectors(): array {
+        return [];
+    }
+
+    /**
+     * Return a list of the Mink named replacements for the component.
+     *
+     * Named replacements allow you to define parts of an xpath that can be reused multiple times, or in multiple
+     * xpaths.
+     *
+     * This method should return a list of {@link behat_component_named_replacement} and the docs on that class explain
+     * how it works.
+     *
+     * @return behat_component_named_replacement[]
+     */
+    public static function get_named_replacements(): array {
+        return [];
     }
 }

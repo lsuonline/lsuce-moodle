@@ -51,12 +51,12 @@ Feature: We can use Single view
       | moodle/grade:edit           | Allow      | teacher  | Course        | C1        |
       | gradereport/singleview:view | Allow      | teacher  | Course        | C1        |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Grades" node in "Course administration"
+    And I am on "Course 1" course homepage
+    Given I navigate to "View > Grader report" in the course gradebook
 
   @javascript
   Scenario: I can update grades, add feedback and exclude grades.
-    Given I select "Single view" from the "Grade report" singleselect
+    Given I navigate to "View > Single view" in the course gradebook
     And I select "Student 4" from the "Select user..." singleselect
     And I set the field "Override for Test assignment one" to "1"
     When I set the following fields to these values:
@@ -87,7 +87,7 @@ Feature: We can use Single view
     And the field "Grade for james (Student) 1" matches value "12.05"
     And the field "Exclude for holly (Student) 2" matches value "1"
     And I select "new grade item 1" from the "Select grade item..." singleselect
-    And I click on "Very good" "option"
+    And I set the field "Grade for james (Student) 1" to "Very good"
     And I press "Save"
     Then I should see "Grades were set for 1 items"
     And I press "Continue"
@@ -96,17 +96,16 @@ Feature: We can use Single view
         | james (Student) 1 | Very good |
     And I log out
     And I log in as "teacher2"
-    And I follow "Course 1"
-    And I navigate to "Grades" node in "Course administration"
-    And I click on "Single view" "option"
-    And I click on "Student 4" "option"
+    And I am on "Course 1" course homepage
+    Given I navigate to "View > Single view" in the course gradebook
+    And I select "Student 4" from the "Select user..." singleselect
     And the "Exclude for Test assignment one" "checkbox" should be disabled
     And the "Override for Test assignment one" "checkbox" should be enabled
 
   Scenario: Single view links work on grade report.
     Given I follow "Single view for Test assignment one"
     Then I should see "Test assignment one"
-    Then I follow "Grader report"
+    Then I navigate to "View > Grader report" in the course gradebook
     And I follow "Single view for Student 1"
     Then I should see "Student 1"
 
@@ -117,7 +116,7 @@ Feature: We can use Single view
     And I set the field "Insert value" to "1.0"
     And I set the field "Perform bulk insert" to "1"
     And I press "Save"
-    Then I should see "Grades were set for 8 items"
+    Then I should see "Grades were set for 6 items"
 
   Scenario: Navigation works in the Single view.
     Given I follow "Single view for Student 1"

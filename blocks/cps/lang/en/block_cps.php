@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 $string['pluginname'] = 'Course Preferences';
 $string['pluginname_desc'] = 'The Course Preferences block allows instructors to
 control course creation and enrollment behavior. These are system wide defaults for
@@ -69,7 +69,7 @@ $string['no_results'] = 'No results.';
 $string['team_request_limit'] = 'Number of Requests';
 $string['team_request_limit_desc'] = 'This is the the maximum number of requests a primary instructor can make (minimum of 1).';
 
-// Error Strings
+// Error Strings.
 $string['not_enabled'] = 'CPS Setting <strong>{$a}</strong> is not enabled.';
 $string['not_teacher'] = 'You are not enrolled or set to be enrolled in any course.
 If you believe that you should be, please contact the Moodle administrator for
@@ -105,7 +105,7 @@ $string['err_team_query_sections'] = '{$a->year} {$a->name} {$a->department}
 
 $string['err_select_teacher'] = 'You must select at least one Instructor';
 
-// Setting names
+// Setting names.
 $string['default_settings'] = 'Default Settings';
 $string['creation'] = 'Creation / Enrollment';
 $string['creation_help'] = 'Creation and Enrollment settings allow instructors
@@ -203,7 +203,7 @@ to head back to the cross-list home screen.';
 
 $string['crosslist_select'] = 'Select courses to Cross-list';
 
-// Team Requests
+// Team Requests.
 $string['team_request'] = 'Team Teach Requests';
 $string['team_request_help'] = '
 Team teach requests are made by an instructor who wants to _Team teach_ with
@@ -340,7 +340,7 @@ $string['user_field_category'] = 'Profile Category';
 $string['user_field_category_desc'] = 'CPS will attempt to create Moodle user profile fields associated with the user meta information from UES.';
 $string['auto_field_desc'] = 'This field was automatically generated through CPS. Do not change the field settings unless you are absolutely certain of what you are doing.';
 
-// Meta Strings
+// Meta Strings.
 $string['username'] = 'Username';
 $string['user_year'] = 'Year';
 $string['user_ferpa'] = 'Ferpa';
@@ -356,3 +356,6 @@ $string['network_failure'] = 'There was a network error that caused the process 
 $string['sec_number'] = 'Section';
 $string['credit_hours'] = 'Credit Hours';
 $string['student_audit'] = 'Auditing';
+
+// Events.
+$string['eventues_course_created'] = 'UES started creating a course';

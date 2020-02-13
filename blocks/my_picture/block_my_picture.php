@@ -23,51 +23,40 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Set and get the config variable
+defined('MOODLE_INTERNAL') || die();
+
+// Set and get the config variable.
 global $CFG;
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once($CFG->dirroot . '/blocks/my_picture/lib.php');
+require_login();
 
-/**
- * The main class for the my_picture system.
-*/
+// The main class for the my_picture system.
 class block_my_picture extends block_list {
-    /**
-     * Initialise the block.
-     */
-    function init() {
+    // Initialise the block.
+    public function init() {
         $this->title = get_string('pluginname', 'block_my_picture');
     }
 
-     /**
-     * Allows configuration within Moodle.
-     *
-     * @return true
-     */
-    function has_config(){
+    // Allows configuration within Moodle.
+    public function has_config() {
         return true;
     }
-    
-    /**
-     * Returns the applicable formats for this block.
-     *
-     * @return array of applicable formats
-     */
+
+    // Returns the applicable formats for this block.
+    // @return array of applicable formats.
     public function applicable_formats() {
         return array(
             'site' => true,
             'my' => true,
             'site-index' => true,
-            'course-view' => true, 
+            'course-view' => true,
         );
     }
 
-    /**
-     * Return the content of this block.
-     *
-     * @return stdClass the content
-     */
-    function get_content() {
+    // Return the content of this block.
+    // @return stdClass the content.
+    public function get_content() {
         if ($this->content !== null) {
             return $this->content;
         }
@@ -79,16 +68,16 @@ class block_my_picture extends block_list {
         $this->content->items = array();
         $this->content->footer = '';
 
-        $reprocess_str = get_string('reprocess', 'block_my_picture');
+        $reprocessstr = get_string('reprocess', 'block_my_picture');
 
-        $reprocess_help = $OUTPUT->help_icon('pluginname', 'block_my_picture');
+        $reprocesshelp = $OUTPUT->help_icon('pluginname', 'block_my_picture');
 
-        $reprocess_link = '
+        $reprocesslink = '
             <a href = "' . $CFG->wwwroot . '/blocks/my_picture/reprocess.php"
-               alt = "'. $reprocess_str . '">' . $reprocess_str . '</a> ' .
-               $reprocess_help;
+               alt = "'. $reprocessstr . '">' . $reprocessstr . '</a> ' .
+               $reprocesshelp;
 
-        $this->content->items[] = $reprocess_link;
+        $this->content->items[] = $reprocesslink;
 
         return $this->content;
     }

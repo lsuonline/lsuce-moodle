@@ -1,9 +1,23 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once '../../config.php';
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+require_once('../../config.php');
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
 ues::require_libs();
-require_once 'provider.php';
+require_once('provider.php');
 
 require_login();
 
@@ -17,21 +31,21 @@ $confirmed = optional_param('confirm', null, PARAM_INT);
 
 $semesters = ues_semester::in_session(time());
 
-$base_url = new moodle_url('/local/lsu/reprocess.php');
+$baseurl = new moodle_url('/local/lsu/reprocess.php');
 
-$_s = ues::gen_str('local_lsu');
+$s = ues::gen_str('local_lsu');
 
-$pluginname = $_s('pluginname');
-$heading = $_s('reprocess');
+$pluginname = $s('pluginname');
+$heading = $s('reprocess');
 
-$admin_plugin = new moodle_url('/admin/settings.php', array('section' => 'local_lsu'));
+$adminplugin = new moodle_url('/admin/settings.php', array('section' => 'local_lsu'));
 
-$PAGE->set_url($base_url);
+$PAGE->set_url($baseurl);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title("$pluginname: $heading");
 $PAGE->set_heading("$pluginname: $heading");
 $PAGE->navbar->add(get_string('administrationsite'));
-$PAGE->navbar->add($pluginname, $admin_plugin);
+$PAGE->navbar->add($pluginname, $adminplugin);
 $PAGE->navbar->add($heading);
 
 echo $OUTPUT->header();
@@ -44,12 +58,12 @@ if ($confirmed) {
     $provider->postprocess($ues);
     echo html_writer::end_tag('pre');
 
-    echo $OUTPUT->continue_button($admin_plugin);
+    echo $OUTPUT->continue_button($adminplugin);
 
 } else {
 
-    $confirm = new moodle_url($base_url, array('confirm' => 1));
-    echo $OUTPUT->confirm($_s('reprocess_confirm'), $confirm, $admin_plugin);
+    $confirm = new moodle_url($baseurl, array('confirm' => 1));
+    echo $OUTPUT->confirm($s('reprocess_confirm'), $confirm, $adminplugin);
 }
 
 echo $OUTPUT->footer();

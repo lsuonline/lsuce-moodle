@@ -14,14 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
+require_once('event/ues_course_created.php');
 ues::require_daos();
 
 interface verifiable {
@@ -33,7 +36,7 @@ abstract class cps_preferences extends ues_external implements verifiable {
         $settings = array('creation', 'split', 'crosslist',
             'team_request', 'material', 'unwant', 'setting');
 
-        $remaining_settings = array();
+        $remainingsettings = array();
 
         foreach ($settings as $setting) {
             $class = 'cps_' . $setting;
@@ -42,17 +45,16 @@ abstract class cps_preferences extends ues_external implements verifiable {
                 continue;
             }
 
-            $remaining_settings[$setting] = $class::name();
+            $remainingsettings[$setting] = $class::name();
         }
 
-        return $remaining_settings;
+        return $remainingsettings;
     }
 
     public static function is_enabled() {
         global $USER;
 
-        // Allow admins to login as instructors and by-pass disabled settings
-        // to pre-build courses for them
+        // Allow admins to login as instructors and by-pass disabled settings to pre-build courses for them.
         if (isset($USER->realuser) and is_siteadmin($USER->realuser)) {
             return true;
         } else {
@@ -72,19 +74,19 @@ abstract class cps_preferences extends ues_external implements verifiable {
 }
 
 interface application {
-    function apply();
+    public function apply();
 }
 
 interface undoable {
-    function unapply();
+    public function unapply();
 }
 
 interface unique extends application {
-    function new_idnumber();
+    public function new_idnumber();
 }
 
 abstract class ues_section_accessor extends cps_preferences {
-    var $section;
+    public $section;
 
     public function section() {
         if (empty($this->section)) {
@@ -92,13 +94,12 @@ abstract class ues_section_accessor extends cps_preferences {
 
             $this->section = $section;
         }
-
         return $this->section;
     }
 }
 
 abstract class ues_user_section_accessor extends ues_section_accessor {
-    var $user;
+    public $user;
 
     public function user() {
         if (empty($this->user)) {
@@ -125,42 +126,57 @@ abstract class manifest_updater extends ues_user_section_accessor implements uni
 
     public function update_manifest() {
         global $DB;
-
-        // Only on update
+        // Only on update.
         if (empty($this->id)) {
             return false;
         }
 
         $section = $this->section();
-        $course = $section->moodle();
-        $new_idnumber = $this->new_idnumber();
 
-        // Nothing to do
+        if (!$section->idnumber) {
+            $uessection = $DB->get_record('enrol_ues_sections', array(
+                'id' => $section->id,
+                'courseid' => $section->courseid,
+                'semesterid' => $section->semesterid
+            ),
+            '*', MUST_EXIST);
+            $section->idnumber = $uessection->idnumber;
+        }
+        $course = $section->moodle();
+
+        // Nothing to do.
         if (empty($course)) {
             return false;
         }
 
-        // Allow event to rename course
-        events_trigger_legacy('ues_course_create', $course);
+        $newidnumber = $this->new_idnumber();
+        $context = context_course::instance($course->id);
+
+        // Allow event to rename course.
+        $event = \blocks_cps\event\ues_course_created::create(array('context' => $context
+                                                                  , 'objectid' => $course->id
+                                                                  , 'courseid' => $course->id
+                                                                  )
+                                                             );
+        $event->trigger();
 
         // Change association if there exists no other course.
-        // This would prevent an unnecessary course creation
-        $n = $DB->get_record('course', array('idnumber' => $new_idnumber));
-        if (empty($n) and $course->idnumber != $new_idnumber) {
-            $course->idnumber = $new_idnumber;
+        // This would prevent an unnecessary course creation.
+        $n = $DB->get_record('course', array('idnumber' => $newidnumber));
+        if (empty($n) and $course->idnumber != $newidnumber) {
+            $course->idnumber = $newidnumber;
         }
-
         return $DB->update_record('course', $course);
     }
 }
 
-// Begin Concrete classes
+// Begin Concrete classes.
 class cps_unwant extends ues_user_section_accessor implements application, undoable {
-    var $sectionid;
-    var $userid;
+    public $sectionid;
+    public $userid;
 
-    public static function active_sections_for($teacher, $is_primary = true) {
-        $sections = $teacher->sections($is_primary);
+    public static function active_sections_for($teacher, $isprimary = true) {
+        $sections = $teacher->sections($isprimary);
 
         return self::active_sections($sections, $teacher->userid);
     }
@@ -172,7 +188,7 @@ class cps_unwant extends ues_user_section_accessor implements application, undoa
             $userid = $USER->id;
         }
 
-        $unwants = cps_unwant::get_all(array('userid' => $userid));
+        $unwants = self::get_all(array('userid' => $userid));
 
         foreach ($unwants as $unwant) {
             if (isset($sections[$unwant->sectionid])) {
@@ -183,14 +199,14 @@ class cps_unwant extends ues_user_section_accessor implements application, undoa
         return $sections;
     }
 
-    function apply() {
+    public function apply() {
         $section = $this->section();
 
-        // Severage is happening in eventslib.php
+        // Severage is happening in eventslib.php.
         ues::unenroll_users(array($section));
     }
 
-    function unapply() {
+    public function unapply() {
         $section = $this->section();
 
         ues::enroll_users(array($section));
@@ -198,11 +214,11 @@ class cps_unwant extends ues_user_section_accessor implements application, undoa
 }
 
 class cps_material extends cps_preferences implements application, undoable {
-    var $userid;
-    var $courseid;
-    var $moodleid;
+    public $userid;
+    public $courseid;
+    public $moodleid;
 
-    private $ues_course;
+    private $uescourse;
     private $user;
     private $moodle;
 
@@ -215,7 +231,6 @@ class cps_material extends cps_preferences implements application, undoable {
             } else {
                 $params = array('shortname' => $this->build_shortname());
             }
-
             $this->moodle = $DB->get_record('course', $params);
         }
 
@@ -223,11 +238,11 @@ class cps_material extends cps_preferences implements application, undoable {
     }
 
     public function course() {
-        if (empty($this->ues_course) and $this->courseid) {
-            $this->ues_course = ues_course::by_id($this->courseid);
+        if (empty($this->uescourse) and $this->courseid) {
+            $this->uescourse = ues_course::by_id($this->courseid);
         }
 
-        return $this->ues_course;
+        return $this->uescourse;
     }
 
     public function user() {
@@ -245,11 +260,10 @@ class cps_material extends cps_preferences implements application, undoable {
         $a->department = $this->course()->department;
         $a->course_number = $this->course()->cou_number;
         $a->fullname = fullname($this->user());
-
         return ues::format_string($pattern, $a);
     }
 
-    function unapply() {
+    public function unapply() {
         $mcourse = $this->moodle();
 
         if (empty($mcourse)) {
@@ -263,10 +277,10 @@ class cps_material extends cps_preferences implements application, undoable {
         return true;
     }
 
-    function apply() {
+    public function apply() {
         global $DB, $CFG;
 
-        require_once $CFG->dirroot . '/course/lib.php';
+        require_once($CFG->dirroot . '/course/lib.php');
 
         $shortname = $this->build_shortname();
 
@@ -312,45 +326,47 @@ class cps_material extends cps_preferences implements application, undoable {
 }
 
 class cps_creation extends cps_preferences implements application {
-    var $userid;
-    var $semesterid;
-    var $courseid;
-    var $enroll_days;
-    var $create_days;
+    public $userid;
+    public $semesterid;
+    public $courseid;
+    public $enroll_days;
+    public $create_days;
 
-    function apply() {
+    public function apply() {
         $params = array(
             'semesterid' => $this->semesterid,
             'courseid' => $this->courseid
         );
 
-        // All the sections for this course and semester
+        // All the sections for this course and semester.
         $sections = ues_section::get_all($params);
 
         $userid = $this->userid;
 
-        $by_teacher = function ($section) use ($userid) {
+        $byteacher = function ($section) use ($userid) {
             $primary = $section->primary();
 
             if (empty($primary)) {
                 $primary = current($section->teachers());
             }
 
-            if (empty($primary)) return false;
+            if (empty($primary)) {
+                return false;
+            }
 
             return $userid == $primary->userid;
         };
 
-        $associated = array_filter($sections, $by_teacher);
+        $associated = array_filter($sections, $byteacher);
 
         ues::inject_manifest($associated);
     }
 }
 
 class cps_setting extends cps_preferences {
-    var $userid;
-    var $name;
-    var $value;
+    public $userid;
+    public $name;
+    public $value;
 
     public static function is_valid($semesters) {
         global $USER;
@@ -360,19 +376,19 @@ class cps_setting extends cps_preferences {
     public static function get_to_name($params) {
         $settings = self::get_all($params);
 
-        $to_named_settings = array();
+        $tonamedsettings = array();
         foreach ($settings as $setting) {
-            $to_named_settings[$setting->name] = $setting;
+            $tonamedsettings[$setting->name] = $setting;
         }
 
-        return $to_named_settings;
+        return $tonamedsettings;
     }
 }
 
 class cps_split extends manifest_updater implements application, undoable {
-    var $userid;
-    var $sectionid;
-    var $groupingid;
+    public $userid;
+    public $sectionid;
+    public $groupingid;
 
     public static function is_valid($semesters) {
         $valids = self::filter_valid($semesters);
@@ -410,11 +426,11 @@ class cps_split extends manifest_updater implements application, undoable {
             }
         }
 
-        $split_filters = ues::where()
+        $splitfilters = ues::where()
             ->userid->equal($USER->id)
             ->sectionid->in(array_keys($course->sections));
 
-        $splits = self::get_all($split_filters);
+        $splits = self::get_all($splitfilters);
 
         return $splits;
     }
@@ -433,7 +449,8 @@ class cps_split extends manifest_updater implements application, undoable {
         });
     }
 
-    function new_idnumber() {
+    // This creates a new idnumber for course splitting.
+    public function new_idnumber() {
         $section = $this->section();
         $semester = $section->semester();
         $session_key = $semester->session_key;
@@ -448,13 +465,13 @@ class cps_split extends manifest_updater implements application, undoable {
         return $idnumber;
     }
 
-    function apply() {
+    public function apply() {
         $sections = array($this->section());
 
         ues::inject_manifest($sections);
     }
 
-    function unapply() {
+    public function unapply() {
         $sections = array($this->section());
 
         ues::inject_manifest($sections, function ($sec) {
@@ -464,13 +481,13 @@ class cps_split extends manifest_updater implements application, undoable {
 }
 
 class cps_crosslist extends manifest_updater implements application, undoable {
-    var $userid;
-    var $sectionid;
-    var $groupingid;
-    var $shell_name;
+    public $userid;
+    public $sectionid;
+    public $groupingid;
+    public $shell_name;
 
     public static function is_valid($semesters) {
-        // Must have two courses in the same semester
+        // Must have two courses in the same semester.
         $validation = function ($in, $semester) {
             return ($in || count($semester->courses) >= 2);
         };
@@ -481,18 +498,18 @@ class cps_crosslist extends manifest_updater implements application, undoable {
     public static function in_courses(array $courses) {
         global $USER;
 
-        // Flatten sections
-        $course_to_sectionids = function ($in, $course) {
+        // Flatten sections.
+        $coursetosectionids = function ($in, $course) {
             return array_merge($in, array_keys($course->sections));
         };
 
-        $sectionids = array_reduce($courses, $course_to_sectionids, array());
+        $sectionids = array_reduce($courses, $coursetosectionids, array());
 
-        $crosslist_params = ues::where()
+        $crosslistparams = ues::where()
             ->userid->equal($USER->id)
             ->sectionid->in($sectionids);
 
-        $crosslists = self::get_all($crosslist_params);
+        $crosslists = self::get_all($crosslistparams);
 
         return $crosslists;
     }
@@ -513,7 +530,8 @@ class cps_crosslist extends manifest_updater implements application, undoable {
         });
     }
 
-    function new_idnumber() {
+    // This creates a new idnumber for crosslisting.
+    public function new_idnumber() {
         $section = $this->section();
         $sem = $section->semester();
         $ses = $sem->session_key;
@@ -525,13 +543,13 @@ class cps_crosslist extends manifest_updater implements application, undoable {
         return $idnumber;
     }
 
-    function apply() {
+    public function apply() {
         $section = $this->section();
 
         ues::inject_manifest(array($section));
     }
 
-    function unapply() {
+    public function unapply() {
         $sections = array($this->section());
 
         ues::inject_manifest($sections, function ($section) {
@@ -540,14 +558,14 @@ class cps_crosslist extends manifest_updater implements application, undoable {
     }
 }
 
-// Request application involves emails
+// Request application involves emails.
 class cps_team_request extends cps_preferences implements application, undoable {
-    var $semesterid;
-    var $userid;
-    var $courseid;
-    var $requested;
-    var $requested_course;
-    var $approval_flag;
+    public $semesterid;
+    public $userid;
+    public $courseid;
+    public $requested;
+    public $requested_course;
+    public $approval_flag;
 
     public static function in_course($course, $semester, $approved = false) {
         global $USER;
@@ -558,7 +576,7 @@ class cps_team_request extends cps_preferences implements application, undoable 
             'semesterid' => $semester->id
         );
 
-        $requests = cps_team_request::get_all($params);
+        $requests = self::get_all($params);
 
         $params = array(
             'requested' => $USER->id,
@@ -566,16 +584,16 @@ class cps_team_request extends cps_preferences implements application, undoable 
             'semesterid' => $semester->id
         );
 
-        $participants = cps_team_request::get_all($params);
+        $participants = self::get_all($params);
 
-        $all_together = $requests + $participants;
+        $alltogether = $requests + $participants;
 
         if ($approved) {
-            return array_filter($all_together, function ($req) {
+            return array_filter($alltogether, function ($req) {
                 return $req->approved();
             });
         } else {
-            return $all_together;
+            return $alltogether;
         }
     }
 
@@ -602,9 +620,9 @@ class cps_team_request extends cps_preferences implements application, undoable 
         return self::delete_all_internal($params, function($table) use ($params) {
             $old = cps_team_request::get($params);
 
-            $child_params = array('requestid' => $old->id);
+            $childparams = array('requestid' => $old->id);
 
-            cps_team_section::delete_all($child_params);
+            cps_team_section::delete_all($childparams);
         });
     }
 
@@ -613,9 +631,9 @@ class cps_team_request extends cps_preferences implements application, undoable 
             $old = cps_team_request::get_all($params);
 
             foreach ($old as $request) {
-                $child_params = array('requestid' => $request->id);
+                $childparams = array('requestid' => $request->id);
 
-                cps_team_section::delete_all($child_params);
+                cps_team_section::delete_all($childparams);
             }
         });
     }
@@ -734,33 +752,33 @@ class cps_team_request extends cps_preferences implements application, undoable 
         $requester = $this->owner();
         $requestee = $this->other_user();
 
-        $course_name = function($course) {
+        $coursename = function($course) {
             return "$course->department $course->cou_number";
         };
 
         $a = new stdClass;
         $a->requestee = fullname($requestee);
         $a->requester = fullname($requester);
-        $a->other_course = $course_name($this->other_course());
-        $a->course = $course_name($this->course());
+        $a->other_course = $coursename($this->other_course());
+        $a->course = $coursename($this->course());
 
         return $a;
     }
 
-    function apply() {
-        $_s = ues::gen_str('block_cps');
+    public function apply() {
+        $s = ues::gen_str('block_cps');
 
         $a = $this->build_email_obj();
 
         if ($this->approved()) {
-            $subject_key = 'team_request_approved_subject';
-            $body_key = 'team_request_approved_body';
+            $subjectkey = 'team_request_approved_subject';
+            $bodykey = 'team_request_approved_body';
 
             $to = $this->owner();
             $from = $this->other_user();
         } else {
-            $subject_key = 'team_request_invite_subject';
-            $body_key = 'team_request_invite_body';
+            $subjectkey = 'team_request_invite_subject';
+            $bodykey = 'team_request_invite_body';
 
             $url = new moodle_url('/blocks/cps/team_request.php');
             $a->link = $url->out(false);
@@ -769,57 +787,57 @@ class cps_team_request extends cps_preferences implements application, undoable 
             $from = $this->owner();
         }
 
-        email_to_user($to, $from, $_s($subject_key), $_s($body_key, $a));
+        email_to_user($to, $from, $s($subjectkey), $s($bodykey, $a));
     }
 
-    function unapply() {
+    public function unapply() {
         global $USER;
 
         $requester = $this->owner();
         $requestee = $this->other_user();
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
         $a = $this->build_email_obj();
 
         if ($requester->id == $USER->id) {
-            $subject_key = 'team_request_revoke_subject';
-            $body_key = 'team_request_revoke_subject';
+            $subjectkey = 'team_request_revoke_subject';
+            $bodykey = 'team_request_revoke_subject';
 
             $to = $requestee;
             $from = $requester;
         } else {
-            $subject_key = 'team_request_reject_subject';
-            $body_key = 'team_request_reject_body';
+            $subjectkey = 'team_request_reject_subject';
+            $bodykey = 'team_request_reject_body';
 
             $to = $requester;
             $from = $requestee;
         }
 
-        // Cascading undo
+        // Cascading undo.
         $children = $this->sections();
         foreach ($children as $child) {
             $child->delete($child->id);
             $child->unapply();
         }
 
-        email_to_user($to, $from, $_s($subject_key), $_s($body_key, $a));
+        email_to_user($to, $from, $s($subjectkey), $s($bodykey, $a));
     }
 }
 
 class cps_team_section extends manifest_updater implements application, undoable {
-    var $requesterid;
-    var $courseid;
-    var $sectionid;
-    var $groupingid;
-    var $shell_name;
-    var $requestid;
+    public $requesterid;
+    public $courseid;
+    public $sectionid;
+    public $groupingid;
+    public $shell_name;
+    public $requestid;
 
     public static function in_requests(array $requests) {
         $sections = array();
 
         foreach ($requests as $request) {
-            $internal = cps_team_section::get_all(ues::where()
+            $internal = self::get_all(ues::where()
                 ->join('{enrol_ues_sections}', 'sec')->on('sectionid', 'id')
                 ->sec->semesterid->equal($request->semesterid)
                 ->requesterid->equal($request->userid)
@@ -833,11 +851,11 @@ class cps_team_section extends manifest_updater implements application, undoable
     }
 
     public static function in_sections($requests, $sections) {
-        $all_sections = self::in_requests($requests);
+        $allsections = self::in_requests($requests);
 
         $correct = array();
 
-        foreach ($all_sections as $id => $sec) {
+        foreach ($allsections as $id => $sec) {
             if (isset($sections[$sec->sectionid])) {
                 $correct[$id] = $sec;
             }
@@ -846,7 +864,7 @@ class cps_team_section extends manifest_updater implements application, undoable
     }
 
     public static function exists($section) {
-        return cps_team_section::get(array('sectionid' => $section->id));
+        return self::get(array('sectionid' => $section->id));
     }
 
     public static function groups($sections) {
@@ -867,11 +885,11 @@ class cps_team_section extends manifest_updater implements application, undoable
         }
 
         foreach (range(1, self::groups($sections)) as $number) {
-            $by_number = function ($section) use ($number) {
+            $bynumber = function ($section) use ($number) {
                 return $section->groupingid == $number;
             };
 
-            $merged[$number] = array_filter($sections, $by_number);
+            $merged[$number] = array_filter($sections, $bynumber);
         }
 
         return $merged;
@@ -905,7 +923,9 @@ class cps_team_section extends manifest_updater implements application, undoable
         return $this->course;
     }
 
-    function new_idnumber() {
+    // This creates a new idnumber for team teaching.
+    public function new_idnumber() {
+        global $DB;
         $section = $this->section();
         $sem = $section->semester();
         $ses = $sem->session_key;
@@ -917,13 +937,13 @@ class cps_team_section extends manifest_updater implements application, undoable
         return $idnumber;
     }
 
-    function apply() {
+    public function apply() {
         $section = $this->section();
 
         ues::inject_manifest(array($section));
     }
 
-    function unapply() {
+    public function unapply() {
         ues::inject_manifest(array($this->section()), function($sec) {
             $sec->idnumber = '';
         });

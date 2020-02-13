@@ -26,13 +26,13 @@
     </h2>
     {{#plan.canbeedited}}
     <div data-region="actions" class="clearfix">
-        <div class="pull-left">
+        <div class="float-left">
             <!-- Button to add competencies to the plan -->
-            <button class="btn" data-action="add">{{#pix}}t/add{{/pix}} {{#str}}addcompetency, tool_lp{{/str}}</button>
+            <button class="btn btn-secondary" data-action="add">{{#pix}}t/add{{/pix}} {{#str}}addcompetency, tool_lp{{/str}}</button>
         </div>
     </div>
     {{/plan.canbeedited}}
-    <div data-region="plan-summary">
+    <div data-region="plan-summary" class="mt-1">
         {{{plan.description}}}
         <dl>
             <dt>{{#str}}status, tool_lp{{/str}}</dt>
@@ -103,12 +103,12 @@
     </div>
     {{#plan.commentarea}}
         {{#canpostorhascomments}}
-            <div data-region="comments">
+            <div data-region="comments" class="mt-1">
                 {{>tool_lp/comment_area}}
             </div>
         {{/canpostorhascomments}}
     {{/plan.commentarea}}
-    <div data-region="plan-competencies">
+    <div data-region="plan-competencies" class="mt-1">
         <h3>{{#str}}learningplancompetencies, tool_lp{{/str}}</h3>
         <table class="generaltable fullwidth managecompetencies">
             <thead>
@@ -129,13 +129,13 @@
                         data-userid="{{plan.userid}}">
                     <td>
                         {{#plan.canbeedited}}
-                        <span class="drag-handlecontainer pull-left"></span>
+                        <span class="drag-handlecontainer float-left"></span>
                         {{/plan.canbeedited}}
                         <a data-usercompetency="true" href="#">{{{competency.shortname}}}</a>
                         <em>{{competency.idnumber}}</em>
                         {{#comppath}}
                             <br>
-                            <span class="pull-left">{{#str}}path, tool_lp{{/str}}&nbsp;</span>{{> tool_lp/competency_path }}
+                            <span class="float-left">{{#str}}path, tool_lp{{/str}}&nbsp;</span>{{> tool_lp/competency_path }}
                         {{/comppath}}
                     </td>
                     {{#plan.iscompleted}}
@@ -152,23 +152,23 @@
                             <ul title="{{#str}}edit{{/str}}" class="user-competency-actions">
                                 <li>
                                     <a href="#">{{#str}}edit{{/str}}</a><b class="caret"></b>
-                                    <ul class="dropdown-menu">
+                                    <ul class="dropdown dropdown-menu">
                                         {{#usercompetency.isrequestreviewallowed}}
-                                            <li>
+                                            <li class="dropdown-item">
                                                 <a href="#" data-action="request-review">{{#pix}}t/edit, core{{/pix}} {{#str}}requestreview, tool_lp{{/str}}</a>
                                             </li>
                                         {{/usercompetency.isrequestreviewallowed}}
                                         {{#usercompetency.iscancelreviewrequestallowed}}
-                                            <li>
+                                            <li class="dropdown-item">
                                                 <a href="#" data-action="cancel-review-request">{{#pix}}t/edit, core{{/pix}} {{#str}}cancelreviewrequest, tool_lp{{/str}}</a>
                                             </li>
                                         {{/usercompetency.iscancelreviewrequestallowed}}
                                         {{#plan.canbeedited}}
-                                            <li>
+                                            <li class="dropdown-item">
                                                 <a href="#" data-action="delete-competency-link" data-id="{{competency.id}}">{{#pix}}t/delete, core{{/pix}} {{#str}}delete{{/str}}</a>
                                             </li>
                                         {{/plan.canbeedited}}
-                                        <li>
+                                        <li class="dropdown-item">
                                             <a href="#" data-action="find-courses-link" data-id="{{competency.id}}">{{#pix}}t/preview, core{{/pix}} {{#str}}findcourses, tool_lp{{/str}}</a>
                                         </li>
                                     </ul>

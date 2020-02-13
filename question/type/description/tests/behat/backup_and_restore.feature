@@ -20,8 +20,7 @@ Feature: Test duplicating a quiz containing a Description question
     And quiz "Test quiz" contains the following questions:
       | description-001 | 1 |
     And I log in as "admin"
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
   @javascript
   Scenario: Backup and restore a course containing a Description question
@@ -29,8 +28,8 @@ Feature: Test duplicating a quiz containing a Description question
       | Confirmation | Filename | test_backup.mbz |
     And I restore "test_backup.mbz" backup into a new course using this options:
       | Schema | Course name | Course 2 |
-    And I navigate to "Question bank" node in "Course administration"
-    And I click on "Edit" "link" in the "description-001" "table_row"
+    And I navigate to "Question bank" in current page administration
+    And I choose "Edit question" action for "description-001" in the question bank
     Then the following fields match these values:
       | Question name                      | description-001                                                        |
       | Question text                      | Here is some information about the questions you are about to attempt. |

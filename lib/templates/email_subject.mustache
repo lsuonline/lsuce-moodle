@@ -15,7 +15,7 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template core/email_html
+    @template core/email_subject
 
     Template for all email subjects.
 
@@ -31,5 +31,12 @@
     * fromname
     * replyto
     * replytoname
+    * prefix
+
+    Example context (json):
+    {
+        "prefix": "[Prefix Text]",
+        "subject": "Email subject"
+    }
 }}
-{{{subject}}}
+{{#prefix}}{{{prefix}}} {{/prefix}}{{{subject}}}

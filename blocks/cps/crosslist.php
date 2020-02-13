@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'crosslist_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('crosslist_form.php');
 
 require_login();
 
@@ -45,9 +45,9 @@ if (empty($sections)) {
 
 $semesters = ues_semester::merge_sections($sections);
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_crosslist::name();
 
 $context = context_system::instance();
@@ -82,7 +82,7 @@ if ($form->is_cancelled()) {
 
             $form->display();
         } catch (Exception $e) {
-            echo $OUTPUT->notification($_s('application_errors', $e->getMessage()));
+            echo $OUTPUT->notification($s('application_errors', $e->getMessage()));
             echo $OUTPUT->continue_button('/my');
         }
         die();

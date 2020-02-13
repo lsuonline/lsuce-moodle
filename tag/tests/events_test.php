@@ -59,8 +59,7 @@ class core_tag_events_testcase extends advanced_testcase {
 
         // Trigger and capture the event when renaming a tag.
         $sink = $this->redirectEvents();
-        tag_rename($tag->id, 'newname');
-        $this->assertDebuggingCalled();
+        core_tag_tag::get($tag->id, '*')->update(array('rawname' => 'newname'));
         // Update the tag's name since we have renamed it.
         $tag->name = 'newname';
         $events = $sink->get_events();
@@ -74,8 +73,7 @@ class core_tag_events_testcase extends advanced_testcase {
 
         // Trigger and capture the event when setting the type of a tag.
         $sink = $this->redirectEvents();
-        tag_type_set($tag->id, 'official');
-        $this->assertDebuggingCalled();
+        core_tag_tag::get($tag->id, '*')->update(array('isstandard' => 1));
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -87,8 +85,8 @@ class core_tag_events_testcase extends advanced_testcase {
 
         // Trigger and capture the event for setting the description of a tag.
         $sink = $this->redirectEvents();
-        tag_description_set($tag->id, 'description', FORMAT_MOODLE);
-        $this->assertDebuggingCalled();
+        core_tag_tag::get($tag->id, '*')->update(
+                array('description' => 'description', 'descriptionformat' => FORMAT_MOODLE));
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -163,13 +161,11 @@ class core_tag_events_testcase extends advanced_testcase {
         $tag = $this->getDataGenerator()->create_tag();
 
         // Assign a tag to a course.
-        tag_assign('course', $course->id, $tag->id, 1, 2, 'core', context_course::instance($course->id)->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::add_item_tag('core', 'course', $course->id, context_course::instance($course->id), $tag->rawname);
 
         // Trigger and capture the event for untagging a course.
         $sink = $this->redirectEvents();
-        coursetag_delete_keyword($tag->id, 2, $course->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::remove_item_tag('core', 'course', $course->id, $tag->rawname);
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -182,13 +178,11 @@ class core_tag_events_testcase extends advanced_testcase {
         $tag = $this->getDataGenerator()->create_tag();
 
         // Assign a tag to a wiki this time.
-        tag_assign('wiki_pages', $wikipageid, $tag->id, 1, 2, 'mod_wiki', context_module::instance($wiki->cmid)->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::add_item_tag('mod_wiki', 'wiki_pages', $wikipageid, context_module::instance($wiki->cmid), $tag->rawname);
 
         // Trigger and capture the event for deleting this tag instance.
         $sink = $this->redirectEvents();
-        tag_delete_instance('wiki_pages', $wikipageid, $tag->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::remove_item_tag('mod_wiki', 'wiki_pages', $wikipageid, $tag->rawname);
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -201,14 +195,12 @@ class core_tag_events_testcase extends advanced_testcase {
         $tag = $this->getDataGenerator()->create_tag();
 
         // Assign a tag to the wiki again.
-        tag_assign('wiki_pages', $wikipageid, $tag->id, 1, 2, 'mod_wiki', context_module::instance($wiki->cmid)->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::add_item_tag('mod_wiki', 'wiki_pages', $wikipageid, context_module::instance($wiki->cmid), $tag->rawname);
 
         // Now we want to delete this tag, and because there is only one tag instance
         // associated with it, it should get deleted as well.
         $sink = $this->redirectEvents();
-        tag_delete($tag->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::delete_tags($tag->id);
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -221,8 +213,7 @@ class core_tag_events_testcase extends advanced_testcase {
         $tag = $this->getDataGenerator()->create_tag();
 
         // Assign a tag to the wiki again.
-        tag_assign('wiki_pages', $wikipageid, $tag->id, 1, 2, 'mod_wiki', context_module::instance($wiki->cmid)->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::add_item_tag('mod_wiki', 'wiki_pages', $wikipageid, context_module::instance($wiki->cmid), $tag->rawname);
 
         // Delete all tag instances for this wiki instance.
         $sink = $this->redirectEvents();
@@ -241,10 +232,8 @@ class core_tag_events_testcase extends advanced_testcase {
         $wikipageid2 = wiki_create_page($subwikiid2, 'Title', FORMAT_HTML, '2');
 
         // Assign a tag to both wiki pages.
-        tag_assign('wiki_pages', $wikipageid, $tag->id, 1, 2, 'mod_wiki', context_module::instance($wiki->cmid)->id);
-        $this->assertDebuggingCalled();
-        tag_assign('wiki_pages', $wikipageid2, $tag->id, 1, 2, 'mod_wiki', context_module::instance($wiki2->cmid)->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::add_item_tag('mod_wiki', 'wiki_pages', $wikipageid, context_module::instance($wiki->cmid), $tag->rawname);
+        core_tag_tag::add_item_tag('mod_wiki', 'wiki_pages', $wikipageid2, context_module::instance($wiki2->cmid), $tag->rawname);
 
         // Now remove all tag_instances associated with all wikis.
         $sink = $this->redirectEvents();
@@ -279,11 +268,11 @@ class core_tag_events_testcase extends advanced_testcase {
         // Create tags we are going to flag.
         $tag = $this->getDataGenerator()->create_tag();
         $tag2 = $this->getDataGenerator()->create_tag();
+        $tags = array($tag, $tag2);
 
         // Trigger and capture the event for setting the flag of a tag.
         $sink = $this->redirectEvents();
-        tag_set_flag($tag->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::get($tag->id, '*')->flag();
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -298,13 +287,15 @@ class core_tag_events_testcase extends advanced_testcase {
         $this->assertEventLegacyLogData($expected, $event);
 
         // Unset the flag for both (though by default tag2 should have been created with 0 already).
-        tag_unset_flag(array($tag->id, $tag2->id));
-        $this->assertDebuggingCalled();
+        foreach ($tags as $t) {
+            core_tag_tag::get($t->id, '*')->reset_flag();
+        }
 
         // Trigger and capture the event for setting the flag for multiple tags.
         $sink = $this->redirectEvents();
-        tag_set_flag(array($tag->id, $tag2->id));
-        $this->assertDebuggingCalled();
+        foreach ($tags as $t) {
+            core_tag_tag::get($t->id, '*')->flag();
+        }
         $events = $sink->get_events();
 
         // Check that the flags were updated.
@@ -338,15 +329,14 @@ class core_tag_events_testcase extends advanced_testcase {
         // Create tags we are going to unflag.
         $tag = $this->getDataGenerator()->create_tag();
         $tag2 = $this->getDataGenerator()->create_tag();
+        $tags = array($tag, $tag2);
 
         // Flag it.
-        tag_set_flag($tag->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::get($tag->id, '*')->flag();
 
         // Trigger and capture the event for unsetting the flag of a tag.
         $sink = $this->redirectEvents();
-        tag_unset_flag($tag->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::get($tag->id, '*')->reset_flag();
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -359,13 +349,15 @@ class core_tag_events_testcase extends advanced_testcase {
         $this->assertEquals(context_system::instance(), $event->get_context());
 
         // Set the flag back for both.
-        tag_set_flag(array($tag->id, $tag2->id));
-        $this->assertDebuggingCalled();
+        foreach ($tags as $t) {
+            core_tag_tag::get($t->id, '*')->flag();
+        }
 
         // Trigger and capture the event for unsetting the flag for multiple tags.
         $sink = $this->redirectEvents();
-        tag_unset_flag(array($tag->id, $tag2->id));
-        $this->assertDebuggingCalled();
+        foreach ($tags as $t) {
+            core_tag_tag::get($t->id, '*')->reset_flag();
+        }
         $events = $sink->get_events();
 
         // Check that the flags were updated.
@@ -401,8 +393,7 @@ class core_tag_events_testcase extends advanced_testcase {
 
         // Trigger and capture the event for deleting a tag.
         $sink = $this->redirectEvents();
-        tag_delete($tag->id);
-        $this->assertDebuggingCalled();
+        core_tag_tag::delete_tags($tag->id);
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -417,8 +408,7 @@ class core_tag_events_testcase extends advanced_testcase {
 
         // Trigger and capture the events for deleting multiple tags.
         $sink = $this->redirectEvents();
-        tag_delete(array($tag->id, $tag2->id));
-        $this->assertDebuggingCalled();
+        core_tag_tag::delete_tags(array($tag->id, $tag2->id));
         $events = $sink->get_events();
 
         // Check that the tags were deleted and the events data is valid.
@@ -463,81 +453,6 @@ class core_tag_events_testcase extends advanced_testcase {
         // Trigger and capture the event for deleting all tags in a course.
         $sink = $this->redirectEvents();
         core_tag_tag::remove_all_item_tags('core', 'course', $course->id);
-        $events = $sink->get_events();
-        $events = array($events[1], $events[3]);
-
-        // Check that the tags were deleted and the events data is valid.
-        $this->assertEquals(0, $DB->count_records('tag'));
-        foreach ($events as $event) {
-            $this->assertInstanceOf('\core\event\tag_deleted', $event);
-            $this->assertEquals(context_system::instance(), $event->get_context());
-        }
-    }
-
-    /**
-     * Test the tag deleted event while calling deprecated functions.
-     * Remove the test when the functions are removed.
-     */
-    public function test_tag_deleted_deprecated() {
-        global $DB;
-
-        $this->setAdminUser();
-
-        // Create a course.
-        $course = $this->getDataGenerator()->create_course();
-
-        // Create another tag to delete.
-        $tag = $this->getDataGenerator()->create_tag();
-
-        // Add a tag instance to a course.
-        tag_assign('course', $course->id, $tag->id, 0, 2, 'core', context_course::instance($course->id)->id);
-        $this->assertDebuggingCalled();
-
-        // Trigger and capture the event for deleting a personal tag for a user for a course.
-        $sink = $this->redirectEvents();
-        coursetag_delete_keyword($tag->id, 2, $course->id);
-        $this->assertDebuggingCalled();
-        $events = $sink->get_events();
-        $event = $events[1];
-
-        // Check that the tag was deleted and the event data is valid.
-        $this->assertEquals(0, $DB->count_records('tag'));
-        $this->assertInstanceOf('\core\event\tag_deleted', $event);
-        $this->assertEquals(context_system::instance(), $event->get_context());
-
-        // Create a new tag we are going to delete.
-        $tag = $this->getDataGenerator()->create_tag();
-
-        // Add the tag instance to the course again as it was deleted.
-        tag_assign('course', $course->id, $tag->id, 0, 2, 'core', context_course::instance($course->id)->id);
-        $this->assertDebuggingCalled();
-
-        // Trigger and capture the event for deleting all tags in a course.
-        $sink = $this->redirectEvents();
-        coursetag_delete_course_tags($course->id);
-        $this->assertDebuggingCalled();
-        $events = $sink->get_events();
-        $event = $events[1];
-
-        // Check that the tag was deleted and the event data is valid.
-        $this->assertEquals(0, $DB->count_records('tag'));
-        $this->assertInstanceOf('\core\event\tag_deleted', $event);
-        $this->assertEquals(context_system::instance(), $event->get_context());
-
-        // Create two tags we are going to delete to ensure passing multiple tags work.
-        $tag = $this->getDataGenerator()->create_tag();
-        $tag2 = $this->getDataGenerator()->create_tag();
-
-        // Add multiple tag instances now and check that it still works.
-        tag_assign('course', $course->id, $tag->id, 0, 2, 'core', context_course::instance($course->id)->id);
-        $this->assertDebuggingCalled();
-        tag_assign('course', $course->id, $tag2->id, 0, 2, 'core', context_course::instance($course->id)->id);
-        $this->assertDebuggingCalled();
-
-        // Trigger and capture the event for deleting all tags in a course.
-        $sink = $this->redirectEvents();
-        coursetag_delete_course_tags($course->id);
-        $this->assertDebuggingCalled();
         $events = $sink->get_events();
         $events = array($events[1], $events[3]);
 

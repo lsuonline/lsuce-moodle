@@ -17,6 +17,11 @@
 /**
  * Redis cache test.
  *
+ * If you wish to use these unit tests all you need to do is add the following definition to
+ * your config.php file.
+ *
+ * define('TEST_CACHESTORE_REDIS_TESTSERVERS', '127.0.0.1');
+ *
  * @package   cachestore_redis
  * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -49,6 +54,12 @@ class cachestore_redis_test extends cachestore_tests {
         return 'cachestore_redis';
     }
 
+    public function setUp() {
+        if (!cachestore_redis::are_requirements_met() || !defined('TEST_CACHESTORE_REDIS_TESTSERVERS')) {
+            $this->markTestSkipped('Could not test cachestore_redis. Requirements are not met.');
+        }
+        parent::setUp();
+    }
     protected function tearDown() {
         parent::tearDown();
 
@@ -58,12 +69,15 @@ class cachestore_redis_test extends cachestore_tests {
     }
 
     /**
+     * Creates the required cachestore for the tests to run against Redis.
+     *
      * @return cachestore_redis
      */
     protected function create_cachestore_redis() {
         /** @var cache_definition $definition */
         $definition = cache_definition::load_adhoc(cache_store::MODE_APPLICATION, 'cachestore_redis', 'phpunit_test');
-        $store      = cachestore_redis::initialise_unit_test_instance($definition);
+        $store = new cachestore_redis('Test', cachestore_redis::unit_test_configuration());
+        $store->initialise($definition);
 
         $this->store = $store;
 

@@ -66,35 +66,37 @@ function resource_display_embed($resource, $cm, $course, $file) {
     $clicktoopen = resource_get_clicktoopen($file, $resource->revision);
 
     $context = context_module::instance($cm->id);
-    $path = '/'.$context->id.'/mod_resource/content/'.$resource->revision.$file->get_filepath().$file->get_filename();
-    $fullurl = file_encode_url($CFG->wwwroot.'/pluginfile.php', $path, false);
-    $moodleurl = new moodle_url('/pluginfile.php' . $path);
+    $moodleurl = moodle_url::make_pluginfile_url($context->id, 'mod_resource', 'content', $resource->revision,
+            $file->get_filepath(), $file->get_filename());
 
     $mimetype = $file->get_mimetype();
     $title    = $resource->name;
 
     $extension = resourcelib_get_extension($file->get_filename());
 
-    $mediarenderer = $PAGE->get_renderer('core', 'media');
+    $mediamanager = core_media_manager::instance($PAGE);
     $embedoptions = array(
-        core_media::OPTION_TRUSTED => true,
-        core_media::OPTION_BLOCK => true,
+        core_media_manager::OPTION_TRUSTED => true,
+        core_media_manager::OPTION_BLOCK => true,
     );
 
     if (file_mimetype_in_typegroup($mimetype, 'web_image')) {  // It's an image
-        $code = resourcelib_embed_image($fullurl, $title);
+        $code = resourcelib_embed_image($moodleurl->out(), $title);
 
     } else if ($mimetype === 'application/pdf') {
         // PDF document
-        $code = resourcelib_embed_pdf($fullurl, $title, $clicktoopen);
+        $code = resourcelib_embed_pdf($moodleurl->out(), $title, $clicktoopen);
 
-    } else if ($mediarenderer->can_embed_url($moodleurl, $embedoptions)) {
+    } else if ($mediamanager->can_embed_url($moodleurl, $embedoptions)) {
         // Media (audio/video) file.
-        $code = $mediarenderer->embed_url($moodleurl, $title, 0, 0, $embedoptions);
+        $code = $mediamanager->embed_url($moodleurl, $title, 0, 0, $embedoptions);
 
     } else {
+        // We need a way to discover if we are loading remote docs inside an iframe.
+        $moodleurl->param('embed', 1);
+
         // anything else - just try object tag enlarged as much as possible
-        $code = resourcelib_embed_general($fullurl, $title, $clicktoopen, $mimetype);
+        $code = resourcelib_embed_general($moodleurl, $title, $clicktoopen, $mimetype);
     }
 
     resource_print_header($resource, $cm, $course);
@@ -253,7 +255,6 @@ function resource_print_header($resource, $cm, $course) {
     $PAGE->set_title($course->shortname.': '.$resource->name);
     $PAGE->set_heading($course->fullname);
     $PAGE->set_activity_record($resource);
-    $PAGE->set_button(update_module_button($cm->id, '', get_string('modulename', 'resource')));
     echo $OUTPUT->header();
 }
 
@@ -303,6 +304,7 @@ function resource_get_file_details($resource, $cm) {
         if (!empty($options['showtype'])) {
             if ($mainfile) {
                 $filedetails['type'] = get_mimetype_description($mainfile);
+                $filedetails['mimetype'] = $mainfile->get_mimetype();
                 // Only show type if it is not unknown.
                 if ($filedetails['type'] === get_mimetype_description('document/unknown')) {
                     $filedetails['type'] = '';
@@ -526,7 +528,11 @@ function resource_set_mainfile($data) {
 
     $context = context_module::instance($cmid);
     if ($draftitemid) {
-        file_save_draft_area_files($draftitemid, $context->id, 'mod_resource', 'content', 0, array('subdirs'=>true));
+        $options = array('subdirs' => true, 'embed' => false);
+        if ($data->display == RESOURCELIB_DISPLAY_EMBED) {
+            $options['embed'] = true;
+        }
+        file_save_draft_area_files($draftitemid, $context->id, 'mod_resource', 'content', 0, $options);
     }
     $files = $fs->get_area_files($context->id, 'mod_resource', 'content', 0, 'sortorder', false);
     if (count($files) == 1) {

@@ -1,4 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once dirname(__FILE__) . '/lib.php';
 
@@ -10,12 +26,18 @@ class lsu_semesters extends lsu_source implements semester_processor {
         $semester_code = substr($term, -2);
 
         switch ($semester_code) {
-            case self::FALL: return array($year - 1, 'Fall');
-            case self::SPRING: return array($year, 'Spring');
-            case self::SUMMER: return array($year, 'Summer');
-            case self::WINTER_INT: return array($year - 1, 'WinterInt');
-            case self::SPRING_INT: return array($year, 'SpringInt');
-            case self::SUMMER_INT: return array($year, 'SummerInt');
+            case self::FALL:
+                return array($year - 1, 'Fall');
+            case self::SPRING:
+                return array($year, 'Spring');
+            case self::SUMMER:
+                return array($year, 'Summer');
+            case self::WINTER_INT:
+                return array($year - 1, 'WinterInt');
+            case self::SPRING_INT:
+                return array($year, 'SpringInt');
+            case self::SUMMER_INT:
+                return array($year, 'SummerInt');
         }
     }
 
@@ -29,7 +51,7 @@ class lsu_semesters extends lsu_source implements semester_processor {
         $lookup = array();
         $semesters = array();
 
-        foreach($xml_semesters->ROW as $xml_semester) {
+        foreach ($xml_semesters->ROW as $xml_semester) {
             $code = $xml_semester->CODE_VALUE;
 
             $term = (string) $xml_semester->TERM_CODE;
@@ -49,7 +71,8 @@ class lsu_semesters extends lsu_source implements semester_processor {
                     $campus = 'LAW';
                     $starting = ($code == self::LAW_SEM);
                     break;
-                default: continue;
+                default:
+                    continue;
             }
 
             if (!isset($lookup[$campus])) {
@@ -71,7 +94,7 @@ class lsu_semesters extends lsu_source implements semester_processor {
                 $semester =& $lookup[$campus][$term][$session];
                 $semester->grades_due = $date;
 
-                // Make a semester end 21 days later for our post grade process
+                // Make a semester end 21 days later for our post grade process.
                 $semester->grades_due += (21 * 24 * 60 * 60);
                 if ($campus == 'LAW') {
                     $semester->grades_due += (25 * 24 * 60 * 60);
@@ -109,18 +132,18 @@ class lsu_courses extends lsu_source implements course_processor {
             $law_not = ($semester->campus == 'LAW' and $department != 'LAW');
             $lsu_not = ($semester->campus == 'LSU' and $department == 'LAW');
 
-            // Course is not semester applicable
+            // Course is not semester applicable.
             if ($law_not or $lsu_not) {
                 continue;
             }
 
-            // @todo this may never get called, considering the conditional below.
+            // TODO: this may never get called, considering the conditional below.
             $is_unique = function ($course) use ($department, $course_number) {
                 return ($course->department != $department or
                     $course->cou_number != $course_number);
             };
 
-            // @todo why is this checking the emptiness of an uninitialized var ?
+            // TODO: why is this checking the emptiness of an uninitialized var?
             if (empty($course) or $is_unique($course)) {
                 $course = new stdClass;
                 $course->department = $department;
@@ -153,12 +176,12 @@ class lsu_teachers_by_department extends lsu_teacher_format implements teacher_b
 
         $teachers = array();
 
-        // LAW teachers should NOT be processed on an incoming LSU semester
+        // LAW teachers should NOT be processed on an incoming LSU semester.
         if ($department == 'LAW' and $semester->campus == 'LSU') {
             return $teachers;
         }
 
-        // Always use LSU campus code
+        // Always use LSU campus code.
         $campus = self::LSU_CAMPUS;
 
         $params = array($semester->session_key, $department, $semester_term, $campus);
@@ -168,7 +191,7 @@ class lsu_teachers_by_department extends lsu_teacher_format implements teacher_b
         foreach ($xml_teachers->ROW as $xml_teacher) {
             $teacher = $this->format_teacher($xml_teacher);
 
-            // Section information
+            // Section information.
             $teacher->department = $department;
             $teacher->cou_number = (string) $xml_teacher->CLASS_COURSE_NBR;
             $teacher->sec_number = (string) $xml_teacher->SECTION_NBR;
@@ -198,7 +221,7 @@ class lsu_students_by_department extends lsu_student_format implements student_b
 
             $student = $this->format_student($xml_student);
 
-            // Section information
+            // Section information.
             $student->department = $department;
             $student->cou_number = (string) $xml_student->COURSE_NBR;
             $student->sec_number = (string) $xml_student->SECTION_NBR;
@@ -217,7 +240,7 @@ class lsu_teachers extends lsu_teacher_format implements teacher_processor {
 
         $teachers = array();
 
-        // LAW teachers should NOT be processed on an incoming LSU semester
+        // LAW teachers should NOT be processed on an incoming LSU semester.
         if ($course->department == 'LAW' and $semester->campus == 'LSU') {
             return $teachers;
         }
@@ -264,7 +287,6 @@ class lsu_student_data extends lsu_source {
 
     function student_data($semester) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
-
         $params = array($semester_term);
 
         if ($semester->campus == 'LSU') {
@@ -274,18 +296,16 @@ class lsu_student_data extends lsu_source {
         }
 
         $xml_data = $this->invoke($params);
-
         $student_data = array();
 
         foreach ($xml_data->ROW as $xml_student_data) {
             $stud_data = new stdClass;
 
             $reg = trim((string) $xml_student_data->REGISTRATION_DATE);
-
             $stud_data->user_year = (string) $xml_student_data->YEAR_CLASS;
             $stud_data->user_college = (string) $xml_student_data->COLLEGE_CODE;
             $stud_data->user_major = (string) $xml_student_data->CURRIC_CODE;
-            $stud_data->user_reg_status = $reg == 'null' ? NULL : $this->parse_date($reg);
+            $stud_data->user_reg_status = $reg == 'null' ? null : $this->parse_date($reg);
             $stud_data->user_keypadid = (string) $xml_student_data->KEYPAD_ID;
             $stud_data->idnumber = trim((string)$xml_student_data->LSU_ID);
 
@@ -300,7 +320,6 @@ class lsu_degree extends lsu_source {
 
     function student_data($semester) {
         $term = $this->encode_semester($semester->year, $semester->name);
-
         $params = array($term);
 
         if ($semester->campus == 'LSU') {
@@ -323,7 +342,6 @@ class lsu_degree extends lsu_source {
 
             $graduate->idnumber = (string) $xml_grad->LSU_ID;
             $graduate->user_degree = 'Y';
-
             $graduates[$graduate->idnumber] = $graduate;
         }
 
@@ -339,7 +357,6 @@ class lsu_anonymous extends lsu_source {
         }
 
         $term = $this->encode_semester($semester->year, $semester->name);
-
         $xml_numbers = $this->invoke(array($term));
 
         $numbers = array();
@@ -348,7 +365,6 @@ class lsu_anonymous extends lsu_source {
 
             $number->idnumber = (string) $xml_number->LSU_ID;
             $number->user_anonymous_number = (string) $xml_number->LAW_ANONYMOUS_NBR;
-
             $numbers[$number->idnumber] = $number;
         }
 
@@ -384,7 +400,6 @@ class lsu_sports extends lsu_source {
         }
 
         $now = time();
-
         $xml_infos = $this->invoke(array($this->find_season($now)));
 
         $numbers = array();

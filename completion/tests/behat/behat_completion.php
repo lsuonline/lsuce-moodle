@@ -49,13 +49,12 @@ class behat_completion extends behat_base {
     public function user_has_completed_activity($userfullname, $activityname) {
 
         // Will throw an exception if the element can not be hovered.
-        $titleliteral = behat_context_helper::escape($userfullname . ", " . $activityname . ": Completed");
-        $xpath = "//table[@id='completion-progress']" .
-            "/descendant::img[contains(@title, $titleliteral)]";
+        $titleliteral = $userfullname . ", " . $activityname . ": Completed";
+        $xpath = "//table[@id='completion-progress']";
 
         $this->execute("behat_completion::go_to_the_current_course_activity_completion_report");
-        $this->execute("behat_general::should_exist",
-            array($this->escape($xpath), "xpath_element")
+        $this->execute("behat_general::should_exist_in_the",
+            array($titleliteral, "icon", $xpath, "xpath_element")
         );
     }
 
@@ -69,12 +68,13 @@ class behat_completion extends behat_base {
     public function user_has_not_completed_activity($userfullname, $activityname) {
 
         // Will throw an exception if the element can not be hovered.
-        $titleliteral = behat_context_helper::escape($userfullname . ", " . $activityname . ": Not completed");
-        $xpath = "//table[@id='completion-progress']" .
-            "/descendant::img[contains(@title, $titleliteral)]";
+        $titleliteral = $userfullname . ", " . $activityname . ": Not completed";
+        $xpath = "//table[@id='completion-progress']";
 
         $this->execute("behat_completion::go_to_the_current_course_activity_completion_report");
-        $this->execute("behat_general::should_exist", array($this->escape($xpath), "xpath_element"));
+        $this->execute("behat_general::should_exist_in_the",
+            array($titleliteral, "icon", $xpath, "xpath_element")
+        );
     }
 
     /**
@@ -84,9 +84,10 @@ class behat_completion extends behat_base {
      */
     public function go_to_the_current_course_activity_completion_report() {
         $completionnode = get_string('pluginname', 'report_progress');
-        $reportsnode = get_string('courseadministration') . ' > ' . get_string('reports');
+        $reportsnode = get_string('reports');
 
-        $this->execute("behat_navigation::i_navigate_to_node_in", array($completionnode, $reportsnode));
+        $this->execute("behat_navigation::i_navigate_to_in_current_page_administration",
+                $reportsnode . ' > ' . $completionnode);
     }
 
     /**
@@ -101,6 +102,9 @@ class behat_completion extends behat_base {
 
         // Go to course editing.
         $this->execute("behat_general::click_link", get_string('editsettings'));
+
+        // Expand all the form fields.
+        $this->execute("behat_forms::i_expand_all_fieldsets");
 
         // Enable completion.
         $this->execute("behat_forms::i_set_the_field_to",
@@ -121,11 +125,11 @@ class behat_completion extends behat_base {
         } else {
             $imgalttext = get_string("completion-alt-auto-y", 'core_completion', $activityname);
         }
-        $csselementforactivitytype = "li.modtype_".strtolower($activitytype);
+        $activityxpath = "//li[contains(concat(' ', @class, ' '), ' modtype_" . strtolower($activitytype) . " ')]";
+        $activityxpath .= "[descendant::*[contains(text(), '" . $activityname . "')]]";
 
-        $xpathtocheck = "//img[contains(@alt, '$imgalttext')]";
         $this->execute("behat_general::should_exist_in_the",
-            array($xpathtocheck, "xpath_element", $csselementforactivitytype, "css_element")
+            array($imgalttext, "icon", $activityxpath, "xpath_element")
         );
 
     }
@@ -141,12 +145,79 @@ class behat_completion extends behat_base {
         } else {
             $imgalttext = get_string("completion-alt-auto-n", 'core_completion', $activityname);
         }
-        $csselementforactivitytype = "li.modtype_".strtolower($activitytype);
+        $activityxpath = "//li[contains(concat(' ', @class, ' '), ' modtype_" . strtolower($activitytype) . " ')]";
+        $activityxpath .= "[descendant::*[contains(text(), '" . $activityname . "')]]";
 
-        $xpathtocheck = "//img[contains(@alt, '$imgalttext')]";
         $this->execute("behat_general::should_exist_in_the",
-            array($xpathtocheck, "xpath_element", $csselementforactivitytype, "css_element")
+            array($imgalttext, "icon", $activityxpath, "xpath_element")
+        );
+    }
+
+    /**
+     * Checks if the activity with specified name shows a information completion checkbox (i.e. showing the completion tracking
+     * configuration).
+     *
+     * @Given /^the "(?P<activityname_string>(?:[^"]|\\")*)" "(?P<activitytype_string>(?:[^"]|\\")*)" activity with "(manual|auto)" completion shows a configuration completion checkbox/
+     * @param string $activityname The activity name.
+     * @param string $activitytype The activity type.
+     * @param string $completiontype The completion type.
+     */
+    public function activity_has_configuration_completion_checkbox($activityname, $activitytype, $completiontype) {
+        if ($completiontype == "manual") {
+            $imgname = 'i/completion-manual-enabled';
+        } else {
+            $imgname = 'i/completion-auto-enabled';
+        }
+        $iconxpath = "//li[contains(concat(' ', @class, ' '), ' modtype_" . strtolower($activitytype) . " ')]";
+        $iconxpath .= "[descendant::*[contains(text(), '" . $activityname . "')]]";
+        $iconxpath .= "/descendant::span[@class='actions']/descendant::img[contains(@src, 'i/completion-')]";
+
+        $this->execute("behat_general::the_attribute_of_should_contain",
+            array("src", $iconxpath, "xpath_element", $imgname)
+        );
+    }
+
+    /**
+     * Checks if the activity with specified name shows a tracking completion checkbox (i.e. showing my completion tracking status)
+     *
+     * @Given /^the "(?P<activityname_string>(?:[^"]|\\")*)" "(?P<activitytype_string>(?:[^"]|\\")*)" activity with "(manual|auto)" completion shows a status completion checkbox/
+     * @param string $activityname The activity name.
+     * @param string $activitytype The activity type.
+     * @param string $completiontype The completion type.
+     */
+    public function activity_has_status_completion_checkbox($activityname, $activitytype, $completiontype) {
+        if ($completiontype == "manual") {
+            $imgname = 'i/completion-manual-';
+        } else {
+            $imgname = 'i/completion-auto-';
+        }
+        $iconxpath = "//li[contains(concat(' ', @class, ' '), ' modtype_" . strtolower($activitytype) . " ')]";
+        $iconxpath .= "[descendant::*[contains(text(), '" . $activityname . "')]]";
+        $iconxpath .= "/descendant::span[@class='actions']/descendant::img[contains(@src, 'i/completion-')]";
+
+        $this->execute("behat_general::the_attribute_of_should_contain",
+            array("src", $iconxpath, "xpath_element", $imgname)
         );
 
+        $this->execute("behat_general::the_attribute_of_should_not_contain",
+            array("src", $iconxpath, "xpath_element", '-enabled')
+        );
+    }
+
+    /**
+     * Checks if the activity with specified name does not show any completion checkbox.
+     *
+     * @Given /^the "(?P<activityname_string>(?:[^"]|\\")*)" "(?P<activitytype_string>(?:[^"]|\\")*)" activity does not show any completion checkbox/
+     * @param string $activityname The activity name.
+     * @param string $activitytype The activity type.
+     */
+    public function activity_has_not_any_completion_checkbox($activityname, $activitytype) {
+        $iconxpath = "//li[contains(concat(' ', @class, ' '), ' modtype_" . strtolower($activitytype) . " ')]";
+        $iconxpath .= "[descendant::*[contains(text(), '" . $activityname . "')]]";
+        $iconxpath .= "/descendant::img[contains(@src, 'i/completion-')]";
+
+        $this->execute("behat_general::should_not_exist",
+            array($iconxpath, "xpath_element")
+        );
     }
 }

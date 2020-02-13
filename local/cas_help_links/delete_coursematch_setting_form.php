@@ -26,14 +26,16 @@
 defined('MOODLE_INTERNAL') || die;
 
 if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
 }
 
 require_once($CFG->libdir.'/formslib.php');
 
 class cas_delete_coursematch_form extends moodleform {
 
-    function definition() {
+    // Added public scope to this function for code check.
+    public function definition() {
         global $CFG, $DB, $OUTPUT;
         $mform = $this->_form;
 
@@ -42,7 +44,15 @@ class cas_delete_coursematch_form extends moodleform {
 
         $mform->addElement('hidden', 'id', $this->_customdata['coursematch_id']);
 
-        $mform->addElement('html', '<p>' . $this->_customdata['coursematch_dept'] . ' ' . $this->_customdata['coursematch_number'] . '&nbsp;&nbsp;(<a href="' . $this->_customdata['coursematch_link'] . '" target="_blank">' . $this->_customdata['coursematch_link'] . '</a>)</p>');
+        $mform->addElement('html', '<p>'
+                            . $this->_customdata['coursematch_dept']
+                            . ' '
+                            . $this->_customdata['coursematch_number']
+                            . '&nbsp;&nbsp;(<a href="' . $this->_customdata['coursematch_link']
+                            . '" target="_blank">'
+                            . $this->_customdata['coursematch_link']
+                            . '</a>)</p>'
+                        );
 
         $mform->addElement('submit', 'submitdeletcoursematch', 'Delete', ['class' => 'pull-left']);
     }

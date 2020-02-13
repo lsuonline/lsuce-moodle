@@ -1,5 +1,5 @@
 @mod @mod_quiz
-Feature: Attemp a quiz where some questions require that the previous question has been answered.
+Feature: Attempt a quiz
   As a student
   In order to demonstrate what I know
   I need to be able to attempt quizzes
@@ -31,15 +31,12 @@ Feature: Attemp a quiz where some questions require that the previous question h
       | question | page | maxmark |
       | TF1      | 1    |         |
       | TF2      | 1    | 3.0     |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
-    And I press "Attempt quiz now"
-    And I click on "True" "radio" in the "First question" "question"
-    And I click on "False" "radio" in the "Second question" "question"
-    And I press "Finish attempt ..."
-    And I press "Submit all and finish"
-    And I click on "Submit all and finish" "button" in the "Confirmation" "dialogue"
+    And user "student" has attempted "Quiz 1" with responses:
+      | slot | response |
+      |   1  | True     |
+      |   2  | False    |
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I follow "Review"
     Then I should see "25.00 out of 100.00"
 
   @javascript
@@ -67,9 +64,7 @@ Feature: Attemp a quiz where some questions require that the previous question h
       |           | 4         | 1       |
       | Section 3 | 5         | 0       |
 
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
     And I press "Attempt quiz now"
 
     Then I should see "Section 1" in the "Quiz navigation" "block"
@@ -110,9 +105,7 @@ Feature: Attemp a quiz where some questions require that the previous question h
       | question | page |
       | TF1      | 1    |
       | TF2      | 2    |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
     And I press "Attempt quiz now"
     Then I should see "Text of the first question"
     And I should not see "Text of the second question"

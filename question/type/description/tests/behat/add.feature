@@ -15,12 +15,12 @@ Feature: Test creating a Description question
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Question bank" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Question bank" in current page administration
 
   Scenario: Create a Description question with Correct answer as False
     When I add a "Description" question filling the form with:
       | Question name                      | description-001                                                |
       | Question text                      | Instructions about the following questions.                    |
       | General feedback                   | Why actually the field 'General feedback' used in this qytype? |
-      Then I should see "description-001"
+    Then I should see "description-001"

@@ -24,7 +24,7 @@
  * @author     Yuliya Bozhko <yuliya.bozhko@totaralms.com>
  */
 
-require_once(dirname(dirname(__FILE__)) . '/config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir . '/badgeslib.php');
 
 $badgeid    = required_param('id', PARAM_INT);
@@ -98,7 +98,7 @@ $totalcount = $DB->count_records('badge_issued', array('badgeid' => $badge->id))
 
 if ($badge->has_awards()) {
     $users = $DB->get_records_sql($sql, array('badgeid' => $badge->id), $page * BADGE_PERPAGE, BADGE_PERPAGE);
-    $recipients             = new badge_recipients($users);
+    $recipients             = new core_badges\output\badge_recipients($users);
     $recipients->sort       = $sortby;
     $recipients->dir        = $sorthow;
     $recipients->page       = $page;

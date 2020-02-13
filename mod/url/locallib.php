@@ -305,18 +305,18 @@ function url_display_embed($url, $cm, $course) {
 
     $extension = resourcelib_get_extension($url->externalurl);
 
-    $mediarenderer = $PAGE->get_renderer('core', 'media');
+    $mediamanager = core_media_manager::instance($PAGE);
     $embedoptions = array(
-        core_media::OPTION_TRUSTED => true,
-        core_media::OPTION_BLOCK => true
+        core_media_manager::OPTION_TRUSTED => true,
+        core_media_manager::OPTION_BLOCK => true
     );
 
     if (in_array($mimetype, array('image/gif','image/jpeg','image/png'))) {  // It's an image
         $code = resourcelib_embed_image($fullurl, $title);
 
-    } else if ($mediarenderer->can_embed_url($moodleurl, $embedoptions)) {
+    } else if ($mediamanager->can_embed_url($moodleurl, $embedoptions)) {
         // Media (audio/video) file.
-        $code = $mediarenderer->embed_url($moodleurl, $title, 0, 0, $embedoptions);
+        $code = $mediamanager->embed_url($moodleurl, $title, 0, 0, $embedoptions);
 
     } else {
         // anything else - just try object tag enlarged as much as possible
@@ -460,18 +460,18 @@ function url_get_variable_values($url, $cm, $course, $config) {
 
     $values = array (
         'courseid'        => $course->id,
-        'coursefullname'  => format_string($course->fullname),
+        'coursefullname'  => format_string($course->fullname, true, array('context' => $coursecontext)),
         'courseshortname' => format_string($course->shortname, true, array('context' => $coursecontext)),
         'courseidnumber'  => $course->idnumber,
         'coursesummary'   => $course->summary,
         'courseformat'    => $course->format,
         'lang'            => current_language(),
-        'sitename'        => format_string($site->fullname),
+        'sitename'        => format_string($site->fullname, true, array('context' => $coursecontext)),
         'serverurl'       => $CFG->wwwroot,
         'currenttime'     => time(),
         'urlinstance'     => $url->id,
         'urlcmid'         => $cm->id,
-        'urlname'         => format_string($url->name),
+        'urlname'         => format_string($url->name, true, array('context' => $coursecontext)),
         'urlidnumber'     => $cm->idnumber,
     );
 

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 use theme_snap\webservice\definition_helper;
 use theme_snap\renderables\course_toc;
 
@@ -51,8 +53,8 @@ class definition_helper_testable extends definition_helper {
      */
     public function __call($name, $arguments) {
         $reflection = new ReflectionObject($this);
-        $parentReflection = $reflection->getParentClass();
-        $method = $parentReflection->getMethod($name);
+        $parentreflection = $reflection->getParentClass();
+        $method = $parentreflection->getMethod($name);
         $method->setAccessible(true);
         return $method->invokeArgs($this, $arguments);
     }
@@ -150,7 +152,7 @@ class wsparam_notype {
 
 /**
  * Tests for webservice definition healper.
- * @author    Guy Thomas <gthomas@moodlerooms.com>
+ * @author    Guy Thomas <osdev@blackboard.com>
  * @copyright Copyright (c) 2016 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -316,7 +318,8 @@ EOF;
     }
 
     public function test_convert_ws_param_no_type() {
-        $this->setExpectedException('coding_exception', 'Type not specified');
+        $this->expectException('coding_exception');
+        $this->expectExceptionMessage('Type not specified');
         new definition_helper_testable(new wsparam_notype());
     }
 

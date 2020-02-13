@@ -67,6 +67,9 @@ class grading_app implements templatable, renderable {
         $this->userid = $userid;
         $this->groupid = $groupid;
         $this->assignment = $assignment;
+        user_preference_allow_ajax_update('assign_filter', PARAM_ALPHA);
+        user_preference_allow_ajax_update('assign_workflowfilter', PARAM_ALPHA);
+        user_preference_allow_ajax_update('assign_markerfilter', PARAM_ALPHANUMEXT);
         $this->participants = $assignment->list_participants_with_filter_status_and_group($groupid);
         if (!$this->userid && count($this->participants)) {
             $this->userid = reset($this->participants)->id;
@@ -80,7 +83,7 @@ class grading_app implements templatable, renderable {
      * @return stdClass - Flat list of exported data.
      */
     public function export_for_template(renderer_base $output) {
-        global $CFG;
+        global $CFG, $USER;
 
         $export = new stdClass();
         $export->userid = $this->userid;
@@ -88,15 +91,22 @@ class grading_app implements templatable, renderable {
         $export->cmid = $this->assignment->get_course_module()->id;
         $export->contextid = $this->assignment->get_context()->id;
         $export->groupid = $this->groupid;
-        $export->name = $this->assignment->get_instance()->name;
+        $export->name = $this->assignment->get_context()->get_context_name();
         $export->courseid = $this->assignment->get_course()->id;
         $export->participants = array();
+        $export->filters = $this->assignment->get_filters();
+        $export->markingworkflowfilters = $this->assignment->get_marking_workflow_filters(true);
+        $export->hasmarkingworkflow = count($export->markingworkflowfilters) > 0;
+        $export->markingallocationfilters = $this->assignment->get_marking_allocation_filters(true);
+        $export->hasmarkingallocation = count($export->markingallocationfilters) > 0;
+
         $num = 1;
         foreach ($this->participants as $idx => $record) {
             $user = new stdClass();
             $user->id = $record->id;
             $user->fullname = fullname($record);
             $user->requiregrading = $record->requiregrading;
+            $user->grantedextension = $record->grantedextension;
             $user->submitted = $record->submitted;
             if (!empty($record->groupid)) {
                 $user->groupid = $record->groupid;
@@ -119,6 +129,9 @@ class grading_app implements templatable, renderable {
                 }
             }
         }
+
+        $export->actiongrading = 'grading';
+        $export->viewgrading = get_string('viewgrading', 'mod_assign');
 
         $export->showreview = $showreview;
 
@@ -156,7 +169,9 @@ class grading_app implements templatable, renderable {
         $export->larrow = $output->larrow();
         // List of identity fields to display (the user info will not contain any fields the user cannot view anyway).
         $export->showuseridentity = $CFG->showuseridentity;
-
+        $export->currentuserid = $USER->id;
+        $helpicon = new \help_icon('sendstudentnotifications', 'assign');
+        $export->helpicon = $helpicon->export_for_template($output);
         return $export;
     }
 

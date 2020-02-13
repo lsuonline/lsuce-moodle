@@ -18,7 +18,7 @@ Feature: Blogs can be set to be only visible by the author.
       | testuser2 | C1     | student |
     And I log in as "admin"
     And I am on site homepage
-    And I navigate to "Blog" node in "Site administration > Appearance"
+    And I navigate to "Appearance > Blog" in site administration
     And I set the following fields to these values:
       | Blog visibility | Users can only see their own blog |
     And I press "Save changes"
@@ -26,8 +26,8 @@ Feature: Blogs can be set to be only visible by the author.
 
   Scenario: A student can not see another student's blog entries.
     Given I log in as "testuser"
-    And I follow "Course 1"
-    And I follow "Participants"
+    And I am on "Course 1" course homepage
+    And I navigate to course participants
     And I follow "Test2 User2"
     And I should see "Miscellaneous"
     Then I should not see "Blog entries"

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -24,8 +23,6 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-
-/** LIBRARY_MAX_NAME_LENGTH = 50 */
 define("LIBRARY_MAX_NAME_LENGTH", 50);
 
 /**
@@ -34,14 +31,13 @@ define("LIBRARY_MAX_NAME_LENGTH", 50);
  * @return string
  */
 function get_library_name($library) {
-    $name = strip_tags(format_string($library->intro,true));
+    $name = strip_tags(format_string($library->intro, true));
     if (core_text::strlen($name) > LIBRARY_MAX_NAME_LENGTH) {
         $name = core_text::substr($name, 0, LIBRARY_MAX_NAME_LENGTH)."...";
     }
 
     if (empty($name)) {
-        // arbitrary name
-        $name = get_string('modulename','library');
+        $name = get_string('modulename', 'library');
     }
 
     return $name;
@@ -95,13 +91,13 @@ function library_update_instance($library) {
 function library_delete_instance($id) {
     global $DB;
 
-    if (! $library = $DB->get_record("library", array("id"=>$id))) {
+    if (! $library = $DB->get_record("library", array("id" => $id))) {
         return false;
     }
 
     $result = true;
 
-    if (! $DB->delete_records("library", array("id"=>$library->id))) {
+    if (! $DB->delete_records("library", array("id" => $library->id))) {
         $result = false;
     }
 
@@ -120,18 +116,18 @@ function library_delete_instance($id) {
  */
 function library_get_coursemodule_info($coursemodule) {
     global $DB, $PAGE;
-    if ($library = $DB->get_record('library', array('id'=>$coursemodule->instance), 'id, name, intro, introformat')) {
+    if ($library = $DB->get_record('library', array('id' => $coursemodule->instance), 'id, name, intro, introformat')) {
         if (empty($library->name)) {
-            // library name missing, fix it
+            // Fix library name if missing.
             $library->name = "library{$library->id}";
-            $DB->set_field('library', 'name', $library->name, array('id'=>$library->id));
+            $DB->set_field('library', 'name', $library->name, array('id' => $library->id));
         }
         $info = new cached_cm_info();
-        
-        // no filtering hre because this info is cached and filtered later
+
+        // No filtering here because this info is cached and filtered later.
         $info->content = format_module_intro('library', $library, $coursemodule->id, false);
         $info->name  = $library->name;
-        
+
         return $info;
     } else {
         return null;
@@ -140,14 +136,13 @@ function library_get_coursemodule_info($coursemodule) {
 
 /**
  *
- *
  * https://github.com/mudrd8mz/moodle-mod_subcourse/blob/master/lib.php
  *
  * @param $cm
  * @return void
  */
 function mod_library_cm_info_view($cm) {
-   global $CFG;
+    global $CFG;
     $imgurl = $CFG->wwwroot . '/mod/library/pix/LaptopUser_icon2.svg';
     $imgalt = get_string('alt_image_text', 'library');
     $link = get_string('library_activity_link', 'library');
@@ -192,17 +187,29 @@ function library_get_extra_capabilities() {
  */
 function library_supports($feature) {
     switch($feature) {
-        case FEATURE_IDNUMBER:                return false;
-        case FEATURE_GROUPS:                  return false;
-        case FEATURE_GROUPINGS:               return false;
-        case FEATURE_GROUPMEMBERSONLY:        return false;
-        case FEATURE_MOD_INTRO:               return false;
-        case FEATURE_COMPLETION_TRACKS_VIEWS: return false;
-        case FEATURE_GRADE_HAS_GRADE:         return false;
-        case FEATURE_GRADE_OUTCOMES:          return false;
-        case FEATURE_MOD_ARCHETYPE:           return 'MOD_ARCHETYPE_ACTIVITY';
-        case FEATURE_BACKUP_MOODLE2:          return false;
-        case FEATURE_NO_VIEW_LINK:            return true;
-        default: return null;
+        case FEATURE_IDNUMBER:
+            return false;
+        case FEATURE_GROUPS:
+            return false;
+        case FEATURE_GROUPINGS:
+            return false;
+        case FEATURE_GROUPMEMBERSONLY:
+            return false;
+        case FEATURE_MOD_INTRO:
+            return false;
+        case FEATURE_COMPLETION_TRACKS_VIEWS:
+            return false;
+        case FEATURE_GRADE_HAS_GRADE:
+            return false;
+        case FEATURE_GRADE_OUTCOMES:
+            return false;
+        case FEATURE_MOD_ARCHETYPE:
+            return 'MOD_ARCHETYPE_ACTIVITY';
+        case FEATURE_BACKUP_MOODLE2:
+            return false;
+        case FEATURE_NO_VIEW_LINK:
+            return true;
+        default:
+            return null;
     }
 }

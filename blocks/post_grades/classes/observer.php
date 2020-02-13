@@ -22,6 +22,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2015 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 abstract class block_post_grades_observer {
 
     /**
@@ -36,7 +37,7 @@ abstract class block_post_grades_observer {
 
         global $DB;
 
-        // remove any of this semester's periods from post grades
+        // Remove any of this semester's periods from post grades.
         $params = array('semesterid' => $event->objectid);
         $DB->delete_records('block_post_grades_periods', $params);
 
@@ -55,7 +56,7 @@ abstract class block_post_grades_observer {
 
         global $DB;
 
-        // remove any of this section's postings from post grades
+        // Remove any of this section's postings from post grades.
         $params = array('sectionid' => $event->objectid);
         $DB->delete_records('block_post_grades_postings', $params);
 

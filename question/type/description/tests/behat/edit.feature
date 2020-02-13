@@ -21,11 +21,11 @@ Feature: Test editing a Description question
       | questioncategory | qtype       | name            | template |
       | Test questions   | description | description-001 | info     |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Question bank" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Question bank" in current page administration
 
   Scenario: Edit a Description question
-    When I click on "Edit" "link" in the "description-001" "table_row"
+    When I choose "Edit question" action for "description-001" in the question bank
     And I set the following fields to these values:
       | Question name | |
     And I press "id_submitbutton"

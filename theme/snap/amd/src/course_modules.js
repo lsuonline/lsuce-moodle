@@ -15,7 +15,7 @@
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package   theme_snap
- * @author    Guy Thomas <gthomas@moodlerooms.com>
+ * @author    Guy Thomas <osdev@blackboard.com>
  * @copyright Copyright (c) 2016 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -29,9 +29,11 @@ define(
         'core/ajax',
         'theme_snap/util',
         'theme_snap/responsive_video',
-        'theme_snap/ajax_notification'
+        'theme_snap/ajax_notification',
+        'core/str',
+        'core/event'
     ],
-    function($, ajax, util, responsiveVideo, ajaxNotify) {
+    function($, ajax, util, responsiveVideo, ajaxNotify, str, Event) {
 
         /**
          * Module has been completed.
@@ -41,6 +43,7 @@ define(
         var updateModCompletion = function(module, completionhtml) {
             // Update completion tracking icon.
             module.find('.snap-asset-completion-tracking').html(completionhtml);
+            module.find('.btn-link').focus();
             $(document).trigger('snapModuleCompletionChange', module);
         };
 
@@ -67,16 +70,21 @@ define(
                         methodname: 'theme_snap_course_module_completion',
                         args: {id: id, completionstate: completionState},
                         done: function(response) {
-                            form.removeClass('ajaxing');
-                            if (ajaxNotify.ifErrorShowBestMsg(response)) {
-                                return;
-                            }
-                            // Update completion html for this module instance.
-                            updateModCompletion(module, response.completionhtml);
+
+                            ajaxNotify.ifErrorShowBestMsg(response).done(function(errorShown) {
+                                form.removeClass('ajaxing');
+                                if (errorShown) {
+                                    return;
+                                } else {
+                                    // No errors, update completion html for this module instance.
+                                    updateModCompletion(module, response.completionhtml);
+                                }
+                            });
                         },
                         fail: function(response) {
-                            form.removeClass('ajaxing');
-                            ajaxNotify.ifErrorShowBestMsg(response);
+                            ajaxNotify.ifErrorShowBestMsg(response).then(function() {
+                                form.removeClass('ajaxing');
+                            });
                         }
                     }
                 ], true, true);
@@ -88,7 +96,7 @@ define(
          * Reveal page module content.
          *
          * @param {jQuery} pageMod
-         * @param {string} completionhtml - updated completionhtml
+         * @param {string} completionHTML - updated completionHTML
          */
         var revealPageMod = function(pageMod, completionHTML) {
             pageMod.find('.pagemod-content').slideToggle("fast", function() {
@@ -97,8 +105,7 @@ define(
                     pageMod.attr('aria-expanded', 'true');
                     pageMod.find('.pagemod-content').focus();
 
-                }
-                else {
+                } else {
                     pageMod.attr('aria-expanded', 'false');
                     pageMod.focus();
                 }
@@ -138,20 +145,26 @@ define(
                             async: true,
                             url: readPageUrl,
                             success: function(data) {
-                                if (ajaxNotify.ifErrorShowBestMsg(data)) {
-                                    return;
-                                }
-                                // Update completion html for this page mod instance.
-                                updateModCompletion(pageMod, data.completionhtml);
+                                ajaxNotify.ifErrorShowBestMsg(data).done(function(errorShown) {
+                                    if (errorShown) {
+                                        return;
+                                    } else {
+                                        // No errors, update completion html for this page mod instance.
+                                        updateModCompletion(pageMod, data.completionhtml);
+                                    }
+                                });
                             }
                         });
                     }
                 } else {
                     if (!isexpanded) {
                         // Content is not available so request it.
-                        pageMod.find('.contentafterlink').prepend(
-                            '<div class="ajaxstatus alert alert-info">' + M.str.theme_snap.loading + '</div>'
-                        );
+                        var loadingStrPromise = str.get_string('loading', 'theme_snap');
+                        $.when(loadingStrPromise).done(function(loadingStr) {
+                            pageMod.find('.contentafterlink').prepend(
+                                '<div class="ajaxstatus alert alert-info">' + loadingStr + '</div>'
+                            );
+                        });
                         var getPageUrl = M.cfg.wwwroot + '/theme/snap/rest.php?action=get_page&contextid=' +
                             readmore.data('pagemodcontext');
                         $.ajax({
@@ -159,13 +172,18 @@ define(
                             async: true,
                             url: getPageUrl,
                             success: function(data) {
-                                if (ajaxNotify.ifErrorShowBestMsg(data)) {
-                                    return;
-                                }
-                                pageModContent.prepend(data.html);
-                                pageModContent.data('content-loaded', 1);
-                                pageMod.find('.contentafterlink .ajaxstatus').remove();
-                                revealPageMod(pageMod, data.completionhtml);
+                                ajaxNotify.ifErrorShowBestMsg(data).done(function(errorShown) {
+                                    if (errorShown) {
+                                        return;
+                                    } else {
+                                        // No errors, reveal page mod.
+                                        pageModContent.prepend(data.html);
+                                        pageModContent.data('content-loaded', 1);
+                                        pageMod.find('.contentafterlink .ajaxstatus').remove();
+                                        revealPageMod(pageMod, data.completionhtml);
+                                        Event.notifyFilterContentUpdated('.pagemod-content');
+                                    }
+                                });
                             }
                         });
                     } else {
@@ -185,8 +203,8 @@ define(
             /**
              * Ensure lightbox container exists.
              *
-             * @param appendto
-             * @param onclose
+             * @param {string} appendto
+             * @param {function} onclose
              * @returns {*|jQuery|HTMLElement}
              */
             var lightbox = function(appendto, onclose) {
@@ -194,15 +212,15 @@ define(
                 if (lbox.length === 0) {
                     $(appendto).append('<div id="snap-light-box" tabindex="-1">' +
                         '<div id="snap-light-box-content"></div>' +
-                        '<a id="snap-light-box-close" class="pull-right snap-action-icon" href="#">' +
-                        '<i class="icon icon-close"></i><small>Close</small>' +
+                        '<a id="snap-light-box-close" class="pull-right snap-action-icon snap-icon-close" href="#">' +
+                        '<small>Close</small>' +
                         '</a>' +
                         '</div>');
                     $('#snap-light-box-close').click(function(e) {
                         e.preventDefault();
                         e.stopPropagation();
                         lightboxclose();
-                        if (typeof(onclose) === 'function') {
+                        if (typeof (onclose) === 'function') {
                             onclose();
                         }
                     });
@@ -214,7 +232,7 @@ define(
             /**
              * Close lightbox.
              */
-            var lightboxclose = function() { // jshint ignore:line
+            var lightboxclose = function() {
                 var lbox = lightbox();
                 window.opener.location.reload(true);
                 lbox.remove();
@@ -223,9 +241,9 @@ define(
             /**
              * Open lightbox and set content if necessary.
              *
-             * @param content
-             * @param appendto
-             * @param onclose
+             * @param {string} content
+             * @param {*} appendto
+             * @param {function} onclose
              */
             var lightboxopen = function(content, appendto, onclose) {
                 appendto = appendto ? appendto : $('body');
@@ -252,57 +270,17 @@ define(
                 async: true,
                 url: M.cfg.wwwroot + '/theme/snap/rest.php?action=get_media&contextid=' + $(resourcemod).data('modcontext'),
                 success: function(data) {
-                    if (ajaxNotify.ifErrorShowBestMsg(data)) {
-                        return;
-                    }
-                    lightboxopen(data.html, appendto);
-
-                    updateModCompletion($(resourcemod), data.completionhtml);
-
-                    // Execute scripts - necessary for flv to work.
-                    var hasflowplayerscript = false;
-                    $('#snap-light-box script').each(function() {
-                        var script = $(this).text();
-
-                        // Remove cdata from script.
-                        script = script.replace(/^(?:\s*)\/\/<!\[CDATA\[/, '').replace(/\/\/\]\](?:\s*)$/, '');
-
-                        // Check for flv video scripts.
-                        if (script.indexOf('M.util.add_video_player') > -1) {
-                            hasflowplayerscript = true;
-                            // This is really important - we have to reset this or it will try to apply flow player to all
-                            // the video players it has already initialised and even ones that no longer exist because
-                            // they have been wiped from the DOM.
-                            M.util.video_players = [];
-                        }
-
-                        // Execute script.
-                        eval(script); // jshint ignore:line
-                    });
-                    if (hasflowplayerscript) {
-                        var jsurl;
-                        if (M.cfg.jsrev == -1) {
-                            jsurl = M.cfg.wwwroot + '/lib/flowplayer/flowplayer-3.2.13.js';
+                    ajaxNotify.ifErrorShowBestMsg(data).done(function(errorShown) {
+                        if (errorShown) {
+                            return;
                         } else {
-                            jsurl = M.cfg.wwwroot +
-                                '/lib/javascript.php?jsfile=/lib/flowplayer/flowplayer-3.2.13.min.js&rev=' + M.cfg.jsrev;
+                            // No errors, open lightbox and update module completion.
+                            lightboxopen(data.html, appendto);
+                            updateModCompletion($(resourcemod), data.completionhtml);
+                            $(document).trigger('snapContentRevealed');
+                            $('#snap-light-box').focus();
                         }
-                        $('head script[src="' + jsurl + '"]').remove();
-                        // This is so hacky it's untrue, we need to load flow player again but it won't do so unless we
-                        // make flowplayer undefined.
-                        // Note, we can't use flowplayer.delete in strict mode, hence "= undefined".
-                        if (typeof(flowplayer) !== 'undefined') {
-                            flowplayer = undefined; // jshint ignore:line
-                        }
-                        M.util.load_flowplayer();
-                        $('head script[src="' + jsurl + '"]').trigger("onreadystatechange");
-                    }
-                    // Apply responsive video after 1 second. Note: 1 second is just to give crappy flow player time to
-                    // sort itself out.
-                    window.setTimeout(function() {
-                        responsiveVideo.apply();
-                    }, 1000);
-                    $('#snap-light-box').focus();
+                    });
                 }
             });
 
@@ -322,13 +300,13 @@ define(
                 });
 
                 // Make lightbox for list display of resources.
-                $(document).on('click', '.js-snap-media .snap-asset-link a', function(e) {
-                    lightboxMedia($(this).closest('.snap-resource'));
+                $(document).on('click', '.js-snap-media .snap-asset-link [href*="/mod/resource/view.php?id="]', function(e) {
+                    lightboxMedia($(this).closest('.snap-resource, .snap-extended-resource'));
                     e.preventDefault();
                 });
 
                 // Make resource cards clickable.
-                $(document).on('click', '.snap-resource-card .snap-resource', function(e) {
+                $(document).on('click', '.snap-resource-card .snap-resource, .snap-extended-resource', function(e) {
                     var trigger = $(e.target),
                         hreftarget = '_self',
                         link = $(trigger).closest('.snap-resource').find('.snap-asset-link a'),
@@ -338,7 +316,7 @@ define(
                     }
 
                     // Excludes any clicks in the actions menu, on links or forms.
-                    var selector = '.snap-asset-completion-tracking, .snap-asset-actions, .contentafterlink a';
+                    var selector = '.snap-asset-completion-tracking, .snap-asset-actions, .contentafterlink a, .ally-actions';
                     var withintarget = $(trigger).closest(selector).length;
                     if (!withintarget) {
                         if ($(this).hasClass('js-snap-media')) {
@@ -350,6 +328,7 @@ define(
                             if ($(link).attr('target') === '_blank') {
                                 hreftarget = '_blank';
                             }
+                            sessionStorage.setItem('lastMod', $(this).attr('id'));
                             window.open(href, hreftarget);
                         }
                         e.preventDefault();

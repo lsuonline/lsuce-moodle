@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Settings link renderable.
+ * Genius link renderable.
  * @author    gthomas2
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 class bb_dashboard_link implements \renderable {
 
     /**
-     * @var bool $output - are we ok to output the settings block.
+     * @var bool $output - are we ok to output the genius link.
      */
     public $output = false;
 

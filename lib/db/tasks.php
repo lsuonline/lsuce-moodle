@@ -150,19 +150,10 @@ $tasks = array(
         'month' => '*'
     ),
     array(
-        'classname' => 'core\task\grade_clean_cron_task',
-        'blocking' => 0,
-        'minute' => '0',
-        'hour' => '4',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    ),
-    array(
-        'classname' => 'core\task\events_cron_task',
+        'classname' => 'core\task\grade_history_cleanup_task',
         'blocking' => 0,
         'minute' => '*',
-        'hour' => '*',
+        'hour' => '0',
         'day' => '*',
         'dayofweek' => '*',
         'month' => '*'
@@ -222,7 +213,16 @@ $tasks = array(
         'month' => '*'
     ),
     array(
-        'classname' => 'core\task\question_cron_task',
+        'classname' => 'core\task\question_preview_cleanup_task',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
+        'classname' => 'core\task\question_stats_cleanup_task',
         'blocking' => 0,
         'minute' => '*',
         'hour' => '*',
@@ -276,6 +276,15 @@ $tasks = array(
         'month' => '*'
     ),
     array(
+        'classname' => 'core\task\badges_message_task',
+        'blocking' => 0,
+        'minute' => '*/5',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
         'classname' => 'core\task\file_temp_cleanup_task',
         'blocking' => 0,
         'minute' => '55',
@@ -315,7 +324,7 @@ $tasks = array(
         'classname' => 'core\task\stats_cron_task',
         'blocking' => 0,
         'minute' => '0',
-        'hour' => '*',
+        'hour' => '0',
         'day' => '*',
         'dayofweek' => '*',
         'month' => '*'
@@ -343,6 +352,42 @@ $tasks = array(
         'blocking' => 0,
         'minute' => 'R',
         'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
+        'classname' => 'core_files\task\conversion_cleanup_task',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => '2',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
+        'classname' => 'core\oauth2\refresh_system_tokens_task',
+        'blocking' => 0,
+        'minute' => '30',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
+        'classname' => 'core\task\analytics_cleanup_task',
+        'blocking' => 0,
+        'minute' => '42',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
+        'classname' => 'core\task\task_log_cleanup_task',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => 'R',
         'day' => '*',
         'dayofweek' => '*',
         'month' => '*'

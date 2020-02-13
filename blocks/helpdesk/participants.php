@@ -14,27 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_helpdesk
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Philip Cali
  */
+
 require_once('../../config.php');
 require_once($CFG->libdir . '/grouplib.php');
 require_once('lib.php');
-
-/**
- * Author: Philip Cali
- */
-
 require_login();
 
 $id = required_param('id', PARAM_INT);
 $group = optional_param('group', 0, PARAM_INT);
 $roleid = optional_param('roleid', 0, PARAM_INT);
-
 $sitecontext = context_system::instance();
 
 require_capability('block/helpdesk:viewenrollments', $sitecontext);
@@ -74,13 +69,20 @@ $rolenamesurl = new moodle_url('/blocks/helpdesk/participants.php', array(
 ));
 $roles = get_roles_used_in_context($context, true);
 $rolenames = array(0 => get_string('allparticipants'));
-foreach($roles as $role) {
+foreach ($roles as $role) {
     $rolenames[$role->id] = strip_tags(role_get_name($role, $context));
 }
 
-$users = get_role_users(
-    $roleid, $context, false, '',
-    'u.lastname, u.firstname', null, $group
+$users = get_role_users($roleid
+                      , $context
+                      , false
+                      , 'ra.id, u.id, u.picture, u.lastname, u.firstname, ' .
+                            'u.idnumber, u.lastaccess, u.firstnamephonetic, ' .
+                            'u.lastnamephonetic, u.middlename, ' .
+                            'u.alternatename, u.imagealt, u.email'
+                      , 'u.lastname, u.firstname'
+                      , null
+                      , $group
 );
 
 if ($roleid > 0) {
@@ -103,22 +105,22 @@ $select->set_label(get_string('currentrole', 'role'));
 echo $OUTPUT->render($select);
 
 $table = new html_table();
-$table->head = array(
-    get_string('userpic'), get_string('fullname'),
-    get_string('idnumber'), get_string('lastaccess')
-);
+$table->head = array(get_string('userpic') 
+                   , get_string('fullname')
+                   , get_string('idnumber') 
+                   , get_string('lastaccess')
+                    );
 
 $neverstr = get_string('never');
 
 foreach ($users as $user) {
     $user->imagealt = '';
     $url = new moodle_url('/user/view.php', array('id' => $user->id));
-    $line = array(
-        $OUTPUT->user_picture($user, array('courseid' => $id, 'alttext' => false)),
-        html_writer::link($url, fullname($user)),
-        $user->idnumber,
-        empty($user->lastaccess) ? $neverstr : userdate($user->lastaccess)
-    );
+    $line = array($OUTPUT->user_picture($user, array('courseid' => $id, 'alttext' => false))
+                , html_writer::link($url, fullname($user))
+                , $user->idnumber
+                , empty($user->lastaccess) ? $neverstr : userdate($user->lastaccess)
+                 );
 
     $table->data[] = new html_table_row($line);
 }

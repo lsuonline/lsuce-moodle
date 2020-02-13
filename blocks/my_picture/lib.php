@@ -22,14 +22,16 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Set and get the config variable
+defined('MOODLE_INTERNAL') || die();
+
+// Set and get the config variable.
 global $CFG;
 
 require_once($CFG->libdir . '/gdlib.php');
 require_once($CFG->libdir . '/filelib.php');
 
 /**
- * 
+ *
  * @global stdClass $DB
  * @param int $limit how many to fetch
  * @return stdClass[]
@@ -47,40 +49,42 @@ function mypic_get_users_without_pictures($limit=0) {
  * @param int[] $idnumbers array of idnumber keys to fetch users with
  * @return stdClass[] user row objects from the DB
  */
-function mypic_WebserviceIntersectMoodle($idnumbers = array()){
+function mypic_WebserviceIntersectMoodle ($idnumbers = array()) {
     global $DB;
-    return array_values($DB->get_records_list('user', 'idnumber', $idnumbers, '','id, firstname, lastname, idnumber'));
+    return array_values($DB->get_records_list('user', 'idnumber', $idnumbers, '', 'id, firstname, lastname, idnumber'));
 }
 
 /**
  * For a given array of users and photo paths, insert the photo into Moodle
  * @global type $DB, $CFG
  * @param $userid array of Moodle user id keys for users to update
- * @param $picture_path array of Moodle temp photos downloaded to update
+ * @param $picturepath array of Moodle temp photos downloaded to update
  */
-function mypic_insert_picture($userid, $picture_path) {
+function mypic_insert_picture($userid, $picturepath) {
     global $DB, $CFG;
 
     $context = context_user::instance($userid);
-    
-    $pathparts  = explode('/', $picture_path);
+
+    $pathparts  = explode('/', $picturepath);
     $file       = array_pop($pathparts);
     $dir        = array_pop($pathparts);
     $shortpath  = $dir.'/'.$file;
-    
-    if(!file_exists($picture_path)) {
+
+    if (!file_exists($picturepath)) {
         return false;
-    }elseif($picture_path == $CFG->dirroot . '/blocks/my_picture/images/nopic.png') {
-        try{
-            process_new_icon($context, 'user', 'icon', 0, $picture_path);
+    } else if ($picturepath == $CFG->dirroot . '/blocks/my_picture/images/nopic.png') {
+        try {
+            process_new_icon($context, 'user', 'icon', 0, $picturepath);
             return $DB->set_field('user', 'picture', 2, array('id' => $userid));
-        }catch(Exception $e) {
+        } catch (Exception $e) {
+            // No code here in original version.
         }
     } else {
         try {
-            process_new_icon($context, 'user', 'icon', 0, $picture_path);
+            process_new_icon($context, 'user', 'icon', 0, $picturepath);
             return $DB->set_field('user', 'picture', 1, array('id' => $userid));
-        } catch(Exception $e) {
+        } catch (Exception $e) {
+            // No code here in original version.
         }
     }
 }
@@ -94,9 +98,9 @@ function mypic_insert_picture($userid, $picture_path) {
 function mypic_insert_nopic($userid) {
     global $CFG;
 
-    $nopic_path = $CFG->dirroot . '/blocks/my_picture/images/nopic.png';
+    $nopicpath = $CFG->dirroot . '/blocks/my_picture/images/nopic.png';
 
-    return mypic_insert_picture($userid, $nopic_path);
+    return mypic_insert_picture($userid, $nopicpath);
 }
 
 /**
@@ -108,21 +112,21 @@ function mypic_insert_nopic($userid) {
 function mypic_insert_badid($userid) {
     global $CFG;
 
-    $badid_path = $CFG->dirroot . '/blocks/my_picture/images/badid.jpg';
+    $badidpath = $CFG->dirroot . '/blocks/my_picture/images/badid.jpg';
 
-    return mypic_insert_picture($userid, $badid_path);
+    return mypic_insert_picture($userid, $badidpath);
 }
 
 /**
  * This method calls the webservice show() method, requests return as json
  * @param type $idnumber 89-number
- * @param type $hash 
+ * @param type $hash
  * @deprecated no longer need update functionality
  * @return boolean
  */
 function mypic_force_update_picture($idnumber, $hash = null) {
     throw new coding_exception("There is no longer any need to 'update' photos; please do not call this function");
-    
+
     $url = get_config('block_my_picture', 'update_url');
 
     if (empty($url)) {
@@ -130,7 +134,6 @@ function mypic_force_update_picture($idnumber, $hash = null) {
     }
 
     if (empty($hash)) {
-        //$hash = hash("sha256", $idnumber);
         $hash = $idnumber;
     }
 
@@ -156,7 +159,6 @@ function mypic_force_update_picture($idnumber, $hash = null) {
 function mypic_fetch_picture($idnumber, $updating = false) {
     global $CFG;
 
-    //$hash = hash("sha256", $idnumber);
     $hash = $idnumber;
     $name = $idnumber . '.jpg';
     $path = $CFG->dataroot . '/temp/' . $name;
@@ -164,15 +166,18 @@ function mypic_fetch_picture($idnumber, $updating = false) {
     $curl = new curl();
     $file = fopen($path, 'w');
     $curl->download(array(array('url' => $url, 'file' => $file)));
-    $contentType = isset($curl->response['Content-Type']) ? $curl->response['Content-Type'] : NULL;
-    $responseCode = isset($curl->response['HTTP/1.1']) ? $curl->response['HTTP/1.1'] : NULL;
+    $contenttype = isset($curl->response['Content-Type']) ? $curl->response['Content-Type'] : null;
+    $responsecode = isset($curl->response['HTTP/1.1']) ? $curl->response['HTTP/1.1'] : null;
     fclose($file);
 
-    if($responseCode == '200 OK' && $contentType == 'image/jpeg'){
-        echo'<p style="text-align: center;"><img src="data:image/jpeg;base64,'. base64_encode(file_get_contents($url)) . '" alt="photo" style="border: 1px solid #666666; margin: 0 auto; border-radius: 10px;" width="auto" height="100px" /></p>';
+    if ($responsecode == '200 OK' && $contenttype == 'image/jpeg') {
+        echo'<p style="text-align: center;"><img src="data:image/jpeg;base64,'
+            . base64_encode(file_get_contents($url))
+            . '" alt="photo" style="border: 1px solid #666666; margin: 0 auto; border-radius: 10px;" '
+            . 'width="auto" height="100px" /></p>';
         return $path;
-    } else if ($responseCode != '404 Not Found') {
-        echo(get_string('cron_webservice_err', 'block_my_picture')); 
+    } else if ($responsecode != '404 Not Found') {
+        echo(get_string('cron_webservice_err', 'block_my_picture'));
         return false;
     } else {
         unlink($path);
@@ -217,24 +222,27 @@ function mypic_update_picture($user, $updating=false) {
 /**
  * @param $users, array of Moodle users
  * @param $updating, overwritten with path if one exists, if not false
- * @param $sep, seperator for displaying data in mtrace  
+ * @param $sep, seperator for displaying data in mtrace
  * @param $step, number of users per update. Set to 100.
  * @return object showing the count, number of updates, errors, nopics, and badids
  */
 function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
-    $_s = function($k, $a=null) {
+    $s = function($k, $a=null) {
         return get_string($k, 'block_my_picture', $a);
     };
 
-    $start_time = microtime();
-
-    $count = $num_success = $num_error = $num_nopic = $num_badid = 0;
+    $starttime = microtime();
+    $count = 0;
+    $numsuccess = 0;
+    $numerror = 0;
+    $numnopic = 0;
+    $numbadid = 0;
 
     foreach ($users as $user) {
         mtrace('Processing image for (' . $user->idnumber . ') ');
 
-        // Keys are error codes, values are counter variables to increment
-        $result_map = array(
+        // Keys are error codes, values are counter variables to increment.
+        $resultmap = array(
             0 => 'num_error',
             1 => 'num_badid',
             2 => 'num_success',
@@ -243,37 +251,55 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
 
         $mypicreturncode = mypic_update_picture($user, $updating);
 
-        mtrace($result_map[$mypicreturncode] . $sep);
+        mtrace($resultmap[$mypicreturncode] . $sep);
 
-        $$result_map[$mypicreturncode]++;
+        switch ($mypicreturncode)
+        {
+            case 0: {
+                $numerror++;
+                break;
+            }
+            case 1: {
+                $numbadid++;
+                break;
+            }
+            case 2: {
+                $numsuccess++;
+                break;
+            }
+            case 3: {
+                $numnopic++;
+                break;
+            }
+        }
 
         $count++;
 
         if (!($count % $step)) {
-            mtrace($_s('completed', $count) . $sep);
+            mtrace($s('completed', $count) . $sep);
         }
     }
 
-    $time_diff = round(microtime_diff($start_time, microtime()), 1);
+    $timediff = round(microtime_diff($starttime, microtime()), 1);
 
-    mtrace($_s('finish', $count) . $sep);
+    mtrace($s('finish', $count) . $sep);
 
     foreach (array('success', 'nopic', 'error', 'badid') as $report) {
         $num = ${'num_' . $report};
 
         $percent = round($num / $count * 100, 2);
-        $str = $_s('num_' . $report);
+        $str = $s('num_' . $report);
 
         mtrace("$num ($percent%) $str $sep");
     }
 
-    mtrace($_s('elapsed', $time_diff) . $sep);
+    mtrace($s('elapsed', $timediff) . $sep);
     return array(
-        'count'     => $count,
-        'success'   => $num_success,
-        'error'     => $num_error,
-        'nopic'     => $num_nopic,
-        'badid'     => $num_badid
+        'count' => $count,
+        'success' => $numsuccess,
+        'error' => $numerror,
+        'nopic' => $numnopic,
+        'badid' => $numbadid
         );
 }
 
@@ -281,14 +307,14 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
  * Verifies the web service exists otherwise exits
  * @return boolean
  */
-function mypic_verifyWebserviceExists(){
+function mypic_verifyWebserviceExists() {
     $ready = get_config('block_my_picture', 'ready_url');
     $curl  = curl_init($ready);
     curl_setopt($curl, CURLOPT_NOBODY, true);
     curl_exec($curl);
-    $isImage = curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+    $isimage = curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
 
-    if(!$isImage == 'image/jpeg'){
+    if (!$isimage == 'image/jpeg') {
         mypic_emailAdminsFailureMsg($ready);
         return false;
     }
@@ -302,31 +328,31 @@ function mypic_verifyWebserviceExists(){
  * @global type $USER
  * @return int number of errors encountered while sending email
  */
-function mypic_emailAdminsFailureMsg($address='<none given>'){
+function mypic_emailAdminsFailureMsg($address='<none given>') {
     global $CFG, $DB, $USER;
-    
+
     $subject = get_string('misconfigured_subject', 'block_my_picture');
     $message = get_string('misconfigured_message', 'block_my_picture', $address);
-    
+
     mtrace(sprintf('addr arg = %s, message = %s', $address, $message));
 
-    $adminIds     = explode(',',$CFG->siteadmins);
-    $admins = $DB->get_records_list('user', 'id',$adminIds);
+    $adminids     = explode(',', $CFG->siteadmins);
+    $admins = $DB->get_records_list('user', 'id', $adminids);
     $errors = 0;
-    foreach($admins as $admin){
+    foreach ($admins as $admin) {
         $success = email_to_user(
-                $admin,                 // to
-                $USER,                  // from
-                $subject,               // subj
-                $message,               // body in plain text
-                $message,               // body in HTML
-                '',                     // attachment
-                '',                     // attachment name
-                true,                   // user true address ($USER)
-                $CFG->noreplyaddress,   // reply-to address
-                get_string('pluginname', 'block_my_picture') // reply-to name
+                $admin, // To
+                $USER, // from
+                $subject, // subj
+                $message, // body in plain text
+                $message, // body in HTML
+                '', // attachment
+                '', // attachment name
+                true, // user true address ($USER)
+                $CFG->noreplyaddress, // reply-to address
+                get_string('pluginname', 'block_my_picture') // reply-to name.
             );
-        if(!$success){
+        if (!$success) {
             $errors++;
         }
     }

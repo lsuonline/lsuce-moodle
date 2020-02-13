@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'creation_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('creation_form.php');
 
 require_login();
 
@@ -42,8 +42,8 @@ $all        = $teacher->sections(true);
 $filter     = ues::where()->grades_due->greater_equal(time());
 $valids     = array_keys(ues_semester::get_all($filter));
 $sections   = array();
-foreach($all as $sec){
-    if(in_array($sec->semesterid, $valids)){
+foreach ($all as $sec) {
+    if (in_array($sec->semesterid, $valids)) {
         $sections[] = $sec;
     }
 }
@@ -53,9 +53,9 @@ if (empty($sections)) {
     print_error('no_section', 'block_cps');
 }
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_creation::name();
 
 $context = context_system::instance();
@@ -69,18 +69,18 @@ $PAGE->set_url('/blocks/cps/creation.php');
 
 $form = new creation_form(null, array('sections' => $sections));
 
-$setting_params = ues::where()
+$settingparams = ues::where()
     ->userid->equal($USER->id)
     ->name->starts_with('creation_');
 
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/my'));
 } else if ($data = $form->get_data()) {
-    $settings  = cps_setting::get_to_name($setting_params);
+    $settings  = cps_setting::get_to_name($settingparams);
     $creations = cps_creation::get_all(array('userid' => $USER->id));
 
     if (isset($data->creation_defaults)) {
-        cps_setting::delete_all($setting_params);
+        cps_setting::delete_all($settingparams);
     }
 
     foreach ($form->settings as $name => $value) {
@@ -123,16 +123,15 @@ if ($form->is_cancelled()) {
                 $creation->fill_params($params);
             }
 
-            
-            $same_value = $creation->create_days == $create_days && $creation->enroll_days == $enroll_days;
-            $default_value = $cpss->create_days == $create_days && $cpss->enroll_days == $enroll_days;
+            $samevalue = $creation->create_days == $create_days && $creation->enroll_days == $enroll_days;
+            $defaultvalue = $cpss->create_days == $create_days && $cpss->enroll_days == $enroll_days;
             $no_value   = $creation->create_days == null && $creation->enroll_days == null;
-            if($same_value){
+            if ($samevalue) {
                 // If nothing has changed, skip the rest of the loop:
-                // apply will perform unenroll/enroll, causing course visibility = 0;
+                // Apply will perform unenroll/enroll, causing course visibility = 0.
                 unset($creations[$creation->id]);
                 continue;
-            } else if ($default_value) {
+            } else if ($defaultvalue) {
                 global $DB;
                 $creation->create_days = $cpss->create_days;
                 $creation->enroll_days = $cpss->enroll_days;
@@ -143,30 +142,30 @@ if ($form->is_cancelled()) {
                 $creation->create_days = $create_days;
                 $creation->enroll_days = $enroll_days;
                 $creation->save();
-                
-                // populate the moodle_course_visibilities map for all courses in which the current user is primary.
+
+                // Populate the moodle_course_visibilities map for all courses in which the current user is primary.
                 $course = ues_course::by_id($courseid);
                 $sections = $course->sections(ues_semester::by_id($semesterid));
-                foreach($sections as $section){
-                    if($USER->id != $section->primary()->userid){
+                foreach ($sections as $section) {
+                    if ($USER->id != $section->primary()->userid) {
                         continue;
                     }
                     $moodle_course = $section->moodle();
-                    if($moodle_course and !array_key_exists($moodle_course->id, $moodle_course_visibilities)){
+                    if ($moodle_course and !array_key_exists($moodle_course->id, $moodle_course_visibilities)) {
                         $moodle_course_visibilities[$moodle_course->id] = $moodle_course->visible;
                     }
                 }
-                
+
                 $creation->apply();
             }
             unset($creations[$creation->id]);
         }
     }
 
-    // reset the visibility for courses made invisible by $creation->apply(); HACK!
+    // Reset the visibility for courses made invisible by $creation->apply(); HACK!.
     $moodle_courses = $DB->get_records_list('course', 'id', array_keys($moodle_course_visibilities));
-    foreach($moodle_courses as $id => $course){
-        if($course->visible != $moodle_course_visibilities[$id]){
+    foreach ($moodle_courses as $id => $course) {
+        if ($course->visible != $moodle_course_visibilities[$id]) {
             $course->visible = $moodle_course_visibilities[$id];
             $DB->update_record('course', $course);
         }
@@ -181,7 +180,7 @@ if ($form->is_cancelled()) {
 }
 
 $creations = cps_creation::get_all(array('userid' => $USER->id));
-$settings  = cps_setting::get_all($setting_params);
+$settings  = cps_setting::get_all($settingparams);
 
 $form_data = array();
 
@@ -208,7 +207,7 @@ echo $OUTPUT->heading_with_help($heading, 'creation', 'block_cps');
 
 if (isset($success) and $success) {
     echo $OUTPUT->notification(get_string('changessaved'), 'notifysuccess');
-}elseif($form->is_submitted() && !$form->is_validated()){
+} else if ($form->is_submitted() && !$form->is_validated()) {
     echo $OUTPUT->notification(get_string('someerrorswerefound'));
 }
 

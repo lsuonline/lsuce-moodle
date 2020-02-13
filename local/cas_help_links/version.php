@@ -13,18 +13,18 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 /**
  * @package   local_cas_help_links
- * @copyright 2016, Louisiana State University
+ * @copyright 2019 Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
+
 defined('MOODLE_INTERNAL') || die();
- 
-$plugin->version   = 2017030900;
+
+$plugin->version = 2020010600;
 $plugin->requires  = 2014051200;
 $plugin->cron      = 0;
 $plugin->component = 'local_cas_help_links';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.5';
+$plugin->release   = 'v3.0';

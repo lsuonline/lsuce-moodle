@@ -53,11 +53,17 @@ class mod_lti_external extends external_api {
                 'id' => new external_value(PARAM_INT, 'Tool type id'),
                 'name' => new external_value(PARAM_NOTAGS, 'Tool type name'),
                 'description' => new external_value(PARAM_NOTAGS, 'Tool type description'),
+                'platformid' => new external_value(PARAM_TEXT, 'Platform ID'),
+                'clientid' => new external_value(PARAM_TEXT, 'Client ID'),
+                'deploymentid' => new external_value(PARAM_INT, 'Deployment ID'),
                 'urls' => new external_single_structure(
                     array(
                         'icon' => new external_value(PARAM_URL, 'Tool type icon URL'),
                         'edit' => new external_value(PARAM_URL, 'Tool type edit URL'),
                         'course' => new external_value(PARAM_URL, 'Tool type edit URL', VALUE_OPTIONAL),
+                        'publickeyset' => new external_value(PARAM_URL, 'Public Keyset URL'),
+                        'accesstoken' => new external_value(PARAM_URL, 'Access Token URL'),
+                        'authrequest' => new external_value(PARAM_URL, 'Authorisation Request URL'),
                     )
                 ),
                 'state' => new external_single_structure(
@@ -306,9 +312,11 @@ class mod_lti_external extends external_api {
 
                 $viewablefields = [];
                 if (has_capability('mod/lti:view', $context)) {
+                    $options = array('noclean' => true);
                     list($module['intro'], $module['introformat']) =
-                        external_format_text($lti->intro, $lti->introformat, $context->id, 'mod_lti', 'intro', $lti->id);
+                        external_format_text($lti->intro, $lti->introformat, $context->id, 'mod_lti', 'intro', null, $options);
 
+                    $module['introfiles'] = external_util::get_area_files($context->id, 'mod_lti', 'intro', false, false);
                     $viewablefields = array('launchcontainer', 'showtitlelaunch', 'showdescriptionlaunch', 'icon', 'secureicon');
                 }
 
@@ -356,6 +364,7 @@ class mod_lti_external extends external_api {
                             'name' => new external_value(PARAM_RAW, 'LTI name'),
                             'intro' => new external_value(PARAM_RAW, 'The LTI intro', VALUE_OPTIONAL),
                             'introformat' => new external_format_value('intro', VALUE_OPTIONAL),
+                            'introfiles' => new external_files('Files in the introduction text', VALUE_OPTIONAL),
                             'timecreated' => new external_value(PARAM_INT, 'Time of creation', VALUE_OPTIONAL),
                             'timemodified' => new external_value(PARAM_INT, 'Time of last modification', VALUE_OPTIONAL),
                             'typeid' => new external_value(PARAM_INT, 'Type id', VALUE_OPTIONAL),

@@ -57,6 +57,9 @@ class store implements \tool_log\log\writer, \core\log\sql_reader {
         $levels = $this->get_config('includelevels', '');
         $this->includeactions = $actions === '' ? array() : explode(',', $actions);
         $this->includelevels = $levels === '' ? array() : explode(',', $levels);
+        // JSON writing defaults to false (table format compatibility with older versions).
+        // Note: This variable is defined in the buffered_writer trait.
+        $this->jsonformat = (bool)$this->get_config('jsonformat', false);
     }
 
     /**
@@ -88,6 +91,7 @@ class store implements \tool_log\log\writer, \core\log\sql_reader {
         $dboptions['dbport'] = $this->get_config('dbport', '');
         $dboptions['dbschema'] = $this->get_config('dbschema', '');
         $dboptions['dbcollation'] = $this->get_config('dbcollation', '');
+        $dboptions['dbhandlesoptions'] = $this->get_config('dbhandlesoptions', false);
         try {
             $db->connect($this->get_config('dbhost'), $this->get_config('dbuser'), $this->get_config('dbpass'),
                 $this->get_config('dbname'), false, $dboptions);
@@ -222,7 +226,7 @@ class store implements \tool_log\log\writer, \core\log\sql_reader {
         $extra = array('origin' => $data->origin, 'ip' => $data->ip, 'realuserid' => $data->realuserid);
         $data = (array)$data;
         $id = $data['id'];
-        $data['other'] = unserialize($data['other']);
+        $data['other'] = self::decode_other($data['other']);
         if ($data['other'] === false) {
             $data['other'] = array();
         }

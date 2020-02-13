@@ -19,9 +19,13 @@
  * Supported_meta interface and implementing classes.
  *
  * @package    block_ues_meta_viewer
- * @copyright  2014, Louisiana State University
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 interface supported_meta {
     public function name();
     public function wrapped_class();
@@ -34,7 +38,6 @@ abstract class provided_meta implements supported_meta {
         if (preg_match('/(ues_\w+)_supported_meta/', get_class($this), $match)) {
             return $match[1];
         }
-
         throw new Exception('Could not find supported meta class');
     }
 

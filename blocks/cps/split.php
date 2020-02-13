@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'split_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('split_form.php');
 
 require_login();
 
@@ -45,15 +45,15 @@ if (empty($sections)) {
 
 $semesters = ues_semester::merge_sections($sections);
 
-$valid_semesters = cps_split::filter_valid($semesters);
+$validsemesters = cps_split::filter_valid($semesters);
 
-if (empty($valid_semesters)) {
+if (empty($validsemesters)) {
     print_error('no_courses', 'block_cps');
 }
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_split::name();
 
 $context = context_system::instance();
@@ -70,7 +70,7 @@ $PAGE->requires->jquery();
 $PAGE->requires->js('/blocks/cps/js/selection.js');
 $PAGE->requires->js('/blocks/cps/js/split.js');
 
-$form = cps_form::create('split', $valid_semesters);
+$form = cps_form::create('split', $validsemesters);
 
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/my'));
@@ -83,18 +83,18 @@ if ($form->is_cancelled()) {
         $form = new split_form_finish();
 
         try {
-            $form->process($data, $valid_semesters);
+            $form->process($data, $validsemesters);
 
             $form->display();
         } catch (Exception $e) {
-            echo $OUTPUT->notification($_s('application_errors', $e->getMessage()));
+            echo $OUTPUT->notification($s('application_errors', $e->getMessage()));
             echo $OUTPUT->continue_button('/my');
         }
 
         die();
     }
 
-    $form = cps_form::next_from('split', $form->next, $data, $valid_semesters);
+    $form = cps_form::next_from('split', $form->next, $data, $validsemesters);
 }
 
 echo $OUTPUT->header();

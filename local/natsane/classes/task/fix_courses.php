@@ -27,9 +27,12 @@
  * @package    local_natsane
  * @copyright  2017 Robert Russo, Louisiana State University
  */
+
 namespace local_natsane\task;
 
-// Extend the Moodle scheduled task class with our mods
+defined('MOODLE_INTERNAL') || die();
+
+// Extend the Moodle scheduled task class with our mods.
 class fix_courses extends \core\task\scheduled_task {
 
     /**

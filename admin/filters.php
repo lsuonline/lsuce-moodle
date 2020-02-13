@@ -22,15 +22,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
 $action = optional_param('action', '', PARAM_ALPHA);
 $filterpath = optional_param('filterpath', '', PARAM_PLUGIN);
-
-require_login();
-$systemcontext = context_system::instance();
-require_capability('moodle/site:config', $systemcontext);
 
 admin_externalpage_setup('managefilters');
 
@@ -218,7 +214,7 @@ function get_table_row(\core\plugininfo\filter $plugininfo, $state, $isfirstrow,
 
     // Re-order.
     $updown = '';
-    $spacer = '<img src="' . $OUTPUT->pix_url('spacer') . '" class="iconsmall" alt="" />';
+    $spacer = $OUTPUT->spacer();
     if ($state->active != TEXTFILTER_DISABLED) {
         if (!$isfirstrow) {
             $updown .= $OUTPUT->action_icon(filters_action_url($filter, 'up'), new pix_icon('t/up', get_string('up'), '', array('class' => 'iconsmall')));

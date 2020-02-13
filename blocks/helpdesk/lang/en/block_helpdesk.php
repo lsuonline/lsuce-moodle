@@ -18,19 +18,22 @@
 /**
  *
  * @package    block_helpdesk
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$string['pluginname'] = 'Help Desk';
+$string['pluginname'] = 'Service Desk';
 $string['search_courses'] = 'Search Courses';
-$string['search_users']= 'Search Users';
+$string['search_users'] = 'Search Users';
 
-$string['helpdesk:viewenrollments'] = 'Allows Help Desk employess to view a course roster';
+$string['helpdesk:viewenrollments'] = 'Allows Service Desk employess to view a course roster';
 $string['no_results'] = 'No Results';
 $string['contains'] = ' contains ';
 $string['equal'] = ' is equal to ';
 $string['starts'] = ' starts with ';
 $string['ends'] = ' ends with ';
 
-$string['helpdesk:myaddinstance'] = "Add Help desk block to the My page";
-$string['helpdesk:addinstance'] = "Add Help Desk block";
+$string['helpdesk:myaddinstance'] = "Add Service Desk block to the My page";
+$string['helpdesk:addinstance'] = "Add Service Desk block";
+
+$string['eventhelpdesk_course'] = 'Searching for a course in the Service Desk block';
+$string['eventhelpdesk_user'] = 'Searching for a user in the Service Desk block';

@@ -25,7 +25,7 @@ require_once(__DIR__ . '/../../../../lib/externallib.php');
 /**
  * Course completion web service.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ws_course_completion extends \external_api {
@@ -66,7 +66,10 @@ class ws_course_completion extends \external_api {
                    'Newly available mods', VALUE_REQUIRED
                 )
             ),
-            'toc' => new \external_single_structure(definition_helper::define_class_for_webservice('theme_snap\renderables\course_toc'), 'Table of contents', VALUE_REQUIRED)
+            'toc' => new \external_single_structure(
+                definition_helper::define_class_for_webservice('theme_snap\renderables\course_toc'),
+                'Table of contents', VALUE_REQUIRED
+            )
         ];
         return new \external_single_structure($keys, 'course_completion');
     }

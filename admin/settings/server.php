@@ -4,15 +4,16 @@
 
 if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
 
-
 // "systempaths" settingpage
 $temp = new admin_settingpage('systempaths', new lang_string('systempaths','admin'));
-
+$temp->add(new admin_setting_configexecutable('pathtophp', new lang_string('pathtophp', 'admin'),
+    new lang_string('configpathtophp', 'admin'), ''));
 $temp->add(new admin_setting_configexecutable('pathtodu', new lang_string('pathtodu', 'admin'), new lang_string('configpathtodu', 'admin'), ''));
 $temp->add(new admin_setting_configexecutable('aspellpath', new lang_string('aspellpath', 'admin'), new lang_string('edhelpaspellpath'), ''));
 $temp->add(new admin_setting_configexecutable('pathtodot', new lang_string('pathtodot', 'admin'), new lang_string('pathtodot_help', 'admin'), ''));
 $temp->add(new admin_setting_configexecutable('pathtogs', new lang_string('pathtogs', 'admin'), new lang_string('pathtogs_help', 'admin'), '/usr/bin/gs'));
-$temp->add(new admin_setting_configexecutable('pathtounoconv', new lang_string('pathtounoconv', 'admin'), new lang_string('pathtounoconv_help', 'admin'), '/usr/bin/unoconv'));
+$temp->add(new admin_setting_configexecutable('pathtopython', new lang_string('pathtopython', 'admin'),
+    new lang_string('pathtopythondesc', 'admin'), ''));
 $ADMIN->add('server', $temp);
 
 
@@ -28,8 +29,12 @@ if ($primaryadmin) {
     $primaryadminemail = NULL;
     $primaryadminname  = NULL;
 }
-$temp->add(new admin_setting_configtext('supportname', new lang_string('supportname', 'admin'), new lang_string('configsupportname', 'admin'), $primaryadminname, PARAM_NOTAGS));
-$temp->add(new admin_setting_configtext('supportemail', new lang_string('supportemail', 'admin'), new lang_string('configsupportemail', 'admin'), $primaryadminemail, PARAM_NOTAGS));
+$temp->add(new admin_setting_configtext('supportname', new lang_string('supportname', 'admin'),
+    new lang_string('configsupportname', 'admin'), $primaryadminname, PARAM_NOTAGS));
+$setting = new admin_setting_configtext('supportemail', new lang_string('supportemail', 'admin'),
+    new lang_string('configsupportemail', 'admin'), $primaryadminemail, PARAM_EMAIL);
+$setting->set_force_ltr(true);
+$temp->add($setting);
 $temp->add(new admin_setting_configtext('supportpage', new lang_string('supportpage', 'admin'), new lang_string('configsupportpage', 'admin'), '', PARAM_URL));
 $ADMIN->add('server', $temp);
 
@@ -79,7 +84,6 @@ $temp->add(new admin_setting_configselect('statsmaxruntime', new lang_string('st
                                                                                                                                                             60*60*7 => '7 '.new lang_string('hours'),
                                                                                                                                                             60*60*8 => '8 '.new lang_string('hours') )));
 $temp->add(new admin_setting_configtext('statsruntimedays', new lang_string('statsruntimedays', 'admin'), new lang_string('configstatsruntimedays', 'admin'), 31, PARAM_INT));
-$temp->add(new admin_setting_configtime('statsruntimestarthour', 'statsruntimestartminute', new lang_string('statsruntimestart', 'admin'), new lang_string('configstatsruntimestart', 'admin'), array('h' => 0, 'm' => 0)));
 $temp->add(new admin_setting_configtext('statsuserthreshold', new lang_string('statsuserthreshold', 'admin'), new lang_string('configstatsuserthreshold', 'admin'), 0, PARAM_INT));
 $ADMIN->add('server', $temp);
 
@@ -172,6 +176,8 @@ $ADMIN->add('server', $temp);
 
 $ADMIN->add('server', new admin_externalpage('environment', new lang_string('environment','admin'), "$CFG->wwwroot/$CFG->admin/environment.php"));
 $ADMIN->add('server', new admin_externalpage('phpinfo', new lang_string('phpinfo'), "$CFG->wwwroot/$CFG->admin/phpinfo.php"));
+$ADMIN->add('server', new admin_externalpage('testoutgoingmailconf', new lang_string('testoutgoingmailconf', 'admin'),
+            new moodle_url("$CFG->wwwroot/$CFG->admin/testoutgoingmailconf.php"), 'moodle/site:config', true));
 
 
 // "performance" settingpage
@@ -207,8 +213,151 @@ $temp->add(new admin_setting_configtext('curltimeoutkbitrate', new lang_string('
 $ADMIN->add('server', $temp);
 
 
-$ADMIN->add('server', new admin_externalpage('adminregistration', new lang_string('hubs', 'admin'),
-    "$CFG->wwwroot/$CFG->admin/registration/index.php"));
+$ADMIN->add('server', new admin_category('taskconfig', new lang_string('taskadmintitle', 'admin')));
+$temp = new admin_settingpage('taskprocessing', new lang_string('taskprocessing','admin'));
+$temp->add(
+    new admin_setting_configtext(
+        'task_scheduled_concurrency_limit',
+        new lang_string('task_scheduled_concurrency_limit', 'admin'),
+        new lang_string('task_scheduled_concurrency_limit_desc', 'admin'),
+        3,
+        PARAM_INT
+    )
+);
+
+$temp->add(
+    new admin_setting_configduration(
+        'task_scheduled_max_runtime',
+        new lang_string('task_scheduled_max_runtime', 'admin'),
+        new lang_string('task_scheduled_max_runtime_desc', 'admin'),
+        30 * MINSECS
+    )
+);
+
+$temp->add(
+    new admin_setting_configtext(
+        'task_adhoc_concurrency_limit',
+        new lang_string('task_adhoc_concurrency_limit', 'admin'),
+        new lang_string('task_adhoc_concurrency_limit_desc', 'admin'),
+        3,
+        PARAM_INT
+    )
+);
+
+$temp->add(
+    new admin_setting_configduration(
+        'task_adhoc_max_runtime',
+        new lang_string('task_adhoc_max_runtime', 'admin'),
+        new lang_string('task_adhoc_max_runtime_desc', 'admin'),
+        30 * MINSECS
+    )
+);
+$ADMIN->add('taskconfig', $temp);
+
+$temp = new admin_settingpage('tasklogging', new lang_string('tasklogging','admin'));
+$temp->add(
+    new admin_setting_configselect(
+        'task_logmode',
+        new lang_string('task_logmode', 'admin'),
+        new lang_string('task_logmode_desc', 'admin'),
+        \core\task\logmanager::MODE_ALL,
+        [
+            \core\task\logmanager::MODE_ALL => new lang_string('task_logmode_all', 'admin'),
+            \core\task\logmanager::MODE_FAILONLY => new lang_string('task_logmode_failonly', 'admin'),
+            \core\task\logmanager::MODE_NONE => new lang_string('task_logmode_none', 'admin'),
+        ]
+    )
+);
+
+if (\core\task\logmanager::uses_standard_settings()) {
+    $temp->add(
+        new admin_setting_configduration(
+            'task_logretention',
+            new \lang_string('task_logretention', 'admin'),
+            new \lang_string('task_logretention_desc', 'admin'),
+            28 * DAYSECS
+        )
+    );
+
+    $temp->add(
+        new admin_setting_configtext(
+            'task_logretainruns',
+            new \lang_string('task_logretainruns', 'admin'),
+            new \lang_string('task_logretainruns_desc', 'admin'),
+            20,
+            PARAM_INT
+        )
+    );
+}
+$ADMIN->add('taskconfig', $temp);
+
+if (\core\task\logmanager::uses_standard_settings()) {
+    $ADMIN->add('taskconfig', new admin_externalpage(
+        'tasklogs',
+        new lang_string('tasklogs','admin'),
+        "{$CFG->wwwroot}/{$CFG->admin}/tasklogs.php"
+    ));
+}
+
+// E-mail settings.
+$ADMIN->add('server', new admin_category('email', new lang_string('categoryemail', 'admin')));
+
+$temp = new admin_settingpage('outgoingmailconfig', new lang_string('outgoingmailconfig', 'admin'));
+
+$temp->add(new admin_setting_heading('smtpheading', new lang_string('smtp', 'admin'),
+            new lang_string('smtpdetail', 'admin')));
+$temp->add(new admin_setting_configtext('smtphosts', new lang_string('smtphosts', 'admin'),
+            new lang_string('configsmtphosts', 'admin'), '', PARAM_RAW));
+$options = array('' => new lang_string('none', 'admin'), 'ssl' => 'SSL', 'tls' => 'TLS');
+$temp->add(new admin_setting_configselect('smtpsecure', new lang_string('smtpsecure', 'admin'),
+            new lang_string('configsmtpsecure', 'admin'), '', $options));
+$authtypeoptions = array('LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'NTLM' => 'NTLM', 'CRAM-MD5' => 'CRAM-MD5');
+$temp->add(new admin_setting_configselect('smtpauthtype', new lang_string('smtpauthtype', 'admin'),
+            new lang_string('configsmtpauthtype', 'admin'), 'LOGIN', $authtypeoptions));
+$temp->add(new admin_setting_configtext('smtpuser', new lang_string('smtpuser', 'admin'),
+            new lang_string('configsmtpuser', 'admin'), '', PARAM_NOTAGS));
+$temp->add(new admin_setting_configpasswordunmask('smtppass', new lang_string('smtppass', 'admin'),
+            new lang_string('configsmtpuser', 'admin'), ''));
+$temp->add(new admin_setting_configtext('smtpmaxbulk', new lang_string('smtpmaxbulk', 'admin'),
+           new lang_string('configsmtpmaxbulk', 'admin'), 1, PARAM_INT));
+$temp->add(new admin_setting_heading('noreplydomainheading', new lang_string('noreplydomain', 'admin'),
+        new lang_string('noreplydomaindetail', 'admin')));
+$temp->add(new admin_setting_configtext('noreplyaddress', new lang_string('noreplyaddress', 'admin'),
+          new lang_string('confignoreplyaddress', 'admin'), 'noreply@' . get_host_from_url($CFG->wwwroot), PARAM_EMAIL));
+$temp->add(new admin_setting_configtextarea('allowedemaildomains',
+        new lang_string('allowedemaildomains', 'admin'),
+        new lang_string('configallowedemaildomains', 'admin'),
+        ''));
+$url = new moodle_url('/admin/testoutgoingmailconf.php');
+$link = html_writer::link($url, get_string('testoutgoingmailconf', 'admin'));
+$temp->add(new admin_setting_heading('testoutgoinmailc', new lang_string('testoutgoingmailconf', 'admin'),
+        new lang_string('testoutgoingmaildetail', 'admin', $link)));
+$temp->add(new admin_setting_heading('emaildoesnotfit', new lang_string('doesnotfit', 'admin'),
+        new lang_string('doesnotfitdetail', 'admin')));
+$charsets = get_list_of_charsets();
+unset($charsets['UTF-8']); // Not needed here.
+$options = array();
+$options['0'] = 'UTF-8';
+$options = array_merge($options, $charsets);
+$temp->add(new admin_setting_configselect('sitemailcharset', new lang_string('sitemailcharset', 'admin'),
+          new lang_string('configsitemailcharset','admin'), '0', $options));
+$temp->add(new admin_setting_configcheckbox('allowusermailcharset', new lang_string('allowusermailcharset', 'admin'),
+          new lang_string('configallowusermailcharset', 'admin'), 0));
+$temp->add(new admin_setting_configcheckbox('allowattachments', new lang_string('allowattachments', 'admin'),
+          new lang_string('configallowattachments', 'admin'), 1));
+$options = array('LF' => 'LF', 'CRLF' => 'CRLF');
+$temp->add(new admin_setting_configselect('mailnewline', new lang_string('mailnewline', 'admin'),
+          new lang_string('configmailnewline', 'admin'), 'LF', $options));
+
+$choices = array(new lang_string('never', 'admin'),
+                 new lang_string('always', 'admin'),
+                 new lang_string('onlynoreply', 'admin'));
+$temp->add(new admin_setting_configselect('emailfromvia', new lang_string('emailfromvia', 'admin'),
+          new lang_string('configemailfromvia', 'admin'), 1, $choices));
+    $temp->add(new admin_setting_configtext('emailsubjectprefix', new lang_string('emailsubjectprefix', 'admin'),
+        new lang_string('configemailsubjectprefix', 'admin'), '', PARAM_RAW));
+
+$ADMIN->add('email', $temp);
 
 // "update notifications" settingpage
 if (empty($CFG->disableupdatenotifications)) {

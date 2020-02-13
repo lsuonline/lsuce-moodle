@@ -17,7 +17,7 @@
 /**
  * Course card renderable
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,8 +27,6 @@ use theme_snap\services\course;
 use theme_snap\local;
 
 defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->libdir . '/coursecatlib.php');
 
 class course_card implements \renderable {
 
@@ -106,6 +104,11 @@ class course_card implements \renderable {
     /**
      * @var bool
      */
+    public $archived = false;
+
+    /**
+     * @var bool
+     */
     public $published = true;
 
     /**
@@ -114,11 +117,28 @@ class course_card implements \renderable {
     public $toggletitle = '';
 
     /**
-     * @param int $courseid
+     * @var int
+     */
+    public $category = null;
+
+    /**
+     * @var string
+     */
+    public $feedbackurl;
+
+    /**
+     * @var int
+     */
+    private $contextid;
+
+    /**
+     * @param \stdClass $course
      * @param course | null $service
      */
-    public function __construct($courseid, course $service = null) {
-        $this->courseid = $courseid;
+    public function __construct($course, course $service = null) {
+        $this->course = $course;
+        $this->courseid = $this->course->id;
+        $this->contextid = \context_course::instance($this->courseid)->id;
         $this->service = $service ? : course::service();
         $this->apply_properties();
         $this->model = $this;
@@ -128,11 +148,11 @@ class course_card implements \renderable {
      * Set props.
      */
     private function apply_properties() {
-        global $DB;
-        $this->course = $DB->get_record('course', ['id' => $this->courseid]);
-        $this->url = new \moodle_url('/course/view.php', ['id' => $this->course->id]) . '';
+        $this->category = $this->course->category;
+        $this->url = new \moodle_url('/course/view.php', ['id' => $this->courseid]) . '';
+        $this->feedbackurl = new \moodle_url('/grade/report/user/index.php', ['id' => $this->courseid]) . '';
         $this->shortname = $this->course->shortname;
-        $this->fullname = $this->course->fullname;
+        $this->fullname = format_string($this->course->fullname);
         $this->published = (bool)$this->course->visible;
         $this->favorited = $this->service->favorited($this->courseid);
         $togglestrkey = !$this->favorited ? 'favorite' : 'favorited';
@@ -152,16 +172,26 @@ class course_card implements \renderable {
         static $count = 0;
         $count++;
         $bgcolor = local::get_course_color($this->courseid);
-        $this->imagecss = "background-color: #$bgcolor;";
-        // Only immediately load images for the first 15 cards.
-        $bgimage = local::course_card_image_url($this->courseid);
-        $isajax = defined('AJAX_SCRIPT') && AJAX_SCRIPT;
-
-        if (!empty($bgimage)) {
-            if (!$isajax && $count <= 15) {
-                $this->imagecss .= "background-image: url($bgimage);";
+        $this->imagecss = "background-image: $bgcolor;";
+        // Only immediately load images for the first 12 cards.
+        /** @var \cache_application $bgcache */
+        $bgcache = \cache::make('theme_snap', 'course_card_bg_image');
+        $bgimage = $bgcache->get($this->contextid);
+        if ($bgimage === false) {
+            $bgurl = local::course_card_image_url($this->courseid);
+            if ($bgurl instanceof \moodle_url) {
+                $bgimage = $bgurl->out();
             } else {
-                $this->lazyloadimageurl = $bgimage->out();
+                $bgimage = '';
+            }
+            $bgcache->set($this->contextid, $bgimage);
+        }
+        $isajax = defined('AJAX_SCRIPT') && AJAX_SCRIPT;
+        if (!empty($bgimage)) {
+            if (!$isajax && $count <= 12) {
+                $this->imagecss = "background-image: url($bgimage);";
+            } else {
+                $this->lazyloadimageurl = $bgimage;
             }
         }
     }
@@ -171,10 +201,24 @@ class course_card implements \renderable {
      */
     private function apply_contact_avatars() {
         global $DB, $OUTPUT;
-        $clist = new \course_in_list($this->course);
+        /** @var \cache_application $avatarcache */
+        $avatarcache = \cache::make('theme_snap', 'course_card_teacher_avatar');
+        $avatars = $avatarcache->get($this->contextid);
+        if ($avatars !== false) {
+            $this->disperse_avatars($avatars);
+            return;
+        }
+        $clist = new \core_course_list_element($this->course);
         $teachers = $clist->get_course_contacts();
         $avatars = [];
         $blankavatars = [];
+
+        /** @var \cache_application $indexcache */
+        $indexcache = \cache::make('theme_snap', 'course_card_teacher_avatar_index');
+        $userctxidx = $indexcache->get('idx');
+        if (!$userctxidx) {
+            $userctxidx = [];
+        }
 
         if (!empty($teachers)) {
             foreach ($teachers as $teacher) {
@@ -186,7 +230,15 @@ class course_card implements \renderable {
                 if (!isset($teacherusers[$teacher['user']->id])) {
                     continue;
                 }
-                $teacheruser = $teacherusers [$teacher['user']->id];
+
+                // Updating avatar cache binary index.
+                $userid = $teacher['user']->id;
+                if (empty($userctxidx[$userid])) {
+                    $userctxidx[$userid] = [];
+                }
+                $userctxidx[$userid][$this->contextid] = true;
+
+                $teacheruser = $teacherusers [$userid];
                 $userpicture = new \user_picture($teacheruser);
                 $userpicture->link = false;
                 $userpicture->size = 100;
@@ -200,8 +252,29 @@ class course_card implements \renderable {
             }
         }
 
-        // Let's put the interesting avatars first!
         $avatars = array_merge($avatars, $blankavatars);
+
+        if (!empty($avatars)) {
+            // Cached value of avatar array for the course.
+            $avatarcache->set($this->contextid, $avatars);
+        } else {
+            $avatarcache->delete($this->contextid);
+        }
+        if (!empty($userctxidx)) {
+            // Context ID + User ID index for handling unenrolments and deletions.
+            $indexcache->set('idx', $userctxidx);
+        } else {
+            $indexcache->delete('idx');
+        }
+
+        $this->disperse_avatars($avatars);
+    }
+
+    /**
+     * Sets avatars in specific arrays to be visualized accordingly.
+     * @param [] $avatars
+     */
+    private function disperse_avatars($avatars) {
         if (count($avatars) > 5) {
             // Show 4 avatars and link to show more.
             $this->visibleavatars = array_slice($avatars, 0, 4);
@@ -214,8 +287,8 @@ class course_card implements \renderable {
         $this->hiddenavatarcount = count($this->hiddenavatars);
     }
 
-    /**
-     * Add CAS help links.
+     /**
+       * Add CAS help links.
      */
     private function apply_cas_course_links($course) {
         $cascourselink = \local_cas_help_links_button_renderer::get_html_for_snap($course);
@@ -239,7 +312,7 @@ class course_card implements \renderable {
         $this->mycolors = $mycolors;
     }
 
-    /**
+/**
      * This magic method is here purely so that doing strval($coursecard->model) yields a json encoded version of the
      * object that can be used in a template.
      * @return string

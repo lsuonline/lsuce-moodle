@@ -100,10 +100,9 @@ class question_engine_data_mapper {
             $stepdata[] = $this->insert_question_attempt($qa, $quba->get_owning_context());
         }
 
-        $stepdata = call_user_func_array('array_merge', $stepdata);
-        if ($stepdata) {
-            $this->insert_all_step_data($stepdata);
-        }
+        $this->insert_all_step_data($this->combine_step_data($stepdata));
+
+        $quba->set_observer(new question_engine_unit_of_work($quba));
     }
 
     /**
@@ -148,7 +147,7 @@ class question_engine_data_mapper {
             $stepdata[] = $this->insert_question_attempt_step($step, $record->id, $seq, $context);
         }
 
-        return call_user_func_array('array_merge', $stepdata);
+        return $this->combine_step_data($stepdata);
     }
 
     /**
@@ -167,6 +166,22 @@ class question_engine_data_mapper {
         $record->timecreated = $step->get_timecreated();
         $record->userid = $step->get_user_id();
         return $record;
+    }
+
+    /**
+     * Take an array of arrays, and flatten it, even if the outer array is empty.
+     *
+     * Only public so it can be called from the unit of work. Not part of the
+     * public API of this class.
+     *
+     * @param array $stepdata array of zero or more arrays.
+     * @return array made by concatenating all the separate arrays.
+     */
+    public function combine_step_data(array $stepdata): array {
+        if (empty($stepdata)) {
+            return [];
+        }
+        return call_user_func_array('array_merge', $stepdata);
     }
 
     /**
@@ -287,10 +302,19 @@ class question_engine_data_mapper {
      */
     public function update_question_attempt_metadata(question_attempt $qa, array $names) {
         global $DB;
-        list($condition, $params) = $DB->get_in_or_equal($names);
-        $params[] = $qa->get_step(0)->get_id();
+        if (!$names) {
+            return [];
+        }
+        // Use case-sensitive function sql_equal() and not get_in_or_equal().
+        // Some databases may use case-insensitive collation, we don't want to delete 'X' instead of 'x'.
+        $sqls = [];
+        $params = [$qa->get_step(0)->get_id()];
+        foreach ($names as $name) {
+            $sqls[] = $DB->sql_equal('name', '?');
+            $params[] = $name;
+        }
         $DB->delete_records_select('question_attempt_step_data',
-                'name ' . $condition . ' AND attemptstepid = ?', $params);
+            'attemptstepid = ? AND (' . join(' OR ', $sqls) . ')', $params);
         return $this->insert_question_attempt_metadata($qa, $names);
     }
 
@@ -516,15 +540,11 @@ ORDER BY
     qas.sequencenumber
     ", $qubaids->usage_id_in_params());
 
-        if (!$records->valid()) {
-            throw new coding_exception('Failed to load questions_usages_by_activity for qubaid_condition :' . $qubaids);
-        }
-
         $qubas = array();
-        do {
+        while ($records->valid()) {
             $record = $records->current();
             $qubas[$record->qubaid] = question_usage_by_activity::load_from_records($records, $record->qubaid);
-        } while ($records->valid());
+        }
 
         $records->close();
 
@@ -1574,9 +1594,7 @@ class question_engine_unit_of_work implements question_usage_observer {
             $dm->update_questions_usage_by_activity($this->quba);
         }
 
-        if ($stepdata) {
-            $dm->insert_all_step_data(call_user_func_array('array_merge', $stepdata));
-        }
+        $dm->insert_all_step_data($dm->combine_step_data($stepdata));
 
         $this->stepsdeleted = array();
         $this->stepsmodified = array();

@@ -1,14 +1,33 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once dirname(__FILE__) . '/processors.php';
+defined('MOODLE_INTERNAL') || die();
+
+global $CFG;
+require_once(dirname(__FILE__) . '/processors.php');
+require_once($CFG->dirroot.'/enrol/ues/lib.php');
+require_once($CFG->dirroot.'/lib/enrollib.php');
 
 class online_enrollment_provider extends enrollment_provider {
-    var $url;
-    var $wsdl;
-    var $username;
-    var $password;
+    public $url;
+    public $wsdl;
+    public $username;
+    public $password;
 
-    var $settings = array(
+    public $settings = array(
         'credential_location' => 'https://secure.web.lsu.edu/credentials.php',
         'wsdl_location' => 'webService.wsdl',
         'semester_source' => 'ONLINE_MOODLE_SEMESTERS',
@@ -23,18 +42,18 @@ class online_enrollment_provider extends enrollment_provider {
         'student_ath_source' => 'MOODLE_STUDENTS_ATH'
     );
 
-    // User data caches to speed things up
+    // User data caches to speed things up.
     private $online_degree_cache = array();
     private $online_student_data_cache = array();
     private $online_sports_cache = array();
     private $online_anonymous_cache = array();
 
-    function init() {
+    public function init() {
         global $CFG;
 
         $path = pathinfo($this->wsdl);
 
-        // Path checks
+        // Path checks.
         if (!file_exists($this->wsdl)) {
             throw new Exception('no_file');
         }
@@ -47,7 +66,7 @@ class online_enrollment_provider extends enrollment_provider {
             throw new Exception('bad_url');
         }
 
-        require_once $CFG->libdir . '/filelib.php';
+        require_once($CFG->libdir . '/filelib.php');
 
         $curl = new curl(array('cache' => true));
         $resp = $curl->post($this->url, array('credentials' => 'get'));
@@ -62,14 +81,14 @@ class online_enrollment_provider extends enrollment_provider {
         $this->password = trim($password);
     }
 
-    function __construct($init_on_create = true) {
+    public function __construct($initoncreate = true) {
         global $CFG;
 
         $this->url = $this->get_setting('credential_location');
 
         $this->wsdl = $CFG->dataroot . '/'. $this->get_setting('wsdl_location');
 
-        if ($init_on_create) {
+        if ($initoncreate) {
             $this->init();
         }
     }
@@ -78,18 +97,18 @@ class online_enrollment_provider extends enrollment_provider {
         parent::settings($settings);
 
         $key = $this->plugin_key();
-        $_s = ues::gen_str($key);
+        $s = ues::gen_str($key);
 
-        $optional_pulls = array (
+        $optionalpulls = array (
             'student_data' => 1,
             'anonymous_numbers' => 0,
             'degree_candidates' => 0,
             'sports_information' => 1
         );
 
-        foreach ($optional_pulls as $name => $default) {
+        foreach ($optionalpulls as $name => $default) {
             $settings->add(new admin_setting_configcheckbox($key . '/' . $name,
-                $_s($name), $_s($name. '_desc'), $default)
+                $s($name), $s($name. '_desc'), $default)
             );
         }
     }
@@ -98,82 +117,82 @@ class online_enrollment_provider extends enrollment_provider {
         return 'local_online';
     }
 
-    function semester_source() {
+    public function semester_source() {
         return new online_semesters(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('semester_source')
         );
     }
 
-    function course_source() {
+    public function course_source() {
         return new online_courses(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('course_source')
         );
     }
 
-    function teacher_source() {
+    public function teacher_source() {
         return new online_teachers(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('teacher_source')
         );
     }
 
-    function student_source() {
+    public function student_source() {
         return new online_students(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_source')
         );
     }
 
-    function student_data_source() {
+    public function student_data_source() {
         return new online_student_data(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_data_source')
         );
     }
 
-    function anonymous_source() {
+    public function anonymous_source() {
         return new online_anonymous(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_anonymous_source')
         );
     }
 
-    function degree_source() {
+    public function degree_source() {
         return new online_degree(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_degree_source')
         );
     }
 
-    function sports_source() {
+    public function sports_source() {
         return new online_sports(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_ath_source')
         );
     }
 
-    function teacher_department_source() {
+    public function teacher_department_source() {
         return new online_teachers_by_department(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('teacher_by_department')
         );
     }
 
-    function student_department_source() {
+    public function student_department_source() {
         return new online_students_by_department(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_by_department')
         );
     }
 
-    function preprocess($enrol = null) {
-        // Clear student auditing flag on each run; It'll be set in processor
+    public function preprocess($enrol = null) {
+        // Clear student auditing flag on each run; It'll be set in processor.
         return (
             ues_student::update_meta(array('student_audit' => 0)) and
             ues_user::update_meta(array('user_degree' => 0)) and
-            // Safe to clear sports on preprocess now that end date is 21 days
+            // Safe to clear sports on preprocess now that end date is 21 days.
             ues_user::update_meta(array('user_sport1' => '')) and
             ues_user::update_meta(array('user_sport2' => '')) and
             ues_user::update_meta(array('user_sport3' => '')) and
@@ -181,8 +200,8 @@ class online_enrollment_provider extends enrollment_provider {
         );
     }
 
-    function postprocess($enrol = null) {
-        $semesters_in_session = ues_semester::in_session();
+    public function postprocess($enrol = null) {
+        $semestersinsession = ues_semester::in_session();
 
         $now = time();
 
@@ -193,7 +212,7 @@ class online_enrollment_provider extends enrollment_provider {
             'sports_information' => $this->sports_source()
         );
 
-        foreach ($semesters_in_session as $semester) {
+        foreach ($semestersinsession as $semester) {
 
             foreach ($attempts as $key => $source) {
                 if (!$this->get_setting($key)) {
@@ -225,7 +244,7 @@ class online_enrollment_provider extends enrollment_provider {
         return true;
     }
 
-    function process_data_source($source, $semester) {
+    public function process_data_source($source, $semester) {
         $datas = $source->student_data($semester);
 
         $name = get_class($source);
@@ -240,8 +259,8 @@ class online_enrollment_provider extends enrollment_provider {
 
             $user = ues_user::upgrade_and_get($data, $params);
 
-            if(isset($data->user_college)) {
-            $user->department = $data->user_college;
+            if (isset($data->user_college)) {
+                $user->department = $data->user_college;
             }
 
             if (empty($user->id)) {
@@ -251,8 +270,6 @@ class online_enrollment_provider extends enrollment_provider {
             $cache[$data->idnumber] = $data;
 
             $user->save();
-
-            events_trigger_legacy('ues_' . $name . '_updated', $user);
         }
     }
 }

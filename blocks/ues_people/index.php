@@ -22,11 +22,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once '../../config.php';
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+require_once('../../config.php');
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
+
 ues::require_daos();
 
-require_once 'lib.php';
+require_once($CFG->dirroot . '/blocks/ues_people/lib.php');
 
 if (!defined('DEFAULT_PAGE_SIZE')) {
     define('DEFAULT_PAGE_SIZE', 20);
@@ -36,10 +37,10 @@ $id = required_param('id', PARAM_INT);
 
 $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 
-$from_request = optional_param('perpage', ues_people::get_perpage($course), PARAM_INT);
+$fromrequest = optional_param('perpage', ues_people::get_perpage($course), PARAM_INT);
 
 $page = optional_param('page', 0, PARAM_INT);
-$perpage = ues_people::set_perpage($course, $from_request);
+$perpage = ues_people::set_perpage($course, $fromrequest);
 $roleid = optional_param('roleid', 0, PARAM_INT);
 $groupid = optional_param('group', 0, PARAM_INT);
 $groupid2 = $groupid;
@@ -49,10 +50,10 @@ $sortdir = optional_param('dir', 'ASC', PARAM_TEXT);
 $silast = optional_param('silast', 'all', PARAM_TEXT);
 $sifirst = optional_param('sifirst', 'all', PARAM_TEXT);
 
-$agree_ferpa = optional_param('FERPA',null,PARAM_INT);
-$disagree = optional_param('disagree',null,PARAM_INT);
+$agreeferpa = optional_param('FERPA', null, PARAM_INT);
+$disagree = optional_param('disagree', null, PARAM_INT);
 
-$export_params = array(
+$exportparams = array(
     'roleid' => $roleid,
     'group' => $groupid,
     'id' => $id,
@@ -70,12 +71,13 @@ $PAGE->set_url('/blocks/ues_people/index.php', array(
     'perpage' => $perpage
 ));
 
-$PAGE->set_pagelayout('incourse');
+$PAGE->set_pagelayout('base');
+$PAGE->set_pagetype('ues_people');
 $PAGE->add_body_class('ues_people');
 
-$all_sections = ues_section::from_course($course);
+$allsections = ues_section::from_course($course);
 
-if (empty($all_sections)) {
+if (empty($allsections)) {
     print_error('only_ues', 'block_ues_people');
 }
 
@@ -85,17 +87,17 @@ $context = context_course::instance($id);
 
 require_capability('moodle/course:viewparticipants', $context);
 
-$can_view = (
+$canview = (
     has_capability('moodle/site:accessallgroups', $context) or
     has_capability('block/ues_people:viewmeta', $context) or
-    ues_user::is_teacher_in($all_sections)
+    ues_user::is_teacher_in($allsections)
 );
 
-if (!$can_view) {
+if (!$canview) {
     redirect(new moodle_url('/course/view.php', array('id' => $id)));
 }
 
-$_s = ues::gen_str('block_ues_people');
+$s = ues::gen_str('block_ues_people');
 
 $user = ues_user::get(array('id' => $USER->id));
 
@@ -133,14 +135,14 @@ $event = \block_ues_people\event\all_ues_logs_viewed::create(array(
 $event->add_record_snapshot('course', $PAGE->course);
 $event->trigger();
 
-$meta_names = ues_people::outputs($course);
+$metanames = ues_people::outputs($course);
 
-$using_meta_sort = $using_ues_sort = false;
+$usingmetasort = $usinguessort = false;
 
-if (($meta == 'sec_number' or $meta == 'credit_hours') and isset($meta_names[$meta])) {
-    $using_ues_sort = true;
-} else if (isset($meta_names[$meta])) {
-    $using_meta_sort = true;
+if (($meta == 'sec_number' or $meta == 'credit_hours') and isset($metanames[$meta])) {
+    $usinguessort = true;
+} else if (isset($metanames[$meta])) {
+    $usingmetasort = true;
 }
 
 $PAGE->set_title("$course->shortname: " . get_string('participants'));
@@ -168,11 +170,11 @@ if ($currentgroup) {
 
 $upicfields = user_picture::fields('u');
 
-$select = sprintf('SELECT DISTINCT(IFNULL(ues.userid, u.id)) AS ui, %s, ues.sn AS sec_number, u.deleted,
+$select = sprintf('SELECT DISTINCT(IFnull(ues.userid, u.id)) AS ui, %s, ues.sn AS sec_number, u.deleted,
                   u.username, u.email, u.idnumber, u.lang, u.timezone, ues.credit_hours, ues.student_audit', $upicfields);
 $joins = array('FROM {user} u');
 
-list($esql, $params) = get_enrolled_sql($context, NULL, $currentgroup, true);
+list($esql, $params) = get_enrolled_sql($context, null, $currentgroup, true);
 $joins[] = "JOIN ($esql) e ON e.id = u.id";
 
 $ccselect = ', ' . context_helper::get_preload_record_columns_sql('ctx');
@@ -185,7 +187,7 @@ $joins[] = $ccjoin;
 $unions = array();
 
 if ($groupid2 > 0) {
-$selects = array(
+    $selects = array(
     't' =>
     "SELECT
         DISTINCT(t.userid) AS userid,
@@ -207,13 +209,14 @@ $selects = array(
     FROM ". ues_student::tablename('stu') . "
         JOIN " . ues_section::tablename('sec') . " ON (sec.id = stu.sectionid)
         JOIN " . ues_course::tablename('uec') . " ON (uec.id = sec.courseid)
-        INNER JOIN {groups} grp ON grp.name = CONCAT(uec.department, ' ', uec.cou_number, ' ', sec.sec_number) AND grp.id = " . $groupid2 . "
+        INNER JOIN {groups} grp ON grp.name =
+        CONCAT(uec.department, ' ', uec.cou_number, ' ', sec.sec_number) AND grp.id = " . $groupid2 . "
         INNER JOIN {groups_members} grpm ON grp.id = grpm.groupid AND stu.userid = grpm.userid
         LEFT JOIN " . ues_student::metatablename('stum') . " ON (stu.id = stum.studentid AND stum.name = 'student_audit')
     WHERE "
-);
+    );
 } else {
-$selects = array(
+    $selects = array(
     't' =>
     "SELECT
         DISTINCT(t.userid) AS userid,
@@ -236,7 +239,8 @@ $selects = array(
             JOIN {user} us ON us.id = stus.userid
             INNER JOIN mdl_user_enrolments ues1 ON ues1.userid = us.id
             INNER JOIN mdl_enrol es1 ON (es1.id = ues1.enrolid AND es1.courseid = " . $course->id . ")
-            INNER JOIN {groups} grps ON grps.courseid = crs.id AND grps.name = CONCAT(uecs.department, ' ', uecs.cou_number, ' ', secs.sec_number)
+            INNER JOIN {groups} grps ON grps.courseid =
+            crs.id AND grps.name = CONCAT(uecs.department, ' ', uecs.cou_number, ' ', secs.sec_number)
             INNER JOIN {groups_members} grpms ON grps.id = grpms.groupid AND stus.userid = grpms.userid
         WHERE crs.id = " . $course->id . " AND us.id = stu.userid),
         stu.credit_hours,
@@ -248,26 +252,26 @@ $selects = array(
         JOIN " . ues_course::tablename('uec') . " ON (uec.id = sec.courseid)
         LEFT JOIN " . ues_student::metatablename('stum') . " ON (stu.id = stum.studentid AND stum.name = 'student_audit')
     WHERE "
-);
+    );
 }
 
-$sectionids = array_keys($all_sections);
+$sectionids = array_keys($allsections);
 
 foreach ($selects as $key => $union) {
-    $union_where = ues::where()
+    $unionwhere = ues::where()
         ->sectionid->in($sectionids)
         ->status->in(ues::ENROLLED, ues::PROCESSED);
 
-    $unions[$key] = '(' . $union . $union_where->sql(function($k) use ($key) {
+    $unions[$key] = '(' . $union . $unionwhere->sql(function($k) use ($key) {
         return $key . '.' . $k;
     }) . ')';
 }
 
 $joins[] = 'LEFT JOIN ('. implode(' UNION ', $unions) . ') ues ON ues.userid = u.id';
 
-if ($using_meta_sort) {
-    $meta_table = ues_user::metatablename('um');
-    $joins[] = 'LEFT JOIN ' . $meta_table.
+if ($usingmetasort) {
+    $metatable = ues_user::metatablename('um');
+    $joins[] = 'LEFT JOIN ' . $metatable.
         ' ON (um.userid = u.id AND um.name = :metakey)';
     $params['metakey'] = $meta;
 }
@@ -288,7 +292,7 @@ if ($roleid) {
     $params['roleid'] = $roleid;
 
     $contextids  = $context->get_parent_context_ids(true);
-    $contextlist = sprintf("IN (%s)", implode(',',$contextids));
+    $contextlist = sprintf("IN (%s)", implode(',', $contextids));
     $sub = 'SELECT userid FROM {role_assignments} WHERE roleid = :roleid AND contextid ' . $contextlist;
 
     $wheres->id->raw("IN ($sub)");
@@ -296,35 +300,42 @@ if ($roleid) {
 
 $where = $wheres->is_empty() ? '' : 'WHERE ' . $wheres->sql(function($k) {
     switch ($k) {
-        case 'sectionid': return 'ues.' . $k;
-        default: return 'u.' . $k;
+        case 'sectionid':
+            return 'ues.' . $k;
+        default:
+            return 'u.' . $k;
     }
 });
 
-if ($using_meta_sort) {
-    $sort = 'ORDER BY um.value ' . $sortdir . ', lastname ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
-} else if ($using_ues_sort && $meta != 'sec_number') {
-    $sort = 'ORDER BY ues.' . $meta . ' ' . $sortdir . ', lastname ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
-} else if ($using_ues_sort && $meta = 'sec_number') {
-    $sort = 'ORDER BY ' . $meta . ' ' . $sortdir . ', lastname ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
+if ($usingmetasort) {
+    $sort = 'ORDER BY um.value ' . $sortdir . ', lastname ' . $sortdir . ', firstname '
+    . $sortdir . ', alternatename ' . $sortdir;
+} else if ($usinguessort && $meta != 'sec_number') {
+    $sort = 'ORDER BY ues.' . $meta . ' ' . $sortdir . ', lastname ' . $sortdir . ', firstname '
+    . $sortdir . ', alternatename ' . $sortdir;
+} else if ($usinguessort && $meta = 'sec_number') {
+    $sort = 'ORDER BY ' . $meta . ' ' . $sortdir . ', lastname ' . $sortdir . ', firstname '
+    . $sortdir . ', alternatename ' . $sortdir;
 } else if ($meta == 'lastname') {
-    $sort = 'ORDER BY u.' . $meta . ' ' . $sortdir . ', firstname ' . $sortdir . ', alternatename ' . $sortdir;
+    $sort = 'ORDER BY u.' . $meta . ' ' . $sortdir . ', firstname '
+    . $sortdir . ', alternatename ' . $sortdir;
 } else if ($meta == 'alternatename' || $meta == 'firstname') {
-    $sort = 'ORDER BY u.firstname' . ' ' . $sortdir . ', lastname ' . $sortdir . ', alternatename ' . $sortdir;
+    $sort = 'ORDER BY u.firstname' . ' ' . $sortdir . ', lastname '
+    . $sortdir . ', alternatename ' . $sortdir;
 } else {
     $sort = 'ORDER BY u.' . $meta . ' ' . $sortdir;
 }
 
-// @TODO This query assumes that no user will exist in more than one section of the same course.
+// This query assumes that no user will exist in more than one section of the same course.
 $sql = "$select $from $where $sort";
 
 if ($data = data_submitted()) {
 
-    if(!$agree_ferpa){        
+    if (!$agreeferpa) {
         redirect(new moodle_url($PAGE->url, array('disagree' => 1)));
     }
 
-    $controls = ues_people::control_elements($meta_names);
+    $controls = ues_people::control_elements($metanames);
 
     if (isset($data->export)) {
         $filename = $course->idnumber . '.csv';
@@ -332,7 +343,7 @@ if ($data = data_submitted()) {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; fileName=' . $filename);
 
-        $to_csv = function ($user) use ($data, $controls) {
+        $tocsv = function ($user) use ($data, $controls) {
             $user->fill_meta();
 
             $line = array();
@@ -358,7 +369,7 @@ if ($data = data_submitted()) {
             return implode(',', $line);
         };
 
-        $lines = ues_user::by_sql($sql, $params, 0, 0, $to_csv);
+        $lines = ues_user::by_sql($sql, $params, 0, 0, $tocsv);
 
         echo implode("\n", $lines);
         exit;
@@ -374,22 +385,24 @@ if ($data = data_submitted()) {
 
 $count = $DB->count_records_sql("SELECT COUNT(DISTINCT(u.id)) $from $where", $params);
 
-$base_url = new moodle_url('/blocks/ues_people/index.php', array(
+$baseurl = new moodle_url('/blocks/ues_people/index.php', array(
     'id' => $id,
     'perpage' => $perpage
 ));
 
-$base_with_params = function($params) use ($base_url) {
-    $url = $base_url->out() . '&amp;';
+$basewithparams = function($params) use ($baseurl) {
+    $url = $baseurl->out() . '&amp;';
 
-    $mapper = function ($key, $value) { return "$key=$value"; };
+    $mapper = function ($key, $value) {
+        return "$key=$value";
+    };
 
     $parms = array_map($mapper, array_keys($params), array_values($params));
 
     return $url . implode('&amp;', $parms);
 };
 
-$paging_bar = $OUTPUT->paging_bar($count, $page, $perpage, $base_with_params(array(
+$pagingbar = $OUTPUT->paging_bar($count, $page, $perpage, $basewithparams(array(
     'roleid' => $roleid,
     'group' => $groupid,
     'silast' => $silast,
@@ -403,7 +416,7 @@ echo $OUTPUT->header();
 if (count($rolenames) > 1) {
     $cr = get_string('currentrole', 'role');
 
-    $rolesnameurl = $base_with_params(array(
+    $rolesnameurl = $basewithparams(array(
         'group' => $groupid, 'meta' => $meta, 'dir' => $sortdir
     ));
 
@@ -413,10 +426,10 @@ if (count($rolenames) > 1) {
     echo html_writer::end_tag('div');
 }
 
-$groups_url = $base_with_params(array(
+$groupsurl = $basewithparams(array(
     'roleid' => $roleid, 'meta' => $meta, 'dir' => $sortdir
 ));
-echo groups_print_course_menu($course, $groups_url);
+echo groups_print_course_menu($course, $groupsurl);
 
 if ($roleid > 0) {
     $a = new stdClass();
@@ -440,7 +453,7 @@ if ($roleid > 0) {
 
 $table = new html_table();
 
-$sort_url = $base_with_params(array(
+$sorturl = $basewithparams(array(
     'roleid' => $roleid,
     'group' => $groupid,
     'silast' => $silast,
@@ -448,22 +461,22 @@ $sort_url = $base_with_params(array(
     'page' => $page
 ));
 
-$user_fields = array(
+$userfields = array(
     'username' => new ues_people_element_output('username', get_string('username')),
     'email' => new ues_people_element_output('email', get_string('email')),
     'idnumber' => new ues_people_element_output('idnumber', get_string('idnumber'))
 );
 
-if ($meta_names['user_keypadid']) {
-  unset($meta_names['user_keypadid']);
+if ($metanames['user_keypadid']) {
+    unset($metanames['user_keypadid']);
 }
 
-$meta_names = array_merge($user_fields, $meta_names);
+$metanames = array_merge($userfields, $metanames);
 
 $name = new html_table_cell(
-    ues_people::sortable($sort_url, get_string('alternatename'), 'alternatename') .
+    ues_people::sortable($sorturl, get_string('alternatename'), 'alternatename') .
     ' (' . get_string('firstname') . ') ' .
-    ues_people::sortable($sort_url, get_string('lastname'), 'lastname')
+    ues_people::sortable($sorturl, get_string('lastname'), 'lastname')
 );
 $name->attributes['class'] = 'fullname';
 $name->colspan = 2;
@@ -473,9 +486,9 @@ if (ues_people::is_filtered('fullname')) {
 
 $headers = array($name);
 
-foreach ($meta_names as $output) {
+foreach ($metanames as $output) {
     $cell = new html_table_cell(
-        ues_people::sortable($sort_url, $output->name, $output->field)
+        ues_people::sortable($sorturl, $output->name, $output->field)
     );
     $cell->attributes['class'] = $output->field;
     if (ues_people::is_filtered($output->field)) {
@@ -484,28 +497,30 @@ foreach ($meta_names as $output) {
     $headers[] = $cell;
 }
 
-// Transform function to optimize table formatting
-$to_row = function ($user) use ($OUTPUT, $meta_names, $id) {
+// Transform function to optimize table formatting.
+$torow = function ($user) use ($OUTPUT, $metanames, $id) {
 
-    // Needed for user_picture
+    // Needed for user_picture.
     $underlying = new stdClass;
     foreach (get_object_vars($user) as $field => $value) {
         $underlying->$field = $value;
     }
 
-    // Needed for user meta
+    // Needed for user metadata.
     $user->fill_meta();
 
-    $user_url = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $id));
+    $userurl = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $id));
 
     $line = array();
     $pic = new html_table_cell($OUTPUT->user_picture($underlying, array('course' => $id)));
     $pic->attributes['class'] = 'fullname';
 
-    if (!empty($user->alternatename)) { 
-        $cell= new html_table_cell(html_writer::link($user_url, $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname));
+    if (!empty($user->alternatename)) {
+        $cell = new html_table_cell(
+            html_writer::link($userurl, $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname)
+        );
     } else {
-        $cell= new html_table_cell(html_writer::link($user_url, fullname($user)));
+        $cell = new html_table_cell(html_writer::link($userurl, fullname($user)));
     }
     $cell->attributes['class'] = 'fullname';
 
@@ -516,7 +531,7 @@ $to_row = function ($user) use ($OUTPUT, $meta_names, $id) {
     $line[] = $pic;
     $line[] = $cell;
 
-    foreach ($meta_names as $output) {
+    foreach ($metanames as $output) {
         $cell = new html_table_cell($output->format($user));
         $cell->attributes['class'] = $output->field;
         if (ues_people::is_filtered($output->field)) {
@@ -532,29 +547,29 @@ $table->head = $headers;
 
 $offset = $perpage * $page;
 
-$table->data = ues_user::by_sql($sql, $params, $offset, $perpage, $to_row);
+$table->data = ues_user::by_sql($sql, $params, $offset, $perpage, $torow);
 
-$default_params = array(
+$defaultparams = array(
     'roleid' => $roleid, 'group' => $groupid, 'meta' => $meta, 'dir' => $sortdir
 );
 
-$firstinitial = $base_with_params($default_params + array('silast' => $silast));
+$firstinitial = $basewithparams($defaultparams + array('silast' => $silast));
 echo ues_people::initial_bars(get_string('firstname'), 'sifirst', $firstinitial);
 
-$lastinitial = $base_with_params($default_params + array('sifirst' => $sifirst));
+$lastinitial = $basewithparams($defaultparams + array('sifirst' => $sifirst));
 echo ues_people::initial_bars(get_string('lastname'), 'silast', $lastinitial);
 
-echo ues_people::show_links($export_params, $count, $perpage);
+echo ues_people::show_links($exportparams, $count, $perpage);
 
-echo $paging_bar;
+echo $pagingbar;
 
 echo html_writer::start_tag('div', array('class' => 'no-overflow'));
 echo html_writer::table($table);
 echo html_writer::end_tag('div');
 
-echo $paging_bar;
+echo $pagingbar;
 
-echo ues_people::show_links($export_params, $count, $perpage);
-echo ues_people::controls($export_params, $meta_names, $disagree);
+echo ues_people::show_links($exportparams, $count, $perpage);
+echo ues_people::controls($exportparams, $metanames, $disagree);
 
 echo $OUTPUT->footer();

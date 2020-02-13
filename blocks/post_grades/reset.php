@@ -1,8 +1,22 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once '../../config.php';
-require_once 'lib.php';
-require_once 'query_form.php';
+require_once('../../config.php');
+require_once('lib.php');
+require_once('query_form.php');
 
 require_login();
 
@@ -15,53 +29,53 @@ $flash = optional_param('flash', null, PARAM_INT);
 
 require_capability('block/post_grades:canconfigure', $context);
 
-$_s = ues::gen_str('block_post_grades');
+$s = ues::gen_str('block_post_grades');
 
-$pluginname = $_s('pluginname');
-$heading = $_s('reset_posting');
+$pluginname = $s('pluginname');
+$heading = $s('reset_posting');
 
-$base_url = new moodle_url('/blocks/post_grades/reset.php');
-$admin_url = new moodle_url('/admin/settings.php', array(
+$baseurl = new moodle_url('/blocks/post_grades/reset.php');
+$adminurl = new moodle_url('/admin/settings.php', array(
     'section' => 'blocksettingpost_grades'
 ));
 
 $title = "$system->shortname: $heading";
 
-$PAGE->set_url($base_url);
+$PAGE->set_url($baseurl);
 $PAGE->set_context($context);
 $PAGE->set_heading($title);
 $PAGE->set_title($title);
-$PAGE->navbar->add($pluginname, $admin_url);
+$PAGE->navbar->add($pluginname, $adminurl);
 $PAGE->navbar->add($heading);
 
-$query_form = new query_form();
+$queryform = new query_form();
 
-if ($query_form->is_cancelled()) {
-    redirect($admin_url);
+if ($queryform->is_cancelled()) {
+    redirect($adminurl);
 }
 
 if ($shortname) {
     $data = new stdClass();
     $data->shortname = $shortname;
-    $query_form->set_data($data);
+    $queryform->set_data($data);
 
     $entries = post_grades::find_postings_by_shortname($shortname);
 
-    $reset_form = new reset_form(null, array(
+    $resetform = new reset_form(null, array(
         'shortname' => $shortname,
         'entries' => $entries
     ));
 
-    if ($reset_form->is_cancelled()) {
-        redirect($base_url);
-    } else if ($data = $reset_form->get_data()) {
+    if ($resetform->is_cancelled()) {
+        redirect($baseurl);
+    } else if ($data = $resetform->get_data()) {
         $fields = (array)$data;
         unset($fields['submitbutton'], $fields['shortname']);
 
         $ids = implode(',', array_keys($fields));
         $DB->delete_records_select('block_post_grades_postings', "id IN ($ids)");
 
-        redirect(new moodle_url($base_url, array('flash' => 1)));
+        redirect(new moodle_url($baseurl, array('flash' => 1)));
     }
 }
 
@@ -72,10 +86,10 @@ if ($flash) {
     echo $OUTPUT->notification(get_string('changessaved'), 'notifysuccess');
 }
 
-$query_form->display();
+$queryform->display();
 
-if (!empty($reset_form)) {
-    $reset_form->display();
+if (!empty($resetform)) {
+    $resetform->display();
 }
 
 echo $OUTPUT->footer();

@@ -25,40 +25,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * This function extends the course navigation
- *
- * @param navigation_node $navigation The navigation node to extend
- * @param stdClass $course The course to object for the tool
- * @param context $coursecontext The context of the course
- */
-function tool_lp_extend_navigation_course($navigation, $course, $coursecontext) {
-    if (!get_config('core_competency', 'enabled')) {
-        return;
-    }
-
-    // Check access to the course and competencies page.
-    $capabilities = array('moodle/competency:coursecompetencyview', 'moodle/competency:coursecompetencymanage');
-    $context = context_course::instance($course->id);
-    if (!has_any_capability($capabilities, $context) || !can_access_course($course)) {
-        return;
-    }
-
-    // Just a link to course competency.
-    $title = get_string('competencies', 'core_competency');
-    $path = new moodle_url("/admin/tool/lp/coursecompetencies.php", array('courseid' => $course->id));
-    $settingsnode = navigation_node::create($title,
-                                            $path,
-                                            navigation_node::TYPE_SETTING,
-                                            null,
-                                            null,
-                                            new pix_icon('i/competencies', ''));
-    if (isset($settingsnode)) {
-        $navigation->add_node($settingsnode);
-    }
-}
-
-
-/**
  * This function extends the user navigation.
  *
  * @param navigation_node $navigation The navigation node to extend
@@ -176,7 +142,7 @@ function tool_lp_coursemodule_standard_elements($formwrapper, $mform) {
     $mform->addElement('header', 'competenciessection', get_string('competencies', 'core_competency'));
 
     MoodleQuickForm::registerElementType('course_competencies',
-                                         "$CFG->dirroot/admin/tool/lp/classes/course_competencies_form_element.php",
+                                         "$CFG->dirroot/$CFG->admin/tool/lp/classes/course_competencies_form_element.php",
                                          'tool_lp_course_competencies_form_element');
     $cmid = null;
     if ($cm = $formwrapper->get_coursemodule()) {
@@ -189,7 +155,7 @@ function tool_lp_coursemodule_standard_elements($formwrapper, $mform) {
     $mform->addElement('course_competencies', 'competencies', get_string('modcompetencies', 'tool_lp'), $options);
     $mform->addHelpButton('competencies', 'modcompetencies', 'tool_lp');
     MoodleQuickForm::registerElementType('course_competency_rule',
-                                         "$CFG->dirroot/admin/tool/lp/classes/course_competency_rule_form_element.php",
+                                         "$CFG->dirroot/$CFG->admin/tool/lp/classes/course_competency_rule_form_element.php",
                                          'tool_lp_course_competency_rule_form_element');
     // Reuse the same options.
     $mform->addElement('course_competency_rule', 'competency_rule', get_string('uponcoursemodulecompletion', 'tool_lp'), $options);
@@ -217,7 +183,7 @@ function tool_lp_coursemodule_edit_post_actions($data, $course) {
 
     $existingids = array();
     foreach ($existing as $cmc) {
-        array_push($existingids, $cmc->get_competencyid());
+        array_push($existingids, $cmc->get('competencyid'));
     }
 
     $newids = isset($data->competencies) ? $data->competencies : array();
@@ -241,4 +207,81 @@ function tool_lp_coursemodule_edit_post_actions($data, $course) {
     }
 
     return $data;
+}
+
+/**
+ * Map icons for font-awesome themes.
+ */
+function tool_lp_get_fontawesome_icon_map() {
+    return [
+        'tool_lp:url' => 'fa-external-link'
+    ];
+}
+
+/**
+ * Render a short bit of information about a competency.
+ *
+ * @param \core_competency\competency $competency The competency to show.
+ * @param \core_competency\competency_framework $framework The competency framework.
+ * @param boolean $includerelated If true, show related competencies.
+ * @param boolean $includecourses If true, show courses using this competency.
+ * @param boolean $skipenabled If true, show this competency even if competencies are disabled.
+ * @return string The html summary for the competency.
+ */
+function tool_lp_render_competency_summary(\core_competency\competency $competency,
+                                           \core_competency\competency_framework $framework,
+                                           $includerelated,
+                                           $includecourses,
+                                           $skipenabled = false) {
+    global $PAGE;
+
+    if (!$skipenabled && !get_config('core_competency', 'enabled')) {
+        return;
+    }
+
+    $summary = new \tool_lp\output\competency_summary($competency, $framework, $includerelated, $includecourses);
+
+    $output = $PAGE->get_renderer('tool_lp');
+
+    return $output->render($summary);
+}
+
+/**
+ * Inject a course competency picker into the form.
+ *
+ * @param MoodleQuickForm $mform The actual form object (required to modify the form).
+ * @param integer $courseid - SITEID or a course id
+ * @param context $context - The page context
+ * @param string $elementname - The name of the form element to create
+ */
+function tool_lp_competency_picker($mform, $courseid, $context, $elementname) {
+    global $CFG, $COURSE;
+
+    if (!get_config('core_competency', 'enabled')) {
+        return;
+    }
+
+    if ($courseid == SITEID) {
+        if (!has_capability('moodle/competency:competencymanage', $context)) {
+            return;
+        }
+
+        MoodleQuickForm::registerElementType('site_competencies',
+                                             "$CFG->dirroot/$CFG->admin/tool/lp/classes/site_competencies_form_element.php",
+                                             'tool_lp_site_competencies_form_element');
+        $mform->addElement('site_competencies', $elementname);
+    } else {
+        if (!has_capability('moodle/competency:coursecompetencymanage', $context)) {
+            return;
+        }
+
+        MoodleQuickForm::registerElementType('course_competencies',
+                                             "$CFG->dirroot/$CFG->admin/tool/lp/classes/course_competencies_form_element.php",
+                                             'tool_lp_course_competencies_form_element');
+        $options = array(
+            'courseid' => $COURSE->id
+        );
+        $mform->addElement('course_competencies', $elementname, get_string('modcompetencies', 'tool_lp'), $options);
+    }
+    $mform->setType($elementname, PARAM_SEQUENCE);
 }

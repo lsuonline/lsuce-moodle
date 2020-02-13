@@ -31,6 +31,7 @@ define(['jquery',
 
     /**
      * Grade dialogue class.
+     * @param {Array} ratingOptions
      */
     var Grade = function(ratingOptions) {
         EventBase.prototype.constructor.apply(this, []);
@@ -46,7 +47,6 @@ define(['jquery',
     /**
      * After render hook.
      *
-     * @return {Promise}
      * @method _afterRender
      * @protected
      */
@@ -102,15 +102,20 @@ define(['jquery',
      * @return {Promise}
      */
     Grade.prototype.display = function() {
-        return this._render().then(function(html) {
-            return Str.get_string('rate', 'tool_lp').then(function(title) {
-                this._popup = new Dialogue(
-                    title,
-                    html,
-                    this._afterRender.bind(this)
-                );
-            }.bind(this));
-        }.bind(this)).fail(Notification.exception);
+        return $.when(
+            Str.get_string('rate', 'tool_lp'),
+            this._render()
+        )
+        .then(function(title, templateResult) {
+            this._popup = new Dialogue(
+                title,
+                templateResult[0],
+                this._afterRender.bind(this)
+            );
+
+            return this._popup;
+        }.bind(this))
+        .catch(Notification.exception);
     };
 
     /**
@@ -118,6 +123,7 @@ define(['jquery',
      *
      * @param {String} selector
      * @method _find
+     * @returns {node} The node
      * @protected
      */
     Grade.prototype._find = function(selector) {

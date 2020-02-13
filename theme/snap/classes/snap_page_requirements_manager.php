@@ -18,11 +18,13 @@
  * Snap page requirements manager.
  * Required for blacklisting core javascript / css.
  * @author    Guy Thomas
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap;
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/lib/outputrequirementslib.php');
 
@@ -71,7 +73,7 @@ class snap_page_requirements_manager extends \page_requirements_manager {
             }
 
             $snapmanprop = new \ReflectionProperty($this, $pname);
-            // if the property is private or protected  set accessible, after the copy reset to not accessible.
+            // If the property is private or protected  set accessible, after the copy reset to not accessible.
             $isprotected = $snapmanprop->isPrivate() || $snapmanprop->isProtected();
             if ($isprotected) {
                 $snapmanprop->setAccessible(true);

@@ -26,7 +26,9 @@
  *
  * @package    local_natsane
  * @copyright  2017 Robert Russo, Louisiana State University
- */ 
+ */
+
+defined('MOODLE_INTERNAL') || die();
 
 // Define the task defaults.
 $tasks = array(

@@ -17,7 +17,7 @@
 /**
  * Course action for affecting section visibility.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -44,12 +44,11 @@ class course_action_section_visibility extends course_action_section_base {
         $baseurl->param('sesskey', sesskey());
 
         $coursecontext = context_course::instance($course->id);
-        $isstealth = isset($course->numsections) && ($section->section > $course->numsections);
 
         $url = clone($baseurl);
-        if (!$isstealth && has_capability('moodle/course:sectionvisibility', $coursecontext)) {
+        if (has_capability('moodle/course:sectionvisibility', $coursecontext)) {
             if ($section->visible) { // Show the hide/show eye.
-                $this->title =  get_string('hidefromothers', 'format_'.$course->format);
+                $this->title = get_string('hidefromothers', 'format_'.$course->format);
                 $url->param('hide', $section->section);
                 $this->url = $url;
                 $this->class .= ' snap-hide';

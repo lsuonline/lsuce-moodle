@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'unwant_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('unwant_form.php');
 
 require_login();
 
@@ -46,9 +46,9 @@ if (empty($sections)) {
 $PAGE->requires->jquery();
 $PAGE->requires->js('/blocks/cps/js/unwanted.js');
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_unwant::name();
 
 $context = context_system::instance();
@@ -68,7 +68,7 @@ if ($form->is_cancelled()) {
 
     $unwants = cps_unwant::get_all(array('userid' => $USER->id));
 
-    // Perform Selected
+    // Perform Selected.
     $fields = get_object_vars($data);
     foreach ($fields as $name => $value) {
         if (preg_match('/^section_(\d+)/', $name, $matches)) {
@@ -89,7 +89,7 @@ if ($form->is_cancelled()) {
         }
     }
 
-    // Erase deselected
+    // Erase deselected.
     foreach ($unwants as $unwant) {
         cps_unwant::delete($unwant->id);
         $unwant->unapply();
@@ -99,10 +99,10 @@ if ($form->is_cancelled()) {
 }
 
 $unwants = cps_unwant::get_all(array('userid' => $USER->id));
-$form_data = array();
+$formdata = array();
 
 foreach ($unwants as $unwant) {
-    $form_data['section_' . $unwant->sectionid] = 1;
+    $formdata['section_' . $unwant->sectionid] = 1;
 }
 
 echo $OUTPUT->header();
@@ -112,7 +112,7 @@ if (isset($success) and $success) {
     echo $OUTPUT->notification(get_string('changessaved'), 'notifysuccess');
 }
 
-$form->set_data($form_data);
+$form->set_data($formdata);
 $form->display();
 
 echo $OUTPUT->footer();

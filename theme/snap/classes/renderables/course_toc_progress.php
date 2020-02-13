@@ -17,11 +17,13 @@
 /**
  * Course toc section
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
+
+defined('MOODLE_INTERNAL') || die();
 
 use theme_snap\output\shared;
 
@@ -75,7 +77,7 @@ class course_toc_progress {
             'complete' => null,
             'total' => null
         ];
-        
+
         if (!$completioninfo->is_enabled()) {
             return ''; // Completion tracking not enabled.
         }
@@ -89,7 +91,7 @@ class course_toc_progress {
             'complete' => $sac->progress->complete,
             'total' => $sac->progress->total
         ];
-        $this->pixcompleted = $OUTPUT->pix_url('i/completion-manual-y');
+        $this->pixcompleted = $OUTPUT->image_url('i/completion-manual-y');
         $this->completed = $sac->progress->complete === $sac->progress->total;
     }
 }

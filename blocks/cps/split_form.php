@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/blocks/cps/formslib.php';
+
+defined('MOODLE_INTERNAL') or die();
+
+require_once($CFG->dirroot . '/blocks/cps/formslib.php');
 
 abstract class split_form extends cps_form {
 
@@ -38,14 +40,14 @@ abstract class split_form extends cps_form {
 }
 
 class split_form_select extends split_form {
-    var $current = self::SELECT;
-    var $next = self::SHELLS;
+    public $current = self::SELECT;
+    public $next = self::SHELLS;
 
     public static function build($semesters) {
         return array('semesters' => $semesters);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $m->addElement('header', 'select', self::_s('select'));
@@ -71,7 +73,7 @@ class split_form_select extends split_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         $semesters = $this->_customdata['semesters'];
 
         if (empty($data['selected'])) {
@@ -87,13 +89,13 @@ class split_form_select extends split_form {
 
         $course = $semesters[$semid]->courses[$couid];
 
-        $section_count = count($course->sections);
+        $sectioncount = count($course->sections);
 
-        if ($section_count < 2) {
+        if ($sectioncount < 2) {
             $errors['selected'] = self::_s('err_split_number');
         }
 
-        if ($section_count == 2) {
+        if ($sectioncount == 2) {
             $this->next = self::CONFIRM;
 
             $this->forge_split_all($course);
@@ -106,9 +108,9 @@ class split_form_select extends split_form {
 }
 
 class split_form_shells extends split_form {
-    var $current = self::SHELLS;
-    var $next = self::DECIDE;
-    var $prev = self::SELECT;
+    public $current = self::SHELLS;
+    public $next = self::DECIDE;
+    public $prev = self::SELECT;
 
     public static function build($semesters) {
         $selected = required_param('selected', PARAM_RAW);
@@ -118,7 +120,7 @@ class split_form_shells extends split_form {
         return array('course' => $semesters[$semid]->courses[$couid]);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $course = $this->_customdata['course'];
@@ -132,7 +134,7 @@ class split_form_shells extends split_form {
         $seqed = range(2, count($course->sections));
         $options = array_combine($seqed, $seqed);
 
-        $m->addElement('select', 'shells', self::_s('split_how_many') ,$options);
+        $m->addElement('select', 'shells', self::_s('split_how_many'), $options);
         $m->addHelpButton('shells', 'split_how_many', 'block_cps');
 
         $m->addElement('hidden', 'selected', '');
@@ -141,7 +143,7 @@ class split_form_shells extends split_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         $course = $this->_customdata['course'];
 
         if ($data['shells'] == count($course->sections)) {
@@ -155,26 +157,26 @@ class split_form_shells extends split_form {
 }
 
 class split_form_update extends split_form implements updating_form {
-    var $current = self::UPDATE;
-    var $next = self::DECIDE;
-    var $prev = self::SELECT;
+    public $current = self::UPDATE;
+    public $next = self::DECIDE;
+    public $prev = self::SELECT;
 
     public static function build($courses) {
         return self::prep_reshell() + split_form_shells::build($courses);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $course = $this->_customdata['course'];
 
-        $current_splits = cps_split::in_course($course);
+        $currentsplits = cps_split::in_course($course);
 
         $sections = $course->sections;
 
-        $shells = cps_split::groups($current_splits);
+        $shells = cps_split::groups($currentsplits);
 
-        $grouping_lookup = array();
+        $groupinglookup = array();
 
         $m->addElement('hidden', 'shells', $shells);
         $m->setType('shells', PARAM_INT);
@@ -183,7 +185,7 @@ class split_form_update extends split_form implements updating_form {
 
         $html = '<div class="previous_splits">
             <ul>';
-        foreach ($current_splits as $split) {
+        foreach ($currentsplits as $split) {
             $section = $course->sections[$split->sectionid];
 
             $display = "$course->department $course->cou_number Setion $section->sec_number";
@@ -191,12 +193,12 @@ class split_form_update extends split_form implements updating_form {
 
             unset ($sections[$section->id]);
 
-            $grouping_lookup[$split->groupingid][$split->shell_name][] = $split->sectionid;
+            $groupinglookup[$split->groupingid][$split->shell_name][] = $split->sectionid;
         }
         $html .= '</ul>
             </div>';
 
-        foreach ($grouping_lookup as $number => $info) {
+        foreach ($groupinglookup as $number => $info) {
             foreach ($info as $name => $secs) {
                 $m->addElement('hidden', 'shell_name_'.$number.'_hidden', $name);
                 $m->setType('shell_name_'.$number.'_hidden', PARAM_TEXT);
@@ -232,7 +234,7 @@ class split_form_update extends split_form implements updating_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         $option = $data['split_option'];
 
         $course = $this->_customdata['course'];
@@ -250,15 +252,15 @@ class split_form_update extends split_form implements updating_form {
 }
 
 class split_form_decide extends split_form {
-    var $current = self::DECIDE;
-    var $next = self::CONFIRM;
-    var $prev = self::SHELLS;
+    public $current = self::DECIDE;
+    public $next = self::CONFIRM;
+    public $prev = self::SHELLS;
 
     public static function build($courses) {
         return self::conform_reshell() + split_form_shells::build($courses);
     }
 
-    function definition() {
+    public function definition() {
         global $USER;
 
         $m =& $this->_form;
@@ -287,62 +289,62 @@ class split_form_decide extends split_form {
             $updating = !empty($this->_customdata['shell_values_'.$groupingid]);
 
             if ($updating) {
-                $shell_name_value = $this->_customdata['shell_name_'.$groupingid.'_hidden'];
-                $shell_values = $this->_customdata['shell_values_'.$groupingid];
+                $shellnamevalue = $this->_customdata['shell_name_'.$groupingid.'_hidden'];
+                $shellvalues = $this->_customdata['shell_values_'.$groupingid];
 
-                $shell_ids = explode(',', $shell_values);
-                $shell_sections = array_map(function($sec) use ( &$before) {
+                $shellids = explode(',', $shellvalues);
+                $shellsections = array_map(function($sec) use ( &$before) {
                     $section = $before[$sec];
                     unset($before[$sec]);
                     return $section;
-                }, $shell_ids);
+                }, $shellids);
 
-                $shell_options = array_combine($shell_ids, $shell_sections);
+                $shelloptions = array_combine($shellids, $shellsections);
             } else {
-                $shell_name_value = 'Course ' . $groupingid;
-                $shell_values = '';
+                $shellnamevalue = 'Course ' . $groupingid;
+                $shellvalues = '';
 
-                $shell_options = array();
+                $shelloptions = array();
             }
 
-            $shell_label =& $m->createElement('static', 'shell_' . $groupingid .
+            $shelllabel =& $m->createElement('static', 'shell_' . $groupingid .
                 '_label', '', $display . ' <span id="shell_name_'.$groupingid.'">'
-                . $shell_name_value . '</span>');
-            $shell =& $m->createElement('select', 'shell_'.$groupingid, '', $shell_options);
+                . $shellnamevalue . '</span>');
+            $shell =& $m->createElement('select', 'shell_'.$groupingid, '', $shelloptions);
             $shell->setMultiple(true);
 
-            $shell_name_params = array('style' => 'display: none;');
-            $shell_name =& $m->createElement('text', 'shell_name_' . $groupingid,
-                '', $shell_name_params);
-            $shell_name->setValue($shell_name_value);
+            $shellnameparams = array('style' => 'display: none;');
+            $shellname =& $m->createElement('text', 'shell_name_' . $groupingid,
+                '', $shellnameparams);
+            $shellname->setValue($shellnamevalue);
 
             $link = html_writer::link('shell_'.$groupingid, self::_s('customize_name'));
 
-            $radio_params = array('id' => 'selected_shell_'.$groupingid);
-            $radio =& $m->createElement('radio', 'selected_shell', '', '', $groupingid, $radio_params);
+            $radioparams = array('id' => 'selected_shell_'.$groupingid);
+            $radio =& $m->createElement('radio', 'selected_shell', '', '', $groupingid, $radioparams);
 
             $radio->setChecked($groupingid == 1);
 
             $for = ' for ' . fullname($USER);
 
-            $shells[] = $shell_label->toHtml() . $for . ' (' . $link . ')<br/>' .
-                $shell_name->toHtml() . '<br/>' . $radio->toHtml() . $shell->toHtml();
+            $shells[] = $shelllabel->toHtml() . $for . ' (' . $link . ')<br/>' .
+                $shellname->toHtml() . '<br/>' . $radio->toHtml() . $shell->toHtml();
 
-            $m->addElement('hidden', 'shell_values_'.$groupingid, $shell_values);
+            $m->addElement('hidden', 'shell_values_'.$groupingid, $shellvalues);
             $m->setType('shell_values_'.$groupingid, PARAM_TEXT);
-            $m->addElement('hidden', 'shell_name_'.$groupingid.'_hidden', $shell_name_value);
+            $m->addElement('hidden', 'shell_name_'.$groupingid.'_hidden', $shellnamevalue);
             $m->setType('shell_name_'.$groupingid.'_hidden', PARAM_TEXT);
         }
 
-        $previous_label =& $m->createElement('static', 'available_sections',
+        $previouslabel =& $m->createElement('static', 'available_sections',
             '', self::_s('available_sections'));
 
         $previous =& $m->createElement('select', 'before', '', $before);
         $previous->setMultiple(true);
 
-        $form_html = $this->mover_form($previous_label, $previous, $shells);
+        $formhtml = $this->mover_form($previouslabel, $previous, $shells);
 
-        $m->addElement('html', $form_html);
+        $m->addElement('html', $formhtml);
 
         $m->addElement('hidden', 'shells', '');
         $m->setType('shells', PARAM_INT);
@@ -358,9 +360,9 @@ class split_form_decide extends split_form {
 }
 
 class split_form_confirm extends split_form {
-    var $current = self::CONFIRM;
-    var $next = self::LOADING;
-    var $prev = self::DECIDE;
+    public $current = self::CONFIRM;
+    public $next = self::LOADING;
+    public $prev = self::DECIDE;
 
     public static function build($courses) {
         $data = split_form_decide::build($courses);
@@ -377,7 +379,7 @@ class split_form_confirm extends split_form {
         return $data + $extra;
     }
 
-    function definition() {
+    public function definition() {
         global $USER;
         $m =& $this->_form;
 
@@ -429,14 +431,14 @@ class split_form_confirm extends split_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         $course = $this->_customdata['course'];
 
-        $section_count = count($course->sections);
+        $sectioncount = count($course->sections);
 
-        if ($section_count == 2) {
+        if ($sectioncount == 2) {
             $this->prev = self::SELECT;
-        } else if ($this->_customdata['shells'] == $section_count) {
+        } else if ($this->_customdata['shells'] == $sectioncount) {
             $this->prev = self::SHELLS;
         }
 
@@ -446,65 +448,64 @@ class split_form_confirm extends split_form {
 
 class split_form_finish implements finalized_form {
 
-    function process($data, $semesters) {
+    public function process($data, $semesters) {
         list($semid, $couid) = explode('_', $data->selected);
         $course = $semesters[$semid]->courses[$couid];
 
-        $current_splits = cps_split::in_course($course);
+        $currentsplits = cps_split::in_course($course);
 
         if (isset($data->split_option) and $data->split_option == split_form_update::UNDO) {
-            $this->undo($current_splits);
+            $this->undo($currentsplits);
         } else {
-            $this->save_or_update($data, $current_splits);
+            $this->save_or_update($data, $currentsplits);
         }
     }
 
-    function undo($splits) {
+    public function undo($splits) {
         foreach ($splits as $split) {
             $split->delete($split->id);
             $split->unapply();
         }
     }
 
-    function save_or_update($data, $current_splits) {
+    public function save_or_update($data, $currentsplits) {
         global $USER;
 
         foreach (range(1, $data->shells) as $grouping) {
-            $shell_name = $data->{'shell_name_'.$grouping.'_hidden'};
+            $shellname = $data->{'shell_name_'.$grouping.'_hidden'};
 
-            $shell_values = $data->{'shell_values_'.$grouping};
+            $shellvalues = $data->{'shell_values_'.$grouping};
 
-            foreach (explode(',', $shell_values) as $sectionid) {
-                $split_params = array(
+            foreach (explode(',', $shellvalues) as $sectionid) {
+                $splitparams = array(
                     'userid' => $USER->id,
                     'sectionid' => $sectionid,
                 );
 
-                if (!$split = cps_split::get($split_params)) {
+                if (!$split = cps_split::get($splitparams)) {
                     $split = new cps_split();
-                    $split->fill_params($split_params);
+                    $split->fill_params($splitparams);
                 }
 
                 $split->groupingid = $grouping;
-                $split->shell_name = $shell_name;
+                $split->shell_name = $shellname;
                 $split->save();
                 $split->apply();
 
-                unset ($current_splits[$split->id]);
+                unset ($currentsplits[$split->id]);
             }
         }
 
-        // Not sure that we'd ever get here... but for sanity sake's we'll
-        // delete invalid splits
-        $this->undo($current_splits);
+        // Not sure that we'd ever get here... but for sanity sake's we'll delete invalid splits.
+        $this->undo($currentsplits);
     }
 
-    function display() {
+    public function display() {
         global $OUTPUT;
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
-        echo $OUTPUT->notification($_s('split_thank_you'), 'notifysuccess');
+        echo $OUTPUT->notification($s('split_thank_you'), 'notifysuccess');
         echo $OUTPUT->continue_button(new moodle_url('/blocks/cps/split.php'));
     }
 }

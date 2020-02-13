@@ -24,10 +24,8 @@
  * @author     Yuliya Bozhko <yuliya.bozhko@totaralms.com>
  */
 
-require_once(dirname(dirname(__FILE__)) . '/config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir . '/badgeslib.php');
-require_once($CFG->dirroot . '/badges/backpack_form.php');
-require_once($CFG->dirroot . '/badges/lib/backpacklib.php');
 
 require_login();
 
@@ -50,32 +48,46 @@ $PAGE->set_context($context);
 $title = get_string('backpackdetails', 'badges');
 $PAGE->set_title($title);
 $PAGE->set_heading(fullname($USER));
-$PAGE->set_pagelayout('mydashboard');
+$PAGE->set_pagelayout('standard');
 
 $backpack = $DB->get_record('badge_backpack', array('userid' => $USER->id));
 $badgescache = cache::make('core', 'externalbadges');
 
 if ($disconnect && $backpack) {
     require_sesskey();
-    $DB->delete_records('badge_external', array('backpackid' => $backpack->id));
-    $DB->delete_records('badge_backpack', array('userid' => $USER->id));
-    $badgescache->delete($USER->id);
+    $sitebackpack = badges_get_site_backpack($backpack->externalbackpackid);
+    // If backpack is connected, need to select collections.
+    $bp = new \core_badges\backpack_api($sitebackpack, $backpack);
+    $bp->disconnect_backpack($USER->id, $backpack->id);
     redirect(new moodle_url('/badges/mybackpack.php'));
 }
-
+$warning = '';
 if ($backpack) {
+
+    $sitebackpack = badges_get_site_backpack($backpack->externalbackpackid);
+
+    if ($sitebackpack->id != $CFG->badges_site_backpack) {
+        $warning = $OUTPUT->notification(get_string('backpackneedsupdate', 'badges'), 'warning');
+    }
+
     // If backpack is connected, need to select collections.
-    $bp = new OpenBadgesBackpackHandler($backpack);
+    $bp = new \core_badges\backpack_api($sitebackpack, $backpack);
     $request = $bp->get_collections();
-    if (empty($request->groups)) {
-        $params['nogroups'] = get_string('error:nogroups', 'badges');
+    $groups = $request;
+    if (isset($request->groups)) {
+        $groups = $request->groups;
+    }
+    if (empty($groups)) {
+        $err = get_string('error:nogroupssummary', 'badges');
+        $err .= get_string('error:nogroupslink', 'badges', $sitebackpack->backpackweburl);
+        $params['nogroups'] = $err;
     } else {
-        $params['groups'] = $request->groups;
+        $params['groups'] = $groups;
     }
     $params['email'] = $backpack->email;
-    $params['selected'] = $DB->get_fieldset_select('badge_external', 'collectionid', 'backpackid = :bid', array('bid' => $backpack->id));
-    $params['backpackid'] = $backpack->id;
-    $form = new edit_collections_form(new moodle_url('/badges/mybackpack.php'), $params);
+    $params['selected'] = $bp->get_collection_record($backpack->id);
+    $params['backpackweburl'] = $sitebackpack->backpackweburl;
+    $form = new \core_badges\form\collections(new moodle_url('/badges/mybackpack.php'), $params);
 
     if ($form->is_cancelled()) {
         redirect(new moodle_url('/badges/mybadges.php'));
@@ -85,52 +97,52 @@ if ($backpack) {
         } else {
             $groups = array_filter($data->group);
         }
-
-        // Remove all unselected collections if there are any.
-        $sqlparams = array('backpack' => $backpack->id);
-        $select = 'backpackid = :backpack ';
-        if (!empty($groups)) {
-            list($grouptest, $groupparams) = $DB->get_in_or_equal($groups, SQL_PARAMS_NAMED, 'col', false);
-            $select .= ' AND collectionid ' . $grouptest;
-            $sqlparams = array_merge($sqlparams, $groupparams);
-        }
-        $DB->delete_records_select('badge_external', $select, $sqlparams);
-
-        // Insert selected collections if they are not in database yet.
-        foreach ($groups as $group) {
-            $obj = new stdClass();
-            $obj->backpackid = $data->backpackid;
-            $obj->collectionid = (int) $group;
-            if (!$DB->record_exists('badge_external', array('backpackid' => $obj->backpackid, 'collectionid' => $obj->collectionid))) {
-                $DB->insert_record('badge_external', $obj);
-            }
-        }
-        $badgescache->delete($USER->id);
+        $bp->set_backpack_collections($backpack->id, $groups);
         redirect(new moodle_url('/badges/mybadges.php'));
     }
 } else {
     // If backpack is not connected, need to connect first.
-    $form = new edit_backpack_form();
+    // To create a new connection to the backpack, first we need to verify the user's email address:
+    // 1. User enters email and clicks 'Connect to backpack'.
+    // 2. After cross-checking the email address against the backpack provider, an email is sent to the specified address,
+    // and the email and secret are stored in user preferences. These will be cleared upon successful verification.
+    // 3. User clicks verification link in the email to confirm the backpack connection.
+    // 4. User redirected to the mybackpack page.
+    // While the verification process is pending, the edit_backpack_form form will present the user with options to resend the
+    // verification email, and to cancel the current verification attempt and start over.
 
+    // To pass through the current state of the verification attempt to the form.
+    $params['email'] = get_user_preferences('badges_email_verify_address');
+    $params['backpackpassword'] = get_user_preferences('badges_email_verify_password');
+    $params['backpackid'] = get_user_preferences('badges_email_verify_backpackid');
+
+    $form = new \core_badges\form\backpack(new moodle_url('/badges/mybackpack.php'), $params);
     if ($form->is_cancelled()) {
         redirect(new moodle_url('/badges/mybadges.php'));
     } else if ($data = $form->get_data()) {
-        $bp = new OpenBadgesBackpackHandler($data);
+        // The form may have been submitted under one of the following circumstances:
+        // 1. After clicking 'Connect to backpack'. We'll have $data->email.
+        // 2. After clicking 'Resend verification email'. We'll have $data->email.
+        // 3. After clicking 'Connect using a different email' to cancel the verification process. We'll have $data->revertbutton.
 
-        $obj = new stdClass();
-        $obj->userid = $data->userid;
-        $obj->email = $data->email;
-        $obj->backpackurl = $data->backpackurl;
-        $obj->backpackuid = $bp->curl_request('user')->userId;
-        $obj->autosync = 0;
-        $obj->password = '';
-        $DB->insert_record('badge_backpack', $obj);
-
-        redirect(new moodle_url('/badges/mybackpack.php'));
+        if (isset($data->revertbutton)) {
+            badges_disconnect_user_backpack($USER->id);
+            redirect(new moodle_url('/badges/mybackpack.php'));
+        } else if (isset($data->email)) {
+            if (badges_send_verification_email($data->email, $data->backpackid, $data->backpackpassword)) {
+                $a = get_user_preferences('badges_email_verify_backpackid');
+                redirect(new moodle_url('/badges/mybackpack.php'),
+                    get_string('backpackemailverifypending', 'badges', $data->email),
+                    null, \core\output\notification::NOTIFY_INFO);
+            } else {
+                print_error ('backpackcannotsendverification', 'badges');
+            }
+        }
     }
 }
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($title);
+echo $warning;
 $form->display();
 echo $OUTPUT->footer();

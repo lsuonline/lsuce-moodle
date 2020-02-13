@@ -13,13 +13,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 /**
  * @package   local_cas_help_links
  * @copyright 2016, Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
+
 defined('MOODLE_INTERNAL') || die();
 
 if (is_siteadmin()) {
@@ -27,10 +27,10 @@ if (is_siteadmin()) {
     require_once(dirname(__FILE__) . '/../../config.php');
     require_once($CFG->libdir . '/adminlib.php');
 
-    // Create the new settings page
+    // Create the new settings page.
     $settings = new admin_settingpage('local_cas_help_links', 'CAS Help Links Settings');
 
-    // Create 
+    // Create.
     $ADMIN->add('localplugins', $settings);
 
     $settings->add(new admin_setting_configcheckbox(
@@ -40,7 +40,7 @@ if (is_siteadmin()) {
         0
     ));
 
-    // default_help_link
+    // Create the default link: default_help_link.
     $settings->add( new admin_setting_configtext(
         'local_cas_help_links/default_help_link',
         get_string('setting_default_help_link_title', 'local_cas_help_links'),

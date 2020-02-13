@@ -107,7 +107,7 @@ class mod_imscp_external extends external_api {
     /**
      * Describes the parameters for get_imscps_by_courses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function get_imscps_by_courses_parameters() {
@@ -163,8 +163,11 @@ class mod_imscp_external extends external_api {
 
                 if (has_capability('mod/imscp:view', $context)) {
                     // Format intro.
+                    $options = array('noclean' => true);
                     list($imscpdetails['intro'], $imscpdetails['introformat']) =
-                        external_format_text($imscp->intro, $imscp->introformat, $context->id, 'mod_imscp', 'intro', null);
+                        external_format_text($imscp->intro, $imscp->introformat, $context->id, 'mod_imscp', 'intro', null,
+                            $options);
+                    $imscpdetails['introfiles'] = external_util::get_area_files($context->id, 'mod_imscp', 'intro', false, false);
                 }
 
                 if (has_capability('moodle/course:manageactivities', $context)) {
@@ -204,6 +207,7 @@ class mod_imscp_external extends external_api {
                             'name' => new external_value(PARAM_RAW, 'Activity name'),
                             'intro' => new external_value(PARAM_RAW, 'The IMSCP intro', VALUE_OPTIONAL),
                             'introformat' => new external_format_value('intro', VALUE_OPTIONAL),
+                            'introfiles' => new external_files('Files in the introduction text', VALUE_OPTIONAL),
                             'revision' => new external_value(PARAM_INT, 'Revision', VALUE_OPTIONAL),
                             'keepold' => new external_value(PARAM_INT, 'Number of old IMSCP to keep', VALUE_OPTIONAL),
                             'structure' => new external_value(PARAM_RAW, 'IMSCP structure', VALUE_OPTIONAL),

@@ -15,7 +15,7 @@
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -29,6 +29,12 @@ define(['jquery'], function($) {
     return {
         /**
          * On function evaluating true.
+         *
+         * @param {function} func
+         * @param {function} callBack
+         * @param {boolean} forceCallBack
+         * @param {number} maxIterations
+         * @param {number} i
          */
         whenTrue: function(func, callBack, forceCallBack, maxIterations, i) {
             maxIterations = !maxIterations ? 10 : maxIterations;
@@ -52,7 +58,7 @@ define(['jquery'], function($) {
 
         /**
          * Scroll a specific dom element into the viewport.
-         * @param el
+         * @param {Object} el
          */
         scrollToElement: function(el) {
             var navheight = $('#mr-nav').outerHeight();

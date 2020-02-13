@@ -14,16 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'setting_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('setting_form.php');
+require_once('classes/ues_handler.php');
 
 require_login();
 
@@ -40,58 +41,58 @@ if ($user->id != $USER->id and !is_siteadmin($USER->id)) {
     print_error('not_teacher', 'block_cps');
 }
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_setting::name();
 
 $context = context_system::instance();
 
-$base_url = new moodle_url('/blocks/cps/setting.php');
+$baseurl = new moodle_url('/blocks/cps/setting.php');
 
 $PAGE->set_context($context);
 $PAGE->set_heading($blockname . ': ' . $heading);
 $PAGE->set_title($heading);
 $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($heading);
-$PAGE->set_url($base_url);
+$PAGE->set_url($baseurl);
 
 $renderer = $PAGE->get_renderer('block_cps');
 
-// Admin came here the first time
+// Admin came here the first time.
 if ($reset == 1 || (is_siteadmin($USER->id) and $USER->id === $id)) {
     $form = new setting_search_form();
 } else {
     $form = new setting_form(null, array('user' => $user));
 }
 
-$setting_params = ues::where('userid')->equal($id)->name->starts_with('user_');
+$settingparams = ues::where('userid')->equal($id)->name->starts_with('user_');
 
 
-function processnamechange($user){
+function processnamechange($user) {
     $isteacher  = cps_setting::is_valid(ues_user::sections(true));
     $altexists  = strlen($user->alternatename) > 0;
 
-    if((!$isteacher && !$altexists) || is_siteadmin()){
+    if ((!$isteacher && !$altexists) || is_siteadmin()) {
         $user->alternatename = $user->firstname;
         $warning = get_string('notice', 'block_cps');
-    } else if($isteacher && !$altexists) {
+    } else if ($isteacher && !$altexists) {
         $user->alternatename = $user->firstname;
     }
     return $user;
 }
 
-if($reset == 1){
+if ($reset == 1) {
     $setting = cps_setting::get(array(
         'userid' => $user->id,
         'name' => 'user_firstname'
     ));
 
-    if($setting){
+    if ($setting) {
         cps_setting::delete($setting->id);
     }
 
-    if(isset($user->alternatename)){
+    if (isset($user->alternatename)) {
         global $DB;
         $user->firstname = $user->alternatename;
         $user->alternatename = null;
@@ -101,7 +102,7 @@ if($reset == 1){
     $data = new stdClass();
     $data->search = true;
     $data->username = $user->username;
-}else{
+} else {
     $data = $form->get_data();
 }
 
@@ -120,13 +121,13 @@ if ($form->is_cancelled()) {
         }
 
         if ($filters->is_empty()) {
-            $note = $OUTPUT->notification($_s('no_filters'));
+            $note = $OUTPUT->notification($s('no_filters'));
         } else {
             $users = ues_user::get_all($filters);
             if (empty($users)) {
-                $result = $OUTPUT->notification($_s('no_results'));
+                $result = $OUTPUT->notification($s('no_results'));
             } else {
-                $table  = $renderer->users_search_result_table($users, $base_url);
+                $table  = $renderer->users_search_result_table($users, $baseurl);
 
                 $result = html_writer::tag(
                     'div', html_writer::table($table),
@@ -137,15 +138,15 @@ if ($form->is_cancelled()) {
     }
 
     if (isset($data->save)) {
-        $current_settings = cps_setting::get_to_name($setting_params);
+        $currentsettings = cps_setting::get_to_name($settingparams);
 
         foreach (get_object_vars($data) as $name => $value) {
             if (empty($value) or !preg_match('/^user_/', $name)) {
                 continue;
             }
 
-            if (isset($current_settings[$name])) {
-                $setting = $current_settings[$name];
+            if (isset($currentsettings[$name])) {
+                $setting = $currentsettings[$name];
             } else {
                 $setting = new cps_setting();
                 $setting->userid = $user->id;
@@ -154,29 +155,33 @@ if ($form->is_cancelled()) {
 
             // In order to allow students to change their names, per SG resolution c.2014, while
             // still retaining the legal name for roster and post-grades purposes, move firstname to alt.name.
-            if($setting->name == 'user_firstname'){
+            if ($setting->name == 'user_firstname') {
                 $user = processnamechange($user);
             }
             $setting->value = $value;
             $setting->save();
 
-            unset($current_settings[$name]);
+            unset($currentsettings[$name]);
         }
 
-        foreach ($current_settings as $setting) {
+        foreach ($currentsettings as $setting) {
             cps_setting::delete($setting->id);
         }
-        events_trigger_legacy('user_updated', $user);
+
+        // Todo: Refactor to actually use Event 2 rather than simply calling the handler directly.
+        blocks_cps_ues_handler::user_updated($user);
 
         $note = $OUTPUT->notification(get_string('settings_changessaved', 'block_cps'), 'notifysuccess');
-        $base_url->param('id', $user->id);
-        redirect($base_url);
+        $baseurl->param('id', $user->id);
+        redirect($baseurl);
     }
 }
 
-$settings = cps_setting::get_to_name($setting_params);
-$to_value = function($setting) { return $setting->value; };
-$form->set_data(array_map($to_value, $settings));
+$settings = cps_setting::get_to_name($settingparams);
+$tovalue = function($setting) {
+    return $setting->value;
+};
+$form->set_data(array_map($tovalue, $settings));
 $warning = get_string('notice', 'block_cps');
 
 echo $OUTPUT->header();

@@ -15,7 +15,7 @@
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package   theme_snap
- * @author    Guy Thomas <gthomas@moodlerooms.com>
+ * @author    Guy Thomas <osdev@blackboard.com>
  * @copyright Copyright (c) 2016 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,6 +26,14 @@ define(['jquery', 'core/templates'],
 
             // Container.
             var containerEl;
+
+            /**
+             * Detach the container for footer alert, so it will not appear at the first load of the page,
+             * this to fix AX problems with unnecessary empty tags.
+             */
+            $(document).ready(function() {
+                containerEl.detach();
+            });
 
             /**
              * Initialising function.
@@ -65,6 +73,7 @@ define(['jquery', 'core/templates'],
 
             /**
              * Add AJAX loading spinner.
+             * @param {string} str
              */
             this.addAjaxLoading = function(str) {
                 str = !str ? M.util.get_string('loading', 'theme_snap') : str;
@@ -84,10 +93,13 @@ define(['jquery', 'core/templates'],
 
             /**
              * Show footer alert.
+             * @param {function} onCancel
              */
             this.show = function(onCancel) {
+                // Re-attach Snap footer alert, so it appears when moving an activity or a section.
+                containerEl.prependTo('section#region-main');
                 containerEl.addClass('snap-footer-alert-visible');
-                if (typeof(onCancel) === 'function') {
+                if (typeof (onCancel) === 'function') {
                     $('.snap-footer-alert-cancel').click(onCancel);
                     $('.snap-footer-alert-cancel').addClass('state-visible');
                 } else {
@@ -101,6 +113,8 @@ define(['jquery', 'core/templates'],
             this.hide = function() {
                 containerEl.removeClass('snap-footer-alert-visible');
                 $('.snap-footer-alert-cancel').removeClass('state-visible');
+                // Detach Snap footer alert after cancel button (When hiding the alert).
+                containerEl.detach();
             };
 
             /**

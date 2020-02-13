@@ -17,8 +17,7 @@ Feature: A teacher can set available from and deadline dates to access a lesson
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
 
   Scenario: Forbidding lesson accesses until a specified date
     Given I add a "Lesson" to section "1"
@@ -29,7 +28,7 @@ Feature: A teacher can set available from and deadline dates to access a lesson
       | Description | Test lesson description |
       | available[day] | 1 |
       | available[month] | January |
-      | available[year] | 2020 |
+      | available[year] | 2030 |
       | available[hour] | 08 |
       | available[minute] | 00 |
     And I press "Save and display"
@@ -42,9 +41,9 @@ Feature: A teacher can set available from and deadline dates to access a lesson
     And I press "Save page"
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     When I follow "Test lesson"
-    Then I should see "This lesson will be open on Wednesday, 1 January 2020, 8:00"
+    Then I should see "This lesson will be open on Tuesday, 1 January 2030, 8:00"
     And I should not see "First page contents"
 
   Scenario: Forbidding lesson accesses until a specified date
@@ -68,7 +67,7 @@ Feature: A teacher can set available from and deadline dates to access a lesson
     And I press "Save page"
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     When I follow "Test lesson"
     Then I should see "This lesson closed on Saturday, 1 January 2000, 8:00"
     And I should not see "First page contents"

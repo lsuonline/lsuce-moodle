@@ -17,11 +17,16 @@
 /**
  * Language strings
  *
- * @package    local
- * @subpackage adminer
- * @copyright  2011 Andreas Grabs
+ * @package    local_adminer
+ * @author Andreas Grabs <moodle@grabs-edv.de>
+ * @copyright  Andreas Grabs
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 
+$string['adminer:useadminer'] = 'Use Adminer';
+$string['config_startwithdb'] = 'Start adminer with current database';
+$string['launchadminer'] = 'Launch Adminer';
+$string['pagenotusedinmoodle'] = 'This page can not be used in Moodle';
 $string['pluginname'] = 'Moodle Adminer';
+$string['privacy:metadata'] = 'The Adminer plugin does not store any personal data.';

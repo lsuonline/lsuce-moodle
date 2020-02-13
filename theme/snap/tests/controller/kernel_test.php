@@ -18,7 +18,7 @@
  * Kernel Tests
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class kernel_test extends \basic_testcase {
@@ -50,22 +50,18 @@ class kernel_test extends \basic_testcase {
     }
 
     public function test_resolve_controller_callback() {
-        $controller = $this->getMock('\theme_snap\controller\controller_abstract', array(
+        $controller = $this->createPartialMock('\theme_snap\controller\controller_abstract', array(
             'init',
             'test_action',
             'require_capability',
         ));
 
-        $router = $this->getMock('\theme_snap\controller\router', array('route_action'));
-        $router->expects($this->once())
-            ->method('route_action')
-            ->will($this->returnValue(array($controller, 'test_action')));
+        $router = $this->createPartialMock('\theme_snap\controller\router', array('route_action'));
+        $router->expects($this->once())->method('route_action')->will($this->returnValue([$controller, 'test_action']));
 
         $kernel = new kernel($router);
 
-        $controller->expects($this->once())
-            ->method('init')
-            ->with('test');
+        $controller->expects($this->once())->method('init')->with('test');
 
         list($routedcontroller, $method) = $kernel->resolve_controller_callback('test');
 

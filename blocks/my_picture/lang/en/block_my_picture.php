@@ -1,15 +1,29 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Author: Adam Zapletal
+// Author: Adam Zapletal.
 
 $string['my_picture:addinstance'] = 'Add a new my picture block';
 $string['my_picture:myaddinstance'] = 'Add a new my picture block';
 
-// Strings for block content
+// Strings for block content.
 $string['pluginname'] = 'My Profile Picture';
 $string['reprocess'] = 'Reprocess';
 
-// Strings for cron
+// Strings for cron.
 $string['start'] = 'Starting profile picture updates...';
 $string['fetched'] = 'Fetching {$a} users...';
 $string['completed'] = 'Completed {$a}...';
@@ -24,14 +38,14 @@ $string['misconfigured_subject'] = "MyProfilePicture ERROR";
 $string["cron_webservice_err"]   = "\n!! Webservice communication error.\nIt is possible that the URLs are misconfigured in the Admin settings area.";
 $string["grab_mypictures"]   = "Grab my_picture images";
 
-// Strings for reprocess.php
+// Strings for reprocess.php.
 $string['reprocess_title'] = 'Reprocess My Picture';
 $string['badid_user'] = 'You do not have a valid LSU ID Number. <br />This number will be populated when you are actively enrolled in Moodle courses. The system will automatically load your latest photo on file with the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> Office.';
 $string['nopic_user'] = 'We were unable to find your photo within the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> system. <br />Please visit <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> online or at 109 LSU Student Union on the LSU campus.';
 $string['error_user'] = 'An error has occurred';
 $string['success_user'] = 'The photo above was fetched from the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> Office. <br />Please clear your browser\'s cache, log out, log back in, and refresh the dashboard if your image isn\'t updated to match the photo above.';
 
-// Strings for fetch_missing.php and reprocess_all.php
+// Strings for fetch_missing.php and reprocess_all.php.
 $string['reprocess_all_title'] = 'Reprocess All Profile Pictures';
 $string['fetch_missing_title'] = 'Fetch Missing Profile Pictures';
 $string['fetching_start'] = 'Fetching missing pictures...';
@@ -42,7 +56,7 @@ $string['nopic_admin'] = 'Not found';
 $string['success'] = 'Success';
 $string['no_missing_pictures'] = 'There were no missing profile pictures in the system';
 
-// Strings for settings.php
+// Strings for settings.php.
 $string['fetch'] = 'Fectch missing on cron';
 $string['fetch_desc'] = 'At every cron interval, _My Profile Picture_ will fetch missing photos.';
 $string['cron_users'] = 'Cron Users';
@@ -54,7 +68,7 @@ $string['url'] = 'URL';
 $string['reprocess_all'] = 'Reprocess all profile pictures';
 $string['fetch_missing'] = 'Fetch all missing profile pictures';
 
-// Reprocess Help
+// Reprocess Help.
 $string['pluginname_help'] = '
 Reprocess Your Profile Picture
 

@@ -32,7 +32,6 @@ use moodle_url;
 use pix_icon;
 use html_writer;
 use gradereport_singleview;
-use grade_anonymous;
 
 defined('MOODLE_INTERNAL') || die;
 
@@ -163,8 +162,6 @@ class grade extends tablelike implements selectable_items, filterable_items {
      * @return array
      */
     public function original_headers() {
-        global $COURSE;
-        if (!grade_anonymous::is_supported($COURSE)) {
         return array(
             '', // For filter icon.
             get_string('firstname') . ' (' . get_string('alternatename') . ') ' . get_string('lastname'),
@@ -174,16 +171,6 @@ class grade extends tablelike implements selectable_items, filterable_items {
             $this->make_toggle_links('override'),
             $this->make_toggle_links('exclude')
         );
-        } else {
-        return array(
-            get_string('firstname') . ' (' . get_string('alternatename') . ') ' . get_string('lastname'),
-            get_string('range', 'grades'),
-            get_string('grade', 'grades'),
-            get_string('feedback', 'grades'),
-            $this->make_toggle_links('override'),
-            $this->make_toggle_links('exclude')
-        );
-        }
     }
 
     /**
@@ -193,7 +180,7 @@ class grade extends tablelike implements selectable_items, filterable_items {
      * @return string
      */
     public function format_line($item) {
-        global $OUTPUT, $COURSE;
+        global $OUTPUT;
 
         $grade = $this->fetch_grade_or_default($this->item, $item->id);
 
@@ -222,21 +209,12 @@ class grade extends tablelike implements selectable_items, filterable_items {
         $iconstring = get_string('filtergrades', 'gradereport_singleview', $fullname);
         $grade->label = $fullname;
 
-        if (!grade_anonymous::is_supported($COURSE)) {
         $line = array(
             $OUTPUT->action_icon($this->format_link('user', $item->id), new pix_icon('t/editstring', $iconstring)),
             $OUTPUT->user_picture($item, array('visibletoscreenreaders' => false)) .
             html_writer::link($url, $fullname),
             $this->item_range()
         );
-        } else {
-        $line = array(
-            $OUTPUT->user_picture($item, array('visibletoscreenreaders' => false)) .
-            html_writer::link($url, $fullname),
-            $this->item_range()
-        );
-        }
-
         $lineclasses = array(
             "action",
             "user",

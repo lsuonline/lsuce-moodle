@@ -18,14 +18,17 @@
  * Theme plugin version definition.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright 2019 Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2016121310;
-$plugin->requires  = 2016052300;
-$plugin->release   = '3.1.3';
+$plugin->version   = 2019102900;
+$plugin->requires  = 2018120300;
+$plugin->release   = '3.6.3';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->component = 'theme_snap';
+$plugin->dependencies = [
+    'theme_boost' => '2018051400'
+];

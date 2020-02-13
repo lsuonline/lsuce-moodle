@@ -17,7 +17,7 @@ Feature: Configure tool types
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
     And I log in as "admin"
-    And I navigate to "Manage tools" node in "Site administration > Plugins > Activity modules > External tool"
+    And I navigate to "Plugins > Activity modules > External tool > Manage tools" in site administration
 
   @javascript
   Scenario: Add a tool type from a cartridge URL
@@ -37,7 +37,7 @@ Feature: Configure tool types
 
   @javascript
   Scenario: Attempt to add a tool type from a configuration URL, then cancel
-    When I set the field "url" to local url "/mod/lti/tests/fixtures/tool_provider.html"
+    When I set the field "url" to local url "/mod/lti/tests/fixtures/tool_provider.php"
     And I press "Add"
     Then I should see "Cancel"
     And I press "cancel-external-registration"

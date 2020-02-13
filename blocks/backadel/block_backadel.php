@@ -1,81 +1,137 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Definition of block_backadel tasks.
+ *
+ * @package    block_backadel
+ * @category   block
+ * @copyright  2016 Louisiana State University - David Elliott, Robert Russo, Chad Mazilly
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+// Get the requisite dependencies.
 require_once($CFG->dirroot . '/blocks/backadel/lib.php');
 require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
 
-
+/**
+ * Main class for setting up the block.
+ * @uses block_list
+ * @package block_backadel
+ */
 class block_backadel extends block_list {
 
-    function init() {
+    /**
+     * Init.
+     */
+    public function init() {
         $this->title = get_string('pluginname', 'block_backadel');
     }
 
-    function applicable_formats() {
+    /**
+     * Locations where block can be displayed.
+     *
+     * @return array
+     */
+    public function applicable_formats() {
         return array('site' => true, 'my' => false, 'course' => false);
     }
-    
-    function has_config(){
+
+    /**
+     * Block has configuration.
+     *
+     * @return true
+     */
+    public function has_config() {
         return true;
     }
 
-    function get_content() {
+    /**
+     * Returns the contents.
+     *
+     * @return stdClass contents of block
+     */
+    public function get_content() {
+        // Set up the globals we need.
         global $DB, $CFG, $USER, $OUTPUT;
 
-        $_s = function($key, $a=NULL) {
-            return get_string($key, 'block_backadel', $a);
-        };
-
+        // Check to make sure the Admin is using the block.
         if (!is_siteadmin($USER->id)) {
             return $this->content;
         }
 
-        if ($this->content !== NULL) {
+        // Return the content if there is any.
+        if ($this->content !== null) {
             return $this->content;
         }
 
+        // Set up the table.
         $table = 'block_backadel_statuses';
 
-        $num_pending = $DB->count_records_select($table, "status='SUCCESS'");
-        $num_failed = $DB->count_records_select($table, "status='FAIL'");
+        // Get the number of pending and failed backups.
+        $numpending = $DB->count_records_select($table, "status='SUCCESS'");
+        $numfailed = $DB->count_records_select($table, "status='FAIL'");
 
+        // Set the $running varuable to the backup status.
         $running = get_config('block_backadel', 'running');
 
+        // Give the admin the running / not status.
         if (!$running) {
-            $status_text = $_s('status_not_running');
+            $statustext = get_string('status_not_running', 'block_backadel');
         } else {
-            $minutes_run = round((time() - $running) / 60);
-            $status_text = $_s('status_running', $minutes_run);
+            $minutesrun = round((time() - $running) / 60);
+            $statustext = get_string('status_running', 'block_backadel', $minutesrun);
         }
 
+        // Build the block itself.
         $icons = array();
         $items = array();
-
         $params = array('class' => 'icon');
 
+        // Build the icon list.
         $icons[] = $OUTPUT->pix_icon('i/backup', '', 'moodle', $params);
-        $icons[] = $OUTPUT->pix_icon('i/cross_red_big', '', 'moodle', $params);
+        $icons[] = $OUTPUT->pix_icon('i/delete', '', 'moodle', $params);
         $icons[] = $OUTPUT->pix_icon('i/risk_xss', '', 'moodle', $params);
-        $icons[] = $OUTPUT->pix_icon('i/admin', '', 'moodle', $params);
+        $icons[] = $OUTPUT->pix_icon('i/calendareventtime', '', 'moodle', $params);
 
+        // Build the list of items.
         $items[] = $this->build_link('index');
-        $items[] = $this->build_link('delete') . "($num_pending)";
-        $items[] = $this->build_link('failed') . "($num_failed)";
-        $items[] = $status_text;
+        $items[] = $this->build_link('delete') . "($numpending)";
+        $items[] = $this->build_link('failed') . "($numfailed)";
+        $items[] = $statustext;
 
+        // Bring it all together.
         $this->content = new stdClass;
-
         $this->content->icons = $icons;
         $this->content->items = $items;
         $this->content->footer = '';
 
+        // Return the block.
         return $this->content;
     }
 
-    function build_link($page) {
-        $_s = function($key) { return get_string($key, 'block_backadel'); };
-
+    /**
+     * Set up the page link
+     *
+     * @return link
+     */
+    public function build_link($page) {
         $url = new moodle_url("/blocks/backadel/$page.php");
-
-        return html_writer::link($url, $_s("block_$page"));
+        return html_writer::link($url, get_string("block_$page", 'block_backadel'));
     }
 }

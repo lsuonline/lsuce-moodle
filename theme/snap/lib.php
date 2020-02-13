@@ -18,10 +18,11 @@
  * Standard library functions for snap theme.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Process site cover image.
@@ -45,6 +46,8 @@ function theme_snap_process_site_coverimage() {
  */
 function theme_snap_process_css($css, theme_config $theme) {
 
+    $css = theme_snap_set_category_colors($css, $theme);
+
     // Set the background image for the logo.
     $logo = $theme->setting_file_url('logo', 'logo');
     $css = theme_snap_set_logo($css, $logo);
@@ -57,9 +60,68 @@ function theme_snap_process_css($css, theme_config $theme) {
     }
     $css = theme_snap_set_customcss($css, $customcss);
 
-    // Set bootswatch.
-    $css = theme_snap_set_bootswatch($css, theme_snap_get_bootswatch_variables($theme));
+    return $css;
+}
 
+/**
+ * Adds the custom category colors to the CSS.
+ *
+ * @param string $css The CSS.
+ * @return string The updated CSS
+ */
+function theme_snap_set_category_colors($css, $theme) {
+    global $DB;
+
+    $tag = '/**setting:categorycolors**/';
+    $replacement = '';
+
+    // Get category colors from database.
+    $categorycolors = array();
+    $dbcategorycolors = get_config("theme_snap", "category_color");
+    if (!empty($dbcategorycolors) && $dbcategorycolors != '0') {
+        $categorycolors = json_decode($dbcategorycolors, true);
+    }
+
+    if (!empty($categorycolors)) {
+        $colors = $categorycolors;
+
+        list($insql, $inparams) = $DB->get_in_or_equal(array_keys($colors));
+        $categories = $DB->get_records_select(
+            'course_categories',
+            'id ' . $insql,
+            $inparams,
+            // Ordered by path ascending so that the colors of child categories overrides,
+            // parent categories by coming later in the CSS output.
+            'path ASC'
+        );
+
+        $themedirectory = realpath(core_component::get_component_directory('theme_snap'));
+        $brandscss = file_get_contents($themedirectory . '/scss/_brandcolor.scss');
+        foreach ($categories as $category) {
+            $compiler = new core_scss();
+            // Rewrite wrapper class with current category id.
+            $categoryselector = '.category-' . $category->id . ' {';
+            $scss = str_replace('.theme-snap {', $categoryselector, $brandscss);
+            $compiler->append_raw_scss($scss);
+            $compiler->add_variables([
+                'brand-primary' => $colors[$category->id],
+                'nav-color' => $colors[$category->id],
+                'nav-button-color' => $colors[$category->id],
+                'nav-login-bg' => $colors[$category->id],
+                'nav-login-color' => '#FFFFFF'
+            ]);
+
+            try {
+                $compiled = $compiler->to_css();
+            } catch (\Leafo\ScssPhp\Exception $e) {
+                $compiled = '';
+                debugging('Error while compiling SCSS: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+            $replacement = $replacement . $compiled;
+        }
+    }
+
+    $css = str_replace($tag, $replacement, $css);
     return $css;
 }
 
@@ -75,7 +137,7 @@ function theme_snap_set_logo($css, $logo) {
     if (is_null($logo)) {
         $replacement = '';
     } else {
-        $replacement = "#snap-home.logo {background-image: url($logo);} #page-login-index .loginpanel h2{background-image: url($logo);}";
+        $replacement = "#snap-home.logo, .snap-logo-sitename {background-image: url($logo);}";
     }
     $css = str_replace($tag, $replacement, $css);
     return $css;
@@ -96,68 +158,6 @@ function theme_snap_set_customcss($css, $customcss) {
     }
     $css = str_replace($tag, $replacement, $css);
     return $css;
-}
-
-/**
- * Extract bootswatch variables from theme configuration.
- *
- * @param theme_config $theme
- * @return array
- */
-function theme_snap_get_bootswatch_variables(theme_config $theme) {
-    $settings['brand-primary'] = !empty($theme->settings->themecolor) ? $theme->settings->themecolor : '#3bcedb';
-    $userfontsans  = $theme->settings->headingfont;
-    if (empty($userfontsans) || in_array($userfontsans, ['Roboto', '"Roboto"'])) {
-        $userfontsans = '';
-    } else {
-        $userfontsans .= ",";
-    }
-    $fallbacksans = 'Roboto,"Fira Sans","Segoe UI","HelveticaNeue-Light",'
-        . '"Helvetica Neue Light","Helvetica Neue",Helvetica, Arial, sans-serif';
-    $settings['font-family-sans-serif'] = $userfontsans . $fallbacksans;
-
-    $userfontserif = $theme->settings->seriffont;
-    if (empty($userfontserif) || in_array($userfontserif, ['Georgia', '"Georgia"'])) {
-        $userfontserif = '';
-    } else {
-        $userfontserif .= ",";
-    }
-    $fallbackserif = 'Georgia,"Times New Roman", Times, serif';
-    $settings['font-family-serif'] = $userfontserif . $fallbackserif;
-
-    return $settings;
-}
-
-/**
- * Add bootswatch CSS
- *
- * @param string $css The original CSS.
- * @param array $variables The bootswatch variables
- * @return string
- * @see theme_snap_get_bootswatch_variables
- */
-function theme_snap_set_bootswatch($css, array $variables) {
-    global $CFG;
-
-    $tag = '/**setting:snap-user-bootswatch**/';
-    if (strpos($css, $tag) === false) {
-        return $css; // Avoid doing work when tag is not present.
-    }
-    require_once(__DIR__.'/lessphp/Less.php');
-
-    try {
-        $parser = new Less_Parser();
-        $parser->parseFile(__DIR__.'/less/bootswatch/snap-variables.less', $CFG->wwwroot.'/');
-        $parser->parseFile(__DIR__.'/less/bootswatch/snap-user-bootswatch.less', $CFG->wwwroot.'/');
-        if (!empty($variables)) {
-            $parser->ModifyVars($variables);
-        }
-        $replacement = $parser->getCss();
-    } catch (Exception $e) {
-        add_to_log(get_site()->id, 'library', 'bootswatch', '', 'Failed to complile bootswatch: '.$e->getMessage());
-        $replacement = '';  // Nothing we can do but remove the tag.
-    }
-    return str_replace($tag, $replacement, $css);
 }
 
 /**
@@ -207,10 +207,24 @@ function theme_snap_send_file($context, $filearea, $args, $forcedownload, $optio
  */
 function theme_snap_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
 
-    if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, ['logo', 'favicon', 'fs_one_image', 'fs_two_image', 'fs_three_image'])) {
+    $coverimagecontexts = [CONTEXT_SYSTEM, CONTEXT_COURSE, CONTEXT_COURSECAT];
+
+    // System level file areas.
+    $sysfileareas = [
+        'logo',
+        'favicon',
+        'fs_one_image',
+        'fs_two_image',
+        'fs_three_image',
+        'slide_one_image',
+        'slide_two_image',
+        'slide_three_image'
+    ];
+
+    if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, $sysfileareas)) {
         $theme = theme_config::load('snap');
         return $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
-    } else if (($context->contextlevel == CONTEXT_SYSTEM || $context->contextlevel == CONTEXT_COURSE)
+    } else if (in_array($context->contextlevel, $coverimagecontexts)
         && $filearea == 'coverimage' || $filearea == 'coursecard') {
         theme_snap_send_file($context, $filearea, $args, $forcedownload, $options);
     } else {
@@ -235,4 +249,127 @@ function theme_snap_myprofile_navigation(core_user\output\myprofile\tree $tree, 
             $tree->add_node($prefnode);
         }
     }
+}
+
+function theme_snap_get_main_scss_content($theme) {
+    global $CFG;
+
+    // Note, the following code is not fully used yet, only the hardcoded
+    // pre and post scss files will be loaded, not any presets defined by
+    // settings.
+
+    $scss = '';
+    $filename = !empty($theme->settings->preset) ? $theme->settings->preset : null;
+    $fs = get_file_storage();
+
+    $context = context_system::instance();
+    if ($filename == 'default.scss') {
+        // We still load the default preset files directly from the boost theme. No sense in duplicating them.
+        $scss .= file_get_contents($CFG->dirroot . '/theme/boost/scss/preset/default.scss');
+    } else if ($filename == 'plain.scss') {
+        // We still load the default preset files directly from the boost theme. No sense in duplicating them.
+        $scss .= file_get_contents($CFG->dirroot . '/theme/boost/scss/preset/plain.scss');
+
+    } else if ($filename && ($presetfile = $fs->get_file($context->id, 'theme_snap', 'preset', 0, '/', $filename))) {
+        // This preset file was fetched from the file area for theme_snap and not theme_boost (see the line above).
+        $scss .= $presetfile->get_content();
+    } else {
+        $scss = '@import "boost";';
+    }
+
+    // Pre CSS - this is loaded AFTER any prescss from the setting but before the main scss.
+    $pre = file_get_contents($CFG->dirroot . '/theme/snap/scss/pre.scss');
+    // Post CSS - this is loaded AFTER the main scss but before the extra scss from the setting.
+    $post = file_get_contents($CFG->dirroot . '/theme/snap/scss/post.scss');
+
+    // Combine them together.
+    return $pre . "\n" . $scss . "\n" . $post;
+}
+
+/**
+ * Get SCSS to prepend.
+ *
+ * @param theme_config $theme The theme config object.
+ * @return array
+ */
+function theme_snap_get_pre_scss($theme) {
+    global $CFG;
+
+    $scss = '';
+
+    $settings['brand-primary'] = !empty($theme->settings->themecolor) ? $theme->settings->themecolor : '#3bcedb';
+    $userfontsans  = $theme->settings->headingfont;
+    if (empty($userfontsans) || in_array($userfontsans, ['Roboto', '"Roboto"'])) {
+        $userfontsans = '';
+    } else {
+        $userfontsans .= ",";
+    }
+    $fallbacksans = 'Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+    $settings['font-family-feature'] = $userfontsans . $fallbacksans;
+
+    $userfontserif = $theme->settings->seriffont;
+    if (empty($userfontserif) || in_array($userfontserif, ['Georgia', '"Georgia"'])) {
+        $userfontserif = '';
+    } else {
+        $userfontserif .= ",";
+    }
+    $fallbackserif = 'Georgia,"Times New Roman", Times, serif';
+    $settings['font-family-serif'] = $userfontserif . $fallbackserif;
+
+    if (!empty($theme->settings->customisenavbar)) {
+        $settings['nav-bg'] = !empty($theme->settings->navbarbg) ? $theme->settings->navbarbg : '#ffffff';
+        $settings['nav-color'] = !empty($theme->settings->navbarlink) ? $theme->settings->navbarlink : $settings['brand-primary'];
+    }
+    if (!empty($theme->settings->customisenavbutton)) {
+        $settings['nav-button-bg'] = !empty($theme->settings->navbarbuttoncolor) ? $theme->settings->navbarbuttoncolor : "#ffffff";
+
+        if (!empty($theme->settings->navbarbuttonlink)) {
+            $settings['nav-button-color'] = $theme->settings->navbarbuttonlink;
+        } else {
+            $settings['nav-button-color'] = $settings['brand-primary'];
+        }
+    }
+
+    foreach ($settings as $key => $value) {
+        $scss .= '$' . $key . ': ' . $value . ";\n";
+    }
+
+    return $scss;
+}
+
+/**
+ * Fragment API function to render couse sections.
+ * @param $args
+ * @return string
+ */
+function theme_snap_output_fragment_section($args) {
+    global $PAGE;
+    if (!empty($args['courseid']) && $args['section'] != '') {
+        $course = get_course($args['courseid']);
+        $PAGE->set_context(\context_course::instance($course->id));
+        $format = course_get_format($args['courseid']);
+        $formatname = $format->get_format();
+        if ($formatname == 'weeks' || $formatname == 'topics') {
+            $course = $format->get_course();
+            $formatrenderer = $format->get_renderer($PAGE);
+            $modinfo = get_fast_modinfo($course);
+            $section = $modinfo->get_section_info($args['section']);
+            $html = $formatrenderer->course_section($course, $section, $modinfo);
+            return $html;
+        }
+    }
+    return '';
+}
+
+function theme_snap_course_module_background_deletion_recommended() {
+    // Check if recyclebin is installed.
+    $toolplugins = core_plugin_manager::instance()->get_installed_plugins("tool");
+    foreach ($toolplugins as $name => $version) {
+        if ($name == 'recyclebin') {
+            if (\tool_recyclebin\course_bin::is_enabled()) {
+                return true;
+            }
+        }
+    }
+    return false;
 }

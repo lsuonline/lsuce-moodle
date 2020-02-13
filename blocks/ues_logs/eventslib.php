@@ -14,19 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_logs
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/blocks/ues_logs/classes/lib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/blocks/ues_logs/classes/lib.php');
 
 abstract class ues_logs_event_handler {
-    public static function ues_student_process($ues_student) {
+    public static function ues_student_process($uesstudent) {
         try {
-            $log = ues_log::add($ues_student);
+            $log = ues_log::add($uesstudent);
 
             $log->save();
 
@@ -36,19 +38,19 @@ abstract class ues_logs_event_handler {
         }
     }
 
-    public static function ues_student_release($ues_student) {
+    public static function ues_student_release($uesstudent) {
         try {
-            $log = ues_log::drop($ues_student);
+            $log = ues_log::drop($uesstudent);
 
             $log->save();
 
-            return $ues_student;
+            return true;
         } catch (Exception $e) {
-            return $ues_student;
+            return false;
         }
     }
 
-    public static function ues_section_drop($ues_section) {
-        return ues_log::delete_all(array('sectionid' => $ues_section->id));
+    public static function ues_section_drop($uessection) {
+        return ues_log::delete_all(array('sectionid' => $uessection->id));
     }
 }

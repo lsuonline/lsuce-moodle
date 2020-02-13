@@ -16,31 +16,11 @@
 
 require_once('../../../config.php');
 require_login();
-require_capability('moodle/site:config', context_system::instance());
+require_capability('local/adminer:useadminer', context_system::instance());
 
 function adminer_object() {
     // required to run any plugin
     require_once("plugins/plugin.php");
-
-    class Adminer_Custom extends AdminerPlugin {
-
-        public function credentials() {
-            global $CFG;
-
-            if(!empty($CFG->dboptions['dbport'])) {
-                return array($CFG->dbhost.':'.$CFG->dboptions['dbport'],
-                             $CFG->dbuser,
-                             $CFG->dbpass);
-            } else {
-                return array($CFG->dbhost, $CFG->dbuser, $CFG->dbpass);
-            }
-        }
-
-        public function loginForm() {
-            echo '';
-        }
-
-    }
 
     // autoloader
     foreach (glob("plugins/*.php") as $filename) {
@@ -49,10 +29,12 @@ function adminer_object() {
 
     $plugins = array(
         // specify enabled plugins here
-        new AdminerFrames(true)
+        new AdminerFrames(true),
+        new AdminerMdlLogin(),
+        new AdminerMdlDesigns(),
     );
 
-    return new Adminer_Custom($plugins);
+    return new AdminerPlugin($plugins);
 }
 // include original Adminer or Adminer Editor
 require_once("adminer.php");

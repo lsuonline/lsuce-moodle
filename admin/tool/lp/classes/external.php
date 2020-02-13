@@ -42,12 +42,12 @@ use external_multiple_structure;
 use invalid_parameter_exception;
 use required_capability_exception;
 
-use tool_lp\external\cohort_summary_exporter;
+use core_cohort\external\cohort_summary_exporter;
 use tool_lp\external\competency_path_exporter;
 use tool_lp\external\competency_summary_exporter;
 use tool_lp\external\course_competency_statistics_exporter;
-use tool_lp\external\course_module_summary_exporter;
-use tool_lp\external\course_summary_exporter;
+use core_course\external\course_module_summary_exporter;
+use core_course\external\course_summary_exporter;
 use tool_lp\external\template_statistics_exporter;
 use tool_lp\external\user_competency_summary_exporter;
 use tool_lp\external\user_competency_summary_in_course_exporter;
@@ -66,7 +66,7 @@ use core_competency\external\template_exporter;
 use core_competency\external\user_competency_course_exporter;
 use core_competency\external\user_competency_exporter;
 use core_competency\external\user_competency_plan_exporter;
-use core_competency\external\user_summary_exporter;
+use core_user\external\user_summary_exporter;
 
 /**
  * This is the external API for this tool.
@@ -205,7 +205,7 @@ class external extends external_api {
         self::validate_context($framework->get_context());
         $output = $PAGE->get_renderer('tool_lp');
 
-        $renderable = new output\manage_competencies_page($framework, $params['search'], $framework->get_context());
+        $renderable = new output\manage_competencies_page($framework, $params['search'], $framework->get_context(), null);
 
         $data = $renderable->export_for_template($output);
 
@@ -363,7 +363,13 @@ class external extends external_api {
             'The course id',
             VALUE_REQUIRED
         );
-        $params = array('courseid' => $courseid);
+        $moduleid = new external_value(
+            PARAM_INT,
+            'The module id',
+            VALUE_DEFAULT,
+            0
+        );
+        $params = array('courseid' => $courseid, 'moduleid' => $moduleid);
         return new external_function_parameters($params);
     }
 
@@ -371,16 +377,18 @@ class external extends external_api {
      * Loads the data required to render the course_competencies_page template.
      *
      * @param int $courseid The course id to check.
+     * @param int $moduleid The module id to check (0 for no filter).
      * @return boolean
      */
-    public static function data_for_course_competencies_page($courseid) {
+    public static function data_for_course_competencies_page($courseid, $moduleid) {
         global $PAGE;
         $params = self::validate_parameters(self::data_for_course_competencies_page_parameters(), array(
             'courseid' => $courseid,
+            'moduleid' => $moduleid,
         ));
         self::validate_context(context_course::instance($params['courseid']));
 
-        $renderable = new output\course_competencies_page($params['courseid']);
+        $renderable = new output\course_competencies_page($params['courseid'], $params['moduleid']);
         $renderer = $PAGE->get_renderer('tool_lp');
 
         $data = $renderable->export_for_template($renderer);
@@ -420,8 +428,12 @@ class external extends external_api {
                     ))
                 ),
                 'comppath' => competency_path_exporter::get_read_structure(),
+                'plans' => new external_multiple_structure(
+                    plan_exporter::get_read_structure()
+                ),
             ))),
             'manageurl' => new external_value(PARAM_LOCALURL, 'Url to the manage competencies page.'),
+            'pluginbaseurl' => new external_value(PARAM_LOCALURL, 'Url to the course competencies page.'),
         ));
 
     }
@@ -917,119 +929,6 @@ class external extends external_api {
         return new external_single_structure(array(
             'users' => new external_multiple_structure(user_summary_exporter::get_read_structure()),
             'count' => new external_value(PARAM_INT, 'Total number of results.')
-        ));
-    }
-
-    /**
-     * Returns the description of external function parameters.
-     *
-     * @return external_function_parameters
-     */
-    public static function search_cohorts_parameters() {
-        $query = new external_value(
-            PARAM_RAW,
-            'Query string'
-        );
-        $includes = new external_value(
-            PARAM_ALPHA,
-            'What other contexts to fetch the frameworks from. (all, parents, self)',
-            VALUE_DEFAULT,
-            'parents'
-        );
-        $limitfrom = new external_value(
-            PARAM_INT,
-            'limitfrom we are fetching the records from',
-            VALUE_DEFAULT,
-            0
-        );
-        $limitnum = new external_value(
-            PARAM_INT,
-            'Number of records to fetch',
-            VALUE_DEFAULT,
-            25
-        );
-        return new external_function_parameters(array(
-            'query' => $query,
-            'context' => self::get_context_parameters(),
-            'includes' => $includes,
-            'limitfrom' => $limitfrom,
-            'limitnum' => $limitnum
-        ));
-    }
-
-    /**
-     * Search cohorts.
-     * TODO: MDL-52243 Move this function to cohorts/externallib.php
-     *
-     * @param string $query
-     * @param array $context
-     * @param string $includes
-     * @param int $limitfrom
-     * @param int $limitnum
-     * @return array
-     */
-    public static function search_cohorts($query, $context, $includes = 'parents', $limitfrom = 0, $limitnum = 25) {
-        global $DB, $CFG, $PAGE;
-        require_once($CFG->dirroot . '/cohort/lib.php');
-
-        $params = self::validate_parameters(self::search_cohorts_parameters(), array(
-            'query' => $query,
-            'context' => $context,
-            'includes' => $includes,
-            'limitfrom' => $limitfrom,
-            'limitnum' => $limitnum,
-        ));
-        $query = $params['query'];
-        $includes = $params['includes'];
-        $context = self::get_context_from_params($params['context']);
-        $limitfrom = $params['limitfrom'];
-        $limitnum = $params['limitnum'];
-
-        self::validate_context($context);
-        $output = $PAGE->get_renderer('tool_lp');
-
-        $manager = has_capability('moodle/cohort:manage', $context);
-        if (!$manager) {
-            require_capability('moodle/cohort:view', $context);
-        }
-
-        // TODO Make this more efficient.
-        if ($includes == 'self') {
-            $results = cohort_get_cohorts($context->id, $limitfrom, $limitnum, $query);
-            $results = $results['cohorts'];
-        } else if ($includes == 'parents') {
-            $results = cohort_get_cohorts($context->id, $limitfrom, $limitnum, $query);
-            $results = $results['cohorts'];
-            if (!$context instanceof context_system) {
-                $results = array_merge($results, cohort_get_available_cohorts($context, COHORT_ALL, $limitfrom, $limitnum, $query));
-            }
-        } else if ($includes == 'all') {
-            $results = cohort_get_all_cohorts($limitfrom, $limitnum, $query);
-            $results = $results['cohorts'];
-        } else {
-            throw new coding_exception('Invalid parameter value for \'includes\'.');
-        }
-
-        $cohorts = array();
-        foreach ($results as $key => $cohort) {
-            $cohortcontext = context::instance_by_id($cohort->contextid);
-            $exporter = new cohort_summary_exporter($cohort, array('context' => $cohortcontext));
-            $newcohort = $exporter->export($output);
-
-            $cohorts[$key] = $newcohort;
-        }
-
-        return array('cohorts' => $cohorts);
-    }
-
-    /**
-     * Returns description of external function result value.
-     *
-     * @return external_description
-     */
-    public static function search_cohorts_returns() {
-        return new external_single_structure(array(
-            'cohorts' => new external_multiple_structure(cohort_summary_exporter::get_read_structure())
         ));
     }
 

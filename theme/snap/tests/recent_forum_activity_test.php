@@ -18,7 +18,7 @@
  * Local Tests
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -32,7 +32,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class theme_snap_recent_forum_activity_test extends \advanced_testcase {
@@ -115,7 +115,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
             $sturole->id);
 
         // Enrol teachers on both courses.
-        $teacherrole = $DB->get_record('role', array('shortname' => 'teacher'));
+        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
         $teachers = [$this->teacher2, $this->teacher1];
         foreach ($teachers as $teacher) {
             $this->getDataGenerator()->enrol_user($teacher->id,
@@ -221,7 +221,8 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
         // Note: In testing number of posts, discussions are counted too as there is a post for each discussion created.
         $discussion1 = $this->create_discussion($ftype, $this->course1->id, $this->teacher1->id, $forum1->id);
         $this->create_post($ftype, $this->course1->id, $this->teacher1->id, $forum1->id, $discussion1->id);
-        $this->create_post($ftype, $this->course1->id, $this->teacher1->id, $forum1->id, $discussion1->id, ['modified' => time() - (13 * WEEKSECS)]);
+        $this->create_post($ftype, $this->course1->id, $this->teacher1->id, $forum1->id, $discussion1->id,
+            ['modified' => time() - (13 * WEEKSECS)]);
 
         // Check teacher viewable posts is 2.
         $this->assert_user_activity($this->teacher2, $toffset + 2);
@@ -429,7 +430,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Test an anonymous advanced forum with one anonymous discussion & reply.
+     * Test an anonymous Open Forum with one anonymous discussion & reply.
      * @throws \coding_exception
      */
     public function test_hsuforum_anonymous() {
@@ -498,14 +499,14 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Test qanda advanced forum.
+     * Test qanda Open Forum.
      */
     public function test_hsuforum_qanda() {
         self::test_forum_qanda('hsuforum');
     }
 
     /**
-     * Test qanda forum & advanced forum combined.
+     * Test qanda forum & Open Forum combined.
      */
     public function test_combined_qanda() {
         self::test_forum_qanda('forum');
@@ -513,7 +514,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Test an advanced forum with one private reply.
+     * Test an Open Forum with one private reply.
      * @throws \coding_exception
      */
     public function test_hsuforum_private() {

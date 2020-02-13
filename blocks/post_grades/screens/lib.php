@@ -1,66 +1,81 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Screens can implement this interface if the the screen requires
-// certain course data before application
+defined('MOODLE_INTERNAL') || die();
+
+// Screens can implement this interface if the the screen requires certain course data before application.
 interface post_filtered {
     public function can_post($section);
 }
 
 abstract class post_grades_screen {
-    function is_law() {
+    public function is_law() {
         $class = get_class($this);
         return preg_match('/law/', $class) ? true : false;
     }
 
-    function get_return_state() {
-        require_once dirname(__FILE__) . '/returnlib.php';
+    public function get_return_state() {
+        require_once(dirname(__FILE__) . '/returnlib.php');
 
         if (!$this->is_law()) {
             return new post_grades_good_return();
         }
 
-        $_s = ues::gen_str('block_post_grades');
+        $s = ues::gen_str('block_post_grades');
 
-        // Will need this later
+        // Will need this later.
         $sections = ues_section::from_course($this->course, true);
         $section = post_grades::find_section($this->group, $sections);
 
-        // Filter Audits at teh screen level
+        // Filter Audits at teh screen level.
         $auditers = post_grades::pull_auditing_students($section);
         foreach ($auditers as $audit) {
             unset($this->students[$audit->id]);
         }
 
-        // Shim for 1.9
+        // Shim for 1.9.
         $course = $section->course()->fill_meta();
 
         if ($course->course_grade_type == 'LP') {
             $scale = get_config('block_post_grades', 'scale');
 
-            $course_item = grade_item::fetch_course_item($this->course->id);
+            $courseitem = grade_item::fetch_course_item($this->course->id);
 
-            // Force scale always for pass/fail courses
-            if ($course_item->scaleid != $scale) {
-                $course_item->gradetype = 2;
-                $course_item->scaleid = $scale;
-                $course_item->gradepass = 2.0;
+            // Force scale always for pass/fail courses.
+            if ($courseitem->scaleid != $scale) {
+                $courseitem->gradetype = 2;
+                $courseitem->scaleid = $scale;
+                $courseitem->gradepass = 2.0;
 
-                $course_item->update();
+                $courseitem->update();
             }
         }
 
         $passthrough = array('CLI', 'IND');
 
-        $legal_writing = !empty($course->course_legal_writing);
+        $legalwriting = !empty($course->course_legal_writing);
         $exception = !empty($course->exception);
 
         if ($course->course_type == 'SEM') {
             $return = new post_grades_no_item_return($this->course);
-        } else if ($course->course_first_year and $legal_writing) {
+        } else if ($course->course_first_year and $legalwriting) {
             $return = new post_grades_no_item_return($this->course);
 
             if ($return->is_ready() and count($sections) > 1) {
-                // Perform compliance on everyone
+                // Perform compliance on everyone.
                 $constructor = $this->constructor();
                 $cloned = $constructor($this->period, $this->course, 0);
 
@@ -74,8 +89,8 @@ abstract class post_grades_screen {
                 );
 
                 $titles = array(
-                    $_s('course_compliance'),
-                    $_s('section_compliance', $this->group->name)
+                    $s('course_compliance'),
+                    $s('section_compliance', $this->group->name)
                 );
 
                 return new post_grades_sequence_compliance(
@@ -83,25 +98,25 @@ abstract class post_grades_screen {
                 );
             }
         } else if ($course->course_first_year) {
-            // Anonymous grade checks
+            // Anonymous grade checks.
             $return = new post_grades_no_anonymous_item_return($this->course);
         } else if ($course->course_grade_type == 'LP' or $exception or
             in_array($course->course_type, $passthrough)) {
 
             $return = new post_grades_no_item_return($this->course);
         } else {
-            // Anonymous grade checks
+            // Anonymous grade checks.
             $return = new post_grades_no_anonymous_item_return($this->course);
         }
 
         return new post_grades_compliance_return($return, $this->students, $course);
     }
 
-    abstract function html();
+    public abstract function html();
 }
 
 abstract class post_grades_student_table extends post_grades_screen {
-    function __construct($period, $course, $group) {
+    public function __construct($period, $course, $group) {
         $this->course = $course;
         $this->period = $period;
         $this->group = $group;
@@ -111,7 +126,7 @@ abstract class post_grades_student_table extends post_grades_screen {
         $this->context = context_course::instance($this->course->id);
         $graded = get_config('moodle', 'gradebookroles');
         $this->students = array();
-        if (COUNT(explode(',', $graded)) > 1) {
+        if (count(explode(',', $graded)) > 1) {
             $roleids = explode(',', $graded);
             foreach ($roleids as $roleid) {
                 // Keeping the first user appearance.
@@ -127,7 +142,7 @@ abstract class post_grades_student_table extends post_grades_screen {
         }
     }
 
-    function constructor() {
+    public function constructor() {
         $class = get_class($this);
 
         return function($period, $course, $group) use ($class) {
@@ -135,9 +150,9 @@ abstract class post_grades_student_table extends post_grades_screen {
         };
     }
 
-    abstract function is_acceptable($student);
+    public abstract function is_acceptable($student);
 
-    function html() {
+    public function html() {
         $table = new html_table();
 
         $table->head = array(
@@ -146,7 +161,7 @@ abstract class post_grades_student_table extends post_grades_screen {
             get_string('grade', 'grades')
         );
 
-        $course_item = grade_item::fetch(array(
+        $courseitem = grade_item::fetch(array(
             'itemtype' => 'course',
             'courseid' => $this->course->id
         ));
@@ -170,31 +185,31 @@ abstract class post_grades_student_table extends post_grades_screen {
                 'id' => $this->course->id
             ));
 
-            $grade_grade = grade_grade::fetch(array(
-                'itemid' => $course_item->id,
+            $gradegrade = grade_grade::fetch(array(
+                'itemid' => $courseitem->id,
                 'userid' => $student->id
             ));
 
-            if (empty($grade_grade)) {
-                $grade_grade = new grade_grade();
-                $grade_grade->finalgrade = null;
+            if (empty($gradegrade)) {
+                $gradegrade = new grade_grade();
+                $gradegrade->finalgrade = null;
             }
 
-            // Don't bother showing incompletes
-            if ($grade_grade->is_overridden() and $grade_grade->finalgrade == null) {
+            // Don't bother showing incompletes.
+            if ($gradegrade->is_overridden() and $gradegrade->finalgrade == null) {
                 continue;
             }
 
-            if ($grade_grade->itemid) {
-                $course_item->grademax = $grade_grade->get_grade_max();
+            if ($gradegrade->itemid) {
+                $courseitem->grademax = $gradegrade->get_grade_max();
             }
 
             $line->cells[] = html_writer::link($url, $name);
             $line->cells[] = $student->idnumber;
             $line->cells[] = grade_format_gradevalue(
-                $grade_grade->finalgrade,
-                $course_item, true,
-                $course_item->get_displaytype()
+                $gradegrade->finalgrade,
+                $courseitem, true,
+                $courseitem->get_displaytype()
             );
 
             $table->data[] = $line;

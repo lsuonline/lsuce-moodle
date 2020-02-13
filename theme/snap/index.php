@@ -18,7 +18,7 @@
  * Snap non-AJAX handler
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -37,6 +37,7 @@ list($context, $course, $cm) = get_context_info_array($contextid);
 
 require_login($course, false, $cm, false, true);
 
+// @codingStandardsIgnoreLine
 /** @var $PAGE moodle_page */
 $PAGE->set_context($context);
 $PAGE->set_url('/theme/snap/index.php', array('action' => $action, 'contextid' => $context->id));

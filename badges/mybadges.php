@@ -24,7 +24,7 @@
  * @author     Yuliya Bozhko <yuliya.bozhko@totaralms.com>
  */
 
-require_once(dirname(dirname(__FILE__)) . '/config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir . '/badgeslib.php');
 require_once($CFG->libdir . '/filelib.php');
 
@@ -72,6 +72,7 @@ if ($hide) {
     require_sesskey();
     $badge = new badge($download);
     $name = str_replace(' ', '_', $badge->name) . '.png';
+    $name = clean_param($name, PARAM_FILE);
     $filehash = badges_bake($hash, $download, $USER->id, true);
     $fs = get_file_storage();
     $file = $fs->get_file_by_hash($filehash);
@@ -89,7 +90,7 @@ $PAGE->set_context($context);
 $title = get_string('badges', 'badges');
 $PAGE->set_title($title);
 $PAGE->set_heading(fullname($USER));
-$PAGE->set_pagelayout('mydashboard');
+$PAGE->set_pagelayout('standard');
 
 // Include JS files for backpack support.
 badges_setup_backpack_js();
@@ -98,10 +99,17 @@ $output = $PAGE->get_renderer('core', 'badges');
 $badges = badges_get_user_badges($USER->id);
 
 echo $OUTPUT->header();
+$success = optional_param('success', '', PARAM_ALPHA);
+$warning = optional_param('warning', '', PARAM_ALPHA);
+if (!empty($success)) {
+    echo $OUTPUT->notification(get_string($success, 'core_badges'), 'notifysuccess');
+} else if (!empty($warning)) {
+    echo $OUTPUT->notification(get_string($warning, 'core_badges'), 'warning');
+}
 $totalcount = count($badges);
 $records = badges_get_user_badges($USER->id, null, $page, BADGE_PERPAGE, $search);
 
-$userbadges             = new badge_user_collection($records, $USER->id);
+$userbadges             = new \core_badges\output\badge_user_collection($records, $USER->id);
 $userbadges->sort       = 'dateissued';
 $userbadges->dir        = 'DESC';
 $userbadges->page       = $page;

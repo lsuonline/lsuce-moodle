@@ -18,7 +18,7 @@
  * Snap TOC renderer.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,7 +28,7 @@ use theme_snap\renderables\course_toc;
 
 defined('MOODLE_INTERNAL') || die();
 
-class toc_renderer extends \core_renderer {
+class toc_renderer extends \theme_boost\output\core_renderer {
 
     /**
      * @return bool|string

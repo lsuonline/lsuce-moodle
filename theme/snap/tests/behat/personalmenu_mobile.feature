@@ -16,7 +16,7 @@
 # Tests for Snap personal menu on mobile devices.
 #
 # @package    theme_snap
-# @copyright  Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright  Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
@@ -25,9 +25,7 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
   on mobile devices.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname | shortname | category | groupmode |
       | Course 1 | C1 | 0 | 1 |
     And the following "users" exist:
@@ -42,7 +40,7 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
   @javascript
   Scenario Outline: Teacher / Student can view personal menu on a mobile device.
     Given I change window size to "320x480"
-    And I log in as "<user>" (theme_snap)
+    And I log in as "<user>"
     And I open the personal menu
     And I follow "Deadlines" in the mobile personal menu
     Then I should see "You have no upcoming deadlines."
@@ -56,9 +54,9 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     Then I should see "You have no messages."
     And I follow "Forum posts" in the mobile personal menu
     Then I should see "You have no relevant forum posts."
-    And I click on "#fixy-close" "css_element"
+    And I click on "#snap-pm-close" "css_element"
     And I open the personal menu
-    And I wait until "#fixy-mobile-menu" "css_element" is visible
+    And I wait until "#snap-pm-mobilemenu" "css_element" is visible
 
     Examples:
     | user     | gradealt | gradenotice                       |
@@ -66,34 +64,11 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     | student1 | Feedback | You have no recent feedback.      |
 
   @javascript
-  Scenario: Teacher / Student using Joule can view alerts in the personal menu on a mobile device.
-    Given I am using Joule
-    And I change window size to "320x480"
-    And the message processor "badge" is enabled
-    And I log in as "student1" (theme_snap)
-    And I open the personal menu
-    And I follow "Deadlines" in the mobile personal menu
-    Then I should see "You have no upcoming deadlines."
-    # This is deliberately not in the order of the icons as the default pane shows courses so we need to switch to
-    # something else first.
-    And I follow "Courses" in the mobile personal menu
-    Then I should see "Course 1"
-    And I follow "Messages" in the mobile personal menu
-    Then I should see "You have no messages."
-    And I follow "Forum posts" in the mobile personal menu
-    Then I should see "You have no relevant forum posts."
-    And I follow "Alerts" in the mobile personal menu
-    Then I should see "You have no unread alerts."
-    And I click on "#fixy-close" "css_element"
-    And I open the personal menu
-    And I wait until "#fixy-mobile-menu" "css_element" is visible
-
-  @javascript
-  Scenario Outline: Mobile menu icons (excluding alerts) only appear when enabled.
+  Scenario Outline: Mobile menu icons only appear when enabled.
     Given I change window size to "320x480"
     And the following config values are set as admin:
       | <toggle> | 0 | theme_snap |
-    And I log in as "student1" (theme_snap)
+    And I log in as "student1"
     And I open the personal menu
     Then "a[href='<href>']" "css_element" should not exist
     And the following config values are set as admin:
@@ -107,18 +82,5 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     | feedbacktoggle   | #snap-personal-menu-graded     |
     | messagestoggle   | #snap-personal-menu-messages   |
     | forumpoststoggle | #snap-personal-menu-forumposts |
-
-  @javascript
-  Scenario: Alerts mobile menu icon only appears when alerts enabled.
-    Given I am using Joule
-    And I change window size to "320x480"
-    And the message processor "badge" is disabled
-    And I log in as "student1" (theme_snap)
-    And I open the personal menu
-    Then "a[href='#snap-personal-menu-badges']" "css_element" should not exist
-    And the message processor "badge" is enabled
-    And I reload the page
-    And I open the personal menu
-    Then "a[href='#snap-personal-menu-badges']" "css_element" should exist
 
 

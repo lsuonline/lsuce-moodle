@@ -14,28 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_reprocess
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
 ues::require_daos();
 
 class block_ues_reprocess extends block_list {
-    function init() {
+    public function init() {
         $this->title = get_string('pluginname', 'block_ues_reprocess');
     }
 
-    function applicable_formats() {
-        return array('course' => true, 'my' => false, 'site' => false);
+    public function applicable_formats() {
+        return array('course' => true, 'my' => true, 'site' => false);
     }
 
-    function get_content() {
+    public function get_content() {
 
-        if ($this->content !== NULL) {
+        if ($this->content !== null) {
             return $this->content;
         }
 
@@ -55,40 +57,40 @@ class block_ues_reprocess extends block_list {
             return $this->content;
         }
 
-        $_s = ues::gen_str('block_ues_reprocess');
+        $is = ues::gen_str('block_ues_reprocess');
 
-        $url_gen = function($base, $params=null) use ($_s) {
+        $urlgen = function($base, $params=null) use ($is) {
             $url = new moodle_url('/blocks/ues_reprocess/'.$base.'.php', $params);
 
-            return html_writer::link($url, $_s($base));
+            return html_writer::link($url, $is($base));
         };
 
-        $is_site = $COURSE->id == 1;
+        $issite = $COURSE->id == 1;
 
-        if ($is_site) {
-            $content->items[] = $url_gen('reprocess', array(
+        if ($issite) {
+            $content->items[] = $urlgen('reprocess', array(
                 'id' => $USER->id, 'type' => 'user'
             ));
         } else {
             $sections = $teacher->sections(true);
 
-            $in_this_course = function($section) use ($COURSE) {
+            $inthiscourse = function($section) use ($COURSE) {
                 return $section->idnumber == $COURSE->idnumber;
             };
 
-            $found = array_filter($sections, $in_this_course);
+            $found = array_filter($sections, $inthiscourse);
 
             if (empty($found)) {
                 return $this->content;
             }
 
-            $content->items[] = $url_gen('reprocess', array(
+            $content->items[] = $urlgen('reprocess', array(
                 'id' => $COURSE->id, 'type' => 'course'
             ));
         }
 
         $content->icons[] = $OUTPUT->pix_icon(
-            'i/users', $_s('reprocess'), 'moodle', array('class' => 'icon')
+            'i/users', $is('reprocess'), 'moodle', array('class' => 'icon')
         );
 
         $this->content = $content;
@@ -96,10 +98,10 @@ class block_ues_reprocess extends block_list {
         return $this->content;
     }
 
-    function cron() {
-        $_s = ues::gen_str('block_ues_reprocess');
+    public function cron() {
+        $us = ues::gen_str('block_ues_reprocess');
 
-        mtrace($_s('cleanup'));
+        mtrace($us('cleanup'));
 
         ues_section::update_meta(array('section_reprocessed' => 0));
 

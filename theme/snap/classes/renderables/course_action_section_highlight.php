@@ -17,7 +17,7 @@
 /**
  * Course action for affecting section visibility.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -35,13 +35,18 @@ class course_action_section_highlight extends course_action_section_base {
     public $class = 'snap-highlight';
 
     /**
+     * @var string
+     */
+    public $ariapressed = 'aria-pressed="false"';
+
+    /**
      * course_action_section_highlight constructor.
      * @param stdClass $course
      * @param stdClass $section - Note this is the section we want to affect via the url param.
      * @param bool $onsectionpage
      */
     public function __construct($course, section_info $section, $onsectionpage = false) {
-        
+
         if ($onsectionpage) {
             $baseurl = course_get_url($course, $section->section);
         } else {
@@ -50,26 +55,23 @@ class course_action_section_highlight extends course_action_section_base {
         $baseurl->param('sesskey', sesskey());
 
         $coursecontext = context_course::instance($course->id);
-        $isstealth = isset($course->numsections) && ($section->section > $course->numsections);
 
         if ($course->format === 'topics') {
-            if (!$isstealth && has_capability('moodle/course:setcurrentsection', $coursecontext)) {
+            if (has_capability('moodle/course:setcurrentsection', $coursecontext)) {
                 $url = clone($baseurl);
                 $marker = optional_param('marker', '', PARAM_INT);
                 $marker = $marker === '' ? $course->marker : $marker;
+                $this->title = get_string('highlight');
                 // Note if the new target section is 0 then it means the requested action is to have no current section
                 // highlighted.
                 if ($marker == $section->section || $section->section === 0) {
                     // Show the lightbulb.
-                    $this->title = get_string('markedthistopic');
                     $url->param('marker', 0);
                     $this->url = $url;
-                    $this->class.= ' snap-marked';
+                    $this->ariapressed = 'aria-pressed="true"';
                 } else {
-                    $this->title = get_string('markthistopic');
                     $url->param('marker', $section->section);
                     $this->url = $url;
-                    $this->class.= ' snap-marker';
                 }
             }
         }

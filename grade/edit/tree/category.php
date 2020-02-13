@@ -40,7 +40,7 @@ navigation_node::override_active_url(new moodle_url('/grade/edit/tree/index.php'
     array('id'=>$courseid)));
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('nocourseid');
+    print_error('invalidcourseid');
 }
 
 require_login($course);
@@ -151,10 +151,12 @@ if ($mform->is_cancelled()) {
         $grade_category->insert();
 
     } else {
+    // LSU Gradebook enhancement. 
            $ec_test = isset($data->grade_item_extracred);
            if ($ec_test == 1) {
                $data->grade_item_aggregationcoef = -1;
            }
+    // End LSU Gradebook enhancement.
         $grade_category->update();
     }
 
@@ -256,21 +258,37 @@ if ($mform->is_cancelled()) {
     $grade_item->set_locktime($locktime); // locktime first - it might be removed when unlocking
     $grade_item->set_locked($locked, false, true);
 
+	// LSU Gradebook enhancement.
     $ec_test = isset($data->grade_item_extracred);
 
-    if ($grade_item->itemtype == 'category' && $parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
-        $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
-        $grade_item->weightoverride = 0;
-        $grade_item->aggregationcoef2 = 0;
+    if (isset($parent_category)) {
+        if ($grade_item->itemtype == 'category' && $parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
+            $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
+            $grade_item->weightoverride = 0;
+            $grade_item->aggregationcoef2 = 0;
+        }
+    } else {
+        if ($grade_item->itemtype == 'category' && $ec_test == 1) {
+            $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
+            $grade_item->weightoverride = 0;
+            $grade_item->aggregationcoef2 = 0;
+        }
     }
 
     isset($data->grade_item_aggregationcoef) ? $data->grade_item_aggregationcoef : $data->grade_item_aggregationcoef = 0;
 
-    if ($grade_item->itemtype == 'category' && $parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->grade_item_aggregationcoef == 1) {
-        $grade_item->aggregationcoef2 = 0;
-        $grade_item->weightoverride = 1;
+    if (isset($parent_category)) {
+        if ($grade_item->itemtype == 'category' && $parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->grade_item_aggregationcoef == 1) {
+            $grade_item->aggregationcoef2 = 0;
+            $grade_item->weightoverride = 1;
+        }
+    } else {
+        if ($grade_item->itemtype == 'category' && $data->grade_item_aggregationcoef == 1) {
+            $grade_item->aggregationcoef2 = 0;
+            $grade_item->weightoverride = 1;
+        }
     }
-
+	// End LSU Gradebook enhancement.
     $grade_item->update(); // We don't need to insert it, it's already created when the category is created
 
     // set parent if needed

@@ -15,11 +15,11 @@ Feature: Test importing questions from WebCT format.
       | user    | course | role           |
       | teacher | C1     | editingteacher |
     And I log in as "teacher"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
   @javascript @_file_upload
   Scenario: import some WebCT questions
-    When I navigate to "Import" node in "Course administration > Question bank"
+    When I navigate to "Question bank > Import" in current page administration
     And I set the field "id_format_webct" to "1"
     And I upload "question/format/webct/tests/fixtures/sample_webct.txt" file to "Import" filemanager
     And I press "id_submitbutton"

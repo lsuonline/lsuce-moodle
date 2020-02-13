@@ -112,12 +112,26 @@ class restore_root_task extends restore_task {
         $users->get_ui()->set_changeable($changeable);
         $this->add_setting($users);
 
-        $rootenrolmanual = new restore_users_setting('enrol_migratetomanual', base_setting::IS_BOOLEAN, false);
-        $rootenrolmanual->set_ui(new backup_setting_ui_checkbox($rootenrolmanual, get_string('rootenrolmanual', 'backup')));
-        $rootenrolmanual->get_ui()->set_changeable(enrol_is_enabled('manual'));
-        $rootenrolmanual->get_ui()->set_changeable($changeable);
-        $this->add_setting($rootenrolmanual);
-        $users->add_dependency($rootenrolmanual);
+        // Restore enrolment methods.
+        if ($changeable) {
+            $options = [
+                backup::ENROL_NEVER     => get_string('rootsettingenrolments_never', 'backup'),
+                backup::ENROL_WITHUSERS => get_string('rootsettingenrolments_withusers', 'backup'),
+                backup::ENROL_ALWAYS    => get_string('rootsettingenrolments_always', 'backup'),
+            ];
+            $enroldefault = backup::ENROL_WITHUSERS;
+        } else {
+            // Users can not be restored, simplify the dropdown.
+            $options = [
+                backup::ENROL_NEVER     => get_string('no'),
+                backup::ENROL_ALWAYS    => get_string('yes')
+            ];
+            $enroldefault = backup::ENROL_NEVER;
+        }
+        $enrolments = new restore_users_setting('enrolments', base_setting::IS_INTEGER, $enroldefault);
+        $enrolments->set_ui(new backup_setting_ui_select($enrolments, get_string('rootsettingenrolments', 'backup'),
+            $options));
+        $this->add_setting($enrolments);
 
         // Define role_assignments (dependent of users)
         $defaultvalue = false;                      // Safer default
@@ -272,5 +286,9 @@ class restore_root_task extends restore_task {
         $competencies = new restore_competencies_setting($hascompetencies);
         $competencies->set_ui(new backup_setting_ui_checkbox($competencies, get_string('rootsettingcompetencies', 'backup')));
         $this->add_setting($competencies);
+
+        $customfields = new restore_customfield_setting('customfields', base_setting::IS_BOOLEAN, $defaultvalue);
+        $customfields->set_ui(new backup_setting_ui_checkbox($customfields, get_string('rootsettingcustomfield', 'backup')));
+        $this->add_setting($customfields);
     }
 }

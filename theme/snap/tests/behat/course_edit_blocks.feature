@@ -16,7 +16,7 @@
 # Tests course edting mode.
 #
 # @package    theme_snap
-# @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
@@ -24,9 +24,7 @@
 Feature: When the moodle theme is set to Snap, teachers only see block edit controls when in edit mode.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
       | Course 2 | C2        | 0        | weeks  |
@@ -44,13 +42,13 @@ Feature: When the moodle theme is set to Snap, teachers only see block edit cont
     Given the following "activities" exist:
       | activity | course | idnumber | name             | intro                         | section |
       | assign   | C1     | assign1  | Test assignment1 | Test assignment description 1 | 1       |
-    And I log in as "teacher1" (theme_snap)
+    And I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
     Then "#section-1" "css_element" should exist
     And ".block_news_items a.toggle-display" "css_element" should not exist
     And I should see "Test assignment1" in the "#section-1" "css_element"
-    And I follow "Course Tools"
+    And I follow "Course Dashboard"
     And I follow "Edit blocks"
     Then course page should be in edit mode
 
@@ -61,14 +59,14 @@ Feature: When the moodle theme is set to Snap, teachers only see block edit cont
 
     # edit mode does not persist between courses
     Given I am on the course main page for "C2"
-    And I follow "Course Tools"
+    And I follow "Course Dashboard"
     Then I should see "Edit blocks"
 
   @javascript
   Scenario: If edit mode is on for a course, it should not carry over to site homepage
-    Given I log in as "admin" (theme_snap)
+    Given I log in as "admin"
     And I am on the course main page for "C1"
-    And I follow "Course Tools"
+    And I follow "Course Dashboard"
     And I follow "Edit blocks"
     When I am on site homepage
     Then I should not see "Change site name"
@@ -76,27 +74,10 @@ Feature: When the moodle theme is set to Snap, teachers only see block edit cont
 
   @javascript
   Scenario: If edit mode is on for site homepage, it should not carry over to courses
-    Given I log in as "admin" (theme_snap)
+    Given I log in as "admin"
     And I am on site homepage
     And I click on "#admin-menu-trigger" "css_element"
     And I follow "Turn editing on"
     When I am on the course main page for "C1"
-    And I follow "Course Tools"
+    And I follow "Course Dashboard"
     Then I should see "Edit blocks"
-
-  @javascript
-  Scenario: In edit mode on a folderview course, teacher can see sections whilst editing on.
-    Given I am using Joule
-    And the following "courses" exist:
-      | fullname | shortname | category | format     |
-      | Course 3 | C3        | 0        | folderview |
-    And the following "course enrolments" exist:
-      | user     | course | role           |
-      | teacher1 | C3     | editingteacher |
-    Given I log in as "teacher1" (theme_snap)
-    And I am on the course main page for "C3"
-    And I click on "#page-mast .singlebutton input[type=\"submit\"]" "css_element"
-    And I should see "Add Topic"
-    And I should see "Add Resource"
-    And I should see "Topic Settings"
-    Then I should see "Topic 1" in the "#section-1 .content" "css_element"

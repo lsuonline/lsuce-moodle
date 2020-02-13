@@ -1,6 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-ini_set('default_socket_timeout', 300);
+defined('MOODLE_INTERNAL') || die();
 
 interface online_semester_codes {
     const FALL1 = '1L';
@@ -26,22 +40,20 @@ interface online_institution_codes {
 }
 
 abstract class online_source implements online_institution_codes, online_semester_codes {
-    /**
-     * An ONLINE source requires these
-     */
-    var $serviceId;
-    var $username;
-    var $password;
-    var $wsdl;
+    // An ONLINE source requires these.
+    public $serviceId;
+    public $username;
+    public $password;
+    public $wsdl;
 
-    function __construct($username, $password, $wsdl, $serviceId) {
+    public function __construct($username, $password, $wsdl, $serviceId) {
         $this->username = $username;
         $this->password = $password;
         $this->wsdl = $wsdl;
         $this->serviceId = $serviceId;
     }
 
-    private function build_parameters(array $params) {
+    protected function build_parameters(array $params) {
         return array (
             'widget1' => $this->username,
             'widget2' => $this->password,
@@ -50,7 +62,7 @@ abstract class online_source implements online_institution_codes, online_semeste
         );
     }
 
-    private function escape_illegals($response) {
+    protected function escape_illegals($response) {
         $convertables = array(
             '/s?&s?/' => ' &amp; ',
         );
@@ -60,7 +72,7 @@ abstract class online_source implements online_institution_codes, online_semeste
         return $response;
     }
 
-    private function clean_response($response) {
+    protected function clean_response($response) {
         $clean = $this->escape_illegals($response);
 
         $contents = $clean;
@@ -70,9 +82,9 @@ abstract class online_source implements online_institution_codes, online_semeste
     public function invoke($params) {
         $client = new SoapClient($this->wsdl, array('connection_timeout' => 3600));
 
-        $invoke_params = $this->build_parameters($params);
+        $invokeparams = $this->build_parameters($params);
 
-        $response = $client->invoke($invoke_params)->invokeReturn;
+        $response = $client->invoke($invokeparams)->invokeReturn;
 
         return new SimpleXmlElement($this->clean_response($response));
     }
@@ -95,37 +107,43 @@ abstract class online_source implements online_institution_codes, online_semeste
         return array($first, $lastname);
     }
 
-    public function encode_semester($semester_year, $semester_name) {
+    public function encode_semester($semesteryear, $semestername) {
 
         $partial = function ($year, $name) {
             return sprintf('%d%s', $year, $name);
         };
 
-        switch ($semester_name) {
-            case 'First Fall': return $partial($semester_year + 1, self::FALL1);
-            case 'Second Fall': return $partial($semester_year + 1, self::FALL2);
-            case 'First Spring': return $partial($semester_year, self::SPRING1);
-            case 'Second Spring': return $partial($semester_year, self::SPRING2);
-            case 'First Summer': return $partial($semester_year, self::SUMMER1);
-            case 'Second Summer': return $partial($semester_year + 1, self::SUMMER2);
+        switch ($semestername) {
+            case 'First Fall':
+                return $partial($semesteryear + 1, self::FALL1);
+            case 'Second Fall':
+                return $partial($semesteryear + 1, self::FALL2);
+            case 'First Spring':
+                return $partial($semesteryear, self::SPRING1);
+            case 'Second Spring':
+                return $partial($semesteryear, self::SPRING2);
+            case 'First Summer':
+                return $partial($semesteryear, self::SUMMER1);
+            case 'Second Summer':
+                return $partial($semesteryear + 1, self::SUMMER2);
         }
     }
 }
 
 abstract class online_teacher_format extends online_source {
-    public function format_teacher($xml_teacher) {
-        $primary_flag = trim($xml_teacher->PRIMARY_INSTRUCTOR);
+    public function format_teacher($xmlteacher) {
+        $primaryflag = trim($xmlteacher->PRIMARY_INSTRUCTOR);
 
-        list($first, $last) = $this->parse_name($xml_teacher->INDIV_NAME);
+        list($first, $last) = $this->parse_name($xmlteacher->INDIV_NAME);
 
         $teacher = new stdClass;
 
-        $teacher->idnumber = (string) $xml_teacher->LSU_ID;
-        $teacher->primary_flag = (string) $primary_flag == 'Y' ? 1 : 0;
+        $teacher->idnumber = (string) $xmlteacher->LSU_ID;
+        $teacher->primary_flag = (string) $primaryflag == 'Y' ? 1 : 0;
 
         $teacher->firstname = $first;
         $teacher->lastname = $last;
-        $teacher->username = (string) $xml_teacher->PRIMARY_ACCESS_ID;
+        $teacher->username = (string) $xmlteacher->PRIMARY_ACCESS_ID;
 
         return $teacher;
     }
@@ -134,22 +152,22 @@ abstract class online_teacher_format extends online_source {
 abstract class online_student_format extends online_source {
     const AUDIT = 'AU';
 
-    public function format_student($xml_student) {
+    public function format_student($xmlstudent) {
         $student = new stdClass;
 
-        $student->idnumber = (string) $xml_student->LSU_ID;
-        $student->credit_hours = (string) $xml_student->CREDIT_HRS;
+        $student->idnumber = (string) $xmlstudent->LSU_ID;
+        $student->credit_hours = (string) $xmlstudent->CREDIT_HRS;
 
-        if (trim((string) $xml_student->GRADING_CODE) == self::AUDIT) {
+        if (trim((string) $xmlstudent->GRADING_CODE) == self::AUDIT) {
             $student->student_audit = 1;
         }
 
-        list($first, $last) = $this->parse_name($xml_student->INDIV_NAME);
+        list($first, $last) = $this->parse_name($xmlstudent->INDIV_NAME);
 
-        $student->username = (string) $xml_student->PRIMARY_ACCESS_ID;
+        $student->username = (string) $xmlstudent->PRIMARY_ACCESS_ID;
         $student->firstname = $first;
         $student->lastname = $last;
-        $student->user_ferpa = trim((string)$xml_student->WITHHOLD_DIR_FLG) == 'P' ? 1 : 0;
+        $student->user_ferpa = trim((string)$xmlstudent->WITHHOLD_DIR_FLG) == 'P' ? 1 : 0;
 
         return $student;
     }

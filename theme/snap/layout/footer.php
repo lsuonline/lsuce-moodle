@@ -20,55 +20,40 @@
  * way.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
-
-$inccoursefooterclass = ($PAGE->theme->settings->coursefootertoggle && strpos($PAGE->pagetype, 'course-view-') === 0) ? ' hascoursefooter' : ' nocoursefooter';
 ?>
-<footer id="moodle-footer" role="contentinfo" class="clearfix<?php echo ($inccoursefooterclass)?>">
-<?php
-/* snap custom footer */
 
-/* custom footer edit button - always shown */
+<footer id="moodle-footer" role="contentinfo" class="clearfix">
+<?php
+/* Snap custom footer.*/
+/* Custom footer edit buttons. */
 $footnote = empty($PAGE->theme->settings->footnote) ? '' : $PAGE->theme->settings->footnote;
+$footnote = format_text($footnote, FORMAT_HTML, ['noclean' => true]);
 if ($this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
     $url = new moodle_url('/admin/settings.php', ['section' => 'themesettingsnap'], 'admin-footnote');
-    $link = html_writer::link($url, get_string('editcustomfooter', 'theme_snap'), ['class' => 'btn btn-inverse btn-sm']);
+    $link = html_writer::link($url, get_string('editcustomfooter', 'theme_snap'), ['class' => 'btn btn-primary btn-sm']);
     $footnote .= '<p class="text-right">'.$link.'</p>';
 }
 
-/* custom menu edit button - only shown if menu exists */
 $custommenu = $OUTPUT->custom_menu();
 if (!empty($custommenu) && $this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
     $url = new moodle_url('/admin/settings.php', ['section' => 'themesettings'], 'id_s__custommenuitems');
-    $link = html_writer::link($url, get_string('editcustommenu', 'theme_snap'), ['class' => 'btn btn-inverse btn-sm']);
+    $link = html_writer::link($url, get_string('editcustommenu', 'theme_snap'), ['class' => 'btn btn-primary btn-sm']);
     $custommenu .= '<p class="text-right">'.$link.'</p>';
 }
 
-if (!empty($custommenu) && !empty($footnote)) {
-    echo '<div class="row">';
-        echo '<div class="col-md-6">';
-        echo $footnote;
-        echo '</div>';
-        echo '<div class="col-md-6">';
-        echo $custommenu;
-        echo '</div>';
-    echo '</div>';
-} else if (!empty($footnote)) {
-    echo '<div class="row">
-        <div class="col-md-12">';
-    echo $footnote;
-    echo '</div></div>';
-} else if (!empty($custommenu)) {
-    echo '<div class="row">
-        <div class="col-md-12">';
-    echo $custommenu;
-    echo '</div></div>';
-}
 
-/* Social media links */
+/* Snap main footer. */
+echo '<div id="snap-site-footer">';
+if (!empty($footnote)) {
+    echo '<div id="snap-footer-content">';
+    echo $footnote;
+    echo '</div>';
+}
+/* Social media links. */
 $socialmedialinks = '';
 if (!empty($PAGE->theme->settings->facebook)) {
     $socialmedialinks .= $this->social_menu_link('facebook', $PAGE->theme->settings->facebook);
@@ -76,31 +61,50 @@ if (!empty($PAGE->theme->settings->facebook)) {
 if (!empty($PAGE->theme->settings->twitter)) {
     $socialmedialinks .= $this->social_menu_link('twitter', $PAGE->theme->settings->twitter);
 }
+if (!empty($PAGE->theme->settings->linkedin)) {
+    $socialmedialinks .= $this->social_menu_link('linkedin', $PAGE->theme->settings->linkedin);
+}
 if (!empty($PAGE->theme->settings->youtube)) {
     $socialmedialinks .= $this->social_menu_link('youtube', $PAGE->theme->settings->youtube);
 }
 if (!empty($PAGE->theme->settings->instagram)) {
     $socialmedialinks .= $this->social_menu_link('instagram', $PAGE->theme->settings->instagram);
 }
-if(!empty($socialmedialinks)) {
-    echo '<div id="snap_socialmedia_links">'.$socialmedialinks.'</div>';
+if (!empty($socialmedialinks)) {
+    echo '<div id="snap-socialmedia-links">' .$socialmedialinks. '</div>';
+}
+echo '</div>';
+?>
+
+
+<?php
+/* Moodle custom menu. */
+if (!empty($custommenu)) {
+    echo '<div id="moodle-custom-menu"><br>';
+    echo $custommenu;
+    echo '</div>';
 }
 ?>
 
-<div id='mrooms-footer' class="helplink text-right">
-    <small>
-    <?php
-    if ($OUTPUT->page_doc_link()) {
-        echo $OUTPUT->page_doc_link();
-    }
-    $poweredbyrunby = get_string('poweredbyrunby', 'theme_snap');
-    ?>
-    <br/><?php echo $poweredbyrunby ?>
-    </small>
+<div class="row">
+    <div id="mrooms-footer" class="helplink col-sm-6">
+        <small>
+            <?php
+            if ($OUTPUT->page_doc_link()) {
+                echo $OUTPUT->page_doc_link();
+                echo "<br>";
+            }
+            echo get_string('poweredbyrunby', 'theme_snap', date('Y', time()));
+            ?>
+        </small>
+    </div>
+    <div class="langmenu col-sm-6 text-right">
+        <?php echo $OUTPUT->lang_menu(); ?>
+    </div>
 </div>
-<!-- close mrooms footer -->
+
 <div id="page-footer">
-<?php echo $OUTPUT->lang_menu(); ?>
+<br/>
 <?php echo $OUTPUT->standard_footer_html(); ?>
 </div>
 </footer>

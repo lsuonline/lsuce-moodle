@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/blocks/ues_meta_viewer/classes/lib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/blocks/ues_meta_viewer/classes/lib.php');
 
 class cps_meta_ui_element extends meta_data_text_box {
     public function format($user) {
@@ -29,9 +31,12 @@ class cps_meta_ui_element extends meta_data_text_box {
             case 'username':
                 $url = new moodle_url('/user/profile.php', array('id' => $user->id));
                 return html_writer::link($url, $user->username);
-            case 'user_ferpa': return $this->format_bool($user);
-            case 'user_reg_status': return $this->format_date($user);
-            default: return parent::format($user);
+            case 'user_ferpa':
+                return $this->format_bool($user);
+            case 'user_reg_status':
+                return $this->format_date($user);
+            default:
+                return parent::format($user);
         }
     }
 

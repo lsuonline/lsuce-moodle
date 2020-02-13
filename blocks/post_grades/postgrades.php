@@ -1,8 +1,22 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once '../../config.php';
-require_once 'lib.php';
-require_once $CFG->dirroot . '/grade/export/lib.php';
+require_once('../../config.php');
+require_once('lib.php');
+require_once($CFG->dirroot . '/grade/export/lib.php');
 
 define('EXPIRE_KEY', strtotime('7 days'));
 
@@ -21,7 +35,7 @@ $context = context_course::instance($course->id);
 require_capability('block/post_grades:canpost', $context);
 
 $sections = ues_section::from_course($course);
-$valid_groups = post_grades::valid_groups($course);
+$validgroups = post_grades::valid_groups($course);
 
 $section = post_grades::find_section($group, $sections);
 
@@ -29,18 +43,18 @@ if (empty($CFG->gradepublishing)) {
     print_error('nopublishing', 'block_post_grades');
 }
 
-// Not a valid group
-if (!isset($valid_groups[$groupid]) or empty($section)) {
+// Not a valid group.
+if (!isset($validgroups[$groupid]) or empty($section)) {
     print_error('notvalidgroup', 'block_post_grades', '', $group->name);
 }
 
-// Not a valid posting period
+// Not a valid posting period.
 if (!in_array($period, post_grades::active_periods($course))) {
     print_error('notactive', 'block_post_grades');
 }
 
-// Need this for LAW types
-$ues_course = $section->course()->fill_meta();
+// Need this for LAW types.
+$uescourse = $section->course()->fill_meta();
 
 $params = array(
     'periodid' => $period->id,
@@ -48,16 +62,16 @@ $params = array(
     'userid' => $USER->id
 );
 
-$_s = ues::gen_str('block_post_grades');
+$s = ues::gen_str('block_post_grades');
 
 $posting = $DB->get_record('block_post_grades_postings', $params);
 
-// Posted before... complain
+// Posted before... complain.
 if ($posting) {
     $a = new stdClass;
     $a->fullname = $course->fullname;
     $a->name = $group->name;
-    $a->post_type = $_s($period->post_type);
+    $a->post_type = $s($period->post_type);
     print_error('alreadyposted', 'block_post_grades', '', $a);
 }
 
@@ -65,29 +79,29 @@ $posting = (object) $params;
 
 $DB->insert_record('block_post_grades_postings', $posting);
 
-// Data is valid, now process
+// Data is valid, now process.
 $key = get_user_key('grade/export', $USER->id, $courseid, '', EXPIRE_KEY);
 
-$course_item = grade_item::fetch(array('itemtype' => 'course', 'courseid' => $courseid));
+$courseitem = grade_item::fetch(array('itemtype' => 'course', 'courseid' => $courseid));
 
-$export_params = array(
+$exportparams = array(
     'id' => $courseid,
     'key' => $key,
     'groupid' => $groupid,
-    'itemids' => $course_item->id,
+    'itemids' => $courseitem->id,
     'export_feedback' => 0,
     'updategradesonly' => 0,
-    'decimalpoints' => $course_item->get_decimals(),
+    'decimalpoints' => $courseitem->get_decimals(),
     'displaytype' => $period->export_number ?
         GRADE_DISPLAY_TYPE_REAL : GRADE_DISPLAY_TYPE_LETTER
 );
 
-if ($ues_course->department == 'LAW') {
+if ($uescourse->department == 'LAW') {
     $domino = get_config('block_post_grades', 'law_domino_application_url');
-    $export_params['decimalpoints'] = 1;
-    $export_params['displaytype'] = GRADE_DISPLAY_TYPE_REAL;
+    $exportparams['decimalpoints'] = 1;
+    $exportparams['displaytype'] = GRADE_DISPLAY_TYPE_REAL;
 
-    if (!empty($ues_course->course_first_year)) {
+    if (!empty($uescourse->course_first_year)) {
         $course->visible = 0;
         $DB->update_record('course', $course);
     }
@@ -95,36 +109,40 @@ if ($ues_course->department == 'LAW') {
     $domino = get_config('block_post_grades', 'domino_application_url');
 }
 
-$export_url = new moodle_url('/grade/export/xml/dump.php', $export_params);
+$exporturl = new moodle_url('/grade/export/xml/dump.php', $exportparams);
 
 switch($period->post_type) {
     case 'midterm':
-        $post_type = 'M'; break;
+        $post_type = 'M';
+        break;
     case 'final':
     case 'law_first':
     case 'law_upper':
-        $post_type = 'F'; break;
+        $post_type = 'F';
+        break;
     case 'law_degree':
-        $post_type = 'D'; break;
+        $post_type = 'D';
+        break;
     case 'degree':
-        $post_type = 'D'; break;
+        $post_type = 'D';
+        break;
     case 'test':
         $post_type = 'T';
 }
 
-$post_params = array(
+$postparams = array(
     'postType' => $post_type,
-    'DeptCode' => $ues_course->department,
-    'CourseNbr' => $ues_course->cou_number,
+    'DeptCode' => $uescourse->department,
+    'CourseNbr' => $uescourse->cou_number,
     'SectionNbr' => $section->sec_number,
-    'MoodleGradeURL' => $ues_course->department == 'LAW' ?
-        $export_url->out(false) :
-        rawurlencode($export_url->out(false))
+    'MoodleGradeURL' => $uescourse->department == 'LAW' ?
+        $exporturl->out(false) :
+        rawurlencode($exporturl->out(false))
 );
 
-// We can't be sure about the configured url, so we are required to be safe
+// We can't be sure about the configured url, so we are required to be safe.
 $transformed = array();
-foreach ($post_params as $key => $value) {
+foreach ($postparams as $key => $value) {
     $transformed[] = "$key=$value";
 }
 

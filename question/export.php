@@ -24,7 +24,7 @@
  */
 
 
-require_once(dirname(__FILE__) . '/../config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->dirroot . '/question/editlib.php');
 require_once($CFG->dirroot . '/question/export_form.php');
 require_once($CFG->dirroot . '/question/format.php');
@@ -43,6 +43,10 @@ $PAGE->set_url($thispageurl);
 $PAGE->set_title($strexportquestions);
 $PAGE->set_heading($COURSE->fullname);
 echo $OUTPUT->header();
+
+// Print horizontal nav if needed.
+$renderer = $PAGE->get_renderer('core_question', 'bank');
+echo $renderer->extra_horizontal_navigation();
 
 $export_form = new question_export_form($thispageurl,
         array('contexts' => $contexts->having_one_edit_tab_cap('export'), 'defaultcategory' => $pagevars['cat']));
@@ -72,6 +76,14 @@ if ($from_form = $export_form->get_data()) {
     echo $OUTPUT->box_start();
     echo get_string('yourfileshoulddownload', 'question', $export_url->out());
     echo $OUTPUT->box_end();
+
+    // Log the export of these questions.
+    $eventparams = [
+            'contextid' => $category->contextid,
+            'other' => ['format' => $from_form->format, 'categoryid' => $category->id],
+    ];
+    $event = \core\event\questions_exported::create($eventparams);
+    $event->trigger();
 
     // Don't allow force download for behat site, as pop-up can't be handled by selenium.
     if (!defined('BEHAT_SITE_RUNNING')) {

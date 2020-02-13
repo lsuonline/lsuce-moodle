@@ -15,6 +15,8 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
+    @template tool_lp/manage_competencies_page
+
     Manage competencies template.
 
     Classes required for JS:
@@ -25,10 +27,15 @@
     * data-region=term
     * data-region=selected-competency
 
-    Context variables required for this template:
-    * framework -
-    * competencies - array of objects containing id, shortname, idnumber, sortorder, parentid, competencyframeworkid, path
-    * canmanage - true if this user has permission to manage the competencies
+    Example context (json):
+    {
+        "framework": {
+            "description": "Framework",
+            "id": 0
+        },
+        "competencies": [],
+        "canmanage": false
+    }
 }}
 <div data-region="managecompetencies">
 <h2>
@@ -38,81 +45,94 @@
     {{/canmanage}}
 </h2>
 <div>{{{framework.description}}}</div>
-<h3>{{#str}}competencies, core_competency{{/str}}</h3>
-<div class="row-fluid">
-<div class="span6">
-<p>
-<form data-region="filtercompetencies" data-frameworkid="{{framework.id}}">
-    <label class="accesshide" for="filter{{uniqid}}">{{#str}}search, tool_lp{{/str}}</label>
-    <input type="text" id="filter{{uniqid}}" placeholder="{{#str}}search, tool_lp{{/str}}" value="{{search}}">
-    <button>{{#pix}}a/search, , {{#str}}search{{/str}}{{/pix}}</button>
-</form>
-</p>
-<ul data-enhance="tree">
-    {{> tool_lp/loading }}
-</ul>
-</div>
-
-<div class="span6 well">
-<h4 data-region="selected-competency">{{#str}}selectedcompetency, tool_lp{{/str}}</h4>
-<p data-region="competencyinfo">
-{{#str}}nocompetencyselected, tool_lp{{/str}}
-</p>
-{{#canmanage}}
-<div data-region="competencyactions">
-<button class="btn" data-action="add">{{#pix}}t/add{{/pix}} <span data-region="term"></span></button>
-            <span data-region="competencyactionsmenu">
-            <ul title="{{#str}}edit{{/str}}" class="competencyactionsmenu">
-                <li>
-                    <a href="#">{{#str}}edit{{/str}}</a><b class="caret"></b>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a href="#" data-action="edit">
-                                {{#pix}}t/edit{{/pix}} {{#str}}edit{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="move">
-                                {{#pix}}t/move{{/pix}} {{#str}}movetonewparent, tool_lp{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="delete">
-                                {{#pix}}t/delete{{/pix}} {{#str}}delete{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="moveup">
-                                {{#pix}}t/up{{/pix}} {{#str}}moveup{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="movedown">
-                                {{#pix}}t/down{{/pix}} {{#str}}movedown{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="linkedcourses">
-                                {{#pix}}t/viewdetails{{/pix}} {{#str}}linkedcourses, tool_lp{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="relatedcompetencies">
-                                {{#pix}}t/add{{/pix}} {{#str}}addcrossreferencedcompetency, tool_lp{{/str}}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" data-action="competencyrules">
-                                {{#pix}}t/edit{{/pix}} {{#str}}competencyrule, tool_lp{{/str}}
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+    <h3>{{#str}}competencies, core_competency{{/str}}</h3>
+    <div class="row-fluid row">
+        <div class="col-lg-6">
+            <p>
+                <form data-region="filtercompetencies" data-frameworkid="{{framework.id}}" class="form-inline">
+                    <div class="input-group mb-3">
+                        <label class="accesshide" for="filter{{uniqid}}">{{#str}}search, tool_lp{{/str}}</label>
+                        <input class="form-control" type="text" id="filter{{uniqid}}" placeholder="{{#str}}search, tool_lp{{/str}}" value="{{search}}">
+                        <div class="input-group-append">
+                            <button class="btn btn-secondary">{{#pix}}a/search, , {{#str}}search{{/str}}{{/pix}}</button>
+                        </div>
+                    </div>
+                </form>
+            </p>
+            <ul data-enhance="tree" class="competency-tree">
+                {{> tool_lp/loading }}
             </ul>
-            </span>
-</div>
-</div>
-{{/canmanage}}
+        </div>
+
+        <div class="col-lg-6">
+            <div class="border p-2 mb-2">
+                <div class="card-title">
+                    <h4 data-region="selected-competency">{{#str}}selectedcompetency, tool_lp{{/str}}</h4>
+                        <span data-region="competencyactionsmenu" class="float-sm-right">
+                            <ul title="{{#str}}edit{{/str}}" class="competencyactionsmenu">
+                                <li>
+                                    <a href="#">{{#str}}edit{{/str}}</a><b class="caret"></b>
+                                    <ul class="dropdown dropdown-menu">
+                                    {{#canmanage}}
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="edit">
+                                            {{#pix}}t/edit{{/pix}} {{#str}}edit{{/str}}
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="move">
+                                            {{#pix}}t/move{{/pix}} {{#str}}movetonewparent, tool_lp{{/str}}
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="delete">
+                                            {{#pix}}t/delete{{/pix}} {{#str}}delete{{/str}}
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="moveup">
+                                            {{#pix}}t/up{{/pix}} {{#str}}moveup{{/str}}
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="movedown">
+                                            {{#pix}}t/down{{/pix}} {{#str}}movedown{{/str}}
+                                        </a>
+                                    </li>
+                                    {{/canmanage}}
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="linkedcourses">
+                                            {{#pix}}t/viewdetails{{/pix}} {{#str}}linkedcourses, tool_lp{{/str}}
+                                        </a>
+                                    </li>
+                                    {{#canmanage}}
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="relatedcompetencies">
+                                            {{#pix}}t/add{{/pix}} {{#str}}addcrossreferencedcompetency, tool_lp{{/str}}
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <a href="#" data-action="competencyrules">
+                                            {{#pix}}t/edit{{/pix}} {{#str}}competencyrule, tool_lp{{/str}}
+                                        </a>
+                                    </li>
+                                    {{/canmanage}}
+                                </ul>
+                            </li>
+                        </ul>
+                    </span>
+                </div>
+                <p data-region="competencyinfo">
+                    {{#str}}nocompetencyselected, tool_lp{{/str}}
+                </p>
+                <div data-region="competencyactions">
+                    {{#canmanage}}
+                    <button class="btn btn-secondary" data-action="add">{{#pix}}t/add{{/pix}} <span data-region="term"></span></button>
+                    {{/canmanage}}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{#js}}
@@ -124,11 +144,11 @@ require(['tool_lp/tree', 'tool_lp/competencytree', 'tool_lp/competencyactions', 
                    {{#quote}} {{{framework.shortname}}} {{/quote}},
                    '{{search}}',
                    '[data-enhance=tree]',
-                   {{canmanage}});
+                   {{canmanage}},
+                   {{competencyid}});
 
     actions.init(treeModel, {{pagecontextid}}, '{{{framework.taxonomies}}}', {{{rulesmodules}}});
 
 });
 {{/js}}
 
-</div>

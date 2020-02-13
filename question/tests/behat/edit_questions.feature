@@ -21,12 +21,12 @@ Feature: A teacher can edit questions in the question bank
       | questioncategory | qtype | name                       | questiontext                  |
       | Test questions   | essay | Test question to be edited | Write about whatever you want |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Questions" node in "Course administration > Question bank"
+    And I am on "Course 1" course homepage
+    And I navigate to "Question bank > Questions" in current page administration
 
   @javascript
   Scenario: Edit a previously created question
-    When I click on "Edit" "link" in the "Test question to be edited" "table_row"
+    When I choose "Edit question" action for "Test question to be edited" in the question bank
     And I set the following fields to these values:
       | Question name | Edited question name |
       | Question text | Write a lot about what you want |
@@ -38,7 +38,7 @@ Feature: A teacher can edit questions in the question bank
 
   @javascript
   Scenario: Editing a question can be cancelled
-    When I click on "Edit" "link" in the "Test question to be edited" "table_row"
+    When I choose "Edit question" action for "Test question to be edited" in the question bank
     And I set the field "Question name" to "Edited question name"
     And I press "Cancel"
     Then I should see "Test question to be edited"

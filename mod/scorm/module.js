@@ -298,9 +298,11 @@ M.mod_scorm.init = function(Y, nav_display, navposition_left, navposition_top, h
             }
 
             // Calculate the rough new height from the viewport height.
-            newheight = Y.one('body').get('winHeight') - 5;
-            if (newheight < 600) {
-                newheight = 600;
+            var newheight = Y.one('body').get('winHeight') - 5
+                - Y.one('#scorm_layout').getY()
+                - window.pageYOffset;
+            if (newheight < 680 || isNaN(newheight)) {
+                newheight = 680;
             }
             Y.one('#scorm_layout').setStyle('height', newheight);
 
@@ -458,9 +460,16 @@ M.mod_scorm.init = function(Y, nav_display, navposition_left, navposition_top, h
             if (scoes_nav[launch_sco].flow === 1) {
                 var datastring = scoes_nav[launch_sco].url + '&function=scorm_seq_flow&request=backward';
                 result = scorm_ajax_request(M.cfg.wwwroot + '/mod/scorm/datamodels/sequencinghandler.php?', datastring);
-                mod_scorm_seq = encodeURIComponent(result);
-                result = Y.JSON.parse (result);
-                if (typeof result.nextactivity.id != undefined) {
+
+                if (result === false) {
+                    // Either the outcome was a failure, or we are unloading and simply just don't know
+                    // what the outcome actually was.
+                    result = {};
+                } else {
+                    result = Y.JSON.parse(result);
+                }
+
+                if (typeof result.nextactivity !== 'undefined' && typeof result.nextactivity.id !== 'undefined') {
                         var node = scorm_prev(scorm_tree_node.getSelectedNodes()[0]);
                         if (node == null) {
                             // Avoid use of TreeView for Navigation.
@@ -490,8 +499,15 @@ M.mod_scorm.init = function(Y, nav_display, navposition_left, navposition_top, h
             if (scoes_nav[launch_sco].flow === 1) {
                 var datastring = scoes_nav[launch_sco].url + '&function=scorm_seq_flow&request=forward';
                 result = scorm_ajax_request(M.cfg.wwwroot + '/mod/scorm/datamodels/sequencinghandler.php?', datastring);
-                mod_scorm_seq = encodeURIComponent(result);
-                result = Y.JSON.parse (result);
+
+                if (result === false) {
+                    // Either the outcome was a failure, or we are unloading and simply just don't know
+                    // what the outcome actually was.
+                    result = {};
+                } else {
+                    result = Y.JSON.parse(result);
+                }
+
                 if (typeof result.nextactivity !== 'undefined' && typeof result.nextactivity.id !== 'undefined') {
                     var node = scorm_next(scorm_tree_node.getSelectedNodes()[0]);
                     if (node === null) {
@@ -559,6 +575,10 @@ M.mod_scorm.init = function(Y, nav_display, navposition_left, navposition_top, h
                     .addClass(cssclasses.scorm_grid_content_toc_hidden);
             }
         }
+
+        // Basic initialization completed, show the elements.
+        Y.one('#scorm_toc').removeClass('loading');
+        Y.one('#scorm_toc_toggle').removeClass('loading');
 
         // TOC Resize handle.
         var layout_width = parseInt(Y.one('#scorm_layout').getComputedStyle('width'), 10);

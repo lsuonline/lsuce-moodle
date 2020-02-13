@@ -14,17 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->libdir . '/formslib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/formslib.php');
 
 class unwant_form extends moodleform {
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $semesters = ues_semester::get_all();
@@ -52,9 +54,9 @@ class unwant_form extends moodleform {
                 return html_writer::link($url, get_string($action), $attrs);
             };
 
-            $clean_links = implode(' / ', array_map($map, $actions));
+            $cleanlinks = implode(' / ', array_map($map, $actions));
 
-            $m->addElement('static', 'all_none_'.$courseid, '', $clean_links);
+            $m->addElement('static', 'all_none_'.$courseid, '', $cleanlinks);
 
             foreach ($course->sections as $section) {
                 $semester = $semesters[$section->semesterid];

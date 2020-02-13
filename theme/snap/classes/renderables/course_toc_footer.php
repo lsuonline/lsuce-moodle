@@ -16,7 +16,7 @@
 
 /**
  * Renderable for course toc footer.
- * @author    Guy Thomas <gthomas@moodlerooms.com>
+ * @author    Guy Thomas <osdev@blackboard.com>
  * @copyright Copyright (c) 2016 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -35,7 +35,6 @@ class course_toc_footer implements \renderable {
      * @var boolean
      */
     public $qmcansend;
-
     /**
      * @var string
      */

@@ -22,12 +22,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace tool_lp\external;
+defined('MOODLE_INTERNAL') || die();
 
 use core_competency\api;
 use core_competency\user_competency;
+use core_competency\external\plan_exporter;
+use core_course\external\course_module_summary_exporter;
+use core_course\external\course_summary_exporter;
 use context_course;
 use renderer_base;
 use stdClass;
+use moodle_url;
 
 /**
  * Class for exporting user competency data with additional related data in a plan.
@@ -35,7 +40,7 @@ use stdClass;
  * @copyright  2015 Damyon Wiese
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class user_competency_summary_in_course_exporter extends \core_competency\external\exporter {
+class user_competency_summary_in_course_exporter extends \core\external\exporter {
 
     protected static function define_related() {
         // We cache the context so it does not need to be retrieved from the framework every time.
@@ -59,7 +64,14 @@ class user_competency_summary_in_course_exporter extends \core_competency\extern
             'coursemodules' => array(
                 'type' => course_module_summary_exporter::read_properties_definition(),
                 'multiple' => true
-            )
+            ),
+            'plans' => array(
+                'type' => plan_exporter::read_properties_definition(),
+                'multiple' => true
+            ),
+            'pluginbaseurl' => [
+                'type' => PARAM_URL
+            ],
         );
     }
 
@@ -80,7 +92,7 @@ class user_competency_summary_in_course_exporter extends \core_competency\extern
         $exporter = new course_summary_exporter($this->related['course'], array('context' => $context));
         $result->course = $exporter->export($output);
 
-        $coursemodules = api::list_course_modules_using_competency($this->related['competency']->get_id(),
+        $coursemodules = api::list_course_modules_using_competency($this->related['competency']->get('id'),
                                                                    $this->related['course']->id);
 
         $fastmodinfo = get_fast_modinfo($this->related['course']->id);
@@ -91,6 +103,16 @@ class user_competency_summary_in_course_exporter extends \core_competency\extern
             $exportedmodules[] = $cmexporter->export($output);
         }
         $result->coursemodules = $exportedmodules;
+
+        // User learning plans.
+        $plans = api::list_plans_with_competency($this->related['user']->id, $this->related['competency']);
+        $exportedplans = array();
+        foreach ($plans as $plan) {
+            $planexporter = new plan_exporter($plan, array('template' => $plan->get_template()));
+            $exportedplans[] = $planexporter->export($output);
+        }
+        $result->plans = $exportedplans;
+        $result->pluginbaseurl = (new moodle_url('/admin/tool/lp'))->out(true);
 
         return (array) $result;
     }

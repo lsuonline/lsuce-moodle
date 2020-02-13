@@ -427,6 +427,7 @@ class grade_category extends grade_object {
         $aggonlygrddiff  = $db_item->aggregateonlygraded != $this->aggregateonlygraded;
         $aggoutcomesdiff = $db_item->aggregateoutcomes   != $this->aggregateoutcomes;
 
+        // LSU Gradebook enhancements.
         $oldweighted = $db_item->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
         $newweighted = $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
 
@@ -451,6 +452,7 @@ class grade_category extends grade_object {
                 $child->update();
             }
         }
+        // END LSU Gradebook enhancements.
 
         return ($aggregationdiff || $keephighdiff || $droplowdiff || $aggonlygrddiff || $aggoutcomesdiff);
     }
@@ -683,7 +685,7 @@ class grade_category extends grade_object {
 
                 // If successful trigger a user_graded event.
                 if ($success) {
-                    \core\event\user_graded::create_from_grade($grade)->trigger();
+                    \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
                 }
             }
             $dropped = $grade_values;
@@ -768,7 +770,7 @@ class grade_category extends grade_object {
 
                 // If successful trigger a user_graded event.
                 if ($success) {
-                    \core\event\user_graded::create_from_grade($grade)->trigger();
+                    \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
                 }
             }
             $this->set_usedinaggregation($userid, $usedweights, $novalue, $dropped, $extracredit);
@@ -811,7 +813,7 @@ class grade_category extends grade_object {
 
             // If successful trigger a user_graded event.
             if ($success) {
-                \core\event\user_graded::create_from_grade($grade)->trigger();
+                \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
             }
         }
 
@@ -1021,6 +1023,8 @@ class grade_category extends grade_object {
                                                        & $weights = null,
                                                        $grademinoverrides = array(),
                                                        $grademaxoverrides = array()) {
+        global $CFG;
+
         $category_item = $this->load_grade_item();
         $grademin = $category_item->grademin;
         $grademax = $category_item->grademax;
@@ -1115,12 +1119,13 @@ class grade_category extends grade_object {
             case GRADE_AGGREGATE_WEIGHTED_MEAN: // Weighted average of all existing final grades, weight specified in coef
                 $weightsum = 0;
                 $sum       = 0;
-                $extrasum  = 0;
+                $extrasum  = 0; // LSU Gradebook enhancement.
 
                 foreach ($grade_values as $itemid=>$grade_value) {
                     if ($weights !== null) {
                         $weights[$itemid] = $items[$itemid]->aggregationcoef;
                     }
+                    // LSU Gradebook enhancement.
                     $coef = $items[$itemid]->aggregationcoef;
                     if ($coef == 0) {
                         continue;
@@ -1130,6 +1135,7 @@ class grade_category extends grade_object {
                         $weightsum += $coef;
                         $sum       += $coef * $grade_value;
                     }
+                    // END LSU Gradebook enhancement.
                 }
                 if ($weightsum == 0) {
                     $agg_grade = null;
@@ -1142,8 +1148,9 @@ class grade_category extends grade_object {
                             $weights[$itemid] = $weight / $weightsum;
                         }
                     }
+
                 }
-                $agg_grade += $extrasum;
+                $agg_grade += $extrasum; // LSU Gradebook enhancement.
                 break;
 
             case GRADE_AGGREGATE_WEIGHTED_MEAN2:
@@ -1152,12 +1159,11 @@ class grade_category extends grade_object {
                 $this->load_grade_item();
                 $weightsum = 0;
                 $sum       = null;
-                $extrasum  = 0;
+                $extrasum  = 0; // LSU Gradebook enhancement.
 
-                $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
+                $weighted_ec = get_config('moodle', 'grade_w_extra_credit'); // LSU Gradebook enhancement.
 
                 foreach ($grade_values as $itemid=>$grade_value) {
-
                     $weight = $items[$itemid]->grademax - $items[$itemid]->grademin;
                     if ($weight <= 0) {
                         continue;
@@ -1191,8 +1197,8 @@ class grade_category extends grade_object {
 
                     $oldsum = $sum;
                     $weightedgrade = $weight * $grade_value;
-                    if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) {
-                        $sum += $weightedgrade;
+                    if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) { //LSU Gradebook enhancement.
+                        $sum += $weightedgrade; //LSU Gradebook enhancement.
                     }
 
                     if ($weights !== null) {
@@ -1245,7 +1251,7 @@ class grade_category extends grade_object {
                         }
                     }
                 }
-                $agg_grade += $extrasum;
+                $agg_grade += $extrasum; // LSU Gradebook enhancement.
                 break;
 
             case GRADE_AGGREGATE_EXTRACREDIT_MEAN: // special average
@@ -1323,14 +1329,17 @@ class grade_category extends grade_object {
                 $this->load_grade_item();
                 $num = count($grade_values);
                 $sum = 0;
-                $extrasum  = 0;
+                // LSU Gradebook Enhancement.
+		$extrasum  = 0;
 
                 $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
+		// End LSU Gradebook Enhancement.
 
                 // This setting indicates if we should use algorithm prior to MDL-49257 fix for calculating extra credit weights.
                 // Even though old algorith has bugs in it, we need to preserve existing grades.
-                $gradebookcalculationfreeze = (int)get_config('core', 'gradebook_calculations_freeze_' . $this->courseid);
-                $oldextracreditcalculation = $gradebookcalculationfreeze && ($gradebookcalculationfreeze <= 20150619);
+                $gradebookcalculationfreeze = 'gradebook_calculations_freeze_' . $this->courseid;
+                $oldextracreditcalculation = isset($CFG->$gradebookcalculationfreeze)
+                        && ($CFG->$gradebookcalculationfreeze <= 20150619);
 
                 $sumweights = 0;
                 $grademin = 0;
@@ -1366,7 +1375,9 @@ class grade_category extends grade_object {
                 // percentage of weights missing from the category.
                 foreach ($grade_values as $itemid => $gradevalue) {
                     if ($items[$itemid]->weightoverride) {
+			// LSU Gradebook Enhancement.
                         if ($items[$itemid]->aggregationcoef2 <= 0 || ($items[$itemid]->weightoverride && $items[$itemid]->aggregationcoef > 0)) {
+			// End LSU Gradebook Enhancement
                             // Records the weight of 0 and continue.
                             $userweights[$itemid] = 0;
                             continue;
@@ -1438,16 +1449,17 @@ class grade_category extends grade_object {
                 $oldgrademax = $this->grade_item->grademax;
                 $oldgrademin = $this->grade_item->grademin;
                 foreach ($grade_values as $itemid => $gradevalue) {
-
                     if (!isset($extracredititems[$itemid])) {
                         continue;
                     }
                     $oldsum = $sum;
                     $weightedgrade = $gradevalue * $userweights[$itemid] * $grademax;
                     $sum += $weightedgrade;
+                    // LSU Gradebook enhancement.
                     if (empty($ec_test)) {
-                       $extrasum += $gradevalue * $extracredititems[$itemid]->grademax;
+                        $extrasum += $gradevalue * $extracredititems[$itemid]->grademax;
                     }
+                     // END LSU Gradebook enhancement.
 
                     // Only go through this when we need to record the weights.
                     if ($weights !== null) {
@@ -1484,11 +1496,13 @@ class grade_category extends grade_object {
                     $agg_grade = $sum;
                     $grademax = $sum;
                 }
-                $nextrasum = 0;
+		// LSU Gradebook Enhancement.
+		$nextrasum = 0;
                 if ((isset($extrasum) > 0) && ($grademax > 0)) {
                     $nextrasum = $extrasum / $grademax;
                 }
                 $agg_grade = $agg_grade + $nextrasum;
+		// End LSU Gradebook Enhancement.
                 break;
 
             case GRADE_AGGREGATE_MEAN:    // Arithmetic average of all grade items (if ungraded aggregated, NULL counted as minimum)
@@ -1533,7 +1547,7 @@ class grade_category extends grade_object {
      * @return void
      */
     private function auto_update_max() {
-        global $DB;
+        global $CFG, $DB;
         if ($this->aggregation != GRADE_AGGREGATE_SUM) {
             // not needed at all
             return;
@@ -1545,11 +1559,10 @@ class grade_category extends grade_object {
 
         // Check to see if the gradebook is frozen. This allows grades to not be altered at all until a user verifies that they
         // wish to update the grades.
-        $gradebookcalculationsfreeze = get_config('core', 'gradebook_calculations_freeze_' . $this->courseid);
+        $gradebookcalculationfreeze = 'gradebook_calculations_freeze_' . $this->courseid;
+        $oldextracreditcalculation = isset($CFG->$gradebookcalculationfreeze) && ($CFG->$gradebookcalculationfreeze <= 20150627);
         // Only run if the gradebook isn't frozen.
-        if ($gradebookcalculationsfreeze && (int)$gradebookcalculationsfreeze <= 20150627) {
-            // Do nothing.
-        } else{
+        if (!$oldextracreditcalculation) {
             // Don't automatically update the max for calculated items.
             if ($this->grade_item->is_calculated()) {
                 return;
@@ -1579,11 +1592,11 @@ class grade_category extends grade_object {
         //find max grade possible
         $maxes = array();
 
-        $notweightedmean = $this->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN;
+        $notweightedmean = $this->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN; // LSU Gradebook enhancement.
 
         foreach ($items as $item) {
 
-            if (($notweightedmean and $item->aggregationcoef > 0) or $item->aggregationcoef < 0) {
+            if (($notweightedmean and $item->aggregationcoef > 0) or $item->aggregationcoef < 0) { // LSU Gradebook enhancement.
                 // extra credit from this activity - does not affect total
                 continue;
             } else if ($item->aggregationcoef2 <= 0) {
@@ -1803,15 +1816,16 @@ class grade_category extends grade_object {
     public function apply_limit_rules(&$grade_values, $items) {
         $extraused = $this->is_extracredit_used();
 
-        // Added for the sake of simplicity
-        $isweightedmean = $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
+        $isweightedmean = $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN; // LSU Gradebook enhancement - Added for the sake of simplicity.
 
         if (!empty($this->droplow)) {
+            // BEGIN LSU Drop Lowest Limit.
             $limit = (bool)get_config('moodle', 'grade_droplow_limit');
 
             if ($limit and count($grade_values) <= $this->droplow) {
                 return;
             }
+            // END LSU Drop Lowest Limit.
 
             asort($grade_values, SORT_NUMERIC);
             $dropped = 0;
@@ -1835,8 +1849,8 @@ class grade_category extends grade_object {
 
                 // Find the first remaining grade item that is available to be dropped
                 foreach ($grade_keys as $gradekeyindex=>$gradekey) {
-                   // Modified to make sure extra credit items are not dropped regardless of aggregation method.
-                   if (!$extraused || ($isweightedmean && $items[$gradekey]->aggregationcoef > 0) || (!$isweightedmean && $items[$gradekey]->aggregationcoef <= 0)) {
+                     // LSU Gradebppk enhancement - Modified to make sure extra credit items are not dropped regardless of aggregation method.
+                    if (!$extraused || ($isweightedmean && $items[$gradekey]->aggregationcoef > 0) || (!$isweightedmean && $items[$gradekey]->aggregationcoef <= 0)) {
                         // Found a non-extra credit grade item that is eligible to be dropped
                         $originalindex = $gradekeyindex;
                         $founditemid = $grade_keys[$originalindex];
@@ -1863,7 +1877,7 @@ class grade_category extends grade_object {
                         break;
                     }
 
-                    // Modified to make sure extra credit items are not dropped regardless of aggregation method.
+                    // LSU Gradebook enhacnement - Modified to make sure extra credit items are not dropped regardless of aggregation method.
                     if (($extraused && ($isweightedmean && $items[$gradekey]->aggregationcoef <= 0)) || (($extraused && (!$isweightedmean && $items[$gradekey]->aggregationcoef > 0)))) {
                         // Don't drop extra credit grade items. Continue the search.
                         continue;
@@ -1889,7 +1903,7 @@ class grade_category extends grade_object {
 
             foreach ($grade_values as $itemid=>$value) {
 
-                if ($this->is_item_extra_credit($items[$itemid])) {
+                if ($this->is_item_extra_credit($items[$itemid])) { // LSU Gradebook enhancement.
                     // we keep all extra credits
 
                 } else if ($kept < $this->keephigh) {
@@ -1902,8 +1916,9 @@ class grade_category extends grade_object {
         }
     }
 
-    /**
+     /**
      * Returns whether or not the item is extra credit.
+     * LSU Gradebook enahancement.
      *
      * @return bool
      */
@@ -2005,7 +2020,7 @@ class grade_category extends grade_object {
     public static function aggregation_uses_extracredit($aggregation) {
         return ($aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
              or $aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
-             or $aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN
+             or $aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN // LSU Gradebook enhancement.
              or $aggregation == GRADE_AGGREGATE_SUM);
     }
 
@@ -2396,10 +2411,12 @@ class grade_category extends grade_object {
         // For a course category, we return the course name if the fullname is set to '?' in the DB (empty in the category edit form)
         if (empty($this->parent) && $this->fullname == '?') {
             $course = $DB->get_record('course', array('id'=> $this->courseid));
-            return format_string($course->fullname);
+            return format_string($course->fullname, false, array("context" => context_course::instance($this->courseid)));
 
         } else {
-            return $this->fullname;
+            // Grade categories can't be set up at system context (unlike scales and outcomes)
+            // We therefore must have a courseid, and don't need to handle system contexts when filtering.
+            return format_string($this->fullname, false, array("context" => context_course::instance($this->courseid)));
         }
     }
 

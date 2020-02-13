@@ -32,9 +32,7 @@ require_once($CFG->libdir . '/grade/grade_item.php');
 require_once($CFG->libdir . '/grade/grade_grade.php');
 require_once($CFG->libdir . '/grade/grade_scale.php');
 require_once($CFG->libdir . '/grade/grade_outcome.php');
-// BEGIN LSU Anonymous Grades
 require_once($CFG->libdir . '/grade/grade_anonymous.php');
-// END LSU Anonymous Grades
 
 /////////////////////////////////////////////////////////////////////
 ///// Start of public API for communication with modules/blocks /////
@@ -255,6 +253,7 @@ function grade_update($source, $courseid, $itemtype, $itemmodule, $iteminstance,
         $rawgrade       = false;
         $feedback       = false;
         $feedbackformat = FORMAT_MOODLE;
+        $feedbackfiles = [];
         $usermodified   = $USER->id;
         $datesubmitted  = null;
         $dategraded     = null;
@@ -271,6 +270,10 @@ function grade_update($source, $courseid, $itemtype, $itemmodule, $iteminstance,
             $feedbackformat = $grade['feedbackformat'];
         }
 
+        if (array_key_exists('feedbackfiles', $grade)) {
+            $feedbackfiles = $grade['feedbackfiles'];
+        }
+
         if (array_key_exists('usermodified', $grade)) {
             $usermodified = $grade['usermodified'];
         }
@@ -284,7 +287,8 @@ function grade_update($source, $courseid, $itemtype, $itemmodule, $iteminstance,
         }
 
         // update or insert the grade
-        if (!$grade_item->update_raw_grade($userid, $rawgrade, $source, $feedback, $feedbackformat, $usermodified, $dategraded, $datesubmitted, $grade_grade)) {
+        if (!$grade_item->update_raw_grade($userid, $rawgrade, $source, $feedback, $feedbackformat, $usermodified,
+                $dategraded, $datesubmitted, $grade_grade, $feedbackfiles)) {
             $failed = true;
         }
     }
@@ -385,7 +389,17 @@ function grade_regrade_final_grades_if_required($course, callable $callback = nu
         echo $OUTPUT->header();
         echo $OUTPUT->heading(get_string('recalculatinggrades', 'grades'));
         $progress = new \core\progress\display(true);
-        grade_regrade_final_grades($course->id, null, null, $progress);
+        $status = grade_regrade_final_grades($course->id, null, null, $progress);
+
+        // Show regrade errors and set the course to no longer needing regrade (stop endless loop).
+        if (is_array($status)) {
+            foreach ($status as $error) {
+                $errortext = new \core\output\notification($error, \core\output\notification::NOTIFY_ERROR);
+                echo $OUTPUT->render($errortext);
+            }
+            $courseitem = grade_item::fetch_course_item($course->id);
+            $courseitem->regrading_finished();
+        }
 
         if ($callback) {
             //
@@ -459,7 +473,7 @@ function grade_get_grades($courseid, $itemtype, $itemmodule, $iteminstance, $use
 
                 switch ($grade_item->gradetype) {
                     case GRADE_TYPE_NONE:
-                        continue;
+                        break;
 
                     case GRADE_TYPE_VALUE:
                         $item->scaleid = 0;
@@ -530,7 +544,17 @@ function grade_get_grades($courseid, $itemtype, $itemmodule, $iteminstance, $use
                         if (is_null($grade->feedback)) {
                             $grade->str_feedback = '';
                         } else {
-                            $grade->str_feedback = format_text($grade->feedback, $grade->feedbackformat);
+                            $feedback = file_rewrite_pluginfile_urls(
+                                $grade->feedback,
+                                'pluginfile.php',
+                                $grade_grades[$userid]->get_context()->id,
+                                GRADE_FILE_COMPONENT,
+                                GRADE_FEEDBACK_FILEAREA,
+                                $grade_grades[$userid]->id
+                            );
+
+                            $grade->str_feedback = format_text($feedback, $grade->feedbackformat,
+                                ['context' => $grade_grades[$userid]->get_context()]);
                         }
 
                         $item->grades[$userid] = $grade;
@@ -576,6 +600,8 @@ function grade_get_grades($courseid, $itemtype, $itemmodule, $iteminstance, $use
                         $grade->feedback       = $grade_grades[$userid]->feedback;
                         $grade->feedbackformat = $grade_grades[$userid]->feedbackformat;
                         $grade->usermodified   = $grade_grades[$userid]->usermodified;
+                        $grade->datesubmitted  = $grade_grades[$userid]->get_datesubmitted();
+                        $grade->dategraded     = $grade_grades[$userid]->get_dategraded();
 
                         // create text representation of grade
                         if (in_array($grade_item->id, $needsupdate)) {
@@ -767,7 +793,9 @@ function grade_format_gradevalue($value, &$grade_item, $localized=true, $display
             return grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized);
 
         case GRADE_DISPLAY_TYPE_LETTER:
+            // BEGIN LSU Better Letters.
             return grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized);
+            // END LSU Better Letters.
 
         case GRADE_DISPLAY_TYPE_REAL_PERCENTAGE:
             return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ' (' .
@@ -775,23 +803,31 @@ function grade_format_gradevalue($value, &$grade_item, $localized=true, $display
 
         case GRADE_DISPLAY_TYPE_REAL_LETTER:
             return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ' (' .
+                    // Begin LSU Better Letters.
                     grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ')';
+                    // END LSU Better Letters.
 
         case GRADE_DISPLAY_TYPE_PERCENTAGE_REAL:
             return grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized) . ' (' .
                     grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ')';
 
         case GRADE_DISPLAY_TYPE_LETTER_REAL:
+            // Begin LSU Better Letters.
             return grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ' (' .
+            // END LSU Better Letters.
                     grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ')';
 
         case GRADE_DISPLAY_TYPE_LETTER_PERCENTAGE:
+            // BEGIN LSU Better Letters.
             return grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ' (' .
+            // END LSU Better Letters.
                     grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized) . ')';
 
         case GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER:
             return grade_format_gradevalue_percentage($value, $grade_item, $decimals, $localized) . ' (' .
+                    // Begin LSU Better Letters.
                     grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) . ')';
+                    // END LSU Better Letters.
         default:
             return '';
     }
@@ -848,7 +884,9 @@ function grade_format_gradevalue_percentage($value, $grade_item, $decimals, $loc
  * @param object $grade_item Grade item object
  * @return string
  */
+// BEGIN LSU Better Letters.
 function grade_format_gradevalue_letter($value, $grade_item, $decimals, $localized) {
+// END LSU Better Letters.
     global $CFG;
     $context = context_course::instance($grade_item->courseid, IGNORE_MISSING);
     if (!$letters = grade_get_letters($context)) {
@@ -861,7 +899,9 @@ function grade_format_gradevalue_letter($value, $grade_item, $decimals, $localiz
 
     $value = grade_grade::standardise_score($value, $grade_item->grademin, $grade_item->grademax, 0, 100);
     $value = bounded_number(0, $value, 100); // just in case
+    // BEGIN LSU Better Letters.
     $value = format_float($value, $decimals, $localized);
+    // END LSU Better Letters.
 
     $gradebookcalculationsfreeze = 'gradebook_calculations_freeze_' . $grade_item->courseid;
 
@@ -1104,13 +1144,14 @@ function grade_recover_history_grades($userid, $courseid) {
  *
  * @param int $courseid The course ID
  * @param int $userid If specified try to do a quick regrading of the grades of this user only
- * @param object $updated_item Optional grade item to be marked for regrading
+ * @param object $updated_item Optional grade item to be marked for regrading. It is required if $userid is set.
  * @param \core\progress\base $progress If provided, will be used to update progress on this long operation.
  * @return bool true if ok, array of errors if problems found. Grade item id => error message
  */
 function grade_regrade_final_grades($courseid, $userid=null, $updated_item=null, $progress=null) {
-    // This may take a very long time.
+    // This may take a very long time and extra memory.
     \core_php_time_limit::raise();
+    raise_memory_limit(MEMORY_EXTRA);
 
     $course_item = grade_item::fetch_course_item($courseid);
 
@@ -1237,7 +1278,7 @@ function grade_regrade_final_grades($courseid, $userid=null, $updated_item=null,
                 if ($updateddependencies === false) {
                     // If no direct descendants are marked as updated, then we don't need to update this grade item. We then mark it
                     // as final.
-
+                    $count++;
                     $finalids[] = $gid;
                     continue;
                 }
@@ -1370,9 +1411,10 @@ function grade_update_mod_grades($modinstance, $userid=0) {
         //new grading supported, force updating of grades
         $updateitemfunc($modinstance);
         $updategradesfunc($modinstance, $userid);
-
-    } else {
+    } else if (function_exists($updategradesfunc) xor function_exists($updateitemfunc)) {
         // Module does not support grading?
+        debugging("You have declared one of $updateitemfunc and $updategradesfunc but not both. " .
+                  "This will cause broken behaviour.", DEBUG_DEVELOPER);
     }
 
     return true;
@@ -1389,7 +1431,16 @@ function remove_grade_letters($context, $showfeedback) {
 
     $strdeleted = get_string('deleted');
 
-    $DB->delete_records('grade_letters', array('contextid'=>$context->id));
+    $records = $DB->get_records('grade_letters', array('contextid' => $context->id));
+    foreach ($records as $record) {
+        $DB->delete_records('grade_letters', array('id' => $record->id));
+        // Trigger the letter grade deleted event.
+        $event = \core\event\grade_letter_deleted::create(array(
+            'objectid' => $record->id,
+            'context' => $context,
+        ));
+        $event->trigger();
+    }
     if ($showfeedback) {
         echo $OUTPUT->notification($strdeleted.' - '.get_string('letters', 'grades'), 'notifysuccess');
     }
@@ -1452,7 +1503,16 @@ function grade_course_category_delete($categoryid, $newparentid, $showfeedback) 
     global $DB;
 
     $context = context_coursecat::instance($categoryid);
-    $DB->delete_records('grade_letters', array('contextid'=>$context->id));
+    $records = $DB->get_records('grade_letters', array('contextid' => $context->id));
+    foreach ($records as $record) {
+        $DB->delete_records('grade_letters', array('id' => $record->id));
+        // Trigger the letter grade deleted event.
+        $event = \core\event\grade_letter_deleted::create(array(
+            'objectid' => $record->id,
+            'context' => $context,
+        ));
+        $event->trigger();
+    }
 }
 
 /**
@@ -1508,6 +1568,7 @@ function grade_user_unenrol($courseid, $userid) {
     }
 }
 
+// LSU Gradebook Enhancement.
 /**
  * Grading cron job.
  */
@@ -1567,6 +1628,7 @@ function grade_clean_cron() {
         }
     }
 }
+// End LSU Gradebook Enhancement.
 
 /**
  * Reset all course grades, refetch from the activities and recalculate

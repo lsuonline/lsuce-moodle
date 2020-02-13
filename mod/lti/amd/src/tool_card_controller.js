@@ -26,9 +26,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
-define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/tool_type', 'mod_lti/events', 'mod_lti/keys',
+ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/modal_factory',
+        'mod_lti/tool_type', 'mod_lti/events', 'mod_lti/keys',
         'core/str'],
-        function($, ajax, notification, templates, toolType, ltiEvents, KEYS, str) {
+        function($, ajax, notification, templates, modalFactory, toolType, ltiEvents, KEYS, str) {
 
     var SELECTORS = {
         DELETE_BUTTON: '.delete',
@@ -46,8 +47,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getDeleteButton
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {JQuery} jQuery object
      */
     var getDeleteButton = function(element) {
         return element.find(SELECTORS.DELETE_BUTTON);
@@ -58,8 +59,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getNameElement
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {JQuery} jQuery object
      */
     var getNameElement = function(element) {
         return element.find(SELECTORS.NAME_ELEMENT);
@@ -70,8 +71,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getDescriptionElement
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {JQuery} jQuery object
      */
     var getDescriptionElement = function(element) {
         return element.find(SELECTORS.DESCRIPTION_ELEMENT);
@@ -82,8 +83,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getActivateButton
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery object
+     * @param {Object} element jQuery object representing the tool card.
+     * @return {Object} jQuery object
      */
     var getActivateButton = function(element) {
         return element.find(SELECTORS.ACTIVATE_BUTTON);
@@ -94,8 +95,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method hasActivateButton
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return bool
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Boolean} true if has active buton
      */
     var hasActivateButton = function(element) {
         return getActivateButton(element).length ? true : false;
@@ -107,8 +108,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getCapabilitiesContainer
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return bool
+     * @param {Object} element jQuery object representing the tool card.
+     * @return {Object} The element
      */
     var getCapabilitiesContainer = function(element) {
         return element.find(SELECTORS.CAPABILITIES_CONTAINER);
@@ -120,8 +121,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method hasCapabilitiesContainer
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return bool
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Boolean} true if has capbilities.
      */
     var hasCapabilitiesContainer = function(element) {
         return getCapabilitiesContainer(element).length ? true : false;
@@ -132,8 +133,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getTypeId
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return string Type ID
+     * @param {Object} element jQuery object representing the tool card.
+     * @return {String} Type ID
      */
     var getTypeId = function(element) {
         return element.attr('data-type-id');
@@ -144,7 +145,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method clearAllAnnouncements
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var clearAllAnnouncements = function(element) {
         element.removeClass('announcement loading success fail capabilities');
@@ -155,7 +156,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method startLoading
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var startLoading = function(element) {
         clearAllAnnouncements(element);
@@ -167,7 +168,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method stopLoading
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var stopLoading = function(element) {
         element.removeClass('announcement loading');
@@ -179,8 +180,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method announceSuccess
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery Deferred object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Promise} jQuery Deferred object
      */
     var announceSuccess = function(element) {
         var promise = $.Deferred();
@@ -201,8 +202,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method announceFailure
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery Deferred object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Promise} jQuery Deferred object
      */
     var announceFailure = function(element) {
         var promise = $.Deferred();
@@ -223,8 +224,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method deleteType
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery Deferred object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Promise} jQuery Deferred object
      */
     var deleteType = function(element) {
         var promise = $.Deferred();
@@ -272,7 +273,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
                                         announceFailure(element);
                                         promise.reject(error);
                                     });
-                        }, function () {
+                        }, function() {
                                 stopLoading(element);
                                 promise.resolve();
                             });
@@ -291,8 +292,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method setValueSnapshot
      * @private
-     * @param object jQuery object representing the element.
-     * @param string value to be saved.
+     * @param {JQuery} element jQuery object representing the element.
+     * @param {String} value to be saved.
      */
     var setValueSnapshot = function(element, value) {
         element.attr('data-val-snapshot', value);
@@ -303,8 +304,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method getValueSnapshot
      * @private
-     * @param object jQuery object representing the element.
-     * @return string the saved value.
+     * @param {JQuery} element jQuery object representing the element.
+     * @return {String} the saved value.
      */
     var getValueSnapshot = function(element) {
         return element.attr('data-val-snapshot');
@@ -315,7 +316,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method snapshotDescription
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var snapshotDescription = function(element) {
         var descriptionElement = getDescriptionElement(element);
@@ -334,8 +335,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method updateDescription
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery Deferred object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Promise} jQuery Deferred object
      */
     var updateDescription = function(element) {
         var typeId = getTypeId(element);
@@ -375,7 +376,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
 
         // Probably need to handle failures better so that we can revert
         // the value in the input for the user.
-        promise.fail(function() { descriptionElement.removeClass('loading'); });
+        promise.fail(function() {
+          descriptionElement.removeClass('loading');
+        });
 
         return promise;
     };
@@ -385,7 +388,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method snapshotName
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var snapshotName = function(element) {
         var nameElement = getNameElement(element);
@@ -404,8 +407,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method updateName
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery Deferred object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Promise} jQuery Deferred object
      */
     var updateName = function(element) {
         var typeId = getTypeId(element);
@@ -443,7 +446,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
 
         // Probably need to handle failures better so that we can revert
         // the value in the input for the user.
-        promise.fail(function() { nameElement.removeClass('loading'); });
+        promise.fail(function() {
+          nameElement.removeClass('loading');
+        });
 
         return promise;
     };
@@ -455,8 +460,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method setStatusActive
      * @private
-     * @param object jQuery object representing the tool card.
-     * @return object jQuery Deferred object
+     * @param {JQuery} element jQuery object representing the tool card.
+     * @return {Promise} jQuery Deferred object
      */
     var setStatusActive = function(element) {
         var id = getTypeId(element);
@@ -473,21 +478,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
             state: toolType.constants.state.configured
         });
 
-        promise.done(function(toolTypeData) {
+        promise.then(function(toolTypeData) {
             stopLoading(element);
+            announceSuccess(element);
+            return toolTypeData;
+        }).then(function(toolTypeData) {
+            return templates.render('mod_lti/tool_card', toolTypeData);
+        }).then(function(renderResult) {
+            var html = renderResult[0];
+            var js = renderResult[1];
 
-            var announcePromise = announceSuccess(element);
-            var renderPromise = templates.render('mod_lti/tool_card', toolTypeData);
-
-            $.when(renderPromise, announcePromise).then(function(renderResult) {
-                var html = renderResult[0];
-                var js = renderResult[1];
-
-                templates.replaceNode(element, html, js);
-            });
-        });
-
-        promise.fail(function() {
+            templates.replaceNode(element, html, js);
+            return;
+        }).catch(function() {
             stopLoading(element);
             announceFailure(element);
         });
@@ -501,7 +504,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method displayCapabilitiesApproval
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var displayCapabilitiesApproval = function(element) {
         element.addClass('announcement capabilities');
@@ -512,7 +515,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method hideCapabilitiesApproval
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var hideCapabilitiesApproval = function(element) {
         element.removeClass('announcement capabilities');
@@ -525,7 +528,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method activateToolType
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var activateToolType = function(element) {
         if (hasCapabilitiesContainer(element)) {
@@ -540,7 +543,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
      *
      * @method registerEventListeners
      * @private
-     * @param object jQuery object representing the tool card.
+     * @param {JQuery} element jQuery object representing the tool card.
      */
     var registerEventListeners = function(element) {
         var deleteButton = getDeleteButton(element);
@@ -629,15 +632,62 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/t
         }
     };
 
+    /**
+     * Sets up the templates for the tool configuration modal on this tool type card.
+     *
+     * @method registerModal
+     * @private
+     * @param {JQuery} element jQuery object representing the tool card.
+     */
+    var registerModal = function(element) {
+        var trigger = $('#' + element.data('uniqid') + '-' + element.data('deploymentid'));
+        var context = {
+            'uniqid': element.data('uniqid'),
+            'platformid': element.data('platformid'),
+            'clientid': element.data('clientid'),
+            'deploymentid': element.data('deploymentid'),
+            'urls': {
+                'publickeyset': element.data('publickeyseturl'),
+                'accesstoken': element.data('accesstokenurl'),
+                'authrequest': element.data('authrequesturl')
+            }
+        };
+        var bodyPromise = templates.render('mod_lti/tool_config_modal_body', context);
+        var mailTo = 'mailto:?subject=' + encodeURIComponent(element.data('mailtosubject')) +
+            '&body=' + encodeURIComponent(element.data('platformidstr')) + ':%20' +
+            encodeURIComponent(element.data('platformid')) + '%0D%0A' +
+            encodeURIComponent(element.data('clientidstr')) + ':%20' +
+            encodeURIComponent(element.data('clientid')) + '%0D%0A' +
+            encodeURIComponent(element.data('deploymentidstr')) + ':%20' +
+            encodeURIComponent(element.data('deploymentid')) + '%0D%0A' +
+            encodeURIComponent(element.data('publickeyseturlstr')) + ':%20' +
+            encodeURIComponent(element.data('publickeyseturl')) + '%0D%0A' +
+            encodeURIComponent(element.data('accesstokenurlstr')) + ':%20' +
+            encodeURIComponent(element.data('accesstokenurl')) + '%0D%0A' +
+            encodeURIComponent(element.data('authrequesturlstr')) + ':%20' +
+            encodeURIComponent(element.data('authrequesturl')) + '%0D%0A';
+        context = {
+            'mailto': mailTo
+        };
+        var footerPromise = templates.render('mod_lti/tool_config_modal_footer', context);
+        modalFactory.create({
+          large: true,
+          title: element.data('modaltitle'),
+          body: bodyPromise,
+          footer: footerPromise,
+        }, trigger);
+    };
+
     return /** @alias module:mod_lti/tool_card_controller */ {
 
         /**
          * Initialise this module.
          *
-         * @param object jQuery object representing the tool card.
+         * @param {JQuery} element jQuery object representing the tool card.
          */
         init: function(element) {
             registerEventListeners(element);
+            registerModal(element);
         }
     };
 });

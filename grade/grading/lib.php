@@ -185,8 +185,8 @@ class grading_manager {
         } else if ($this->get_context()->contextlevel >= CONTEXT_COURSE) {
             list($context, $course, $cm) = get_context_info_array($this->get_context()->id);
 
-            if (strval($cm->name) !== '') {
-                $title = $cm->name;
+            if ($cm && strval($cm->name) !== '') {
+                $title = format_string($cm->name, true, array('context' => $context));
             } else {
                 debugging('Gradable areas are currently supported at the course module level only', DEBUG_DEVELOPER);
                 $title = $this->get_component();
@@ -322,8 +322,10 @@ class grading_manager {
             }
 
         } else if ($this->get_context()->contextlevel == CONTEXT_MODULE) {
-            list($context, $course, $cm) = get_context_info_array($this->get_context()->id);
-            return self::available_areas('mod_'.$cm->modname);
+            $modulecontext = $this->get_context();
+            $coursecontext = $modulecontext->get_course_context();
+            $cm = get_fast_modinfo($coursecontext->instanceid)->get_cm($modulecontext->instanceid);
+            return self::available_areas("mod_{$cm->modname}");
 
         } else {
             throw new coding_exception('Unsupported gradable area context level');
@@ -489,7 +491,7 @@ class grading_manager {
      * Returns the given method's controller in the gradable area
      *
      * @param string $method the method name, eg 'rubric' (must be available)
-     * @return grading_controller
+     * @return gradingform_controller
      */
     public function get_controller($method) {
         global $CFG, $DB;
@@ -534,7 +536,7 @@ class grading_manager {
     /**
      * Returns the controller for the active method if it is available
      *
-     * @return null|grading_controller
+     * @return null|gradingform_controller
      */
     public function get_active_controller() {
         if ($gradingmethod = $this->get_active_method()) {

@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
  * values.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class kernel {
@@ -64,6 +64,7 @@ class kernel {
      * @return array
      */
     public function resolve_controller_callback($action) {
+        // @codingStandardsIgnoreLine
         /** @var $controller controller_abstract */
         list($controller, $method) = $this->router->route_action($action);
 

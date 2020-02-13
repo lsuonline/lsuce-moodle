@@ -1,11 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
 ues::require_daos();
 
 abstract class post_grades {
 
-    public static function pull_auditing_students($course_or_section) {
+    public static function pull_auditing_students($courseorsection) {
         $filters = ues::where()
             ->join('{enrol_ues_students}', 'stu')->on('id', 'userid')
             ->join('{enrol_ues_studentmeta}', 'stum')->on('stu.id', 'studentid')
@@ -13,10 +29,10 @@ abstract class post_grades {
             ->stum->value->equal(1)
             ->stu->status->in(ues::ENROLLED, ues::PROCESSED);
 
-        if ($course_or_section instanceof ues_section) {
-            $filters->stu->sectionid->equal($course_or_section->id);
+        if ($courseorsection instanceof ues_section) {
+            $filters->stu->sectionid->equal($courseorsection->id);
         } else {
-            $sections = ues_section::from_course($course_or_section);
+            $sections = ues_section::from_course($courseorsection);
             $filters->stu->sectionid->in(array_keys($sections));
         }
 
@@ -24,11 +40,13 @@ abstract class post_grades {
     }
 
     public static function valid_types() {
-        $type_keys = array_keys(self::screens());
+        $typekeys = array_keys(self::screens());
 
-        $to_name = function($key) { return get_string($key, 'block_post_grades'); };
+        $toname = function($key) {
+            return get_string($key, 'block_post_grades');
+        };
 
-        return array_combine($type_keys, array_map($to_name, $type_keys));
+        return array_combine($typekeys, array_map($toname, $typekeys));
     }
 
     public static function active_periods_for_sections($sections) {
@@ -91,8 +109,8 @@ abstract class post_grades {
             return null;
         }
 
-        require_once dirname(__FILE__) . '/screens/lib.php';
-        require_once $screens[$screen];
+        require_once(dirname(__FILE__) . '/screens/lib.php');
+        require_once($screens[$screen]);
 
         return "post_grades_$screen";
     }
@@ -110,11 +128,11 @@ abstract class post_grades {
         $groups = groups_get_all_groups($course->id);
 
         $pattern = '/\w{2,4} \d{4} \d{3}/';
-        $valid_name = function($group) use ($pattern) {
+        $validname = function($group) use ($pattern) {
             return preg_match($pattern, $group->name);
         };
 
-        return array_filter($groups, $valid_name);
+        return array_filter($groups, $validname);
     }
 
     public static function find_section($group, $sections) {
@@ -143,7 +161,7 @@ abstract class post_grades {
 
     public static function already_posted($course, $group, $period) {
         $sections = ues_section::from_course($course, true);
-        $section = post_grades::find_section($group, $sections);
+        $section = self::find_section($group, $sections);
 
         return self::already_posted_section($section, $period);
     }

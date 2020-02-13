@@ -39,6 +39,11 @@ if (! $entry = $DB->get_record("glossary_entries", array("id"=>$entry))) {
     print_error('invalidentry');
 }
 
+// Permission checks are based on the course module instance so make sure it is correct.
+if ($cm->instance != $entry->glossaryid) {
+    print_error('invalidentry');
+}
+
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
 $manageentries = has_capability('mod/glossary:manageentries', $context);
@@ -119,6 +124,8 @@ if ($confirm and confirm_sesskey()) { // the operation was confirmed.
         require_once($CFG->dirroot.'/mod/glossary/rsslib.php');
         glossary_rss_delete_file($glossary);
     }
+
+    core_tag_tag::remove_all_item_tags('mod_glossary', 'glossary_entries', $origentry->id);
 
     $event = \mod_glossary\event\entry_deleted::create(array(
         'context' => $context,

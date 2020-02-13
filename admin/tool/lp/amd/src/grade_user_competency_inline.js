@@ -34,12 +34,12 @@ define(['jquery',
      * InlineEditor
      *
      * @param {String} selector The selector to trigger the grading.
-     * @param {Number} The id of the scale for this competency.
-     * @param {Number} The id of the competency.
-     * @param {Number} The id of the user.
-     * @param {Number} The id of the plan.
-     * @param {Number} The id of the course.
-     * @param {String} Language string for choose a rating.
+     * @param {Number} scaleId The id of the scale for this competency.
+     * @param {Number} competencyId The id of the competency.
+     * @param {Number} userId The id of the user.
+     * @param {Number} planId The id of the plan.
+     * @param {Number} courseId The id of the course.
+     * @param {String} chooseStr Language string for choose a rating.
      */
     var InlineEditor = function(selector, scaleId, competencyId, userId, planId, courseId, chooseStr) {
         EventBase.prototype.constructor.apply(this, []);
@@ -95,7 +95,7 @@ define(['jquery',
             self = this;
 
         var promise = ScaleValues.get_values(self._scaleId);
-        promise.done(function(scalevalues) {
+        promise.then(function(scalevalues) {
             options.push({
                 value: '',
                 name: self._chooseStr
@@ -109,8 +109,13 @@ define(['jquery',
                 });
             }
 
-            self._dialogue = new GradeDialogue(options);
-            self._dialogue.on('rated', function(e, data) {
+            return options;
+        })
+        .then(function(options) {
+            return new GradeDialogue(options);
+        })
+        .then(function(dialogue) {
+            dialogue.on('rated', function(e, data) {
                 var args = self._args;
                 args.grade = data.rating;
                 args.note = data.note;
@@ -118,12 +123,20 @@ define(['jquery',
                     methodname: self._methodName,
                     args: args,
                     done: function(evidence) {
-                        self._trigger('competencyupdated', { args: args, evidence: evidence });
-                    }.bind(self),
+                        self._trigger('competencyupdated', {args: args, evidence: evidence});
+                    },
                     fail: notification.exception
                 }]);
-            }.bind(self));
-        }).fail(notification.exception);
+            });
+
+            return dialogue;
+        })
+        .then(function(dialogue) {
+            self._dialogue = dialogue;
+
+            return;
+        })
+        .fail(notification.exception);
     };
 
     /** @type {Number} The scale id for this competency. */

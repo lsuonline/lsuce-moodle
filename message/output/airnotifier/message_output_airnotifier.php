@@ -117,6 +117,8 @@ class message_output_airnotifier extends message_output {
             $header = array('Accept: application/json', 'X-AN-APP-NAME: ' . $CFG->airnotifierappname,
                 'X-AN-APP-KEY: ' . $CFG->airnotifieraccesskey);
             $curl = new curl;
+            // Push notifications are supposed to be instant, do not wait to long blocking the execution.
+            $curl->setopt(array('CURLOPT_TIMEOUT' => 2, 'CURLOPT_CONNECTTIMEOUT' => 2));
             $curl->setHeader($header);
 
             $params = array(
@@ -149,8 +151,6 @@ class message_output_airnotifier extends message_output {
             return get_string('notconfigured', 'message_airnotifier');
         } else {
 
-            $PAGE->requires->css('/message/output/airnotifier/style.css');
-
             $airnotifiermanager = new message_airnotifier_manager();
             $devicetokens = $airnotifiermanager->get_user_devices($CFG->airnotifiermobileappname, $USER->id);
 
@@ -169,21 +169,19 @@ class message_output_airnotifier extends message_output {
 
                     $hideshowicon = $OUTPUT->pix_icon($hideshowiconname, get_string('showhide', 'message_airnotifier'));
                     $name = "{$devicetoken->name} {$devicetoken->model} {$devicetoken->platform} {$devicetoken->version}";
-                    $hideurl = new moodle_url('message/output/airnotifier/action.php',
-                                    array('hide' => !$devicetoken->enable, 'deviceid' => $devicetoken->id,
-                                        'sesskey' => sesskey()));
 
                     $output .= html_writer::start_tag('li', array('id' => $devicetoken->id,
                                                                     'class' => 'airnotifierdevice ' . $dimmed)) . "\n";
                     $output .= html_writer::label($name, 'deviceid-' . $devicetoken->id, array('class' => 'devicelabel ')) . ' ' .
-                        html_writer::link($hideurl, $hideshowicon, array('class' => 'hidedevice', 'alt' => 'show/hide')) . "\n";
+                        html_writer::link('#', $hideshowicon, array('class' => 'hidedevice', 'alt' => 'show/hide')) . "\n";
                     $output .= html_writer::end_tag('li') . "\n";
                 }
 
                 // Include the AJAX script to automatically trigger the action.
                 $airnotifiermanager->include_device_ajax();
 
-                $output = html_writer::tag('ul', $output, array('id' => 'airnotifierdevices'));
+                $output = html_writer::tag('ul', $output, array('class' => 'list-unstyled unstyled',
+                    'id' => 'airnotifierdevices'));
             } else {
                 $output = get_string('nodevices', 'message_airnotifier');
             }

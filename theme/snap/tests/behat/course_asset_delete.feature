@@ -24,10 +24,7 @@
 Feature: When the moodle theme is set to Snap, teachers can delete course resources and activities without having to reload the page.
 
   Background:
-    Given the following config values are set as admin:
-      | theme              | snap |
-      | defaulthomepage    | 0    |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
     And the following "users" exist:
@@ -47,48 +44,56 @@ Feature: When the moodle theme is set to Snap, teachers can delete course resour
 
   @javascript
   Scenario: In read mode, on front page, admin can cancel / confirm delete activity.
-    Given I log in as "admin" (theme_snap)
+    Given I log in as "admin"
+    And I am on site homepage
     And I click on "#admin-menu-trigger" "css_element"
-    And I navigate to "Front page settings" node in "Site administration > Front page"
+    And I navigate to "Edit settings" in current page administration
     And I set the following fields to these values:
       | Include a topic section | 1 |
     And I am on site homepage
     And I should see "Test assignment1"
-    When I click on ".snap-activity[data-type='Assignment'] a.snap-edit-asset-more" "css_element"
+    When I click on ".snap-activity[data-type='Assignment'] span.snap-edit-asset-more" "css_element"
     And I click on ".snap-activity[data-type='Assignment'] a.js_snap_delete" "css_element"
     Then I should see asset delete dialog
     And I cancel dialog
     Then I should not see asset delete dialog
     And I should see "Test assignment1"
-    When I click on ".snap-activity[data-type='Assignment'] a.snap-edit-asset-more" "css_element"
+    When I click on ".snap-activity[data-type='Assignment'] span.snap-edit-asset-more" "css_element"
     And I click on ".snap-activity[data-type='Assignment'] a.js_snap_delete" "css_element"
     Then I should see asset delete dialog
     When I press "Delete Assign"
     Then I should not see "Test assignment1"
+    # This is to test that the deletion persists.
+    And I reload the page
+    Then I should not see "Test assignment1"
 
   @javascript
   Scenario: In read mode, on course, teacher can cancel / confirm delete activity.
-    Given I log in as "teacher1" (theme_snap)
+    Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
     Then "#section-1" "css_element" should exist
-    When I click on ".snap-activity[data-type='Assignment'] a.snap-edit-asset-more" "css_element"
+    When I click on ".snap-activity[data-type='Assignment'] span.snap-edit-asset-more" "css_element"
     And I click on ".snap-activity[data-type='Assignment'] a.js_snap_delete" "css_element"
     Then I should see asset delete dialog
     And I cancel dialog
     Then I should not see asset delete dialog
     And I should see "Test assignment1"
-    When I click on ".snap-activity[data-type='Assignment'] a.snap-edit-asset-more" "css_element"
+    When I click on ".snap-activity[data-type='Assignment'] span.snap-edit-asset-more" "css_element"
     And I click on ".snap-activity[data-type='Assignment'] a.js_snap_delete" "css_element"
     Then I should see asset delete dialog
     When I press "Delete Assign"
     Then I should not see "Test assignment1" in the "#section-1" "css_element"
     And I cannot see "Test assignment1" in course asset search
+    # This is to test that the deletion persists.
+    And I reload the page
+    Then I should not see "Test assignment1" in the "#section-1" "css_element"
+    And I cannot see "Test assignment1" in course asset search
 
   @javascript
   Scenario: Student cannot delete activity.
-    Given I log in as "student1" (theme_snap)
+    Given I log in as "student1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
-    Then ".snap-activity[data-type='Assignment'] a.snap-edit-asset-more" "css_element" should not exist
+    Then ".snap-activity[data-type='Assignment'] span.snap-edit-asset-more" "css_element" should not exist
     And ".snap-activity[data-type='Assignment'] a.js_snap_delete" "css_element" should not exist

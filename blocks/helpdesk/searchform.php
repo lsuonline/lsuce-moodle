@@ -18,13 +18,16 @@
 /**
  *
  * @package    block_helpdesk
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->libdir . '/formslib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/formslib.php');
 
 class helpdesk_searchform extends moodleform {
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         foreach ($this->_customdata['criterion'] as $k => $c) {
@@ -33,14 +36,14 @@ class helpdesk_searchform extends moodleform {
                 $m->createElement('select', "{$k}_equality", '', $options),
                 $m->createElement('text', "{$k}_terms", '', array('size' => 60))
             );
-            $m->setType("{$k}_terms",PARAM_TEXT);
+            $m->setType("{$k}_terms", PARAM_TEXT);
 
             $m->addGroup($elements, $k, $c, array(' '), false);
             $m->setDefault("{$k}_equality", 'contains');
         }
 
         $m->addElement('hidden', 'mode', $this->_customdata['mode']);
-        $m->setType('mode',PARAM_ALPHA);
+        $m->setType('mode', PARAM_ALPHA);
 
         $buttons = array(
             $m->createElement('submit', 'submit', get_string('submit')),

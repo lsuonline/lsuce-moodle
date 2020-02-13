@@ -14,17 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * @package   block_ues_reprocess
- * @copyright 2016, Louisiana State University
+ * @copyright 2019 Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_ues_reprocess';
-$plugin->version = 2016040800;
+$plugin->version = 2019102900;
 $plugin->requires = 2015111600;
 $plugin->release = 'v3.0.0';
 

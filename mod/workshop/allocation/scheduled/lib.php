@@ -26,10 +26,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(dirname(dirname(__FILE__)) . '/lib.php');                  // interface definition
-require_once(dirname(dirname(dirname(__FILE__))) . '/locallib.php');    // workshop internal API
-require_once(dirname(dirname(__FILE__)) . '/random/lib.php');           // random allocator
-require_once(dirname(__FILE__) . '/settings_form.php');                 // our settings form
+require_once(__DIR__ . '/../lib.php');            // interface definition
+require_once(__DIR__ . '/../../locallib.php');    // workshop internal API
+require_once(__DIR__ . '/../random/lib.php');     // random allocator
+require_once(__DIR__ . '/settings_form.php');     // our settings form
 
 /**
  * Allocates the submissions randomly in a cronjob task
@@ -245,43 +245,5 @@ class workshop_scheduled_allocator implements workshop_allocator {
             $data->id = $current->id;
             $DB->update_record('workshopallocation_scheduled', $data);
         }
-    }
-}
-
-/**
- * Regular jobs to execute via cron
- */
-function workshopallocation_scheduled_cron() {
-    global $CFG, $DB;
-
-    $sql = "SELECT w.*
-              FROM {workshopallocation_scheduled} a
-              JOIN {workshop} w ON a.workshopid = w.id
-             WHERE a.enabled = 1
-                   AND w.phase = 20
-                   AND w.submissionend > 0
-                   AND w.submissionend < ?
-                   AND (a.timeallocated IS NULL OR a.timeallocated < w.submissionend)";
-
-    $workshops = $DB->get_records_sql($sql, array(time()));
-
-    if (empty($workshops)) {
-        mtrace('... no workshops awaiting scheduled allocation. ', '');
-        return;
-    }
-
-    mtrace('... executing scheduled allocation in '.count($workshops).' workshop(s) ... ', '');
-
-    // let's have some fun!
-    require_once($CFG->dirroot.'/mod/workshop/locallib.php');
-
-    foreach ($workshops as $workshop) {
-        $cm = get_coursemodule_from_instance('workshop', $workshop->id, $workshop->course, false, MUST_EXIST);
-        $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-        $workshop = new workshop($workshop, $cm, $course);
-        $allocator = $workshop->allocator_instance('scheduled');
-        $result = $allocator->execute();
-
-        // todo inform the teachers about the results
     }
 }

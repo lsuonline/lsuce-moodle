@@ -22,9 +22,9 @@ Feature: Exporting and importing feedbacks
 
   Scenario: Export sample feedback and compare with the fixture
     When I log in as "teacher"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Learning experience"
-    And I follow "Edit questions"
+    And I click on "Edit questions" "link" in the "[role=main]" "css_element"
     And I add a "Information" question to the feedback with:
       | Question         | this is an information question |
       | Label            | info                            |
@@ -52,7 +52,7 @@ Feature: Exporting and importing feedbacks
     And I add a "Multiple choice" question to the feedback with:
       | Question                       | this is a multiple choice 3        |
       | Label                          | multichoice3                       |
-      | Multiple choice type           | Multiple choice - single answer allowed (dropdownlist) |
+      | Multiple choice type           | Multiple choice - single answer allowed (drop-down menu) |
       | Multiple choice values         | option g\noption h\noption i                           |
     And I add a "Multiple choice (rated)" question to the feedback with:
       | Question               | this is a multiple choice rated |
@@ -74,9 +74,9 @@ Feature: Exporting and importing feedbacks
   @javascript @_file_upload
   Scenario: Import feedback deleting old items
     When I log in as "teacher"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Learning experience"
-    And I follow "Edit questions"
+    And I click on "Edit questions" "link" in the "[role=main]" "css_element"
     And I add a "Numeric answer" question to the feedback with:
       | Question               | Existing question |
       | Label                  | numeric           |
@@ -85,7 +85,7 @@ Feature: Exporting and importing feedbacks
     And I follow "Import questions"
     And I upload "mod/feedback/tests/fixtures/testexport.xml" file to "File" filemanager
     And I press "Yes"
-    And I follow "Edit questions"
+    And I click on "Edit questions" "link" in the "[role=main]" "css_element"
     Then I should not see "Existing question"
     And I should see "this is an information question"
     And I should see "label text"
@@ -101,9 +101,9 @@ Feature: Exporting and importing feedbacks
   @javascript @_file_upload
   Scenario: Import feedback appending new items
     When I log in as "teacher"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Learning experience"
-    And I follow "Edit questions"
+    And I click on "Edit questions" "link" in the "[role=main]" "css_element"
     And I add a "Numeric answer" question to the feedback with:
       | Question               | Existing question |
       | Label                  | numeric           |
@@ -113,7 +113,7 @@ Feature: Exporting and importing feedbacks
     And I set the field "Append new items" to "1"
     And I upload "mod/feedback/tests/fixtures/testexport.xml" file to "File" filemanager
     And I press "Yes"
-    And I follow "Edit questions"
+    And I click on "Edit questions" "link" in the "[role=main]" "css_element"
     Then I should see "Existing question"
     And "Existing question" "text" should appear before "this is an information question" "text"
     And I should see "this is an information question"

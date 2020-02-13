@@ -77,6 +77,7 @@ class core_webservice_external extends external_api {
                       array('serviceshortnames'=>$serviceshortnames));
 
         $context = context_user::instance($USER->id);
+        $systemcontext = context_system::instance();
 
         $userpicture = new user_picture($USER);
         $userpicture->size = 1; // Size f1.
@@ -84,15 +85,16 @@ class core_webservice_external extends external_api {
 
         // Site information.
         $siteinfo =  array(
-            'sitename' => $SITE->fullname,
+            'sitename' => external_format_string($SITE->fullname, $systemcontext),
             'siteurl' => $CFG->wwwroot,
             'username' => $USER->username,
             'firstname' => $USER->firstname,
             'lastname' => $USER->lastname,
             'fullname' => fullname($USER),
-            'lang' => current_language(),
+            'lang' => clean_param(current_language(), PARAM_LANG),
             'userid' => $USER->id,
-            'userpictureurl' => $profileimageurl->out(false)
+            'userpictureurl' => $profileimageurl->out(false),
+            'siteid' => SITEID
         );
 
         // Retrieve the service and functions from the web service linked to the token
@@ -162,11 +164,11 @@ class core_webservice_external extends external_api {
         $siteinfo['functions'] = $availablefunctions;
 
         // Mobile CSS theme and alternative login url.
-        $siteinfo['mobilecssurl'] = $CFG->mobilecssurl;
+        $siteinfo['mobilecssurl'] = !empty($CFG->mobilecssurl) ? $CFG->mobilecssurl : '';
 
         // Retrieve some advanced features. Only enable/disable ones (bool).
         $advancedfeatures = array("usecomments", "usetags", "enablenotes", "messaging", "enableblogs",
-                                    "enablecompletion", "enablebadges");
+                                    "enablecompletion", "enablebadges", "messagingallusers");
         foreach ($advancedfeatures as $feature) {
             if (isset($CFG->{$feature})) {
                 $siteinfo['advancedfeatures'][] = array(
@@ -187,14 +189,26 @@ class core_webservice_external extends external_api {
         // User quota. 0 means user can ignore the quota.
         $siteinfo['userquota'] = 0;
         if (!has_capability('moodle/user:ignoreuserquota', $context)) {
-            $siteinfo['userquota'] = $CFG->userquota;
+            $siteinfo['userquota'] = (int) $CFG->userquota; // Cast to int to ensure value is not higher than PHP_INT_MAX.
         }
 
         // User max upload file size. -1 means the user can ignore the upload file size.
-        $siteinfo['usermaxuploadfilesize'] = get_user_max_upload_file_size($context, $CFG->maxbytes);
+        // Cast to int to ensure value is not higher than PHP_INT_MAX.
+        $siteinfo['usermaxuploadfilesize'] = (int) get_user_max_upload_file_size($context, $CFG->maxbytes);
 
         // User home page.
         $siteinfo['userhomepage'] = get_home_page();
+
+        // Calendar.
+        $siteinfo['sitecalendartype'] = $CFG->calendartype;
+        if (empty($USER->calendartype)) {
+            $siteinfo['usercalendartype'] = $CFG->calendartype;
+        } else {
+            $siteinfo['usercalendartype'] = $USER->calendartype;
+        }
+
+        // Current theme.
+        $siteinfo['theme'] = clean_param($PAGE->theme->name, PARAM_THEME);  // We always clean to avoid problem with old sites.
 
         return $siteinfo;
     }
@@ -213,7 +227,7 @@ class core_webservice_external extends external_api {
                 'firstname'      => new external_value(PARAM_TEXT, 'first name'),
                 'lastname'       => new external_value(PARAM_TEXT, 'last name'),
                 'fullname'       => new external_value(PARAM_TEXT, 'user full name'),
-                'lang'           => new external_value(PARAM_LANG, 'user language'),
+                'lang'           => new external_value(PARAM_LANG, 'Current language.'),
                 'userid'         => new external_value(PARAM_INT, 'user id'),
                 'siteurl'        => new external_value(PARAM_RAW, 'site url'),
                 'userpictureurl' => new external_value(PARAM_URL, 'the user profile picture.
@@ -257,7 +271,11 @@ class core_webservice_external extends external_api {
                                             VALUE_OPTIONAL),
                 'userhomepage' => new external_value(PARAM_INT,
                                                         'the default home page for the user: 0 for the site home, 1 for dashboard',
-                                                        VALUE_OPTIONAL)
+                                                        VALUE_OPTIONAL),
+                'siteid'  => new external_value(PARAM_INT, 'Site course ID', VALUE_OPTIONAL),
+                'sitecalendartype'  => new external_value(PARAM_PLUGIN, 'Calendar type set in the site.', VALUE_OPTIONAL),
+                'usercalendartype'  => new external_value(PARAM_PLUGIN, 'Calendar typed used by the user.', VALUE_OPTIONAL),
+                'theme'  => new external_value(PARAM_THEME, 'Current theme for the user.', VALUE_OPTIONAL),
             )
         );
     }

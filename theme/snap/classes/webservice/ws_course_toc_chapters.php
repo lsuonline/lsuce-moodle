@@ -25,7 +25,7 @@ require_once(__DIR__ . '/../../../../lib/externallib.php');
 /**
  * Course TOC chapters web service.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ws_course_toc_chapters extends \external_api {
@@ -44,7 +44,7 @@ class ws_course_toc_chapters extends \external_api {
      */
     public static function service_returns() {
         $keys = [
-            'chapters' =>  new \external_single_structure(
+            'chapters' => new \external_single_structure(
                 [
                     'chapters' => new \external_multiple_structure(
                         new \external_single_structure(

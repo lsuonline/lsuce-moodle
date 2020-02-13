@@ -21,12 +21,12 @@ Feature: Preview a Trtue/False question
       | questioncategory | qtype     | name           | template |
       | Test questions   | truefalse | true-false-001 | true     |
     Given I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Question bank" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Question bank" in current page administration
 
   @javascript @_switch_window
   Scenario: Preview a True/False question and submit a correct response.
-    When I click on "Preview" "link" in the "true-false-001" "table_row"
+    When I choose "Preview" action for "true-false-001" in the question bank
     And I switch to "questionpreview" window
     And I set the field "How questions behave" to "Immediate feedback"
     And I press "Start again with these options"
@@ -38,7 +38,7 @@ Feature: Preview a Trtue/False question
 
   @javascript @_switch_window
   Scenario: Preview a True/False question and submit an incorrect response.
-    When I click on "Preview" "link" in the "true-false-001" "table_row"
+    When I choose "Preview" action for "true-false-001" in the question bank
     And I switch to "questionpreview" window
     And I set the field "How questions behave" to "Immediate feedback"
     And I press "Start again with these options"

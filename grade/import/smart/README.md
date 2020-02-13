@@ -1,6 +1,6 @@
 # Smart File Importer
 
-This impoerterallows instructors to upload a variety of file formats to import
+This importer allows instructors to upload a variety of file formats to import
 grades into their gradebook.
 
 ## Download

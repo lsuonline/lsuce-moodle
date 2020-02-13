@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'material_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('material_form.php');
 
 require_login();
 
@@ -37,17 +37,17 @@ if (!ues_user::is_teacher()) {
 
 $teacher = ues_teacher::get(array('userid' => $USER->id));
 
-$non_primaries = (bool) get_config('block_cps', 'material_nonprimary');
+$nonprimaries = (bool) get_config('block_cps', 'material_nonprimary');
 
-$sections = $teacher->sections(!$non_primaries);
+$sections = $teacher->sections(!$nonprimaries);
 
 if (empty($sections)) {
     print_error('no_section', 'block_cps');
 }
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_material::name();
 
 $context = context_system::instance();
@@ -66,7 +66,7 @@ if ($form->is_cancelled()) {
 } else if ($data = $form->get_data()) {
     $fields = get_object_vars($data);
 
-    $current_selections = cps_material::get_all(array('userid' => $USER->id));
+    $currentselections = cps_material::get_all(array('userid' => $USER->id));
 
     foreach ($fields as $name => $value) {
         if (!preg_match('/^material_(\d+)/', $name, $matches)) {
@@ -85,11 +85,11 @@ if ($form->is_cancelled()) {
         $material->save();
         $material->apply();
 
-        unset($current_selections[$material->id]);
+        unset($currentselections[$material->id]);
     }
 
-    // Remove deselected
-    foreach ($current_selections as $material) {
+    // Remove deselected.
+    foreach ($currentselections as $material) {
         $material->unapply();
         $material->delete($material->id);
     }
@@ -97,9 +97,9 @@ if ($form->is_cancelled()) {
     $success = true;
 }
 
-$all_materials = cps_material::get_all(array('userid' => $USER->id));
+$allmaterials = cps_material::get_all(array('userid' => $USER->id));
 $data = array();
-foreach ($all_materials as $material) {
+foreach ($allmaterials as $material) {
     $data['material_' . $material->courseid] = 1;
 }
 $form->set_data($data);

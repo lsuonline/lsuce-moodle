@@ -22,6 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+define('NO_OUTPUT_BUFFERING', true); // The progress bar may be used here.
+
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/lib.php';
 require_once $CFG->dirroot.'/grade/report/lib.php'; // for preferences
@@ -38,15 +40,14 @@ $PAGE->set_pagelayout('admin');
 
 /// Make sure they can even access this course
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('nocourseid');
+    print_error('invalidcourseid');
 }
 
 require_login($course);
 $context = context_course::instance($course->id);
 require_capability('moodle/grade:manage', $context);
 
-// todo $PAGE->requires->js_module() should be used here instead
-$PAGE->requires->js('/grade/edit/tree/functions.js');
+$PAGE->requires->js_call_amd('core_grades/edittree_index', 'enhance');
 
 /// return tracking object
 $gpr = new grade_plugin_return(array('type'=>'edit', 'plugin'=>'tree', 'courseid'=>$courseid));
@@ -238,43 +239,34 @@ print_grade_page_head($courseid, 'settings', 'setup', get_string('gradebooksetup
 // Print Table of categories and items
 echo $OUTPUT->box_start('gradetreebox generalbox');
 
-echo '<form id="gradetreeform" method="post" action="'.$returnurl.'">';
-echo '<div>';
-echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
-
 //did we update something in the db and thus invalidate $grade_edit_tree?
 if ($recreatetree) {
     $grade_edit_tree = new grade_edit_tree($gtree, $movingeid, $gpr);
 }
 
+$bulkmoveoptions = ['' => get_string('choosedots')] + $grade_edit_tree->categories;
+$tpldata = (object) [
+    'actionurl' => $returnurl,
+    'sesskey' => sesskey(),
+    'showsave' => !$moving,
+    'showbulkmove' => !$moving && count($grade_edit_tree->categories) > 1,
+    'bulkmoveoptions' => array_map(function($option) use ($bulkmoveoptions) {
+        return [
+            'name' => $bulkmoveoptions[$option],
+            'value' => $option
+        ];
+    }, array_keys($bulkmoveoptions))
+];
+
 // Check to see if we have a normalisation message to send.
 if ($weightsadjusted) {
-    echo $OUTPUT->notification(get_string('weightsadjusted', 'grades'), 'notifymessage');
+    $notification = new \core\output\notification(get_string('weightsadjusted', 'grades'), \core\output\notification::NOTIFY_INFO);
+    $tpldata->notification = $notification->export_for_template($OUTPUT);
 }
 
-echo html_writer::table($grade_edit_tree->table);
+$tpldata->table = html_writer::table($grade_edit_tree->table);
 
-echo '<div id="gradetreesubmit">';
-if (!$moving) {
-    echo '<input class="advanced" type="submit" value="'.get_string('savechanges').'" />';
-}
-
-// We don't print a bulk move menu if there are no other categories than course category
-if (!$moving && count($grade_edit_tree->categories) > 1) {
-    echo '<br /><br />';
-    echo '<input type="hidden" name="bulkmove" value="0" id="bulkmoveinput" />';
-    $attributes = array('id'=>'menumoveafter', 'class' => 'ignoredirty singleselect');
-    echo html_writer::label(get_string('moveselectedto', 'grades'), 'menumoveafter');
-    echo html_writer::select($grade_edit_tree->categories, 'moveafter', '', array(''=>'choosedots'), $attributes);
-    $OUTPUT->add_action_handler(new component_action('change', 'submit_bulk_move'), 'menumoveafter');
-    echo '<div id="noscriptgradetreeform" class="hiddenifjs">
-            <input type="submit" value="'.get_string('go').'" />
-          </div>';
-}
-
-echo '</div>';
-
-echo '</div></form>';
+echo $OUTPUT->render_from_template('core_grades/edit_tree', $tpldata);
 
 echo $OUTPUT->box_end();
 
@@ -284,13 +276,13 @@ echo $OUTPUT->container_start('buttons mdl-align');
 if ($moving) {
     echo $OUTPUT->single_button(new moodle_url('index.php', array('id'=>$course->id)), get_string('cancel'), 'get');
 } else {
-    echo $OUTPUT->single_button(new moodle_url('category.php', array('courseid'=>$course->id)), get_string('addcategory', 'grades'), 'get');
-    echo $OUTPUT->single_button(new moodle_url('item.php', array('courseid'=>$course->id)), get_string('additem', 'grades'), 'get');
-
+    echo $OUTPUT->single_button(new moodle_url('item.php', array('courseid' => $course->id)), get_string('additem',
+        'grades'), 'get');
     if (!empty($CFG->enableoutcomes)) {
         echo $OUTPUT->single_button(new moodle_url('outcomeitem.php', array('courseid'=>$course->id)), get_string('addoutcomeitem', 'grades'), 'get');
     }
-
+    echo $OUTPUT->single_button(new moodle_url('category.php', array('courseid' => $course->id)), get_string('addcategory',
+        'grades'), 'get');
     //echo $OUTPUT->(new moodle_url('index.php', array('id'=>$course->id, 'action'=>'autosort')), get_string('autosort', 'grades'), 'get');
 }
 

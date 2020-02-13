@@ -16,24 +16,27 @@
 
 
 /**
+ * The main block file.
  *
  * @package    block_ues_people
  * @copyright  2014 Louisiana State University
+ * @copyright  2014 Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-defined('MOODLE_INTERNAL') or die();
+
+defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+    require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
     ues::require_daos();
 
     $defaults = array('sec_number', 'credit_hours');
-    $user_meta = array_merge($defaults, ues_user::get_meta_names());
+    $usermeta = array_merge($defaults, ues_user::get_meta_names());
 
-    $options = array_combine($user_meta, $user_meta);
+    $options = array_combine($usermeta, $usermeta);
 
-    $_s = ues::gen_str('block_ues_people');
+    $s = ues::gen_str('block_ues_people');
 
     $settings->add(new admin_setting_configmultiselect('block_ues_people/outputs',
-        $_s('outputs'), $_s('outputs_desc'), $defaults, $options));
+        $s('outputs'), $s('outputs_desc'), $defaults, $options));
 }

@@ -6,13 +6,11 @@ Feature: Manage plearning plan templates
 
   Background:
     Given I log in as "admin"
+    And I change window size to "small"
     And I am on site homepage
-    And I expand "Site administration" node
-    When I expand "Competencies" node
-    Then I should see "Learning plan templates"
 
   Scenario: Create a new learning plan template
-    Given I follow "Learning plan templates"
+    Given I navigate to "Competencies > Learning plan templates" in site administration
     And I should see "List of learning plan templates"
     And I click on "Add new learning plan template" "button"
     And I should see "Add new learning plan template"
@@ -26,7 +24,7 @@ Feature: Manage plearning plan templates
     Given the following lp "templates" exist:
       | shortname | description |
       | Science template Year-2 | science template description |
-    And I follow "Learning plan templates"
+    And I navigate to "Competencies > Learning plan templates" in site administration
     And I should see "Science template Year-2"
     When I click on "Science template Year-2" "link"
     Then I should see "Science template Year-2"
@@ -36,7 +34,7 @@ Feature: Manage plearning plan templates
     Given the following lp "templates" exist:
       | shortname | description |
       | Science template Year-3 | science template description |
-    And I follow "Learning plan templates"
+    And I navigate to "Competencies > Learning plan templates" in site administration
     And I should see "Science template Year-3"
     And I click on "Edit" of edit menu in the "Science template Year-3" row
     And the field "Name" matches value "Science template Year-3"
@@ -49,14 +47,15 @@ Feature: Manage plearning plan templates
     Given the following lp "templates" exist:
       | shortname | description |
       | Science template Year-4 | science template description |
-    And I follow "Learning plan templates"
+    And I navigate to "Competencies > Learning plan templates" in site administration
     And I should see "Science template Year-4"
     And I click on "Delete" of edit menu in the "Science template Year-4" row
     And "Confirm" "dialogue" should be visible
     And "Delete" "button" should exist in the "Confirm" "dialogue"
     And "Cancel" "button" should exist in the "Confirm" "dialogue"
-    And I click on "Cancel" "button"
+    And I click on "Cancel" "button" in the "Confirm" "dialogue"
     And I click on "Delete" of edit menu in the "Science template Year-4" row
     And "Confirm" "dialogue" should be visible
-    When I click on "Delete" "button"
+    When I click on "Delete" "button" in the "Confirm" "dialogue"
+    And I wait until the page is ready
     Then I should not see "Science template Year-4"

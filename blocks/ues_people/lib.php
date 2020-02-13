@@ -16,11 +16,15 @@
 
 
 /**
+ * The main block file.
  *
  * @package    block_ues_people
  * @copyright  2014 Louisiana State University
+ * @copyright  2014 Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 abstract class ues_people {
     public static function primary_role() {
@@ -38,11 +42,11 @@ abstract class ues_people {
     public static function ues_roles() {
         global $DB;
 
-        $role_sql = ues::where()->id->in(
+        $rolesql = ues::where()->id->in(
             self::primary_role(), self::nonprimary_role(), self::student_role()
         )->sql();
 
-        return $DB->get_records_sql('SELECT * FROM {role} WHERE ' . $role_sql);
+        return $DB->get_records_sql('SELECT * FROM {role} WHERE ' . $rolesql);
     }
 
     public static function defaults() {
@@ -82,12 +86,12 @@ abstract class ues_people {
 
             if ($dir == 'ASC') {
                 $path = 'down';
-                $new_dir = 'DESC';
+                $newdir = 'DESC';
             } else {
                 $path = 'up';
-                $new_dir = 'ASC';
+                $newdir = 'ASC';
             }
-            $murl = new moodle_url($url, array('meta' => $field, 'dir' => $new_dir));
+            $murl = new moodle_url($url, array('meta' => $field, 'dir' => $newdir));
 
             $link = html_writer::link($murl, $label);
             $link .= ' ' . $OUTPUT->pix_icon('t/'. $path, $dir);
@@ -103,51 +107,47 @@ abstract class ues_people {
         $defaults = self::defaults();
 
         $internal = array('sec_number', 'credit_hours');
-        $meta_names = array_merge($internal, ues_user::get_meta_names());
+        $metanames = array_merge($internal, ues_user::get_meta_names());
 
-        $_s = ues::gen_str('block_ues_people');
+        $s = ues::gen_str('block_ues_people');
 
         $outputs = array();
 
-        foreach ($meta_names as $meta) {
-            // Admin choice on limits
+        foreach ($metanames as $meta) {
+            // Admin choice on limits.
             if (!in_array($meta, $defaults)) {
                 continue;
             }
 
             $element = in_array($meta, $internal) ?
-                new ues_people_element_output($meta, $_s($meta)) :
+                new ues_people_element_output($meta, $s($meta)) :
                 new ues_people_element_output($meta);
 
             $outputs[$meta] = $element;
         }
 
-        // Little information about where the user is coming from
+        // Little information about where the user is coming from.
         $data = new stdClass;
         $data->course = $course;
         $data->outputs = $outputs;
 
-        // Plugin interference
-        /**
-         * Refactoring of 
-         * events_trigger_legacy('ues_people_outputs', $data);
-         */
+        // Refactoring of events_trigger_legacy.
         global $CFG;
 
-        if(file_exists($CFG->dirroot.'/blocks/cps/events/ues_people.php')){
-            require_once $CFG->dirroot.'/blocks/cps/events/ues_people.php';
+        if (file_exists($CFG->dirroot.'/blocks/cps/classes/ues_people_handler.php')) {
+            require_once($CFG->dirroot.'/blocks/cps/classes/ues_people_handler.php');
             $data = cps_ues_people_handler::ues_people_outputs($data);
         }
 
-        if(file_exists($CFG->dirroot.'/blocks/post_grades/events.php')){
-            require_once $CFG->dirroot.'/blocks/post_grades/events.php';
+        if (file_exists($CFG->dirroot.'/blocks/post_grades/events.php')) {
+            require_once($CFG->dirroot.'/blocks/post_grades/events.php');
             $data = post_grades_handler::ues_people_outputs($data);
         }
 
         return $data->outputs;
     }
 
-    public static function control_elements($meta_names) {
+    public static function control_elements($metanames) {
         $defaults = array(
             'fullname' => get_string('alternatename') . ' (' . get_string('firstname') . ') ' . get_string('lastname'),
             'username' => get_string('username'),
@@ -160,17 +160,17 @@ abstract class ues_people {
             $controls[$field] = new ues_people_element_output($field, $name);
         }
 
-        $controls += $meta_names;
+        $controls += $metanames;
 
         return $controls;
     }
 
-    public static function get_filter($meta_name) {
-        return (int)get_user_preferences('block_ues_people_filter_'.$meta_name, 1);
+    public static function get_filter($metaname) {
+        return (int)get_user_preferences('block_ues_people_filter_'.$metaname, 1);
     }
 
-    public static function set_filter($meta_name, $value) {
-        return set_user_preference('block_ues_people_filter_'.$meta_name, (int)$value);
+    public static function set_filter($metaname, $value) {
+        return set_user_preference('block_ues_people_filter_'.$metaname, (int)$value);
     }
 
     public static function show_links($params, $count, $perpage) {
@@ -192,7 +192,7 @@ abstract class ues_people {
     public static function set_perpage($course, $perpage) {
         $current = self::get_perpage($course);
 
-        // Same... do nothing
+        // Same... do nothing.
         if ($current != $perpage) {
             set_user_preference(
                 'block_ues_people_perpage_' . $course->id,
@@ -209,23 +209,23 @@ abstract class ues_people {
         );
     }
 
-    public static function is_filtered($meta_name) {
-        $pref = self::get_filter($meta_name);
+    public static function is_filtered($metaname) {
+        $pref = self::get_filter($metaname);
         return $pref === 0;
     }
 
-    public static function ferpa_control($disagree){
-        //  FERPA 
+    public static function ferpa_control($disagree) {
+        // FERPA stuffs.
         $attr = array(
-            'id'    =>  'ferpa-warning'
+            'id' => 'ferpa-warning'
         );
-        $attr['style'] = is_null($disagree) ? null : "color:red"; 
+        $attr['style'] = is_null($disagree) ? null : "color:red";
 
-        $ferpa_warning  = html_writer::tag('span',get_string('downloadconfirm', 'block_ues_people'), $attr); 
+        $ferpawarning = html_writer::tag('span', get_string('downloadconfirm', 'block_ues_people'), $attr);
         unset($attr);
 
-        //build checkbox
-        $attr = array(  
+        // Build the checkbox.
+        $attr = array(
             'id'        => 'ferpa',
             'type'      => 'checkbox',
             'class'     => "req",
@@ -233,20 +233,19 @@ abstract class ues_people {
             'name'      => 'FERPA'
         );
 
+        $ferpacheck = html_writer::empty_tag('input', $attr);
 
-        $ferpa_check    =  html_writer::empty_tag('input', $attr);
-
-        //output ferpa
+        // Output the FERPA flag.
         $html  = html_writer::empty_tag('br');
-        $html .= html_writer::tag('p', $ferpa_check." ".$ferpa_warning, array('id' => 'id_ferpa_required'));
+        $html .= html_writer::tag('p', $ferpacheck." ".$ferpawarning, array('id' => 'id_ferpa_required'));
         $html .= html_writer::empty_tag('br');
         return $html;
     }
 
-    public static function controls(array $params, $meta_names, $disagree) {
+    public static function controls(array $params, $metanames, $disagree) {
         global $OUTPUT;
 
-        $controls = self::control_elements($meta_names);
+        $controls = self::control_elements($metanames);
 
         $table = new html_table();
         $head = array();
@@ -268,13 +267,12 @@ abstract class ues_people {
 
         $table->head = $head;
         $table->data[] = $data;
-        
 
-        $html_table     = html_writer::table($table);
+        $htmltable     = html_writer::table($table);
 
         $html = $OUTPUT->box_start();
         $html .= html_writer::start_tag('form', array('method' => 'POST'));
-        $html .= $html_table;
+        $html .= $htmltable;
         $html .= self::ferpa_control($disagree);
         $html .= html_writer::start_tag('div', array('class' => 'export_button'));
         $html .= html_writer::empty_tag('input', array(
@@ -306,10 +304,10 @@ abstract class ues_people {
 }
 
 class ues_people_element_output {
-    var $name;
-    var $field;
+    public $name;
+    public $field;
 
-    function __construct($field, $name = '') {
+    public function __construct($field, $name = '') {
         $this->field = $field;
         if (empty($name)) {
             $name = $field;
@@ -317,7 +315,7 @@ class ues_people_element_output {
         $this->name = $name;
     }
 
-    function format($user) {
+    public function format($user) {
         if (isset($user->{$this->field})) {
             return $user->{$this->field};
         } else {

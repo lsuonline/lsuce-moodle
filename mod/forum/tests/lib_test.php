@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/forum/lib.php');
+require_once($CFG->dirroot . '/mod/forum/locallib.php');
 require_once($CFG->dirroot . '/rating/lib.php');
 
 class mod_forum_lib_testcase extends advanced_testcase {
@@ -270,6 +271,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
 
         $this->resetAfterTest();
 
+        $cache = cache::make('mod_forum', 'forum_is_tracked');
         $useron = $this->getDataGenerator()->create_user(array('trackforums' => 1));
         $useroff = $this->getDataGenerator()->create_user(array('trackforums' => 0));
         $course = $this->getDataGenerator()->create_course();
@@ -309,6 +311,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $result = forum_tp_is_tracked($forumoptional, $useroff);
         $this->assertEquals(false, $result);
 
+        $cache->purge();
         // Don't allow force.
         $CFG->forum_allowforcedreadtracking = 0;
 
@@ -342,6 +345,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         forum_tp_stop_tracking($forumforce->id, $useroff->id);
         forum_tp_stop_tracking($forumoptional->id, $useroff->id);
 
+        $cache->purge();
         // Allow force.
         $CFG->forum_allowforcedreadtracking = 1;
 
@@ -361,6 +365,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $result = forum_tp_is_tracked($forumoptional, $useroff);
         $this->assertEquals(false, $result);
 
+        $cache->purge();
         // Don't allow force.
         $CFG->forum_allowforcedreadtracking = 0;
 
@@ -880,8 +885,8 @@ class mod_forum_lib_testcase extends advanced_testcase {
         // Adding timed discussions.
         $CFG->forum_enabletimedposts = true;
         $now = $record->timemodified;
-        $past = $now - 60;
-        $future = $now + 60;
+        $past = $now - 600;
+        $future = $now + 600;
 
         $record = new stdClass();
         $record->course = $course->id;
@@ -1124,8 +1129,8 @@ class mod_forum_lib_testcase extends advanced_testcase {
         // Adding timed discussions.
         $CFG->forum_enabletimedposts = true;
         $now = $record->timemodified;
-        $past = $now - 60;
-        $future = $now + 60;
+        $past = $now - 600;
+        $future = $now + 600;
 
         $record = new stdClass();
         $record->course = $course->id;
@@ -1422,7 +1427,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->assertEmpty($neighbours['next']);
 
         // Querying the neighbours of a discussion passing the wrong CM.
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         forum_get_discussion_neighbours($cm2, $disc11, $forum2);
     }
 
@@ -1622,7 +1627,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->assertEmpty($neighbours['next']);
 
         // Querying the neighbours of a discussion passing the wrong CM.
-        $this->setExpectedException('coding_exception');
+        $this->expectException('coding_exception');
         forum_get_discussion_neighbours($cm2, $disc11, $forum2);
     }
 
@@ -1707,6 +1712,81 @@ class mod_forum_lib_testcase extends advanced_testcase {
             $this->assertEquals($discussionid, $row->discussion);
         }
     }
+
+    /**
+     * Test the reply count when used with private replies.
+     */
+    public function test_forum_count_discussion_replies_private() {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id));
+        $context = context_module::instance($forum->cmid);
+        $cm = get_coursemodule_from_instance('forum', $forum->id);
+
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id);
+
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id);
+
+        $privilegeduser = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($privilegeduser->id, $course->id, 'editingteacher');
+
+        $otheruser = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($otheruser->id, $course->id);
+
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_forum');
+
+        // Create a discussion with some replies.
+        $record = new stdClass();
+        $record->course = $forum->course;
+        $record->forum = $forum->id;
+        $record->userid = $student->id;
+        $discussion = $generator->create_discussion($record);
+        $replycount = 5;
+        $replyto = $DB->get_record('forum_posts', array('discussion' => $discussion->id));
+
+        // Create a couple of standard replies.
+        $post = new stdClass();
+        $post->userid = $student->id;
+        $post->discussion = $discussion->id;
+        $post->parent = $replyto->id;
+
+        for ($i = 0; $i < $replycount; $i++) {
+            $post = $generator->create_post($post);
+        }
+
+        // Create a private reply post from the teacher back to the student.
+        $reply = new stdClass();
+        $reply->userid = $teacher->id;
+        $reply->discussion = $discussion->id;
+        $reply->parent = $replyto->id;
+        $reply->privatereplyto = $replyto->userid;
+        $generator->create_post($reply);
+
+        // The user is the author of the private reply.
+        $this->setUser($teacher->id);
+        $counts = forum_count_discussion_replies($forum->id);
+        $this->assertEquals($replycount + 1, $counts[$discussion->id]->replies);
+
+        // The user is the intended recipient.
+        $this->setUser($student->id);
+        $counts = forum_count_discussion_replies($forum->id);
+        $this->assertEquals($replycount + 1, $counts[$discussion->id]->replies);
+
+        // The user is not the author or recipient, but does have the readprivatereplies capability.
+        $this->setUser($privilegeduser->id);
+        $counts = forum_count_discussion_replies($forum->id, "", -1, -1, 0, true);
+        $this->assertEquals($replycount + 1, $counts[$discussion->id]->replies);
+
+        // The user is not allowed to view this post.
+        $this->setUser($otheruser->id);
+        $counts = forum_count_discussion_replies($forum->id);
+        $this->assertEquals($replycount, $counts[$discussion->id]->replies);
+    }
+
     public function test_discussion_pinned_sort() {
         list($forum, $discussionids) = $this->create_multiple_discussions_with_replies(10, 5);
         $cm = get_coursemodule_from_instance('forum', $forum->id);
@@ -2023,9 +2103,9 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $cm = get_coursemodule_from_instance('forum', $forum->id);
 
         // Create groups.
-        $group1 = self::getDataGenerator()->create_group(array('courseid' => $course->id));
-        $group2 = self::getDataGenerator()->create_group(array('courseid' => $course->id));
-        $group3 = self::getDataGenerator()->create_group(array('courseid' => $course->id));
+        $group1 = self::getDataGenerator()->create_group(array('courseid' => $course->id, 'name' => 'group1'));
+        $group2 = self::getDataGenerator()->create_group(array('courseid' => $course->id, 'name' => 'group2'));
+        $group3 = self::getDataGenerator()->create_group(array('courseid' => $course->id, 'name' => 'group3'));
 
         // Add the user1 to g1 and g2 groups.
         groups_add_member($group1->id, $user1->id);
@@ -2055,6 +2135,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $discussiong3u3 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
 
         self::setUser($user1);
+
         // Test retrieve discussions not passing the groupid parameter. We will receive only first group discussions.
         $discussions = forum_get_discussions($cm);
         self::assertCount(2, $discussions);
@@ -2119,7 +2200,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
      * Test forum_user_can_post_discussion
      */
     public function test_forum_user_can_post_discussion() {
-        global $CFG, $DB;
+        global $DB;
 
         $this->resetAfterTest(true);
 
@@ -2212,6 +2293,40 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $forum->groupmode = NOGROUPS;
         $DB->update_record('forum', $forum);
 
+        $can = forum_user_can_post_discussion($forum, null, -1, $cm, $context);
+        $this->assertTrue($can);
+    }
+
+    /**
+     * Test forum_user_can_post_discussion_after_cutoff
+     */
+    public function test_forum_user_can_post_discussion_after_cutoff() {
+        $this->resetAfterTest(true);
+
+        // Create course to add the module.
+        $course = self::getDataGenerator()->create_course(array('groupmode' => SEPARATEGROUPS, 'groupmodeforce' => 1));
+        $student = self::getDataGenerator()->create_user();
+        $teacher = self::getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id);
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        // Forum forcing separate gropus.
+        $record = new stdClass();
+        $record->course = $course->id;
+        $record->cutoffdate = time() - 1;
+        $forum = self::getDataGenerator()->create_module('forum', $record);
+        $cm = get_coursemodule_from_instance('forum', $forum->id);
+        $context = context_module::instance($cm->id);
+
+        self::setUser($student);
+
+        // Students usually don't have the mod/forum:canoverridecutoff capability.
+        $can = forum_user_can_post_discussion($forum, null, -1, $cm, $context);
+        $this->assertFalse($can);
+
+        self::setUser($teacher);
+
+        // Teachers usually have the mod/forum:canoverridecutoff capability.
         $can = forum_user_can_post_discussion($forum, null, -1, $cm, $context);
         $this->assertTrue($can);
     }
@@ -2448,6 +2563,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         }
         $results = array();
         forum_print_overview($courses, $results);
+        $this->assertDebuggingCalledCount(2);
 
         // There should be one entry for course1, and no others.
         $this->assertCount(1, $results);
@@ -2499,6 +2615,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->setUser($viewer1->id);
         $results = array();
         forum_print_overview($courses, $results);
+        $this->assertDebuggingCalledCount(2);
 
         // There should be one entry for course1.
         $this->assertCount(1, $results);
@@ -2510,6 +2627,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->setUser($viewer2->id);
         $results = array();
         forum_print_overview($courses, $results);
+        $this->assertDebuggingCalledCount(2);
 
         // There should be one entry for course1.
         $this->assertCount(0, $results);
@@ -2555,6 +2673,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->setUser($viewer->id);
         $results = array();
         forum_print_overview($courses, $results);
+        $this->assertDebuggingCalledCount(2);
 
         if ($hasresult) {
             // There should be one entry for course1.
@@ -2620,6 +2739,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->setUser($viewer1->id);
         $results = array();
         forum_print_overview($courses, $results);
+        $this->assertDebuggingCalledCount(2);
 
         if ($hasresult) {
             // There should be one entry for course1.
@@ -2636,6 +2756,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->setUser($viewer2->id);
         $results = array();
         forum_print_overview($courses, $results);
+        $this->assertDebuggingCalledCount(2);
 
         // There should be one entry for course1.
         $this->assertCount(0, $results);
@@ -2954,218 +3075,892 @@ class mod_forum_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * @dataProvider forum_get_unmailed_posts_provider
+     * Test for forum_is_author_hidden.
      */
-    public function test_forum_get_unmailed_posts($discussiondata, $enabletimedposts, $expectedcount, $expectedreplycount) {
-        global $CFG, $DB;
+    public function test_forum_is_author_hidden() {
+        // First post, different forum type.
+        $post = (object) ['parent' => 0];
+        $forum = (object) ['type' => 'standard'];
+        $this->assertFalse(forum_is_author_hidden($post, $forum));
+
+        // Child post, different forum type.
+        $post->parent = 1;
+        $this->assertFalse(forum_is_author_hidden($post, $forum));
+
+        // First post, single simple discussion forum type.
+        $post->parent = 0;
+        $forum->type = 'single';
+        $this->assertTrue(forum_is_author_hidden($post, $forum));
+
+        // Child post, single simple discussion forum type.
+        $post->parent = 1;
+        $this->assertFalse(forum_is_author_hidden($post, $forum));
+
+        // Incorrect parameters: $post.
+        $this->expectException('coding_exception');
+        $this->expectExceptionMessage('$post->parent must be set.');
+        unset($post->parent);
+        forum_is_author_hidden($post, $forum);
+
+        // Incorrect parameters: $forum.
+        $this->expectException('coding_exception');
+        $this->expectExceptionMessage('$forum->type must be set.');
+        unset($forum->type);
+        forum_is_author_hidden($post, $forum);
+    }
+
+    /**
+     * Test the forum_discussion_is_locked function.
+     *
+     * @dataProvider forum_discussion_is_locked_provider
+     * @param   stdClass    $forum
+     * @param   stdClass    $discussion
+     * @param   bool        $expect
+     */
+    public function test_forum_discussion_is_locked($forum, $discussion, $expect) {
+        $this->resetAfterTest();
+
+        $datagenerator = $this->getDataGenerator();
+        $plugingenerator = $datagenerator->get_plugin_generator('mod_forum');
+
+        $course = $datagenerator->create_course();
+        $user = $datagenerator->create_user();
+        $forum = $datagenerator->create_module('forum', (object) array_merge([
+            'course' => $course->id
+        ], $forum));
+        $discussion = $plugingenerator->create_discussion((object) array_merge([
+            'course' => $course->id,
+            'userid' => $user->id,
+            'forum' => $forum->id,
+        ], $discussion));
+
+        $this->assertEquals($expect, forum_discussion_is_locked($forum, $discussion));
+    }
+
+    /**
+     * Dataprovider for forum_discussion_is_locked tests.
+     *
+     * @return  array
+     */
+    public function forum_discussion_is_locked_provider() {
+        return [
+            'Unlocked: lockdiscussionafter is false' => [
+                ['lockdiscussionafter' => false],
+                [],
+                false
+            ],
+            'Unlocked: lockdiscussionafter is set; forum is of type single; post is recent' => [
+                ['lockdiscussionafter' => DAYSECS, 'type' => 'single'],
+                ['timemodified' => time()],
+                false
+            ],
+            'Unlocked: lockdiscussionafter is set; forum is of type single; post is old' => [
+                ['lockdiscussionafter' => MINSECS, 'type' => 'single'],
+                ['timemodified' => time() - DAYSECS],
+                false
+            ],
+            'Unlocked: lockdiscussionafter is set; forum is of type eachuser; post is recent' => [
+                ['lockdiscussionafter' => DAYSECS, 'type' => 'eachuser'],
+                ['timemodified' => time()],
+                false
+            ],
+            'Locked: lockdiscussionafter is set; forum is of type eachuser; post is old' => [
+                ['lockdiscussionafter' => MINSECS, 'type' => 'eachuser'],
+                ['timemodified' => time() - DAYSECS],
+                true
+            ],
+        ];
+    }
+
+    /**
+     * Test the forum_is_cutoff_date_reached function.
+     *
+     * @dataProvider forum_is_cutoff_date_reached_provider
+     * @param   array   $forum
+     * @param   bool    $expect
+     */
+    public function test_forum_is_cutoff_date_reached($forum, $expect) {
+        $this->resetAfterTest();
+
+        $datagenerator = $this->getDataGenerator();
+        $course = $datagenerator->create_course();
+        $forum = $datagenerator->create_module('forum', (object) array_merge([
+            'course' => $course->id
+        ], $forum));
+
+        $this->assertEquals($expect, forum_is_cutoff_date_reached($forum));
+    }
+
+    /**
+     * Dataprovider for forum_is_cutoff_date_reached tests.
+     *
+     * @return  array
+     */
+    public function forum_is_cutoff_date_reached_provider() {
+        $now = time();
+        return [
+            'cutoffdate is unset' => [
+                [],
+                false
+            ],
+            'cutoffdate is 0' => [
+                ['cutoffdate' => 0],
+                false
+            ],
+            'cutoffdate is set and is in future' => [
+                ['cutoffdate' => $now + 86400],
+                false
+            ],
+            'cutoffdate is set and is in past' => [
+                ['cutoffdate' => $now - 86400],
+                true
+            ],
+        ];
+    }
+
+    /**
+     * Test the forum_is_due_date_reached function.
+     *
+     * @dataProvider forum_is_due_date_reached_provider
+     * @param   stdClass    $forum
+     * @param   bool        $expect
+     */
+    public function test_forum_is_due_date_reached($forum, $expect) {
+        $this->resetAfterTest();
+
+        $this->setAdminUser();
+
+        $datagenerator = $this->getDataGenerator();
+        $course = $datagenerator->create_course();
+        $forum = $datagenerator->create_module('forum', (object) array_merge([
+            'course' => $course->id
+        ], $forum));
+
+        $this->assertEquals($expect, forum_is_due_date_reached($forum));
+    }
+
+    /**
+     * Dataprovider for forum_is_due_date_reached tests.
+     *
+     * @return  array
+     */
+    public function forum_is_due_date_reached_provider() {
+        $now = time();
+        return [
+            'duedate is unset' => [
+                [],
+                false
+            ],
+            'duedate is 0' => [
+                ['duedate' => 0],
+                false
+            ],
+            'duedate is set and is in future' => [
+                ['duedate' => $now + 86400],
+                false
+            ],
+            'duedate is set and is in past' => [
+                ['duedate' => $now - 86400],
+                true
+            ],
+        ];
+    }
+
+    /**
+     * Test that {@link forum_update_post()} keeps correct forum_discussions usermodified.
+     */
+    public function test_forum_update_post_keeps_discussions_usermodified() {
+        global $DB;
 
         $this->resetAfterTest();
 
-        // Configure timed posts.
-        $CFG->forum_enabletimedposts = $enabletimedposts;
+        // Let there be light.
+        $teacher = self::getDataGenerator()->create_user();
+        $student = self::getDataGenerator()->create_user();
+        $course = self::getDataGenerator()->create_course();
 
-        $course = $this->getDataGenerator()->create_course();
-        $forum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
-        $user = $this->getDataGenerator()->create_user();
-        $forumgen = $this->getDataGenerator()->get_plugin_generator('mod_forum');
+        $forum = self::getDataGenerator()->create_module('forum', (object)[
+            'course' => $course->id,
+        ]);
 
-        // Keep track of the start time of the test. Do not use time() after this point to prevent random failures.
-        $time = time();
+        $generator = self::getDataGenerator()->get_plugin_generator('mod_forum');
 
-        $record = new stdClass();
-        $record->course = $course->id;
-        $record->userid = $user->id;
-        $record->forum = $forum->id;
-        if (isset($discussiondata['timecreated'])) {
-            $record->timemodified = $time + $discussiondata['timecreated'];
-        }
-        if (isset($discussiondata['timestart'])) {
-            $record->timestart = $time + $discussiondata['timestart'];
-        }
-        if (isset($discussiondata['timeend'])) {
-            $record->timeend = $time + $discussiondata['timeend'];
-        }
-        if (isset($discussiondata['mailed'])) {
-            $record->mailed = $discussiondata['mailed'];
-        }
+        // Let the teacher start a discussion.
+        $discussion = $generator->create_discussion((object)[
+            'course' => $course->id,
+            'userid' => $teacher->id,
+            'forum' => $forum->id,
+        ]);
 
-        $discussion = $forumgen->create_discussion($record);
+        // On this freshly created discussion, the teacher is the author of the last post.
+        $this->assertEquals($teacher->id, $DB->get_field('forum_discussions', 'usermodified', ['id' => $discussion->id]));
 
-        // Fetch the unmailed posts.
-        $timenow   = $time;
-        $endtime   = $timenow - $CFG->maxeditingtime;
-        $starttime = $endtime - 2 * DAYSECS;
+        // Fetch modified timestamp of the discussion.
+        $discussionmodified = $DB->get_field('forum_discussions', 'timemodified', ['id' => $discussion->id]);
+        $pasttime = $discussionmodified - 3600;
 
-        $unmailed = forum_get_unmailed_posts($starttime, $endtime, $timenow);
-        $this->assertCount($expectedcount, $unmailed);
+        // Adjust the discussion modified timestamp back an hour, so it's in the past.
+        $adjustment = (object)[
+            'id' => $discussion->id,
+            'timemodified' => $pasttime,
+        ];
+        $DB->update_record('forum_discussions', $adjustment);
 
-        // Add a reply just outside the maxeditingtime.
-        $replyto = $DB->get_record('forum_posts', array('discussion' => $discussion->id));
-        $reply = new stdClass();
-        $reply->userid = $user->id;
-        $reply->discussion = $discussion->id;
-        $reply->parent = $replyto->id;
-        $reply->created = max($replyto->created, $endtime - 1);
-        $forumgen->create_post($reply);
+        // Let the student reply to the teacher's post.
+        $reply = $generator->create_post((object)[
+            'course' => $course->id,
+            'userid' => $student->id,
+            'forum' => $forum->id,
+            'discussion' => $discussion->id,
+            'parent' => $discussion->firstpost,
+        ]);
 
-        $unmailed = forum_get_unmailed_posts($starttime, $endtime, $timenow);
-        $this->assertCount($expectedreplycount, $unmailed);
+        // The student should now be the last post's author.
+        $this->assertEquals($student->id, $DB->get_field('forum_discussions', 'usermodified', ['id' => $discussion->id]));
+
+        // Fetch modified timestamp of the discussion and student's post.
+        $discussionmodified = $DB->get_field('forum_discussions', 'timemodified', ['id' => $discussion->id]);
+        $postmodified = $DB->get_field('forum_posts', 'modified', ['id' => $reply->id]);
+
+        // Discussion modified time should be updated to be equal to the newly created post's time.
+        $this->assertEquals($discussionmodified, $postmodified);
+
+        // Adjust the discussion and post timestamps, so they are in the past.
+        $adjustment = (object)[
+            'id' => $discussion->id,
+            'timemodified' => $pasttime,
+        ];
+        $DB->update_record('forum_discussions', $adjustment);
+
+        $adjustment = (object)[
+            'id' => $reply->id,
+            'modified' => $pasttime,
+        ];
+        $DB->update_record('forum_posts', $adjustment);
+
+        // The discussion and student's post time should now be an hour in the past.
+        $this->assertEquals($pasttime, $DB->get_field('forum_discussions', 'timemodified', ['id' => $discussion->id]));
+        $this->assertEquals($pasttime, $DB->get_field('forum_posts', 'modified', ['id' => $reply->id]));
+
+        // Let the teacher edit the student's reply.
+        $this->setUser($teacher->id);
+        $newpost = (object)[
+            'id' => $reply->id,
+            'itemid' => 0,
+            'subject' => 'Amended subject',
+        ];
+        forum_update_post($newpost, null);
+
+        // The student should still be the last post's author.
+        $this->assertEquals($student->id, $DB->get_field('forum_discussions', 'usermodified', ['id' => $discussion->id]));
+
+        // The discussion modified time should not have changed.
+        $this->assertEquals($pasttime, $DB->get_field('forum_discussions', 'timemodified', ['id' => $discussion->id]));
+
+        // The post time should be updated.
+        $this->assertGreaterThan($pasttime, $DB->get_field('forum_posts', 'modified', ['id' => $reply->id]));
     }
 
-    public function forum_get_unmailed_posts_provider() {
-        return [
-            'Untimed discussion; Single post; maxeditingtime not expired' => [
-                'discussion'        => [
-                ],
-                'timedposts'        => false,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
-            'Untimed discussion; Single post; maxeditingtime expired' => [
-                'discussion'        => [
-                    'timecreated'   => - DAYSECS,
-                ],
-                'timedposts'        => false,
-                'postcount'         => 1,
-                'replycount'        => 2,
-            ],
-            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime not expired' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => 0,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
-            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => - DAYSECS,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 1,
-                'replycount'        => 2,
-            ],
-            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend not reached' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => - DAYSECS,
-                    'timeend'       => + DAYSECS
-                ],
-                'timedposts'        => true,
-                'postcount'         => 1,
-                'replycount'        => 2,
-            ],
-            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend passed' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => - DAYSECS,
-                    'timeend'       => - HOURSECS,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
-            'Timed discussion; Single post; Posted 1 week ago; timeend not reached' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timeend'       => + DAYSECS
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 1,
-            ],
-            'Timed discussion; Single post; Posted 1 week ago; timeend passed' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timeend'       => - DAYSECS,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
+    public function test_forum_core_calendar_provide_event_action() {
+        $this->resetAfterTest();
+        $this->setAdminUser();
 
-            'Previously mailed; Untimed discussion; Single post; maxeditingtime not expired' => [
-                'discussion'        => [
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => false,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
+        // Create the activity.
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id,
+            'completionreplies' => 5, 'completiondiscussions' => 2));
 
-            'Previously mailed; Untimed discussion; Single post; maxeditingtime expired' => [
-                'discussion'        => [
-                    'timecreated'   => - DAYSECS,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => false,
-                'postcount'         => 0,
-                'replycount'        => 1,
-            ],
-            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime not expired' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => 0,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
-            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => - DAYSECS,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 1,
-            ],
-            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend not reached' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => - DAYSECS,
-                    'timeend'       => + DAYSECS,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 1,
-            ],
-            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend passed' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timestart'     => - DAYSECS,
-                    'timeend'       => - HOURSECS,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
-            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timeend not reached' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timeend'       => + DAYSECS,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 1,
-            ],
-            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timeend passed' => [
-                'discussion'        => [
-                    'timecreated'   => - WEEKSECS,
-                    'timeend'       => - DAYSECS,
-                    'mailed'        => 1,
-                ],
-                'timedposts'        => true,
-                'postcount'         => 0,
-                'replycount'        => 0,
-            ],
+        // Create a calendar event.
+        $event = $this->create_action_event($course->id, $forum->id,
+            \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
+
+        // Create an action factory.
+        $factory = new \core_calendar\action_factory();
+
+        // Decorate action event.
+        $actionevent = mod_forum_core_calendar_provide_event_action($event, $factory);
+
+        // Confirm the event was decorated.
+        $this->assertInstanceOf('\core_calendar\local\event\value_objects\action', $actionevent);
+        $this->assertEquals(get_string('view'), $actionevent->get_name());
+        $this->assertInstanceOf('moodle_url', $actionevent->get_url());
+        $this->assertEquals(7, $actionevent->get_item_count());
+        $this->assertTrue($actionevent->is_actionable());
+    }
+
+    public function test_forum_core_calendar_provide_event_action_in_hidden_section() {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Create a course.
+        $course = $this->getDataGenerator()->create_course();
+
+        // Create a student.
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        // Create the activity.
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id,
+                'completionreplies' => 5, 'completiondiscussions' => 2));
+
+        // Create a calendar event.
+        $event = $this->create_action_event($course->id, $forum->id,
+                \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
+
+        // Set sections 0 as hidden.
+        set_section_visible($course->id, 0, 0);
+
+        // Now, log out.
+        $CFG->forcelogin = true; // We don't want to be logged in as guest, as guest users might still have some capabilities.
+        $this->setUser();
+
+        // Create an action factory.
+        $factory = new \core_calendar\action_factory();
+
+        // Decorate action event for the student.
+        $actionevent = mod_forum_core_calendar_provide_event_action($event, $factory, $student->id);
+
+        // Confirm the event is not shown at all.
+        $this->assertNull($actionevent);
+    }
+
+    public function test_forum_core_calendar_provide_event_action_for_user() {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Create a course.
+        $course = $this->getDataGenerator()->create_course();
+
+        // Create a student.
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        // Create the activity.
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id,
+                'completionreplies' => 5, 'completiondiscussions' => 2));
+
+        // Create a calendar event.
+        $event = $this->create_action_event($course->id, $forum->id,
+                \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
+
+        // Now log out.
+        $CFG->forcelogin = true; // We don't want to be logged in as guest, as guest users might still have some capabilities.
+        $this->setUser();
+
+        // Create an action factory.
+        $factory = new \core_calendar\action_factory();
+
+        // Decorate action event for the student.
+        $actionevent = mod_forum_core_calendar_provide_event_action($event, $factory, $student->id);
+
+        // Confirm the event was decorated.
+        $this->assertInstanceOf('\core_calendar\local\event\value_objects\action', $actionevent);
+        $this->assertEquals(get_string('view'), $actionevent->get_name());
+        $this->assertInstanceOf('moodle_url', $actionevent->get_url());
+        $this->assertEquals(7, $actionevent->get_item_count());
+        $this->assertTrue($actionevent->is_actionable());
+    }
+
+    public function test_forum_core_calendar_provide_event_action_as_non_user() {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Create the activity.
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id));
+
+        // Create a calendar event.
+        $event = $this->create_action_event($course->id, $forum->id,
+            \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
+
+        // Log out the user and set force login to true.
+        \core\session\manager::init_empty_session();
+        $CFG->forcelogin = true;
+
+        // Create an action factory.
+        $factory = new \core_calendar\action_factory();
+
+        // Decorate action event.
+        $actionevent = mod_forum_core_calendar_provide_event_action($event, $factory);
+
+        // Ensure result was null.
+        $this->assertNull($actionevent);
+    }
+
+    public function test_forum_core_calendar_provide_event_action_already_completed() {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $CFG->enablecompletion = 1;
+
+        // Create the activity.
+        $course = $this->getDataGenerator()->create_course(array('enablecompletion' => 1));
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id),
+            array('completion' => 2, 'completionview' => 1, 'completionexpected' => time() + DAYSECS));
+
+        // Get some additional data.
+        $cm = get_coursemodule_from_instance('forum', $forum->id);
+
+        // Create a calendar event.
+        $event = $this->create_action_event($course->id, $forum->id,
+            \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
+
+        // Mark the activity as completed.
+        $completion = new completion_info($course);
+        $completion->set_module_viewed($cm);
+
+        // Create an action factory.
+        $factory = new \core_calendar\action_factory();
+
+        // Decorate action event.
+        $actionevent = mod_forum_core_calendar_provide_event_action($event, $factory);
+
+        // Ensure result was null.
+        $this->assertNull($actionevent);
+    }
+
+    public function test_forum_core_calendar_provide_event_action_already_completed_for_user() {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $CFG->enablecompletion = 1;
+
+        // Create a course.
+        $course = $this->getDataGenerator()->create_course(array('enablecompletion' => 1));
+
+        // Create a student.
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        // Create the activity.
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id),
+            array('completion' => 2, 'completionview' => 1, 'completionexpected' => time() + DAYSECS));
+
+        // Get some additional data.
+        $cm = get_coursemodule_from_instance('forum', $forum->id);
+
+        // Create a calendar event.
+        $event = $this->create_action_event($course->id, $forum->id,
+            \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
+
+        // Mark the activity as completed for the student.
+        $completion = new completion_info($course);
+        $completion->set_module_viewed($cm, $student->id);
+
+        // Create an action factory.
+        $factory = new \core_calendar\action_factory();
+
+        // Decorate action event.
+        $actionevent = mod_forum_core_calendar_provide_event_action($event, $factory, $student->id);
+
+        // Ensure result was null.
+        $this->assertNull($actionevent);
+    }
+
+    public function test_mod_forum_get_tagged_posts() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Setup test data.
+        $forumgenerator = $this->getDataGenerator()->get_plugin_generator('mod_forum');
+        $course3 = $this->getDataGenerator()->create_course();
+        $course2 = $this->getDataGenerator()->create_course();
+        $course1 = $this->getDataGenerator()->create_course();
+        $forum1 = $this->getDataGenerator()->create_module('forum', array('course' => $course1->id));
+        $forum2 = $this->getDataGenerator()->create_module('forum', array('course' => $course2->id));
+        $forum3 = $this->getDataGenerator()->create_module('forum', array('course' => $course3->id));
+        $post11 = $forumgenerator->create_content($forum1, array('tags' => array('Cats', 'Dogs')));
+        $post12 = $forumgenerator->create_content($forum1, array('tags' => array('Cats', 'mice')));
+        $post13 = $forumgenerator->create_content($forum1, array('tags' => array('Cats')));
+        $post14 = $forumgenerator->create_content($forum1);
+        $post15 = $forumgenerator->create_content($forum1, array('tags' => array('Cats')));
+        $post16 = $forumgenerator->create_content($forum1, array('tags' => array('Cats'), 'hidden' => true));
+        $post21 = $forumgenerator->create_content($forum2, array('tags' => array('Cats')));
+        $post22 = $forumgenerator->create_content($forum2, array('tags' => array('Cats', 'Dogs')));
+        $post23 = $forumgenerator->create_content($forum2, array('tags' => array('mice', 'Cats')));
+        $post31 = $forumgenerator->create_content($forum3, array('tags' => array('mice', 'Cats')));
+
+        $tag = core_tag_tag::get_by_name(0, 'Cats');
+
+        // Admin can see everything.
+        $res = mod_forum_get_tagged_posts($tag, /*$exclusivemode = */false,
+            /*$fromctx = */0, /*$ctx = */0, /*$rec = */1, /*$post = */0);
+        $this->assertRegExp('/'.$post11->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post12->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post13->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post14->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post15->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post16->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post21->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post22->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post23->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post31->subject.'</', $res->content);
+        $this->assertEmpty($res->prevpageurl);
+        $this->assertNotEmpty($res->nextpageurl);
+        $res = mod_forum_get_tagged_posts($tag, /*$exclusivemode = */false,
+            /*$fromctx = */0, /*$ctx = */0, /*$rec = */1, /*$post = */1);
+        $this->assertNotRegExp('/'.$post11->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post12->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post13->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post14->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post15->subject.'</', $res->content);
+        $this->assertNotRegExp('/'.$post16->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post21->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post22->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post23->subject.'</', $res->content);
+        $this->assertRegExp('/'.$post31->subject.'</', $res->content);
+        $this->assertNotEmpty($res->prevpageurl);
+        $this->assertEmpty($res->nextpageurl);
+
+        // Create and enrol a user.
+        $student = self::getDataGenerator()->create_user();
+        $studentrole = $DB->get_record('role', array('shortname' => 'student'));
+        $this->getDataGenerator()->enrol_user($student->id, $course1->id, $studentrole->id, 'manual');
+        $this->getDataGenerator()->enrol_user($student->id, $course2->id, $studentrole->id, 'manual');
+        $this->setUser($student);
+        core_tag_index_builder::reset_caches();
+
+        // User can not see posts in course 3 because he is not enrolled.
+        $res = mod_forum_get_tagged_posts($tag, /*$exclusivemode = */false,
+            /*$fromctx = */0, /*$ctx = */0, /*$rec = */1, /*$post = */1);
+        $this->assertRegExp('/'.$post22->subject.'/', $res->content);
+        $this->assertRegExp('/'.$post23->subject.'/', $res->content);
+        $this->assertNotRegExp('/'.$post31->subject.'/', $res->content);
+
+        // User can search forum posts inside a course.
+        $coursecontext = context_course::instance($course1->id);
+        $res = mod_forum_get_tagged_posts($tag, /*$exclusivemode = */false,
+            /*$fromctx = */0, /*$ctx = */$coursecontext->id, /*$rec = */1, /*$post = */0);
+        $this->assertRegExp('/'.$post11->subject.'/', $res->content);
+        $this->assertRegExp('/'.$post12->subject.'/', $res->content);
+        $this->assertRegExp('/'.$post13->subject.'/', $res->content);
+        $this->assertNotRegExp('/'.$post14->subject.'/', $res->content);
+        $this->assertRegExp('/'.$post15->subject.'/', $res->content);
+        $this->assertRegExp('/'.$post16->subject.'/', $res->content);
+        $this->assertNotRegExp('/'.$post21->subject.'/', $res->content);
+        $this->assertNotRegExp('/'.$post22->subject.'/', $res->content);
+        $this->assertNotRegExp('/'.$post23->subject.'/', $res->content);
+        $this->assertEmpty($res->nextpageurl);
+    }
+
+    /**
+     * Creates an action event.
+     *
+     * @param int $courseid The course id.
+     * @param int $instanceid The instance id.
+     * @param string $eventtype The event type.
+     * @return bool|calendar_event
+     */
+    private function create_action_event($courseid, $instanceid, $eventtype) {
+        $event = new stdClass();
+        $event->name = 'Calendar event';
+        $event->modulename  = 'forum';
+        $event->courseid = $courseid;
+        $event->instance = $instanceid;
+        $event->type = CALENDAR_EVENT_TYPE_ACTION;
+        $event->eventtype = $eventtype;
+        $event->timestart = time();
+
+        return calendar_event::create($event);
+    }
+
+    /**
+     * Test the callback responsible for returning the completion rule descriptions.
+     * This function should work given either an instance of the module (cm_info), such as when checking the active rules,
+     * or if passed a stdClass of similar structure, such as when checking the the default completion settings for a mod type.
+     */
+    public function test_mod_forum_completion_get_active_rule_descriptions() {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Two activities, both with automatic completion. One has the 'completionsubmit' rule, one doesn't.
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 2]);
+        $forum1 = $this->getDataGenerator()->create_module('forum', [
+            'course' => $course->id,
+            'completion' => 2,
+            'completiondiscussions' => 3,
+            'completionreplies' => 3,
+            'completionposts' => 3
+        ]);
+        $forum2 = $this->getDataGenerator()->create_module('forum', [
+            'course' => $course->id,
+            'completion' => 2,
+            'completiondiscussions' => 0,
+            'completionreplies' => 0,
+            'completionposts' => 0
+        ]);
+        $cm1 = cm_info::create(get_coursemodule_from_instance('forum', $forum1->id));
+        $cm2 = cm_info::create(get_coursemodule_from_instance('forum', $forum2->id));
+
+        // Data for the stdClass input type.
+        // This type of input would occur when checking the default completion rules for an activity type, where we don't have
+        // any access to cm_info, rather the input is a stdClass containing completion and customdata attributes, just like cm_info.
+        $moddefaults = new stdClass();
+        $moddefaults->customdata = ['customcompletionrules' => [
+            'completiondiscussions' => 3,
+            'completionreplies' => 3,
+            'completionposts' => 3
+        ]];
+        $moddefaults->completion = 2;
+
+        $activeruledescriptions = [
+            get_string('completiondiscussionsdesc', 'forum', 3),
+            get_string('completionrepliesdesc', 'forum', 3),
+            get_string('completionpostsdesc', 'forum', 3)
         ];
+        $this->assertEquals(mod_forum_get_completion_active_rule_descriptions($cm1), $activeruledescriptions);
+        $this->assertEquals(mod_forum_get_completion_active_rule_descriptions($cm2), []);
+        $this->assertEquals(mod_forum_get_completion_active_rule_descriptions($moddefaults), $activeruledescriptions);
+        $this->assertEquals(mod_forum_get_completion_active_rule_descriptions(new stdClass()), []);
+    }
+
+    /**
+     * Test the forum_post_is_visible_privately function used in private replies.
+     */
+    public function test_forum_post_is_visible_privately() {
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id));
+        $context = context_module::instance($forum->cmid);
+        $cm = get_coursemodule_from_instance('forum', $forum->id);
+
+        $author = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($author->id, $course->id);
+
+        $recipient = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($recipient->id, $course->id);
+
+        $privilegeduser = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($privilegeduser->id, $course->id, 'editingteacher');
+
+        $otheruser = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($otheruser->id, $course->id);
+
+        // Fake a post - this does not need to be persisted to the DB.
+        $post = new \stdClass();
+        $post->userid = $author->id;
+        $post->privatereplyto = $recipient->id;
+
+        // The user is the author.
+        $this->setUser($author->id);
+        $this->assertTrue(forum_post_is_visible_privately($post, $cm));
+
+        // The user is the intended recipient.
+        $this->setUser($recipient->id);
+        $this->assertTrue(forum_post_is_visible_privately($post, $cm));
+
+        // The user is not the author or recipient, but does have the readprivatereplies capability.
+        $this->setUser($privilegeduser->id);
+        $this->assertTrue(forum_post_is_visible_privately($post, $cm));
+
+        // The user is not allowed to view this post.
+        $this->setUser($otheruser->id);
+        $this->assertFalse(forum_post_is_visible_privately($post, $cm));
+    }
+
+    /**
+     * An unkown event type should not have any limits
+     */
+    public function test_mod_forum_core_calendar_get_valid_event_timestart_range_unknown_event() {
+        global $CFG;
+        require_once($CFG->dirroot . "/calendar/lib.php");
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $duedate = time() + DAYSECS;
+        $forum = new \stdClass();
+        $forum->duedate = $duedate;
+
+        // Create a valid event.
+        $event = new \calendar_event([
+            'name' => 'Test event',
+            'description' => '',
+            'format' => 1,
+            'courseid' => $course->id,
+            'groupid' => 0,
+            'userid' => 2,
+            'modulename' => 'forum',
+            'instance' => 1,
+            'eventtype' => FORUM_EVENT_TYPE_DUE . "SOMETHING ELSE",
+            'timestart' => 1,
+            'timeduration' => 86400,
+            'visible' => 1
+        ]);
+
+        list ($min, $max) = mod_forum_core_calendar_get_valid_event_timestart_range($event, $forum);
+        $this->assertNull($min);
+        $this->assertNull($max);
+    }
+
+    /**
+     * Forums configured without a cutoff date should not have any limits applied.
+     */
+    public function test_mod_forum_core_calendar_get_valid_event_timestart_range_due_no_limit() {
+        global $CFG;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $duedate = time() + DAYSECS;
+        $forum = new \stdClass();
+        $forum->duedate = $duedate;
+
+        // Create a valid event.
+        $event = new \calendar_event([
+            'name' => 'Test event',
+            'description' => '',
+            'format' => 1,
+            'courseid' => $course->id,
+            'groupid' => 0,
+            'userid' => 2,
+            'modulename' => 'forum',
+            'instance' => 1,
+            'eventtype' => FORUM_EVENT_TYPE_DUE,
+            'timestart' => 1,
+            'timeduration' => 86400,
+            'visible' => 1
+        ]);
+
+        list($min, $max) = mod_forum_core_calendar_get_valid_event_timestart_range($event, $forum);
+        $this->assertNull($min);
+        $this->assertNull($max);
+    }
+
+    /**
+     * Forums should be top bound by the cutoff date.
+     */
+    public function test_mod_forum_core_calendar_get_valid_event_timestart_range_due_with_limits() {
+        global $CFG;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $duedate = time() + DAYSECS;
+        $cutoffdate = $duedate + DAYSECS;
+        $forum = new \stdClass();
+        $forum->duedate = $duedate;
+        $forum->cutoffdate = $cutoffdate;
+
+        // Create a valid event.
+        $event = new \calendar_event([
+            'name' => 'Test event',
+            'description' => '',
+            'format' => 1,
+            'courseid' => $course->id,
+            'groupid' => 0,
+            'userid' => 2,
+            'modulename' => 'forum',
+            'instance' => 1,
+            'eventtype' => FORUM_EVENT_TYPE_DUE,
+            'timestart' => 1,
+            'timeduration' => 86400,
+            'visible' => 1
+        ]);
+
+        list($min, $max) = mod_forum_core_calendar_get_valid_event_timestart_range($event, $forum);
+        $this->assertNull($min);
+        $this->assertEquals($cutoffdate, $max[0]);
+        $this->assertNotEmpty($max[1]);
+    }
+
+    /**
+     * An unknown event type should not change the forum instance.
+     */
+    public function test_mod_forum_core_calendar_event_timestart_updated_unknown_event() {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . "/calendar/lib.php");
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $forumgenerator = $generator->get_plugin_generator('mod_forum');
+        $duedate = time() + DAYSECS;
+        $cutoffdate = $duedate + DAYSECS;
+        $forum = $forumgenerator->create_instance(['course' => $course->id]);
+        $forum->duedate = $duedate;
+        $forum->cutoffdate = $cutoffdate;
+        $DB->update_record('forum', $forum);
+
+        // Create a valid event.
+        $event = new \calendar_event([
+            'name' => 'Test event',
+            'description' => '',
+            'format' => 1,
+            'courseid' => $course->id,
+            'groupid' => 0,
+            'userid' => 2,
+            'modulename' => 'forum',
+            'instance' => $forum->id,
+            'eventtype' => FORUM_EVENT_TYPE_DUE . "SOMETHING ELSE",
+            'timestart' => 1,
+            'timeduration' => 86400,
+            'visible' => 1
+        ]);
+
+        mod_forum_core_calendar_event_timestart_updated($event, $forum);
+
+        $forum = $DB->get_record('forum', ['id' => $forum->id]);
+        $this->assertEquals($duedate, $forum->duedate);
+        $this->assertEquals($cutoffdate, $forum->cutoffdate);
+    }
+
+    /**
+     * Due date events should update the forum due date.
+     */
+    public function test_mod_forum_core_calendar_event_timestart_updated_due_event() {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . "/calendar/lib.php");
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $forumgenerator = $generator->get_plugin_generator('mod_forum');
+        $duedate = time() + DAYSECS;
+        $cutoffdate = $duedate + DAYSECS;
+        $newduedate = $duedate + 1;
+        $forum = $forumgenerator->create_instance(['course' => $course->id]);
+        $forum->duedate = $duedate;
+        $forum->cutoffdate = $cutoffdate;
+        $DB->update_record('forum', $forum);
+
+        // Create a valid event.
+        $event = new \calendar_event([
+            'name' => 'Test event',
+            'description' => '',
+            'format' => 1,
+            'courseid' => $course->id,
+            'groupid' => 0,
+            'userid' => 2,
+            'modulename' => 'forum',
+            'instance' => $forum->id,
+            'eventtype' => FORUM_EVENT_TYPE_DUE,
+            'timestart' => $newduedate,
+            'timeduration' => 86400,
+            'visible' => 1
+        ]);
+
+        mod_forum_core_calendar_event_timestart_updated($event, $forum);
+
+        $forum = $DB->get_record('forum', ['id' => $forum->id]);
+        $this->assertEquals($newduedate, $forum->duedate);
+        $this->assertEquals($cutoffdate, $forum->cutoffdate);
     }
 }

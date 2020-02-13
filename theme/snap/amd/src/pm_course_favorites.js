@@ -15,7 +15,7 @@
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -24,7 +24,7 @@
  */
 define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/model_view', 'theme_snap/ajax_notification'],
     function($, ajax, notification, log, mview, ajaxNotify) {
-        return function(cardsHidden) {
+        return function() {
             log.enableAll(true);
 
             /**
@@ -33,8 +33,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
              * @method reloadCourseCardTemplate
              * @param {object} renderable - coursecard renderable
              * @param {jQuery} cardEl - coursecard element
+             * @returns {Promise}
              */
             var reloadCourseCardTemplate = function(renderable, cardEl) {
+                var dfd = $.Deferred();
                 mview(cardEl, 'theme_snap/course_cards');
                 var callback = function() {
                     var button = $(cardEl).find('.favoritetoggle');
@@ -42,23 +44,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
                     $(button).focus();
                 };
                 $(cardEl).trigger('modelUpdate', [renderable, callback]);
-            };
-
-            /**
-             * The ajax call has returned a new course_card renderable.
-             *
-             * @method reloadCourseCardTemplate
-             * @param {object} renderable - coursecard renderable
-             * @param {jQuery} cardEl - coursecard element
-             */
-            var reloadCourseCardTemplate = function(renderable, cardEl) {
-                mview(cardEl, 'theme_snap/course_cards');
-                var callback = function() {
-                    var button = $(cardEl).find('.favoritetogglec');
-                    $(button).removeClass('ajaxing');
-                    $(button).focus();
-                };
-                $(cardEl).trigger('modelUpdate', [renderable, callback]);
+                $(cardEl).on('modelUpdated', function(e) {
+                    dfd.resolve(e);
+                });
+                return dfd.promise();
             };
 
             /**
@@ -67,7 +56,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
              * @returns {int}
              */
             var getCardId = function(cardEl) {
-                return parseInt($(cardEl).find('.courseinfo-body').data('courseid'));
+                return parseInt($(cardEl).find('.coursecard-body').data('courseid'));
             };
 
             /**
@@ -78,8 +67,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
              */
             var getCardTitle = function(cardEl, lowerCase) {
                 // The title comes back in lower case by default as it's used for case insensitive sorting.
-                lowerCase = null ? null : true;
-                var title = $(cardEl).find('.coursefullname').html();
+                if (lowerCase === undefined) {
+                    lowerCase = true;
+                }
+                var title = $(cardEl).find('.coursecard-coursename').html();
                 if (lowerCase) {
                     title = title.toLowerCase();
                 }
@@ -91,6 +82,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
              *
              * @param {jQuery} cardEl
              * @param {jQuery} cards
+             * @returns {number}
              */
             var getCardIndex = function(cardEl, cards) {
                 if (cards.length === 0) {
@@ -163,8 +155,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
                     }
                 }
 
-                cardsHidden.updateToggleCount();
-                if (typeof(onMoveComplete) === 'function') {
+                if (typeof (onMoveComplete) === 'function') {
                     onMoveComplete();
                 }
             };
@@ -177,18 +168,20 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
              */
             var moveOutOfFavorites = function(cardEl, onMoveComplete) {
                 var container;
-                if ($(cardEl).data('hidden') === true) {
-                    container = '#fixy-hidden-courses';
-                    // Show toggle for hidden courses.
-                    $('.header-hidden-courses').addClass('state-visible');
-                    // Auto toggle visibility of hidden courses if currently hidden.
-                    if (!$('#fixy-hidden-courses').is(':visible')) {
-                        cardsHidden.toggleHidden(false);
-                    }
+                // Check there are courses which are not hidden.
+                // When this is 0 we only have hidden courses, so container is #snap-pm-courses-current-cards.
+                var publishedcount = $('#snap-pm-courses-current .coursecard:not([data-hidden="true"])').length;
+                // Special stuff for when moving a hidden course.
+                if ($(cardEl).data('hidden') === true && publishedcount > 0) {
+                    container = '#snap-pm-courses-hidden-cards';
+                    // Open hidden courses section.
+                    $('#snap-pm-courses-hidden').addClass('state-visible');
+                    $('#snap-pm-courses-hidden-cards').collapse('show');
                 } else {
-                    container = '#fixy-visible-courses';
+                    window.console.log('not a hidden card');
+                    container = '#snap-pm-courses-current-cards';
                 }
-                moveCard(cardEl, container + ' .courseinfo:not(.favorited)', container, false, onMoveComplete);
+                moveCard(cardEl, container + ' .coursecard:not(.favorited)', container, false, onMoveComplete);
             };
 
             /**
@@ -203,37 +196,51 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
                 $(button).addClass('ajaxing');
 
                 var favorited = $(button).attr('aria-pressed') === 'true' ? 0 : 1;
-                var cardEl = $($(button).parents('.courseinfo')[0]);
+                var cardEl = $($(button).parents('.coursecard')[0]);
                 var shortname = $(cardEl).data('shortname');
 
-                var doAjax = function() {
-                    ajax.call([
+                var doAjax = function(jsid) {
+                    return ajax.call([
                         {
                             methodname: 'theme_snap_course_card',
                             args: {courseshortname: shortname, favorited: favorited},
-                            done: function(response) {
-                                reloadCourseCardTemplate(response, cardEl);
-                            },
                             fail: function(response) {
                                 $(button).removeClass('ajaxing');
                                 ajaxNotify.ifErrorShowBestMsg(response);
                             }
                         }
-                    ], true, true);
+                    ], true, true)[0].then(function(response) {
+                        return reloadCourseCardTemplate(response, cardEl);
+                    }).then(function() {
+                        M.util.js_complete(jsid);
+                    });
                 };
 
+                var jsid;
                 if (favorited === 1) {
+                    jsid = 'favourite_' + new Date().getTime().toString(16) + (Math.floor(Math.random() * 1000));
+                    M.util.js_pending(jsid);
                     // Move to favorites.
-                    moveCard(cardEl, '#fixy-visible-courses .courseinfo.favorited', '#fixy-visible-courses', true, doAjax);
+                    moveCard(cardEl, '#snap-pm-courses-current-cards .coursecard.favorited', '#snap-pm-courses-current-cards', true,
+                        function() {
+                            doAjax(jsid);
+                        }
+                    );
                 } else {
-                    moveOutOfFavorites(cardEl, doAjax);
+                    jsid = 'unfavourite_' + new Date().getTime().toString(16) + (Math.floor(Math.random() * 1000));
+                    M.util.js_pending(jsid);
+                    moveOutOfFavorites(cardEl,
+                        function() {
+                           doAjax(jsid);
+                        }
+                    );
                 }
             };
 
             /**
              * On clicking favourite toggle. (Delegated).
              */
-            $("#fixy-my-courses").on("click", ".favoritetoggle", function(e) {
+            $("#snap-pm").on("click", ".favoritetoggle", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 favoriteCourse(this);

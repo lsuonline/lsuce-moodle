@@ -16,26 +16,29 @@
 
 namespace theme_snap;
 
-require_once($CFG->dirroot.'/mod/assign/locallib.php');
+use grade_item;
 
-// Note: PHP Storm is reporting this unused but it is!
-use \theme_snap\activity_meta;
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot.'/mod/assign/locallib.php');
 
 /**
  * Activity functions.
  * These functions are in a class purely for auto loading convenience.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class activity {
+
+    public static $phpunitallowcaching = false;
 
     /**
      * @param \cm_info $mod
      * @return activity_meta
      */
-    public static function module_meta(\cm_info $mod) {        
+    public static function module_meta(\cm_info $mod) {
         $methodname = $mod->modname . '_meta';
         if (method_exists('theme_snap\\activity', $methodname)) {
             $meta = call_user_func('theme_snap\\activity::' . $methodname, $mod);
@@ -44,7 +47,7 @@ class activity {
         }
         return $meta;
     }
-    
+
     /**
      * Return standard meta data for module
      *
@@ -94,13 +97,18 @@ class activity {
         }
 
         // If module is not visible to the user then don't bother getting meta data.
-        if (!$mod->uservisible) {
+        if (!$mod->visibleoncoursepage) {
             return $meta;
         }
 
         $activitydates = self::instance_activity_dates($courseid, $mod, $timeopenfld, $timeclosefld);
         $meta->timeopen = $activitydates->timeopen;
         $meta->timeclose = $activitydates->timeclose;
+        $meta->timesfromcache = !empty($activitydates->fromcache);
+
+        if (isset($activitydates->extension)) {
+            $meta->extension = $activitydates->extension;
+        }
 
         // TODO: use activity specific "teacher" capabilities.
         if (has_capability('mod/assign:grade', $mod->context)) {
@@ -158,20 +166,23 @@ class activity {
             }
 
             if ($graderow) {
-                $gradeitem = \grade_item::fetch(array(
-                    'itemtype' => 'mod',
-                    'itemmodule' => $mod->modname,
+                // Looking for a visible grade.
+                $gradeitems = grade_item::fetch_all([
+                    'courseid'     => $courseid,
+                    'itemtype'     => 'mod',
+                    'itemmodule'   => $mod->modname,
                     'iteminstance' => $mod->instance,
                     'itemnumber' => 0,
-                ));
-
-                $grade = new \grade_grade(array('itemid' => $gradeitem->id, 'userid' => $USER->id));
+                ]);
 
                 $coursecontext = \context_course::instance($courseid);
-                $canviewhiddengrade = has_capability('moodle/grade:viewhidden', $coursecontext);
-
-                if (!$grade->is_hidden() || $canviewhiddengrade) {
-                    $meta->grade = true;
+                foreach ($gradeitems as $gradeitem) {
+                    $grade = new \grade_grade(['itemid' => $gradeitem->id, 'userid' => $USER->id]);
+                    $canviewhiddengrade = has_capability('moodle/grade:viewhidden', $coursecontext);
+                    if (!$grade->is_hidden() || $canviewhiddengrade) {
+                        $meta->grade = true; // Found a visible grade, item is graded.
+                        break;
+                    }
                 }
             }
         }
@@ -308,6 +319,8 @@ class activity {
             list($esql, $params) = get_enrolled_sql(\context_course::instance($courseid), 'mod/assign:submit', 0, true);
             $params['courseid'] = $courseid;
 
+            list($sqlgroupsjoin, $sqlgroupswhere, $groupparams) = self::get_groups_sql($courseid);
+
             $sql = "-- Snap sql
                     SELECT cm.id AS coursemoduleid, a.id AS instanceid, a.course,
                            a.allowsubmissionsfromdate AS opentime, a.duedate AS closetime,
@@ -346,6 +359,7 @@ class activity {
                  LEFT JOIN {grade_grades} gg
                         ON gg.itemid = gi.id
                        AND gg.userid = sb.userid
+                       $sqlgroupsjoin
 
 -- End of join required to make assignments classed as graded when done via gradebook
 
@@ -358,9 +372,10 @@ class activity {
                        )
 
                        AND (a.duedate = 0 OR a.duedate > $since)
+                       $sqlgroupswhere
                  $gradetypelimit
                  GROUP BY instanceid, a.course, opentime, closetime, coursemoduleid ORDER BY a.duedate ASC";
-            $rs = $DB->get_records_sql($sql, $params);
+            $rs = $DB->get_records_sql($sql, array_merge($params, $groupparams));
             $ungraded = array_merge($ungraded, $rs);
         }
 
@@ -402,10 +417,15 @@ class activity {
 
 					  JOIN {quiz_attempts} qa ON qa.quiz = q.id
 					   AND qa.sumgrades IS NULL
+					   AND qa.preview = 0
 
--- Exclude those people who can grade quizzes
+-- Exclude those people who can grade quizzes and suspended users
 
-                     WHERE qa.userid NOT IN ($graderids)
+          		      JOIN {enrol} en ON en.courseid = q.course
+                      JOIN {user_enrolments} ue ON en.id = ue.enrolid
+                       AND qa.userid = ue.userid
+                     WHERE ue.status = 0
+                       AND qa.userid NOT IN ($graderids)
                        AND qa.state = 'finished'
                        AND (q.timeclose = 0 OR q.timeclose > $since)
                   GROUP BY instanceid, q.course, opentime, closetime, coursemoduleid
@@ -558,13 +578,23 @@ class activity {
             list($graderids, $params) = get_enrolled_sql(\context_course::instance($courseid), 'moodle/grade:viewall');
             $params['courseid'] = $courseid;
 
+            if ($maintable == 'quiz') {
+                $quizvalidation = "AND sb.preview = 0";
+            } else {
+                $quizvalidation = "";
+            }
             // Get the number of submissions for all $maintable activities in this course.
             $sql = "-- Snap sql
                     SELECT m.id, COUNT(DISTINCT sb.userid) as totalsubmitted
                       FROM {".$maintable."} m
                       JOIN {".$submittable."} sb ON m.id = sb.$mainkey
-                     WHERE m.course = :courseid
+                      JOIN {enrol} en ON en.courseid = m.course
+                      JOIN {user_enrolments} ue ON en.id = ue.enrolid
+                       AND sb.userid = ue.userid
+                     WHERE ue.status = 0
+                       AND m.course = :courseid
                            AND sb.userid NOT IN ($graderids)
+                           $quizvalidation
                            $extraselect
                      GROUP BY m.id";
             $modtotalsbyid[$maintable][$courseid] = $DB->get_records_sql($sql, $params);
@@ -598,6 +628,8 @@ class activity {
             $params['courseid'] = $courseid;
             $params['submitted'] = ASSIGN_SUBMISSION_STATUS_SUBMITTED;
 
+            list($sqlgroupsjoin, $sqlgroupswhere, $groupparams) = self::get_groups_sql($courseid);
+
             // Get the number of submissions for all assign activities in this course.
             $sql = "-- Snap sql
                 SELECT m.id, COUNT(sb.userid) as totalsubmitted
@@ -608,11 +640,13 @@ class activity {
 
                   JOIN ($esql) e
                     ON e.id = sb.userid
+                       $sqlgroupsjoin
 
                  WHERE m.course = :courseid
                        AND sb.status = :submitted
+                       $sqlgroupswhere
                  GROUP by m.id";
-            $modtotalsbyid['assign'][$courseid] = $DB->get_records_sql($sql, $params);
+            $modtotalsbyid['assign'][$courseid] = $DB->get_records_sql($sql, array_merge($params, $groupparams));
         }
         $totalsbyid = $modtotalsbyid['assign'][$courseid];
 
@@ -696,10 +730,15 @@ class activity {
 
 					  JOIN {quiz_attempts} qa ON qa.quiz = q.id
 					   AND qa.sumgrades IS NULL
+					   AND qa.preview = 0
 
--- Exclude those people who can grade quizzes
+-- Exclude those people who can grade quizzes and suspended users
 
-                     WHERE qa.userid NOT IN ($graderids)
+                      JOIN {enrol} en ON en.courseid = q.course
+                      JOIN {user_enrolments} ue ON en.id = ue.enrolid
+                       AND qa.userid = ue.userid
+                     WHERE ue.status = 0
+                       AND qa.userid NOT IN ($graderids)
                        AND qa.state = 'finished'
                        AND q.course = :courseid
                      GROUP BY q.id";
@@ -787,6 +826,31 @@ class activity {
             return false;
         }
 
+        if ($mod->modname === 'assign') {
+            $parameter = [$courseid];
+            $sqlgrps = "-- Snap sql
+                SELECT st.*
+                    FROM {".$submissiontable."} st
+
+                    JOIN {".$mod->modname."} a
+                      ON a.id = st.$modfield
+
+                   WHERE NOT st.groupid = 0
+                     AND a.course = ?
+                     AND st.latest = 1
+                     AND a.teamsubmission = 1
+                ORDER BY $modfield DESC, st.id DESC";
+            $grpssubmissions = $DB->get_records_sql($sqlgrps, $parameter);
+
+            foreach ($grpssubmissions as $grpssub) {
+                if (groups_is_member($grpssub->groupid, $USER->id)) {
+                    if (array_key_exists($grpssub->assignment, $result)) {
+                        $result[$grpssub->assignment]->status = $grpssub->status;
+                    }
+                }
+            }
+        }
+
         foreach ($result as $r) {
             if (!isset($r->status)) {
                 $r->status = null;
@@ -803,65 +867,193 @@ class activity {
     }
 
     /**
-     * Get the activity dates for a specific module instance
+     * Take events array and rehash by modulename instance
+     * @param array $events
+     * @return array
+     */
+    protected static function hash_events_by_module_instance(array $events) {
+        $tmparr = [];
+        foreach ($events as $event) {
+
+            if (!isset($tmparr[$event->modulename])) {
+                $tmparr[$event->modulename] = [];
+            }
+
+            if (!isset($tmparr[$event->modulename][$event->instance])) {
+                $tmparr[$event->modulename][$event->instance] = [];
+            }
+
+            $tmparr[$event->modulename][$event->instance][] = $event;
+        }
+        return $tmparr;
+    }
+
+    /**
+     * Get the activity open from date for a specific module instance
      *
      * @param $courseid
-     * @param stdClass $mod
+     * @param \cm_info $mod
      * @param string $timeopenfld
      * @param string $timeclosefld
      *
      * @return bool|stdClass
      */
-    public static function instance_activity_dates($courseid, $mod, $timeopenfld = '', $timeclosefld = '') {
-        global $DB, $USER;
+    public static function instance_activity_dates($courseid, \cm_info $mod, $timeopenfld = '', $timeclosefld = '') {
+        global $DB, $USER, $COURSE;
+
         // Note: Caches all moduledates to minimise database transactions.
-        static $moddates = array();
-        if (!isset($moddates[$courseid . '_' . $mod->modname][$mod->instance]) || PHPUNIT_TEST) {
-            $timeopenfld = $mod->modname === 'quiz' ? 'timeopen' : ($mod->modname === 'lesson' ? 'available' : $timeopenfld);
-            $timeclosefld = $mod->modname === 'quiz' ? 'timeclose' : ($mod->modname === 'lesson' ? 'deadline' : $timeclosefld);
+        static $moddates = [];
+
+        // Did we use the MUC to get the events from the calendar?
+        static $eventsfromcache = false;
+
+        // Note: Caches all moduledates by instance to minimise db transactions.
+        static $eventsbymodinst = [];
+
+        $modname = $mod->modname;
+        $modinst = $mod->instance;
+
+        $phpunittest = defined('PHPUNIT_TEST') && PHPUNIT_TEST;
+
+        if (!empty($moddates[$courseid.'_'.$modname][$modinst]) && !$phpunittest) {
+            return $moddates[$courseid.'_'.$modname][$modinst];
+        }
+
+        if ($modname === 'quiz') {
+            $timeopenfld = 'timeopen';
+            $timeclosefld = 'timeclose';
+        } else if ($modname === 'lesson') {
+            $timeopenfld = 'available';
+            $timeclosefld = 'deadline';
+        }
+
+        if ($mod->modname != 'assign') {
+            // Get moddates WITHOUT overrides.
             $sql = "-- Snap sql
-                    SELECT 
-                    module.id, 
-                    module.$timeopenfld AS timeopen, 
-                    module.$timeclosefld AS timeclose";
-            if ($mod->modname === 'quiz' || $mod->modname === 'lesson') {
-                $id = $mod->modname === 'quiz' ? $mod->modname : 'lessonid';
-                $groups = groups_get_user_groups($courseid);
-                $groupbysql = '';
-                $params = array();
-                if ($groups[0]) {
-                    list ($groupsql, $params) = $DB->get_in_or_equal($groups[0]);
-                    $sql .= ", CASE WHEN ovrd1.$timeopenfld IS NULL THEN MIN(ovrd2.$timeopenfld) ELSE ovrd1.$timeopenfld END AS timeopenover,
-                            CASE WHEN ovrd1.$timeclosefld IS NULL THEN MAX(ovrd2.$timeclosefld) ELSE ovrd1.$timeclosefld END AS timecloseover
-                            FROM {" . $mod->modname . "} module
-                            LEFT JOIN {" . $mod->modname . "_overrides} ovrd1 ON module.id=ovrd1.$id AND $USER->id=ovrd1.userid
-                            LEFT JOIN {" . $mod->modname . "_overrides} ovrd2 ON module.id=ovrd2.$id AND ovrd2.groupid $groupsql";
-                    $groupbysql = " GROUP BY module.id, timeopen, timeclose";
-                } else {
-                    $sql .= ", ovrd1.$timeopenfld AS timeopenover, ovrd1.$timeclosefld AS timecloseover
-                             FROM {" . $mod->modname . "} module 
-                             LEFT JOIN {" . $mod->modname . "_overrides} ovrd1
-                             ON module.id=ovrd1.$id AND $USER->id=ovrd1.userid";
-                }
-                $sql .= " WHERE module.course = ?";
-                $sql .= $groupbysql;
+                    SELECT id, $timeopenfld AS timeopen, $timeclosefld as timeclose
+                        FROM {" . $modname . "}
+                    WHERE course = ?";
+            $params = [$courseid];
+        } else {
+            // Get assignment moddates + time opening overrides.
+            // Assignment doesn't put opening time overrides in the calendar so we need to get them here.
+            $groups = groups_get_user_groups($courseid);
+
+            if ($groups[0]) {
+                list ($groupsql, $params) = $DB->get_in_or_equal($groups[0]);
+
+                $sql = "-- Snap sql
+                    SELECT ma.id,
+                      CASE
+                      WHEN mao.allowsubmissionsfromdate IS NOT NULL
+                      THEN mao.allowsubmissionsfromdate
+                      ELSE CASE WHEN maog.allowsubmissionsfromdate IS NOT NULL
+                      THEN maog.allowsubmissionsfromdate
+                      ELSE ma.allowsubmissionsfromdate
+                      END
+                      END AS timeopen,
+                          ma.duedate as timeclose
+
+                     FROM {assign} ma
+
+                LEFT JOIN {assign_overrides} mao ON mao.assignid = ma.id AND mao.userid = ? AND mao.groupid IS NULL
+                LEFT JOIN {assign_overrides} maog ON maog.assignid = ma.id AND maog.groupid $groupsql
+                      AND maog.sortorder = 1
+
+                    WHERE course = ?";
+
+                array_unshift($params, $USER->id);
                 $params[] = $courseid;
-                $result = $DB->get_records_sql($sql, $params);
+
             } else {
-                $sql .= " FROM {" . $mod->modname . "} module
-                    WHERE module.course = ?";
-                $result = $DB->get_records_sql($sql, array($courseid));
+
+                $sql = "-- Snap sql
+                    SELECT ma.id,
+                      CASE
+                      WHEN mao.allowsubmissionsfromdate IS NOT NULL
+                      THEN mao.allowsubmissionsfromdate
+                      ELSE ma.allowsubmissionsfromdate
+                      END AS timeopen,
+                          ma.duedate as timeclose
+                     FROM {assign} ma
+
+                LEFT JOIN {assign_overrides} mao ON mao.assignid = ma.id AND mao.userid = ? AND mao.groupid IS NULL
+
+                    WHERE course = ?";
+
+                $params = [$USER->id, $courseid];
             }
-            $moddates[$courseid . '_' . $mod->modname] = $result;
+
         }
-        $modinst = $moddates[$courseid.'_'.$mod->modname][$mod->instance];
-        if (!empty($modinst->timecloseover)) {
-            $modinst->timeclose = $modinst->timecloseover;
-            if ($modinst->timeopenover) {
-                $modinst->timeopen = $modinst->timeopenover;
+        $moddates[$courseid . '_' . $modname] = $DB->get_records_sql($sql, $params);
+
+        // Override moddates with calendar dates.
+        // Note - we only get 1 years of dates to use for overrides, etc.
+        // This means 6 months after an override date expires it will show the default date.
+        $tz = new \DateTimeZone(\core_date::get_user_timezone($USER));
+        $today = new \DateTime('today', $tz);
+        $todayts = $today->getTimestamp();
+        $tstart = $todayts - (YEARSECS / 2);
+        $tend = $todayts + (YEARSECS / 2);
+
+        if ($phpunittest || !isset($eventsbymodinst[$courseid])) {
+            if ($COURSE->id == $courseid) {
+                $coursesparam = [$courseid => $COURSE];
+            } else {
+                $coursesparam = [$courseid => get_course($courseid)];
+            }
+            $cachepfx = 'course'.$courseid.'_';
+            $eventsobj = self::user_activity_events($USER, $coursesparam, $tstart, $tend, $cachepfx, 1000);
+            $events = $eventsobj->events;
+            $eventsfromcache = $eventsobj->fromcache;
+            $eventsbymodinst[$courseid] = self::hash_events_by_module_instance($events);
+        }
+
+        // Extract opening time and closing time from events.
+
+        if (!empty($eventsbymodinst[$courseid][$modname])) {
+            foreach ($eventsbymodinst[$courseid][$modname] as $modinstevents) {
+                $timeopen = null;
+                $timeclose = null;
+                foreach ($modinstevents as $event) {
+                    if ($event->timestart === null) {
+                        continue;
+                    }
+
+                    if ($event->eventtype === 'open') {
+                        $timeopen = $event->timestart;
+                    } else if (($event->eventtype === 'close' || $event->eventtype === 'due')) {
+                        $timeclose = $event->timestart + $event->timeduration;
+                    }
+
+                }
+
+                // If we have a null time open or close, use initial dates gotten from module query.
+                $initialdates = null;
+                if (!empty($moddates[$courseid . '_' . $modname][$event->instance])) {
+                    $initialdates = $moddates[$courseid . '_' . $modname][$event->instance];
+                }
+                if ($timeopen === null && !empty($initialdates)) {
+                    $timeopen = $initialdates->timeopen;
+                }
+                if ($timeclose === null && !empty($initialdates)) {
+                    $timeclose = $initialdates->timeclose;
+                }
+
+                $instdates = (object)[
+                    'timeopen' => $timeopen,
+                    'timeclose' => $timeclose,
+                    'fromcache' => $eventsfromcache
+                ];
+
+                if ($event->modulename === $modname) {
+                    // Only statically cache for the current module type we are requesting.
+                    $moddates[$courseid . '_' . $modname][$event->instance] = $instdates;
+                }
             }
         }
-        return $modinst;
+
+        return $moddates[$courseid.'_'.$modname][$modinst];
 
     }
 
@@ -885,7 +1077,7 @@ class activity {
         }
 
         $sql = "-- Snap sql
-                SELECT m.id AS instanceid, gg.*
+                  SELECT DISTINCT m.id AS instanceid
 
                     FROM {".$mod->modname."} m
 
@@ -969,4 +1161,384 @@ class activity {
 
         return $eventdata;
     }
+
+    /**
+     * Note: This function is not optimised for usage in big loops but it does have the advantage of using core logic
+     * for evaluating override priority.
+     * Get the most appropriate due date, including overrides and extensions.
+     * @param int $assignid
+     * @param stdClass | int $userid
+     * @return stdClass
+     * @throws \coding_exception
+     */
+    public static function assignment_due_date_info($assignid, $userid) {
+        global $CFG;
+
+        require_once($CFG->dirroot.'/mod/assign/locallib.php');
+
+        $duedateinfo = (object) ['duedate' => null, 'extended' => false];
+
+        list ($course, $cminfo) = get_course_and_cm_from_instance($assignid, 'assign');
+        unset($course);
+
+        // Check overrides.
+        $assign = new \assign($cminfo->context, $cminfo, false);
+        $overrides = $assign->override_exists($userid);
+        if (!empty($overrides->duedate)) {
+            $duedate = $overrides->duedate;
+        } else {
+            $duedate = $assign->get_instance()->duedate;
+        }
+
+        // Check deadline extensions.
+        $flags = $assign->get_user_flags($userid, true);
+        if (!empty($flags->extensionduedate)) {
+            // Extension always overwrites duedate, even if it's less than due date or overridden due date.
+            $duedate = $flags->extensionduedate;
+            $duedateinfo->extended = true;
+        }
+
+        $duedateinfo->duedate = $duedate;
+        return $duedateinfo;
+    }
+
+    /**
+     * Get all events restricted by various parameters, taking in to account user and group overrides.
+     * Copied from calendar/classes/local/api.php.
+     * Uses
+     *
+     * @param int|null      $timestartfrom         Events with timestart from this value (inclusive).
+     * @param int|null      $timestartto           Events with timestart until this value (inclusive).
+     * @param int|null      $timesortfrom          Events with timesort from this value (inclusive).
+     * @param int|null      $timesortto            Events with timesort until this value (inclusive).
+     * @param int|null      $timestartaftereventid Restrict the events in the timestart range to ones after this ID.
+     * @param int|null      $timesortaftereventid  Restrict the events in the timesort range to ones after this ID.
+     * @param int           $limitnum              Return at most this number of events.
+     * @param int|null      $type                  Return only events of this type.
+     * @param array|null    $usersfilter           Return only events for these users.
+     * @param array|null    $groupsfilter          Return only events for these groups.
+     * @param array|null    $coursesfilter         Return only events for these courses.
+     * @param bool          $withduration          If true return only events starting within specified
+     *                                             timestart otherwise return in progress events as well.
+     * @param bool          $ignorehidden          If true don't return hidden events.
+     * @return \core_calendar\local\event\entities\event_interface[] Array of event_interfaces.
+     */
+    public static function get_events(
+        $timestartfrom = null,
+        $timestartto = null,
+        $timesortfrom = null,
+        $timesortto = null,
+        $timestartaftereventid = null,
+        $timesortaftereventid = null,
+        $limitnum = 20,
+        $type = null,
+        array $usersfilter = null,
+        array $groupsfilter = null,
+        array $coursesfilter = null,
+        $withduration = true,
+        $ignorehidden = true
+    ) {
+
+        \theme_snap\calendar\event\container::ovd_init();
+        $vault = \theme_snap\calendar\event\container::get_event_vault();
+
+        $timestartafterevent = null;
+        $timesortafterevent = null;
+
+        if ($timestartaftereventid && $event = $vault->get_event_by_id($timestartaftereventid)) {
+            $timestartafterevent = $event;
+        }
+
+        if ($timesortaftereventid && $event = $vault->get_event_by_id($timesortaftereventid)) {
+            $timesortafterevent = $event;
+        }
+
+        return $vault->get_events(
+            $timestartfrom,
+            $timestartto,
+            $timesortfrom,
+            $timesortto,
+            $timestartafterevent,
+            $timesortafterevent,
+            $limitnum,
+            $type,
+            $usersfilter,
+            $groupsfilter,
+            $coursesfilter,
+            null,
+            $withduration,
+            $ignorehidden
+        );
+    }
+
+    /**
+     * Get calendar activity events for specific date range and array of courses.
+     * Note - only deals with due, open, close event types.
+     * @param int $tstart
+     * @param int $tend
+     * @param \stdClass[] $courses
+     * @return array
+     */
+    public static function get_calendar_activity_events($tstart, $tend, array $courses, $limit = 40) {
+
+        $calendar = new \calendar_information(0, 0, 0, $tstart);
+        $course = get_course(SITEID);
+        $calendar->set_sources($course, $courses);
+
+        $withduration = true;
+        $ignorehidden = true;
+        $mapper = \core_calendar\local\event\container::get_event_mapper();
+
+        // Normalise the users, groups and courses parameters so that they are compliant with
+        // the calendar apis get_events method.
+        // Existing functions that were using the old calendar_get_events() were passing a mixture of array, int,
+        // boolean for these parameters, but with the new API method, only null and arrays are accepted.
+        list($userparam, $groupparam, $courseparam) = array_map(function($param) {
+            // If parameter is true, return null.
+            if ($param === true) {
+                return null;
+            }
+
+            // If parameter is false, return an empty array.
+            if ($param === false) {
+                return [];
+            }
+
+            // If the parameter is a scalar value, enclose it in an array.
+            if (!is_array($param)) {
+                return [$param];
+            }
+
+            // No normalisation required.
+            return $param;
+        }, [$calendar->users, $calendar->groups, $calendar->courses]);
+
+        $events = self::get_events(
+            $tstart,
+            $tend,
+            null,
+            null,
+            null,
+            null,
+            $limit,
+            null,
+            $userparam,
+            $groupparam,
+            $courseparam,
+            $withduration,
+            $ignorehidden
+        );
+
+        return array_reduce($events, function($carry, $event) use ($mapper) {
+            return $carry + [$event->get_id() => $mapper->from_event_to_stdclass($event)];
+        }, []);
+    }
+
+    /**
+     * Return user's deadlines from calendar.
+     *
+     * @param int|stdClass $userorid
+     * @param stdClass[] $courses array of courses hashed by course id.
+     * @param int $tstart
+     * @param int $tend
+     * @param string $cacheprefix
+     * @param int $limit
+     * @return stdClass
+     */
+    public static function user_activity_events($userorid, array $courses, $tstart, $tend, $cacheprefix = '',
+                                                $limit = 40) {
+
+        $retobj = (object) [
+            'timestamp' => null,
+            'events' => [],
+            'fromcache' => false
+        ];
+
+        $user = local::get_user($userorid);
+        if (!$user) {
+            return $retobj;
+        }
+
+        // The cache key includes the start and end dates rounded to a day.
+        $dstart = strtotime(date('Y-m-d', $tstart));
+        $dend = strtotime(date('Y-m-d', $tend));
+
+        $cachekey = $cacheprefix.$user->id.'_'.($dstart + $dend).'_'.$limit;
+
+        if (self::$phpunitallowcaching || !(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
+            $muc = \cache::make('theme_snap', 'activity_deadlines');
+            $cached = $muc->get($cachekey);
+
+            if ($cached && $cached->timestamp >= time() - HOURSECS) {
+
+                $cachestamps = local::get_calendar_change_stamps();
+
+                $activitiesstamp = $cached->timestamp;
+                $cachefresh = true; // Until proven otherwise.
+
+                foreach ($courses as $courseid => $course) {
+                    if (isset($cachestamps[$courseid])) {
+                        $stamp = $cachestamps[$courseid];
+                        if ($stamp > $activitiesstamp) {
+                            $cachefresh = false;
+                        }
+                    }
+                }
+
+                if ($cachefresh) {
+                    $cached->fromcache = true; // Useful for debugging and unit testing.
+                    return $cached;
+                }
+            }
+        }
+
+        if (empty($courses)) {
+            return $retobj;
+        }
+
+        $events = self::get_calendar_activity_events($tstart, $tend, $courses, $limit);
+
+        // Filter down array and also modify event name if necessary;
+        // Note, filter_array cannot be used here as we need to modify the event name, not just filter.
+        $tmparr = [];
+        foreach ($events as $event) {
+
+            /** @var cm_info $cminfo */
+            list ($course, $cminfo) = get_course_and_cm_from_instance($event->instance, $event->modulename);
+            unset($course);
+
+            // We are only interested in modules with valid instances.
+            if (empty($cminfo)) {
+                continue;
+            }
+
+            if (!$cminfo->uservisible) {
+                continue;
+            }
+            if ($event->eventtype === 'close') {
+                // Revert the addition of e.g. "(Quiz closes)" to the event name.
+                $event->name = $cminfo->name;
+            }
+
+            if (isset($courses[$event->courseid])) {
+                $course = $courses[$event->courseid];
+                $event->coursefullname = format_string($course->fullname);
+            }
+
+            $tmparr[$event->id] = $event;
+
+        }
+        $events = $tmparr;
+        unset($tmparr);
+
+        $retobj->timestamp = microtime(true);
+        $retobj->events = $events;
+
+        if (self::$phpunitallowcaching || !(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
+            $muc->set($cachekey, $retobj);
+        }
+
+        return $retobj;
+    }
+
+    /**
+     * Return user's upcoming activity deadlines from the calendar.
+     *
+     * All deadlines from today, then any from the next 6 months up to the
+     * max requested.
+     * @param \stdClass|integer $userorid
+     * @param integer $maxdeadlines
+     * @return array
+     */
+    public static function upcoming_deadlines($userorid, $maxdeadlines = 5) {
+
+        global $USER;
+        $origuser = $USER;
+        $user = local::get_user($userorid);
+        $USER = $user;
+
+        $tz = new \DateTimeZone(\core_date::get_user_timezone($user));
+        $today = new \DateTime('today', $tz);
+        $todayts = $today->getTimestamp();
+        $tomorrow = new \DateTime('tomorrow', $tz);
+        $tomorrowts = $tomorrow->getTimestamp();
+
+        $courses = enrol_get_users_courses($user->id, true);
+
+        $eventsobj = self::user_activity_events($user, $courses, $todayts, $todayts + (YEARSECS / 2), 'deadlines');
+
+        $events = $eventsobj->events;
+        uasort($events, function($e1, $e2) {
+            if ($e1->timestart === $e2->timestart) {
+                return 0;
+            }
+            return ($e1->timestart < $e2->timestart) ? -1 : 1;
+        });
+
+        $counteventstoday = 0;
+
+        $tmparr = [];
+        foreach ($events as $event) {
+            if ($event->timestart >= $todayts) {
+                if ($event->eventtype != 'close' && $event->eventtype != 'due' && $event->eventtype != 'expectcompletionon') {
+                    continue;
+                }
+
+                $tmparr[] = $event;
+
+                if ($event->timestart < $tomorrowts) {
+                    $counteventstoday++;
+                }
+            }
+        }
+        $events = $tmparr;
+
+        // We have unlimited events for today but a maximum of five events for everything passed today.
+        // If we have 10 events today then we will see 10 events, if we have 3 events for today then we will see
+        // a maximum of 5 events including all the events that happen beyond today's date.
+        $maxevents = $counteventstoday > $maxdeadlines ? $counteventstoday : $maxdeadlines;
+
+        $eventsobj->events = array_slice($events, 0, $maxevents);
+
+        $USER = $origuser;
+
+        return $eventsobj;
+    }
+
+    /**
+     * Returns the join and where statements required to validate the assignment submissions by groups on a course.
+     * @param integer $courseid
+     * @return array
+     */
+    private static function get_groups_sql($courseid) {
+        global $USER;
+
+        $sqlgroupsjoin = '';
+        $sqlgroupswhere = '';
+        $groupparams = array();
+
+        $course = get_course($courseid);
+        $groupmode = groups_get_course_groupmode($course);
+        $context = \context_course::instance($courseid);
+
+        if ($groupmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
+            $groupparams['userid'] = $USER->id;
+            $groupparams['courseid2'] = $courseid;
+
+            $sqlgroupsjoin = "
+                    JOIN {groups_members} gm
+                      ON gm.userid = sb.userid
+                    JOIN {groups} g
+                      ON gm.groupid = g.id";
+            $sqlgroupswhere = "
+                     AND gm.groupid
+                      IN (SELECT g.id
+                    FROM {groups} g
+                    JOIN {groups_members} gm ON gm.groupid = g.id
+                   WHERE g.courseid = :courseid2
+                     AND gm.userid = :userid)";
+        }
+        return array($sqlgroupsjoin, $sqlgroupswhere, $groupparams);
+    }
+
 }

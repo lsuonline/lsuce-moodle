@@ -25,7 +25,7 @@ Feature: An administrator can filter user accounts by role, cohort and other pro
     And I log in as "admin"
     And I add "User Two (two@example.com)" user to "CH1" cohort members
     And I add "User Three (three@example.com)" user to "CH1" cohort members
-    And I follow "Browse list of users"
+    And I navigate to "Users > Accounts > Browse list of users" in site administration
 
   Scenario: Filter user accounts by role and cohort
     When I set the following fields to these values:
@@ -65,3 +65,20 @@ Feature: An administrator can filter user accounts by role, cohort and other pro
     And I should not see "User Two"
     And I should not see "User Three"
     And I should not see "User Four"
+
+  Scenario: Filter user accounts by enrolled in any course
+    When I set the following fields to these values:
+      | id_anycourses | Yes |
+    And I press "Add filter"
+    Then I should see "User One"
+    And I should see "User Two"
+    And I should see "User Three"
+    And I should not see "User Four"
+    And I press "Remove all filters"
+    And I set the following fields to these values:
+      | id_anycourses | No |
+    And I press "Add filter"
+    And I should not see "User One"
+    And I should not see "User Two"
+    And I should not see "User Three"
+    And I should see "User Four"

@@ -1,16 +1,33 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
+
 global $CFG;
 require_once dirname(__FILE__) . '/processors.php';
-require_once $CFG->dirroot.'/enrol/ues/lib.php';
-require_once $CFG->dirroot.'/lib/enrollib.php';
+require_once($CFG->dirroot.'/enrol/ues/lib.php');
+require_once($CFG->dirroot.'/lib/enrollib.php');
 
 class lsu_enrollment_provider extends enrollment_provider {
-    var $url;
-    var $wsdl;
-    var $username;
-    var $password;
+    public $url;
+    public $wsdl;
+    public $username;
+    public $password;
 
-    var $settings = array(
+    public $settings = array(
         'credential_location' => 'https://secure.web.lsu.edu/credentials.php',
         'wsdl_location' => 'webService.wsdl',
         'semester_source' => 'MOODLE_SEMESTERS',
@@ -25,7 +42,7 @@ class lsu_enrollment_provider extends enrollment_provider {
         'student_ath_source' => 'MOODLE_STUDENTS_ATH'
     );
 
-    // User data caches to speed things up
+    // User data caches to speed things up.
     private $lsu_degree_cache = array();
     private $lsu_student_data_cache = array();
     private $lsu_sports_cache = array();
@@ -36,7 +53,7 @@ class lsu_enrollment_provider extends enrollment_provider {
 
         $path = pathinfo($this->wsdl);
 
-        // Path checks
+        // Path checks.
         if (!file_exists($this->wsdl)) {
             throw new Exception('no_file');
         }
@@ -52,6 +69,7 @@ class lsu_enrollment_provider extends enrollment_provider {
         require_once $CFG->libdir . '/filelib.php';
 
         $curl = new curl(array('cache' => true));
+
         $resp = $curl->post($this->url, array('credentials' => 'get'));
 
         list($username, $password) = explode("\n", $resp);
@@ -173,24 +191,21 @@ class lsu_enrollment_provider extends enrollment_provider {
     function preprocess($enrol = null) {
         $semesters_in_session = ues_semester::in_session();
 
-        foreach($semesters_in_session as $semester){
-
-
-
-            // cleanup orphaned groups- https://trello.com/c/lQqVUrpQ
-            $orphanedGroupMemebers = $this-> findOrphanedGroups($semester);
+        foreach ($semesters_in_session as $semester) {
+            // Cleanup orphaned groups- https://trello.com/c/lQqVUrpQ.
+            $orphanedGroupMemebers = $this->findOrphanedGroups($semester);
             $this->unenrollGroupsUsers($orphanedGroupMemebers);
 
-            // find and remove any duplicate group membership records
+            // Find and remove any duplicate group membership records.
             $duplicateGroupMemberships = $this->findDuplicateGroupMembers($semester);
             $this->removeGroupDupes($duplicateGroupMemberships);
         }
 
-        // Clear student auditing flag on each run; It'll be set in processor
+        // Clear student auditing flag on each run; It'll be set in processor.
         return (
             ues_student::update_meta(array('student_audit' => 0)) and
             ues_user::update_meta(array('user_degree' => 0)) and
-            // Safe to clear sports on preprocess now that end date is 21 days
+            // Safe to clear sports on preprocess now that end date is 21 days.
             ues_user::update_meta(array('user_sport1' => '')) and
             ues_user::update_meta(array('user_sport2' => '')) and
             ues_user::update_meta(array('user_sport3' => '')) and
@@ -224,6 +239,11 @@ class lsu_enrollment_provider extends enrollment_provider {
                 try {
                     $this->process_data_source($source, $semester);
                 } catch (Exception $e) {
+
+                    echo"<br /> \n exception: ";
+                    var_dump($e);
+                    echo"<br /> \n";
+
                     $handler = new stdClass;
 
                     $handler->file = '/enrol/ues/plugins/lsu/errors.php';
@@ -243,8 +263,9 @@ class lsu_enrollment_provider extends enrollment_provider {
     }
 
     function process_data_source($source, $semester) {
-        $datas = $source->student_data($semester);
+        global $CFG;
 
+        $datas = $source->student_data($semester);
         $name = get_class($source);
 
         $cache =& $this->{$name . '_cache'};
@@ -257,8 +278,8 @@ class lsu_enrollment_provider extends enrollment_provider {
 
             $user = ues_user::upgrade_and_get($data, $params);
 
-            if(isset($data->user_college)) {
-            $user->department = $data->user_college;
+            if (isset($data->user_college)) {
+                $user->department = $data->user_college;
             }
 
             if (empty($user->id)) {
@@ -266,10 +287,29 @@ class lsu_enrollment_provider extends enrollment_provider {
             }
 
             $cache[$data->idnumber] = $data;
-
+    
             $user->save();
 
-            events_trigger_legacy('ues_' . $name . '_updated', $user);
+            // Todo: Refactor to actually use Event 2 rather than simply calling the handlers directly.
+            require_once($CFG->dirroot . '/blocks/cps/classes/ues_handler.php');
+            switch ($name) {
+                case 'lsu_student_data': {
+                    blocks_cps_ues_handler::ues_lsu_student_data_updated($user);
+                    break;
+                }
+                case 'xml_student_data': {
+                    blocks_cps_ues_handler::ues_xml_student_data_updated($user);
+                    break;
+                }
+                case 'lsu_anonymous': {
+                    blocks_cps_ues_handler::ues_lsu_anonymous_updated($user);
+                    break;
+                }
+                case 'xml_anonymous': {
+                    blocks_cps_ues_handler::ues_xml_anonymous_updated($user);
+                    break;
+                }
+            }
         }
     }
 
@@ -308,7 +348,7 @@ class lsu_enrollment_provider extends enrollment_provider {
             WHERE c.fullname like '$semesterprefix %'
                 AND (
                         SELECT count(id) AS memcount
-                        FROM {groups_members} 
+                        FROM {groups_members}
                         WHERE groupid = grp.id
                     ) > 0
             ORDER BY c.fullname
@@ -325,7 +365,7 @@ class lsu_enrollment_provider extends enrollment_provider {
                 INNER JOIN {enrol_ues_courses} c ON s.courseid = c.id
                 INNER JOIN {enrol_ues_semesters} sem ON s.semesterid = sem.id
                 INNER JOIN {course} mc ON mc.idnumber = s.idnumber
-                INNER JOIN 
+                INNER JOIN
                 (
             SELECT
                 grp.id,
@@ -347,7 +387,7 @@ class lsu_enrollment_provider extends enrollment_provider {
             WHERE c.fullname like '$semesterprefix %'
                 AND (
                         SELECT count(id) AS memcount
-                        FROM {groups_members} 
+                        FROM {groups_members}
                         WHERE groupid = grp.id
                     ) > 0
             ORDER BY c.fullname
@@ -360,7 +400,7 @@ class lsu_enrollment_provider extends enrollment_provider {
                 INNER JOIN {enrol_ues_courses} c ON s.courseid = c.id
                 INNER JOIN {enrol_ues_semesters} sem ON s.semesterid = sem.id
                 INNER JOIN {course} mc ON mc.idnumber = s.idnumber
-                INNER JOIN 
+                INNER JOIN
                 (
             SELECT
                 grp.id,
@@ -382,7 +422,7 @@ class lsu_enrollment_provider extends enrollment_provider {
             WHERE c.fullname like '$semesterprefix %'
                 AND (
                         SELECT count(id) AS memcount
-                        FROM {groups_members} 
+                        FROM {groups_members}
                         WHERE groupid = grp.id
                     ) > 0
             ORDER BY c.fullname
@@ -397,19 +437,19 @@ class lsu_enrollment_provider extends enrollment_provider {
 
     /**
      * Specialized cleanup fn to unenroll users from groups
-     * 
-     * Use cases: unenroll members of orphaned groups 
-     * Takes the output of @see lsu_enrollment_provider::findOrphanedGroups 
+     *
+     * Use cases: unenroll members of orphaned groups
+     * Takes the output of @see lsu_enrollment_provider::findOrphanedGroups
      * and prepares it for unenrollment.
-     * 
+     *
      * @todo parameterize queries for semester prefix- remove hardcoded course prefeix!!!
      * @global object $DB
-     * @param object[] $groupMembers rows from 
+     * @param object[] $groupMembers rows from
      * @see lsu_enrollment_provider::findOrphanedGroups
      */
     public function unenrollGroupsUsers($groupMembers) {
         $ues        = new enrol_ues_plugin();
-        foreach($groupMembers as $user){
+        foreach ($groupMembers as $user) {
             $instance   = $ues->get_instance($user->courseid);
             $ues->unenrol_user($instance, $user->userid);
         }
@@ -419,7 +459,14 @@ class lsu_enrollment_provider extends enrollment_provider {
         global $DB;
         $semesterprefix = $this->get_semester_prefix($semester);
 
-        $sql = "SELECT CONCAT (u.firstname, ' ', u.lastname) AS UserFullname, u.username, g.name, u.id userid, c.id courseid, g.id, c.fullname, COUNT(g.name) AS groupcount
+        $sql = "SELECT CONCAT (u.firstname, ' ', u.lastname) AS UserFullname
+                               , u.username
+                               , g.name
+                               , u.id userid
+                               , c.id courseid
+                               , g.id
+                               , c.fullname
+                               , COUNT(g.name) AS groupcount
                 FROM {groups_members} gm
                     INNER JOIN {groups} g ON g.id = gm.groupid
                     INNER JOIN {course} c ON g.courseid = c.id
@@ -429,21 +476,21 @@ class lsu_enrollment_provider extends enrollment_provider {
                 GROUP BY gm.groupid, u.username
                 HAVING groupcount > 1;";
 
-
         return $DB->get_records_sql($sql);
     }
 
     public function removeGroupDupes($dupes) {
+
         global $DB;
-        
-        foreach($dupes as $dupe){
-            // find all records for the current user/groupid
-            $dupeRecs = $DB->get_records('groups_members', array('groupid'=>$dupe->id, 'userid'=>$dupe->userid));
-            
-            // delete from DB until only one remains
-            while(count($dupeRecs) > 1){
+
+        foreach ($dupes as $dupe) {
+            // Find all records for the current user/groupid.
+            $dupeRecs = $DB->get_records('groups_members', array('groupid' => $dupe->id, 'userid' => $dupe->userid));
+
+            // Delete from DB until only one remains.
+            while (count($dupeRecs) > 1) {
                 $toDelete = array_shift($dupeRecs);
-                $DB->delete_records('groups_members',array('id'=>$toDelete->id));
+                $DB->delete_records('groups_members', array('id' => $toDelete->id));
             }
         }
     }

@@ -127,11 +127,11 @@ class item implements \renderable, \templatable {
         $title = $this->title;
         if (!$title) {
             $title = strip_tags($this->description);
-            $title = core_text::substr($title, 0, 20) . '...';
+            $title = \core_text::substr($title, 0, 20) . '...';
         }
 
         // Allow the renderer to format the title and description.
-        $data['title']          = $output->format_title($title);
+        $data['title']          = strip_tags($output->format_title($title));
         $data['description']    = $this->showdescription ? $output->format_description($this->description) : null;
 
         return $data;

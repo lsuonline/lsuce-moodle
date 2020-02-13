@@ -15,8 +15,8 @@ Feature: Test creating a Matching question
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Question bank" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Question bank" in current page administration
 
   Scenario: Create a Matching question with 3 subquestions
     When I add a "Matching" question filling the form with:

@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/course/lib.php');
+
 /**
  * Specify course upload details.
  *
@@ -55,8 +57,8 @@ class tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
             'maxlength="100" size="20"');
         $mform->setType('options[shortnametemplate]', PARAM_RAW);
         $mform->addHelpButton('options[shortnametemplate]', 'shortnametemplate', 'tool_uploadcourse');
-        $mform->disabledIf('options[shortnametemplate]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_CREATE_OR_UPDATE);
-        $mform->disabledIf('options[shortnametemplate]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_UPDATE_ONLY);
+        $mform->hideIf('options[shortnametemplate]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_CREATE_OR_UPDATE);
+        $mform->hideIf('options[shortnametemplate]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_UPDATE_ONLY);
 
         // Restore file is not in the array options on purpose, because formslib can't handle it!
         $contextid = $this->_customdata['contextid'];
@@ -71,8 +73,8 @@ class tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
 
         $mform->addElement('selectyesno', 'options[reset]', get_string('reset', 'tool_uploadcourse'));
         $mform->setDefault('options[reset]', 0);
-        $mform->disabledIf('options[reset]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_CREATE_NEW);
-        $mform->disabledIf('options[reset]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_CREATE_ALL);
+        $mform->hideIf('options[reset]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_CREATE_NEW);
+        $mform->hideIf('options[reset]', 'options[mode]', 'eq', tool_uploadcourse_processor::MODE_CREATE_ALL);
         $mform->disabledIf('options[reset]', 'options[allowresets]', 'eq', 0);
         $mform->addHelpButton('options[reset]', 'reset', 'tool_uploadcourse');
 
@@ -80,20 +82,23 @@ class tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
         $mform->addElement('header', 'defaultheader', get_string('defaultvalues', 'tool_uploadcourse'));
         $mform->setExpanded('defaultheader', true);
 
-        $displaylist = coursecat::make_categories_list('moodle/course:create');
+        $displaylist = core_course_category::make_categories_list('moodle/course:create');
         $mform->addElement('select', 'defaults[category]', get_string('coursecategory'), $displaylist);
         $mform->addHelpButton('defaults[category]', 'coursecategory');
 
         $choices = array();
         $choices['0'] = get_string('hide');
         $choices['1'] = get_string('show');
-        $mform->addElement('select', 'defaults[visible]', get_string('visible'), $choices);
-        $mform->addHelpButton('defaults[visible]', 'visible');
+        $mform->addElement('select', 'defaults[visible]', get_string('coursevisibility'), $choices);
+        $mform->addHelpButton('defaults[visible]', 'coursevisibility');
         $mform->setDefault('defaults[visible]', $courseconfig->visible);
 
-        $mform->addElement('date_selector', 'defaults[startdate]', get_string('startdate'));
+        $mform->addElement('date_time_selector', 'defaults[startdate]', get_string('startdate'));
         $mform->addHelpButton('defaults[startdate]', 'startdate');
         $mform->setDefault('defaults[startdate]', time() + 3600 * 24);
+
+        $mform->addElement('date_time_selector', 'defaults[enddate]', get_string('enddate'), array('optional' => true));
+        $mform->addHelpButton('defaults[enddate]', 'enddate');
 
         $courseformats = get_sorted_course_formats(true);
         $formcourseformats = array();
@@ -161,6 +166,13 @@ class tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
         $mform->addHelpButton('defaults[groupmodeforce]', 'groupmodeforce', 'group');
         $mform->setDefault('defaults[groupmodeforce]', $courseconfig->groupmodeforce);
 
+        // Completion tracking.
+        if (!empty($CFG->enablecompletion)) {
+            $mform->addElement('selectyesno', 'defaults[enablecompletion]', get_string('enablecompletion', 'completion'));
+            $mform->setDefault('defaults[enablecompletion]', $courseconfig->enablecompletion);
+            $mform->addHelpButton('defaults[enablecompletion]', 'enablecompletion', 'completion');
+        }
+
         // Hidden fields.
         $mform->addElement('hidden', 'importid');
         $mform->setType('importid', PARAM_INT);
@@ -190,4 +202,41 @@ class tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
         $mform->closeHeaderBefore('buttonar');
     }
 
+    /**
+     * Sets the enddate default after set_data is called.
+     */
+    public function definition_after_data() {
+
+        $mform = $this->_form;
+
+        // The default end date depends on the course format.
+        $format = course_get_format((object)array('format' => get_config('moodlecourse', 'format')));
+
+        // Check if course end date form field should be enabled by default.
+        // If a default date is provided to the form element, it is magically enabled by default in the
+        // MoodleQuickForm_date_time_selector class, otherwise it's disabled by default.
+        if (get_config('moodlecourse', 'courseenddateenabled')) {
+            $enddate = $format->get_default_course_enddate($mform, array('startdate' => 'defaults[startdate]'));
+            $mform->setDefault('defaults[enddate]', $enddate);
+        }
+    }
+
+    /**
+     * Validation.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array the errors that were found
+     */
+    public function validation($data, $files) {
+        global $DB;
+
+        $errors = parent::validation($data, $files);
+
+        if ($errorcode = course_validate_dates($data['defaults'])) {
+            $errors['defaults[enddate]'] = get_string($errorcode, 'error');
+        }
+
+        return $errors;
+    }
 }

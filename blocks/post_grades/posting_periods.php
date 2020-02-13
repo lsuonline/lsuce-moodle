@@ -1,7 +1,21 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once '../../config.php';
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+require_once('../../config.php');
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
 ues::require_daos();
 
 require_login();
@@ -16,35 +30,35 @@ $context = context_system::instance();
 
 require_capability('block/post_grades:canconfigure', $context);
 
-$_s = ues::gen_str('block_post_grades');
+$s = ues::gen_str('block_post_grades');
 
-$pluginname = $_s('pluginname');
-$heading = $_s('posting_periods');
+$pluginname = $s('pluginname');
+$heading = $s('posting_periods');
 
-$create_url = new moodle_url('/blocks/post_grades/period.php');
-$base_url = new moodle_url('/blocks/post_grades/posting_periods.php');
-$admin_url = new moodle_url('/admin/settings.php', array(
+$createurl = new moodle_url('/blocks/post_grades/period.php');
+$baseurl = new moodle_url('/blocks/post_grades/posting_periods.php');
+$adminurl = new moodle_url('/admin/settings.php', array(
     'section' => 'blocksettingpost_grades'
 ));
 
 $title = "$system->shortname: $heading";
 
-$PAGE->set_url($base_url);
+$PAGE->set_url($baseurl);
 $PAGE->set_context($context);
 $PAGE->set_heading($title);
 $PAGE->set_title($title);
-$PAGE->navbar->add($pluginname, $admin_url);
+$PAGE->navbar->add($pluginname, $adminurl);
 $PAGE->navbar->add($heading);
 
 $periods = $DB->get_records('block_post_grades_periods', null, 'start_time ASC');
 $semesters = ues_semester::get_all();
 
 if ($action == 'confirm' and isset($periods[$id])) {
-    // Cleanup
+    // Cleanup.
     $DB->delete_records('block_post_grades_postings', array('periodid' => $id));
     $DB->delete_records('block_post_grades_periods', array('id' => $id));
 
-    redirect(new moodle_url($base_url, array('flash' => 1)));
+    redirect(new moodle_url($baseurl, array('flash' => 1)));
 }
 
 echo $OUTPUT->header();
@@ -52,12 +66,12 @@ echo $OUTPUT->heading($heading);
 
 if ($action == 'delete' and isset($periods[$id])) {
     $semester = $semesters[$periods[$id]->semesterid];
-    $msg = $_s('are_you_sure', "$semester");
+    $msg = $s('are_you_sure', "$semester");
 
     $params = array('action' => 'confirm', 'id' => $id);
-    $confirm_url = new moodle_url($base_url, $params);
+    $confirmurl = new moodle_url($baseurl, $params);
 
-    echo $OUTPUT->confirm($msg, $confirm_url, $base_url);
+    echo $OUTPUT->confirm($msg, $confirmurl, $baseurl);
     echo $OUTPUT->footer();
     exit;
 }
@@ -67,23 +81,23 @@ if ($flash) {
 }
 
 if (empty($periods)) {
-    echo $OUTPUT->notification($_s('no_posting'));
-    echo $OUTPUT->continue_button($create_url);
+    echo $OUTPUT->notification($s('no_posting'));
+    echo $OUTPUT->continue_button($createurl);
     echo $OUTPUT->footer();
     exit;
 }
 
-$create_link = html_writer::link($create_url, $_s('new_posting'));
+$createlink = html_writer::link($createurl, $s('new_posting'));
 
-echo html_writer::tag('div', $create_link, array('class' => 'centered controls'));
+echo html_writer::tag('div', $createlink, array('class' => 'centered controls'));
 
 $table = new html_table();
 
 $table->head = array(
-    $_s('semester'),
-    $_s('post_type'),
-    $_s('start_time'),
-    $_s('end_time'),
+    $s('semester'),
+    $s('post_type'),
+    $s('start_time'),
+    $s('end_time'),
     get_string('active'),
     get_string('action')
 );
@@ -92,8 +106,8 @@ $pattern = 'm/d/Y g:00:00 a';
 
 $now = time();
 
-$edit_icon = $OUTPUT->pix_icon('i/edit', get_string('edit'));
-$delete_icon = $OUTPUT->pix_icon('i/cross_red_big', get_string('delete'));
+$editicon = $OUTPUT->pix_icon('i/edit', get_string('edit'));
+$deleteicon = $OUTPUT->pix_icon('i/cross_red_big', get_string('delete'));
 
 foreach ($periods as $period) {
     $line = new html_table_row();
@@ -103,15 +117,15 @@ foreach ($periods as $period) {
     $active = ($now >= $period->start_time and $now <= $period->end_time) ? 'Y' : 'N';
 
     $params = array('id' => $period->id);
-    $edit_url = new moodle_url($create_url, $params);
-    $edit = html_writer::link($edit_url, $edit_icon);
+    $editurl = new moodle_url($createurl, $params);
+    $edit = html_writer::link($editurl, $editicon);
 
     $params['action'] = 'delete';
-    $delete_url = new moodle_url($base_url, $params);
-    $delete = html_writer::link($delete_url, $delete_icon);
+    $deleteurl = new moodle_url($baseurl, $params);
+    $delete = html_writer::link($deleteurl, $deleteicon);
 
     $line->cells[] = "$semester";
-    $line->cells[] = $_s($period->post_type);
+    $line->cells[] = $s($period->post_type);
     $line->cells[] = date($pattern, $period->start_time);
     $line->cells[] = date($pattern, $period->end_time);
     $line->cells[] = $active;

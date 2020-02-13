@@ -27,9 +27,11 @@ defined('MOODLE_INTERNAL') || die();
 use context_course;
 use renderer_base;
 use stdClass;
+use moodle_url;
 use core_competency\competency_framework;
 use core_competency\external\competency_exporter;
 use core_competency\external\competency_framework_exporter;
+use core_course\external\course_summary_exporter;
 
 /**
  * Class for exporting competency data with additional related data.
@@ -37,7 +39,7 @@ use core_competency\external\competency_framework_exporter;
  * @copyright  2015 Damyon Wiese
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class competency_summary_exporter extends \core_competency\external\exporter {
+class competency_summary_exporter extends \core\external\exporter {
 
     protected static function define_related() {
         // We cache the context so it does not need to be retrieved from the framework every time.
@@ -81,7 +83,10 @@ class competency_summary_exporter extends \core_competency\external\exporter {
             ),
             'comppath' => array(
                 'type' => competency_path_exporter::read_properties_definition(),
-            )
+            ),
+            'pluginbaseurl' => [
+                'type' => PARAM_URL
+            ]
         );
     }
 
@@ -115,11 +120,11 @@ class competency_summary_exporter extends \core_competency\external\exporter {
 
         $exporter = new competency_framework_exporter($this->related['framework']);
         $result->framework = $exporter->export($output);
-        $scaleconfiguration = $this->related['framework']->get_scaleconfiguration();
-        $scaleid = $this->related['framework']->get_scaleid();
-        if ($competency->get_scaleid()) {
-            $scaleconfiguration = $competency->get_scaleconfiguration();
-            $scaleid = $competency->get_scaleid();
+        $scaleconfiguration = $this->related['framework']->get('scaleconfiguration');
+        $scaleid = $this->related['framework']->get('scaleid');
+        if ($competency->get('scaleid')) {
+            $scaleconfiguration = $competency->get('scaleconfiguration');
+            $scaleid = $competency->get('scaleid');
         }
         $result->scaleconfiguration = $scaleconfiguration;
         $result->scaleid = $scaleid;
@@ -135,6 +140,8 @@ class competency_summary_exporter extends \core_competency\external\exporter {
             'context' => $context
         ]);
         $result->comppath = $exporter->export($output);
+        $result->pluginbaseurl = (new moodle_url('/admin/tool/lp'))->out(true);
+        $result->showlinks = \core_competency\api::show_links();
 
         return (array) $result;
     }

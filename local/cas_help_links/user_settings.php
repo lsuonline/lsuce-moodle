@@ -13,14 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 /**
  * @package   local_cas_help_links
  * @copyright 2016, Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
-// defined('MOODLE_INTERNAL') || die();
 
 require_once('../../config.php');
 
@@ -35,18 +33,14 @@ $PAGE->set_context($context);
 
 require_login();
 
-// make sure that the user being referenced is the auth user
+// Make sure that the user being referenced is the auth user.
 if ($USER->id != $user_id) {
     echo 'Access denied. Security violation.';
     header('Location: ' . $CFG->wwwroot, false, 302);
     exit();
 }
 
-//////////////////////////////////////////////////////////
-/// 
-/// HANDLE FORM SUBMISSION
-/// 
-//////////////////////////////////////////////////////////
+// Handle form submission.
 $submit_success = false;
 
 if ($data = data_submitted() and confirm_sesskey()) {
@@ -57,22 +51,15 @@ if ($data = data_submitted() and confirm_sesskey()) {
     }
 }
 
-//////////////////////////////////////////////////////////
-/// 
-/// RENDER PAGE
-///
-/// (NOTE: it is assumed this is a primary instructor or site admin)
-/// 
-//////////////////////////////////////////////////////////
-
-// get all data
+// Render page (NOTE: it is assumed this is a primary instructor or site admin).
+// Get all data.
 $courseSettingsData = \local_cas_help_links_utility::get_primary_instructor_course_settings($user_id);
 
 $categorySettingsData = \local_cas_help_links_utility::get_primary_instructor_category_settings($user_id);
 
 $userSettingsData = \local_cas_help_links_utility::get_primary_instructor_user_settings($user_id);
 
-// PAGE RENDERING STUFF
+// Page rendering code.
 $PAGE->set_context($context);
 $PAGE->requires->jquery();
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . "/local/cas_help_links/style.css"));
@@ -89,8 +76,9 @@ if (isset($e)) {
 } else if ($submit_success) {
     echo $OUTPUT->notification(get_string('submit_success', 'local_cas_help_links'), 'notifysuccess');
 }
+
 echo $output->heading(get_string('user_settings_heading', 'local_cas_help_links'));
 echo $output->action_link('user_analytics.php', get_string('analytics_link_label', 'local_cas_help_links'));
 
-echo $output->cas_help_links($courseSettingsData,$categorySettingsData,$userSettingsData);
+echo $output->cas_help_links($courseSettingsData, $categorySettingsData, $userSettingsData);
 echo $output->footer();

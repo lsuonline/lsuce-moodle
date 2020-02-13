@@ -201,7 +201,7 @@ M.mod_quiz.autosave = {
         this.delay = delay * 1000;
 
         this.form.delegate('valuechange', this.value_changed, this.SELECTORS.VALUE_CHANGE_ELEMENTS, this);
-        this.form.delegate('change',      this.value_changed, this.SELECTORS.CHANGE_ELEMENTS,       this);
+        this.form.delegate('change', this.value_changed, this.SELECTORS.CHANGE_ELEMENTS, this);
         this.form.on('submit', this.stop_autosaving, this);
 
         this.init_tinymce(this.TINYMCE_DETECTION_REPEATS);
@@ -212,7 +212,7 @@ M.mod_quiz.autosave = {
 
     save_hidden_field_values: function() {
         this.form.all(this.SELECTORS.HIDDEN_INPUTS).each(function(hidden) {
-            var name  = hidden.get('name');
+            var name = hidden.get('name');
             if (!name) {
                 return;
             }
@@ -227,7 +227,7 @@ M.mod_quiz.autosave = {
 
     detect_hidden_field_changes: function() {
         this.form.all(this.SELECTORS.HIDDEN_INPUTS).each(function(hidden) {
-            var name  = hidden.get('name'),
+            var name = hidden.get('name'),
                 value = hidden.get('value');
             if (!name) {
                 return;
@@ -335,6 +335,14 @@ M.mod_quiz.autosave = {
         if (typeof window.tinyMCE !== 'undefined') {
             window.tinyMCE.triggerSave();
         }
+
+        // YUI io.form incorrectly (in my opinion) sends the value of all submit
+        // buttons in the ajax request. We don't want any submit buttons.
+        // Therefore, temporarily change the type.
+        // (Yes, this is a nasty hack. One day this will be re-written as AMD, hopefully).
+        var allsubmitbuttons = this.form.all('input[type=submit], button[type=submit]');
+        allsubmitbuttons.setAttribute('type', 'button');
+
         this.save_transaction = Y.io(this.AUTOSAVE_HANDLER, {
             method:  'POST',
             form:    {id: this.form},
@@ -344,6 +352,9 @@ M.mod_quiz.autosave = {
             },
             context: this
         });
+
+        // Change the button types back.
+        allsubmitbuttons.setAttribute('type', 'submit');
     },
 
     save_done: function(transactionid, response) {
@@ -388,7 +399,7 @@ M.mod_quiz.autosave = {
 
     is_time_nearly_over: function() {
         return M.mod_quiz.timer && M.mod_quiz.timer.endtime &&
-                (new Date().getTime() + 2*this.delay) > M.mod_quiz.timer.endtime;
+                (new Date().getTime() + 2 * this.delay) > M.mod_quiz.timer.endtime;
     },
 
     stop_autosaving: function() {

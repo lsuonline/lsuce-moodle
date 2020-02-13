@@ -1,6 +1,5 @@
 # LSU CSV Profile block #
 ## Allows for simple upload of additional profile fields ##
-### Version 1 ###
 
 This block allows administrators and designates to upload additional profile field data.
 After running the upload you can view the log of the inserted profile fields, updates, deletes, and failures.

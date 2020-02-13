@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/blocks/cps/formslib.php';
+
+defined('MOODLE_INTERNAL') or die();
+
+require_once($CFG->dirroot . '/blocks/cps/formslib.php');
 
 interface team_states {
     const QUERY = 'query';
@@ -35,14 +37,14 @@ abstract class team_request_form extends cps_form implements team_states {
 }
 
 class team_request_form_select extends team_request_form {
-    var $current = self::SELECT;
-    var $next = self::SHELLS;
+    public $current = self::SELECT;
+    public $next = self::SHELLS;
 
     public static function build($semesters) {
         return array('semesters' => $semesters);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $semesters = $this->_customdata['semesters'];
@@ -69,7 +71,7 @@ class team_request_form_select extends team_request_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         if (empty($data['selected'])) {
             return array('selected' => self::_s('err_select_one'));
         }
@@ -89,9 +91,9 @@ class team_request_form_select extends team_request_form {
 }
 
 class team_request_form_update extends team_request_form {
-    var $current = self::UPDATE;
-    var $next = self::MANAGE;
-    var $prev = self::SELECT;
+    public $current = self::UPDATE;
+    public $next = self::MANAGE;
+    public $prev = self::SELECT;
 
     const ADD_USER_CURRENT = 1;
     const ADD_COURSE = 2;
@@ -108,53 +110,92 @@ class team_request_form_update extends team_request_form {
         return $extra + team_request_form_shells::build($courses);
     }
 
-    function definition() {
+    /**
+     * Gets the largest grouping id for a particular course in the
+     * enrol_cps_team_sections table, excluding any records for the current
+     * request.  This should be the grouping id used in the most recently
+     * _completed_ team teach. If there are are no grouping ids for that
+     * course, it should return 0.
+     *
+     * Note: There is a small risk of interference if two users request
+     * team-teaching at the same time.  We should really have a mutex lock on
+     * enrol_cps_team_sections during this method and until the value obtained
+     * is used to insert a record into this table.
+     *
+     * @param $coursid     The UES course id for this course.  Note that this
+     *                     is a UES course id which has a 1-1 relationship to
+     *                     catalog courses, not the Moodle course id which is
+     *                     different for different instructor/course
+     *                     combinations.
+     * @param $requestid   The id for the request currently being made.
+     * @return             The number of the latest group for this course,
+     *                     excluding the group number of the current request,
+     *                     or 0 if no other group exists for this course.
+     */
+    private function get_latest_group($courseid, $requestid) {
+        global $DB;
+        $resultfieldset = $DB->get_records_sql("SELECT `groupingid` " .
+                                               "FROM {enrol_cps_team_sections} " .
+                                               "WHERE `courseid` = '$courseid' " .
+                                                    "AND `requestid` != '$requestid' " .
+                                               "ORDER BY `groupingid` DESC LIMIT 1"
+                                             , null
+                                             , IGNORE_MISSING
+        );
+        if (!$resultfieldset) {
+            return 0;
+        } else {
+            return (array_slice($resultfieldset, 0, 1)[0])->groupingid;
+        }
+    }
+
+    public function definition() {
         $m =& $this->_form;
 
         $course = $this->_customdata['selected_course'];
 
         $semester = $this->_customdata['semester'];
 
-        $to_display = $this->to_display($semester);
+        $todisplay = $this->to_display($semester);
 
-        $m->addElement('header', 'selected_course', $to_display($course));
+        $m->addElement('header', 'selected_course', $todisplay($course));
 
         $m->addElement('static', 'all_requests', self::_s('team_following'), '');
 
-        $team_teaches = cps_team_request::in_course($course, $semester);
+        $teamteaches = cps_team_request::in_course($course, $semester);
 
-        $is_master = false;
-        $any_approved = false;
+        $ismaster = false;
+        $anyapproved = false;
 
-        $selected_users = array();
+        $selectedusers = array();
         $queries = array();
 
-        $grouping_map = array();
-        $groupingid = 0;
-        foreach ($team_teaches as $request) {
+        $groupingmap = array();
+        $firstrequest = array_slice($teamteaches, 0, 1)[0];
+        $groupingid = $this->get_latest_group($firstrequest->requested_course, $firstrequest->requested);
+        foreach ($teamteaches as $request) {
 
             if ($request->is_owner()) {
-                $is_master = true;
+                $ismaster = true;
 
                 $user = $request->other_user();
 
-                $other_course = $request->other_course();
-
-                if (!isset($grouping_map[$other_course->id])) {
-                    $groupingid ++;
-                    $grouping_map[$other_course->id] = $groupingid;
+                $othercourse = $request->other_course();
+                if (!isset($groupingmap[$othercourse->id])) {
+                    $groupingid++;
+                    $groupingmap[$othercourse->id] = $groupingid;
                 }
 
                 $queries[$groupingid] = array(
-                    'department' => $other_course->department,
-                    'cou_number' => $other_course->cou_number
+                    'department' => $othercourse->department,
+                    'cou_number' => $othercourse->cou_number
                 );
 
-                $selected_users[$groupingid][] = $user->id;
+                $selectedusers[$groupingid][] = $user->id;
             }
 
             if ($request->approved()) {
-                $any_approved = true;
+                $anyapproved = true;
                 $append = self::_s('team_approved');
             } else {
                 $append = self::_s('team_not_approved');
@@ -163,11 +204,12 @@ class team_request_form_update extends team_request_form {
             $label = $request->label() . ' - ' . $append;
 
             $m->addElement('static', 'selected_'.$request->id, '', $label);
+
         }
 
         $m->addElement('static', 'breather', '', '');
 
-        if ($is_master) {
+        if ($ismaster) {
             $m->addElement('radio', 'update_option', '',
                 self::_s('team_current'), self::ADD_USER_CURRENT);
 
@@ -176,9 +218,9 @@ class team_request_form_update extends team_request_form {
         }
 
         $limit = get_config('block_cps', 'team_request_limit');
-        $shells_range = range(1, $limit - $groupingid);
+        $shellsrange = range(1, $limit - $groupingid);
 
-        $options = array_combine($shells_range, $shells_range);
+        $options = array_combine($shellsrange, $shellsrange);
 
         $m->addElement('select', 'reshell', self::_s('team_reshell'), $options);
 
@@ -189,7 +231,7 @@ class team_request_form_update extends team_request_form {
         $m->addElement('radio', 'update_option', '',
             self::_s('team_manage_requests'), self::MANAGE_REQUESTS);
 
-        if ($any_approved) {
+        if ($anyapproved) {
             global $OUTPUT;
 
             $icon = $OUTPUT->help_icon('team_manage_sections', 'block_cps');
@@ -199,15 +241,13 @@ class team_request_form_update extends team_request_form {
         }
 
         $m->setDefault('update_option', self::MANAGE_REQUESTS);
-
         $m->addElement('hidden', 'selected', '');
-        $m->setType('selected',PARAM_ALPHANUMEXT);
-        
+        $m->setType('selected', PARAM_ALPHANUMEXT);
         $m->addElement('hidden', 'shells', $groupingid);
         $m->setType('shells', PARAM_INT);
 
         foreach ($queries as $number => $query) {
-            $users = implode(',', $selected_users[$number]);
+            $users = implode(',', $selectedusers[$number]);
 
             $m->addElement('hidden', 'selected_users'.$number.'_str', $users);
             $m->setType('selected_users'.$number.'_str', PARAM_TEXT);
@@ -233,7 +273,7 @@ class team_request_form_update extends team_request_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         if (isset($data['back'])) {
             return true;
         }
@@ -255,9 +295,9 @@ class team_request_form_update extends team_request_form {
 }
 
 class team_request_form_manage extends team_request_form {
-    var $current = self::MANAGE;
-    var $prev = self::UPDATE;
-    var $next = self::CONFIRM;
+    public $current = self::MANAGE;
+    public $prev = self::UPDATE;
+    public $next = self::CONFIRM;
 
     const NOTHING = 0;
     const APPROVE = 1;
@@ -267,37 +307,39 @@ class team_request_form_manage extends team_request_form {
         return team_request_form_shells::build($courses);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $course = $this->_customdata['selected_course'];
 
         $semester = $this->_customdata['semester'];
 
-        $to_display = $this->to_display($semester);
+        $todisplay = $this->to_display($semester);
 
-        $to_bold = function ($text) { return "<strong>$text</strong>"; };
+        $tobold = function ($text) {
+            return "<strong>$text</strong>";
+        };
 
-        $filler = function ($how_much) {
-            $spaces = range(1, $how_much);
+        $filler = function ($howmuch) {
+            $spaces = range(1, $howmuch);
 
             return implode('', array_map(function ($sp) {
                 return '&nbsp;';
             }, $spaces));
         };
 
-        $m->addElement('header', 'selected_course', $to_display($course));
+        $m->addElement('header', 'selected_course', $todisplay($course));
 
         $m->addElement('static', 'team_error', '', '');
 
         $m->addElement('static', 'action_labels', '',
-            $to_bold(self::_s('team_actions')). $filler(50) .
-            $to_bold(self::_s('team_requested_courses')));
+            $tobold(self::_s('team_actions')). $filler(50) .
+            $tobold(self::_s('team_requested_courses')));
 
-        $team_teaches = cps_team_request::in_course($course, $semester);
+        $teamteaches = cps_team_request::in_course($course, $semester);
 
-        foreach ($team_teaches as $request) {
-            // The master of this request
+        foreach ($teamteaches as $request) {
+            // The master of this request.
             $master = $request->is_owner();
 
             $approval = $request->approved() ?
@@ -337,29 +379,25 @@ class team_request_form_manage extends team_request_form {
         }
 
         $m->addElement('hidden', 'selected', '');
-        $m->setType('selected',PARAM_ALPHANUMEXT);
-        
+        $m->setType('selected', PARAM_ALPHANUMEXT);
         $m->addElement('hidden', 'update_option', '');
-        $m->setType('update_option',PARAM_INT);
-        
+        $m->setType('update_option', PARAM_INT);
+
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
 
         if (isset($data['back'])) {
             return true;
         }
 
         $selected = 0;
-
         $course = $this->_customdata['selected_course'];
-
         $semester = $this->_customdata['semester'];
-
         $teams = cps_team_request::in_course($course, $semester);
 
-        foreach ($teams as $id =>$team) {
+        foreach ($teams as $id => $team) {
             $approval = $data['options_'.$id]['approval_'.$id];
 
             if ($approval != self::NOTHING) {
@@ -376,32 +414,25 @@ class team_request_form_manage extends team_request_form {
 }
 
 class team_request_form_confirm extends team_request_form {
-    var $current = self::CONFIRM;
-    var $next = self::FINISHED;
-    var $prev = self::MANAGE;
+    public $current = self::CONFIRM;
+    public $next = self::FINISHED;
+    public $prev = self::MANAGE;
 
     public static function build($courses) {
         return team_request_form_shells::build($courses);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
-
         $course = $this->_customdata['selected_course'];
-
         $semester = $this->_customdata['semester'];
-
-        $to_display = $this->to_display($semester);
-
-        $team_teaches = cps_team_request::in_course($course, $semester);
-
-        $m->addElement('header', 'selected_course', $to_display($course));
-
+        $todisplay = $this->to_display($semester);
+        $teamteaches = cps_team_request::in_course($course, $semester);
+        $m->addElement('header', 'selected_course', $todisplay($course));
         $approved = array();
         $denied = array();
 
-        foreach ($team_teaches as $id => $request) {
-
+        foreach ($teamteaches as $id => $request) {
             $m->addElement('hidden', 'options_'.$id.'[approval_'.$id.']', '');
             $m->setType('options_'.$id.'[approval_'.$id.']', PARAM_INT);
 
@@ -411,6 +442,7 @@ class team_request_form_confirm extends team_request_form {
 
             $action = $this->_customdata['options_' . $id]['approval_'.$id];
 
+            // TODO rewrite case statement so that it will not throw a warning in PHP 7.3 10/11/2019.
             switch ($action) {
                 case team_request_form_manage::APPROVE:
                     $approved[] = $request;
@@ -418,7 +450,8 @@ class team_request_form_confirm extends team_request_form {
                 case team_request_form_manage::REVOKE:
                     $denied[] = $request;
                 case team_request_form_manage::NOTHING:
-                    continue;
+                    // Old: continue;.
+                    break;
             }
         }
 
@@ -439,22 +472,21 @@ class team_request_form_confirm extends team_request_form {
         }
 
         $m->addElement('hidden', 'selected', '');
-        $m->setType('selected',PARAM_ALPHANUMEXT);
-        
+        $m->setType('selected', PARAM_ALPHANUMEXT);
         $m->addElement('hidden', 'update_option', '');
-        $m->setType('update_option',PARAM_INT);
+        $m->setType('update_option', PARAM_INT);
 
         $this->generate_states_and_buttons();
     }
 }
 
 /**
- * second form in the team-teach request wizard
+ * Second form in the team-teach request wizard
  */
 class team_request_form_shells extends team_request_form {
-    var $current = self::SHELLS;
-    var $prev = self::SELECT;
-    var $next = self::QUERY;
+    public $current = self::SHELLS;
+    public $prev = self::SELECT;
+    public $next = self::QUERY;
 
     public static function build($semesters) {
         $selected = required_param('selected', PARAM_RAW);
@@ -467,13 +499,11 @@ class team_request_form_shells extends team_request_form {
         return array('selected_course' => $course, 'semester' => $semester);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $course = $this->_customdata['selected_course'];
-
         $sem = $this->_customdata['semester'];
-
         $display = $this->display_course($course, $sem);
 
         $m->addElement('header', 'selected_course', $display);
@@ -483,40 +513,38 @@ class team_request_form_shells extends team_request_form {
         $options = array_combine($range, $range);
 
         $m->addElement('select', 'shells', self::_s('team_how_many'), $options);
-        
         $m->addHelpButton('shells', 'team_how_many', 'block_cps');
-
         $m->addElement('hidden', 'selected', '');
-        $m->setType('selected',PARAM_ALPHANUMEXT);
+        $m->setType('selected', PARAM_ALPHANUMEXT);
 
         $this->generate_states_and_buttons();
     }
 }
 
 class team_request_form_query extends team_request_form {
-    var $current = self::QUERY;
-    var $prev = self::SHELLS;
-    var $next = self::REQUEST;
+    public $current = self::QUERY;
+    public $prev = self::SHELLS;
+    public $next = self::REQUEST;
 
     public static function build($courses) {
         $shells = required_param('shells', PARAM_INT);
 
         $reshell = optional_param('reshell', 0, PARAM_INT);
 
-        // Don't need to dup this add
+        // Don't need to dup this add.
         $current = required_param('current', PARAM_TEXT);
 
-        $to_add = ($reshell and $current == self::UPDATE);
+        $toadd = ($reshell and $current == self::UPDATE);
 
         $extra = array(
-            'shells' => $to_add ? $shells + $reshell: $shells,
+            'shells' => $toadd ? $shells + $reshell : $shells,
             'reshell' => $reshell
         );
 
         return $extra + team_request_form_shells::build($courses);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $course = $this->_customdata['selected_course'];
@@ -525,11 +553,11 @@ class team_request_form_query extends team_request_form {
 
         $shells = $this->_customdata['shells'];
 
-        $update_option = optional_param('update_option', null, PARAM_INT);
+        $updateoption = optional_param('update_option', null, PARAM_INT);
 
-        if ($update_option) {
-            $m->addElement('hidden', 'update_option', $update_option);
-            $m->setType('update_option',PARAM_INT);
+        if ($updateoption) {
+            $m->addElement('hidden', 'update_option', $updateoption);
+            $m->setType('update_option', PARAM_INT);
             $this->prev = self::UPDATE;
         }
 
@@ -539,64 +567,62 @@ class team_request_form_query extends team_request_form {
 
         $m->addElement('static', 'err_label', '', '');
 
-        $to_bold = function ($s) { return "<strong>$s</strong>"; };
+        $tobold = function ($s) {
+            return "<strong>$s</strong>";
+        };
 
         $fill = function ($n) {
             $spaces = range(1, $n);
             return array(implode('', array_map(function ($d) {
-                return '&nbsp;'; }, $spaces)));
+                return '&nbsp;';
+            },
+            $spaces)));
         };
 
         $dept = self::_s('department');
         $cou = self::_s('cou_number');
 
         $labels = array(
-            $m->createELement('static', 'dept_label', '', $to_bold($dept)),
-            $m->createELement('static', 'cou_label', '', $to_bold($cou))
+            $m->createELement('static', 'dept_label', '', $tobold($dept)),
+            $m->createELement('static', 'cou_label', '', $tobold($cou))
         );
 
         $m->addGroup($labels, 'query_labels', '&nbsp;', $fill(23), false);
 
         foreach (range(1, $shells) as $number) {
-
-
-            
             $texts = array(
                 $m->createELement('text', 'department', ''),
                 $m->createELement('text', 'cou_number', '')
             );
-            
+
             $display = self::_s('team_query_for', $semester);
 
             $group = $m->addGroup($texts, 'query' . $number, $display, $fill(1), true);
 
             $m->setType($group->getElementName('department'), PARAM_ALPHANUMEXT);
             $m->setType($group->getElementName('cou_number'), PARAM_ALPHANUM);
-            
             $m->addElement('hidden', 'selected_users'.$number.'_str', '');
             $m->setType('selected_users'.$number.'_str', PARAM_TEXT);
         }
 
         $m->addElement('hidden', 'selected', '');
         $m->setType('selected', PARAM_TEXT);
-        
         $m->addElement('hidden', 'shells', '');
-        $m->setType('shells',PARAM_INT);
-
+        $m->setType('shells', PARAM_INT);
         $m->addElement('hidden', 'reshell', 0);
-        $m->setType('reshell',PARAM_INT);
-        
+        $m->setType('reshell', PARAM_INT);
+
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         global $USER;
 
         if (isset($data['back'])) {
             return true;
         }
 
-        $one_or_other = function ($one, $other) {
+        $oneorother = function ($one, $other) {
             return ($one and !$other) or (!$one and $other);
         };
 
@@ -606,14 +632,13 @@ class team_request_form_query extends team_request_form {
 
         $valid = false;
         foreach (range(1, $data['shells']) as $number) {
-
             $query = $data['query' . $number];
 
             if (empty($query['department']) and empty($query['cou_number'])) {
                 continue;
             }
 
-            if ($one_or_other($query['department'], $query['cou_number'])) {
+            if ($oneorother($query['department'], $query['cou_number'])) {
                 $errors['err_label'] = self::_s('err_team_query');
                 return $errors;
             }
@@ -649,15 +674,15 @@ class team_request_form_query extends team_request_form {
 }
 
 class team_request_form_request extends team_request_form {
-    var $current = self::REQUEST;
-    var $prev = self::QUERY;
-    var $next = self::REVIEW;
+    public $current = self::REQUEST;
+    public $prev = self::QUERY;
+    public $next = self::REVIEW;
 
     public static function build($courses) {
         $data = team_request_form_query::build($courses);
 
         $queries = array();
-        $current_selected = array();
+        $currentselected = array();
 
         foreach (range(1, $data['shells']) as $number) {
             $key = 'query' . $number;
@@ -677,101 +702,90 @@ class team_request_form_request extends team_request_form {
         return $queries + team_request_form_query::build($courses);
     }
 
-    function definition() {
+    public function definition() {
         global $USER;
 
         $m =& $this->_form;
 
-        $selected_course = $this->_customdata['selected_course'];
-
+        $selectedcourse = $this->_customdata['selected_course'];
         $semester = $this->_customdata['semester'];
+        $updateoption = optional_param('update_option', null, PARAM_INT);
 
-        $update_option = optional_param('update_option', null, PARAM_INT);
-
-        if ($update_option) {
-            $m->addElement('hidden', 'update_option', $update_option);
+        if ($updateoption) {
+            $m->addElement('hidden', 'update_option', $updateoption);
             $m->setType('update_option', PARAM_INT);
-            $adding_user = team_request_form_update::ADD_USER_CURRENT;
+            $addinguser = team_request_form_update::ADD_USER_CURRENT;
 
-            $this->prev = $update_option == $adding_user ? self::UPDATE :
+            $this->prev = $updateoption == $addinguser ? self::UPDATE :
                 $this->prev;
         }
 
-        $to_display = $this->to_display($semester);
+        $todisplay = $this->to_display($semester);
 
-        $m->addElement('header', 'selected_course', $to_display($selected_course));
+        $m->addElement('header', 'selected_course', $todisplay($selectedcourse));
 
         foreach (range(1, $this->_customdata['shells']) as $number) {
             $users = array();
-
             $key = 'query' . $number;
-
             $query = $this->_customdata[$key];
 
             $m->addElement('hidden', 'query'.$number.'[department]', '');
             $m->setType('query'.$number.'[department]', PARAM_ALPHANUMEXT);
-            
             $m->addElement('hidden', 'query'.$number.'[cou_number]', '');
             $m->setType('query'.$number.'[cou_number]', PARAM_ALPHANUM);
-            
+
             if (empty($query['department'])) {
                 $m->addElement('hidden', 'selected_users'.$number, '');
-                $m->setType('selected_users'.$number,PARAM_INT);
+                $m->setType('selected_users'.$number, PARAM_INT);
                 continue;
             }
 
-            $other_course = ues_course::get(array(
+            $othercourse = ues_course::get(array(
                 'department' => $query['department'],
                 'cou_number' => $query['cou_number']
             ));
 
-            $other_sections = $other_course->sections($semester);
+            $othersections = $othercourse->sections($semester);
 
             // Should query allow lookup to non-primaries?
-            $other_teachers = $other_course->teachers($semester);
+            $otherteachers = $othercourse->teachers($semester);
 
-            foreach ($other_teachers as $teacher) {
+            foreach ($otherteachers as $teacher) {
                 if ($teacher->userid == $USER->id) {
                     continue;
                 }
 
                 $user = $teacher->user();
-
-                $section_info = $other_sections[$teacher->sectionid];
-
-                $display = fullname($user) . " ($section_info,...)";
-
+                $sectioninfo = $othersections[$teacher->sectionid];
+                $display = fullname($user) . " ($sectioninfo,...)";
                 $users[$teacher->userid] = $display;
             }
 
-            $m->addElement('static', 'query'.$number.'_course', $to_display($other_course));
+            $m->addElement('static', 'query'.$number.'_course', $todisplay($othercourse));
 
             $select =& $m->addElement('select', 'selected_users' . $number,
                 self::_s('team_teachers'), $users);
-            $m->setType('selected_users'.$number,PARAM_INT);
+
+            $m->setType('selected_users'.$number, PARAM_INT);
 
             $select->setMultiple(true);
 
             $m->addHelpButton('selected_users' . $number, 'team_teachers', 'block_cps');
-
             $m->addElement('hidden', 'selected_users'.$number.'_str', '');
-            $m->setType('selected_users'.$number.'_str',PARAM_RAW);
+            $m->setType('selected_users'.$number.'_str', PARAM_RAW);
         }
 
         $m->addElement('hidden', 'selected', '');
-        $m->setType('selected',PARAM_ALPHANUMEXT);
-        
+        $m->setType('selected', PARAM_ALPHANUMEXT);
         $m->addElement('hidden', 'shells', '');
         $m->setType('shells', PARAM_INT);
-        
         $m->addElement('hidden', 'reshell', 0);
-        $m->setType('reshell',PARAM_INT);
+        $m->setType('reshell', PARAM_INT);
 
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
-
+    public function validation($data, $files) {
         if (isset($data['back'])) {
             return true;
         }
@@ -793,48 +807,40 @@ class team_request_form_request extends team_request_form {
 }
 
 class team_request_form_review extends team_request_form {
-    var $current = self::REVIEW;
-    var $prev = self::REQUEST;
-    var $next = self::FINISHED;
+    public $current = self::REVIEW;
+    public $prev = self::REQUEST;
+    public $next = self::FINISHED;
 
     public static function build($courses) {
         $data = team_request_form_request::build($courses);
 
-        $users_data = array();
+        $usersdata = array();
 
         foreach (range(1, $data['shells']) as $number) {
             $key = 'selected_users'. $number;
 
             $users = optional_param_array($key, null, PARAM_INT);
             $userids = optional_param($key . '_str', null, PARAM_TEXT);
-
             $userid = ($users) ? implode(',', $users) : $userids;
-
-            $users_data[$key . '_str'] = $userid;
+            $usersdata[$key . '_str'] = $userid;
         }
-
-        return $users_data + $data;
+        return $usersdata + $data;
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
-
         $course = $this->_customdata['selected_course'];
-
         $semester = $this->_customdata['semester'];
-
-        $to_display = $this->to_display($semester);
+        $todisplay = $this->to_display($semester);
 
         $m->addElement('header', 'review', self::_s('review_selection'));
-
-        $m->addElement('static', 'selected_course', $to_display($course), self::_s('team_with'));
+        $m->addElement('static', 'selected_course', $todisplay($course), self::_s('team_with'));
 
         foreach (range(1, $this->_customdata['shells']) as $number) {
             $query = (object) $this->_customdata['query'. $number];
 
             $m->addElement('hidden', 'query'.$number.'[department]', '');
             $m->setType('query'.$number.'[department]', PARAM_ALPHANUMEXT);
-            
             $m->addElement('hidden', 'query'.$number.'[cou_number]', '');
             $m->setType('query'.$number.'[cou_number]', PARAM_ALPHANUM);
 
@@ -844,11 +850,10 @@ class team_request_form_review extends team_request_form {
             }
 
             $userids = $this->_customdata['selected_users'.$number.'_str'];
-
-            $users = ues_user::get_all(ues::where('id')->in(explode(",",$userids)));
+            $users = ues_user::get_all(ues::where('id')->in(explode(",", $userids)));
 
             foreach ($users as $user) {
-                $str = $to_display($query) . ' with ' . fullname($user);
+                $str = $todisplay($query) . ' with ' . fullname($user);
 
                 $m->addElement('static', 'selected_user_'.$user->id, '', $str);
             }
@@ -859,19 +864,16 @@ class team_request_form_review extends team_request_form {
 
         $m->addElement('static', 'breather', '', '');
         $m->addElement('static', 'please_note', self::_s('team_note'), self::_s('team_going_email'));
-
         $m->addElement('hidden', 'selected', '');
-        $m->setType('selected',PARAM_ALPHANUMEXT);
-        
+        $m->setType('selected', PARAM_ALPHANUMEXT);
         $m->addElement('hidden', 'shells', '');
-        $m->setType('shells',PARAM_INT);
-        
+        $m->setType('shells', PARAM_INT);
         $m->addElement('hidden', 'reshell', 0);
         $m->setType('reshell', PARAM_INT);
 
-        $update_option = optional_param('update_option', null, PARAM_INT);
-        if ($update_option) {
-            $m->addElement('hidden', 'update_option', $update_option);
+        $updateoption = optional_param('update_option', null, PARAM_INT);
+        if ($updateoption) {
+            $m->addElement('hidden', 'update_option', $updateoption);
             $m->setType('update_option', PARAM_INT);
         }
 
@@ -880,8 +882,7 @@ class team_request_form_review extends team_request_form {
 }
 
 class team_request_form_finish implements finalized_form {
-    function process($data, $semesters) {
-
+    public function process($data, $semesters) {
         list($semid, $couid) = explode('_', $data->selected);
 
         $semester = $semesters[$semid];
@@ -898,8 +899,8 @@ class team_request_form_finish implements finalized_form {
         }
     }
 
-    function handle_approvals($data, $teamteaches) {
-        $to_undo = array();
+    public function handle_approvals($data, $teamteaches) {
+        $toundo = array();
 
         foreach ($teamteaches as $id => $teamteach) {
             $action = $data->{'options_'.$id}['approval_'.$id];
@@ -911,23 +912,25 @@ class team_request_form_finish implements finalized_form {
                     $teamteach->apply();
                     break;
                 case team_request_form_manage::REVOKE:
-                    $to_undo[] = $teamteach;
+                    $toundo[] = $teamteach;
                     break;
-                default: continue;
+                default:
+                    // Old: continue;.
+                    break;
             }
         }
 
-        $this->undo($to_undo);
+        $this->undo($toundo);
     }
 
-    function undo($teamteaches) {
+    public function undo($teamteaches) {
         foreach ($teamteaches as $teamteach) {
             $teamteach->unapply();
             cps_team_request::delete($teamteach->id);
         }
     }
 
-    function save_or_update($data, $current_teamteaches, $couid, $semid) {
+    public function save_or_update($data, $currentteamteaches, $couid, $semid) {
         global $USER;
 
         foreach (range(1, $data->shells) as $number) {
@@ -956,29 +959,24 @@ class team_request_form_finish implements finalized_form {
                 $request->save();
                 $request->apply();
 
-                unset ($current_teamteaches[$request->id]);
+                unset ($currentteamteaches[$request->id]);
             }
         }
 
-        $this->undo($current_teamteaches);
+        $this->undo($currentteamteaches);
     }
 
-    function display() {
+    public function display() {
         global $OUTPUT;
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
         echo $OUTPUT->header();
-        echo $OUTPUT->heading($_s('team_request_finish'));
-
+        echo $OUTPUT->heading($s('team_request_finish'));
         echo $OUTPUT->box_start();
-
-        echo $OUTPUT->notification($_s('team_request_thank_you'), 'notifysuccess');
+        echo $OUTPUT->notification($s('team_request_thank_you'), 'notifysuccess');
         echo $OUTPUT->continue_button(new moodle_url('/blocks/cps/team_request.php'));
-
         echo $OUTPUT->box_end();
-
         echo $OUTPUT->footer();
-
     }
 }

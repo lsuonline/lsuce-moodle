@@ -1,7 +1,6 @@
 <?php
 
     require('../config.php');
-    require_once($CFG->libdir.'/eventslib.php');
 
     // Form submitted, do not check referer (original page unknown).
     if ($form = data_submitted()) {
@@ -11,7 +10,8 @@
         }
 
         // Send the message and redirect.
-        $eventdata = new stdClass();
+        $eventdata = new \core\message\message();
+        $eventdata->courseid         = SITEID;
         $eventdata->component        = 'moodle';
         $eventdata->name             = 'errors';
         $eventdata->userfrom          = $USER;

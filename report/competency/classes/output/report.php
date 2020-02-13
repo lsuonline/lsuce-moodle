@@ -32,11 +32,12 @@ use moodle_url;
 use stdClass;
 use core_competency\api;
 use core_competency\external\user_competency_course_exporter;
-use core_competency\external\user_summary_exporter;
+use core_user\external\user_summary_exporter;
+use core_competency\external\performance_helper;
 use core_competency\url;
 use core_competency\user_competency;
 use tool_lp\external\competency_summary_exporter;
-use tool_lp\external\course_summary_exporter;
+use core_course\external\course_summary_exporter;
 
 /**
  * Class containing data for learning plan template competencies page
@@ -50,6 +51,8 @@ class report implements renderable, templatable {
     protected $context;
     /** @var int $courseid */
     protected $courseid;
+    /** @var int $moduleid */
+    protected $moduleid;
     /** @var array $competencies */
     protected $competencies;
 
@@ -58,10 +61,12 @@ class report implements renderable, templatable {
      *
      * @param int $courseid The course id
      * @param int $userid The user id
+     * @param int $moduleid The module id
      */
-    public function __construct($courseid, $userid) {
+    public function __construct($courseid, $userid, $moduleid) {
         $this->courseid = $courseid;
         $this->userid = $userid;
+        $this->moduleid = $moduleid;
         $this->context = context_course::instance($courseid);
     }
 
@@ -76,18 +81,19 @@ class report implements renderable, templatable {
 
         $data = new stdClass();
         $data->courseid = $this->courseid;
+        $data->moduleid = $this->moduleid;
+        if (empty($data->moduleid)) {
+            $data->moduleid = 0;
+        }
 
         $course = $DB->get_record('course', array('id' => $this->courseid));
         $coursecontext = context_course::instance($course->id);
         $exporter = new course_summary_exporter($course, array('context' => $coursecontext));
         $coursecompetencysettings = api::read_course_competency_settings($course->id);
-        $data->pushratingstouserplans = $coursecompetencysettings->get_pushratingstouserplans();
+        $data->pushratingstouserplans = $coursecompetencysettings->get('pushratingstouserplans');
         $data->course = $exporter->export($output);
 
         $data->usercompetencies = array();
-        $scalecache = array();
-        $frameworkcache = array();
-
         $user = core_user::get_user($this->userid);
 
         $exporter = new user_summary_exporter($user);
@@ -95,12 +101,30 @@ class report implements renderable, templatable {
         $data->usercompetencies = array();
         $coursecompetencies = api::list_course_competencies($this->courseid);
         $usercompetencycourses = api::list_user_competencies_in_course($this->courseid, $user->id);
+        if ($this->moduleid > 0) {
+            $modulecompetencies = api::list_course_module_competencies_in_course_module($this->moduleid);
+            foreach ($usercompetencycourses as $ucid => $usercompetency) {
+                $found = false;
+                foreach ($modulecompetencies as $mcid => $modulecompetency) {
+                    if ($modulecompetency->get('competencyid') == $usercompetency->get('competencyid')) {
+                        $found = true;
+                        break;
+                    }
+                }
 
+                if (!$found) {
+                    // We need to filter out this competency.
+                    unset($usercompetencycourses[$ucid]);
+                }
+            }
+        }
+
+        $helper = new performance_helper();
         foreach ($usercompetencycourses as $usercompetencycourse) {
             $onerow = new stdClass();
             $competency = null;
             foreach ($coursecompetencies as $coursecompetency) {
-                if ($coursecompetency['competency']->get_id() == $usercompetencycourse->get_competencyid()) {
+                if ($coursecompetency['competency']->get('id') == $usercompetencycourse->get('competencyid')) {
                     $competency = $coursecompetency['competency'];
                     break;
                 }
@@ -108,24 +132,9 @@ class report implements renderable, templatable {
             if (!$competency) {
                 continue;
             }
-            // Fetch the framework.
-            if (!isset($frameworkcache[$competency->get_competencyframeworkid()])) {
-                $frameworkcache[$competency->get_competencyframeworkid()] = $competency->get_framework();
-            }
-            $framework = $frameworkcache[$competency->get_competencyframeworkid()];
 
-            // Fetch the scale.
-            $scaleid = $competency->get_scaleid();
-            if ($scaleid === null) {
-                $scaleid = $framework->get_scaleid();
-                if (!isset($scalecache[$scaleid])) {
-                    $scalecache[$competency->get_scaleid()] = $framework->get_scale();
-                }
-
-            } else if (!isset($scalecache[$scaleid])) {
-                $scalecache[$competency->get_scaleid()] = $competency->get_scale();
-            }
-            $scale = $scalecache[$competency->get_scaleid()];
+            $framework = $helper->get_framework_from_competency($competency);
+            $scale = $helper->get_scale_from_competency($competency);
 
             $exporter = new user_competency_course_exporter($usercompetencycourse, array('scale' => $scale));
             $record = $exporter->export($output);

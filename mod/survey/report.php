@@ -118,7 +118,7 @@
     $PAGE->set_title("$course->shortname: ".format_string($survey->name));
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
-    echo $OUTPUT->heading($survey->name);
+    echo $OUTPUT->heading(format_string($survey->name));
 
 /// Check to see if groups are being used in this survey
     if ($groupmode = groups_get_activity_groupmode($cm)) {   // Groups are being used
@@ -387,15 +387,15 @@
          if ($notes != '' and confirm_sesskey()) {
              if (survey_get_analysis($survey->id, $user->id)) {
                  if (! survey_update_analysis($survey->id, $user->id, $notes)) {
-                     echo $OUTPUT->notification("An error occurred while saving your notes.  Sorry.");
+                     echo $OUTPUT->notification(get_string("errorunabletosavenotes", "survey"), "notifyproblem");
                  } else {
-                     echo $OUTPUT->notification(get_string("savednotes", "survey"));
+                     echo $OUTPUT->notification(get_string("savednotes", "survey"), "notifysuccess");
                  }
              } else {
                  if (! survey_add_analysis($survey->id, $user->id, $notes)) {
-                     echo $OUTPUT->notification("An error occurred while saving your notes.  Sorry.");
+                     echo $OUTPUT->notification(get_string("errorunabletosavenotes", "survey"), "notifyproblem");
                  } else {
-                     echo $OUTPUT->notification(get_string("savednotes", "survey"));
+                     echo $OUTPUT->notification(get_string("savednotes", "survey"), "notifysuccess");
                  }
              }
          }
@@ -472,14 +472,14 @@
          echo "<form action=\"report.php\" method=\"post\">";
          echo "<h3>$strnotes:</h3>";
          echo "<blockquote>";
-         echo "<textarea name=\"notes\" rows=\"10\" cols=\"60\">";
+         echo "<textarea class=\"form-control\" name=\"notes\" rows=\"10\" cols=\"60\">";
          p($notes);
          echo "</textarea><br />";
          echo "<input type=\"hidden\" name=\"action\" value=\"student\" />";
          echo "<input type=\"hidden\" name=\"sesskey\" value=\"".sesskey()."\" />";
          echo "<input type=\"hidden\" name=\"student\" value=\"$student\" />";
          echo "<input type=\"hidden\" name=\"id\" value=\"$cm->id\" />";
-         echo "<input type=\"submit\" value=\"".get_string("savechanges")."\" />";
+         echo "<input type=\"submit\" class=\"btn btn-primary\" value=\"".get_string("savechanges")."\" />";
          echo "</blockquote>";
          echo "</form>";
          echo "</div>";

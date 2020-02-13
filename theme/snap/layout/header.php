@@ -20,7 +20,7 @@
  * way.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -49,13 +49,25 @@ echo $OUTPUT->doctype();
 <link href='//fonts.googleapis.com/css?family=Roboto:500,100,400,300' rel='stylesheet' type='text/css'>
 <?php
 
-// Output course cover image?
-if ($COURSE->id != SITEID) {
-    $coverimagecss = \theme_snap\local::course_coverimage_css($COURSE->id);
-} else {
-    $coverimagecss = \theme_snap\local::site_coverimage_css();
+// Front page carousel.
+$carousel = false;
+if ($PAGE->pagetype === 'site-index' && !empty($PAGE->theme->settings->cover_carousel)) {
+    // Output is html from template, but can be empty if no slides.
+    $carousel = $OUTPUT->cover_carousel();
 }
-if (!empty($coverimagecss)) {
+// Cover images for the site, catagory or course.
+$coverimagecss = '';
+if ($PAGE->context->contextlevel === CONTEXT_COURSECAT) {
+    if ($PAGE->pagelayout === 'coursecategory') {
+        $coverimagecss = \theme_snap\local::course_cat_coverimage_css($PAGE->context->instanceid);
+    }
+} else if ($PAGE->pagelayout === 'frontpage' || $PAGE->pagelayout === 'login') {
+    $coverimagecss = \theme_snap\local::site_coverimage_css();
+} else {
+    $coverimagecss = \theme_snap\local::course_coverimage_css($COURSE->id);
+}
+
+if (!empty($coverimagecss) && !$carousel) {
     echo "<style>$coverimagecss</style>";
 }
 ?>

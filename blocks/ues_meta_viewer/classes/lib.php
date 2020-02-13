@@ -17,23 +17,23 @@
 
 /**
  * Utility classes.
- * 
+ *
  * @package    block_ues_meta_viewer
- * @copyright  2014 Louisiana State University
- * 
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 abstract class meta_data_ui_element {
     protected $name;
     protected $key;
     protected $value;
 
-    function __construct($field, $name) {
+    public function __construct($field, $name) {
         $this->key($field);
-
         $this->name($name);
-
         $this->value = optional_param($this->key, null, PARAM_TEXT);
     }
 
@@ -48,7 +48,6 @@ abstract class meta_data_ui_element {
         if ($name) {
             $this->name = $name;
         }
-
         return $this->name;
     }
 
@@ -60,7 +59,6 @@ abstract class meta_data_ui_element {
         if (!isset($user->{$this->key()})) {
             return get_string('not_available', 'block_ues_meta_viewer');
         }
-
         return $user->{$this->key()};
     }
 
@@ -83,14 +81,13 @@ abstract class meta_data_ui_element {
         } else if (strpos($value, '>') === 0) {
             return $dsl->greater($strip('>'));
         } else if (strtolower($value) == 'null') {
-            return $dsl->is(NULL)->equal('');
+            return $dsl->is(null)->equal('');
         } else if (strtolower($value) == 'not null') {
             return $dsl->not_equal('');
         } else {
             return $dsl->equal($value);
         }
     }
-
     public abstract function html();
     public abstract function sql($dsl);
 }
@@ -106,7 +103,6 @@ class meta_data_text_box extends meta_data_ui_element {
         if (trim($this->value()) !== '') {
             $params['value'] = $this->value();
         }
-
         return html_writer::empty_tag('input', $params);
     }
 
@@ -117,7 +113,6 @@ class meta_data_text_box extends meta_data_ui_element {
         if (trim($value) === '') {
             return $dsl;
         }
-
         return $this->translate_value($dsl->{$key});
     }
 }

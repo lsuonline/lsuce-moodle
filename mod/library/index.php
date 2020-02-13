@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,13 +22,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once("../../config.php");
 require_once("lib.php");
+require_login();
 
-$id = required_param('id',PARAM_INT);   // course
-
-$PAGE->set_url('/mod/library/index.php', array('id'=>$id));
-
+$id = required_param('id', PARAM_INT); // Course.
+$PAGE->set_url('/mod/library/index.php', array('id' => $id));
 redirect("$CFG->wwwroot/course/view.php?id=$id");
-
-

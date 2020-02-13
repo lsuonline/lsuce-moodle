@@ -823,7 +823,20 @@ class database_manager {
             throw new ddl_exception('ddlunknownerror', null, 'add_index sql not generated');
         }
 
-        $this->execute_sql_arr($sqlarr, array($xmldb_table->getName()));
+        try {
+            $this->execute_sql_arr($sqlarr, array($xmldb_table->getName()));
+        } catch (ddl_change_structure_exception $e) {
+            // There could be a problem with the index length related to the row format of the table.
+            // If we are using utf8mb4 and the row format is 'compact' or 'redundant' then we need to change it over to
+            // 'compressed' or 'dynamic'.
+            if (method_exists($this->mdb, 'convert_table_row_format')) {
+                $this->mdb->convert_table_row_format($xmldb_table->getName());
+                $this->execute_sql_arr($sqlarr, array($xmldb_table->getName()));
+            } else {
+                // It's some other problem that we are currently not handling.
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -886,6 +899,27 @@ class database_manager {
     }
 
     /**
+     * Get the list of install.xml files.
+     *
+     * @return array
+     */
+    public function get_install_xml_files(): array {
+        global $CFG;
+        require_once($CFG->libdir.'/adminlib.php');
+
+        $files = [];
+        $dbdirs = get_db_directories();
+        foreach ($dbdirs as $dbdir) {
+            $filename = "{$dbdir}/install.xml";
+            if (file_exists($filename)) {
+                $files[] = $filename;
+            }
+        }
+
+        return $files;
+    }
+
+    /**
      * Reads the install.xml files for Moodle core and modules and returns an array of
      * xmldb_structure object with xmldb_table from these files.
      * @return xmldb_structure schema from install.xml files
@@ -896,10 +930,10 @@ class database_manager {
 
         $schema = new xmldb_structure('export');
         $schema->setVersion($CFG->version);
-        $dbdirs = get_db_directories();
-        foreach ($dbdirs as $dbdir) {
-            $xmldb_file = new xmldb_file($dbdir.'/install.xml');
-            if (!$xmldb_file->fileExists() or !$xmldb_file->loadXMLStructure()) {
+
+        foreach ($this->get_install_xml_files() as $filename) {
+            $xmldb_file = new xmldb_file($filename);
+            if (!$xmldb_file->loadXMLStructure()) {
                 continue;
             }
             $structure = $xmldb_file->getStructure();

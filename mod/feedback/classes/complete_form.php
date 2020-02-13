@@ -70,6 +70,7 @@ class mod_feedback_complete_form extends moodleform {
         $isanonymous = $this->structure->is_anonymous() ? ' ianonymous' : '';
         parent::__construct(null, $customdata, 'POST', '',
                 array('id' => $formid, 'class' => 'feedback_form' . $isanonymous), true);
+        $this->set_display_vertical();
     }
 
     /**
@@ -111,7 +112,6 @@ class mod_feedback_complete_form extends moodleform {
                     array('class' => 'form-submit'));
             $buttonarray[] = &$mform->createElement('submit', 'savevalues', get_string('save_entries', 'feedback'),
                     array('class' => 'form-submit'));
-            $buttonarray[] = &$mform->createElement('static', 'buttonsseparator', '', '<br>');
             $buttonarray[] = &$mform->createElement('cancel');
             $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
             $mform->closeHeaderBefore('buttonar');
@@ -293,15 +293,22 @@ class mod_feedback_complete_form extends moodleform {
      */
     public function add_form_element($item, $element, $addrequiredrule = true, $setdefaultvalue = true) {
         global $OUTPUT;
-        // Add element to the form.
-        if (is_array($element)) {
-            if ($this->is_frozen() && $element[0] === 'text') {
-                // Convert 'text' element to 'static' when freezing for better display.
-                $element = ['static', $element[1], $element[2]];
+
+        if (is_array($element) && $element[0] == 'group') {
+            // For groups, use the mforms addGroup API.
+            // $element looks like: ['group', $groupinputname, $name, $objects, $separator, $appendname],
+            $element = $this->_form->addGroup($element[3], $element[1], $element[2], $element[4], $element[5]);
+        } else {
+            // Add non-group element to the form.
+            if (is_array($element)) {
+                if ($this->is_frozen() && $element[0] === 'text') {
+                    // Convert 'text' element to 'static' when freezing for better display.
+                    $element = ['static', $element[1], $element[2]];
+                }
+                $element = call_user_func_array(array($this->_form, 'createElement'), $element);
             }
-            $element = call_user_func_array(array($this->_form, 'createElement'), $element);
+            $element = $this->_form->addElement($element);
         }
-        $element = $this->_form->addElement($element);
 
         // Prepend standard CSS classes to the element classes.
         $attributes = $element->getAttributes();
@@ -316,7 +323,7 @@ class mod_feedback_complete_form extends moodleform {
 
         // Set default value.
         if ($setdefaultvalue && ($tmpvalue = $this->get_item_value($item))) {
-            $this->_form->setDefault($element->getName(), $tmpvalue);
+            $this->_form->setDefault($element->getName(), htmlspecialchars_decode($tmpvalue, ENT_QUOTES));
         }
 
         // Freeze if needed.
@@ -326,8 +333,7 @@ class mod_feedback_complete_form extends moodleform {
 
         // Add red asterisks on required fields.
         if ($item->required) {
-            $required = '<img class="req" title="'.get_string('requiredelement', 'form').'" alt="'.
-                    get_string('requiredelement', 'form').'" src="'.$OUTPUT->pix_url('req') .'" />';
+            $required = $OUTPUT->pix_icon('req', get_string('requiredelement', 'form'));
             $element->setLabel($element->getLabel() . $required);
             $this->hasrequired = true;
         }
@@ -446,7 +452,6 @@ class mod_feedback_complete_form extends moodleform {
         $menu->set_constraint('.feedback_form');
         $menu->set_alignment(action_menu::TR, action_menu::BR);
         $menu->set_menu_trigger(get_string('edit'));
-        $menu->do_not_enhance();
         $menu->prioritise = true;
 
         $itemobj = feedback_get_item_class($item->typ);
@@ -551,7 +556,7 @@ class mod_feedback_complete_form extends moodleform {
                ($this->mode == self::MODE_COMPLETE || $this->mode == self::MODE_PRINT || $this->mode == self::MODE_VIEW_TEMPLATE)) {
             $element = $mform->addElement('static', 'requiredfields', '',
                     get_string('somefieldsrequired', 'form',
-                            '<img alt="'.get_string('requiredelement', 'form').'" src="'.$OUTPUT->pix_url('req') .'" />'));
+                            $OUTPUT->pix_icon('req', get_string('requiredelement', 'form'))));
             $element->setAttributes($element->getAttributes() + ['class' => 'requirednote']);
         }
 

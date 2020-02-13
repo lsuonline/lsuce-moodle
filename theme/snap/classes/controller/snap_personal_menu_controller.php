@@ -23,7 +23,7 @@ defined('MOODLE_INTERNAL') || die();
  * Handles requests regarding user deadlines and other CTAs.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class snap_personal_menu_controller extends controller_abstract {
@@ -41,9 +41,12 @@ class snap_personal_menu_controller extends controller_abstract {
      * @return string
      */
     public function get_deadlines_action() {
-        return json_encode(array(
-            'html' => \theme_snap\local::deadlines()
-        ));
+        global $PAGE, $USER;
+        $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        $deadlines = \theme_snap\activity::upcoming_deadlines($USER->id);
+        return json_encode([
+            'html' => $output->deadlines($deadlines)
+        ]);
     }
 
     /**
@@ -96,7 +99,6 @@ class snap_personal_menu_controller extends controller_abstract {
      * @return string
      */
     public function get_courseinfo_action() {
-        
         $courseids = optional_param('courseids', false, PARAM_SEQUENCE);
         if (!empty($courseids)) {
             $courseids = explode(',', $courseids);

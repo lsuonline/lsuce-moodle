@@ -16,14 +16,16 @@
 
 
 /**
- *
  * @package    block_ues_meta_viewer
- * @copyright  2014 Louisiana State University
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once $CFG->dirroot . '/blocks/ues_meta_viewer/classes/lib.php';
-require_once $CFG->dirroot . '/blocks/cps/events/ues_meta_viewer.php';
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/blocks/ues_meta_viewer/classes/lib.php');
+require_once($CFG->dirroot . '/blocks/cps/classes/ues_meta_viewer_handler.php');
 
 abstract class ues_meta_viewer {
 
@@ -32,10 +34,9 @@ abstract class ues_meta_viewer {
      * @var array map from types to an array of event handlers having the form:
      * array(include_file => listener_classname, ...).
      */
-    private static $handlermap = array(
-            'ues_user'     => array('/blocks/cps/events/ues_meta_viewer.php' => 'cps_ues_meta_viewer_handler'),
-            'sports_grade' => array('/blocks/student_gradeviewer/events/lib.php' => 'student_gradeviewer_handlers'),
-            );
+    private static $handlermap = array('ues_user' => array('/blocks/cps/classes/ues_meta_viewer_handler.php' => 'blocks_cps_ues_meta_viewer_handler')
+                                     , 'sports_grade' => array('/blocks/student_gradeviewer/events/lib.php' => 'student_gradeviewer_handlers'),
+                                      );
 
     /**
      * Helper function for eliminating events_trigger_legacy().
@@ -48,13 +49,13 @@ abstract class ues_meta_viewer {
      * @param objcet $params
      * @param string $fn
      */
-    private static function mock_event($type, $params, $fn){
+    private static function mock_event($type, $params, $fn) {
         global $CFG;
-        if(array_key_exists($type, self::$handlermap)){
-            foreach(self::$handlermap[$type] as $file => $class){
-                if(file_exists($CFG->dirroot.$file)){
+        if (array_key_exists($type, self::$handlermap)) {
+            foreach (self::$handlermap[$type] as $file => $class) {
+                if (file_exists($CFG->dirroot.$file)) {
                     require_once($CFG->dirroot.$file);
-                    $class::{$type . '_data_ui_'.$fn}($params);
+                    $class::{$type . '_data_ui_'.$fn} ($params);
                 }
             }
         }
@@ -65,11 +66,10 @@ abstract class ues_meta_viewer {
             return $handler->sql($dsl);
         };
 
-        // What I'd give for an optional here
         try {
             $filters = array_reduce($handlers, $flatten, ues::where());
 
-            // Catch empty
+            // Catch empty.
             $filters->get();
             return $filters;
         } catch (Exception $e) {
@@ -90,10 +90,8 @@ abstract class ues_meta_viewer {
             $format = function($handler) use ($user) {
                 return $handler->format($user);
             };
-
             $table->data[] = array_map($format, $handlers);
         }
-
         return $table;
     }
 
@@ -109,41 +107,35 @@ abstract class ues_meta_viewer {
 
         $handler = new stdClass;
         $handler->ui_element = new meta_data_text_box($field, $name);
-
         self::mock_event($type, $handler, 'element');
         return $handler->ui_element;
     }
 
     public static function generate_keys($type, $class, $user) {
         $types = self::supported_types();
-
         $fields = new stdClass;
-
         $fields->user = $user;
         $fields->keys = $types[$type]->defaults();
 
-        // Auto fill based on system
-        $additional_fields = $class::get_meta_names();
-        foreach ($additional_fields as $field) {
+        // Auto fill based on system.
+        $additionalfields = $class::get_meta_names();
+        foreach ($additionalfields as $field) {
             $fields->keys[] = $field;
         }
 
         // Should this user see appropriate fields?
         self::mock_event($type, $fields, 'keys');
-
         return $fields->keys;
     }
 
     public static function supported_types() {
         if (!class_exists('supported_meta')) {
             global $CFG;
-
-            require_once $CFG->dirroot . '/blocks/ues_meta_viewer/classes/support.php';
+            require_once($CFG->dirroot . '/blocks/ues_meta_viewer/classes/support.php');
         }
 
-        $supported_types = new stdClass;
-
-        $supported_types->types = array(
+        $supportedtypes = new stdClass;
+        $supportedtypes->types = array(
             'ues_user' => new ues_user_supported_meta(),
             'ues_section' => new ues_section_supported_meta(),
             'ues_course' => new ues_course_supported_meta(),
@@ -152,9 +144,8 @@ abstract class ues_meta_viewer {
             'ues_student' => new ues_student_supported_meta()
         );
 
-        require_once $CFG->dirroot.'/blocks/student_gradeviewer/events/lib.php';
-        $supported_types = student_gradeviewer_handlers::ues_meta_supported_types($supported_types);
-
-        return $supported_types->types;
+        require_once($CFG->dirroot.'/blocks/student_gradeviewer/events/lib.php');
+        $supportedtypes = student_gradeviewer_handlers::ues_meta_supported_types($supportedtypes);
+        return $supportedtypes->types;
     }
 }

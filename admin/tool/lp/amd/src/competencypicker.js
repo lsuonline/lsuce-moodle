@@ -31,8 +31,10 @@ define(['jquery',
         'core/templates',
         'tool_lp/dialogue',
         'core/str',
-        'tool_lp/tree'],
-        function($, Notification, Ajax, Templates, Dialogue, Str, Tree) {
+        'tool_lp/tree',
+        'core/pending'
+        ],
+        function($, Notification, Ajax, Templates, Dialogue, Str, Tree, Pending) {
 
     /**
      * Competency picker class.
@@ -118,7 +120,7 @@ define(['jquery',
                 if (valid) {
                     validIds.push(compId);
                 }
-            }.bind(self));
+            });
 
             self._selectedCompetencies = validIds;
 
@@ -128,14 +130,14 @@ define(['jquery',
             } else {
                 self._find('[data-region="competencylinktree"] [data-action="add"]').removeAttr('disabled');
             }
-        }.bind(self));
+        });
 
         // Add listener for framework change.
         if (!self._singleFramework) {
             self._find('[data-action="chooseframework"]').change(function(e) {
                 self._frameworkId = $(e.target).val();
-                self._loadCompetencies().then(self._refresh.bind(self));
-            }.bind(self));
+                self._loadCompetencies().then(self._refresh.bind(self)).catch(Notification.exception);
+            });
         }
 
         // Add listener for search.
@@ -146,30 +148,34 @@ define(['jquery',
             return self._refresh().always(function() {
                 $(e.target).removeAttr('disabled');
             });
-        }.bind(self));
+        });
 
         // Add listener for cancel.
         self._find('[data-region="competencylinktree"] [data-action="cancel"]').click(function(e) {
             e.preventDefault();
             self.close();
-        }.bind(self));
+        });
 
         // Add listener for add.
         self._find('[data-region="competencylinktree"] [data-action="add"]').click(function(e) {
             e.preventDefault();
+            var pendingPromise = new Pending();
             if (!self._selectedCompetencies.length) {
                 return;
             }
 
             if (self._multiSelect) {
-                self._trigger('save', { competencyIds: self._selectedCompetencies });
+                self._trigger('save', {competencyIds: self._selectedCompetencies});
             } else {
                 // We checked above that the array has at least one value.
-                self._trigger('save', { competencyId: self._selectedCompetencies[0] });
+                self._trigger('save', {competencyId: self._selectedCompetencies[0]});
             }
 
+            // The dialogue here is a YUI dialogue and doesn't support Promises at all.
+            // However, it is typically synchronous so this shoudl suffice.
             self.close();
-        }.bind(self));
+            pendingPromise.resolve();
+        });
 
         // The list of selected competencies will be modified while looping (because of the listeners above).
         var currentItems = self._selectedCompetencies.slice(0);
@@ -180,7 +186,7 @@ define(['jquery',
                 tree.toggleItem(node);
                 tree.updateFocus(node);
             }
-        }.bind(self));
+        });
 
     };
 
@@ -203,15 +209,15 @@ define(['jquery',
      */
     Picker.prototype.display = function() {
         var self = this;
-        return self._render().then(function(html) {
-            return Str.get_string('competencypicker', 'tool_lp').then(function(title) {
-                self._popup = new Dialogue(
-                    title,
-                    html,
-                    self._afterRender.bind(self)
-                );
-            }.bind(self));
-        }.bind(self)).fail(Notification.exception);
+        return $.when(Str.get_string('competencypicker', 'tool_lp'), self._render())
+        .then(function(title, render) {
+            self._popup = new Dialogue(
+                title,
+                render[0],
+                self._afterRender.bind(self)
+            );
+            return;
+        }).catch(Notification.exception);
     };
 
     /**
@@ -226,12 +232,15 @@ define(['jquery',
         var self = this;
 
         return Ajax.call([
-            { methodname: 'core_competency_search_competencies', args: {
+            {methodname: 'core_competency_search_competencies', args: {
                 searchtext: searchText,
                 competencyframeworkid: frameworkId
             }}
         ])[0].done(function(competencies) {
-
+          /**
+           * @param {Object} parent
+           * @param {Array} competencies
+           */
             function addCompetencyChildren(parent, competencies) {
                 for (var i = 0; i < competencies.length; i++) {
                     if (competencies[i].parentid == parent.id) {
@@ -245,7 +254,8 @@ define(['jquery',
             }
 
             // Expand the list of competencies into a tree.
-            var i, tree = [], comp;
+            var i, comp;
+            var tree = [];
             for (i = 0; i < competencies.length; i++) {
                 comp = competencies[i];
                 if (comp.parentid == "0") { // Loose check for now, because WS returns a string.
@@ -258,13 +268,14 @@ define(['jquery',
 
             self._competencies = tree;
 
-        }.bind(self)).fail(Notification.exception);
+        }).fail(Notification.exception);
     };
 
     /**
      * Find a node in the dialogue.
      *
      * @param {String} selector
+     * @return {JQuery}
      * @method _find
      */
     Picker.prototype._find = function(selector) {
@@ -275,6 +286,7 @@ define(['jquery',
      * Convenience method to get a framework object.
      *
      * @param {Number} fid The framework ID.
+     * @return {Object}
      * @method _getFramework
      */
     Picker.prototype._getFramework = function(fid) {
@@ -282,7 +294,7 @@ define(['jquery',
         $.each(this._frameworks, function(i, f) {
             if (f.id == fid) {
                 frm = f;
-                return false;
+                return;
             }
         });
         return frm;
@@ -315,7 +327,7 @@ define(['jquery',
 
         if (self._singleFramework) {
             promise = Ajax.call([
-                { methodname: 'core_competency_read_competency_framework', args: {
+                {methodname: 'core_competency_read_competency_framework', args: {
                     id: this._frameworkId
                 }}
             ])[0].then(function(framework) {
@@ -323,9 +335,9 @@ define(['jquery',
             });
         } else {
             promise = Ajax.call([
-                { methodname: 'core_competency_list_competency_frameworks', args: {
+                {methodname: 'core_competency_list_competency_frameworks', args: {
                     sort: 'shortname',
-                    context: { contextid: self._pageContextId },
+                    context: {contextid: self._pageContextId},
                     includes: self._pageContextIncludes,
                     onlyvisible: self._onlyVisible
                 }}
@@ -368,7 +380,7 @@ define(['jquery',
             }
 
             return self._loadCompetencies();
-        }.bind(self));
+        });
     };
 
     /**
@@ -382,7 +394,8 @@ define(['jquery',
         return self._render().then(function(html) {
             self._find('[data-region="competencylinktree"]').replaceWith(html);
             self._afterRender();
-        }.bind(self));
+            return;
+        });
     };
 
     /**
@@ -414,7 +427,7 @@ define(['jquery',
             };
 
             return Templates.render('tool_lp/competency_picker', context);
-        }.bind(self));
+        });
     };
 
     /**
@@ -437,7 +450,7 @@ define(['jquery',
      *
      * This needs to be set after reset/close.
      *
-     * @params {Number[]} The IDs.
+     * @param {Number[]} ids The IDs.
      * @method _setDisallowedCompetencyIDs
      */
     Picker.prototype.setDisallowedCompetencyIDs = function(ids) {
@@ -448,7 +461,7 @@ define(['jquery',
      * Trigger an event.
      *
      * @param {String} type The type of event.
-     * @param {Object} The data to pass to the listeners.
+     * @param {Object} data The data to pass to the listeners.
      * @method _reset
      */
     Picker.prototype._trigger = function(type, data) {

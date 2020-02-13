@@ -45,6 +45,7 @@ class user_edit_form extends moodleform {
         $mform = $this->_form;
         $editoroptions = null;
         $filemanageroptions = null;
+        $usernotfullysetup = user_not_fully_set_up($USER);
 
         if (!is_array($this->_customdata)) {
             throw new coding_exception('invalid custom data for user_edit_form');
@@ -76,16 +77,34 @@ class user_edit_form extends moodleform {
         useredit_shared_definition($mform, $editoroptions, $filemanageroptions, $user);
 
         // Extra settigs.
-        if (!empty($CFG->disableuserimages)) {
+        if (!empty($CFG->disableuserimages) || $usernotfullysetup) {
             $mform->removeElement('deletepicture');
             $mform->removeElement('imagefile');
             $mform->removeElement('imagealt');
         }
 
+        // If the user isn't fully set up, let them know that they will be able to change
+        // their profile picture once their profile is complete.
+        if ($usernotfullysetup) {
+            $userpicturewarning = $mform->createElement('warning', 'userpicturewarning', 'notifymessage', get_string('newpictureusernotsetup'));
+            $enabledusernamefields = useredit_get_enabled_name_fields();
+            if ($mform->elementExists('moodle_additional_names')) {
+                $mform->insertElementBefore($userpicturewarning, 'moodle_additional_names');
+            } else if ($mform->elementExists('moodle_interests')) {
+                $mform->insertElementBefore($userpicturewarning, 'moodle_interests');
+            } else {
+                $mform->insertElementBefore($userpicturewarning, 'moodle_optional');
+            }
+
+            // This is expected to exist when the form is submitted.
+            $imagefile = $mform->createElement('hidden', 'imagefile');
+            $mform->insertElementBefore($imagefile, 'userpicturewarning');
+        }
+
         // Next the customisable profile fields.
         profile_definition($mform, $userid);
 
-        $this->add_action_buttons(false, get_string('updatemyprofile'));
+        $this->add_action_buttons(true, get_string('updatemyprofile'));
 
         $this->set_data($user);
     }
@@ -191,10 +210,18 @@ class user_edit_form extends moodleform {
             // Mail not confirmed yet.
         } else if (!validate_email($usernew->email)) {
             $errors['email'] = get_string('invalidemail');
-        } else if (($usernew->email !== $user->email)
-                and empty($CFG->allowaccountssameemail)
-                and $DB->record_exists('user', array('email' => $usernew->email, 'mnethostid' => $CFG->mnet_localhost_id))) {
-            $errors['email'] = get_string('emailexists');
+        } else if (($usernew->email !== $user->email) && empty($CFG->allowaccountssameemail)) {
+            // Make a case-insensitive query for the given email address.
+            $select = $DB->sql_equal('email', ':email', false) . ' AND mnethostid = :mnethostid AND id <> :userid';
+            $params = array(
+                'email' => $usernew->email,
+                'mnethostid' => $CFG->mnet_localhost_id,
+                'userid' => $usernew->id
+            );
+            // If there are other user(s) that already have the same email, show an error.
+            if ($DB->record_exists_select('user', $select, $params)) {
+                $errors['email'] = get_string('emailexists');
+            }
         }
 
         if (isset($usernew->email) and $usernew->email === $user->email and over_bounce_threshold($user)) {

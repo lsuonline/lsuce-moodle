@@ -16,11 +16,15 @@
 
 
 /**
+ * The main block file.
  *
- * @package    block_ues_poeple
+ * @package    block_ues_people
  * @copyright  2014 Louisiana State University
+ * @copyright  2014 Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'UES People';
 $string['downloadconfirm'] = 'I assume the responsibility of guarding this data on my local drive.';

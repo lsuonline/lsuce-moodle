@@ -31,6 +31,9 @@ require_once(__DIR__ . '/behat_command.php');
 require_once(__DIR__ . '/behat_config_manager.php');
 
 require_once(__DIR__ . '/../../filelib.php');
+require_once(__DIR__ . '/../../clilib.php');
+
+use Behat\Mink\Session;
 
 /**
  * Init/reset utilities for Behat database and dataroot
@@ -114,6 +117,12 @@ class behat_util extends testing_util {
         // Enable web cron.
         set_config('cronclionly', 0);
 
+        // Set editor autosave to high value, so as to avoid unwanted ajax.
+        set_config('autosavefrequency', '604800', 'editor_atto');
+
+        // Set noreplyaddress to an example domain, as it should be valid email address and test site can be a localhost.
+        set_config('noreplyaddress', 'noreply@example.com');
+
         // Keeps the current version of database and dataroot.
         self::store_versions_hash();
 
@@ -133,8 +142,23 @@ class behat_util extends testing_util {
         }
 
         self::reset_dataroot();
-        self::drop_dataroot();
         self::drop_database(true);
+        self::drop_dataroot();
+    }
+
+    /**
+     * Delete files and directories under dataroot.
+     */
+    public static function drop_dataroot() {
+        global $CFG;
+
+        // As behat directory is now created under default $CFG->behat_dataroot_parent, so remove the whole dir.
+        if ($CFG->behat_dataroot !== $CFG->behat_dataroot_parent) {
+            remove_dir($CFG->behat_dataroot, false);
+        } else {
+            // It should never come here.
+            throw new moodle_exception("Behat dataroot should not be same as parent behat data root.");
+        }
     }
 
     /**
@@ -158,7 +182,7 @@ class behat_util extends testing_util {
 
             behat_error (BEHAT_EXITCODE_REQUIREMENT, $CFG->behat_wwwroot . ' is not available, ensure you specified ' .
                 'correct url and that the server is set up and started.' . PHP_EOL . ' More info in ' .
-                behat_command::DOCS_URL . '#Running_tests' . PHP_EOL);
+                behat_command::DOCS_URL . PHP_EOL);
         }
 
         // Check if cli version is same as web version.
@@ -215,10 +239,14 @@ class behat_util extends testing_util {
      *
      * Stores a file in dataroot/behat to allow Moodle to switch
      * to the test environment when using cli-server.
+     * @param bool $themesuitewithallfeatures List themes to include core features.
+     * @param string $tags comma separated tag, which will be given preference while distributing features in parallel run.
+     * @param int $parallelruns number of parallel runs.
+     * @param int $run current run.
      * @throws coding_exception
      * @return void
      */
-    public static function start_test_mode() {
+    public static function start_test_mode($themesuitewithallfeatures = false, $tags = '', $parallelruns = 0, $run = 0) {
         global $CFG;
 
         if (!defined('BEHAT_UTIL')) {
@@ -234,7 +262,7 @@ class behat_util extends testing_util {
         self::test_environment_problem();
 
         // Updates all the Moodle features and steps definitions.
-        behat_config_manager::update_config_file();
+        behat_config_manager::update_config_file('', true, $tags, $themesuitewithallfeatures, $parallelruns, $run);
 
         if (self::is_test_mode_enabled()) {
             return;
@@ -280,6 +308,7 @@ class behat_util extends testing_util {
         }
 
         $testenvfile = self::get_test_file_path();
+        behat_config_manager::set_behat_run_config_value('behatsiteenabled', 0);
 
         if (!self::is_test_mode_enabled()) {
             echo "Test environment was already disabled\n";
@@ -312,8 +341,25 @@ class behat_util extends testing_util {
      * Returns the path to the file which specifies if test environment is enabled
      * @return string
      */
-    protected final static function get_test_file_path() {
-        return behat_command::get_behat_dir() . '/test_environment_enabled.txt';
+    public final static function get_test_file_path() {
+        return behat_command::get_parent_behat_dir() . '/test_environment_enabled.txt';
+    }
+
+    /**
+     * Removes config settings that were added to the main $CFG config within the Behat CLI
+     * run.
+     *
+     * Database storage is already handled by reset_database and existing config values will
+     * be reset automatically by initialise_cfg(), so we only need to remove added ones.
+     */
+    public static function remove_added_config() {
+        global $CFG;
+        if (!empty($CFG->behat_cli_added_config)) {
+            foreach ($CFG->behat_cli_added_config as $key => $value) {
+                unset($CFG->{$key});
+            }
+            unset($CFG->behat_cli_added_config);
+        }
     }
 
     /**
@@ -328,6 +374,7 @@ class behat_util extends testing_util {
 
         // Reset all static caches.
         accesslib_clear_all_caches(true);
+        accesslib_reset_role_cache();
         // Reset the nasty strings list used during the last test.
         nasty_strings::reset_used_strings();
 
@@ -342,5 +389,44 @@ class behat_util extends testing_util {
 
         // Inform data generator.
         self::get_data_generator()->reset();
+
+        // Initialise $CFG with default values. This is needed for behat cli process, so we don't have modified
+        // $CFG values from the old run. @see set_config.
+        self::remove_added_config();
+        initialise_cfg();
+    }
+
+    /**
+     * Pause execution immediately.
+     *
+     * @param Session $session
+     * @param string $message The message to show when pausing.
+     * This will be passed through cli_ansi_format so appropriate ANSI formatting and features are available.
+     */
+    public static function pause(Session $session, string $message): void {
+        $posixexists = function_exists('posix_isatty');
+
+        // Make sure this step is only used with interactive terminal (if detected).
+        if ($posixexists && !@posix_isatty(STDOUT)) {
+            throw new ExpectationException('Break point should only be used with interactive terminal.', $session);
+        }
+
+        // Save the cursor position, ring the bell, and add a new line.
+        fwrite(STDOUT, cli_ansi_format("<cursor:save><bell><newline>"));
+
+        // Output the formatted message and reset colour back to normal.
+        $formattedmessage = cli_ansi_format("{$message}<colour:normal>");
+        fwrite(STDOUT, $formattedmessage);
+
+        // Wait for input.
+        fread(STDIN, 1024);
+
+        // Move the cursor back up to the previous position, then restore the original position stored earlier, and move
+        // it back down again.
+        fwrite(STDOUT, cli_ansi_format("<cursor:up><cursor:up><cursor:restore><cursor:down><cursor:down>"));
+
+        // Add any extra lines back if the provided message was spread over multiple lines.
+        $linecount = count(explode("\n", $formattedmessage));
+        fwrite(STDOUT, str_repeat(cli_ansi_format("<cursor:down>"), $linecount - 1));
     }
 }

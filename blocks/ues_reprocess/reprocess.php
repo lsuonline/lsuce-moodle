@@ -14,17 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_reprocess
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
-require_once 'reprocess_form.php';
-require_once 'lib.php';
+
+require_once('../../config.php');
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
+require_once('reprocess_form.php');
+require_once('lib.php');
 
 require_login();
 
@@ -32,17 +32,17 @@ ues::require_daos();
 
 $type = required_param('type', PARAM_TEXT);
 
-$valid_types = array('user', 'course');
+$validtypes = array('user', 'course');
 
-if (!in_array($type, $valid_types)) {
+if (!in_array($type, $validtypes)) {
     print_error('not_supported', 'block_ues_reprocess', '', $type);
 }
 
 $id = required_param('id', PARAM_INT);
 
-$_s = ues::gen_str('block_ues_reprocess');
+$s = ues::gen_str('block_ues_reprocess');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 
 if ($type == 'user') {
     $user = $DB->get_record('user', array('id' => $id), '*', MUST_EXIST);
@@ -52,12 +52,12 @@ if ($type == 'user') {
         return true;
     };
 
-    $header = $_s('reprocess');
+    $header = $s('reprocess');
     $context = context_system::instance();
 
-    $back_url = new moodle_url('/my');
+    $backurl = new moodle_url('/my');
 
-    $custom_page = function ($page) use ($blockname, $context, $header) {
+    $custompage = function ($page) use ($blockname, $context, $header) {
         global $USER;
         $page->set_context($context);
         $page->set_heading($blockname);
@@ -79,15 +79,15 @@ if ($type == 'user') {
         return $section->idnumber == $course->idnumber;
     };
 
-    $header = $_s('reprocess_course');
+    $header = $s('reprocess_course');
 
-    $back_url = new moodle_url('/course/view.php', array('id' => $id));
-    $custom_page = function ($page) use ($course, $context, $header, $blockname) {
+    $backurl = new moodle_url('/course/view.php', array('id' => $id));
+    $custompage = function ($page) use ($course, $context, $header, $blockname) {
         global $USER;
 
         $base = '/blocks/ues_reprocess/reprocess.php';
 
-        $url = new moodle_url($base, array('id' => $USER->id,'type' => 'user'));
+        $url = new moodle_url($base, array('id' => $USER->id, 'type' => 'user'));
 
         $page->set_context($context);
         $page->set_heading($blockname . ': ' . $header);
@@ -101,24 +101,24 @@ if ($type == 'user') {
     };
 }
 
-$ues_user = ues_user::upgrade($user);
+$uesuser = ues_user::upgrade($user);
 
 if (has_capability('block/ues_reprocess:canreprocess', $context)) {
-    $pre_sections = ues_section::from_course($course);
+    $presections = ues_section::from_course($course);
 } else {
-    $pre_sections = $ues_user->sections(true);
+    $presections = $uesuser->sections(true);
 }
 
-$owned_sections = array_filter($pre_sections, $filter);
+$ownedsections = array_filter($presections, $filter);
 
-$custom_page($PAGE);
+$custompage($PAGE);
 
 $form = new reprocess_form(null, array(
-    'id' => $id, 'sections' => $owned_sections, 'type' => $type
+    'id' => $id, 'sections' => $ownedsections, 'type' => $type
 ));
 
 if ($form->is_cancelled()) {
-    redirect($back_url);
+    redirect($backurl);
 } else if ($data = $form->get_data()) {
     $module = array(
         'name' => 'blocks_ues_reprocess',
@@ -128,14 +128,14 @@ if ($form->is_cancelled()) {
 
     $PAGE->requires->js_init_call('M.block_ues_reprocess.init', null, false, $module);
 
-    $basic = array('id'=> $id, 'type' => $type);
+    $basic = array('id' => $id, 'type' => $type);
 
     $params = get_object_vars($data);
 
-    $sections = ues_reprocess::post($owned_sections, $params);
+    $sections = ues_reprocess::post($ownedsections, $params);
 
-    $confirm_url = new moodle_url('rpc.php', $params);
-    $cancel_url = new moodle_url('reprocess.php', $basic);
+    $confirmurl = new moodle_url('rpc.php', $params);
+    $cancelurl = new moodle_url('reprocess.php', $basic);
     $posted = true;
 }
 
@@ -143,28 +143,28 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading($header);
 
 if (!empty($posted) and empty($sections)) {
-    echo $OUTPUT->notification($_s('select'));
+    echo $OUTPUT->notification($s('select'));
     $form->display();
 } else if (!empty($posted)) {
-    $to_number = function ($in, $section) {
+    $tonumber = function ($in, $section) {
         $section->semester();
         $section->course();
         return $in . "<li><strong>$section</strong></li>";
     };
 
-    $numbers = array_reduce($sections, $to_number, '');
+    $numbers = array_reduce($sections, $tonumber, '');
 
-    echo $OUTPUT->confirm($_s('are_you_sure', $numbers), $confirm_url, $cancel_url);
+    echo $OUTPUT->confirm($s('are_you_sure', $numbers), $confirmurl, $cancelurl);
 
     echo html_writer::start_tag('div', array('id' => 'loading', 'style' => 'display: none'));
-    echo $OUTPUT->notification($_s('patience'));
+    echo $OUTPUT->notification($s('patience'));
     echo '<br/>';
     echo $OUTPUT->pix_icon('i/loading', 'Loading');
     echo html_writer::end_tag('div');
 
-} else if (empty($owned_sections)) {
-    echo $OUTPUT->notification($_s('none_found'));
-    echo $OUTPUT->continue_button($back_url);
+} else if (empty($ownedsections)) {
+    echo $OUTPUT->notification($s('none_found'));
+    echo $OUTPUT->continue_button($backurl);
 } else {
     $form->display();
 }

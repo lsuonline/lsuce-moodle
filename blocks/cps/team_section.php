@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'team_section_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('team_section_form.php');
 
 require_login();
 
@@ -55,21 +55,20 @@ if (!isset($semesters[$semid]) or !isset($semesters[$semid]->courses[$couid])) {
 $semester = $semesters[$semid];
 $course = $semester->courses[$couid];
 
-$current_requests = cps_team_request::in_course($course, $semester, true);
+$currentrequests = cps_team_request::in_course($course, $semester, true);
 
-if (empty($current_requests)) {
+if (empty($currentrequests)) {
     print_error('not_approved', 'block_cps');
 }
 
-$initial_data = array(
-    'course' => $course,
-    'semester' => $semester,
-    'requests' => $current_requests
+$initialdata = array('course' => $course
+                   , 'semester' => $semester
+                   , 'requests' => $currentrequests
 );
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_team_request::name();
 
 $context = context_system::instance();
@@ -86,7 +85,7 @@ $PAGE->requires->jquery();
 $PAGE->requires->js('/blocks/cps/js/selection.js');
 $PAGE->requires->js('/blocks/cps/js/crosslist.js');
 
-$form = cps_form::create('team_section', $initial_data);
+$form = cps_form::create('team_section', $initialdata);
 
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/blocks/cps/team_request.php'));
@@ -100,17 +99,17 @@ if ($form->is_cancelled()) {
         $form = new team_section_form_finish();
 
         try {
-            $form->process($data, $initial_data);
+            $form->process($data, $initialdata);
 
             $form->display();
         } catch (Exception $e) {
-            echo $OUTPUT->notification($_s('application_errors', $e->getMessage()));
+            echo $OUTPUT->notification($s('application_errors', $e->getMessage()));
             echo $OUTPUT->continue_button('/my');
         }
         die();
     }
 
-    $form = cps_form::next_from('team_section', $form->next, $data, $initial_data);
+    $form = cps_form::next_from('team_section', $form->next, $data, $initialdata);
 }
 
 echo $OUTPUT->header();

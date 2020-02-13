@@ -46,13 +46,17 @@ if (!$edit) {
 
 $returnurl = null;
 $editparam = null;
+
+// BEGIN LSU Better Letters.
 $custom = true;
 $decimals = $custom ? (int) get_config('moodle', 'grade_decimalpoints') : 2;
-
+// END LSU Better Letters.
 
 if ($context->contextlevel == CONTEXT_SYSTEM or $context->contextlevel == CONTEXT_COURSECAT) {
     require_once $CFG->libdir.'/adminlib.php';
+    // LSU Gradebook enhancement.
     require_login();
+    // End LSU Gradebook enhancement.
 
     admin_externalpage_setup('letters');
 
@@ -90,11 +94,18 @@ if (!$edit) {
     $max = 100;
     foreach($letters as $boundary=>$letter) {
         $line = array();
+
+        // BEGIN LSU Better Letters.
         $line[] = format_float($max, $decimals).' %';
         $line[] = format_float($boundary, $decimals).' %';
+        // END LSU Better Letters.
+
         $line[] = format_string($letter);
         $data[] = $line;
+
+        // BEGIN LSU Better Letters.
         $max = $boundary - (1 / pow(10, $decimals));
+        // END LSU Better Letters.
     }
 
     print_grade_page_head($COURSE->id, 'letter', 'view', get_string('gradeletters', 'grades'));
@@ -110,9 +121,17 @@ if (!$edit) {
     $table = new html_table();
     $table->id = 'grade-letters-view';
     $table->head  = array(get_string('max', 'grades'), get_string('min', 'grades'), get_string('letter', 'grades'));
+
+    // BEGIN LSU Better Letters.
     $table->size  = array('33%', '33%', '34%');
+    // END LSU Better Letters.
+
     $table->align = array('left', 'left', 'left');
+
+    // BEGIN LSU Better Letters.
     $table->width = '40%';
+    // END LSU Better Letters.
+
     $table->data  = $data;
     $table->tablealign  = 'center';
     echo html_writer::table($table);
@@ -129,11 +148,14 @@ if (!$edit) {
         $gradelettername = 'gradeletter'.$i;
         $gradeboundaryname = 'gradeboundary'.$i;
 
-
         $data->$gradelettername   = $letter;
         $data->$gradeboundaryname = $boundary;
+
+        // BEGIN LSU Better Letters.
         $stored = "{$data->$gradeboundaryname}";
         $letters[$stored] = $letter;
+        // END LSU Better Letters.
+
         $i++;
     }
     $data->override = $override;
@@ -146,7 +168,16 @@ if (!$edit) {
 
     } else if ($data = $mform->get_data()) {
         if (!$admin and empty($data->override)) {
-            $DB->delete_records('grade_letters', array('contextid' => $context->id));
+            $records = $DB->get_records('grade_letters', array('contextid' => $context->id));
+            foreach ($records as $record) {
+                $DB->delete_records('grade_letters', array('id' => $record->id));
+                // Trigger the letter grade deleted event.
+                $event = \core\event\grade_letter_deleted::create(array(
+                    'objectid' => $record->id,
+                    'context' => $context,
+                ));
+                $event->trigger();
+            }
             redirect($returnurl);
         }
 
@@ -191,21 +222,45 @@ if (!$edit) {
                     // The letter has been assigned to another boundary, we update it.
                     $record->id = $pool[$boundary]->id;
                     $DB->update_record('grade_letters', $record);
+                    // Trigger the letter grade updated event.
+                    $event = \core\event\grade_letter_updated::create(array(
+                        'objectid' => $record->id,
+                        'context' => $context,
+                    ));
+                    $event->trigger();
                 }
                 unset($pool[$boundary]);    // Remove the letter from the pool.
             } else if ($candidate = array_pop($pool)) {
                 // The boundary is new, we update a random record from the pool.
                 $record->id = $candidate->id;
                 $DB->update_record('grade_letters', $record);
+                // Trigger the letter grade updated event.
+                $event = \core\event\grade_letter_updated::create(array(
+                    'objectid' => $record->id,
+                    'context' => $context,
+                ));
+                $event->trigger();
             } else {
                 // No records were found, this must be a new letter.
-                $DB->insert_record('grade_letters', $record);
+                $newid = $DB->insert_record('grade_letters', $record);
+                // Trigger the letter grade added event.
+                $event = \core\event\grade_letter_created::create(array(
+                    'objectid' => $newid,
+                    'context' => $context,
+                ));
+                $event->trigger();
             }
         }
 
         // Delete the unused records.
         foreach($pool as $leftover) {
             $DB->delete_records('grade_letters', array('id' => $leftover->id));
+            // Trigger the letter grade deleted event.
+            $event = \core\event\grade_letter_deleted::create(array(
+                'objectid' => $leftover->id,
+                'context' => $context,
+            ));
+            $event->trigger();
         }
 
         redirect($returnurl);

@@ -16,7 +16,7 @@
 # Tests course heading links back to course.
 #
 # @package    theme_snap
-# @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
@@ -24,9 +24,7 @@
 Feature: When the moodle theme is set to Snap, users can link back to the course main page by clicking the page heading.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
+  Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
     And the following "users" exist:
@@ -38,7 +36,7 @@ Feature: When the moodle theme is set to Snap, users can link back to the course
 
   @javascript
   Scenario: Teacher can navigate back to course main page from editing topics section.
-    Given I log in as "teacher1" (theme_snap)
+    Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Edit section"
     # Note the double space between "of" and "General" below is necessary.

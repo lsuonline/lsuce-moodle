@@ -17,16 +17,39 @@
 /**
  * Add page to admin menu.
  *
- * @package    local
- * @subpackage adminer
- * @copyright  2011 Andreas Grabs
+ * @package    local_adminer
+ * @author Andreas Grabs <moodle@grabs-edv.de>
+ * @copyright  Andreas Grabs
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die;
 
-if ($hassiteconfig) { // needs this condition or there is error on login page
+if ($hassiteconfig) {
+    $pluginname = get_string('pluginname', 'local_adminer');
+
     $ADMIN->add('server', new admin_externalpage('local_adminer',
-            get_string('pluginname', 'local_adminer'),
-            new moodle_url('/local/adminer/index.php')));
+            $pluginname,
+            new moodle_url('/local/adminer/index.php'),
+            "local/adminer:useadminer"));
+
+    $settings = new admin_settingpage('local_adminer_settings', $pluginname);
+    $ADMIN->add('localplugins', $settings);
+
+    $configs = array();
+
+    $configs[] = new admin_setting_heading('local_adminer',
+                                                get_string('settings'),
+                                                '');
+
+    $options = array(0 => get_string('no'), 1 => get_string('yes'));
+    $configs[] = new admin_setting_configselect('startwithdb',
+                    get_string('config_startwithdb', 'local_adminer'),
+                    '', 0, $options);
+
+    // Put all settings into the settings page.
+    foreach ($configs as $config) {
+        $config->plugin = 'local_adminer';
+        $settings->add($config);
+    }
 }

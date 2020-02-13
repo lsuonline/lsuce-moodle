@@ -14,27 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/blocks/cps/formslib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/blocks/cps/formslib.php');
 
 abstract class crosslist_form extends cps_form {
 }
 
 class crosslist_form_select extends crosslist_form {
-    var $current = self::SELECT;
-    var $next = self::SHELLS;
+    public $current = self::SELECT;
+    public $next = self::SHELLS;
 
     public static function build($semesters) {
         return array('semesters' => $semesters);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $semesters = $this->_customdata['semesters'];
@@ -60,34 +62,34 @@ class crosslist_form_select extends crosslist_form {
         $this->generate_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         $semesters = $this->_customdata['semesters'];
 
         $errors = array();
 
         // Must select two...
-        // Must select from same semester
+        // Must select from same semester.
         $selected = 0;
-        $selected_semester = null;
+        $selectedsemester = null;
         $updating = false;
         foreach ($data as $key => $value) {
-            $is_a_match = preg_match('/^selected_(\d+)_(\d+)/', $key, $matches);
+            $ismatch = preg_match('/^selected_(\d+)_(\d+)/', $key, $matches);
 
-            if ($is_a_match) {
+            if ($ismatch) {
                 $selected ++;
 
                 $course = $semesters[$matches[1]]->courses[$matches[2]];
 
                 $updating = ($updating or cps_crosslist::exists($course));
 
-                $current_semester = $matches[1];
+                $currentsemester = $matches[1];
 
-                if (empty($selected_semester)) {
-                    $selected_semester = $current_semester;
+                if (empty($selectedsemester)) {
+                    $selectedsemester = $currentsemester;
                 }
 
-                if ($selected_semester != $current_semester) {
-                    $errors[$key] = self::_s('err_same_semester', $semesters[$selected_semester]);
+                if ($selectedsemester != $currentsemester) {
+                    $errors[$key] = self::_s('err_same_semester', $semesters[$selectedsemester]);
                 }
             }
         }
@@ -105,9 +107,9 @@ class crosslist_form_select extends crosslist_form {
 }
 
 class crosslist_form_update extends crosslist_form implements updating_form {
-    var $current = self::UPDATE;
-    var $next = self::DECIDE;
-    var $prev = self::SELECT;
+    public $current = self::UPDATE;
+    public $next = self::DECIDE;
+    public $prev = self::SELECT;
 
     public static function build($semesters) {
         return self::prep_reshell() + crosslist_form_shells::build($semesters);
@@ -115,13 +117,9 @@ class crosslist_form_update extends crosslist_form implements updating_form {
 
     public function definition() {
         $m =& $this->_form;
-
         $courses = $this->_customdata['selected_courses'];
-
         $semester = $this->_customdata['semester'];
-
         $current_crosslists = cps_crosslist::in_courses($courses);
-
         $shells = cps_crosslist::groups($current_crosslists);
 
         $cr_lookup = array();
@@ -203,7 +201,7 @@ class crosslist_form_update extends crosslist_form implements updating_form {
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
         $option = $data['crosslist_option'];
 
         $this->next = $option == self::UNDO ? self::LOADING : $this->next;
@@ -213,9 +211,9 @@ class crosslist_form_update extends crosslist_form implements updating_form {
 }
 
 class crosslist_form_shells extends crosslist_form {
-    var $current = self::SHELLS;
-    var $next = self::DECIDE;
-    var $prev = self::SELECT;
+    public $current = self::SHELLS;
+    public $next = self::DECIDE;
+    public $prev = self::SELECT;
 
     public static function build($semesters) {
 
@@ -232,7 +230,7 @@ class crosslist_form_shells extends crosslist_form {
                 }
             }
 
-            // No need to continue; found semester
+            // No need to continue; found semester.
             if ($selected_semester) {
                 break;
             }
@@ -241,7 +239,7 @@ class crosslist_form_shells extends crosslist_form {
         return array('selected_courses' => $selected_courses, 'semester' => $selected_semester);
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $courses = $this->_customdata['selected_courses'];
@@ -259,7 +257,7 @@ class crosslist_form_shells extends crosslist_form {
             $m->addElement('static', 'course_' . $course->id,
                 $this->display_course($course, $semester));
                 $m->setType('course_' . $course->id, PARAM_TEXT);
-            
+
             $m->addElement('hidden', $selected, 1);
                 $m->setType($selected, PARAM_BOOL);
 
@@ -280,23 +278,20 @@ class crosslist_form_shells extends crosslist_form {
 }
 
 class crosslist_form_decide extends crosslist_form {
-    var $current = self::DECIDE;
-    var $next = self::CONFIRM;
-    var $prev = self::SHELLS;
+    public $current = self::DECIDE;
+    public $next = self::CONFIRM;
+    public $prev = self::SHELLS;
 
     public static function build($semesters) {
         return self::conform_reshell() + crosslist_form_shells::build($semesters);
     }
 
-    function definition() {
+    public function definition() {
         global $USER;
 
         $m =& $this->_form;
-
         $courses = $this->_customdata['selected_courses'];
-
         $this->prev = cps_crosslist::exists($courses) ? self::UPDATE : $this->prev;
-
         $semester = $this->_customdata['semester'];
 
         $to_coursenames = function($course) {
@@ -369,7 +364,6 @@ class crosslist_form_decide extends crosslist_form {
 
             $m->addElement('hidden', 'shell_values_'.$groupingid, $shell_values);
             $m->setType('shell_values_'.$groupingid, PARAM_TEXT);
-            
             $m->addElement('hidden', 'shell_name_'.$groupingid.'_hidden', $shell_name_value);
             $m->setType('shell_name_'.$groupingid.'_hidden', PARAM_TEXT);
         }
@@ -384,17 +378,15 @@ class crosslist_form_decide extends crosslist_form {
 
         $m->addElement('html', $form_html);
         $m->setType('html', PARAM_RAW);
-
         $m->addElement('hidden', 'shells', '');
         $m->setType('shells', PARAM_TEXT);
-        
         $m->addElement('hidden', 'reshelled', '');
         $m->setType('reshelled', PARAM_TEXT);
 
         $this->generate_states_and_buttons();
     }
 
-    function validation($data, $files) {
+    public function validation($data, $files) {
 
         if (isset($data['back'])) {
             return true;
@@ -420,9 +412,9 @@ class crosslist_form_decide extends crosslist_form {
 }
 
 class crosslist_form_confirm extends crosslist_form {
-    var $current = self::CONFIRM;
-    var $prev = self::DECIDE;
-    var $next = self::LOADING;
+    public $current = self::CONFIRM;
+    public $prev = self::DECIDE;
+    public $next = self::LOADING;
 
     public static function build($semesters) {
         $data = crosslist_form_decide::build($semesters);
@@ -439,7 +431,7 @@ class crosslist_form_confirm extends crosslist_form {
         return $extra + $data;
     }
 
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $courses = $this->_customdata['selected_courses'];
@@ -488,10 +480,8 @@ class crosslist_form_confirm extends crosslist_form {
             $html .= '</ul>';
 
             $m->addElement('static', 'shell_label_'.$number, $name, $html);
-
             $m->addElement('hidden', $namekey, $name);
             $m->setType($namekey, PARAM_TEXT);
-            
             $m->addElement('hidden', $valuekey, $values);
             $m->setType($valuekey, PARAM_TEXT);
         }
@@ -509,7 +499,7 @@ class crosslist_form_confirm extends crosslist_form {
 }
 
 class crosslist_form_finish implements finalized_form {
-    function process($data, $semesters) {
+    public function process($data, $semesters) {
         $extra = crosslist_form_shells::build($semesters);
 
         $current_crosslists = cps_crosslist::in_courses($extra['selected_courses']);
@@ -521,14 +511,14 @@ class crosslist_form_finish implements finalized_form {
         }
     }
 
-    function undo($crosslists) {
+    public function undo($crosslists) {
         foreach ($crosslists as $crosslist) {
             $crosslist->delete($crosslist->id);
             $crosslist->unapply();
         }
     }
 
-    function save_or_update($data, $current_crosslists) {
+    public function save_or_update($data, $current_crosslists) {
         global $USER;
 
         foreach (range(1, $data->shells) as $grouping) {
@@ -559,12 +549,12 @@ class crosslist_form_finish implements finalized_form {
         $this->undo($current_crosslists);
     }
 
-    function display() {
+    public function display() {
         global $OUTPUT;
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
-        echo $OUTPUT->notification($_s('crosslist_thank_you'), 'notifysuccess');
+        echo $OUTPUT->notification($s('crosslist_thank_you'), 'notifysuccess');
         echo $OUTPUT->continue_button(new moodle_url('/blocks/cps/crosslist.php'));
     }
 }

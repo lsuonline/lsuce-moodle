@@ -22,10 +22,10 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['addtodock'] = 'Move this to the dock';
 $string['anypagematchingtheabove'] = 'Any page matching the above';
 $string['appearsinsubcontexts'] = 'Appears in sub-contexts';
 $string['assignrolesinblock'] = 'Assign roles in {$a} block';
+$string['blocksdrawertoggle'] = 'Hide/show blocks drawer';
 $string['blocksettings'] = 'Block settings';
 $string['bracketfirst'] = '{$a} (first)';
 $string['bracketlast'] = '{$a} (last)';
@@ -42,18 +42,21 @@ $string['deletecheck'] = 'Delete {$a} block?';
 $string['deleteblock'] = 'Delete {$a} block';
 $string['deleteblockcheck'] = 'Are you sure that you want to delete this block titled {$a}?';
 $string['deleteblockwarning'] = '<p>You are about to delete a block that appears elsewhere.</p><p>Original block location: {$a->location}<br />Display on page types: {$a->pagetype}</p><p>Are you sure you want to continue?</p>';
-$string['dockblock'] = 'Dock {$a} block';
 $string['hideblock'] = 'Hide {$a} block';
-$string['hidedockpanel'] = 'Hide the dock panel';
 $string['hidepanel'] = 'Hide panel';
 $string['moveblock'] = 'Move {$a} block';
 $string['moveblockafter'] = 'Move block to after {$a} block';
 $string['moveblockbefore'] = 'Move block to before {$a} block';
 $string['moveblockinregion'] = 'Move block to {$a} region';
 $string['movingthisblockcancel'] = 'Moving this block ({$a})';
+$string['myblocks'] = 'My blocks';
 $string['onthispage'] = 'On this page';
 $string['pagetypes'] = 'Page types';
 $string['pagetypewarning'] = 'The previously specified page type is no longer selectable. Please choose the most appropriate page type below.';
+$string['privacy:metadata:userpref:dockedinstance'] = 'Records when the user docked a block';
+$string['privacy:metadata:userpref:hiddenblock'] = 'Records when the user collapsed/hid a block';
+$string['privacy:request:blockisdocked'] = 'Indicates whether the block was docked';
+$string['privacy:request:blockishidden'] = 'Indicates whether the block was hidden/collapsed';
 $string['region'] = 'Region';
 $string['showblock'] = 'Show {$a} block';
 $string['showoncontextandsubs'] = 'Display on \'{$a}\' and any pages within it';
@@ -65,9 +68,14 @@ $string['site-*'] = 'Any top-level site page';
 $string['subpages'] = 'Select pages';
 $string['restrictpagetypes'] = 'Display on page types';
 $string['thisspecificpage'] = 'This specific page';
-$string['undockall'] = 'Undock all';
-$string['undockblock'] = 'Undock {$a} block';
-$string['undockitem'] = 'Undock this item';
 $string['visible'] = 'Visible';
 $string['weight'] = 'Weight';
 $string['wherethisblockappears'] = 'Where this block appears';
+
+// Deprecated since Moodle 3.7.
+$string['addtodock'] = 'Move this to the dock';
+$string['dockblock'] = 'Dock {$a} block';
+$string['hidedockpanel'] = 'Hide the dock panel';
+$string['undockall'] = 'Undock all';
+$string['undockblock'] = 'Undock {$a} block';
+$string['undockitem'] = 'Undock this item';

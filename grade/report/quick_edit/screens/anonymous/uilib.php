@@ -1,4 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
 
 class anonymous_ui_factory extends quick_edit_grade_ui_factory {
     public function create($type) {
@@ -13,7 +29,7 @@ class anonymous_ui_factory extends quick_edit_grade_ui_factory {
 }
 
 class anonymous_quick_edit_finalgrade extends quick_edit_finalgrade_ui {
-    function determine_format() {
+    public function determine_format() {
         if ($this->grade->load_item()->is_completed()) {
             return new quick_edit_empty_element($this->get_value());
         } else {
@@ -21,18 +37,18 @@ class anonymous_quick_edit_finalgrade extends quick_edit_finalgrade_ui {
         }
     }
 
-    function set($value) {
-        // Swap grade_items
-	$mainuserfields = user_picture::fields();
-        $moodle_grade_item = $this->grade->load_grade_item();
+    public function set($value) {
+        // Swap grade_items.
+        $mainuserfields = user_picture::fields();
+        $moodlegradeitem = $this->grade->load_grade_item();
 
         $this->grade->grade_item = $this->grade->load_item();
 
         $msg = parent::set($value);
 
-        $this->grade->grade_item = $moodle_grade_item;
+        $this->grade->grade_item = $moodlegradeitem;
 
-        // Mask student
+        // Mask student.
         if (!empty($msg) and !$this->grade->load_item()->is_completed()) {
             global $DB;
 
@@ -53,7 +69,7 @@ class anonymous_quick_edit_finalgrade extends quick_edit_finalgrade_ui {
 }
 
 class anonymous_quick_edit_adjust_value extends quick_edit_finalgrade_ui {
-    var $name = 'adjust_value';
+    public $name = 'adjust_value';
 
     public function is_disabled() {
         $boundary = $this->grade->load_item()->adjust_boundary();
@@ -87,7 +103,7 @@ class anonymous_quick_edit_adjust_value extends quick_edit_finalgrade_ui {
             $bounded = $this->grade->bound_adjust_value($value);
             if ($bounded < $value) {
                 $code = 'anonymousmorethanmax';
-            } else if($bounded > $value) {
+            } else if ($bounded > $value) {
                 $code = 'anonymouslessthanmin';
             }
         } else {
@@ -96,7 +112,7 @@ class anonymous_quick_edit_adjust_value extends quick_edit_finalgrade_ui {
             $bounded = $this->grade->bound_adjust_value($value);
         }
 
-        // Diff checker will fail on screen
+        // Diff checker will fail on screen.
         if ($code) {
             $params = array('id' => $this->grade->userid);
             $user = $DB->get_record('user', $params, 'id, firstname, alternatename, lastname');

@@ -53,6 +53,7 @@ require_once($CFG->dirroot.'/mod/lti/locallib.php');
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID, or
 $l  = optional_param('l', 0, PARAM_INT);  // lti ID.
+$forceview = optional_param('forceview', 0, PARAM_BOOL);
 
 if ($l) {  // Two ways to specify the module.
     $lti = $DB->get_record('lti', array('id' => $l), '*', MUST_EXIST);
@@ -86,13 +87,18 @@ $PAGE->set_url($url);
 $launchcontainer = lti_get_launch_container($lti, $toolconfig);
 
 if ($launchcontainer == LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS) {
-    $PAGE->set_pagelayout('frametop'); // Most frametops don't include footer, and pre-post blocks.
+    $PAGE->set_pagelayout('incourse');
     $PAGE->blocks->show_only_fake_blocks(); // Disable blocks for layouts which do include pre-post blocks.
 } else if ($launchcontainer == LTI_LAUNCH_CONTAINER_REPLACE_MOODLE_WINDOW) {
-    redirect('launch.php?id=' . $cm->id);
-} else {
+    if (!$forceview) {
+        $url = new moodle_url('/mod/lti/launch.php', array('id' => $cm->id));
+        redirect($url);
+    }
+} else { // Handles LTI_LAUNCH_CONTAINER_DEFAULT, LTI_LAUNCH_CONTAINER_EMBED, LTI_LAUNCH_CONTAINER_WINDOW.
     $PAGE->set_pagelayout('incourse');
 }
+
+lti_view($lti, $course, $cm, $context);
 
 $pagetitle = strip_tags($course->shortname.': '.format_string($lti->name));
 $PAGE->set_title($pagetitle);
@@ -110,15 +116,37 @@ if ($lti->showdescriptionlaunch && $lti->intro) {
     echo $OUTPUT->box(format_module_intro('lti', $lti, $cm->id), 'generalbox description', 'intro');
 }
 
-if ( $launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW ) {
-    echo "<script language=\"javascript\">//<![CDATA[\n";
-    echo "window.open('launch.php?id=".$cm->id."','lti');";
-    echo "//]]\n";
-    echo "</script>\n";
-    echo "<p>".get_string("basiclti_in_new_window", "lti")."</p>\n";
+$typeid = $lti->typeid;
+if ($typeid) {
+    $config = lti_get_type_type_config($typeid);
 } else {
+    $config = new stdClass();
+    $config->lti_ltiversion = LTI_VERSION_1;
+}
+
+if (($launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW) &&
+    (($config->lti_ltiversion !== LTI_VERSION_1P3) || isset($SESSION->lti_initiatelogin_status))) {
+    unset($SESSION->lti_initiatelogin_status);
+    if (!$forceview) {
+        echo "<script language=\"javascript\">//<![CDATA[\n";
+        echo "window.open('launch.php?id=" . $cm->id . "&triggerview=0','lti-" . $cm->id . "');";
+        echo "//]]\n";
+        echo "</script>\n";
+        echo "<p>".get_string("basiclti_in_new_window", "lti")."</p>\n";
+    }
+    $url = new moodle_url('/mod/lti/launch.php', array('id' => $cm->id));
+    echo html_writer::start_tag('p');
+    echo html_writer::link($url, get_string("basiclti_in_new_window_open", "lti"), array('target' => '_blank'));
+    echo html_writer::end_tag('p');
+} else {
+    $content = '';
+    if ($config->lti_ltiversion === LTI_VERSION_1P3) {
+        $content = lti_initiate_login($cm->course, $id, $lti, $config);
+    }
+
     // Request the launch content with an iframe tag.
-    echo '<iframe id="contentframe" height="600px" width="100%" src="launch.php?id='.$cm->id.'"></iframe>';
+    echo '<iframe id="contentframe" height="600px" width="100%" src="launch.php?id=' . $cm->id .
+         "&triggerview=0\" webkitallowfullscreen mozallowfullscreen allowfullscreen>{$content}</iframe>";
 
     // Output script to make the iframe tag be as large as possible.
     $resize = '

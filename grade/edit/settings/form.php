@@ -75,8 +75,6 @@ class course_settings_form extends moodleform {
         }
         // END LSU Anonymous Grade settings
 
-
-
         if ($CFG->grade_minmaxtouse == GRADE_MIN_MAX_FROM_GRADE_ITEM) {
             $default = get_string('gradeitemminmax', 'grades');
         } else if ($CFG->grade_minmaxtouse == GRADE_MIN_MAX_FROM_GRADE_GRADE) {

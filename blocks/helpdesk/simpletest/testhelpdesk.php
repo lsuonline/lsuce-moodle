@@ -14,21 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_helpdesk
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-if(!defined('MOODLE_INTERNAL')) {
+
+if (!defined('MOODLE_INTERNAL')) {
     die('Direct access to this script is forbidden.');
 }
 
 require_once($CFG->dirroot . '/blocks/helpdesk/lib.php');
 
 class helpdesk_test extends UnitTestCase {
-    function test_equality_translator() {
+    public function test_equality_translator() {
         $expected = array (
             "LIKE '%ell%'",
             "= 'sneebs'",
@@ -43,12 +43,12 @@ class helpdesk_test extends UnitTestCase {
             hdesk_translate_equality('ends', 'sauce')
         );
 
-        foreach(range(0, 3) as $index) {
-            $this->assertEqual($expected[$index], $actual[$index]); 
+        foreach (range(0, 3) as $index) {
+            $this->assertEqual($expected[$index], $actual[$index]);
         }
     }
 
-    function test_results_sql() {
+    public function test_results_sql() {
         $expected = array (
             "fullname LIKE '%bo%'",
             "username = 'pcali1'",
@@ -56,10 +56,10 @@ class helpdesk_test extends UnitTestCase {
             "email LIKE '%@lsu.edu'"
         );
 
-        $build_string = function(array $fields, array $equalities) {
+        $buildstring = function(array $fields, array $equalities) {
             $data = new stdClass;
             $criterion = array();
-            foreach($fields as $field => $value) {
+            foreach ($fields as $field => $value) {
                 $data->{$field . '_terms'} = $value;
                 $data->{$field . '_equality'} = $equalities[$field];
                 $criterion[$field] = $value;
@@ -68,14 +68,14 @@ class helpdesk_test extends UnitTestCase {
         };
 
         $actual = array (
-            $build_string(array('fullname' => 'bo'), array('fullname' => 'contains')),
-            $build_string(array('username' => 'pcali1'), array('username' => 'equal')),
-            $build_string(array('lastname' => 'Smi', 'firstname' => 'John'),
+            $buildstring(array('fullname' => 'bo'), array('fullname' => 'contains')),
+            $buildstring(array('username' => 'pcali1'), array('username' => 'equal')),
+            $buildstring(array('lastname' => 'Smi', 'firstname' => 'John'),
                           array('lastname' => 'starts', 'firstname' => 'equal')),
-            $build_string(array('email' => '@lsu.edu'), array('email' => 'ends'))
+            $buildstring(array('email' => '@lsu.edu'), array('email' => 'ends'))
         );
 
-        foreach(range(0, 3) as $index) {
+        foreach (range(0, 3) as $index) {
             $this->assertEqual($expected[$index], $actual[$index]);
         }
     }

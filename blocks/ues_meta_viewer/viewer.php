@@ -19,40 +19,42 @@
  * Search form and results viewer page.
  *
  * @package    block_ues_meta_viewer
- * @copyright  2014, Louisiana State University
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
-ues::require_daos();
 
-require_once 'lib.php';
+// Get the requirements.
+require_once('../../config.php');
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
+ues::require_daos();
+require_once($CFG->dirroot . '/blocks/ues_meta_viewer/lib.php');
 
 require_login();
 
-$supported_types = ues_meta_viewer::supported_types();
+$supportedtypes = ues_meta_viewer::supported_types();
 
 $type = required_param('type', PARAM_TEXT);
 
-if (!isset($supported_types[$type])) {
+if (!isset($supportedtypes[$type])) {
     print_error('unsupported_type', 'block_ues_meta_viewer', '', $type);
 }
 
-$supported_type = $supported_types[$type];
+$supportedtype = $supportedtypes[$type];
 
-if (!$supported_type->can_use()) {
+if (!$supportedtype->can_use()) {
     print_error('unsupported_type', 'block_ues_meta_viewer', '', $type);
 }
 
-$class = $supported_type->wrapped_class();
+$class = $supportedtype->wrapped_class();
 
 $page = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 100, PARAM_INT);
 
-$_s = ues::gen_str('block_ues_meta_viewer');
+$s = ues::gen_str('block_ues_meta_viewer');
 
-$blockname = $_s('pluginname');
-$heading = $_s('viewer', $supported_type->name());
+$blockname = $s('pluginname');
+$heading = $s('viewer', $supportedtype->name());
 
 $context = context_system::instance();
 
@@ -83,21 +85,21 @@ foreach ($fields as $field) {
     $handlers[] = $handler;
 
     $value = $handler->value();
-    // Only add searched fields as GET param
+    // Only add searched fields as GET param.
     if (trim($value) !== '') {
         $params[$field] = $value;
     }
 }
 
-$search_table = new html_table();
-$search_table->head = $head;
-$search_table->data = array(new html_table_row($search));
+$searchtable = new html_table();
+$searchtable->head = $head;
+$searchtable->data = array(new html_table_row($search));
 
 if (!empty($_REQUEST['search'])) {
-    $by_filters = ues_meta_viewer::sql($handlers);
+    $byfilters = ues_meta_viewer::sql($handlers);
 
-    $count = $class::count($by_filters);
-    $res = $class::get_all($by_filters, true, '', '*', $page + ($page * $perpage), $perpage);
+    $count = $class::count($byfilters);
+    $res = $class::get_all($byfilters, true, '', '*', $page + ($page * $perpage), $perpage);
 
     $params['search'] = get_string('search');
 
@@ -119,7 +121,7 @@ $hidden = function($name, $value) {
 };
 
 echo html_writer::start_tag('form', array('method' => 'POST', 'class' => 'search-form'));
-echo html_writer::tag('div', html_writer::table($search_table), array('class' => 'search-table'));
+echo html_writer::tag('div', html_writer::table($searchtable), array('class' => 'search-table'));
 echo html_writer::start_tag('div', array('class' => 'search-buttons center padded'));
 echo $hidden('page', 0) . $hidden('type', $type);
 echo html_writer::empty_tag('input', array(
@@ -132,10 +134,10 @@ if ($posted) {
     echo html_writer::start_tag('div', array('class' => 'results'));
     if (empty($result)) {
         echo html_writer::start_tag('div', array('class' => 'no-results center padded'));
-        echo $_s('no_results');
+        echo $s('no_results');
         echo html_writer::end_tag('div');
     } else {
-        echo html_writer::tag('div', $_s('found_results') . ' ' . $count,
+        echo html_writer::tag('div', $s('found_results') . ' ' . $count,
             array('class' => 'count-results center padded'));
         echo $OUTPUT->paging_bar($count, $page, $perpage, $baseurl->out());
         echo html_writer::tag('div', html_writer::table($result),

@@ -16,7 +16,7 @@
 # Tests for single section to be overriden with normal behaviour in Snap.
 #
 # @package    theme_snap
-# @copyright  Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright  Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
@@ -25,9 +25,7 @@ Feature: When the moodle theme is set to Snap, courses in single section per pag
   sections displayed at the same time.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "users" exist:
+    Given the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@example.com |
       | teacher2 | Teacher | 2 | teacher2@example.com |
@@ -47,21 +45,21 @@ Feature: When the moodle theme is set to Snap, courses in single section per pag
   Scenario: All users see course pages rendered in regular mode even when course single section per page mode set.
 
     # Test with admin user.
-    Given I log in as "admin" (theme_snap)
+    Given I log in as "admin"
    Then I can see course "C1" in all sections mode
-    And I log out (theme_snap)
+    And I log out
 
     # Test with editing teacher.
-    And I log in as "teacher1" (theme_snap)
+    And I log in as "teacher1"
     Then I can see course "C1" in all sections mode
-    And I log out (theme_snap)
+    And I log out
 
     # Test widh non editing teacher.
-    And I log in as "teacher2" (theme_snap)
+    And I log in as "teacher2"
     Then I can see course "C1" in all sections mode
-    And I log out (theme_snap)
+    And I log out
 
     # Test with student.
-    And I log in as "student1" (theme_snap)
+    And I log in as "student1"
     Then I can see course "C1" in all sections mode
-    And I log out (theme_snap)
+    And I log out

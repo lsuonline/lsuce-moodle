@@ -15,37 +15,32 @@
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /* exported snapInit */
+/* eslint no-invalid-this: "warn"*/
 
 /**
  * Main snap initialising function.
  */
-define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_snap/personal_menu',
-        'theme_snap/responsive_video', 'theme_snap/cover_image'],
-    function($, bsjq, log, Headroom, util, personalMenu, responsiveVideo, coverImage) {
+define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_snap/personal_menu',
+        'theme_snap/cover_image', 'theme_snap/progressbar', 'core/templates', 'core/str', 'theme_snap/accessibility',
+        'theme_snap/messages'],
+    function($, log, Headroom, util, personalMenu, coverImage, ProgressBar, templates, str, accessibility, messages) {
 
         'use strict';
 
-        // Use bootstrap modified jquery (tooltips).
-        $ = bsjq;
-
+        /* eslint-disable camelcase */
         M.theme_snap = M.theme_snap || {};
+        /* eslint-enable camelcase */
 
         /**
          * master switch for logging
          * @type {boolean}
          */
         var loggingenabled = false;
-
-        /**
-         * timestamp for when window was last resized
-         * @type {null}
-         */
-        var resizestamp = null;
 
         if (!loggingenabled) {
             log.disableAll(true);
@@ -54,8 +49,21 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
         }
 
         /**
+         * Initialize pre SCSS and grading constants.
+         * New variables can be initialized if necessary.
+         * These variables are being passed from classes/output/shared.php,
+         * and being updated from php constants in snapInit.
+         */
+        var brandColorSuccess = '';
+        var brandColorWarning = '';
+        var GRADE_DISPLAY_TYPE_PERCENTAGE = '';
+        var GRADE_DISPLAY_TYPE_PERCENTAGE_REAL = '';
+        var GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER = '';
+
+        /**
          * Get all url parameters from href
-         * @param href
+         * @param {string} href
+         * @returns {Array}
          */
         var getURLParams = function(href) {
             // Create temporary array from href.
@@ -88,7 +96,6 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
          *
          * @author Guy Thomas
          * @date 2014-05-19
-         * @return void
          */
         var movePHPErrorsToHeader = function() {
             // Remove <br> tags inserted before xdebug-error.
@@ -128,6 +135,7 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
          * Are we on the course page?
          * Note: This doesn't mean that we are in a course - Being in a course could mean that you are on a module page.
          * This means that you are actually on the course page.
+         * @returns {boolean}
          */
         var onCoursePage = function() {
             return $('body').attr('id').indexOf('page-course-view-') === 0;
@@ -136,10 +144,12 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
         /**
          * Apply block hash to form actions etc if necessary.
          */
+        /* eslint-disable no-invalid-this */
         var applyBlockHash = function() {
             // Add block hash to add block form.
             if (onCoursePage()) {
                 $('.block_adminblock form').each(function() {
+                    /* eslint-disable no-invalid-this */
                     $(this).attr('action', $(this).attr('action') + '#coursetools');
                 });
             }
@@ -151,7 +161,7 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
             var urlParams = getURLParams(location.href);
 
             // If calendar navigation has been clicked then go back to calendar.
-            if (onCoursePage() && typeof(urlParams.time) !== 'undefined') {
+            if (onCoursePage() && typeof (urlParams.time) !== 'undefined') {
                 location.hash = 'coursetools';
                 if ($('.block_calendar_month')) {
                     util.scrollToElement($('.block_calendar_month'));
@@ -168,7 +178,7 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
             var paramchecks = ['bui_deleteid', 'bui_editid'];
             for (var p in paramchecks) {
                 var param = paramchecks[p];
-                if (typeof(urlParams[param]) !== 'undefined') {
+                if (typeof (urlParams[param]) !== 'undefined') {
                     formselectors.push('#notice form');
                     break;
                 }
@@ -193,7 +203,6 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
          *
          * @author Guy Thomas
          * @date 2014-05-20
-         * @return void
          */
         var setForumStrings = function() {
             $('.path-mod-forum tr.discussion td.topic.starter').attr('data-cellname',
@@ -212,7 +221,7 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
          * Process toc search string - trim, remove case sensitivity etc.
          *
          * @author Guy Thomas
-         * @param string searchString
+         * @param {string} searchString
          * @returns {string}
          */
         var processSearchString = function(searchString) {
@@ -269,7 +278,8 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
         };
 
         /**
-         * listen for hash changes / popstates.
+         * Listen for hash changes / popstates.
+         * @param {CourseLibAmd} courseLib
          */
         var listenHashChange = function(courseLib) {
             var lastHash = location.hash;
@@ -279,9 +289,8 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                 if (newHash !== lastHash) {
                     if (location.hash === '#primary-nav') {
                         personalMenu.update();
-                    }
-                    else {
-                        $('#page, #moodle-footer, #js-personal-menu-trigger, #logo, .skiplinks').css('display', '');
+                    } else {
+                        $('#page, #moodle-footer, #js-snap-pm-trigger, #logo, .skiplinks').css('display', '');
                         if (onCoursePage()) {
                             log.info('show section', e.target);
                             courseLib.showSection();
@@ -289,6 +298,84 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                     }
                 }
                 lastHash = newHash;
+            });
+        };
+
+        /**
+         * Course footer recent activity dom re-order.
+         */
+        var recentUpdatesFix = function() {
+            $('#snap-course-footer-recent-activity .info').each(function() {
+                $(this).appendTo($(this).prev());
+            });
+            $('#snap-course-footer-recent-activity .head .name').each(function() {
+                $(this).prependTo($(this).closest(".head"));
+            });
+        };
+
+        /**
+         * Apply progressbar.js for circular progress displays.
+         */
+        var createColoredDataCircle = function(nodePointer, dataCallback) {
+            var circle = new ProgressBar.Circle(nodePointer, {
+                color: 'inherit', // @gray.
+                easing: 'linear',
+                strokeWidth: 6,
+                trailWidth: 3,
+                duration: 1400,
+                text: {
+                    value: '0'
+                }
+            });
+
+            var value = ($(nodePointer).attr('value') / 100);
+            var endColor = brandColorSuccess; // Green @brand-success.
+            if (value === 0 || $(nodePointer).attr('value') === '-') {
+                circle.setText('-');
+            } else {
+                if ($(nodePointer).attr('value') < 50) {
+                    endColor = brandColorWarning; // Orange @brand-warning.
+                }
+                circle.setText(dataCallback(nodePointer));
+            }
+
+            circle.animate(value, {
+                from: {
+                    color: '#999' // @gray-light.
+                },
+                to: {
+                    color: endColor
+                },
+                step: function(state, circle) {
+                    circle.path.setAttribute('stroke', state.color);
+                }
+            });
+        };
+
+        var progressbarcircle = function() {
+            $('.snap-student-dashboard-progress .js-progressbar-circle').each(function() {
+                createColoredDataCircle(this, function(nodePointer) {
+                    return $(nodePointer).attr('value') + '<small>%</small>';
+                });
+            });
+
+            $('.snap-student-dashboard-grade .js-progressbar-circle').each(function() {
+                createColoredDataCircle(this, function(nodePointer) {
+                    var nodeValue = $(nodePointer).attr('value');
+                    var gradeFormat = $(nodePointer).attr('gradeformat');
+
+                    /**
+                     * Definitions for gradebook.
+                     *
+                     * We need to display the % for all the grade formats which contains a % in the value.
+                     */
+                    if (gradeFormat == GRADE_DISPLAY_TYPE_PERCENTAGE
+                        || gradeFormat == GRADE_DISPLAY_TYPE_PERCENTAGE_REAL
+                        || gradeFormat == GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER) {
+                        nodeValue = nodeValue + '<small>%</small>';
+                    }
+                    return nodeValue;
+                });
             });
         };
 
@@ -389,14 +476,18 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
             // Onclick for toggle of state-visible of admin block and mobile menu.
             $(document).on("click", "#admin-menu-trigger, #toc-mobile-menu-toggle", function(e) {
                 var href = this.getAttribute('href');
-                // Make this only happen for settings button
-                if (this.getAttribute('id') == 'admin-menu-trigger') {
+                // Make this only happen for settings button.
+                if (this.getAttribute('id') === 'admin-menu-trigger') {
                     $(this).toggleClass('active');
                     $('#page').toggleClass('offcanvas');
                 }
                 $(href).attr('tabindex', '0');
                 $(href).toggleClass('state-visible').focus();
                 e.preventDefault();
+
+                if ($('.message-drawer').length) {
+                    document.dispatchEvent(new Event("messages-drawer:toggle"));
+                }
             });
 
             // Mobile menu button.
@@ -416,31 +507,13 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                     if ($news.is('.state-expanded')) {
                         $news.find('.news-article-message').focus();
                         $news.attr('aria-expanded', 'true');
-                    }
-                    else {
+                    } else {
                         $news.focus();
                         $news.attr('aria-expanded', 'false');
                     }
+                    $(document).trigger('snapContentRevealed');
                 });
-                responsiveVideo.apply();
                 e.preventDefault();
-            });
-
-            // Listen for window resize for videos.
-            $(window).resize(function() {
-                resizestamp = new Date().getTime();
-                (function(timestamp) {
-                    window.setTimeout(function() {
-                        log.info('checking ' + timestamp + ' against ' + resizestamp);
-                        if (timestamp === resizestamp) {
-                            log.info('running resize hook functions');
-                            responsiveVideo.apply();
-                        } else {
-                            log.info('skipping resize hook functions - timestamp has changed from ' +
-                                timestamp + ' to ' + resizestamp);
-                        }
-                    }, 200); // wait 1/20th of a second before resizing
-                })(resizestamp);
             });
 
             // Bootstrap js elements
@@ -449,10 +522,10 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
             $(function() {
                 var supportsTouch = false;
                 if ('ontouchstart' in window) {
-                    //iOS & android
+                    // iOS & android
                     supportsTouch = true;
                 } else if (window.navigator.msPointerEnabled) {
-                    //Win8
+                    // Win8
                     supportsTouch = true;
                 }
                 if (!supportsTouch) {
@@ -460,6 +533,31 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                 }
             });
         };
+
+        /**
+         * Function to fix the styles when fullscreen is used with Atto Editor.
+         */
+        function waitForFullScreenButton() {
+            var maxIterations = 15;
+            var i = 0;
+            var checker = setInterval(function() {
+                i = i + 1;
+                if (i > maxIterations) {
+                    clearInterval(checker);
+                } else {
+                    if ($('button.atto_fullscreen_button').length != 0 && $('div.editor_atto').length != 0) {
+                        $('button.atto_fullscreen_button').click(function() {
+                            $('div.editor_atto').css('background-color', '#eee');
+                            $('div.editor_atto').css('z-index', '1');
+                        });
+                        $('button.atto_html_button').click(function() {
+                            $('#id_introeditor').css('z-index', '1');
+                        });
+                        clearInterval(checker);
+                    }
+                }
+            }, 2000);
+        }
 
         /**
          * AMD return object.
@@ -471,15 +569,32 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
              * @param {bool} pageHasCourseContent
              * @param {int} siteMaxBytes
              * @param {bool} forcePassChange
+             * @param {bool} messageBadgeCountEnabled
+             * @param {int} userId
+             * @param {bool} sitePolicyAcceptReqd
+             * @param {bool} inAlternativeRole
+             * @param {string} brandColors
+             * @param {int} gradingConstants
              */
-            snapInit: function(courseConfig, pageHasCourseContent, siteMaxBytes, forcePassChange) {
+            snapInit: function(courseConfig, pageHasCourseContent, siteMaxBytes, forcePassChange,
+                               messageBadgeCountEnabled, userId, sitePolicyAcceptReqd, inAlternativeRole,
+                               brandColors, gradingConstants) {
 
                 // Set up.
+
+                // Branding colors. New colors can be set up if necessary.
+                brandColorSuccess = brandColors['success'];
+                brandColorWarning = brandColors['warning'];
+                // Grading constants for percentage.
+                GRADE_DISPLAY_TYPE_PERCENTAGE = gradingConstants['gradepercentage'];
+                GRADE_DISPLAY_TYPE_PERCENTAGE_REAL = gradingConstants['gradepercentagereal'];
+                GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER = gradingConstants['gradepercentageletter'];
+
                 M.cfg.context = courseConfig.contextid;
                 M.snapTheme = {forcePassChange: forcePassChange};
 
                 // General AMD modules.
-                personalMenu.init();
+                personalMenu.init(sitePolicyAcceptReqd);
 
                 // Course related AMD modules (note, site page can technically have course content too).
                 if (pageHasCourseContent) {
@@ -497,6 +612,7 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                 }
 
                 // When document has loaded.
+                /* eslint-disable complexity */
                 $(document).ready(function() {
                     movePHPErrorsToHeader(); // boring
                     setForumStrings(); // whatever
@@ -504,47 +620,78 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                     applyBlockHash(); // change location hash if necessary
                     bodyClasses(); // add body classes
 
-                    coverImage(courseConfig.shortname, siteMaxBytes);
+                    // Make sure that the blocks are always within page-content for assig view page.
+                    $('#page-mod-assign-view #page-content').append($('#moodle-blocks'));
 
-                    if ($('body').hasClass('snap-fixy-open')) {
+                    // Add a class to the body to show js is loaded.
+                    $('body').addClass('snap-js-loaded');
+                    // Apply progressbar.js for circluar progress display.
+                    progressbarcircle();
+                    // Course footer recent updates dom fixes.
+                    recentUpdatesFix();
+
+                    if ($('body').hasClass('pagelayout-course') || $('body').hasClass('pagelayout-frontpage')) {
+                        coverImage.courseImage(courseConfig.shortname, siteMaxBytes);
+                    } else if ($('body').hasClass('pagelayout-coursecategory')) {
+                        if (courseConfig.categoryid) {
+                            coverImage.categoryImage(courseConfig.categoryid, siteMaxBytes);
+                        }
+                    }
+
+                    // Allow deeplinking to bs tabs on snap settings page.
+                    if ($('#page-admin-setting-themesettingsnap').length) {
+                        var tabHash = location.hash;
+                        // Check link is to a tab hash.
+                        if (tabHash && $('.nav-link[href="' + tabHash + '"]').length) {
+                            $('.nav-link[href="' + tabHash + '"]').tab('show');
+                            $(window).scrollTop(0);
+                        }
+                    }
+
+                    if ($('body').hasClass('snap-pm-open')) {
                         personalMenu.update();
                     }
 
-                    // SL - 19th aug 2014 - resposive video and snap search in exceptions.
                     // SHAME - make section name creation mandatory
                     if ($('#page-course-editsection.format-topics').length) {
-                        var usedefaultname = document.getElementById('id_usedefaultname'),
-                            sname = document.getElementById('id_name');
-                        usedefaultname.value = '0';
-                        usedefaultname.checked = false;
+                        var usedefaultname = document.getElementById('id_name_customize'),
+                            sname = document.getElementById('id_name_value');
+                        usedefaultname.value = '1';
+                        usedefaultname.checked = true;
                         sname.required = "required";
-                        sname.focus();
-                        $('#id_name + span').css('display', 'none');
+                        $(usedefaultname).parent().css('display', 'none');
 
                         // Enable the cancel button.
                         $('#id_cancel').on('click', function() {
-                            $('#id_name').removeAttr('required');
-                            $('#mform1').submit();
+                            $(sname).removeAttr('required');
+                            return true;
                         });
                     }
 
-                    // Book mod print button.
-                    if ($('#page-mod-book-view').length) {
+                    // Book mod print button, only show if print link already present.
+                    if ($('#page-mod-book-view a[href*="mod/book/tool/print/index.php"]').length) {
                         var urlParams = getURLParams(location.href);
-                        $('.block_book_toc').append('<p>' +
-                            '<hr><a target="_blank" href="/mod/book/tool/print/index.php?id=' + urlParams.id + '">' +
-                            M.util.get_string('printbook', 'booktool_print') +
-                            '</a></p>');
+                        if (urlParams) {
+                            $('[data-block="_fake"]').append('<p>' +
+                                '<hr><a target="_blank" href="/mod/book/tool/print/index.php?id=' + urlParams.id + '">' +
+                                M.util.get_string('printbook', 'booktool_print') +
+                                '</a></p>');
+                        }
                     }
 
-                    var mod_settings_id_re = /^page-mod-.*-mod$/; // e.g. #page-mod-resource-mod or #page-mod-forum-mod
-                    var on_mod_settings = mod_settings_id_re.test($('body').attr('id')) && location.href.indexOf("modedit") > -1;
-                    var on_course_settings = $('body').attr('id') === 'page-course-edit';
-                    var on_section_settings = $('body').attr('id') === 'page-course-editsection';
-                    var page_blacklist = ['page-mod-hvp-mod'];
-                    var page_not_in_blacklist = page_blacklist.indexOf($('body').attr('id')) === -1;
+                    var modSettingsIdRe = /^page-mod-.*-mod$/; // e.g. #page-mod-resource-mod or #page-mod-forum-mod
+                    var onModSettings = modSettingsIdRe.test($('body').attr('id')) && location.href.indexOf("modedit") > -1;
+                    if (!onModSettings) {
+                        modSettingsIdRe = /^page-mod-.*-general$/;
+                        onModSettings = modSettingsIdRe.test($('body').attr('id')) && location.href.indexOf("modedit") > -1;
+                    }
+                    var onCourseSettings = $('body').attr('id') === 'page-course-edit';
+                    var onSectionSettings = $('body').attr('id') === 'page-course-editsection';
+                    $('#page-mod-hvp-mod .h5p-editor-iframe').parent().css({"display": "block"});
+                    var pageBlacklist = ['page-mod-hvp-mod'];
+                    var pageNotInBlacklist = pageBlacklist.indexOf($('body').attr('id')) === -1;
 
-                    if ((on_mod_settings || on_course_settings || on_section_settings) && page_not_in_blacklist) {
+                    if ((onModSettings || onCourseSettings || onSectionSettings) && pageNotInBlacklist) {
                         // Wrap advanced options in a div
                         var vital = [
                             ':first',
@@ -553,57 +700,225 @@ define(['jquery', 'theme_snap/bootstrap', 'core/log', 'theme_snap/headroom', 'th
                             '#id_general + #id_general', // Turnitin duplicate ID bug.
                             '#id_content',
                             '#page-mod-choice-mod #id_optionhdr',
-                            '#page-mod-assign-mod #id_availability',
-                            '#page-mod-assign-mod #id_submissiontypes',
                             '#page-mod-workshop-mod #id_gradingsettings',
                             '#page-mod-choicegroup-mod #id_miscellaneoussettingshdr',
                             '#page-mod-choicegroup-mod #id_groups',
-                            '#page-mod-scorm-mod #id_packagehdr',
+                            '#page-mod-scorm-mod #id_packagehdr'
                         ];
                         vital = vital.join();
 
                         $('#mform1 > fieldset').not(vital).wrapAll('<div class="snap-form-advanced col-md-4" />');
 
-                        // Add expand all to advanced column
+                        // Add expand all to advanced column.
                         $(".snap-form-advanced").append($(".collapsible-actions"));
+                        // Add collapsed to all fieldsets in advanced, except on course edit page.
+                        if (!$('#page-course-edit').length) {
+                            $(".snap-form-advanced fieldset").addClass('collapsed');
+                        }
 
                         // Sanitize required input into a single fieldset
-                        var main_form = $("#mform1 fieldset:first");
-                        var append_to = $("#mform1 fieldset:first .fcontainer");
+                        var mainForm = $("#mform1 fieldset:first");
+                        var appendTo = $("#mform1 fieldset:first .fcontainer");
 
                         var required = $("#mform1 > fieldset").not("#mform1 > fieldset:first");
                         for (var i = 0; i < required.length; i++) {
                             var content = $(required[i]).find('.fcontainer');
-                            $(append_to).append(content);
+                            $(appendTo).append(content);
                             $(required[i]).remove();
                         }
-                        $(main_form).wrap('<div class="snap-form-required col-md-8" />');
+                        $(mainForm).wrap('<div class="snap-form-required col-md-8" />');
 
                         var description = $("#mform1 fieldset:first .fitem_feditor:not(.required)");
 
-                        if (on_mod_settings && description) {
+                        if (onModSettings && description) {
                             var editingassignment = $('body').attr('id') == 'page-mod-assign-mod';
                             var editingchoice = $('body').attr('id') == 'page-mod-choice-mod';
                             var editingturnitin = $('body').attr('id') == 'page-mod-turnitintool-mod';
                             var editingworkshop = $('body').attr('id') == 'page-mod-workshop-mod';
                             if (!editingchoice && !editingassignment && !editingturnitin && !editingworkshop) {
-                                $(append_to).append(description);
-                                $(append_to).append($('#fitem_id_showdescription'));
+                                $(appendTo).append(description);
+                                $(appendTo).append($('#fitem_id_showdescription'));
                             }
                         }
 
-                        var savebuttons = $("#mform1 #fgroup_id_buttonar");
-                        $(main_form).append(savebuttons);
+                        // Resources - put description in common mod settings.
+                        description = $("#page-mod-resource-mod [data-fieldtype='editor']").closest('.form-group');
+                        var showdescription = $("#page-mod-resource-mod [id='id_showdescription']").closest('.form-group');
+                        $("#page-mod-resource-mod .snap-form-advanced #id_modstandardelshdr .fcontainer").append(description);
+                        $("#page-mod-resource-mod .snap-form-advanced #id_modstandardelshdr .fcontainer").append(showdescription);
+
+                        // Assignment - put due date in required, and attatchments in common settings.
+                        var filemanager = $("#page-mod-assign-mod [data-fieldtype='filemanager']").closest('.form-group');
+                        var duedate = $("#page-mod-assign-mod [for='id_duedate']").closest('.form-group');
+                        $("#page-mod-assign-mod .snap-form-advanced #id_modstandardelshdr .fcontainer").append(filemanager);
+                        $("#page-mod-assign-mod .snap-form-required .fcontainer").append(duedate);
+
+                        // Move availablity at the top of advanced settings.
+                        var availablity = $('#id_visible').closest('.form-group').addClass('snap-form-visibility');
+                        var label = $(availablity).find('label');
+                        var select = $(availablity).find('select');
+                        $(label).insertBefore(select);
+
+                        // SHAME - rewrite visibility form lang string to be more user friendly.
+                        $(label).text(M.util.get_string('visibility', 'theme_snap') + ' ');
+
+                        if ($("#page-course-edit").length) {
+                            // We are in course editing form.
+                            // Removing the "Show all sections in one page" from the course format form.
+                            var strDisabled = "";
+                            (function(){
+                                return str.get_strings([
+                                    {key: 'showallsectionsdisabled', component: 'theme_snap'},
+                                    {key: 'disabled', component: 'theme_snap'}
+                                ]);
+                            })()
+                                .then(function(strings) {
+                                    var strMessage = strings[0];
+                                    strDisabled = strings[1];
+                                    return templates.render('theme_snap/form_alert', {
+                                        type: 'warning',
+                                        classes: '',
+                                        message: strMessage
+                                    });
+                                })
+                                .then(function(html) {
+                                    var op0 = $('[name="coursedisplay"] > option[value="0"]');
+                                    var op1 = $('[name="coursedisplay"] > option[value="1"]');
+                                    var selectNode =  $('[name="coursedisplay"]');
+                                    // Disable option 0
+                                    op0.attr('disabled','disabled');
+                                    // Add "(Disabled)" to option text
+                                    op0.append(' (' + strDisabled + ')');
+                                    // Remove selection attribute
+                                    op0.removeAttr("selected");
+                                    // Select option 1
+                                    op1.attr('selected','selected');
+                                    // Add warning
+                                    selectNode.parent().append(html);
+                                });
+                        }
+
+                        $('.snap-form-advanced').prepend(availablity);
+
+                        // Add save buttons.
+                        var savebuttons = $("#mform1 > .form-group:last");
+                        $(mainForm).append(savebuttons);
+
+                        // Expand collapsed fieldsets when editing a mod that has errors in it.
+                        var errorElements = $('.form-group.has-danger');
+                        if (onModSettings && errorElements.length) {
+                            errorElements.closest('.collapsible').removeClass('collapsed');
+                        }
+
+                        // Hide appearance menu from interface when editing a page-resource.
+                        if ($("#page-mod-page-mod").length) {
+                            // Chaining promises to get localized strings and render warning message.
+                            (function() {
+                                return str.get_strings([
+                                    {key: 'showappearancedisabled', component: 'theme_snap'}
+                                ]);
+                            })()
+                                .then(function(localizedstring){
+                                    return templates.render('theme_snap/form_alert', {
+                                        type: 'warning',
+                                        classes: '',
+                                        message: localizedstring
+                                    });
+                                })
+                                .then(function (html) {
+                                    // Disable checkboxes.
+                                    // Colors for disabling the divs.
+                                    var layoverbkcolor = "#f1f1f1";
+                                    var layovercolor = "#d5d5d5";
+                                    var cBoxes = $('[id="id_printheading"], [id="id_printintro"], [id="id_printlastmodified"]');
+
+                                    // Note we can't use 'disabled' for settings or they don't get submitted.
+                                    cBoxes.attr('readonly', true);
+                                    cBoxes.attr('tabindex', -1); // Prevent tabbing to change val.
+                                    cBoxes.click(function(e) {
+                                        e.preventDefault();
+                                        return false;
+                                    });
+                                    cBoxes.parent().parent().parent().css('background-color', layoverbkcolor);
+                                    cBoxes.parent().parent().parent().css('color', layovercolor);
+
+                                    // Add warning.
+                                    var selectNode = $('[id="id_error_printheading"]');
+                                    selectNode.parent().parent().parent().append(html);
+                                });
+                        }
                     }
 
-                    $(window).on('load', function() {
-                        // Add a class to the body to show js is loaded.
-                        $('body').addClass('snap-js-loaded');
-                        // Make video responsive.
-                        // Note, if you don't do this on load then FLV media gets wrong size.
-                        responsiveVideo.apply();
+                    // Conversation counter for user badge.
+                    if (messageBadgeCountEnabled) {
+                        require(
+                            [
+                                'theme_snap/conversation_badge_count-lazy'
+                            ], function(conversationBadgeCount) {
+                                conversationBadgeCount.init(userId);
+                            }
+                        );
+                    }
+
+                    // Listen to cover image label key press for accessible usage.
+                    var focustarget = $('#snap-coverimagecontrol label');
+                    if (focustarget && focustarget.length) {
+                        focustarget.keypress(function (e) {
+                            if (e.which === 13) {
+                                $('#snap-coverfiles').trigger('click');
+                            }
+                        });
+                    }
+
+                    // Review if settings block is missing.
+                    if (!$('.block_settings').length) {
+                        // Hide admin icon.
+                        $('#admin-menu-trigger').hide();
+                        if (inAlternativeRole) {
+                            // Handle possible alternative role.
+                            require(
+                                [
+                                    'theme_snap/alternative_role_handler-lazy'
+                                ], function(alternativeRoleHandler) {
+                                    alternativeRoleHandler.init(courseConfig.id);
+                                }
+                            );
+                        }
+                    }
+
+                    // Add tab logic so search is focused before admin.
+                    var notificationsBtn = $('#nav-notification-popover-container > div.popover-region-toggle.nav-link');
+                    var searchButton = $('.search-input-wrapper.nav-link > div[role="button"]');
+                    var adminMenuTrigger = $('#admin-menu-trigger');
+                    var snapHome = $('#snap-home');
+                    if (notificationsBtn.length && searchButton.length && adminMenuTrigger.length && snapHome.length) {
+                        // Update tab events because all elements have tabindex="0" and they are rendered funny.
+                        require(
+                            [
+                                'theme_snap/rearrange_tab_handler-lazy'
+                            ], function(searchTabHandler) {
+                                searchTabHandler.init([notificationsBtn, searchButton, adminMenuTrigger, snapHome]);
+                            }
+                        );
+                    }
+
+                    // Add setttings tab show behaviour to classes which want to do that.
+                    $('.snap-settings-tab-link').on('click', function() {
+                        var tab = $('a[href="' + $(this).attr('href') + '"].nav-link');
+                        if (tab.length) {
+                            tab.tab('show');
+                        }
                     });
+
+                    // Unpin headroom when url has #course-detail-title.
+                    if (window.location.hash === '#course-detail-title') {
+                        $('#mr-nav').removeClass('headroom--pinned').addClass('headroom--unpinned');
+                    }
+
+                    waitForFullScreenButton();
                 });
+                accessibility.init();
+                messages.init();
             }
         };
     }

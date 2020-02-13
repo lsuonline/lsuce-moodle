@@ -27,8 +27,8 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/log', 'cor
     /**
      * GradingPopup
      *
-     * @param {String} The regionSelector
-     * @param {String} The userCompetencySelector
+     * @param {String} regionSelector The regionSelector
+     * @param {String} userCompetencySelector The userCompetencySelector
      */
     var GradingPopup = function(regionSelector, userCompetencySelector) {
         this._regionSelector = regionSelector;
@@ -41,7 +41,7 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/log', 'cor
      * Get the data from the clicked cell and open the popup.
      *
      * @method _handleClick
-     * @param {Event} e
+     * @param {Event} e The event
      */
     GradingPopup.prototype._handleClick = function(e) {
         var cell = $(e.target).closest(this._userCompetencySelector);
@@ -52,20 +52,17 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/log', 'cor
         log.debug('Clicked on cell: competencyId=' + competencyId + ', courseId=' + courseId + ', userId=' + userId);
 
         var requests = ajax.call([{
-            methodname : 'tool_lp_data_for_user_competency_summary_in_course',
-            args: { userid: userId, competencyid: competencyId, courseid: courseId },
-            done: this._contextLoaded.bind(this),
-            fail: notification.exception
+            methodname: 'tool_lp_data_for_user_competency_summary_in_course',
+            args: {userid: userId, competencyid: competencyId, courseid: courseId},
+        }, {
+            methodname: 'core_competency_user_competency_viewed_in_course',
+            args: {userid: userId, competencyid: competencyId, courseid: courseId},
         }]);
 
-        // Log the user competency viewed in course event.
-        requests[0].then(function(){
-            ajax.call([{
-                methodname : 'core_competency_user_competency_viewed_in_course',
-                args: { userid: userId, competencyid: competencyId, courseid: courseId },
-                fail: notification.exception
-            }]);
-        });
+        $.when.apply($, requests).then(function(context) {
+            this._contextLoaded.bind(this)(context);
+            return;
+        }.bind(this)).catch(notification.exception);
     };
 
     /**
@@ -76,6 +73,7 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/log', 'cor
      */
     GradingPopup.prototype._contextLoaded = function(context) {
         var self = this;
+
         // We have to display user info in popup.
         context.displayuser = true;
         templates.render('tool_lp/user_competency_summary_in_course', context).done(function(html, js) {
@@ -93,11 +91,17 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/log', 'cor
     GradingPopup.prototype._refresh = function() {
         var region = $(this._regionSelector);
         var courseId = region.data('courseid');
+        var moduleId = region.data('moduleid');
         var userId = region.data('userid');
 
+        // The module id is expected to be an integer, so don't pass empty string.
+        if (moduleId === '') {
+            moduleId = 0;
+        }
+
         ajax.call([{
-            methodname : 'report_competency_data_for_report',
-            args: { courseid: courseId, userid: userId },
+            methodname: 'report_competency_data_for_report',
+            args: {courseid: courseId, userid: userId, moduleid: moduleId},
             done: this._pageContextLoaded.bind(this),
             fail: notification.exception
         }]);

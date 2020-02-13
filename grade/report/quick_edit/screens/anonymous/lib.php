@@ -1,6 +1,22 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once dirname(__FILE__) . '/uilib.php';
+defined('MOODLE_INTERNAL') || die();
+
+require_once(dirname(__FILE__) . '/uilib.php');
 
 class quick_edit_anonymous extends quick_edit_tablelike
     implements selectable_items, item_filtering {
@@ -86,7 +102,7 @@ class quick_edit_anonymous extends quick_edit_tablelike
         // Create a graded_users_iterator because it will properly check the groups etc.
         require_once($CFG->dirroot.'/grade/lib.php');
         $gui = new \graded_users_iterator($this->course, null, $this->groupid);
-        $gui->require_active_enrolment(TRUE);
+        $gui->require_active_enrolment(true);
         $gui->init();
 
         // Flatten the users.
@@ -97,10 +113,10 @@ class quick_edit_anonymous extends quick_edit_tablelike
         return $users;
     }
 
-    public function init($self_item_is_empty = false) {
+    public function init($selfitemisempty = false) {
         $graded = get_config('moodle', 'gradebookroles');
 
-        if ($self_item_is_empty) {
+        if ($selfitemisempty) {
             return;
         }
 
@@ -112,7 +128,7 @@ class quick_edit_anonymous extends quick_edit_tablelike
         $this->coursestudents = array();
         $suspended = array('status', '0');
 
-        if (COUNT(explode(',', $graded)) > 1) {
+        if (count(explode(',', $graded)) > 1) {
             $roleids = explode(',', $graded);
             foreach ($roleids as $roleid) {
                 $this->students = $this->students + get_role_users(

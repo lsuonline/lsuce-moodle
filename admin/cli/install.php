@@ -90,7 +90,7 @@ Example:
 
 
 // distro specific customisation
-$distrolibfile = dirname(dirname(dirname(__FILE__))).'/install/distrolib.php';
+$distrolibfile = __DIR__.'/../../install/distrolib.php';
 $distro = null;
 if (file_exists($distrolibfile)) {
     require_once($distrolibfile);
@@ -100,7 +100,7 @@ if (file_exists($distrolibfile)) {
 }
 
 // Nothing to do if config.php exists
-$configfile = dirname(dirname(dirname(__FILE__))).'/config.php';
+$configfile = __DIR__.'/../../config.php';
 if (file_exists($configfile)) {
     require($configfile);
     require_once($CFG->libdir.'/clilib.php');
@@ -146,20 +146,15 @@ define('PHPUNIT_TEST', false);
 
 define('IGNORE_COMPONENT_CACHE', true);
 
-// Check that PHP is of a sufficient version
-if (version_compare(phpversion(), "5.4.4") < 0) {
-    $phpversion = phpversion();
-    // do NOT localise - lang strings would not work here and we CAN NOT move it after installib
-    fwrite(STDERR, "Moodle 2.7 or later requires at least PHP 5.4.4 (currently using version $phpversion).\n");
-    fwrite(STDERR, "Please upgrade your server software or install older Moodle version.\n");
-    exit(1);
-}
+// Check that PHP is of a sufficient version as soon as possible.
+require_once(__DIR__.'/../../lib/phpminimumversionlib.php');
+moodle_require_minimum_php_version();
 
 // set up configuration
 global $CFG;
 $CFG = new stdClass();
 $CFG->lang                 = 'en';
-$CFG->dirroot              = dirname(dirname(dirname(__FILE__)));
+$CFG->dirroot              = dirname(dirname(__DIR__));
 $CFG->libdir               = "$CFG->dirroot/lib";
 $CFG->wwwroot              = "http://localhost";
 $CFG->httpswwwroot         = $CFG->wwwroot;
@@ -172,7 +167,7 @@ $CFG->debug                = (E_ALL | E_STRICT);
 $CFG->debugdisplay         = true;
 $CFG->debugdeveloper       = true;
 
-$parts = explode('/', str_replace('\\', '/', dirname(dirname(__FILE__))));
+$parts = explode('/', str_replace('\\', '/', dirname(__DIR__)));
 $CFG->admin                = array_pop($parts);
 
 //point pear include path to moodles lib/pear so that includes and requires will search there for files before anywhere else
@@ -224,7 +219,6 @@ $databases = array('mysqli' => moodle_database::get_driver_instance('mysqli', 'n
                    'pgsql'  => moodle_database::get_driver_instance('pgsql',  'native'),
                    'oci'    => moodle_database::get_driver_instance('oci',    'native'),
                    'sqlsrv' => moodle_database::get_driver_instance('sqlsrv', 'native'), // MS SQL*Server PHP driver
-                   'mssql'  => moodle_database::get_driver_instance('mssql',  'native'), // FreeTDS driver
                   );
 foreach ($databases as $type=>$database) {
     if ($database->driver_installed() !== true) {
@@ -244,7 +238,7 @@ list($options, $unrecognized) = cli_get_params(
         'chmod'             => isset($distro->directorypermissions) ? sprintf('%04o',$distro->directorypermissions) : '2777', // let distros set dir permissions
         'lang'              => $CFG->lang,
         'wwwroot'           => '',
-        'dataroot'          => empty($distro->dataroot) ? str_replace('\\', '/', dirname(dirname(dirname(dirname(__FILE__)))).'/moodledata'): $distro->dataroot, // initialised later after including libs or by distro
+        'dataroot'          => empty($distro->dataroot) ? str_replace('\\', '/', dirname(dirname(dirname(__DIR__))).'/moodledata'): $distro->dataroot, // initialised later after including libs or by distro
         'dbtype'            => empty($distro->dbtype) ? $defaultdb : $distro->dbtype, // let distro skip dbtype selection
         'dbhost'            => empty($distro->dbhost) ? 'localhost' : $distro->dbhost, // let distros set dbhost
         'dbname'            => 'moodle',
@@ -448,6 +442,7 @@ if ($interactive) {
     }
 }
 $CFG->tempdir       = $CFG->dataroot.'/temp';
+$CFG->backuptempdir = $CFG->tempdir.'/backup';
 $CFG->cachedir      = $CFG->dataroot.'/cache';
 $CFG->localcachedir = $CFG->dataroot.'/localcache';
 
@@ -519,100 +514,105 @@ if ($interactive) {
 $database = $databases[$CFG->dbtype];
 
 
-// ask for db host
-if ($interactive) {
-    cli_separator();
-    cli_heading(get_string('databasehost', 'install'));
-    if ($options['dbhost'] !== '') {
-        $prompt = get_string('clitypevaluedefault', 'admin', $options['dbhost']);
+// We cannot do any validation until all DB connection data is provided.
+$hintdatabase = '';
+do {
+    echo $hintdatabase;
+
+    // Ask for db host.
+    if ($interactive) {
+        cli_separator();
+        cli_heading(get_string('databasehost', 'install'));
+        if ($options['dbhost'] !== '') {
+            $prompt = get_string('clitypevaluedefault', 'admin', $options['dbhost']);
+        } else {
+            $prompt = get_string('clitypevalue', 'admin');
+        }
+        $CFG->dbhost = cli_input($prompt, $options['dbhost']);
+
     } else {
-        $prompt = get_string('clitypevalue', 'admin');
+        $CFG->dbhost = $options['dbhost'];
     }
-    $CFG->dbhost = cli_input($prompt, $options['dbhost']);
 
-} else {
-    $CFG->dbhost = $options['dbhost'];
-}
+    // Ask for db name.
+    if ($interactive) {
+        cli_separator();
+        cli_heading(get_string('databasename', 'install'));
+        if ($options['dbname'] !== '') {
+            $prompt = get_string('clitypevaluedefault', 'admin', $options['dbname']);
+        } else {
+            $prompt = get_string('clitypevalue', 'admin');
+        }
+        $CFG->dbname = cli_input($prompt, $options['dbname']);
 
-// ask for db name
-if ($interactive) {
-    cli_separator();
-    cli_heading(get_string('databasename', 'install'));
-    if ($options['dbname'] !== '') {
-        $prompt = get_string('clitypevaluedefault', 'admin', $options['dbname']);
     } else {
-        $prompt = get_string('clitypevalue', 'admin');
+        $CFG->dbname = $options['dbname'];
     }
-    $CFG->dbname = cli_input($prompt, $options['dbname']);
 
-} else {
-    $CFG->dbname = $options['dbname'];
-}
+    // Ask for db prefix.
+    if ($interactive) {
+        cli_separator();
+        cli_heading(get_string('dbprefix', 'install'));
+        //TODO: solve somehow the prefix trouble for oci.
+        if ($options['prefix'] !== '') {
+            $prompt = get_string('clitypevaluedefault', 'admin', $options['prefix']);
+        } else {
+            $prompt = get_string('clitypevalue', 'admin');
+        }
+        $CFG->prefix = cli_input($prompt, $options['prefix']);
 
-// ask for db prefix
-if ($interactive) {
-    cli_separator();
-    cli_heading(get_string('dbprefix', 'install'));
-    //TODO: solve somehow the prefix trouble for oci
-    if ($options['prefix'] !== '') {
-        $prompt = get_string('clitypevaluedefault', 'admin', $options['prefix']);
     } else {
-        $prompt = get_string('clitypevalue', 'admin');
+        $CFG->prefix = $options['prefix'];
     }
-    $CFG->prefix = cli_input($prompt, $options['prefix']);
 
-} else {
-    $CFG->prefix = $options['prefix'];
-}
+    // Ask for db port.
+    if ($interactive) {
+        cli_separator();
+        cli_heading(get_string('databaseport', 'install'));
+        $prompt = get_string('clitypevaluedefault', 'admin', $options['dbport']);
+        $CFG->dboptions['dbport'] = (int) cli_input($prompt, $options['dbport']);
 
-// ask for db port
-if ($interactive) {
-    cli_separator();
-    cli_heading(get_string('databaseport', 'install'));
-    $prompt = get_string('clitypevaluedefault', 'admin', $options['dbport']);
-    $CFG->dboptions['dbport'] = (int)cli_input($prompt, $options['dbport']);
-
-} else {
-    $CFG->dboptions['dbport'] = (int)$options['dbport'];
-}
-if ($CFG->dboptions['dbport'] <= 0) {
-    $CFG->dboptions['dbport'] = '';
-}
-
-// ask for db socket
-if ($CFG->ostype === 'WINDOWS') {
-    $CFG->dboptions['dbsocket'] = '';
-
-} else if ($interactive and empty($CFG->dboptions['dbport'])) {
-    cli_separator();
-    cli_heading(get_string('databasesocket', 'install'));
-    $prompt = get_string('clitypevaluedefault', 'admin', $options['dbsocket']);
-    $CFG->dboptions['dbsocket'] = cli_input($prompt, $options['dbsocket']);
-
-} else {
-    $CFG->dboptions['dbsocket'] = $options['dbsocket'];
-}
-
-// ask for db user
-if ($interactive) {
-    cli_separator();
-    cli_heading(get_string('databaseuser', 'install'));
-    if ($options['dbuser'] !== '') {
-        $prompt = get_string('clitypevaluedefault', 'admin', $options['dbuser']);
     } else {
-        $prompt = get_string('clitypevalue', 'admin');
+        $CFG->dboptions['dbport'] = (int) $options['dbport'];
     }
-    $CFG->dbuser = cli_input($prompt, $options['dbuser']);
+    if ($CFG->dboptions['dbport'] <= 0) {
+        $CFG->dboptions['dbport'] = '';
+    }
 
-} else {
-    $CFG->dbuser = $options['dbuser'];
-}
+    // Ask for db socket.
+    if ($CFG->ostype === 'WINDOWS') {
+        $CFG->dboptions['dbsocket'] = '';
 
-// ask for db password
-if ($interactive) {
-    cli_separator();
-    cli_heading(get_string('databasepass', 'install'));
-    do {
+    } else if ($interactive and empty($CFG->dboptions['dbport'])) {
+        cli_separator();
+        cli_heading(get_string('databasesocket', 'install'));
+        $prompt = get_string('clitypevaluedefault', 'admin', $options['dbsocket']);
+        $CFG->dboptions['dbsocket'] = cli_input($prompt, $options['dbsocket']);
+
+    } else {
+        $CFG->dboptions['dbsocket'] = $options['dbsocket'];
+    }
+
+    // Ask for db user.
+    if ($interactive) {
+        cli_separator();
+        cli_heading(get_string('databaseuser', 'install'));
+        if ($options['dbuser'] !== '') {
+            $prompt = get_string('clitypevaluedefault', 'admin', $options['dbuser']);
+        } else {
+            $prompt = get_string('clitypevalue', 'admin');
+        }
+        $CFG->dbuser = cli_input($prompt, $options['dbuser']);
+
+    } else {
+        $CFG->dbuser = $options['dbuser'];
+    }
+
+    // Ask for db password.
+    if ($interactive) {
+        cli_separator();
+        cli_heading(get_string('databasepass', 'install'));
+
         if ($options['dbpass'] !== '') {
             $prompt = get_string('clitypevaluedefault', 'admin', $options['dbpass']);
         } else {
@@ -620,19 +620,23 @@ if ($interactive) {
         }
 
         $CFG->dbpass = cli_input($prompt, $options['dbpass']);
-        if (function_exists('distro_pre_create_db')) { // Hook for distros needing to do something before DB creation
-            $distro = distro_pre_create_db($database, $CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname, $CFG->prefix, array('dbpersist'=>0, 'dbport'=>$CFG->dboptions['dbport'], 'dbsocket'=>$CFG->dboptions['dbsocket']), $distro);
+        if (function_exists('distro_pre_create_db')) { // Hook for distros needing to do something before DB creation.
+            $distro = distro_pre_create_db($database, $CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname, $CFG->prefix,
+                    array('dbpersist' => 0, 'dbport' => $CFG->dboptions['dbport'], 'dbsocket' => $CFG->dboptions['dbsocket']),
+                    $distro);
         }
-        $hint_database = install_db_validate($database, $CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname, $CFG->prefix, array('dbpersist'=>0, 'dbport'=>$CFG->dboptions['dbport'], 'dbsocket'=>$CFG->dboptions['dbsocket']));
-    } while ($hint_database !== '');
+        $hintdatabase = install_db_validate($database, $CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname, $CFG->prefix,
+                array('dbpersist' => 0, 'dbport' => $CFG->dboptions['dbport'], 'dbsocket' => $CFG->dboptions['dbsocket']));
 
-} else {
-    $CFG->dbpass = $options['dbpass'];
-    $hint_database = install_db_validate($database, $CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname, $CFG->prefix, array('dbpersist'=>0, 'dbport'=>$CFG->dboptions['dbport'], 'dbsocket'=>$CFG->dboptions['dbsocket']));
-    if ($hint_database !== '') {
-        cli_error(get_string('dbconnectionerror', 'install'));
+    } else {
+        $CFG->dbpass = $options['dbpass'];
+        $hintdatabase = install_db_validate($database, $CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname, $CFG->prefix,
+                array('dbpersist' => 0, 'dbport' => $CFG->dboptions['dbport'], 'dbsocket' => $CFG->dboptions['dbsocket']));
+        if ($hintdatabase !== '') {
+            cli_error(get_string('dbconnectionerror', 'install'));
+        }
     }
-}
+} while ($hintdatabase !== '');
 
 // ask for fullname
 if ($interactive) {
@@ -715,7 +719,7 @@ if ($interactive) {
     cli_separator();
     cli_heading(get_string('cliadminemail', 'install'));
     $prompt = get_string('clitypevaluedefault', 'admin', $options['adminemail']);
-    $options['adminemail'] = cli_input($prompt);
+    $options['adminemail'] = cli_input($prompt, $options['adminemail']);
 }
 
 // Validate that the address provided was an e-mail address.
@@ -808,6 +812,12 @@ if (!core_plugin_manager::instance()->all_plugins_ok($version, $failed)) {
 
 if (!$options['skip-database']) {
     install_cli_database($options, $interactive);
+    // This needs to happen at the end to ensure it occurs after all caches
+    // have been purged for the last time.
+    // This will build a cached version of the current theme for the user
+    // to immediately start browsing the site.
+    require_once($CFG->libdir.'/upgradelib.php');
+    upgrade_themes();
 } else {
     echo get_string('cliskipdatabase', 'install')."\n";
 }

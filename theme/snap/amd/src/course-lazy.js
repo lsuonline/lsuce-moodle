@@ -15,7 +15,7 @@
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,14 +26,14 @@ define(
     [
         'jquery',
         'theme_snap/util',
-        'theme_snap/responsive_video',
         'theme_snap/section_asset_management',
         'theme_snap/course_modules'
     ],
-    function($, util, responsiveVideo, sectionAssetManagement, courseModules) {
+    function($, util, sectionAssetManagement, courseModules) {
 
     /**
      * Return class(has private and public methods).
+     * @param {object} courseConfig
      */
     return function(courseConfig) {
 
@@ -51,8 +51,7 @@ define(
 
         /**
          * Scroll to a mod via search
-         * @param string modid
-         * @return void
+         * @param {string} modid
          */
         var scrollToModule = function(modid) {
             // sometimes we have a hash, sometimes we don't
@@ -69,6 +68,7 @@ define(
 
             $(targmod).find('.instancename').prepend(searchpin);
             $(targmod).attr('tabindex', '-1').focus();
+            $('#course-toc').removeClass('state-visible');
         };
 
         /**
@@ -79,6 +79,7 @@ define(
             var currentSectionId = $(sectionIdSel).attr('id');
             $('#chapters li').removeClass('snap-visible-section');
             $('#chapters a[href$="' + currentSectionId + '"]').parent('li').addClass('snap-visible-section');
+            $(document).trigger('snapContentRevealed');
         };
 
         /**
@@ -91,7 +92,7 @@ define(
             }
             var sectionSetByServer = '';
 
-            if($('.section.main.state-visible.set-by-server').length) {
+            if ($('.section.main.state-visible.set-by-server').length) {
                 sectionSetByServer = '#' + $('.section.main.state-visible.set-by-server').attr('id');
                 $('.section.main.state-visible.set-by-server').removeClass('set-by-server');
             } else {
@@ -120,7 +121,7 @@ define(
             } else {
                 $(section).addClass('state-visible').focus();
                 // Faux link click behaviour - scroll to page top.
-                window.scrollTo(0, 0);
+                scrollBack();
             }
 
             // Default niceties to perform.
@@ -135,11 +136,29 @@ define(
                 } else {
                     $('#section-0').addClass('state-visible').focus();
                 }
-                window.scrollTo(0, 0);
+                scrollBack();
             }
 
-            responsiveVideo.apply();
+            // Store last activity/resource accessed on sessionStorage
+            $('li.snap-activity:visible, li.snap-resource:visible').on('click', 'a.mod-link', function() {
+                sessionStorage.setItem('lastMod', $(this).parents('[id^=module]').attr('id'));
+            });
+
             this.setTOCVisibleSection();
+        };
+
+        /**
+         * Scroll to the last activity or resource accessed,
+         * if there is nothing stored in session go to page top.
+         */
+        var scrollBack = function () {
+            var storedmod = sessionStorage.getItem('lastMod');
+            if(storedmod === null){
+                window.scrollTo(0, 0);
+            } else {
+                util.scrollToElement($('#'+storedmod+''));
+                sessionStorage.removeItem('lastMod');
+            }
         };
 
         /**
@@ -163,14 +182,47 @@ define(
             // SL - 19th aug 2014 - check we are in a course and if so, show current section.
             if (onCoursePage()) {
                 self.showSection();
-                $(document).on('snapTOCReplaced',  function() {
+                $(document).on('snapTOCReplaced', function() {
                     self.setTOCVisibleSection();
+                    if (self.courseConfig.partialrender) {
+                        sectionAssetManagement.setTocObserver();
+                    }
                 });
+                // Sets the observers for rendering sections on demand.
+                if (self.courseConfig.partialrender) {
+                    var hash = $(location).attr('hash');
+                    var params = hash.split('&');
+                    var section = false;
+
+                    $.each(params, function(idx, param) {
+                        if (param.includes('section')) {
+                            section = param.split('#section-')[1];
+                        }
+                    });
+                    if (section) {
+                        sectionAssetManagement.renderAndFocusSection(section, 0);
+                    }
+                }
             }
+        };
+
+        /**
+         * Snap modchooser listener to add current section to urls.
+         */
+        var modchooserSectionLinks = function() {
+            $('.section-modchooser-link').click(function() {
+                // Grab the section number from the button.
+                var sectionNum = $(this).attr('data-section');
+                $('.snap-modchooser-addlink').each(function() {
+                    // Update section in mod link to current section.
+                    var newLink = this.href.replace(/(section=)[0-9]+/ig, '$1' + sectionNum);
+                    $(this).attr('href', newLink);
+                });
+            });
         };
 
         // Intialise course lib.
         init();
-
+        modchooserSectionLinks();
     };
 });

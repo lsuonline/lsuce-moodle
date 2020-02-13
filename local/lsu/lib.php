@@ -1,4 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
 
 ini_set('default_socket_timeout', 300);
 
@@ -26,15 +42,14 @@ interface institution_codes {
 }
 
 abstract class lsu_source implements institution_codes, semester_codes {
-    /**
-     * An LSU source requires these
-     */
-    var $serviceId;
-    var $username;
-    var $password;
-    var $wsdl;
 
-    function __construct($username, $password, $wsdl, $serviceId) {
+    // An LSU source requires these.
+    public $serviceId;
+    public $username;
+    public $password;
+    public $wsdl;
+
+    public function __construct($username, $password, $wsdl, $serviceId) {
         $this->username  = $username;
         $this->password  = $password;
         $this->wsdl      = $wsdl;
@@ -102,12 +117,18 @@ abstract class lsu_source implements institution_codes, semester_codes {
         };
 
         switch ($semester_name) {
-            case 'Fall': return $partial($semester_year + 1, self::FALL);
-            case 'WinterInt': return $partial($semester_year + 1, self::WINTER_INT);
-            case 'Summer': return $partial($semester_year, self::SUMMER);
-            case 'Spring': return $partial($semester_year, self::SPRING);
-            case 'SummerInt': return $partial($semester_year, self::SUMMER_INT);
-            case 'SpringInt': return $partial($semester_year, self::SPRING_INT);
+            case 'Fall':
+                return $partial($semester_year + 1, self::FALL);
+            case 'WinterInt':
+                return $partial($semester_year + 1, self::WINTER_INT);
+            case 'Summer':
+                return $partial($semester_year, self::SUMMER);
+            case 'Spring':
+                return $partial($semester_year, self::SPRING);
+            case 'SummerInt':
+                return $partial($semester_year, self::SUMMER_INT);
+            case 'SpringInt':
+                return $partial($semester_year, self::SPRING_INT);
         }
     }
 }

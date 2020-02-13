@@ -34,7 +34,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->dirroot . '/my/lib.php');
 
 redirect_if_major_upgrade_required();
@@ -51,11 +51,6 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 }
 
 $strmymoodle = get_string('myhome');
-
-// Requires non priveleged users to use site_home instead of dashboard.
-if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
-    redirect(new moodle_url('/', array('redirect' => 0)));
-}
 
 if (isguestuser()) {  // Force them to see system default, no editing allowed
     // If guests are not allowed my moodle, send them to front page.
@@ -93,7 +88,6 @@ $PAGE->blocks->add_region('content');
 $PAGE->set_subpage($currentpage->id);
 $PAGE->set_title($pagetitle);
 $PAGE->set_heading($header);
-$PAGE->add_body_class('eupopup eupopup-bottom');
 
 if (!isguestuser()) {   // Skip default home page for guests
     if (get_home_page() != HOMEPAGE_MY) {
@@ -172,3 +166,8 @@ echo $OUTPUT->header();
 echo $OUTPUT->custom_block_region('content');
 
 echo $OUTPUT->footer();
+
+// Trigger dashboard has been viewed event.
+$eventparams = array('context' => $context);
+$event = \core\event\dashboard_viewed::create($eventparams);
+$event->trigger();

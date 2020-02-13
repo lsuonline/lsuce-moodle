@@ -20,7 +20,7 @@
  * way.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -29,7 +29,5 @@ $hassidepre = $PAGE->blocks->region_has_content('side-pre', $OUTPUT);
 $knownregionpre = $PAGE->blocks->is_known_region('side-pre');
 
 if ($hassidepre) {
-    echo '<div id="moodle-blocks" class="clearfix">';
-    echo $OUTPUT->blocks('side-pre');
-    echo '</div>';
+    echo $OUTPUT->snap_blocks();
 }

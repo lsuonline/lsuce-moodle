@@ -1,124 +1,269 @@
-@core @core_message
-Feature: Check that messages can be deleted
-  In order to check a user can delete a message
+@core @core_message @javascript
+Feature: Delete messages from conversations
+  In order to manage a course group in a course
   As a user
-  I can delete a message
+  I need to be able to delete messages from conversations
 
   Background:
-    Given the following "users" exist:
-      | username | firstname | lastname | email            |
-      | user1    | User      | 1        | user1@asd.com    |
-      | user2    | User      | 2        | user2@asd.com    |
-    And I log in as "admin"
-    And I set the following administration settings values:
-      | forceloginforprofiles | 0 |
-    And I log out
+    Given the following "courses" exist:
+      | fullname | shortname | category | groupmode |
+      | Course 1 | C1        | 0        | 1         |
+    And the following "users" exist:
+      | username | firstname | lastname | email                |
+      | student1 | Student   | 1        | student1@example.com |
+      | student2 | Student   | 2        | student2@example.com |
+    And the following "course enrolments" exist:
+      | user     | course | role |
+      | student1 | C1     | student |
+      | student2 | C1     | student |
+    And the following "groups" exist:
+      | name    | course | idnumber | enablemessaging |
+      | Group 1 | C1     | G1       | 1               |
+    And the following "group members" exist:
+      | user     | group |
+      | student1 | G1 |
+      | student2 | G1 |
+    And the following "group messages" exist:
+      | user     | group  | message                   |
+      | student1 | G1     | Hi!                       |
+      | student2 | G1     | How are you?              |
+      | student1 | G1     | Can somebody help me?     |
+    And the following "private messages" exist:
+      | user     | contact  | message       |
+      | student1 | student2 | Hi!           |
+      | student2 | student1 | Hello!        |
+      | student1 | student2 | Are you free? |
+    And the following config values are set as admin:
+      | messaging        | 1 |
+      | messagingminpoll | 1 |
 
-  @javascript
-  Scenario: Test basic functionality of deleting a message
-    # Send two messages from User 1 to User 2.
-    And I log in as "user1"
-    And I send "Hey bud, what's happening?" message to "User 2" user
-    And I set the field with xpath "//textarea[@id='id_message']" to "Whoops, forgot to mention that I drank all your beers. Lol."
-    And I press "Send message"
-    # Confirm that there is a delete link next to each message.
-    And "Delete" "link" should exist in the "#message_1" "css_element"
-    And "Delete" "link" should exist in the "#message_2" "css_element"
-    # Confirm that there is a confirmation box before deleting, and that when we cancel the messages remain.
-    And I click on "#message_2" "css_element"
-    And I click on "Delete" "link" in the "#message_2" "css_element"
-    And I press "Cancel"
-    And I should see "Hey bud, what's happening?"
-    And I should see "Whoops, forgot to mention that I drank all your beers. Lol."
-    # Confirm we can delete a message and then can no longer see it.
-    And I click on "#message_2" "css_element"
-    And I click on "Delete" "link" in the "#message_2" "css_element"
-    And I press "Delete"
-    And I should see "Hey bud, what's happening?"
-    And I should not see "Whoops, forgot to mention that I drank all your beers. Lol."
-    # Check that when we do a search for the keywords in the message we deleted nothing is returned.
-    And I follow "Messages" in the user menu
-    And I set the field "Search people and messages" to "beers"
-    And I press "Search people and messages"
-    And I should see "Messages found: 0"
-    # Check that we can still search the message that we did not delete.
-    And I follow "Messages" in the user menu
-    And I set the field "Search people and messages" to "bud"
-    And I press "Search people and messages"
-    And I should see "Messages found: 1"
-    # Check that the message we deleted does not show up on the recent conversation.
-    And I set the field "Message navigation:" to "Recent conversations"
-    And I should see "Hey bud, what's happening?"
-    And I log out
-    # Log in as User 2 and send two replies.
-    And I log in as "user2"
-    And I follow "Messages" in the user menu
-    And I follow "User 1 (2)"
-    And I set the field with xpath "//textarea[@id='id_message']" to "Not much brah, just writing a behat test and communicating to myself."
-    And I press "Send message"
-    And I set the field with xpath "//textarea[@id='id_message']" to "Oh man, I was looking forward to those tonight!"
-    And I press "Send message"
-    # Confirm that we can see all messages.
-    And I should see "Hey bud, what's happening?"
-    And I should see "Whoops, forgot to mention that I drank all your beers. Lol."
-    And I should see "Not much brah, just writing a behat test and communicating to myself."
-    And I should see "Oh man, I was looking forward to those tonight!"
-    # Confirm that there is a delete link next to each message.
-    And "Delete" "link" should exist in the "#message_1" "css_element"
-    And "Delete" "link" should exist in the "#message_2" "css_element"
-    And "Delete" "link" should exist in the "#message_3" "css_element"
-    And "Delete" "link" should exist in the "#message_4" "css_element"
-    # Now, delete one of the messages that User 1 sent and one by User 2.
-    And I click on "#message_1" "css_element"
-    And I click on "Delete" "link" in the "#message_1" "css_element"
-    And I press "Delete"
-    And I click on "#message_2" "css_element"
-    And I click on "Delete" "link" in the "#message_2" "css_element"
-    And I press "Delete"
-    # Confirm that the messages are no longer listed.
-    And I should not see "Hey bud, what's happening?"
-    And I should see "Whoops, forgot to mention that I drank all your beers. Lol."
-    And I should not see "Not much brah, just writing a behat test and communicating to myself."
-    And I should see "Oh man, I was looking forward to those tonight!"
-    # Check that when we do a search for the keywords in the messages we deleted nothing is returned.
-    And I follow "Messages" in the user menu
-    And I set the field "Search people and messages" to "bud"
-    And I press "Search people and messages"
-    And I should see "Messages found: 0"
-    And I set the field "Search people and messages" to "brah"
-    And I press "Search people and messages"
-    And I should see "Messages found: 0"
-    # Check that we can still search the message that we did not delete.
-    And I follow "Messages" in the user menu
-    And I set the field "Search people and messages" to "Whoops"
-    And I press "Search people and messages"
-    And I should see "Messages found: 1"
-    And I set the field "Search people and messages" to "tonight"
-    And I press "Search people and messages"
-    And I should see "Messages found: 1"
-    # Check that the messages we deleted do not show up on the recent conversation.
-    And I set the field "Message navigation:" to "Recent conversations"
-    And I should see "Oh man, I was looking forward to those tonight!"
-    And I log out
+  Scenario: Delete a message sent by the user from a group conversation
+    Given I log in as "student1"
+    And I open messaging
+    And "Group 1" "core_message > Message" should exist
+    And I select "Group 1" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I click on "How are you?" "core_message > Message content"
+    And I click on "Can somebody help me?" "core_message > Message content"
+    And I should see "3" in the "[data-region='message-selected-court']" "css_element"
+#   Clicking to unselect
+    And I click on "How are you?" "core_message > Message content"
+    And I click on "Can somebody help me?" "core_message > Message content"
+    And I should see "1" in the "[data-region='message-selected-court']" "css_element"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Deleting, so messages should not be there
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    Then I should not see "Delete"
+    And I should not see "Hi!"
+    And I should see "##today##j F##" in the "Group 1" "core_message > Message conversation"
+    And I should see "How are you?" in the "Group 1" "core_message > Message conversation"
+    And I should see "Can somebody help me?" in the "Group 1" "core_message > Message conversation"
+    And I should not see "Messages selected"
 
-  @javascript
-  Scenario: Check that we can prevent some users from deleting messages
-    # Prevent the ability to delete messages.
-    Given I log in as "admin"
-    And I set the following system permissions of "Authenticated user" role:
-      | capability                   | permission |
-      | moodle/site:deleteownmessage | Prevent   |
-    # Send a message from the admin to User 1
-    And I send "Hey there, this is the all-powerful administrator. Obey my commands." message to "User 1" user
-    # Check the admin is still able to delete messages.
-    And I click on "#message_1" "css_element"
-    And I click on "Delete" "link" in the "#message_1" "css_element"
-    And I press "Delete"
-    And I should not see "Hey there, this is the all-powerful administrator. Obey my commands."
+  Scenario: Delete two messages from a group conversation; one sent by another user.
+    Given I log in as "student1"
+    And I open messaging
+    And "Group 1" "core_message > Message" should exist
+    And I select "Group 1" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I should see "1" in the "[data-region='message-selected-court']" "css_element"
+    And I click on "How are you?" "core_message > Message content"
+    And I should see "2" in the "[data-region='message-selected-court']" "css_element"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Deleting, so messages should not be there
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    Then I should not see "Delete"
+    And I should not see "Hi!"
+    And I should see "##today##j F##" in the "Group 1" "core_message > Message conversation"
+    And I should not see "How are you?" in the "Group 1" "core_message > Message conversation"
+    And I should see "Can somebody help me?" in the "Group 1" "core_message > Message conversation"
+    And I should not see "Messages selected"
+#   Check messages were not deleted for other users
     And I log out
-    # Check that User 1 is unable to delete the message the admin sent.
-    And I log in as "user1"
-    And I follow "Messages" in the user menu
-    And I follow "Admin User (1)"
-    And I should see "Hey there, this is the all-powerful administrator. Obey my commands."
-    And "Delete" "link" should not exist in the "#message_1" "css_element"
+    And I log in as "student2"
+    And I open messaging
+    And I select "Group 1" conversation in messaging
+    And I should see "Hi!"
+    And I should see "How are you?"
+    And I should see "Can somebody help me?"
+
+  Scenario: Cancel deleting two messages from a group conversation
+    Given I log in as "student1"
+    And I open messaging
+    And "Group 1" "core_message > Message" should exist
+    And I select "Group 1" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I click on "How are you?" "core_message > Message content"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Canceling deletion, so messages should be there
+    And I should see "Cancel"
+    And I click on "//button[@data-action='cancel-confirm']" "xpath_element"
+    Then I should not see "Cancel"
+    And I should see "Hi!"
+    And I should see "How are you?" in the "Group 1" "core_message > Message conversation"
+    And I should see "2" in the "[data-region='message-selected-court']" "css_element"
+
+  Scenario: Delete a message sent by the user from a private conversation
+    Given I log in as "student1"
+    And I open messaging
+    And I should see "Private"
+    And I open the "Private" conversations list
+    And I should see "Student 2"
+    And I select "Student 2" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I should see "1" in the "[data-region='message-selected-court']" "css_element"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Deleting, so messages should not be there
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    Then I should not see "Delete"
+    And I should not see "Hi!"
+    And I should see "##today##j F##" in the "Student 2" "core_message > Message conversation"
+    And I should see "Hello!" in the "Student 2" "core_message > Message conversation"
+    And I should see "Are you free?" in the "Student 2" "core_message > Message conversation"
+    And I should not see "Messages selected"
+
+  Scenario: Delete two messages from a private conversation; one sent by another user
+    Given I log in as "student1"
+    And I open messaging
+    And I should see "Private"
+    And I open the "Private" conversations list
+    And I should see "Student 2"
+    And I select "Student 2" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I should see "1" in the "[data-region='message-selected-court']" "css_element"
+    And I click on "Hello!" "core_message > Message content"
+    And I should see "2" in the "[data-region='message-selected-court']" "css_element"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Deleting, so messages should not be there
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    Then I should not see "Delete"
+    And I should not see "Hi!"
+    And I should not see "Hello!" in the "Student 2" "core_message > Message conversation"
+    And I should see "##today##j F##" in the "Student 2" "core_message > Message conversation"
+    And I should see "Are you free?" in the "Student 2" "core_message > Message conversation"
+    And I should not see "Messages selected"
+#   Check messages were not deleted for the other user
+    And I log out
+    And I log in as "student2"
+    And I open messaging
+    And I open the "Private" conversations list
+    And I select "Student 1" conversation in messaging
+    And I should see "Hi!"
+    And I should see "Hello!"
+    And I should see "Are you free?"
+
+  Scenario: Cancel deleting two messages from a private conversation
+    Given I log in as "student1"
+    And I open messaging
+    And I should see "Private"
+    And I open the "Private" conversations list
+    And I should see "Student 2"
+    And I select "Student 2" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I click on "Hello!" "core_message > Message content"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Canceling deletion, so messages should be there
+    And I should see "Cancel"
+    And I click on "//button[@data-action='cancel-confirm']" "xpath_element"
+    Then I should not see "Cancel"
+    And I should see "Hi!"
+    And I should see "Hello!" in the "Student 2" "core_message > Message conversation"
+    And I should see "2" in the "[data-region='message-selected-court']" "css_element"
+
+  Scenario: Delete a message sent by the user from a favorite conversation
+    Given the following "favourite conversations" exist:
+      | user     | contact  |
+      | student1 | student2 |
+    And I log in as "student1"
+    And I open messaging
+    And I should see "Student 2"
+    And I select "Student 2" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I should see "1" in the "[data-region='message-selected-court']" "css_element"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Deleting, so messages should not be there
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    Then I should not see "Delete"
+    And I should not see "Hi!"
+    And I should see "##today##j F##" in the "Student 2" "core_message > Message conversation"
+    And I should see "Hello!" in the "Student 2" "core_message > Message conversation"
+    And I should not see "Messages selected"
+
+  Scenario: Delete two messages from a favourite conversation; one sent by another user
+    Given the following "favourite conversations" exist:
+      | user     | contact  |
+      | student1 | student2 |
+    And I log in as "student1"
+    And I open messaging
+    And I should see "Student 2"
+    And I select "Student 2" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I should see "1" in the "[data-region='message-selected-court']" "css_element"
+    And I click on "Hello!" "core_message > Message content"
+    And I should see "2" in the "[data-region='message-selected-court']" "css_element"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Deleting, so messages should not be there
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    Then I should not see "Delete"
+    And I should not see "Hi!"
+    And I should not see "Hello!" in the "Student 2" "core_message > Message conversation"
+    And I should see "##today##j F##" in the "Student 2" "core_message > Message conversation"
+    And I should see "Are you free?" in the "Student 2" "core_message > Message conversation"
+    And I should not see "Messages selected"
+
+  Scenario: Cancel deleting two messages from a favourite conversation
+    Given the following "favourite conversations" exist:
+      | user     | contact  |
+      | student1 | student2 |
+    And I log in as "student1"
+    And I open messaging
+    And I should see "Student 2"
+    And I select "Student 2" conversation in messaging
+    And I click on "Hi!" "core_message > Message content"
+    And I click on "Hello!" "core_message > Message content"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+#   Canceling deletion, so messages should be there
+    And I should see "Cancel"
+    And I click on "//button[@data-action='cancel-confirm']" "xpath_element"
+    Then I should not see "Cancel"
+    And I should see "Hi!"
+    And I should see "Hello!" in the "Student 2" "core_message > Message conversation"
+    And I should see "2" in the "[data-region='message-selected-court']" "css_element"
+
+  Scenario: Check an empty favourite conversation is still favourite
+    Given the following "favourite conversations" exist:
+      | user     | contact  |
+      | student1 | student2 |
+    And I log in as "student1"
+    And I open messaging
+    And I should see "Student 2"
+    And I select "Student 2" conversation in the "favourites" conversations list
+    And I click on "Hi!" "core_message > Message content"
+    And I click on "Hello!" "core_message > Message content"
+    And I click on "Are you free?" "core_message > Message content"
+    And "Delete selected messages" "button" should exist
+    When I click on "Delete selected messages" "button"
+    And I should see "Delete"
+    And I click on "//button[@data-action='confirm-delete-selected-messages']" "xpath_element"
+    And I go back in "view-conversation" message drawer
+    Then I should not see "Student 2" in the "//*[@data-region='message-drawer']//div[@data-region='view-overview-favourites']" "xpath_element"
+    And I send "Hi!" message to "Student 2" user
+    And I go back in "view-conversation" message drawer
+    And I go back in "view-search" message drawer
+    And I open the "Starred" conversations list
+    And I should see "Student 2" in the "//*[@data-region='message-drawer']//div[@data-region='view-overview-favourites']" "xpath_element"

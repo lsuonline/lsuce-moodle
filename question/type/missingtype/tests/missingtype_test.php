@@ -27,10 +27,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
-require_once(dirname(__FILE__) . '/../../../engine/tests/helpers.php');
-require_once(dirname(__FILE__) . '/../../../behaviour/deferredfeedback/behaviour.php');
-require_once(dirname(__FILE__) . '/../question.php');
-
+require_once(__DIR__ . '/../../../engine/tests/helpers.php');
+require_once(__DIR__ . '/../../../behaviour/deferredfeedback/behaviour.php');
+require_once(__DIR__ . '/../question.php');
+require_once($CFG->dirroot . '/question/type/missingtype/questiontype.php');
 
 /**
  * Unit tests for the 'missing' question type.
@@ -58,6 +58,7 @@ class qtype_missing_test extends question_testcase {
         $questiondata->stamp = make_unique_id_code();
         $questiondata->version = make_unique_id_code();
         $questiondata->hidden = 0;
+        $questiondata->idnumber = null;
         $questiondata->timecreated = 0;
         $questiondata->timemodified = 0;
         $questiondata->createdby = 0;
@@ -66,14 +67,18 @@ class qtype_missing_test extends question_testcase {
         return $questiondata;
     }
 
+    /**
+     * @expectedException moodle_exception
+     */
     public function test_cannot_grade() {
         $q = new qtype_missingtype_question();
-        $this->setExpectedException('moodle_exception');
         $q->grade_response(array());
     }
 
+    /**
+     * @expectedException moodle_exception
+     */
     public function test_load_qtype_strict() {
-        $this->setExpectedException('moodle_exception');
         $qtype = question_bank::get_qtype('strange_unknown');
     }
 

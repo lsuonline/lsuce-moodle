@@ -16,20 +16,18 @@
 # Tests for logout.
 #
 # @package    theme_snap
-# @author     2016 Guy Thomas <gthomas@moodlerooms.com>
+# @author     2016 Guy Thomas <osdev@blackboard.com>
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @theme @theme_snap
 Feature: When the moodle theme is set to Snap, log out works via personal menu.
 
   Background:
-    Given the following config values are set as admin:
-      | theme              | snap |
-    And the following "users" exist:
+    Given the following "users" exist:
       | username | firstname | lastname | email                |
       | teacher1 | Teacher   | 1        | teacher1@example.com |
 
   @javascript
   Scenario: User logs in then out.
-    Given I log in as "teacher1" (theme_snap)
-    And I log out (theme_snap)
+    Given I log in as "teacher1"
+    And I log out

@@ -194,7 +194,13 @@ $string['errorupdatinggradecategoryaggregateoutcomes'] = 'Error updating the "In
 $string['errorupdatinggradecategoryaggregation'] = 'Error updating the aggregation type of grade category ID {$a->id}';
 $string['errorupdatinggradeitemaggregationcoef'] = 'Error updating the aggregation coefficient (weight or extra credit) of grade item ID {$a->id}';
 $string['eventgradedeleted'] = 'Grade deleted';
+$string['eventgradelettercreated'] = 'Grade letter created';
+$string['eventgradeletterdeleted'] = 'Grade letter deleted';
+$string['eventgradeletterupdated'] = 'Grade letter updated';
 $string['eventgradeviewed'] = 'Grades were viewed in the gradebook';
+$string['eventscalecreated'] = 'Scale created';
+$string['eventscaledeleted'] = 'Scale deleted';
+$string['eventscaleupdated'] = 'Scale updated';
 $string['eventusergraded'] = 'User graded';
 $string['excluded'] = 'Excluded';
 $string['excluded_help'] = 'If ticked, the grade will not be included in any aggregation.';
@@ -202,6 +208,7 @@ $string['expand'] = 'Expand category';
 $string['export'] = 'Export';
 $string['exportalloutcomes'] = 'Export all outcomes';
 $string['exportfeedback'] = 'Include feedback in export';
+$string['exportfeedback_desc'] = 'This can be overridden during export.';
 $string['exportformatoptions'] = 'Export format options';
 $string['exportplugins'] = 'Export plugins';
 $string['exportsettings'] = 'Export settings';
@@ -216,7 +223,9 @@ $string['feedback'] = 'Feedback';
 $string['feedback_help'] = 'This box enables any comments about the grade to be added.';
 $string['feedbackadd'] = 'Add feedback';
 $string['feedbackedit'] = 'Edit feedback';
+$string['feedbackfiles'] = 'Feedback files';
 $string['feedbackforgradeitems'] = 'Feedback for {$a}';
+$string['feedbackhistoryfiles'] = 'Feedback history files';
 $string['feedbacks'] = 'Feedbacks';
 $string['feedbacksaved'] = 'Feedback saved';
 $string['feedbackview'] = 'View feedback';
@@ -326,6 +335,9 @@ $string['grades'] = 'Grades';
 $string['gradesforuser'] = 'Grades for {$a->user}';
 $string['singleview'] = 'Single view for {$a}';
 $string['gradesonly'] = 'Change to grades only';
+// The following 2 strings were not in 3.11.
+$string['gradesmoduledeletionpendingwarning'] = 'Warning: Activity deletion in progress! Some grades are about to be removed.';
+$string['gradesmoduledeletionprefix'] = '[Deletion in progress]';
 $string['gradessettings'] = 'Grade settings';
 $string['gradetype'] = 'Grade type';
 $string['gradetype_help'] = 'There are 4 grade types:
@@ -607,6 +619,45 @@ $string['prefletters'] = 'Grade letters and boundaries';
 $string['prefrows'] = 'Special rows';
 $string['prefshow'] = 'Show/hide toggles';
 $string['previewrows'] = 'Preview rows';
+// $string['privacy:metadata:categorieshistory'] = 'A record of previous versions of grade categories';
+// $string['privacy:metadata:filepurpose'] = 'Feedback files stored in the gradebook for a user.';
+// $string['privacy:metadata:grade_import_newitem'] = 'Temporary table for storing new grade_item names from grade import';
+// $string['privacy:metadata:grade_import_newitem:importcode'] = 'A unique batch code for identifying one batch of imports';
+// $string['privacy:metadata:grade_import_newitem:importer'] = 'User importing the data';
+// $string['privacy:metadata:grade_import_newitem:itemname'] = 'New grade item name';
+// $string['privacy:metadata:grade_import_values'] = 'Temporary table for importing grades';
+// $string['privacy:metadata:grade_import_values:feedback'] = 'Grade feedback';
+// $string['privacy:metadata:grade_import_values:finalgrade'] = 'Raw grade value';
+// $string['privacy:metadata:grade_import_values:importcode'] = 'A unique batch code for identifying one batch of imports';
+// $string['privacy:metadata:grade_import_values:importer'] = 'User importing the data';
+// $string['privacy:metadata:grade_import_values:importonlyfeedback'] = 'Flag if only feedback was imported';
+// $string['privacy:metadata:grade_import_values:userid'] = 'User whose grade was imported';
+// $string['privacy:metadata:grades'] = 'A record of grades';
+// $string['privacy:metadata:grades:aggregationstatus'] = 'The aggregation status';
+// $string['privacy:metadata:grades:aggregationweight'] = 'The weight in aggregation';
+// $string['privacy:metadata:grades:feedback'] = 'The feedback';
+// $string['privacy:metadata:grades:finalgrade'] = 'The grade';
+// $string['privacy:metadata:grades:information'] = 'Additional information about the grade';
+// $string['privacy:metadata:grades:timemodified'] = 'The time when the grade was last modified';
+// $string['privacy:metadata:grades:userid'] = 'The ID of the user whose grade it is';
+// $string['privacy:metadata:grades:usermodified'] = 'The ID of the user who last modified the record';
+// $string['privacy:metadata:gradeshistory'] = 'A record of the previous grades';
+// $string['privacy:metadata:history:loggeduser'] = 'The ID of the user who was logged in when the versioning occurred';
+// $string['privacy:metadata:history:timemodified'] = 'The time when grade versioning occurred';
+// $string['privacy:metadata:itemshistory'] = 'A record of previous versions of grade items';
+// $string['privacy:metadata:outcomes'] = 'A record of outcomes';
+// $string['privacy:metadata:outcomes:timemodified'] = 'The time when the record was modified';
+// $string['privacy:metadata:outcomes:usermodified'] = 'The user who last modified the record';
+// $string['privacy:metadata:outcomeshistory'] = 'A record of previous versions of outcomes';
+// $string['privacy:metadata:scale'] = 'A record of scales';
+// $string['privacy:metadata:scale:timemodified'] = 'The time when the record was last modified';
+// $string['privacy:metadata:scale:userid'] = 'The user who last modified the record';
+// $string['privacy:metadata:scalehistory'] = 'A record of previous versions of scales';
+// $string['privacy:path:relatedtome'] = 'Related to me';
+// $string['privacy:request:historyactiondelete'] = 'Delete';
+// $string['privacy:request:historyactioninsert'] = 'Insert';
+// $string['privacy:request:historyactionupdate'] = 'Update';
+// $string['privacy:request:unknowndeletedgradeitem'] = 'Unknown (the grade item was deleted)';
 $string['profilereport'] = 'User profile report';
 $string['profilereport_help'] = 'Grade report used on user profile page.';
 $string['publishing'] = 'Publishing';
@@ -786,6 +837,7 @@ $string['usergrade'] = 'User {$a->fullname} ({$a->useridnumber}) on item {$a->gr
 $string['userid'] = 'User ID';
 $string['useridnumberwarning'] = 'Users without an ID number are excluded from the export as they cannot be imported';
 $string['usermappingerror'] = 'User mapping error: Could not find user with {$a->field} of "{$a->value}".';
+$string['usermappingerrormultipleusersfound'] = 'User mapping error: Multiple users found with {$a->field} of "{$a->value}". Please use a more unique mapping field.';
 $string['usermappingerrorusernotfound'] = 'User mapping error. Could not find user.';
 $string['usermappingerrorcurrentgroup'] = 'User is not a member of current group.';
 $string['userpreferences'] = 'User preferences';
@@ -817,20 +869,20 @@ $string['yes'] = 'Yes';
 $string['yourgrade'] = 'Your grade';
 $string['coursecateditable'] = 'Course category editable';
 $string['coursecateditable_help'] = 'Disabling will make the course category name an uneditable field.';
-$string['droplow_limit'] = 'Drop the lowest limit';
-$string['droplow_limit_help'] = 'By applying this setting, the drop setting will be ignored until the number of droppable grades are > than the drop number.';
+
+// LSU enhancement.
+$string['w_ec'] = 'Weighted ' . $string['aggregationcoefextra'];
+$string['w_ec_help'] = 'By default, '.$string['aggregationcoefextra'].' items in either the '.$string['aggregateweightedmean2'].' or '.$string['aggregatesum'].' grade categories are weighted. Uncheck this option to allow extra credit items to simply add points to the aggregated category total.';
+// END LSU enhancement.
+
+// LSU enhancement.
 $string['manipulatecategories'] = 'Manipulate category totals';
 $string['manipulatecategories_help'] = 'Curve and offset category totals';
 $string['gradeitemmanualrecompute'] = 'Manual item recompute';
 $string['gradeitemmanualrecompute_help'] = 'Allow the gradebook to automatically adjust the raw grade boundaries when editing the real grade boundaries for Manual items.<br /><strong>When enabled, you will have the option of manipulating category totals.</strong>';
-$string['w_ec'] = 'Weighted ' . $string['aggregationcoefextra'];
-$string['w_ec_help'] = 'By default, '.$string['aggregationcoefextra'].' items in either the '.$string['aggregateweightedmean2'].' or '.$string['aggregatesum'].' grade categories are weighted. Uncheck this option to allow extra credit items to simply add points to the aggregated category total.';
-$string['privacy_ack'] = 'Student privacy';
-$string['privacy_ack_help'] = 'This setting blocks anyone from downloading student grades without confirming they will comply with all laws and policies regarding student rights.';
-$string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
-$string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
+// END LSU enhancement.
 
-// BEGIN LSU Better Letters
+// BEGIN LSU Better Letters.
 $string['letterscustompercents'] = 'Custom Percentages';
 $string['letterscustompercents_help'] = 'Allows for users to enter a value for the percents.';
 $string['lettersdefaultletters'] = 'F,D,C,B,A';
@@ -838,9 +890,9 @@ $string['lettersstrictletter'] = 'Strict Letter names';
 $string['lettersstrictletter_help'] = 'This setting forces the default letter names defined with the selected Letter names.';
 $string['lettersnames'] = 'Letter names';
 $string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
-// END LSU Better Letters
+// END LSU Better Letters.
 
-// BEGIN LSU Anonymous Grades
+// BEGIN LSU Anonymous Grades.
 $string['anonymous'] = 'Anonymous';
 $string['anonymousadjusts'] = 'Anonymous adjusts +/-';
 $string['anonymousadjusts_help'] = 'In anonymous grading, final grades cannot be changed once committed. Adjustments allow changes within the specified constraints.';
@@ -854,8 +906,19 @@ $string['anonymousitem'] = 'Anonymous item';
 $string['anonymouslessthanmin'] = 'The adjustment entered for {$a->itemname} for {$a->username} is less than -{$a->boundary}.<br />Anonymous graded courses do not allow for unlimited grading.';
 $string['anonymousmorethanmax'] = 'The adjustment entered for {$a->itemname} for {$a->username} is more than {$a->boundary}.<br />Anonymous graded courses do not allow for unlimited grading.';
 $string['anonymousnotallowed'] = 'Directly editing anonymous grades is not allowed.';
-// END LSU Anonymous Grades
+// END LSU Anonymous Grades.
 
+// BEGIN LSU Drop Lowest Limit.
+$string['droplow_limit'] = 'Drop the lowest limit';
+$string['droplow_limit_help'] = 'By applying this setting, the drop setting will be ignored until the number of droppable grades are > than the drop number.';
+// END LSU Drop Lowest Limit.
+
+// BEGIN LSU FERPA Student Privacy.
+$string['privacy_ack'] = 'Student privacy';
+$string['privacy_ack_help'] = 'This setting blocks anyone from downloading student grades without confirming they will comply with all laws and policies regarding student rights.';
+$string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
+$string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
+// END LSU FERPA Student Privacy.
 
 // Deprecated since 3.0.
 $string['categoriesanditems'] = 'Categories and items';

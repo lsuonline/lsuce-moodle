@@ -26,14 +26,15 @@
 defined('MOODLE_INTERNAL') || die;
 
 if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+    die('Direct access to this script is forbidden.'); // It must be included from a Moodle page.
 }
 
 require_once($CFG->libdir.'/formslib.php');
 
 class cas_cat_form extends moodleform {
 
-    function definition() {
+    // Added 'public' scope to this function - unsure of intent.
+    public function definition() {
         global $CFG, $DB, $OUTPUT;
         $mform = $this->_form;
         $attributes = array(
@@ -49,37 +50,39 @@ class cas_cat_form extends moodleform {
         $categories = $this->_customdata['categorySettingsData'];
         $mform->addElement('hidden', 'sesskey', sesskey());
         $mform->setType('id', PARAM_INT);
-        
-        $mform->addElement('html', '<p class="error-notification-header alert alert-error">' . get_string('submit_error', 'local_cas_help_links') .'</p>');
-        
+
+        $mform->addElement('html'
+                          , '<p class="error-notification-header alert alert-error">'
+                          . get_string('submit_error', 'local_cas_help_links')
+                          .'</p>');
+
         $mform->addElement('header', 'category_preferences', $catheader);
-        
+
         foreach ($categories as $category) {
-            
-            // "hide" checkbox
+
+            // Hide checkbox.
             $hidecatlinks = get_string('hide_category_links', 'local_cas_help_links', $category['category_name']);
 
             $mform->addElement('advcheckbox', $category['display_input_name'], $hidecatlinks, null, $attributes, array(0, 1));
             $mform->setDefault($category['display_input_name'], $category['hide_link']);
 
-            // url input
+            // URL input.
             $mform->addElement('text', $category['link_input_name'], $category['category_name'], $lattributes);
             $mform->disabledIf($category['link_input_name'], $category['display_input_name'], 'checked');
             $mform->setDefault($category['link_input_name'], $category['link_url']);
             $mform->setType($category['link_input_name'], PARAM_TEXT);
-            
         }
-        
+
         $mform->addElement('header', 'course_match_preferences', $coursematchheader);
 
-        $hidecoursematchlinks = get_string('hide_coursematch_links', 'local_cas_help_links', NULL);
+        $hidecoursematchlinks = get_string('hide_coursematch_links', 'local_cas_help_links', null);
 
         $mform->addElement('checkbox', 'coursematch_display', $hidecoursematchlinks);
 
         $mform->addElement('text', 'coursematch_dept', get_string('coursematch_dept', 'local_cas_help_links'), []);
         $mform->setDefault('coursematch_dept', 'MISC');
         $mform->setType('coursematch_dept', PARAM_TEXT);
-        
+
         $mform->addElement('text', 'coursematch_number', get_string('coursematch_number', 'local_cas_help_links'), []);
         $mform->setDefault('coursematch_number', '1000');
         $mform->setType('coursematch_number', PARAM_TEXT);

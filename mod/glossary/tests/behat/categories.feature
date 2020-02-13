@@ -23,17 +23,10 @@ Feature: Glossary entries can be organised in categories
     And the following "activities" exist:
       | activity | name       | intro                                                           | course | idnumber  |
       | label    | name       | check autolinking of CategoryAutoLinks and CategoryNoLinks text | C1     | label1    |
-# Log in as admin and enable autolinking filter
-    And I log in as "admin"
-    And I expand "Site administration" node
-    And I expand "Plugins" node
-    And I expand "Filters" node
-    And I follow "Manage filters"
-    And I click on "On" "option" in the "Glossary auto-linking" "table_row"
-    And I log out
+    And the "glossary" filter is "on"
 # Log in as a teacher and make sure nothing is yet autolinked
     And I log in as "teacher1"
-    When I follow "Course 1"
+    When I am on "Course 1" course homepage
     Then I should see "CategoryAutoLinks"
     And I should see "CategoryNoLinks"
     And "a.glossary.autolink" "css_element" should not exist
@@ -41,16 +34,16 @@ Feature: Glossary entries can be organised in categories
     And I follow "MyGlossary"
     And I follow "Browse by category"
     And I press "Edit categories"
-    And I press "Add Category"
+    And I press "Add category"
     And I set the field "name" to "CategoryNoLinks"
     And I press "Save changes"
     And I should see "0 Entries" in the "CategoryNoLinks" "table_row"
-    And I press "Add Category"
+    And I press "Add category"
     And I set the field "name" to "CategoryAutoLinks"
     And I set the field "usedynalink" to "Yes"
     And I press "Save changes"
     And I should see "0 Entries" in the "CategoryAutoLinks" "table_row"
-    And I press "Add Category"
+    And I press "Add category"
     And I set the field "name" to "Category2"
     And I press "Save changes"
     And I click on "Edit" "link" in the "Category2" "table_row"
@@ -87,24 +80,24 @@ Feature: Glossary entries can be organised in categories
     And I follow "Browse by category"
     And "//h3[contains(.,'CATEGORYAUTOLINKS')]" "xpath_element" should appear before "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element"
     And "//h4[contains(.,'EntryCategoryAL')]" "xpath_element" should appear before "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element"
-    And "//h4[contains(.,'EntryCategoryBoth')]" "xpath_element" should appear before "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element"
-    And "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element" should appear before "//h4[contains(.,'EntryCategoryBoth')]" "xpath_element"
+    And "(//h4[contains(.,'EntryCategoryBoth')])[1]" "xpath_element" should appear before "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element"
+    And "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element" should appear before "(//h4[contains(.,'EntryCategoryBoth')])[2]" "xpath_element"
     And "//h4[contains(.,'EntryCategoryNL')]" "xpath_element" should appear after "//h3[contains(.,'CATEGORYNOLINKS')]" "xpath_element"
     And I should not see "EntryNoCategory"
     And I set the field "hook" to "Not categorised"
-    And I click on "Not categorised" "option" in the "#catmenu select" "css_element"
+    And I set the field "Categories" to "Not categorised"
     And I should see "EntryNoCategory"
     And I should not see "EntryCategoryNL"
     And I should not see "EntryCategoryAL"
     And I should not see "EntryCategoryBoth"
 # Check that category is autolinked from the text in the course
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I should see "CategoryAutoLinks"
     And I should see "CategoryAutoLinks" in the "a.glossary.autolink" "css_element"
     And I should see "CategoryNoLinks"
     And "//a[contains(.,'CategoryNoLinks')]" "xpath_element" should not exist
 # Delete a category with entries
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "MyGlossary"
     And I follow "Browse by category"
     And I press "Edit categories"
@@ -119,8 +112,7 @@ Feature: Glossary entries can be organised in categories
     And I should not see "EntryNoCategory"
     And I should not see "EntryCategoryAL"
     And I should see "EntryCategoryBoth"
-    And I click on "Not categorised" "option" in the "#catmenu select" "css_element"
+    And I set the field "Categories" to "Not categorised"
     And I should see "EntryNoCategory"
     And I should see "EntryCategoryAL"
     And I should not see "EntryCategoryBoth"
-    And I log out

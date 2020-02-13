@@ -191,7 +191,7 @@ class graded_users_iterator {
                             LEFT JOIN (SELECT * FROM {user_info_data}
                                 WHERE fieldid = :cf$customfieldscount) cf$customfieldscount
                             ON u.id = cf$customfieldscount.userid";
-                    $userfields .= ", cf$customfieldscount.data AS customfield_{$field->shortname}";
+                    $userfields .= ", cf$customfieldscount.data AS customfield_{$field->customid}";
                     $params['cf'.$customfieldscount] = $field->customid;
                     $customfieldscount++;
                 }
@@ -453,7 +453,11 @@ function grade_get_graded_users_select($report, $course, $userid, $groupid, $inc
     if (!empty($menususpendedusers)) {
         $menu[] = array(get_string('suspendedusers') => $menususpendedusers);
     }
-    $select = new single_select(new moodle_url('/grade/report/'.$report.'/index.php', array('id'=>$course->id)), 'userid', $menu, $userid);
+    $gpr = new grade_plugin_return(array('type' => 'report', 'course' => $course, 'groupid' => $groupid));
+    $select = new single_select(
+        new moodle_url('/grade/report/'.$report.'/index.php', $gpr->get_options()),
+        'userid', $menu, $userid
+    );
     $select->label = $label;
     $select->formid = 'choosegradeuser';
     return $select;
@@ -682,9 +686,8 @@ function print_natural_aggregation_upgrade_notice($courseid, $context, $thispage
             $fixurl = new moodle_url($thispage, $urlparams);
             $fixbutton = $OUTPUT->single_button($fixurl, $fixmessage, 'get');
 
-//            This is REALLY annoying for those of us without grade issues.
-//            $html .= $OUTPUT->notification($message);
-//            $html .= $fixbutton;
+            $html .= $OUTPUT->notification($message);
+            $html .= $fixbutton;
         }
     }
 
@@ -713,7 +716,6 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
     $menu = array();
     $count = 0;
     $active = '';
-    $category = isset($PAGE->category->id) ? $PAGE->category->id : '1';
 
     foreach ($plugin_info as $plugin_type => $plugins) {
         if ($plugin_type == 'strings') {
@@ -721,15 +723,11 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
         }
 
         $first_plugin = reset($plugins);
+
         $sectionname = $plugin_info['strings'][$plugin_type];
         $section = array();
+
         foreach ($plugins as $plugin) {
-
-            if ($category != $CFG->grade_anonymous_cats && $plugin->id == 'quick_edit') {
-                unset ($plugin);
-                continue;
-            }
-
             $link = $plugin->link->out(false);
             $section[$link] = $plugin->string;
             $count++;
@@ -819,13 +817,23 @@ function grade_print_tabs($active_type, $active_plugin, $plugin_info, $return=fa
         }
     }
 
-    $tabs[] = $top_row;
-    $tabs[] = $bottom_row;
+    // Do not display rows that contain only one item, they are not helpful.
+    if (count($top_row) > 1) {
+        $tabs[] = $top_row;
+    }
+    if (count($bottom_row) > 1) {
+        $tabs[] = $bottom_row;
+    }
+    if (empty($tabs)) {
+        return;
+    }
+
+    $rv = html_writer::div(print_tabs($tabs, $active_plugin, $inactive, $activated, true), 'grade-navigation');
 
     if ($return) {
-        return print_tabs($tabs, $active_plugin, $inactive, $activated, true);
+        return $rv;
     } else {
-        print_tabs($tabs, $active_plugin, $inactive, $activated);
+        echo $rv;
     }
 }
 
@@ -976,6 +984,13 @@ function print_grade_page_head($courseid, $active_type, $active_plugin=null,
                                $user = null) {
     global $CFG, $OUTPUT, $PAGE;
 
+    // Put a warning on all gradebook pages if the course has modules currently scheduled for background deletion.
+    require_once($CFG->dirroot . '/course/lib.php');
+    if (course_modules_pending_deletion($courseid, true)) {
+        \core\notification::add(get_string('gradesmoduledeletionpendingwarning', 'grades'),
+            \core\output\notification::NOTIFY_WARNING);
+    }
+
     if ($active_type === 'preferences') {
         // In Moodle 2.8 report preferences were moved under 'settings'. Allow backward compatibility for 3rd party grade reports.
         $active_type = 'settings';
@@ -1045,7 +1060,8 @@ function print_grade_page_head($courseid, $active_type, $active_plugin=null,
             if (isset($user)) {
                 $output = $OUTPUT->context_header(
                         array(
-                            'heading' => fullname($user),
+                            'heading' => html_writer::link(new moodle_url('/user/view.php', array('id' => $user->id,
+                                'course' => $courseid)), fullname($user)),
                             'user' => $user,
                             'usercontext' => context_user::instance($user->id)
                         ), 2
@@ -1085,30 +1101,82 @@ function print_grade_page_head($courseid, $active_type, $active_plugin=null,
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class grade_plugin_return {
+    /**
+     * Type of grade plugin (e.g. 'edit', 'report')
+     *
+     * @var string
+     */
     public $type;
+    /**
+     * Name of grade plugin (e.g. 'grader', 'overview')
+     *
+     * @var string
+     */
     public $plugin;
+    /**
+     * Course id being viewed
+     *
+     * @var int
+     */
     public $courseid;
+    /**
+     * Id of user whose information is being viewed/edited
+     *
+     * @var int
+     */
     public $userid;
+    /**
+     * Id of group for which information is being viewed/edited
+     *
+     * @var int
+     */
+    public $groupid;
+    /**
+     * Current page # within output
+     *
+     * @var int
+     */
     public $page;
 
     /**
      * Constructor
      *
-     * @param array $params - associative array with return parameters, if null parameter are taken from _GET or _POST
+     * @param array $params - associative array with return parameters, if not supplied parameter are taken from _GET or _POST
      */
-    public function __construct($params = null) {
-        if (empty($params)) {
-            $this->type     = optional_param('gpr_type', null, PARAM_SAFEDIR);
-            $this->plugin   = optional_param('gpr_plugin', null, PARAM_PLUGIN);
-            $this->courseid = optional_param('gpr_courseid', null, PARAM_INT);
-            $this->userid   = optional_param('gpr_userid', null, PARAM_INT);
-            $this->page     = optional_param('gpr_page', null, PARAM_INT);
+    public function __construct($params = []) {
+        $this->type     = optional_param('gpr_type', null, PARAM_SAFEDIR);
+        $this->plugin   = optional_param('gpr_plugin', null, PARAM_PLUGIN);
+        $this->courseid = optional_param('gpr_courseid', null, PARAM_INT);
+        $this->userid   = optional_param('gpr_userid', null, PARAM_INT);
+        $this->groupid  = optional_param('gpr_groupid', null, PARAM_INT);
+        $this->page     = optional_param('gpr_page', null, PARAM_INT);
 
+        foreach ($params as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        // Allow course object rather than id to be used to specify course
+        // - avoid unnecessary use of get_course.
+        if (array_key_exists('course', $params)) {
+            $course = $params['course'];
+            $this->courseid = $course->id;
         } else {
-            foreach ($params as $key=>$value) {
-                if (property_exists($this, $key)) {
-                    $this->$key = $value;
+            $course = null;
+        }
+        // If group has been explicitly set in constructor parameters,
+        // we should respect that.
+        if (!array_key_exists('groupid', $params)) {
+            // Otherwise, 'group' in request parameters is a request for a change.
+            // In that case, or if we have no group at all, we should get groupid from
+            // groups_get_course_group, which will do some housekeeping as well as
+            // give us the correct value.
+            $changegroup = optional_param('group', -1, PARAM_INT);
+            if ($changegroup !== -1 or (empty($this->groupid) and !empty($this->courseid))) {
+                if ($course === null) {
+                    $course = get_course($this->courseid);
                 }
+                $this->groupid = groups_get_course_group($course, true);
             }
         }
     }
@@ -1146,6 +1214,10 @@ class grade_plugin_return {
             $params['userid'] = $this->userid;
         }
 
+        if (!empty($this->groupid)) {
+            $params['group'] = $this->groupid;
+        }
+
         if (!empty($this->page)) {
             $params['page'] = $this->page;
         }
@@ -1178,6 +1250,11 @@ class grade_plugin_return {
 
         if (!empty($this->userid)) {
             $url .= $glue.'userid='.$this->userid;
+            $glue = '&amp;';
+        }
+
+        if (!empty($this->groupid)) {
+            $url .= $glue.'group='.$this->groupid;
             $glue = '&amp;';
         }
 
@@ -1219,9 +1296,14 @@ class grade_plugin_return {
             $result .= '<input type="hidden" name="gpr_userid" value="'.$this->userid.'" />';
         }
 
+        if (!empty($this->groupid)) {
+            $result .= '<input type="hidden" name="gpr_groupid" value="'.$this->groupid.'" />';
+        }
+
         if (!empty($this->page)) {
             $result .= '<input type="hidden" name="gpr_page" value="'.$this->page.'" />';
         }
+        return $result;
     }
 
     /**
@@ -1254,6 +1336,11 @@ class grade_plugin_return {
             $mform->setType('gpr_userid', PARAM_INT);
         }
 
+        if (!empty($this->groupid)) {
+            $mform->addElement('hidden', 'gpr_groupid', $this->groupid);
+            $mform->setType('gpr_groupid', PARAM_INT);
+        }
+
         if (!empty($this->page)) {
             $mform->addElement('hidden', 'gpr_page', $this->page);
             $mform->setType('gpr_page', PARAM_INT);
@@ -1284,6 +1371,10 @@ class grade_plugin_return {
 
         if (!empty($this->userid)) {
             $url->param('gpr_userid', $this->userid);
+        }
+
+        if (!empty($this->groupid)) {
+            $url->param('gpr_groupid', $this->groupid);
         }
 
         if (!empty($this->page)) {
@@ -1547,7 +1638,8 @@ class grade_structure {
             $header .= $this->get_element_icon($element, $spacerifnone);
         }
 
-        $header .= $element['object']->get_name($fulltotal);
+        $title = $element['object']->get_name($fulltotal);
+        $header .= $title;
 
         if ($element['type'] != 'item' and $element['type'] != 'categoryitem' and
             $element['type'] != 'courseitem') {
@@ -1557,11 +1649,12 @@ class grade_structure {
         if ($withlink && $url = $this->get_activity_link($element)) {
             $a = new stdClass();
             $a->name = get_string('modulename', $element['object']->itemmodule);
+            $a->title = $title;
             $title = get_string('linktoactivity', 'grades', $a);
 
-            $header = html_writer::link($url, $header, array('title' => $title));
+            $header = html_writer::link($url, $header, array('title' => $title, 'class' => 'gradeitemheader'));
         } else {
-            $header = html_writer::span($header);
+            $header = html_writer::span($header, 'gradeitemheader', array('title' => $title, 'tabindex' => '0'));
         }
 
         if ($withdescription) {
@@ -2113,7 +2206,12 @@ class grade_seq extends grade_structure {
         }
         unset($element['children']);
 
-        if ($category_grade_last and count($children) > 1) {
+        if ($category_grade_last and count($children) > 1 and
+            (
+                $children[0]['type'] === 'courseitem' or
+                $children[0]['type'] === 'categoryitem'
+            )
+        ) {
             $cat_item = array_shift($children);
             array_push($children, $cat_item);
         }
@@ -3177,7 +3275,7 @@ abstract class grade_helper {
      */
     public static function get_user_field_value($user, $field) {
         if (!empty($field->customid)) {
-            $fieldname = 'customfield_' . $field->shortname;
+            $fieldname = 'customfield_' . $field->customid;
             if (!empty($user->{$fieldname}) || is_numeric($user->{$fieldname})) {
                 $fieldvalue = $user->{$fieldname};
             } else {

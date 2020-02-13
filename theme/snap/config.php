@@ -18,7 +18,7 @@
  * Theme config
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -59,28 +59,21 @@ if ($themeissnap && $notajaxscript) {
 $THEME->doctype = 'html5';
 $THEME->yuicssmodules = array('cssgrids'); // This is required for joule grader.
 $THEME->name = 'snap';
-$THEME->parents = array();
-$THEME->sheets = array('moodle');
+$THEME->parents = array('boost');
+
+$THEME->enable_dock = false;
+$THEME->prescsscallback = 'theme_snap_get_pre_scss';
+$THEME->scss = function($theme) {
+    return theme_snap_get_main_scss_content($theme);
+};
+$THEME->csspostprocess = 'theme_snap_process_css';
 $THEME->supportscssoptimisation = false;
 
 $THEME->editor_sheets = array('editor');
 
-$THEME->plugins_exclude_sheets = array(
-    'block' => array(
-        'html'
-    ),
-);
-
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
 
 $THEME->layouts = array(
-    'format_flexpage' => array(
-        'file' => 'flexpage.php',
-        'regions' => array('side-top', 'side-pre', 'main', 'side-main-box', 'side-post'),
-        'defaultregion' => 'main',
-        'options' => array('langmenu' => true),
-    ),
-
     // Most backwards compatible layout without the blocks - this is the layout used by default.
     'base' => array(
         'file' => 'default.php',
@@ -104,7 +97,7 @@ $THEME->layouts = array(
         'options' => array('langmenu' => true),
     ),
     'coursecategory' => array(
-        'file' => 'default.php',
+        'file' => 'course-index-category.php',
         'regions' => array(),
     ),
     // Part of course, typical for modules - default page layout if $cm specified in require_login().
@@ -194,12 +187,9 @@ $THEME->layouts = array(
     ),
 );
 
-$THEME->javascripts = array(
-);
-$THEME->javascripts_footer = array(
-);
+$THEME->javascripts = array();
+$THEME->javascripts_footer = array();
 
-$THEME->csspostprocess = 'theme_snap_process_css';
 $THEME->hidefromselector = false;
 
 // For use with Flexpage layouts.
@@ -219,3 +209,11 @@ if ($themeissnap && $notajaxscript) {
     }
 
 }
+
+$runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
+$requiredblocks = array('settings');
+if ($runningbehattest) {
+    array_push($requiredblocks, 'navigation');
+}
+
+$THEME->requiredblocks = $requiredblocks;

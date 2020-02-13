@@ -22,23 +22,25 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Set and get the config variable
+// Set and get the config variable.
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once('lib.php');
 
-// Increase the max execution time to 2 hrs
-ini_set('max_execution_time','7200');
+// Increase the max execution time to 2 hrs.
+ini_set('max_execution_time', '7200');
 
 require_login();
 
-$_s = function($key) { return get_string($key, 'block_my_picture'); };
+$s = function($key) {
+    return get_string($key, 'block_my_picture');
+};
 
 if (!is_siteadmin($USER->id)) {
     print_error('need_permission', 'block_mypic');
 }
 
-$header = $_s('fetch_missing_title');
-$pluginname = $_s('pluginname');
+$header = $s('fetch_missing_title');
+$pluginname = $s('pluginname');
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/blocks/my_picture/fetch_missing.php');
@@ -48,22 +50,18 @@ $PAGE->set_heading($SITE->shortname . ': ' . $pluginname);
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($header);
-
 echo '<div>';
-
-echo $_s('fetching_start') . '<br />';
+echo $s('fetching_start') . '<br />';
 
 $limit = get_config('block_my_picture', 'cron_users');
-
 $users = mypic_get_users_without_pictures($limit);
 
 if ($users) {
-    $force_update = false;
-    mypic_batch_update($users, $force_update, '<br />');
+    $forceupdate = false;
+    mypic_batch_update($users, $forceupdate, '<br />');
 } else {
-    echo $_s('no_missing_pictures') . '<br />';
+    echo $s('no_missing_pictures') . '<br />';
 }
 
 echo '</div>';
-
 echo $OUTPUT->footer();

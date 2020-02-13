@@ -81,16 +81,19 @@ $string['negcovar_help'] = 'This question\'s grade for this set of attempts on t
 Our equation for effective question weight cannot be calculated in this case. The calculations for effective question weight for other questions in this quiz are the effective question weight for these questions if the highlighted questions with a negative covariance are given a maximum grade of zero.
 
 If you edit a quiz and give these question(s) with negative covariance a max grade of zero then the effective question weight of these questions will be zero and the real effective question weight of other questions will be as calculated now.';
+$string['nogradedattempts'] = 'No attempts have been made at this quiz, or all attempts have questions that need manual grading.';
 $string['nostudentsingroup'] = 'There are no students in this group yet';
 $string['optiongrade'] = 'Partial credit';
 $string['partofquestion'] = 'Part of question';
 $string['pluginname'] = 'Statistics';
+$string['privacy:metadata'] = 'Although the Quiz Statistics plugin has database tables, the data is aggregate data and does not describe a unique indidividual.';
 $string['position'] = 'Position';
 $string['positions'] = 'Position(s)';
 $string['questioninformation'] = 'Question information';
 $string['questionname'] = 'Question name';
 $string['questionnumber'] = 'Q#';
 $string['questionstatistics'] = 'Question statistics';
+$string['quizstatisticscleanuptask'] = 'Clean up old quiz statistics cache records';
 $string['questionstatsfilename'] = 'questionstats';
 $string['questiontype'] = 'Question type';
 $string['quizinformation'] = 'Quiz information';
@@ -98,6 +101,8 @@ $string['quizname'] = 'Quiz name';
 $string['quizoverallstatistics'] = 'Quiz overall statistics';
 $string['quizstructureanalysis'] = 'Quiz structure analysis';
 $string['random_guess_score'] = 'Random guess score';
+$string['rangeofvalues'] = 'Range of statistics for these questions';
+$string['rangebetween'] = '{$a->min} − {$a->max}';
 $string['recalculatenow'] = 'Recalculate now';
 $string['reportsettings'] = 'Statistics calculation settings';
 $string['response'] = 'Response';
@@ -113,5 +118,5 @@ $string['statisticsreportgraph'] = 'Statistics for question positions';
 $string['statistics:view'] = 'View statistics report';
 $string['statsfor'] = 'Quiz statistics (for {$a})';
 $string['variant'] = 'Variant';
+$string['viewanalysis'] = 'View details';
 $string['whichtries'] = 'Analyze responses for';
-

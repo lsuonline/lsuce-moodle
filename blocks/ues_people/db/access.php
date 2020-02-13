@@ -19,8 +19,12 @@
  *
  * @package    block_ues_people
  * @copyright  2014 Louisiana State University
+ * @copyright  2014 Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 $capabilities = array(
     'block/ues_people:viewmeta' => array(
         'riskbitmask' => RISK_PERSONAL,
@@ -32,7 +36,7 @@ $capabilities = array(
             'teacher' => CAP_ALLOW
         ),
     ),
-    
+
     'block/ues_people:addinstance' => array(
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
@@ -44,7 +48,7 @@ $capabilities = array(
         ),
     'clonepermissionsfrom' => 'moodle/site:manageblocks'
     ),
-    
+
     'block/ues_people:myaddinstance' => array(
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',

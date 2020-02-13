@@ -72,7 +72,7 @@ class behat_workshopallocation_manual extends behat_base {
             $this->find('xpath', $xpathtd."/descendant::input[@value=$go]")->click();
         } else {
             // With Javascript we just wait for the page to reload.
-            $this->getSession()->wait(self::EXTENDED_TIMEOUT, self::PAGE_READY_JS);
+            $this->getSession()->wait(behat_base::get_extended_timeout(), self::PAGE_READY_JS);
         }
         // Check the success string to appear.
         $allocatedtext = behat_context_helper::escape(
@@ -90,7 +90,7 @@ class behat_workshopallocation_manual extends behat_base {
     public function i_allocate_submissions_in_workshop_as($workshopname, TableNode $table) {
 
         $this->find_link($workshopname)->click();
-        $this->find_link(get_string('allocate', 'workshop'))->click();
+        $this->execute('behat_navigation::i_navigate_to_in_current_page_administration', get_string('allocate', 'workshop'));
         $rows = $table->getRows();
         $reviewer = $participant = null;
         for ($i = 0; $i < count($rows[0]); $i++) {

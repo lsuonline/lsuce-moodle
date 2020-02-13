@@ -1,4 +1,18 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 $string['pluginname'] = 'Post Grades';
 
@@ -52,13 +66,13 @@ $string['section_compliance'] = 'Section {$a} compliance';
 $string['law_quick_edit_compliance'] = 'QE Compliance';
 $string['law_quick_edit_compliance_help'] = 'This setting allows the quick edit screen to display compliance warnings when grading regular grade items.';
 
-// UES People
+// UES People.
 $string['student_audit'] = 'Auditing';
 
-// Quick Edit Strings
+// Quick Edit Strings.
 $string['student_incomplete'] = 'Incomplete';
 
-// Form strings
+// Form strings.
 $string['posting_for'] = '{$a->post_type} for {$a->fullname} {$a->course_name} Section {$a->sec_number}';
 $string['view_gradsheet'] = 'View Gradesheet';
 $string['reset_posting'] = 'Reset Postings';
@@ -81,7 +95,7 @@ $string['law_upper'] = 'LAW Upper Class';
 $string['law_first'] = 'LAW First Year';
 $string['law_degree'] = 'LAW Degree Candidates';
 
-// LAW return lib
+// LAW return lib.
 $string['sizeexplain'] = 'Your grades must conform to the {$a->description}
 curve compliance. Once your grades meet the standard, then you will be able
 to post to the mainframe. If you are able to post now, yet you see still see
@@ -93,7 +107,7 @@ The median value of your grades must be within {$a->upper} - {$a->lower}.
 Your median value is {$a->median}. If you are able to post now, treat the
 guideline as a <strong>recommendation</strong>.';
 
-// LAW config page
+// LAW config page.
 $string['law_scale'] = 'LAW scale';
 $string['law_scale_help'] = 'This scale will be used for LAW courses of the type `LP`.';
 $string['mean'] = 'Mean';

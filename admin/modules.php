@@ -87,14 +87,18 @@
     $table->set_attribute('class', 'admintable generaltable');
     $table->setup();
 
-    foreach ($modules as $module) {
+    $pluginmanager = core_plugin_manager::instance();
 
-        if (!file_exists("$CFG->dirroot/mod/$module->name/lib.php")) {
+    foreach ($modules as $module) {
+        $plugininfo = $pluginmanager->get_plugin_info('mod_'.$module->name);
+        $status = $plugininfo->get_status();
+
+        if ($status === core_plugin_manager::PLUGIN_STATUS_MISSING) {
             $strmodulename = '<span class="notifyproblem">'.$module->name.' ('.get_string('missingfromdisk').')</span>';
             $missing = true;
         } else {
             // took out hspace="\10\", because it does not validate. don't know what to replace with.
-            $icon = "<img src=\"" . $OUTPUT->pix_url('icon', $module->name) . "\" class=\"icon\" alt=\"\" />";
+            $icon = "<img src=\"" . $OUTPUT->image_url('icon', $module->name) . "\" class=\"icon\" alt=\"\" />";
             $strmodulename = $icon.' '.get_string('modulename', $module->name);
             $missing = false;
         }
@@ -130,11 +134,11 @@
             $class   = '';
         } else if ($module->visible) {
             $visible = "<a href=\"modules.php?hide=$module->name&amp;sesskey=".sesskey()."\" title=\"$strhide\">".
-                       "<img src=\"" . $OUTPUT->pix_url('t/hide') . "\" class=\"iconsmall\" alt=\"$strhide\" /></a>";
+                       $OUTPUT->pix_icon('t/hide', $strhide) . '</a>';
             $class   = '';
         } else {
             $visible = "<a href=\"modules.php?show=$module->name&amp;sesskey=".sesskey()."\" title=\"$strshow\">".
-                       "<img src=\"" . $OUTPUT->pix_url('t/show') . "\" class=\"iconsmall\" alt=\"$strshow\" /></a>";
+                       $OUTPUT->pix_icon('t/show', $strshow) . '</a>';
             $class =   'dimmed_text';
         }
         if ($module->name == "forum") {

@@ -17,7 +17,7 @@
 /**
  * Course action for affecting section visibility.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -37,9 +37,8 @@ class course_action_section_move extends course_action_section_base {
     public function __construct($course, section_info $section, $onsectionpage = false) {
 
         $coursecontext = context_course::instance($course->id);
-        $isstealth = isset($course->numsections) && ($section->section > $course->numsections);
 
-        if (!$isstealth && !$onsectionpage && has_capability('moodle/course:movesections', $coursecontext)) {
+        if (!$onsectionpage && has_capability('moodle/course:movesections', $coursecontext)) {
             $this->url = '#section-'.$section->section;
             $sectionname = !empty($section->name) ? $section->name : get_section_name($course, $section);
             $this->title = s(get_string('move', 'theme_snap', $sectionname));

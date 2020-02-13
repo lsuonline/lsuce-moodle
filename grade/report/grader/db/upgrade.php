@@ -131,6 +131,6 @@ function xmldb_gradereport_grader_upgrade($oldversion) {
     }
     // END LSU Anonymous Grade DB upgrade
 
-    upgrade_plugin_savepoint(true, 2016052302, 'gradereport', 'grader');
+    upgrade_plugin_savepoint(true, 2019121601, 'gradereport', 'grader');
     return true;
 }

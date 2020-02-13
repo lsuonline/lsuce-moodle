@@ -52,7 +52,7 @@ class core_question_renderer extends plugin_renderer_base {
     public function question_preview_link($questionid, context $context, $showlabel) {
         if ($showlabel) {
             $alt = '';
-            $label = ' ' . get_string('preview');
+            $label = get_string('preview');
             $attributes = array();
         } else {
             $alt = get_string('preview');
@@ -89,7 +89,7 @@ class core_question_renderer extends plugin_renderer_base {
 
         $output = '';
         $output .= html_writer::start_tag('div', array(
-            'id' => 'q' . $qa->get_slot(),
+            'id' => $qa->get_outer_question_div_unique_id(),
             'class' => implode(' ', array(
                 'que',
                 $qa->get_question()->qtype->name(),
@@ -156,15 +156,15 @@ class core_question_renderer extends plugin_renderer_base {
      * @return HTML fragment.
      */
     protected function number($number) {
+        if (trim($number) === '') {
+            return '';
+        }
         $numbertext = '';
-        if (is_numeric($number)) {
+        if (trim($number) === 'i') {
+            $numbertext = get_string('information', 'question');
+        } else {
             $numbertext = get_string('questionx', 'question',
                     html_writer::tag('span', $number, array('class' => 'qno')));
-        } else if ($number == 'i') {
-            $numbertext = get_string('information', 'question');
-        }
-        if (!$numbertext) {
-            return '';
         }
         return html_writer::tag('h3', $numbertext, array('class' => 'no'));
     }
@@ -323,21 +323,23 @@ class core_question_renderer extends plugin_renderer_base {
         if ($flagged) {
             $icon = 'i/flagged';
             $alt = get_string('flagged', 'question');
+            $label = get_string('clickunflag', 'question');
         } else {
             $icon = 'i/unflagged';
             $alt = get_string('notflagged', 'question');
+            $label = get_string('clickflag', 'question');
         }
         $attributes = array(
-            'src' => $this->pix_url($icon),
+            'src' => $this->image_url($icon),
             'alt' => $alt,
+            'class' => 'questionflagimage',
         );
         if ($id) {
             $attributes['id'] = $id;
         }
         $img = html_writer::empty_tag('img', $attributes);
-        if ($flagged) {
-            $img .= ' ' . get_string('flagged', 'question');
-        }
+        $img .= html_writer::span($label);
+
         return $img;
     }
 

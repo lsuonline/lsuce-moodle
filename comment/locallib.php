@@ -68,7 +68,7 @@ class comment_manager {
                        ON u.id=c.userid
               ORDER BY c.timecreated ASC";
         $rs = $DB->get_recordset_sql($sql, null, $start, $this->perpage);
-        $formatoptions = array('overflowdiv' => true);
+        $formatoptions = array('overflowdiv' => true, 'blanktarget' => true);
         foreach ($rs as $item) {
             // Set calculated fields
             $item->fullname = fullname($item);
@@ -157,7 +157,8 @@ class comment_manager {
 
         $table = new html_table();
         $table->head = array (
-            html_writer::checkbox('selectall', '', false, get_string('selectall'), array('id'=>'comment_select_all', 'class'=>'comment-report-selectall')),
+            html_writer::checkbox('selectall', '', false, get_string('selectall'), array('id' => 'comment_select_all',
+                'class' => 'mr-1')),
             get_string('author', 'search'),
             get_string('content'),
             get_string('action')
@@ -169,6 +170,7 @@ class comment_manager {
 
         $link = new moodle_url('/comment/index.php', array('action' => 'delete', 'sesskey' => sesskey()));
         foreach ($comments as $c) {
+            $userdata = html_writer::link(new moodle_url('/user/profile.php', ['id' => $c->userid]), $c->fullname);
             $this->setup_plugin($c);
             if (!empty($this->plugintype)) {
                 $context_url = plugin_callback($this->plugintype, $this->pluginname, 'comment', 'url', array($c));
@@ -179,7 +181,7 @@ class comment_manager {
                 $action .= html_writer::empty_tag('br');
                 $action .= html_writer::link($context_url, get_string('commentincontext'), array('target'=>'_blank'));
             }
-            $table->data[] = array($checkbox, $c->fullname, $c->content, $action);
+            $table->data[] = array($checkbox, $userdata, $c->content, $action);
         }
         echo html_writer::table($table);
         echo $OUTPUT->paging_bar($count, $page, $this->perpage, $CFG->wwwroot.'/comment/index.php');
@@ -216,5 +218,51 @@ class comment_manager {
             }
         }
         return true;
+    }
+
+    /**
+     * Get comments created since a given time.
+     *
+     * @param  stdClass $course    course object
+     * @param  stdClass $context   context object
+     * @param  string $component   component name
+     * @param  int $since          the time to check
+     * @param  stdClass $cm        course module object
+     * @return array list of comments db records since the given timelimit
+     * @since Moodle 3.2
+     */
+    public function get_component_comments_since($course, $context, $component, $since, $cm = null) {
+        global $DB;
+
+        $commentssince = array();
+        $where = 'contextid = ? AND component = ? AND timecreated > ?';
+        $comments = $DB->get_records_select('comments', $where, array($context->id, $component, $since));
+        // Check item by item if we have permissions.
+        $managersviewstatus = array();
+        foreach ($comments as $comment) {
+            // Check if the manager for the item is cached.
+            if (!isset($managersviewstatus[$comment->commentarea]) or
+                    !isset($managersviewstatus[$comment->commentarea][$comment->itemid])) {
+
+                $args = new stdClass;
+                $args->area      = $comment->commentarea;
+                $args->itemid    = $comment->itemid;
+                $args->context   = $context;
+                $args->course    = $course;
+                $args->client_id = 0;
+                $args->component = $component;
+                if (!empty($cm)) {
+                    $args->cm = $cm;
+                }
+
+                $manager = new comment($args);
+                $managersviewstatus[$comment->commentarea][$comment->itemid] = $manager->can_view();
+            }
+
+            if ($managersviewstatus[$comment->commentarea][$comment->itemid]) {
+                $commentssince[$comment->id] = $comment;
+            }
+        }
+        return $commentssince;
     }
 }

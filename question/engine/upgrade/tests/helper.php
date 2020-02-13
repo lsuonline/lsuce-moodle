@@ -16,7 +16,7 @@
 
 /**
  * This file contains test helper code for testing the upgrade to the new
- * question engine. The acutal tests are organised by question type in files
+ * question engine. The actual tests are organised by question type in files
  * like question/type/truefalse/tests/upgradelibnewqe_test.php.
  *
  * @package    moodlecore
@@ -29,7 +29,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
-require_once(dirname(__FILE__) . '/../upgradelib.php');
+require_once(__DIR__ . '/../upgradelib.php');
 
 
 /**

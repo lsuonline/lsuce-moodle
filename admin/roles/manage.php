@@ -31,7 +31,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../../config.php');
+require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot . '/' . $CFG->admin . '/roles/lib.php');
 
@@ -48,7 +48,6 @@ $defineurl = $CFG->wwwroot . '/' . $CFG->admin . '/roles/define.php';
 
 // Check access permissions.
 $systemcontext = context_system::instance();
-require_login();
 require_capability('moodle/role:manage', $systemcontext);
 admin_externalpage_setup('defineroles');
 
@@ -85,12 +84,10 @@ switch ($action) {
             die;
         }
         if (!delete_role($roleid)) {
-            // The delete failed, but mark the context dirty in case.
-            $systemcontext->mark_dirty();
+            // The delete failed.
             print_error('cannotdeleterolewithid', 'error', $baseurl, $roleid);
         }
         // Deleted a role sitewide...
-        $systemcontext->mark_dirty();
         redirect($baseurl);
         break;
 
@@ -216,9 +213,9 @@ die;
 function get_action_icon($url, $icon, $alt, $tooltip) {
     global $OUTPUT;
     return '<a title="' . $tooltip . '" href="'. $url . '">' .
-            '<img src="' . $OUTPUT->pix_url('t/' . $icon) . '" class="iconsmall" alt="' . $alt . '" /></a> ';
+            $OUTPUT->pix_icon('t/' . $icon, $alt) . '</a> ';
 }
 function get_spacer() {
     global $OUTPUT;
-    return '<img src="' . $OUTPUT->pix_url('spacer') . '" class="iconsmall" alt="" /> ';
+    return $OUTPUT->spacer();
 }

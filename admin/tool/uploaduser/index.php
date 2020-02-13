@@ -32,6 +32,8 @@ require_once($CFG->dirroot.'/group/lib.php');
 require_once($CFG->dirroot.'/cohort/lib.php');
 require_once('locallib.php');
 require_once('user_form.php');
+require_once('classes/local/field_value_validators.php');
+use tool_uploaduser\local\field_value_validators;
 
 $iid         = optional_param('iid', '', PARAM_INT);
 $previewrows = optional_param('previewrows', 10, PARAM_INT);
@@ -39,7 +41,6 @@ $previewrows = optional_param('previewrows', 10, PARAM_INT);
 core_php_time_limit::raise(60*60); // 1 hour should be enough
 raise_memory_limit(MEMORY_HUGE);
 
-require_login();
 admin_externalpage_setup('tooluploaduser');
 require_capability('moodle/site:uploadusers', context_system::instance());
 
@@ -94,6 +95,7 @@ $STD_FIELDS = array('id', 'username', 'email',
         'auth',        // watch out when changing auth type or using external auth plugins!
         'oldusername', // use when renaming users - this is the original username
         'suspended',   // 1 means suspend user account, 0 means activate user account, nothing means keep as is for existing users
+        'theme',       // Define a theme for user when 'allowuserthemes' is enabled.
         'deleted',     // 1 means delete user
         'mnethostid',  // Can not be used for adding, updating or deleting of users - only for enrolments, groups, cohorts and suspending.
         'interests',
@@ -102,7 +104,6 @@ $STD_FIELDS = array('id', 'username', 'email',
 $STD_FIELDS = array_merge($STD_FIELDS, get_all_user_name_fields());
 
 $PRF_FIELDS = array();
-
 if ($proffields = $DB->get_records('user_info_field')) {
     foreach ($proffields as $key => $proffield) {
         $profilefieldname = 'profile_field_'.$proffield->shortname;
@@ -356,40 +357,52 @@ if ($formdata = $mform2->is_cancelled()) {
             $upt->track('username', s($user->username), 'normal', false);
         }
 
-        // add default values for remaining fields
-        $formdefaults = array();
-        foreach ($STD_FIELDS as $field) {
-            if (isset($user->$field)) {
-                continue;
-            }
-            // all validation moved to form2
-            if (isset($formdata->$field)) {
-                // process templates
-                $user->$field = uu_process_template($formdata->$field, $user);
-                $formdefaults[$field] = true;
-                if (in_array($field, $upt->columns)) {
-                    $upt->track($field, s($user->$field), 'normal');
-                }
+        // Verify if the theme is valid and allowed to be set.
+        if (isset($user->theme)) {
+            list($status, $message) = field_value_validators::validate_theme($user->theme);
+            if ($status !== 'normal' && !empty($message)) {
+                $upt->track('status', $message, $status);
+                // Unset the theme when validation fails.
+                unset($user->theme);
             }
         }
-        foreach ($PRF_FIELDS as $field) {
-            if (isset($user->$field)) {
-                continue;
-            }
-            if (isset($formdata->$field)) {
-                // process templates
-                $user->$field = uu_process_template($formdata->$field, $user);
 
-                // Form contains key and later code expects value.
-                // Convert key to value for required profile fields.
-                require_once($CFG->dirroot.'/user/profile/field/'.$proffields[$field]->datatype.'/field.class.php');
-                $profilefieldclass = 'profile_field_'.$proffields[$field]->datatype;
-                $profilefield = new $profilefieldclass($proffields[$field]->id);
-                if (method_exists($profilefield, 'convert_external_data')) {
-                    $user->$field = $profilefield->edit_save_data_preprocess($user->$field, null);
+        // add default values for remaining fields
+        $formdefaults = array();
+        if (!$existinguser || ($updatetype != UU_UPDATE_FILEOVERRIDE && $updatetype != UU_UPDATE_NOCHANGES)) {
+            foreach ($STD_FIELDS as $field) {
+                if (isset($user->$field)) {
+                    continue;
                 }
+                // all validation moved to form2
+                if (isset($formdata->$field)) {
+                    // process templates
+                    $user->$field = uu_process_template($formdata->$field, $user);
+                    $formdefaults[$field] = true;
+                    if (in_array($field, $upt->columns)) {
+                        $upt->track($field, s($user->$field), 'normal');
+                    }
+                }
+            }
+            foreach ($PRF_FIELDS as $field) {
+                if (isset($user->$field)) {
+                    continue;
+                }
+                if (isset($formdata->$field)) {
+                    // process templates
+                    $user->$field = uu_process_template($formdata->$field, $user);
 
-                $formdefaults[$field] = true;
+                    // Form contains key and later code expects value.
+                    // Convert key to value for required profile fields.
+                    require_once($CFG->dirroot.'/user/profile/field/'.$proffields[$field]->datatype.'/field.class.php');
+                    $profilefieldclass = 'profile_field_'.$proffields[$field]->datatype;
+                    $profilefield = new $profilefieldclass($proffields[$field]->id);
+                    if (method_exists($profilefield, 'convert_external_data')) {
+                        $user->$field = $profilefield->edit_save_data_preprocess($user->$field, null);
+                    }
+
+                    $formdefaults[$field] = true;
+                }
             }
         }
 
@@ -1210,6 +1223,14 @@ while ($linenum <= $previewrows and $fields = $cir->next()) {
     if (isset($rowcols['city'])) {
         $rowcols['city'] = $rowcols['city'];
     }
+
+    if (isset($rowcols['theme'])) {
+        list($status, $message) = field_value_validators::validate_theme($rowcols['theme']);
+        if ($status !== 'normal' && !empty($message)) {
+            $rowcols['status'][] = $message;
+        }
+    }
+
     // Check if rowcols have custom profile field with correct data and update error state.
     $noerror = uu_check_custom_profile_data($rowcols) && $noerror;
     $rowcols['status'] = implode('<br />', $rowcols['status']);
@@ -1242,4 +1263,3 @@ if ($noerror) {
 }
 echo $OUTPUT->footer();
 die;
-

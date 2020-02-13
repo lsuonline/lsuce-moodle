@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+    die('Direct access to this script is forbidden.'); // It must be included from a Moodle page.
 }
 
 require_once($CFG->libdir.'/formslib.php');
@@ -35,7 +35,8 @@ require_once($CFG->libdir.'/resourcelib.php');
 
 class cas_form extends moodleform {
 
-    function definition() {
+    // Added 'public' scope on this b/c its the only method in the class..., unsure of what the intent was.
+    public function definition() {
         global $CFG, $DB, $OUTPUT;
         $mform = $this->_form;
         $attributes = array(
@@ -71,23 +72,25 @@ class cas_form extends moodleform {
         $mform->addElement('hidden', 'id', $userSettingsData['user_id']);
         $mform->addElement('hidden', 'sesskey', sesskey());
         $mform->setType('id', PARAM_INT);
-        
-        $mform->addElement('html', '<div class="error-notification-header alert alert-error">' . get_string('submit_error', 'local_cas_help_links') .'</div>');
+
+        $mform->addElement('html'
+                            , '<div class="error-notification-header alert alert-error">' . get_string('submit_error'
+                            , 'local_cas_help_links') .'</div>');
 
         $mform->addElement('header', 'personal_preferences', $pcourseheader);
-        
+
         foreach ($courses as $course) {
             if ( !$course['link_id']) {
                 $defaultlink = 'Inherited';
             } else {
-                $defaultlink = $course['link_url']; 
+                $defaultlink = $course['link_url'];
             }
 
-            // "hide" checkbox
+            // Hide checkbox.
             $mform->addElement('advcheckbox', $course['display_input_name'], $hide_course_link, null, $attributes, array(0, 1));
             $mform->setDefault($course['display_input_name'], $course['hide_link']);
-            
-            // url input
+
+            // URL input.
             $mform->addElement('text', $course['link_input_name'], $course['course_fullname'], $lattributes);
             $mform->disabledIf($course['link_input_name'], $course['display_input_name'], 'checked');
             $mform->setDefault($course['link_input_name'], $course['link_url']);
@@ -95,7 +98,7 @@ class cas_form extends moodleform {
         }
 
         $mform->addElement('header', 'category_preferences', $pcategory_header);
-        
+
         foreach ($categories as $category) {
             if ( !$category['link_id']) {
                 $defaultlink = 'Inherited';
@@ -103,11 +106,17 @@ class cas_form extends moodleform {
                 $defaultlink = $category['link_url'];
             }
             $hide_category_links = get_string('hide_category_links', 'local_cas_help_links', $category['category_name']);
-            // "hide" checkbox
-            $mform->addElement('advcheckbox', $category['display_input_name'], $hide_category_links, null, $attributes, array(0, 1));
+            // Hide checkbox.
+            $mform->addElement('advcheckbox'
+                                , $category['display_input_name']
+                                , $hide_category_links
+                                , null
+                                , $attributes
+                                , array(0, 1));
+
             $mform->setDefault($category['display_input_name'], $category['hide_link']);
-            
-            // url input
+
+            // URL input.
             $mform->addElement('text', $category['link_input_name'], $category['category_name'], $lattributes);
             $mform->disabledIf($category['link_input_name'], $category['display_input_name'], 'checked');
             $mform->setDefault($category['link_input_name'], $category['link_url']);
@@ -116,11 +125,17 @@ class cas_form extends moodleform {
 
         $mform->addElement('header', 'user_preferences', $user_header);
 
-        // "hide" checkbox
-        $mform->addElement('advcheckbox', $userSettingsData['display_input_name'], $hide_user_links, null, $attributes, array(0, 1));
+        // Hide checkbox.
+        $mform->addElement('advcheckbox'
+                            , $userSettingsData['display_input_name']
+                            , $hide_user_links
+                            , null
+                            , $attributes
+                            , array(0, 1));
+
         $mform->setDefault($userSettingsData['display_input_name'], $userSettingsData['hide_link']);
-        
-        // url input
+
+        // URL input.
         $mform->addElement('text', $userSettingsData['link_input_name'], $my_default_link, $lattributes);
         $mform->disabledIf($userSettingsData['link_input_name'], $userSettingsData['display_input_name'], 'checked');
         $mform->setDefault($userSettingsData['link_input_name'], $userSettingsData['link_url']);

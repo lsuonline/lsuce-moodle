@@ -41,6 +41,8 @@ require_once($CFG->libdir . '/form/duration.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class core_form_duration_testcase extends basic_testcase {
+    /** @var MoodleQuickForm Keeps reference of dummy form object */
+    private $mform;
     /** @var MoodleQuickForm_duration Keeps reference of MoodleQuickForm_duration object */
     private $element;
 
@@ -49,7 +51,11 @@ class core_form_duration_testcase extends basic_testcase {
      */
     protected function setUp() {
         parent::setUp();
-        $this->element = new MoodleQuickForm_duration();
+
+        // Get form data.
+        $form = new temp_form_duration();
+        $this->mform = $form->getform();
+        $this->element = $this->mform->addElement('duration', 'duration');
     }
 
     /**
@@ -67,7 +73,7 @@ class core_form_duration_testcase extends basic_testcase {
      */
     public function test_constructor() {
         // Test trying to create with an invalid unit.
-        $this->element = new MoodleQuickForm_duration('testel', null, array('defaultunit' => 123));
+        $this->element = $this->mform->addElement('duration', 'testel', null, array('defaultunit' => 123, 'optional' => false));
     }
 
     /**
@@ -94,7 +100,7 @@ class core_form_duration_testcase extends basic_testcase {
         $this->assertEquals(array(1, 86400), $this->element->seconds_to_unit(86400));
         $this->assertEquals(array(25, 3600), $this->element->seconds_to_unit(90000));
 
-        $this->element = new MoodleQuickForm_duration('testel', null, array('defaultunit' => 86400));
+        $this->element = $this->mform->addElement('duration', 'testel', null, array('defaultunit' => 86400, 'optional' => false));
         $this->assertEquals(array(0, 86400), $this->element->seconds_to_unit(0)); // Zero minutes, for a nice default unit.
     }
 
@@ -102,26 +108,64 @@ class core_form_duration_testcase extends basic_testcase {
      * Testcase to check generated timestamp
      */
     public function test_exportValue() {
-        $el = new MoodleQuickForm_duration('testel');
-        $el->_createElements();
+        /** @var MoodleQuickForm_duration $el */
+        $el = $this->mform->addElement('duration', 'testel');
         $values = array('testel' => array('number' => 10, 'timeunit' => 1));
-        $this->assertEquals(array('testel' => 10), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 10), $el->exportValue($values, true));
+        $this->assertEquals(10, $el->exportValue($values));
         $values = array('testel' => array('number' => 3, 'timeunit' => 60));
-        $this->assertEquals(array('testel' => 180), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 180), $el->exportValue($values, true));
+        $this->assertEquals(180, $el->exportValue($values));
         $values = array('testel' => array('number' => 1.5, 'timeunit' => 60));
-        $this->assertEquals(array('testel' => 90), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 90), $el->exportValue($values, true));
+        $this->assertEquals(90, $el->exportValue($values));
         $values = array('testel' => array('number' => 2, 'timeunit' => 3600));
-        $this->assertEquals(array('testel' => 7200), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 7200), $el->exportValue($values, true));
+        $this->assertEquals(7200, $el->exportValue($values));
         $values = array('testel' => array('number' => 1, 'timeunit' => 86400));
-        $this->assertEquals(array('testel' => 86400), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 86400), $el->exportValue($values, true));
+        $this->assertEquals(86400, $el->exportValue($values));
         $values = array('testel' => array('number' => 0, 'timeunit' => 3600));
-        $this->assertEquals(array('testel' => 0), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 0), $el->exportValue($values, true));
+        $this->assertEquals(0, $el->exportValue($values));
 
-        $el = new MoodleQuickForm_duration('testel', null, array('optional' => true));
-        $el->_createElements();
+        $el = $this->mform->addElement('duration', 'testel', null, array('optional' => true));
         $values = array('testel' => array('number' => 10, 'timeunit' => 1));
-        $this->assertEquals(array('testel' => 0), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 0), $el->exportValue($values, true));
+        $this->assertEquals(0, $el->exportValue($values));
         $values = array('testel' => array('number' => 20, 'timeunit' => 1, 'enabled' => 1));
-        $this->assertEquals(array('testel' => 20), $el->exportValue($values));
+        $this->assertEquals(array('testel' => 20), $el->exportValue($values, true));
+        $this->assertEquals(20, $el->exportValue($values));
+
+        // Optional element.
+        $el2 = $this->mform->addElement('duration', 'testel', '', ['optional' => true]);
+        $values = array('testel' => array('number' => 10, 'timeunit' => 1, 'enabled' => 1));
+        $this->assertEquals(array('testel' => 10), $el2->exportValue($values, true));
+        $this->assertEquals(10, $el2->exportValue($values));
+        $values = array('testel' => array('number' => 10, 'timeunit' => 1, 'enabled' => 0));
+        $this->assertEquals(array('testel' => 0), $el2->exportValue($values, true));
+        $this->assertEquals(null, $el2->exportValue($values));
+    }
+}
+
+/**
+ * Form object to be used in test case.
+ */
+class temp_form_duration extends moodleform {
+    /**
+     * Form definition.
+     */
+    public function definition() {
+        // No definition required.
+    }
+    /**
+     * Returns form reference
+     * @return MoodleQuickForm
+     */
+    public function getform() {
+        $mform = $this->_form;
+        // Set submitted flag, to simulate submission.
+        $mform->_flagSubmitted = true;
+        return $mform;
     }
 }

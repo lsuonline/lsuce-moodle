@@ -144,12 +144,14 @@ class MoodleQuickForm_duration extends MoodleQuickForm_group {
         }
         $this->_elements = array();
         // E_STRICT creating elements without forms is nasty because it internally uses $this
-        $this->_elements[] = @MoodleQuickForm::createElement('text', 'number', get_string('time', 'form'), $attributes, true);
+        $number = $this->createFormElement('text', 'number', get_string('time', 'form'), $attributes, true);
+        $number->set_force_ltr(true);
+        $this->_elements[] = $number;
         unset($attributes['size']);
-        $this->_elements[] = @MoodleQuickForm::createElement('select', 'timeunit', get_string('timeunit', 'form'), $this->get_units(), $attributes, true);
+        $this->_elements[] = $this->createFormElement('select', 'timeunit', get_string('timeunit', 'form'), $this->get_units(), $attributes, true);
         // If optional we add a checkbox which the user can use to turn if on
         if($this->_options['optional']) {
-            $this->_elements[] = @MoodleQuickForm::createElement('checkbox', 'enabled', null, get_string('enable'), $this->getAttributes(), true);
+            $this->_elements[] = $this->createFormElement('checkbox', 'enabled', null, get_string('enable'), $this->getAttributes(), true);
         }
         foreach ($this->_elements as $element){
             if (method_exists($element, 'setHiddenLabel')){
@@ -167,6 +169,7 @@ class MoodleQuickForm_duration extends MoodleQuickForm_group {
      * @return bool
      */
     function onQuickFormEvent($event, $arg, &$caller) {
+        $this->setMoodleForm($caller);
         switch ($event) {
             case 'updateValue':
                 // constant values override both default and submitted ones
@@ -238,10 +241,10 @@ class MoodleQuickForm_duration extends MoodleQuickForm_group {
      * Override of standard quickforms method.
      *
      * @param  array $submitValues
-     * @param  bool  $notused Not used.
+     * @param  bool  $assoc  whether to return the value as associative array
      * @return array field name => value. The value is the time interval in seconds.
      */
-    function exportValue(&$submitValues, $notused = false) {
+    function exportValue(&$submitValues, $assoc = false) {
         // Get the values from all the child elements.
         $valuearray = array();
         foreach ($this->_elements as $element) {
@@ -256,8 +259,8 @@ class MoodleQuickForm_duration extends MoodleQuickForm_group {
             return null;
         }
         if ($this->_options['optional'] && empty($valuearray['enabled'])) {
-            return array($this->getName() => 0);
+            return $this->_prepareValue(0, $assoc);
         }
-        return array($this->getName() => $valuearray['number'] * $valuearray['timeunit']);
+        return $this->_prepareValue($valuearray['number'] * $valuearray['timeunit'], $assoc);
     }
 }

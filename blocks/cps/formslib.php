@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->libdir . '/formslib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/formslib.php');
 
 interface generic_states {
     const SELECT = 'select';
@@ -34,9 +36,9 @@ interface generic_states {
 }
 
 interface finalized_form {
-    function process($data, $courses);
+    public function process($data, $courses);
 
-    function display();
+    public function display();
 }
 
 interface updating_form {
@@ -46,9 +48,9 @@ interface updating_form {
 }
 
 abstract class cps_form extends moodleform implements generic_states {
-    var $current;
-    var $next;
-    var $prev;
+    public $current;
+    public $next;
+    public $prev;
 
     public static function _s($key, $a = null) {
         return get_string($key, 'block_cps', $a);
@@ -76,7 +78,7 @@ abstract class cps_form extends moodleform implements generic_states {
     public static function create($prefix, $courses, $state = null, $extra= null) {
         $state = $state ? $state : self::first();
 
-        // Interject loading screen
+        // Interject loading screen.
         if ($state == self::LOADING) {
             return new cps_loading_form($extra);
         }
@@ -110,13 +112,13 @@ abstract class cps_form extends moodleform implements generic_states {
 
         $reshell = optional_param('reshelled', 0, PARAM_INT);
 
-        // Don't need to dup this add
+        // Don't need to dup this add.
         $current = required_param('current', PARAM_TEXT);
 
-        $to_add = ($reshell and $current == self::UPDATE);
+        $toadd = ($reshell and $current == self::UPDATE);
 
         $extra = array(
-            'shells' => $to_add ? $reshell : $shells,
+            'shells' => $toadd ? $reshell : $shells,
             'reshelled' => $reshell
         );
 
@@ -136,8 +138,8 @@ abstract class cps_form extends moodleform implements generic_states {
     }
 
     public function display_course($course, $sem) {
-        $semester_name = $this->display_semester($sem);
-        return "$semester_name $course->department $course->cou_number";
+        $semestername = $this->display_semester($sem);
+        return "$semestername $course->department $course->cou_number";
     }
 
     public function display_semester($sem) {
@@ -171,7 +173,6 @@ abstract class cps_form extends moodleform implements generic_states {
         if (!empty($this->prev)) {
             $buttons[] = $m->createElement('submit', 'back', self::_s('back'));
         }
-        
 
         $buttons[] = $m->createElement('cancel');
 
@@ -192,81 +193,81 @@ abstract class cps_form extends moodleform implements generic_states {
     protected function split_movers() {
         global $OUTPUT;
 
-        $move_left = html_writer::empty_tag('input', array(
+        $moveleft = html_writer::empty_tag('input', array(
             'type' => 'button',
             'value' => $OUTPUT->larrow(),
             'name' => 'move_left'
         ));
 
-        $move_right= html_writer::empty_tag('input', array(
+        $moveright = html_writer::empty_tag('input', array(
             'type' => 'button',
             'value' => $OUTPUT->rarrow(),
             'name' => 'move_right'
         ));
 
         return html_writer::tag('div',
-            $move_left . '<br/>' . $move_right,
+            $moveleft . '<br/>' . $moveright,
             array('class' => 'split_movers')
         );
     }
 
-    protected function mover_form($previous_label, $previous, $shells) {
+    protected function mover_form($previouslabel, $previous, $shells) {
         $this->_form->addElement('html', '<div id="split_error"></div>');
 
-        $previous_html = html_writer::tag('div',
-            $previous_label->toHtml() . '<br/>' . $previous->toHtml(),
+        $previoushtml = html_writer::tag('div',
+            $previouslabel->toHtml() . '<br/>' . $previous->toHtml(),
             array('class' => 'split_available_sections')
         );
 
-        $button_html = $this->split_movers();
+        $buttonhtml = $this->split_movers();
 
-        $split_html = html_writer::tag('div',
+        $splithtml = html_writer::tag('div',
             implode('<br/>', $shells),
             array('class' => 'split_bucket_sections')
         );
 
         return html_writer::tag('div',
-            implode(' ', array($previous_html, $button_html, $split_html)),
+            implode(' ', array($previoushtml, $buttonhtml, $splithtml)),
             array('class' => 'split_mover_form')
         );
     }
 }
 
 class cps_loading_form implements generic_states {
-    var $next = self::FINISHED;
-    var $current = self::LOADING;
-    var $prev = self::CONFIRM;
+    public $next = self::FINISHED;
+    public $current = self::LOADING;
+    public $prev = self::CONFIRM;
 
-    function __construct($data) {
+    public function __construct($data) {
         unset($data->next);
         unset($data->current);
 
         $this->data = $data;
     }
 
-    function get_data() {
+    public function get_data() {
         $data = data_submitted();
 
         return (object) $data;
     }
 
     // Stub?
-    function set_data($data) {
+    public function set_data($data) {
     }
 
-    function is_cancelled() {
+    public function is_cancelled() {
         return false;
     }
 
-    function display() {
+    public function display() {
         global $PAGE, $OUTPUT;
 
         $PAGE->requires->js('/blocks/cps/js/loading.js');
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
         echo $OUTPUT->box_start('generalbox cps_loading');
-        echo $OUTPUT->notification($_s('please_wait'));
+        echo $OUTPUT->notification($s('please_wait'));
 
         $this->data->next = self::FINISHED;
         $this->data->current = self::LOADING;
@@ -285,7 +286,7 @@ class cps_loading_form implements generic_states {
 
         echo $OUTPUT->box_end();
         echo html_writer::tag('div',
-            $OUTPUT->notification($_s('network_failure')) .
+            $OUTPUT->notification($s('network_failure')) .
             $OUTPUT->continue_button(new moodle_url('/my')),
             array('class' => 'network_failure', 'style' => 'display: none;')
         );

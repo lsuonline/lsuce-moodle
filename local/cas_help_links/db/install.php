@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 function xmldb_local_cas_help_links_install() {
     global $CFG, $DB;
 
-    // @TODO: populate the DB with initial category links here!
-    
+    // TODO: populate the DB with initial category links here!
+
     return true;
 }

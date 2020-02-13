@@ -27,9 +27,7 @@ Feature: availability_grouping
   Scenario: Test condition
     # Basic setup.
     Given I log in as "teacher1"
-    And I am on site homepage
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
 
     # Start to add a Page. If there aren't any groupings, there's no Grouping option.
     And I add a "Page" to section "1"
@@ -41,8 +39,7 @@ Feature: availability_grouping
     # Back to course page but add groups.
     # This step used to be 'And I follow "C1"', but Chrome thinks the breadcrumb
     # is not clickable, so we'll go via the home page instead.
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And the following "groupings" exist:
       | name | course | idnumber |
       | GX1  | C1     | GXI1     |
@@ -78,7 +75,7 @@ Feature: availability_grouping
     # Log back in as student.
     When I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
     # No pages should appear yet.
     Then I should not see "P1" in the "region-main" "region"
@@ -90,9 +87,30 @@ Feature: availability_grouping
       | grouping | group  |
       | GXI1     | GI1    |
     And I log in as "student1"
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
     # P1 should show but not B2.
     Then I should see "P1" in the "region-main" "region"
     And I should not see "P2" in the "region-main" "region"
+
+  @javascript
+  Scenario: Check grouping access restriction message on course homepage
+    Given the following "groupings" exist:
+      | name        | course | idnumber |
+      | Grouping A  | C1     | GA      |
+    And the following "grouping groups" exist:
+      | grouping  | group |
+      | GA        | GI1   |
+    And the following "activities" exist:
+      | activity  | name        | intro              | course | idnumber | groupmode | grouping |
+      | assign    | Test assign | Assign description | C1     | assign1  | 1         | GA       |
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I turn editing mode on
+    And I open "Test assign" actions menu
+    And I choose "Edit settings" in the open action menu
+    And I expand all fieldsets
+    And the field "groupingid" matches value "Grouping A"
+    And I press "Add group/grouping access restriction"
+    When I press "Save and return to course"
+    Then I should see "Not available unless: You belong to a group in Grouping A"

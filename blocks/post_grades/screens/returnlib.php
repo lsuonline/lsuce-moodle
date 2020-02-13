@@ -1,48 +1,64 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
 
 interface post_grades_return {
-    function is_ready();
+    public function is_ready();
 }
 
 interface post_grades_return_header {
-    function get_explanation();
+    public function get_explanation();
 }
 
 interface post_grades_return_process
     extends post_grades_return, post_grades_return_header {
 
-    function process();
+    public function process();
 
-    function get_url($processed);
+    public function get_url($processed);
 }
 
 interface post_grades_return_graphable {
-    function get_calc_info();
+    public function get_calc_info();
 
-    function get_grading_info();
+    public function get_grading_info();
 }
 
 interface post_grades_compliance extends post_grades_return_header {
-    function is_compliant();
+    public function is_compliant();
 
-    function is_required();
+    public function is_required();
 }
 
 class post_grades_good_return implements post_grades_return {
-    function is_ready() {
+    public function is_ready() {
         return true;
     }
 }
 
 abstract class post_grades_mean_median implements post_grades_compliance {
-    var $itemid;
-    var $course;
-    var $students;
-    var $total;
-    var $median;
-    var $mean;
+    public $itemid;
+    public $course;
+    public $students;
+    public $total;
+    public $median;
+    public $mean;
 
-    function __construct($students, $course, $itemid = null) {
+    public function __construct($students, $course, $itemid = null) {
         $this->itemid = $itemid;
         $this->course = $course;
         $this->students = $this->get_graded_students($students);
@@ -52,12 +68,12 @@ abstract class post_grades_mean_median implements post_grades_compliance {
         $this->median = $this->median_value($this->students, $this->total);
     }
 
-    function value_for($setting) {
+    public function value_for($setting) {
         return get_config('block_post_grades', $setting);
     }
 
-    function is_incomplete($student, $course_item) {
-        $grade = $course_item->get_grade($student->id, false);
+    public function is_incomplete($student, $courseitem) {
+        $grade = $courseitem->get_grade($student->id, false);
 
         if (empty($grade->id)) {
             return false;
@@ -66,7 +82,7 @@ abstract class post_grades_mean_median implements post_grades_compliance {
         return $grade->is_overridden() and $grade->finalgrade == null;
     }
 
-    function get_graded_students($students) {
+    public function get_graded_students($students) {
         global $DB;
 
         $ci = grade_item::fetch_course_item($this->course->id);
@@ -79,7 +95,7 @@ abstract class post_grades_mean_median implements post_grades_compliance {
 
         $anon = grade_anonymous::fetch(array('itemid' => $this->itemid));
 
-        // Filter audits at the return level, for quick edits
+        // Filter audits at the return level, for quick edits.
         $audits = post_grades::pull_auditing_students($this->course);
 
         $rtn = array();
@@ -88,14 +104,14 @@ abstract class post_grades_mean_median implements post_grades_compliance {
                 continue;
             }
 
-            $user_params = array('userid' => $stud->id);
+            $userparams = array('userid' => $stud->id);
             if ($anon) {
-                $params = $user_params + array('anonymous_itemid' => $anon->id);
+                $params = $userparams + array('anonymous_itemid' => $anon->id);
                 $finalgrade = $DB->get_field(
                     'grade_anon_grades', 'finalgrade', $params
                 );
             } else {
-                $params = $user_params + array('itemid' => $item->id);
+                $params = $userparams + array('itemid' => $item->id);
                 $finalgrade = $DB->get_field('grade_grades', 'finalgrade', $params);
             }
 
@@ -106,7 +122,7 @@ abstract class post_grades_mean_median implements post_grades_compliance {
         return $rtn;
     }
 
-    function mean_value($students, $total) {
+    public function mean_value($students, $total) {
         $sum = array_reduce($students, function($in, $student) {
             return $in + $student->finalgrade;
         });
@@ -114,9 +130,11 @@ abstract class post_grades_mean_median implements post_grades_compliance {
         return round($sum / $total, 1);
     }
 
-    function median_value($students, $total) {
+    public function median_value($students, $total) {
         uasort($students, function($a, $b) {
-            if ($a->finalgrade == $b->finalgrade) return 0;
+            if ($a->finalgrade == $b->finalgrade) {
+                return 0;
+            }
             return $a->finalgrade < $b->finalgrade ? 1 : -1;
         });
 
@@ -130,18 +148,18 @@ abstract class post_grades_mean_median implements post_grades_compliance {
         }
     }
 
-    function check($value, $lower, $upper) {
+    public function check($value, $lower, $upper) {
         return $value <= $upper && $value >= $lower;
     }
 }
 
 class post_grades_seminar_compliance extends post_grades_mean_median {
-    var $value;
-    var $lower;
-    var $upper;
-    var $required;
+    public $value;
+    public $lower;
+    public $upper;
+    public $required;
 
-    function __construct($students, $course) {
+    public function __construct($students, $course) {
         $this->value = $this->value_for('sem_median');
 
         $points = $this->value_for('sem_median_range');
@@ -152,16 +170,16 @@ class post_grades_seminar_compliance extends post_grades_mean_median {
         parent::__construct($students, $course);
     }
 
-    function is_compliant() {
+    public function is_compliant() {
         return empty($this->required) ?
             true : $this->check($this->median, $this->lower, $this->upper);
     }
 
-    function is_required() {
+    public function is_required() {
         return $this->required;
     }
 
-    function get_explanation() {
+    public function get_explanation() {
         return get_string('semexplain', 'block_post_grades', $this);
     }
 }
@@ -169,20 +187,18 @@ class post_grades_seminar_compliance extends post_grades_mean_median {
 class post_grades_class_size extends post_grades_mean_median
     implements post_grades_return_graphable {
 
-    var $median_value;
-    var $median_lower;
-    var $median_upper;
+    public $median_value;
+    public $median_lower;
+    public $median_upper;
+    public $mean_value;
+    public $mean_lower;
+    public $mean_upper;
+    public $size;
+    public $required;
+    public $grading;
+    public $info;
 
-    var $mean_value;
-    var $mean_lower;
-    var $mean_upper;
-
-    var $size;
-    var $required;
-    var $grading;
-    var $info;
-
-    function __construct($students, $ues, $course, $itemid = null) {
+    public function __construct($students, $ues, $course, $itemid = null) {
         $this->ues = $ues;
 
         parent::__construct($students, $course, $itemid);
@@ -198,7 +214,7 @@ class post_grades_class_size extends post_grades_mean_median
         $this->median_lower = $this->median_value - $range;
         $this->median_upper = $this->median_value + $range;
 
-        // Some sizes might not enforce mean
+        // Some sizes might not enforce mean.
         $this->mean_value = $this->value_for($this->size . '_mean');
         if (empty($this->mean_value)) {
             $this->mean_value = $this->median_value;
@@ -217,20 +233,20 @@ class post_grades_class_size extends post_grades_mean_median
         );
     }
 
-    function get_class_size($total) {
-        $is_large = $total >= $this->value_for('number_students');
-        $is_small = $total < $this->value_for('number_students_less');
+    public function get_class_size($total) {
+        $islarge = $total >= $this->value_for('number_students');
+        $issmall = $total < $this->value_for('number_students_less');
 
-        if (!empty($this->ues->course_first_year) or $is_large) {
+        if (!empty($this->ues->course_first_year) or $islarge) {
             return "large";
-        } else if ($is_small) {
+        } else if ($issmall) {
             return "small";
         } else {
             return "mid";
         }
     }
 
-    function pull_config() {
+    public function pull_config() {
         $rtn = array();
 
         foreach (array('high_pass', 'pass', 'fail') as $area) {
@@ -241,15 +257,19 @@ class post_grades_class_size extends post_grades_mean_median
             $a->upper = $this->value_for($area . '_upper');
             $a->operator = $area == 'fail' ? '<=' : '>=';
             $a->comparision = $area == 'fail' ?
-                function($v) use ($value) { return $v->finalgrade <= $value; } :
-                function($v) use ($value) { return $v->finalgrade >= $value; };
+                function($v) use ($value) {
+                    return $v->finalgrade <= $value;
+                } :
+                function($v) use ($value) {
+                    return $v->finalgrade >= $value;
+                };
             $rtn[$area] = $a;
         }
 
         return $rtn;
     }
 
-    function pull_info() {
+    public function pull_info() {
         $info = array();
         foreach ($this->grading as $area => $spec) {
             $a = new stdClass;
@@ -265,13 +285,13 @@ class post_grades_class_size extends post_grades_mean_median
         return $info;
     }
 
-    function is_compliant() {
-        $is_compliant = true;
+    public function is_compliant() {
+        $iscompliant = true;
 
         if ($this->size == 'large') {
             foreach ($this->info as $area => $info) {
-                $is_compliant = (
-                    $is_compliant and
+                $iscompliant = (
+                    $iscompliant and
                     $this->check($info->total, $info->lower, $info->upper)
                 );
             }
@@ -282,25 +302,25 @@ class post_grades_class_size extends post_grades_mean_median
         }
 
         return (
-            $is_compliant and
+            $iscompliant and
             $this->mean_compliance and
             $this->median_compliance
         );
     }
 
-    function get_calc_info() {
+    public function get_calc_info() {
         return $this->info;
     }
 
-    function get_grading_info() {
+    public function get_grading_info() {
         return $this->grading;
     }
 
-    function is_required() {
+    public function is_required() {
         return $this->required;
     }
 
-    function get_explanation() {
+    public function get_explanation() {
         $this->description = get_string(
             $this->size . '_courses', 'block_post_grades'
         );
@@ -309,11 +329,11 @@ class post_grades_class_size extends post_grades_mean_median
 }
 
 class post_grades_passthrough implements post_grades_compliance {
-    function __construct($course) {
+    public function __construct($course) {
         $this->course = $course;
     }
 
-    function is_compliant() {
+    public function is_compliant() {
         return (
             (
                 $this->course->course_type == 'CLI' or
@@ -325,25 +345,25 @@ class post_grades_passthrough implements post_grades_compliance {
         );
     }
 
-    function is_required() {
+    public function is_required() {
         return false;
     }
 
-    function get_explanation() {
+    public function get_explanation() {
         return '';
     }
 }
 
 abstract class post_grades_delegating_return implements post_grades_return_process {
-    function __construct($base_return) {
+    public function __construct($base_return) {
         $this->base_return = $base_return;
     }
 
-    function get_explanation() {
+    public function get_explanation() {
         return $this->base_return->get_explanation();
     }
 
-    function get_url($processed) {
+    public function get_url($processed) {
         if (empty($processed)) {
             $processed = $this->base_return->process();
         }
@@ -352,63 +372,63 @@ abstract class post_grades_delegating_return implements post_grades_return_proce
 
 }
 
-// A JD compliance return wraps a concrete return
+// A JD compliance return wraps a concrete return.
 class post_grades_compliance_return extends post_grades_delegating_return {
-    function __construct($base_return, $students, $ues_course, $itemid = null) {
+    public function __construct($base_return, $students, $uescourse, $itemid = null) {
         parent::__construct($base_return);
 
-        $passthrough = new post_grades_passthrough($ues_course);
+        $passthrough = new post_grades_passthrough($uescourse);
 
-        // Determine compliance return
+        // Determine compliance return.
         if ($passthrough->is_compliant()) {
             $this->compliance = $passthrough;
-        } else if ($ues_course->course_type == 'SEM') {
+        } else if ($uescourse->course_type == 'SEM') {
             $this->compliance = new post_grades_seminar_compliance(
                 $students, $base_return->course
             );
         } else {
             $this->compliance = new post_grades_class_size(
-                $students, $ues_course, $base_return->course, $itemid
+                $students, $uescourse, $base_return->course, $itemid
             );
         }
     }
 
-    function is_ready() {
+    public function is_ready() {
         return $this->base_return->is_ready() and $this->compliance->is_compliant();
     }
 
-    function process() {
-        // Delegate to base return
+    public function process() {
+        // Delegate to base return.
         if (!$this->base_return->is_ready()) {
             return $this->base_return->process();
         }
 
-        // Prototyping
+        // Prototyping.
         return $this->compliance;
     }
 }
 
 class post_grades_sequence_compliance extends post_grades_delegating_return {
-    function __construct($base, $compliances, $titles = array()) {
+    public function __construct($base, $compliances, $titles = array()) {
         parent::__construct($base);
 
         $this->compliances = $compliances;
         $this->titles = $titles;
     }
 
-    function is_ready() {
+    public function is_ready() {
         return array_reduce($this->compliances, function($in, $compliance) {
             return $in || $compliance->is_compliant();
         });
     }
 
-    function process() {
+    public function process() {
         return array_combine($this->titles, $this->compliances);
     }
 }
 
 class post_grades_no_item_return implements post_grades_return_process {
-    function __construct($course) {
+    public function __construct($course) {
         global $DB;
 
         $this->course = $course;
@@ -420,16 +440,16 @@ class post_grades_no_item_return implements post_grades_return_process {
         $this->items = $DB->count_records_select('grade_items', $filters->sql());
     }
 
-    function get_explanation() {
+    public function get_explanation() {
         return get_string('noitems', 'block_post_grades');
     }
 
-    function is_ready() {
+    public function is_ready() {
         return !empty($this->items);
     }
 
-    function get_url($processed) {
-        // Instructor has their own gradebook, just route them accordingly
+    public function get_url($processed) {
+        // Instructor has their own gradebook, just route them accordingly.
         if (empty($processed)) {
             return new moodle_url('/grade/report/grader/index.php', array(
                 'id' => $this->course->id
@@ -443,7 +463,7 @@ class post_grades_no_item_return implements post_grades_return_process {
         }
     }
 
-    function default_params() {
+    public function default_params() {
         global $DB;
 
         $params = array(
@@ -452,7 +472,7 @@ class post_grades_no_item_return implements post_grades_return_process {
             'parent' => null
         );
 
-        $parent_cat = $DB->get_field('grade_categories', 'id', $params);
+        $parentcat = $DB->get_field('grade_categories', 'id', $params);
 
         $params = array(
             'courseid' => $this->course->id,
@@ -463,10 +483,10 @@ class post_grades_no_item_return implements post_grades_return_process {
             'itemtype' => 'manual',
             'decimals' => 1,
             'itemname' => get_string('finalgrade_item', 'block_post_grades'),
-            'categoryid' => $parent_cat
+            'categoryid' => $parentcat
         );
 
-        //Need for later
+        // Need for later.
         $groupid = required_param('group', PARAM_INT);
         $group = $DB->get_record('groups', array('id' => $groupid), '*', MUST_EXIST);
         $sections = ues_section::from_course($this->course, true);
@@ -482,18 +502,18 @@ class post_grades_no_item_return implements post_grades_return_process {
                 'decimals' => 1,
                 'itemtype' => 'manual',
                 'itemname' => get_string('finalgrade_item', 'block_post_grades'),
-                'categoryid' => $parent_cat
+                'categoryid' => $parentcat
             );
         }
         return $params;
     }
 
-    function process() {
+    public function process() {
         grade_regrade_final_grades($this->course->id);
 
         $params = $this->default_params();
 
-        // No need to recreate; fetch generated or send to gradebook
+        // No need to recreate; fetch generated or send to gradebook.
         if ($this->items) {
             if ($item = grade_item::fetch($params)) {
                 return $item;
@@ -502,29 +522,29 @@ class post_grades_no_item_return implements post_grades_return_process {
             }
         }
 
-        $course_cat = grade_category::fetch_course_category($this->course->id);
+        $coursecat = grade_category::fetch_course_category($this->course->id);
 
-        $course_item = grade_item::fetch_course_item($this->course->id);
-        $course_item->gradepass = 1.5;
-        $course_item->grademin = 1.3;
-        $course_item->grademax = 4.0;
-        $course_item->decimals = 1;
-        $course_item->display = 1;
+        $courseitem = grade_item::fetch_course_item($this->course->id);
+        $courseitem->gradepass = 1.5;
+        $courseitem->grademin = 1.3;
+        $courseitem->grademax = 4.0;
+        $courseitem->decimals = 1;
+        $courseitem->display = 1;
 
         $params['aggregationcoef'] =
-            $course_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN ? 1 : 0;
+            $coursecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN ? 1 : 0;
 
-        $course_item->update();
+        $courseitem->update();
 
-        $new_item = new grade_item($params);
-        $new_item->insert();
+        $newitem = new grade_item($params);
+        $newitem->insert();
 
-        return $new_item;
+        return $newitem;
     }
 }
 
 class post_grades_no_anonymous_item_return extends post_grades_no_item_return {
-    function __construct($course) {
+    public function __construct($course) {
         global $DB;
 
         $this->course = $course;
@@ -536,7 +556,7 @@ class post_grades_no_anonymous_item_return extends post_grades_no_item_return {
         $this->items = $DB->get_records_select('grade_anon_items', $filters->sql());
     }
 
-    function get_url($processed) {
+    public function get_url($processed) {
         return new moodle_url('/grade/report/quick_edit/index.php', array(
             'id' => $this->course->id,
             'item' => 'anonymous',
@@ -545,35 +565,34 @@ class post_grades_no_anonymous_item_return extends post_grades_no_item_return {
         ));
     }
 
-    function is_ready() {
+    public function is_ready() {
         return !empty($this->items) and reset($this->items)->complete;
     }
 
-    function get_explanation() {
+    public function get_explanation() {
         return get_string('noanonitem', 'block_post_grades');
     }
 
-    function process() {
+    public function process() {
         if ($this->items) {
-            $db_item = reset($this->items);
+            $dbitem = reset($this->items);
 
-            return grade_anonymous::fetch(array('id' => $db_item->id));
+            return grade_anonymous::fetch(array('id' => $dbitem->id));
         }
 
-        $new_item = parent::process();
+        $newitem = parent::process();
 
-        $new_item->itemname = get_string('finalgrade_anon', 'block_post_grades');
-        $new_item->update();
+        $newitem->itemname = get_string('finalgrade_anon', 'block_post_grades');
+        $newitem->update();
 
         $params = array(
-            'itemid' => $new_item->id,
+            'itemid' => $newitem->id,
             'complete' => false
         );
 
-        $anon_item = new grade_anonymous($params);
-        $anon_item->insert();
+        $anonitem = new grade_anonymous($params);
+        $anonitem->insert();
 
-        return $anon_item;
+        return $anonitem;
     }
 }
-

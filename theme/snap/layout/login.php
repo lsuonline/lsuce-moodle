@@ -18,7 +18,7 @@
  * Layout - default.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -37,7 +37,13 @@ require(__DIR__.'/header.php');
 
 <section id="region-main">
 <?php
-echo $OUTPUT->main_content();
+if ($PAGE->title === get_string('restoredaccount')) {
+    echo html_writer::start_div('loginerror-restoredaccount');
+    echo $OUTPUT->main_content();
+    echo html_writer::end_div();
+} else {
+    echo $OUTPUT->main_content();
+}
 ?>
 </section>
 </main>

@@ -35,14 +35,16 @@ use core_competency\api;
 use tool_lp\course_competency_statistics;
 use core_competency\competency;
 use core_competency\course_competency;
+use core_competency\external\performance_helper;
 use core_competency\external\competency_exporter;
 use core_competency\external\course_competency_exporter;
 use core_competency\external\course_competency_settings_exporter;
 use core_competency\external\user_competency_course_exporter;
 use core_competency\external\user_competency_exporter;
+use core_competency\external\plan_exporter;
 use tool_lp\external\competency_path_exporter;
 use tool_lp\external\course_competency_statistics_exporter;
-use tool_lp\external\course_module_summary_exporter;
+use core_course\external\course_module_summary_exporter;
 
 /**
  * Class containing data for course competencies page
@@ -54,6 +56,9 @@ class course_competencies_page implements renderable, templatable {
 
     /** @var int $courseid Course id for this page. */
     protected $courseid = null;
+
+    /** @var int $moduleid Module id for this page. */
+    protected $moduleid = null;
 
     /** @var context $context The context for this page. */
     protected $context = null;
@@ -74,10 +79,31 @@ class course_competencies_page implements renderable, templatable {
      * Construct this renderable.
      * @param int $courseid The course record for this page.
      */
-    public function __construct($courseid) {
+    public function __construct($courseid, $moduleid) {
         $this->context = context_course::instance($courseid);
         $this->courseid = $courseid;
+        $this->moduleid = $moduleid;
         $this->coursecompetencylist = api::list_course_competencies($courseid);
+
+        if ($this->moduleid > 0) {
+            $modulecompetencies = api::list_course_module_competencies_in_course_module($this->moduleid);
+            foreach ($this->coursecompetencylist as $ccid => $coursecompetency) {
+                $coursecompetency = $coursecompetency['coursecompetency'];
+                $found = false;
+                foreach ($modulecompetencies as $mcid => $modulecompetency) {
+                    if ($modulecompetency->get('competencyid') == $coursecompetency->get('competencyid')) {
+                        $found = true;
+                        break;
+                    }
+                }
+
+                if (!$found) {
+                    // We need to filter out this competency.
+                    unset($this->coursecompetencylist[$ccid]);
+                }
+            }
+        }
+
         $this->canmanagecoursecompetencies = has_capability('moodle/competency:coursecompetencymanage', $this->context);
         $this->canconfigurecoursecompetencies = has_capability('moodle/competency:coursecompetencyconfigure', $this->context);
         $this->cangradecompetencies = has_capability('moodle/competency:competencygrade', $this->context);
@@ -110,14 +136,33 @@ class course_competencies_page implements renderable, templatable {
 
         $data = new stdClass();
         $data->courseid = $this->courseid;
+        $data->moduleid = $this->moduleid;
         $data->pagecontextid = $this->context->id;
         $data->competencies = array();
-        $contextcache = array();
+        $data->pluginbaseurl = (new moodle_url('/admin/tool/lp'))->out(true);
 
         $gradable = is_enrolled($this->context, $USER, 'moodle/competency:coursecompetencygradable');
         if ($gradable) {
             $usercompetencycourses = api::list_user_competencies_in_course($this->courseid, $USER->id);
             $data->gradableuserid = $USER->id;
+
+            if ($this->moduleid > 0) {
+                $modulecompetencies = api::list_course_module_competencies_in_course_module($this->moduleid);
+                foreach ($usercompetencycourses as $ucid => $usercoursecompetency) {
+                    $found = false;
+                    foreach ($modulecompetencies as $mcid => $modulecompetency) {
+                        if ($modulecompetency->get('competencyid') == $usercoursecompetency->get('competencyid')) {
+                            $found = true;
+                            break;
+                        }
+                    }
+
+                    if (!$found) {
+                        // We need to filter out this competency.
+                        unset($usercompetencycourses[$ucid]);
+                    }
+                }
+            }
         }
 
         $ruleoutcomelist = course_competency::get_ruleoutcome_list();
@@ -126,21 +171,19 @@ class course_competencies_page implements renderable, templatable {
             $ruleoutcomeoptions[$value] = array('value' => $value, 'text' => (string) $text, 'selected' => false);
         }
 
+        $helper = new performance_helper();
         foreach ($this->coursecompetencylist as $coursecompetencyelement) {
             $coursecompetency = $coursecompetencyelement['coursecompetency'];
             $competency = $coursecompetencyelement['competency'];
-            if (!isset($contextcache[$competency->get_competencyframeworkid()])) {
-                $contextcache[$competency->get_competencyframeworkid()] = $competency->get_context();
-            }
-            $context = $contextcache[$competency->get_competencyframeworkid()];
+            $context = $helper->get_context_from_competency($competency);
 
             $compexporter = new competency_exporter($competency, array('context' => $context));
             $ccexporter = new course_competency_exporter($coursecompetency, array('context' => $context));
 
             $ccoutcomeoptions = (array) (object) $ruleoutcomeoptions;
-            $ccoutcomeoptions[$coursecompetency->get_ruleoutcome()]['selected'] = true;
+            $ccoutcomeoptions[$coursecompetency->get('ruleoutcome')]['selected'] = true;
 
-            $coursemodules = api::list_course_modules_using_competency($competency->get_id(), $this->courseid);
+            $coursemodules = api::list_course_modules_using_competency($competency->get('id'), $this->courseid);
 
             $fastmodinfo = get_fast_modinfo($this->courseid);
             $exportedmodules = array();
@@ -152,27 +195,36 @@ class course_competencies_page implements renderable, templatable {
             // Competency path.
             $pathexporter = new competency_path_exporter([
                 'ancestors' => $competency->get_ancestors(),
-                'framework' => $competency->get_framework(),
+                'framework' => $helper->get_framework_from_competency($competency),
                 'context' => $context
             ]);
+
+            // User learning plans.
+            $plans = api::list_plans_with_competency($USER->id, $competency);
+            $exportedplans = array();
+            foreach ($plans as $plan) {
+                $planexporter = new plan_exporter($plan, array('template' => $plan->get_template()));
+                $exportedplans[] = $planexporter->export($output);
+            }
 
             $onerow = array(
                 'competency' => $compexporter->export($output),
                 'coursecompetency' => $ccexporter->export($output),
                 'ruleoutcomeoptions' => $ccoutcomeoptions,
                 'coursemodules' => $exportedmodules,
-                'comppath' => $pathexporter->export($output)
+                'comppath' => $pathexporter->export($output),
+                'plans' => $exportedplans
             );
             if ($gradable) {
                 $foundusercompetencycourse = false;
                 foreach ($usercompetencycourses as $usercompetencycourse) {
-                    if ($usercompetencycourse->get_competencyid() == $competency->get_id()) {
+                    if ($usercompetencycourse->get('competencyid') == $competency->get('id')) {
                         $foundusercompetencycourse = $usercompetencycourse;
                     }
                 }
                 if ($foundusercompetencycourse) {
                     $related = array(
-                        'scale' => $competency->get_scale()
+                        'scale' => $helper->get_scale_from_competency($competency)
                     );
                     $exporter = new user_competency_course_exporter($foundusercompetencycourse, $related);
                     $onerow['usercompetencycourse'] = $exporter->export($output);

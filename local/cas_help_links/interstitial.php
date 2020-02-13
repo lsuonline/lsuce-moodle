@@ -13,14 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 /**
  * @package   local_cas_help_links
  * @copyright 2016, Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
-// defined('MOODLE_INTERNAL') || die();
 
 require_once('../../config.php');
 
@@ -37,22 +35,17 @@ $PAGE->set_context($context);
 
 require_login();
 
-//////////////////////////////////////////////////////////
-/// 
-/// HANDLE REDIRECT
-/// 
-//////////////////////////////////////////////////////////
+// HANDLE REDIRECT.
 
-// if a URL was provided
+// If a URL was provided.
 if ($redirect_url) {
-    // loggen the linken here
+    // Log link.
     \local_cas_help_links_logger::log_link_click($USER->id, $course_id, $link_id);
-    
-    // redirect to the appropriate url
+    // Redirect to the appropriate url.
     header('Location: ' . $redirect_url);
     die;
 }
 
-// otherwise, default to redirecting back from whence they came!
+// Otherwise, redirect user back to where they came from.
 header('Location: ' . $_SERVER['HTTP_REFERER']);
 die;

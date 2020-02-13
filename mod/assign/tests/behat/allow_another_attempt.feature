@@ -18,17 +18,17 @@ Feature: In an assignment, students start a new attempt based on their previous 
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Assignment" to section "1" and I fill the form with:
       | Assignment name | Test assignment name |
       | Description | Submit your online text |
       | assignsubmission_onlinetext_enabled | 1 |
       | assignsubmission_file_enabled | 0 |
       | Attempts reopened | Manually |
+      | Hide grader identity from students | Yes |
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test assignment name"
     When I press "Add submission"
     And I set the following fields to these values:
@@ -36,9 +36,9 @@ Feature: In an assignment, students start a new attempt based on their previous 
     And I press "Save changes"
     And I log out
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test assignment name"
-    And I follow "View all submissions"
+    And I navigate to "View all submissions" in current page administration
     And I click on "Grade" "link" in the "Student 1" "table_row"
     And I set the following fields to these values:
       | Allow another attempt | 1 |
@@ -46,16 +46,17 @@ Feature: In an assignment, students start a new attempt based on their previous 
     And I press "Ok"
     And I click on "Edit settings" "link"
     And I log out
-    And I log in as "student1"
-    And I follow "Course 1"
+    Then I log in as "student1"
+    And I am on "Course 1" course homepage
     And I follow "Test assignment name"
+    And I should not see "Teacher 1"
     And I press "Add a new attempt based on previous submission"
     And I press "Save changes"
-    Then I log out
+    And I log out
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test assignment name"
-    And I follow "View all submissions"
+    And I navigate to "View all submissions" in current page administration
     And I click on "Grade" "link" in the "Student 1" "table_row"
     And I should see "I'm the student first submission"
 
@@ -89,8 +90,7 @@ Feature: In an assignment, students start a new attempt based on their previous 
       | student3 | G2 |
       | student4 | G2 |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Assignment" to section "1" and I fill the form with:
       | Assignment name | Test assignment name |
       | Description | Test assignment description |
@@ -102,7 +102,7 @@ Feature: In an assignment, students start a new attempt based on their previous 
       | Group mode | Separate groups |
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test assignment name"
     And I press "Add submission"
     And I set the following fields to these values:
@@ -110,9 +110,9 @@ Feature: In an assignment, students start a new attempt based on their previous 
     And I press "Save changes"
     And I log out
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test assignment name"
-    When I follow "View all submissions"
+    When I navigate to "View all submissions" in current page administration
     Then "Student 1" row "Status" column of "generaltable" table should contain "Submitted for grading"
     And "Student 2" row "Status" column of "generaltable" table should contain "Submitted for grading"
     And "Student 3" row "Status" column of "generaltable" table should contain "No submission"
@@ -128,42 +128,43 @@ Feature: In an assignment, students start a new attempt based on their previous 
       | operation | Allow another attempt |
     And I click on "Go" "button" confirming the dialogue
     And I should not see "The grades were not saved because someone has modified one or more records more recently than when you loaded the page."
-# Behat tests for the group submission, should be uncommented once the MDL-48216 is fixed.
-#    And I log out
-#    And I log in as "student3"
-#    And I follow "Course 1"
-#    And I follow "Test assignment name"
-#    #And I should see "This is attempt 1 ( 3 attempts allowed )."
-#    And I press "Add submission"
-#    And I set the following fields to these values:
-#      | Online text | I'm the student's 3 group 2 first attempt |
-#    And I press "Save changes"
-#    And I log out
-#    And I log in as "teacher1"
-#    And I follow "Course 1"
-#    And I follow "Test assignment name"
-#    And I follow "View all submissions"
-#    And "Student 1" row "Status" column of "generaltable" table should contain "Reopened"
-#    And "Student 2" row "Status" column of "generaltable" table should contain "Reopened"
-#    And "Student 3" row "Status" column of "generaltable" table should contain "Submitted for grading"
-#    And "Student 4" row "Status" column of "generaltable" table should contain "Submitted for grading"
-#    And I click on "Grade " "link" in the "Student 3" "table_row"
-#    And I set the following fields to these values:
-#      | Allow another attempt | 1 |
-#    And I press "Save changes"
-#    And I log out
-#    And I log in as "student4"
-#    And I follow "Course 1"
-#    And I follow "Test assignment name"
-#    #And I should see "This is attempt 2 ( 3 attempts allowed )."
-#    And I press "Add submission"
-#    And I set the following fields to these values:
-#      | Online text | I'm the student's 4 group 2 second attempt |
-#    And I press "Save changes"
-#    And I log out
-#    And I log in as "teacher1"
-#    And I follow "Course 1"
-#    And I follow "Test assignment name"
-#    And I follow "View all submissions"
-#    And I click on "Grade" "link" in the "Student 1" "table_row"
-    #And I should see "This is attempt 2 (3 attempts allowed)"
+    And I log out
+    And I log in as "student3"
+    And I am on "Course 1" course homepage
+    And I follow "Test assignment name"
+    And I should see "This is attempt 1 ( 3 attempts allowed )."
+    And I press "Add submission"
+    And I set the following fields to these values:
+      | Online text | I'm the student's 3 group 2 first attempt |
+    And I press "Save changes"
+    And I log out
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I follow "Test assignment name"
+    And I navigate to "View all submissions" in current page administration
+    And "Student 1" row "Status" column of "generaltable" table should contain "Reopened"
+    And "Student 2" row "Status" column of "generaltable" table should contain "Reopened"
+    And "Student 3" row "Status" column of "generaltable" table should contain "Submitted for grading"
+    And "Student 4" row "Status" column of "generaltable" table should contain "Submitted for grading"
+    And I click on "Grade" "link" in the "Student 3" "table_row"
+    And I set the following fields to these values:
+      | Allow another attempt | 1 |
+    And I press "Save changes"
+    And I press "Ok"
+    And I follow "Assignment: Test assignment name"
+    And I log out
+    And I log in as "student4"
+    And I am on "Course 1" course homepage
+    And I follow "Test assignment name"
+    And I should see "This is attempt 2 ( 3 attempts allowed )."
+    And I press "Add a new attempt"
+    And I set the following fields to these values:
+      | Online text | I'm the student's 4 group 2 second attempt |
+    And I press "Save changes"
+    And I log out
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I follow "Test assignment name"
+    And I select "Group 2" from the "group" singleselect
+    And I click on "Grade" "link" in the ".submissionlinks" "css_element"
+    And I should see "2" in the "#id_attemptsettings" "css_element"

@@ -1,3 +1,6 @@
+## v3.1.0
+- Updated for Moodle 3.7 compatability
+
 ## v2.0.0
 
 - Subplugins are now supported through events [#31][31]

@@ -48,6 +48,14 @@ define('WEBSERVICE_AUTHMETHOD_SESSION_TOKEN', 2);
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class webservice {
+    /**
+     * Only update token last access once per this many seconds. (This constant controls update of
+     * the external tokens last access field. There is a similar define LASTACCESS_UPDATE_SECS
+     * which controls update of the web site last access fields.)
+     *
+     * @var int
+     */
+    const TOKEN_LASTACCESS_UPDATE_SECS = 60;
 
     /**
      * Authenticate user (used by download/upload file scripts)
@@ -111,6 +119,7 @@ class webservice {
 
         // setup user session to check capability
         \core\session\manager::set_user($user);
+        set_login_session_preferences();
 
         //assumes that if sid is set then there must be a valid associated session no matter the token type
         if ($token->sid) {
@@ -120,9 +129,9 @@ class webservice {
             }
         }
 
-        //Non admin can not authenticate if maintenance mode
-        $hassiteconfig = has_capability('moodle/site:config', context_system::instance(), $user);
-        if (!empty($CFG->maintenance_enabled) and !$hassiteconfig) {
+        // Cannot authenticate unless maintenance access is granted.
+        $hasmaintenanceaccess = has_capability('moodle/site:maintenanceaccess', context_system::instance(), $user);
+        if (!empty($CFG->maintenance_enabled) and !$hasmaintenanceaccess) {
             //this is usually temporary, client want to implement code logic  => moodle_exception
             throw new moodle_exception('sitemaintenance', 'admin');
         }
@@ -208,9 +217,30 @@ class webservice {
         }
 
         // log token access
-        $DB->set_field('external_tokens', 'lastaccess', time(), array('id' => $token->id));
+        self::update_token_lastaccess($token);
 
         return array('user' => $user, 'token' => $token, 'service' => $service);
+    }
+
+    /**
+     * Updates the last access time for a token.
+     *
+     * @param \stdClass $token Token object (must include id, lastaccess fields)
+     * @param int $time Time of access (0 = use current time)
+     * @throws dml_exception If database error
+     */
+    public static function update_token_lastaccess($token, int $time = 0) {
+        global $DB;
+
+        if (!$time) {
+            $time = time();
+        }
+
+        // Only update the field if it is a different time from previous request,
+        // so as not to waste database effort.
+        if ($time >= $token->lastaccess + self::TOKEN_LASTACCESS_UPDATE_SECS) {
+            $DB->set_field('external_tokens', 'lastaccess', $time, array('id' => $token->id));
+        }
     }
 
     /**
@@ -340,6 +370,7 @@ class webservice {
                     $newtoken->contextid = context_system::instance()->id;
                     $newtoken->creatorid = $userid;
                     $newtoken->timecreated = time();
+                    $newtoken->privatetoken = null;
 
                     $DB->insert_record('external_tokens', $newtoken);
                 }
@@ -401,6 +432,29 @@ class webservice {
     }
 
     /**
+     * Return a token of an arbitrary user by tokenid, including details of the associated user and the service name.
+     * If no tokens exist an exception is thrown
+     *
+     * The returned value is a stdClass:
+     * ->id token id
+     * ->token
+     * ->firstname user firstname
+     * ->lastname
+     * ->name service name
+     *
+     * @param int $tokenid token id
+     * @return stdClass
+     */
+    public function get_token_by_id_with_details($tokenid) {
+        global $DB;
+        $sql = "SELECT t.id, t.token, u.id AS userid, u.firstname, u.lastname, s.name, t.creatorid
+                FROM {external_tokens} t, {user} u, {external_services} s
+                WHERE t.id=? AND t.tokentype = ? AND s.id = t.externalserviceid AND t.userid = u.id";
+        $token = $DB->get_record_sql($sql, array($tokenid, EXTERNAL_TOKEN_PERMANENT), MUST_EXIST);
+        return $token;
+    }
+
+    /**
      * Return a database token record for a token id
      *
      * @param int $tokenid token id
@@ -419,6 +473,16 @@ class webservice {
     public function delete_user_ws_token($tokenid) {
         global $DB;
         $DB->delete_records('external_tokens', array('id'=>$tokenid));
+    }
+
+    /**
+     * Delete all the tokens belonging to a user.
+     *
+     * @param int $userid the user id whose tokens must be deleted
+     */
+    public static function delete_user_ws_tokens($userid) {
+        global $DB;
+        $DB->delete_records('external_tokens', array('userid' => $userid));
     }
 
     /**
@@ -460,7 +524,8 @@ class webservice {
                       FROM {external_functions} f
                      WHERE f.name IN (SELECT sf.functionname
                                         FROM {external_services_functions} sf
-                                       WHERE sf.externalserviceid $serviceids)";
+                                       WHERE sf.externalserviceid $serviceids)
+                     ORDER BY f.name ASC";
             $functions = $DB->get_records_sql($sql, $params);
         } else {
             $functions = array();
@@ -725,7 +790,22 @@ class webservice {
 
     }
 
+    /**
+     * Return a list with all the valid user tokens for the given user, it only excludes expired tokens.
+     *
+     * @param  string $userid user id to retrieve tokens from
+     * @return array array of token entries
+     * @since Moodle 3.2
+     */
+    public static function get_active_tokens($userid) {
+        global $DB;
 
+        $sql = 'SELECT t.*, s.name as servicename FROM {external_tokens} t JOIN
+                {external_services} s ON t.externalserviceid = s.id WHERE
+                t.userid = :userid AND (t.validuntil IS NULL OR t.validuntil > :now)';
+        $params = array('userid' => $userid, 'now' => time());
+        return $DB->get_records_sql($sql, $params);
+    }
 }
 
 /**
@@ -862,7 +942,6 @@ abstract class webservice_server implements webservice_server_interface {
         }
 
         $loginfaileddefaultparams = array(
-            'context' => context_system::instance(),
             'other' => array(
                 'method' => $this->authmethod,
                 'reason' => null
@@ -913,9 +992,9 @@ abstract class webservice_server implements webservice_server_interface {
             $user = $this->authenticate_by_token(EXTERNAL_TOKEN_EMBEDDED);
         }
 
-        //Non admin can not authenticate if maintenance mode
-        $hassiteconfig = has_capability('moodle/site:config', context_system::instance(), $user);
-        if (!empty($CFG->maintenance_enabled) and !$hassiteconfig) {
+        // Cannot authenticate unless maintenance access is granted.
+        $hasmaintenanceaccess = has_capability('moodle/site:maintenanceaccess', context_system::instance(), $user);
+        if (!empty($CFG->maintenance_enabled) and !$hasmaintenanceaccess) {
             throw new moodle_exception('sitemaintenance', 'admin');
         }
 
@@ -990,6 +1069,7 @@ abstract class webservice_server implements webservice_server_interface {
         // now fake user login, the session is completely empty too
         enrol_check_plugins($user);
         \core\session\manager::set_user($user);
+        set_login_session_preferences();
         $this->userid = $user->id;
 
         if ($this->authmethod != WEBSERVICE_AUTHMETHOD_SESSION_TOKEN && !has_capability("webservice/$this->wsname:use", $this->restricted_context)) {
@@ -1010,7 +1090,6 @@ abstract class webservice_server implements webservice_server_interface {
         global $DB;
 
         $loginfaileddefaultparams = array(
-            'context' => context_system::instance(),
             'other' => array(
                 'method' => $this->authmethod,
                 'reason' => null
@@ -1059,7 +1138,7 @@ abstract class webservice_server implements webservice_server_interface {
         $user = $DB->get_record('user', array('id'=>$token->userid), '*', MUST_EXIST);
 
         // log token access
-        $DB->set_field('external_tokens', 'lastaccess', time(), array('id'=>$token->id));
+        webservice::update_token_lastaccess($token);
 
         return $user;
 
@@ -1076,18 +1155,20 @@ abstract class webservice_server implements webservice_server_interface {
         // Must be the same XXX key name as the external_settings::set_XXX function.
         // Must be the same XXX ws parameter name as 'moodlewssettingXXX'.
         $externalsettings = array(
-            'raw' => false,
-            'fileurl' => true,
-            'filter' =>  false);
+            'raw' => array('default' => false, 'type' => PARAM_BOOL),
+            'fileurl' => array('default' => true, 'type' => PARAM_BOOL),
+            'filter' => array('default' => false, 'type' => PARAM_BOOL),
+            'lang' => array('default' => '', 'type' => PARAM_LANG),
+        );
 
         // Load the external settings with the web service settings.
         $settings = external_settings::get_instance();
-        foreach ($externalsettings as $name => $default) {
+        foreach ($externalsettings as $name => $settingdata) {
 
             $wsparamname = 'moodlewssetting' . $name;
 
             // Retrieve and remove the setting parameter from the request.
-            $value = optional_param($wsparamname, $default, PARAM_BOOL);
+            $value = optional_param($wsparamname, $settingdata['default'], $settingdata['type']);
             unset($_GET[$wsparamname]);
             unset($_POST[$wsparamname]);
 
@@ -1153,6 +1234,8 @@ abstract class webservice_base_server extends webservice_server {
      * @uses die
      */
     public function run() {
+        global $CFG, $SESSION;
+
         // we will probably need a lot of memory in some functions
         raise_memory_limit(MEMORY_EXTRA);
 
@@ -1185,6 +1268,23 @@ abstract class webservice_base_server extends webservice_server {
         $event = \core\event\webservice_function_called::create($params);
         $event->set_legacy_logdata(array(SITEID, 'webservice', $this->functionname, '' , getremoteaddr() , 0, $this->userid));
         $event->trigger();
+
+        // Do additional setup stuff.
+        $settings = external_settings::get_instance();
+        $sessionlang = $settings->get_lang();
+        if (!empty($sessionlang)) {
+            $SESSION->lang = $sessionlang;
+        }
+
+        setup_lang_from_browser();
+
+        if (empty($CFG->lang)) {
+            if (empty($SESSION->lang)) {
+                $CFG->lang = 'en';
+            } else {
+                $CFG->lang = $SESSION->lang;
+            }
+        }
 
         // finally, execute the function - any errors are catched by the default exception handler
         $this->execute();
@@ -1321,9 +1421,27 @@ abstract class webservice_base_server extends webservice_server {
     protected function execute() {
         // validate params, this also sorts the params properly, we need the correct order in the next part
         $params = call_user_func(array($this->function->classname, 'validate_parameters'), $this->function->parameters_desc, $this->parameters);
+        $params = array_values($params);
+
+        // Allow any Moodle plugin a chance to override this call. This is a convenient spot to
+        // make arbitrary behaviour customisations, for example to affect the mobile app behaviour.
+        // The overriding plugin could call the 'real' function first and then modify the results,
+        // or it could do a completely separate thing.
+        $callbacks = get_plugins_with_function('override_webservice_execution');
+        foreach ($callbacks as $plugintype => $plugins) {
+            foreach ($plugins as $plugin => $callback) {
+                $result = $callback($this->function, $params);
+                if ($result !== false) {
+                    // If the callback returns anything other than false, we assume it replaces the
+                    // real function.
+                    $this->returns = $result;
+                    return;
+                }
+            }
+        }
 
         // execute - yay!
-        $this->returns = call_user_func_array(array($this->function->classname, $this->function->methodname), array_values($params));
+        $this->returns = call_user_func_array(array($this->function->classname, $this->function->methodname), $params);
     }
 
     /**

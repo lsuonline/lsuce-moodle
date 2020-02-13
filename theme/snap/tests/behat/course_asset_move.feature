@@ -16,7 +16,7 @@
 # Tests for toggle course section visibility in non edit mode in snap.
 #
 # @package    theme_snap
-# @copyright  2015 Guy Thomas <gthomas@moodlerooms.com>
+# @copyright  2015 Guy Thomas <osdev@blackboard.com>
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
@@ -25,13 +25,12 @@ Feature: When the moodle theme is set to Snap, teachers can move course resource
 
   Background:
     Given I log in as "admin"
-    And I navigate to "Front page settings" node in "Site administration > Front page"
+    And I am on site homepage
+    And I click on "#admin-menu-trigger" "css_element"
+    And I navigate to "Edit settings" in current page administration
     And I set the following fields to these values:
       | Include a topic section | 1 |
     And I log out
-    Given the following config values are set as admin:
-      | theme           | snap |
-      | defaulthomepage | 0    |
     And the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1 | 0 | topics |
@@ -52,7 +51,8 @@ Feature: When the moodle theme is set to Snap, teachers can move course resource
 
   @javascript
   Scenario: In read mode, on front page, admin moves activity.
-    Given I log in as "admin" (theme_snap)
+    Given I log in as "admin"
+    And I am on site homepage
     And I click on ".snap-activity.modtype_assign .snap-asset-move img[title='Move \"Test assignment1\"']" "css_element"
     Then I should see "Moving \"Test assignment1\""
     And I click on "#region-main .sitetopic ul.section li.snap-drop.asset-drop div.asset-wrapper" "css_element"
@@ -60,7 +60,7 @@ Feature: When the moodle theme is set to Snap, teachers can move course resource
 
   @javascript
   Scenario: In read mode, on course, teacher moves activity.
-    Given I log in as "teacher1" (theme_snap)
+    Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
     Then "#section-1" "css_element" should exist
@@ -71,7 +71,7 @@ Feature: When the moodle theme is set to Snap, teachers can move course resource
 
   @javascript
   Scenario: In read mode, on course, teacher moves activity to a different section.
-    Given I log in as "teacher1" (theme_snap)
+    Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
     Then "#section-1" "css_element" should exist
@@ -83,7 +83,7 @@ Feature: When the moodle theme is set to Snap, teachers can move course resource
 
   @javascript
   Scenario: In read mode, on course, teacher moves two activities to a different section.
-    Given I log in as "teacher1" (theme_snap)
+    Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
     Then "#section-1" "css_element" should exist
@@ -98,7 +98,7 @@ Feature: When the moodle theme is set to Snap, teachers can move course resource
 
   @javascript
   Scenario: Student cannot move activity.
-    Given I log in as "student1" (theme_snap)
+    Given I log in as "student1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
     Then ".snap-activity.modtype_assign .js-snap-asset-move" "css_element" should not exist

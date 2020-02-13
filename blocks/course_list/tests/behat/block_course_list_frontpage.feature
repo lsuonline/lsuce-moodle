@@ -28,7 +28,7 @@ Feature: Enable the course_list block on the frontpage and view it's contents
   Scenario: Add the course list block on the frontpage and navigate to the course listing
     Given I log in as "admin"
     And I am on site homepage
-    And I navigate to "Turn editing on" node in "Front page settings"
+    And I navigate to "Turn editing on" in current page administration
     And I add the "Courses" block
     And I log out
     When I log in as "teacher1"
@@ -43,7 +43,7 @@ Feature: Enable the course_list block on the frontpage and view it's contents
   Scenario: Add the course list block on the frontpage page and navigate to another course
     Given I log in as "admin"
     And I am on site homepage
-    And I navigate to "Turn editing on" node in "Front page settings"
+    And I navigate to "Turn editing on" in current page administration
     And I add the "Courses" block
     And I log out
     When I log in as "teacher1"
@@ -52,13 +52,13 @@ Feature: Enable the course_list block on the frontpage and view it's contents
     And I should see "Course 2" in the "My courses" "block"
     And I should see "Course 3" in the "My courses" "block"
     And I should not see "Course 4" in the "My courses" "block"
-    And I follow "Course 3"
+    And I am on "Course 3" course homepage
     And I should see "Course 3"
 
   Scenario: Add the course list block on the frontpage page and view as an admin
     Given I log in as "admin"
     And I am on site homepage
-    And I navigate to "Turn editing on" node in "Front page settings"
+    And I navigate to "Turn editing on" in current page administration
     When I add the "Courses" block
     Then I should see "Miscellaneous" in the "Course categories" "block"
     And I should see "Category 1" in the "Course categories" "block"
@@ -72,7 +72,7 @@ Feature: Enable the course_list block on the frontpage and view it's contents
   Scenario: Add the course list block on the frontpage page and view as a guest
     Given I log in as "admin"
     And I am on site homepage
-    And I navigate to "Turn editing on" node in "Front page settings"
+    And I navigate to "Turn editing on" in current page administration
     And I add the "Courses" block
     And I log out
     When I log in as "guest"

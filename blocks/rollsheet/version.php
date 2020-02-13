@@ -24,12 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016020200;      // The current module version (Date: YYYYMMDDXX)
-$plugin->requires = 2011070110;      // Requires this Moodle version
+$plugin->version = 2016020200; // The current module version (Date: YYYYMMDDXX).
+$plugin->requires = 2011070110; // Requires this Moodle version.
 
 $plugin->component = 'block_rollsheet';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->release = '1.4';
-?>
-
-

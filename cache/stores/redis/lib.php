@@ -27,14 +27,17 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Redis Cache Store
  *
+ * To allow separation of definitions in Moodle and faster purging, each cache
+ * is implemented as a Redis hash.  That is a trade-off between having functionality of TTL
+ * and being able to manage many caches in a single redis instance.  Given the recommendation
+ * not to use TTL if at all possible and the benefits of having many stores in Redis using the
+ * hash configuration, the hash implementation has been used.
+ *
  * @copyright   2013 Adam Durana
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @todo TTL support was removed, but might be able to add it back by setting
- *       the TTL on the hash key.  So, after a set, we could use http://redis.io/commands/pttl
- *       to see if the hash is set to expire, if not, set a TTL on it.  Must prevent it from
- *       doing it on every set though.
  */
-class cachestore_redis extends cache_store implements cache_is_key_aware, cache_is_lockable, cache_is_configurable {
+class cachestore_redis extends cache_store implements cache_is_key_aware, cache_is_lockable,
+        cache_is_configurable, cache_is_searchable {
     /**
      * Name of this store.
      *
@@ -71,6 +74,13 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     protected $redis;
 
     /**
+     * Serializer for this store.
+     *
+     * @var int
+     */
+    protected $serializer = Redis::SERIALIZER_PHP;
+
+    /**
      * Determines if the requirements for this type of store are met.
      *
      * @return bool
@@ -86,7 +96,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return bool
      */
     public static function is_supported_mode($mode) {
-        return ($mode === self::MODE_APPLICATION);
+        return ($mode === self::MODE_APPLICATION || $mode === self::MODE_SESSION);
     }
 
     /**
@@ -96,7 +106,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int
      */
     public static function get_supported_features(array $configuration = array()) {
-        return self::SUPPORTS_DATA_GUARANTEE + self::DEREFERENCES_OBJECTS;
+        return self::SUPPORTS_DATA_GUARANTEE + self::DEREFERENCES_OBJECTS + self::IS_SEARCHABLE;
     }
 
     /**
@@ -106,7 +116,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int
      */
     public static function get_supported_modes(array $configuration = array()) {
-        return self::MODE_APPLICATION;
+        return self::MODE_APPLICATION + self::MODE_SESSION;
     }
 
     /**
@@ -118,16 +128,15 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     public function __construct($name, array $configuration = array()) {
         $this->name = $name;
 
-        // During unit test purge, it goes off process and no config is passed.
-        if (PHPUNIT_TEST && empty($configuration)) {
-            // The name is important because it is part of the prefix.
-            $this->name    = self::get_testing_name();
-            $configuration = self::get_testing_configuration();
-        } else if (!array_key_exists('server', $configuration) || empty($configuration['server'])) {
+        if (!array_key_exists('server', $configuration) || empty($configuration['server'])) {
             return;
         }
+        if (array_key_exists('serializer', $configuration)) {
+            $this->serializer = (int)$configuration['serializer'];
+        }
+        $password = !empty($configuration['password']) ? $configuration['password'] : '';
         $prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
-        $this->redis = $this->new_redis($configuration['server'], $prefix);
+        $this->redis = $this->new_redis($configuration['server'], $prefix, $password);
     }
 
     /**
@@ -136,14 +145,27 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      *
      * @param string $server The server connection string
      * @param string $prefix The key prefix
+     * @param string $password The server connection password
      * @return Redis
      */
-    protected function new_redis($server, $prefix = '') {
+    protected function new_redis($server, $prefix = '', $password = '') {
         $redis = new Redis();
-        if ($redis->connect($server)) {
-            $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-            $redis->setOption(Redis::OPT_PREFIX, $prefix.$this->name.'-');
-
+        // Check if it isn't a Unix socket to set default port.
+        $port = ($server[0] === '/') ? null : 6379;
+        if (strpos($server, ':')) {
+            $serverconf = explode(':', $server);
+            $server = $serverconf[0];
+            $port = $serverconf[1];
+        }
+        if ($redis->connect($server, $port)) {
+            if (!empty($password)) {
+                $redis->auth($password);
+            }
+            $redis->setOption(Redis::OPT_SERIALIZER, $this->serializer);
+            if (!empty($prefix)) {
+                $redis->setOption(Redis::OPT_PREFIX, $prefix);
+            }
+            // Database setting option...
             $this->isready = $this->ping($redis);
         } else {
             $this->isready = false;
@@ -273,6 +295,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int The number of keys successfully deleted.
      */
     public function delete_many(array $keys) {
+        // Redis needs the hash as the first argument, so we have to put it at the start of the array.
         array_unshift($keys, $this->hash);
         return call_user_func_array(array($this->redis, 'hDel'), $keys);
     }
@@ -296,26 +319,6 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     }
 
     /**
-     * Creates an instance of the store for testing.
-     *
-     * @param cache_definition $definition
-     * @return mixed An instance of the store, or false if an instance cannot be created.
-     */
-    public static function initialise_test_instance(cache_definition $definition) {
-        if (!self::are_requirements_met()) {
-            return false;
-        }
-        $config = get_config('cachestore_redis');
-        if (empty($config->test_server)) {
-            return false;
-        }
-        $cache = new cachestore_redis('Redis test', ['server' => $config->test_server]);
-        $cache->initialise($definition);
-
-        return $cache;
-    }
-
-    /**
      * Determines if the store has a given key.
      *
      * @see cache_is_key_aware
@@ -323,7 +326,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return bool True if the key exists, false if it does not.
      */
     public function has($key) {
-        return $this->redis->hExists($this->hash, $key);
+        return !empty($this->redis->hExists($this->hash, $key));
     }
 
     /**
@@ -391,6 +394,32 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     }
 
     /**
+     * Finds all of the keys being used by this cache store instance.
+     *
+     * @return array of all keys in the hash as a numbered array.
+     */
+    public function find_all() {
+        return $this->redis->hKeys($this->hash);
+    }
+
+    /**
+     * Finds all of the keys whose keys start with the given prefix.
+     *
+     * @param string $prefix
+     *
+     * @return array List of keys that match this prefix.
+     */
+    public function find_by_prefix($prefix) {
+        $return = [];
+        foreach ($this->find_all() as $key) {
+            if (strpos($key, $prefix) === 0) {
+                $return[] = $key;
+            }
+        }
+        return $return;
+    }
+
+    /**
      * Releases a given lock if the owner information matches.
      *
      * @see cache_is_lockable
@@ -413,7 +442,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return array
      */
     public static function config_get_configuration_array($data) {
-        return array('server' => $data->server, 'prefix' => $data->prefix);
+        return array(
+            'server' => $data->server,
+            'prefix' => $data->prefix,
+            'password' => $data->password,
+            'serializer' => $data->serializer
+        );
     }
 
     /**
@@ -427,54 +461,81 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         $data = array();
         $data['server'] = $config['server'];
         $data['prefix'] = !empty($config['prefix']) ? $config['prefix'] : '';
+        $data['password'] = !empty($config['password']) ? $config['password'] : '';
+        if (!empty($config['serializer'])) {
+            $data['serializer'] = $config['serializer'];
+        }
         $editform->set_data($data);
     }
 
-    public static function initialise_unit_test_instance(cache_definition $definition) {
+
+    /**
+     * Creates an instance of the store for testing.
+     *
+     * @param cache_definition $definition
+     * @return mixed An instance of the store, or false if an instance cannot be created.
+     */
+    public static function initialise_test_instance(cache_definition $definition) {
         if (!self::are_requirements_met()) {
             return false;
         }
-        if (!self::ready_to_be_used_for_testing()) {
+        $config = get_config('cachestore_redis');
+        if (empty($config->test_server)) {
             return false;
         }
-
-        $store = new cachestore_redis(self::get_testing_name(), self::get_testing_configuration());
-        if (!$store->is_ready()) {
-            return false;
+        $configuration = array('server' => $config->test_server);
+        if (!empty($config->test_serializer)) {
+            $configuration['serializer'] = $config->test_serializer;
         }
-        $store->initialise($definition);
+        if (!empty($config->test_password)) {
+            $configuration['password'] = $config->test_password;
+        }
+        $cache = new cachestore_redis('Redis test', $configuration);
+        $cache->initialise($definition);
 
-        return $store;
-    }
-
-    public static function ready_to_be_used_for_testing() {
-        return defined('CACHESTORE_REDIS_TEST_SERVER');
+        return $cache;
     }
 
     /**
      * Return configuration to use when unit testing.
      *
      * @return array
-     * @throws coding_exception
      */
-    public static function get_testing_configuration() {
+    public static function unit_test_configuration() {
         global $DB;
 
-        if (!self::are_requirements_met()) {
-            throw new coding_exception('Redis cache store not setup for testing');
+        if (!self::are_requirements_met() || !self::ready_to_be_used_for_testing()) {
+            throw new moodle_exception('TEST_CACHESTORE_REDIS_TESTSERVERS not configured, unable to create test configuration');
         }
-        return [
-            'server' => CACHESTORE_REDIS_TEST_SERVER,
-            'prefix' => $DB->get_prefix(),
+
+        return ['server' => TEST_CACHESTORE_REDIS_TESTSERVERS,
+                'prefix' => $DB->get_prefix(),
         ];
     }
 
     /**
-     * Get the name to use when unit testing.
+     * Returns true if this cache store instance is both suitable for testing, and ready for testing.
      *
-     * @return string
+     * When TEST_CACHESTORE_REDIS_TESTSERVERS is set, then we are ready to be use d for testing.
+     *
+     * @return bool
      */
-    private static function get_testing_name() {
-        return 'test_application';
+    public static function ready_to_be_used_for_testing() {
+        return defined('TEST_CACHESTORE_REDIS_TESTSERVERS');
+    }
+
+    /**
+     * Gets an array of options to use as the serialiser.
+     * @return array
+     */
+    public static function config_get_serializer_options() {
+        $options = array(
+            Redis::SERIALIZER_PHP => get_string('serializer_php', 'cachestore_redis')
+        );
+
+        if (defined('Redis::SERIALIZER_IGBINARY')) {
+            $options[Redis::SERIALIZER_IGBINARY] = get_string('serializer_igbinary', 'cachestore_redis');
+        }
+        return $options;
     }
 }

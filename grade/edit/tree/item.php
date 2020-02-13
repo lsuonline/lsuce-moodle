@@ -41,7 +41,7 @@ navigation_node::override_active_url(new moodle_url('/grade/edit/tree/index.php'
     array('id'=>$courseid)));
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('nocourseid');
+    print_error('invalidcourseid');
 }
 
 require_login($course);
@@ -165,7 +165,6 @@ if ($mform->is_cancelled()) {
     unset($grade_item->anonymous);
     // END LSU Anonymous Grades
 
-
     // Handle null decimals value
     if (!property_exists($data, 'decimals') or $data->decimals < 0) {
         $grade_item->decimals = null;
@@ -178,7 +177,6 @@ if ($mform->is_cancelled()) {
         // BEGIN LSU Anonymous Grades check
         if (isset($data->anonymous) and grade_anonymous::is_supported($course)) {
             $anon = new grade_anonymous(array('itemid' => $grade_item->id));
-
             if (empty($anon->id)) {
                 $anon->insert();
             }
@@ -191,15 +189,16 @@ if ($mform->is_cancelled()) {
         }
 
     } else {
-           $ec_test = isset($data->extracred);
-           if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
-               $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
-           }
-           if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
-               $grade_item->aggregationcoef2 = 0;
-               $grade_item->weightoverride = 1;
-           }
-
+            // LSU Gradebook enhancement
+            $ec_test = isset($data->extracred);
+            if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
+                $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
+            }
+            if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
+                $grade_item->aggregationcoef2 = 0;
+                $grade_item->weightoverride = 1;
+            }
+            // END LSU Gradebook enhancement
         $grade_item->update();
 
         if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {

@@ -24,6 +24,8 @@
  * @since      Moodle 3.0
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 $functions = array(
 
     'mod_lti_get_tool_launch_data' => array(
@@ -49,7 +51,7 @@ $functions = array(
         'classname'     => 'mod_lti_external',
         'methodname'    => 'view_lti',
         'description'   => 'Trigger the course module viewed event and update the module completion status.',
-        'type'          => 'write',
+        'type'          => 'read',
         'capabilities'  => 'mod/lti:view',
         'services'      => array(MOODLE_OFFICIAL_MOBILE_SERVICE)
     ),

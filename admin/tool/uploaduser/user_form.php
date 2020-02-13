@@ -95,7 +95,7 @@ class admin_uploaduser_form2 extends moodleform {
         $choices = array(0 => get_string('infilefield', 'auth'), 1 => get_string('createpasswordifneeded', 'auth'));
         $mform->addElement('select', 'uupasswordnew', get_string('uupasswordnew', 'tool_uploaduser'), $choices);
         $mform->setDefault('uupasswordnew', 1);
-        $mform->disabledIf('uupasswordnew', 'uutype', 'eq', UU_USER_UPDATE);
+        $mform->hideIf('uupasswordnew', 'uutype', 'eq', UU_USER_UPDATE);
 
         $choices = array(UU_UPDATE_NOCHANGES    => get_string('nochanges', 'tool_uploaduser'),
                          UU_UPDATE_FILEOVERRIDE => get_string('uuupdatefromfile', 'tool_uploaduser'),
@@ -103,16 +103,16 @@ class admin_uploaduser_form2 extends moodleform {
                          UU_UPDATE_MISSING      => get_string('uuupdatemissing', 'tool_uploaduser'));
         $mform->addElement('select', 'uuupdatetype', get_string('uuupdatetype', 'tool_uploaduser'), $choices);
         $mform->setDefault('uuupdatetype', UU_UPDATE_NOCHANGES);
-        $mform->disabledIf('uuupdatetype', 'uutype', 'eq', UU_USER_ADDNEW);
-        $mform->disabledIf('uuupdatetype', 'uutype', 'eq', UU_USER_ADDINC);
+        $mform->hideIf('uuupdatetype', 'uutype', 'eq', UU_USER_ADDNEW);
+        $mform->hideIf('uuupdatetype', 'uutype', 'eq', UU_USER_ADDINC);
 
         $choices = array(0 => get_string('nochanges', 'tool_uploaduser'), 1 => get_string('update'));
         $mform->addElement('select', 'uupasswordold', get_string('uupasswordold', 'tool_uploaduser'), $choices);
         $mform->setDefault('uupasswordold', 0);
-        $mform->disabledIf('uupasswordold', 'uutype', 'eq', UU_USER_ADDNEW);
-        $mform->disabledIf('uupasswordold', 'uutype', 'eq', UU_USER_ADDINC);
-        $mform->disabledIf('uupasswordold', 'uuupdatetype', 'eq', 0);
-        $mform->disabledIf('uupasswordold', 'uuupdatetype', 'eq', 3);
+        $mform->hideIf('uupasswordold', 'uutype', 'eq', UU_USER_ADDNEW);
+        $mform->hideIf('uupasswordold', 'uutype', 'eq', UU_USER_ADDINC);
+        $mform->hideIf('uupasswordold', 'uuupdatetype', 'eq', 0);
+        $mform->hideIf('uupasswordold', 'uuupdatetype', 'eq', 3);
 
         $choices = array(UU_PWRESET_WEAK => get_string('usersweakpassword', 'tool_uploaduser'),
                          UU_PWRESET_NONE => get_string('none'),
@@ -125,18 +125,18 @@ class admin_uploaduser_form2 extends moodleform {
 
         $mform->addElement('selectyesno', 'uuallowrenames', get_string('allowrenames', 'tool_uploaduser'));
         $mform->setDefault('uuallowrenames', 0);
-        $mform->disabledIf('uuallowrenames', 'uutype', 'eq', UU_USER_ADDNEW);
-        $mform->disabledIf('uuallowrenames', 'uutype', 'eq', UU_USER_ADDINC);
+        $mform->hideIf('uuallowrenames', 'uutype', 'eq', UU_USER_ADDNEW);
+        $mform->hideIf('uuallowrenames', 'uutype', 'eq', UU_USER_ADDINC);
 
         $mform->addElement('selectyesno', 'uuallowdeletes', get_string('allowdeletes', 'tool_uploaduser'));
         $mform->setDefault('uuallowdeletes', 0);
-        $mform->disabledIf('uuallowdeletes', 'uutype', 'eq', UU_USER_ADDNEW);
-        $mform->disabledIf('uuallowdeletes', 'uutype', 'eq', UU_USER_ADDINC);
+        $mform->hideIf('uuallowdeletes', 'uutype', 'eq', UU_USER_ADDNEW);
+        $mform->hideIf('uuallowdeletes', 'uutype', 'eq', UU_USER_ADDINC);
 
         $mform->addElement('selectyesno', 'uuallowsuspends', get_string('allowsuspends', 'tool_uploaduser'));
         $mform->setDefault('uuallowsuspends', 1);
-        $mform->disabledIf('uuallowsuspends', 'uutype', 'eq', UU_USER_ADDNEW);
-        $mform->disabledIf('uuallowsuspends', 'uutype', 'eq', UU_USER_ADDINC);
+        $mform->hideIf('uuallowsuspends', 'uutype', 'eq', UU_USER_ADDNEW);
+        $mform->hideIf('uuallowsuspends', 'uutype', 'eq', UU_USER_ADDINC);
 
         if (!empty($CFG->allowaccountssameemail)) {
             $mform->addElement('selectyesno', 'uunoemailduplicates', get_string('uunoemailduplicates', 'tool_uploaduser'));
@@ -209,13 +209,15 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->addElement('text', 'username', get_string('uuusernametemplate', 'tool_uploaduser'), 'size="20"');
         $mform->setType('username', PARAM_RAW); // No cleaning here. The process verifies it later.
         $mform->addRule('username', get_string('requiredtemplate', 'tool_uploaduser'), 'required', null, 'client');
-        $mform->disabledIf('username', 'uutype', 'eq', UU_USER_ADD_UPDATE);
-        $mform->disabledIf('username', 'uutype', 'eq', UU_USER_UPDATE);
+        $mform->hideIf('username', 'uutype', 'eq', UU_USER_ADD_UPDATE);
+        $mform->hideIf('username', 'uutype', 'eq', UU_USER_UPDATE);
+        $mform->setForceLtr('username');
 
         $mform->addElement('text', 'email', get_string('email'), 'maxlength="100" size="30"');
         $mform->setType('email', PARAM_RAW); // No cleaning here. The process verifies it later.
-        $mform->disabledIf('email', 'uutype', 'eq', UU_USER_ADD_UPDATE);
-        $mform->disabledIf('email', 'uutype', 'eq', UU_USER_UPDATE);
+        $mform->hideIf('email', 'uutype', 'eq', UU_USER_ADD_UPDATE);
+        $mform->hideIf('email', 'uutype', 'eq', UU_USER_UPDATE);
+        $mform->setForceLtr('email');
 
         // only enabled and known to work plugins
         $choices = uu_supported_auths();
@@ -227,6 +229,7 @@ class admin_uploaduser_form2 extends moodleform {
         $choices = array(0 => get_string('emaildisplayno'), 1 => get_string('emaildisplayyes'), 2 => get_string('emaildisplaycourse'));
         $mform->addElement('select', 'maildisplay', get_string('emaildisplay'), $choices);
         $mform->setDefault('maildisplay', core_user::get_property_default('maildisplay'));
+        $mform->addHelpButton('maildisplay', 'emaildisplay');
 
         $choices = array(0 => get_string('textformat'), 1 => get_string('htmlformat'));
         $mform->addElement('select', 'mailformat', get_string('emailformat'), $choices);
@@ -281,6 +284,7 @@ class admin_uploaduser_form2 extends moodleform {
 
         $mform->addElement('text', 'idnumber', get_string('idnumber'), 'maxlength="255" size="25"');
         $mform->setType('idnumber', PARAM_NOTAGS);
+        $mform->setForceLtr('idnumber');
 
         $mform->addElement('text', 'institution', get_string('institution'), 'maxlength="255" size="25"');
         $mform->setType('institution', PARAM_TEXT);
@@ -293,10 +297,12 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->addElement('text', 'phone1', get_string('phone1'), 'maxlength="20" size="25"');
         $mform->setType('phone1', PARAM_NOTAGS);
         $mform->setAdvanced('phone1');
+        $mform->setForceLtr('phone1');
 
         $mform->addElement('text', 'phone2', get_string('phone2'), 'maxlength="20" size="25"');
         $mform->setType('phone2', PARAM_NOTAGS);
         $mform->setAdvanced('phone2');
+        $mform->setForceLtr('phone2');
 
         $mform->addElement('text', 'address', get_string('address'), 'maxlength="255" size="25"');
         $mform->setType('address', PARAM_TEXT);
@@ -345,6 +351,7 @@ class admin_uploaduser_form2 extends moodleform {
         $errors = parent::validation($data, $files);
         $columns = $this->_customdata['columns'];
         $optype  = $data['uutype'];
+        $updatetype = $data['uuupdatetype'];
 
         // detect if password column needed in file
         if (!in_array('password', $columns)) {
@@ -375,6 +382,12 @@ class admin_uploaduser_form2 extends moodleform {
                     }
                     break;
              }
+        }
+
+        // If the 'Existing user details' value is set we need to ensure that the
+        // 'Upload type' is not set to something invalid.
+        if (!empty($updatetype) && ($optype == UU_USER_ADDNEW || $optype == UU_USER_ADDINC)) {
+            $errors['uuupdatetype'] = get_string('invalidupdatetype', 'tool_uploaduser');
         }
 
         // look for other required data

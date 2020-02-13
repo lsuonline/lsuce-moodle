@@ -1,6 +1,22 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once $CFG->dirroot . '/grade/report/quick_edit/classes/uilib.php';
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/grade/report/quick_edit/classes/uilib.php');
 
 interface selectable_items {
     public function description();
@@ -15,19 +31,14 @@ interface item_filtering {
 }
 
 abstract class quick_edit_screen {
-    var $courseid;
+    public $courseid;
+    public $itemid;
+    public $groupid;
+    public $context;
+    public $page;
+    public $perpage;
 
-    var $itemid;
-
-    var $groupid;
-
-    var $context;
-
-    var $page;
-
-    var $perpage;
-
-    function __construct($courseid, $itemid, $groupid = null) {
+    public function __construct($courseid, $itemid, $groupid = null) {
         global $DB;
 
         $this->courseid = $courseid;
@@ -49,9 +60,10 @@ abstract class quick_edit_screen {
     }
 
     public function format_link($screen, $itemid, $display = null) {
-        $url = new moodle_url('/grade/report/user/index.php', array(
+        $url = new moodle_url('/grade/report/quick_edit/index.php', array(
             'id' => $this->courseid,
-            'userid' => $itemid,
+            'item' => $screen,
+            'itemid' => $itemid,
             'group' => $this->groupid
         ));
 
@@ -107,7 +119,7 @@ abstract class quick_edit_screen {
         return get_string('pluginname', 'gradereport_quick_edit');
     }
 
-    public abstract function init($self_item_is_empty = false);
+    public abstract function init($selfitemisempty = false);
 
     public abstract function html();
 
@@ -173,15 +185,15 @@ abstract class quick_edit_screen {
                 continue;
             }
 
-            $grade_item = grade_item::fetch(array(
+            $gradeitem = grade_item::fetch(array(
                 'id' => $itemid, 'courseid' => $this->courseid
             ));
 
-            if (!$grade_item) {
+            if (!$gradeitem) {
                 continue;
             }
 
-            $grade = $this->fetch_grade_or_default($grade_item, $userid);
+            $grade = $this->fetch_grade_or_default($gradeitem, $userid);
 
             $element = $this->factory()->create($matches[1])->format($grade);
 
@@ -197,28 +209,54 @@ abstract class quick_edit_screen {
                 $data->$name = null;
             }
 
-            // Same value; skip
+            // Same value; skip.
             if ($oldvalue == $posted) {
                 continue;
             }
 
             $msg = $element->set($posted);
 
-            // Optional type
+            // Optional type.
             if (!empty($msg)) {
                 $warnings[] = $msg;
             }
         }
 
-        // Some post-processing
-        $event_data = new stdClass;
-        $event_data->warnings = $warnings;
-        $event_data->post_data = $data;
-        $event_data->instance = $this;
+        $eventbase = get_class($this);
+        if ($eventbase != 'quick_edit_anonymous' && $eventbase != 'quick_edit_grade') {
+            $eventbase = 'quick_edit_other';
+        }
 
-        qe_events_trigger(get_class($this) . '_edited', $event_data);
+        $eventdata = array('contextid' => $this->context->id
+                         , 'other' => array('warnings' => $warnings
+                                          , 'post_data' => $data
+                                          , 'instance' => $this
+                                           )
+                          );
 
-        return $event_data->warnings;
+        global $CFG;
+        // TODO: Refactor the if-statement below to use only Event 2 (with no if-stmt).
+        if ($CFG->removeevent2triggers) {
+            require_once($CFG->dirroot . '/blocks/post_grades/events.php');
+            if ($eventbase == 'quick_edit_anonymous') {
+                post_grades_handler::quick_edit_anonymous_edited($this, $warnings);
+            } else if ($eventbase == 'quick_edit_grade') {
+                post_grades_handler::quick_edit_grade_edited($this, $warnings);
+            } else {
+                post_grades_handler::quick_edit_other_edited($this, $warnings);
+            }
+        } else {
+            require_once("classes/event/{$eventbase}_edited.php");
+            if ($eventbase == 'quick_edit_anonymous') {
+                $event = grade_report_quick_edit\event\quick_edit_anonymous_edited::create($eventdata);
+            } else if ($eventbase == 'quick_edit_grade') {
+                $event = grade_report_quick_edit\event\quick_edit_grade_edited::create($eventdata);
+            } else {
+                $event = grade_report_quick_edit\event\quick_edit_other_edited::create($eventdata);
+            }
+            $event->trigger();
+        }
+        return $warnings;
     }
 
     public function display_group_selector() {
@@ -227,7 +265,7 @@ abstract class quick_edit_screen {
 }
 
 abstract class quick_edit_tablelike extends quick_edit_screen implements tabbable {
-    var $items;
+    public $items;
 
     protected $headers = array();
 
@@ -257,34 +295,34 @@ abstract class quick_edit_tablelike extends quick_edit_screen implements tabbabl
         return (count($this->definition()) * $this->total) + $this->index;
     }
 
-    // Special injection for bulk operations
+    // Special injection for bulk operations.
     public function process($data) {
         $bulk = $this->factory()->create('bulk_insert')->format($this->item);
 
         // Bulk insert messages the data to be passed in
-        // ie: for all grades of empty grades apply the specified value
+        // ie: for all grades of empty grades apply the specified value.
         if ($bulk->is_applied($data)) {
             $filter = $bulk->get_type($data);
-            $insert_value = $bulk->get_insert_value($data);
+            $insertvalue = $bulk->get_insert_value($data);
 
-            // Appropriately massage data that may not exist
+            // Appropriately massage data that may not exist.
             if ($this->supports_paging()) {
                 // TODO: this only works with the grade screen...
-                $grade_item = grade_item::fetch(array(
+                $gradeitem = grade_item::fetch(array(
                     'courseid' => $this->courseid,
                     'id' => $this->item->id
                 ));
 
-                $null = $grade_item->gradetype == GRADE_TYPE_SCALE ? -1 : '';
+                $null = $gradeitem->gradetype == GRADE_TYPE_SCALE ? -1 : '';
 
                 foreach ($this->all_items as $itemid => $item) {
-                    $field = "finalgrade_{$grade_item->id}_{$itemid}";
+                    $field = "finalgrade_{$gradeitem->id}_{$itemid}";
                     if (isset($data->$field)) {
                         continue;
                     }
 
                     $grade = grade_grade::fetch(array(
-                        'itemid' => $grade_item->id,
+                        'itemid' => $gradeitem->id,
                         'userid' => $itemid
                     ));
 
@@ -298,18 +336,18 @@ abstract class quick_edit_tablelike extends quick_edit_screen implements tabbabl
                     continue;
                 }
 
-                $grade_item = grade_item::fetch(array(
+                $gradeitem = grade_item::fetch(array(
                     'courseid' => $this->courseid,
                     'id' => $matches[1]
                 ));
 
-                $is_scale = ($grade_item->gradetype == GRADE_TYPE_SCALE);
+                $isscale = ($gradeitem->gradetype == GRADE_TYPE_SCALE);
 
-                $empties = (trim($value) === '' or ($is_scale and $value == -1));
+                $empties = (trim($value) === '' or ($isscale and $value == -1));
 
                 if ($filter == 'all' or $empties) {
-                    $data->$varname = ($is_scale and empty($insert_value)) ?
-                        -1 : $insert_value;
+                    $data->$varname = ($isscale and empty($insertvalue)) ?
+                        -1 : $insertvalue;
                 }
             }
         }
@@ -319,7 +357,7 @@ abstract class quick_edit_tablelike extends quick_edit_screen implements tabbabl
 
     public function format_definition($line, $grade) {
         foreach ($this->definition() as $i => $field) {
-            // Table tab index
+            // Table tab index.
             $tab = ($i * $this->total) + $this->index;
 
             $html = $this->factory()->create($field)->format($grade, $tab);
@@ -339,7 +377,7 @@ abstract class quick_edit_tablelike extends quick_edit_screen implements tabbabl
 
         $table->head = $this->headers();
 
-        // To be used for extra formatting
+        // To be used for extra formatting.
         $this->index = 0;
         $this->total = count($this->items);
 
@@ -348,18 +386,44 @@ abstract class quick_edit_tablelike extends quick_edit_screen implements tabbabl
             $table->data[] = $this->format_line($item);
         }
 
-        $underlying = get_class($this);
+        $eventbase = get_class($this);
+        if ($eventbase != 'quick_edit_anonymous' && $eventbase != 'quick_edit_grade') {
+            $eventbase = 'quick_edit_other';
+        }
 
-        $data = new stdClass;
-        $data->table = $table;
-        $data->instance = $this;
+        $eventdata = array('contextid' => $this->context->id
+                         , 'other' => array('table' => $table
+                                          , 'instance' => $this
+                                           )
+                          );
 
-        qe_events_trigger($underlying . '_table_built', $data);
+        global $CFG;
+        // TODO: Refactor the if-statement below to use only Event 2 (with no if-stmt).
+        if ($CFG->removeevent2triggers) {
+            require_once($CFG->dirroot . '/blocks/post_grades/events.php');
+            if ($eventbase == 'quick_edit_anonymous') {
+                post_grades_handler::quick_edit_anonymous_table_built($eventdata['other']);
+            } else if ($eventbase == 'quick_edit_grade') {
+                post_grades_handler::quick_edit_grade_table_built($eventdata['other']);
+            } else {
+                post_grades_handler::quick_edit_other_table_built($eventdata['other']);
+            }
+        } else {
+            require_once("classes/event/{$eventbase}_table_built.php");
+            if ($eventbase == 'quick_edit_anonymous') {
+                $event = grade_report_quick_edit\event\quick_edit_anonymous_table_built::create($eventdata);
+            } else if ($eventbase == 'quick_edit_grade') {
+                $event = grade_report_quick_edit\event\quick_edit_grade_table_built::create($eventdata);
+            } else {
+                $event = grade_report_quick_edit\event\quick_edit_other_table_built::create($eventdata);
+            }
+            $event->trigger();
+        }
 
-        $button_attr = array('class' => 'quick_edit_buttons submit');
-        $button_html = implode(' ', $this->buttons());
+        $buttonattr = array('class' => 'quick_edit_buttons submit');
+        $buttonhtml = implode(' ', $this->buttons());
 
-        $buttons = html_writer::tag('div', $button_html, $button_attr);
+        $buttons = html_writer::tag('div', $buttonhtml, $buttonattr);
 
         return html_writer::tag('form',
             $buttons . html_writer::table($table) . $this->bulk_insert() . $buttons,

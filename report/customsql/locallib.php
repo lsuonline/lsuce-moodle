@@ -393,10 +393,11 @@ function report_customsql_pretify_column_names($row) {
 function report_customsql_customcodes() {
     global $CFG;
     $customcodes = array();
-    $customcodepairs = !empty($CFG->report_customsql_badwordsexception) ? explode(":",$CFG->report_customsql_badwordsexception) : null;
+    $customcodepairs = !empty($CFG->report_customsql_badwordsexception)
+        ? explode(":", $CFG->report_customsql_badwordsexception) : null;
     if ($customcodepairs) {
         foreach ($customcodepairs as $customcodepair) {
-            $ccp = explode(',',$customcodepair);
+            $ccp = explode(',', $customcodepair);
             $customcodes[$ccp[0]] = $ccp[1];
         }
     }
