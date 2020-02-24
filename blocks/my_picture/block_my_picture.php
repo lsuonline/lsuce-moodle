@@ -29,7 +29,6 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once($CFG->dirroot . '/blocks/my_picture/lib.php');
-require_login();
 
 // The main class for the my_picture system.
 class block_my_picture extends block_list {
