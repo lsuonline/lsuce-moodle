@@ -5,6 +5,7 @@
  * @author Mark Nielsen, Robert Russo
  */
 
+$dirroot = '/var/www/html';
 $cemdlconfig = '/var/moodledata/config.php';
 
 if (file_exists($cemdlconfig)) {
