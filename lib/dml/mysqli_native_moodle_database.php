@@ -455,11 +455,7 @@ class mysqli_native_moodle_database extends moodle_database {
 
         $rowformat = '';
         if (($engine === 'innodb' || $engine === 'xtradb') && strpos($collation, 'utf8mb4_') === 0) {
-            if ($this->is_compressed_row_format_supported()) {
-                $rowformat = "ROW_FORMAT=Compressed";
-            } else {
-                $rowformat = "ROW_FORMAT=Dynamic";
-            }
+            $rowformat = "ROW_FORMAT=Dynamic";
         }
         return $rowformat;
     }
@@ -2019,7 +2015,7 @@ class mysqli_native_moodle_database extends moodle_database {
     public function convert_table_row_format($tablename) {
         $currentrowformat = $this->get_row_format($tablename);
         if ($currentrowformat == 'Compact' || $currentrowformat == 'Redundant') {
-            $rowformat = ($this->is_compressed_row_format_supported(false)) ? "ROW_FORMAT=Compressed" : "ROW_FORMAT=Dynamic";
+            $rowformat = "ROW_FORMAT=Dynamic";
             $prefix = $this->get_prefix();
             $this->change_database_structure("ALTER TABLE {$prefix}$tablename $rowformat");
         }
