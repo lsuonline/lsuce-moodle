@@ -235,11 +235,6 @@ body.path-site .block.block_settings {
     .card-title {
         visibility: hidden;
     }
-
-    // Hide a possible second gear menu
-    .block-controls {
-        visibility: hidden;
-    }
 }
 
 #page-content .block_settings.state-visible,
@@ -252,9 +247,6 @@ body.path-site .block.block_settings {
     right: 0;
     border-left: 1px solid #eee;
     transition: right 0.4s ease-in-out;
-    div.card-body {
-        margin-top: 3em;
-    }
 }
 
 .block .header .title .commands {
@@ -288,14 +280,5 @@ body.path-site .block.block_settings {
     }
     #region-main {
         padding-top: 2em;
-    }
-}
-
-/* My overview block */
-.block-myoverview {
-    @media (min-width: 1100px) {
-        .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card {
-            width: calc(33.33% - #{$card-gutter});
-        }
     }
 }

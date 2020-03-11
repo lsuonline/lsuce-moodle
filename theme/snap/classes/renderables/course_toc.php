@@ -81,22 +81,16 @@ class course_toc implements \renderable, \templatable{
      */
     protected $numsections;
 
-    private $loadmodules = true;
-
     /**
-     * Constructor.
-     * @param null|int $course
-     * @param null|string $format
-     * @param bool $loadmodules
-     * @throws \coding_exception
+     * course_toc constructor.
+     * @param null $course
+     * @params null $format
      */
-    public function __construct($course = null, $format = null, $loadmodules = true) {
-        global $COURSE, $PAGE;
+    public function __construct($course = null, $format = null) {
+        global $COURSE;
         if (empty($course)) {
             $course = $COURSE;
         }
-
-        $this->loadmodules = $loadmodules;
 
         $supportedformats = ['weeks', 'topics'];
         if (!in_array($course->format, $supportedformats)) {
@@ -118,14 +112,7 @@ class course_toc implements \renderable, \templatable{
         $this->course = $course;
         $this->numsections = $this->format->get_last_section_number();
 
-        // Set context first so $OUTPUT does not break later.
-        if (!isset($PAGE->context) && AJAX_SCRIPT) {
-            $PAGE->set_context(context_course::instance($this->course->id));
-        }
-
-        if ($this->loadmodules) {
-            $this->set_modules();
-        }
+        $this->set_modules();
         $this->set_chapters();
         $this->set_footer();
     }
@@ -135,6 +122,13 @@ class course_toc implements \renderable, \templatable{
      * @throws \coding_exception
      */
     protected function set_modules() {
+        global $CFG, $PAGE;
+
+        // Set context first so $OUTPUT does not break later.
+        if (!isset($PAGE->context) && AJAX_SCRIPT) {
+            $PAGE->set_context(context_course::instance($this->course->id));
+        }
+
         // If course does not have any sections then exit - note, module search is not supported in course formats
         // that don't have sections.
         if (empty($this->numsections)) {
@@ -238,20 +232,8 @@ class course_toc implements \renderable, \templatable{
             if ($chapter->outputlink) {
                 $chapter->url = '#section-'.$section;
             }
-            $chapter->section = $section;
 
-            // Empty default progress.
-            $chapter->progress = (object) [
-                "progress" => (object) [
-                    "complete" => null,
-                    "total" => null,
-                ],
-                "completed" => null,
-                "pixcompleted" => null,
-            ];
-            if ($this->loadmodules) {
-                $chapter->progress = new course_toc_progress($this->course, $thissection);
-            }
+            $chapter->progress = new course_toc_progress($this->course, $thissection);
             $this->chapters->chapters[] = $chapter;
         }
     }
@@ -261,7 +243,6 @@ class course_toc implements \renderable, \templatable{
      */
     protected function set_footer() {
         global $OUTPUT;
-
         $this->footer = (object) [
             'canaddnewsection' => has_capability('moodle/course:update', context_course::instance($this->course->id)),
             'imgurladdnewsection' => $OUTPUT->image_url('pencil', 'theme'),

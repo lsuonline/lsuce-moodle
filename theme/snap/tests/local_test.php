@@ -320,41 +320,6 @@ class theme_snap_local_test extends snap_base_test {
         }
     }
 
-    public function test_max_id_message() {
-        $this->resetAfterTest();
-
-        $generator = $this->getDataGenerator();
-
-        $userfrom = $generator->create_user();
-        $userto = $generator->create_user();
-
-        $messages = [];
-        $msg = 0;
-        for ($msg = 0; $msg < 5; $msg++) {
-            $messages[$msg] = new \core\message\message();
-            $messages[$msg]->component         = 'moodle';
-            $messages[$msg]->name              = 'instantmessage';
-            $messages[$msg]->userfrom          = $userfrom;
-            $messages[$msg]->userto            = $userto;
-            $messages[$msg]->subject           = 'message subject ' . $msg;
-            $messages[$msg]->fullmessage       = 'message body ' . $msg;
-            $messages[$msg]->fullmessageformat = FORMAT_MARKDOWN;
-            $messages[$msg]->fullmessagehtml   = '<p>message body '. $msg .'</p>';
-            $messages[$msg]->smallmessage      = 'small message ' . $msg;
-            $messages[$msg]->notification      = 0;
-            $messages[$msg]->courseid = SITEID;
-        }
-        $messageids = [];
-        foreach ($messages as $message) {
-            $messageids[] = message_send($message);
-        }
-
-        for ($msg = 4; $msg >= 0; $msg--) {
-            $actual = local::get_user_messages($userto->id, null, 0, count($messageids), $messageids[$msg]);
-            $this->assertCount($msg + 1, $actual);
-            $this->assertEquals('message subject '. $msg, $actual[count($actual) - 1]->subject);
-        }
-    }
 
     public function test_one_message_deleted() {
         global $DB;
@@ -872,15 +837,8 @@ class theme_snap_local_test extends snap_base_test {
         $comp = local::course_completion_progress($course);
         $this->assertTrue($comp->fromcache);
 
-        $this->setUser($teacher); // We need to be a teacher if we are grading.
-        // Teacher should not have completion records.
-        $comp = local::course_completion_progress($course);
-        $this->assertTrue(property_exists($comp, 'complete'));
-        $this->assertNull($comp->complete);
-        // Assert null completion data not in cache.
-        $this->assertFalse($comp->fromcache);
-
         // Assert completion does not update for current user when grading someone else's assignment.
+        $this->setUser($teacher); // We need to be a teacher if we are grading.
         $DB->set_field('course_modules', 'completiongradeitemnumber', 0, ['id' => $cm->id]);
         $assign = new \assign($cm->context, $cm, $course);
         $gradeitem = $assign->get_grade_item();
@@ -895,14 +853,11 @@ class theme_snap_local_test extends snap_base_test {
         $assignrow->cmidnumber = null;
         assign_grade_item_update($assignrow, $grades);
         $comp = local::course_completion_progress($course);
-        $this->assertInstanceOf('stdClass', $comp);
         $this->assertFalse($comp->fromcache);
-        $this->assertNull($comp->complete);
-        $this->assertNull($comp->total);
-        $this->assertNull($comp->progress);
-
-        // In order to be able to have completion data, a sumbmission has to be as student.
-        $generator->enrol_user($teacher->id, $course->id, $studentrole->id);
+        $this->assertInstanceOf('stdClass', $comp);
+        $this->assertEquals(0, $comp->complete);
+        $this->assertEquals(1, $comp->total);
+        $this->assertEquals(0, $comp->progress);
 
         // Assert completion does update for current user when they grade their own assignment.
         // Note, we need to stay as a teacher because if we logged out to test as student it would invalidate the
@@ -919,23 +874,7 @@ class theme_snap_local_test extends snap_base_test {
         $this->assertEquals(1, $comp->complete);
         $this->assertEquals(1, $comp->total);
         $this->assertEquals(100, $comp->progress);
-        $coursectx = \context_course::instance($course->id);
-        role_unassign($studentrole->id, $teacher->id, $coursectx->id);
-        // Losing the teacher role will hide the completion progress.
-        $comp = local::course_completion_progress($course);
-        $this->assertInstanceOf('stdClass', $comp);
-        $this->assertFalse($comp->fromcache);
-        $this->assertNull($comp->complete);
-        $this->assertNull($comp->total);
-        $this->assertNull($comp->progress);
-        $system = \context_system::instance();
-        // Adding capability without role will result in a visible progress.
-        assign_capability('moodle/course:isincompletionreports', CAP_ALLOW, $editingteacherrole->id, $system->id);
-        $comp = local::course_completion_progress($course);
-        $this->assertTrue($comp->fromcache); // Cache should have been dumped at this point.
-        $this->assertEquals(1, $comp->complete);
-        $this->assertEquals(1, $comp->total);
-        $this->assertEquals(100, $comp->progress);
+
         // Assert from cache again on 2nd get.
         $comp = local::course_completion_progress($course);
         $this->assertTrue($comp->fromcache);

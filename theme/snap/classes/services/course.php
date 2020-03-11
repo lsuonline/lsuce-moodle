@@ -456,12 +456,11 @@ class course {
      * @param string $shortname
      * @param int $sectionnumber
      * @param boolean $visible
-     * @param bool $loadmodules Should modules be loaded.
      * @return array
      * @throws \moodle_exception
      * @throws \required_capability_exception
      */
-    public function set_section_visibility($shortname, $sectionnumber, $visible, $loadmodules = true) {
+    public function set_section_visibility($shortname, $sectionnumber, $visible) {
         global $OUTPUT;
         $course = $this->coursebyshortname($shortname);
         $context = \context_course::instance($course->id);
@@ -472,9 +471,7 @@ class course {
         $modinfo = get_fast_modinfo($course);
         $section = $modinfo->get_section_info($sectionnumber);
         $actionmodel = new \theme_snap\renderables\course_action_section_visibility($course, $section);
-
-        $nullformat = null;
-        $toc = new \theme_snap\renderables\course_toc($course, $nullformat, $loadmodules);
+        $toc = new \theme_snap\renderables\course_toc($course);
 
         return [
             'actionmodel' => $actionmodel->export_for_template($OUTPUT),
@@ -498,7 +495,7 @@ class course {
         $sectioninfo = $modinfo->get_section_info($sectionnumber);
 
         if (course_can_delete_section($course, $sectioninfo)) {
-            course_delete_section($course, $sectioninfo, true, true);
+            course_delete_section($course, $sectioninfo, true);
         }
         $toc = new \theme_snap\renderables\course_toc($course);
         return [

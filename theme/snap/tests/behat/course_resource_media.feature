@@ -20,7 +20,7 @@
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
-@theme @theme_snap @theme_snap_course
+@theme @theme_snap
 Feature: When the moodle theme is set to Snap, clicking on a resource with a media file mime type will open the
   resource inline.
 
@@ -39,7 +39,6 @@ Feature: When the moodle theme is set to Snap, clicking on a resource with a med
 
   @javascript
   Scenario: MP3 opens inline and marked as completed.
-    Given I skip because "The message UI for Snap has changed, more steps are required."
     Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"

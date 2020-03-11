@@ -20,7 +20,7 @@
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
-@theme @theme_snap @theme_snap_color_check @theme_snap_course
+@theme @theme_snap
 Feature: When the moodle theme is set to Snap, sets a color per category.
 
   Background:
@@ -51,7 +51,6 @@ Feature: When the moodle theme is set to Snap, sets a color per category.
 
   @javascript
   Scenario: Load all classes in each category hierarchy.
-    And I skip because "It's failing since we merged 3.7"
     Given I log in as "admin"
     And I follow "Browse all courses"
     And I purge snap caches
@@ -70,7 +69,6 @@ Feature: When the moodle theme is set to Snap, sets a color per category.
 
   @javascript
   Scenario: Check category colors in hierarchy.
-    And I skip because "It's failing since we merged 3.7"
     Given I log in as "admin"
     And I follow "Browse all courses"
     And I purge snap caches
@@ -88,7 +86,6 @@ Feature: When the moodle theme is set to Snap, sets a color per category.
 
   @javascript
   Scenario: Check category colors from nearest parent in hierarchy.
-    And I skip because "It's failing since we merged 3.7"
     Given the following config values are set as admin:
       | category_color | {"5":"#00FF00","10":"#FF0000"} | theme_snap |
     And I log in as "admin"
@@ -116,15 +113,6 @@ Feature: When the moodle theme is set to Snap, sets a color per category.
     # And I am on the course with shortname "C2" <- Removed this - this custom step is not part of Snap!
     And I am on the course main page for "C2"
     And I check element "a" with color "#00FF00"
-    And I follow "Create learning activity"
-    And I follow "Resources"
-    # The tabs color is by design 8% darker than the category color.
-    And I check element "a.nav-link.active.show" with property "background-color" = "#00D600"
-    And I follow "Help guide"
-    And I check element "a.nav-link.active.show" with property "background-color" = "#00D600"
-    And I follow "Activities"
-    And I check element "a.nav-link.active.show" with property "background-color" = "#00D600"
-    And I click on "button.close" "css_element"
     Then I log out
     And I log in as "student1"
     # And I am on the course with shortname "C2"

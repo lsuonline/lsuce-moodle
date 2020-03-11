@@ -71,9 +71,7 @@ if ($COURSE->id != SITEID && !empty($coverimagecss)) {
         } // End else.
     ?>
 </div>
-<?php
-echo $OUTPUT->custom_menu_spacer();
-?>
+
 <section id="region-main">
 <?php
 echo $OUTPUT->course_content_header();

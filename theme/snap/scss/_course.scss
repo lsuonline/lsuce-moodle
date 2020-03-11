@@ -197,7 +197,7 @@ section#region-main
     list-style: none;
 }
 
-.format-topics:not(.no-number-toc) {
+.format-topics {
     li.section .sectionname:before {
         content: counter(annotation-list) ".\00a0";
     }
@@ -639,6 +639,7 @@ li.section:focus {
         .snap-asset-link {
             font-size: 1em;
             margin: 0;
+            padding: 0.5em 0;
             @include alakazam;
 
             // The link itself.
@@ -662,14 +663,6 @@ li.section:focus {
     // Undo row negative margins.
     margin-left: 15px;
     margin-right: 15px;
-}
-
-#page-mod-quiz-attempt {
-    #region-main {
-        .activity-navigation {
-            display: none;
-        }
-    }
 }
 
 /**
@@ -867,7 +860,8 @@ body.snap-resource-card li.snap-resource {
     // Resource cards are clickable with data-href, so add cursor pointer.
     .asset-wrapper {
         @include clearfix;
-        .snap-header-card {
+        cursor: pointer;
+        .snap-assettype {
             padding-bottom: 1.5em;
         }
         .snap-asset-actions {
@@ -881,7 +875,6 @@ body.snap-resource-card li.snap-resource {
 
     .contentafterlink {
         font-size: small;
-        padding-top: 0.5em;
     }
 
     &.snap-mime-document,
@@ -955,11 +948,7 @@ body.snap-resource-card li.snap-resource {
     }
 
     &.modtype_scorm {
-        background-image: url([[pix:scorm|icon]]);
-    }
-
-    &.modtype_imscp {
-        background-image: url([[pix:imscp|icon]]);
+        background-image: url([[pix:core|/f/scorm]]);
     }
 
     &.modtype_folder {
@@ -985,174 +974,27 @@ body.snap-resource-card li.snap-resource {
     }
 }
 
-// -----------------------------------------------------------
-// Icons view - Activity header.
-// -----------------------------------------------------------
-body.snap-resource-list,
-body.snap-resource-card {
-    // Establish 60% for title and 40% for icons in the activity header.
-    .asset-wrapper {
-        .snap-assettype {
-            display: inline-block;
-            width: 60%;
-            height: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .snap-header-card-icons {
-            display: inline-block;
-            width: 40%;
-            height: 100%;
-            max-height: 1.4em;
-        }
-    }
-    // Modify restriction icon size and position for course cards.
-    .snap-header-card {
-        padding-bottom: 1em;
-        .snap-header-card-icons {
-            a#snap-restriction {
-                padding: 0;
-                float: right;
-                display: inline-block;
-                border: none;
-                outline: none;
-                background-color: transparent;
-                transition: all .2s ease-in-out;
-                cursor: pointer;
-                img#snap-restriction-icon {
-                    width: 20px;
-                    height: 20px;
-                    float: right;
-                }
-                &:active {
-                    outline: none;
-                    border: none;
-                    background-color: transparent;
-                }
-                &:hover {
-                    transform: scale(1.1);
-                }
-            }
-            .snap-asset-completion-tracking {
-                display: inline-block;
-                float: right;
-            }
-        }
-    }
-}
-
-// We need to establish to 100% the width for the icons for these activities, because the asset type will not appear in the card.
-// This will happen in list and card views.
-body.snap-resource-list {
-    li.modtype_label,
-    li.modtype_resource,
-    li.modtype_url,
-    li.modtype_imscp,
-    li.modtype_lightboxgallery,
-    li.modtype_scorm {
-        .snap-header-card-icons {
-            width: 100%;
-        }
-    }
-    li.snap-resource-long.modtype_folder .snap-header-card-icons {
-        width: 100%;
-    }
-}
-
-body.snap-resource-card {
-    li.modtype_label {
-        .snap-header-card-icons {
-            width: 100%;
-        }
-    }
-    li.snap-resource-long.modtype_folder .snap-header-card-icons {
-        width: 40%;
-    }
-}
-
-// -----------------------------------------------------------
-// Cards view - Ellipsis title and gradient content.
-// -----------------------------------------------------------
+// Modify Snap resources cards content and title to have a scrollbar on it.
 body.snap-resource-card {
     li.snap-resource.snap-resource-long {
-        height: 21em;
-    }
-    // Hide multimedia content on resource cards description.
-    li.snap-resource.snap-resource-long.modtype_url,
-    li.snap-resource.snap-resource-long.modtype_folder,
-    li.snap-resource.snap-resource-long.modtype_resource,
-    li.snap-resource.snap-resource-long.modtype_imscp,
-    li.snap-resource.snap-resource-long.modtype_lightboxgallery,
-    li.snap-resource.snap-resource-long.modtype_scorm {
-        div.contentafterlink div.no-overflow img,
-        div.contentafterlink div.no-overflow img.img-responsive.atto_image_button_text-bottom,
-        div.contentafterlink div.no-overflow iframe,
-        div.mediaplugin.mediaplugin_videojs {
-            display: none;
-        }
-    }
-
-    // Modify resource card structure to have ellipsis in the title and a gradient in the description.
-    .snap-resource-long {
-        /* mixin for multiline */
-        @mixin multiLineEllipsis($lineHeight: 1.25em, $lineCount: 1, $bgColor: white) {
-            overflow: hidden;
-            position: relative;
-            line-height: $lineHeight;
-            padding-right: 1em;
-            &:before {
-                content: '...';
-                position: absolute;
-                right: 0;
-                bottom: 0;
-            }
-            &:after {
-                content: '';
-                position: absolute;
-                right: 0;
-                width: 1em;
-                height: 1em;
-                margin-top: 0.2em;
-                background: $bgColor;
-            }
-        }
-
-        .snap-asset-link {
-            a.mod-link {
-                cursor: pointer;
-                p.instancename {
-                    max-height: 2.5em;
-                    @include multiLineEllipsis($lineHeight: 1.25em, $lineCount: 2, $bgColor: white);
+        height: 13.5em;
+        .asset-wrapper {
+            .snap-asset-content {
+                max-height: 8em;
+                overflow-y: hidden;
+                padding-right: 0.6em;
+                overflow-wrap: break-word;
+                &:hover {
+                    overflow-y: scroll;
+                }
+                h4.snap-asset-link {
+                    padding: 0.2em 0;
                 }
             }
-        }
+            .snap-assettype {
+                padding-bottom: 1em;
+            }
 
-        div.contentafterlink {
-            .no-overflow {
-                word-wrap: break-word;
-                max-height: 4.2em;
-                overflow: hidden;
-                position: relative;
-            }
-            p.snap-resource-card-fadeout {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                text-align: center;
-                margin: 0;
-                color: transparent;
-                // The blank space that achieve the transparent gradient needs to be unselectable.
-                user-select: none; /* supported by Chrome and Opera */
-                -webkit-user-select: none; /* Safari */
-                -khtml-user-select: none; /* Konqueror HTML */
-                -moz-user-select: none; /* Firefox */
-                -ms-user-select: none; /* Internet Explorer/Edge */
-                // Transparent needs to be set the color to white with 0 alpha to achieve the gradient. This is because for Safari
-                // transparent is a black color with 0 alpha and this will cause a bug.
-                background-image: linear-gradient(to bottom, rgba(255,255,255,0) 0%, white);
-            }
         }
     }
 }
@@ -1533,6 +1375,15 @@ body.snap-resource-card {
 
 // TODO - in course_renderer figure out if completion tracking enabled.
 // If so - add 1.3em gutter to slat to stop overlapping.
+
+.snap-asset-completion-tracking {
+    position: absolute;
+    top: 0.5em;
+    right: 1em;
+    display: block;
+    line-height: 0;
+}
+
 /* Completion actions */
 
 span.autocompletion img,
@@ -1979,7 +1830,7 @@ span.editinstructions {
         }
     }
 
-    #region-main form[id^="mform1"] > div.form-group.fitem {
+    #region-main #mform1 > div.form-group.fitem {
         margin-left: 0;
     }
 
@@ -2096,7 +1947,7 @@ span.editinstructions {
 // Hide section drop on moving section, the following section and when not moving.
 .section-drop,
 .section-moving a.section-drop,
-.section-moving + .section .section-drop:not(.partial-render) {
+.section-moving + .section .section-drop {
     display: none;
 }
 
@@ -2338,8 +2189,4 @@ body.path-course-index {
 // Fix options lenght in menu.
 .dropdown.snap-edit-more-dropdown .dropdown-menu.show {
     display: table;
-}
-
-.modtype_page .asset-wrapper .snap-asset-completion-tracking {
-    margin-right: 0.3em;
 }

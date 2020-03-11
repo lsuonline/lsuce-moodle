@@ -19,7 +19,8 @@
 # @copyright  Copyright (c) 2018 Blackboard Inc. (http://www.blackboard.com)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@theme @theme_snap @theme_snap_course
+
+@theme @theme_snap
 Feature: When the moodle theme is set to Snap, switching between roles should be possible.
 
   Background:

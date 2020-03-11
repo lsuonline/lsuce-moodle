@@ -24,7 +24,7 @@
  */
 
 namespace theme_snap\privacy;
-
+use core_privacy\local\legacy_polyfill;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\approved_contextlist;
@@ -47,13 +47,15 @@ defined('MOODLE_INTERNAL') || die();
 class provider implements metadata_provider, request_provider,
     \core_privacy\local\request\core_userlist_provider {
 
+    use legacy_polyfill;
+
     /**
      * Get the list of contexts that contain user information for the specified user.
      *
      * @param   int $userid The user to search.
      * @return  contextlist   $contextlist  The contextlist containing the list of contexts used in this plugin.
      */
-    public static function get_contexts_for_userid(int $userid) : contextlist {
+    public static function _get_contexts_for_userid($userid) {
         $sql = "SELECT cx.id
                   FROM {context} cx
                   JOIN {theme_snap_course_favorites} tscf ON tscf.userid = cx.instanceid AND cx.contextlevel = :userctxlevel
@@ -76,7 +78,7 @@ class provider implements metadata_provider, request_provider,
      *
      * @param approved_contextlist $contextlist The approved contexts to export information for.
      */
-    public static function export_user_data(approved_contextlist $contextlist) {
+    public static function _export_user_data(approved_contextlist $contextlist) {
         global $DB;
 
         if (empty($contextlist->count())) {
@@ -115,7 +117,7 @@ class provider implements metadata_provider, request_provider,
      *
      * @param \context $context The specific context to delete data for.
      */
-    public static function delete_data_for_all_users_in_context(\context $context) {
+    public static function _delete_data_for_all_users_in_context(\context $context) {
         global $DB;
 
         if (empty($context)) {
@@ -133,7 +135,7 @@ class provider implements metadata_provider, request_provider,
      *
      * @param approved_contextlist $contextlist The approved contexts and user information to delete information for.
      */
-    public static function delete_data_for_user(approved_contextlist $contextlist) {
+    public static function _delete_data_for_user(approved_contextlist $contextlist) {
         global $DB;
 
         if (empty($contextlist->count())) {
@@ -156,7 +158,7 @@ class provider implements metadata_provider, request_provider,
      * @param   collection $collection The initialised collection to add items to.
      * @return  collection A listing of user data stored through this system.
      */
-    public static function get_metadata(collection $collection) : collection {
+    public static function _get_metadata(collection $collection) {
         $fields = [
             'userid' => 'privacy:metadata:theme_snap_course_favorites:userid',
             'courseid' => 'privacy:metadata:theme_snap_course_favorites:courseid',

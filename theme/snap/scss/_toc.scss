@@ -336,7 +336,6 @@
 
         #chapters,
         .toc-footer,
-        #toc-search,
         #toc-desktop-menu-heading {
             display: none;
         }
@@ -352,14 +351,6 @@
         padding-top: 1em;
         background-color: white !important;
         overflow-y: scroll;
-
-        #chapters {
-            margin-top: 3rem;
-        }
-
-        #toc-search {
-            display: block;
-        }
 
         #chapters,
         .toc-footer {

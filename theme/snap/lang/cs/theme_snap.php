@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -69,8 +69,6 @@ $string['coursefootertoggledesc'] = 'Zápatí kurzu zobrazuje uživatelům na st
 $string['courseformatnotification'] = 'Formát kurzu, který aktuálně používáte, není motivem Snap plně podporován. V Blackboard Open LMS se pro optimální prostředí doporučuje používat u motivu Snap formát kurzu Témata nebo Týdně. Formát kurzu lze změnit v <a href="{$a}">nastavení kurzu</a>.';
 $string['coursefixydefaulttext'] = 'Aktuálně nejste registrováni v žádných kurzech.<br>Kurzy, do kterých jste registrováni, se budou zobrazovat zde.';
 $string['coursegrade'] = 'Klasifikace kurzu:';
-$string['coursepartialrender'] = 'Povolit „líné“ načítání sekcí kurzu';
-$string['coursepartialrenderdesc'] = 'Pokud je tato možnost povolena, budou se sekce kurzu načítat na vyžádání při výběru uživatelem. Díky tomu se budou kurzy s velkým množstvím obsahu načítat rychleji.';
 $string['coursenavigation'] = 'Navigace kurzu';
 $string['coursesummaryfilesunsuitable'] = 'Před pokusem o změnu titulního obrázku smažte soubory v souhrnu kurzu';
 $string['coursetools'] = 'Panel kurzu';
@@ -89,8 +87,6 @@ $string['customcssdesc'] = 'Upozorňujeme, že velké možnosti provází velká
 $string['customtopbar'] = 'Navigační panel';
 $string['customisenavbar'] = 'Změnit barvy navigačního panelu';
 $string['customisenavbutton'] = 'Změnit barvy tlačítka Moje kurzy';
-$string['customisecustommenu'] = 'Změnit barvu textu vlastní nabídky';
-$string['custommenutext'] = 'Barva textu vlastní nabídky';
 $string['deadlines'] = 'Termíny';
 $string['deadlinestoggle'] = 'Termíny';
 $string['deadlinestoggledesc'] = 'Zobrazuje uživatelům blížící se termíny aktivit v kurzech, kde jsou zapsáni.';
@@ -250,16 +246,12 @@ $string['personalmenu'] = 'Osobní nabídka';
 $string['personalmenufeatures'] = 'Prvky osobní nabídky';
 $string['personalmenulogintoggle'] = 'Zobrazit osobní nabídku při přihlášení';
 $string['personalmenulogintoggledesc'] = 'Otevře osobní nabídku hned po přihlášení.';
-$string['personalmenuadvancedfeedsenable'] = 'Povolit pokročilé kanály (experimentální)';
-$string['personalmenuadvancedfeedsenabledesc'] = 'Pokročilé kanály načítají určité položky osobní nabídky, což umožňuje kratší dobu načítání a obnovuje obsah na vyžádání.';
-$string['personalmenuadvancedfeedsperpage'] = 'Počet zobrazených položek pokročilých kanálů';
-$string['personalmenuadvancedfeedsperpagedesc'] = 'Vyberte počet položek, které se v kanálu zobrazí. Uživatelé mohou další položky zobrazit výběrem možnosti <strong>Zobrazit více</strong>.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Titulní obrázek';
 $string['posterdesc'] = 'Jedná se o velký obrázek v záhlaví titulní stránky vašeho webu. Nejlepší je použít obrázek na šířku (1200 x 600 pixelů nebo více).';
-$string['poweredbyrunby'] = 'Sestaveno pomocí systému <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank" rel="noopener">Blackboard Open LMS</a>,
-    produkt používá technologii <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>.<br>
+$string['poweredbyrunby'] = 'Sestaveno pomocí systému <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a>,
+    produkt používá technologii <a href="https://moodle.com/" target="_blank">Moodle</a>.<br>
     Copyright &#169; {$a} Blackboard Inc., všechna práva vyhrazena.';
 $string['previoussection'] = 'Předchozí sekce';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'ID kurzu, který uživatel přidal do oblíbených';
@@ -279,9 +271,7 @@ $string['region-side-top'] = 'Nahoře';
 $string['released'] = 'Vydáno: {$a}';
 $string['reopened'] = 'Znovu otevřeno';
 $string['resourcedisplay'] = 'Zobrazení zdrojů';
-$string['resourcedisplayhelp'] = 'Vyberte, jak se ve vašem kurzu budou zobrazovat přílohy a odkazy. Motiv Snap nepodporuje multimediální soubory v popisu karet s malou aktivitou a karet zdrojů.';
-$string['displaydescription'] = 'Zobrazit popis';
-$string['displaydescriptionhelp'] = 'Vyberte, pokud chcete na nové stránce jako první zobrazit popis zdroje a aktivit adresy URL. Studenti se k obsahu dostanou přes tento popis.';
+$string['resourcedisplayhelp'] = 'Vyberte, jak se ve vašem kurzu budou zobrazovat přílohy a odkazy.';
 $string['search'] = 'Prohledat obsah';
 $string['seriffont'] = 'Písmo Serif';
 $string['seriffont_desc'] = 'Toto písmo je používáno pro většinu obsahu generovaného uživateli. S písmem serif je obsah generovaný uživateli čitelnější a více působí dojmem, že byl psán člověkem.';
@@ -341,23 +331,9 @@ $string['cachedef_profile_based_branding'] = 'Vyrovnávací paměť pro značky 
 $string['cachedef_course_card_bg_image'] = 'Vyrovnávací paměť pro obrázek na pozadí kurzu';
 $string['cachedef_course_card_teacher_avatar'] = 'Vyrovnávací paměť pro avatary učitelů';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Vyrovnávací paměť pro index avatarů učitelů';
-$string['accessforumstringdis'] = 'Možnosti zobrazení';
-$string['accessforumstringmov'] = 'Možnosti přesunutí';
-$string['accesscalendarstring'] = 'Kalendář';
-$string['accessglobalsearchstring'] = 'Hledat';
+$string['accesforumstringdis'] = 'Možnosti zobrazení';
+$string['accesforumstringmov'] = 'Možnosti posunutí';
+$string['accescalendarstring'] = 'Kalendář';
 $string['admineventwarning'] = 'K zobrazení událostí ze všech kurzů, ';
 $string['gotocalendarsnap'] = 'přejít na kalendář stránek';
 $string['quizattemptswarn'] = 'Vylučuje pokusy od pozastavených uživatelů';
-$string['quizfeedback'] = 'Zpětná vazba';
-$string['validratio'] = 'Tato kombinace barev vyhovuje hodnotě minimálního poměru WCAG 2.0 – 4,5:1';
-$string['invalidratio'] = 'Tato kombinace barev nevyhovuje <a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">hodnotě minimálního poměru WCAG 2.0 – 4,5:1</a>. Hodnota: "{$a}"';
-$string['imageinvalidratio'] = 'Tento obrázek by mohl mít problémy s kontrastem, protože nevyhovuje hodnotě minimálního poměru WCAG 2.0 – 4,5:1. Průměrná hodnota pixelů: "{$a}"';
-$string['catinvalidratio'] = 'Následující kategorie barev nevyhovují
-<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">hodnotě minimálního poměru WCAG 2.0 – 4,5:1</a>:
-Barva pozadí vůči webu (bílá): "{$a->white}". Barva pozadí vůči navigačnímu panelu: "{$a->custombar}". Barva pozadí vůči tlačítku Moje kurzy: "{$a->customnav}"';
-$string['imageinvalidratiocategory'] = 'Tento obrázek by mohl mít problémy s barvou motivu, protože nevyhovuje hodnotě minimálního poměru WCAG 2.0 – 4,5:1. Průměrná hodnota pixelů: "{$a}"';
-$string['lazyload_mod_page'] = 'Povolit výchozí „líné“ načítání zdrojů stránky';
-$string['lazyload_mod_page_description'] = 'Pokud je tato možnost povolena, výrazně se sníží doba načítání kurzů, které mají mnoho stránek.';
-$string['pmadvancedfeed_viewmore'] = 'Zobrazit více';
-$string['pmadvancedfeed_reload'] = 'Obnovit';
-$string['multimediacard'] = 'V motivu Snap se v zobrazeních karet aktivit nezobrazí multimediální soubory. Použije se to pro domovskou stránku a stránky kurzu pouze u karet s malou aktivitou a karet zdrojů.';

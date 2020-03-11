@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -68,8 +68,6 @@ $string['coursefootertoggledesc'] = 'In der Fußzeile auf einer Kursseite werden
 $string['courseformatnotification'] = 'Das momentan von Ihnen genutzte Kursformat wird nicht vollständig vom Snap-Thema unterstützt. Für eine bestmögliche Erfahrung empfiehlt Blackboard Open LMS die Kursformate "Themen" oder "Wöchentlich" mit dem Snap-Thema. Das Kursformat kann unter <a href="{$a}">Kurseinstellungen</a> geändert werden.';
 $string['coursefixydefaulttext'] = 'Sie sind aktuell bei keinem Kurs angemeldet.<br>Kurse, an denen Sie teilnehmen, werden hier angezeigt.';
 $string['coursegrade'] = 'Kursbewertung:';
-$string['coursepartialrender'] = '"Lazy Loading" für Kursabschnitte aktivieren';
-$string['coursepartialrenderdesc'] = 'Wenn diese Option aktiviert ist, werden Kursabschnitte auf Anforderung geladen, wenn sie von einem Nutzer ausgewählt werden. So können Kurse mit umfangreichem Inhalt schneller geladen werden.';
 $string['coursenavigation'] = 'Kursnavigation';
 $string['coursesummaryfilesunsuitable'] = 'Bitte leeren Sie Ihre Kursbeschreibungsdateien vor dem Ändern des Titelbilds';
 $string['coursetools'] = 'Kurs-Dashboard';
@@ -88,8 +86,6 @@ $string['customcssdesc'] = 'Bitte berücksichtigen Sie, dass größere Befugnis 
 $string['customtopbar'] = 'Navigationsleiste';
 $string['customisenavbar'] = 'Farben der Navigationsleiste ändern';
 $string['customisenavbutton'] = 'Farben der Schaltfläche "Meine Kurse" ändern';
-$string['customisecustommenu'] = 'Textfarbe des benutzerdefinierten Menüs ändern';
-$string['custommenutext'] = 'Textfarbe des benutzerdefinierten Menüs';
 $string['deadlines'] = 'Termine';
 $string['deadlinestoggle'] = 'Termine';
 $string['deadlinestoggledesc'] = 'Anstehende Termine für Aktivitäten in belegten Kursen für alle Nutzer/innen anzeigen.';
@@ -248,10 +244,6 @@ $string['personalmenu'] = 'Menü "Persönlich"';
 $string['personalmenufeatures'] = 'Funktionen im Menü "Persönlich"';
 $string['personalmenulogintoggle'] = 'Persönliches Menü bei Anmeldung anzeigen';
 $string['personalmenulogintoggledesc'] = 'Öffnet das Persönliche Menü direkt nach der Anmeldung';
-$string['personalmenuadvancedfeedsenable'] = 'Erweiterte Feeds aktivieren (experimentell)';
-$string['personalmenuadvancedfeedsenabledesc'] = 'Erweiterte Feeds laden persönliche Menüelemente, sodass die Ladezeiten verkürzt und Inhalte auf Anforderung aktualisiert werden können.';
-$string['personalmenuadvancedfeedsperpage'] = 'Erweiterte Feeds – Anzahl der angezeigten Elemente';
-$string['personalmenuadvancedfeedsperpagedesc'] = 'Wählen Sie die Anzahl der Elemente aus, die in dem Feed angezeigt werden sollen. Mit der Option <strong>Mehr anzeigen</strong> können Nutzer weitere Elemente anzeigen.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Titelbild';
@@ -277,9 +269,7 @@ $string['region-side-top'] = 'Oben';
 $string['released'] = 'Version: {$a}';
 $string['reopened'] = 'Erneut geöffnet';
 $string['resourcedisplay'] = 'Anzeige von Ressourcen';
-$string['resourcedisplayhelp'] = 'Wählen Sie aus, welche Anhänge und Links in Ihrem Kurs erscheinen sollen. Das Snap-Design unterstützt keine Multimedia-Dateien in der Beschreibung der Kurzaktivitäts- und Ressourcenkarten.';
-$string['displaydescription'] = 'Beschreibung anzeigen';
-$string['displaydescriptionhelp'] = 'Wählen Sie aus, dass erst eine Beschreibung der Ressourcen- und URL-Aktivitäten auf einer neuen Seite angezeigt werden. Die Teilnehmer greifen über die Beschreibung auf Inhalte zu.';
+$string['resourcedisplayhelp'] = 'Wählen Sie aus, welche Anhänge und Links in Ihrem Kurs erscheinen sollen.';
 $string['search'] = 'Inhalte suchen';
 $string['seriffont'] = 'Schriftart Serif';
 $string['seriffont_desc'] = 'Diese Schriftart wird für die meisten benutzergenerierten Inhalte verwendet. Eine Schriftart mit Serifen verbessert die Lesbarkeit von benutzergenerierten Inhalten und vermittelt das Gefühl menschlicher Handschrift.';
@@ -339,24 +329,9 @@ $string['cachedef_profile_based_branding'] = 'Zwischenspeicherung für profilbas
 $string['cachedef_course_card_bg_image'] = 'Zwischenspeicherung für Kurs-Hintergrundbild.';
 $string['cachedef_course_card_teacher_avatar'] = 'Zwischenspeicherung für Trainer-Avatare.';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Zwischenspeicherung für den Index der Trainer-Avatare.';
-$string['accessforumstringdis'] = 'Anzeigeoptionen';
-$string['accessforumstringmov'] = 'Verschiebeoptionen';
-$string['accesscalendarstring'] = 'Kalender';
-$string['accessglobalsearchstring'] = 'Suche';
+$string['accesforumstringdis'] = 'Anzeigeoptionen';
+$string['accesforumstringmov'] = 'Verschiebeoptionen';
+$string['accescalendarstring'] = 'Kalender';
 $string['admineventwarning'] = 'Wenn Ereignisse aus allen Kursen angezeigt werden sollen, ';
 $string['gotocalendarsnap'] = 'rufen Sie den Website-Kalender auf.';
 $string['quizattemptswarn'] = 'Versuche von gesperrten Nutzer(inne)n ausschließen';
-$string['quizfeedback'] = 'Feedback';
-$string['validratio'] = 'Diese Farbkombination erfüllt das WCAG 2.0-Mindestverhältnis 4.5:1';
-$string['invalidratio'] = 'Diese Farbkombination erfüllt nicht das
-<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0-Mindestverhältnis 4.5:1</a>. Wert: "{$a}"';
-$string['imageinvalidratio'] = 'Bei diesem Schaltflächensymbol können Probleme mit dem Kontrast auftreten, da das WCAG 2.0-Mindestverhältnis 4.5:1 nicht erfüllt ist. Durchschnittlicher Pixelwert: "{$a}"';
-$string['catinvalidratio'] = 'Folgende Farbkategorien erfüllen nicht das
-<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0-Mindestverhältnis 4.5:1</a> :
-Gegenüber der Website-Hintergrundfarbe (weiß): "{$a->white}". Gegenüber der Hintergrundfarbe der Navigationsleiste: "{$a->custombar}". Gegenüber der Hintergrundfarbe der Schaltfläche „Meine Kurse“: "{$a->customnav}"';
-$string['imageinvalidratiocategory'] = 'Bei diesem Schaltflächensymbol können Kontrastprobleme mit der Designfarbe auftreten, da das WCAG 2.0-Mindestverhältnis 4.5:1 nicht erfüllt ist. Durchschnittlicher Pixelwert: "{$a}"';
-$string['lazyload_mod_page'] = '"Lazy Loading" als Standard für Seitenressourcen aktivieren';
-$string['lazyload_mod_page_description'] = 'Wenn diese Einstellung aktiviert ist, werden bei Kursen mit vielen Seiten die Kursseiten erheblich schneller geladen.';
-$string['pmadvancedfeed_viewmore'] = 'Mehr anzeigen';
-$string['pmadvancedfeed_reload'] = 'Aktualisieren';
-$string['multimediacard'] = 'Multimedia-Dateien werden in den Aktivitätskarten-Ansichten für das Snap-Design nicht angezeigt. Diese Einstellung wird nur bei Kurzaktivitäts- und Ressourcenkarten auf der Startseite und den Kursseiten angewendet.';

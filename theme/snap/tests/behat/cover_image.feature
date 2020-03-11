@@ -20,7 +20,7 @@
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
-@theme @theme_snap @theme_snap_color_check
+@theme @theme_snap
 Feature: When the moodle theme is set to Snap, cover image can be set for site and courses.
 
   Background:
@@ -177,13 +177,7 @@ Feature: When the moodle theme is set to Snap, cover image can be set for site a
     And I reload the page
     Then I should see cover image in page header
     # Test deleting cover image
-    And the following config values are set as admin:
-      | linkadmincategories | 0 |
-    And I click on "#admin-menu-trigger" "css_element"
-    And I expand "Site administration" node
-    And I expand "Appearance" node
-    And I expand "Themes" node
-    And I follow "Snap"
+    And I navigate to "Appearance > Themes > Snap" in site administration
     And I follow "Cover display"
     And I delete "rawcoverimage.png" from "Cover image" filemanager
     And I press "Save changes"

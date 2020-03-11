@@ -20,7 +20,7 @@
 # @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@theme @theme_snap @theme_snap_ax
+@theme @theme_snap
 Feature: When adding a submission in an assignment, file picker options should exists as buttons.
 
   Background:

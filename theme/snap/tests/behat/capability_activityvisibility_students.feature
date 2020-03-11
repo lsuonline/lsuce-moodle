@@ -21,7 +21,8 @@
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @theme @theme_snap
-Feature: When theme is set to Snap, and course:activityvisibility is set for students, a student should be able to hide an activity.
+Feature: When theme is set to Snap, and course:activityvisibility is set for students, a student should be able to
+  hide an activity.
 
   Background:
     Given the following "courses" exist:

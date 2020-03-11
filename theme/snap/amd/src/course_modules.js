@@ -311,9 +311,7 @@ define(
                     }
 
                     // Excludes any clicks in the actions menu, on links or forms.
-                    var selector = '.snap-asset-completion-tracking, ' +
-                        '.snap-asset-actions, .contentafterlink a, .ally-actions, ' +
-                        '.snap-header-card, .contentafterlink, .snap-asset-meta';
+                    var selector = '.snap-asset-completion-tracking, .snap-asset-actions, .contentafterlink a, .ally-actions';
                     var withintarget = $(trigger).closest(selector).length;
                     if (!withintarget) {
                         if ($(this).hasClass('js-snap-media')) {

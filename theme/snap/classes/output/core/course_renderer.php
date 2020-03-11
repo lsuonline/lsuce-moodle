@@ -39,7 +39,6 @@ use theme_snap\activity_meta;
 
 require_once($CFG->dirroot . "/mod/book/locallib.php");
 require_once($CFG->libdir . "/gradelib.php");
-require_once($CFG->dirroot . '/course/renderer.php');
 
 class course_renderer extends \core_course_renderer {
     /**
@@ -196,7 +195,7 @@ class course_renderer extends \core_course_renderer {
      */
     public function course_section_cm($course, &$completioninfo, cm_info $mod, $sectionreturn, $displayoptions = array()) {
 
-        global $COURSE, $OUTPUT;
+        global $COURSE;
 
         $output = '';
         // We return empty string (because course module will not be displayed at all)
@@ -230,11 +229,6 @@ class course_renderer extends \core_course_renderer {
         if (!empty($cmname)) {
             // Activity/resource type.
             $snapmodtype = $this->get_mod_type($mod)[0];
-            $pagecurrentstr = get_string('modulename', 'mod_page');
-            $bookcurrentstr = get_string('modulename', 'mod_book');
-            if (strcmp($snapmodtype, $pagecurrentstr) == 0 || strcmp($snapmodtype, $bookcurrentstr) == 0) {
-                $snapmodtype = '';
-            }
             $assettype = '<div class="snap-assettype">'.$snapmodtype.'</div>';
             // Asset link.
             $assetlink .= '<h3 class="snap-asset-link">'.$cmname.'</h3>';
@@ -255,14 +249,6 @@ class course_renderer extends \core_course_renderer {
         $completiontracking = '<div class="snap-asset-completion-tracking">';
         $completiontracking .= $this->course_section_cm_completion($course, $completioninfo, $mod, $displayoptions);
         $completiontracking .= '</div>';
-
-        // Add specific class if the completion tracking is disabled for an activity.
-        $completion = $completioninfo->is_enabled($mod);
-        if ($completion == COMPLETION_TRACKING_NONE) {
-            $completiontracking = '<div class="disabled-snap-asset-completion-tracking">';
-            $completiontracking .= $this->course_section_cm_completion($course, $completioninfo, $mod, $displayoptions);
-            $completiontracking .= '</div>';
-        }
 
         // Draft & Stealth tags.
         $stealthtag = '';
@@ -299,36 +285,22 @@ class course_renderer extends \core_course_renderer {
 
         $canviewhidden = has_capability('moodle/course:viewhiddenactivities', $mod->context);
         // If the module isn't available, or we are a teacher (can view hidden activities) then get availability
-        // info. Restrictions will appear on click over a lock image inside the activity header.
-        $coursetoolsicon = '';
+        // info.
+        $conditionalmeta = '';
         if (!$mod->available || $canviewhidden) {
             $availabilityinfo = $this->course_section_cm_availability($mod, $displayoptions);
             if ($availabilityinfo) {
-                $restrictionsource = '<img title="" id="snap-restriction-icon" aria-hidden="true" class="svg-icon" src="';
-                $restrictionsource .= $this->output->image_url('lock', 'theme').'"/>';
-                $coursetoolsicon = html_writer::tag('a', $restrictionsource, [
-                    'tabindex' => '0',
-                    'class' => 'snap-conditional-tag',
-                    'role' => 'button',
-                    'data-toggle' => 'popover',
-                    'data-trigger' => 'focus',
-                    'data-placement' => 'right',
-                    'id' => 'snap-restriction',
-                    'data-html' => 'true',
-                    'clickable' => 'true',
-                    'data-content' => $availabilityinfo
-                ]);
+                $conditionalmeta .= '<div class="snap-conditional-tag">'.$availabilityinfo.'</div>';
             }
         }
 
         // Add draft, contitional.
-        $assetmeta = $stealthtag.$drafttag;
+        $assetmeta = $stealthtag.$drafttag.$conditionalmeta;
 
         // Build output.
         $postcontent = '<div class="snap-asset-meta" data-cmid="'.$mod->id.'">'.$assetmeta.$mod->afterlink.'</div>';
         $content = '<div class="snap-asset-content">'.$assetlink.$postcontent.$contentpart.$snapcompletionmeta.$groupmeta.'</div>';
-        $cardicons = '<div class="snap-header-card-icons">'.$completiontracking.$coursetoolsicon.'</div>';
-        $output .= '<div class="snap-header-card">'.$assettype.$cardicons.'</div>'.$content;
+        $output .= $assettype.$completiontracking.$content;
 
         // Bail at this point if we aren't using a supported format. (Folder view is only partially supported).
         $supported = ['topics', 'weeks', 'site'];
@@ -477,27 +449,13 @@ class course_renderer extends \core_course_renderer {
         }
         if ($mod->url) {
             if ($content) {
-                // Add extra content to create fadeout to resource cards activities and SCORM package.
-                if ((plugin_supports('mod', $mod->modname, FEATURE_MOD_ARCHETYPE) === MOD_ARCHETYPE_RESOURCE) ||
-                    $mod->modname === 'scorm') {
-                        $fadeoutcard = "<p class='snap-resource-card-fadeout'>&nbsp;</p>";
-                        $content .= $fadeoutcard;
-                }
                 // If specified, display extra content after link.
                 $output = html_writer::tag('div', $content, array('class' => trim('contentafterlink ' . $textclasses)));
             }
         } else {
-            $snapmodtype = $this->get_mod_type($mod)[0];
-            // Label title should not be displayed in the activity card header.
-            $labelcurrentstr = get_string('modulename', 'mod_label');
-            if (strcmp($snapmodtype, $labelcurrentstr) == 0) {
-                $snapmodtype = '';
-            }
-            $assettype = '<div class="snap-assettype">'.$snapmodtype.'</div>';
-
             // No link, so display only content.
-            $output = html_writer::tag('div', $assettype . $accesstext . $content,
-                array('class' => 'contentwithoutlink ' . $textclasses));
+            $output = html_writer::tag('div', $accesstext . $content,
+            array('class' => 'contentwithoutlink ' . $textclasses));
         }
         return $output;
     }
@@ -565,12 +523,13 @@ class course_renderer extends \core_course_renderer {
      * @param cm_info $mod
      * @param activity_meta $meta
      * @return string
-     * @throws \coding_exception
+     * @throws coding_exception
      */
-    public static function submission_cta(cm_info $mod, activity_meta $meta) {
+    public function submission_cta(cm_info $mod, activity_meta $meta) {
         global $CFG;
 
         if (empty($meta->submissionnotrequired)) {
+            $class = 'snap-assignment-stage';
             $url = $CFG->wwwroot.'/mod/'.$mod->modname.'/view.php?id='.$mod->id;
 
             if ($meta->submitted) {
@@ -669,7 +628,7 @@ class course_renderer extends \core_course_renderer {
             }
             // @codingStandardsIgnoreLine
             /* @var cm_info $mod */
-            $content .= self::submission_cta($mod, $meta);
+            $content .= $this->submission_cta($mod, $meta);
         }
 
         // Activity due date.
@@ -766,22 +725,17 @@ class course_renderer extends \core_course_renderer {
         $readmore = get_string('readmore', 'theme_snap');
         $close = get_string('closebuttontitle', 'moodle');
 
-        $content = '';
-        $contentloaded = 0;
-        if (empty(get_config('theme_snap', 'lazyload_mod_page'))) {
-            // Identify content elements which should force an AJAX lazy load.
-            $elcontentblist = ['iframe', 'video', 'object', 'embed', 'model-viewer'];
-            $content = $page->content;
-            $lazyload = false;
-            foreach ($elcontentblist as $el) {
-                if (stripos($content, '<'.$el) !== false) {
-                    $content = ''; // Don't include the content as it is likely to slow the page load down considerably.
-                    $lazyload = true;
-                }
+        // Identify content elements which should force an AJAX lazy load.
+        $elcontentblist = ['iframe', 'video', 'object', 'embed'];
+        $content = $page->content;
+        $lazyload = false;
+        foreach ($elcontentblist as $el) {
+            if (stripos($content, '<'.$el) !== false) {
+                $content = ''; // Don't include the content as it is likely to slow the page load down considerably.
+                $lazyload = true;
             }
-            $contentloaded = !$lazyload ? 1 : 0;
         }
-
+        $contentloaded = !$lazyload ? 1 : 0;
         $pslinkclass = 'btn btn-secondary pagemod-readmore';
         $pmcontextattribute = 'data-pagemodcontext="'.$mod->context->id.'"';
 
@@ -926,8 +880,6 @@ class course_renderer extends \core_course_renderer {
         // Multimedia mods we want to open in the same window.
         $snapmultimedia = $this->snap_multimedia();
 
-        $resourcedisplay = get_config('theme_snap', 'resourcedisplay');
-        $displaydescription = get_config('theme_snap', 'displaydescription');
         if ($mod->modname === 'resource') {
             $extension = $this->get_mod_type($mod)[1];
             if (in_array($extension, $snapmultimedia) ) {
@@ -937,26 +889,18 @@ class course_renderer extends \core_course_renderer {
                     $url .= "&amp;redirect=1";
                 }
             } else {
-                if ($resourcedisplay == 'card' && $displaydescription) {
-                    $url .= "&amp;forceview=1";
-                } else {
-                    $url .= "&amp;redirect=1";
-                    $target = "target='_blank'";
-                }
-            }
-        }
-        if ($mod->modname === 'url') {
-            if ($resourcedisplay == 'card' && $displaydescription) {
-                // Set the url to forceview 1 to see intermediate page with description.
-                $url .= "&amp;forceview=1";
-            } else {
                 $url .= "&amp;redirect=1";
                 $target = "target='_blank'";
             }
         }
+        if ($mod->modname === 'url') {
+            // Set the url to redirect 1 to avoid intermediate pages.
+            $url .= "&amp;redirect=1";
+            $target = "target='_blank'";
+        }
 
         if ($mod->uservisible) {
-            $output .= "<a $target class='mod-link' href='$url'>$activityimg<p class='instancename'>$instancename</p></a>";
+            $output .= "<a $target class='mod-link' href='$url'>$activityimg<span class='instancename'>$instancename</span></a>";
             $output .= $groupinglabel;
         } else {
             // We may be displaying this just in order to show information
@@ -1072,7 +1016,6 @@ class course_renderer extends \core_course_renderer {
      */
     public function course_category($category) {
         global $CFG;
-        $basecategory = \core_course_category::get(0);
         $coursecat = \core_course_category::get(is_object($category) ? $category->id : $category);
         $site = get_site();
         $output = '';
@@ -1091,13 +1034,13 @@ class course_renderer extends \core_course_renderer {
             }
         } else {
             $title = $site->shortname;
-            if ($basecategory->get_children_count() > 1) {
+            if (\core_course_category::is_simple_site() > 1) {
                 $title .= ": ". $coursecat->get_formatted_name();
             }
             $this->page->set_title($title);
 
             // Print the category selector.
-            if ($basecategory->get_children_count() > 1) {
+            if (\core_course_category::is_simple_site() > 1) {
                 $select = new \single_select(new moodle_url('/course/index.php'), 'categoryid',
                         \core_course_category::make_categories_list(), $coursecat->id, null, 'switchcategory');
                 $select->set_label(get_string('category').':');
@@ -1226,8 +1169,8 @@ class course_renderer extends \core_course_renderer {
             if (empty($courseteachers)) {
                 $courseteachers = "<h5>".get_string('coursecontacts', 'theme_snap')."</h5>";
             }
-            $courseteachers .= '<br><a id="enrolled-users" class="btn btn-outline-secondary btn-sm"
-                href="'.$CFG->wwwroot.'/user/index.php?id='.$COURSE->id.'">'.get_string('enrolledusers', 'enrol').'</a>';
+            $courseteachers .= '<br><a class="btn btn-outline-secondary btn-sm" href="'.$CFG->wwwroot.'/user/index.php?id='.
+                $COURSE->id.'">'.get_string('enrolledusers', 'enrol').'</a>';
         }
 
         // Course cummary.
@@ -1248,8 +1191,8 @@ class course_renderer extends \core_course_renderer {
             if (empty($coursesummary)) {
                 $coursesummary = '<h5>'.get_string('aboutcourse', 'theme_snap').'</h5>';
             }
-            $coursesummary .= '<br><a id="edit-summary" class="btn btn-outline-secondary btn-sm"
-            href="'.$CFG->wwwroot.'/course/edit.php?id='.$COURSE->id.'#id_descriptionhdr">'.get_string('editsummary').'</a>';
+            $coursesummary .= '<br><a class="btn btn-outline-secondary btn-sm" href="'.$CFG->wwwroot.'/course/edit.php?id='.
+                $COURSE->id.'#id_descriptionhdr">'.get_string('editsummary').'</a>';
         }
 
         // Get recent activities on mods in the course.
@@ -1302,7 +1245,7 @@ class course_renderer extends \core_course_renderer {
      * @return string
      */
     public function print_teacher_profile($user) {
-        global $CFG, $OUTPUT, $USER;
+        global $CFG, $OUTPUT;
 
         $userpicture = new \user_picture($user);
         $userpicture->link = false;
@@ -1311,17 +1254,14 @@ class course_renderer extends \core_course_renderer {
         $picture = $this->render($userpicture);
 
         $fullname = '<a href="' .$CFG->wwwroot. '/user/profile.php?id=' .$user->id. '">'.format_string(fullname($user)).'</a>';
+        $messageicon = '<img class="svg-icon" alt="" role="presentation" src="' .$OUTPUT->image_url('messages', 'theme').' ">';
+        $message = '<br><small><a href="'.$CFG->wwwroot.
+                '/message/index.php?id='.$user->id.'">message'.$messageicon.'</a></small>';
+
         $data = (object) [
             'image' => $picture,
-            'content' => $fullname
+            'content' => $fullname.$message
         ];
-        if ($USER->id != $user->id) {
-            $messageicon = '<img class="svg-icon" alt="" role="presentation" src="'
-                .$OUTPUT->image_url('messages', 'theme').' ">';
-            $message = '<br><small><a href="'.$CFG->wwwroot.
-                '/message/index.php?id='.$user->id.'">message'.$messageicon.'</a></small>';
-            $data->content .= $message;
-        }
 
         return $this->render_from_template('theme_snap/media_object', $data);
     }
