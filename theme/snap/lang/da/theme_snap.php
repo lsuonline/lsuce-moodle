@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -68,6 +68,8 @@ $string['coursefootertoggledesc'] = 'Kursussidefoden viser brugere nyttige oplys
 $string['courseformatnotification'] = 'Det aktuelle kursusformat, som du bruger, understøttes ikke fuldt af Snap-temaet. For at få den bedst oplevelse anbefaler Blackboard Open LMS at bruge kursusformaterne Emner eller Ugentligt sammen med Snap-temaet. Kursusformatet kan ændres i <a href="{$a}">kursusindstillingerne</a>.';
 $string['coursefixydefaulttext'] = 'Du er ikke tilmeldt noget kursus i øjeblikket.<br>Kurser, som du er tilmeldt, vises her.';
 $string['coursegrade'] = 'Kursuskarakter:';
+$string['coursepartialrender'] = 'Aktivér udskudt indlæsning for kursusaktiviteter';
+$string['coursepartialrenderdesc'] = 'Hvis dette er aktiveret, vil kursussektioner blive indlæst efter behov, når de vælges af en bruger. Dette vil hjælpe kurser med en stor mængde indhold til at indlæse hurtigere.';
 $string['coursenavigation'] = 'Kursusnavigation';
 $string['coursesummaryfilesunsuitable'] = 'Tøm dine kursusoversigtsfiler, før du forsøger at ændre forsidebilledet';
 $string['coursetools'] = 'Dashboard for kursus';
@@ -86,6 +88,8 @@ $string['customcssdesc'] = 'Husk, at der med store evner følger et stort ansvar
 $string['customtopbar'] = 'Navigationslinje';
 $string['customisenavbar'] = 'Ændr navigationslinjens farver';
 $string['customisenavbutton'] = 'Ændr farverne på knappen Mine kurser';
+$string['customisecustommenu'] = 'Skift tekstfarve for brugerdefineret menu';
+$string['custommenutext'] = 'Tekstfarve for brugerdefineret menu';
 $string['deadlines'] = 'Deadlines';
 $string['deadlinestoggle'] = 'Deadlines';
 $string['deadlinestoggledesc'] = 'Vis brugere kommende aktivitetsdeadlines fra kurser, som de er tilmeldt.';
@@ -243,13 +247,17 @@ $string['personalmenu'] = 'Personlig menu';
 $string['personalmenufeatures'] = 'Personlige menufunktioner';
 $string['personalmenulogintoggle'] = 'Vis personlig menu ved login';
 $string['personalmenulogintoggledesc'] = 'Åbner den personlige menu, så snart der er logget ind';
+$string['personalmenuadvancedfeedsenable'] = 'Aktivér Avancerede feeds (eksperimenterende)';
+$string['personalmenuadvancedfeedsenabledesc'] = 'Avancerede feeds indlæser nogle personlige menuelementer, som tillader hurtigere indlæsningstider og opdaterer indhold efter behov.';
+$string['personalmenuadvancedfeedsperpage'] = 'Antal viste elementer i "Avancerede feeds"';
+$string['personalmenuadvancedfeedsperpagedesc'] = 'Vælg det antal elementer, der skal vises i feedet. Brugere kan vælge <strong>Vis flere</strong>, for at vise yderligere elementer.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Forsidebillede';
 $string['posterdesc'] = 'Et stort sidehovedbillede til dit websteds forside. Liggende billeder (1200 x 600 pixels) eller større fungerer bedst.';
-$string['poweredbyrunby'] = 'Bygget med<a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a>,
-    a <a href="https://moodle.com/" target="_blank">Moodle</a>-baseret produkt.<br>
-    Copyright &#169; {$a} Blackboard Inc, alle rettigheder forbeholdes.';
+$string['poweredbyrunby'] = 'Bygget med <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank" rel="noopener">Blackboard Open LMS</a>,
+    et <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>-baseret produkt.<br>
+    Copyright &#169; {$a} Blackboard Inc., alle rettigheder forbeholdes.';
 $string['previoussection'] = 'Forrige sektion';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'Kursus-id\'et for det kursus, brugeren har markeret som favorit';
 $string['privacy:metadata:theme_snap_course_favorites:userid'] = 'Bruger-id\'et for den bruger, der har markeret kurset om favorit';
@@ -268,7 +276,9 @@ $string['region-side-top'] = 'Top';
 $string['released'] = 'Frigivet: {$a}';
 $string['reopened'] = 'Genåbnet';
 $string['resourcedisplay'] = 'Ressourcevisning';
-$string['resourcedisplayhelp'] = 'Vælg, hvordan vedhæftede filer og links vises i dit kursus.';
+$string['resourcedisplayhelp'] = 'Vælg, hvordan vedhæftede filer og links vises i dit kursus. Snap-temaet understøtter ikke multimediefiler i de små aktivitets- og ressourcekorts beskrivelse.';
+$string['displaydescription'] = 'Vis beskrivelse';
+$string['displaydescriptionhelp'] = 'Vælg for at vise en beskrivelse af ressourcer og URL-aktiviteter på en ny side først. Studerende vil få adgang til indhold via beskrivelsen.';
 $string['search'] = 'Søg i indhold';
 $string['seriffont'] = 'Serif-skrifttype';
 $string['seriffont_desc'] = 'Denne skrifttype bruges til det meste brugergenererede indhold. En Serif-skrifttype gør brugergenereret indhold mere tydeligt, og det ligner noget, som er skrevet af en person.';
@@ -328,9 +338,24 @@ $string['cachedef_profile_based_branding'] = 'Cachelagring for profilbaseret bra
 $string['cachedef_course_card_bg_image'] = 'Cachelagring for kursets baggrundsbillede.';
 $string['cachedef_course_card_teacher_avatar'] = 'Cachelagring for underviseravatarer.';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Cachelagring for indeks for underviseravatarer';
-$string['accesforumstringdis'] = 'Indstillinger for visning';
-$string['accesforumstringmov'] = 'Flyt indstillinger';
-$string['accescalendarstring'] = 'Kalender';
+$string['accessforumstringdis'] = 'Indstillinger for visning';
+$string['accessforumstringmov'] = 'Flyt indstillinger';
+$string['accesscalendarstring'] = 'Kalender';
+$string['accessglobalsearchstring'] = 'Søg';
 $string['admineventwarning'] = 'For at se begivenheder fra alle kurser, ';
 $string['gotocalendarsnap'] = 'skal du gå til webstedets kalender.';
 $string['quizattemptswarn'] = 'Udelader forsøg fra suspenderede brugere';
+$string['quizfeedback'] = 'Feedback';
+$string['validratio'] = 'Denne kombination af farver overholder ikke , for WCAG 2.0-minimumsratioen, 4.5:1';
+$string['invalidratio'] = 'Denne kombination af farver overholder ikke
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0-minimumsratioen, 4.5:1</a>. Værdi: "{$a}"';
+$string['imageinvalidratio'] = 'Dette billede kan have kontrastproblemer, da det ikke overholder WCAG 2.0-minimumsratioen, 4.5:1. Gennemsnitlig pixelværdi: "{$a}"';
+$string['catinvalidratio'] = 'Følgende farvekategorier overholder ikke
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0-minimumsratioen, 4.5:1</a> :
+I forhold til baggrundsfarven (hvid): "{$a->white}". I forhold til navigationsbarens baggrundsfarven: "{$a->custombar}". I forhold til baggrundsfarven for Mine kurser-knappen: "{$a->customnav}"';
+$string['imageinvalidratiocategory'] = 'Dette billede kan have kontrastproblemer med temafarven, da det ikke overholder WCAG 2.0-minimumsratioen, 4.5:1. Gennemsnitlig pixelværdi: "{$a}"';
+$string['lazyload_mod_page'] = 'Aktivér udskudt indlæsning som standard for sidens resourcer';
+$string['lazyload_mod_page_description'] = 'Hvis denne indstilling er aktiveret, vil den kraftigt reducere indlæsningstiden for kurser med mange sider.';
+$string['pmadvancedfeed_viewmore'] = 'Vis mere';
+$string['pmadvancedfeed_reload'] = 'Opdater';
+$string['multimediacard'] = 'Multimediefiler vil ikke blive vist i aktivitetskortvisninger for Snap-temaet. Dette vil kun være gældende på hjemmesiden og kursussiden for små aktivitets- og ressourcekort.';

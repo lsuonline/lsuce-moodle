@@ -148,7 +148,7 @@ table.boxwidthwide {
 
     .collapsible-actions,
     .ftoggler {
-        display: none;
+        display: block;
     }
     // Inputs to full width.
     .mform .form-inline .form-control,
@@ -745,7 +745,7 @@ a.yui3-button,
 
         // for personal menu updates - need to re-visit when we re-use more widley
         // in the messaging system we ellispe text
-        p {
+        p, small {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -813,7 +813,6 @@ nav #mr-nav
 footer #moodle-footer
 
  ****************************/
-#mr-nav,
 #page-header,
 #region-main,
 #moodle-footer,
@@ -839,11 +838,14 @@ footer #moodle-footer
 // -------------------------
 
 #mr-nav {
+    #snap-header {
+        padding: .5em 4%;
+    }
     position: fixed;
     width: 100vw;
     z-index: 23;
-    padding: .5em 4%;
     background-color: $nav-bg;
+    top: 0;
 
     //headroom js http://wicky.nillia.ms/headroom.js/
     &.headroom--unpinned {
@@ -906,7 +908,6 @@ footer #moodle-footer
             background-color: darken($nav-login-bg, 8%);
             border-color: darken($nav-login-bg, 8%);
         }
-
     }
 }
 
@@ -1021,12 +1022,21 @@ footer #moodle-footer
     position: relative;
     left: 0;
     transition: all 0.4s 0s ease;
-
     // When admin block is open
     &.offcanvas {
         left: -200px;
     }
 }
+
+// We target only google Chorme
+#page-site-index.editing.chrome #moodle-blocks,
+#page-my-index.editing.chrome #moodle-blocks,
+.format-topics.path-course-view.editing.chrome #moodle-blocks,
+.editing.chrome #moodle-blocks{
+    overflow-y: auto;
+}
+
+
 
 #moodle-blocks {
     max-width: 60.5em;
@@ -1099,7 +1109,7 @@ header#page-header
     padding: .5em 0;
     float: none;
     @include media-breakpoint-up(md) {
-        margin-top: -0.5em;
+        margin-top: -.75em;
     }
 }
 
@@ -1110,19 +1120,6 @@ header#page-header
     display: block;
     li.breadcrumb-item {
         display: inline-block;
-    }
-}
-
-@include media-breakpoint-down(md) {
-    .breadcrumb li {
-        &:nth-last-child(n+4) {
-            display: none;
-        }
-
-        &:nth-last-child(3):before {
-            content: "";
-            padding: 0;
-        }
     }
 }
 
@@ -1737,7 +1734,7 @@ ul.events-new + ul.events-underway {
         display: block;
         padding-bottom: 10px;
     }
-    
+
     .yui3-calendarbase {
         width: 350px !important;
     }
@@ -2007,6 +2004,10 @@ ul.events-new + ul.events-underway {
             background-color: #eceeef !important;
             opacity: 1;
         }
+    }
+
+    .feedback {
+        word-break: break-word;
     }
 }
 
@@ -2857,22 +2858,22 @@ table#user-grades tr.avg td.cell {
     };
     &.alert-info {
         color: $brand-info;
-        background-color: rgba($brand-info, .05);
+        background-color: mix($brand-info, white, 10%);
         border-color: $brand-info;
     };
     &.alert-success {
         color: $brand-success;
-        background-color: rgba($brand-success, .05);
+        background-color: mix($brand-success, white, 5%);
         border-color: $brand-success;
     };
     &.alert-danger {
         color: $brand-danger;
-        background-color: rgba($brand-danger, .05);
+        background-color: mix($brand-danger, white, 5%);
         border-color: $brand-danger;
     };
     &.alert-warning {
         color: $brand-warning;
-        background-color: rgba($brand-warning, .05);
+        background-color: mix($brand-warning, white, 5%);
         border-color: $brand-warning;
     };
 }
@@ -3887,7 +3888,7 @@ section#region-main {
             }
         }
     }
-    
+
     .card-footer.dashboard-card-footer.border-0.bg-white {
         background-color: transparent !important;
     }
@@ -3928,6 +3929,10 @@ section#region-main {
 // Fix width for tables when adding a new member to a group in a course.
 #page-group-members div#addmembersform form#assignform table {
     table-layout: fixed;
+    optgroup {
+        overflow-x: scroll;
+        padding-bottom: 1em;
+    }
 
     tr td:nth-child(4) {
         width: 40%;
@@ -3951,4 +3956,203 @@ section#region-main {
         }
     }
 
+}
+
+#page-admin-roles-check #userselector_options.collapsibleregion {
+    overflow: visible;
+}
+
+#page-local-pld-view #actionEmailEditor form .form-group {
+    margin: auto;
+}
+
+#page-local-pld-view #txtActionEmailBodyBtn {
+    float: right !important;
+}
+
+#page-local-pld-view .ft {
+    justify-content: normal !important;
+} .button-group button:nth-child(2) {
+      margin-left: 0.313em;
+  }
+
+// This z-index value allows the moodle dialogue (Image and file repository window) be usable for both Atto and TinyMCE html editors.
+#page-local-pld-view .moodle-dialogue-base .moodle-dialogue {
+    z-index: 300005 !important;
+}
+
+#page-local-pld-view .mform .form-inline .form-control, .mform .form-inline .custom-select #id_config_text {
+    width: 56em !important;
+}
+
+#page-local-pld-view #id_config_texteditable {
+    height: 15em !important;
+}
+
+#page-local-pld-view #id_config_text {
+    height: 15em !important;
+}
+
+#page-local-pld-view #id_config_text_ifr {
+    height: 15em !important;
+}
+
+// -------------------------
+// Snap custom menu.
+// -------------------------
+
+header#mr-nav {
+    #snap-custom-menu nav.navbar {
+        width: 100%;
+        ul#snap-navbar-content {
+            margin: 0;
+            padding: 0;
+            li.nav-item {
+                list-style: none;
+                max-width: 11em;
+                &:hover {
+                    outline: 0;
+                }
+                div.dropdown-menu {
+                    border: 0;
+                    margin-top: 0 !important; // This margin needs to be override to remove the marging of 2px that it has by default.
+                }
+                a {
+                    display: block;
+                    text-decoration: none;
+                    font-weight: bold;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    max-width: 11em;
+                }
+                a.nav-link {
+                    height: 50px;
+                    vertical-align: middle;
+                    padding-right: 1.53em;
+                }
+                .dropdown-toggle {
+                    &::after {
+                        position: absolute;
+                        right: 0.9em;
+                        top: 50%;
+                        margin-top: -0.1em;
+                    }
+                }
+                // Animation and rotation of caret dropdown for custom menu.
+                .dropdown-toggle[aria-expanded="true"]:after {
+                    transform: rotate(180deg);
+                }
+                .dropdown-toggle:after {
+                    transition: 0.5s;
+                }
+            }
+        }
+    }
+}
+
+// Snap custom menu fix for IE11.
+.ie11 header#mr-nav #snap-custom-menu nav.navbar {
+    max-height: 100%;
+    padding-bottom: 0;
+    padding-top: 0;
+    ul#snap-navbar-content li.nav-item a.nav-link {
+        max-height: 100%;
+    }
+}
+
+@media (min-width: 992px) {
+    header#mr-nav div#snap-custom-menu {
+        display: block;
+    }
+    footer#moodle-footer div#snap-custom-menu {
+        display: none;
+    }
+    // Spacer to be shown conditionally when custom menu has items to show.
+    .snap-custom-menu-spacer {
+        padding-top: 3.25em;
+    }
+}
+
+@media (max-width: 992px) {
+    header#mr-nav div#snap-custom-menu {
+        display: none;
+    }
+    footer#moodle-footer div#snap-custom-menu {
+        display: block;
+        nav.navbar {
+            max-height: 100%;
+            ul#snap-navbar-content {
+                display: grid !important; // Need to override this to display the custom menu in the footer as a vertical list.
+                li.nav-item {
+                    list-style-type: none;
+                    a.nav-link,
+                    a.dropdown-item {
+                        &:hover,
+                        &:active {
+                            outline: 0;
+                        }
+                        &:focus,
+                        &:hover,
+                        &:active {
+                            background-color: transparent;
+                        }
+                    }
+                    a.dropdown-item {
+                        max-width: 11em;
+                        overflow: hidden;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
+                    }
+                    a.nav-link {
+                        white-space: nowrap;
+                    }
+                }
+                li.nav-item.dropdown.show {
+                    div.dropdown-menu.show {
+                        margin-left: 1rem!important;
+                        margin-top: 0 !important; // These margins needs to be override as well to modify the position of the dropdown items.
+                        display: block;
+                        position: static;
+                        background-color: transparent;
+                        border: none;
+                    }
+                }
+                // Animation and rotation of caret dropdown for custom menu.
+                .dropdown-toggle[aria-expanded="true"]:after {
+                    transform: rotate(180deg);
+                }
+                .dropdown-toggle:after {
+                    transition: 0.5s;
+                }
+            }
+        }
+    }
+}
+
+// Change font size for header Folder activity with inline content.
+li.snap-activity.modtype_folder div[id^="folder_tree"] {
+    td[id^="ygtvcontentel"] > div,
+    > ul > li > div {
+        > h3 {
+            font-size: 1em;
+        }
+    }
+}
+
+// Modify table layout for definition field for Glossary activities when a video is inserted.
+// Table was not respecting the max-width for the definition field.
+#page-mod-glossary-view .glossarydisplay .entrybox table.glossarypost {
+    table-layout: fixed;
+    width: 100%;
+}
+
+// Need to override the max-width of the submit buttons on the form when creating an activity to modify its position for mobile mode.
+@media (max-width: 767px) {
+    div[role=main] .mform .snap-form-advanced input {
+        max-width: fit-content !important;
+    }
+    div[role=main] .mform div.snap-form-advanced > div:nth-of-type(3) > div.form-inline.felement {
+        display: block;
+    }
 }

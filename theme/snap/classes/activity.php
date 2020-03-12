@@ -206,13 +206,14 @@ class activity {
     public static function assign_meta(\cm_info $modinst) {
         global $DB;
         static $submissionsenabled;
+        static $coursequeried;
 
         $courseid = $modinst->course;
 
         // Get count of enabled submission plugins grouped by assignment id.
         // Note, under normal circumstances we only run this once but with PHP unit tests, assignments are being
         // created one after the other and so this needs to be run each time during a PHP unit test.
-        if (empty($submissionsenabled) || PHPUNIT_TEST) {
+        if (empty($submissionsenabled) || $coursequeried !== $courseid || PHPUNIT_TEST) {
             $sql = "SELECT a.id, count(1) AS submissionsenabled
                       FROM {assign} a
                       JOIN {assign_plugin_config} ac ON ac.assignment = a.id
@@ -223,6 +224,7 @@ class activity {
                        AND plugin!='comments'
                   GROUP BY a.id;";
             $submissionsenabled = $DB->get_records_sql($sql, array($courseid));
+            $coursequeried = $courseid;
         }
 
         $submitselect = '';
@@ -700,6 +702,17 @@ class activity {
      */
     public static function quiz_num_submissions($courseid, $modid) {
         return self::std_num_submissions($courseid, $modid, 'quiz', 'quiz', 'quiz_attempts');
+    }
+
+    /**
+     * Get number of contributors to the database
+     *
+     * @param int $courseid
+     * @param int $modid
+     * @return int
+     */
+    public static function data_num_submissions($courseid, $modid) {
+        return self::std_num_submissions($courseid, $modid, 'data', 'dataid', 'data_records');
     }
 
     /**
@@ -1341,14 +1354,16 @@ class activity {
      * @param int $tend
      * @param string $cacheprefix
      * @param int $limit
-     * @return stdClass
+     * @return object
      */
     public static function user_activity_events($userorid, array $courses, $tstart, $tend, $cacheprefix = '',
                                                 $limit = 40) {
+        global $DB;
 
         $retobj = (object) [
             'timestamp' => null,
             'events' => [],
+            'courses' => [],
             'fromcache' => false
         ];
 
@@ -1374,13 +1389,39 @@ class activity {
                 $activitiesstamp = $cached->timestamp;
                 $cachefresh = true; // Until proven otherwise.
 
+                $coursecache = [];
                 foreach ($courses as $courseid => $course) {
+                    $coursecache[$courseid] = $course->shortname;
+
+                    if (!isset($cached->courses[$courseid])) {
+                        $cachefresh = false;
+                    }
                     if (isset($cachestamps[$courseid])) {
                         $stamp = $cachestamps[$courseid];
                         if ($stamp > $activitiesstamp) {
                             $cachefresh = false;
                         }
                     }
+                }
+                $cmids = [];
+                foreach ($cached->events as $event) {
+                    if (!empty($event->actionurl)) {
+                        $cmids[] = $event->actionurl->get_param("id");
+                    }
+                    if (!isset($courses[$event->courseid])) {
+                        $cachefresh = false;
+                    }
+                }
+                if (!empty($cmids)) {
+                    list($insql, $params) = $DB->get_in_or_equal($cmids);
+                    $sql = "SELECT deletioninprogress
+                          FROM {course_modules}
+                         WHERE id $insql
+                           AND deletioninprogress = 1";
+                    $deletioninprogress = $DB->get_record_sql($sql, $params);
+                }
+                if (!empty($deletioninprogress)) {
+                    $cachefresh = false;
                 }
 
                 if ($cachefresh) {
@@ -1401,8 +1442,12 @@ class activity {
         $tmparr = [];
         foreach ($events as $event) {
 
-            /** @var cm_info $cminfo */
-            list ($course, $cminfo) = get_course_and_cm_from_instance($event->instance, $event->modulename);
+            // Validation added to prevent array offset.
+            $courseid = array_key_exists($event->courseid, $courses) ? $courses[$event->courseid] : 0;
+
+            /** @var \cm_info $cminfo */
+            list ($course, $cminfo) = get_course_and_cm_from_instance(
+                    $event->instance, $event->modulename,  $courseid, $event->userid);
             unset($course);
 
             // We are only interested in modules with valid instances.
@@ -1426,6 +1471,11 @@ class activity {
             $tmparr[$event->id] = $event;
 
         }
+        if (!isset($coursecache)) {
+            foreach ($courses as $courseid => $course) {
+                $coursecache[$courseid] = $course->shortname;
+            }
+        }
         $events = $tmparr;
         unset($tmparr);
 
@@ -1433,6 +1483,7 @@ class activity {
         $retobj->events = $events;
 
         if (self::$phpunitallowcaching || !(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
+            $retobj->courses = $coursecache;
             $muc->set($cachekey, $retobj);
         }
 

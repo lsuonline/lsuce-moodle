@@ -19,12 +19,13 @@
 # @copyright  Copyright (c) 2018 Blackboard Inc.
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@theme @theme_snap
+@theme @theme_snap @theme_snap_footer
 Feature: As an admin, I should be able to set a site's footer on Snap theme.
 
   Background:
     Given the following config values are set as admin:
         | theme | snap |
+        | linkadmincategories | 0 |
       And the following "users" exist:
         | username | firstname | lastname | email |
         | user1    | User1     | 1        | user1@example.com |
@@ -36,7 +37,10 @@ Feature: As an admin, I should be able to set a site's footer on Snap theme.
       And "iframe" "css_element" should not be visible
       And I should not see "New footer"
       And I click on "#admin-menu-trigger" "css_element"
-      And I navigate to "Appearance > Themes > Snap" in site administration
+      And I expand "Site administration" node
+      And I expand "Appearance" node
+      And I expand "Themes" node
+      And I follow "Snap"
      Then I should see "Site footer"
       And I set the following fields to these values:
         | Site footer | <iframe></iframe> <p>New footer</p>|

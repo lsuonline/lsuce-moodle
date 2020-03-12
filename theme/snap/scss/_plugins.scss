@@ -82,7 +82,6 @@
 
     .popover-region-container {
         top: 2.5rem;
-        height: auto;
         width: 300px;
         text-align: left;
     }
@@ -132,6 +131,10 @@
         width: auto;
         height: auto;
         color: $nav-color;
+    }
+
+    .popover-region-container {
+        top: 2.5rem;
     }
 }
 
@@ -203,6 +206,10 @@
         .description {
             font-family: $font-family-system;
         }
+    }
+
+    .assign-submission-data .fileuploadsubmissiontime {
+        float: left;
     }
 
     // Larger screen layout.
@@ -292,6 +299,10 @@
 
 .assign-submission-data a.btn {
     margin: 1em 1em;
+}
+
+#page-mod-assign-view .assign-submission-data .boxaligncenter {
+    word-break: break-all;
 }
 
 .needsgradingdata {
@@ -470,7 +481,9 @@
     .bookprev {
         text-align: left;
     }
-
+}
+#page-mod-book-mod.path-mod-book #id_general .fcontainer .checkbox {
+    display: none;
 }
 
 // Book mod grid.
@@ -509,6 +522,9 @@
     &#page-mod-lesson-view {
         .singlebutton > form[action*="editpage.php"] {
             display: none;
+        }
+        .form-check > .text-nowrap {
+            white-space: normal!important;
         }
     }
     // Unstyle secondary navtabs.
@@ -565,7 +581,6 @@
 
         input[type="radio"],
         input[type="checkbox"] {
-            top: 0.25em;
 
             + label {
                 padding-left: 1.5em;
@@ -646,4 +661,26 @@ body.pagelayout-admin.path-mod {
             filter: grayscale(100%) opacity(0.5);
         }
     }
+}
+
+section#snap-add-new-section #summary-editor_ifr {
+    height: 13em !important;
+}
+
+section#snap-add-new-section #summary-editor_parent #summary-editor_tbl {
+    display: table;
+    flex-flow: row wrap;
+    align-items: center;
+    border-collapse: collapse;
+}
+
+/**
+ * Styling for atto_htmlplus.
+ */
+.snap-form-required .editor_atto_wrap .CodeMirror.cm-s-default.CodeMirror-wrap {
+    z-index: 1;
+}
+
+#page-local-pld-view #id_config_text_ifr {
+    height: 19em !important;
 }

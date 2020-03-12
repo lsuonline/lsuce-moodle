@@ -32,11 +32,6 @@ defined('MOODLE_INTERNAL') || die();
 /* Custom footer edit buttons. */
 $footnote = empty($PAGE->theme->settings->footnote) ? '' : $PAGE->theme->settings->footnote;
 $footnote = format_text($footnote, FORMAT_HTML, ['noclean' => true]);
-if ($this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
-    $url = new moodle_url('/admin/settings.php', ['section' => 'themesettingsnap'], 'admin-footnote');
-    $link = html_writer::link($url, get_string('editcustomfooter', 'theme_snap'), ['class' => 'btn btn-primary btn-sm']);
-    $footnote .= '<p class="text-right">'.$link.'</p>';
-}
 
 $custommenu = $OUTPUT->custom_menu();
 if (!empty($custommenu) && $this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
@@ -76,11 +71,12 @@ if (!empty($socialmedialinks)) {
 echo '</div>';
 ?>
 
-
 <?php
 /* Moodle custom menu. */
+/* We need to render the custom menu in the footer in mobile views. */
+
 if (!empty($custommenu)) {
-    echo '<div id="moodle-custom-menu"><br>';
+    echo '<div id="snap-custom-menu"><br>';
     echo $custommenu;
     echo '</div>';
 }

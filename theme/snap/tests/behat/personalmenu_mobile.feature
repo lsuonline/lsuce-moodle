@@ -20,7 +20,7 @@
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
-@theme @theme_snap
+@theme @theme_snap @theme_snap_personalmenu
 Feature: When the moodle theme is set to Snap, students and teachers can open a personal menu which works responsively
   on mobile devices.
 
@@ -36,6 +36,8 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
       | user | course | role |
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
+    And the following config values are set as admin:
+      | personalmenuadvancedfeedsenable | 0 | theme_snap |
 
   @javascript
   Scenario Outline: Teacher / Student can view personal menu on a mobile device.

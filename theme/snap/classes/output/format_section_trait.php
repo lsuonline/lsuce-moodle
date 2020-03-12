@@ -29,6 +29,7 @@ namespace theme_snap\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
+use gradereport_singleview\local\ui\empty_element;
 use html_writer;
 use moodle_url;
 use stdClass;
@@ -130,7 +131,7 @@ trait format_section_trait {
      * @param bool $onsectionpage true if being printed on a section page
      * @return array of links with edit controls
      */
-    protected function section_edit_controls($course, $section, $onsectionpage = false) {
+    protected function section_edit_control_items($course, $section, $onsectionpage = false) {
 
         if ($section->section === 0) {
             return [];
@@ -242,21 +243,28 @@ trait format_section_trait {
         $testemptytitle = get_string('topic').' '.$section->section;
         if ($sectiontitle == $testemptytitle && has_capability('moodle/course:update', $context)) {
             $url = new moodle_url('/course/editsection.php', array('id' => $section->id, 'sr' => $sectionreturn));
-            $o .= "<h2 class='sectionname'><a href='$url' title='".s(get_string('editcoursetopic', 'theme_snap'))."'>";
+            $o .= "<h2 class='sectionname'><span class='sectionnumber'></span>";
+            $o .= "<a href='$url' title='".s(get_string('editcoursetopic', 'theme_snap'))."'>";
             $o .= get_string('defaulttopictitle', 'theme_snap')."</a></h2>";
         } else {
+            $leftnav = get_config('theme_snap', 'leftnav');
+            $leftnavtop = $leftnav === 'top';
+            if ($section->section != 0 && $leftnavtop != 0 ) {
+                $sectiontitle = '<span class=\'sectionnumber\'></span>' . $sectiontitle;
+            }
             $o .= "<div tabindex='0'>" . $output->heading($sectiontitle, 2, 'sectionname' . $classes) . "</div>";
         }
 
         // Section drop zone.
         $caneditcourse = has_capability('moodle/course:update', $context);
         if ($caneditcourse && $section->section != 0) {
-            $o .= "<a class='snap-drop section-drop' data-title='".
+            $extradropclass = !empty(get_config('theme_snap', 'coursepartialrender')) ? 'partial-render' : '';
+            $o .= "<a class='snap-drop section-drop " . $extradropclass . "' data-title='".
                     s($sectiontitle)."' href='#'>_</a>";
         }
 
         // Section editing commands.
-        $sectiontoolsarray = $this->section_edit_controls($course, $section, $sectionreturn);
+        $sectiontoolsarray = $this->section_edit_control_items($course, $section, $sectionreturn);
 
         if (has_capability('moodle/course:update', $context)) {
             if (!empty($sectiontoolsarray)) {
@@ -378,16 +386,39 @@ trait format_section_trait {
 
         // Now the list of sections..
         echo $this->start_section_list();
+        $canviewhidden = has_capability('moodle/course:viewhiddensections', context_course::instance($course->id));
         $numsections = course_get_format($course)->get_last_section_number();
+        if (get_config('theme_snap', 'coursepartialrender')) {
+            echo $this->render_from_template('theme_snap/course_section_loading', []);
+            $startsectionid = 0;
+            if ($course->format == 'topics') {
+                $startsectionid = !empty($course->marker) ? $course->marker : 0;
+            } else if ($course->format == 'weeks') {
+                for ($i = 0; $i <= $numsections; $i++) {
+                    if (course_get_format($course)->is_section_current($i)) {
+                        $startsectionid = $i;
+                        break;
+                    }
+                }
+            }
+            $mainsection = $modinfo->get_section_info($startsectionid);
+            // Marker can be set to a deleted section.
+            if (!empty($mainsection) && (!empty($mainsection->visible) || $canviewhidden)) {
+                $sections[$startsectionid] = $mainsection;
+            } else {
+                $sections[0] = $modinfo->get_section_info(0);
+            }
 
-        foreach ($modinfo->get_section_info_all() as $section => $thissection) {
+        } else {
+            $sections = $modinfo->get_section_info_all();
+        }
+
+        foreach ($sections as $section => $thissection) {
 
             if ($section > $numsections) {
                 // Activities inside this section are 'orphaned', this section will be printed as 'stealth' below.
                 continue;
             }
-
-            $canviewhidden = has_capability('moodle/course:viewhiddensections', context_course::instance($course->id));
 
             // Student check.
             if (!$canviewhidden) {
@@ -442,7 +473,6 @@ trait format_section_trait {
      * @return string
      */
     private function change_num_sections($course) {
-        global $OUTPUT;
 
         $course = course_get_format($course)->get_course();
         $context = context_course::instance($course->id);
@@ -460,7 +490,8 @@ trait format_section_trait {
         $defaulttitle = get_string('title', 'theme_snap');
         $sectionnum = course_get_format($course)->get_last_section_number();
         if ($course->format === 'topics') {
-            $required = 'required';
+            // Make sure that section does not have leading or trailing spaces and at least one character.
+            $required = 'required pattern="\S(.*\S)?"';
         } else {
             // Take this part of code from /course/format/weeks/lib.php on functions
             // @codingStandardsIgnoreLine
@@ -498,8 +529,23 @@ trait format_section_trait {
         $output .= '</div>';
         $output .= '<div class="form-group">';
         $output .= '<label for="summary">'.get_string('contents', 'theme_snap').'</label>';
-        $output .= $OUTPUT->print_textarea(true, 10, 150, "100%",
-            "auto", "summary", '', $course->id, true);
+
+        $options = array(
+            'subdirs' => 0,
+            'maxbytes' => 0,
+            'maxfiles' => EDITOR_UNLIMITED_FILES,
+            'context' => $context,
+        );
+        $draftitemid = file_get_submitted_draft_itemid('summary');
+        $currenttext = file_prepare_draft_area($draftitemid, $context->id, 'course', 'section', null, $options);
+
+        $output .= $this->print_editor('summary', 'summary-editor', $currenttext, $draftitemid, $options);
+        $output .= html_writer::empty_tag('input', array(
+            'type' => 'hidden',
+            'name' => 'draftitemid',
+            'value' => $draftitemid,
+        ));
+
         $output .= '</div>';
         $output .= html_writer::empty_tag('input', array(
             'type' => 'submit',
@@ -510,6 +556,69 @@ trait format_section_trait {
         $output .= html_writer::end_tag('form');
         $output .= '</section>';
         return $output;
+    }
+
+    /**
+     * Returns the HTML for an editor with file management
+     *
+     * @param string $id The id to use fort he textarea element
+     * @param string $name Name to use for the textarea element
+     * @param string $currenttext Initial content to display in the textarea
+     * @param int $draftitemid the id of the draft area to use
+     * @param array $options text and file options ('subdirs'=>false, 'forcehttps'=>false)
+     * @return string
+     */
+    private function print_editor($name, $id, $currenttext, $draftitemid, $options) {
+        global $OUTPUT;
+
+        editors_head_setup();
+        $editor = editors_get_preferred_editor(FORMAT_HTML);
+        $editor->set_text($currenttext);
+
+        $args = new stdClass();
+        $args->accepted_types = array('image');
+        $args->return_types = (FILE_INTERNAL | FILE_EXTERNAL);
+        $args->context = $options['context'];
+        $args->env = 'filepicker';
+
+        $imageoptions = initialise_filepicker($args);
+        $imageoptions->context = $options['context'];
+        $imageoptions->client_id = uniqid();
+        $imageoptions->maxbytes = $options['maxfiles'];
+        $imageoptions->env = 'editor';
+        $imageoptions->itemid = $draftitemid;
+
+        $args->accepted_types = array('video', 'audio');
+        $mediaoptions = initialise_filepicker($args);
+        $mediaoptions->context = $options['context'];
+        $mediaoptions->client_id = uniqid();
+        $mediaoptions->maxbytes  = $options['maxfiles'];
+        $mediaoptions->env = 'editor';
+        $mediaoptions->itemid = $draftitemid;
+
+        $args->accepted_types = '*';
+        $linkoptions = initialise_filepicker($args);
+        $linkoptions->context = $options['context'];
+        $linkoptions->client_id = uniqid();
+        $linkoptions->maxbytes  = $options['maxfiles'];
+        $linkoptions->env = 'editor';
+        $linkoptions->itemid = $draftitemid;
+
+        $fpoptions['image'] = $imageoptions;
+        $fpoptions['media'] = $mediaoptions;
+        $fpoptions['link'] = $linkoptions;
+
+        $editor->use_editor('summary-editor', $options, $fpoptions);
+
+        $context = [
+            'id' => $id,
+            'name' => $name,
+            'value' => $currenttext,
+            'rows' => 15,
+            'cols' => 65
+        ];
+
+        return $OUTPUT->render_from_template('core_form/editor_textarea', $context);
     }
 
     /**
@@ -540,7 +649,7 @@ trait format_section_trait {
         $mcclass = 'js-only section-modchooser-link btn btn-link';
         $mcdataattributes = 'data-section="'.$section.'" data-toggle="modal" data-target="#snap-modchooser-modal"';
         $modchooser = '
-        <div class="col-sm-6 snap-modchooser">
+        <div class="col-sm-6 snap-modchooser" id="snap-create-activity">
             <a href="#" class="'.$mcclass.'" '.$mcdataattributes.'>'.$icon.get_string('addresourceoractivity', 'theme_snap').'</a>
         </div>';
 

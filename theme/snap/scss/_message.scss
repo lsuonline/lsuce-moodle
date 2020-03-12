@@ -108,10 +108,11 @@
 // Show message drawer in full width.
 #page-message-edit,
 #page-message-index {
-    .message-drawer {
-        width: 100%;
-        height: calc(100% - 7em);
-        top: 6em;
+    .message-app.drawer {
+        visibility : hidden;
+        height: calc(100% - 10em);
+        top: 10em;
+        z-index: 1;
         left: 0;
         @media (max-width: 560px) {
             top: 8em;
@@ -124,7 +125,7 @@
     .custom-radio .custom-control-input:checked~.custom-control-label::before {
         background-color: $brand-primary;
     }
-    .message-drawer.bg-light {
+    .message-app.drawer.bg-light {
         padding: 1em;
         .body-container {
             border: 1px solid #dee2e6;
@@ -136,13 +137,68 @@
         color: $brand-primary;
     }
 }
+
+// Fix for personal menu hidden in IE 11 message page.
+.ie11#page-message-index {
+    #snap-pm {
+        position: relative;
+        z-index: 2;
+    }
+    .message-drawer {
+        z-index: 1;
+    }
+}
+
 // Hide scrolling when the message drawer is present.
-#page-message-edit {
+#page-message-edit:not(.snap-pm-open) {
     overflow: hidden;
 }
-// Set style for clickable messages as boost.
-div.message.clickable.bg-secondary {
-    background-color: #ced4da !important;
-    color: #373a3c !important;
-    border-radius: .25rem!important;
+// Fixes for Inherited boost styles for the message app page.
+// Message background #E6E6E6 to better AX over the message view.
+.message-app {
+    .message {
+        &.send .tail {
+            border-bottom-color: #E6E6E6 !important;
+        }
+    }
+    .message.bg-secondary {
+        background-color: #E6E6E6 !important;
+        color: #373a3c !important;
+    }
+    .message.rounded {
+        border-radius: .25rem!important;
+    }
+    &.main {
+        min-height: 600px !important;
+    }
+    a[data-action="view-contact"] {
+        img.rounded-circle {
+            // Need to use px b/c height is hard coded in template.
+            max-width: 38px;
+        }
+    }
+
+    [data-region="confirm-dialogue-container"]
+    [data-region="confirm-dialogue"]
+    [data-region="delete-messages-for-all-users-toggle-container"]
+    label.custom-control-label.text-muted::before {
+        background-color: transparent;
+    }
+}
+
+// Hide the message drawer when in profile view.
+body#page-user-profile .message-app.drawer {
+    visibility: hidden;
+}
+
+// Fix for message page to modify visibility on search input for mobile view"
+@media (max-width: 575px) {
+    #page-message-index #region-main div[role="main"] {
+        div.alert.alert-warning.alert-block.fade.in {
+            margin-top: 4em;
+        }
+        .message-app.main {
+            margin-top: 3em;
+        }
+    }
 }

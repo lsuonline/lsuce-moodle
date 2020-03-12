@@ -32,6 +32,11 @@ use html_writer;
 use moodle_url;
 use stdClass;
 use theme_snap\local;
+use theme_snap\renderables\login_alternative_methods;
+
+require_once($CFG->dirroot.'/grade/querylib.php');
+require_once($CFG->libdir.'/gradelib.php');
+require_once($CFG->dirroot.'/grade/lib.php');
 
 class shared extends \renderer_base {
 
@@ -150,6 +155,10 @@ EOF;
         if (!isset($CFG->additionalhtmlfooter)) {
             $CFG->additionalhtmlfooter = '';
         }
+        $maxbytes = get_max_upload_file_size($CFG->maxbytes, $course->maxbytes);;
+        if (has_capability('moodle/course:ignorefilesizelimits', $PAGE->context)) {
+            $maxbytes = 0;
+        }
         // Note, we have to put the file handlers into the footer instead of passing them into the amd module as an
         // argument. If you pass large amounts of data into the amd arguments then it throws a debug error.
         $CFG->additionalhtmlfooter .= $script;
@@ -175,7 +184,7 @@ EOF;
         ], 'mod_label');
         $vars = array(
             array('courseid' => $course->id,
-                'maxbytes' => get_max_upload_file_size($CFG->maxbytes, $course->maxbytes),
+                'maxbytes' => $maxbytes,
                 'showstatus' => $showstatus)
         );
 
@@ -240,10 +249,12 @@ EOF;
             'action:changesectionvisibility',
             'action:duplicateasset',
             'action:highlightsectionvisibility',
+            'action:sectiontoc',
             'error:failedtochangesectionvisibility',
             'error:failedtohighlightsection',
             'error:failedtochangeassetvisibility',
             'error:failedtoduplicateasset',
+            'error:failedtotoc',
             'deleteassetconfirm',
             'deletesectionconfirm',
             'deletingsection'
@@ -367,7 +378,10 @@ EOF;
             'ajaxurl' => '/course/rest.php',
             'unavailablesections' => $unavailablesections,
             'unavailablemods' => $unavailablemods,
-            'enablecompletion' => isloggedin() && $COURSE->enablecompletion
+            'enablecompletion' => isloggedin() && $COURSE->enablecompletion,
+            'format' => $COURSE->format,
+            'partialrender' => !empty(get_config('theme_snap', 'coursepartialrender')) ? true : false,
+            'toctype' => get_config('theme_snap', 'leftnav')
         ];
 
         $mprocs = get_message_processors(true);
@@ -378,12 +392,79 @@ EOF;
         $policyurlexist = $manager->is_defined();
         $sitepolicyacceptreqd = isloggedin() && $policyurlexist && empty($USER->policyagreed) && !is_siteadmin();
         $inalternativerole = $OUTPUT->in_alternative_role();
+        // Bring pre contents scss branding variables, to pass them to Snap init.
+        $pre = file_get_contents($CFG->dirroot . '/theme/snap/scss/pre.scss');
+        $lines = preg_split("/\r\n|\n|\r/", $pre);
+        $brandcolors = [];
+        foreach ($lines as $line) {
+            if (strpos($line, '$brand-primary:') === 0) {
+                $branding = [];
+                preg_match("/#.*;\$/", $line, $branding);
+                $brandcolors['primary'] = $branding[0];
+                continue;
+            }
+            if (strpos($line, '$brand-success:') === 0) {
+                $branding = [];
+                preg_match("/#.*;\$/", $line, $branding);
+                $brandcolors['success'] = $branding[0];
+                continue;
+            }
+            if (strpos($line, '$brand-warning:') === 0) {
+                $branding = [];
+                preg_match("/#.*;\$/", $line, $branding);
+                $brandcolors['warning'] = $branding[0];
+                continue;
+            }
+            if (strpos($line, '$brand-danger:') === 0) {
+                $branding = [];
+                preg_match("/#.*;\$/", $line, $branding);
+                $brandcolors['danger'] = $branding[0];
+                continue;
+            }
+            if (strpos($line, '$brand-info:') === 0) {
+                $branding = [];
+                preg_match("/#.*;\$/", $line, $branding);
+                $brandcolors['info'] = $branding[0];
+                continue;
+            }
+
+            $brandprimary = array_key_exists('primary', $brandcolors);
+            $brandsuccess = array_key_exists('success', $brandcolors);
+            $brandwarning = array_key_exists('warning', $brandcolors);
+            $branddanger = array_key_exists('danger', $brandcolors);
+            $brandinfo = array_key_exists('info', $brandcolors);
+
+            if ($brandprimary && $brandsuccess && $brandwarning && $branddanger && $brandinfo) {
+                break;
+            }
+        }
+        // Bring grading settings constants with percentage, to pass them to Snap init.
+        $gradingconstants = [];
+        $gradingconstants['gradepercentage'] = GRADE_DISPLAY_TYPE_PERCENTAGE;
+        $gradingconstants['gradepercentagereal'] = GRADE_DISPLAY_TYPE_PERCENTAGE_REAL;
+        $gradingconstants['gradepercentageletter'] = GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER;
+        $localplugins = core_component::get_plugin_list('local');
+        // Check if the plugins are installed to pass them as parameters to accessibility.js AMD module.
+        $localjoulegrader = array_key_exists('joulegrader', $localplugins);
+        $blockreports = array_key_exists('reports', core_component::get_plugin_list('block'));
+        $allyreport = (\core_component::get_component_directory('report_allylti') !== null);
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
-                     $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole];
+                     $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
+                     $gradingconstants];
+        $initaxvars = [$localjoulegrader, $allyreport, $blockreports];
+        $alternativelogins = new login_alternative_methods();
+        if ($alternativelogins->potentialidps) {
+            $loginvars = [get_config('theme_snap', 'enabledlogin'), get_config('theme_snap', 'enabledloginorder')];
+        } else {
+            $enabledlogin = \theme_snap\output\core_renderer::ENABLED_LOGIN_MOODLE;
+            $loginvars = [$enabledlogin, null];
+        }
         $PAGE->requires->js_call_amd('theme_snap/snap', 'snapInit', $initvars);
+        $PAGE->requires->js_call_amd('theme_snap/accessibility', 'snapAxInit', $initaxvars);
         if (!empty($CFG->calendar_adminseesall) && is_siteadmin()) {
             $PAGE->requires->js_call_amd('theme_snap/adminevents', 'init');
         }
+        $PAGE->requires->js_call_amd('theme_snap/login_render-lazy', 'loginRender', $loginvars);
         // Does the page have editable course content?
         if ($pagehascoursecontent && $PAGE->user_allowed_editing()) {
             $canmanageacts = has_capability('moodle/course:manageactivities', context_course::instance($COURSE->id));
@@ -456,7 +537,8 @@ EOF;
                 $item->link = $CFG->wwwroot.'/'.$item->link;
             }
             // Generate linkhtml.
-            $o .= html_writer::link($item->link, $item->title);
+            $attributes = $item->attributes ?? null;
+            $o .= html_writer::link($item->link, $item->title, $attributes);
         }
         return $o;
     }
@@ -662,7 +744,7 @@ EOF;
         // Mediasite. (GT Mod - core component check needs to be first in evaluation or capability check error will
         // occur when the module is not installed).
         if ( \core_component::get_component_directory('mod_mediasite') !== null &&
-            $COURSE->id > 1 && has_capability('mod/mediasite:courses7', $coursecontext) &&
+            $COURSE->id != SITEID && has_capability('mod/mediasite:courses7', $coursecontext) &&
             is_callable('mr_on') &&
             mr_on("mediasite", "_MR_MODULES")) {
             require_once($CFG->dirroot . "/mod/mediasite/mediasitesite.php");
@@ -692,8 +774,10 @@ EOF;
 
         // Quickmail stuff to follow.
         $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $COURSE->id], '', 'name,value');
+
         // Get the master block config for Quickmail.
         $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
+
         // Determine Quickmail allowstudents for this course.
         if ((int) $blockconfig < 0) {
             $courseallowstudents = 0;
@@ -702,23 +786,59 @@ EOF;
                 $courseconfig['allowstudents'] :
                 $blockconfig;
         }
+
         // Show QM icon and link for those who cansend OR students.
         if (has_capability('block/quickmail:cansend', $coursecontext) OR $courseallowstudents == 1) {
-            // Set the icon.
+
+            // Set the icon appropriate for the version.
             if ($CFG->version > 2017051500.00) {
                 $iconurl = $OUTPUT->image_url('t/email', 'core');
             } else {
                 $iconurl = $OUTPUT->pix_url('t/email', 'core');
             }
+
             // Build the HTML for the icon.
             $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+
             // Build the link and add it to the array of links.
             $links[] = array(
-                'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
-                'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
+               'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
+               'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
             );
         }
 
+        if ( \core_component::get_component_directory('report_allylti') !== null &&
+            $COURSE->id != SITEID && has_capability('report/allylti:viewcoursereport', $coursecontext) && $configured) {
+
+            $url = new moodle_url('/report/allylti/launch.php', [
+                    'reporttype' => 'course',
+                    'report' => 'admin',
+                    'course' => $COURSE->id]
+            );
+        }
+
+        $config = get_config('tool_ally');
+        $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);
+        $runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
+        $configured = $configured || $runningbehattest;
+
+        if ( \core_component::get_component_directory('report_allylti') !== null &&
+            $COURSE->id != SITEID && has_capability('report/allylti:viewcoursereport', $coursecontext) && $configured) {
+
+            $url = new moodle_url('/report/allylti/launch.php', [
+                    'reporttype' => 'course',
+                    'report' => 'admin',
+                    'course' => $COURSE->id]
+            );
+
+            $iconurl = $OUTPUT->image_url('i/ally_logo', 'theme_snap');
+            $allyicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+            $links[] = [
+                'link' => $url->out_as_local_url(false),
+                'title' => $allyicon . get_string('coursereport', 'report_allylti'),
+                'attributes' => ['target' => '_blank']
+            ];
+        }
         // Output course tools section.
         $coursetools = get_string('coursetools', 'theme_snap');
         $iconurl = $OUTPUT->image_url('course_dashboard', 'theme');
@@ -813,7 +933,14 @@ EOF;
         if (has_capability('gradereport/overview:view', $coursecontext)) {
             $grade = local::course_grade($COURSE, true);
             $coursegrade = '-';
-            if (isset($grade->coursegrade['percentage'])) {
+            $gradeitem = \grade_item::fetch_course_item($COURSE->id);
+            $displayformat = $gradeitem->get_displaytype();
+            // If the display grade form is set as a letter, a letter will appear in the user grade dashboard.
+            if (($displayformat == GRADE_DISPLAY_TYPE_LETTER) ||
+                ($displayformat == GRADE_DISPLAY_TYPE_LETTER_REAL) ||
+                ($displayformat == GRADE_DISPLAY_TYPE_LETTER_PERCENTAGE)) {
+                $coursegrade = current(explode(' ', $grade->coursegrade['value']));
+            } else if (isset($grade->coursegrade['percentage'])) {
                 $coursegrade = current(explode(' ', $grade->coursegrade['percentage']));
             }
 
@@ -823,7 +950,7 @@ EOF;
             $userboard .= '<h4 class="h6">' . get_string('grade') . '</h6>';
             $userboard .= '<a href="' . $moodleurl . '">';
             $userboard .= '<div class="js-progressbar-circle snap-progress-circle snap-progressbar-link" value="';
-            $userboard .= s($coursegrade) . '"></div>';
+            $userboard .= s($coursegrade) . '"gradeformat="' . $displayformat . '" ></div>';
             $userboard .= '</a>';
             $userboard .= '</div>';
         }

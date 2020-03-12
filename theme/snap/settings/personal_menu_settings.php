@@ -34,7 +34,7 @@ $default = $checked;
 $setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
 $snapsettings->add($setting);
 
-// Personal menu recent feedback & grading  on/off.
+// Personal menu recent feedback & grading on/off.
 $name = 'theme_snap/feedbacktoggle';
 $title = new lang_string('feedbacktoggle', 'theme_snap');
 $description = new lang_string('feedbacktoggledesc', 'theme_snap');
@@ -64,6 +64,55 @@ $title = new lang_string('personalmenulogintoggle', 'theme_snap');
 $description = new lang_string('personalmenulogintoggledesc', 'theme_snap');
 $default = $checked;
 $setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
+$snapsettings->add($setting);
+
+// Enable advanced PM feeds.
+$name = 'theme_snap/personalmenuadvancedfeedsenable';
+$title = new lang_string('personalmenuadvancedfeedsenable', 'theme_snap');
+$description = new lang_string('personalmenuadvancedfeedsenabledesc', 'theme_snap');
+$default = $checked;
+$setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
+$snapsettings->add($setting);
+
+$name = 'theme_snap/personalmenuadvancedfeedsperpage';
+$title = new lang_string('personalmenuadvancedfeedsperpage', 'theme_snap');
+$description = new lang_string('personalmenuadvancedfeedsperpagedesc', 'theme_snap');
+$default = '3';
+$pmfeedperpagechoices = [
+    '3' => '3',
+    '4' => '4',
+    '5' => '5',
+    '6' => '6',
+];
+$setting = new admin_setting_configselect($name, $title, $description, $default, $pmfeedperpagechoices);
+$snapsettings->add($setting);
+// Only show per page option if advanced feeds are enabled.
+$tohide = 'theme_snap/personalmenuadvancedfeedsperpage';
+$dependency = 'theme_snap/personalmenuadvancedfeedsenable';
+$settings->hide_if($tohide, $dependency, 'notchecked');
+
+// Enable login options display.
+$name = 'theme_snap/enabledlogin';
+$title = new lang_string('enabledlogin', 'theme_snap');
+$description = new lang_string('enabledlogindesc', 'theme_snap');
+$default = '0';
+$enabledloginchoices = [
+    \theme_snap\output\core_renderer::ENABLED_LOGIN_BOTH        => new lang_string('bothlogin', 'theme_snap'),
+    \theme_snap\output\core_renderer::ENABLED_LOGIN_MOODLE      => new lang_string('moodlelogin', 'theme_snap'),
+    \theme_snap\output\core_renderer::ENABLED_LOGIN_ALTERNATIVE => new lang_string('alternativelogin', 'theme_snap')
+];
+$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices);
+$snapsettings->add($setting);
+
+$name = 'theme_snap/enabledloginorder';
+$title = new lang_string('enabledloginorder', 'theme_snap');
+$description = new lang_string('enabledloginorderdesc', 'theme_snap');
+$default = '0';
+$enabledloginchoices = [
+    \theme_snap\output\core_renderer::ORDER_LOGIN_MOODLE_FIRST      => new lang_string('moodleloginfirst', 'theme_snap'),
+    \theme_snap\output\core_renderer::ORDER_LOGIN_ALTERNATIVE_FIRST => new lang_string('alternativeloginfirst', 'theme_snap')
+];
+$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices);
 $snapsettings->add($setting);
 
 $settings->add($snapsettings);

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -69,15 +69,17 @@ $string['coursefootertoggledesc'] = 'W stopce na stronie kursu wyświetlane są 
 $string['courseformatnotification'] = 'Aktualnie używany format kursu nie jest w pełni obsługiwany przez motyw Snap. W celu uzyskania najlepszych rezultatów Blackboard Open LMS zaleca stosowanie z motywem Snap formatów kursu Tematy lub Tygodniowy. Format kursu można zmienić w <a href="{$a}">ustawieniach kursu</a>.';
 $string['coursefixydefaulttext'] = 'Nie uczestniczysz obecnie w żadnym kursie.<br>Kursy, w których uczestniczysz, będą wyświetlone tutaj.';
 $string['coursegrade'] = 'Ocena z kursu:';
+$string['coursepartialrender'] = 'Włącz ładowanie opóźnione dla sekcji kursu';
+$string['coursepartialrenderdesc'] = 'Jeśli ta opcja jest włączona, sekcje kursu są ładowane na żądanie po wybraniu przez użytkownika. Pozwala to szybciej ładować kursy zawierające duże ilości danych.';
 $string['coursenavigation'] = 'Nawigacja kursu';
 $string['coursesummaryfilesunsuitable'] = 'Opróżnij pliki podsumowania kursu, zanim podejmiesz próbę zmiany obrazu na pierwszą stronę';
 $string['coursetools'] = 'Pulpit kursu';
 $string['coverdisplay'] = 'Wyświetlanie pierwszej strony';
-$string['covercarousel'] = 'Panel przewijany na pierwszej stronie';
-$string['covercarouselon'] = 'Użyj panelu przewijanego na pierwszej stronie';
-$string['covercarouseldescription'] = '<p>Panel przewijany to zestaw przewijanych transparentów albo pokaz slajdów, który jest wyświetlany na stronie głównej witryny zamiast obrazu tytułowego.</p>
+$string['covercarousel'] = 'Obraz przewijany na pierwszą stronę';
+$string['covercarouselon'] = 'Użyj obrazu przewijanego na pierwszej stronie';
+$string['covercarouseldescription'] = '<p>Obraz przewijany to zestaw przewijanych transparentów albo pokaz slajdów, który jest wyświetlany na stronie głównej witryny zamiast obrazu tytułowego.</p>
 <p>Można dodać maksymalnie trzy obrazy, tytuł każdego slajdu oraz opcjonalny podtytuł. Najlepiej wyglądają obrazy o wielkości 1200 x 600 pikseli.</p>';
-$string['coverimage'] = 'Obraz tytułowy';
+$string['coverimage'] = 'Obraz na pierwszą stronę';
 $string['covervideo'] = 'Film tytułowy';
 $string['comingsoon'] = 'Już wkrótce!';
 $string['createsection'] = 'Utwórz sekcję';
@@ -87,6 +89,8 @@ $string['customcssdesc'] = 'Należy pamiętać, że duże możliwości wiążą 
 $string['customtopbar'] = 'Pasek nawigacji';
 $string['customisenavbar'] = 'Zmień kolory paska nawigacyjnego';
 $string['customisenavbutton'] = 'Zmień kolory przycisków Moje kursy';
+$string['customisecustommenu'] = 'Zmień niestandardowy kolor tekstu menu';
+$string['custommenutext'] = 'Niestandardowy kolor tekstu menu';
 $string['deadlines'] = 'Terminy końcowe';
 $string['deadlinestoggle'] = 'Terminy końcowe';
 $string['deadlinestoggledesc'] = 'Pokazuj użytkownikom zbliżające się terminy realizacji aktywności w ramach kursów, na które są zapisani.';
@@ -112,7 +116,7 @@ $string['editcustommenu'] = 'Edytuj menu niestandardowe';
 $string['error:categorycolorinvalidjson'] = 'Niepoprawny format JSON dla kategorii kursu';
 $string['error:categorycolorinvalidvalue'] = 'Nieprawidłowy identyfikator rekordu lub wartość koloru dla kategorii „{$a}”';
 $string['error:categorynotfound'] = 'Nie znaleziono rekordu kategorii o identyfikatorze „{$a}”';
-$string['error:coverimageexceedsmaxbytes'] = 'Plik obrazu tytułowego przekracza maksymalną dozwoloną wielkość na poziomie witryny ({$a})';
+$string['error:coverimageexceedsmaxbytes'] = 'Plik obrazu na pierwszą stronę przekracza maksymalną dozwoloną wielkość na poziomie witryny ({$a})';
 $string['error:coverimageresolutionlow'] = 'Aby uzyskać najlepszą jakość, zalecamy użycie większego obrazu o szerokości co najmniej 1024px.';
 $string['error:duplicatedcategoryids'] = 'Niepoprawny format JSON, niektóre identyfikatory są zduplikowane';
 $string['error:failedtochangeassetvisibility'] = 'Nie udało się ukryć/wyświetlić zasobu';
@@ -157,7 +161,7 @@ $string['featuredcoursesbrowseall'] = 'Przeglądaj wszystkie kursy';
 $string['featuredcoursesbrowsealldesc'] = 'Dodaj łącze do przeglądania wszystkich kursów';
 $string['feedbackavailable'] = 'Dostępny jest komunikat zwrotny';
 $string['feedbacktoggle'] = 'Komunikaty zwrotne i oceny';
-$string['feedbacktoggledesc'] = 'Pokaż uczniom najnowsze komunikaty zwrotne, a nauczycielom ostatnio złożone prace, które oczekują na ocenę.';
+$string['feedbacktoggledesc'] = 'Pokazuj uczniom najnowsze komunikaty zwrotne, a nauczycielom ostatnio złożone prace, które oczekują na ocenę.';
 $string['footnote'] = 'Stopka witryny';
 $string['footnotedesc'] = 'Stopka jest wyświetlana w całej witrynie. Jest to najlepsze miejsce do umieszczania łączy do pomocy, działu wsparcia oraz innych witryn organizacji, które chcesz udostępnić uczniom i nauczycielom. Na przykład łącze do biblioteki, adres e-mail itp.';
 $string['forcepwdwarningpersonalmenu'] = 'Musisz <a href="{$a}">zmienić hasło</a>, aby używać menu osobistego.';
@@ -168,7 +172,7 @@ $string['forumreplies'] = 'Odpowiedzi';
 $string['forumtopic'] = 'Temat';
 $string['forumposts'] = 'Wpisy forum';
 $string['forumpoststoggle'] = 'Wpisy forum';
-$string['forumpoststoggledesc'] = 'Pokaż użytkownikom 10 najnowszych wpisów na forum z ich kursów.';
+$string['forumpoststoggledesc'] = 'Pokazuj użytkownikom 10 najnowszych wpisów na forum z ich kursów.';
 $string['fullname'] = 'Nazwa witryny';
 $string['fullnamedesc'] = 'Nazwa używanej witryny.';
 $string['graderadviseuserreport'] = 'Funkcja „Dziennik ocen” może nie działać prawidłowo na urządzeniach mobilnych. Zaleca się korzystać z funkcji „Moje oceny”.';
@@ -245,13 +249,17 @@ $string['overdue'] = 'Zaległe';
 $string['personalmenu'] = 'Menu osobiste';
 $string['personalmenufeatures'] = 'Funkcje menu osobistego';
 $string['personalmenulogintoggle'] = 'Pokaż menu osobiste podczas logowania';
-$string['personalmenulogintoggledesc'] = 'Otwiera menu osobiste natychmiast po zalogowaniu';
+$string['personalmenulogintoggledesc'] = 'Otwiera menu osobiste natychmiast po zalogowaniu.';
+$string['personalmenuadvancedfeedsenable'] = 'Włącz zaawansowane źródła (eksperymentalne)';
+$string['personalmenuadvancedfeedsenabledesc'] = 'Zaawansowane źródła ładują osobiste elementy menu, które umożliwiają szybsze ładowanie i odświeżania treści na żądanie.';
+$string['personalmenuadvancedfeedsperpage'] = 'Liczba wyświetlanych elementów zaawansowanego źródła';
+$string['personalmenuadvancedfeedsperpagedesc'] = 'Wybierz liczbę elementów wyświetlanych w źródle. Użytkownicy mogą wybrać opcję <strong>Zobacz więcej</strong>, aby wyświetlić dodatkowe elementy.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Obraz na pierwszą stronę';
 $string['posterdesc'] = 'Duży obraz nagłówka wyświetlany na stronie głównej witryny. Najlepiej wyglądają obrazy w orientacji poziomej 1200 na 600 pikseli lub większe.';
-$string['poweredbyrunby'] = 'Utworzono przy użyciu <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a>,
-    w oparciu o technologię <a href="https://moodle.com/" target="_blank">Moodle</a>.<br>
+$string['poweredbyrunby'] = 'Utworzono przy użyciu <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank" rel="noopener">Blackboard Open LMS</a>,
+    w oparciu o technologię <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>.<br>
     Copyright &#169; {$a} Blackboard Inc., Wszelkie prawa zastrzeżone.';
 $string['previoussection'] = 'Poprzednia sekcja';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'Identyfikator kursu, który użytkownik oznaczył jako ulubiony';
@@ -271,7 +279,9 @@ $string['region-side-top'] = 'Góra';
 $string['released'] = 'Wydanie: {$a}';
 $string['reopened'] = 'Ponownie otwarte';
 $string['resourcedisplay'] = 'Wyświetlanie zasobu';
-$string['resourcedisplayhelp'] = 'Wybierz sposób wyświetlania załączników i łączy w kursie.';
+$string['resourcedisplayhelp'] = 'Wybierz sposób wyświetlania załączników i łączy w kursie. Kompozycja Snap nie obsługuje plików multimedialnych w opisie małych kart aktywności i zasobów.';
+$string['displaydescription'] = 'Wyświetl opis';
+$string['displaydescriptionhelp'] = 'Wybierz tę opcję, aby najpierw wyświetlić opis działań dotyczących zasobów i adresów URL na nowej stronie. Studenci uzyskają dostęp do treści z opisu.';
 $string['search'] = 'Przeszukaj zawartość';
 $string['seriffont'] = 'Czcionka Serif';
 $string['seriffont_desc'] = 'Czcionka używana w większości materiałów opracowanych przez użytkowników. Użycie czcionki szeryfowej zwiększa czytelność materiałów opracowanych przez użytkowników i sprawia, że wyglądają one jak pisane przez człowieka.';
@@ -295,7 +305,7 @@ $string['twitter'] = 'Twitter';
 $string['twitterdesc'] = 'Adres URL Twojego konta w serwisie Twitter.';
 $string['unenrolme'] = 'Wypisz mnie';
 $string['unread'] = 'nieprzeczytane';
-$string['unsupportedcoverimagetype'] = 'Nieobsługiwany typ obrazu tytułowego ({$a})!';
+$string['unsupportedcoverimagetype'] = 'Nieobsługiwany typ obrazu na pierwszą stronę ({$a})!';
 $string['via'] = 'za pomocą';
 $string['viewcourse'] = 'Wyświetl kurs';
 $string['viewyourprofile'] = 'Wyświetl swój profil';
@@ -331,9 +341,24 @@ $string['cachedef_profile_based_branding'] = 'Buforowanie na potrzeby oznakowani
 $string['cachedef_course_card_bg_image'] = 'Buforowanie obrazu tła kursu.';
 $string['cachedef_course_card_teacher_avatar'] = 'Buforowanie awatarów nauczycieli.';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Buforowanie indeksu awatarów nauczycieli.';
-$string['accesforumstringdis'] = 'Wyświetl opcje';
-$string['accesforumstringmov'] = 'Opcje przenoszenia';
-$string['accescalendarstring'] = 'Kalendarz';
+$string['accessforumstringdis'] = 'Wyświetl opcje';
+$string['accessforumstringmov'] = 'Opcje przenoszenia';
+$string['accesscalendarstring'] = 'Kalendarz';
+$string['accessglobalsearchstring'] = 'Szukaj';
 $string['admineventwarning'] = 'Aby wyświetlić wydarzenia ze wszystkich kursów, ';
 $string['gotocalendarsnap'] = 'przejdź do witryny kalendarza.';
 $string['quizattemptswarn'] = 'Wyklucza podejścia zawieszonych użytkowników';
+$string['quizfeedback'] = 'Informacja zwrotna';
+$string['validratio'] = 'Ta kombinacja kolorów jest zgodna z minimalną wartością współczynnika wg normy WCAG 2.0 równą 4,5:1';
+$string['invalidratio'] = 'Ta kombinacja kolorów jest niezgodna z
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">minimalną wartością współczynnika wg normy WCAG 2.0 równą 4,5:1</a>. Wartość: „{$a}”';
+$string['imageinvalidratio'] = 'Ten obraz może być przyczyną problemów z kontrastem ze względu na niezgodność z minimalną wartością współczynnika wg normy WCAG 2.0 równą 4,5:1. Średnia wartość pikseli: „{$a}”';
+$string['catinvalidratio'] = 'Następujące kategorie kolorów są niezgodne z
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">minimalną wartością współczynnika wg normy WCAG 2.0 równą 4,5:1</a>:
+W odniesieniu do koloru tła witryny (biały): „{$a->white}”. W odniesieniu do koloru tła paska nawigacyjnego: „{$a->custombar}”. W odniesieniu do koloru tła przycisku Moje kursy: „{$a->customnav}”';
+$string['imageinvalidratiocategory'] = 'Przy tym kolorze motywu ten obraz może być przyczyną problemów z kontrastem ze względu na niezgodność z minimalną wartością współczynnika wg normy WCAG 2.0 równą 4,5:1. Średnia wartość pikseli: „{$a}”';
+$string['lazyload_mod_page'] = 'Włącz domyślne ładowanie opóźnione zasobów stron';
+$string['lazyload_mod_page_description'] = 'Włączenie tego ustawienia pozwala znacząco skrócić czasy ładowania stron kursu w przypadku kursów wielostronicowych.';
+$string['pmadvancedfeed_viewmore'] = 'Zobacz więcej';
+$string['pmadvancedfeed_reload'] = 'Odśwież';
+$string['multimediacard'] = 'Pliki multimedialne nie będą wyświetlane w widokach kart aktywności w kompozycji Snap. Będą one używane na stronie głównej i stronach kursu tylko w przypadku małych kart aktywności i zasobów.';

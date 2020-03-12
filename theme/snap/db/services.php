@@ -71,6 +71,30 @@ $functions = [
         'type'          => 'write',
         'ajax'          => true,
         'loginrequired' => true
+    ],
+    'theme_snap_course_cards_categories' => [
+        'classname'     => 'theme_snap\\webservice\\ws_course_cards_categories',
+        'methodname'    => 'service',
+        'description'   => 'Course cards sorting categories',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true
+    ],
+    'theme_snap_course_cards_data' => [
+        'classname'     => 'theme_snap\\webservice\\ws_course_cards_data',
+        'methodname'    => 'service',
+        'description'   => 'Course card renderable data for web components',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true
+    ],
+    'theme_snap_feed' => [
+        'classname'     => 'theme_snap\\webservice\\ws_feed',
+        'methodname'    => 'service',
+        'description'   => 'Personal Menu Feed',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true
     ]
 ];
 

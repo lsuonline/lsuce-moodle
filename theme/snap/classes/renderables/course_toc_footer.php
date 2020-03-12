@@ -32,13 +32,13 @@ class course_toc_footer implements \renderable {
     public $canaddnewsection;
 
     /**
-     * @var boolean
-     */
-    public $qmcansend;
-    /**
-     * @var string
-     */
-    public $qmurl;
+      * @var boolean
+      */
+     public $qmcansend;
+     /**
+      * @var string
+      */
+     public $qmurl;
 
     /**
      * @var string

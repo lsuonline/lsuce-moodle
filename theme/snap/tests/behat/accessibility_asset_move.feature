@@ -21,7 +21,7 @@
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
-@theme @theme_snap
+@theme @theme_snap @theme_snap_ax
 Feature: When the moodle theme is set to Snap, on moving assets some links shouldn't be reached.
 
   Background:
@@ -58,8 +58,8 @@ Feature: When the moodle theme is set to Snap, on moving assets some links shoul
     Then I should see "Moving \"Test assignment2\""
     And the "tabindex" attribute of ".snap-asset .mod-link" "css_element" should contain "-1"
     And the "tabindex" attribute of ".snap-asset .snap-completion-meta a" "css_element" should contain "-1"
-    And I click on "#region-main .sitetopic ul.section li.snap-drop.asset-drop div.asset-wrapper" "css_element"
-    Then ".snap-activity.modtype_assign" "css_element" should appear after ".snap-activity.modtype_assign .snap-asset-move img[title='Move \"Test assignment1\"']" "css_element"
+    And I click on "li.snap-activity:not(.asset-moving) a.snap-move-note" "css_element"
+    Then "//li[contains(@class, 'snap-activity')]//p[contains(text(), \"Test assignment1\")]" "xpath_element" should appear after "//li[contains(@class, 'snap-activity')]//p[contains(text(), \"Test assignment2\")]" "xpath_element"
 
   @javascript
   Scenario: In read mode, on course, when teacher try move an activity, anchor links tabindex attribute should exists and value is -1 and button disabled.
@@ -71,6 +71,5 @@ Feature: When the moodle theme is set to Snap, on moving assets some links shoul
     Then I should see "Moving \"Test assignment2\""
     And the "tabindex" attribute of ".snap-asset .mod-link" "css_element" should contain "-1"
     And the "tabindex" attribute of ".snap-asset .snap-completion-meta a" "css_element" should contain "-1"
-    And the "disabled" attribute of ".snap-asset button" "css_element" should contain "disabled"
-    And I click on "li#section-1 li.snap-drop.asset-drop div.asset-wrapper" "css_element"
-    Then ".snap-activity.modtype_assign" "css_element" should appear after ".snap-activity.modtype_assign .snap-asset-move img[title='Move \"Test assignment1\"']" "css_element"
+    And I click on "li.snap-activity:not(.asset-moving) a.snap-move-note" "css_element"
+    Then "//li[contains(@class, 'snap-activity')]//p[contains(text(), \"Test assignment1\")]" "xpath_element" should appear after "//li[contains(@class, 'snap-activity')]//p[contains(text(), \"Test assignment2\")]" "xpath_element"

@@ -80,9 +80,8 @@ class behat_theme_snap_category_colors extends behat_base {
     /**
      * Checks if css element have a property with input value.
      *
-     * @Given /^I check \
-     *        element "(?P<element_string>(?:[^"]|\\")*)" with \
-     *        property "(?P<property_string>(?:[^"]|\\")*)" = "(?P<value_string>(?:[^"]|\\")*)"$/
+     * @codingStandardsIgnoreLine
+     * @Given /^I check element "(?P<element_string>(?:[^"]|\\")*)" with property "(?P<property_string>(?:[^"]|\\")*)" = "(?P<value_string>(?:[^"]|\\")*)"$/
      * @param string $element element to be checked
      * @param string $property property to be checked
      * @param string $value value of the property
@@ -144,7 +143,13 @@ class behat_theme_snap_category_colors extends behat_base {
      * @return array|bool
      */
     private static function rgb2array($rgb) {
-        preg_match("/rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)/", $rgb, $vals);
+        if (strpos($rgb, 'rgba') !== false) {
+            $pattern = '~^rgba?\((25[0-5]|2[0-4]\d|1\d{2}|\d\d?)\s*,\s*(25[0-5]|2[0-4]\d|1\d{2}|\d\d?)\s*,' .
+            '\s*(25[0-5]|2[0-4]\d|1\d{2}|\d\d?)\s*(?:,\s*([01]\.?\d*?))?\)$~';
+            preg_match($pattern, $rgb, $vals);
+        } else {
+            preg_match("/rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)/", $rgb, $vals);
+        }
         if (!isset($vals[1])) {
             return false;
         }

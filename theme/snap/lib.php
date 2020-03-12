@@ -75,6 +75,9 @@ function theme_snap_set_category_colors($css, $theme) {
     $tag = '/**setting:categorycolors**/';
     $replacement = '';
 
+    // Get custom menu text color from database.
+    $dbcustommenutextcolor = get_config("theme_snap", "custommenutext");
+    $dbcustommenutextcoloractive = get_config("theme_snap", "customisecustommenu");
     // Get category colors from database.
     $categorycolors = array();
     $dbcategorycolors = get_config("theme_snap", "category_color");
@@ -108,7 +111,8 @@ function theme_snap_set_category_colors($css, $theme) {
                 'nav-color' => $colors[$category->id],
                 'nav-button-color' => $colors[$category->id],
                 'nav-login-bg' => $colors[$category->id],
-                'nav-login-color' => '#FFFFFF'
+                'nav-login-color' => '#FFFFFF',
+                'custom-menu-text-color' => $dbcustommenutextcoloractive ? $dbcustommenutextcolor : '#FFFFFF'
             ]);
 
             try {
@@ -227,6 +231,12 @@ function theme_snap_pluginfile($course, $cm, $context, $filearea, $args, $forced
     } else if (in_array($context->contextlevel, $coverimagecontexts)
         && $filearea == 'coverimage' || $filearea == 'coursecard') {
         theme_snap_send_file($context, $filearea, $args, $forcedownload, $options);
+    } else if ($filearea === 'vendorjs') {
+        $pluginpath = __DIR__.'/';
+        // Typically CDN fall backs would go in vendorjs.
+        $path = $pluginpath.'vendorjs/'.implode('/', $args);
+        send_file($path, basename($path));
+        return true;
     } else {
         send_file_not_found();
     }
@@ -329,6 +339,13 @@ function theme_snap_get_pre_scss($theme) {
             $settings['nav-button-color'] = $settings['brand-primary'];
         }
     }
+    if (!empty($theme->settings->customisecustommenu)) {
+        if (!empty($theme->settings->custommenutext)) {
+            $settings['custom-menu-text-color'] = $theme->settings->custommenutext;
+        } else {
+            $settings['custom-menu-text-color'] = $settings['brand-primary'];
+        }
+    }
 
     foreach ($settings as $key => $value) {
         $scss .= '$' . $key . ': ' . $value . ";\n";
@@ -338,13 +355,13 @@ function theme_snap_get_pre_scss($theme) {
 }
 
 /**
- * Fragment API function to render couse sections.
+ * Fragment API function to render course sections.
  * @param $args
  * @return string
  */
 function theme_snap_output_fragment_section($args) {
-    global $PAGE;
-    if (!empty($args['courseid']) && !empty($args['section'])) {
+    global $PAGE, $CFG;
+    if (!empty($args['courseid']) && $args['section'] != '') {
         $course = get_course($args['courseid']);
         $PAGE->set_context(\context_course::instance($course->id));
         $format = course_get_format($args['courseid']);
@@ -354,9 +371,90 @@ function theme_snap_output_fragment_section($args) {
             $formatrenderer = $format->get_renderer($PAGE);
             $modinfo = get_fast_modinfo($course);
             $section = $modinfo->get_section_info($args['section']);
+
+            // We need to double check if the page has an instance of SharingCart.
+            // Current $PAGE object can't be modified.
+            $page = new moodle_page();
+            $page->set_course($course);
+            $page->set_pagelayout('course');
+            $page->set_pagetype('course-view-' . $formatname);
+            $page->initialise_theme_and_output();
+            $page->blocks->load_blocks();
+            $page->blocks->create_all_block_instances();
+            if ($page->blocks->is_block_present('sharing_cart') && !empty($section) &&
+                file_exists($CFG->dirroot . '/blocks/sharing_cart/amd/src/script.js')) {
+                $sectionsjs = new stdClass();
+                $sectionsjs->id = $section->id;
+                $sectionsjs->name = $section->name;
+                $sectionsjs->num = $args['section'];
+                $PAGE->requires->js_call_amd('block_sharing_cart/script', 'init', [$course->id,
+                    [$sectionsjs], true]);
+                $PAGE->requires->strings_for_js(
+                    array('yes', 'no', 'ok', 'cancel', 'error', 'edit', 'move', 'delete', 'movehere'),
+                    'moodle'
+                );
+
+                $PAGE->requires->strings_for_js(
+                    array('copyhere', 'notarget', 'backup', 'restore', 'movedir', 'clipboard',
+                        'confirm_backup', 'confirm_backup_section', 'confirm_userdata', 'confirm_userdata_section',
+                        'confirm_delete', 'snap_dialog_restore'),
+                    'block_sharing_cart'
+                );
+            }
+            $maxbytes = get_max_upload_file_size($CFG->maxbytes, $course->maxbytes);;
+            if (has_capability('moodle/course:ignorefilesizelimits', $PAGE->context)) {
+                $maxbytes = 0;
+            }
             $html = $formatrenderer->course_section($course, $section, $modinfo);
+            $PAGE->requires->js('/course/dndupload.js');
+            $vars = array(
+                array('courseid' => $course->id,
+                    'maxbytes' => $maxbytes,
+                    'showstatus' => false)
+            );
+            $PAGE->requires->js_call_amd('theme_snap/dndupload-lazy', 'init', $vars);
             return $html;
         }
     }
     return '';
+}
+
+function theme_snap_course_module_background_deletion_recommended() {
+    // Check if recyclebin is installed.
+    $toolplugins = core_plugin_manager::instance()->get_installed_plugins("tool");
+    foreach ($toolplugins as $name => $version) {
+        if ($name == 'recyclebin') {
+            if (\tool_recyclebin\course_bin::is_enabled()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Hook for adding things before footer.
+ */
+function theme_snap_before_footer() {
+    global $CFG, $PAGE;
+
+    if (empty(get_config('theme_snap', 'personalmenuadvancedfeedsenable'))) {
+        return;
+    }
+
+    $paths = [];
+
+    if (core_useragent::is_ie()) {
+        $paths['theme_snap/snapce'] = [
+            $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce-es5'
+        ];
+    } else {
+        $paths['theme_snap/snapce'] = [
+            $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce'
+        ];
+    }
+
+    $PAGE->requires->js_call_amd('theme_snap/wcloader', 'init', [
+        'componentPaths' => json_encode($paths)
+    ]);
 }
