@@ -61,6 +61,9 @@ class course_total_grade extends \grade_report_overview {
     public function __construct($user, $gpr, $course) {
         global $CFG;
 
+        // LSU fix for certain courses to provide correct types to grade_report constructor.
+        $this = new grade_report_overview($user->userid, $gpr, \context_course::instance($course->id));
+
         $this->user = $user;
 
         if (empty($CFG->gradebookroles)) {
