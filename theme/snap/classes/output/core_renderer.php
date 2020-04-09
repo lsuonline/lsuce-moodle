@@ -1216,8 +1216,15 @@ HTML;
      * Override to add a class to differentiate from other
      * #notice.box.generalbox that have buttons after them,
      * rather than inside them.
+     * 
+     * @param $message              Message to display.
+     * @param $continue             Continuation URL and text for continue button.
+     * @param $cancel               Cancel URL and text for cancel button.
+     * @param $internalnotification Pre-formed div element for a standard success notification.  If non-null, it also
+     *                              implies that there will only be a single go-back button which has the same URL as
+     *                              the cancel button. Needed for LSU adhoc enrollment enhancement.
      */
-    public function confirm($message, $continue, $cancel) {
+    public function confirm($message, $continue, $cancel, $internalnotification = '') {
         // We need plain styling of confirm boxes on upgrade because we don't know which stylesheet we have (it could be
         // from any previous version of Moodle).
         if ($continue instanceof single_button) {
@@ -1245,9 +1252,18 @@ HTML;
         }
 
         $output = $this->box_start('generalbox snap-continue-cancel', 'notice');
+																			  
+        $output .= $internalnotification; // LSU adhoc enrollment enhancement.
         $output .= html_writer::tag('h4', get_string('confirm'));
         $output .= html_writer::tag('p', $message);
-        $output .= html_writer::tag('div', $this->render($continue) . $this->render($cancel), array('class' => 'buttons'));
+        // LSU adhoc enrollment enhancement.
+        if ($internalnotification) {
+            $cancel->label = 'Go Back';
+            $output .= html_writer::tag('div', $this->render($cancel), array('class' => 'buttons'));
+        } else {
+            $output .= html_writer::tag('div', $this->render($continue) . $this->render($cancel), array('class' => 'buttons'));
+        } 
+        // LSU adhoc enrollment enhancement ends.
         $output .= $this->box_end();
         return $output;
     }

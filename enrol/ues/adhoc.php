@@ -79,11 +79,14 @@ if ($confirmed and $data = data_submitted()) {
 // Begin outputting the page.
 echo $OUTPUT->header();
 echo $OUTPUT->heading($action);
+
 echo html_writer::tag('p', $s('run_adhoc_desc'));
 
 // Provide a success notification.
 if ($success) {
-    echo $OUTPUT->notification($s('run_adhoc_success'), 'notifysuccess');
+    $internalnotification = $OUTPUT->notification($s('run_adhoc_success'), 'notifysuccess'); // Fix for success notification.
+} else {
+    $internalnotification = ''; // Fix for success notification.
 }
 
 // Define the confirm URL.
@@ -105,5 +108,10 @@ if ($taskstatusdescription) {
 }
 
 // Finish outputting the page.
-echo $OUTPUT->confirm($confirmmsg, $confirmurl, $cancelurl);
+if ($success) {
+    echo $OUTPUT->confirm('Click \'Go Back\' to return to the UES Enrollment page.', $confirmurl, $cancelurl, $internalnotification);
+} else {
+    echo $OUTPUT->confirm($confirmmsg, $confirmurl, $cancelurl, $internalnotification);
+}
+
 echo $OUTPUT->footer();
