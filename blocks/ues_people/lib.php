@@ -136,7 +136,7 @@ abstract class ues_people {
 
         if (file_exists($CFG->dirroot.'/blocks/cps/classes/ues_people_handler.php')) {
             require_once($CFG->dirroot.'/blocks/cps/classes/ues_people_handler.php');
-            $data = cps_ues_people_handler::ues_people_outputs($data);
+            $data = blocks_cps_ues_people_handler::ues_people_outputs($data);
         }
 
         if (file_exists($CFG->dirroot.'/blocks/post_grades/events.php')) {
