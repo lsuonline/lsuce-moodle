@@ -298,10 +298,14 @@ class edit_item_form extends moodleform {
             $gradeitem->parent_category = $parentcategory;
         }
 
+        // LSU Gradebook moodle 3.7 enhancement. 
+        /*
         if (!$gradeitem->is_raw_used()) {
             $mform->removeElement('plusfactor');
             $mform->removeElement('multfactor');
         }
+        */
+        // End LSU Gradebook Moodle 3.7 enhancement. 
 
         if ($gradeitem->is_outcome_item()) {
             // We have to prevent incompatible modifications of outcomes if outcomes disabled.
@@ -457,9 +461,9 @@ class edit_item_form extends moodleform {
                     $mform->removeElement('scaleid');
                 }
             }
-
-	    // LSU Grade Enhancement.
         } else {
+            // LSU Gradebook moodle 3.7 enhancement. 
+            /* 
             // all new items are manual, children of course category
             if ($mform->elementExists('plusfactor')) {
                 $mform->removeElement('plusfactor');
@@ -467,6 +471,8 @@ class edit_item_form extends moodleform {
             if ($mform->elementExists('multfactor')) {
                 $mform->removeElement('multfactor');
             }
+            */
+            // End LSU Gradebook moodle 3.7 enhancement. 
             if ($mform->elementExists('rescalegrades')) {
                 $mform->removeElement('rescalegrades');
             }
