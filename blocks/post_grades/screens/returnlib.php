@@ -171,7 +171,7 @@ class post_grades_seminar_compliance extends post_grades_mean_median {
     }
 
     public function is_compliant() {
-        return empty($this->required) ?
+        return !$this->required ?
             true : $this->check($this->median, $this->lower, $this->upper);
     }
 
@@ -297,7 +297,7 @@ class post_grades_class_size extends post_grades_mean_median
             }
         }
 
-        if (empty($this->required)) {
+        if (!$this->required) {
             return true;
         }
 

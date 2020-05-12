@@ -79,7 +79,7 @@ class retrieve_etextbooks extends \core\task\scheduled_task {
             $termswitcharoo = explode(" ", $tbook->term);
             if (count($termswitcharoo) == 2) {
                 $tbook->term = trim($termswitcharoo[1] . " " . $termswitcharoo[0]);
-            } else {
+            } else if (count($termswitcharoo) == 3) {
                 $tbook->term = trim($termswitcharoo[2] . " " . $termswitcharoo[0] . " " . $termswitcharoo[1]);
             }
 
