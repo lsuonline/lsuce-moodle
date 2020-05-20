@@ -165,7 +165,7 @@ $string['next'] = 'Next';
 $string['back'] = 'Back';
 
 $string['split_processed'] = 'Split Courses Processed';
-$string['split_thank_you'] = 'Your split selections have been processed. Conintue
+$string['split_thank_you'] = 'Your split selections have been processed. Continue
 to head back to the split home screen.';
 
 $string['chosen'] = 'Please review your selections.';
