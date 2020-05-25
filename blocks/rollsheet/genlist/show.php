@@ -132,7 +132,7 @@ function buildMenu($cid) {
     $outputhtml .= '<input type="hidden" name="orderby" value="'.$orderby.'">'
                  . '<input type="submit" value="'.get_string('printbutton', 'block_rollsheet').'">'
                  . '</span></form></div></div>';
-    return $output;
+    return $outputhtml;
 }
 
 /*

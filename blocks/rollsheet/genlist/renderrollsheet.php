@@ -61,34 +61,36 @@ function renderRollsheet() {
     $ctxlevel = $context->contextlevel;
 
     if ($groupname) {
-        $query = "SELECT u.id, u.idnumber, $mainuserfields FROM {course} c "
-                        . "INNER JOIN {context} cx ON c.id = cx.instanceid AND cx.contextlevel = " . $ctxlevel
-                        . "INNER JOIN {role_assignments} ra ON cx.id = ra.contextid "
-                        . " INNER JOIN {role} r ON ra.roleid = r.id "
-                        . " INNER JOIN {user} u ON ra.userid = u.id "
-                        . " INNER JOIN {groups_members} gm ON u.id = gm.userid "
-                        . " NNER JOIN {groups} g ON gm.groupid = g.id AND c.id = g.courseid "
-                . "WHERE r.shortname = $student AND gm.groupid = ?" . $appendorder;
+        $query = "SELECT u.id, u.idnumber, $mainuserfields
+                  FROM {course} c
+                	INNER JOIN {context} cx ON c.id = cx.instanceid AND cx.contextlevel = $ctxlevel
+                	INNER JOIN {role_assignments} ra ON cx.id = ra.contextid
+                	INNER JOIN {role} r ON ra.roleid = r.id
+                	INNER JOIN {user} u ON ra.userid = u.id
+                	INNER JOIN {groups_members} gm ON u.id = gm.userid
+                	INNER JOIN {groups} g ON gm.groupid = g.id AND c.id = g.courseid
+                  WHERE r.shortname = $student AND gm.groupid = ?" . $appendorder;
+                $result = $DB->get_records_sql($query,array($selectedGroupId));
         $result = $DB->get_records_sql($query, array($selectedgroupid));
     } else if (!has_capability('moodle/site:accessallgroups', $context)) {
-        $query = "SELECT CONCAT(u.id, g.id) AS groupuserid, u.id, u.idnumber, $mainuserfields "
-                . "FROM {course} c "
-                        . "INNER JOIN {context} cx ON c.id = cx.instanceid AND cx.contextlevel = " . $ctxlevel
-                        . "INNER JOIN {role_assignments} ra ON cx.id = ra.contextid "
-                        . "INNER JOIN {role} r ON ra.roleid = r.id "
-                        . "INNER JOIN {user} u ON ra.userid = u.id "
-                        . "INNER JOIN {groups_members} gm ON u.id = gm.userid "
-                        . "INNER JOIN {groups} g ON gm.groupid = g.id AND c.id = g.courseid "
-                . "WHERE r.shortname = $student AND gm.groupid IN ($groupids) " . $appendorder;
+        $query = "SELECT CONCAT(u.id, g.id) AS groupuserid, u.id, u.idnumber, $mainuserfields
+                  FROM {course} c
+                    INNER JOIN {context} cx ON c.id = cx.instanceid AND cx.contextlevel = $ctxlevel
+                    INNER JOIN {role_assignments} ra ON cx.id = ra.contextid
+                    INNER JOIN {role} r ON ra.roleid = r.id
+                    INNER JOIN {user} u ON ra.userid = u.id
+                    INNER JOIN {groups_members} gm ON u.id = gm.userid
+                    INNER JOIN {groups} g ON gm.groupid = g.id AND c.id = g.courseid
+                  WHERE r.shortname = $student AND gm.groupid IN ($groupids) " . $appendorder;
         $result = $DB->get_records_sql($query, array($cid));
     } else {
-        $query = "SELECT u.id, u.idnumber, $mainuserfields "
-                . "FROM {course} c "
-                        . "INNER JOIN {context} cx ON c.id = cx.instanceid AND cx.contextlevel = $ctxlevel "
-                        . "INNER JOIN {role_assignments} ra ON cx.id = ra.contextid "
-                        . "INNER JOIN {role} r ON ra.roleid = r.id "
-                        . "INNER JOIN {user} u ON ra.userid = u.id "
-                . "WHERE r.shortname = $student AND c.id = ?" . $appendorder;
+        $query = "SELECT u.id, u.idnumber, $mainuserfields
+                  FROM {course} c
+                    INNER JOIN {context} cx ON c.id = cx.instanceid AND cx.contextlevel = $ctxlevel
+                    INNER JOIN {role_assignments} ra ON cx.id = ra.contextid
+                    INNER JOIN {role} r ON ra.roleid = r.id
+                    INNER JOIN {user} u ON ra.userid = u.id
+                  WHERE r.shortname = $student AND c.id = ?" . $appendorder;
         $result = $DB->get_records_sql($query, array($cid));
     }
 
