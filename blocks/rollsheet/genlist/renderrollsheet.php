@@ -70,7 +70,6 @@ function renderRollsheet() {
                 	INNER JOIN {groups_members} gm ON u.id = gm.userid
                 	INNER JOIN {groups} g ON gm.groupid = g.id AND c.id = g.courseid
                   WHERE r.shortname = $student AND gm.groupid = ?" . $appendorder;
-                $result = $DB->get_records_sql($query,array($selectedGroupId));
         $result = $DB->get_records_sql($query, array($selectedgroupid));
     } else if (!has_capability('moodle/site:accessallgroups', $context)) {
         $query = "SELECT CONCAT(u.id, g.id) AS groupuserid, u.id, u.idnumber, $mainuserfields
