@@ -271,7 +271,11 @@ if ($fullname) {
         $usedgroupid = false;
     }
     $nonrespondents = questionnaire_get_incomplete_users($cm, $sid, $usedgroupid);
-    $countnonrespondents = count($nonrespondents);
+    if (is_array($nonrespondents) || is_object($nonrespondents)) {
+        $countnonrespondents = count($nonrespondents);
+    } else {
+        $countnonrespondents = 0;
+    }
 
     $table->initialbars(false);
 
@@ -397,8 +401,10 @@ if (!$nonrespondents) {
             if ($resume) {
                 if ($perpage >= $countnonrespondents) {
                     $questionnaire->page->add_to_page('formarea',
-                        '<input type="button" id="checkstarted" class="btn btn-secondary" value="'.get_string('checkstarted', 'questionnaire').'" />'."\n");
-                    $questionnaire->page->add_to_page('formarea', '<input type="button" id="checknotstarted" class="btn btn-secondary" value="'.
+                        '<input type="button" id="checkstarted" class="btn btn-secondary" value="' .
+                        get_string('checkstarted', 'questionnaire').'" />'."\n");
+                    $questionnaire->page->add_to_page('formarea',
+                        '<input type="button" id="checknotstarted" class="btn btn-secondary" value="'.
                         get_string('checknotstarted', 'questionnaire').'" />'."\n");
                 }
             }
@@ -480,8 +486,8 @@ if (!$nonrespondents) {
         // Send button.
         $questionnaire->page->add_to_page('formarea', $questionnaire->renderer->box_start('mdl-left'));
         $questionnaire->page->add_to_page('formarea', '<div class="buttons">');
-        $questionnaire->page->add_to_page('formarea',
-            '<input type="submit" name="send_message" class="btn btn-secondary" value="'.get_string('send', 'questionnaire').'" />');
+        $questionnaire->page->add_to_page('formarea', '<input type="submit" name="send_message" class="btn btn-secondary" value="' .
+            get_string('send', 'questionnaire').'" />');
         $questionnaire->page->add_to_page('formarea', '</div>');
         $questionnaire->page->add_to_page('formarea', $questionnaire->renderer->box_end());
 

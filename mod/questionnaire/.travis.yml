@@ -26,14 +26,15 @@ php:
 
 matrix:
   exclude:
-    - php: 7.2
-      env: MOODLE_BRANCH=MOODLE_36_STABLE DB=mysqli
-    - php: 7.2
-      env: MOODLE_BRANCH=MOODLE_36_STABLE DB=pgsql
     - php: 7.1
+      env: MOODLE_BRANCH=MOODLE_38_STABLE DB=mysqli
+    - php: 7.1
+      env: MOODLE_BRANCH=MOODLE_38_STABLE DB=pgsql
+    - php: 7.2
       env: MOODLE_BRANCH=MOODLE_37_STABLE DB=mysqli
-    - php: 7.1
+    - php: 7.2
       env: MOODLE_BRANCH=MOODLE_37_STABLE DB=pgsql
+
 env:
   global:
     - IGNORE_NAMES=mobile_*.mustache
@@ -42,13 +43,11 @@ env:
     - MOODLE_BRANCH=MOODLE_38_STABLE DB=mysqli
     - MOODLE_BRANCH=MOODLE_37_STABLE DB=pgsql
     - MOODLE_BRANCH=MOODLE_37_STABLE DB=mysqli
-    - MOODLE_BRANCH=MOODLE_36_STABLE DB=pgsql
-    - MOODLE_BRANCH=MOODLE_36_STABLE DB=mysqli
 
 before_install:
   - phpenv config-rm xdebug.ini
-  - nvm install 8.9
-  - nvm use 8.9
+  - nvm install 14.0
+  - nvm use 14.0
   - cd ../..
   - composer create-project -n --no-dev --prefer-dist blackboard-open-source/moodle-plugin-ci ci ^2
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
