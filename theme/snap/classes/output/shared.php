@@ -798,41 +798,49 @@ EOF;
             }
         }
 
-        // Quickmail.
-        if ( \core_component::get_component_directory('block_quickmail') !== null &&
-            $COURSE->id != SITEID && has_capability('block/quickmail:cansend', $coursecontext)
-        ) {
+        // Begin LSU Enhancement fix quickmail icon not showing up for students in course.  
 
-            $iconurl = $OUTPUT->image_url('t/email', 'core');
-            $quickmailicon = '<img src="' . $iconurl . '" class="svg-icon" alt="" role="presentation">';
-            $links[] = array(
-                'link' => 'blocks/quickmail/qm.php?courseid=' . $COURSE->id,
-                'title' => $quickmailicon . get_string('pluginname', 'block_quickmail'),
-            );
+        if ( \core_component::get_component_directory('block_quickmail') !== null) {
+            
+            // Check course config
+            $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $COURSE->id], '', 'name,value');
+             
+            // Get the master block config for Quickmail.
+            $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
+            
+            // Determine Quickmail allowstudents for this course.
+            if ((int) $blockconfig < 0) {
+                $courseallowstudents = 0;
+            } else {
+                $courseallowstudents = array_key_exists('allowstudents', $courseconfig) ?
+                    $courseconfig['allowstudents'] :
+                    $blockconfig;
+            }
+
+            // Show QM icon and link for those who cansend OR students.
+            if (has_capability('block/quickmail:cansend', $coursecontext) OR $courseallowstudents == 1) {
+                // Set the icon appropriate for the version.
+                if ($CFG->version > 2017051500.00) {
+                    $iconurl = $OUTPUT->image_url('t/email', 'core');
+                } else {
+                    $iconurl = $OUTPUT->pix_url('t/email', 'core');
+                }
+        
+                // Build the HTML for the icon.
+                $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                // Build the link and add it to the array of links.
+                $links[] = array(
+                    'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
+                    'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
+                 );
+            }
         }
 
-        if ( \core_component::get_component_directory('report_allylti') !== null &&
-            $COURSE->id != SITEID && has_capability('report/allylti:viewcoursereport', $coursecontext)
-        ) {
-
-            $url = new moodle_url('/report/allylti/launch.php', [
-                    'reporttype' => 'course',
-                    'report' => 'admin',
-                    'course' => $COURSE->id]
-            );
-
-            $iconurl = $OUTPUT->image_url('i/ally_logo', 'theme_snap');
-            $allyicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-            $links[] = [
-                'link' => $url->out_as_local_url(false),
-                'title' => $allyicon . get_string('coursereport', 'report_allylti'),
-                'attributes' => ['target' => '_blank']
-            ];
-        }
-
+        // End LSU Enhancement fix quickmail icon no showing up for students in course. 
+       
         // Kaltura my media.
         if (has_capability('local/mymedia:view', context_system::instance())) {
-            $iconurl = $OUTPUT->pix_url('t/kaltura', 'core');
+            $iconurl = $OUTPUT->image_url('t/kaltura', 'core'); // SJ Change pix_url to image_url
             $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
 
             $links[] = array(
