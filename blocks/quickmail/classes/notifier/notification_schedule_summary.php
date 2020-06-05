@@ -54,8 +54,11 @@ class notification_schedule_summary {
         // if there is a begin date, format and append it
         if (array_key_exists('begin_at', $this->params)) {
             if (is_numeric($this->params['begin_at'])) {
-                $begin_at = \DateTime::createFromFormat('U', $this->params['begin_at'], \core_date::get_server_timezone_object());
-                    
+                //Start LSU Fix display correct time.
+                $begin = date('Y-m-d H:i', $this->params['begin_at']);
+
+                $begin_at = \DateTime::createFromFormat('Y-m-d H:i', $begin, \core_date::get_server_timezone_object());
+                //End LSU Fix display correct time.
                 $summary .= ', ' . block_quickmail_string::get('time_beginning') . ' ' . $begin_at->format(self::$date_format);
             }
         }
@@ -63,8 +66,11 @@ class notification_schedule_summary {
         // if there is an end date, format and append it
         if (array_key_exists('end_at', $this->params)) {
             if (is_numeric($this->params['end_at'])) {
-                $end_at = \DateTime::createFromFormat('U', $this->params['end_at'], \core_date::get_server_timezone_object());
+                //Start LSU Fix display correct time.
+                $end = date('Y-m-d H:i', $this->params['end_at']);
 
+                $end_at = \DateTime::createFromFormat('Y-m-d H:i', $end, \core_date::get_server_timezone_object());
+                //End LSU Fix display correct time.
                 $summary .= ', ' . block_quickmail_string::get('time_ending') . ' ' . $end_at->format(self::$date_format);
             }
         }
