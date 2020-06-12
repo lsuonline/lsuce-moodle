@@ -344,7 +344,7 @@ class team_request_form_manage extends team_request_form {
         $m->addElement('static', 'team_error', '', '');
 
         $m->addElement('static', 'action_labels', '',
-            $tobold(self::_s('team_actions')). $filler(50) .
+            $tobold(self::_s('team_actions')) . $filler(50) .
             $tobold(self::_s('team_requested_courses')));
 
         $teamteaches = cps_team_request::in_course($course, $semester);
@@ -418,7 +418,7 @@ class team_request_form_manage extends team_request_form {
         $teams = cps_team_request::in_course($course, $semester);
 
         foreach ($teams as $id => $team) {
-            $approval = $data['options_'.$id]['approval_'.$id];
+            $approval = $data['options_' . $id]['approval_' . $id];
 
             if ($approval != self::NOTHING) {
                 $selected ++;
@@ -453,14 +453,14 @@ class team_request_form_confirm extends team_request_form {
         $denied = array();
 
         foreach ($teamteaches as $id => $request) {
-            $m->addElement('hidden', 'options_'.$id.'[approval_'.$id.']', '');
-            $m->setType('options_'.$id.'[approval_'.$id.']', PARAM_INT);
+            $m->addElement('hidden', 'options_' . $id . '[approval_' . $id . ']', '');
+            $m->setType('options_' . $id . '[approval_' . $id . ']', PARAM_INT);
 
-            if (!isset($this->_customdata['options_'.$id])) {
+            if (!isset($this->_customdata['options_' . $id])) {
                 continue;
             }
 
-            $action = $this->_customdata['options_' . $id]['approval_'.$id];
+            $action = $this->_customdata['options_' . $id]['approval_' . $id];
 
             // TODO rewrite case statement so that it will not throw a warning in PHP 7.3 10/11/2019.
             switch ($action) {
@@ -479,7 +479,7 @@ class team_request_form_confirm extends team_request_form {
             $m->addElement('static', 'approved', self::_s('team_to_approve'), '');
 
             foreach ($approved as $request) {
-                $m->addElement('static', 'approve_'.$request->id, '', $request->label());
+                $m->addElement('static', 'approve_' . $request->id, '', $request->label());
             }
         }
 
@@ -487,7 +487,7 @@ class team_request_form_confirm extends team_request_form {
             $m->addElement('static', 'not_approved', self::_s('team_to_revoke'), '');
 
             foreach ($denied as $request) {
-                $m->addElement('static', 'deny_'.$request->id, '', $request->label());
+                $m->addElement('static', 'deny_' . $request->id, '', $request->label());
             }
         }
 
@@ -621,8 +621,8 @@ class team_request_form_query extends team_request_form {
 
             $m->setType($group->getElementName('department'), PARAM_ALPHANUMEXT);
             $m->setType($group->getElementName('cou_number'), PARAM_ALPHANUM);
-            $m->addElement('hidden', 'selected_users'.$number.'_str', '');
-            $m->setType('selected_users'.$number.'_str', PARAM_TEXT);
+            $m->addElement('hidden', 'selected_users' . $number . '_str', '');
+            $m->setType('selected_users' . $number . '_str', PARAM_TEXT);
         }
 
         $m->addElement('hidden', 'selected', '');
@@ -711,11 +711,11 @@ class team_request_form_request extends team_request_form {
 
             $queries[$key] = $query;
 
-            $users = optional_param('selected_users'.$number.'_str', null,
+            $users = optional_param('selected_users' . $number . '_str', null,
                 PARAM_TEXT);
 
             if ($users) {
-                $queries['selected_users'.$number] = explode(',', $users);
+                $queries['selected_users' . $number] = explode(',', $users);
             }
         }
 
@@ -749,14 +749,14 @@ class team_request_form_request extends team_request_form {
             $key = 'query' . $number;
             $query = $this->_customdata[$key];
 
-            $m->addElement('hidden', 'query'.$number.'[department]', '');
-            $m->setType('query'.$number.'[department]', PARAM_ALPHANUMEXT);
-            $m->addElement('hidden', 'query'.$number.'[cou_number]', '');
-            $m->setType('query'.$number.'[cou_number]', PARAM_ALPHANUM);
+            $m->addElement('hidden', 'query' . $number . '[department]', '');
+            $m->setType('query' . $number . '[department]', PARAM_ALPHANUMEXT);
+            $m->addElement('hidden', 'query' . $number . '[cou_number]', '');
+            $m->setType('query' . $number . '[cou_number]', PARAM_ALPHANUM);
 
             if (empty($query['department'])) {
-                $m->addElement('hidden', 'selected_users'.$number, '');
-                $m->setType('selected_users'.$number, PARAM_INT);
+                $m->addElement('hidden', 'selected_users' . $number, '');
+                $m->setType('selected_users' . $number, PARAM_INT);
                 continue;
             }
 
@@ -781,18 +781,18 @@ class team_request_form_request extends team_request_form {
                 $users[$teacher->userid] = $display;
             }
 
-            $m->addElement('static', 'query'.$number.'_course', $todisplay($othercourse));
+            $m->addElement('static', 'query' . $number . '_course', $todisplay($othercourse));
 
             $select =& $m->addElement('select', 'selected_users' . $number,
                 self::_s('team_teachers'), $users);
 
-            $m->setType('selected_users'.$number, PARAM_INT);
+            $m->setType('selected_users' . $number, PARAM_INT);
 
             $select->setMultiple(true);
 
             $m->addHelpButton('selected_users' . $number, 'team_teachers', 'block_cps');
-            $m->addElement('hidden', 'selected_users'.$number.'_str', '');
-            $m->setType('selected_users'.$number.'_str', PARAM_RAW);
+            $m->addElement('hidden', 'selected_users' . $number . '_str', '');
+            $m->setType('selected_users' . $number . '_str', PARAM_RAW);
         }
 
         $m->addElement('hidden', 'selected', '');
@@ -815,7 +815,7 @@ class team_request_form_request extends team_request_form {
         $shells = $data['shells'];
 
         foreach (range(1, $shells) as $number) {
-            $key = 'selected_users'.$number;
+            $key = 'selected_users' . $number;
 
             if (!isset($data[$key])) {
                 $errors[$key] = self::_s('err_select_teacher');
@@ -837,7 +837,7 @@ class team_request_form_review extends team_request_form {
         $usersdata = array();
 
         foreach (range(1, $data['shells']) as $number) {
-            $key = 'selected_users'. $number;
+            $key = 'selected_users' . $number;
 
             $users = optional_param_array($key, null, PARAM_INT);
             $userids = optional_param($key . '_str', null, PARAM_TEXT);
@@ -857,29 +857,29 @@ class team_request_form_review extends team_request_form {
         $m->addElement('static', 'selected_course', $todisplay($course), self::_s('team_with'));
 
         foreach (range(1, $this->_customdata['shells']) as $number) {
-            $query = (object) $this->_customdata['query'. $number];
+            $query = (object) $this->_customdata['query' . $number];
 
-            $m->addElement('hidden', 'query'.$number.'[department]', '');
-            $m->setType('query'.$number.'[department]', PARAM_ALPHANUMEXT);
-            $m->addElement('hidden', 'query'.$number.'[cou_number]', '');
-            $m->setType('query'.$number.'[cou_number]', PARAM_ALPHANUM);
+            $m->addElement('hidden', 'query' . $number . '[department]', '');
+            $m->setType('query' . $number . '[department]', PARAM_ALPHANUMEXT);
+            $m->addElement('hidden', 'query' . $number . '[cou_number]', '');
+            $m->setType('query' . $number . '[cou_number]', PARAM_ALPHANUM);
 
             if (empty($query->department)) {
-                $m->addElement('hidden', 'selected_users'.$number.'_str', '');
+                $m->addElement('hidden', 'selected_users' . $number . '_str', '');
                 continue;
             }
 
-            $userids = $this->_customdata['selected_users'.$number.'_str'];
+            $userids = $this->_customdata['selected_users' . $number . '_str'];
             $users = ues_user::get_all(ues::where('id')->in(explode(",", $userids)));
 
             foreach ($users as $user) {
                 $str = $todisplay($query) . ' with ' . fullname($user);
 
-                $m->addElement('static', 'selected_user_'.$user->id, '', $str);
+                $m->addElement('static', 'selected_user_' . $user->id, '', $str);
             }
 
-            $m->addElement('hidden', 'selected_users'.$number.'_str', $userids);
-            $m->setType('selected_users'.$number.'_str', PARAM_RAW);
+            $m->addElement('hidden', 'selected_users' . $number . '_str', $userids);
+            $m->setType('selected_users' . $number . '_str', PARAM_RAW);
         }
 
         $m->addElement('static', 'breather', '', '');
@@ -923,7 +923,7 @@ class team_request_form_finish implements finalized_form {
         $toundo = array();
 
         foreach ($teamteaches as $id => $teamteach) {
-            $action = $data->{'options_'.$id}['approval_'.$id];
+            $action = $data->{'options_' . $id}['approval_' . $id];
 
             switch ($action) {
                 case team_request_form_manage::APPROVE:
@@ -954,12 +954,12 @@ class team_request_form_finish implements finalized_form {
         global $USER;
 
         foreach (range(1, $data->shells) as $number) {
-            $requested = ues_course::get($data->{'query'.$number});
+            $requested = ues_course::get($data->{'query' . $number});
             if (empty($requested)) {
                 continue;
             }
 
-            $selected = explode(',', $data->{'selected_users'.$number.'_str'});
+            $selected = explode(',', $data->{'selected_users' . $number . '_str'});
 
             foreach ($selected as $userid) {
                 $params = array (

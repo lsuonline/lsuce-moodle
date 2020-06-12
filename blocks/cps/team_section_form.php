@@ -74,18 +74,18 @@ class team_section_form_select extends team_section_form {
                         $label .= ' ' . self::_s('team_section_option');
                     }
 
-                    $m->addElement('static', 'section_'.$section->courseid, '',
+                    $m->addElement('static', 'section_' . $section->courseid, '',
                         $label);
                 }
 
-                $m->addElement('static', 'other_course_'.$othercourse->id,
+                $m->addElement('static', 'other_course_' . $othercourse->id,
                     $this->display_course($othercourse, $semester), '');
 
                 foreach ($request->sections() as $tsec) {
                     $section = $tsec->section();
 
                     if ($section->courseid != $courseid) {
-                        $m->addElement('static', 'other_selected_'.$section->id,
+                        $m->addElement('static', 'other_selected_' . $section->id,
                             '', 'Section ' . $section->sec_number);
                     }
                 }
@@ -115,8 +115,8 @@ class team_section_form_select extends team_section_form {
                 $m->setType('shells', PARAM_INT);
 
                 foreach ($merged as $number => $sections) {
-                    $namekey = 'shell_name_'.$number.'_hidden';
-                    $valuekey = 'shell_values_'.$number;
+                    $namekey = 'shell_name_' . $number . '_hidden';
+                    $valuekey = 'shell_values_' . $number;
 
                     $m->addElement('hidden', $namekey,
                         current($sections)->shell_name);
@@ -187,7 +187,7 @@ class team_section_form_update extends team_section_form implements updating_for
             $shell_name = current($reqsecs)->shell_name;
             $shell_values = array();
 
-            $m->addElement('static', 'shell_'.$number, $shell_name, '');
+            $m->addElement('static', 'shell_' . $number, $shell_name, '');
             foreach ($reqsecs as $req_sec) {
                 $section = $req_sec->section();
 
@@ -217,14 +217,14 @@ class team_section_form_update extends team_section_form implements updating_for
                     fullname($user)
                 );
 
-                $m->addElement('static', 'section_'.$section->id, '',
+                $m->addElement('static', 'section_' . $section->id, '',
                     implode(' ', $label));
 
                 $shell_values[] = $section->id;
             }
 
-            $m->addElement('hidden', 'shell_name_'.$number.'_hidden', $shell_name);
-            $m->addElement('hidden', 'shell_values_'.$number, implode(',', $shell_values));
+            $m->addElement('hidden', 'shell_name_' . $number . '_hidden', $shell_name);
+            $m->addElement('hidden', 'shell_values_' . $number, implode(',', $shell_values));
         }
 
         $m->addElement('static', 'breather', '', '');
@@ -389,11 +389,11 @@ class team_section_form_decide extends team_section_form {
         $number = $this->_customdata['shells'] + $this->_customdata['reshelled'];
 
         foreach (range(1, $number) as $groupingid) {
-            $updating = !empty($this->_customdata['shell_values_'.$groupingid]);
+            $updating = !empty($this->_customdata['shell_values_' . $groupingid]);
 
             if ($updating) {
-                $shell_name_value = $this->_customdata['shell_name_'.$groupingid.'_hidden'];
-                $shell_values = $this->_customdata['shell_values_'.$groupingid];
+                $shell_name_value = $this->_customdata['shell_name_' . $groupingid . '_hidden'];
+                $shell_values = $this->_customdata['shell_values_' . $groupingid];
 
                 $shell_ids = explode(',', $shell_values);
                 $shell_sections = array_map(function($sec) use ( &$before) {
@@ -411,9 +411,9 @@ class team_section_form_decide extends team_section_form {
             }
 
             $shell_label =& $m->createElement('static', 'shell_' . $groupingid .
-                '_label', '', $display . ' <span id="shell_name_'.$groupingid.'">'
+                '_label', '', $display . ' <span id="shell_name_' . $groupingid . '">'
                 . $shell_name_value . '</span>');
-            $shell =& $m->createElement('select', 'shell_'.$groupingid, '', $shell_options);
+            $shell =& $m->createElement('select', 'shell_' . $groupingid, '', $shell_options);
             $shell->setMultiple(true);
 
             $shell_name_params = array('style' => 'display: none;');
@@ -422,9 +422,9 @@ class team_section_form_decide extends team_section_form {
             $shell_name->setValue($shell_name_value);
 
             $link = empty($mastered) ? get_string('locked', 'grades') :
-                html_writer::link('shell_'.$groupingid, self::_s('customize_name'));
+                html_writer::link('shell_' . $groupingid, self::_s('customize_name'));
 
-            $radio_params = array('id' => 'selected_shell_'.$groupingid);
+            $radio_params = array('id' => 'selected_shell_' . $groupingid);
             $radio =& $m->createElement('radio', 'selected_shell', '', '', $groupingid, $radio_params);
 
             $radio->setChecked($groupingid == 1);
@@ -432,11 +432,11 @@ class team_section_form_decide extends team_section_form {
             $shells[] = $shell_label->toHtml() . ' (' . $link . ')<br/>' .
                 $shell_name->toHtml() . '<br/>' . $radio->toHtml() . $shell->toHtml();
 
-            $m->addElement('hidden', 'shell_values_'.$groupingid, $shell_values);
-            $m->setType('shell_values_'.$groupingid, PARAM_RAW);
+            $m->addElement('hidden', 'shell_values_' . $groupingid, $shell_values);
+            $m->setType('shell_values_' . $groupingid, PARAM_RAW);
 
-            $m->addElement('hidden', 'shell_name_'.$groupingid.'_hidden', $shell_name_value);
-            $m->setType('shell_name_'.$groupingid.'_hidden', PARAM_TEXT);
+            $m->addElement('hidden', 'shell_name_' . $groupingid . '_hidden', $shell_name_value);
+            $m->setType('shell_name_' . $groupingid . '_hidden', PARAM_TEXT);
 
         }
 
@@ -487,7 +487,7 @@ class team_section_form_decide extends team_section_form {
             $sections = cps_team_section::merge_groups_in_requests($requests);
 
             foreach (range(1, $data['shells']) as $number) {
-                $sectionids = explode(',', $data['shell_values_'.$number]);
+                $sectionids = explode(',', $data['shell_values_' . $number]);
 
                 if (isset($sections[$number])) {
                     foreach ($sections[$number] as $sec) {
@@ -517,8 +517,8 @@ class team_section_form_confirm extends team_section_form {
         $extra = array();
 
         foreach (range(1, $data['shells']) as $number) {
-            $valuekey = 'shell_values_'.$number;
-            $namekey = 'shell_name_'.$number.'_hidden';
+            $valuekey = 'shell_values_' . $number;
+            $namekey = 'shell_name_' . $number . '_hidden';
 
             $extra += array(
                 $namekey => required_param($namekey, PARAM_TEXT),
@@ -559,18 +559,18 @@ class team_section_form_confirm extends team_section_form {
 
         $all_users = array();
 
-        $m->addElement('header', 'selected_course', "$display $all_courses");
+        $m->addElement('header', 'selected_course', "{$display} {$all_courses}");
 
         foreach (range(1, $this->_customdata['shells']) as $number) {
-            $valuekey = 'shell_values_'.$number;
-            $namekey = 'shell_name_'.$number.'_hidden';
+            $valuekey = 'shell_values_' . $number;
+            $namekey = 'shell_name_' . $number . '_hidden';
 
             $sectionids = $this->_customdata[$valuekey];
             $shell_name = $this->_customdata[$namekey];
 
             $sections = ues_section::get_all(ues::where('id')->in(explode(',', $sectionids)));
 
-            $m->addElement('static', 'shell_'.$number, $shell_name, '');
+            $m->addElement('static', 'shell_' . $number, $shell_name, '');
 
             foreach ($sections as $section) {
                 $teacher = $section->primary();
@@ -588,7 +588,7 @@ class team_section_form_confirm extends team_section_form {
 
                 $label = implode(' ', $parts);
 
-                $m->addElement('static', 'section_'.$section->id, '', $label);
+                $m->addElement('static', 'section_' . $section->id, '', $label);
             }
 
             $m->addElement('hidden', $valuekey, '');
@@ -645,8 +645,8 @@ class team_section_form_finish implements finalized_form, updating_form {
     public function save_or_update($data, $currentrequests, $currentsections) {
 
         foreach (range(1, $data->shells) as $number) {
-            $sectionids = $data->{'shell_values_'.$number};
-            $shell_name = $data->{'shell_name_'.$number.'_hidden'};
+            $sectionids = $data->{'shell_values_' . $number};
+            $shell_name = $data->{'shell_name_' . $number . '_hidden'};
 
             foreach (explode(',', $sectionids) as $sectionid) {
                 $section = ues_section::get(array('id' => $sectionid));

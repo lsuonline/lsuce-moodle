@@ -55,7 +55,7 @@ $heading = cps_team_request::name();
 $context = context_system::instance();
 
 $PAGE->set_context($context);
-$PAGE->set_heading($blockname . ': '. $heading);
+$PAGE->set_heading($blockname . ': ' . $heading);
 $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($heading);
 $PAGE->set_title($heading);
