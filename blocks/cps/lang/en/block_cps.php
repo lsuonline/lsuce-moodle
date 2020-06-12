@@ -227,7 +227,7 @@ $string['team_going_email'] = 'The instructors you have selected will receive
 an email from you, inviting them to team teach. You can revoke team teach
 privileges at any time.';
 
-$string['team_how_many'] = 'How many courses will you combine?';
+$string['team_how_many'] = 'How many courses will you combine with this course?';
 $string['team_how_many_help'] = 'This number represents how many different
 course departments and numbers you are combining. In the next screen you will
 decide which courses.';
@@ -283,7 +283,7 @@ $string['team_revoke'] = 'Revoke';
 $string['team_approve'] = 'Approve';
 $string['team_do_nothing'] = 'Do Nothing';
 $string['team_deny'] = 'Deny';
-$string['team_cancel'] = 'Cancel';
+$string['team_cancel'] = 'Leave Team Teach';
 $string['team_actions'] = 'Actions';
 $string['team_requested_courses'] = 'Requested Courses';
 
@@ -311,7 +311,7 @@ $string['team_request_invite_body'] = '
 {$a->requester} has invited you and your students from your {$a->other_course}
 course to participate in a team-taught course with his/her {$a->course}
 course. If you accept this invitation, you and your students will be added
-and you will be made a non-primary instructor.
+and you will be made a primary instructor.
 
 Please click the following link to accept or reject {$a->requester}\'s request:
 {$a->link}';
