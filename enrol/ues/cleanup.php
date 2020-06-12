@@ -134,7 +134,7 @@ $table->data = array();
 
 // Build the remove link and icon.
 $makeremovelink = function($semester) use ($OUTPUT, $s) {
-    $removeiicon = $OUTPUT->pix_icon('i/cross_red_big', $s('drop_semester', $semester));
+    $removeicon = $OUTPUT->pix_icon('i/cross_red_big', $s('drop_semester', $semester));
     $url = new moodle_url('/enrol/ues/cleanup.php', array('id' => $semester->id));
     return html_writer::link($url, $removeicon);
 };
