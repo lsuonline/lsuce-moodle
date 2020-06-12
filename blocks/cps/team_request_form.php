@@ -165,7 +165,9 @@ class team_request_form_update extends team_request_form {
         $teamteaches = cps_team_request::in_course($course, $semester);
 
         $ismaster = false;
+        $isotheruser = false;
         $anyapproved = false;
+        $selfapproved = false;
 
         $selectedusers = array();
         $queries = array();
@@ -192,18 +194,27 @@ class team_request_form_update extends team_request_form {
                 );
 
                 $selectedusers[$groupingid][] = $user->id;
+            } else if ($request->is_other_user()) {
+                $isotheruser = true;
             }
 
-            if ($request->approved()) {
-                $anyapproved = true;
-                $append = self::_s('team_approved');
-            } else {
-                $append = self::_s('team_not_approved');
+            // If the current user is involved in the request, add a label for it to the form.
+            if ($ismaster || $isotheruser) {
+                if ($request->approved()) {
+                    $anyapproved = true;
+                    $append = self::_s('team_approved');
+                    if ($request->is_other_user()) {
+                        $selfapproved = true;
+                    }
+                } else {
+                    $append = self::_s('team_not_approved');
+                }
+                
+                $label = $request->label() . ' - ' . $append;
+
+                $m->addElement('static', 'selected_' . $request->id, '', $label);
             }
 
-            $label = $request->label() . ' - ' . $append;
-
-            $m->addElement('static', 'selected_'.$request->id, '', $label);
 
         }
 
@@ -231,7 +242,7 @@ class team_request_form_update extends team_request_form {
         $m->addElement('radio', 'update_option', '',
             self::_s('team_manage_requests'), self::MANAGE_REQUESTS);
 
-        if ($anyapproved) {
+        if ($selfapproved || ($ismaster && $anyapproved)) {
             global $OUTPUT;
 
             $icon = $OUTPUT->help_icon('team_manage_sections', 'block_cps');
@@ -249,11 +260,11 @@ class team_request_form_update extends team_request_form {
         foreach ($queries as $number => $query) {
             $users = implode(',', $selectedusers[$number]);
 
-            $m->addElement('hidden', 'selected_users'.$number.'_str', $users);
-            $m->setType('selected_users'.$number.'_str', PARAM_TEXT);
+            $m->addElement('hidden', 'selected_users' . $number . '_str', $users);
+            $m->setType('selected_users' . $number . '_str', PARAM_TEXT);
 
             foreach ($query as $key => $value) {
-                $m->addElement('hidden', 'query'.$number.'['.$key.']', $value);
+                $m->addElement('hidden', 'query' . $number . '[' . $key . ']', $value);
                 switch($key){
                     case 'department':
                         $ptype = PARAM_ALPHANUMEXT;
@@ -266,7 +277,7 @@ class team_request_form_update extends team_request_form {
                         break;
                 }
 
-                $m->setType('query'.$number.'['.$key.']', $ptype);
+                $m->setType('query' . $number . '[' . $key . ']', $ptype);
             }
         }
 
@@ -338,44 +349,53 @@ class team_request_form_manage extends team_request_form {
 
         $teamteaches = cps_team_request::in_course($course, $semester);
 
+        $mastersoptionadded = false;
+
         foreach ($teamteaches as $request) {
-            // The master of this request.
+            // The current user is the master of this request.
             $master = $request->is_owner();
+            // The current user is the other user of this request.
+            $otheruser = $request->is_other_user();
 
-            $approval = $request->approved() ?
-                self::_s('team_approved') :
-                self::_s('team_not_approved');
+            // If the current user is involved in this request, add a set of
+            // radio buttons to the form for this request.
+            if ($otheruser || $master) {
+                $approval = $request->approved() ?
+                    self::_s('team_approved') :
+                    self::_s('team_not_approved');
 
-            $label = $request->label(). ' - <strong>' . $approval . '</strong>';
+                $label = $request->label() . ' - <strong>' . $approval . '</strong>';
 
-            $options = array (
-                $m->createELement('radio', 'approval_'.$request->id, '',
-                    self::_s('team_do_nothing'), self::NOTHING)
-            );
+                $options = array (
+                    $m->createELement('radio', 'approval_' . $request->id, '',
+                        self::_s('team_do_nothing'), self::NOTHING)
+                );
 
-            if (!$master and !$request->approved()) {
+                if ($otheruser and !$request->approved()) {
+                    $options[] =
+                        $m->createELement('radio', 'approval_' . $request->id, '',
+                            self::_s('team_approve'), self::APPROVE);
+                }
+
+                if ($master) {
+                    $verbiage = self::_s('team_revoke');
+                } else if ($request->approved()) {
+                    $verbiage = self::_s('team_cancel');
+                } else {
+                    $verbiage = self::_s('team_deny');
+                }
+
                 $options[] =
-                    $m->createELement('radio', 'approval_'.$request->id, '',
-                        self::_s('team_approve'), self::APPROVE);
+                    $m->createELement('radio', 'approval_' . $request->id, '',
+                        $verbiage, self::REVOKE);
+
+                $options[] =
+                    $m->createElement('static', 'request' . $request->id, '', $label);
+
+                $m->addGroup($options, 'options_' . $request->id, '&nbsp;',
+                    $filler(3), true);
+                
             }
-
-            if ($master) {
-                $verbiage = self::_s('team_revoke');
-            } else if ($request->approved()) {
-                $verbiage = self::_s('team_cancel');
-            } else {
-                $verbiage = self::_s('team_deny');
-            }
-
-            $options[] =
-                $m->createELement('radio', 'approval_'.$request->id, '',
-                    $verbiage, self::REVOKE);
-
-            $options[] =
-                $m->createElement('static', 'request'.$request->id, '', $label);
-
-            $m->addGroup($options, 'options_'.$request->id, '&nbsp;',
-                $filler(3), true);
         }
 
         $m->addElement('hidden', 'selected', '');

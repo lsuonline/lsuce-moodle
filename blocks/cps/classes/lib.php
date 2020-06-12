@@ -755,14 +755,27 @@ class cps_team_request extends cps_preferences implements application, undoable 
         return $this->semester;
     }
 
+    /**
+     * Create a label for the course request using the semester's year, name, and session key,
+     * the course's department and course number, and the user in the course request who is NOT
+     * the current $USER.  If both users in the course request are not the current $USER, use
+     * the other_user().
+     *
+     * @param int     $from_userid The current user's id.  If not provided, it will be inferred
+     *                             from $USER.
+     * @return string              The label created.
+     */    
     public function label($from_userid = null) {
 
         if ($this->is_owner($from_userid)) {
             $course = $this->other_course();
             $user = $this->other_user();
-        } else {
+        } else if ($this->is_other_user()) {
             $course = $this->course();
             $user = $this->owner();
+        } else {
+            $course = $this->other_course();
+            $user = $this->other_user();
         }
 
         $sem = $this->semester();
