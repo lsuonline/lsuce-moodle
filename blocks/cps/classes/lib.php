@@ -570,6 +570,8 @@ class cps_team_request extends cps_preferences implements application, undoable 
     public static function in_course($course, $semester, $approved = false) {
         global $USER;
 
+		// Get team requests where the $USER is the requester.  This should
+		// be the entire set of requests for this team-teach, if it exists.
         $params = array(
             'userid' => $USER->id,
             'courseid' => $course->id,
@@ -578,22 +580,45 @@ class cps_team_request extends cps_preferences implements application, undoable 
 
         $requests = self::get_all($params);
 
-        $params = array(
-            'requested' => $USER->id,
-            'requested_course' => $course->id,
-            'semesterid' => $semester->id
-        );
+        if (!$requests) {
+			// If the $USER is not the requester, find the request where the
+			// $USER is the requestee.
+            $params = array(
+                'requested' => $USER->id,
+                'requested_course' => $course->id,
+                'semesterid' => $semester->id
+            );
 
-        $participants = self::get_all($params);
-
-        $alltogether = $requests + $participants;
+            $participants = self::get_all($params);
+            
+            $requester = '';
+			if (count($participants) == 1) {
+			    // Get the team requests where the requester of the $USER is
+				// the requestee.
+                $requester = array_values($participants)[0];
+                $params = array(
+                    'userid' => $requester->userid,
+                    'courseid' => $requester->courseid,
+                    'semesterid' => $semester->id
+                );
+                $requests = self::get_all($params);
+            } else {
+                if ($participants) {
+                    debugging("There was more than one team request for course id {$course->id} "
+                        . "in semester id {$semester->id} that involved {$USER->id} as a requestee.");
+                } else if ($approved) {
+                    debugging("There were no team requests for course id {$course->id} "
+                        . "in semester id {$semester->id} that involved $requester");
+                }
+            }
+        }
 
         if ($approved) {
-            return array_filter($alltogether, function ($req) {
+            return array_filter($requests, function ($req) {
                 return $req->approved();
             });
         } else {
-            return $alltogether;
+            return $requests;
         }
     }
 
