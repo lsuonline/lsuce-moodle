@@ -685,6 +685,16 @@ class cps_team_request extends cps_preferences implements application, undoable 
         return $from_userid == $this->userid;
     }
 
+    public function is_other_user($from_userid = null) {
+        if (!$from_userid) {
+            global $USER;
+
+            $from_userid = $USER->id;
+        }
+
+        return $from_userid == $this->requested;
+    }
+
     public function approved() {
         return $this->approval_flag == 1;
     }

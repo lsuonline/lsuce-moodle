@@ -333,7 +333,7 @@ class team_section_form_decide extends team_section_form {
 
         $display = "$semester->year $semester->name" . $semester->get_session_key();
 
-        $all_courses = array($course->id => $course);
+        $all_courses = array(); 
 
         $allsections = $course->sections;
 
@@ -357,12 +357,16 @@ class team_section_form_decide extends team_section_form {
         }
 
         foreach ($requests as $request) {
-            $othercourse = $request->is_owner() ?
-                $request->other_course() :
-                $request->course();
+            // Make sure that course and other_course member objects have been added to this $request.
+            $request->course();
+            $request->other_course();
 
-            if (!isset($all_courses[$othercourse->id])) {
-                $all_courses[$othercourse->id] = $othercourse;
+            // Add course and other_course from this $request to $all_courses (if not already added).
+            if (!isset($all_courses[$request->courseid])) {
+                $all_courses[$request->courseid] = $request->course();
+            }
+            if (!isset($all_courses[$request->requested_course])) {
+                $all_courses[$request->requested_course] = $request->other_course();
             }
         }
 
@@ -530,17 +534,19 @@ class team_section_form_confirm extends team_section_form {
 
         list($course, $semester, $requests) = $this->extract_data();
 
-        $display = "$semester->year $semester->name" . $semester->get_session_key();
+        $display = "{$semester->year} {$semester->name}" . $semester->get_session_key();
 
         $to_coursename = function ($course) {
-            return "$course->department $course->cou_number";
+            return "{$course->department} {$course->cou_number}";
         };
 
         $courses = array($course->id => $to_coursename($course));
 
         foreach ($requests as $request) {
             $othercourse = $request->is_owner() ?
-                $request->other_course() : $request->course();
+                $request->other_course() : (
+                    $request->is_other_user() ? $request->course() : $request->other_course()
+                );
 
             if (isset($courses[$othercourse->id])) {
                 continue;
