@@ -967,8 +967,18 @@ class local {
      * @return string
      */
     public static function get_course_color($id) {
-        $colour = substr(md5($id), 0, 6);
-        $colour2 = substr(md5($id), 6, 6);
+        global $USER;
+       
+        // Begin LSU fix limit “My Courses” colors.
+        if ($USER->profile['limitmycolors'] == 1) {
+            $colour = str_repeat(substr(md5($id), 1, 2), 3);
+            $colour2 = str_repeat(substr(md5($id), 3, 2), 3);
+        } else {
+            $colour = substr(md5($id), 0, 6);
+            $colour2 = substr(md5($id), 6, 6);
+        }
+        // End LSU fix limit “My Courses” colors.
+
         return 'linear-gradient(to bottom right, #' .$colour. ', #'. $colour2. ')';
     }
 
