@@ -45,6 +45,7 @@ class alternate_index_component extends component implements \renderable {
      * @return stdClass
      */
     public function export_for_template($output) {
+        global $CFG; // LSU Enhancement initialize $CFG. 
         $data = (object)[];
 
         $data->courseId = $this->course_id;
@@ -71,13 +72,32 @@ class alternate_index_component extends component implements \renderable {
             ];
         }
 
-        $data->urlBack = $this->course_id 
-            ? new moodle_url('/course/view.php', ['id' => $this->course_id])
-            : new moodle_url('/my');
+        // BEGIN LSU Enhancement urlBack to course page instead of my page. 
+        foreach($_SESSION['USER']->currentcourseaccess as $key => $value) {
+            $temp = $key;
+        }
 
-        $data->urlBackLabel = $this->course_id 
-            ? block_quickmail_string::get('back_to_course')
-            : block_quickmail_string::get('back_to_mypage');
+        if($CFG->theme === 'snap'){
+
+            $data->urlBack = $this->course_id 
+                ? new moodle_url('/course/view.php', ['id' => $this->course_id])
+                : new moodle_url('/course/view.php', ['id' => $temp]);
+
+            $data->urlBackLabel = $this->course_id 
+                ? block_quickmail_string::get('back_to_course')
+                : block_quickmail_string::get('back_to_course');
+
+        } else { 
+         
+            $data->urlBack = $this->course_id 
+                ? new moodle_url('/course/view.php', ['id' => $this->course_id])
+                : new moodle_url('/my');
+
+            $data->urlBackLabel = $this->course_id 
+                ? block_quickmail_string::get('back_to_course')
+                : block_quickmail_string::get('back_to_mypage');   
+        }
+        // END LSU Enhancement urlBack to course page instead of my page.      
 
         $data->urlCreate = new moodle_url('/blocks/quickmail/create_alternate.php', ['courseid' => $this->course_id]);
         
