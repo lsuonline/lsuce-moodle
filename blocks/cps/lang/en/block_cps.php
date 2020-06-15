@@ -220,7 +220,7 @@ contains a list of instructors that teach sections in those courses. You are
 not limited to the number of instructors you invite, though an invited instructor
 is free to reject your invitation.';
 
-$string['review_selection'] = 'Please reivew your selections';
+$string['review_selection'] = 'Please review your selections';
 
 $string['team_note'] = '<strong>Note</strong>';
 $string['team_going_email'] = 'The instructors you have selected will receive
