@@ -752,7 +752,7 @@ class grade_item extends grade_object {
                 return "Could not aggregate final grades for category:".$this->id; // TODO: improve and localize
             }
 
-        } else if ($this->is_manual_item()) {
+        } else if ($this->is_manual_item() && !$CFG->grade_item_manual_recompute) { // LSU Gradebook Enhancement
             // manual items track only final grades, no raw grades
             return true;
 
