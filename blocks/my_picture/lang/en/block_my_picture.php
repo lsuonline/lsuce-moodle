@@ -28,22 +28,23 @@ $string['start'] = 'Starting profile picture updates...';
 $string['fetched'] = 'Fetching {$a} users...';
 $string['completed'] = 'Completed {$a}...';
 $string['finish'] = 'Finished {$a} profile picture update(s)';
-$string['num_success'] = 'Successful updates';
-$string['num_nopic'] = 'Missing pictures';
-$string['num_badid'] = 'Invalid idnumbers';
-$string['num_error'] = 'Errors';
+$string['numsuccess'] = 'Successful updates';
+$string['numnopic'] = 'Missing pictures';
+$string['numbadid'] = 'Invalid idnumbers';
+$string['numerror'] = 'Errors';
 $string['elapsed'] = 'Elapsed time: {$a} seconds';
 $string['misconfigured_message'] = 'The My Profile Picture block failed to contact the photos webservice. Please check the settings and verify the webservice is operating normally at the address {$a}';
 $string['misconfigured_subject'] = "MyProfilePicture ERROR";
-$string["cron_webservice_err"]   = "\n!! Webservice communication error.\nIt is possible that the URLs are misconfigured in the Admin settings area.";
+$string["cron_webservice_err"]   = "\nWebservice communication error.\n It is possible that the URLs are misconfigured in the Admin settings area.";
+$string["cron_webservice_response"]   = "\n" . 'Webservice responded with error code: {$a->response} and content type: {$a->content} for {$a->idnumber}.' . "<br />\n";
 $string["grab_mypictures"]   = "Grab my_picture images";
 
 // Strings for reprocess.php.
 $string['reprocess_title'] = 'Reprocess My Picture';
-$string['badid_user'] = 'You do not have a valid LSU ID Number. <br />This number will be populated when you are actively enrolled in Moodle courses. The system will automatically load your latest photo on file with the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> Office.';
-$string['nopic_user'] = 'We were unable to find your photo within the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> system. <br />Please visit <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> online or at 109 LSU Student Union on the LSU campus.';
-$string['error_user'] = 'An error has occurred';
-$string['success_user'] = 'The photo above was fetched from the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> Office. <br />Please clear your browser\'s cache, log out, log back in, and refresh the dashboard if your image isn\'t updated to match the photo above.';
+$string['badiduser'] = 'You do not have a valid LSU ID Number. <br />This number will be populated when you are actively enrolled in Moodle courses. The system will automatically load your latest photo on file with the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> Office.';
+$string['nopicuser'] = 'We were unable to find your photo within the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> system. <br />Please visit <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> online or at 109 LSU Student Union on the LSU campus.';
+$string['erroruser'] = 'An error has occurred';
+$string['successuser'] = 'The photo above was fetched from the LSU Auxilary Services <a href="https://tcard.lsu.edu/imageupload.php" target="_blank">Tiger Card</a> Office. <br />Please clear your browser\'s cache, log out, log back in, and refresh the dashboard if your image isn\'t updated to match the photo above.';
 
 // Strings for fetch_missing.php and reprocess_all.php.
 $string['reprocess_all_title'] = 'Reprocess All Profile Pictures';

@@ -177,9 +177,15 @@ function mypic_fetch_picture($idnumber, $updating = false) {
             . 'width="auto" height="100px" /></p>';
         return $path;
     } else if ($responsecode != '404 Not Found') {
-        echo(get_string('cron_webservice_err', 'block_my_picture'));
+        if($CFG->debugdeveloper OR php_sapi_name() == "cli") {
+            echo(get_string('cron_webservice_response', 'block_my_picture', ['response' => $responsecode, 'content' => $contenttype, 'idnumber' => $idnumber]));
+            echo(get_string('cron_webservice_err', 'block_my_picture'));
+        }
         return false;
     } else {
+        if($CFG->debugdeveloper) {
+            echo(get_string('cron_webservice_response', 'block_my_picture', ['response' => $responsecode, 'content' => $contenttype, 'idnumber' => $idnumber]));
+        }
         unlink($path);
         return false;
     }
@@ -243,10 +249,10 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
 
         // Keys are error codes, values are counter variables to increment.
         $resultmap = array(
-            0 => 'num_error',
-            1 => 'num_badid',
-            2 => 'num_success',
-            3 => 'num_nopic'
+            0 => 'numerror',
+            1 => 'numbadid',
+            2 => 'numsuccess',
+            3 => 'numnopic'
         );
 
         $mypicreturncode = mypic_update_picture($user, $updating);
@@ -285,10 +291,10 @@ function mypic_batch_update($users, $updating=false, $sep='', $step=100) {
     mtrace($s('finish', $count) . $sep);
 
     foreach (array('success', 'nopic', 'error', 'badid') as $report) {
-        $num = ${'num_' . $report};
+        $num = ${'num' . $report};
 
         $percent = round($num / $count * 100, 2);
-        $str = $s('num_' . $report);
+        $str = $s('num' . $report);
 
         mtrace("$num ($percent%) $str $sep");
     }

@@ -46,10 +46,10 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading($header);
 
 $resultmap = array(
-    0 => 'error_user',
-    1 => 'badid_user',
-    2 => 'success_user',
-    3 => 'nopic_user'
+    0 => 'erroruser',
+    1 => 'badiduser',
+    2 => 'successuser',
+    3 => 'nopicuser'
 );
 
 // Force updating when user clicks reprocess.
