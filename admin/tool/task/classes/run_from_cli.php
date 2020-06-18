@@ -83,6 +83,14 @@ class run_from_cli {
             $classname = get_class($task);
             $taskarg   = escapeshellarg("--execute={$classname}");
 
+            // From LTG for their config handling.
+            $setconfig = '';
+
+            if (!empty($_SERVER['MR_CONFIG_FILENAME'])) {
+                $configfile = $_SERVER['MR_CONFIG_FILENAME'];
+                $setconfig = self::MR_CONFIG_FILE_VAR . "=" . $configfile;
+            }
+
             // Build the CLI command.
             $command = "{$phpbinary} {$scriptpath} {$taskarg}";
 
