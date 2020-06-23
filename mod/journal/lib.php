@@ -663,7 +663,10 @@ function journal_grade_item_update($journal, $grades=null) {
         $params['gradetype']  = GRADE_TYPE_VALUE;
         $params['grademax']   = $journal->grade;
         $params['grademin']   = 0;
-        $params['multfactor'] = 1.0;
+        // Begin LSU Gradebook Enhancement
+        // Removing this line allows journals to process multiplicator values correctly.
+        // $params['multfactor'] = 1.0;
+        // End LSU Gradebook Enhancement
 
     } else if ($journal->grade < 0) {
         $params['gradetype'] = GRADE_TYPE_SCALE;
