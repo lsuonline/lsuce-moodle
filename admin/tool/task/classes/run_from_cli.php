@@ -33,6 +33,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class run_from_cli {
+    
+    // Added for MR config support.
+    const MR_CONFIG_FILE_VAR = "MR_CONFIG_FILENAME";
 
     /**
      * Find the path of PHP CLI binary.
