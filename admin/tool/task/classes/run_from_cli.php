@@ -95,7 +95,9 @@ class run_from_cli {
             }
 
             // Build the CLI command.
-            $command = "{$phpbinary} {$scriptpath} {$taskarg}";
+            // Removed as per LTG
+            // $command = "{$phpbinary} {$scriptpath} {$taskarg}";
+            $command = "{$setconfig} {$phpbinary} {$scriptpath} {$taskarg}";
 
             // Execute it.
             passthru($command);
