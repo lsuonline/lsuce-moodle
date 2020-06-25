@@ -570,8 +570,6 @@ class cps_team_request extends cps_preferences implements application, undoable 
     public static function in_course($course, $semester, $approved = false) {
         global $USER;
 
-		// Get team requests where the $USER is the requester.  This should
-		// be the entire set of requests for this team-teach, if it exists.
         $params = array(
             'userid' => $USER->id,
             'courseid' => $course->id,
@@ -581,8 +579,6 @@ class cps_team_request extends cps_preferences implements application, undoable 
         $requests = self::get_all($params);
 
         if (!$requests) {
-			// If the $USER is not the requester, find the request where the
-			// $USER is the requestee.
             $params = array(
                 'requested' => $USER->id,
                 'requested_course' => $course->id,
@@ -593,8 +589,6 @@ class cps_team_request extends cps_preferences implements application, undoable 
             
             $requester = '';
 			if (count($participants) == 1) {
-			    // Get the team requests where the requester of the $USER is
-				// the requestee.
                 $requester = array_values($participants)[0];
                 $params = array(
                     'userid' => $requester->userid,
@@ -763,7 +757,7 @@ class cps_team_request extends cps_preferences implements application, undoable 
      *
      * @param int     $from_userid The current user's id.  If not provided, it will be inferred
      *                             from $USER.
-     * @return string              The label created.
+     * @return string The label created.
      */    
     public function label($from_userid = null) {
 

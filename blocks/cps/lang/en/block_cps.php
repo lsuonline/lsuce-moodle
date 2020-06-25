@@ -161,6 +161,13 @@ $string['split_how_many_help'] = 'A _course shell_ is a Moodle course that encap
 For example: If you were splitting a course with three sections, you may decide to make
 two _course shells_, one containing one section, and the other containing two. In most cases,
 the number of _course shells_ is limited to the number of sections within a course.';
+$string['split_autopop'] = 'Do you want to automatically assign sections to course shells using generic shell names?';
+$string['split_autopop_help'] = 'When you have the same number of sections and available course shells,
+you may choose to automatically assign sections to course shells.  If you do, each section will be assigned
+to the next available course shell in turn, and a generic name will be given to each course shell by inserting
+\'Course #\' into the original course\'s full name for each section #.  If you don\'t, each course shell will have
+a customizable course shell name, and you will get a screen with a box for each course shell which you must use to
+choose one section for each shell.';
 $string['next'] = 'Next';
 $string['back'] = 'Back';
 
@@ -220,7 +227,7 @@ contains a list of instructors that teach sections in those courses. You are
 not limited to the number of instructors you invite, though an invited instructor
 is free to reject your invitation.';
 
-$string['review_selection'] = 'Please review your selections';
+$string['review_selection'] = 'Please reivew your selections';
 
 $string['team_note'] = '<strong>Note</strong>';
 $string['team_going_email'] = 'The instructors you have selected will receive

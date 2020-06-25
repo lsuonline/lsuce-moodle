@@ -69,6 +69,7 @@ class split_form_select extends split_form {
         }
 
         $m->addRule('selected', self::_s('err_select_one'), 'required', null, 'client');
+        $m->setType('selected', PARAM_ALPHANUMEXT);
 
         $this->generate_states_and_buttons();
     }
@@ -140,13 +141,18 @@ class split_form_shells extends split_form {
         $m->addElement('hidden', 'selected', '');
         $m->setType('selected', PARAM_ALPHANUMEXT);
 
+        $m->addElement('selectyesno', 'autopop', self::_s('split_autopop'));
+        $m->setDefault('autopop', 0);
+        $m->addHelpButton('autopop', 'split_autopop', 'block_cps');
+        $m->disabledIf('autopop', 'shells', 'neq', count($course->sections));
+
         $this->generate_states_and_buttons();
     }
 
     public function validation($data, $files) {
         $course = $this->_customdata['course'];
 
-        if ($data['shells'] == count($course->sections)) {
+        if ($data['autopop'] && ($data['shells'] == count($course->sections))) {
             $this->next = self::CONFIRM;
 
             $this->forge_split_all($course);
@@ -188,7 +194,7 @@ class split_form_update extends split_form implements updating_form {
         foreach ($currentsplits as $split) {
             $section = $course->sections[$split->sectionid];
 
-            $display = "$course->department $course->cou_number Setion $section->sec_number";
+            $display = "$course->department $course->cou_number Section $section->sec_number";
             $html .= "<li>$display is split into course $split->shell_name</li>";
 
             unset ($sections[$section->id]);
@@ -229,6 +235,8 @@ class split_form_update extends split_form implements updating_form {
         $m->setDefault('split_option', self::REARRANGE);
 
         $m->addElement('hidden', 'selected', '');
+        $m->setType('selected', PARAM_ALPHANUMEXT);
+
         $m->setType('reshelled', PARAM_INT);
 
         $this->generate_states_and_buttons();
