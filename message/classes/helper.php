@@ -465,12 +465,14 @@ class helper {
     public static function messageuser_link_params(int $useridto) : array {
         global $USER;
 
+        // LSU Changed message-user-button to messages-user-button due to snap issues.
         return [
-            'id' => 'message-user-button',
+            'id' => 'messages-user-button',
             'role' => 'button',
             'data-conversationid' => api::get_conversation_between_users([$USER->id, $useridto]),
             'data-userid' => $useridto,
         ];
+        // LSU Changed message-user-button to messages-user-button due to snap issues.
     }
 
     /**
