@@ -387,6 +387,34 @@ body.snap-pm-open {
     &.favorited .favoritetoggle:after {
         background: url("[[pix:theme|fav_checked]]");
     }
+
+    // Begin LSU fix display "favorites" icon when limit "My Courses" colors is active. 
+    .favoritetogglec {
+        display: block;
+        width: 2em;
+        height: 2em;
+        padding: 0;
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 0.25em;
+        z-index: 1;
+    }
+
+    .favoritetogglec:after {
+        background: url("[[pix:theme|fav_unchecked]]");
+        background-repeat: none;
+        content: ' ';
+        width: 80%;
+        height: 80%;
+        display: block;
+        margin: 0 10% 5%;
+    }
+
+    &.favorited .favoritetogglec:after {
+        background: url("[[pix:theme|fav_checked]]");
+    }
+    // End LSU fix display "favorites" icon when limit "My Courses" colors is active. 
 }
 
 // -------------------------

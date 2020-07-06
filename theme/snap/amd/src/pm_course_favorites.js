@@ -40,6 +40,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
                 mview(cardEl, 'theme_snap/course_cards');
                 var callback = function() {
                     var button = $(cardEl).find('.favoritetoggle');
+                    // Begin LSU fix display "favorites" icon when limit "My Courses" colors is active. 
+                    if (button.lenght <= 0)
+                        $(cardEl).find('.favoritetogglec');
+                    // End LSU fix display "favorites" icon when limit "My Courses" colors is active.     
                     $(button).removeClass('ajaxing');
                     $(button).focus();
                 };
@@ -245,6 +249,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/log', 'theme_snap/mode
                 e.stopPropagation();
                 favoriteCourse(this);
             });
+            // Begin LSU fix display "favorites" icon when limit "My Courses" colors is active. 
+            $("#snap-pm").on("click", ".favoritetogglec", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                favoriteCourse(this);
+            });
+            // End LSU fix display "favorites" icon when limit "My Courses" colors is active. 
         };
     }
 );
