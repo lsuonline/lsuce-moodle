@@ -4543,7 +4543,7 @@ class settings_navigation extends navigation_node {
         }
 
         // Restore to this course
-        if ($adminoptions->restore) {
+        if ($adminoptions->restore && has_capability('moodle/course:create', $coursecontext)) {
             $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$coursecontext->id));
             $coursenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, 'restore', new pix_icon('i/restore', ''));
         }
