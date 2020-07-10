@@ -33,6 +33,7 @@ $context = context_user::instance($USER->id);
 require_capability('local/mymedia:view', $context);
 
 $PAGE->set_context(context_system::instance());
+$PAGE->set_url('/local/mymedia/mymedia.php');
 
 // BEGIN LSU Nav node addition.
 $pageparams = [
@@ -44,16 +45,23 @@ if ($pageparams['courseid']) {
 } else {
     $courseid = 1;
 }
-$course = get_course($courseid);
-$coursenode = $PAGE->navigation->find($courseid, navigation_node::TYPE_COURSE);
-$mmnode = $coursenode->add(get_string('heading_mymedia', 'local_mymedia'),
+
+$course = get_course($pageparams['courseid']);
+
+$PAGE->navbar->add(get_string('mycourses', 'moodle'), new moodle_url('/index.php'));
+
+if ($courseid > 1) {
+  $PAGE->navbar->add($course->shortname, new moodle_url('/course/view.php', array('id' => $courseid)));
+}
+
+$PAGE->navbar->add(get_string('heading_mymedia', 'local_mymedia'),
     new moodle_url('/local/mymedia/mymedia.php', array('courseid' => $courseid)));
-$mmnode->make_active();
+
+$PAGE->navbar->get_items();
 // END LSU Nav node addition.
 
 $header =  fullname($USER) . ": " . get_string('heading_mymedia', 'local_mymedia');
 
-$PAGE->set_url('/local/mymedia/mymedia.php');
 $PAGE->set_pagetype('mymedia-index');
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title($header);
