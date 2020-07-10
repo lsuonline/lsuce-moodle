@@ -33,6 +33,24 @@ $context = context_user::instance($USER->id);
 require_capability('local/mymedia:view', $context);
 
 $PAGE->set_context(context_system::instance());
+
+// BEGIN LSU Nav node addition.
+$pageparams = [
+    'courseid' => optional_param('courseid', 1, PARAM_INT)
+];
+// Sanity check to be sure we don't ever error out.
+if ($pageparams['courseid']) {
+    $courseid = $pageparams['courseid'];
+} else {
+    $courseid = 1;
+}
+$course = get_course($courseid);
+$coursenode = $PAGE->navigation->find($courseid, navigation_node::TYPE_COURSE);
+$mmnode = $coursenode->add(get_string('heading_mymedia', 'local_mymedia'),
+    new moodle_url('/local/mymedia/mymedia.php', array('courseid' => $courseid)));
+$mmnode->make_active();
+// END LSU Nav node addition.
+
 $header =  fullname($USER) . ": " . get_string('heading_mymedia', 'local_mymedia');
 
 $PAGE->set_url('/local/mymedia/mymedia.php');
