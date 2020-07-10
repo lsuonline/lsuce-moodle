@@ -844,7 +844,7 @@ EOF;
             $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
 
             $links[] = array(
-                'link' => 'local/mymedia/mymedia.php',
+                'link' => 'local/mymedia/mymedia.php?courseid=' . $COURSE->id,
                 'title' => $mymediaicon.get_string('nav_mymedia', 'local_mymedia'),
             );
         }
