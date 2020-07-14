@@ -325,7 +325,9 @@ abstract class ues {
             post_grades_handler::ues_semester_drop($semester);
         }
 
-        ues_semester::delete($semester->id);
+        if(!$semester->semester_ignore){ // LSU Enhancement if semester is ignored do not delete
+            ues_semester::delete($semester->id);
+        }
 
         $log('Done');
     }

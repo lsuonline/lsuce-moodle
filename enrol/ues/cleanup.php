@@ -73,7 +73,7 @@ echo $OUTPUT->heading($action);
 if ($semesterid) {
     // Get the semester data based on the supplied id.
     $semesterparam = array('id' => $semesterid);
-    $semester = ues_semester::get($semesterparam);
+    $semester = ues_semester::get($semesterparam, true); // LSU Enhancement include ignore flag
 
     // Set the URL base.
     $base = '/enrol/ues/cleanup.php';
