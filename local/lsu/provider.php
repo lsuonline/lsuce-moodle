@@ -193,8 +193,9 @@ class lsu_enrollment_provider extends enrollment_provider {
 
         foreach ($semesters_in_session as $semester) {
             // Cleanup orphaned groups- https://trello.com/c/lQqVUrpQ.
-            $orphanedGroupMemebers = $this->findOrphanedGroups($semester);
-            $this->unenrollGroupsUsers($orphanedGroupMemebers);
+            // REMOVED 08/20/2020 to speed things up - and it's not really doing anything.
+            // $orphanedGroupMemebers = $this->findOrphanedGroups($semester);
+            // $this->unenrollGroupsUsers($orphanedGroupMemebers);
 
             // Find and remove any duplicate group membership records.
             $duplicateGroupMemberships = $this->findDuplicateGroupMembers($semester);
