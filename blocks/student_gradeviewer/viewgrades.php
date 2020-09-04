@@ -121,8 +121,9 @@ $tree = new grade_tree($course->id, true, true, null, !$CFG->enableoutcomes);
 $context = context_course::instance($course->id);
 
 // In case there is more than one role, grab a user that is graded.
+$totalusers = array();
 foreach ($graded as $gradedrole) {
-    $totalusers = get_role_users($gradedrole, $context);
+    $totalusers = $totalusers + get_role_users($gradedrole, $context);
 }
 
 foreach ($tree->get_items() as $item) {
