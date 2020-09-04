@@ -471,11 +471,11 @@ class edit_item_form extends moodleform {
             if ($mform->elementExists('multfactor')) {
                 $mform->removeElement('multfactor');
             }
-            */
-            // End LSU Gradebook moodle 3.7 enhancement. 
             if ($mform->elementExists('rescalegrades')) {
                 $mform->removeElement('rescalegrades');
             }
+            */
+            // End LSU Gradebook moodle 3.7 enhancement. 
         }
 	    // End LSU Grade Enhancement.
 
