@@ -56,6 +56,16 @@ define('CUSTOMCERT_DATE_COURSE_END', '-4');
  */
 define('CUSTOMCERT_DATE_CURRENT_DATE', '-5');
 
+/**
+ * Date - Enrollment start
+ */
+define('CUSTOMCERT_DATE_ENROLMENT_START', '-6');
+
+/**
+ * Date - Entrollment end
+ */
+define('CUSTOMCERT_DATE_ENROLMENT_END', '-7');
+
 require_once($CFG->dirroot . '/lib/grade/constants.php');
 
 /**
@@ -83,6 +93,9 @@ class element extends \mod_customcert\element {
         if ($completionenabled) {
             $dateoptions[CUSTOMCERT_DATE_COMPLETION] = get_string('completiondate', 'customcertelement_date');
         }
+        $dateoptions[CUSTOMCERT_DATE_ENROLMENT_START] = get_string('enrolmentstartdate', 'customcertelement_date');
+        $dateoptions[CUSTOMCERT_DATE_ENROLMENT_END] = get_string('enrolmentenddate', 'customcertelement_date');
+
         $dateoptions[CUSTOMCERT_DATE_COURSE_START] = get_string('coursestartdate', 'customcertelement_date');
         $dateoptions[CUSTOMCERT_DATE_COURSE_END] = get_string('courseenddate', 'customcertelement_date');
         $dateoptions[CUSTOMCERT_DATE_COURSE_GRADE] = get_string('coursegradedate', 'customcertelement_date');
@@ -147,7 +160,7 @@ class element extends \mod_customcert\element {
             $customcert = $DB->get_record('customcert', array('templateid' => $page->templateid), '*', MUST_EXIST);
             // Now we can get the issue for this user.
             $issue = $DB->get_record('customcert_issues', array('userid' => $user->id, 'customcertid' => $customcert->id),
-                '*', MUST_EXIST);
+                '*', IGNORE_MULTIPLE);
 
             if ($dateitem == CUSTOMCERT_DATE_ISSUE) {
                 $date = $issue->timecreated;
@@ -162,6 +175,26 @@ class element extends \mod_customcert\element {
                 if ($timecompleted = $DB->get_record_sql($sql, array('userid' => $issue->userid, 'courseid' => $courseid))) {
                     if (!empty($timecompleted->timecompleted)) {
                         $date = $timecompleted->timecompleted;
+                    }
+                }
+            } else if ($dateitem == CUSTOMCERT_DATE_ENROLMENT_START) {
+                // Get the enrolment start date.
+                $sql = "SELECT ue.timestart FROM {enrol} e JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                         WHERE e.courseid = :courseid
+                           AND ue.userid = :userid";
+                if ($timestart = $DB->get_record_sql($sql, array('userid' => $issue->userid, 'courseid' => $courseid))) {
+                    if (!empty($timestart->timestart)) {
+                        $date = $timestart->timestart;
+                    }
+                }
+            } else if ($dateitem == CUSTOMCERT_DATE_ENROLMENT_END) {
+                // Get the enrolment end date.
+                $sql = "SELECT ue.timeend FROM {enrol} e JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                         WHERE e.courseid = :courseid
+                           AND ue.userid = :userid";
+                if ($timeend = $DB->get_record_sql($sql, array('userid' => $issue->userid, 'courseid' => $courseid))) {
+                    if (!empty($timeend->timeend)) {
+                        $date = $timeend->timeend;
                     }
                 }
             } else if ($dateitem == CUSTOMCERT_DATE_COURSE_START) {
@@ -198,12 +231,7 @@ class element extends \mod_customcert\element {
 
         // Ensure that a date has been set.
         if (!empty($date)) {
-            $date = $this->get_date_format_string($date, $dateformat);
-            // If we are previewing, we want to let the user know it's an example date so they don't get confused.
-            if ($preview) {
-                $date = get_string('exampledata', 'customcert', 'date') . ' ' . $date;
-            }
-            \mod_customcert\element_helper::render_content($pdf, $this, $date);
+            \mod_customcert\element_helper::render_content($pdf, $this, $this->get_date_format_string($date, $dateformat));
         }
     }
 
