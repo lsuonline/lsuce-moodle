@@ -145,6 +145,10 @@ class block_ce_enrollinfo extends block_base {
             $formattedenddate = "";
         }
 
+        if (!isset($enddate)) {
+            $enddate = 0;
+        }
+
         // Calculate time left in enrollment. Subtract current date from $enddate.
         $now = date ( 'F j, Y, g:i a' );
         if (isset($startdate) != null OR isset($enddate) != null) {
