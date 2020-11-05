@@ -157,7 +157,7 @@ function mypic_force_update_picture($idnumber, $hash = null) {
  * @return boolean|string
  */
 function mypic_fetch_picture($idnumber, $updating = false) {
-    global $CFG;
+    global $CFG, $USER;
 
     $hash = $idnumber;
     $name = $idnumber . '.jpg';
@@ -168,22 +168,39 @@ function mypic_fetch_picture($idnumber, $updating = false) {
     $curl->download(array(array('url' => $url, 'file' => $file)));
     $contenttype = isset($curl->response['Content-Type']) ? $curl->response['Content-Type'] : null;
     $responsecode = isset($curl->response['HTTP/1.1']) ? $curl->response['HTTP/1.1'] : null;
-    fclose($file);
+    if ((is_siteadmin($USER) && $CFG->debugdeveloper == true) && php_sapi_name() != "cli") {
+        echo'Raw Response Code: ';
+        var_dump($responsecode);
+        echo'<br>';
+        echo'Waw Content Type: ';
+        var_dump($contenttype);
+        echo'<br>';
+    }
 
-    if ($responsecode == '200 OK' && $contenttype == 'image/jpeg') {
-        echo'<p style="text-align: center;"><img src="data:image/jpeg;base64,'
-            . base64_encode(file_get_contents($url))
-            . '" alt="photo" style="border: 1px solid #666666; margin: 0 auto; border-radius: 10px;" '
-            . 'width="auto" height="100px" /></p>';
+    $responsecode = (int)substr($responsecode, 0, 3);
+    fclose($file);
+    if ((is_siteadmin($USER) && $CFG->debugdeveloper == true) && php_sapi_name() != "cli") {
+        echo'Adjusted Response Code: ';
+        var_dump($responsecode);
+        echo'<br>';
+    }
+
+    if ($responsecode == '200' && $contenttype == 'image/jpeg') {
+        if (php_sapi_name() != "cli") {
+            echo'<p style="text-align: center;"><img src="data:image/jpeg;base64,'
+                . base64_encode(file_get_contents($url))
+                . '" alt="photo" style="border: 1px solid #666666; margin: 0 auto; border-radius: 10px;" '
+                . 'width="auto" height="100px" /></p>';
+        }
         return $path;
-    } else if ($responsecode != '404 Not Found') {
-        if($CFG->debugdeveloper OR php_sapi_name() == "cli") {
+    } elseif ($responsecode != 404) {
+        if ((is_siteadmin($USER) && $CFG->debugdeveloper == true) OR php_sapi_name() == "cli") {
             echo(get_string('cron_webservice_response', 'block_my_picture', ['response' => $responsecode, 'content' => $contenttype, 'idnumber' => $idnumber]));
             echo(get_string('cron_webservice_err', 'block_my_picture'));
         }
         return false;
     } else {
-        if($CFG->debugdeveloper) {
+        if ((is_siteadmin($USER) && $CFG->debugdeveloper == true) OR php_sapi_name() == "cli") {
             echo(get_string('cron_webservice_response', 'block_my_picture', ['response' => $responsecode, 'content' => $contenttype, 'idnumber' => $idnumber]));
         }
         unlink($path);
@@ -319,11 +336,18 @@ function mypic_verifyWebserviceExists() {
     curl_setopt($curl, CURLOPT_NOBODY, true);
     curl_exec($curl);
     $isimage = curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+    $isalive = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
 
     if (!$isimage == 'image/jpeg') {
         mypic_emailAdminsFailureMsg($ready);
         return false;
     }
+
+    if (!$isalive == '200') {
+        mypic_emailAdminsFailureMsg($ready);
+        return false;
+    }
+
     return true;
 }
 
