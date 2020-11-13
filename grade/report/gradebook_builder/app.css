@@ -387,6 +387,10 @@
   margin-top: 0 !important;
 }
 
-#page-grade-report-gradebook_builder-index #snap-pm-header.clearfix, #page-grade-report-gradebook_builder-index #snap-pm-courses .clearfix {
+#page-grade-report-gradebook_builder-index #snap-pm-courses #snap-pm-courses-hidden-cards.clearfix div.coursecard {
+  display: none;
+}
+
+#page-grade-report-gradebook_builder-index #snap-pm-header.clearfix, #page-grade-report-gradebook_builder-index #snap-pm-courses #snap-pm-courses-current-cards.clearfix, #page-grade-report-gradebook_builder-index #snap-pm-courses #snap-pm-courses-hidden-cards.clearfix.show div.coursecard { 
   display: block;
 }
