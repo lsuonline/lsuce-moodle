@@ -22,7 +22,7 @@ $string['save_category'] = 'Save this template to be used by any course in {$a}.
 $string['save_system'] = 'Save this template to be used by everyone.';
 
 $string['help'] = '?';
-$string['helplink'] = 'http://grok.lsu.edu/Article.aspx?articleid=16677';
+$string['helplink'] = 'https://moodle3.grok.lsu.edu/Article.aspx?articleid=18968';
 $string['instructions'] = 'Instructions';
 $string['help_step_0'] = 'Choose a template from the \'Choose\' drop-down menu, or follow the instructions below to create your own:';
 $string['help_step_1'] = 'Enter a category name in the field for each category you would like to create (ex: Quizzes, Homework), and click \'Add.\'';

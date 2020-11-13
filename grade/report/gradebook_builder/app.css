@@ -386,3 +386,7 @@
 #page-grade-report-gradebook_builder-index form.well:first-of-type {
   margin-top: 0 !important;
 }
+
+#page-grade-report-gradebook_builder-index #snap-pm-header.clearfix {
+  display: block;
+}

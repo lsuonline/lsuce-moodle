@@ -72,7 +72,7 @@ $(document).ready(function() {
         $('select#add-item-category')
             .append('<option value="' + id + '">' + name + '</option>');
 
-       // $('div#howto').replaceWith('<div class="help"><a href=http://grok.lsu.edu/Article.aspx?articleid=16094 target="_blank" class="help">help</a></div>');
+       // $('div#howto').replaceWith('<div class="help"><a href=https://moodle3.grok.lsu.edu/Article.aspx?articleid=18968 target="_blank" class="help">help</a></div>');
 
         readjustWeight(function(tw) {
             tw.append(weights);
