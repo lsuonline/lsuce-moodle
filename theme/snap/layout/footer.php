@@ -24,24 +24,16 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
-
-/* Moodle custom menu. */
-/* We need to render the custom menu in the footer in mobile views. */
-$custommenu = $OUTPUT->custom_menu();
-
-if (!empty($custommenu)) {
-    echo '<div id="footer-snap-custom-menu">' . $custommenu . '</div>';
-}
 ?>
 
 <footer id="moodle-footer" role="contentinfo" class="clearfix">
-
 <?php
 /* Snap custom footer.*/
 /* Custom footer edit buttons. */
 $footnote = empty($PAGE->theme->settings->footnote) ? '' : $PAGE->theme->settings->footnote;
 $footnote = format_text($footnote, FORMAT_HTML, ['noclean' => true]);
 
+$custommenu = $OUTPUT->custom_menu();
 if (!empty($custommenu) && $this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
     $url = new moodle_url('/admin/settings.php', ['section' => 'themesettings'], 'id_s__custommenuitems');
     $link = html_writer::link($url, get_string('editcustommenu', 'theme_snap'), ['class' => 'btn btn-primary btn-sm']);
@@ -79,15 +71,26 @@ if (!empty($socialmedialinks)) {
 echo '</div>';
 ?>
 
+<?php
+/* Moodle custom menu. */
+/* We need to render the custom menu in the footer in mobile views. */
+
+if (!empty($custommenu)) {
+    echo '<div id="snap-custom-menu"><br>';
+    echo $custommenu;
+    echo '</div>';
+}
+?>
+
 <div class="row">
     <div id="mrooms-footer" class="helplink col-sm-6">
         <small>
             <?php
             if ($OUTPUT->page_doc_link()) {
                 echo $OUTPUT->page_doc_link();
-                // echo "<br>";
+                echo "<br>";
             }
-            // echo get_string('poweredbyrunby', 'theme_snap', date('Y', time()));
+            echo get_string('poweredbyrunby', 'theme_snap', date('Y', time()));
             ?>
         </small>
     </div>
