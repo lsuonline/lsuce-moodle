@@ -39,15 +39,17 @@ global $CFG, $DB;
             return $profilefield->name;
         }, $profilefields);
 
-        $settings->add(
-            new admin_setting_configselect(
-                'block_ce_enrollinfo_field',
-                get_string('ce_selectable_fields', 'block_ce_enrollinfo'),
-                get_string('ce_selectable_fields_desc', 'block_ce_enrollinfo'),
-                null,
-                $ceenrollinfofieldoptions
-            )
-        );
+        if(isset($ceenrollinfofieldoptions) && !empty($ceenrollinfofieldoptions)) {
+            $settings->add(
+                new admin_setting_configselect(
+                    'block_ce_enrollinfo_field',
+                    get_string('ce_selectable_fields', 'block_ce_enrollinfo'),
+                    get_string('ce_selectable_fields_desc', 'block_ce_enrollinfo'),
+                    null,
+                    $ceenrollinfofieldoptions
+                )
+            );
+        }
 
         $settings->add(
             new admin_setting_configselect(
