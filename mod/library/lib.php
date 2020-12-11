@@ -34,6 +34,7 @@ function get_library_name($library) {
     $name = strip_tags(format_string($library->intro, true));
     if (core_text::strlen($name) > LIBRARY_MAX_NAME_LENGTH) {
         $name = core_text::substr($name, 0, LIBRARY_MAX_NAME_LENGTH)."...";
+
     }
 
     if (empty($name)) {
@@ -42,6 +43,7 @@ function get_library_name($library) {
 
     return $name;
 }
+
 /**
  * Given an object containing all the necessary data,
  * (defined by the form in mod_form.php) this function
@@ -192,9 +194,9 @@ function library_supports($feature) {
         case FEATURE_IDNUMBER:
         case FEATURE_GROUPS:
         case FEATURE_GROUPINGS:
-        case FEATURE_GROUPMEMBERSONLY:
         case FEATURE_MOD_INTRO:
         case FEATURE_COMPLETION_TRACKS_VIEWS:
+        case FEATURE_COMPLETION_HAS_RULES:
         case FEATURE_GRADE_HAS_GRADE:
         case FEATURE_GRADE_OUTCOMES:
         case FEATURE_BACKUP_MOODLE2:

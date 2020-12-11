@@ -28,9 +28,6 @@ require_once($CFG->dirroot.'/course/moodleform_mod.php');
 
 class mod_library_mod_form extends moodleform_mod {
     public function definition() {
-        $mform = $this->_form;
-        $mform->addElement('header', 'generalhdr', get_string('general'));
-        $this->standard_intro_elements(false, get_string('librarytext', 'library'));
         $this->standard_coursemodule_elements();
         $this->add_action_buttons(true, false, null);
     }
