@@ -12,9 +12,9 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$string['pluginname'] = 'Pearson MyLab & Mastering (Mod)';
-$string['modulename'] = 'Pearson MyLab & Mastering Link';
-$string['modulenameplural'] = 'Pearson MyLab & Mastering Links';
+$string['pluginname'] = 'MyLab and Mastering (Mod)';
+$string['modulename'] = 'MyLab and Mastering Link';
+$string['modulenameplural'] = 'MyLab and Mastering Links';
 $string['addlinkheader'] = 'Add a link';
 $string['selectedlink'] = 'Available links';
 $string['linktitle'] = 'Change link title';
@@ -24,9 +24,9 @@ $string['lauchpresentationheader'] = 'Launch presentation options';
 $string['inframe'] = 'Launch in frame';
 $string['inframe_help'] = 'Check this box if you want the launch to occur within the Moodle course frame.  If this is not checked the launch will occur in a new window.';
 
-$string['modulename_help'] = 'Pearson offers integration between Moodle and its MyLab & Mastering products.  This integration provides the ability for the instructor and students to log in to Moodle and click a link from a Moodle course to access their MyLab & Mastering experience.
+$string['modulename_help'] = 'Pearson offers integration between Moodle and its MyLab and Mastering products.  This integration provides the ability for the instructor and students to log in to Moodle and click a link from a Moodle course to access their MyLab and Mastering experience.
 
 This integration provides:
 
-* Single sign-on (SSO) from the Moodle course into the MyLab & Mastering course. This standards-based integration uses IMS Learning Tools Interoperability (LTI), a proven integration protocol.
-* Links to Pearson MyLab & Mastering courses ensure the student is presented with the educational materials they need within the context of the Moodle course frame.';
+* Single sign-on (SSO) from the Moodle course into the MyLab and Mastering course. This standards-based integration uses IMS Learning Tools Interoperability (LTI), a proven integration protocol.
+* Links to Pearson MyLab and Mastering courses ensure the student is presented with the educational materials they need within the context of the Moodle course frame.';
