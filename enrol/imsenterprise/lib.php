@@ -550,16 +550,18 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
             if ($imsupdateusers) {
                 if ($id = $DB->get_field('user', 'id', array('idnumber' => $person->idnumber))) {
                     $person->id = $id;
-                    $passs = $DB->get_field('user', 'password', array('idnumber' => $person->idnumber));
-                    $auths = $DB->get_field('user', 'auth', array('idnumber' => $person->idnumber));
-                    $DB->update_record('user', $person);
+		    // BEGIN LSU change to add passwords for manual users without them.
+                    // $passs = $DB->get_field('user', 'password', array('idnumber' => $person->idnumber));
+                    // $auths = $DB->get_field('user', 'auth', array('idnumber' => $person->idnumber));
+                    // END LSU change to add passwords for manual users without them.
+		    $DB->update_record('user', $person);
                     $this->log_line("Updated user $person->username");
                     // BEGIN LSU change to add passwords for manual users without them.
-                    if ($passs === '' && $auths === 'manual') {
-                        set_user_preference('auth_forcepasswordchange', 1, $id);
-                        set_user_preference('create_password', 1, $id);
-                        $this->log_line("Sending $person->username password via cron");
-                    }
+                    // if ($passs === '' && $auths === 'manual') {
+                    //    set_user_preference('auth_forcepasswordchange', 1, $id);
+                    //    set_user_preference('create_password', 1, $id);
+                    //    $this->log_line("Sending $person->username password via cron");
+                    // }
                     // END LSU change to add passwords for manual users without them.
                 } else {
                     $this->log_line("Ignoring update request for non-existent user $person->username");
