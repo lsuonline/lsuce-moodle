@@ -107,7 +107,7 @@ class block_ce_enrollinfo extends block_base {
                 FROM {user} u
                 INNER JOIN {user_enrolments} ue ON ue.userid = u.id
                 INNER JOIN {enrol} e ON e.id = ue.enrolid
-            WHERE e.enrol = 'manual'
+            WHERE e.enrol = 'imsenterprise'
                 AND u.id = ?
                 AND ue.status = 0
                 AND e.courseid = ?";
