@@ -451,7 +451,7 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
     protected function process_person_tag($tagcontents) {
         global $CFG, $DB;
         // BEGIN LSU change to add moodle lib for sending passwords.
-        require_once('../../lib/moodlelib.php');
+        require_once($CFG->dirroot . '/lib/moodlelib.php');
         // END LSU change to add moodle lib for sending passwords.
 
         // Get plugin configs.
