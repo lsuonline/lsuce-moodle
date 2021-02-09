@@ -727,7 +727,9 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                             $einstance = $DB->get_record('enrol', array('id' => $enrolid));
                         }
 
-                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end);
+                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
+                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end, $status = ENROL_USER_ACTIVE);
+                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
 
                         $this->log_line("Enrolled user #$memberstoreobj->userid ($member->idnumber) "
                             ."to role $member->roletype in course $memberstoreobj->course");
@@ -772,7 +774,10 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                             array('enrol' => $memberstoreobj->enrol, 'courseid' => $courseobj->id));
                         foreach ($einstances as $einstance) {
                             // Unenrol the user from all imsenterprise enrolment instances.
-                            $this->unenrol_user($einstance, $memberstoreobj->userid);
+                            // BEGIN LSU suspend user versus unenrol them.
+                            // $this->unenrol_user($einstance, $memberstoreobj->userid);
+                            $this->update_user_enrol($einstance, $memberstoreobj->userid, ENROL_USER_SUSPENDED);
+                            // END LSU suspend user versus unenrol them.
                         }
 
                         $membersuntally++;
