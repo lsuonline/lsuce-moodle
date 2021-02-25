@@ -885,3 +885,7 @@ $string['lettersstrictletter_help'] = 'This setting forces the default letter na
 $string['lettersnames'] = 'Letter names';
 $string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
 // END LSU Better Letters.
+
+// BEGIN LSU Column Average No Zero.
+$string['meangradednozeros'] = 'Non-empty, non-zero grades';
+// END LSU Column Average No Zero.
