@@ -386,17 +386,27 @@ class edit_category_form extends moodleform {
                 }
             }
 
-            // If it is a course category, remove the "required" rule from the "fullname" element
+            // BEGIN LSU Course Category Editable switch.
             if ($grade_category->is_course_category()) {
+                // If it is a course category, remove the "required" rule from the "fullname" element
                 unset($mform->_rules['fullname']);
                 $key = array_search('fullname', $mform->_required);
                 unset($mform->_required[$key]);
-            }
 
-            // If it is a course category and its fullname is ?, show an empty field
-            if ($grade_category->is_course_category() && $mform->getElementValue('fullname') == '?') {
-                $mform->setDefault('fullname', '');
+                // Check to see if it's an editable field in the global config.
+		$editable = (bool) get_config('moodle', 'grade_coursecateditable');
+
+                // If the course category's (editable global setting) fullname is ?, show an editable empty field.
+                if ($editable && $mform->getElementValue('fullname') == '?') {
+                    $mform->setDefault('fullname', '');
+                // If it is a (non-editable global setting set) course category and its fullname is ?, show the course fullname.
+                } else if (!$editable) {
+                    $mform->setDefault('fullname', $COURSE->fullname);
+                    $mform->hardFreeze('fullname');
+                }
             }
+            // END LSU Course Category Editable switch.
+
             // remove unwanted aggregation options
             if ($mform->elementExists('aggregation')) {
                 $allaggoptions = array_keys($this->aggregation_options);

@@ -889,3 +889,9 @@ $string['lettersname_help'] = 'This setting forces the default letter names defi
 // BEGIN LSU Column Average No Zero.
 $string['meangradednozeros'] = 'Non-empty, non-zero grades';
 // END LSU Column Average No Zero.
+
+// BEGIN LSU Course Category Editable switch.
+$string['coursecateditable'] = 'Course category editable';
+$string['coursecateditable_help'] = 'Disabling will make the course category name an uneditable field.';
+// END LSU Course Category Editable switch.
+

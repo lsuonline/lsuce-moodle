@@ -23,6 +23,10 @@ if (has_capability('moodle/grade:manage', $systemcontext)
     $temp = new admin_settingpage('gradessettings', new lang_string('generalsettings', 'grades'), 'moodle/grade:manage');
     if ($ADMIN->fulltree) {
 
+        // BEGIN LSU Course Category Editable switch.
+        $temp->add(new admin_setting_configcheckbox('grade_coursecateditable', new lang_string('coursecateditable', 'grades'), new lang_string('coursecateditable_help', 'grades'), 1));
+        // END LSU Course Category Editable switch.
+
         // new CFG variable for gradebook (what roles to display)
         $temp->add(new admin_setting_special_gradebookroles());
 
