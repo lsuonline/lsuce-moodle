@@ -39,5 +39,6 @@ $string['cliunknowoption'] = 'Ej identifierade alternativ:
   {$a}
 Vänligen använd --help alternativet.';
 $string['cliyesnoprompt'] = 'skriv in y (betyder ja) eller n (betyder nej)';
-$string['environmentrequireinstall'] = 'är nödvändig att installera/aktivera';
-$string['environmentrequireversion'] = 'version {$a->needed} är nödvändig och du använder {$a->current}';
+$string['environmentrequireinstall'] = 'måste vara installerat och aktiverat';
+$string['environmentrequireversion'] = 'version {$a->needed} krävs och du använder {$a->current}';
+$string['upgradekeyset'] = 'Uppgraderingsnyckel (lämna tom för att inte ange någon)';
