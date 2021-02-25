@@ -46,6 +46,11 @@ if (!$edit) {
 
 $returnurl = null;
 $editparam = null;
+// BEGIN LSU Better Letters.
+$custom = true;
+$decimals = $custom ? (int) get_config('moodle', 'grade_decimalpoints') : 2;
+// END LSU Better Letters.
+
 if ($context->contextlevel == CONTEXT_SYSTEM or $context->contextlevel == CONTEXT_COURSECAT) {
     require_once $CFG->libdir.'/adminlib.php';
 
@@ -85,11 +90,15 @@ if (!$edit) {
     $max = 100;
     foreach($letters as $boundary=>$letter) {
         $line = array();
-        $line[] = format_float($max,2).' %';
-        $line[] = format_float($boundary,2).' %';
+        // BEGIN LSU Better Letters.
+        $line[] = format_float($max, $decimals).' %';
+        $line[] = format_float($boundary, $decimals).' %';
+        // END LSU Better Letters.
         $line[] = format_string($letter);
         $data[] = $line;
-        $max = $boundary - 0.01;
+        // BEGIN LSU Better Letters.
+        $max = $boundary - (1 / pow(10, $decimals));
+        // END LSU Better Letters.
     }
 
     print_grade_page_head($COURSE->id, 'letter', 'view', get_string('gradeletters', 'grades'));
@@ -105,9 +114,13 @@ if (!$edit) {
     $table = new html_table();
     $table->id = 'grade-letters-view';
     $table->head  = array(get_string('max', 'grades'), get_string('min', 'grades'), get_string('letter', 'grades'));
-    $table->size  = array('30%', '30%', '40%');
+    // BEGIN LSU Better Letters.
+    $table->size  = array('33%', '33%', '34%');
+    // END LSU Better Letters.
     $table->align = array('left', 'left', 'left');
-    $table->width = '30%';
+    // BEGIN LSU Better Letters.
+    $table->width = '40%';
+    // END LSU Better Letters.
     $table->data  = $data;
     $table->tablealign  = 'center';
     echo html_writer::table($table);
@@ -126,6 +139,10 @@ if (!$edit) {
 
         $data->$gradelettername   = $letter;
         $data->$gradeboundaryname = $boundary;
+        // BEGIN LSU Better Letters.
+        $stored = "{$data->$gradeboundaryname}";
+        $letters[$stored] = $letter;
+        // END LSU Better Letters.
         $i++;
     }
     $data->override = $override;

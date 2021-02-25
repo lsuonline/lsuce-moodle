@@ -876,3 +876,12 @@ $string['xml'] = 'XML';
 $string['yes'] = 'Yes';
 $string['yourgrade'] = 'Your grade';
 
+// BEGIN LSU Better Letters.
+$string['letterscustompercents'] = 'Custom Percentages';
+$string['letterscustompercents_help'] = 'Allows for users to enter a value for the percents.';
+$string['lettersdefaultletters'] = 'F,D,C,B,A';
+$string['lettersstrictletter'] = 'Strict Letter names';
+$string['lettersstrictletter_help'] = 'This setting forces the default letter names defined with the selected Letter names.';
+$string['lettersnames'] = 'Letter names';
+$string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
+// END LSU Better Letters.

@@ -31,6 +31,10 @@ require_once $CFG->libdir.'/formslib.php';
 class edit_letter_form extends moodleform {
 
     public function definition() {
+	// BEGIN LSU Better Letters
+	global $DB;
+	// END LSU Better Letters
+
         $mform =& $this->_form;
         $num   = $this->_customdata['num'];
         $admin = $this->_customdata['admin'];
@@ -46,16 +50,42 @@ class edit_letter_form extends moodleform {
         $gradeletter       = get_string('gradeletter', 'grades');
         $gradeboundary     = get_string('gradeboundary', 'grades');
 
+        // BEGIN LSU Better Letters
+        $strict = get_config('moodle', 'grade_letters_strict');
+
+        $default = get_config('moodle', 'grade_letters_names');
+
+        if ($default and $scale = $DB->get_record('scale', array('id' => $default))) {
+            $default_letters = $scale->scale;
+        } else {
+           $default_letters = get_string('lettersdefaultletters', 'grades');
+        }
+
+        $default_letters = array_reverse(explode(',', $default_letters));
+        $letters = array('' => get_string('unused', 'grades')) +
+            array_combine($default_letters, $default_letters);
+        // END LSU Better Letters
+
         for ($i=1; $i<$num+1; $i++) {
             $gradelettername = 'gradeletter'.$i;
             $gradeboundaryname = 'gradeboundary'.$i;
 
             $entry = array();
-            $entry[] = $mform->createElement('text', $gradelettername, $gradeletter . " $i");
+            // BEGIN LSU Better Letters
+            if ($strict) {
+                $entry[] = $mform->createElement('select', $gradelettername, $gradeletter . " $i", $letters);
+            } else {
+                $entry[] = $mform->createElement('text', $gradelettername, $gradeletter . " $i");
+            }
+            // END LSU Better Letters
+
             $mform->setType($gradelettername, PARAM_TEXT);
 
             if (!$admin) {
                 $mform->disabledIf($gradelettername, 'override', 'notchecked');
+                // BEGIN LSU Better Letters
+                $mform->disabledIf($gradelettername, $gradeboundaryname, 'eq', -1);
+                // END LSU Better Letters
             }
 
             $entry[] = $mform->createElement('static', '', '', '&ge;');

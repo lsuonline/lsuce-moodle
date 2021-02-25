@@ -199,7 +199,35 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $ADMIN->add('grades', $outcomes);
     }
     $letters = new admin_externalpage('letters', new lang_string('letters', 'grades'), $CFG->wwwroot.'/grade/edit/letter/index.php', 'moodle/grade:manageletters');
+
+    // BEGIN LSU Better Letter Grades
+    $letters_str = new lang_string('letters', 'grades');
+    $letters_base = $CFG->wwwroot.'/grade/edit/letter';
+    $letters = new admin_externalpage('letters', $letters_str, $letters_base . '/index.php', 'moodle/grade:manageletters');
+    // END LSU Better Letter Grades
+
     $ADMIN->add('grades', $letters);
+
+    // BEGIN LSU Better Letter Grades
+    $letters_settings_str = new lang_string('letter', 'grades') . ' ' . new lang_string('edit') . ' ' . new lang_string('settings');
+    $temp = new admin_settingpage('letterssettings', $letters_settings_str, 'moodle/grade:manageletters');
+    if ($ADMIN->fulltree) {
+        $temp->add(new admin_setting_configcheckbox('grade_letters_strict',
+            new lang_string('lettersstrictletter', 'grades'), new lang_string('lettersstrictletter_help', 'grades'), 0));
+
+        $params = array('courseid' => 0);
+
+        $db_scales = $DB->get_records_menu('scale', $params, '', 'id, name');
+
+        $scales = array(0 => new lang_string('lettersdefaultletters', 'grades')) + $db_scales;
+
+        $temp->add(new admin_setting_configselect('grade_letters_names',
+            new lang_string('lettersnames', 'grades'),
+            new lang_string('lettersname_help', 'grades'), 0, $scales));
+    }
+
+    $ADMIN->add('grades', $temp);
+    // END LSU Better Letter Grades
 
     // The plugins must implement a settings.php file that adds their admin settings to the $settings object
 
