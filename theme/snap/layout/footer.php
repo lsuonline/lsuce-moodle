@@ -24,6 +24,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
+// BEGIN LSU Move the custom menu to the bottom above the footer.
+$custommenu = $OUTPUT->custom_menu();
+if (!empty($custommenu)) {
+    echo '<div id="footer-snap-custom-menu">' . $custommenu . '</div>';
+}
+// END LSU Move the custom menu to the bottom above the footer.
 ?>
 
 <footer id="moodle-footer" role="contentinfo" class="clearfix">
@@ -33,7 +39,10 @@ defined('MOODLE_INTERNAL') || die();
 $footnote = empty($PAGE->theme->settings->footnote) ? '' : $PAGE->theme->settings->footnote;
 $footnote = format_text($footnote, FORMAT_HTML, ['noclean' => true]);
 
-$custommenu = $OUTPUT->custom_menu();
+// BEGIN LSU Move the custom menu to the bottom above the footer.
+// $custommenu = $OUTPUT->custom_menu();
+// END LSU Move the custom menu to the bottom above the footer.
+
 if (!empty($custommenu) && $this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
     $url = new moodle_url('/admin/settings.php', ['section' => 'themesettings'], 'id_s__custommenuitems');
     $link = html_writer::link($url, get_string('editcustommenu', 'theme_snap'), ['class' => 'btn btn-primary btn-sm']);
@@ -88,12 +97,16 @@ if (!empty($custommenu)) {
             <?php
             if ($OUTPUT->page_doc_link()) {
                 echo $OUTPUT->page_doc_link();
-                echo "<br>";
+                // BEGIN LSU Remove useless white space.
+                // echo "<br>";
+                // END LSU Remove useless white space.
             }
-            echo get_string('poweredbyrunby', 'theme_snap', (object) [
-                    'subdomain' => $this->get_poweredby_subdomain(),
-                    'year'      => date('Y', time())
-            ]);
+            // BEGIN LSU remove the OpenLMS powered by notice.
+            // echo get_string('poweredbyrunby', 'theme_snap', (object) [
+            //         'subdomain' => $this->get_poweredby_subdomain(),
+            //         'year'      => date('Y', time())
+            // ]);
+            // END LSU remove the OpenLMS powered by notice.
             ?>
         </small>
     </div>
