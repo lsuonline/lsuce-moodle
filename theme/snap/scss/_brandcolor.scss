@@ -71,7 +71,7 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
         }
     }
 
-    a:not(.btn):not(.dropdown-item):not(._blanktarget):not(.snap-due-date):not(.yui3-button):not(.mast-breadcrumb):not(.active):not(.disabled),
+    a:not(.btn):not(.dropdown-item):not(._blanktarget):not(.snap-due-date):not(.yui3-button):not(.mast-breadcrumb):not(.active):not(.disabled):not(.dimmed),
     .btn-link,
     .fake-link {
         color: $brand-primary;
@@ -324,9 +324,8 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
         &:focus,
         &:active,
         &.active {
-            text-decoration: underline;
-            color: darken($brand-primary, 8%);
-            background-color: #fff;
+            background-color: $brand-primary;
+            color: #fff;
         }
     }
 
@@ -984,21 +983,15 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
             background: $brand-primary;
         }
     }
-}
 
-#page-course-loginas.theme-snap #user-notifications {
-    padding-top: 7rem;
-    display: block;
-    overflow: hidden;
-}
+    #action-menu-toggle-0 > i[title="Actions menu"] {
+        color: $brand-primary;
+    }
 
-#page-contentbank.theme-snap #page-mast .dropdown-toggle > i[title="Actions menu"] {
-    color: $brand-primary;
-}
-
-#moodle-footer #page-footer a:focus {
-    outline: 3px solid $brand-primary;
-    box-shadow: none;
-    background-color: transparent;
-    color: white;
+    #moodle-footer #page-footer a:focus {
+        outline: 3px solid $brand-primary !important;
+        box-shadow: none;
+        background-color: transparent;
+        color: white;
+    }
 }

@@ -266,19 +266,21 @@ $string['personalmenu'] = 'Personal menu';
 $string['personalmenufeatures'] = 'Personal menu features';
 $string['personalmenulogintoggle'] = 'Show personal menu on login';
 $string['personalmenulogintoggledesc'] = 'Opens the personal menu immediately after login';
-$string['personalmenuadvancedfeedsenable'] = 'Enable Advanced feeds (Experimental)';
+$string['personalmenuadvancedfeedsenable'] = 'Enable Advanced feeds';
 $string['personalmenuadvancedfeedsenabledesc'] = 'Advanced feeds loads some personal menu items which allows faster load times and refreshes content on demand.';
 $string['personalmenuadvancedfeedsperpage'] = 'Advanced feeds item display count';
 $string['personalmenuadvancedfeedsperpagedesc'] = 'Choose the number of items to display in the feed. Users can select <strong>View more</strong> to display additional items.';
 $string['personalmenuadvancedfeedslifetime'] = 'Advanced feeds life time';
 $string['personalmenuadvancedfeedslifetimedesc'] = 'Choose the amount of time the feeds will be cached in the browser after login. Setting the value to 0 won\'t cache the feeds in the browser.';
+$string['personalmenurefreshdeadlines'] = 'Refresh deadlines using scheduled task.';
+$string['personalmenurefreshdeadlinesdesc'] = 'When the task runs, deadline data will be refreshed for faster page load times.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Cover image';
 $string['posterdesc'] = 'A large header image for the front page of your site. Landscape images (1200 x 600 pixels) or larger work best.';
-$string['poweredbyrunby'] = 'Built with <a href="https://www.openlms.net/" target="_blank" rel="noopener">Open LMS</a>,
+$string['poweredbyrunby'] = 'Built with <a href="https://{$a->subdomain}.openlms.net/" target="_blank" rel="noopener">Open LMS</a>,
     a <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>-based product.<br>
-    Copyright &#169; {$a} Open LMS, All Rights Reserved.';
+    Copyright &#169; {$a->year} Open LMS, All Rights Reserved.';
 $string['previoussection'] = 'Previous section';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'The course ID of the course that the user favorited';
 $string['privacy:metadata:theme_snap_course_favorites:userid'] = 'The user ID of the user that favorited the course';
@@ -398,4 +400,4 @@ $string['design_mod_page'] = 'Enable previous design for page resources';
 $string['design_mod_page_description'] = 'If enabled, page resource content will be displayed inside the same page, course or front page.';
 $string['design_activity_chooser'] = 'Roll back to the original design for the activity chooser';
 $string['design_activity_chooser_description'] = 'If enabled, the activity chooser will be displayed with the original design. This will affect the course and front pages.';
-
+$string['refreshdeadlinestask'] = 'Refresh deadlines cached data. This should be run before all users login.';

@@ -297,7 +297,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
 
         $heading = get_string('messages', 'theme_snap');
         if ($this->advanced_feeds_enabled()) {
-            $o = $this->render_feed_web_component('messages', $heading, get_string('nomessages', 'theme_snap'));
+            $o = ce_render_helper::get_instance()
+                ->render_feed_web_component('messages', $heading, get_string('nomessages', 'theme_snap'));
         } else {
             $o = '<h2>'.$heading.'</h2>';
             $o .= '<div id="snap-personal-menu-messages"></div>';
@@ -323,7 +324,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $heading = get_string('forumposts', 'theme_snap');
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
-            $o = $this->render_feed_web_component('forumposts', $heading,
+            $o = ce_render_helper::get_instance()->render_feed_web_component('forumposts', $heading,
                             get_string('noforumposts', 'theme_snap'), $virtualpaging);
         } else {
             $o = '<h2>'.$heading.'</h2>
@@ -544,7 +545,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $heading = get_string('grading', 'theme_snap');
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
-            $o = $this->render_feed_web_component('grading', $heading,
+            $o = ce_render_helper::get_instance()->render_feed_web_component('grading', $heading,
                             get_string('nograding', 'theme_snap'), $virtualpaging);
         } else {
             $o = "<h2>$heading</h2>";
@@ -567,7 +568,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $heading = get_string('recentfeedback', 'theme_snap');
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
-            $o = $this->render_feed_web_component('graded', $heading,
+            $o = ce_render_helper::get_instance()->render_feed_web_component('graded', $heading,
                             get_string('nograded', 'theme_snap'), $virtualpaging);
         } else {
             $o = "<h2>$heading</h2>";
@@ -593,7 +594,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $heading = get_string('deadlines', 'theme_snap');
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
-            $o = $this->render_feed_web_component('deadlines', $heading,
+            $o = ce_render_helper::get_instance()->render_feed_web_component('deadlines', $heading,
                 get_string('nodeadlines', 'theme_snap'), $virtualpaging);
         } else {
             $o = "<h2>$heading</h2>";
@@ -1642,19 +1643,26 @@ HTML;
             }
         }
 
-        if ($item->key === 'courseadmin') {
-            $this->add_switchroleto_navigation_node($item);
-        }
+        // Bank content link where necessary (Front page - Course page - Category settings).
+        $context = context_system::instance();
+
+        $coursecatcontext = $this->page->context->contextlevel === CONTEXT_COURSECAT;
 
         if ($COURSE->id !== $SITE->id) {
             $context = context_course::instance($COURSE->id);
-        } else {
-            $context = context_system::instance();
         }
+        if ($coursecatcontext) {
+            $context = $this->page->context;
+        }
+
         if (has_capability('moodle/contentbank:access', $context)) {
-            if ($item->key === 'frontpage' || $item->key === 'courseadmin') {
+            if ($item->key === 'frontpage' || $item->key === 'courseadmin' || $item->key === 'categorysettings') {
                 $this->add_contentbank_navigation_node($item, $context->id);
             }
+        }
+
+        if ($item->key === 'courseadmin') {
+            $this->add_switchroleto_navigation_node($item);
         }
 
         $content = parent::render_navigation_node($item);
@@ -1672,7 +1680,7 @@ HTML;
      */
     private function add_contentbank_navigation_node(navigation_node $item, $contextid) {
         $url = new moodle_url('/contentbank/index.php', array('contextid' => $contextid));
-        $item->add(get_string('contentbank'), $url, navigation_node::TYPE_CUSTOM, null, 'contentbank');
+        $item->add(get_string('contentbank'), $url, navigation_node::TYPE_CUSTOM, null, 'contentbank', new \pix_icon('brush', ''));
     }
 
     /**
@@ -1911,7 +1919,7 @@ HTML;
      * Uses bootstrap compatible html.
      * @param string $coverimage
      */
-    public function navbar($coverimage = '') {
+    public function snapnavbar($coverimage = '') {
         global $COURSE, $CFG;
 
         require_once($CFG->dirroot.'/course/lib.php');
@@ -1928,11 +1936,6 @@ HTML;
 
         foreach ($this->page->navbar->get_items() as $item) {
             $item->hideicon = true;
-
-            // Remove link to current page - n.b. needs improving.
-            if ($item->action == $this->page->url) {
-                continue;
-            }
 
             // Add Breadcrumb links to all users types.
             if ($item->key === 'myhome') {
@@ -1996,51 +1999,6 @@ HTML;
     }
 
     /**
-     * @param string $feedkey
-     * @param string $title
-     * @param bool $virtualpaging
-     * @param bool $showreload
-     * @return string
-     */
-    private function render_feed_web_component($feedkey, $title, $emptymessage, $virtualpaging = false, $showreload = true) {
-        global $CFG;
-        $pagesize = get_config('theme_snap', 'personalmenuadvancedfeedsperpage');
-        $pagesize = !empty($pagesize) ? $pagesize : 3;
-        $maxlifetime = get_config('theme_snap', 'personalmenuadvancedfeedslifetime');
-        $maxlifetime = is_number($maxlifetime) ? $maxlifetime : 30 * MINSECS;
-        $sesskey = sesskey();
-
-        $viewmoremsg = get_string('pmadvancedfeed_viewmore', 'theme_snap');
-        $reloadmsg = get_string('pmadvancedfeed_reload', 'theme_snap');
-
-        $initialvalue = '';
-        if ((defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING)
-            // There is no easy way to have e2e testing when requesting services is asynchronous,
-            // so for testing purposes, we'll populate the component data when the page is being rendered.
-            || !empty($CFG->theme_snap_prepopulate_advanced_feeds)
-        ) {
-            $initialvalue = htmlspecialchars(json_encode(local::get_feed($feedkey, 0, $pagesize)));
-            $initialvalue = "initial-value=\"{$initialvalue}\"";
-        }
-        return <<<HTML
-<snap-feed elem-id="snap-personal-menu-feed-{$feedkey}"
-           title="{$title}"
-           feed-id="{$feedkey}"
-           show-reload="{$showreload}"
-           sess-key="{$sesskey}"
-           page-size="{$pagesize}"
-           virtual-paging="{$virtualpaging}"
-           empty-message="{$emptymessage}"
-           view-more-message="{$viewmoremsg}"
-           reload-message="{$reloadmsg}"
-           {$initialvalue}
-           www-root="{$CFG->wwwroot}"
-           max-life-time="$maxlifetime"
-></snap-feed>
-HTML;
-    }
-
-    /**
      * Renders a div that is only shown when there are configured custom menu items.
      *
      * @return string
@@ -2079,5 +2037,25 @@ HTML;
         $header = new stdClass();
         $header->headeractions = $this->page->get_header_actions();
         return $this->render_from_template('core/full_header', $header);
+    }
+
+    /**
+     * Gets the subdomain to use to link to the Open LMS site.
+     * @return string
+     */
+    public function get_poweredby_subdomain() {
+        // Currently supported subdomains.
+        $subdomains = [
+            'es' => 'es',
+            'fr' => 'fr',
+            'ja' => 'jp',
+            'pt_br' => 'br',
+        ];
+
+        if (isset($subdomains[current_language()])) {
+            return $subdomains[current_language()];
+        }
+        // Default subdomain.
+        return 'www';
     }
 }
