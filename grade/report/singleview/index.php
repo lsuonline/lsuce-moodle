@@ -131,7 +131,17 @@ if ($data = data_submitted()) {
 
 $PAGE->set_pagelayout('report');
 if ($itemtype == 'user') {
-    print_grade_page_head($course->id, 'report', 'singleview', $reportname, false, false, true, null, null, $report->screen->item);
+    // BEGIN LSU Alternate Names support.
+    $user = $report->screen->item;
+
+    $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+
+    if ($alternateused) {
+        $user->firstname = $report->screen->item->alternatename . ' (' . $report->screen->item->firstname . ') ';
+    }
+
+    print_grade_page_head($course->id, 'report', 'singleview', $reportname, false, false, true, null, null, $user);
+    // END LSU Alternate Names support.
 } else {
     print_grade_page_head($course->id, 'report', 'singleview', $reportname);
 }

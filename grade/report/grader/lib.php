@@ -728,7 +728,15 @@ class grade_report_grader extends grade_report {
                 $usercell->text = $OUTPUT->user_picture($user, ['link' => false, 'visibletoscreenreaders' => false]);
             }
 
-            $fullname = fullname($user, $viewfullnames);
+            // BEGIN LSU Alternate Names support.
+            $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+            if ($alternateused) {
+                $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;
+            } else {
+                $fullname = fullname($user);
+            }
+            // END LSU Alternate Names support.
+
             $usercell->text = html_writer::link(
                     new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $this->course->id]),
                     $usercell->text . $fullname,
