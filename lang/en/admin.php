@@ -1476,3 +1476,8 @@ $string['requestcategoryselection'] = 'Enable category selection';
 // Deprecated since Moodle 3.9.
 $string['availablelicenses'] = 'Available licences';
 $string['managelicenses'] = 'Manage licences';
+
+// BEGIN LSU FERPA photos.
+$string['ferpaphotos'] = 'FERPA photo mode';
+$string['ferpaphotoshelp'] = 'Hides student photos from other students';
+// END LSU FERPA photos.

@@ -345,11 +345,26 @@ class user_picture implements renderable {
      * @return moodle_url
      */
     public function get_url(moodle_page $page, renderer_base $renderer = null) {
-        global $CFG;
+        global $CFG, $USER;
 
         if (is_null($renderer)) {
             $renderer = $page->get_renderer('core');
         }
+
+        // BEGIN LSU FERPA photos.
+        $is_self = $USER->id == $this->user->id;
+
+        if (isset($this->courseid) && $this->courseid != $page->course->id) {
+            $page->course->id = $this->courseid;
+        }
+
+        $cc = $page->course->id == SITEID ?
+            context_system::instance() :
+            context_course::instance($page->course->id);
+
+        $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
+        $is_teacher = has_capability('moodle/course:update', $cc, $USER->id);
+        // END LSU FERPA photos.
 
         // Sort out the filename and size. Size is only required for the gravatar
         // implementation presently.
@@ -408,11 +423,23 @@ class user_picture implements renderable {
                 // picture for the correct theme.
                 $path .= $page->theme->name.'/';
             }
-            // Set the image URL to the URL for the uploaded file and return.
-            $url = moodle_url::make_pluginfile_url(
-                    $contextid, 'user', 'icon', null, $path, $filename, false, $this->includetoken);
-            $url->param('rev', $this->user->picture);
-            return $url;
+
+            // BEGIN LSU FERPA photos.
+            $ferpaphotos = isset($CFG->ferpaphotos)?$CFG->ferpaphotos:0;
+            if ($ferpaphotos == 0) {
+                // Set the image URL to the URL for the uploaded file and return.
+                $url = moodle_url::make_pluginfile_url(
+                       $contextid, 'user', 'icon', null, $path, $filename, false, $this->includetoken);
+                $url->param('rev', $this->user->picture);
+                return $url;
+            } else if ($is_self or $is_teacher or $can_view_details) {
+                // Set the image URL to the URL for the uploaded file and return.
+                $url = moodle_url::make_pluginfile_url(
+                       $contextid, 'user', 'icon', null, $path, $filename, false, $this->includetoken);
+                $url->param('rev', $this->user->picture);
+                return $url;
+            }
+            // END LSU FERPA photos.
         }
 
         if ($this->user->picture == 0 and !empty($CFG->enablegravatar)) {
