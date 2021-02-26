@@ -52,6 +52,13 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 
 $strmymoodle = get_string('myhome');
 
+// BEGIN LSU site_home requirement.
+// Requires non priveleged users to use site_home instead of dashboard.
+if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
+    redirect(new moodle_url('/', array('redirect' => 0)));
+}
+// END LSU site_home requirement.
+
 if (isguestuser()) {  // Force them to see system default, no editing allowed
     // If guests are not allowed my moodle, send them to front page.
     if (empty($CFG->allowguestmymoodle)) {
