@@ -97,6 +97,10 @@ if (has_capability('moodle/grade:manage', $systemcontext)
 
         $temp->add(new admin_setting_special_gradelimiting());
 
+        // BEGIN LSU Grade Privacy Aggreement.
+        $temp->add(new admin_setting_configcheckbox('privacy_ack', new lang_string('privacy_ack', 'grades'), new lang_string('privacy_ack_help', 'grades'), 0));
+        // END LSU Grade Privacy Aggreement.
+
         $temp->add(new admin_setting_configcheckbox('grade_report_showmin',
                                                     get_string('minimum_show', 'grades'),
                                                     get_string('minimum_show_help', 'grades'), '1'));

@@ -906,3 +906,10 @@ $string['manipulatecategories_help'] = 'Curve and offset category totals';
 $string['gradeitemmanualrecompute'] = 'Manual item recompute';
 $string['gradeitemmanualrecompute_help'] = 'Allow the gradebook to automatically adjust the raw grade boundaries when editing the real grade boundaries for Manual items.<br /><strong>When enabled, you will have the option of manipulating category totals.</strong>';
 // END LSU Manual Grade Raw Grade support.
+
+// BEGIN LSU Grade Privacy Aggreement.
+$string['privacy_ack'] = 'Student privacy';
+$string['privacy_ack_help'] = 'This setting blocks anyone from downloading student grades without confirming they will comply with all laws and policies regarding student rights.';
+$string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
+$string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
+// END LSU Grade Privacy Aggreement.
