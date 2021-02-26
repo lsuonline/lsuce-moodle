@@ -51,6 +51,18 @@ if (has_capability('moodle/grade:manage', $systemcontext)
 
         $temp->add(new admin_setting_configselect('grade_export_displaytype', new lang_string('gradeexportdisplaytype', 'grades'),
                                                   new lang_string('gradeexportdisplaytype_desc', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
+        // BEGIN LSU Manual Grade Raw Grade support.
+        $temp->add(new admin_setting_configcheckbox('grade_item_manual_recompute',
+            new lang_string('gradeitemmanualrecompute', 'grades'),
+            new lang_string('gradeitemmanualrecompute_help', 'grades'), 0));
+
+        $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
+        if ($manualraw) {
+            $temp->add(new admin_setting_configcheckbox('manipulate_categories',
+                new lang_string('manipulatecategories', 'grades'),
+                new lang_string('manipulatecategories_help', 'grades'), 0));
+        }
+        // END LSU Manual Grade Raw Grade support.
 
         $temp->add(new admin_setting_configselect('grade_export_decimalpoints', new lang_string('gradeexportdecimalpoints', 'grades'),
                                                   new lang_string('gradeexportdecimalpoints_desc', 'grades'), 2,

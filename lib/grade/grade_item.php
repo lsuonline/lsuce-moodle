@@ -773,6 +773,10 @@ class grade_item extends grade_object {
     public function regrade_final_grades($userid=null) {
         global $CFG, $DB;
 
+        // BEGIN LSU Manual Grade Raw Grade support.
+        $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
+        // END LSU Manual Grade Raw Grade support.
+
         // locked grade items already have correct final grades
         if ($this->is_locked()) {
             return true;
@@ -801,7 +805,9 @@ class grade_item extends grade_object {
                 return "Could not aggregate final grades for category:".$this->id; // TODO: improve and localize
             }
 
-        } else if ($this->is_manual_item()) {
+        // BEGIN LSU Manual Grade Raw Grade support.
+        } else if ($this->is_manual_item() && !$manualraw) {
+        // END LSU Manual Grade Raw Grade support.
             // manual items track only final grades, no raw grades
             return true;
 
@@ -828,6 +834,15 @@ class grade_item extends grade_object {
                     // this grade is locked - final grade must be ok
                     continue;
                 }
+
+                // BEGIN LSU Manual Grade Raw Grade support.
+                if ($this->is_manual_item() and $manualraw) {
+                    $maxscale = ($this->grademax / $grade->rawgrademax);
+                    $grade->rawgrademax = $this->grademax;
+                    $grade->rawgrademin = $this->grademin;
+                    $grade->rawgrade = $this->bounded_grade($grade->rawgrade);
+                }
+                // END LSU Manual Grade Raw Grade support.
 
                 $grade->finalgrade = $this->adjust_raw_grade($grade->rawgrade, $grade->rawgrademin, $grade->rawgrademax);
 
@@ -875,10 +890,14 @@ class grade_item extends grade_object {
 
             // Standardise score to the new grade range
             // NOTE: skip if the activity provides a manual rescaling option.
-            $manuallyrescale = (component_callback_exists('mod_' . $this->itemmodule, 'rescale_activity_grades') !== false);
-            if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
-                $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
+            // BEGIN LSU Manual Grade Raw Grade support.
+            if ($this->itemtype != 'manual') {
+                $manuallyrescale = (component_callback_exists('mod_' . $this->itemmodule, 'rescale_activity_grades') !== false);
+                if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
+                    $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
+                }
             }
+            // END LSU Manual Grade Raw Grade support.
 
             // Apply other grade_item factors
             $rawgrade *= $this->multfactor;
@@ -1164,7 +1183,20 @@ class grade_item extends grade_object {
      * @return bool
      */
     public function is_raw_used() {
-        return ($this->is_external_item() and !$this->is_calculated() and !$this->is_outcome_item());
+        // BEGIN LSU Manual Grade Raw Grade support.
+        global $CFG;
+        $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
+        if($CFG->manipulate_categories) {
+            $manipulatable_item = ($this->is_category_item() or $this->is_course_item());
+        } else {
+            $manipulatable_item = NULL;
+        }
+        if($manualraw) {
+            return ($this->is_manual_item() or $this->is_external_item() or $manipulatable_item and !$this->is_calculated() and !$this->is_outcome_item());
+        } else {
+            return ($this->is_external_item() and !$this->is_calculated() and !$this->is_outcome_item());
+        }
+        // END LSU Manual Grade Raw Grade support.
     }
 
     /**
@@ -1814,6 +1846,15 @@ class grade_item extends grade_object {
             $this->force_regrading();
             return false;
         }
+
+        // BEGIN LSU Manual Grade Raw Grade support.
+        if ($this->is_manual_item()) {
+            return $this->update_raw_grade(
+                $userid, $finalgrade, $source, $feedback, $feedbackformat,
+                $usermodified, null, null, $grade
+            );
+        }
+        // END LSU Manual Grade Raw Grade support.
 
         $oldgrade = new stdClass();
         $oldgrade->finalgrade     = $grade->finalgrade;

@@ -1094,6 +1094,13 @@ class grade_report_grader extends grade_report {
 
                 } else if ($USER->gradeediting[$this->courseid]) {
 
+                    // BEGIN LSU Manual Grade Raw Grade support. 
+                    $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
+                    if ($item->is_manual_item() and $manualraw) {
+                        $gradeval = $grade->rawgrade;
+                    }
+                    // END LSU Manual Grade Raw Grade support.
+
                     if ($item->scaleid && !empty($scalesarray[$item->scaleid])) {
                         $itemcell->attributes['class'] .= ' grade_type_scale';
                     } else if ($item->gradetype == GRADE_TYPE_VALUE) {
