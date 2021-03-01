@@ -1611,12 +1611,41 @@ class grade_item extends grade_object {
 
             // Reset all but the the extra credit field.
             $this->aggregationcoef2 = $defaults['aggregationcoef2'];
-            $this->weightoverride = $defaults['weightoverride'];
+
+            // BEGIN LSU Weighted Mean Extra Credit
+            if ($from == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $to == GRADE_AGGREGATE_SUM && $this->aggregationcoef == 1) {
+                $this->weightoverride = 1;
+                $this->aggregationcoef = '1.00000';
+                $this->aggregationcoef2 = '0.00000';
+            } else {
+                $this->weightoverride = $defaults['weightoverride'];
+            }
+            // END LSU Weighted Mean Extra Credit
 
             if ($to != GRADE_AGGREGATE_EXTRACREDIT_MEAN) {
                 // Normalise extra credit, except for 'Mean with extra credit' which supports higher values than 1.
                 $this->aggregationcoef = min(1, $this->aggregationcoef);
             }
+
+        // BEGIN LSU Weighted Mean Extra Credit
+        } else if (($from == GRADE_AGGREGATE_WEIGHTED_MEAN && $to == GRADE_AGGREGATE_SUM) && $this->aggregationcoef <= 0) {
+            $this->weightoverride = 1;
+            $this->aggregationcoef2 = '0.00000';
+            $this->aggregationcoef = '1.00000';
+        } else if (($from == GRADE_AGGREGATE_SUM && $to == GRADE_AGGREGATE_WEIGHTED_MEAN) && ($this->aggregationcoef = 1 && $this->weightoverride == 1)) {
+            $this->aggregationcoef2 = $defaults['aggregationcoef2'];
+            $this->weightoverride = $defaults['weightoverride'];
+            $this->aggregationcoef = '-1.00000';
+        } else if ($from == GRADE_AGGREGATE_WEIGHTED_MEAN && $to == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $this->aggregationcoef <= 0) {
+            $this->aggregationcoef = '1.00000';
+            $this->aggregationcoef2 = $defaults['aggregationcoef2'];
+            $this->weightoverride = '1';
+        } else if ($from == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $to == GRADE_AGGREGATE_WEIGHTED_MEAN && $this->aggregationcoef == 1) {
+            $this->aggregationcoef = $this->aggregationcoef * -1;
+            $this->aggregationcoef2 = $defaults['aggregationcoef2'];
+            $this->weightoverride = '1';
+        // END LSU Weighted Mean Extra Credit
+
         } else {
             // Reset all.
             $this->aggregationcoef = $defaults['aggregationcoef'];

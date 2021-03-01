@@ -179,7 +179,19 @@ if ($mform->is_cancelled()) {
         }
 
     } else {
+
+        // BEGIN LSU Weighted Mean Extra Credit
+        $ectest = isset($data->extracred);
+        if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ectest == 1) {
+            $gradeitem->aggregationcoef = $gradeitem->aggregationcoef <> 0 ? abs($gradeitem->aggregationcoef) * -1 : -1;
+        }
+        if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
+            $gradeitem->aggregationcoef2 = 0;
+            $gradeitem->weightoverride = 1;
+        }
+
         $gradeitem->update();
+        // END LSU Weighted Mean Extra Credit
 
         if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {
             $newmin = $gradeitem->grademin;
