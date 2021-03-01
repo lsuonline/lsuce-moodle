@@ -913,3 +913,8 @@ $string['privacy_ack_help'] = 'This setting blocks anyone from downloading stude
 $string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
 $string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
 // END LSU Grade Privacy Aggreement.
+
+// BEGIN LSU SWM unweighted extra credit option
+$string['w_ec'] = 'Weighted ' . $string['aggregationcoefextra'];
+$string['w_ec_help'] = 'By default, '.$string['aggregationcoefextra'].' items in either the '.$string['aggregateweightedmean2'].' or '.$string['aggregatesum'].' grade categories are weighted. Uncheck this option to allow extra credit items to simply add points to the aggregated category total.';
+// END LSU SWM unweighted extra credit option

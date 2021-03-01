@@ -144,6 +144,10 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_configmultiselect('grade_aggregations_visible', new lang_string('aggregationsvisible', 'grades'),
                                                        new lang_string('aggregationsvisiblehelp', 'grades'), $defaultvisible, $options));
 
+        // BEGIN LSU SWM unweighted extra credit option
+        $temp->add(new admin_setting_configcheckbox('grade_w_extra_credit', new lang_string('w_ec', 'grades'), new lang_string('w_ec_help', 'grades'), '1'));
+        // END LSU SWM unweighted extra credit option
+
         $options = array(0 => new lang_string('no'), 1 => new lang_string('yes'));
 
         $defaults = array('value'=>1, 'forced'=>false, 'adv'=>true);

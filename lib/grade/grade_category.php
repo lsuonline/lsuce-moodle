@@ -1131,19 +1131,29 @@ class grade_category extends grade_object {
                 $weightsum = 0;
                 $sum       = null;
 
-                foreach ($grade_values as $itemid=>$grade_value) {
-                    if ($items[$itemid]->aggregationcoef > 0) {
-                        continue;
-                    }
+                // BEGIN LSU SWM unweighted extra credit option
+                $extrasum  = 0;
+                $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
 
+                foreach ($grade_values as $itemid=>$grade_value) {
                     $weight = $items[$itemid]->grademax - $items[$itemid]->grademin;
                     if ($weight <= 0) {
                         continue;
                     }
 
-                    $weightsum += $weight;
+                    if (!empty($weighted_ec) && $items[$itemid]->aggregationcoef > 0) {
+                        continue;
+                    } else if (empty($weighted_ec) && $items[$itemid]->aggregationcoef > 0) {
+                        $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                        continue;
+                    }
+
+                    if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) {
+                        $weightsum += $weight;
+                    }
                     $sum += $weight * $grade_value;
                 }
+                // END LSU SWM unweighted extra credit option
 
                 // Handle the extra credit items separately to calculate their weight accurately.
                 foreach ($grade_values as $itemid => $grade_value) {
@@ -1159,7 +1169,12 @@ class grade_category extends grade_object {
 
                     $oldsum = $sum;
                     $weightedgrade = $weight * $grade_value;
-                    $sum += $weightedgrade;
+
+                    // BEGIN LSU SWM unweighted extra credit option
+                    if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) {
+                        $sum += $weightedgrade;
+                    }
+                    // END LSU SWM unweighted extra credit option
 
                     if ($weights !== null) {
                         if ($weightsum <= 0) {
@@ -1211,6 +1226,9 @@ class grade_category extends grade_object {
                         }
                     }
                 }
+                // BEGIN LSU SWM unweighted extra credit option
+                $agg_grade += $extrasum;
+                // END LSU SWM unweighted extra credit option
                 break;
 
             case GRADE_AGGREGATE_EXTRACREDIT_MEAN: // special average
@@ -1400,13 +1418,30 @@ class grade_category extends grade_object {
                 // right values there, and restore them afterwards.
                 $oldgrademax = $this->grade_item->grademax;
                 $oldgrademin = $this->grade_item->grademin;
+
+                // BEGIN LSU SWM unweighted extra credit option
+                $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
+                $extrasum = 0;
+                $normalextrasum = $extrasum;
+                // END LSU SWM unweighted extra credit option
+
                 foreach ($grade_values as $itemid => $gradevalue) {
                     if (!isset($extracredititems[$itemid])) {
                         continue;
                     }
                     $oldsum = $sum;
                     $weightedgrade = $gradevalue * $userweights[$itemid] * $grademax;
-                    $sum += $weightedgrade;
+                    // BEGIN LSU SWM unweighted extra credit option
+                    if (!empty($weighted_ec)) {
+                        $sum += $weightedgrade;
+                    } else {
+                         if (isset($extracredititems[$itemid])) {
+                            $extrasum += $gradevalue * $userweights[$itemid] * $grademax;
+                         } else {
+                             $sum += $gradevalue;
+                         }
+                    }
+                    // END LSU SWM unweighted extra credit option
 
                     // Only go through this when we need to record the weights.
                     if ($weights !== null) {
@@ -1436,13 +1471,18 @@ class grade_category extends grade_object {
                 $this->grade_item->grademax = $oldgrademax;
                 $this->grade_item->grademin = $oldgrademin;
 
+                // BEGIN LSU SWM unweighted extra credit option
+                $normalextrasum = ($extrasum / $grademax); // Normalize Extra Credit.
+
                 if ($grademax > 0) {
-                    $agg_grade = $sum / $grademax; // Re-normalize score.
+                    $agg_grade = ($sum / $grademax); // Re-normalize score.
+                    $agg_grade += $normalextrasum; // Add Extra Credit.
                 } else {
                     // Every item in the category is extra credit.
                     $agg_grade = $sum;
                     $grademax = $sum;
                 }
+                // END LSU SWM unweighted extra credit option
 
                 break;
 
