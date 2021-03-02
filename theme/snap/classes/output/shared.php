@@ -793,6 +793,44 @@ EOF;
             }
         }
 
+        // Begin LSU Enhancement fix quickmail icon not showing up for students in course.
+        if ( \core_component::get_component_directory('block_quickmail') !== null) {
+
+            // Check course config
+            $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $COURSE->id], '', 'name,value');
+
+            // Get the master block config for Quickmail.
+            $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
+
+            // Determine Quickmail allowstudents for this course.
+            if ((int) $blockconfig < 0) {
+                $courseallowstudents = 0;
+            } else {
+                $courseallowstudents = array_key_exists('allowstudents', $courseconfig) ?
+                    $courseconfig['allowstudents'] :
+                    $blockconfig;
+            }
+
+            // Show QM icon and link for those who cansend OR students.
+            if (has_capability('block/quickmail:cansend', $coursecontext) OR $courseallowstudents == 1) {
+                // Set the icon appropriate for the version.
+                if ($CFG->version > 2017051500.00) {
+                    $iconurl = $OUTPUT->image_url('t/email', 'core');
+                } else {
+                    $iconurl = $OUTPUT->pix_url('t/email', 'core');
+                }
+
+                // Build the HTML for the icon.
+                $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                // Build the link and add it to the array of links.
+                $links[] = array(
+                    'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
+                    'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
+                 );
+            }
+        }
+        // End LSU Enhancement fix quickmail icon no showing up for students in course.
+
         $config = get_config('tool_ally');
         $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);
         $runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
