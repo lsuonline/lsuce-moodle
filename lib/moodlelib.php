@@ -6151,11 +6151,15 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     // and that the senders email setting is either displayed to everyone, or display to only other users that are enrolled
     // in a course with the sender.
     } else if ($usetrueaddress && can_send_from_real_email_address($from, $user)) {
-        if (!validate_email($from->email)) {
-            debugging('email_to_user: Invalid from-email '.s($from->email).' - not sending');
-            // Better not to use $noreplyaddress in this case.
-            return false;
+        // BEGIN LSU Quickmail alternate email option.
+        if ($CFG->altsendfrom <> 1) {
+            if (!validate_email($from->email)) {
+                debugging('email_to_user: Invalid from-email '.s($from->email).' - not sending');
+                // Better not to use $noreplyaddress in this case.
+                return false;
+            }
         }
+        // END LSU Quickmail alternate email option.
         $mail->From = $from->email;
         $fromdetails = new stdClass();
         $fromdetails->name = fullname($from);
