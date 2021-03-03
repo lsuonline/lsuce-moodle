@@ -52,7 +52,7 @@ $string['migrate_gradesoverridden_notdelete'] = 'Original mod_hvp activity "{$a-
     is configured with an invalid maximum grade (it has to be higher than 0 in order to be migrated to the gradebook).
     The original activity has been hidden instead of removing it.';
 $string['nohvpactivities'] = 'There are no mod_hvp activities to migrate to the mod_h5pactivity.';
-$string['pluginname'] = 'Migrate content from mod_hvp to mod_h5pactivity';
+$string['pluginname'] = 'H5P plugin to core.';
 $string['keeporiginal'] = 'Select what to do with the original activity once migrated';
 $string['keeporiginal_hide'] = 'Hide the original activity';
 $string['keeporiginal_delete'] = 'Delete the original activity';
