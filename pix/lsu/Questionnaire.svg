@@ -1,0 +1,21 @@
+<svg width="100%" height="100%" viewBox="0 0 417 417" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;">
+<g>
+  <g>
+    <g>
+      <path d="M384.583,9.167c14.167,-0 25,10.833 25,23.75l0,349.166c0,13.334 -11.25,23.75 -25,23.75l-247.5,0c-13.75,0 -25,-10.833 -25,-23.75l0,-349.166c0,-13.334 11.25,-23.75 25,-23.75l247.5,-0Z" style="fill:#fff;fill-rule:nonzero;stroke:#999;stroke-width:12.5px;" />
+      <path d="M240.946,206.583l-0,-62.833l47.387,0" style="fill:none;fill-rule:nonzero;stroke:#999;stroke-width:12.5px;" />
+      <path d="M183.75,207.083l104.583,0" style="fill:none;fill-rule:nonzero;stroke:#999;stroke-width:12.5px;" />
+      <path d="M240.829,207.425l0,67.575l47.504,0" style="fill:none;fill-rule:nonzero;stroke:#999;stroke-width:12.5px;" />
+    </g>
+    <g>
+      <circle cx="340.833" cy="275" r="11.25" style="fill:#999;stroke:#999;stroke-width:17.38px;stroke-linecap:butt;stroke-linejoin:miter;" />
+      <circle cx="340.833" cy="205.833" r="11.25" style="fill:#999;stroke:#999;stroke-width:17.38px;stroke-linecap:butt;stroke-linejoin:miter;" />
+      <circle cx="340.833" cy="141.667" r="11.25" style="fill:#999;stroke:#999;stroke-width:17.38px;stroke-linecap:butt;stroke-linejoin:miter;" />
+    </g>
+  </g>
+  <g>
+    <circle cx="110" cy="208.333" r="100" style="fill:#ff9800;stroke:#ff9800;stroke-width:12.5px;" />
+    <path d="M51.667,209.167l46.666,45.833m0,0l63.75,-84.167" style="fill:none;fill-rule:nonzero;stroke:#fff;stroke-width:20.83px;" />
+  </g>
+</g>
+</svg>
