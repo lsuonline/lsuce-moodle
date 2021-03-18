@@ -107,7 +107,7 @@ class block_ce_enrollinfo extends block_base {
                 FROM {user} u
                 INNER JOIN {user_enrolments} ue ON ue.userid = u.id
                 INNER JOIN {enrol} e ON e.id = ue.enrolid
-            WHERE e.enrol = 'manual'
+            WHERE e.enrol = 'imsenterprise'
                 AND u.id = ?
                 AND ue.status = 0
                 AND e.courseid = ?";
@@ -125,10 +125,11 @@ class block_ce_enrollinfo extends block_base {
         }
 
         // Add 56 days (8 weeks) to $startdate to find $eightweekdate.
+        // Changed to 21 days (3 weeks) -- strtotime becomes +21, not +56 20190104 pvz.
         if (isset($startdate) != null) {
-            $eightweekdate = date( 'l, F j, Y', strtotime ( '+56 day', $startdate ));
+            $threeweekdate = date( 'l, F j, Y', strtotime ( '+21 day', $startdate ));
         } else {
-            $eightweekdate = "";
+            $threeweekdate = "";
         }
 
         // Format $startdate for easy reading.
@@ -192,7 +193,7 @@ class block_ce_enrollinfo extends block_base {
         $this->content->text .= '<br /><br />';
         $this->content->text .= get_string('cestring_formattedstartdate', 'block_ce_enrollinfo', $formattedstartdate);
         $this->content->text .= '<br /><br />';
-        $this->content->text .= get_string('cestring_eightweekdate', 'block_ce_enrollinfo', $eightweekdate);
+        $this->content->text .= get_string('cestring_threeweekdate', 'block_ce_enrollinfo', $threeweekdate);
         $this->content->text .= '<br /><br />';
         $this->content->text .= get_string('cestring_formattedenddate', 'block_ce_enrollinfo', $formattedenddate);
         $this->content->text .= '<br /><br />';

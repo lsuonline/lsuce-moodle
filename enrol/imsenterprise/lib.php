@@ -450,6 +450,9 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
      */
     protected function process_person_tag($tagcontents) {
         global $CFG, $DB;
+        // BEGIN LSU change to add moodle lib for sending passwords.
+        require_once($CFG->dirroot . '/lib/moodlelib.php');
+        // END LSU change to add moodle lib for sending passwords.
 
         // Get plugin configs.
         $imssourcedidfallback   = $this->get_config('imssourcedidfallback');
@@ -547,8 +550,19 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
             if ($imsupdateusers) {
                 if ($id = $DB->get_field('user', 'id', array('idnumber' => $person->idnumber))) {
                     $person->id = $id;
-                    $DB->update_record('user', $person);
+		    // BEGIN LSU change to add passwords for manual users without them.
+                    // $passs = $DB->get_field('user', 'password', array('idnumber' => $person->idnumber));
+                    // $auths = $DB->get_field('user', 'auth', array('idnumber' => $person->idnumber));
+                    // END LSU change to add passwords for manual users without them.
+		    $DB->update_record('user', $person);
                     $this->log_line("Updated user $person->username");
+                    // BEGIN LSU change to add passwords for manual users without them.
+                    // if ($passs === '' && $auths === 'manual') {
+                    //    set_user_preference('auth_forcepasswordchange', 1, $id);
+                    //    set_user_preference('create_password', 1, $id);
+                    //    $this->log_line("Sending $person->username password via cron");
+                    // }
+                    // END LSU change to add passwords for manual users without them.
                 } else {
                     $this->log_line("Ignoring update request for non-existent user $person->username");
                 }
@@ -577,11 +591,23 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                         $auth = reset($auth);
                         $person->auth = $auth;
                     }
+                    // BEGIN LSU change to add passwords for manual users without them.
+                    if ($person->auth == 'manual') {
+                        $person->password = 'to be generated';
+                    }
+                    // END LSU change to add passwords for manual users without them.
                     $person->confirmed = 1;
                     $person->timemodified = time();
                     $person->mnethostid = $CFG->mnet_localhost_id;
                     $id = $DB->insert_record('user', $person);
                     $this->log_line("Created user record ('.$id.') for user '$person->username' (ID number $person->idnumber).");
+                    // BEGIN LSU change to add passwords for manual users without them.
+                    if ($person->password == 'to be generated') {
+                        set_user_preference('auth_forcepasswordchange', 1, $id);
+                        set_user_preference('create_password', 1, $id);
+                        $this->log_line("Sending $person->username password via cron");
+                    }
+                    // END LSU change to add passwords for manual users without them.
                 }
             } else if ($createnewusers) {
                 $this->log_line("User record already exists for user '$person->username' (ID number $person->idnumber).");
@@ -701,7 +727,9 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                             $einstance = $DB->get_record('enrol', array('id' => $enrolid));
                         }
 
-                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end);
+                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
+                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end, $status = ENROL_USER_ACTIVE);
+                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
 
                         $this->log_line("Enrolled user #$memberstoreobj->userid ($member->idnumber) "
                             ."to role $member->roletype in course $memberstoreobj->course");
@@ -746,7 +774,10 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                             array('enrol' => $memberstoreobj->enrol, 'courseid' => $courseobj->id));
                         foreach ($einstances as $einstance) {
                             // Unenrol the user from all imsenterprise enrolment instances.
-                            $this->unenrol_user($einstance, $memberstoreobj->userid);
+                            // BEGIN LSU suspend user versus unenrol them.
+                            // $this->unenrol_user($einstance, $memberstoreobj->userid);
+                            $this->update_user_enrol($einstance, $memberstoreobj->userid, ENROL_USER_SUSPENDED);
+                            // END LSU suspend user versus unenrol them.
                         }
 
                         $membersuntally++;
@@ -807,14 +838,20 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         // Explanatory note: The matching will ONLY match if the attribute restrict="1"
         // because otherwise the time markers should be ignored (participation should be
         // allowed outside the period).
-        if (preg_match('{<begin\s+restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}is', $string, $matches)) {
+
+        // BEGIN LSU change to start / end time.
+        $matches = array();
+        if (preg_match('{<begin restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}', $string, $matches)) {
             $ret->begin = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
         }
 
         $matches = array();
-        if (preg_match('{<end\s+restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</end>}is', $string, $matches)) {
-            $ret->end = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
+        // Example time: 2021-01-13 - 10:52:13.
+        if (preg_match('{<end restrict="1">(\d\d\d\d)-(\d\d)-(\d\d) - (\d\d):(\d\d):(\d\d)</end>}', $string, $matches)) {
+            $ret->end = mktime($matches[4], $matches[5], $matches[6], $matches[2], $matches[3], $matches[1]);
         }
+        // END LSU change to add time.
+
         return $ret;
     }
 

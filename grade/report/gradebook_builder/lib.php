@@ -288,6 +288,7 @@ class grade_report_gradebook_builder extends grade_report {
         $help_step_4 = get_string('help_step_4', 'gradereport_gradebook_builder');
         $help_step_5 = get_string('help_step_5', 'gradereport_gradebook_builder');
         $help_step_6 = get_string('help_step_6', 'gradereport_gradebook_builder');
+        $help_step_7 = get_string('help_step_7', 'gradereport_gradebook_builder');
 
         $step_1 = get_string('step_1', 'gradereport_gradebook_builder');
         $step_2 = get_string('step_2', 'gradereport_gradebook_builder');
@@ -425,12 +426,17 @@ class grade_report_gradebook_builder extends grade_report {
                             html_writer::tag('li', 
                                 $help_step_4) 
                             .
-                            html_writer::tag('li', 
-                                $help_step_5) 
+
+                            html_writer::tag('li',
+                                $help_step_5)
                             .
                             html_writer::tag('li', 
-                                $help_step_6)
-                        ),
+                                $help_step_6) 
+			) . 
+                        html_writer::tag('div',
+                            $help_step_7,
+                        ['class' => 'help_instructions'])
+                        ,
                     ['id' => 'howto']),
                 ['class' => 'col-md-7 col-lg-6']),
             ['class' => 'row']),

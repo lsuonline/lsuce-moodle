@@ -53,3 +53,6 @@ $string['profilefielddesc'] = '<strong>THIS MUST EXIST!</strong><br />The field 
 $string['nopermissions'] = 'You do not have permissions to upload to this profile field.';
 $string['settingstitle'] = 'Settings';
 $string['settingshelp'] = 'Select some sane defaults';
+
+$string['updateoptions'] = 'Update Options';
+$string['updateoptionsdesc'] = 'Add new and delete missing profile field data OR add and update new profile field data only.';

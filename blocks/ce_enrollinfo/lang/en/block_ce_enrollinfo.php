@@ -35,6 +35,6 @@ defined('MOODLE_INTERNAL') || die();
     $string['ce_timezone'] = 'All times in US Central time.';
     $string['cestring_lsuid'] = 'LSUID: <strong> {$a} </strong>';
     $string['cestring_formattedstartdate'] = 'Start Date: <strong> {$a} </strong>';
-    $string['cestring_eightweekdate'] = 'Eight-Week Date: <strong> {$a} </strong>';
+    $string['cestring_threeweekdate'] = 'Three-Week Date: <strong> {$a} </strong>';
     $string['cestring_formattedenddate'] = 'End Date: <strong> {$a} </strong>';
     $string['cestring_formattedtimeleft'] = 'Time Left: <strong> {$a} </strong>';

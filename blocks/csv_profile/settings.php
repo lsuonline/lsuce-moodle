@@ -30,7 +30,7 @@ if ($ADMIN->fulltree) {
         new admin_setting_heading('block_csv_profile/heading'
                                 , get_string('settingstitle', 'block_csv_profile')
                                 , get_string('settingshelp', 'block_csv_profile')));
-    $options = array(0 => 'username', 1 => 'email', 2 => 'idnumber');
+    $options = array(0 => 'id', 1 => 'username', 2 => 'email', 3 => 'idnumber');
     $settings->add(new admin_setting_configselect('block_csv_profile/userfield'
                                 , get_string('userfield', 'block_csv_profile')
                                 , get_string('userfielddesc', 'block_csv_profile')
@@ -40,4 +40,10 @@ if ($ADMIN->fulltree) {
                                 , get_string('profilefield', 'block_csv_profile')
                                 , get_string('profilefielddesc', 'block_csv_profile')
                                 , ''));
+    $updateoptions = array(0 => 'Insert, Update, and Delete', 1 => 'Insert and Update Only');
+    $settings->add(new admin_setting_configselect('block_csv_profile/updateoptions'
+                                , get_string('updateoptions', 'block_csv_profile')
+                                , get_string('updateoptionsdesc', 'block_csv_profile')
+                                , ''
+                                , $updateoptions));
 }
