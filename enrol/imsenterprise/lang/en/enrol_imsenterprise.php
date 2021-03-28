@@ -93,3 +93,8 @@ $string['roles'] = 'Roles';
 $string['ignore'] = 'Ignore';
 $string['importimsfile'] = 'Import IMS Enterprise file';
 $string['privacy:metadata'] = 'The IMS Enterprise file enrolment plugin does not store any personal data.';
+
+// BEGIN LSU IMS Profile Field support.
+$string['profilefield'] = 'User profile field';
+$string['profilefielddesc'] = 'Specify an additional profile field you want populated by the IMS file. The IMS Enterprise file must be contained in the <profile_field> tag in the member area.';
+// END LSU IMS Profile Field support.

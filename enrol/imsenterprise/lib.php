@@ -462,6 +462,12 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         $createnewusers         = $this->get_config('createnewusers');
         $imsupdateusers         = $this->get_config('imsupdateusers');
 
+        // BEGIN LSU IMS Profile Field support.
+        $pfield                 = $this->get_config('profilefield');
+        $pfielddata             = $DB->get_record('user_info_field', array('shortname'=>$pfield), 'id', IGNORE_MISSING);
+        $profilefieldid         = $pfielddata->id;
+        // END LSU IMS Profile Field support.
+
         $person = new stdClass();
         if (preg_match('{<sourcedid>.*?<id>(.+?)</id>.*?</sourcedid>}is', $tagcontents, $matches)) {
             $person->idnumber = trim($matches[1]);
@@ -486,6 +492,18 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         if (preg_match('{<userid\s+authenticationtype\s*=\s*"*(.+?)"*>.*?</userid>}is', $tagcontents, $matches)) {
             $person->auth = trim($matches[1]);
         }
+
+        // BEGIN LSU IMS Profile Field support.
+        $matches = array();
+        if (preg_match('{<profile_field\s+fieldname\s*=\s*"*(.+?)"*>.*?</profile_field>}is', $tagcontents, $matches)) {
+            $person->pfieldsn = trim($matches[1]);
+        }
+
+        $matches = array();
+        if (preg_match('{<profile_field.*?>(.*?)</profile_field>}is', $tagcontents, $matches)) {
+            $person->pfieldvalue = trim($matches[1]);
+        }
+        // END LSU IMS Profile Field support.
 
         if ($imssourcedidfallback && trim($person->username) == '') {
             // This is the point where we can fall back to useing the "sourcedid" if "userid" is not supplied.
@@ -550,19 +568,26 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
             if ($imsupdateusers) {
                 if ($id = $DB->get_field('user', 'id', array('idnumber' => $person->idnumber))) {
                     $person->id = $id;
-		    // BEGIN LSU change to add passwords for manual users without them.
-                    // $passs = $DB->get_field('user', 'password', array('idnumber' => $person->idnumber));
-                    // $auths = $DB->get_field('user', 'auth', array('idnumber' => $person->idnumber));
-                    // END LSU change to add passwords for manual users without them.
 		    $DB->update_record('user', $person);
                     $this->log_line("Updated user $person->username");
-                    // BEGIN LSU change to add passwords for manual users without them.
-                    // if ($passs === '' && $auths === 'manual') {
-                    //    set_user_preference('auth_forcepasswordchange', 1, $id);
-                    //    set_user_preference('create_password', 1, $id);
-                    //    $this->log_line("Sending $person->username password via cron");
-                    // }
-                    // END LSU change to add passwords for manual users without them.
+                    // BEGIN LSU IMS Profile Field support.
+                    if (isset($person->pfieldvalue) && isset($profilefieldid)) {
+                        $infodataid              = $DB->get_record('user_info_data', array('fieldid' => $profilefieldid, 'userid' => $person->id), 'id', IGNORE_MISSING);
+                        $infodata                = new stdClass();
+                        $infodata->userid        = $person->id;
+                        $infodata->fieldid       = $profilefieldid;
+                        $infodata->data          = $person->pfieldvalue;
+                        $infodata->dataformat    = 0;
+                        if ($infodataid) {
+                            $infodata->id = $infodataid->id;
+                            $DB->update_record('user_info_data', (array) $infodata, $bulk = false);
+                            $this->log_line("Updated $pfield for existing user $person->username");
+                        } else {
+                            $DB->insert_record('user_info_data', $infodata);
+                            $this->log_line("Inserted $pfield for existing user $person->username");
+                        }
+                    }
+                    // END LSU IMS Profile Fild Support.
                 } else {
                     $this->log_line("Ignoring update request for non-existent user $person->username");
                 }
@@ -591,6 +616,13 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                         $auth = reset($auth);
                         $person->auth = $auth;
                     }
+
+                    // BEGIN LSU IMS Profile Field support. 
+                    if (empty($person->pfieldsn)) {
+                        $person->pfieldsn = $pfield;
+		    }
+                    // END LSU IMS Profile Field support.
+
                     // BEGIN LSU change to add passwords for manual users without them.
                     if ($person->auth == 'manual') {
                         $person->password = 'to be generated';
@@ -600,6 +632,27 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                     $person->timemodified = time();
                     $person->mnethostid = $CFG->mnet_localhost_id;
                     $id = $DB->insert_record('user', $person);
+
+                    // BEGIN LSU IMS Profile Field support.
+                    if (isset($person->pfieldvalue) && isset($profilefieldid)) {
+                        $infodataid              = $DB->get_record('user_info_data', array('fieldid' => $profilefieldid, 'userid' => $id), 'id', IGNORE_MISSING);
+                        $infodata                = new stdClass();
+                        $infodata->userid        = $id;
+                        $infodata->fieldid       = $profilefieldid;
+                        $infodata->data          = $person->pfieldvalue;
+                        $infodata->dataformat    = 0;
+
+                        if (isset($infodataid->id)) {
+                            $infodata->id = $infodataid->id;
+                            $DB->update_record('user_info_data', (array) $infodata, $bulk = false);
+                            $this->log_line("Updated $pfield for new user $person->username");
+                        } else {
+                            $DB->insert_record('user_info_data', $infodata);
+                            $this->log_line("Inserted $pfield for new user $person->username");
+                        }
+                    }
+                    // END LSU IMS Profile Field support.
+
                     $this->log_line("Created user record ('.$id.') for user '$person->username' (ID number $person->idnumber).");
                     // BEGIN LSU change to add passwords for manual users without them.
                     if ($person->password == 'to be generated') {

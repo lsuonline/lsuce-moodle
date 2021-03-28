@@ -135,6 +135,11 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/imscapitafix',
         get_string('usecapitafix', 'enrol_imsenterprise'), get_string('usecapitafix_desc', 'enrol_imsenterprise'), 0));
 
+    // BEGIN LSU IMS Profile Field support.
+    $settings->add(new admin_setting_configtext('enrol_imsenterprise/profilefield',
+        get_string('profilefield', 'enrol_imsenterprise'), get_string('profilefielddesc', 'enrol_imsenterprise'), ''));
+    // END LSU IMS Profile Field support.
+
     $importurl = new moodle_url('/enrol/imsenterprise/importnow.php', array('sesskey' => sesskey()));
     $importnowstring = get_string('aftersaving...', 'enrol_imsenterprise').' ';
     $importnowstring .= html_writer::link($importurl, get_string('doitnow', 'enrol_imsenterprise'));
