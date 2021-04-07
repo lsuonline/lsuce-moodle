@@ -150,6 +150,30 @@ function backadel_backup_course($course) {
     // Build the path.
     $backadelpath = get_config('block_backadel', 'path');
 
+// Some excessive debugging to figure out what's going on.
+echo"\n\n";
+echo"\n\nBC: ";
+var_dump($bc);
+echo"\n\nOutcome: ";
+var_dump($outcome);
+echo"\n\nResults: ";
+var_dump($results);
+echo"\n\nFile: ";
+var_dump($file);
+echo"\n\nSuffix: ";
+var_dump($suffix);
+echo"\n\nMatchers: ";
+var_dump($matchers);
+echo"\n\nSafeshort: ";
+var_dump($safeshort);
+echo"\n\nBackadelfile: ";
+var_dump($backadelfile);
+echo"\n\nBackadelpath: ";
+var_dump($backadelpath);
+echo"\n\nCopy contents to: ";
+echo ($CFG->dataroot . $backadelpath . $backadelfile);
+echo"\n\n";
+
     // Copy the file to the destination.
     $file->copy_content_to($CFG->dataroot . $backadelpath . $backadelfile);
 
