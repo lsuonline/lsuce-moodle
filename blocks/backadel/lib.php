@@ -131,58 +131,231 @@ function backadel_backup_course($course) {
     // Required files for the backups.
     require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
     require_once($CFG->dirroot . '/backup/controller/backup_controller.class.php');
+    require_once($CFG->dirroot . '/backup/util/helper/backup_cron_helper.class.php');
 
-    // Setup the backup controller.
-    $bc = new backup_controller(backup::TYPE_1COURSE, $course->id,
-        backup::FORMAT_MOODLE, backup::INTERACTIVE_NO, backup::MODE_AUTOMATED, 2);
-    $outcome = $bc->execute_plan();
-    $results = $bc->get_results();
-    $file = $results['backup_destination'];
+    // Generate the Filename suffix.
     $suffix = generate_suffix($course->id);
     $matchers = array('/\s/', '/\//');
 
-    // Ensure the shortname is safe.
+    // Build the basis for the filename.
     $safeshort = preg_replace($matchers, '-', $course->shortname);
 
-    // Name the file.
+    // Assemble the filename from constituent parts.
     $backadelfile = "backadel-{$safeshort}{$suffix}.zip";
 
     // Build the path.
-    $backadelpath = get_config('block_backadel', 'path');
+    $backadelpath = $CFG->dataroot . get_config('block_backadel', 'path');
 
-// Some excessive debugging to figure out what's going on.
-echo"\n\n";
-echo"\n\nBC: ";
-var_dump($bc);
-echo"\n\nOutcome: ";
-var_dump($outcome);
-echo"\n\nResults: ";
-var_dump($results);
-echo"\n\nFile: ";
-var_dump($file);
-echo"\n\nSuffix: ";
-var_dump($suffix);
-echo"\n\nMatchers: ";
-var_dump($matchers);
-echo"\n\nSafeshort: ";
-var_dump($safeshort);
-echo"\n\nBackadelfile: ";
-var_dump($backadelfile);
-echo"\n\nBackadelpath: ";
-var_dump($backadelpath);
-echo"\n\nCopy contents to: ";
-echo ($CFG->dataroot . $backadelpath . $backadelfile);
-echo"\n\n";
+    // Set the userid.
+    $userid = 2;
 
-    // Copy the file to the destination.
-    $file->copy_content_to($CFG->dataroot . $backadelpath . $backadelfile);
+    // Set up the config for backup.
+    $config = get_config('backup');
 
-    // Kill the backup controller.
+    // Grab the specified directory for automated backups.
+    $dir = $config->backup_auto_destination;
+
+    // The default outcome here is success.
+    $outcome = 1;
+
+    // Grab the backup storage location (0: course, 1: specified dir, 2: both).
+    $storage = (int)$config->backup_auto_storage;
+
+    // Build the backup controller.
+    $bc = new backup_controller(backup::TYPE_1COURSE, $course->id, backup::FORMAT_MOODLE, backup::INTERACTIVE_NO,
+        backup::MODE_AUTOMATED, $userid);
+
+    // Try some stuff.
+    try {
+
+        // Set the default filename.
+        $format = $bc->get_format();
+        $type = $bc->get_type();
+        $id = $bc->get_id();
+        $users = $bc->get_plan()->get_setting('users')->get_value();
+        $anonymised = $bc->get_plan()->get_setting('anonymize')->get_value();
+        $incfiles = (bool)$config->backup_auto_files;
+        $bc->get_plan()->get_setting('filename')->set_value(backup_plan_dbops::get_default_backup_filename($format, $type,
+            $id, $users, $anonymised, false, $incfiles));
+
+        $filename = backup_plan_dbops::get_default_backup_filename($format, $type, $course->id, $users, $anonymised,
+            !$config->backup_shortname);
+
+        // Get the full path filename for the Moodle backup.
+        $mfname = $dir . '/' . $filename;
+
+        // Get the full path filename for the proposed backadel filename.
+        $bdfname = $backadelpath . $backadelfile;
+
+        // Set the status for the backup logs.
+        $bc->set_status(backup::STATUS_AWAITING);
+
+        // Actually do the backup.
+        $bc->execute_plan();
+        $results = $bc->get_results();
+        $outcome = outcome_from_results($results);
+
+        // This gives us the file in the temp location for use later.
+        $file = $results['backup_destination']; // May be empty if file already moved to target location.
+
+        // Copy the file from the course storage area to backadel and cleanly delete it.
+        if ($storage === 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath)) {
+
+            // Try to copy the file from the course file-area to the backadel area.
+            if ($file->copy_content_to($bdfname)) {
+
+                // Yay! It worked. Log it.
+                $bc->log('Backup file copied successfully to the specified backadel folder - ',
+                        backup::LOG_INFO, $bdfname);
+
+                // Generate different output if the course has no instructors.
+                if (!empty($suffix)) {
+                    mtrace('Copy successful from course automated backup area to - ' . $bdfname);
+                } else {
+                    mtrace('Copy successful for course without instructors - ' . $bdfname);
+                }
+
+                // Set the outcome and buresult for later use.
+                $outcome = 1;
+                $buresult = true;
+
+                // Delete the file from the course backup area on successful save to backadel file area.
+                if (!empty($file)) {
+                    $file->delete();
+                }
+            } else {
+
+                // The copy_contents_to failed. Log it accordingly.
+                $bc->log('Attempt to copy backup file to the specified backadel failed - ',
+                        backup::LOG_ERROR, $bdfname);
+                mtrace('Copy failed from course automated backup area to - ' . $bdfname);
+
+                // Set the outcome and buresult for later use.
+                $outcome = 0;
+                $buresult = false;
+
+                // Delete the file from the course backup area on failed save to backadel file area.
+                if (!empty($file)) {
+                    $file->delete();
+                }
+            }
+
+        // We're now working with a specified directory for backup storage.
+        } else if ($storage !== 0 && (empty($backadelpath) || !is_dir($backadelpath) || !is_writable($backadelpath))) {
+
+            // The backadel path is either not specified or not a directory or not writeable. Log it accordingly.
+            $bc->log('Specified backup directory is not writable - ', backup::LOG_ERROR, $backadelpath);
+            mtrace('Backadel failed: Specified backup directory is not writable - ' . $backadelpath);
+
+            // Set the outcome and buresult for later use.
+            $outcome = 0;
+            $buresult = false;
+
+            // Unlink the Moodle backup.
+            @unlink($mfname);
+
+        // Looks like we the backadel path is specified and a writeable directory. Let's double check to see if the Moodle backup is missing.
+        } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath) && !file_exists($mfname)) {
+
+            // The file does not exist, log accordingly.
+            $bc->log('Source backup file does not exist - ', backup::LOG_ERROR, $mfname);
+            mtrace('Backadel failed: Source backup file does not exist - ' . $mfname);
+
+            // Set the outcome and buresult for later use.
+            $outcome = 0;
+            $buresult = false;
+
+            // Unlink the Moodle backup.
+            @unlink($mfname);
+
+        // Now we're cooking with gas and everything looks good. Let's triple check everything is good to go.
+        } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath) && file_exists($mfname)) {
+
+            // GTG! Now we can sleep for a second just to make sure the file is finished copying in it's entrirety to the specified destination.
+            sleep(1);
+
+            // Try to rename the file from the Moodle file location to the backadel file location.
+            if (rename($mfname, $bdfname)) {
+
+                // Yay! Everything worked. Let's log accordingly.
+                $bc->log('Rename successful - ', backup::LOG_INFO, $backadelpath);
+
+                // Generate different output if the course has no instructors.
+                if (!empty($suffix)) {
+                    mtrace('Rename successful - ' . $mfname . ' to ' . $bdfname);
+                } else {
+                    mtrace('Rename successful for course without instructors - ' . $bdfname);
+                }
+
+                // Set the outcome and buresult for later use.
+                $outcome = 1;
+                $buresult = true;
+            } else {
+
+                // The rename failed. Log accordingly.
+                $bc->log('Rename failed - ', backup::LOG_ERROR, $bdfname);
+                mtrace('Rename failed - ' . $mfname . ' to ' . $bdfname);
+
+                // Set the outcome and buresult for later use.
+                $outcome = 0;
+                $buresult = false;
+
+                // The rename failed, so let's delete this file from the Moodle specified directory for automated backups.
+                if ($storage !== 0 && !empty($mfname) && file_exists($mfname)) {
+                    @unlink($mfname);
+                }
+            }
+        } else {
+            // Super catch-all for something else failing. Better safe than ignorant.
+            $bc->log('Something else failed - ', backup::LOG_ERROR, $bdfname);
+            mtrace('Something else failed generating ' . $bdfname);
+
+            // Set the outcome and buresult for later use.
+            $outcome = 0;
+            $buresult = false;
+        }
+
+    // Catch and log stuff.
+    } catch (moodle_exception $e) {
+        $bc->log('backup_auto_failed_on_course', backup::LOG_ERROR, $course->shortname); // Log error header.
+        $bc->log('Exception: ' . $e->errorcode, backup::LOG_ERROR, $e->a, 1); // Log original exception problem.
+        $bc->log('Debug: ' . $e->debuginfo, backup::LOG_DEBUG, null, 1); // Log original debug information.
+        $outcome = 0;
+    }
+
+    // destroy and unset the backup controller.
     $bc->destroy();
     unset($bc);
 
-    return true;
+    // Return either true or false.
+    return $buresult;
 }
+
+
+    /**
+     * Returns the backup outcome by analysing its results.
+     *
+     * @param array $results returned by a backup
+     * @return int {@link self::BACKUP_STATUS_OK} and other constants
+     */
+    function outcome_from_results($results) {
+        $outcome = 1;
+        foreach ($results as $code => $value) {
+            // Each possible error and warning code has to be specified in this switch
+            // which basically analyses the results to return the correct backup status.
+            switch ($code) {
+                case 'missing_files_in_pool':
+                    $outcome = 4;
+                    break;
+            }
+            // If we found the highest error level, we exit the loop.
+            if ($outcome == 0) {
+                break;
+            }
+        }
+        return $outcome;
+    }
+
 
 /**
  * Email the admins

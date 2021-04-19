@@ -56,7 +56,7 @@ class backup_task extends \core\task\scheduled_task {
 function begin_backup_task() {
     global $DB, $CFG;
 
-    mtrace('begin cron for BACKADEL!!!!!!!!!!!!!!!!!!!1');
+    mtrace('Begin cron for BACKADEL!!!!!!!!!!!!!!!!!!!');
 
     // Grab the running status.
     $running = get_config('block_backadel', 'running');
@@ -80,7 +80,7 @@ function begin_backup_task() {
     $errorlog = '';
 
     // Set the running status to now.
-    set_config('running', time(), 'block_backadel');
+    // set_config('running', time(), 'block_backadel');
 
     // Loop through the courses to get backed up.
     foreach ($backups as $b) {
@@ -88,9 +88,11 @@ function begin_backup_task() {
         echo "\n" . get_string('backing_up', 'block_backadel') . ' ' . $course->shortname . "\n";
 
         // Log any failures.
-        if (!backadel_backup_course($course)) {
-            $error = true;
+        $error = !backadel_backup_course($course);
+        if ($error) {
             $errorlog .= get_string('cron_backup_error', 'block_backadel', $course->shortname) . "\n";
+        } else {
+           $errorlog .= $course->shortname . " backed up successfully.\n";
         }
 
         // Convert the status to the acceptable FAIL / SUCCESS keyword.

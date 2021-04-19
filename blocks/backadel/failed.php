@@ -20,10 +20,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 require_once('../../config.php');
-require_once('lib.php');
+require_once($CFG->dirroot . '/blocks/backadel/lib.php');
 
 require_login();
 
@@ -53,7 +51,7 @@ $cleandata = array();
 
 if ($data = data_submitted()) {
     foreach ($data as $key => $value) {
-        $cleandata[$key] = clean_param($value, PARAM_CLEAN);
+        $cleandata[$key] = clean_param_array($value, PARAM_CLEAN);
     }
 
     foreach ($cleandata['failed'] as $id) {
