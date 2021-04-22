@@ -302,9 +302,6 @@ function backadel_backup_course($course) {
         // Now we're cooking with gas and everything looks good. Let's triple check everything is good to go.
         } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath) && file_exists($mfname)) {
 
-            // GTG! Now we can sleep for a second just to make sure the file is finished copying in it's entrirety to the specified destination.
-            sleep(1);
-
             // Try to rename the file from the Moodle file location to the backadel file location.
             if (rename($mfname, $bdfname)) {
 

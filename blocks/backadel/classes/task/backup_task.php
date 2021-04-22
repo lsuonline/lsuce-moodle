@@ -65,7 +65,8 @@ function begin_backup_task() {
     if ($running) {
         $minutesrun = round((time() - $running) / 60);
         echo "\n" . get_string('cron_already_running', 'block_backadel', $minutesrun) . "\n";
-        return;
+	// We no longer need ot do this now that scheduled tasks take care of this for us.
+        // return;
     }
 
     // Set up the params.
@@ -80,7 +81,7 @@ function begin_backup_task() {
     $errorlog = '';
 
     // Set the running status to now.
-    // set_config('running', time(), 'block_backadel');
+    set_config('running', time(), 'block_backadel');
 
     // Loop through the courses to get backed up.
     foreach ($backups as $b) {

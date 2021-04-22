@@ -31,11 +31,10 @@ $string['block_failed'] = 'Failures';
 $string['block_large_backups'] = 'Large Backups';
 $string['backing_up'] = 'Backing Up';
 $string['backadel_settings'] = 'Backup and Delete Settings';
-$string['status_running'] = 'Running for {$a} minute(s)';
+$string['status_running'] = 'Running: {$a}.';
 $string['cron_backup_error'] = 'Error backing up {$a}';
 $string['status_not_running'] = 'Not Running';
-$string['cron_already_running'] = 'Skipping backadel, it has already been ' .
-    'running for {$a} minute(s)';
+$string['cron_already_running'] = 'Backadel claims it has been running for {$a} minute(s), but the task manager disagrees.';
 $string['backuptask'] = 'Backup job';
 
 // Stings shared by pages.
