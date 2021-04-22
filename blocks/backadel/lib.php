@@ -197,7 +197,7 @@ function backadel_backup_course($course) {
         $mfname = $dir . '/' . $filename;
 
         // Due to moodle backup not returning filenames and naming them with the minute attached, we have to do stupid stuff.
-        if (!file_exists($mfname)) {
+        if ($storage !== 0 && !file_exists($mfname)) {
 
             // Print this to the task logs so we see it initially failed.
             mtrace('Moodle backup file does not exist at initial location - ' . $mfname);
