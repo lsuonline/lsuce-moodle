@@ -181,12 +181,6 @@ function backadel_backup_course($course) {
         $filename = backup_plan_dbops::get_default_backup_filename($format, $type, $course->id, $users, $anonymised,
             !$config->backup_shortname);
 
-        // Get the full path filename for the Moodle backup.
-        $mfname = $dir . '/' . $filename;
-
-        // Get the full path filename for the proposed backadel filename.
-        $bdfname = $backadelpath . $backadelfile;
-
         // Set the status for the backup logs.
         $bc->set_status(backup::STATUS_AWAITING);
 
@@ -197,6 +191,12 @@ function backadel_backup_course($course) {
 
         // This gives us the file in the temp location for use later.
         $file = $results['backup_destination']; // May be empty if file already moved to target location.
+
+        // Get the full path filename for the Moodle backup.
+        $mfname = $dir . '/' . $filename;
+
+        // Get the full path filename for the proposed backadel filename.
+        $bdfname = $backadelpath . $backadelfile;
 
         // Copy the file from the course storage area to backadel and cleanly delete it.
         if ($storage === 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath)) {
