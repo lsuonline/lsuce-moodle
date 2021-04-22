@@ -57,6 +57,26 @@ if (!empty($issuedbadge->recipient->id)) {
     $issuer = $assertion->get_issuer();
     if (!($issuerentityid = badges_external_get_mapping($sitebackpack->id, OPEN_BADGES_V2_TYPE_ISSUER, $issuer['email']))) {
         $response = $api->put_issuer($issuer);
+
+echo"<br><br><br><br><br><br>";
+echo"<br>badge: ";
+var_dump($badge);
+
+echo"<br><br>user backpack: ";
+var_dump($backpack);
+
+echo"<br><br>site backpack: ";
+var_dump($sitebackpack);
+
+echo"<br><br>assertion: ";
+var_dump($assertion);
+
+echo"<br><br>issuer: ";
+var_dump($issuer);
+
+echo"<br><br>response: ";
+var_dump($response);
+
         if (!$response) {
             throw new moodle_exception('invalidrequest', 'error');
         }

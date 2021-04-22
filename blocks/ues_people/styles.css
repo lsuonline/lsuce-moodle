@@ -9,3 +9,7 @@
 .ues_people .fullname a:link {
   text-decoration: none !important;
 }
+
+.theme-snap .ues_people #region-main {
+  max-width: none;
+}

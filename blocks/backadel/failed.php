@@ -21,7 +21,7 @@
  */
 
 require_once('../../config.php');
-require_once($CFG->dirroot . '/blocks/backadel/lib.php');
+require_once('lib.php');
 
 require_login();
 
