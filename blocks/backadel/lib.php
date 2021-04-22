@@ -168,7 +168,7 @@ function backadel_backup_course($course) {
     // Try some stuff.
     try {
 
-        // Set the default filename.
+        // Set up the stuff to set the default filename.
         $format = $bc->get_format();
         $type = $bc->get_type();
         $id = $bc->get_id();
@@ -178,22 +178,53 @@ function backadel_backup_course($course) {
         $bc->get_plan()->get_setting('filename')->set_value(backup_plan_dbops::get_default_backup_filename($format, $type,
             $id, $users, $anonymised, false, $incfiles));
 
+        // Set the filename PRIOR to completing the backup, we'll do some checking later on.
         $filename = backup_plan_dbops::get_default_backup_filename($format, $type, $course->id, $users, $anonymised,
             !$config->backup_shortname);
 
         // Set the status for the backup logs.
         $bc->set_status(backup::STATUS_AWAITING);
 
-        // Actually do the backup.
+        // Do the backup.
         $bc->execute_plan();
         $results = $bc->get_results();
         $outcome = outcome_from_results($results);
 
-        // This gives us the file in the temp location for use later.
-        $file = $results['backup_destination']; // May be empty if file already moved to target location.
+        // May be empty if file already moved to target location.
+        $file = $results['backup_destination'];
 
         // Get the full path filename for the Moodle backup.
         $mfname = $dir . '/' . $filename;
+
+        // Due to moodle backup not returning filenames and naming them with the minute attached, we have to do stupid stuff.
+        if (!file_exists($mfname)) {
+
+            // Print this to the task logs so we see it initially failed.
+            mtrace('Moodle backup file does not exist at initial location - ' . $mfname);
+
+            // Grab a secondary filename after the abckup is completed in case the initial location is incorrect..
+            $filename = backup_plan_dbops::get_default_backup_filename($format, $type, $course->id, $users, $anonymised,
+                !$config->backup_shortname);
+
+            // Set the new location based on the updated filename.
+            $mfname = $dir . '/' . $filename;
+
+            // Print the new location so we can see what's going on.
+            mtrace('Trying secondary location - ' . $mfname);
+
+            // Some extra sanity checking to make sure the file name has not changed since we updated it and now.
+            if (!file_exists($mfname)) {
+
+                // Reset the filename yet again.
+                $filename = backup_plan_dbops::get_default_backup_filename($format, $type, $course->id, $users, $anonymised, !$config->backup_shortname);
+
+                // Rebuild the full path based on the new filename... again.
+                $mfname = $dir . '/' . $filename;
+
+                // Print the final location and hope we don't fail anymore.
+                mtrace('Secondary location does not exist, using tertiary location - ' . $mfname);
+            }
+        }
 
         // Get the full path filename for the proposed backadel filename.
         $bdfname = $backadelpath . $backadelfile;
