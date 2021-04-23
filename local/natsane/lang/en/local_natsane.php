@@ -20,3 +20,8 @@ $string['pluginname_desc'] = "Periodically unweights incorrctly weighted extra c
 // Task.
 $string['fix_courses_task'] = 'Adjust Natural Grades';
 $string['fix_kaltura_task'] = 'Fix restored kaltura items';
+$string['run_unenroll_dupes'] = 'Remove duplicate manual enrollments';
+
+// Email strings.
+$string['dupeusrinfo'] = "Remove duplicate manual enrollments";
+$string['dupesubject'] = "Remove duplicate enrollments";

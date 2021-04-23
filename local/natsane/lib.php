@@ -259,6 +259,93 @@ class natsane {
 
 
     /**
+     * Master function for unenrolling duplicate manual enrollments.
+     *
+     * When a user is enrolled both manually and via another method
+     * this task will find the duplicates, get the manual enrollment
+     * instance and unenrol that user from that manual instance.
+     *
+     * @return boolean
+     */
+    public function run_unenroll_dupes() {
+        global $CFG, $DB;
+
+        // Set up the SQL to grab the data.
+	$sql = "SELECT DISTINCT(ue.id) AS ueid,
+        ue.enrolid AS instanceid,
+	e.courseid AS courseid,
+	ue.userid AS userid,
+        COUNT(ue.userid) as counts,
+        IF(GROUP_CONCAT(e.enrol)LIKE '%imsenterprise%', 1, 0) AS usesims
+        FROM {enrol} e
+            INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+        WHERE e.enrol IN('imsenterprise', 'manual')
+        GROUP BY e.courseid, ue.userid HAVING COUNT(ue.userid) > 1
+        ORDER BY e.enrol ASC";
+
+        // Get the data set.
+        $duplicates = $DB->get_records_sql($sql);
+
+        // Set totalcount to 0;
+        $totalcount = 0;
+        // Get a count of records that we want to touch so we can exit quickly.
+        foreach($duplicates as $dupe) {
+            $totalcount += $dupe->usesims;
+        }
+
+        // Short circuit the scheduled task if there's nothing to fix.
+        if ($totalcount == 0) {
+            return true;
+        }
+
+        // Now that we know we're going to fix some stuff, let's begin.
+
+        // Set the start time so we can log how long this takes.
+        $starttime = microtime(true);
+
+        // Logs for duplicate enrollments.
+        $this->log("Beginning the process of removing duplicate manual enrollments.");
+
+        // Loop through the data.
+        foreach($duplicates as $duplicate) {
+            // Set up the data for use later.
+            $courseid    = $duplicate->courseid;
+            $userid      = $duplicate->userid;
+
+            // MAKE SURE the user has an IMS Enterprise Enrollment before removing the manual enrollments from the course.
+            if ($duplicate->usesims == 1) {
+
+                // Set the instances to manual enrollment instances that are duplicates to be removed.
+                $instances   = $DB->get_records('enrol', array('courseid'=>$courseid, 'enrol'=>'manual', 'status'=>ENROL_INSTANCE_ENABLED), 'sortorder,id');
+
+                // In case we have more than one manual enrollment instances, remove all of them, leaving the IMS Enrollment alone.
+                foreach($instances as $instance) {
+                    // Get the appropriate enrollment plugin for the instance.
+                    $plugin = enrol_get_plugin($instance->enrol);
+                    // Actually uneneroll the user.
+                    $plugin->unenrol_user($instance, $userid);
+                    // Log that we did it.
+                    $this->log("Unenrolled user id " . $userid . " from course id " . $courseid . " with " . $instance->enrol . " enrollment.");
+                }
+            }
+        }
+
+        // How long in seconds did this job take?
+        $elapsedtime = round(microtime(true) - $starttime, 2);
+
+        // Log the finish.
+        $this->log("Finished the process of removing duplicate manual enrollments.");
+        $this->log("The process took " . $elapsedtime. " seconds.");
+
+        // Set up the email strings.
+	$usrinfo = get_string('dupeusrinfo', 'local_natsane'); 
+	$subject = get_string('dupesubject', 'local_natsane') . ': [' . $CFG->wwwroot . ']'; 
+
+        // Send an email to administrators regarding the status of the job.
+        $this->email_log_report_to_admins($usrinfo, $subject);
+    }
+
+    /**
      * Emails a natural log report to admin users
      *
      * @return void
@@ -288,11 +375,30 @@ class natsane {
         // Get email content from email log.
         $emailcontent = implode("\n", $this->emaillog);
 
-        // Send to each admin.
+        // Send to admin.
         $users = get_admins();
         foreach ($users as $user) {
             $replyto = '';
             email_to_user($user, "Fix Kaltura items", sprintf('Kaltura item fixes for [%s]', $CFG->wwwroot), $emailcontent);
+        }
+    }
+
+    /**
+     * Emails a duplicate enrollment log report to admin users
+     *
+     * @return void
+     */
+    private function email_log_report_to_admins($usrinfo, $subject) {
+        global $CFG;
+
+        // Get email content from email log.
+        $emailcontent = implode("\n", $this->emaillog);
+
+        // Send to each admin.
+        $users = get_admins();
+        foreach ($users as $user) {
+            $replyto = '';
+            email_to_user($user, $usrinfo, $subject, $emailcontent);
         }
     }
 

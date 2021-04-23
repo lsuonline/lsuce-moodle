@@ -33,6 +33,15 @@ defined('MOODLE_INTERNAL') || die();
 // Define the task defaults.
 $tasks = array(
     array(
+        'classname' => 'local_natsane\task\unenroll_dupes',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '0',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ),
+    array(
         'classname' => 'local_natsane\task\fix_courses',
         'blocking' => 0,
         'minute' => '0',
