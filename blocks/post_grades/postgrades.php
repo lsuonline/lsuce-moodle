@@ -103,6 +103,9 @@ switch($period->post_type) {
     case 'midterm':
         $post_type = 'M';
         break;
+    case 'onlinemidterm':
+        $post_type = 'N';
+        break;
     case 'final':
         $post_type = 'F';
         break;
@@ -128,5 +131,12 @@ foreach ($postparams as $key => $value) {
 }
 
 $forward = $domino . implode('&', $transformed);
+
+// Add some debugging stuff in for testing. This will be disbled in prod and can be removed.
+if ($CFG->debug == 32767 && $CFG->debugdisplay > 0) {
+    echo'<br>Post grades URL: ';
+    print_r($forward);
+    die();
+}
 
 redirect($forward);

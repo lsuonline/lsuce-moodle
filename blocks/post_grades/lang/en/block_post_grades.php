@@ -45,7 +45,7 @@ $string['post_type_grades'] = 'Post {$a->post_type} Grades';
 $string['make_changes'] = 'Return to Gradebook';
 
 $string['nopublishing'] = 'Grade publishing has not been actived. Please contact the Moodle admin about this error.';
-$string['alreadyposted'] = 'You have already posted {$a->post_type} for {$a->name} from Moodle. If you have confirmed
+$string['alreadyposted'] = 'You have already posted {$a->post_type} grades for {$a->name} from Moodle. If you have confirmed
 that there was a problem with the transport, please contact the Moodle Administrator to allow you to post
 from Moodle once more.';
 
@@ -63,7 +63,7 @@ $string['student_audit'] = 'Auditing';
 $string['student_incomplete'] = 'Incomplete';
 
 // Form strings.
-$string['posting_for'] = '{$a->post_type} for {$a->fullname} {$a->course_name} Section {$a->sec_number}';
+$string['posting_for'] = '{$a->post_type} grades for {$a->fullname} {$a->course_name} Section {$a->sec_number}';
 $string['view_gradsheet'] = 'View Gradesheet';
 $string['reset_posting'] = 'Reset Postings';
 $string['find_postings'] = 'Find Postings';
@@ -77,7 +77,8 @@ $string['post_type'] = 'Posting Type';
 
 $string['no_students'] = 'No students for {$a}';
 
-$string['midterm'] = 'Midterms';
-$string['final'] = 'Finals';
-$string['degree'] = 'Degree Candidates';
+$string['midterm'] = 'Midterm';
+$string['onlinemidterm'] = 'Online Midterm';
+$string['final'] = 'Final';
+$string['degree'] = 'Degree Candidate';
 $string['test'] = 'PG Test';
