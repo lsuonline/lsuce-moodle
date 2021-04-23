@@ -23,8 +23,10 @@
 require_once('../../config.php');
 require_once('lib.php');
 
+// Require login.
 require_login();
 
+// Ensure the site admin is the page user.
 if (!is_siteadmin($USER->id)) {
     print_error('need_permission', 'block_backadel');
 }
@@ -44,27 +46,28 @@ $PAGE->set_url('/blocks/backadel/failed.php');
 $PAGE->requires->js('/blocks/backadel/js/jquery.js');
 $PAGE->requires->js('/blocks/backadel/js/toggle.js');
 
+// Output the page.
 echo $OUTPUT->header();
 echo $OUTPUT->heading($header);
 
 $cleandata = array();
 
+// Reschedule selected courses.
 if ($data = data_submitted()) {
     foreach ($data as $key => $value) {
         $cleandata[$key] = clean_param_array($value, PARAM_CLEAN);
     }
 
+    // Loop through the selected courses and update the backadel status.
     foreach ($cleandata['failed'] as $id) {
         $status = $DB->get_record('block_backadel_statuses',
             array('coursesid' => $id));
 
+        // Set the status as 'BACKUP' to reschedule.
         $status->status = 'BACKUP';
-
         $DB->update_record('block_backadel_statuses', $status);
-
         mtrace('<br />');
     }
-
     echo '<div>' . get_string('statuses_updated', 'block_backadel') . '</div>';
 }
 
@@ -72,35 +75,46 @@ if ($data = data_submitted()) {
 $failedids = $DB->get_fieldset_select('block_backadel_statuses',
     'coursesid', 'status = "FAIL"');
 
+// If we don't have nay failed backups.
 if (!$failedids) {
     echo '<div>' . get_string('none_failed', 'block_backadel') . '</div>';
 
-    $OUTPUT->footer();
-    die();
+    // Output the footer.
+    echo $OUTPUT->footer();
+    return true;
 }
 
+// Set the limits on the query.
 $where = 'id IN (' . implode(', ', $failedids) . ')';
 
+// Grab the list of failed courses.
 $courses = $DB->get_records_select('course', $where);
 
+// Set up a new table.
 $table = new html_table();
-
 $table->head = array(get_string('shortname'), get_string('fullname'), get_string('failed', 'block_backadel'));
 $table->data = array();
 
+// Loop through the list of courses.
 foreach ($courses as $c) {
+
+    // Build links.
     $url = new moodle_url('/course/view.php?id=' . $c->id);
     $link = html_writer::link($url, $c->shortname);
 
+    // Add checkboxes.
     $checkbox = html_writer::checkbox('failed[]', $c->id);
 
+    // Populate the table with links and checkboxes.
     $table->data[] = array($link, $c->fullname, $checkbox);
 }
 
+// Output the form.
 echo '<form action = "failed.php" method = "POST">';
 echo html_writer::table($table);
 echo html_writer::link('#', get_string('toggle_all', 'block_backadel'), array('class' => 'toggle_link'));
 echo '    <input type = "submit" value = "' . get_string('failed_button', 'block_backadel') . '"/>';
 echo '</form>';
 
+// Output the footer.
 echo $OUTPUT->footer();

@@ -15,8 +15,6 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Definition of the grade_forecast_report class is defined
- *
  * @package    block_backadel
  * @copyright  2016 Louisiana State University, Chad Mazilly, Robert Russo, Dave Elliott
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -24,6 +22,8 @@
 
 require_once('../../config.php');
 require_once('lib.php');
+
+// Require login.
 require_login();
 
 // Ensure the site admin is the page user.
@@ -34,12 +34,15 @@ if (!is_siteadmin($USER->id)) {
 // Page Setup.
 $blockname = get_string('pluginname', 'block_backadel');
 $header = get_string('delete_header', 'block_backadel');
+
 $context = context_system::instance();
 $PAGE->set_context($context);
+
 $PAGE->navbar->add($header);
 $PAGE->set_title($blockname);
 $PAGE->set_heading($SITE->shortname . ': ' . $blockname);
 $PAGE->set_url('/blocks/backadel/delete.php');
+
 $PAGE->requires->js('/blocks/backadel/js/jquery.js');
 $PAGE->requires->js('/blocks/backadel/js/toggle.js');
 
@@ -96,9 +99,8 @@ if (!$completedids) {
     echo '<div>' . get_string('none_completed', 'block_backadel') . '</div>';
 
     // Output the footer.
-    $OUTPUT->footer();
-    // Why die?
-    die();
+    echo $OUTPUT->footer();
+    return true;
 }
 
 // Set the limits on the query.
