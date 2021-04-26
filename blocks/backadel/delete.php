@@ -85,9 +85,8 @@ if ($deleteids) {
     $DB->delete_records_select('block_backadel_statuses', $where);
 
     // Output the footer.
-    $OUTPUT->footer();
-    // Why die?
-    die();
+    echo $OUTPUT->footer();
+    return true;
 }
 
 // List completed backups.
