@@ -1774,7 +1774,13 @@ class local {
             // TODO - when moodle gets private reply (anonymous) forums, we need to handle this here.
         }
 
-        if (!empty($hsuforumids)) {
+        // BEGIN LSU Removal of HSU Forum Post code.
+        if (!file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            unset($hsuforumids);
+        }
+
+        if (isset($hsuforumids) && !empty($hsuforumids)) {
+        // END LSU Removal of HSU Forum Post code.
             list($afinsql, $afinparams) = $DB->get_in_or_equal($hsuforumids, SQL_PARAMS_NAMED, 'finb');
             $params = array_merge($params, $afinparams);
             $params = array_merge($params,
@@ -1936,7 +1942,12 @@ class local {
 
         // We save both types of forums in the array $groupsid.
         $groupsid['forum'] = $DB->get_records_sql($sqlforum, $params);
-        $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+
+        // BEGIN LSU Removal of HSU Forum Post code.
+        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+        }
+        // END LSU Removal of HSU Forum Post code.
 
         return $groupsid;
     }
