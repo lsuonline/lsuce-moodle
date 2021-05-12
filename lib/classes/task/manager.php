@@ -36,6 +36,10 @@ define('CORE_TASK_TASKS_FILENAME', 'db/tasks.php');
  */
 class manager {
 
+    // BEGIN LSU LTG patch for tasks to run now.
+    const MR_CONFIG_FILE_VAR = "MR_CONFIG_FILENAME";
+    // END LSU LTG patch for tasks to run now.
+
     /**
      * Given a component name, will load the list of tasks in the db/tasks.php file for that component.
      *
@@ -961,8 +965,16 @@ class manager {
             $classname = get_class($task);
             $taskarg   = escapeshellarg("--execute={$classname}");
 
+            // BEGIN LSU LTG patch for tasks to run now.
+            $setconfig = '';
+            if (!empty($_SERVER['MR_CONFIG_FILENAME'])) {
+                $configfile = $_SERVER['MR_CONFIG_FILENAME'];
+                $setconfig = self::MR_CONFIG_FILE_VAR . "=" . $configfile;
+            }
+
             // Build the CLI command.
-            $command = "{$phpbinary} {$scriptpath} {$taskarg}";
+            $command = "{$setconfig} {$phpbinary} {$scriptpath} {$taskarg}";
+            // END LSU LTG patch for tasks to run now.
 
             // Execute it.
             passthru($command);
