@@ -27,9 +27,6 @@ namespace theme_snap\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
-// BEGIN LSU Enhancement add Kaltura my media.
-use context_system;
-// END LSU Enhancement add Kaltura my media.
 use core_component;
 use html_writer;
 use moodle_url;
@@ -833,18 +830,6 @@ EOF;
             }
         }
         // End LSU Enhancement fix quickmail icon no showing up for students in course.
-
-        // BEGIN LSU Enhancement add Kaltura my media.
-        if (has_capability('local/mymedia:view', context_system::instance())) {
-            $iconurl = $OUTPUT->image_url('lsu/kaltura', 'core');
-            $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-
-            $links[] = array(
-                'link' => 'local/mymedia/mymedia.php?courseid=' . $COURSE->id,
-                'title' => $mymediaicon.get_string('nav_mymedia', 'local_mymedia'),
-            );
-        }
-        // END LSU Enhancement add Kaltura my media.
 
         $config = get_config('tool_ally');
         $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);
