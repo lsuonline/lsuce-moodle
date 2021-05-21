@@ -887,7 +887,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         // Assignment - put due date in required, and attatchments in common settings.
                         var filemanager = $("#page-mod-assign-mod [data-fieldtype='filemanager']").closest('.form-group');
                         var duedate = $("#page-mod-assign-mod [for='id_duedate']").closest('.form-group');
-                        $("#page-mod-assign-mod .snap-form-advanced #id_modstandardelshdr .fcontainer").append(filemanager);
+                        $("#page-mod-assign-mod .snap-form-required #id_modstandardelshdr .fcontainer").append(filemanager);
                         $("#page-mod-assign-mod .snap-form-required .fcontainer").append(duedate);
 
                         // Move availablity at the top of advanced settings.
