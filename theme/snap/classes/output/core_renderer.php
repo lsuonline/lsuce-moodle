@@ -669,6 +669,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $data = (object) [
             'action' => $action,
             'logintoken' => $logintoken,
+            'forgotpasswordurl' => $CFG->forgottenpasswordurl,
         ];
         return $this->render_from_template('theme_snap/login_base_methods', $data);
     }
