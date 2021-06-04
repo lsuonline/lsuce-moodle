@@ -44,6 +44,27 @@ class quizaccess_biosigid extends quiz_access_rule_base
     }
 
     /**
+     * Sets up the attempt (review or summary) page with any special extra
+     * properties required by this rule. securewindow rule is an example of where
+     * this is used.
+     *
+     * @param moodle_page $page the page object to initialise.
+     */
+    public function setup_attempt_page($page) {
+        global $USER;
+
+        echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/3.1.3/signalr.min.js"></script>';
+
+        $stagingdomain = 'staging-sandbox.verifyexpress.com';
+        $configdomain = get_config('biosigid', 'domain');
+        $biodomain = (!empty($configdomain)) ? $configdomain : $stagingdomain;
+
+        $page->requires->js_call_amd('quizaccess_biosigid/config', 'init', array($biodomain));
+        $page->requires->js_call_amd('quizaccess_biosigid/eye', 'init', array($USER->email, $page->url->get_path(), $biodomain));
+
+    }
+
+    /**
      * cleanup left over session data for quiz
      */
     public function current_attempt_finished() {

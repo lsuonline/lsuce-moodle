@@ -25,7 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2020122400;      // The current module version (Date: YYYYMMDDXX)
+$plugin->version   = 2021051003;      // The current module version (Date: YYYYMMDDXX)
 $plugin->requires  = 2011112900;      // Requires this Moodle version
 $plugin->cron      = 0;               // Period for cron to check this module (secs)
 $plugin->component = 'mod_biosigid';  // To check on upgrade, that module sits in correct place
+$plugin->release = 'v1.0.3';  // To check on upgrade, that module sits in correct place

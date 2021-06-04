@@ -42,10 +42,22 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('biosigid/locale',
         get_string('locale', BIOSIGID_MODULE_NAME), "<strong style='color: red'>Required:</strong> " . get_string('configlocale', BIOSIGID_MODULE_NAME), 'en_US', PARAM_RAW, 40));
 
+    // Biosigid domain setting.
+    $settings->add(
+        new admin_setting_configtext(
+            'biosigid/domain',
+            get_string('biosigiddomain', 'mod_biosigid'),
+            get_string('biosigiddomain_desc', 'mod_biosigid'),
+            '',
+            PARAM_RAW,
+            60
+        )
+    );
+
     $settings->add(new admin_setting_heading('biosigidcustom', get_string('settings_custom', BIOSIGID_MODULE_NAME), get_string('configsettings_custom', BIOSIGID_MODULE_NAME)));
     $settings->add(new admin_setting_configtext('biosigid/custom1',
         get_string('custom1', BIOSIGID_MODULE_NAME), "<strong>Optional:</strong> " . get_string('configcustom1', BIOSIGID_MODULE_NAME), '', PARAM_RAW, 40));
-        
+
     //--- enc defaults -----------------------------------------------------------------------------------
     $settings->add(new admin_setting_heading('biosigidencdefaults', get_string('encdefaults', BIOSIGID_MODULE_NAME), get_string('configencdefaults', BIOSIGID_MODULE_NAME)));
     $settings->add(new admin_setting_configtext('biosigid/passphrase',

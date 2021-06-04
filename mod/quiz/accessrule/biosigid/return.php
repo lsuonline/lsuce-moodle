@@ -114,6 +114,7 @@ if ($ok) {    // check verify success
     if (!$ok) {
         $statusCode = 110;
     }
+    $SESSION->bsa = $params['bsa'];
 }
 
 // generate randomness for encrypted string

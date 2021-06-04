@@ -139,10 +139,12 @@ if ($ok) {
     $statusCode = 100;
     $courseurl = new moodle_url('/mod/biosigid/returned.php', array('id' => $courseid));
     $redirecturl = $courseurl->out();
+    // $redirecturl = 'https://027a6b39045a.ngrok.io/mod/biosigid/returned.php?id='.$courseid;
 } else {
     $status = "Failure";
     $courseurl = new moodle_url('/mod/biosigid/error.php', array('id' => $courseid));
     $redirecturl = $courseurl->out();
+    // $redirecturl = 'https://027a6b39045a.ngrok.io/mod/biosigid/error.php?id='.$courseid;
 }
 
 // Generate XML to return to BSI

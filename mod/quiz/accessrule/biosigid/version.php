@@ -23,12 +23,12 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2020081900; // our version
+$plugin->version   = 2021052802; // our version
 $plugin->requires  = 2011120500; // https://docs.moodle.org/dev/Releases -- required minimum moodle version
 $plugin->component = 'quizaccess_biosigid';
 $plugin->maturity  = MATURITY_STABLE; // MATURITY_ALPHA, MATURITY_BETA, MATURITY_RC or MATURITY_STABLE
-$plugin->release   = '1.0.0';
+$plugin->release   = '1.2.5';
 
 $plugin->dependencies = [
-    'mod_biosigid' => 2020031300
+    'mod_biosigid' => 2021051002
 ];
