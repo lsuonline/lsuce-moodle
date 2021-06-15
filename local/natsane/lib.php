@@ -393,7 +393,7 @@ class natsane {
         }
 
         // Send an email to administrators regarding this.
-//        $this->email_nlog_report_to_admins();
+        $this->email_clog_report_to_admins();
     }
 
     public static function build_course_module($kalturaitem) {
@@ -477,7 +477,24 @@ class natsane {
 
 
 
+    /**
+     * Emails a kalvidres conversion log to admin users
+     *
+     * @return void
+     */
+    private function email_clog_report_to_admins() {
+        global $CFG;
 
+        // Get email content from email log.
+        $emailcontent = implode("\n", $this->emaillog);
+
+        // Send to each admin.
+        $users = get_admins();
+        foreach ($users as $user) {
+            $replyto = '';
+            email_to_user($user, "Kaltura Video Resource conversion", sprintf('Converting KalVidRes for [%s]', $CFG->wwwroot), $emailcontent);
+        }
+    }
 
     /**
      * Emails a natural log report to admin users
