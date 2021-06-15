@@ -257,10 +257,6 @@ class natsane {
         $this->email_klog_report_to_admins();
     }
 
-
-
-
-
     /**
      * Master function for moving kaltura video assignments to urls.
      *
@@ -272,6 +268,14 @@ class natsane {
      */
     public function run_convert_kalvidres() {
         global $CFG, $DB;
+
+        // Let's be sure the table exists before we do anything.
+        $tableexists = ($DB->get_manager()->table_exists('local_kalpanmaps'));
+
+        // We need this for controlling item visibility.
+        if (!function_exists('set_coursemodule_visible')) {
+            require_once($CFG->dirroot . "/course/lib.php");
+        }
 
         // SQL to grab kaltura items to convert..
         $kpsql = 'SELECT km.id AS kmid,
@@ -304,13 +308,8 @@ class natsane {
         WHERE u.externalurl LIKE :exturl
             AND u.course = :cid';
 
-        $updatevis = 'UPDATE {course_modules} cm
-                SET cm.visible = 0
-            WHERE cm.visible = 1
-                AND cm.id = :cmid';
-
-        // Standard moodle function to get records from the above SQL.
-        $kpdata = $DB->get_records_sql($kpsql);
+        // If the table exists, use a standard moodle function to get records from the above SQL.
+        $kpdata = $tableexists ? $DB->get_records_sql($kpsql) : null;
 
         // Set the start time so we can log how long this takes.
         $starttime = microtime(true);
@@ -324,7 +323,8 @@ class natsane {
             $this->log("    Converting Kaltura Video Resource to Panoptp url.");
             foreach ($kpdata as $kalturaitem) {
                 // Grab an array of objects with previously converted kaltura item's courseids.
-                $dones = $DB->get_records_sql($donesql, ['cid' => $kalturaitem->courseid, 'exturl' => '%' . $kalturaitem->panoptoid . '%']);
+                $dones = $DB->get_records_sql($donesql,
+                         ['cid' => $kalturaitem->courseid, 'exturl' => '%' . $kalturaitem->panoptoid . '%']);
 
                 // Set this to false so we don't break unless needed.
                 $found = false;
@@ -333,13 +333,17 @@ class natsane {
                 foreach ($dones as $done) {
                     // Check to see if we've converted this kmid for this course already.
                     if($done->courseid == $kalturaitem->courseid && $done->kmid == $kalturaitem->kmid) {
-                        $this->log("        Skipping already converted Kaltura itemid: " . $kalturaitem->kalturaid . " for courseid: " . $kalturaitem->courseid . " with existing urlid: " . $done->urlid . ".");
+                        $this->log("        Skipping already converted Kaltura itemid: " . 
+                                   $kalturaitem->kalturaid . " for courseid: " . 
+                                   $kalturaitem->courseid . " with existing urlid: " . $done->urlid . ".");
                         $found = true;
 
                         // Hide the corresponding kalura item if configured to do so and it's not already hidden.
                         if ($kalturaitem->modvis == 1 && $CFG->local_natsane_kalvidres_postconv_hide == 1) {
-                            $DB->execute($updatevis, ['cmid' => $kalturaitem->cmid]);
-                            $this->log("            Hiding old kaltura item: " . $kalturaitem->kalturaid . " with already existing url: " . $done->urlid . " in courseid: " . $kalturaitem->courseid . ".");
+		            set_coursemodule_visible($kalturaitem->cmid, 0, $visibleoncoursepage = 1);
+                            $this->log("            Hiding old kaltura item: " . $kalturaitem->kalturaid . 
+                                       " with already existing url: " . $done->urlid . " in courseid: " .
+                                       $kalturaitem->courseid . ".");
                         }
 
                         // Get outta here.
@@ -360,14 +364,17 @@ class natsane {
 
                 // Hide the corresponding kalura item if configured to do so and it's not already hidden.
                 if ($kalturaitem->modvis == 1 && $CFG->local_natsane_kalvidres_conv_hide == 1) {
-                    $DB->execute($updatevis, ['cmid' => $kalturaitem->cmid]);
-                    $this->log("                Hiding old kaltura item: " . $kalturaitem->kalturaid . " with already existing url in courseid: " . $kalturaitem->courseid . ".");
+		    set_coursemodule_visible($kalturaitem->cmid, 0, $visibleoncoursepage = 1);
+                    $this->log("                Hiding old kaltura item: " . $kalturaitem->kalturaid . 
+                               " with already existing url in courseid: " . $kalturaitem->courseid . ".");
                 }
 
                 // Rebuild the course cache JUST IN CASE.
-                rebuild_course_cache($kalturaitem->courseid, true);
+                // rebuild_course_cache($kalturaitem->courseid, true);
 
-                $this->log("            Finished creating the new url with panopto id: " . $kalturaitem->panoptoid . " and hiding the old kaltura item with id: " . $kalturaitem->krid  . ".");
+                $this->log("            Finished creating the new url with panopto id: " . 
+                           $kalturaitem->panoptoid . " and hiding the old kaltura item with id: " . 
+                           $kalturaitem->krid  . ".");
                 $this->log("        Panopto url itemid: " . $kalturaitem->panoptoid . " has been created.");
             }
 
@@ -377,7 +384,8 @@ class natsane {
 
             // How long in seconds did this job take.
             $elapsedtime = round(microtime(true) - $starttime, 3);
-            $this->log("The process to convert Kaltura Video Resources to Panopto urls took " . $elapsedtime . " seconds.");
+            $this->log("The process to convert Kaltura Video Resources to Panopto urls took " . 
+                       $elapsedtime . " seconds.");
         } else {
 
             // We did not have anything to do.
@@ -424,7 +432,7 @@ class natsane {
         unset($newcm->id);
 
         $cmid = $DB->insert_record("course_modules", $newcm);
-        rebuild_course_cache($newcm->course, true);
+        // rebuild_course_cache($newcm->course, true);
         return $cmid;
     }
 
@@ -454,15 +462,7 @@ class natsane {
         $module->printintro = $config->printintro;
 
         if (!function_exists('url_add_instance')) {
-            $lib_file = $CFG->dirroot . '/mod/url/lib.php';
-            if (!file_exists($lib_file)) {
-
-// TODO: do soemthing else
-echo'NO FILE';
-// TODO: do soemthing else
-
-            }
-            require_once $lib_file;
+            require_once($CFG->dirroot . '/mod/url/lib.php');
         }
 
         $module->id = url_add_instance($module, null);
