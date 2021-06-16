@@ -29,34 +29,14 @@ if ($hassiteconfig) {
         1 => get_string('yes')
     ];
 
-    $settings = new admin_settingpage('local_natsane', get_string('convert_kalvidres', 'local_natsane'));
+    $settings = new admin_settingpage('local_natsane', get_string('pluginname', 'local_natsane'));
 
     $ADMIN->add('localplugins', $settings);
 
     $settings->add(
         new admin_setting_heading(
             'local_natsane_header', '',
-            get_string('convert_kalvidres_help', 'local_natsane')
-        )
-    );
-
-    $settings->add(
-        new admin_setting_configselect(
-            'local_natsane_kalvidres_conv_hide',
-            get_string('hide_kaltura_items', 'local_natsane'),
-            get_string('hide_kaltura_items_help', 'local_natsane'),
-            0, // Default.
-            $yesno
-        )
-    );
-
-    $settings->add(
-        new admin_setting_configselect(
-            'local_natsane_kalvidres_postconv_hide',
-            get_string('hide_kaltura_items2', 'local_natsane'),
-            get_string('hide_kaltura_items2_help', 'local_natsane'),
-            0, // Default.
-            $yesno
+            get_string('pluginname', 'local_natsane')
         )
     );
 }

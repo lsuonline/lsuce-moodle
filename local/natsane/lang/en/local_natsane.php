@@ -20,11 +20,3 @@ $string['pluginname_desc'] = "Periodically unweights incorrctly weighted extra c
 // Task.
 $string['fix_courses_task'] = 'Adjust Natural Grades';
 $string['fix_kaltura_task'] = 'Fix restored kaltura items';
-$string['convert_kalvidres'] = 'Convert KalVidRes to URLs';
-$string['convert_kalvidres_help'] = 'Converts Kaltura Video Resources to Moodle URL resources.';
-
-// Settings.
-$string['hide_kaltura_items'] = 'Hide kalvidres';
-$string['hide_kaltura_items_help'] = 'Hides kaltura Video Resource items on conversion.';
-$string['hide_kaltura_items2'] = 'Hide converted';
-$string['hide_kaltura_items2_help'] = 'Hides previously converted kaltura Video Resource items when found.';

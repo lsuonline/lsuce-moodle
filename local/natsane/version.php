@@ -22,7 +22,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2021061002;
+$plugin->version = 2021061602;
 $plugin->requires = 2015111600;
 $plugin->component = 'local_natsane';
 $plugin->maturity = MATURITY_STABLE;
