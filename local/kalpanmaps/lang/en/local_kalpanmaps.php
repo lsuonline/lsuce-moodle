@@ -31,10 +31,16 @@ $string['import_kalvidmap'] = 'Import KalVidMap data';
 $string['convert_kalvidres'] = 'Convert KalVidRes to URLs';
 $string['convert_kalvidres_help'] = 'Converts Kaltura Video Resources to Moodle URL resources.';
 
-// Settings.
+// Conversion Settings.
 $string['hide_kaltura_items'] = 'Hide kalvidres';
 $string['hide_kaltura_items_help'] = 'Hides kaltura Video Resource items on conversion.';
 $string['hide_kaltura_items2'] = 'Hide converted';
 $string['hide_kaltura_items2_help'] = 'Hides previously converted kaltura Video Resource items when found.';
+
+// Import Settings.
 $string['kalpanmapfile'] = 'File location';
 $string['kalpanmapfile_help'] = 'Location of the csv file with kaltura, panopto ids provided by Panopto and edited to ONLY have those two fields in that order.';
+$string['verbose'] = 'Verbose';
+$string['verbose_help'] = 'Enabling verbose logging will give an output of EVERY imported line. This may prove too large for storing in your DB. Please use with caution.';
+$string['purge'] = 'Purge data';
+$string['purge_help'] = 'Truncate the local_kalpanmaps table prior to importing.';

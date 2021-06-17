@@ -62,6 +62,26 @@ if ($hassiteconfig) {
     );
 
     $settings->add(
+        new admin_setting_configselect(
+            'local_kalpanmaps_verbose',
+            get_string('verbose', 'local_kalpanmaps'),
+            get_string('verbose_help', 'local_kalpanmaps'),
+            0, // Default.
+            $yesno
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configselect(
+            'local_kalpanmaps_purge',
+            get_string('purge', 'local_kalpanmaps'),
+            get_string('purge_help', 'local_kalpanmaps'),
+            0, // Default.
+            $yesno
+        )
+    );
+
+    $settings->add(
         new admin_setting_configtext(
             'local_kalpanmaps_kalpanmapfile',
             get_string('kalpanmapfile', 'local_kalpanmaps'),

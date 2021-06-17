@@ -55,13 +55,44 @@ class kalvidmaps {
         // Set the filename variable from CFG.
         $filename = $CFG->local_kalpanmaps_kalpanmapfile;
 
+        // Grab the truncate preference.
+        $purge = $CFG->local_kalpanmaps_purge;
+
         // Load the content based on the filename / location.
         $content = self::local_kalpanmaps_getcontent($filename);
+
+        // Truncate the table if we have this setting set.
+        if ($purge) {
+            if (self::local_kalpanmaps_purge()) {
+                mtrace('Successfully purged the kalpanmaps table.');
+            }
+        }
 
         // Import the CSV into the DB.
         self::local_kalpanmaps_csv($content);
 
         return true;
+    }
+
+    /**
+     * Truncates the kalpanmaps table.
+     *
+     * @package   local_kalpanmaps
+     * @return    bool
+     *
+     */
+    public static function local_kalpanmaps_purge() {
+        global $DB;
+
+        // Build the SQL for truncating the table.
+        $purgesql = 'TRUNCATE {local_kalpanmaps}';
+
+        // Execute it.
+        if ($DB->execute($purgesql)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -72,6 +103,10 @@ class kalvidmaps {
      *
      */
     public static function local_kalpanmaps_csv($content) {
+        global $CFG;
+
+        // Set the verbose flag from settings.
+        $verbose = $CFG->local_kalpanmaps_verbose;
 
         // Set the counter for later.
         $counter = 0;
@@ -95,7 +130,16 @@ class kalvidmaps {
                 $counter++;
 
                 // Add the data to the DB.
-                self::local_kalpanmaps_field2db($fields);
+                self::local_kalpanmaps_field2db($fields, $verbose);
+
+                if (!$verbose) {
+                    $eol = ($counter % 50) == 0 ? PHP_EOL : " ";
+                    if ($eol == PHP_EOL) {
+                        mtrace("Imported " . $counter . " entries.", $eol);
+		    } else {
+                        mtrace(".", $eol);
+                    }
+                }
             }
         }
 
@@ -130,7 +174,7 @@ class kalvidmaps {
      * @return    int $return kalpanmaps entry id
      *
      */
-    public static function local_kalpanmaps_field2db($fields) {
+    public static function local_kalpanmaps_field2db($fields, $verbose) {
         global $DB;
 
         // Set this up for later.
@@ -146,7 +190,9 @@ class kalvidmaps {
         // Insert the data and return the id of the newly inserted row.
         $return = $DB->insert_record($table, $data, $returnid=true, $bulk=false);
 
-        // Some logging.
-        mtrace("  Imported Kaltura entry_id: " . $data->kaltura_id . " and Panopto session_id: " . $data->panopto_id . " into kalpanmaps id: " . $return . ".");
+        // Some verbose logging.
+        if ($verbose) {
+            mtrace("  entry_id: " . $data->kaltura_id . " - session_id: " . $data->panopto_id . " - id: " . $return . ".");
+        }
     }
 }

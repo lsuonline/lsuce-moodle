@@ -58,12 +58,44 @@ function local_kalpanmaps_import() {
     // Set the filename variable from CFG.
     $filename = $CFG->local_kalpanmaps_kalpanmapfile;
 
+    // Grab the truncate preference.
+    $purge = $CFG->local_kalpanmaps_purge;
+
     // Load the content based on the filename / location.
     $content = local_kalpanmaps_getcontent($filename);
+
+    // Truncate the table if we have this setting set.
+    if ($purge) {
+        if (local_kalpanmaps_purge()) {
+            echo("Successfully purged the kalpanmaps table.\n");
+        }
+    }
 
     // Import the CSV into the DB.
     local_kalpanmaps_csv($content);
 }
+
+    /**
+     * Truncates the kalpanmaps table.
+     *
+     * @package   local_kalpanmaps
+     * @return    bool
+     *
+     */
+    function local_kalpanmaps_purge() {
+        global $DB;
+
+        // Build the SQL for truncating the table.
+        $purgesql = 'TRUNCATE {local_kalpanmaps}';
+
+        // Execut it.
+        if ($DB->execute($purgesql)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
 /**
  * Loops through data and calls local_kalpanmaps_field2db.
@@ -81,7 +113,7 @@ function local_kalpanmaps_csv($content) {
     $starttime = microtime(true);
 
     // Start the cli log.
-    echo"Importing data\n";
+    echo("Importing data\n");
 
     // Loop through the content.
     foreach ($content as $line) {
@@ -104,7 +136,7 @@ function local_kalpanmaps_csv($content) {
     $elapsedtime = round(microtime(true) - $starttime, 1);
 
     // Finish the log, letting me know how many we did and how long it took.
-    echo"Completed importing " . $counter . " rows of data in " . $elapsedtime . " seconds.\n";
+    echo("Completed importing " . $counter . " rows of data in " . $elapsedtime . " seconds.\n");
 }
 
 /**
