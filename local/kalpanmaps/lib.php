@@ -44,6 +44,9 @@ class kalpanmaps {
     public function run_convert_kalvidres() {
         global $CFG, $DB;
 
+        // Set up verbose logging preference.
+        $verbose = $CFG->local_kalpanmaps_verbose;
+
         // Let's be sure the table exists before we do anything.
         $tableexists = ($DB->get_manager()->table_exists('local_kalpanmaps'));
 
@@ -107,14 +110,24 @@ class kalpanmaps {
 
             // Loops through and actually does the conversions.
             foreach ($kpdata as $kalturaitem) {
-                $this->log("        Converting Kaltura itemid: " . $kalturaitem->kalturaid . ".");
-                $this->log("            Ceating new url for Kaltura itemid: " . $kalturaitem->kalturaid . ".");
+                // Increment the converted count.
+                $converted++;
+
+                // Log stuff depending on the verbosity preferences.
+                if ($verbose) {
+                    $this->log("        Converting Kaltura itemid: " . $kalturaitem->kalturaid . ".");
+                    $this->log("            Ceating new url for Kaltura itemid: " . $kalturaitem->kalturaid . ".");
+                } else {
+                    $eol = ($converted % 50) == 0 ? PHP_EOL : " ";
+                    if ($eol == PHP_EOL) {
+                        mtrace("Created " . $converted . " entries.", $eol);
+                    } else {
+                        mtrace(".", $eol);
+                    }
+                }
 
                 // We have not yet converted all kaltura items in this course, convert the next one.
                 self::build_url($kalturaitem);
-
-                // Increment the converted count.
-                $converted++;
 
                 // Hide the corresponding kalura item if configured to do so and it's not already hidden.
                 if ($kalturaitem->modvis == 1 && $CFG->local_kalpanmaps_kalvidres_conv_hide == 1) {
@@ -124,18 +137,23 @@ class kalpanmaps {
 
                     // Increment the hidden count.
                     $hidden++;
-                    $this->log("                Hiding old kaltura item: " . $kalturaitem->kalturaid . 
-                               " with already existing url in courseid: " . $kalturaitem->courseid . ".");
+
+                    if ($verbose) {
+                        $this->log("                Hiding old kaltura item: " . $kalturaitem->kalturaid . 
+                                   " with already existing url in courseid: " . $kalturaitem->courseid . ".");
+                    }
                 }
 
-                $this->log("            Finished creating the new url with panopto id: " . 
-                           $kalturaitem->panoptoid . " and hiding the old kaltura item with id: " . 
-                           $kalturaitem->krid  . ".");
-                $this->log("        Panopto url itemid: " . $kalturaitem->panoptoid . " has been created.");
+                if ($verbose) {
+                    $this->log("            Finished creating the new url with panopto id: " . 
+                               $kalturaitem->panoptoid . " and hiding the old kaltura item with id: " . 
+                               $kalturaitem->krid  . ".");
+                    $this->log("        Panopto url itemid: " . $kalturaitem->panoptoid . " has been created.");
+                }
             }
 
             // We're done with conversions.
-            $this->log("    Completed converting Kaltura Video Resource items to Panopto urls.");
+            $this->log("\n    Completed converting Kaltura Video Resource items to Panopto urls.");
             $this->log("Finished converting outstanding Kaltura Video Resources to panopto urls.");
 
             // How long in seconds did this conversion job take.

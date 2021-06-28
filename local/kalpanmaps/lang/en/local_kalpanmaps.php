@@ -41,6 +41,6 @@ $string['hide_kaltura_items2_help'] = 'Hides previously converted kaltura Video 
 $string['kalpanmapfile'] = 'File location';
 $string['kalpanmapfile_help'] = 'Location of the csv file with kaltura, panopto ids provided by Panopto and edited to ONLY have those two fields in that order.';
 $string['verbose'] = 'Verbose';
-$string['verbose_help'] = 'Enabling verbose logging will give an output of EVERY imported line. This may prove too large for storing in your DB. Please use with caution.';
+$string['verbose_help'] = 'Enabling verbose logging will give an output of EVERY imported line and converted kalvidres resource. This may prove too large for storing as a task log. Please use with caution.';
 $string['purge'] = 'Purge data';
 $string['purge_help'] = 'Truncate the local_kalpanmaps table prior to importing.';
