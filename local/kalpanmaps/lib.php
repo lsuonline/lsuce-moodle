@@ -79,7 +79,6 @@ class kalpanmaps {
             LEFT JOIN {url} u ON kr.course = u.course AND kr.name = u.name AND u.externalurl LIKE CONCAT("%", km.panopto_id , "%")
 	WHERE u.id IS NULL
         GROUP BY kr.id, kr.course';
-          
 
         // SQL to grab visible previously converted kaltura video resources for future hiding.
         $donesql = 'SELECT cm.id AS cmid
@@ -139,14 +138,14 @@ class kalpanmaps {
                     $hidden++;
 
                     if ($verbose) {
-                        $this->log("                Hiding old kaltura item: " . $kalturaitem->kalturaid . 
+                        $this->log("                Hiding old kaltura item: " . $kalturaitem->kalturaid .
                                    " with already existing url in courseid: " . $kalturaitem->courseid . ".");
                     }
                 }
 
                 if ($verbose) {
-                    $this->log("            Finished creating the new url with panopto id: " . 
-                               $kalturaitem->panoptoid . " and hiding the old kaltura item with id: " . 
+                    $this->log("            Finished creating the new url with panopto id: " .
+                               $kalturaitem->panoptoid . " and hiding the old kaltura item with id: " .
                                $kalturaitem->krid  . ".");
                     $this->log("        Panopto url itemid: " . $kalturaitem->panoptoid . " has been created.");
                 }
@@ -158,7 +157,7 @@ class kalpanmaps {
 
             // How long in seconds did this conversion job take.
             $elapsedtime = round(microtime(true) - $starttime, 3);
-            $this->log("The process to convert Kaltura Video Resources to Panopto urls took " . 
+            $this->log("The process to convert Kaltura Video Resources to Panopto urls took " .
                        $elapsedtime . " seconds.");
 
         } else {
@@ -311,12 +310,140 @@ class kalpanmaps {
         $cm->instance = $module->id;
 
         // Add the course module to a specific section matching the old kalvidres.
-        $cm->section = course_add_cm_to_section($module->course,$module->coursemodule,$module->section);
+        $cm->section = course_add_cm_to_section($module->course,$module->coursemodule,$module->section, $kalturaitem->cmid);
 
         // Update the cm.
         $DB->update_record('course_modules', $cm);
 
         return $module;
+    }
+
+    /**
+     * Master function for moving kaltura video iframes panotpo.
+     *
+     * For every kaltura embed in the DB
+     * A new panopto iframe will be created
+     * To replace the existing kaltura iframe
+     * In the same resource or activity.
+     *
+     * @return boolean $success
+     */
+    public function run_convert_kalembeds() {
+        global $CFG, $DB;
+
+        // Set up verbose logging preference.
+        $verbose = $CFG->local_kalpanmaps_verbose;
+
+        // Let's be sure the table exists before we do anything.
+        $tableexists = ($DB->get_manager()->table_exists('local_kalpanmaps'));
+
+        // If the table exists, convert any outstanding embeds.
+        $success = $tableexists ? self::conv_panitem() : false;
+
+        return $success;
+    }
+
+    /**
+     * Function for grabbing label data where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_labels($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gklsql = "SELECT l.id AS itemid,
+                       l.course AS courseid,
+                       l.intro AS item
+                   FROM mdl_label l
+                   WHERE l.intro REGEXP '<iframe.+kaltura.com.+entry_id=.+iframe>'";
+
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array $params=null, $limitfrom=0, $limit);
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    public static function get_kalpanmaps($enryid) {
+        global $DB;
+
+        // Build the panoptoid.
+        $panoptoid = $DB->get_record('kalpanmaps', array ('entry_id' => $entryid), $fields='panopto_id', $strictness=IGNORE_MISSING);
+
+        // Return the panotoid.
+        return $panoptoid;
+    }
+
+    public static function get_panmatches($kalitem) {
+        // Grab the original Kaltura iframe in it's entirety.
+        $kalmatches->oldiframe = preg_match('/(\<iframe.+?entry_id=&.+?iframe\>)/', $kalitem->info, $matches[1]);
+
+        // Make it a nonsensical noframe tag so we don't show up in future searches.
+        $kalmatches->oldiframe = preg_replace('iframe', 'noframe', $kalmatches->oldiframe);
+
+        // Grab the Kaltura entry_id.
+        $kalmatches->entryid = preg_match('/\<iframe.+?entry_id=(.+?)&.+?iframe\>/', $kalitem->info, $matches[1]);
+
+        // Grab the height.
+        $kalmatches->height = isset($matches[1]) ? preg_match('/\<iframe.+?height="(.+?)".+?iframe\>/', $kalitem->info, $matches[1]) : 400;
+
+        // Grab the width.
+        $kalmatches->width = isset($matches[1]) ? preg_match('/\<iframe.+?width="(.+?)".+?iframe\>/', $kalitem->info, $matches[1]) : 200;
+
+        // Grab anything that might be extra.
+        $kalmatches->ifxtra = isset($matches[1]) ? preg_match('/\<iframe .+?\>(.+?)\<\/iframe\>/', $kalitem->info, $matches[1]) : '';
+
+        return $kalmatches
+    }
+
+    public static function conv_panitem() {
+        global $CFG, $DB;
+
+        // Populate the kalitems array.
+        $kalitems = self::get_kal_labels($limit=0);
+
+        // Grab the panopto server.
+        $panoptourl = get_config('block_panopto', 'server_name1');
+
+        // The link we're using. Should this be a config item?
+        $link = '/Panopto/Pages/Viewer.aspx?id=';
+
+        // Loop through the kaltura items and do stuff.
+        foreach ($kalitems as $kalitem) {
+
+            // Replace any line breaks so we can ensure regex will work.
+            $kalitem->info = preg_replace( "/\r|\n/", "", $kalitem->info);
+
+            $panmatches = self::get_panmatches($kalitem);
+
+            // Get the corresponding panopto_id.
+            $panoptoid = self::get_kalpanmaps($kalitem->enryid)
+
+            // Build the URL for the new iframe.
+            $kalframe = 'https://' . $panoptourl . $link . $panoptoid;
+
+            // Replace the old iframe with the new one and a hidden version of itself.
+            $kalitem->info = preg_replace('/<iframe.+?entry_id=.+?iframe>/',
+                                          '<iframe src="' .
+                                          $kalframe .
+                                          '" width="' .
+                                          $panmatches->width .
+                                          '" height="' .
+                                           $panmatches->height .
+                                          '">' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          ' <!--HIDDEN' .
+                                          $panmatches->oldiframe .
+                                          'HIDDEN--> ',
+                                          $kalitem->info);
+
+            // Update the record with the new iframe.
+            $DB->update_record($table, $kalitem, $bulk=false)
+        }
     }
 
     /**
