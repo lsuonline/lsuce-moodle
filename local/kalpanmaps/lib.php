@@ -348,9 +348,9 @@ class kalpanmaps {
 
         // Start the log.
         if ($verbose) {
-            $this->log("We are in verbose mode and have begun converting kaltura iframe embeds.");
+            mtrace("We are in verbose mode and have begun converting kaltura iframe embeds.");
         } else {
-            $this->log("Converting kaltura iframe embeds.");
+            mtrace("Converting kaltura iframe embeds.");
         }
 
         // Let's be sure the table exists before we do anything.
@@ -361,9 +361,9 @@ class kalpanmaps {
 
         // Log out what happened.
         if ($success) {
-            $this->log("Successfully converted all remaining kaltura ifram embeds.");
+            mtrace("Successfully converted all remaining kaltura ifram embeds.");
         } else {
-            $this->log("Something went wrong and is probably listed above.");
+            mtrace("The process has completed. Any errors would be listed above.");
         }
 
         return $success;
@@ -378,18 +378,17 @@ class kalpanmaps {
         global $DB;
 
         // Build the SQL to grab items that have kaltura iframes in them.
-        $gklsql = "SELECT l.id AS id,
+        $gksql = 'SELECT l.id AS id,
                        l.course AS courseid,
                        l.intro AS itemdata,
-                       'label' AS table,
-                       'intro' AS dataitem
+                       "label" AS tble,
+                       "intro" AS dataitem
                    FROM mdl_label l
-                   WHERE l.intro REGEXP '<iframe.+kaltura.com.+entry_id=.+iframe>'";
-
+                   WHERE l.intro REGEXP "<iframe id=.+</iframe>"';
 
         // Build the array of objects.
         $kalitems = array();
-        $kalitems = $DB->get_records_sql($gksql, array $params=null, $limitfrom=0, $limit);
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
 
         // Return the array of objects.
         return $kalitems;
@@ -400,15 +399,17 @@ class kalpanmaps {
      *
      * @return string $panoptoid
      */
-    public static function get_kalpanmaps($enryid, $verbose) {
+    public static function get_kalpanmaps($entryid, $verbose) {
         global $DB;
 
         // Build the panoptoid.
-        $panoptoid = $DB->get_record('kalpanmaps', array ('entry_id' => $entryid), $fields='panopto_id', $strictness=IGNORE_MISSING);
+        $parms = array('kaltura_id' => $entryid);
+        $panoptoid = $DB->get_record('local_kalpanmaps', $parms);
+
 
         // Log the entryid and panoptoid accordingly.
         if ($verbose) {
-            $this->log("  Retreived $panoptoid from DB with matching entryid $entryid.");
+            mtrace("    Retreived $panoptoid->panopto_id from DB with matching entryid $entryid.");
         }
 
         // Return the panotoid.
@@ -422,14 +423,17 @@ class kalpanmaps {
      */
     public static function write_panitem($kalitem) {
         global $DB;
- 
+
         // Build the SQL as generically as we can for use in any context.
-        $sql = "UPDATE {$kalitem->table}
-                    SET $kalitem->dataitem = '$kalitem->itemdata' 
-                WHERE id = $kalitem->id;"
+        $item = $kalitem->dataitem;
+        $dataitem = new stdClass();
+
+        $dataitem->id = $kalitem->id;
+        $dataitem->$item = $kalitem->itemdata;
 
         // Run it and store the status.
-        $success = $DB->execute($sql, $kalitem);
+        $success = false;
+        $success = $DB->update_record($kalitem->tble, $dataitem);
 
         return $success;
     }
@@ -443,30 +447,40 @@ class kalpanmaps {
         // Instantiate the new object.
         $kalmatches = new stdClass();
 
+        // Replace any line breaks so we can ensure regex will work.
+        $kalitem->itemdata = preg_replace( "/\r|\n/", "", $kalitem->itemdata);
+
         // Grab the original Kaltura iframe in it's entirety and add it to the object.
-        $kalmatches->oldiframe = preg_match('/(<iframe.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches[1]);
+        preg_match('/(<iframe id=.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches);
+        $kalmatches->oldiframe = $matches[1];
 
         // Rename "iframe" to a nonsensical "noframe" tag so we don't show up in future searches.
-        $kalmatches->oldiframe = preg_replace('iframe', 'noframe', $kalmatches->oldiframe);
+        $kalmatches->noframe = preg_replace('/iframe id/', 'noframe id', $kalmatches->oldiframe);
 
         // Grab the Kaltura entry_id and add it to the object.
-        $kalmatches->entryid = preg_match('/\<iframe.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalitem->itemdata, $matches[1]);
+        preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        $kalmatches->entryid = $matches[1];
 
         // Grab the width and add it to the object.
-        $kalmatches->width = isset($matches[1]) ? preg_match('/\<iframe.+?width="(.+?)".+?\<\/iframe\>/', $kalitem->itemdata, $matches[1]) : 400;
+        preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        // TODO: Convert the 400 to a width config var.
+        $kalmatches->width = isset($matches[1]) ? $matches[1] : 400;
 
         // Grab the height and add it to the object.
-        $kalmatches->height = isset($matches[1]) ? preg_match('/\<iframe.+?height="(.+?)".+?\<\/iframe\>/', $kalitem->itemdata, $matches[1]) : 285;
+        preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        // TODO: Convert the 285 to a height config var.
+        $kalmatches->height = isset($matches[1]) ? $matches[1] : 285;
 
         // Grab anything that might be extra and add it to the object.
-        $kalmatches->ifxtra = isset($matches[1]) ? preg_match('/\<iframe.+?\>(.*?)\<\/iframe\>/', $kalitem->itemdata, $matches[1]) : '';
+        preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
 
         // Log the iframe info in verbose mode.
         if ($verbose) {
-            $this->log("    Found ifram2e with entryid $kalmatches->entryid and width: $kalmatches->width, height: $kalmatches->height.");
+            mtrace("    Found iframe with entryid $kalmatches->entryid and width: $kalmatches->width, height: $kalmatches->height.");
         }
 
-        return $kalmatches
+        return $kalmatches;
     }
 
     /**
@@ -481,8 +495,7 @@ class kalpanmaps {
         $successes = 0;
 
         // Populate the kalitems array.
-        $kalitems = array();
-        $kalitems[] = self::get_kal_label($limit=0);
+        $kalitems = self::get_kal_label($limit=0);
         // $kalitems[] = self::get_kal_assign($limit=0);
         // $kalitems[] = self::get_kal_book_chapters($limit=0);
         // $kalitems[] = self::get_kal_course_sections($limit=0);
@@ -505,23 +518,35 @@ class kalpanmaps {
         // Loop through the kaltura items and do stuff.
         foreach ($kalitems as $kalitem) {
 
-            // Replace any line breaks so we can ensure regex will work.
-            $kalitem->itemdata = preg_replace( "/\r|\n/", "", $kalitem->itemdata);
+            if (!isset($kalitem->itemdata)) { return; }
 
+            // Get an object for future use in building the new data entry.
             $panmatches = self::get_panmatches($kalitem, $verbose);
 
             // Get the corresponding panopto_id.
-            $panoptoid = self::get_kalpanmaps($panmatches->enryid, $verbose)
+            $panoptoid = self::get_kalpanmaps($panmatches->entryid, $verbose);
 
             // Build the URL for the new iframe.
-            $kalframe = 'https://' . $panoptourl . $link . $panoptoid;
+            $kalframe = 'https://' . $panoptourl . $link . $panoptoid->panopto_id . '&showtitle=false' . '&captions=true';
 
             if ($verbose) {
-                $this->log("  Found iframe with kaltura entryid: $panmatches->entryid.");
+                mtrace("      Found iframe with kaltura entryid: $panmatches->entryid.");
             }
 
+/*
+echo'<xmp>';
+print_r($kalitem->itemdata);
+echo'</xmp>';
+
+echo'<xmp>';
+print_r($panmatches->oldiframe);
+echo'</xmp>';
+*/
+
             // Replace the old iframe with the new one and a hidden version of itself.
-            $kalitem->itemdata = preg_replace('/<iframe.+?entry_id=.+?iframe>/',
+            $kalitem->itemdata = preg_replace('/\<iframe .+?entry_id=' .
+                                          $panmatches->entryid .
+                                          '.+?\>\<\/iframe\>/',
                                           '<iframe src="' .
                                           $kalframe .
                                           '" width="' .
@@ -531,33 +556,43 @@ class kalpanmaps {
                                           '">' .
                                           $panmatches->ifxtra .
                                           '</iframe>' .
-                                          ' <!--HIDDEN' .
-                                          $panmatches->oldiframe .
-                                          'HIDDEN--> ',
+                                          '<!--HIDDEN ' .
+                                          $panmatches->noframe .
+                                          ' HIDDEN-->',
                                           $kalitem->itemdata);
+
+/*
+echo'<xmp>';
+print_r($panmatches->noframe);
+echo'</xmp>';
+
+echo'<xmp>';
+print_r($kalitem->itemdata);
+echo'</xmp>';
+*/
 
             // Update the record with the new iframe and hidden noframe.
             if (self::write_panitem($kalitem)) {
                 // increment our successes.
-                $successes++
+                $successes++;
 
                 // Log that we've done it in verbose mode or just update the page with a period.
                 if ($verbose) {
-                    $this->log("  Replaced Kaltura $panmatches->entryid iframe with Panopto id: $panoptoid.");
+                    mtrace("  Replaced Kaltura $panmatches->entryid iframe with Panopto id: $panoptoid->panopto_id.");
                 } else {
-                    $this->log(".");
+                    mtrace(".");
                 }
             } else {
                 // Increment our failures.
-                $fails++
+                $fails++;
 
                 // We have a failure, log it regardless of status.
-                $this->log("  Conversion of $kalitem->table.$kalitem->dataitem failed for kaltura entryid: $panmatches->entryid and panopto id: $panoptoid in courseid $kalitem->course.");
+                mtrace("  Conversion of $kalitem->table.$kalitem->dataitem failed for kaltura entryid: $panmatches->entryid and panopto id: $panoptoid in courseid $kalitem->course.");
             }
         }
 
         // Log what we did.
-        $this->log("\nSuccess: $successes\nFailures: $fails\nKaltura iframe conversion is complete for now.");
+        mtrace("\nSuccess: $successes\nFailures: $fails\nKaltura iframe conversion is complete for now.");
     }
 
 

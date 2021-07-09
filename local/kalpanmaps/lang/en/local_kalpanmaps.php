@@ -30,6 +30,8 @@ $string['pluginname_desc'] = "Periodically converts remaining Kaltura items to t
 $string['import_kalvidmap'] = 'Import KalVidMap data';
 $string['convert_kalvidres'] = 'Convert KalVidRes to URLs';
 $string['convert_kalvidres_help'] = 'Converts Kaltura Video Resources to Moodle URL resources.';
+$string['convert_kalembeds'] = 'Convert Kaltura embeds';
+$string['convert_kalembeds_help'] = 'Converts Kaltura embeds to Panopto embeds.';
 
 // Conversion Settings.
 $string['hide_kaltura_items'] = 'Hide kalvidres';

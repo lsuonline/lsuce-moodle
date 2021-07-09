@@ -15,44 +15,43 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Setting up the scheduled task.
+ * A scheduled task.
+ *
+ * The scheduled task that runs the kaltura embed conversion..
  *
  * @package    local_kalpanmaps
  * @copyright  2021 onwards LSUOnline & Continuing Education
  * @copyright  2021 onwards Robert Russo
  */
+namespace local_kalpanmaps\task;
 
 defined('MOODLE_INTERNAL') || die();
 
-// Define the task defaults.
-$tasks = array(
-    array(
-        'classname' => 'local_kalpanmaps\task\convert_kalvidres',
-        'blocking' => 0,
-        'minute' => '0',
-        'hour' => '0',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    ),
+// Extend the Moodle scheduled task class with our mods.
+class convert_kalembeds extends \core\task\scheduled_task {
 
-    array(
-        'classname' => 'local_kalpanmaps\task\import_kalvidmap',
-        'blocking' => 0,
-        'minute' => '0',
-        'hour' => '0',
-        'day' => '0',
-        'dayofweek' => '0',
-        'month' => '0'
-    ),
+    /**
+     * Get a descriptive name for this task (shown to admins).
+     *
+     * @return string
+     */
+    public function get_name() {
 
-    array(
-        'classname' => 'local_kalpanmaps\task\convert_kalembeds',
-        'blocking' => 0,
-        'minute' => '0',
-        'hour' => '*',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    )
-);
+        return get_string('convert_kalembeds', 'local_kalpanmaps');
+
+    }
+
+    /**
+     * Do the job.
+     *
+     * Throw exceptions on errors (the job will be retried).
+     */
+    public function execute() {
+
+        global $CFG;
+        require_once($CFG->dirroot . '/local/kalpanmaps/lib.php');
+        $kalpanmaps = new \kalpanmaps();
+        $kalpanmaps->run_convert_kalembeds();
+
+    }
+}

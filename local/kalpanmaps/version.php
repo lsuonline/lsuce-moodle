@@ -23,7 +23,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2021061601;
+$plugin->version = 2021070800;
 $plugin->requires = 2015111600;
 $plugin->component = 'local_kalpanmaps';
 $plugin->maturity = MATURITY_STABLE;
