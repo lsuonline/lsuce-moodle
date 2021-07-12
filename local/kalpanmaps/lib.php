@@ -429,7 +429,7 @@ class kalpanmaps {
         $dataitem = new stdClass();
 
         $dataitem->id = $kalitem->id;
-        $dataitem->$item = $kalitem->itemdata;
+        $dataitem->$item = $kalitem->newitemdata;
 
         // Run it and store the status.
         $success = false;
@@ -455,24 +455,24 @@ class kalpanmaps {
         $kalmatches->oldiframe = $matches[1];
 
         // Rename "iframe" to a nonsensical "noframe" tag so we don't show up in future searches.
-        $kalmatches->noframe = preg_replace('/iframe id/', 'noframe id', $kalmatches->oldiframe);
+        $kalmatches->noframe = preg_replace('/iframe/', 'noframe', $kalmatches->oldiframe);
 
         // Grab the Kaltura entry_id and add it to the object.
-        preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->entryid = $matches[1];
 
         // Grab the width and add it to the object.
-        preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         // TODO: Convert the 400 to a width config var.
         $kalmatches->width = isset($matches[1]) ? $matches[1] : 400;
 
         // Grab the height and add it to the object.
-        preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         // TODO: Convert the 285 to a height config var.
         $kalmatches->height = isset($matches[1]) ? $matches[1] : 285;
 
         // Grab anything that might be extra and add it to the object.
-        preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalitem->oldiframe, $matches);
+        preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
 
         // Log the iframe info in verbose mode.
@@ -515,6 +515,12 @@ class kalpanmaps {
         // The link we're using. Should this be a config item?
         $link = '/Panopto/Pages/Viewer.aspx?id=';
 
+/*
+echo'<xmp>';
+print_r($kalitems);
+echo'</xmp>';
+*/
+
         // Loop through the kaltura items and do stuff.
         foreach ($kalitems as $kalitem) {
 
@@ -522,6 +528,14 @@ class kalpanmaps {
 
             // Get an object for future use in building the new data entry.
             $panmatches = self::get_panmatches($kalitem, $verbose);
+
+/*
+echo'<xmp>';
+print_r($panmatches);
+echo'</xmp>';
+*/
+
+            if (!isset($panmatches->entryid)) { return; }
 
             // Get the corresponding panopto_id.
             $panoptoid = self::get_kalpanmaps($panmatches->entryid, $verbose);
@@ -544,9 +558,9 @@ echo'</xmp>';
 */
 
             // Replace the old iframe with the new one and a hidden version of itself.
-            $kalitem->itemdata = preg_replace('/\<iframe .+?entry_id=' .
+            $kalitem->newitemdata = preg_replace('/\<iframe id="kaltura_player".+?entry_id=' .
                                           $panmatches->entryid .
-                                          '.+?\>\<\/iframe\>/',
+                                          '.+?\<\/iframe\>/',
                                           '<iframe src="' .
                                           $kalframe .
                                           '" width="' .
@@ -559,7 +573,7 @@ echo'</xmp>';
                                           '<!--HIDDEN ' .
                                           $panmatches->noframe .
                                           ' HIDDEN-->',
-                                          $kalitem->itemdata);
+                                          $kalitem->itemdata, 1);
 
 /*
 echo'<xmp>';
@@ -567,7 +581,7 @@ print_r($panmatches->noframe);
 echo'</xmp>';
 
 echo'<xmp>';
-print_r($kalitem->itemdata);
+print_r($kalitem->newitemdata);
 echo'</xmp>';
 */
 
@@ -589,7 +603,12 @@ echo'</xmp>';
                 // We have a failure, log it regardless of status.
                 mtrace("  Conversion of $kalitem->table.$kalitem->dataitem failed for kaltura entryid: $panmatches->entryid and panopto id: $panoptoid in courseid $kalitem->course.");
             }
+
+        // Rebuild the course cache.
+        rebuild_course_cache($kalitem->courseid, true);
+
         }
+
 
         // Log what we did.
         mtrace("\nSuccess: $successes\nFailures: $fails\nKaltura iframe conversion is complete for now.");
