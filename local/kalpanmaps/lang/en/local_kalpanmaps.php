@@ -28,8 +28,10 @@ $string['pluginname_desc'] = "Periodically converts remaining Kaltura items to t
 
 // Task.
 $string['import_kalvidmap'] = 'Import KalVidMap data';
+$string['general'] = 'General settings';
 $string['convert_kalvidres'] = 'Convert KalVidRes to URLs';
 $string['convert_kalvidres_help'] = 'Converts Kaltura Video Resources to Moodle URL resources.';
+$string['convert_kalvids'] = 'Convert Kaltura to Panopto';
 $string['convert_kalembeds'] = 'Convert Kaltura embeds';
 $string['convert_kalembeds_help'] = 'Converts Kaltura embeds to Panopto embeds.';
 
@@ -38,6 +40,12 @@ $string['hide_kaltura_items'] = 'Hide kalvidres';
 $string['hide_kaltura_items_help'] = 'Hides kaltura Video Resource items on conversion.';
 $string['hide_kaltura_items2'] = 'Hide converted';
 $string['hide_kaltura_items2_help'] = 'Hides previously converted kaltura Video Resource items when found.';
+
+// Embed Settings.
+$string['kalembeds_width'] = 'Width';
+$string['kalembeds_width_help'] = 'Default iframe width when none is specified.';
+$string['kalembeds_height'] = 'Height';
+$string['kalembeds_height_help'] = 'Default iframe height when none is specified.';
 
 // Import Settings.
 $string['kalpanmapfile'] = 'File location';

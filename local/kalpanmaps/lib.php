@@ -395,6 +395,462 @@ class kalpanmaps {
     }
 
     /**
+     * Function for grabbing page data where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_page_content($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT p.id AS id,
+                       p.course AS courseid,
+                       p.content AS itemdata,
+                       "page" AS tble,
+                       "content" AS dataitem
+                   FROM mdl_page p
+                   WHERE p.content REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing page intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_page_intro($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT p.id AS id,
+                       p.course AS courseid,
+                       p.intro AS itemdata,
+                       "page" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_page p
+                   WHERE p.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing assignment intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_assign($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT a.id AS id,
+                       a.course AS courseid,
+                       a.intro AS itemdata,
+                       "assign" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_assign a
+                   WHERE a.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing course sections where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_course_sections($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT cs.id AS id,
+                       cs.course AS courseid,
+                       cs.summary AS itemdata,
+                       "course_sections" AS tble,
+                       "summary" AS dataitem
+                   FROM mdl_course_sections cs
+                   WHERE cs.summary REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing quiz intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_quiz($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT q.id AS id,
+                       q.course AS courseid,
+                       q.intro AS itemdata,
+                       "quiz" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_quiz q
+                   WHERE q.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing book intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_book_intro($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT b.id AS id,
+                       b.course AS courseid,
+                       b.intro AS itemdata,
+                       "book" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_book b
+                   WHERE b.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing book chapter content where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_book_chapters($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT bc.id AS id,
+                       b.course AS courseid,
+                       bc.content AS itemdata,
+                       "book_chapters" AS tble,
+                       "content" AS dataitem
+                   FROM mdl_book_chapters bc
+                       INNER JOIN mdl_book b ON b.id = bc.bookid
+                   WHERE bc.content REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing forum intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_forum($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT f.id AS id,
+                       f.course AS courseid,
+                       f.intro AS itemdata,
+                       "forum" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_forum f
+                   WHERE f.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing lesson intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_lesson($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT l.id AS id,
+                       l.course AS courseid,
+                       l.intro AS itemdata,
+                       "lesson" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_lesson l
+                   WHERE l.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing lesson page contents where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_lesson_pages($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT lp.id AS id,
+                       l.course AS courseid,
+                       lp.contents AS itemdata,
+                       "lesson_pages" AS tble,
+                       "contents" AS dataitem
+                   FROM mdl_lesson_pages lp
+                       INNER JOIN mdl_lesson l ON l.id = lp.lessonid
+                   WHERE lp.contents REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing journal intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_journal($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT j.id AS id,
+                       j.course AS courseid,
+                       j.intro AS itemdata,
+                       "journal" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_journal j
+                   WHERE j.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing choice intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_choice($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT c.id AS id,
+                       c.course AS courseid,
+                       c.intro AS itemdata,
+                       "choice" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_choice c
+                   WHERE c.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing feedback intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_feedback($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT f.id AS id,
+                       f.course AS courseid,
+                       f.intro AS itemdata,
+                       "feedback" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_feedback f
+                   WHERE f.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing glossary intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_glossary($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT g.id AS id,
+                       g.course AS courseid,
+                       g.intro AS itemdata,
+                       "glossary" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_glossary g
+                   WHERE g.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing group choice intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_choicegroup($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT gc.id AS id,
+                       gc.course AS courseid,
+                       gc.intro AS itemdata,
+                       "choicegroup" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_choicegroup gc
+                   WHERE gc.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing LTI intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_lti($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT l.id AS id,
+                       l.course AS courseid,
+                       l.intro AS itemdata,
+                       "lti" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_lti gc
+                   WHERE l.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing questionnaire intros where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_questionnaire($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT q.id AS id,
+                       q.course AS courseid,
+                       q.intro AS itemdata,
+                       "questionnaire" AS tble,
+                       "intro" AS dataitem
+                   FROM mdl_questionnaire q
+                   WHERE q.intro REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
+     * Function for grabbing question text where kaltura iframes are present.
+     *
+     * @return array $kalitems
+     */
+    public static function get_kal_question($limit=0) {
+        global $DB;
+
+        // Build the SQL to grab items that have kaltura iframes in them.
+        $gksql = 'SELECT qq.id AS id,
+                       c.id AS courseid,
+                       qq.questiontext AS itemdata,
+                       "question" AS tble,
+                       "questiontext" AS dataitem
+                   FROM mdl_question qq
+                       INNER JOIN mdl_question_categories qc ON qc.id = qq.category
+                       INNER JOIN mdl_context ctx ON ctx.id = qc.contextid
+                       INNER JOIN mdl_course c ON c.id = ctx.instanceid
+                   WHERE ctx.contextlevel = 50
+                       AND qq.questiontext REGEXP "<iframe id=.+</iframe>"';
+
+        // Build the array of objects.
+        $kalitems = array();
+        $kalitems = $DB->get_records_sql($gksql, array(null, $limitfrom=0, $limit));
+
+        // Return the array of objects.
+        return $kalitems;
+    }
+
+    /**
      * Function for grabbing the panoptoid for a corresponding kalpanmaps kaltura entry_id.
      *
      * @return string $panoptoid
@@ -409,7 +865,7 @@ class kalpanmaps {
 
         // Log the entryid and panoptoid accordingly.
         if ($verbose) {
-            mtrace("    Retreived $panoptoid->panopto_id from DB with matching entryid $entryid.");
+            mtrace("        Retreived $panoptoid->panopto_id from DB with matching entryid $entryid.");
         }
 
         // Return the panotoid.
@@ -444,6 +900,8 @@ class kalpanmaps {
      * @return object $kalmatches
      */
     public static function get_panmatches($kalitem, $verbose) {
+        global $CFG;
+
         // Instantiate the new object.
         $kalmatches = new stdClass();
 
@@ -463,13 +921,11 @@ class kalpanmaps {
 
         // Grab the width and add it to the object.
         preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        // TODO: Convert the 400 to a width config var.
-        $kalmatches->width = isset($matches[1]) ? $matches[1] : 400;
+        $kalmatches->width = isset($matches[1]) ? $matches[1] : $CFG->local_kalpanmaps_width;
 
         // Grab the height and add it to the object.
         preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        // TODO: Convert the 285 to a height config var.
-        $kalmatches->height = isset($matches[1]) ? $matches[1] : 285;
+        $kalmatches->height = isset($matches[1]) ? $matches[1] : $CFG->local_kalpanmaps_height;
 
         // Grab anything that might be extra and add it to the object.
         preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
@@ -477,7 +933,7 @@ class kalpanmaps {
 
         // Log the iframe info in verbose mode.
         if ($verbose) {
-            mtrace("    Found iframe with entryid $kalmatches->entryid and width: $kalmatches->width, height: $kalmatches->height.");
+            mtrace("    Found $kalitem->tble $kalitem->dataitem with iframe and entryid: $kalmatches->entryid, width: $kalmatches->width, height: $kalmatches->height in course: $kalitem->courseid.");
         }
 
         return $kalmatches;
@@ -496,18 +952,42 @@ class kalpanmaps {
 
         // Populate the kalitems array.
         $kalitems = self::get_kal_label($limit=0);
-        // $kalitems[] = self::get_kal_assign($limit=0);
-        // $kalitems[] = self::get_kal_book_chapters($limit=0);
-        // $kalitems[] = self::get_kal_course_sections($limit=0);
-        // $kalitems[] = self::get_kal_forum($limit=0);
-        // $kalitems[] = self::get_kal_forum_posts($limit=0);
-        // $kalitems[] = self::get_kal_journal($limit=0);
-        // $kalitems[] = self::get_kal_lesson_pages($limit=0);
-        // $kalitems[] = self::get_kal_page($limit=0);
-        // $kalitems[] = self::get_kal_question($limit=0);
-        // $kalitems[] = self::get_kal_quiz($limit=0);
-        // $kalitems[] = self::get_kal_assignsubmission_onlinetext($limit=0);
-        // $kalitems[] = self::get_kal_lesson_answers($limit=0);
+        $kalitems = array_merge($kalitems, self::get_kal_page_intro($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_page_content($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_assign($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_course_sections($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_quiz($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_book_intro($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_book_chapters($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_forum($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_lesson($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_lesson_pages($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_journal($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_choice($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_feedback($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_glossary($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_choicegroup($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_lti($limit=0));
+        $kalitems = array_merge($kalitems, self::get_kal_questionnaire($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_scorm($limit=0))
+        // $kalitems = array_merge($kalitems, self::get_kal_survey($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_turnitin($limit=0))
+        // $kalitems = array_merge($kalitems, self::get_kal_wiki($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_workshops($limit=0));
+        // NO? $kalitems = array_merge($kalitems, self::get_kal_database($limit=0));
+
+        if ($CFG->kalprocessstudents) {
+        // $kalitems = array_merge($kalitems, self::get_kal_choice_options($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_choice_answers($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_journal_entries($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_forum_discussions($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_forum_posts($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_assignsubmission_onlinetext($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_lesson_answers($limit=0));
+        // $kalitems = array_merge($kalitems, self::get_kal_glossary_entries($limit=0));
+	// TODO: CACHING!!!!
+        // $kalitems = array_merge($kalitems, self::get_kal_question($limit=0));
+        }
 
         // Grab the panopto server.
         $panoptourl = get_config('block_panopto', 'server_name1');
@@ -515,11 +995,11 @@ class kalpanmaps {
         // The link we're using. Should this be a config item?
         $link = '/Panopto/Pages/Viewer.aspx?id=';
 
-/*
-echo'<xmp>';
-print_r($kalitems);
-echo'</xmp>';
-*/
+        /*
+        echo'<xmp>';
+        print_r($kalitems);
+        echo'</xmp>';
+        */
 
         // Loop through the kaltura items and do stuff.
         foreach ($kalitems as $kalitem) {
@@ -529,11 +1009,11 @@ echo'</xmp>';
             // Get an object for future use in building the new data entry.
             $panmatches = self::get_panmatches($kalitem, $verbose);
 
-/*
-echo'<xmp>';
-print_r($panmatches);
-echo'</xmp>';
-*/
+            /*
+            echo'<xmp>';
+            print_r($panmatches);
+            echo'</xmp>';
+            */
 
             if (!isset($panmatches->entryid)) { return; }
 
@@ -547,15 +1027,14 @@ echo'</xmp>';
                 mtrace("      Found iframe with kaltura entryid: $panmatches->entryid.");
             }
 
-/*
-echo'<xmp>';
-print_r($kalitem->itemdata);
-echo'</xmp>';
-
-echo'<xmp>';
-print_r($panmatches->oldiframe);
-echo'</xmp>';
-*/
+            /*
+            echo'<xmp>';
+            print_r($kalitem->itemdata);
+            echo'</xmp>';
+            echo'<xmp>';
+            print_r($panmatches->oldiframe);
+            echo'</xmp>';
+            */
 
             // Replace the old iframe with the new one and a hidden version of itself.
             $kalitem->newitemdata = preg_replace('/\<iframe id="kaltura_player".+?entry_id=' .
@@ -575,15 +1054,14 @@ echo'</xmp>';
                                           ' HIDDEN-->',
                                           $kalitem->itemdata, 1);
 
-/*
-echo'<xmp>';
-print_r($panmatches->noframe);
-echo'</xmp>';
-
-echo'<xmp>';
-print_r($kalitem->newitemdata);
-echo'</xmp>';
-*/
+            /*
+            echo'<xmp>';
+            print_r($panmatches->noframe);
+            echo'</xmp>';
+            echo'<xmp>';
+            print_r($kalitem->newitemdata);
+            echo'</xmp>';
+            */
 
             // Update the record with the new iframe and hidden noframe.
             if (self::write_panitem($kalitem)) {
@@ -592,7 +1070,7 @@ echo'</xmp>';
 
                 // Log that we've done it in verbose mode or just update the page with a period.
                 if ($verbose) {
-                    mtrace("  Replaced Kaltura $panmatches->entryid iframe with Panopto id: $panoptoid->panopto_id.");
+                    mtrace("    Replaced $kalitem->tble $kalitem->dataitem kaltura entry_id: $panmatches->entryid iframe with Panopto id: $panoptoid->panopto_id in course $kalitem->courseid.");
                 } else {
                     mtrace(".");
                 }
@@ -601,7 +1079,7 @@ echo'</xmp>';
                 $fails++;
 
                 // We have a failure, log it regardless of status.
-                mtrace("  Conversion of $kalitem->table.$kalitem->dataitem failed for kaltura entryid: $panmatches->entryid and panopto id: $panoptoid in courseid $kalitem->course.");
+                mtrace("  Conversion of $kalitem->tble.$kalitem->dataitem failed for kaltura entryid: $panmatches->entryid and panopto id: $panoptoid in courseid $kalitem->course.");
             }
 
         // Rebuild the course cache.
