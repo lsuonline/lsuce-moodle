@@ -46,6 +46,8 @@ $string['kalembeds_width'] = 'Width';
 $string['kalembeds_width_help'] = 'Default iframe width when none is specified.';
 $string['kalembeds_height'] = 'Height';
 $string['kalembeds_height_help'] = 'Default iframe height when none is specified.';
+$string['kalembeds_studentdata'] = 'Student Data';
+$string['kalembeds_studentdata_help'] = 'Replace Kaltura iframes with corresponding panopto iframes for student submitted data?';
 
 // Import Settings.
 $string['kalpanmapfile'] = 'File location';

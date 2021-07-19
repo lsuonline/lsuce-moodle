@@ -115,6 +115,16 @@ if ($hassiteconfig) {
         )
     );
 
+    // Add an option to process student data.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_kalprocessstudents',
+            get_string('kalembeds_studentdata', 'local_kalpanmaps'),
+            get_string('kalembeds_studentdata_help', 'local_kalpanmaps'),
+            0 // Default.
+        )
+    );
+
     // Add a configurable default width.
     $settings->add(
         new admin_setting_configtext(
