@@ -348,7 +348,7 @@ class kalpanmaps {
 
         // Start the log.
         if ($verbose) {
-            mtrace("We are in verbose mode and have begun converting kaltura iframe embeds.");
+            mtrace("We are in verbose mode and have begun converting kaltura embeds.");
         } else {
             mtrace("Converting kaltura iframe embeds.");
         }
@@ -361,7 +361,7 @@ class kalpanmaps {
 
         // Log out what happened.
         if ($success) {
-            mtrace("Successfully converted all remaining kaltura iframe embeds.");
+            mtrace("Successfully converted all remaining kaltura embeds.");
         } else {
             mtrace("The process has completed. Any errors would be listed above.");
         }
@@ -384,7 +384,8 @@ class kalpanmaps {
                        "label" AS tble,
                        "intro" AS dataitem
                    FROM mdl_label l
-                   WHERE l.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE l.intro REGEXP "<iframe id=.+</iframe>"
+                       OR l.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -409,7 +410,8 @@ class kalpanmaps {
                        "page" AS tble,
                        "content" AS dataitem
                    FROM mdl_page p
-                   WHERE p.content REGEXP "<iframe id=.+</iframe>"';
+		   WHERE p.content REGEXP "<iframe id=.+</iframe>"
+                       OR p.content REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -434,7 +436,8 @@ class kalpanmaps {
                        "page" AS tble,
                        "intro" AS dataitem
                    FROM mdl_page p
-                   WHERE p.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE p.intro REGEXP "<iframe id=.+</iframe>"
+                       OR p.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -459,7 +462,8 @@ class kalpanmaps {
                        "assign" AS tble,
                        "intro" AS dataitem
                    FROM mdl_assign a
-                   WHERE a.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE a.intro REGEXP "<iframe id=.+</iframe>"
+                       OR a.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -484,7 +488,8 @@ class kalpanmaps {
                        "course_sections" AS tble,
                        "summary" AS dataitem
                    FROM mdl_course_sections cs
-                   WHERE cs.summary REGEXP "<iframe id=.+</iframe>"';
+		   WHERE cs.summary REGEXP "<iframe id=.+</iframe>"
+                       OR cs.summary REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -509,7 +514,8 @@ class kalpanmaps {
                        "quiz" AS tble,
                        "intro" AS dataitem
                    FROM mdl_quiz q
-                   WHERE q.intro REGEXP "<iframe id=.+</iframe>"';
+                   WHERE q.intro REGEXP "<iframe id=.+</iframe>"
+                       OR q.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -534,7 +540,8 @@ class kalpanmaps {
                        "book" AS tble,
                        "intro" AS dataitem
                    FROM mdl_book b
-                   WHERE b.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE b.intro REGEXP "<iframe id=.+</iframe>"
+                       OR b.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -560,7 +567,8 @@ class kalpanmaps {
                        "content" AS dataitem
                    FROM mdl_book_chapters bc
                        INNER JOIN mdl_book b ON b.id = bc.bookid
-                   WHERE bc.content REGEXP "<iframe id=.+</iframe>"';
+                   WHERE bc.content REGEXP "<iframe id=.+</iframe>"
+                       OR bc.content REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -585,7 +593,8 @@ class kalpanmaps {
                        "forum" AS tble,
                        "intro" AS dataitem
                    FROM mdl_forum f
-                   WHERE f.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE f.intro REGEXP "<iframe id=.+</iframe>"
+                       OR f.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -646,7 +655,8 @@ class kalpanmaps {
                        "lesson" AS tble,
                        "intro" AS dataitem
                    FROM mdl_lesson l
-                   WHERE l.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE l.intro REGEXP "<iframe id=.+</iframe>"
+                       OR l.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -672,7 +682,8 @@ class kalpanmaps {
                        "contents" AS dataitem
                    FROM mdl_lesson_pages lp
                        INNER JOIN mdl_lesson l ON l.id = lp.lessonid
-                   WHERE lp.contents REGEXP "<iframe id=.+</iframe>"';
+		   WHERE lp.contents REGEXP "<iframe id=.+</iframe>"
+                       OR lp.contents REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -697,7 +708,8 @@ class kalpanmaps {
                        "journal" AS tble,
                        "intro" AS dataitem
                    FROM mdl_journal j
-                   WHERE j.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE j.intro REGEXP "<iframe id=.+</iframe>"
+                       OR j.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -722,7 +734,8 @@ class kalpanmaps {
                        "choice" AS tble,
                        "intro" AS dataitem
                    FROM mdl_choice c
-                   WHERE c.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE c.intro REGEXP "<iframe id=.+</iframe>"
+                       OR c.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -747,7 +760,8 @@ class kalpanmaps {
                        "feedback" AS tble,
                        "intro" AS dataitem
                    FROM mdl_feedback f
-                   WHERE f.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE f.intro REGEXP "<iframe id=.+</iframe>"
+                       OR f.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -772,7 +786,8 @@ class kalpanmaps {
                        "glossary" AS tble,
                        "intro" AS dataitem
                    FROM mdl_glossary g
-                   WHERE g.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE g.intro REGEXP "<iframe id=.+</iframe>"
+                       OR g.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -797,7 +812,8 @@ class kalpanmaps {
                        "choicegroup" AS tble,
                        "intro" AS dataitem
                    FROM mdl_choicegroup gc
-                   WHERE gc.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE gc.intro REGEXP "<iframe id=.+</iframe>"
+                       OR gc.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -822,7 +838,8 @@ class kalpanmaps {
                        "lti" AS tble,
                        "intro" AS dataitem
                    FROM mdl_lti l
-                   WHERE l.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE l.intro REGEXP "<iframe id=.+</iframe>"
+                       OR l.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -847,7 +864,8 @@ class kalpanmaps {
                        "questionnaire" AS tble,
                        "intro" AS dataitem
                    FROM mdl_questionnaire q
-                   WHERE q.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE q.intro REGEXP "<iframe id=.+</iframe>"
+                       OR q.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -872,7 +890,8 @@ class kalpanmaps {
                        "scorm" AS tble,
                        "intro" AS dataitem
                    FROM mdl_scorm sco
-                   WHERE sco.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE sco.intro REGEXP "<iframe id=.+</iframe>"
+                       OR sco.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -897,7 +916,8 @@ class kalpanmaps {
                        "survey" AS tble,
                        "intro" AS dataitem
                    FROM mdl_survey s
-                   WHERE s.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE s.intro REGEXP "<iframe id=.+</iframe>"
+                       OR s.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -922,7 +942,8 @@ class kalpanmaps {
                        "turnitintooltwo" AS tble,
                        "intro" AS dataitem
                    FROM mdl_turnitintooltwo tii
-                   WHERE tii.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE tii.intro REGEXP "<iframe id=.+</iframe>"
+                       OR tii.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -947,7 +968,8 @@ class kalpanmaps {
                        "url" AS tble,
                        "intro" AS dataitem
                    FROM mdl_url u
-                   WHERE u.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE u.intro REGEXP "<iframe id=.+</iframe>"
+                       OR u.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -972,7 +994,8 @@ class kalpanmaps {
                        "wiki" AS tble,
                        "intro" AS dataitem
                    FROM mdl_wiki w
-                   WHERE w.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE w.intro REGEXP "<iframe id=.+</iframe>"
+                       OR w.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -997,7 +1020,8 @@ class kalpanmaps {
                        "workshop" AS tble,
                        "intro" AS dataitem
                    FROM mdl_workshop w
-                   WHERE w.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE w.intro REGEXP "<iframe id=.+</iframe>"
+                       OR w.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1022,7 +1046,8 @@ class kalpanmaps {
                        "data" AS tble,
                        "intro" AS dataitem
                    FROM mdl_data db
-                   WHERE db.intro REGEXP "<iframe id=.+</iframe>"';
+		   WHERE db.intro REGEXP "<iframe id=.+</iframe>"
+                       OR db.intro REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1048,10 +1073,10 @@ class kalpanmaps {
                        "questiontext" AS dataitem
                    FROM mdl_question qq
                        INNER JOIN mdl_question_categories qc ON qc.id = qq.category
-                       INNER JOIN mdl_context ctx ON ctx.id = qc.contextid
+                       INNER JOIN mdl_context ctx ON ctx.id = qc.contextiid AND ctx.contextlevel = 50
                        INNER JOIN mdl_course c ON c.id = ctx.instanceid
-                   WHERE ctx.contextlevel = 50
-                       AND qq.questiontext REGEXP "<iframe id=.+</iframe>"';
+		   WHERE qq.questiontext REGEXP "<iframe id=.+</iframe>"
+                       OR qq.questiontext REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1060,9 +1085,6 @@ class kalpanmaps {
         // Return the array of objects.
         return $kalitems;
     }
-
-// Student Data
-
 
     /**
      * Function for grabbing the panoptoid for a corresponding kalpanmaps kaltura entry_id.
@@ -1076,10 +1098,15 @@ class kalpanmaps {
         $parms = array('kaltura_id' => $entryid);
         $panoptoid = $DB->get_record('local_kalpanmaps', $parms);
 
-
-        // Log the entryid and panoptoid accordingly.
-        if ($verbose) {
-            mtrace("    Retreived $panoptoid->panopto_id from DB with matching entryid $entryid.");
+        if ($panoptoid) {
+            // Log the entryid and panoptoid accordingly.
+            if ($verbose) {
+                mtrace("    Retreived $panoptoid->panopto_id from DB with matching entryid $entryid.");
+            }
+        } else {
+            if ($verbose) {
+                mtrace("    No matching panopto id found for kaltura entryid $entryid. Exiting process.");
+            }
         }
 
         // Return the panotoid.
@@ -1137,14 +1164,8 @@ class kalpanmaps {
         preg_match('/(<iframe id=.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches);
         $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
 
-        preg_match('/(\<a href="http.+?kaltura.com\/browseandembed\/index\/media\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/', $kalitem->itemdata, $matches);
-        $kalmatches->kalbutton = isset($matches[1]) ? $matches[1] : $kalmatches->oldiframe;
-
-        /*
-        echo'<xmp>Kaltura Embed Button: ';
-        print_r($kalmatches->kalbutton);
-        echo'</xmp>';
-        */
+        preg_match('/(\<a href="http.+?kaf.kaltura.com\/browseandembed\/index\/media\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/', $kalitem->itemdata, $matches);
+        $kalmatches->kalbutton = isset($matches[1]) ? $matches[1] : '';
 
         // Rename "iframe" to a nonsensical "noframe" tag so we don't show up in future searches.
         $kalmatches->noframe = preg_replace('/iframe/', 'noframe', $kalmatches->oldiframe);
@@ -1155,19 +1176,45 @@ class kalpanmaps {
 
         // Grab the width and add it to the object.
         preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        $kalmatches->width = isset($matches[1]) ? $matches[1] : $CFG->local_kalpanmaps_width;
+        $kalmatches->width = isset($matches[1]) ? $matches[1] : '';//$CFG->local_kalpanmaps_width;
 
         // Grab the height and add it to the object.
         preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        $kalmatches->height = isset($matches[1]) ? $matches[1] : $CFG->local_kalpanmaps_height;
+        $kalmatches->height = isset($matches[1]) ? $matches[1] : '';//$CFG->local_kalpanmaps_height;
 
         // Grab anything that might be extra and add it to the object.
         preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
 
+        preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/', $kalmatches->kalbutton, $matches);
+	$kalmatches->noframe = !empty($kalmatches->noframe) ? $kalmatches->noframe : '<!-- HIDDEN <anchor ' . $matches[2] . '</anchor> HIDDEN -->';
+
+        // Set these for the buttons.
+        $kalmatches->entryid = $kalmatches->entryid ? $kalmatches->entryid : $matches[3];
+        $kalmatches->width = $kalmatches->width ? $kalmatches->width : $matches[4];
+        $kalmatches->height = $kalmatches->height ? $kalmatches->height : $matches[5];
+        $kalmatches->ifxtra = $kalmatches->ifxtra ? $kalmatches->ifxtra : $matches[6];
+
+        /*
+        echo'<xmp>';
+        echo"kalbutton: ";
+        print_r($kalmatches->kalbutton);
+        echo"\nnobutton: ";
+        print_r($kalmatches->noframe);
+        echo"\nentry_id: ";
+        print_r($kalmatches->entryid);
+        echo"\nwidth: ";
+        print_r($kalmatches->width);
+        echo"\nheight: ";
+        print_r($kalmatches->height);
+        echo"\nifextra: ";
+        print_r($kalmatches->ifxtra);
+        echo'</xmp>';
+        */
+
         // Log the iframe info in verbose mode.
         if ($verbose) {
-            mtrace("  Found $kalitem->tble $kalitem->dataitem with iframe and entryid: $kalmatches->entryid, width: $kalmatches->width, height: $kalmatches->height in course: $kalitem->courseid.");
+            mtrace("  Found $kalitem->tble $kalitem->dataitem with matching data and entryid: $kalmatches->entryid, width: $kalmatches->width, height: $kalmatches->height in course: $kalitem->courseid.");
         }
 
         return $kalmatches;
@@ -1295,29 +1342,30 @@ class kalpanmaps {
             echo'</xmp>';
             */
 
-            if (!isset($panmatches->entryid)) { return; }
-
             // Get the corresponding panopto_id.
             $panoptoid = self::get_kalpanmaps($panmatches->entryid, $verbose);
+
+            if (!$panoptoid) {
+                continue;
+            }
 
             // Build the URL for the new iframe.
             $kalframe = 'https://' . $panoptourl . $link . $panoptoid->panopto_id . '&showtitle=false' . '&captions=true';
 
             if ($verbose) {
-                mtrace("  Found iframe with kaltura entryid: $panmatches->entryid.");
+                mtrace("  Found data item with kaltura entryid: $panmatches->entryid.");
             }
 
             /*
             echo'<xmp>';
             print_r($kalitem->itemdata);
-            echo'</xmp>';
-            echo'<xmp>';
             print_r($panmatches->oldiframe);
             echo'</xmp>';
             */
 
             // Replace the old iframe with the new one and a hidden version of itself.
-            $kalitem->newitemdata = preg_replace('/\<iframe id="kaltura_player".+?entry_id=' .
+            if($panmatches->oldiframe <> '') {
+                $kalitem->newitemdata = preg_replace('/\<iframe id="kaltura_player".+?entry_id=' .
                                           $panmatches->entryid .
                                           '.+?\<\/iframe\>/',
                                           '<iframe src="' .
@@ -1333,12 +1381,27 @@ class kalpanmaps {
                                           $panmatches->noframe .
                                           ' HIDDEN-->',
                                           $kalitem->itemdata, 1);
+            } else {
+                $kalitem->newitemdata = preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
+                                          $panmatches->entryid .
+                                          '\/.+?\>.+?\<\/a\>/',
+                                          '<iframe src="' .
+                                          $kalframe .
+                                          '" width="' .
+                                          $panmatches->width .
+                                          '" height="' .
+                                           $panmatches->height .
+                                          '">' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          $panmatches->noframe,
+                                          $kalitem->itemdata, 1);
+            }
 
             /*
             echo'<xmp>';
             print_r($panmatches->noframe);
-            echo'</xmp>';
-            echo'<xmp>';
+            echo"\nNewItemData: ";
             print_r($kalitem->newitemdata);
             echo'</xmp>';
             */
@@ -1350,7 +1413,7 @@ class kalpanmaps {
 
                 // Log that we've done it in verbose mode or just update the page with a period.
                 if ($verbose) {
-                    mtrace("  Replaced $kalitem->tble $kalitem->dataitem kaltura entry_id: $panmatches->entryid iframe with Panopto id: $panoptoid->panopto_id in course $kalitem->courseid.");
+                    mtrace("  Replaced $kalitem->tble $kalitem->dataitem kaltura entry_id: $panmatches->entryid item data with Panopto id: $panoptoid->panopto_id in course $kalitem->courseid.");
                 } else {
                     mtrace(".");
                 }
@@ -1371,7 +1434,7 @@ class kalpanmaps {
         // Log what we did.
         mtrace("  Success: $successes");
         mtrace("  Failures: $fails");
-        mtrace("Kaltura iframe conversion is complete for now.");
+        mtrace("Kaltura embed conversion is complete for now.");
     }
 
 
