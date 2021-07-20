@@ -1073,7 +1073,7 @@ class kalpanmaps {
                        "questiontext" AS dataitem
                    FROM mdl_question qq
                        INNER JOIN mdl_question_categories qc ON qc.id = qq.category
-                       INNER JOIN mdl_context ctx ON ctx.id = qc.contextiid AND ctx.contextlevel = 50
+                       INNER JOIN mdl_context ctx ON ctx.id = qc.contextid AND ctx.contextlevel = 50
                        INNER JOIN mdl_course c ON c.id = ctx.instanceid
 		   WHERE qq.questiontext REGEXP "<iframe id=.+</iframe>"
                        OR qq.questiontext REGEXP "<a .+http://.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
