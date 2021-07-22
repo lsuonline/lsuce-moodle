@@ -48,6 +48,18 @@ $string['kalembeds_height'] = 'Height';
 $string['kalembeds_height_help'] = 'Default iframe height when none is specified.';
 $string['kalembeds_studentdata'] = 'Student Data';
 $string['kalembeds_studentdata_help'] = 'Replace Kaltura iframes with corresponding panopto iframes for student submitted data?';
+$string['kalembeds_showtitle'] = 'Show Video Title';
+$string['kalembeds_showtitle_help'] = 'Shows the video title in the top left of the video.';
+$string['kalembeds_captions'] = 'Show Video Captions';
+$string['kalembeds_captions_help'] = 'Shows the video captions by default, if they exist.';
+$string['kalembeds_autoplay'] = 'Autoplay Video';
+$string['kalembeds_autoplay_help'] = 'Automatically starts the video on load. This may not work on all browsers.';
+$string['kalembeds_offerviewer'] = 'Show "Watch in Panopto" link';
+$string['kalembeds_offerviewer_help'] = 'Shows the "Watch in Panopto" link in the lower right portion of the video.';
+$string['kalembeds_showbrand'] = 'Show Brand';
+$string['kalembeds_showbrand_help'] = 'Shows a custom brand if applicable.';
+$string['kalembeds_interactivity'] = 'Allow Interactivity';
+$string['kalembeds_interactivity_help'] = 'Enables the public to access the table of contents, post public comments, add notes, view video info, and search for other videos within the video interface.';
 
 // Import Settings.
 $string['kalpanmapfile'] = 'File location';

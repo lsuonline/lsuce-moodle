@@ -109,7 +109,7 @@ if ($hassiteconfig) {
 
     // Add the subhead for iframe conversion specific settings.
     $settings->add(
-        new admin_setting_heading('local_kalpanmaps_iframes', 
+        new admin_setting_heading('local_kalpanmaps_iframes',
             get_string('convert_kalembeds', 'local_kalpanmaps'),
             get_string('convert_kalembeds_help', 'local_kalpanmaps')
         )
@@ -144,4 +144,60 @@ if ($hassiteconfig) {
             '285'
         )
     );
+
+    // Add options for urlparms.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_showtitle',
+            get_string('kalembeds_showtitle', 'local_kalpanmaps'),
+            get_string('kalembeds_showtitle_help', 'local_kalpanmaps'),
+            0 // Default.
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_captions',
+            get_string('kalembeds_captions', 'local_kalpanmaps'),
+            get_string('kalembeds_captions_help', 'local_kalpanmaps'),
+            1 // Default.
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_autoplay',
+            get_string('kalembeds_autoplay', 'local_kalpanmaps'),
+            get_string('kalembeds_autoplay_help', 'local_kalpanmaps'),
+            0 // Default.
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_offerviewer',
+            get_string('kalembeds_offerviewer', 'local_kalpanmaps'),
+            get_string('kalembeds_offerviewer_help', 'local_kalpanmaps'),
+            1 // Default.
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_showbrand',
+            get_string('kalembeds_showbrand', 'local_kalpanmaps'),
+            get_string('kalembeds_showbrand_help', 'local_kalpanmaps'),
+            0 // Default.
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'local_kalpanmaps_interactivity',
+            get_string('kalembeds_interactivity', 'local_kalpanmaps'),
+            get_string('kalembeds_interactivity_help', 'local_kalpanmaps'),
+            0 // Default.
+        )
+    );
+
 }

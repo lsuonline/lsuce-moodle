@@ -136,7 +136,7 @@ class kalvidmaps {
                     $eol = ($counter % 50) == 0 ? PHP_EOL : " ";
                     if ($eol == PHP_EOL) {
                         mtrace("Imported " . $counter . " entries.", $eol);
-		    } else {
+                    } else {
                         mtrace(".", $eol);
                     }
                 }
@@ -180,7 +180,7 @@ class kalvidmaps {
         // Set this up for later.
         $data = new stdClass;
 
-        // populate the data.
+        // Populate the data.
         $data->kaltura_id = $fields[0];
         $data->panopto_id = $fields[1];
 
@@ -188,7 +188,7 @@ class kalvidmaps {
         $table = 'local_kalpanmaps';
 
         // Insert the data and return the id of the newly inserted row.
-        $return = $DB->insert_record($table, $data, $returnid=true, $bulk=false);
+        $return = $DB->insert_record($table, $data, $returnid = true, $bulk = false);
 
         // Some verbose logging.
         if ($verbose) {

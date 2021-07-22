@@ -75,26 +75,26 @@ function local_kalpanmaps_import() {
     local_kalpanmaps_csv($content);
 }
 
-    /**
-     * Truncates the kalpanmaps table.
-     *
-     * @package   local_kalpanmaps
-     * @return    bool
-     *
-     */
-    function local_kalpanmaps_purge() {
-        global $DB;
+/**
+ * Truncates the kalpanmaps table.
+ *
+ * @package   local_kalpanmaps
+ * @return    bool
+ *
+ */
+function local_kalpanmaps_purge() {
+    global $DB;
 
-        // Build the SQL for truncating the table.
-        $purgesql = 'TRUNCATE {local_kalpanmaps}';
+    // Build the SQL for truncating the table.
+    $purgesql = 'TRUNCATE {local_kalpanmaps}';
 
-        // Execut it.
-        if ($DB->execute($purgesql)) {
-            return true;
-        } else {
-            return false;
-        }
+    // Execute it.
+    if ($DB->execute($purgesql)) {
+        return true;
+    } else {
+        return false;
     }
+}
 
 
 /**
@@ -169,7 +169,7 @@ function local_kalpanmaps_field2db($fields) {
     // Set this up for later.
     $data = new stdClass;
 
-    // populate the data.
+    // Populate the data.
     $data->kaltura_id = $fields[0];
     $data->panopto_id = $fields[1];
 
@@ -177,13 +177,17 @@ function local_kalpanmaps_field2db($fields) {
     $table = 'local_kalpanmaps';
 
     // Inser the data and return the id of the newly inserted row.
-    $return = $DB->insert_record($table, $data, $returnid=true, $bulk=false);
+    $return = $DB->insert_record($table, $data, $returnid = true, $bulk = false);
 
     // Some logging.
-    echo("  Imported Kaltura entry_id: " . $data->kaltura_id . " and Panopto session_id: " . $data->panopto_id . " into kalpanmaps id: " . $return . ".\n");
+    echo("  Imported Kaltura entry_id: " .
+        $data->kaltura_id .
+        " and Panopto session_id: " .
+        $data->panopto_id .
+        " into kalpanmaps id: " .
+        $return .
+        ".\n");
 
     // Return the kalpanmaps row id even though we don't use it.
     return $return;
 }
-
-?>
