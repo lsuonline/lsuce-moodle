@@ -391,7 +391,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_label l
-                   WHERE l.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE l.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR l.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -418,7 +418,7 @@ class kalpanmaps {
                        "content" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_page p
-                   WHERE p.content REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE p.content REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR p.content REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -445,7 +445,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_page p
-                   WHERE p.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE p.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR p.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -472,7 +472,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_assign a
-                   WHERE a.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE a.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR a.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -526,7 +526,7 @@ class kalpanmaps {
                        "summary" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_course_sections cs
-                   WHERE cs.summary REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE cs.summary REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR cs.summary REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -553,7 +553,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_quiz q
-                   WHERE q.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE q.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR q.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -580,7 +580,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_book b
-                   WHERE b.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE b.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR b.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -608,7 +608,7 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_book_chapters bc
                        INNER JOIN mdl_book b ON b.id = bc.bookid
-                   WHERE bc.content REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE bc.content REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR bc.content REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -635,7 +635,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_forum f
-                   WHERE f.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE f.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR f.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -702,7 +702,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_lesson l
-                   WHERE l.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE l.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR l.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -730,7 +730,7 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_lesson_pages lp
                        INNER JOIN mdl_lesson l ON l.id = lp.lessonid
-                   WHERE lp.contents REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE lp.contents REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR lp.contents REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -817,7 +817,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_journal j
-                   WHERE j.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE j.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR j.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -871,7 +871,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_choice c
-                   WHERE c.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE c.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR c.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -898,7 +898,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_feedback f
-                   WHERE f.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE f.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR f.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -925,7 +925,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_glossary g
-                   WHERE g.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE g.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR g.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -964,7 +964,7 @@ class kalpanmaps {
                   FROM mdl_glossary_entries ge
                     INNER JOIN mdl_glossary g ON g.id = ge.glossaryid
                     ' . $joins . '
-                   WHERE (g.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE (g.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR g.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")
                     ' . $wheres;
 
@@ -992,7 +992,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_choicegroup gc
-                   WHERE gc.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE gc.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR gc.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1019,7 +1019,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_lti l
-                   WHERE l.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE l.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR l.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1046,7 +1046,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_questionnaire q
-                   WHERE q.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE q.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR q.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1073,7 +1073,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_scorm sco
-                   WHERE sco.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE sco.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR sco.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1100,7 +1100,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_survey s
-                   WHERE s.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE s.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR s.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1127,7 +1127,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_turnitintooltwo tii
-                   WHERE tii.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE tii.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR tii.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1154,7 +1154,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_url u
-                   WHERE u.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE u.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR u.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1181,7 +1181,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_wiki w
-                   WHERE w.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE w.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR w.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1208,7 +1208,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_workshop w
-                   WHERE w.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE w.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR w.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1235,7 +1235,7 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_data db
-                   WHERE db.intro REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE db.intro REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR db.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
@@ -1265,7 +1265,7 @@ class kalpanmaps {
                        INNER JOIN mdl_question_categories qc ON qc.id = qq.category
                        INNER JOIN mdl_context ctx ON ctx.id = qc.contextid AND ctx.contextlevel = 50
                        INNER JOIN mdl_course c ON c.id = ctx.instanceid
-                   WHERE qq.questiontext REGEXP "<iframe id=.+kaltura.com.+?>.+</iframe>"
+                   WHERE qq.questiontext REGEXP "<iframe id=.+kaltura.com.+>.+</iframe>"
                        OR qq.questiontext REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
 
         // Build the array of objects.
