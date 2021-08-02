@@ -1356,52 +1356,57 @@ class kalpanmaps {
         preg_match('/(<iframe id=.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches);
         $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
 
+        unset($matches);
         preg_match(
             '/(\<a href="http.+?kaf.kaltura.com\/browseandembed\/index\/media\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/',
             $kalitem->itemdata, $matches);
         $kalmatches->kalbutton = isset($matches[1]) ? $matches[1] : '';
 
+        unset($matches);
         // Rename "iframe" to a nonsensical "noframe" tag so we don't show up in future searches.
         $kalmatches->noframe = preg_replace('/iframe/', 'noframe', $kalmatches->oldiframe);
 
+        unset($matches);
         // Grab the Kaltura entry_id and add it to the object.
         preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
 
+        unset($matches);
         // Grab the width and add it to the object.
         preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        $kalmatches->width = isset($matches[1]) ? $matches[1] : $CFG->local_kalpanmaps_width;
+        preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
+            $kalmatches->kalbutton, $matches2);
+        $kalmatches->width = isset($matches[1]) ? $matches[1] : (isset($matches2[4]) ? $matches2[4] : $CFG->local_kalpanmaps_width);
 
+        unset($matches);
         // Grab the height and add it to the object.
         preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        $kalmatches->height = isset($matches[1]) ? $matches[1] : $CFG->local_kalpanmaps_height;
+        $kalmatches->height = isset($matches[1]) ? $matches[1] : (isset($matches2[5]) ? $matches2[5] : $CFG->local_kalpanmaps_height);
 
         // Rename "tinymce-kalturamedia-embed" to "LSU-PanoptoMedia-Embed".
-        $kalmatches->kalbutton = preg_replace('/\>.+?\|\|(.+?) \[(.+?)\]\|\|\d.+\|\|\d.+\</', '>$1 &mdash; $2<', $kalmatches->kalbutton);
+        $kalmatches->kalbutton = preg_replace('/\>.+?\|\|(.+?) \[(.+?)\]\|\|\d.+\|\|\d.+\</', '>$1 - $2<', $kalmatches->kalbutton);
 
+        unset($matches);
         // Grab anything that might be extra and add it to the object.
         preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
 
+        unset($matches);
         preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches);
         $kalmatches->noframe = !empty($kalmatches->noframe)
             ? $kalmatches->noframe
             : ($matches ? '<!-- HIDDEN <anchor ' . $matches[2] . '</anchor> HIDDEN -->' : '');
 
-        // Set these for the buttons.
-        $kalmatches->entryid = $kalmatches->entryid
-            ? $kalmatches->entryid :
-            (isset($matches[3]) ? $matches[3] : '');
-        $kalmatches->width = $kalmatches->width
-            ? $kalmatches->width :
-            (isset($matches[4]) ? $matches[4] : $CFG->local_kalpanmaps_width);
-        $kalmatches->height = $kalmatches->height
-            ? $kalmatches->height :
-            (isset($matches[5]) ? $matches[5] : $CFG->local_kalpanmaps_height);
-        $kalmatches->ifxtra = $kalmatches->ifxtra
-            ? $kalmatches->ifxtra :
-            (isset($matches[6]) ? $matches[6] : '');
+        if ($kalmatches->kalbutton) {
+            // Set these for the buttons.
+            $kalmatches->entryid = $kalmatches->entryid
+                ? $kalmatches->entryid :
+                (isset($matches[3]) ? $matches[3] : '');
+            $kalmatches->ifxtra = $kalmatches->ifxtra
+                ? $kalmatches->ifxtra :
+                (isset($matches[6]) ? $matches[6] : '');
+        }
 
         /*
         echo'<xmp>';
@@ -1649,17 +1654,35 @@ class kalpanmaps {
 
             // Replace the old iframe with the new one and a hidden version of itself.
             if ($panmatches->oldiframe <> '') {
-                $kalitem->newitemdata = preg_replace('/\<iframe id=.+?entry_id=' .
+                if ($kalitem->tble == "course_sections") {
+                    $kalitem->newitemdata = preg_replace('/\<iframe id=.+?entry_id=' .
+                                          $panmatches->entryid .
+                                          '.+?\<\/iframe\>/',
+                                          '<iframe width="'.
+                                          $panmatches->width .
+                                          'px" height="'.
+                                          $panmatches->height .
+                                          'px" src="' .
+                                          $kalframe .
+                                          '"> Panopto Video - ' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          '<!--HIDDEN ' .
+                                          $panmatches->noframe .
+                                          ' HIDDEN-->',
+                                          $kalitem->itemdata, 1);
+                } else {
+                    $kalitem->newitemdata = preg_replace('/\<iframe id=.+?entry_id=' .
                                           $panmatches->entryid .
                                           '.+?\<\/iframe\>/',
                                           '<div style="max-width: ' .
-                                          $panmatches->width . 'px">' .
+                                          $panmatches->width . 'px;">' .
                                           '<div class="pandiv" style="padding-top: '
                                           . (($panmatches->height / $panmatches->width) * 100) .
-                                          '%">' .
+                                          '%;">' .
                                           '<iframe class="paniframe" src="' .
                                           $kalframe .
-                                          '">' .
+                                          '">Panopto Video - ' .
                                           $panmatches->ifxtra .
                                           '</iframe>' .
                                           '</div>' .
@@ -1668,6 +1691,7 @@ class kalpanmaps {
                                           $panmatches->noframe .
                                           ' HIDDEN-->',
                                           $kalitem->itemdata, 1);
+                }
             } else {
                 if (($students && $kalitem->usertype == "student") || $forcelinks) {
                      $kalitem->newitemdata = preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
@@ -1681,22 +1705,41 @@ class kalpanmaps {
                                           $panmatches->noframe,
                                           $kalitem->itemdata, 1);
                 } else {
-                    $kalitem->newitemdata = preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
+                        if ($kalitem->tble == "course_sections") {
+                            $kalitem->newitemdata =
+                                          preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
+                                          $panmatches->entryid .
+                                          '\/.+?\>.+?\<\/a\>/',
+                                          '<iframe width="'.
+                                          $panmatches->width .
+                                          'px" height="'.
+                                          $panmatches->height .
+                                          'px" src="' .
+                                          $kalframe .
+                                          '"> Panopto Video - ' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          $panmatches->noframe,
+                                          $kalitem->itemdata, 1);
+                        } else {
+                            $kalitem->newitemdata =
+                                          preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
                                           $panmatches->entryid .
                                           '\/.+?\>.+?\<\/a\>/',
                                           '<div style="max-width: ' .
-                                          $panmatches->width . 'px">' .
+                                          $panmatches->width . 'px;">' .
                                           '<div class="pandiv" style="padding-top: '
                                           . (($panmatches->height / $panmatches->width) * 100) .
-                                          '%"><iframe class="paniframe" src="' .
+                                          '%;"><iframe class="paniframe" src="' .
                                           $kalframe .
-                                          '">' .
+                                          '"> Panopto Video - ' .
                                           $panmatches->ifxtra .
                                           '</iframe>' .
                                           '</div>' .
                                           '</div>' .
                                           $panmatches->noframe,
                                           $kalitem->itemdata, 1);
+                    }
                 }
             }
 
