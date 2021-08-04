@@ -391,8 +391,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_label l
-                   WHERE (l.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR l.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -418,8 +418,8 @@ class kalpanmaps {
                        "content" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_page p
-                   WHERE (p.content REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR p.content REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (p.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR p.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -445,8 +445,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_page p
-                   WHERE (p.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR p.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (p.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR p.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -472,8 +472,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_assign a
-                   WHERE (a.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR a.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (a.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR a.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -500,7 +500,7 @@ class kalpanmaps {
                        "student" AS usertype
                    FROM mdl_assignsubmission_onlinetext aso
                        INNER JOIN mdl_assign a ON a.id = aso.assignment
-                   WHERE aso.onlinetext REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
+                   WHERE aso.onlinetext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -526,8 +526,8 @@ class kalpanmaps {
                        "summary" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_course_sections cs
-                   WHERE (cs.summary REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR cs.summary REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (cs.summary LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR cs.summary LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -553,8 +553,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_quiz q
-                   WHERE (q.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR q.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (q.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -580,8 +580,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_book b
-                   WHERE (b.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR b.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (b.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR b.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -608,8 +608,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_book_chapters bc
                        INNER JOIN mdl_book b ON b.id = bc.bookid
-                   WHERE (bc.content REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR bc.content REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (bc.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR bc.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -635,8 +635,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_forum f
-                   WHERE (f.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR f.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (f.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -702,8 +702,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_lesson l
-                   WHERE (l.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR l.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -730,8 +730,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_lesson_pages lp
                        INNER JOIN mdl_lesson l ON l.id = lp.lessonid
-                   WHERE (lp.contents REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR lp.contents REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (lp.contents LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR lp.contents LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -817,8 +817,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_journal j
-                   WHERE (j.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR j.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (j.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR j.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -845,7 +845,7 @@ class kalpanmaps {
                        "student" AS usertype
                    FROM mdl_journal j
                        INNER JOIN mdl_journal_entries je ON je.journal = j.id
-                   WHERE je.text REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>"';
+                   WHERE je.text LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -871,8 +871,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_choice c
-                   WHERE (c.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR c.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (c.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR c.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -898,8 +898,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_feedback f
-                   WHERE (f.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR f.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (f.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -925,8 +925,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_glossary g
-                   WHERE (g.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR g.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (g.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -964,8 +964,8 @@ class kalpanmaps {
                   FROM mdl_glossary_entries ge
                     INNER JOIN mdl_glossary g ON g.id = ge.glossaryid
                     ' . $joins . '
-                   WHERE (g.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR g.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")
+                   WHERE (g.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")
                     ' . $wheres;
 
         // Build the array of objects.
@@ -992,8 +992,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_choicegroup gc
-                   WHERE (gc.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR gc.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (gc.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR gc.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1019,8 +1019,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_lti l
-                   WHERE (l.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR l.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1046,8 +1046,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_questionnaire q
-                   WHERE (q.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR q.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (q.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1073,8 +1073,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_scorm sco
-                   WHERE (sco.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR sco.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (sco.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR sco.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1100,8 +1100,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_survey s
-                   WHERE (s.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR s.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (s.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR s.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1127,8 +1127,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_turnitintooltwo tii
-                   WHERE (tii.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR tii.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (tii.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR tii.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1154,8 +1154,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_url u
-                   WHERE (u.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR u.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (u.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR u.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1181,8 +1181,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_wiki w
-                   WHERE (w.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR w.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (w.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1208,8 +1208,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_workshop w
-                   WHERE (w.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR w.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (w.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1235,8 +1235,8 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_data db
-                   WHERE (db.intro REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR db.intro REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (db.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR db.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1265,8 +1265,8 @@ class kalpanmaps {
                        INNER JOIN mdl_question_categories qc ON qc.id = qq.category
                        INNER JOIN mdl_context ctx ON ctx.id = qc.contextid AND ctx.contextlevel = 50
                        INNER JOIN mdl_course c ON c.id = ctx.instanceid
-                   WHERE (qq.questiontext REGEXP "<iframe.+kaltura.com.+>.+</iframe>"
-                       OR qq.questiontext REGEXP "<a .+http.+kaf.kaltura.com/browseandembed/.+/entryid/.+>.+</a>")';
+                   WHERE (qq.questiontext LIKE "%<iframe id=\"kaltura_player\" src=\"%"
+                       OR qq.questiontext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
 
         // Build the array of objects.
         $kalitems = array();
