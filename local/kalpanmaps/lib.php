@@ -1350,7 +1350,7 @@ class kalpanmaps {
         $kalmatches = new stdClass();
 
         // Replace any line breaks so we can ensure regex will work.
-        $kalitem->itemdata = preg_replace( "/\r|\n/", "", $kalitem->itemdata);
+        $kalitem->itemdata = preg_replace( "/\r|\n/", " ", $kalitem->itemdata);
 
         // Grab the original Kaltura iframe in it's entirety and add it to the object.
         preg_match('/(<iframe id=.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches);
