@@ -419,7 +419,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_page p
                    WHERE (p.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR p.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+                       OR p.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR p.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -609,7 +610,8 @@ class kalpanmaps {
                    FROM mdl_book_chapters bc
                        INNER JOIN mdl_book b ON b.id = bc.bookid
                    WHERE (bc.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR bc.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+                       OR bc.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR bc.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1349,49 +1351,69 @@ class kalpanmaps {
         // Instantiate the new object.
         $kalmatches = new stdClass();
 
+        // Use this to differentiate between playlists and standard items.
+        $kalmatches->playlist = false;
+
         // Replace any line breaks so we can ensure regex will work.
-        $kalitem->itemdata = preg_replace( "/\r|\n/", "", $kalitem->itemdata);
+        $kalitem->itemdata = preg_replace( "/\r|\n/", " ", $kalitem->itemdata);
 
         // Grab the original Kaltura iframe in it's entirety and add it to the object.
         preg_match('/(<iframe id=.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches);
         $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
+        // Grab the original Kaltura playlist iframe in it's entirety and add it to the object.
+        if ($kalmatches->oldiframe == '') {
+            preg_match('/(\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/.+?<\/iframe\>)/', $kalitem->itemdata, $matches);
+
+            $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
+            $kalmatches->playlist = true;
+            unset($matches);
+        }
+
         preg_match(
             '/(\<a href="http.+?kaf.kaltura.com\/browseandembed\/index\/media\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/',
             $kalitem->itemdata, $matches);
         $kalmatches->kalbutton = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
         // Rename "iframe" to a nonsensical "noframe" tag so we don't show up in future searches.
         $kalmatches->noframe = preg_replace('/iframe/', 'noframe', $kalmatches->oldiframe);
-
         unset($matches);
+
         // Grab the Kaltura entry_id and add it to the object.
         preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
+        // Grab the Kaltura playlist entry_id and add it to the object.
+        if ($kalmatches->oldiframe <> '' && $kalmatches->entryid == '') {
+            preg_match('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/(.+?)\?.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+            $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
+            $kalmatches->playlist = true;
+            unset($matches);
+        }
+
         // Grab the width and add it to the object.
-        preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe .+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches2);
         $kalmatches->width = isset($matches[1]) ? $matches[1] : (isset($matches2[4]) ? $matches2[4] : $CFG->local_kalpanmaps_width);
-
         unset($matches);
+
         // Grab the height and add it to the object.
-        preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe .+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->height = isset($matches[1]) ? $matches[1] : (isset($matches2[5]) ? $matches2[5] : $CFG->local_kalpanmaps_height);
 
         // Rename "tinymce-kalturamedia-embed" to "LSU-PanoptoMedia-Embed".
         $kalmatches->kalbutton = preg_replace('/\>.+?\|\|(.+?) \[(.+?)\]\|\|\d.+\|\|\d.+\</', '>$1 - $2<', $kalmatches->kalbutton);
-
         unset($matches);
+
         // Grab anything that might be extra and add it to the object.
-        preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe .+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
         preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches);
         $kalmatches->noframe = !empty($kalmatches->noframe)
@@ -1550,6 +1572,9 @@ class kalpanmaps {
         // The link we're using for faculty items.
         $flink = '/Panopto/Pages/Embed.aspx?id=';
 
+        // The link we're using for faculty playlists.
+        $plink = '/Panopto/Pages/Embed.aspx?pid=';
+
         // The link for student data.
         $slink = '/Panopto/Pages/Viewer.aspx?id=';
 
@@ -1630,6 +1655,8 @@ class kalpanmaps {
             // Build the URL for the new data item depending on who generated the content.
             if ($kalitem->usertype == "student") {
                 $kalframe = 'https://' . $panoptourl . $slink . $panoptoid->panopto_id . '&' . $kalframeparms;
+            } else if ($panmatches->playlist == true) {
+                $kalframe = 'https://' . $panoptourl . $plink . $panoptoid->panopto_id . '&' . $kalframeparms;
             } else {
                 $kalframe = 'https://' . $panoptourl . $flink . $panoptoid->panopto_id . '&' . $kalframeparms;
             }
@@ -1667,6 +1694,26 @@ class kalpanmaps {
                                           '"> Panopto Video - ' .
                                           $panmatches->ifxtra .
                                           '</iframe>' .
+                                          '<!--HIDDEN ' .
+                                          $panmatches->noframe .
+                                          ' HIDDEN-->',
+                                          $kalitem->itemdata, 1);
+                } else if ($panmatches->playlist == true) {
+                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?widget_id\/' .
+                                          $panmatches->entryid .
+                                          '\?.+?\<\/iframe\>/',
+                                          '<div style="max-width: ' .
+                                          $panmatches->width . 'px;">' .
+                                          '<div class="pandiv" style="padding-top: '
+                                          . (($panmatches->height / $panmatches->width) * 100) .
+                                          '%;">' .
+                                          '<iframe class="paniframe" src="' .
+                                          $kalframe .
+                                          '">Panopto Video - ' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          '</div>' .
+                                          '</div>' .
                                           '<!--HIDDEN ' .
                                           $panmatches->noframe .
                                           ' HIDDEN-->',
