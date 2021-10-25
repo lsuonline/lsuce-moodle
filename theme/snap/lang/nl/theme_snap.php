@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,6 +27,7 @@ $string['action:changeassetvisibility'] = 'zichtbaarheid van set wijzigen';
 $string['action:duplicateasset'] = 'dubbele set';
 $string['action:changesectionvisibility'] = 'zichtbaarheid van secties wijzigen';
 $string['action:highlightsectionvisibility'] = 'zichtbaarheid van sectie markeren';
+$string['action:sectiontoc'] = 'sectie met inhoudsopgave ophalen';
 $string['addanewsection'] = 'Een nieuwe sectie maken';
 $string['addresourceoractivity'] = 'Leeractiviteit maken';
 $string['admin'] = 'Beheerder';
@@ -57,6 +58,7 @@ $string['changecoverimage'] = 'Omslagafbeelding wijzigen';
 $string['changefullname'] = 'Wijzig sitenaam';
 $string['chapters'] = 'Hoofdstukken';
 $string['choosereadme'] = '<div class="clearfix"><div class="theme_screenshot"><h2>Snap</h2><img class=img-polaroid src="snap/pix/screenshot.jpg" />';
+$string['close'] = 'Sluiten';
 $string['conditional'] = 'Voorwaardelijk';
 $string['contents'] = 'Inhoud';
 $string['contributed'] = 'Bijgedragen';
@@ -65,9 +67,11 @@ $string['coursecontacts'] = 'Contactpersonen cursus';
 $string['coursedisplay'] = 'Cursusweergave';
 $string['coursefootertoggle'] = 'Cursusvoettekst';
 $string['coursefootertoggledesc'] = 'De voettekst van de cursus bevat nuttige informatie voor gebruikers op een cursuspagina, waaronder cursuscontactpersonen, cursusbeschrijving en recente activiteiten in de cursus.';
-$string['courseformatnotification'] = 'De huidige cursusstructuur die je gebruikt, wordt niet volledig ondersteund door het thema Snap. Voor de beste ervaring adviseert Blackboard Open LMS dat je de cursusstructuur Onderwerpen of Wekelijks gebruikt met het thema Snap. Je kunt de cursusstructuur wijzigen in de <a href="{$a}">cursusinstellingen</a>.';
+$string['courseformatnotification'] = 'De huidige cursusstructuur die je gebruikt, wordt niet volledig ondersteund door het thema Snap. Voor de beste ervaring adviseert Open LMS dat je de cursusstructuur Onderwerpen of Wekelijks gebruikt met het thema Snap. Je kunt de cursusstructuur wijzigen in de <a href="{$a}">cursusinstellingen</a>.';
 $string['coursefixydefaulttext'] = 'Je bent op dit moment niet ingeschreven bij een cursus.<br>Cursussen waarvoor je bent ingeschreven, worden hier getoond.';
 $string['coursegrade'] = 'Cursuscijfer:';
+$string['coursepartialrender'] = 'Vertraagd laden inschakelen voor cursussecties';
+$string['coursepartialrenderdesc'] = 'Als deze optie is ingeschakeld, worden cursussecties op aanvraag geladen wanneer de gebruiker deze selecteert. Zo kunnen cursussen met een grote hoeveelheid inhoud sneller worden geladen.';
 $string['coursenavigation'] = 'Cursusnavigatie';
 $string['coursesummaryfilesunsuitable'] = 'Maak je cursussamenvattingsbestanden leeg voordat je probeert de omslagafbeelding te wijzigen';
 $string['coursetools'] = 'Cursusdashboard';
@@ -82,10 +86,12 @@ $string['comingsoon'] = 'Binnenkort!';
 $string['createsection'] = 'Sectie maken';
 $string['current'] = 'Huidige';
 $string['customcss'] = 'Aangepaste CSS';
-$string['customcssdesc'] = 'Wees je van je verantwoordelijkheid bewust. Elk probleem dat wordt veroorzaakt door de CSS die hier wordt toegevoegd, moet je zelf oplossen. Blackboard Open LMS Support kan je niet helpen met CSS-inhoud.';
+$string['customcssdesc'] = 'Wees je bewust van je verantwoordelijkheid. Elk probleem dat wordt veroorzaakt door de CSS die hier wordt toegevoegd, moet je zelf oplossen. Open LMS Support kan je niet helpen met CSS-inhoud.';
 $string['customtopbar'] = 'Navigatiebalk';
 $string['customisenavbar'] = 'Kleuren van navigatiebalk wijzigen';
 $string['customisenavbutton'] = 'Kleuren van de knop Mijn cursussen wijzigen';
+$string['customisecustommenu'] = 'Aangepaste menukleur wijzigen';
+$string['custommenutext'] = 'Aangepaste menukleur';
 $string['deadlines'] = 'Deadlines';
 $string['deadlinestoggle'] = 'Deadlines';
 $string['deadlinestoggledesc'] = 'Gebruikers alle aanstaande deadlines voor activiteiten tonen voor cursussen waarvoor ze zijn ingeschreven.';
@@ -108,6 +114,8 @@ $string['editcoursesettings'] = 'Cursusinstellingen';
 $string['editcoursetopic'] = 'Sectie bewerken';
 $string['editcustomfooter'] = 'Voettekst bewerken';
 $string['editcustommenu'] = 'Aangepast menu bewerken';
+$string['error'] = 'Fout';
+$string['errorgettingfeed'] = 'Er is een fout opgetreden bij het ophalen van feeditems.';
 $string['error:categorycolorinvalidjson'] = 'Onjuiste JSON-indeling voor cursuscategorieën';
 $string['error:categorycolorinvalidvalue'] = 'Record-ID of kleurwaarde voor categorie "{$a}" is niet geldig';
 $string['error:categorynotfound'] = 'De categorierecord met ID "{$a}" is niet gevonden';
@@ -119,6 +127,7 @@ $string['error:failedtochangesectionvisibility'] = 'Kan sectie niet verbergen/to
 $string['error:failedtohighlightsection'] = 'Kan sectie niet markeren';
 $string['error:failedtoduplicateasset'] = 'Kan niet dupliceren';
 $string['error:failedtodeleteasset'] = 'Kan set niet verwijderen';
+$string['error:failedtotoc'] = 'Kan de inhoudsopgave niet ophalen.';
 $string['extension'] = 'Extensie {$a}';
 $string['facebook'] = 'Facebook';
 $string['facebookdesc'] = 'De url van je Facebook-pagina.';
@@ -134,6 +143,14 @@ $string['featurespotsheading'] = 'Titel uitgelichte spots';
 $string['featureonetitle'] = 'Uitgelichte spot 1 titel';
 $string['featuretwotitle'] = 'Uitgelichte spot 2 titel';
 $string['featurethreetitle'] = 'Uitgelichte spot 3 titel';
+$string['featureonetitlelink'] = 'Titelkoppeling functie 1';
+$string['featuretwotitlelink'] = 'Titelkoppeling functie 2';
+$string['featurethreetitlelink'] = 'Titelkoppeling functie 3';
+$string['featuretitlelinkdesc'] = 'Typ de URL waaraan je dit functiepunt wilt koppelen. Je kunt externe of interne koppelingen toevoegen binnen de site. Als je een interne koppeling wilt toevoegen, kopieer je deze uit de site-URL met /. Als je bijvoorbeeld een koppeling naar een cursus wilt toevoegen, ziet die eruit als "course/view.php?id=160". Als je een externe koppeling wilt toevoegen, begin je de koppeling met https://';
+$string['featureonetitlecb'] = 'Functie 1 geopend in een nieuw venster';
+$string['featuretwotitlecb'] = 'Functie 2 geopend in een nieuw venster';
+$string['featurethreetitlecb'] = 'Functie 3 geopend in een nieuw venster';
+$string['featuretitlecbdesc'] = 'Indien ingeschakeld, wordt de koppeling die is toegevoegd aan het functiepunt in een nieuw venster geopend.';
 $string['featureonetext'] = 'Uitgelichte spot 1 inhoud';
 $string['featuretwotext'] = 'Uitgelichte spot 2 inhoud';
 $string['featurethreetext'] = 'Uitgelichte spot 3 inhoud';
@@ -195,7 +212,7 @@ Voorbeeld:<br>
 "12":"#CC0084",<br>
 "56":"#CC0087",<br>
 "89":"#CCF084"}';
-$string['knowledgebase'] = 'Blackboard Open LMS Knowledge Base';
+$string['knowledgebase'] = 'Open LMS Knowledge Base';
 $string['list'] = 'Lijst';
 $string['linkedin'] = 'LinkedIn';
 $string['linkedindesc'] = 'De url van de LinkedIn-account van je organisatie.';
@@ -244,13 +261,19 @@ $string['personalmenu'] = 'Persoonlijk menu';
 $string['personalmenufeatures'] = 'Functies persoonlijk menu';
 $string['personalmenulogintoggle'] = 'Toon persoonlijk menu bij het aanmelden';
 $string['personalmenulogintoggledesc'] = 'Opent het persoonlijke menu onmiddellijk na het aanmelden';
+$string['personalmenuadvancedfeedsenable'] = 'Geavanceerde feeds inschakelen (experimenteel)';
+$string['personalmenuadvancedfeedsenabledesc'] = 'Met geavanceerde feeds worden bepaalde persoonlijke menu-items geladen, waardoor inhoud sneller op aanvraag wordt weergegeven en vernieuwd.';
+$string['personalmenuadvancedfeedsperpage'] = 'Aantal weergegeven items in geavanceerde feeds';
+$string['personalmenuadvancedfeedsperpagedesc'] = 'Kies het aantal items dat je in de feed wilt weergeven. Gebruikers kunnen <strong>Meer weergeven</strong> selecteren om meer items weer te geven.';
+$string['personalmenuadvancedfeedslifetime'] = 'Levensduur geavanceerde feeds';
+$string['personalmenuadvancedfeedslifetimedesc'] = 'Kies hoe lang de feeds in de browsercache blijven opgeslagen na het aanmelden. Als de waarde op 0 wordt ingesteld, worden de feeds niet opgeslagen in de browsercache.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Omslagafbeelding';
 $string['posterdesc'] = 'Een grote headerafbeelding voor de startpagina van je site. Liggende afbeeldingen (1200 x 600 pixels) of groter werken het beste.';
-$string['poweredbyrunby'] = 'Gebouwd met <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a>,
-    een op <a href="https://moodle.com/" target="_blank">Moodle</a> gebaseerd product.<br>
-    Copyright &#169; {$a} Blackboard Inc., Alle rechten voorbehouden.';
+$string['poweredbyrunby'] = 'Gebouwd met <a href="https://{$a->subdomain}.openlms.net/" target="_blank" rel="noopener">Open LMS</a>,
+een op <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a> gebaseerd product.<br>
+Copyright &#169; {$a->year} Open LMS, alle rechten voorbehouden.';
 $string['previoussection'] = 'Vorige sectie';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'De cursus-ID van de cursus die de gebruiker als favoriet heeft ingesteld';
 $string['privacy:metadata:theme_snap_course_favorites:userid'] = 'De gebruikers-ID van de gebruiker die de cursus als favoriet heeft ingesteld';
@@ -269,7 +292,9 @@ $string['region-side-top'] = 'Bovenaan';
 $string['released'] = 'Release: {$a}';
 $string['reopened'] = 'Heropend';
 $string['resourcedisplay'] = 'Bronweergave';
-$string['resourcedisplayhelp'] = 'Selecteer hoe bijlagen en koppelingen in je cursus moeten worden weergegeven.';
+$string['resourcedisplayhelp'] = 'Selecteer hoe bijlagen en koppelingen in je cursus moeten worden weergegeven. Het Snap-thema biedt geen ondersteuning voor multimediabestanden in de beschrijving van kleine activiteit- en bronkaarten.';
+$string['displaydescription'] = 'Toon beschrijving';
+$string['displaydescriptionhelp'] = 'Selecteer om als eerste een beschrijving van de bron en URL-activiteiten weer te geven op een nieuwe pagina. Leerlingen openen inhoud vanuit de beschrijving.';
 $string['search'] = 'Inhoud zoeken';
 $string['seriffont'] = 'Lettertype Serif';
 $string['seriffont_desc'] = 'Dit lettertype wordt gebruikt voor de meeste door gebruikers gegenereerde inhoud. Gebruik een serif-lettertype om door gebruikers gemaakte inhoud beter leesbaar te maken, en de inhoud meer te doen aanvoelen alsof hij door een mens is geschreven.';
@@ -292,10 +317,12 @@ $string['topicactions'] = 'Onderwerpacties';
 $string['twitter'] = 'Twitter';
 $string['twitterdesc'] = 'De url van je Twitter-account.';
 $string['unenrolme'] = 'Maak mijn inschrijving ongedaan';
+$string['enrolme'] = 'Schrijf mij in';
 $string['unread'] = 'ongelezen';
 $string['unsupportedcoverimagetype'] = 'Afbeeldingstype voor omslag ({$a}) niet ondersteund';
 $string['via'] = 'via';
 $string['viewcourse'] = 'Cursus bekijken';
+$string['viewmore'] = 'Meer weergeven';
 $string['viewyourprofile'] = 'Je profiel bekijken';
 $string['viewmyfeedback'] = 'Mijn feedback bekijken';
 $string['viewcalendar'] = 'Toon mijn kalender';
@@ -329,9 +356,37 @@ $string['cachedef_profile_based_branding'] = 'Caching voor profielgebaseerde opm
 $string['cachedef_course_card_bg_image'] = 'Caching voor achtergrondafbeelding cursus.';
 $string['cachedef_course_card_teacher_avatar'] = 'Caching voor avatars docent.';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Caching voor index van avatars docent.';
-$string['accesforumstringdis'] = 'Toonopties';
-$string['accesforumstringmov'] = 'Verplaatsopties';
-$string['accescalendarstring'] = 'Kalender';
+$string['accessforumstringdis'] = 'Weergaveopties';
+$string['accessforumstringmov'] = 'Verplaatsopties';
+$string['accesscalendarstring'] = 'Kalender';
+$string['accessglobalsearchstring'] = 'Zoeken';
 $string['admineventwarning'] = 'Om gebeurtenissen uit alle cursussen te zien, ';
 $string['gotocalendarsnap'] = 'ga je naar de agenda van de site.';
 $string['quizattemptswarn'] = 'Pogingen van geschorste gebruikers uitsluiten';
+$string['quizfeedback'] = 'Feedback';
+$string['validratio'] = 'Deze combinatie van kleuren voldoet niet aan de minimale ratiowaarde van 4.5:1 van WCAG 2.0';
+$string['invalidratio'] = 'Deze kleurencombinatie voldoet niet aan de
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">minimale ratiowaarde van 4.5:1 van WCAG 2.0</a>. Waarde: "{$a}"';
+$string['imageinvalidratio'] = 'Deze afbeelding kan contrastproblemen veroorzaken omdat er niet wordt voldaan aan de minimale ratiowaarde van 4.5:1 van WCAG 2.0. Gemiddelde pixelwaarde: "{$a}"';
+$string['catinvalidratio'] = 'De volgende kleurcategorieën voldoen niet aan de
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">minimale ratiowaarde van 4.5:1 van WCAG 2.0</a> :
+Achtergrondkleur van site (wit): "{$a->white}". Achtergrondkleur van navigatiebalk: "{$a->custombar}". Achtergrondkleur van knop Mijn cursussen: "{$a->customnav}"';
+$string['imageinvalidratiocategory'] = 'Deze afbeelding kan contrastproblemen veroorzaken omdat de themakleur niet voldoet aan de minimale ratiowaarde van 4.5:1 van WCAG 2.0. Gemiddelde pixelwaarde: "{$a}"';
+$string['lazyload_mod_page'] = 'Standaard vertraagd laden inschakelen voor paginabronnen';
+$string['lazyload_mod_page_description'] = 'Als deze optie is ingeschakeld, wordt de laadtijd van cursuspagina\'s aanzienlijk korter voor cursussen met veel pagina\'s.';
+$string['pmadvancedfeed_viewmore'] = 'Meer weergeven';
+$string['pmadvancedfeed_reload'] = 'Vernieuwen';
+$string['multimediacard'] = 'Multimediabestanden worden niet weergegeven in de activiteitkaartweergaven voor het Snap-thema. Dit wordt alleen toegepast op de startpagina en cursuspagina\'s voor kleine activiteit- en bronkaarten.';
+$string['enabledlogin'] = 'Weergegeven aanmeldingsopties';
+$string['enabledlogindesc'] = 'Selecteer de aanmeldingsopties die moeten worden weergegeven.';
+$string['moodlelogin'] = 'Alleen Moodle-aanmelding weergeven';
+$string['alternativelogin'] = 'Alleen alternatieve aanmeldingsopties weergeven';
+$string['bothlogin'] = 'Beide aanmeldingsopties weergeven';
+$string['enabledloginorder'] = 'Volgorde van aanmeldingsopties';
+$string['enabledloginorderdesc'] = 'Selecteer welke aanmeldingsoptie als eerste moet worden weergegeven.';
+$string['moodleloginfirst'] = 'Moodle-aanmelding als eerste weergeven';
+$string['alternativeloginfirst'] = 'Alternatieve aanmeldingsopties als eerste weergeven';
+$string['alternativeloginoptions'] = 'Alternatieve aanmeldingsopties';
+$string['openmessagedrawer'] = 'Berichtenlade openen. ';
+$string['design_mod_page'] = 'Vorig ontwerp voor paginabronnen inschakelen';
+$string['design_mod_page_description'] = 'Indien ingeschakeld wordt de paginabroninhoud op dezelfde pagina, in de cursus of op de beginpagina weergegeven.';

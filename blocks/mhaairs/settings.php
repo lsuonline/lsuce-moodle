@@ -64,6 +64,33 @@ if ($ADMIN->fulltree) {
         PARAM_ALPHANUMEXT
     ));
 
+    // End point url.
+    $settings->add(new admin_setting_configtext(
+        'block_mhaairs_endpoint_url',
+        new lang_string('endpointurllabel', 'block_mhaairs'),
+        new lang_string('endpointurldesc', 'block_mhaairs'),
+        '',
+        PARAM_URL
+    ));
+
+    // Instructor roles.
+    $settings->add(new admin_setting_configtext(
+        'block_mhaairs_instructor_roles',
+        new lang_string('instructorroleslabel', 'block_mhaairs'),
+        new lang_string('instructorrolesdesc', 'block_mhaairs'),
+        '',
+        PARAM_TAGLIST
+    ));
+
+    // Student roles.
+    $settings->add(new admin_setting_configtext(
+        'block_mhaairs_student_roles',
+        new lang_string('studentroleslabel', 'block_mhaairs'),
+        new lang_string('studentrolesdesc', 'block_mhaairs'),
+        '',
+        PARAM_TAGLIST
+    ));
+
     // Available services.
     $settings->add(new admin_setting_configmulticheckbox_mhaairs(
         'block_mhaairs_display_services',
@@ -72,12 +99,12 @@ if ($ADMIN->fulltree) {
     ));
 
     // Display help links.
-    $settings->add(new admin_setting_configcheckbox(
-        'block_mhaairs_display_helplinks',
-        new lang_string('mhaairs_displayhelp', 'block_mhaairs'),
-        new lang_string('mhaairs_displayhelpdesc', 'block_mhaairs'),
-        1
-    ));
+    //$settings->add(new admin_setting_configcheckbox(
+    //    'block_mhaairs_display_helplinks',
+    //    new lang_string('mhaairs_displayhelp', 'block_mhaairs'),
+    //    new lang_string('mhaairs_displayhelpdesc', 'block_mhaairs'),
+    //    1
+    //));
 
     // Sync gradebook.
     $settings->add(new admin_setting_configcheckbox(

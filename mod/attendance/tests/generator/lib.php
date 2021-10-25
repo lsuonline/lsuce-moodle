@@ -43,7 +43,7 @@ class mod_attendance_generator extends testing_module_generator {
      * @return stdClass mod_attendance_structure
      */
     public function create_instance($record = null, array $options = null) {
-        global $CFG;
+        global $CFG, $DB;
         require_once($CFG->dirroot.'/mod/attendance/lib.php');
 
         $this->instancecount++;

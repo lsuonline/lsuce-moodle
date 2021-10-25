@@ -17,7 +17,7 @@
 /**
  * This file keeps track of upgrades to the myoverview block
  *
- * @since 3.7.3
+ * @since 3.8
  * @package block_myoverview
  * @copyright 2019 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -31,9 +31,9 @@ defined('MOODLE_INTERNAL') || die();
  * @param int $oldversion
  */
 function xmldb_block_myoverview_upgrade($oldversion) {
-    global $DB;
+    global $DB, $CFG, $OUTPUT;
 
-    if ($oldversion < 2019052001) {
+    if ($oldversion < 2019091800) {
         // Remove orphaned course favourites, which weren't being deleted when the course was deleted.
         $sql = 'SELECT f.id
                   FROM {favourite} f
@@ -52,8 +52,34 @@ function xmldb_block_myoverview_upgrade($oldversion) {
             }
         }
 
-        upgrade_block_savepoint(true, 2019052001, 'myoverview', false);
+        upgrade_block_savepoint(true, 2019091800, 'myoverview', false);
     }
+
+    // Automatically generated Moodle v3.8.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2019111801) {
+        // Renaming the setting from displaygroupingstarred to displaygroupingfavourites to match Moodle convention.
+
+        // Check to see if record exists. get_config doesn't allow differentiation between not exists and false.
+        $dbval = $DB->get_field('config_plugins', 'value', ['plugin' => 'block_myoverview', 'name' => 'displaygroupingstarred']);
+        if ($dbval !== false) {
+            set_config('displaygroupingfavourites', $dbval, 'block_myoverview');
+            unset_config('displaygroupingstarred', 'block_myoverview');
+        }
+
+        if (isset($CFG->forced_plugin_settings['block_myoverview']['displaygroupingstarred'])) {
+            // Check to see if the starred setting is defined in the config file. Display a warning if so.
+            $warn = 'Setting block_myoverview->displaygroupingstarred has been renamed '.
+                    'to block_myoverview->displaygroupingfavourites. Old setting present in config.php.';
+            echo $OUTPUT->notification($warn, 'notifyproblem');
+        }
+
+        upgrade_block_savepoint(true, 2019111801, 'myoverview', false);
+    }
+
+    // Automatically generated Moodle v3.9.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

@@ -83,4 +83,48 @@ class field_controller extends \core_customfield\field_controller {
         $mform->hideIf('configdata[mindate][hour]', 'configdata[includetime]');
         $mform->hideIf('configdata[mindate][minute]', 'configdata[includetime]');
     }
+
+    /**
+     * Does this custom field type support being used as part of the block_myoverview
+     * custom field grouping?
+     * @return bool
+     */
+    public function supports_course_grouping(): bool {
+        return true;
+    }
+
+    /**
+     * If this field supports course grouping, then this function needs overriding to
+     * return the formatted values for this.
+     * @param array $values the used values that need formatting
+     * @return array
+     */
+    public function course_grouping_format_values($values): array {
+        $format = get_string('strftimedate', 'langconfig');
+        $ret = [];
+        foreach ($values as $value) {
+            if ($value) {
+                $ret[$value] = userdate($value, $format);
+            }
+        }
+        if (!$ret) {
+            return []; // If the only dates found are 0, then do not show any options.
+        }
+        $ret[BLOCK_MYOVERVIEW_CUSTOMFIELD_EMPTY] = get_string('nocustomvalue', 'block_myoverview',
+            $this->get_formatted_name());
+        return $ret;
+    }
+
+    /**
+     * Convert given value into appropriate timestamp
+     *
+     * @param string $value
+     * @return int
+     */
+    public function parse_value(string $value) {
+        $timestamp = strtotime($value);
+
+        // If we have a valid, positive timestamp then return it.
+        return $timestamp > 0 ? $timestamp : 0;
+    }
 }

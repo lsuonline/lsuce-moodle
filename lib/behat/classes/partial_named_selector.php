@@ -78,6 +78,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'group_message_header' => 'group_message_header',
         'group_message' => 'group_message',
         'autocomplete' => 'autocomplete',
+        'iframe' => 'iframe',
     );
 
     /**
@@ -121,6 +122,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'autocomplete_selection' => 'autocomplete_selection',
         'autocomplete_suggestions' => 'autocomplete_suggestions',
         'autocomplete' => 'autocomplete',
+        'iframe' => 'iframe',
     );
 
     /**
@@ -133,7 +135,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
      */
     protected static $moodleselectors = array(
         'activity' => <<<XPATH
-.//li[contains(concat(' ', normalize-space(@class), ' '), ' activity ')][normalize-space(.) = %locator% ]
+.//li[contains(concat(' ', normalize-space(@class), ' '), ' activity ')][descendant::*[contains(normalize-space(.), %locator%)]]
 XPATH
         , 'block' => <<<XPATH
 .//*[@data-block][contains(concat(' ', normalize-space(@class), ' '), concat(' ', %locator%, ' ')) or
@@ -159,7 +161,7 @@ XPATH
 .//div[
         contains(concat(' ', normalize-space(@class), ' '), ' modal ')
             and
-        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')] = %locator%)
+        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')]) = %locator%
     ]
 XPATH
         , 'group_message' => <<<XPATH
@@ -219,16 +221,21 @@ XPATH
 .//*[contains(., %locator%) and not(.//*[contains(., %locator%)])]
 XPATH
         , 'form_row' => <<<XPATH
-.//*[self::label or self::div[contains(concat(' ', @class, ' '), ' fstaticlabel ')]][contains(., %locator%)]/ancestor::*[contains(concat(' ', @class, ' '), ' fitem ')]
+.//*[contains(concat(' ', @class, ' '), ' col-form-label ')]
+    [normalize-space(.)= %locator%]
+    /ancestor::*[contains(concat(' ', @class, ' '), ' fitem ')]
 XPATH
         , 'autocomplete_selection' => <<<XPATH
-.//div[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-selection', ' '))]/span[@role='listitem'][contains(normalize-space(.), %locator%)]
+.//div[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-selection', ' '))]/span[@role='option'][contains(normalize-space(.), %locator%)]
 XPATH
         , 'autocomplete_suggestions' => <<<XPATH
 .//ul[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-suggestions', ' '))]/li[@role='option'][contains(normalize-space(.), %locator%)]
 XPATH
         , 'autocomplete' => <<<XPATH
 .//descendant::input[@id = //label[contains(normalize-space(string(.)), %locator%)]/@for]/ancestor::*[@data-fieldtype = 'autocomplete']
+XPATH
+        , 'iframe' => <<<XPATH
+.//iframe[(%idOrNameMatch% or (contains(concat(' ', normalize-space(@class), ' '), %locator% )))]
 XPATH
     );
 
@@ -248,12 +255,20 @@ XPATH
         ,
             'filemanager' => <<<XPATH
 .//*[@data-fieldtype = 'filemanager' or @data-fieldtype = 'filepicker']
-    /descendant::input[@id = //label[contains(normalize-space(string(.)), %locator%)]/@for]
+    /descendant::input[@id = substring-before(//p[contains(normalize-space(string(.)), %locator%)]/@id, '_label')]
 XPATH
         ,
              'passwordunmask' => <<<XPATH
 .//*[@data-passwordunmask='wrapper']
     /descendant::input[@id = %locator% or @id = //label[contains(normalize-space(string(.)), %locator%)]/@for]
+XPATH
+        ,
+             'inplaceeditable' => <<<XPATH
+.//descendant::span[@data-inplaceeditable][descendant::a[%titleMatch%]]
+XPATH
+        ,
+            'date_time' => <<<XPATH
+.//fieldset[(%idMatch% or ./legend[%exactTagTextMatch%]) and (@data-fieldtype='date' or @data-fieldtype='date_time')]
 XPATH
         ],
     ];
@@ -271,6 +286,12 @@ XPATH
         ],
         '%ariaLabelMatch%' => [
             'moodle' => 'contains(./@aria-label, %locator%)',
+        ],
+        '%exactTagTextMatch%' => [
+            // This is based upon the upstream tagTextMatch but performs an exact match rather than a loose match using
+            // contains().
+            // If possible we should only use exact matches for any new form fields that we add.
+            'moodle' => 'normalize-space(text())=%locator%',
         ],
     ];
 

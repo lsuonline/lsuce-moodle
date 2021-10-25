@@ -18,6 +18,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use \theme_snap\activity,
     \theme_snap\snap_base_test;
+use theme_snap\local;
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/assign/tests/base_test.php');
@@ -457,6 +458,7 @@ class theme_snap_acitvity_test extends snap_base_test {
         $course = get_course(SITEID);
         $courses = enrol_get_my_courses();
         $calendar->set_sources($course, $courses);
+
         $eventsobj = activity::user_activity_events($student, $courses, $tstart, $tend, 'allcourses');
         $events = $eventsobj->events;
         $snapevent = reset($events);
@@ -464,6 +466,7 @@ class theme_snap_acitvity_test extends snap_base_test {
         $this->assertEquals($due, $snapevent->timesort);
         // Assert not from cache.
         $this->assertFalse($eventsobj->fromcache);
+
         // Test that getting the events again recovers them from cache and that they are populated.
         $eventsobj = activity::user_activity_events($student, $courses, $tstart, $tend, 'allcourses');
         $events = $eventsobj->events;
@@ -472,6 +475,37 @@ class theme_snap_acitvity_test extends snap_base_test {
         $this->assertTrue($eventsobj->fromcache);
         $this->assertEquals($due, $snapevent->timestart);
         $this->assertEquals($due, $snapevent->timesort);
+
+        $coursetest = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($student->id, $coursetest->id);
+        $course = reset($courses);
+        $this->setAdminUser();
+        \core_course\management\helper::action_course_hide_by_record((int)$course->id);
+        $this->setUser($student);
+
+        $courses = enrol_get_my_courses();
+        $eventsobj = activity::user_activity_events($student, $courses, $tstart, $tend, 'allcourses');
+        $events = $eventsobj->events;
+        $snapevent = reset($events);
+        // Assert from cache.
+        $this->assertFalse($eventsobj->fromcache);
+        $this->assertEmpty($snapevent);
+        $this->assertCount(1, $eventsobj->courses);
+
+        $this->setAdminUser();
+        \core_course\management\helper::action_course_show_by_record((int)$course->id);
+        $this->setUser($student);
+
+        $courses = enrol_get_my_courses();
+        $eventsobj = activity::user_activity_events($student, $courses, $tstart, $tend, 'allcourses');
+        $events = $eventsobj->events;
+        $snapevent = reset($events);
+
+        // Assert from cache.
+        $this->assertFalse($eventsobj->fromcache);
+        $this->assertEquals($due, $snapevent->timestart);
+        $this->assertEquals($due, $snapevent->timesort);
+        $this->assertCount(2, $eventsobj->courses);
 
         // Test group override invalidates cache and overrides due date.
         $this->override_assign_group_duedate($assign->id, $group->id, $ovdgroupdue, 1);
@@ -880,7 +914,7 @@ class theme_snap_acitvity_test extends snap_base_test {
         }
 
         $deadlines = activity::upcoming_deadlines($student);
-        $this->assertCount(5, $deadlines->events);
+        $this->assertCount(22, $deadlines->events);
         $this->assertFalse($deadlines->fromcache);
         $deadlines = activity::upcoming_deadlines($student);
         $this->assertTrue($deadlines->fromcache);
@@ -917,7 +951,7 @@ class theme_snap_acitvity_test extends snap_base_test {
         }
 
         $deadlines = activity::upcoming_deadlines($student);
-        $this->assertCount(20, $deadlines->events);
+        $this->assertCount(25, $deadlines->events);
         $this->assertFalse($deadlines->fromcache);
         $deadlines = activity::upcoming_deadlines($student);
         $this->assertTrue($deadlines->fromcache);
@@ -985,7 +1019,7 @@ class theme_snap_acitvity_test extends snap_base_test {
      * Test upcoming deadlines
      */
     public function test_upcoming_deadlines_timezones() {
-        global $DB;
+        global $DB, $CFG;
 
         $this->resetAfterTest();
 
@@ -1049,8 +1083,8 @@ class theme_snap_acitvity_test extends snap_base_test {
 
         // 5 items should be shown as final deadline 3rd quiz gets cut off and assignment with past deadline should not
         // show.
-        $actual = activity::upcoming_deadlines($student->id)->events;
         $expected = 5;
+        $actual = activity::upcoming_deadlines($student->id, $expected)->events;
 
         // Check deadlines are listed in appropriate order.
         $this->assertCount($expected, $actual);
@@ -1098,8 +1132,8 @@ class theme_snap_acitvity_test extends snap_base_test {
             $tzoneusers[$offset] = $generator->create_user(['timezone' => $tz]);
             $generator->enrol_user($tzoneusers[$offset]->id, $course->id, $studentrole->id);
             $this->setUser($tzoneusers[$offset]);
-            $actual = activity::upcoming_deadlines($tzoneusers[$offset])->events;
             $expected = 5;
+            $actual = activity::upcoming_deadlines($tzoneusers[$offset], $expected)->events;
             $this->assertCount($expected, $actual);
         }
 
@@ -1577,6 +1611,47 @@ class theme_snap_acitvity_test extends snap_base_test {
 
         $actual = activity::quiz_ungraded([$course->id], $sixmonthsago);
         $this->assertCount(0, $actual);
+    }
+
+    public function test_snap_deadlines_feed_size() {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        activity::$phpunitallowcaching = true;
+
+        $dg = $this->getDataGenerator();
+        $student = $dg->create_user();
+        $teacher = $dg->create_user();
+        $course = $dg->create_course();
+        $group = $dg->create_group((object)['courseid' => $course->id]);
+        $dg->enrol_user($student->id, $course->id, 'student');
+        $dg->create_group_member((object)['groupid' => $group->id, 'userid' => $student->id]);
+        $dg->enrol_user($teacher->id, $course->id, 'teacher');
+
+        $this->setUser($teacher);
+
+        $tz = new \DateTimeZone(\core_date::get_user_timezone($student));
+        $today = new \DateTime('today', $tz);
+        $todayts = $today->getTimestamp();
+
+        $assigninstances = [];
+
+        for ($t = 0; $t < 2; $t++) {
+            $assigninstances[] = $this->create_assignment($course->id, $todayts)->get_instance();
+        }
+        for ($t = 0; $t < 20; $t++) {
+            $assigninstances[] = $this->create_assignment($course->id, ($todayts + WEEKSECS))->get_instance();
+        }
+
+        // No setting, should be 22.
+        $deadlines = local::get_feed('deadlines');
+        $this->assertCount(22, $deadlines);
+
+        // With setting, we get more.
+        $CFG->snap_advanced_feeds_max_deadlines = 10;
+        $deadlines = local::get_feed('deadlines');
+        $this->assertCount(10, $deadlines);
     }
 
 }

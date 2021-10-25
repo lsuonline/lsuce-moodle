@@ -107,7 +107,7 @@ $pattern = 'm/d/Y g:00:00 a';
 $now = time();
 
 $editicon = $OUTPUT->pix_icon('i/edit', get_string('edit'));
-$deleteicon = $OUTPUT->pix_icon('i/cross_red_big', get_string('delete'));
+$deleteicon = $OUTPUT->pix_icon('i/delete', get_string('delete'));
 
 foreach ($periods as $period) {
     $line = new html_table_row();
@@ -129,7 +129,7 @@ foreach ($periods as $period) {
     $line->cells[] = date($pattern, $period->start_time);
     $line->cells[] = date($pattern, $period->end_time);
     $line->cells[] = $active;
-    $line->cells[] = $edit . ' - ' . $delete;
+    $line->cells[] = $edit . ' ' . $delete;
 
     $table->data[] = $line;
 }

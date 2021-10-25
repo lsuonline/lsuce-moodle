@@ -77,7 +77,12 @@ function form_init_date_js() {
     global $PAGE;
     static $done = false;
     if (!$done) {
+        $done = true;
         $calendar = \core_calendar\type_factory::get_calendar_instance();
+        if ($calendar->get_name() !== 'gregorian') {
+            // The YUI2 calendar only supports the gregorian calendar type.
+            return;
+        }
         $module   = 'moodle-form-dateselector';
         $function = 'M.form.dateselector.init_date_selectors';
         $defaulttimezone = date_default_timezone_get();
@@ -105,7 +110,6 @@ function form_init_date_js() {
             'december'          => date_format_string(strtotime("December 1"), '%B', $defaulttimezone)
         ));
         $PAGE->requires->yui_module($module, $function, $config);
-        $done = true;
     }
 }
 
@@ -165,6 +169,10 @@ abstract class moodleform {
      * @param mixed $attributes you can pass a string of html attributes here or an array.
      *               Special attribute 'data-random-ids' will randomise generated elements ids. This
      *               is necessary when there are several forms on the same page.
+     *               Special attribute 'data-double-submit-protection' set to 'off' will turn off
+     *               double-submit protection JavaScript - this may be necessary if your form sends
+     *               downloadable files in response to a submit button, and can't call
+     *               \core_form\util::form_download_complete();
      * @param bool $editable
      * @param array $ajaxformdata Forms submitted via ajax, must pass their data here, instead of relying on _GET and _POST.
      */
@@ -1102,6 +1110,7 @@ abstract class moodleform {
         }
         $repeats = $this->optional_param($repeathiddenname, $repeats, PARAM_INT);
         $addfields = $this->optional_param($addfieldsname, '', PARAM_TEXT);
+        $oldrepeats = $repeats;
         if (!empty($addfields)){
             $repeats += $addfieldsno;
         }
@@ -1122,6 +1131,11 @@ abstract class moodleform {
                         $this->repeat_elements_fix_clone($i, $el, $namecloned);
                     }
                     $elementclone->setLabel(str_replace('{no}', $i + 1, $elementclone->getLabel()));
+                }
+
+                // Mark newly created elements, so they know not to look for any submitted data.
+                if ($i >= $oldrepeats) {
+                    $mform->note_new_repeat($elementclone->getName());
                 }
 
                 $mform->addElement($elementclone);
@@ -1533,6 +1547,9 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
      * @var string
      */
     var $_pageparams = '';
+
+    /** @var array names of new repeating elements that should not expect to find submitted data */
+    protected $_newrepeats = array();
 
     /** @var array $_ajaxformdata submitted form data when using mforms with ajax */
     protected $_ajaxformdata;
@@ -2858,6 +2875,28 @@ require(["core/event", "jquery"], function(Event, $) {
     function isSubmitted()
     {
         return parent::isSubmitted() && (!$this->isFrozen());
+    }
+
+    /**
+     * Add the element name to the list of newly-created repeat elements
+     * (So that elements that interpret 'no data submitted' as a valid state
+     * can tell when they should get the default value instead).
+     *
+     * @param string $name the name of the new element
+     */
+    public function note_new_repeat($name) {
+        $this->_newrepeats[] = $name;
+    }
+
+    /**
+     * Check if the element with the given name has just been added by clicking
+     * on the 'Add repeating elements' button.
+     *
+     * @param string $name the name of the element being checked
+     * @return bool true if the element is newly added
+     */
+    public function is_new_repeat($name) {
+        return in_array($name, $this->_newrepeats);
     }
 }
 

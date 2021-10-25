@@ -35,8 +35,9 @@
 require_once(dirname(__FILE__) . '/AuthManagement/AuthManagementAutoload.php');
 require_once(dirname(__FILE__) . '/panopto_data.php');
 require_once(dirname(__FILE__) . '/block_panopto_lib.php');
+require_once(dirname(__FILE__) . '/panopto_timeout_soap_client.php');
 
-class panopto_auth_soap_client extends SoapClient {
+class panopto_auth_soap_client extends PanoptoTimeoutSoapClient {
 
 
     /**
@@ -75,7 +76,7 @@ class panopto_auth_soap_client extends SoapClient {
             $apiuseruserkey
         );
 
-        $this->serviceparams = generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.2/Auth.svc?singlewsdl');
+        $this->serviceparams = panopto_generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.2/Auth.svc?singlewsdl');
 
     }
 

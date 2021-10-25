@@ -119,10 +119,15 @@ class date extends responsetype {
 
     /**
      * Provide a template for results screen if defined.
+     * @param bool $pdf
      * @return mixed The template string or false/
      */
-    public function results_template() {
-        return 'mod_questionnaire/results_date';
+    public function results_template($pdf = false) {
+        if ($pdf) {
+            return 'mod_questionnaire/resultspdf_date';
+        } else {
+            return 'mod_questionnaire/results_date';
+        }
     }
 
     /**
@@ -176,12 +181,16 @@ class date extends responsetype {
             $pagetags->responses = [];
             $numresps = 0;
             ksort ($weights); // Sort dates into chronological order.
+            $evencolor = false;
             foreach ($weights as $content => $num) {
                 $response = new \stdClass();
                 $response->text = userdate($content, $dateformat, '', false);    // Change timestamp into readable dates.
                 $numresps += $num;
                 $response->total = $num;
+                // The 'evencolor' attribute is used by the PDF template.
+                $response->evencolor = $evencolor;
                 $pagetags->responses[] = (object)['response' => $response];
+                $evencolor = !$evencolor;
             }
 
             if ($showtotals == 1) {
@@ -244,21 +253,13 @@ class date extends responsetype {
     static public function response_answers_by_question($rid) {
         global $DB;
 
-        $dateformat = get_string('strfdate', 'questionnaire');
         $answers = [];
         $sql = 'SELECT id, response_id as responseid, question_id as questionid, 0 as choiceid, response as value ' .
             'FROM {' . static::response_table() .'} ' .
             'WHERE response_id = ? ';
         $records = $DB->get_records_sql($sql, [$rid]);
         foreach ($records as $record) {
-            // Convert date from yyyy-mm-dd database format to actual questionnaire dateformat.
-            // does not work with dates prior to 1900 under Windows.
-            if (preg_match('/\d\d\d\d-\d\d-\d\d/', $record->value)) {
-                $dateparts = preg_split('/-/', $record->value);
-                $val = make_timestamp($dateparts[0], $dateparts[1], $dateparts[2]); // Unix timestamp.
-                $val = userdate ( $val, $dateformat);
-                $record->value = $val;
-            }
+            // Leave the date format in data storage format.
             $answers[$record->questionid][] = answer\answer::create_from_data($record);
         }
 

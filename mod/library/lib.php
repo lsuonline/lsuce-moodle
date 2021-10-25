@@ -34,6 +34,7 @@ function get_library_name($library) {
     $name = strip_tags(format_string($library->intro, true));
     if (core_text::strlen($name) > LIBRARY_MAX_NAME_LENGTH) {
         $name = core_text::substr($name, 0, LIBRARY_MAX_NAME_LENGTH)."...";
+
     }
 
     if (empty($name)) {
@@ -42,6 +43,7 @@ function get_library_name($library) {
 
     return $name;
 }
+
 /**
  * Given an object containing all the necessary data,
  * (defined by the form in mod_form.php) this function
@@ -187,24 +189,16 @@ function library_get_extra_capabilities() {
  */
 function library_supports($feature) {
     switch($feature) {
-        case FEATURE_IDNUMBER:
-            return false;
-        case FEATURE_GROUPS:
-            return false;
-        case FEATURE_GROUPINGS:
-            return false;
-        case FEATURE_GROUPMEMBERSONLY:
-            return false;
-        case FEATURE_MOD_INTRO:
-            return false;
-        case FEATURE_COMPLETION_TRACKS_VIEWS:
-            return false;
-        case FEATURE_GRADE_HAS_GRADE:
-            return false;
-        case FEATURE_GRADE_OUTCOMES:
-            return false;
         case FEATURE_MOD_ARCHETYPE:
-            return 'MOD_ARCHETYPE_ACTIVITY';
+            return MOD_ARCHETYPE_RESOURCE;
+        case FEATURE_IDNUMBER:
+        case FEATURE_GROUPS:
+        case FEATURE_GROUPINGS:
+        case FEATURE_MOD_INTRO:
+        case FEATURE_COMPLETION_TRACKS_VIEWS:
+        case FEATURE_COMPLETION_HAS_RULES:
+        case FEATURE_GRADE_HAS_GRADE:
+        case FEATURE_GRADE_OUTCOMES:
         case FEATURE_BACKUP_MOODLE2:
             return false;
         case FEATURE_NO_VIEW_LINK:

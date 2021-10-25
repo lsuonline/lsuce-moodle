@@ -27,12 +27,15 @@ namespace theme_snap\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
+// BEGIN LSU Enhancement add Kaltura my media.
 use context_system;
+// END LSU Enhancement add Kaltura my media.
 use core_component;
 use html_writer;
 use moodle_url;
 use stdClass;
 use theme_snap\local;
+use theme_snap\renderables\login_alternative_methods;
 
 require_once($CFG->dirroot.'/grade/querylib.php');
 require_once($CFG->libdir.'/gradelib.php');
@@ -155,6 +158,10 @@ EOF;
         if (!isset($CFG->additionalhtmlfooter)) {
             $CFG->additionalhtmlfooter = '';
         }
+        $maxbytes = get_max_upload_file_size($CFG->maxbytes, $course->maxbytes);;
+        if (has_capability('moodle/course:ignorefilesizelimits', $PAGE->context)) {
+            $maxbytes = 0;
+        }
         // Note, we have to put the file handlers into the footer instead of passing them into the amd module as an
         // argument. If you pass large amounts of data into the amd arguments then it throws a debug error.
         $CFG->additionalhtmlfooter .= $script;
@@ -180,8 +187,7 @@ EOF;
         ], 'mod_label');
         $vars = array(
             array('courseid' => $course->id,
-                'maxbytes' => get_max_upload_file_size($CFG->maxbytes, $course->maxbytes),
-                'handlers' => $handler->get_js_data(),
+                'maxbytes' => $maxbytes,
                 'showstatus' => $showstatus)
         );
 
@@ -246,13 +252,13 @@ EOF;
             'action:changesectionvisibility',
             'action:duplicateasset',
             'action:highlightsectionvisibility',
+            'action:sectiontoc',
             'error:failedtochangesectionvisibility',
             'error:failedtohighlightsection',
             'error:failedtochangeassetvisibility',
             'error:failedtoduplicateasset',
+            'error:failedtotoc',
             'deleteassetconfirm',
-            'deletingasset',
-            'deletingassetname',
             'deletesectionconfirm',
             'deletingsection'
         ], 'theme_snap');
@@ -290,7 +296,6 @@ EOF;
         $PAGE->requires->jquery();
         $PAGE->requires->js_amd_inline("require(['theme_boost/loader']);");
         $PAGE->requires->strings_for_js(array(
-            //'close',
             'coursecontacts',
             'debugerrors',
             'problemsfound',
@@ -378,12 +383,14 @@ EOF;
             'unavailablemods' => $unavailablemods,
             'enablecompletion' => isloggedin() && $COURSE->enablecompletion,
             'format' => $COURSE->format,
-            'partialrender' => !empty(get_config('theme_snap', 'coursepartialrender')) ? true : false
+            'partialrender' => !empty(get_config('theme_snap', 'coursepartialrender')),
+            'toctype' => get_config('theme_snap', 'leftnav'),
+            'loadPageInCourse' => !empty(get_config('theme_snap', 'design_mod_page')),
         ];
 
-        $mprocs = get_message_processors(true);
         $forcepwdchange = (bool) get_user_preferences('auth_forcepasswordchange', false);
-        $conversationbadgecountenabled = isloggedin() && isset($mprocs['badge']) && $PAGE->theme->settings->messagestoggle == 1;
+        $conversationbadgecountenabled = isloggedin() && $PAGE->theme->settings->messagestoggle == 1;
+
         $userid = $USER->id;
         $manager = new \core_privacy\local\sitepolicy\manager();
         $policyurlexist = $manager->is_defined();
@@ -440,13 +447,28 @@ EOF;
         $gradingconstants['gradepercentage'] = GRADE_DISPLAY_TYPE_PERCENTAGE;
         $gradingconstants['gradepercentagereal'] = GRADE_DISPLAY_TYPE_PERCENTAGE_REAL;
         $gradingconstants['gradepercentageletter'] = GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER;
+        $localplugins = core_component::get_plugin_list('local');
+        // Check if the plugins are installed to pass them as parameters to accessibility.js AMD module.
+        $localjoulegrader = array_key_exists('joulegrader', $localplugins);
+        $blockreports = array_key_exists('reports', core_component::get_plugin_list('block'));
+        $allyreport = (\core_component::get_component_directory('report_allylti') !== null);
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
                      $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
                      $gradingconstants];
+        $initaxvars = [$localjoulegrader, $allyreport, $blockreports];
+        $alternativelogins = new login_alternative_methods();
+        if ($alternativelogins->potentialidps) {
+            $loginvars = [get_config('theme_snap', 'enabledlogin'), get_config('theme_snap', 'enabledloginorder')];
+        } else {
+            $enabledlogin = \theme_snap\output\core_renderer::ENABLED_LOGIN_MOODLE;
+            $loginvars = [$enabledlogin, null];
+        }
         $PAGE->requires->js_call_amd('theme_snap/snap', 'snapInit', $initvars);
+        $PAGE->requires->js_call_amd('theme_snap/accessibility', 'snapAxInit', $initaxvars);
         if (!empty($CFG->calendar_adminseesall) && is_siteadmin()) {
             $PAGE->requires->js_call_amd('theme_snap/adminevents', 'init');
         }
+        $PAGE->requires->js_call_amd('theme_snap/login_render-lazy', 'loginRender', $loginvars);
         // Does the page have editable course content?
         if ($pagehascoursecontent && $PAGE->user_allowed_editing()) {
             $canmanageacts = has_capability('moodle/course:manageactivities', context_course::instance($COURSE->id));
@@ -461,38 +483,6 @@ EOF;
                 $USER->editing = $originaleditstate;
             }
         }
-    }
-
-    /**
-     * Render a warning where flexpage is the course format for the front page.
-     *
-     * @author: Guy Thomas
-     * @date: 2014-07-17
-     * @param bool $adminsonly
-     * @return string
-     */
-    public static function flexpage_frontpage_warning($adminsonly = false) {
-        global $OUTPUT;
-
-        if ($adminsonly) {
-            if (!is_siteadmin()) {
-                // Only for admin users.
-                return '';
-            }
-        }
-
-        // Check to see if the front page course has a format of flexpage.
-        $fpage = get_site();
-        if ($fpage->format != 'flexpage') {
-            // Front page format is not flexpage.
-            return '';
-        }
-
-        $url = new moodle_url('/admin/settings.php', ['section' => 'frontpagesettings']);
-
-        // Output warning.
-        return ($OUTPUT->notification(get_string('warnsiteformatflexpage',
-                'theme_snap', $url->out())));
     }
 
     /**
@@ -565,26 +555,32 @@ EOF;
      * @return string
      */
     public static function appendices() {
-        global $CFG, $COURSE, $PAGE, $OUTPUT, $DB;
+        global $CFG, $COURSE, $OUTPUT, $DB;
 
-        $links = array();
+        $links = [];
         $localplugins = core_component::get_plugin_list('local');
         $coursecontext = context_course::instance($COURSE->id);
 
         // Course enrolment link.
-        $enrollink = '';
+        /** @var \enrol_plugin[] $plugins */
         $plugins   = enrol_get_plugins(true);
         $instances = enrol_get_instances($COURSE->id, true);
         $selfenrol = false;
+        // These plugins may allow self (un)enroll links to be shown.
+        $allowedenrollplugins = [];
+        $allowedenrollplugins['self'] = true;
+        $allowedenrollplugins['manual'] = true;
         foreach ($instances as $instance) { // Need to check enrolment methods for self enrol.
-            if ($instance->enrol === 'self') {
+            if (isset($allowedenrollplugins[$instance->enrol])) { // Will show links for methods which allow it.
                 $plugin = $plugins[$instance->enrol];
                 if (is_enrolled($coursecontext)) {
                     // Prepare unenrolment link.
                     $enrolurl = $plugin->get_unenrolself_link($instance);
                     if ($enrolurl) {
                         $selfenrol = true;
-                        $enrolstr = get_string('unenrolme', 'theme_snap');
+                        $iconurl = $OUTPUT->image_url('i/unenrolme', 'theme_snap');
+                        $enrolicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                        $enrolstr = $enrolicon . get_string('unenrolme', 'theme_snap');
                         break;
                     }
                 } else {
@@ -592,14 +588,13 @@ EOF;
                         // Prepare enrolment link.
                         $selfenrol = true;
                         $enrolurl = new moodle_url('/enrol/index.php', ['id' => $COURSE->id]);
-                        $enrolstr = get_string('enrolme', 'core_enrol');
+                        $iconurl = $OUTPUT->image_url('i/enrolme', 'theme_snap');
+                        $enrolicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                        $enrolstr = $enrolicon . get_string('enrolme', 'theme_snap');
                         break;
                     }
                 }
             }
-        }
-        if ($selfenrol) {
-            $enrollink = '<div class="text-center"><a href="'.$enrolurl.'" class="btn btn-primary">'.$enrolstr.'</a></div><br>';
         }
 
         // Course settings.
@@ -617,22 +612,11 @@ EOF;
             );
         }
 
-        // Norton grader if installed.
         $iconurl = $OUTPUT->image_url('joule_grader', 'theme');
         $gradebookicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-        if (array_key_exists('nortongrader', $localplugins)) {
-            if (has_capability('local/nortongrader:grade', $coursecontext)
-                || has_capability('local/nortongrader:view', $coursecontext)
-            ) {
-                $links[] = array(
-                    'link' => $CFG->wwwroot.'/local/nortongrader/view.php?courseid='.$COURSE->id,
-                    'title' => $gradebookicon.get_string('pluginname', 'local_nortongrader'),
-                );
-            }
-        }
 
         // Joule grader if installed.
-        if (array_key_exists('joulegrader', $localplugins) && !array_key_exists('nortongrader', $localplugins)) {
+        if (array_key_exists('joulegrader', $localplugins)) {
             if (has_capability('local/joulegrader:grade', $coursecontext)
                 || has_capability('local/joulegrader:view', $coursecontext)
             ) {
@@ -672,8 +656,7 @@ EOF;
                     $userpicture->size = 100;
                     $participanticons .= $OUTPUT->render($userpicture);
                 }
-            } 
-            else {
+            } else {
                 // Default icon when 0 participants.
                 $iconurl = $OUTPUT->image_url('u/f1');
                 $participanticons = '<img src="'.$iconurl.'" alt="" role="presentation">';
@@ -696,6 +679,21 @@ EOF;
                 $links[] = array(
                     'link' => $CFG->wwwroot.'/blocks/reports/view.php?action=dashboard&courseid='.$COURSE->id,
                     'title' => $reportsicon.get_string('joulereports', 'block_reports')
+                );
+            }
+        }
+
+        // New Open reports if installed and visible.
+        if (array_key_exists('reports', core_component::get_plugin_list('block'))
+                && !empty($CFG->block_reports_enable_dashboardce)) {
+            $iconurl = $OUTPUT->image_url('open_reports_ce', 'theme');
+            $reportsicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+            if (has_capability('block/reports:viewown', $coursecontext, null, false)
+                || has_capability('block/reports:view', $coursecontext)
+            ) {
+                $links[] = array(
+                    'link' => $CFG->wwwroot.'/blocks/reports/view.php?action=dashboardce&courseid='.$COURSE->id,
+                    'title' => $reportsicon.get_string('openreports', 'block_reports')
                 );
             }
         }
@@ -798,16 +796,15 @@ EOF;
             }
         }
 
-        // Begin LSU Enhancement fix quickmail icon not showing up for students in course.  
-
+        // Begin LSU Enhancement fix quickmail icon not showing up for students in course.
         if ( \core_component::get_component_directory('block_quickmail') !== null) {
-            
+
             // Check course config
             $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $COURSE->id], '', 'name,value');
-             
+
             // Get the master block config for Quickmail.
             $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
-            
+
             // Determine Quickmail allowstudents for this course.
             if ((int) $blockconfig < 0) {
                 $courseallowstudents = 0;
@@ -825,7 +822,7 @@ EOF;
                 } else {
                     $iconurl = $OUTPUT->pix_url('t/email', 'core');
                 }
-        
+
                 // Build the HTML for the icon.
                 $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
                 // Build the link and add it to the array of links.
@@ -835,12 +832,11 @@ EOF;
                  );
             }
         }
+        // End LSU Enhancement fix quickmail icon no showing up for students in course.
 
-        // End LSU Enhancement fix quickmail icon no showing up for students in course. 
-       
-        // Kaltura my media.
+        // BEGIN LSU Enhancement add Kaltura my media.
         if (has_capability('local/mymedia:view', context_system::instance())) {
-            $iconurl = $OUTPUT->image_url('t/kaltura', 'core'); // SJ Change pix_url to image_url
+            $iconurl = $OUTPUT->image_url('lsu/kaltura', 'core');
             $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
 
             $links[] = array(
@@ -848,19 +844,37 @@ EOF;
                 'title' => $mymediaicon.get_string('nav_mymedia', 'local_mymedia'),
             );
         }
+        // END LSU Enhancement add Kaltura my media.
 
-         // Edit blocks.
-         $editblocks = '';
-         if (has_capability('moodle/course:update', $coursecontext)) {
-            $url = new moodle_url('/course/view.php', ['id' => $COURSE->id, 'sesskey' => sesskey()]);
-            if ($PAGE->user_is_editing()) {
-                $url->param('edit', 'off');
-                $editstring = get_string('turneditingoff');
-            } else {
-                $url->param('edit', 'on');
-                $editstring = get_string('editcoursecontent', 'theme_snap');
-            }
-            $editblocks = '<div class="text-center"><a href="'.$url.'" class="btn btn-primary">'.$editstring.'</a></div><br>';
+        $config = get_config('tool_ally');
+        $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);
+        $runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
+        $configured = $configured || $runningbehattest;
+
+        if ( \core_component::get_component_directory('report_allylti') !== null &&
+            $COURSE->id != SITEID && has_capability('report/allylti:viewcoursereport', $coursecontext) && $configured) {
+
+            $url = new moodle_url('/report/allylti/launch.php', [
+                    'reporttype' => 'course',
+                    'report' => 'admin',
+                    'course' => $COURSE->id]
+            );
+
+            $iconurl = $OUTPUT->image_url('i/ally_logo', 'theme_snap');
+            $allyicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+            $links[] = [
+                'link' => $url->out_as_local_url(false),
+                'title' => $allyicon . get_string('coursereport', 'report_allylti'),
+                'attributes' => ['target' => '_blank']
+            ];
+        }
+
+        // Add enrol link as the last item in the dashboard links.
+        if ($selfenrol) {
+            $links[] = [
+                'link'  => $enrolurl->out_as_local_url(false),
+                'title' => $enrolstr,
+            ];
         }
 
         // Output course tools section.
@@ -868,7 +882,6 @@ EOF;
         $iconurl = $OUTPUT->image_url('course_dashboard', 'theme');
         $coursetoolsicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
         $o = '<h2>'.$coursetoolsicon.$coursetools.'</h2>';
-        $o .= $enrollink;
         $o .= self::print_student_dashboard();
         $o .= '<div id="coursetools-list">' .self::render_appendices($links). '</div><hr>';
 

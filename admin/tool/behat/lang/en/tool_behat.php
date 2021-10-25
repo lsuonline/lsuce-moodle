@@ -24,7 +24,7 @@
 
 $string['aim'] = 'This administration tool helps developers and test writers to create .feature files describing Moodle\'s functionalities and run them automatically. Step definitions available for use in .feature files are listed below.';
 $string['allavailablesteps'] = 'All available step definitions';
-$string['errorapproot'] = '$CFG->behat_ionic_dirroot is not pointing to a valid Moodle Mobile developer install.';
+$string['errorapproot'] = '$CFG->behat_ionic_dirroot is not pointing to a valid Moodle app developer install.';
 $string['errorbehatcommand'] = 'Error running behat CLI command. Try running "{$a} --help" manually from CLI to find out more about the problem.';
 $string['errorcomposer'] = 'Composer dependencies are not installed.';
 $string['errordataroot'] = '$CFG->behat_dataroot is not set or is invalid.';
@@ -46,6 +46,7 @@ $string['stepsdefinitionstype'] = 'Type';
 $string['theninfo'] = 'Then. Checkings to ensure the outcomes are the expected ones';
 $string['unknownexceptioninfo'] = 'There was a problem with Selenium or your browser. Please ensure you are using the latest version of Selenium. Error:';
 $string['viewsteps'] = 'Filter';
+$string['warndirrootconfigfound'] = 'A configuration file was found at {$a}. This file is not automatically updated and may become stale. We recommend removing this file.';
 $string['wheninfo'] = 'When. Action that provokes an event';
 $string['wrongbehatsetup'] = 'Something is wrong with the behat setup and so step definitions cannot be listed: <b>{$a->errormsg}</b><br/><br/>Please check:<ul>
 <li>$CFG->behat_dataroot, $CFG->behat_prefix and $CFG->behat_wwwroot are set in config.php with different values from $CFG->dataroot, $CFG->prefix and $CFG->wwwroot.</li>

@@ -126,17 +126,20 @@ class block_online_users extends block_base {
                 } else { // Not a guest user.
                     $this->content->text .= '<div class="user">';
                     $this->content->text .= '<a href="'.$CFG->wwwroot.'/user/view.php?id='.$user->id.'&amp;course='.$this->page->course->id.'" title="'.$timeago.'">';
-                    $this->content->text .= $OUTPUT->user_picture($user, array('size'=>16, 'alttext'=>false, 'link'=>false)) .$user->fullname.'</a></div>';
+                    $avataroptions = ['size' => 16, 'visibletoscreenreaders' => false, 'link' => false];
+                    $this->content->text .= $OUTPUT->user_picture($user, $avataroptions) . $user->fullname . '</a></div>';
 
                     if ($USER->id == $user->id) {
-                        $action = ($user->uservisibility != null && $user->uservisibility == 0) ? 'show' : 'hide';
-                        $anchortagcontents = $OUTPUT->pix_icon('t/' . $action,
-                            get_string('online_status:' . $action, 'block_online_users'));
-                        $anchortag = html_writer::link("", $anchortagcontents,
-                            array('title' => get_string('online_status:' . $action, 'block_online_users'),
-                                'data-action' => $action, 'data-userid' => $user->id, 'id' => 'change-user-visibility'));
+                        if ($CFG->block_online_users_onlinestatushiding) {
+                            $action = ($user->uservisibility != null && $user->uservisibility == 0) ? 'show' : 'hide';
+                            $anchortagcontents = $OUTPUT->pix_icon('t/' . $action,
+                                get_string('online_status:' . $action, 'block_online_users'));
+                            $anchortag = html_writer::link("", $anchortagcontents,
+                                array('title' => get_string('online_status:' . $action, 'block_online_users'),
+                                    'data-action' => $action, 'data-userid' => $user->id, 'id' => 'change-user-visibility'));
 
-                        $this->content->text .= '<div class="uservisibility">' . $anchortag . '</div>';
+                            $this->content->text .= '<div class="uservisibility">' . $anchortag . '</div>';
+                        }
                     } else {
                         if ($canshowicon) {  // Only when logged in and messaging active etc.
                             $anchortagcontents = $OUTPUT->pix_icon('t/message', get_string('messageselectadd'));
@@ -154,6 +157,27 @@ class block_online_users extends block_base {
         }
 
         return $this->content;
+    }
+
+    /**
+     * Return the plugin config settings for external functions.
+     *
+     * @return stdClass the configs for both the block instance and plugin
+     * @since Moodle 3.8
+     */
+    public function get_config_for_external() {
+        global $CFG;
+
+        // Return all settings for all users since it is safe (no private keys, etc..).
+        $configs = (object) [
+            'timetosee' => $CFG->block_online_users_timetosee,
+            'onlinestatushiding' => $CFG->block_online_users_onlinestatushiding
+        ];
+
+        return (object) [
+            'instance' => new stdClass(),
+            'plugin' => $configs,
+        ];
     }
 }
 

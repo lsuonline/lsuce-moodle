@@ -228,7 +228,7 @@ class user_picture implements renderable {
         // only touch the DB if we are missing data and complain loudly...
         $needrec = false;
         foreach (self::$fields as $field) {
-            if (!array_key_exists($field, $user)) {
+            if (!property_exists($user, $field)) {
                 $needrec = true;
                 debugging('Missing '.$field.' property in $user object, this is a performance problem that needs to be fixed by a developer. '
                           .'Please use user_picture::fields() to get the full list of required fields.', DEBUG_DEVELOPER);
@@ -345,11 +345,26 @@ class user_picture implements renderable {
      * @return moodle_url
      */
     public function get_url(moodle_page $page, renderer_base $renderer = null) {
-        global $CFG;
+        global $CFG, $USER;
 
         if (is_null($renderer)) {
             $renderer = $page->get_renderer('core');
         }
+
+        // BEGIN LSU FERPA photos.
+        $is_self = $USER->id == $this->user->id;
+
+        if (isset($this->courseid) && $this->courseid != $page->course->id) {
+            $page->course->id = $this->courseid;
+        }
+
+        $cc = $page->course->id == SITEID ?
+            context_system::instance() :
+            context_course::instance($page->course->id);
+
+        $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
+        $is_teacher = has_capability('moodle/course:update', $cc, $USER->id);
+        // END LSU FERPA photos.
 
         // Sort out the filename and size. Size is only required for the gravatar
         // implementation presently.
@@ -408,11 +423,23 @@ class user_picture implements renderable {
                 // picture for the correct theme.
                 $path .= $page->theme->name.'/';
             }
-            // Set the image URL to the URL for the uploaded file and return.
-            $url = moodle_url::make_pluginfile_url(
-                    $contextid, 'user', 'icon', null, $path, $filename, false, $this->includetoken);
-            $url->param('rev', $this->user->picture);
-            return $url;
+
+            // BEGIN LSU FERPA photos.
+            $ferpaphotos = isset($CFG->ferpaphotos)?$CFG->ferpaphotos:0;
+            if ($ferpaphotos == 0) {
+                // Set the image URL to the URL for the uploaded file and return.
+                $url = moodle_url::make_pluginfile_url(
+                       $contextid, 'user', 'icon', null, $path, $filename, false, $this->includetoken);
+                $url->param('rev', $this->user->picture);
+                return $url;
+            } else if ($is_self or $is_teacher or $can_view_details) {
+                // Set the image URL to the URL for the uploaded file and return.
+                $url = moodle_url::make_pluginfile_url(
+                       $contextid, 'user', 'icon', null, $path, $filename, false, $this->includetoken);
+                $url->param('rev', $this->user->picture);
+                return $url;
+            }
+            // END LSU FERPA photos.
         }
 
         if ($this->user->picture == 0 and !empty($CFG->enablegravatar)) {
@@ -868,16 +895,23 @@ class single_button implements renderable {
     public $actionid;
 
     /**
+     * @var array
+     */
+    protected $attributes = [];
+
+    /**
      * Constructor
      * @param moodle_url $url
      * @param string $label button text
      * @param string $method get or post submit method
+     * @param array $attributes Attributes for the HTML button tag
      */
-    public function __construct(moodle_url $url, $label, $method='post', $primary=false) {
+    public function __construct(moodle_url $url, $label, $method='post', $primary=false, $attributes = []) {
         $this->url    = clone($url);
         $this->label  = $label;
         $this->method = $method;
         $this->primary = $primary;
+        $this->attributes = $attributes;
     }
 
     /**
@@ -899,6 +933,17 @@ class single_button implements renderable {
     }
 
     /**
+     * Sets an attribute for the HTML button tag.
+     *
+     * @param  string $name  The attribute name
+     * @param  mixed  $value The value
+     * @return null
+     */
+    public function set_attribute($name, $value) {
+        $this->attributes[$name] = $value;
+    }
+
+    /**
      * Export data.
      *
      * @param renderer_base $output Renderer.
@@ -917,6 +962,11 @@ class single_button implements renderable {
         $data->disabled = $this->disabled;
         $data->tooltip = $this->tooltip;
         $data->primary = $this->primary;
+
+        $data->attributes = [];
+        foreach ($this->attributes as $key => $value) {
+            $data->attributes[] = ['name' => $key, 'value' => $value];
+        }
 
         // Form parameters.
         $params = $this->url->params();
@@ -1785,10 +1835,12 @@ class html_writer {
      * @param bool $checked Whether the checkbox is checked
      * @param string $label The label for the checkbox
      * @param array $attributes Any attributes to apply to the checkbox
+     * @param array $labelattributes Any attributes to apply to the label, if present
      * @return string html fragment
      */
-    public static function checkbox($name, $value, $checked = true, $label = '', array $attributes = null) {
-        $attributes = (array)$attributes;
+    public static function checkbox($name, $value, $checked = true, $label = '',
+            array $attributes = null, array $labelattributes = null) {
+        $attributes = (array) $attributes;
         $output = '';
 
         if ($label !== '' and !is_null($label)) {
@@ -1804,7 +1856,9 @@ class html_writer {
         $output .= self::empty_tag('input', $attributes);
 
         if ($label !== '' and !is_null($label)) {
-            $output .= self::tag('label', $label, array('for'=>$attributes['id']));
+            $labelattributes = (array) $labelattributes;
+            $labelattributes['for'] = $attributes['id'];
+            $output .= self::tag('label', $label, $labelattributes);
         }
 
         return $output;
@@ -2062,12 +2116,10 @@ class html_writer {
      */
     public static function script($jscode, $url=null) {
         if ($jscode) {
-            $attributes = array('type'=>'text/javascript');
-            return self::tag('script', "\n//<![CDATA[\n$jscode\n//]]>\n", $attributes) . "\n";
+            return self::tag('script', "\n//<![CDATA[\n$jscode\n//]]>\n") . "\n";
 
         } else if ($url) {
-            $attributes = array('type'=>'text/javascript', 'src'=>$url);
-            return self::tag('script', '', $attributes) . "\n";
+            return self::tag('script', '', ['src' => $url]) . "\n";
 
         } else {
             return '';
@@ -2182,8 +2234,9 @@ class html_writer {
                     $heading->header = true;
                 }
 
-                if ($heading->header && empty($heading->scope)) {
-                    $heading->scope = 'col';
+                $tagtype = 'td';
+                if ($heading->header && (string)$heading->text != '') {
+                    $tagtype = 'th';
                 }
 
                 $heading->attributes['class'] .= ' header c' . $key;
@@ -2199,16 +2252,15 @@ class html_writer {
                     $heading->attributes['class'] .= ' ' . $table->colclasses[$key];
                 }
                 $heading->attributes['class'] = trim($heading->attributes['class']);
-                $attributes = array_merge($heading->attributes, array(
-                        'style'     => $table->align[$key] . $table->size[$key] . $heading->style,
-                        'scope'     => $heading->scope,
-                        'colspan'   => $heading->colspan,
-                    ));
+                $attributes = array_merge($heading->attributes, [
+                    'style'     => $table->align[$key] . $table->size[$key] . $heading->style,
+                    'colspan'   => $heading->colspan,
+                ]);
 
-                $tagtype = 'td';
-                if ($heading->header === true) {
-                    $tagtype = 'th';
+                if ($tagtype == 'th') {
+                    $attributes['scope'] = !empty($heading->scope) ? $heading->scope : 'col';
                 }
+
                 $output .= html_writer::tag($tagtype, $heading->text, $attributes) . "\n";
             }
             $output .= html_writer::end_tag('tr') . "\n";
@@ -2740,6 +2792,12 @@ class html_table {
 
     /**
      * @var string Description of the contents for screen readers.
+     *
+     * The "summary" attribute on the "table" element is not supported in HTML5.
+     * Consider describing the structure of the table in a "caption" element or in a "figure" element containing the table;
+     * or, simplify the structure of the table so that no description is needed.
+     *
+     * @deprecated since Moodle 3.9.
      */
     public $summary;
 
@@ -3060,6 +3118,7 @@ class paging_bar implements renderable, templatable {
         $data->label = get_string('page');
         $data->pages = [];
         $data->haspages = $this->totalcount > $this->perpage;
+        $data->pagesize = $this->perpage;
 
         if (!$data->haspages) {
             return $data;
@@ -3067,7 +3126,7 @@ class paging_bar implements renderable, templatable {
 
         if ($this->page > 0) {
             $data->previous = [
-                'page' => $this->page - 1,
+                'page' => $this->page,
                 'url' => (new moodle_url($this->baseurl, [$this->pagevar => $this->page - 1]))->out(false)
             ];
         }
@@ -3113,7 +3172,7 @@ class paging_bar implements renderable, templatable {
 
         if ($this->page + 1 != $lastpage) {
             $data->next = [
-                'page' => $this->page + 1,
+                'page' => $this->page + 2,
                 'url' => (new moodle_url($this->baseurl, [$this->pagevar => $this->page + 1]))->out(false)
             ];
         }
@@ -3223,6 +3282,9 @@ class initials_bar implements renderable, templatable {
             $groupletter->url = $this->url->out(false, array($this->urlvar => $letter));
             if ($letter == $this->current) {
                 $groupletter->selected = $this->current;
+            }
+            if (!isset($data->group[$groupnumber])) {
+                $data->group[$groupnumber] = new stdClass();
             }
             $data->group[$groupnumber]->letter[] = $groupletter;
         }
@@ -3735,11 +3797,10 @@ class custom_menu extends custom_menu_item {
                 $setting = trim($setting);
                 if (!empty($setting)) {
                     switch ($i) {
-                        case 0:
+                        case 0: // Menu text.
                             $itemtext = ltrim($setting, '-');
-                            $itemtitle = $itemtext;
                             break;
-                        case 1:
+                        case 1: // URL.
                             try {
                                 $itemurl = new moodle_url($setting);
                             } catch (moodle_exception $exception) {
@@ -3748,10 +3809,10 @@ class custom_menu extends custom_menu_item {
                                 $itemurl = null;
                             }
                             break;
-                        case 2:
+                        case 2: // Title attribute.
                             $itemtitle = $setting;
                             break;
-                        case 3:
+                        case 3: // Language.
                             if (!empty($language)) {
                                 $itemlanguages = array_map('trim', explode(',', $setting));
                                 $itemvisible &= in_array($language, $itemlanguages);
@@ -4173,32 +4234,32 @@ class action_menu implements renderable, templatable {
 
     /**
      * An icon to use for the toggling the secondary menu (dropdown).
-     * @var actionicon
+     * @var pix_icon
      */
     public $actionicon;
 
     /**
      * Any text to use for the toggling the secondary menu (dropdown).
-     * @var menutrigger
+     * @var string
      */
     public $menutrigger = '';
 
     /**
      * Any extra classes for toggling to the secondary menu.
-     * @var triggerextraclasses
+     * @var string
      */
     public $triggerextraclasses = '';
 
     /**
      * Place the action menu before all other actions.
-     * @var prioritise
+     * @var bool
      */
     public $prioritise = false;
 
     /**
      * Constructs the action menu with the given items.
      *
-     * @param array $actions An array of actions.
+     * @param array $actions An array of actions (action_menu_link|pix_icon|string).
      */
     public function __construct(array $actions = array()) {
         static $initialised = 0;
@@ -4232,7 +4293,6 @@ class action_menu implements renderable, templatable {
      * Sets the label for the menu trigger.
      *
      * @param string $label The text
-     * @return null
      */
     public function set_action_label($label) {
         $this->actionlabel = $label;
@@ -4243,7 +4303,6 @@ class action_menu implements renderable, templatable {
      *
      * @param string $trigger The text
      * @param string $extraclasses Extra classes to style the secondary menu toggle.
-     * @return null
      */
     public function set_menu_trigger($trigger, $extraclasses = '') {
         $this->menutrigger = $trigger;
@@ -4651,6 +4710,12 @@ class action_menu_link extends action_link implements renderable {
     public $actionmenu = null;
 
     /**
+     * The number of instances of this action menu link (and its subclasses).
+     * @var int
+     */
+    protected static $instance = 1;
+
+    /**
      * Constructs the object.
      *
      * @param moodle_url $url The URL for the action.
@@ -4673,10 +4738,8 @@ class action_menu_link extends action_link implements renderable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output) {
-        static $instance = 1;
-
         $data = parent::export_for_template($output);
-        $data->instance = $instance++;
+        $data->instance = self::$instance++;
 
         // Ignore what the parent did with the attributes, except for ID and class.
         $data->attributes = [];

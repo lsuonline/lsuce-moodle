@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,6 +27,7 @@ $string['action:changeassetvisibility'] = 'modifier la visibilité des ressource
 $string['action:duplicateasset'] = 'dupliquer la ressource';
 $string['action:changesectionvisibility'] = 'modifier la visibilité des sections';
 $string['action:highlightsectionvisibility'] = 'mettre en surbrillance la visibilité des sections';
+$string['action:sectiontoc'] = 'obtenir la table des matières de section';
 $string['addanewsection'] = 'Créer une section';
 $string['addresourceoractivity'] = 'Créer une activité d\'apprentissage';
 $string['admin'] = 'Admin';
@@ -57,6 +58,7 @@ $string['changecoverimage'] = 'Modifier l\'image de couverture';
 $string['changefullname'] = 'Modifier nom du site';
 $string['chapters'] = 'Chapitres';
 $string['choosereadme'] = '<div class="clearfix"><div class="theme_screenshot"><h2>Snap</h2><img class=img-polaroid src="snap/pix/screenshot.jpg" /></div></div>';
+$string['close'] = 'Fermer';
 $string['conditional'] = 'Conditionnel';
 $string['contents'] = 'Contenus';
 $string['contributed'] = 'Contribution apportée';
@@ -65,9 +67,11 @@ $string['coursecontacts'] = 'Contacts de cours';
 $string['coursedisplay'] = 'Affichage du cours';
 $string['coursefootertoggle'] = 'Pied de page du cours';
 $string['coursefootertoggledesc'] = 'Le pied de page de cours affiche des informations utiles pour les utilisateurs sur une page de cours, notamment les contacts de cours, la description du cours et l\'activité récente dans le cours.';
-$string['courseformatnotification'] = 'Le format de cours que vous utilisez actuellement n\'est pas totalement pris en charge par le thème Snap. Blackboard Open LMS recommande d\'utiliser les formats de cours Hebdomadaire et Rubrique avec le thème Snap pour bénéficier de la meilleure expérience. Le format de cours peut être modifié dans les <a href="{$a}">réglages du cours</a>.';
+$string['courseformatnotification'] = 'Le format de cours que vous utilisez actuellement n\'est pas totalement pris en charge par le thème Snap. Open LMS recommande d\'utiliser les formats de cours Hebdomadaire et Rubrique avec le thème Snap pour bénéficier de la meilleure expérience. Le format de cours peut être modifié dans les <a href="{$a}">réglages du cours</a>.';
 $string['coursefixydefaulttext'] = 'Vous n\'êtes inscrit à aucun cours actuellement.<br>Les cours auxquels vous êtes inscrit sont affichés ici.';
 $string['coursegrade'] = 'Note du cours :';
+$string['coursepartialrender'] = 'Activer le chargement différé des sections de cours';
+$string['coursepartialrenderdesc'] = 'Si ce paramètre est activé, les sections de cours sont chargées lorsque l\'utilisateur les sélectionne. Cela permet de charger les cours volumineux plus rapidement.';
 $string['coursenavigation'] = 'Navigation de cours';
 $string['coursesummaryfilesunsuitable'] = 'Videz vos fichiers de cours avant de tenter de modifier l\'image de couverture';
 $string['coursetools'] = 'Tableau de bord du cours';
@@ -82,10 +86,12 @@ $string['comingsoon'] = 'Bientôt disponible !';
 $string['createsection'] = 'Créer une section';
 $string['current'] = 'Actuelle';
 $string['customcss'] = 'CSS personnalisé';
-$string['customcssdesc'] = 'Vous êtes responsable des actions que vous exécutez. Il vous incombera de résoudre tout problème causé par le code CSS ajouté ici. L\'assistance Blackboard Open LMS ne fournit aucun dépannage ni aucune aide concernant le contenu CSS.';
+$string['customcssdesc'] = 'Vous êtes responsable des actions que vous exécutez. Il vous incombera de résoudre tout problème causé par le code CSS ajouté ici. L\'assistance Open LMS ne fournit aucun dépannage ni aucune aide concernant le contenu CSS.';
 $string['customtopbar'] = 'Barre de navigation';
 $string['customisenavbar'] = 'Modifier les couleurs de la barre de navigation';
 $string['customisenavbutton'] = 'Modifier les couleurs du bouton Mes cours';
+$string['customisecustommenu'] = 'Modifier la couleur du texte du menu personnalisé';
+$string['custommenutext'] = 'Couleur du texte du menu personnalisé';
 $string['deadlines'] = 'Échéance';
 $string['deadlinestoggle'] = 'Échéance';
 $string['deadlinestoggledesc'] = 'Montrer aux utilisateurs les échéances des activités à venir des cours auxquels ils sont inscrits.';
@@ -108,6 +114,8 @@ $string['editcoursesettings'] = 'Paramètres de cours';
 $string['editcoursetopic'] = 'Modifier la section';
 $string['editcustomfooter'] = 'Modifier le pied de page';
 $string['editcustommenu'] = 'Modifier le menu personnalisé';
+$string['error'] = 'Erreur';
+$string['errorgettingfeed'] = 'Une erreur est survenue lors de l\'obtention des éléments de flux.';
 $string['error:categorycolorinvalidjson'] = 'Format JSON incorrect pour les catégories de cours';
 $string['error:categorycolorinvalidvalue'] = 'L\'identifiant d\'enregistrement ou la valeur de couleur pour la catégorie "{$a}" ne sont pas valides.';
 $string['error:categorynotfound'] = 'L\'enregistrement de catégorie associé à l\'identifiant "{$a}" n\'a pas été trouvé';
@@ -119,6 +127,7 @@ $string['error:failedtochangesectionvisibility'] = 'Échec de l\'action Masquer/
 $string['error:failedtohighlightsection'] = 'Échec de la mise en surbrillance de la section';
 $string['error:failedtoduplicateasset'] = 'Échec de la duplication';
 $string['error:failedtodeleteasset'] = 'Impossible de supprimer la ressource';
+$string['error:failedtotoc'] = 'Impossible d\'obtenir la table des matières.';
 $string['extension'] = 'Extension {$a}';
 $string['facebook'] = 'Facebook';
 $string['facebookdesc'] = 'URL de votre page Facebook.';
@@ -134,6 +143,14 @@ $string['featurespotsheading'] = 'Titre des emplacements de fonctionnalités';
 $string['featureonetitle'] = 'Titre de la fonctionnalité 1';
 $string['featuretwotitle'] = 'Titre de la fonctionnalité 2';
 $string['featurethreetitle'] = 'Titre de la fonctionnalité 3';
+$string['featureonetitlelink'] = 'Lien du titre de la fonctionnalité 1';
+$string['featuretwotitlelink'] = 'Lien du titre de la fonctionnalité 2';
+$string['featurethreetitlelink'] = 'Lien du titre de la fonctionnalité 3';
+$string['featuretitlelinkdesc'] = 'Saisissez l\'URL à laquelle vous souhaitez lier cet emplacement de fonctionnalité. Vous pouvez ajouter des liens externes et internes sur votre site. Pour ajouter un lien externe, copiez-le à partir de l\'URL du site en incluant la barre oblique (« / »). Par exemple, pour ajouter un lien vers un cours, copiez « /course/view.php?id=160 ». Pour ajouter un lien externe, le lien doit commencer par https://';
+$string['featureonetitlecb'] = 'La fonctionnalité 1 s\'ouvre dans une nouvelle fenêtre';
+$string['featuretwotitlecb'] = 'La fonctionnalité 2 s\'ouvre dans une nouvelle fenêtre';
+$string['featurethreetitlecb'] = 'La fonctionnalité 3 s\'ouvre dans une nouvelle fenêtre';
+$string['featuretitlecbdesc'] = 'Lorsque cette option est activée, le lien ajouté à l\'emplacement de fonctionnalité s\'ouvre dans une nouvelle fenêtre';
 $string['featureonetext'] = 'Contenu de la fonctionnalité 1';
 $string['featuretwotext'] = 'Contenu de la fonctionnalité 2';
 $string['featurethreetext'] = 'Contenu de la fonctionnalité 3';
@@ -194,14 +211,14 @@ $string['jsontextdescription'] = 'La zone de texte valide le texte JSON considé
 "12":"#CC0084",<br>
 "56":"#CC0087",<br>
 "89":"#CCF084"}';
-$string['knowledgebase'] = 'Base de connaissances Blackboard Open LMS';
+$string['knowledgebase'] = 'Base de connaissances Open LMS';
 $string['list'] = 'Liste';
 $string['linkedin'] = 'LinkedIn';
 $string['linkedindesc'] = 'URL de la page LinkedIn de votre organisation.';
 $string['leftnav'] = 'Table des matières';
 $string['leftnavdesc'] = 'Choisissez où afficher la table des matières. La liste permet d\'afficher plus de contenu et est pratique pour les cours comportant de nombreuses rubriques.';
 $string['loading'] = 'Chargement...';
-$string['loggedinasguest'] = 'Vous êtes connecté en tant que visiteur';
+$string['loggedinasguest'] = 'Vous êtes connecté en tant qu\'utilisateur anonyme';
 $string['loggedoutmsg'] = 'Vous êtes actuellement déconnecté. Si vous souhaitez continuer à utiliser ce site, reconnectez-vous.';
 $string['loggedoutmsgtitle'] = 'Vous êtes déconnecté.';
 $string['loggedoutfailmsg'] = 'Vous devez être connecté à {$a}.';
@@ -243,13 +260,19 @@ $string['personalmenu'] = 'Menu personnel';
 $string['personalmenufeatures'] = 'Fonctionnalités du menu personnel';
 $string['personalmenulogintoggle'] = 'Afficher le menu personnel lors de la connexion';
 $string['personalmenulogintoggledesc'] = 'Ouvre immédiatement le menu personnel après la connexion';
+$string['personalmenuadvancedfeedsenable'] = 'Activer les flux avancés (expérimental)';
+$string['personalmenuadvancedfeedsenabledesc'] = 'Les flux avancés chargent des éléments de menu personnalisés, ce qui permet de réduire les temps de chargement et d\'actualiser le contenu sur demande.';
+$string['personalmenuadvancedfeedsperpage'] = 'Nombre d\'éléments d\'affichage des flux avancés';
+$string['personalmenuadvancedfeedsperpagedesc'] = 'Choisissez le nombre d\'éléments à afficher dans le flux. Les utilisateurs pourront sélectionner l\'option <strong>Voir plus</strong> pour afficher davantage d\'éléments.';
+$string['personalmenuadvancedfeedslifetime'] = 'Durée de vie des flux avancés';
+$string['personalmenuadvancedfeedslifetimedesc'] = 'Choisissez la durée pendant laquelle les flux seront mis en cache dans le navigateur après connexion. Sélectionner une valeur de 0 empêchera la mise en cache des flux dans le navigateur.';
 $string['pld'] = 'CPP';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Image de couverture';
 $string['posterdesc'] = 'Image d\'en-tête de grande taille destinée à la page d\'accueil de votre site. Les images en mode paysage (1200 pixels x 600 pixels ou plus) sont plus optimales.';
-$string['poweredbyrunby'] = 'Conçu avec <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a>,
-     une technologie <a href="https://moodle.com/" target="_blank">Moodle</a>.<br>
-    Copyright &#169; {$a} Blackboard Inc, tous droits réservés.';
+$string['poweredbyrunby'] = 'Conçu avec <a href="https://{$a->subdomain}.openlms.net/" target="_blank" rel="noopener">Open LMS</a>,
+une technologie <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>.<br>
+Copyright &#169; {$a->year} Open LMS, tous droits réservés.';
 $string['previoussection'] = 'Section précédente';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'Identifiant du cours que l\'utilisateur a ajouté à ses favoris';
 $string['privacy:metadata:theme_snap_course_favorites:userid'] = 'Identifiant de l\'utilisateur qui a ajouté le cours à ses favoris';
@@ -268,7 +291,9 @@ $string['region-side-top'] = 'Haut';
 $string['released'] = 'Version : {$a}';
 $string['reopened'] = 'Réouvert';
 $string['resourcedisplay'] = 'Affichage des ressources';
-$string['resourcedisplayhelp'] = 'Sélectionnez le mode d\'affichage des pièces jointes et des liens dans votre cours.';
+$string['resourcedisplayhelp'] = 'Sélectionnez le mode d\'affichage des pièces jointes et des liens dans votre cours. Le thème Snap ne prend pas en charge les fichiers multimédias dans la brève description des fiches de ressources et d\'activité.';
+$string['displaydescription'] = 'Afficher la description';
+$string['displaydescriptionhelp'] = 'Choisissez d\'afficher une description de la ressource et des activités URL dans une nouvelle page d\'abord. Les étudiants accéderont au contenu depuis la description.';
 $string['search'] = 'Rechercher du contenu';
 $string['seriffont'] = 'Police Serif';
 $string['seriffont_desc'] = 'Cette police est utilisée pour la plupart du contenu généré par l\'utilisateur. L\'utilisation d\'une police Serif rend le contenu généré par l\'utilisateur plus lisible, et donne l\'impression qu\'il a été rédigé à la main.';
@@ -291,10 +316,12 @@ $string['topicactions'] = 'Actions relatives à la rubrique';
 $string['twitter'] = 'Twitter';
 $string['twitterdesc'] = 'URL de votre compte Twitter.';
 $string['unenrolme'] = 'Me désinscrire';
+$string['enrolme'] = 'M\'inscrire';
 $string['unread'] = 'non lu';
 $string['unsupportedcoverimagetype'] = 'Type d\'image de couverture non pris en charge ({$a})';
 $string['via'] = 'via';
 $string['viewcourse'] = 'Afficher le cours';
+$string['viewmore'] = 'Voir plus';
 $string['viewyourprofile'] = 'Afficher votre profil';
 $string['viewmyfeedback'] = 'Afficher mon feed-back';
 $string['viewcalendar'] = 'Afficher mon calendrier';
@@ -305,7 +332,7 @@ $string['visibility'] = 'Visibilité';
 $string['xofyanswered'] = '{$a->completed} sur {$a->participants} ont répondu';
 $string['xofyattempted'] = '{$a->completed} sur {$a->participants} ont effectué une tentative';
 $string['xofycontributed'] = '{$a->completed} sur {$a->participants} ont contribué';
-$string['xofysubmitted'] = '{$a->completed} sur {$a->participants} ont envoyé';
+$string['xofysubmitted'] = '{$a->completed} sur {$a->participants} remis';
 $string['xungraded'] = '{$a} non noté';
 $string['youtube'] = 'YouTube';
 $string['youtubedesc'] = 'URL de votre chaîne YouTube.';
@@ -328,9 +355,37 @@ $string['cachedef_profile_based_branding'] = 'Mise en cache de la personnalisati
 $string['cachedef_course_card_bg_image'] = 'Mise en cache de l\'image d\'arrière plan du cours.';
 $string['cachedef_course_card_teacher_avatar'] = 'Mise en cache des avatars des enseignants.';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Mise en cache de l\'index des avatars des enseignants.';
-$string['accesforumstringdis'] = 'Options d\'affichage';
-$string['accesforumstringmov'] = 'Déplacer les options';
-$string['accescalendarstring'] = 'Calendrier';
+$string['accessforumstringdis'] = 'Options d\'affichage';
+$string['accessforumstringmov'] = 'Déplacer les options';
+$string['accesscalendarstring'] = 'Calendrier';
+$string['accessglobalsearchstring'] = 'Recherche';
 $string['admineventwarning'] = 'Pour afficher les événements de tous les cours, ';
 $string['gotocalendarsnap'] = 'accédez au calendrier du site.';
 $string['quizattemptswarn'] = 'Les tentatives des utilisateurs suspendus sont exclues';
+$string['quizfeedback'] = 'Feed-back';
+$string['validratio'] = 'Cette combinaison de couleurs ne respecte pas la valeur de proportion minimum WCAG 2.0 de 4.5:1.';
+$string['invalidratio'] = 'Cette combinaison de couleurs ne respecte pas la
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">valeur de proportion minimum WCAG 2.0 de 4.5:1</a>. Valeur : « {$a} »';
+$string['imageinvalidratio'] = 'Cette image ne respectant pas la valeur de proportion minimum WCAG 2.0 de 4.5:1, elle peut présenter des problèmes de contraste. Valeur moyenne de pixels : « {$a} »';
+$string['catinvalidratio'] = 'Les catégories de couleurs suivantes ne respectent pas la
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">valeur de proportion minimum WCAG 2.0 de 4.5:1</a> :
+Couleur d\'arrière-plan du site (blanc) : « {$a->white} ». Couleur d\'arrière-plan de la barre de navigation : « {$a->custombar} ». Couleur d\'arrière-plan du bouton Mes cours : « {$a->customnav} »';
+$string['imageinvalidratiocategory'] = 'Cette image ne respectant pas la valeur de proportion minimum WCAG 2.0 de 4.5:1, elle peut présenter des problèmes de contraste avec la couleur du thème. Valeur moyenne de pixels : « {$a} »';
+$string['lazyload_mod_page'] = 'Activer le chargement différé par défaut pour les ressources des pages';
+$string['lazyload_mod_page_description'] = 'Lorsque ce paramètre est activé, il réduit de manière significative le temps de chargement des cours composés de nombreuses pages.';
+$string['pmadvancedfeed_viewmore'] = 'Voir plus';
+$string['pmadvancedfeed_reload'] = 'Actualiser';
+$string['multimediacard'] = 'Les fichiers multimédias ne s\'afficheront pas dans la fiche d\'activité pour le thème Snap. Ceci sera appliqué à la page d\'accueil et aux pages de cours uniquement pour les brèves fiches de ressource et d\'activité.';
+$string['enabledlogin'] = 'Options de connexion affichées';
+$string['enabledlogindesc'] = 'Sélectionnez les options de connexion à afficher.';
+$string['moodlelogin'] = 'Afficher la connexion à Moodle uniquement';
+$string['alternativelogin'] = 'Afficher les autres options de connexion uniquement';
+$string['bothlogin'] = 'Afficher les deux options de connexion';
+$string['enabledloginorder'] = 'Ordre des options de connexion';
+$string['enabledloginorderdesc'] = 'Sélectionnez l\'option de connexion à afficher en premier.';
+$string['moodleloginfirst'] = 'Afficher la connexion à Moodle en premier';
+$string['alternativeloginfirst'] = 'Afficher les autres options de connexion en premier';
+$string['alternativeloginoptions'] = 'Autres options de connexion';
+$string['openmessagedrawer'] = 'Ouvrir le tiroir de messagerie. ';
+$string['design_mod_page'] = 'Activer la conception précédente pour les ressources de pages';
+$string['design_mod_page_description'] = 'Lorsque cette option est activée, le contenu de la ressource de page est affiché au sein de la même page, du même cours ou de la même page d\'accueil.';

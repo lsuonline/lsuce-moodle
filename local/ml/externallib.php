@@ -103,7 +103,7 @@ class local_ml_external extends external_api {
                                                  VALUE_DEFAULT,
                                                  'http://tinyurl.com/yasf4vnw'),
                     'description' => new external_value(PARAM_TEXT, 'Activity description', VALUE_DEFAULT, ''),
-                    'grade' => new external_value(PARAM_INT, 'Points possible', VALUE_DEFAULT, 100)
+                    'grade' => new external_value(PARAM_FLOAT, 'Points possible', VALUE_DEFAULT, 100)
                 )
         );
 
@@ -227,7 +227,7 @@ class local_ml_external extends external_api {
                                                  VALUE_DEFAULT,
                                                  'http://tinyurl.com/yasf4vnw'),
                     'description' => new external_value(PARAM_TEXT, 'Activity description', VALUE_DEFAULT, ''),
-                    'grade' => new external_value(PARAM_INT, 'Points possible', VALUE_DEFAULT, 100)
+                    'grade' => new external_value(PARAM_FLOAT, 'Points possible', VALUE_DEFAULT, 100)
                 )
         );
 
@@ -284,7 +284,7 @@ class local_ml_external extends external_api {
         $moduleinfo->course = $params['course'];
         $moduleinfo->section = $params['section'];
         $moduleinfo->visible = $params['visible'];
-        // Moodle 3.3 seems to also require visibleoncoursepage. 
+        // Moodle 3.3 seems to also require visibleoncoursepage.
         $moduleinfo->visibleoncoursepage = $params['visibleoncoursepage'];
         $moduleinfo->introeditor = array(
                 'text' => $params['description'],

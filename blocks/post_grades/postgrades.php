@@ -53,7 +53,6 @@ if (!in_array($period, post_grades::active_periods($course))) {
     print_error('notactive', 'block_post_grades');
 }
 
-// Need this for LAW types.
 $uescourse = $section->course()->fill_meta();
 
 $params = array(
@@ -96,18 +95,7 @@ $exportparams = array(
         GRADE_DISPLAY_TYPE_REAL : GRADE_DISPLAY_TYPE_LETTER
 );
 
-if ($uescourse->department == 'LAW') {
-    $domino = get_config('block_post_grades', 'law_domino_application_url');
-    $exportparams['decimalpoints'] = 1;
-    $exportparams['displaytype'] = GRADE_DISPLAY_TYPE_REAL;
-
-    if (!empty($uescourse->course_first_year)) {
-        $course->visible = 0;
-        $DB->update_record('course', $course);
-    }
-} else {
-    $domino = get_config('block_post_grades', 'domino_application_url');
-}
+$domino = get_config('block_post_grades', 'domino_application_url');
 
 $exporturl = new moodle_url('/grade/export/xml/dump.php', $exportparams);
 
@@ -115,13 +103,11 @@ switch($period->post_type) {
     case 'midterm':
         $post_type = 'M';
         break;
-    case 'final':
-    case 'law_first':
-    case 'law_upper':
-        $post_type = 'F';
+    case 'onlinemidterm':
+        $post_type = 'N';
         break;
-    case 'law_degree':
-        $post_type = 'D';
+    case 'final':
+        $post_type = 'F';
         break;
     case 'degree':
         $post_type = 'D';
@@ -135,9 +121,7 @@ $postparams = array(
     'DeptCode' => $uescourse->department,
     'CourseNbr' => $uescourse->cou_number,
     'SectionNbr' => $section->sec_number,
-    'MoodleGradeURL' => $uescourse->department == 'LAW' ?
-        $exporturl->out(false) :
-        rawurlencode($exporturl->out(false))
+    'MoodleGradeURL' => rawurlencode($exporturl->out(false))
 );
 
 // We can't be sure about the configured url, so we are required to be safe.
@@ -147,5 +131,12 @@ foreach ($postparams as $key => $value) {
 }
 
 $forward = $domino . implode('&', $transformed);
+
+// Add some debugging stuff in for testing. This will be disbled in prod and can be removed.
+if ($CFG->debug == 32767 && $CFG->debugdisplay > 0) {
+    echo'<br>Post grades URL: ';
+    print_r($forward);
+    die();
+}
 
 redirect($forward);

@@ -241,11 +241,27 @@ forum_discussion_view($modcontext, $forumrecord, $discussionrecord);
 
 unset($SESSION->fromdiscussion);
 
+$saveddisplaymode = get_user_preferences('forum_displaymode', $CFG->forum_displaymode);
+
 if ($mode) {
-    set_user_preference('forum_displaymode', $mode);
+    $displaymode = $mode;
+} else {
+    $displaymode = $saveddisplaymode;
 }
 
-$displaymode = get_user_preferences('forum_displaymode', $CFG->forum_displaymode);
+if (get_user_preferences('forum_useexperimentalui', false)) {
+    if ($displaymode == FORUM_MODE_NESTED) {
+        $displaymode = FORUM_MODE_NESTED_V2;
+    }
+} else {
+    if ($displaymode == FORUM_MODE_NESTED_V2) {
+        $displaymode = FORUM_MODE_NESTED;
+    }
+}
+
+if ($displaymode != $saveddisplaymode) {
+    set_user_preference('forum_displaymode', $displaymode);
+}
 
 if ($parent) {
     // If flat AND parent, then force nested display this time
@@ -291,21 +307,27 @@ if ($node && $post->get_id() != $discussion->get_first_post_id()) {
     $node->add(format_string($post->get_subject()), $PAGE->url);
 }
 
+$isnestedv2displaymode = $displaymode == FORUM_MODE_NESTED_V2;
 $PAGE->set_title("$course->shortname: " . format_string($discussion->get_name()));
 $PAGE->set_heading($course->fullname);
-$PAGE->set_button(forum_search_form($course));
+if ($isnestedv2displaymode) {
+    $PAGE->add_body_class('nested-v2-display-mode reset-style');
+    $settingstrigger = $OUTPUT->render_from_template('mod_forum/settings_drawer_trigger', null);
+    $PAGE->add_header_action($settingstrigger);
+} else {
+    $PAGE->set_button(forum_search_form($course));
+}
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(format_string($forum->get_name()), 2);
-echo $OUTPUT->heading(format_string($discussion->get_name()), 3, 'discussionname');
+if (!$isnestedv2displaymode) {
+    echo $OUTPUT->heading(format_string($forum->get_name()), 2);
+    echo $OUTPUT->heading(format_string($discussion->get_name()), 3, 'discussionname');
+}
 
 $rendererfactory = mod_forum\local\container::get_renderer_factory();
 $discussionrenderer = $rendererfactory->get_discussion_renderer($forum, $discussion, $displaymode);
 $orderpostsby = $displaymode == FORUM_MODE_FLATNEWEST ? 'created DESC' : 'created ASC';
 $replies = $postvault->get_replies_to_post($USER, $post, $capabilitymanager->can_view_any_private_reply($USER), $orderpostsby);
-$postids = array_map(function($post) {
-    return $post->get_id();
-}, array_merge([$post], array_values($replies)));
 
 if ($move == -1 and confirm_sesskey()) {
     $forumname = format_string($forum->get_name(), true);
@@ -316,5 +338,12 @@ echo $discussionrenderer->render($USER, $post, $replies);
 echo $OUTPUT->footer();
 
 if ($istracked && !$CFG->forum_usermarksread) {
-    forum_tp_mark_posts_read($USER, $postids);
+    if ($displaymode == FORUM_MODE_THREADED) {
+        forum_tp_add_read_record($USER->id, $post->get_id());
+    } else {
+        $postids = array_map(function($post) {
+            return $post->get_id();
+        }, array_merge([$post], array_values($replies)));
+        forum_tp_mark_posts_read($USER, $postids);
+    }
 }

@@ -78,14 +78,14 @@ class managesubscriptions extends \moodleform {
         $mform->addElement('filepicker', 'importfile', get_string('importfromfile', 'calendar'), null, array('accepted_types' => '.ics'));
 
         // Disable appropriate elements depending on import from value.
-        $mform->disabledIf('pollinterval', 'importfrom', 'eq', CALENDAR_IMPORT_FROM_FILE);
-        $mform->disabledIf('url',  'importfrom', 'eq', CALENDAR_IMPORT_FROM_FILE);
-        $mform->disabledIf('importfile', 'importfrom', 'eq', CALENDAR_IMPORT_FROM_URL);
+        $mform->hideIf('pollinterval', 'importfrom', 'eq', CALENDAR_IMPORT_FROM_FILE);
+        $mform->hideIf('url',  'importfrom', 'eq', CALENDAR_IMPORT_FROM_FILE);
+        $mform->hideIf('importfile', 'importfrom', 'eq', CALENDAR_IMPORT_FROM_URL);
 
         // Add the select elements for the available event types.
         $this->add_event_type_elements($mform, $eventtypes);
 
-        // Eventtype: 0 = user, 1 = global, anything else = course ID.
+        // Eventtype: 0 = user, 1 = site, anything else = course ID.
         $mform->addElement('submit', 'add', get_string('add'));
 
         // Add the javascript required to enhance this mform.

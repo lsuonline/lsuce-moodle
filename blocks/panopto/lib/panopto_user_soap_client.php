@@ -34,8 +34,9 @@ defined('MOODLE_INTERNAL') || die();
 require_once(dirname(__FILE__) . '/UserManagement/UserManagementAutoload.php');
 require_once(dirname(__FILE__) . '/panopto_data.php');
 require_once(dirname(__FILE__) . '/block_panopto_lib.php');
+require_once(dirname(__FILE__) . '/panopto_timeout_soap_client.php');
 
-class panopto_user_soap_client extends SoapClient {
+class panopto_user_soap_client extends PanoptoTimeoutSoapClient {
     /**
      * @var array $authparam
      */
@@ -76,7 +77,7 @@ class panopto_user_soap_client extends SoapClient {
             null,
             $apiuseruserkey);
 
-        $this->serviceparams = generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.6/UserManagement.svc?singlewsdl');
+        $this->serviceparams = panopto_generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.6/UserManagement.svc?singlewsdl');
 
         // We need to make sure the UpdateContactInfo call succeeded so we need to ensure SOAP_WAIT_ONE_WAY_CALLS is set.
         $this->serviceparams['wsdl_features'] = SOAP_WAIT_ONE_WAY_CALLS | SOAP_SINGLE_ELEMENT_ARRAYS | SOAP_USE_XSI_ARRAY_TYPE;

@@ -465,7 +465,7 @@ function profiling_list_controls($listurl) {
  * against an array of * wildchar patterns
  */
 function profiling_string_matches($string, $patterns) {
-    $patterns = explode(',', $patterns);
+   $patterns = preg_split("/\n|,/", $patterns);
     foreach ($patterns as $pattern) {
         // Trim and prepare pattern
         $pattern = str_replace('\*', '.*', preg_quote(trim($pattern), '~'));
@@ -473,7 +473,7 @@ function profiling_string_matches($string, $patterns) {
         if (empty($pattern)) {
             continue;
         }
-        if (preg_match('~' . $pattern . '~', $string)) {
+        if (preg_match('~^' . $pattern . '$~', $string)) {
             return true;
         }
     }
@@ -823,10 +823,10 @@ function profiling_get_import_run_schema() {
         <xs:element type="xs:int" name="runreference"/>
         <xs:element type="xs:string" name="runcomment"/>
         <xs:element type="xs:int" name="timecreated"/>
-        <xs:element type="xs:int" name="totalexecutiontime"/>
-        <xs:element type="xs:int" name="totalcputime"/>
-        <xs:element type="xs:int" name="totalcalls"/>
-        <xs:element type="xs:int" name="totalmemory"/>
+        <xs:element type="xs:integer" name="totalexecutiontime"/>
+        <xs:element type="xs:integer" name="totalcputime"/>
+        <xs:element type="xs:integer" name="totalcalls"/>
+        <xs:element type="xs:integer" name="totalmemory"/>
         <xs:element type="xs:string" name="data"/>
       </xs:sequence>
     </xs:complexType>

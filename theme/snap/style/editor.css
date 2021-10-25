@@ -273,7 +273,6 @@ a:focus {
 }
 
 a:focus {
-    outline: thin dotted;
     outline: 5px auto -webkit-focus-ring-color;
     outline-offset: -2px;
 }
@@ -370,7 +369,7 @@ h6,
         Helvetica,
         Arial,
         sans-serif;
-    font-weight: 400;
+    font-weight: 300;
     line-height: 1.5;
     color: #565656;
 }
@@ -2140,7 +2139,6 @@ table th[class*="col-"] {
 .btn.focus,
 .btn:active.focus,
 .btn.active.focus {
-    outline: thin dotted;
     outline: 5px auto -webkit-focus-ring-color;
     outline-offset: -2px;
 }
@@ -2222,9 +2220,6 @@ fieldset[disabled] a.btn {
     background-image: none;
 }
 
-.btn-default.disabled,
-.btn-default[disabled],
-fieldset[disabled] .btn-default,
 .btn-default.disabled:hover,
 .btn-default[disabled]:hover,
 fieldset[disabled] .btn-default:hover,
@@ -2233,13 +2228,7 @@ fieldset[disabled] .btn-default:hover,
 fieldset[disabled] .btn-default:focus,
 .btn-default.disabled.focus,
 .btn-default[disabled].focus,
-fieldset[disabled] .btn-default.focus,
-.btn-default.disabled:active,
-.btn-default[disabled]:active,
-fieldset[disabled] .btn-default:active,
-.btn-default.disabled.active,
-.btn-default[disabled].active,
-fieldset[disabled] .btn-default.active {
+fieldset[disabled] .btn-default.focus {
     background-color: transparent;
     border-color: #03a9f4;
 }
@@ -2296,9 +2285,6 @@ fieldset[disabled] .btn-default.active {
     background-image: none;
 }
 
-.btn-primary.disabled,
-.btn-primary[disabled],
-fieldset[disabled] .btn-primary,
 .btn-primary.disabled:hover,
 .btn-primary[disabled]:hover,
 fieldset[disabled] .btn-primary:hover,
@@ -2307,13 +2293,7 @@ fieldset[disabled] .btn-primary:hover,
 fieldset[disabled] .btn-primary:focus,
 .btn-primary.disabled.focus,
 .btn-primary[disabled].focus,
-fieldset[disabled] .btn-primary.focus,
-.btn-primary.disabled:active,
-.btn-primary[disabled]:active,
-fieldset[disabled] .btn-primary:active,
-.btn-primary.disabled.active,
-.btn-primary[disabled].active,
-fieldset[disabled] .btn-primary.active {
+fieldset[disabled] .btn-primary.focus {
     background-color: transparent;
     border-color: #03a9f4;
 }
@@ -2370,9 +2350,6 @@ fieldset[disabled] .btn-primary.active {
     background-image: none;
 }
 
-.btn-success.disabled,
-.btn-success[disabled],
-fieldset[disabled] .btn-success,
 .btn-success.disabled:hover,
 .btn-success[disabled]:hover,
 fieldset[disabled] .btn-success:hover,
@@ -2381,13 +2358,7 @@ fieldset[disabled] .btn-success:hover,
 fieldset[disabled] .btn-success:focus,
 .btn-success.disabled.focus,
 .btn-success[disabled].focus,
-fieldset[disabled] .btn-success.focus,
-.btn-success.disabled:active,
-.btn-success[disabled]:active,
-fieldset[disabled] .btn-success:active,
-.btn-success.disabled.active,
-.btn-success[disabled].active,
-fieldset[disabled] .btn-success.active {
+fieldset[disabled] .btn-success.focus {
     background-color: transparent;
     border-color: #8bc34a;
 }
@@ -2444,9 +2415,6 @@ fieldset[disabled] .btn-success.active {
     background-image: none;
 }
 
-.btn-info.disabled,
-.btn-info[disabled],
-fieldset[disabled] .btn-info,
 .btn-info.disabled:hover,
 .btn-info[disabled]:hover,
 fieldset[disabled] .btn-info:hover,
@@ -2455,13 +2423,7 @@ fieldset[disabled] .btn-info:hover,
 fieldset[disabled] .btn-info:focus,
 .btn-info.disabled.focus,
 .btn-info[disabled].focus,
-fieldset[disabled] .btn-info.focus,
-.btn-info.disabled:active,
-.btn-info[disabled]:active,
-fieldset[disabled] .btn-info:active,
-.btn-info.disabled.active,
-.btn-info[disabled].active,
-fieldset[disabled] .btn-info.active {
+fieldset[disabled] .btn-info.focus {
     background-color: transparent;
     border-color: #03a9f4;
 }
@@ -2518,9 +2480,6 @@ fieldset[disabled] .btn-info.active {
     background-image: none;
 }
 
-.btn-warning.disabled,
-.btn-warning[disabled],
-fieldset[disabled] .btn-warning,
 .btn-warning.disabled:hover,
 .btn-warning[disabled]:hover,
 fieldset[disabled] .btn-warning:hover,
@@ -2529,13 +2488,7 @@ fieldset[disabled] .btn-warning:hover,
 fieldset[disabled] .btn-warning:focus,
 .btn-warning.disabled.focus,
 .btn-warning[disabled].focus,
-fieldset[disabled] .btn-warning.focus,
-.btn-warning.disabled:active,
-.btn-warning[disabled]:active,
-fieldset[disabled] .btn-warning:active,
-.btn-warning.disabled.active,
-.btn-warning[disabled].active,
-fieldset[disabled] .btn-warning.active {
+fieldset[disabled] .btn-warning.focus {
     background-color: transparent;
     border-color: #ff9800;
 }
@@ -2592,9 +2545,6 @@ fieldset[disabled] .btn-warning.active {
     background-image: none;
 }
 
-.btn-danger.disabled,
-.btn-danger[disabled],
-fieldset[disabled] .btn-danger,
 .btn-danger.disabled:hover,
 .btn-danger[disabled]:hover,
 fieldset[disabled] .btn-danger:hover,
@@ -2603,13 +2553,7 @@ fieldset[disabled] .btn-danger:hover,
 fieldset[disabled] .btn-danger:focus,
 .btn-danger.disabled.focus,
 .btn-danger[disabled].focus,
-fieldset[disabled] .btn-danger.focus,
-.btn-danger.disabled:active,
-.btn-danger[disabled]:active,
-fieldset[disabled] .btn-danger:active,
-.btn-danger.disabled.active,
-.btn-danger[disabled].active,
-fieldset[disabled] .btn-danger.active {
+fieldset[disabled] .btn-danger.focus {
     background-color: transparent;
     border-color: #e91e63;
 }
@@ -3242,7 +3186,6 @@ a.thumbnail.active {
 .modal-header {
     padding: 15px;
     border-bottom: 1px solid #f5f5f5;
-    min-height: 16.6px;
 }
 
 .modal-header .close {
@@ -5057,7 +5000,6 @@ a.skip-block {
 #page-my-index #moodle-blocks,
 #page-calendar-view #moodle-blocks,
 #moodle-blocks.state-visible,
-.format-folderview.path-course-view:not(.folderview-single-section) #moodle-blocks,
 .format-weeks.path-course-view.editing #moodle-blocks,
 .format-topics.path-course-view.editing #moodle-blocks {
     visibility: visible;
@@ -5901,7 +5843,6 @@ input[type="reset"]:focus {
 #page-site-index .section-modchooser-link .section-modchooser-text.focus,
 #page-site-index .section-modchooser-link .section-modchooser-text:active.focus,
 #page-site-index .section-modchooser-link .section-modchooser-text.active.focus {
-    outline: thin dotted;
     outline: 5px auto -webkit-focus-ring-color;
     outline-offset: -2px;
 }
@@ -5977,9 +5918,6 @@ fieldset[disabled] a#page-site-index .section-modchooser-link .section-modchoose
     background-image: none;
 }
 
-#page-site-index .section-modchooser-link .section-modchooser-text.disabled,
-#page-site-index .section-modchooser-link .section-modchooser-text[disabled],
-fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text,
 #page-site-index .section-modchooser-link .section-modchooser-text.disabled:hover,
 #page-site-index .section-modchooser-link .section-modchooser-text[disabled]:hover,
 fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text:hover,
@@ -5988,13 +5926,7 @@ fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser
 fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text:focus,
 #page-site-index .section-modchooser-link .section-modchooser-text.disabled.focus,
 #page-site-index .section-modchooser-link .section-modchooser-text[disabled].focus,
-fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text.focus,
-#page-site-index .section-modchooser-link .section-modchooser-text.disabled:active,
-#page-site-index .section-modchooser-link .section-modchooser-text[disabled]:active,
-fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text:active,
-#page-site-index .section-modchooser-link .section-modchooser-text.disabled.active,
-#page-site-index .section-modchooser-link .section-modchooser-text[disabled].active,
-fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text.active {
+fieldset[disabled] #page-site-index .section-modchooser-link .section-modchooser-text.focus {
     background-color: transparent;
     border-color: #03a9f4;
 }
@@ -6282,9 +6214,8 @@ footer #moodle-footer
         */
 }
 
-.bb_dashboard_link img {
+.genius_dashboard_link img {
     width: 1em;
-    height: 1em;
     margin-right: 0.25em;
 }
 
@@ -7386,7 +7317,6 @@ ul.events-new + ul.events-underway {
 #page-mod-quiz-review .arrow_link.focus,
 #page-mod-quiz-review .arrow_link:active.focus,
 #page-mod-quiz-review .arrow_link.active.focus {
-    outline: thin dotted;
     outline: 5px auto -webkit-focus-ring-color;
     outline-offset: -2px;
 }
@@ -7462,9 +7392,6 @@ fieldset[disabled] a#page-mod-quiz-review .arrow_link {
     background-image: none;
 }
 
-#page-mod-quiz-review .arrow_link.disabled,
-#page-mod-quiz-review .arrow_link[disabled],
-fieldset[disabled] #page-mod-quiz-review .arrow_link,
 #page-mod-quiz-review .arrow_link.disabled:hover,
 #page-mod-quiz-review .arrow_link[disabled]:hover,
 fieldset[disabled] #page-mod-quiz-review .arrow_link:hover,
@@ -7473,13 +7400,7 @@ fieldset[disabled] #page-mod-quiz-review .arrow_link:hover,
 fieldset[disabled] #page-mod-quiz-review .arrow_link:focus,
 #page-mod-quiz-review .arrow_link.disabled.focus,
 #page-mod-quiz-review .arrow_link[disabled].focus,
-fieldset[disabled] #page-mod-quiz-review .arrow_link.focus,
-#page-mod-quiz-review .arrow_link.disabled:active,
-#page-mod-quiz-review .arrow_link[disabled]:active,
-fieldset[disabled] #page-mod-quiz-review .arrow_link:active,
-#page-mod-quiz-review .arrow_link.disabled.active,
-#page-mod-quiz-review .arrow_link[disabled].active,
-fieldset[disabled] #page-mod-quiz-review .arrow_link.active {
+fieldset[disabled] #page-mod-quiz-review .arrow_link.focus {
     background-color: transparent;
     border-color: #03a9f4;
 }
@@ -8047,7 +7968,6 @@ table#user-grades tr.avg td.cell {
 .gradingform_checklist.editor .additem input.active.focus,
 .gradingform_rubric.editor .addlevel input.active.focus,
 .gradingform_rubric.editor .addcriterion input.active.focus {
-    outline: thin dotted;
     outline: 5px auto -webkit-focus-ring-color;
     outline-offset: -2px;
 }
@@ -8207,18 +8127,6 @@ fieldset[disabled] a.gradingform_rubric.editor .addcriterion input {
     background-image: none;
 }
 
-.gradingform_checklist.editor .addgroup input.disabled,
-.gradingform_checklist.editor .additem input.disabled,
-.gradingform_rubric.editor .addlevel input.disabled,
-.gradingform_rubric.editor .addcriterion input.disabled,
-.gradingform_checklist.editor .addgroup input[disabled],
-.gradingform_checklist.editor .additem input[disabled],
-.gradingform_rubric.editor .addlevel input[disabled],
-.gradingform_rubric.editor .addcriterion input[disabled],
-fieldset[disabled] .gradingform_checklist.editor .addgroup input,
-fieldset[disabled] .gradingform_checklist.editor .additem input,
-fieldset[disabled] .gradingform_rubric.editor .addlevel input,
-fieldset[disabled] .gradingform_rubric.editor .addcriterion input,
 .gradingform_checklist.editor .addgroup input.disabled:hover,
 .gradingform_checklist.editor .additem input.disabled:hover,
 .gradingform_rubric.editor .addlevel input.disabled:hover,
@@ -8254,31 +8162,7 @@ fieldset[disabled] .gradingform_rubric.editor .addcriterion input:focus,
 fieldset[disabled] .gradingform_checklist.editor .addgroup input.focus,
 fieldset[disabled] .gradingform_checklist.editor .additem input.focus,
 fieldset[disabled] .gradingform_rubric.editor .addlevel input.focus,
-fieldset[disabled] .gradingform_rubric.editor .addcriterion input.focus,
-.gradingform_checklist.editor .addgroup input.disabled:active,
-.gradingform_checklist.editor .additem input.disabled:active,
-.gradingform_rubric.editor .addlevel input.disabled:active,
-.gradingform_rubric.editor .addcriterion input.disabled:active,
-.gradingform_checklist.editor .addgroup input[disabled]:active,
-.gradingform_checklist.editor .additem input[disabled]:active,
-.gradingform_rubric.editor .addlevel input[disabled]:active,
-.gradingform_rubric.editor .addcriterion input[disabled]:active,
-fieldset[disabled] .gradingform_checklist.editor .addgroup input:active,
-fieldset[disabled] .gradingform_checklist.editor .additem input:active,
-fieldset[disabled] .gradingform_rubric.editor .addlevel input:active,
-fieldset[disabled] .gradingform_rubric.editor .addcriterion input:active,
-.gradingform_checklist.editor .addgroup input.disabled.active,
-.gradingform_checklist.editor .additem input.disabled.active,
-.gradingform_rubric.editor .addlevel input.disabled.active,
-.gradingform_rubric.editor .addcriterion input.disabled.active,
-.gradingform_checklist.editor .addgroup input[disabled].active,
-.gradingform_checklist.editor .additem input[disabled].active,
-.gradingform_rubric.editor .addlevel input[disabled].active,
-.gradingform_rubric.editor .addcriterion input[disabled].active,
-fieldset[disabled] .gradingform_checklist.editor .addgroup input.active,
-fieldset[disabled] .gradingform_checklist.editor .additem input.active,
-fieldset[disabled] .gradingform_rubric.editor .addlevel input.active,
-fieldset[disabled] .gradingform_rubric.editor .addcriterion input.active {
+fieldset[disabled] .gradingform_rubric.editor .addcriterion input.focus {
     background-color: transparent;
     border-color: #03a9f4;
 }
@@ -8414,133 +8298,6 @@ fieldset[disabled] .gradingform_rubric.editor .addcriterion input.active {
 
 #page-grade-report-grader-index header#mr-nav {
     animation-name: none;
-}
-
-#page-grade-report-joulegrader-index #joule-grades-thead {
-    table-layout: fixed;
-}
-
-#page-grade-report-nortongrader-index #gradereport-joulegrader-navbox,
-#page-grade-report-joulegrader-index #gradereport-joulegrader-navbox,
-#page-grade-report-nortongrader-index #gradereport-nortongrader-navbox,
-#page-grade-report-joulegrader-index #gradereport-nortongrader-navbox {
-    border: 0;
-    background: none;
-}
-
-#page-grade-report-nortongrader-index table .header[scope="col"],
-#page-grade-report-joulegrader-index table .header[scope="col"] {
-    background-color: #fff;
-    font-size: 13px;
-}
-
-#page-grade-report-nortongrader-index table,
-#page-grade-report-joulegrader-index table {
-    margin: 0;
-    text-align: right;
-}
-
-#page-grade-report-nortongrader-index #joule-grades-thead-wrap,
-#page-grade-report-joulegrader-index #joule-grades-thead-wrap,
-#page-grade-report-nortongrader-index #joule-grades-leftcol-wrap,
-#page-grade-report-joulegrader-index #joule-grades-leftcol-wrap,
-#page-grade-report-nortongrader-index table.joule-grades,
-#page-grade-report-joulegrader-index table.joule-grades {
-    border: none;
-    font-size: 16px;
-}
-
-#page-grade-report-nortongrader-index table.joule-grades tr.odd td.cell,
-#page-grade-report-joulegrader-index table.joule-grades tr.odd td.cell {
-    background-color: #f9f9f9;
-}
-
-#page-grade-report-nortongrader-index table.joule-grades tr.odd td.cell.overridden,
-#page-grade-report-joulegrader-index table.joule-grades tr.odd td.cell.overridden,
-#page-grade-report-nortongrader-index table.joule-grades tr.odd td.cell.ajaxoverridden,
-#page-grade-report-joulegrader-index table.joule-grades tr.odd td.cell.ajaxoverridden {
-    background-color: #efd9a4;
-}
-
-#page-grade-report-nortongrader-index table.joule-grades td,
-#page-grade-report-joulegrader-index table.joule-grades td,
-#page-grade-report-nortongrader-index table.joule-grades th,
-#page-grade-report-joulegrader-index table.joule-grades th {
-    border-right: none;
-    border-left: none;
-    border-width: 1px;
-}
-
-#page-grade-report-nortongrader-index table.joule-grades th.item,
-#page-grade-report-joulegrader-index table.joule-grades th.item,
-#page-grade-report-nortongrader-index table.joule-grades th.categoryitem,
-#page-grade-report-joulegrader-index table.joule-grades th.categoryitem,
-#page-grade-report-nortongrader-index table.joule-grades th.courseitem,
-#page-grade-report-joulegrader-index table.joule-grades th.courseitem {
-    border-bottom-color: #ddd;
-}
-
-#page-grade-report-nortongrader-index #joule-grades-leftcol-wrap,
-#page-grade-report-joulegrader-index #joule-grades-leftcol-wrap {
-    border-right: 1px solid #ddd;
-}
-
-#page-grade-report-nortongrader-index table.joule-grades th,
-#page-grade-report-joulegrader-index table.joule-grades th,
-#page-grade-report-nortongrader-index table.joule-grades td,
-#page-grade-report-joulegrader-index table.joule-grades td {
-    padding: 4px;
-}
-
-#page-grade-report-nortongrader-index #joule-grades-fthead,
-#page-grade-report-joulegrader-index #joule-grades-fthead {
-    margin-top: -1px;
-}
-
-#page-grade-report-nortongrader-index #joule-grades-leftcol,
-#page-grade-report-joulegrader-index #joule-grades-leftcol {
-    margin-top: 0;
-}
-
-#page-grade-report-nortongrader-index #joule-grades .row.nortongraderactionmenu,
-#page-grade-report-joulegrader-index #joule-grades .row.nortongraderactionmenu,
-#page-grade-report-nortongrader-index #joule-grades-leftcol .row.nortongraderactionmenu,
-#page-grade-report-joulegrader-index #joule-grades-leftcol .row.nortongraderactionmenu,
-#page-grade-report-nortongrader-index #joule-grades .row.joulegraderactionmenu,
-#page-grade-report-joulegrader-index #joule-grades .row.joulegraderactionmenu,
-#page-grade-report-nortongrader-index #joule-grades-leftcol .row.joulegraderactionmenu,
-#page-grade-report-joulegrader-index #joule-grades-leftcol .row.joulegraderactionmenu {
-    margin-left: 0;
-    margin-right: 0;
-}
-
-#page-grade-report-nortongrader-index #joule-grades .row.nortongraderactionmenu:before,
-#page-grade-report-joulegrader-index #joule-grades .row.nortongraderactionmenu:before,
-#page-grade-report-nortongrader-index #joule-grades-leftcol .row.nortongraderactionmenu:before,
-#page-grade-report-joulegrader-index #joule-grades-leftcol .row.nortongraderactionmenu:before,
-#page-grade-report-nortongrader-index #joule-grades .row.joulegraderactionmenu:before,
-#page-grade-report-joulegrader-index #joule-grades .row.joulegraderactionmenu:before,
-#page-grade-report-nortongrader-index #joule-grades-leftcol .row.joulegraderactionmenu:before,
-#page-grade-report-joulegrader-index #joule-grades-leftcol .row.joulegraderactionmenu:before,
-#page-grade-report-nortongrader-index #joule-grades .row.nortongraderactionmenu:after,
-#page-grade-report-joulegrader-index #joule-grades .row.nortongraderactionmenu:after,
-#page-grade-report-nortongrader-index #joule-grades-leftcol .row.nortongraderactionmenu:after,
-#page-grade-report-joulegrader-index #joule-grades-leftcol .row.nortongraderactionmenu:after,
-#page-grade-report-nortongrader-index #joule-grades .row.joulegraderactionmenu:after,
-#page-grade-report-joulegrader-index #joule-grades .row.joulegraderactionmenu:after,
-#page-grade-report-nortongrader-index #joule-grades-leftcol .row.joulegraderactionmenu:after,
-#page-grade-report-joulegrader-index #joule-grades-leftcol .row.joulegraderactionmenu:after {
-    display: none;
-}
-
-#page-grade-report-nortongrader-index #joule-grades-fthead,
-#page-grade-report-joulegrader-index #joule-grades-fthead {
-    width: auto;
-}
-
-#page-grade-report-nortongrader-index #joule-grades-leftcol-wrap,
-#page-grade-report-joulegrader-index #joule-grades-leftcol-wrap {
-    border-bottom: none;
 }
 
 #page-local-joulegrader-view #local-joulegrader-navigation {
@@ -9117,12 +8874,6 @@ http://css-spinners.com/css/spinner/three-quarters.css
     text-indent: -9999px;
     width: 32px;
     height: 32px;
-}
-
-/** folderview format **/
-#page-course-view-folderview.jsenabled #tab_addBlock,
-#page-course-view-folderview .section-navigation .jumpmenu {
-  display: none;
 }
 
 /** fix feedback field sizes on mobile devices **/
@@ -9982,14 +9733,6 @@ section#region-main
     display: block;
 }
 
-.pagelayout-course #settingsnav .type_course > ul > li:first-child {
-    display: none;
-}
-
-#page-course-view-folderview .type_course ul > li:first-child {
-    display: list-item;
-}
-
 .editing.pagelayout-admin #region-main {
     display: block;
 }
@@ -10189,18 +9932,6 @@ li.section:focus {
     background-color: transparent;
 }
 
-.course-content .single-section ul.folderview li.section .right.side .editing_highlight img {
-    display: block;
-}
-
-.course-content .single-section ul.folderview li.section .content .summary {
-    margin-right: 40px;
-}
-
-#page-course-view-folderview .content > h3 {
-    display: inline;
-}
-  
 .sectionname {
     padding-top: 0;
     margin-top: 0;
@@ -10219,17 +9950,6 @@ li.section:focus {
     border: initial;
 }
 
-.folderview .sectionname.accesshide {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-}
-  
 .path-course-view .section .summary {
     position: relative;
     line-height: inherit;
@@ -10423,8 +10143,7 @@ li.section:focus {
 .editing #snap-add-new-section,
 #coursetools.state-visible,
 .editing #coursetools,
-.format-singleactivity #coursetools,
-#page-course-view-folderview #coursetools {
+.format-singleactivity #coursetools{
     visibility: visible;
     height: auto;
     width: auto;
@@ -10443,18 +10162,9 @@ li.section:focus {
     display: block;
 }
 
-/* Flex page - align edit button right */
-body.format-flexpage .singlebutton {
-    text-align: right;
-}
-
 .section-modchooser {
     text-align: center;
     padding: 0;
-}
-
-.folderview-single-section #coursetools {
-    display: none;
 }
 
 /* MODS & RESOURCES IN COURSE */
@@ -10653,10 +10363,6 @@ body.format-flexpage .singlebutton {
 .section li.snap-native .snap-assettype {
     display: none;
 }
-
-.section li.snap-native .instancename {
-    font-size: 1.3em;
-} 
 
 .section li.snap-native .contentafterlink {
     font-size: 1em;
@@ -11542,7 +11248,6 @@ span.editinstructions {
 #changenumsections .reduce-sections:active.focus,
 #changenumsections .increase-sections.active.focus,
 #changenumsections .reduce-sections.active.focus {
-    outline: thin dotted;
     outline: 5px auto -webkit-focus-ring-color;
     outline-offset: -2px;
 }
@@ -12020,7 +11725,7 @@ fieldset[disabled] a#changenumsections .reduce-sections {
     height: 1.5em;
 }
 
-#snap-course-wrapper .sectionname:before {
+#snap-course-wrapper .sectionnumber:before {
     content: '';
 }
 
@@ -12248,7 +11953,7 @@ fieldset[disabled] a#changenumsections .reduce-sections {
 .snap-pm-open #page,
 .snap-pm-open #moodle-footer,
 .snap-pm-open #fixy-trigger,
-.snap-pm-open .bb_dashboard_link,
+.snap-pm-open .genius_dashboard_link,
 .snap-pm-open #admin-menu-trigger,
 .snap-pm-open #newmessageoverlay,
 .snap-pm-open #snap-home,
@@ -12602,7 +12307,10 @@ fieldset[disabled] a#changenumsections .reduce-sections {
 .fixy .callstoaction #snap-personal-menu-deadlines,
 .fixy .callstoaction #snap-personal-menu-graded,
 .fixy .callstoaction #snap-personal-menu-grading,
-.fixy .callstoaction #snap-personal-menu-messages {
+.fixy .callstoaction #snap-personal-menu-messages,
+.fixy .callstoaction #snap-personal-menu-feed-graded,
+.fixy .callstoaction #snap-personal-menu-feed-grading,
+.fixy .callstoaction #snap-personal-menu-feed-messages {
     min-height: 50px;
 }
 
@@ -12708,7 +12416,6 @@ fieldset[disabled] a#changenumsections .reduce-sections {
 }
 
 .courseinfo .courseinfo-body h3 a {
-    display: block;
     display: -webkit-box;
     max-height: 3em;
     width: 100%;
@@ -12780,34 +12487,8 @@ fieldset[disabled] a#changenumsections .reduce-sections {
 }
 
 .courseinfo.favorited .favoritetoggle:after {
-    background: url("[[pix:theme|fav_checkedc]]");
+    background: url("[[pix:theme|fav_checked]]");
 }
-
-.courseinfo .favoritetogglec {
-    width: 2em;
-    height: 2em;
-    padding: 0;
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin: 0.25em;
-    z-index: 1;
-}
-
-.courseinfo .favoritetogglec:after {
-    background: url("[[pix:theme|fav_uncheckedc]]");
-    background-repeat: none;
-    content: ' ';
-    width: 80%;
-    height: 80%;
-    display: block;
-    margin: 0 10% 5%;
-}
-
-.courseinfo.favorited .favoritetogglec:after {
-    background: url("[[pix:theme|fav_checkedc]]");
-}
-  
 
 @keyframes spinnerrotate {
     from {
@@ -13372,17 +13053,7 @@ fieldset[disabled] #id_cancel:focus {
     display: block;
 }
 
-.path-blocks-conduit .widgets {
-    white-space: normal;
-}
-
-.path-blocks-conduit .widgets input {
-    display: block;
-    margin: 8px 0 0 5px;
-}
-
 .path-blocks-conduit .widgets a {
-    display: block;
     margin-top: -1.5em;
 }
 
@@ -13483,7 +13154,7 @@ fieldset[disabled] .path-admin-tool-lp [data-region="filtercompetencies"] button
 /* Radio button and checkbox inputs. */
 #page-mod-lesson-view.path-mod-lesson .answeroptiongroup,
 #page-mod-lesson-view.path-mod-lesson .answeroption {
-    /* Put options on separate lines. */
+    /* Put options on seperate lines. */
 }
 
 #page-mod-lesson-view.path-mod-lesson .answeroptiongroup input[type="radio"],
@@ -14259,12 +13930,6 @@ input[type="reset"][disabled],
     color: #03a9f4;
 }
 
-.format-flexpage .yui-button-checked button {
-    background-color: #038dcc;
-    border-color: #027fb8;
-    color: #fff;
-}
-  
 #page-site-index #page-header,
 #page-login-index #page,
 .news-article-image,

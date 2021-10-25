@@ -586,10 +586,11 @@ function feedback_cron () {
 }
 
 /**
- * @return bool false
+ * @deprecated since Moodle 3.8
  */
-function feedback_scale_used ($feedbackid, $scaleid) {
-    return false;
+function feedback_scale_used() {
+    throw new coding_exception('feedback_scale_used() can not be used anymore. Plugins can implement ' .
+        '<modname>_scale_used_anywhere, all implementations of <modname>_scale_used are now ignored');
 }
 
 /**
@@ -808,7 +809,8 @@ function feedback_set_events($feedback) {
         $event->eventtype    = FEEDBACK_EVENT_TYPE_OPEN;
         $event->type         = empty($feedback->timeclose) ? CALENDAR_EVENT_TYPE_ACTION : CALENDAR_EVENT_TYPE_STANDARD;
         $event->name         = get_string('calendarstart', 'feedback', $feedback->name);
-        $event->description  = format_module_intro('feedback', $feedback, $feedback->coursemodule);
+        $event->description  = format_module_intro('feedback', $feedback, $feedback->coursemodule, false);
+        $event->format       = FORMAT_HTML;
         $event->timestart    = $feedback->timeopen;
         $event->timesort     = $feedback->timeopen;
         $event->visible      = instance_is_visible('feedback', $feedback);
@@ -843,7 +845,8 @@ function feedback_set_events($feedback) {
         $event->type         = CALENDAR_EVENT_TYPE_ACTION;
         $event->eventtype    = FEEDBACK_EVENT_TYPE_CLOSE;
         $event->name         = get_string('calendarend', 'feedback', $feedback->name);
-        $event->description  = format_module_intro('feedback', $feedback, $feedback->coursemodule);
+        $event->description  = format_module_intro('feedback', $feedback, $feedback->coursemodule, false);
+        $event->format       = FORMAT_HTML;
         $event->timestart    = $feedback->timeclose;
         $event->timesort     = $feedback->timeclose;
         $event->visible      = instance_is_visible('feedback', $feedback);
@@ -2636,6 +2639,7 @@ function feedback_send_email($cm, $feedback, $course, $user, $completed = null) 
             ];
             if ($feedback->anonymous == FEEDBACK_ANONYMOUS_NO) {
                 $eventdata = new \core\message\message();
+                $eventdata->anonymous        = false;
                 $eventdata->courseid         = $course->id;
                 $eventdata->name             = 'submission';
                 $eventdata->component        = 'mod_feedback';
@@ -2651,12 +2655,14 @@ function feedback_send_email($cm, $feedback, $course, $user, $completed = null) 
                 $eventdata->contexturlname   = $info->feedback;
                 // User image.
                 $userpicture = new user_picture($user);
+                $userpicture->size = 1; // Use f1 size.
                 $userpicture->includetoken = $teacher->id; // Generate an out-of-session token for the user receiving the message.
                 $customdata['notificationiconurl'] = $userpicture->get_url($PAGE)->out(false);
                 $eventdata->customdata = $customdata;
                 message_send($eventdata);
             } else {
                 $eventdata = new \core\message\message();
+                $eventdata->anonymous        = true;
                 $eventdata->courseid         = $course->id;
                 $eventdata->name             = 'submission';
                 $eventdata->component        = 'mod_feedback';
@@ -2722,6 +2728,7 @@ function feedback_send_email_anonym($cm, $feedback, $course) {
             }
 
             $eventdata = new \core\message\message();
+            $eventdata->anonymous        = true;
             $eventdata->courseid         = $course->id;
             $eventdata->name             = 'submission';
             $eventdata->component        = 'mod_feedback';

@@ -75,11 +75,11 @@ class core_string_manager_standard_testcase extends advanced_testcase {
         $this->assertFalse($stringman->string_deprecated('hidden', 'grades'));
 
         // Check deprecated string.
-        $this->assertTrue($stringman->string_deprecated('groupextendenrol', 'core'));
-        $this->assertTrue($stringman->string_exists('groupextendenrol', 'core'));
+        $this->assertTrue($stringman->string_deprecated('purgedefinitionsuccess', 'core_cache'));
+        $this->assertTrue($stringman->string_exists('purgedefinitionsuccess', 'core_cache'));
         $this->assertDebuggingNotCalled();
-        $this->assertEquals('Extend enrolment (common)', get_string('groupextendenrol', 'core'));
-        $this->assertDebuggingCalled('String [groupextendenrol,core] is deprecated. '.
+        $this->assertEquals('Successfully purged the requested definition.', get_string('purgedefinitionsuccess', 'core_cache'));
+        $this->assertDebuggingCalled('String [purgedefinitionsuccess,core_cache] is deprecated. '.
             'Either you should no longer be using that string, or the string has been incorrectly deprecated, in which case you should report this as a bug. '.
             'Please refer to https://docs.moodle.org/dev/String_deprecation');
     }
@@ -140,8 +140,66 @@ class core_string_manager_standard_testcase extends advanced_testcase {
 
         $this->assertEquals(['en' => 'En'], $stringman->get_list_of_translations());
 
+        // Set invalid config, ensure original list is returned.
+        set_config('langlist', 'xx');
+        $this->assertEquals(['en' => 'English ‎(en)‎'], get_string_manager(true)->get_list_of_translations());
+
+        set_config('langlist', 'xx,en|En');
+        $this->assertEquals(['en' => 'En'], get_string_manager(true)->get_list_of_translations());
+
         set_config('langlist', '');
         get_string_manager(true);
+    }
+
+    /**
+     * Test {@see core_string_manager_standard::get_list_of_countries()} under different conditions.
+     */
+    public function test_get_list_of_countries() {
+
+        $this->resetAfterTest();
+        $stringman = get_string_manager();
+
+        $countries = $stringman->get_list_of_countries(true);
+        $this->assertIsArray($countries);
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
+
+        set_config('allcountrycodes', '');
+        $countries = $stringman->get_list_of_countries(false);
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
+
+        set_config('allcountrycodes', 'CZ,BE');
+        $countries = $stringman->get_list_of_countries(true);
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
+
+        $countries = $stringman->get_list_of_countries(false);
+        $this->assertEquals(2, count($countries));
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+
+        set_config('allcountrycodes', 'CZ,UVWXYZ');
+        $countries = $stringman->get_list_of_countries();
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertEquals(1, count($countries));
+
+        set_config('allcountrycodes', 'UVWXYZ');
+        $countries = $stringman->get_list_of_countries();
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
     }
 }
 

@@ -65,12 +65,6 @@ if ($mform->is_cancelled()) {
                                       and strpos($key, 'export_') !== 0) {
             continue;
         }
-        // BEGIN LSU ANonymous Grades
-        if ($key == 'anonymous_adjusts' and
-            !is_numeric($value) or trim($value) === '') {
-            $value = -1;
-        }
-        // END LSU ANonymous Grades
         if ($value == -1) {
             $value = null;
         }

@@ -62,6 +62,32 @@ class block_backadel extends block_list {
     }
 
     /**
+     * Returns the time running.
+     *
+     * @return time running
+     */
+    public function seconds2human($secondsrun) {
+        $s = $secondsrun%60 . ' seconds';
+        $m = floor(($secondsrun%3600)/60) . ' minutes,';
+        $h = floor(($secondsrun%86400)/3600) . ' hours,';
+        $d = floor(($secondsrun%2592000)/86400) . ' days,';
+        $M = floor($secondsrun/2592000) . ' months,';
+
+        if ($M == '0 months,' || $d == '0 days,' || $h == '0 hours,' || $m == '0 minutes,') {
+            $es = 'and ' . $s;
+        } else {
+            $es = $s;
+        }
+
+        $em = $m == '0 minutes,' ? '' : $m;
+        $eh = $h == '0 hours,' ? '' : $h;
+        $ed = $d == '0 days,' ? '' : $d;
+        $eM = $M == '0 months,' ? '' : $M;
+
+        return "$eM $ed $eh $em $es";
+    }
+
+    /**
      * Returns the contents.
      *
      * @return stdClass contents of block
@@ -94,8 +120,9 @@ class block_backadel extends block_list {
         if (!$running) {
             $statustext = get_string('status_not_running', 'block_backadel');
         } else {
-            $minutesrun = round((time() - $running) / 60);
-            $statustext = get_string('status_running', 'block_backadel', $minutesrun);
+            $secondsrun = round(time() - $running);
+            $timerunning = self::seconds2human($secondsrun);
+            $statustext = get_string('status_running', 'block_backadel', $timerunning);
         }
 
         // Build the block itself.

@@ -114,22 +114,21 @@ function block_csv_profile_update_users($csvcontent, $profilefield) {
         $generatedarray[$usersid] = $generatedobj;
     }
 
-    $updateoptions = get_config('block_csv_profile', 'updateoptions');
-    if ($updateoptions == 0) {
-        $storedarray = $DB->get_records_sql('SELECT userid, data FROM {user_info_data} WHERE fieldid = ?', array($profilefield));
-        $diffs = array_udiff($storedarray, $generatedarray,
-            function ($sobj, $gobj) {
-                return $sobj->userid - $gobj->userid;
-            }
-         );
-        if ($diffs) {
-            foreach ($diffs as $diff) {
-                $DB->delete_records('user_info_data', array('userid' => $diff->userid, 'fieldid' => $profilefield));
-                $log .= get_string('deleteduser', 'block_csv_profile', $diff->userid . ' (' . $diff->data . ')') . "\r\n";
-                $stats->deleted++;
-            }
+    $storedarray = $DB->get_records_sql('SELECT userid, data FROM {user_info_data} WHERE fieldid = ?', array($profilefield));
+    $diffs = array_udiff($storedarray, $generatedarray,
+        function ($sobj, $gobj) {
+            return $sobj->userid - $gobj->userid;
+        }
+     );
+
+    if ($diffs) {
+        foreach ($diffs as $diff) {
+            $DB->delete_records('user_info_data', array('userid' => $diff->userid, 'fieldid' => $profilefield));
+            $log .= get_string('deleteduser', 'block_csv_profile', $diff->userid . ' (' . $diff->data . ')') . "\r\n";
+            $stats->deleted++;
         }
     }
+
     $log .= get_string('done', 'block_csv_profile') . "\r\n";
     $log = get_string('status', 'block_csv_profile', $stats) . "\r\n\r\n" .
             $log . "\r\n\r\n" . get_string('status', 'block_csv_profile', $stats);
@@ -147,12 +146,10 @@ function block_csv_profile_get_fieldtype() {
     switch($userfieldid) {
         case 0:
         default:
-            return 'id';
-        case 1:
             return 'username';
-        case 2:
+        case 1:
             return 'email';
-        case 3:
+        case 2:
             return 'idnumber';
     }
 }

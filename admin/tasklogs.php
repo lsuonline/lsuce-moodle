@@ -32,6 +32,7 @@ $result = optional_param('result', null, PARAM_INT);
 
 $pageurl = new \moodle_url('/admin/tasklogs.php');
 $pageurl->param('filter', $filter);
+$pageurl->param('result', $result);
 
 $PAGE->set_url($pageurl);
 $PAGE->set_context(context_system::instance());
@@ -40,9 +41,6 @@ $strheading = get_string('tasklogs', 'tool_task');
 $PAGE->set_title($strheading);
 $PAGE->set_heading($strheading);
 
-require_login();
-
-require_capability('moodle/site:config', context_system::instance());
 admin_externalpage_setup('tasklogs');
 
 $logid = optional_param('logid', null, PARAM_INT);
@@ -58,16 +56,18 @@ if (null !== $logid) {
         header("Content-Disposition: attachment; filename=\"{$filename}\"");
     }
 
-    readstring_accel($log->output, 'text/plain', false);
+    readstring_accel($log->output, 'text/plain');
     exit;
 }
 
 $renderer = $PAGE->get_renderer('tool_task');
 
 echo $OUTPUT->header();
+
+// Output the search form.
 echo $OUTPUT->render_from_template('core_admin/tasklogs', (object) [
     'action' => $pageurl->out(),
-    'filter' => $filter,
+    'filter' => htmlentities($filter),
     'resultfilteroptions' => [
         (object) [
             'value' => -1,
@@ -87,6 +87,7 @@ echo $OUTPUT->render_from_template('core_admin/tasklogs', (object) [
     ],
 ]);
 
+// Output any matching logs.
 $table = new \core_admin\task_log_table($filter, $result);
 $table->baseurl = $pageurl;
 $table->out(100, false);

@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__.'/moodle_database.php');
+require_once(__DIR__.'/moodle_read_slave_trait.php');
 require_once(__DIR__.'/mysqli_native_moodle_recordset.php');
 require_once(__DIR__.'/mysqli_native_moodle_temptables.php');
 
@@ -36,6 +37,9 @@ require_once(__DIR__.'/mysqli_native_moodle_temptables.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mysqli_native_moodle_database extends moodle_database {
+    use moodle_read_slave_trait {
+        can_use_readonly as read_slave_can_use_readonly;
+    }
 
     /** @var mysqli $mysqli */
     protected $mysqli = null;
@@ -235,6 +239,14 @@ class mysqli_native_moodle_database extends moodle_database {
         if (isset($this->dboptions['dbcollation'])) {
             return $this->dboptions['dbcollation'];
         }
+    }
+
+    /**
+     * Set 'dbcollation' option
+     *
+     * @return string $dbcollation
+     */
+    private function detect_collation(): string {
         if ($this->external) {
             return null;
         }
@@ -246,9 +258,7 @@ class mysqli_native_moodle_database extends moodle_database {
         $sql = "SELECT collation_name
                   FROM INFORMATION_SCHEMA.COLUMNS
                  WHERE table_schema = DATABASE() AND table_name = '{$this->prefix}config' AND column_name = 'value'";
-        $this->query_start($sql, NULL, SQL_QUERY_AUX);
         $result = $this->mysqli->query($sql);
-        $this->query_end($result);
         if ($rec = $result->fetch_assoc()) {
             // MySQL 8 BC: information_schema.* returns the fields in upper case.
             $rec = array_change_key_case($rec, CASE_LOWER);
@@ -260,9 +270,7 @@ class mysqli_native_moodle_database extends moodle_database {
         if (!$collation) {
             // Get the default database collation, but only if using UTF-8.
             $sql = "SELECT @@collation_database";
-            $this->query_start($sql, NULL, SQL_QUERY_AUX);
             $result = $this->mysqli->query($sql);
-            $this->query_end($result);
             if ($rec = $result->fetch_assoc()) {
                 if (strpos($rec['@@collation_database'], 'utf8_') === 0 || strpos($rec['@@collation_database'], 'utf8mb4_') === 0) {
                     $collation = $rec['@@collation_database'];
@@ -275,9 +283,7 @@ class mysqli_native_moodle_database extends moodle_database {
             // We want only utf8 compatible collations.
             $collation = null;
             $sql = "SHOW COLLATION WHERE Collation LIKE 'utf8mb4\_%' AND Charset = 'utf8mb4'";
-            $this->query_start($sql, NULL, SQL_QUERY_AUX);
             $result = $this->mysqli->query($sql);
-            $this->query_end($result);
             while ($res = $result->fetch_assoc()) {
                 $collation = $res['Collation'];
                 if (strtoupper($res['Default']) === 'YES') {
@@ -404,8 +410,10 @@ class mysqli_native_moodle_database extends moodle_database {
 
     /**
      * Check if moodle is inside an instance of Amazon Aurora DB.
-     * From doc: "Amazon Aurora MySQL does not support compressed table (that is, tables created with ROW_FORMAT=COMPRESSED)".
-     * https://docs.aws.amazon.com/dms/latest/sbs/CHAP_MySQL2Aurora.RDSMySQL.html#CHAP_MySQL2Aurora.RDSMySQL.Snapshot.PreImport
+     * From doc: "Amazon Aurora MySQL does not support compressed table
+     * (that is, tables created with ROW_FORMAT=COMPRESSED)".
+     * https://docs.aws.amazon.com/dms/latest/sbs/CHAP_MySQL2Aurora.RDSMySQL.html
+     * #CHAP_MySQL2Aurora.RDSMySQL.Snapshot.PreImport
      * @return mixed|null
      * @throws ddl_change_structure_exception
      * @throws dml_read_exception
@@ -545,7 +553,6 @@ class mysqli_native_moodle_database extends moodle_database {
 
     /**
      * Connect to db
-     * Must be called before other methods.
      * @param string $dbhost The database host.
      * @param string $dbuser The database username.
      * @param string $dbpass The database username's password.
@@ -554,7 +561,7 @@ class mysqli_native_moodle_database extends moodle_database {
      * @param array $dboptions driver specific options
      * @return bool success
      */
-    public function connect($dbhost, $dbuser, $dbpass, $dbname, $prefix, array $dboptions=null) {
+    public function raw_connect(string $dbhost, string $dbuser, string $dbpass, string $dbname, $prefix, array $dboptions=null): bool {
         $driverstatus = $this->driver_installed();
 
         if ($driverstatus !== true) {
@@ -583,10 +590,21 @@ class mysqli_native_moodle_database extends moodle_database {
         if ($dbhost and !empty($this->dboptions['dbpersist'])) {
             $dbhost = "p:$dbhost";
         }
-        $this->mysqli = @new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport, $dbsocket);
+        $this->mysqli = mysqli_init();
+        if (!empty($this->dboptions['connecttimeout'])) {
+            $this->mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, $this->dboptions['connecttimeout']);
+        }
 
-        if ($this->mysqli->connect_errno !== 0) {
-            $dberr = $this->mysqli->connect_error;
+        $conn = null;
+        $dberr = null;
+        try {
+            // real_connect() is doing things we don't expext.
+            $conn = @$this->mysqli->real_connect($dbhost, $dbuser, $dbpass, $dbname, $dbport, $dbsocket);
+        } catch (\Exception $e) {
+            $dberr = "$e";
+        }
+        if (!$conn) {
+            $dberr = $dberr ?: $this->mysqli->connect_error;
             $this->mysqli = null;
             throw new dml_connection_exception($dberr);
         }
@@ -595,16 +613,14 @@ class mysqli_native_moodle_database extends moodle_database {
         $this->query_log_prevent();
 
         if (isset($dboptions['dbcollation'])) {
-            $collationinfo = explode('_', $dboptions['dbcollation']);
-            $this->dboptions['dbcollation'] = $dboptions['dbcollation'];
+            $collation = $this->dboptions['dbcollation'] = $dboptions['dbcollation'];
         } else {
-            $collationinfo = explode('_', $this->get_dbcollation());
+            $collation = $this->detect_collation();
         }
+        $collationinfo = explode('_', $collation);
         $charset = reset($collationinfo);
 
-        $this->query_start("--set_charset()", null, SQL_QUERY_AUX);
         $this->mysqli->set_charset($charset);
-        $this->query_end(true);
 
         // If available, enforce strict mode for the session. That guaranties
         // standard behaviour under some situations, avoiding some MySQL nasty
@@ -614,9 +630,7 @@ class mysqli_native_moodle_database extends moodle_database {
         $si = $this->get_server_info();
         if (version_compare($si['version'], '5.0.2', '>=')) {
             $sql = "SET SESSION sql_mode = 'STRICT_ALL_TABLES'";
-            $this->query_start($sql, null, SQL_QUERY_AUX);
             $result = $this->mysqli->query($sql);
-            $this->query_end($result);
         }
 
         // We can enable logging now.
@@ -639,6 +653,40 @@ class mysqli_native_moodle_database extends moodle_database {
             $this->mysqli->close();
             $this->mysqli = null;
         }
+    }
+
+    /**
+     * Gets db handle currently used with queries
+     * @return resource
+     */
+    protected function get_db_handle() {
+        return $this->mysqli;
+    }
+
+    /**
+     * Sets db handle to be used with subsequent queries
+     * @param resource $dbh
+     * @return void
+     */
+    protected function set_db_handle($dbh): void {
+        $this->mysqli = $dbh;
+    }
+
+    /**
+     * Check if The query qualifies for readonly connection execution
+     * Logging queries are exempt, those are write operations that circumvent
+     * standard query_start/query_end paths.
+     * @param int $type type of query
+     * @param string $sql
+     * @return bool
+     */
+    protected function can_use_readonly(int $type, string $sql): bool {
+        // ... *_LOCK queries always go to master.
+        if (preg_match('/\b(GET|RELEASE)_LOCK/i', $sql)) {
+            return false;
+        }
+
+        return $this->read_slave_can_use_readonly($type, $sql);
     }
 
     /**
@@ -727,24 +775,12 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     /**
-     * Returns detailed information about columns in table. This information is cached internally.
+     * Fetches detailed information about columns in table.
+     *
      * @param string $table name
-     * @param bool $usecache
      * @return database_column_info[] array of database_column_info objects indexed with column names
      */
-    public function get_columns($table, $usecache=true) {
-        if ($usecache) {
-            if ($this->temptables->is_temptable($table)) {
-                if ($data = $this->get_temp_tables_cache()->get($table)) {
-                    return $data;
-                }
-            } else {
-                if ($data = $this->get_metacache()->get($table)) {
-                    return $data;
-                }
-            }
-        }
-
+    protected function fetch_columns(string $table): array {
         $structure = array();
 
         $sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision,
@@ -848,14 +884,6 @@ class mysqli_native_moodle_database extends moodle_database {
             $result->close();
         }
 
-        if ($usecache) {
-            if ($this->temptables->is_temptable($table)) {
-                $this->get_temp_tables_cache()->set($table, $structure);
-            } else {
-                $this->get_metacache()->set($table, $structure);
-            }
-        }
-
         return $structure;
     }
 
@@ -887,7 +915,7 @@ class mysqli_native_moodle_database extends moodle_database {
         $info->type           = $rawcolumn->data_type;
         $info->meta_type      = $this->mysqltype2moodletype($rawcolumn->data_type);
         if ($this->has_breaking_change_quoted_defaults()) {
-            $info->default_value = trim($rawcolumn->column_default, "'");
+            $info->default_value = is_null($rawcolumn->column_default) ? null : trim($rawcolumn->column_default, "'");
             if ($info->default_value === 'NULL') {
                 $info->default_value = null;
             }
@@ -1375,7 +1403,7 @@ class mysqli_native_moodle_database extends moodle_database {
      * If the return ID isn't required, then this just reports success as true/false.
      * $data is an object containing needed data
      * @param string $table The database table to be inserted into
-     * @param object $data A data object with values for one or more fields in the record
+     * @param object|array $dataobject A data object with values for one or more fields in the record
      * @param bool $returnid Should the id of the newly created record entry be returned? If this option is not requested then true/false is returned.
      * @return bool|int true or new id
      * @throws dml_exception A DML specific exception is thrown for any errors.
@@ -1687,6 +1715,23 @@ class mysqli_native_moodle_database extends moodle_database {
         $this->query_end($result);
 
         return true;
+    }
+
+    /**
+     * Deletes records using a subquery, which is done with a strange DELETE...JOIN syntax in MySQL
+     * because it performs very badly with normal subqueries.
+     *
+     * @param string $table Table to delete from
+     * @param string $field Field in table to match
+     * @param string $alias Name of single column in subquery e.g. 'id'
+     * @param string $subquery Query that will return values of the field to delete
+     * @param array $params Parameters for query
+     * @throws dml_exception If there is any error
+     */
+    public function delete_records_subquery(string $table, string $field, string $alias, string $subquery, array $params = []): void {
+        // Aliases mysql_deltable and mysql_subquery are chosen to be unlikely to conflict.
+        $this->execute("DELETE mysql_deltable FROM {" . $table . "} mysql_deltable JOIN " .
+                "($subquery) mysql_subquery ON mysql_subquery.$alias = mysql_deltable.$field", $params);
     }
 
     public function sql_cast_char2int($fieldname, $text=false) {

@@ -30,7 +30,7 @@ class qtype_combined_combinable_type_oumultiresponse extends qtype_combined_comb
     protected $identifier = 'multiresponse';
 
     protected function extra_question_properties() {
-        return array('answernumbering' => 'abc') + $this->combined_feedback_properties();
+        return $this->combined_feedback_properties();
     }
 
     protected function extra_answer_properties() {
@@ -38,7 +38,10 @@ class qtype_combined_combinable_type_oumultiresponse extends qtype_combined_comb
     }
 
     public function subq_form_fragment_question_option_fields() {
-        return array('shuffleanswers' => false);
+        return [
+            'shuffleanswers' => (bool) get_config('qtype_combined', 'shuffleanswers_multiresponse'),
+            'answernumbering' => null,
+        ];
     }
 
     protected function transform_subq_form_data_to_full($subqdata) {
@@ -62,7 +65,15 @@ class qtype_combined_combinable_oumultiresponse extends qtype_combined_combinabl
      * @param                 $repeatenabled
      */
     public function add_form_fragment(moodleform $combinedform, MoodleQuickForm $mform, $repeatenabled) {
-        $mform->addElement('advcheckbox', $this->form_field_name('shuffleanswers'), get_string('shuffle', 'qtype_gapselect'));
+        $mform->addElement('advcheckbox', $this->form_field_name('shuffleanswers'),
+            get_string('shuffle', 'qtype_combined'));
+            $mform->setDefault($this->form_field_name('shuffleanswers'),
+                get_config('qtype_combined', 'shuffleanswers_multiresponse'));
+
+        $mform->addElement('select', $this->form_field_name('answernumbering'),
+                get_string('answernumbering', 'qtype_multichoice'), qtype_multichoice::get_numbering_styles());
+        $mform->setDefault($this->form_field_name('answernumbering'),
+                get_config('qtype_combined', 'answernumbering_multiresponse'));
 
         $answerels = array();
         $answerels[] = $mform->createElement('editor', $this->form_field_name('answer'),
@@ -75,17 +86,11 @@ class qtype_combined_combinable_oumultiresponse extends qtype_combined_combinabl
                 $this->form_field_name('answergroup'),
                 get_string('choiceno', 'qtype_multichoice', '{no}'),
                 $answerels, null, false);
-        if ($this->questionrec !== null) {
-            $countanswers = count($this->questionrec->options->answers);
-        } else {
-            $countanswers = 0;
-        }
 
-        if ($repeatenabled) {
-            $defaultstartnumbers = QUESTION_NUMANS_START * 2;
-            $repeatsatstart = max($defaultstartnumbers, $countanswers + QUESTION_NUMANS_ADD);
+        if (isset($this->questionrec->options)) {
+            $repeatsatstart = count($this->questionrec->options->answers);
         } else {
-            $repeatsatstart = $countanswers;
+            $repeatsatstart = max(5, QUESTION_NUMANS_START);
         }
 
         $combinedform->repeat_elements(array($answergroupel),
@@ -96,14 +101,16 @@ class qtype_combined_combinable_oumultiresponse extends qtype_combined_combinabl
             QUESTION_NUMANS_ADD,
             get_string('addmorechoiceblanks', 'qtype_gapselect'),
             true);
-
     }
 
     public function data_to_form($context, $fileoptions) {
         $mroptions = array('answer' => array(), 'correctanswer' => array());
         if ($this->questionrec !== null) {
             foreach ($this->questionrec->options->answers as $questionrecanswer) {
-                $mroptions['answer'][]['text'] = $questionrecanswer->answer;
+                $mroptions['answer'][] = [
+                    'text' => $questionrecanswer->answer,
+                    'format' => $questionrecanswer->answerformat,
+                ];
                 $mroptions['correctanswer'][] = $questionrecanswer->fraction > 0;
             }
         }

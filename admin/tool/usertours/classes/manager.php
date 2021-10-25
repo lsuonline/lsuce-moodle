@@ -79,6 +79,11 @@ class manager {
     const ACTION_VIEWTOUR = 'viewtour';
 
     /**
+     * @var ACTION_DUPLICATETOUR     The action to duplicate the tour.
+     */
+    const ACTION_DUPLICATETOUR = 'duplicatetour';
+
+    /**
      * @var ACTION_NEWSTEP The action to create a new step.
      */
     const ACTION_NEWSTEP = 'newstep';
@@ -134,12 +139,27 @@ class manager {
     const CONFIG_SHIPPED_VERSION = 'shipped_version';
 
     /**
+     * Helper method to initialize admin page, setting appropriate extra URL parameters
+     *
+     * @param string $action
+     */
+    protected function setup_admin_externalpage(string $action): void {
+        admin_externalpage_setup('tool_usertours/tours', '', array_filter([
+            'action' => $action,
+            'id' => optional_param('id', 0, PARAM_INT),
+            'tourid' => optional_param('tourid', 0, PARAM_INT),
+            'direction' => optional_param('direction', 0, PARAM_INT),
+        ]));
+    }
+
+    /**
      * This is the entry point for this controller class.
      *
      * @param   string  $action     The action to perform.
      */
     public function execute($action) {
-        admin_externalpage_setup('tool_usertours/tours');
+        $this->setup_admin_externalpage($action);
+
         // Add the main content.
         switch($action) {
             case self::ACTION_NEWTOUR:
@@ -161,6 +181,10 @@ class manager {
 
             case self::ACTION_VIEWTOUR:
                 $this->view_tour(required_param('id', PARAM_INT));
+                break;
+
+            case self::ACTION_DUPLICATETOUR:
+                $this->duplicate_tour(required_param('id', PARAM_INT));
                 break;
 
             case self::ACTION_HIDETOUR:
@@ -487,6 +511,39 @@ class manager {
     }
 
     /**
+     * Duplicate an existing tour.
+     *
+     * @param   int         $tourid     The ID of the tour to duplicate.
+     */
+    protected function duplicate_tour($tourid) {
+        $tour = helper::get_tour($tourid);
+
+        $export = $tour->to_record();
+        // Remove the id.
+        unset($export->id);
+
+        // Set the version.
+        $export->version = get_config('tool_usertours', 'version');
+
+        $export->name = get_string('duplicatetour_name', 'tool_usertours', $export->name);
+
+        // Step export.
+        $export->steps = [];
+        foreach ($tour->get_steps() as $step) {
+            $record = $step->to_record();
+            unset($record->id);
+            unset($record->tourid);
+
+            $export->steps[] = $record;
+        }
+
+        $exportstring = json_encode($export);
+        $newtour = self::import_tour_from_json($exportstring);
+
+        redirect($newtour->get_view_link());
+    }
+
+    /**
      * Show the tour.
      *
      * @param   int         $tourid     The ID of the tour to display.
@@ -720,6 +777,13 @@ class manager {
      * @param   int     $direction
      */
     protected static function _move_tour(tour $tour, $direction) {
+        // We can't move the first tour higher, nor the last tour any lower.
+        if (($tour->is_first_tour() && $direction == helper::MOVE_UP) ||
+                ($tour->is_last_tour() && $direction == helper::MOVE_DOWN)) {
+
+            return;
+        }
+
         $currentsortorder   = $tour->get_sortorder();
         $targetsortorder    = $currentsortorder + $direction;
 
@@ -796,21 +860,19 @@ class manager {
         // the format filename => version. The version value needs to
         // be increased if the tour has been updated.
         $shippedtours = [
-            '36_dashboard.json' => 3
         ];
 
         // These are tours that we used to ship but don't ship any longer.
         // We do not remove them, but we do disable them.
         $unshippedtours = [
+            // Formerly included in Moodle 3.2.0.
             'boost_administrator.json' => 1,
             'boost_course_view.json' => 1,
-        ];
 
-        if ($CFG->messaging) {
-            $shippedtours['36_messaging.json'] = 3;
-        } else {
-            $unshippedtours['36_messaging.json'] = 3;
-        }
+            // Formerly included in Moodle 3.6.0.
+            '36_dashboard.json' => 3,
+            '36_messaging.json' => 3,
+        ];
 
         $existingtourrecords = $DB->get_recordset('tool_usertours_tours');
 
@@ -847,6 +909,9 @@ class manager {
             }
         }
         $existingtourrecords->close();
+
+        // Ensure we correct the sortorder in any existing tours, prior to adding latest shipped tours.
+        helper::reset_tour_sortorder();
 
         foreach (array_reverse($shippedtours) as $filename => $version) {
             $filepath = $CFG->dirroot . "/{$CFG->admin}/tool/usertours/tours/" . $filename;

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -24,6 +23,8 @@
 
 namespace block_quickmail\components;
 
+defined('MOODLE_INTERNAL') || die();
+
 use block_quickmail\components\component;
 use block_quickmail_string;
 use moodle_url;
@@ -33,10 +34,10 @@ class sent_message_index_component extends component implements \renderable {
     public $messages;
     public $pagination;
     public $user;
-    public $course_id;
-    public $sort_by;
-    public $sort_dir;
-    public $user_course_array;
+    public $courseid;
+    public $sortby;
+    public $sortdir;
+    public $usercoursearray;
 
     public function __construct($params = []) {
         parent::__construct($params);
@@ -55,7 +56,6 @@ class sent_message_index_component extends component implements \renderable {
      * @return stdClass
      */
     public function export_for_template($output) {
-        global $CFG; // LSU Enhancement initialize $CFG. 
         $data = (object)[];
 
         $data->userCourseArray = $this->transform_course_array($this->user_course_array, $this->course_id);
@@ -67,9 +67,9 @@ class sent_message_index_component extends component implements \renderable {
         $data->sentAtIsSorted = $this->is_attr_sorted('sent');
 
         $data = $this->include_pagination($data, $this->pagination);
-        
+
         $data->tableRows = [];
-        
+
         foreach ($this->messages as $message) {
             $data->tableRows[] = [
                 'id' => $message->get('id'),
@@ -86,32 +86,13 @@ class sent_message_index_component extends component implements \renderable {
             ];
         }
 
-        // BEGIN LSU Enhancement urlBack to course page instead of my page. 
-        foreach($_SESSION['USER']->currentcourseaccess as $key => $value) {
-            $temp = $key;
-        }
+        $data->urlBack = $this->course_id
+            ? new moodle_url('/course/view.php', ['id' => $this->course_id])
+            : new moodle_url('/my');
 
-        if($CFG->theme === 'snap'){
-
-            $data->urlBack = $this->course_id 
-                ? new moodle_url('/course/view.php', ['id' => $this->course_id])
-                : new moodle_url('/course/view.php', ['id' => $temp]);
-
-            $data->urlBackLabel = $this->course_id 
-                ? block_quickmail_string::get('back_to_course')
-                : block_quickmail_string::get('back_to_course');
-
-        } else { 
-         
-            $data->urlBack = $this->course_id 
-                ? new moodle_url('/course/view.php', ['id' => $this->course_id])
-                : new moodle_url('/my');
-
-            $data->urlBackLabel = $this->course_id 
-                ? block_quickmail_string::get('back_to_course')
-                : block_quickmail_string::get('back_to_mypage');   
-        }
-        // END LSU Enhancement urlBack to course page instead of my page.
+        $data->urlBackLabel = $this->course_id
+            ? block_quickmail_string::get('back_to_course')
+            : block_quickmail_string::get('back_to_mypage');
 
         return $data;
     }

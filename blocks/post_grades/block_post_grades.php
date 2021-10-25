@@ -67,7 +67,7 @@ class block_post_grades extends block_list {
         $notpostedicon = $OUTPUT->pix_icon('i/completion-manual-n',
             $s('not_posted'), 'moodle', array('class' => 'icon'));
 
-        $postedicon = $OUTPUT->pix_icon('i/completion-manual-enabled',
+        $postedicon = $OUTPUT->pix_icon('i/completion-manual-y',
             $s('posted'), 'moodle', array('class' => 'icon'));
 
         foreach ($periods as $period) {
@@ -99,10 +99,7 @@ class block_post_grades extends block_list {
                 $url = new moodle_url('/blocks/post_grades/confirm.php', $params);
                 $link = html_writer::link($url, $group->name);
 
-                $this->content->items[] = $link;
-                $this->content->icons[] =
-                    post_grades::already_posted_section($sec, $period) ?
-                    $postedicon : $notpostedicon;
+                $this->content->items[] = (post_grades::already_posted_section($sec, $period) ? $postedicon : $notpostedicon) . $link;
             }
         }
 

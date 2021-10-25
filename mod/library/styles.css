@@ -23,3 +23,7 @@ li.modtype_library img {
 .snap-activity.modtype_library p {
   margin-right: 100px;
 }
+
+.modtype_library div.activityinstance > div.snap-header-card > div.snap-header-card-icons {
+  width: 100%;
+}

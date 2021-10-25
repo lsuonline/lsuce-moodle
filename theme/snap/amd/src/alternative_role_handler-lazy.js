@@ -34,10 +34,10 @@ define(['jquery', 'core/templates'],
 
                 templates.render('theme_snap/return_to_normal_role', {
                     switchroleurl: M.cfg.wwwroot + '/course/switchrole.php?'
-                    + 'id=' + courseId
-                    + '&sesskey=' + M.cfg.sesskey
-                    + '&switchrole=0'
-                    + '&returnurl=' + returnURL
+                        + 'id=' + courseId
+                        + '&sesskey=' + M.cfg.sesskey
+                        + '&switchrole=0'
+                        + '&returnurl=' + returnURL
                 }).then(function(html) {
                     $('#admin-menu-trigger').parent().append(html);
                 });

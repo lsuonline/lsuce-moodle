@@ -25,6 +25,6 @@
 
 defined('MOODLE_INTERNAL') || die('Direct access to this script is forbidden.');
 
-$plugin->version   = 2019041100; // The current module version (Date: YYYYMMDDXX).
-$plugin->requires  = 2019041000; // Requires this Moodle version (3.7).
+$plugin->version   = 2020061500; // The current module version (Date: YYYYMMDDXX).
+$plugin->requires  = 2020061500; // Requires this Moodle version (3.9).
 $plugin->component = 'customcertelement_coursefield';

@@ -450,6 +450,7 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
      */
     protected function process_person_tag($tagcontents) {
         global $CFG, $DB;
+
         // BEGIN LSU change to add moodle lib for sending passwords.
         require_once($CFG->dirroot . '/lib/moodlelib.php');
         // END LSU change to add moodle lib for sending passwords.
@@ -568,7 +569,7 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
             if ($imsupdateusers) {
                 if ($id = $DB->get_field('user', 'id', array('idnumber' => $person->idnumber))) {
                     $person->id = $id;
-		    $DB->update_record('user', $person);
+                    $DB->update_record('user', $person);
                     $this->log_line("Updated user $person->username");
                     // BEGIN LSU IMS Profile Field support.
                     if (isset($person->pfieldvalue) && isset($profilefieldid)) {
@@ -617,10 +618,10 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                         $person->auth = $auth;
                     }
 
-                    // BEGIN LSU IMS Profile Field support. 
+                    // BEGIN LSU IMS Profile Field support.
                     if (empty($person->pfieldsn)) {
                         $person->pfieldsn = $pfield;
-		    }
+                    }
                     // END LSU IMS Profile Field support.
 
                     // BEGIN LSU change to add passwords for manual users without them.
@@ -828,7 +829,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                         foreach ($einstances as $einstance) {
                             // Unenrol the user from all imsenterprise enrolment instances.
                             // BEGIN LSU suspend user versus unenrol them.
-                            // $this->unenrol_user($einstance, $memberstoreobj->userid);
                             $this->update_user_enrol($einstance, $memberstoreobj->userid, ENROL_USER_SUSPENDED);
                             // END LSU suspend user versus unenrol them.
                         }
@@ -891,7 +891,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         // Explanatory note: The matching will ONLY match if the attribute restrict="1"
         // because otherwise the time markers should be ignored (participation should be
         // allowed outside the period).
-
         // BEGIN LSU change to start / end time.
         $matches = array();
         if (preg_match('{<begin restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}', $string, $matches)) {

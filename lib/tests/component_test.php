@@ -36,7 +36,7 @@ class core_component_testcase extends advanced_testcase {
      * this is defined here to annoy devs that try to add more without any thinking,
      * always verify that it does not collide with any existing add-on modules and subplugins!!!
      */
-    const SUBSYSTEMCOUNT = 68;
+    const SUBSYSTEMCOUNT = 71;
 
     public function setUp() {
         $psr0namespaces = new ReflectionProperty('core_component', 'psr0namespaces');
@@ -396,7 +396,7 @@ class core_component_testcase extends advanced_testcase {
         $this->assertNull(core_component::get_subtype_parent('mod'));
 
         // Any plugin with more subtypes is ok here.
-        $this->assertFileExists("$CFG->dirroot/mod/assign/db/subplugins.php");
+        $this->assertFileExists("$CFG->dirroot/mod/assign/db/subplugins.json");
         $this->assertSame('mod_assign', core_component::get_subtype_parent('assignsubmission'));
         $this->assertSame('mod_assign', core_component::get_subtype_parent('assignfeedback'));
         $this->assertNull(core_component::get_subtype_parent('assignxxxxx'));
@@ -406,7 +406,7 @@ class core_component_testcase extends advanced_testcase {
         global $CFG;
 
         // Any plugin with more subtypes is ok here.
-        $this->assertFileExists("$CFG->dirroot/mod/assign/db/subplugins.php");
+        $this->assertFileExists("$CFG->dirroot/mod/assign/db/subplugins.json");
 
         $subplugins = core_component::get_subplugins('mod_assign');
         $this->assertSame(array('assignsubmission', 'assignfeedback'), array_keys($subplugins));
@@ -419,7 +419,7 @@ class core_component_testcase extends advanced_testcase {
 
         // Any plugin without subtypes is ok here.
         $this->assertFileExists("$CFG->dirroot/mod/choice");
-        $this->assertFileNotExists("$CFG->dirroot/mod/choice/db/subplugins.php");
+        $this->assertFileNotExists("$CFG->dirroot/mod/choice/db/subplugins.json");
 
         $this->assertNull(core_component::get_subplugins('mod_choice'));
 
@@ -505,7 +505,7 @@ class core_component_testcase extends advanced_testcase {
         $this->assertCount(5, core_component::get_component_classes_in_namespace('core_user', 'output\\myprofile'));
 
         // Without namespace it returns classes/ classes.
-        $this->assertCount(3, core_component::get_component_classes_in_namespace('tool_mobile', ''));
+        $this->assertCount(5, core_component::get_component_classes_in_namespace('tool_mobile', ''));
         $this->assertCount(2, core_component::get_component_classes_in_namespace('tool_filetypes'));
 
         // When no component is specified, classes are returned for the namespace in all components.

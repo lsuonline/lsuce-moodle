@@ -27,12 +27,12 @@
 
 require_once(__DIR__ . '/../../behat/behat_base.php');
 
-use Behat\Mink\Exception\ExpectationException as ExpectationException,
-    Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException,
-    Behat\Mink\Exception\DriverException as DriverException,
-    WebDriver\Exception\NoSuchElement as NoSuchElement,
-    WebDriver\Exception\StaleElementReference as StaleElementReference,
-    Behat\Gherkin\Node\TableNode as TableNode;
+use Behat\Gherkin\Node\TableNode as TableNode;
+use Behat\Mink\Exception\DriverException as DriverException;
+use Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException;
+use Behat\Mink\Exception\ExpectationException as ExpectationException;
+use WebDriver\Exception\NoSuchElement as NoSuchElement;
+use WebDriver\Exception\StaleElementReference as StaleElementReference;
 
 /**
  * Cross component steps definitions.
@@ -74,7 +74,7 @@ class behat_general extends behat_base {
      * @Given /^I am on homepage$/
      */
     public function i_am_on_homepage() {
-        $this->getSession()->visit($this->locate_path('/'));
+        $this->execute('behat_general::i_visit', ['/']);
     }
 
     /**
@@ -83,7 +83,7 @@ class behat_general extends behat_base {
      * @Given /^I am on site homepage$/
      */
     public function i_am_on_site_homepage() {
-        $this->getSession()->visit($this->locate_path('/?redirect=0'));
+        $this->execute('behat_general::i_visit', ['/?redirect=0']);
     }
 
     /**
@@ -92,7 +92,7 @@ class behat_general extends behat_base {
      * @Given /^I am on course index$/
      */
     public function i_am_on_course_index() {
-        $this->getSession()->visit($this->locate_path('/course/index.php'));
+        $this->execute('behat_general::i_visit', ['/course/index.php']);
     }
 
     /**
@@ -159,21 +159,30 @@ class behat_general extends behat_base {
      * Switches to the specified iframe.
      *
      * @Given /^I switch to "(?P<iframe_name_string>(?:[^"]|\\")*)" iframe$/
-     * @param string $iframename
+     * @Given /^I switch to "(?P<iframe_name_string>(?:[^"]|\\")*)" class iframe$/
+     * @param string $name The name of the iframe
      */
-    public function switch_to_iframe($iframename) {
-
+    public function switch_to_iframe($name) {
         // We spin to give time to the iframe to be loaded.
         // Using extended timeout as we don't know about which
         // kind of iframe will be loaded.
         $this->spin(
-            function($context, $iframename) {
+            function($context) use ($name){
+                $iframe = $context->find('iframe', $name);
+                if ($iframe->hasAttribute('name')) {
+                    $iframename = $iframe->getAttribute('name');
+                } else {
+                    if (!$this->running_javascript()) {
+                        throw new \coding_exception('iframe must have a name attribute to use the switchTo command.');
+                    }
+                    $iframename = uniqid();
+                    $this->execute_js_on_node($iframe, "{{ELEMENT}}.name = '{$iframename}';");
+                }
                 $context->getSession()->switchToIFrame($iframename);
 
                 // If no exception we are done.
                 return true;
             },
-            $iframename,
             behat_base::get_extended_timeout()
         );
     }
@@ -194,14 +203,11 @@ class behat_general extends behat_base {
      * @param string $windowname
      */
     public function switch_to_window($windowname) {
-        // In Behat, some browsers (e.g. Chrome) are unable to switch to a
-        // window without a name, and by default the main browser window does
-        // not have a name. To work-around this, when we switch away from an
-        // unnamed window (presumably the main window) to some other named
-        // window, then we first set the main window name to a conventional
-        // value that we can later use this name to switch back.
-        $this->getSession()->executeScript(
-                'if (window.name == "") window.name = "' . self::MAIN_WINDOW_NAME . '"');
+        if ($windowname === self::MAIN_WINDOW_NAME) {
+            // When switching to the main window normalise the window name to null.
+            // This is normalised further in the Mink driver to the root window ID.
+            $windowname = null;
+        }
 
         $this->getSession()->switchToWindow($windowname);
     }
@@ -212,7 +218,31 @@ class behat_general extends behat_base {
      * @Given /^I switch to the main window$/
      */
     public function switch_to_the_main_window() {
-        $this->getSession()->switchToWindow(self::MAIN_WINDOW_NAME);
+        $this->switch_to_window(self::MAIN_WINDOW_NAME);
+    }
+
+    /**
+     * Closes all extra windows opened during the navigation.
+     *
+     * This assumes all popups are opened by the main tab and you will now get back.
+     *
+     * @Given /^I close all opened windows$/
+     * @throws DriverException If there aren't exactly 1 tabs open when finish or no javascript running
+     */
+    public function i_close_all_opened_windows() {
+        if (!$this->running_javascript()) {
+            throw new DriverException('Closing windows steps require javascript');
+        }
+        $names = $this->getSession()->getWindowNames();
+        for ($index = 1; $index < count($names); $index ++) {
+            $this->getSession()->switchToWindow($names[$index]);
+            $this->execute_script("window.open('', '_self').close();");
+        }
+        $names = $this->getSession()->getWindowNames();
+        if (count($names) !== 1) {
+            throw new DriverException('Expected to see 1 tabs open, not ' . count($names));
+        }
+        $this->getSession()->switchToWindow($names[0]);
     }
 
     /**
@@ -220,7 +250,7 @@ class behat_general extends behat_base {
      * @Given /^I accept the currently displayed dialog$/
      */
     public function accept_currently_displayed_alert_dialog() {
-        $this->getSession()->getDriver()->getWebDriverSession()->accept_alert();
+        $this->getSession()->getDriver()->getWebDriver()->switchTo()->alert()->accept();
     }
 
     /**
@@ -228,7 +258,7 @@ class behat_general extends behat_base {
      * @Given /^I dismiss the currently displayed dialog$/
      */
     public function dismiss_currently_displayed_alert_dialog() {
-        $this->getSession()->getDriver()->getWebDriverSession()->dismiss_alert();
+        $this->getSession()->getDriver()->getWebDriver()->switchTo()->alert()->dismiss();
     }
 
     /**
@@ -316,9 +346,9 @@ class behat_general extends behat_base {
      * @param string $selectortype The type of what we look for
      */
     public function i_hover($element, $selectortype) {
-
         // Gets the node based on the requested selector type and locator.
         $node = $this->get_selected_node($selectortype, $element);
+        $this->execute_js_on_node($node, '{{ELEMENT}}.scrollIntoView();');
         $node->mouseOver();
     }
 
@@ -367,7 +397,8 @@ class behat_general extends behat_base {
      */
     public function i_click_on_confirming_the_dialogue($element, $selectortype) {
         $this->i_click_on($element, $selectortype);
-        $this->accept_currently_displayed_alert_dialog();
+        $this->execute('behat_general::accept_currently_displayed_alert_dialog', []);
+        $this->wait_until_the_page_is_ready();
     }
 
     /**
@@ -380,7 +411,8 @@ class behat_general extends behat_base {
      */
     public function i_click_on_dismissing_the_dialogue($element, $selectortype) {
         $this->i_click_on($element, $selectortype);
-        $this->dismiss_currently_displayed_alert_dialog();
+        $this->execute('behat_general::dismiss_currently_displayed_alert_dialog', []);
+        $this->wait_until_the_page_is_ready();
     }
 
     /**
@@ -872,7 +904,7 @@ class behat_general extends behat_base {
     return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
 })()
 EOF;
-            $ok = $this->getSession()->getDriver()->evaluateScript($js);
+            $ok = $this->evaluate_script($js);
         } else {
 
             // Using following xpath axe to find it.
@@ -894,13 +926,7 @@ EOF;
      * @param string $selectortype The type of element where we are looking in.
      */
     public function the_element_should_be_disabled($element, $selectortype) {
-
-        // Transforming from steps definitions selector/locator format to Mink format and getting the NodeElement.
-        $node = $this->get_selected_node($selectortype, $element);
-
-        if (!$node->hasAttribute('disabled')) {
-            throw new ExpectationException('The element "' . $element . '" is not disabled', $this->getSession());
-        }
+        $this->the_attribute_of_should_be_set("disabled", $element, $selectortype, false);
     }
 
     /**
@@ -912,13 +938,7 @@ EOF;
      * @param string $selectortype The type of where we look
      */
     public function the_element_should_be_enabled($element, $selectortype) {
-
-        // Transforming from steps definitions selector/locator format to mink format and getting the NodeElement.
-        $node = $this->get_selected_node($selectortype, $element);
-
-        if ($node->hasAttribute('disabled')) {
-            throw new ExpectationException('The element "' . $element . '" is not enabled', $this->getSession());
-        }
+        $this->the_attribute_of_should_be_set("disabled", $element, $selectortype, true);
     }
 
     /**
@@ -930,12 +950,7 @@ EOF;
      * @param string $selectortype The type of element where we are looking in.
      */
     public function the_element_should_be_readonly($element, $selectortype) {
-        // Transforming from steps definitions selector/locator format to Mink format and getting the NodeElement.
-        $node = $this->get_selected_node($selectortype, $element);
-
-        if (!$node->hasAttribute('readonly')) {
-            throw new ExpectationException('The element "' . $element . '" is not readonly', $this->getSession());
-        }
+        $this->the_attribute_of_should_be_set("readonly", $element, $selectortype, false);
     }
 
     /**
@@ -947,12 +962,7 @@ EOF;
      * @param string $selectortype The type of element where we are looking in.
      */
     public function the_element_should_not_be_readonly($element, $selectortype) {
-        // Transforming from steps definitions selector/locator format to Mink format and getting the NodeElement.
-        $node = $this->get_selected_node($selectortype, $element);
-
-        if ($node->hasAttribute('readonly')) {
-            throw new ExpectationException('The element "' . $element . '" is readonly', $this->getSession());
-        }
+        $this->the_attribute_of_should_be_set("readonly", $element, $selectortype, true);
     }
 
     /**
@@ -1006,7 +1016,7 @@ EOF;
      * @Given /^I trigger cron$/
      */
     public function i_trigger_cron() {
-        $this->getSession()->visit($this->locate_path('/admin/cron.php'));
+        $this->execute('behat_general::i_visit', ['/admin/cron.php']);
     }
 
     /**
@@ -1198,6 +1208,39 @@ EOF;
      */
     public function i_change_window_size_to($windowviewport, $windowsize) {
         $this->resize_window($windowsize, $windowviewport === 'viewport');
+    }
+
+    /**
+     * Checks whether there the specified attribute is set or not.
+     *
+     * @Then the :attribute attribute of :element :selectortype should be set
+     * @Then the :attribute attribute of :element :selectortype should :not be set
+     *
+     * @throws ExpectationException
+     * @param string $attribute Name of attribute
+     * @param string $element The locator of the specified selector
+     * @param string $selectortype The selector type
+     * @param string $not
+     */
+    public function the_attribute_of_should_be_set($attribute, $element, $selectortype, $not = null) {
+        // Get the container node (exception if it doesn't exist).
+        $containernode = $this->get_selected_node($selectortype, $element);
+        $hasattribute = $containernode->hasAttribute($attribute);
+
+        if ($not && $hasattribute) {
+            $value = $containernode->getAttribute($attribute);
+            // Should not be set but is.
+            throw new ExpectationException(
+                "The attribute \"{$attribute}\" should not be set but has a value of '{$value}'",
+                $this->getSession()
+            );
+        } else if (!$not && !$hasattribute) {
+            // Should be set but is not.
+            throw new ExpectationException(
+                "The attribute \"{$attribute}\" should be set but is not",
+                $this->getSession()
+            );
+        }
     }
 
     /**
@@ -1532,7 +1575,7 @@ EOF;
 
         if ($content !== $expectedcontent) {
             throw new ExpectationException('Image is not identical to the fixture. Received ' .
-            strlen($content) . ' bytes and expected ' . strlen($expectedcontent) . ' bytes');
+            strlen($content) . ' bytes and expected ' . strlen($expectedcontent) . ' bytes', $this->getSession());
         }
     }
 
@@ -1557,11 +1600,12 @@ EOF;
 
         $this->pageloaddetectionrunning = true;
 
-        $session->executeScript(
-                'var span = document.createElement("span");
-                span.setAttribute("data-rel", "' . self::PAGE_LOAD_DETECTION_STRING . '");
-                span.setAttribute("style", "display: none;");
-                document.body.appendChild(span);');
+        $this->execute_script(
+            'var span = document.createElement("span");
+            span.setAttribute("data-rel", "' . self::PAGE_LOAD_DETECTION_STRING . '");
+            span.setAttribute("style", "display: none;");
+            document.body.appendChild(span);'
+        );
     }
 
     /**
@@ -1659,6 +1703,140 @@ EOF;
     }
 
     /**
+     * Send key presses to the browser without first changing focusing, or applying the key presses to a specific
+     * element.
+     *
+     * Example usage of this step:
+     *     When I type "Penguin"
+     *
+     * @When    I type :keys
+     * @param   string $keys The key, or list of keys, to type
+     */
+    public function i_type(string $keys): void {
+        behat_base::type_keys($this->getSession(), str_split($keys));
+    }
+
+    /**
+     * Press a named key with an optional set of modifiers.
+     *
+     * Supported named keys are:
+     * - up
+     * - down
+     * - left
+     * - right
+     * - pageup|page_up
+     * - pagedown|page_down
+     * - home
+     * - end
+     * - insert
+     * - delete
+     * - backspace
+     * - escape
+     * - enter
+     * - tab
+     *
+     * Supported moderators are:
+     * - shift
+     * - ctrl
+     * - alt
+     * - meta
+     *
+     * Example usage of this new step:
+     *     When I press the up key
+     *     When I press the space key
+     *     When I press the shift tab key
+     *
+     * Multiple moderator keys can be combined using the '+' operator, for example:
+     *     When I press the ctrl+shift enter key
+     *     When I press the ctrl + shift enter key
+     *
+     * @When    /^I press the (?P<modifiers_string>.* )?(?P<key_string>.*) key$/
+     * @param   string $modifiers A list of keyboard modifiers, separated by the `+` character
+     * @param   string $key The name of the key to press
+     */
+    public function i_press_named_key(string $modifiers, string $key): void {
+        behat_base::require_javascript_in_session($this->getSession());
+
+        $keys = [];
+
+        foreach (explode('+', $modifiers) as $modifier) {
+            switch (strtoupper(trim($modifier))) {
+                case '':
+                    break;
+                case 'SHIFT':
+                    $keys[] = behat_keys::SHIFT;
+                    break;
+                case 'CTRL':
+                    $keys[] = behat_keys::CONTROL;
+                    break;
+                case 'ALT':
+                    $keys[] = behat_keys::ALT;
+                    break;
+                case 'META':
+                    $keys[] = behat_keys::META;
+                    break;
+                default:
+                    throw new \coding_exception("Unknown modifier key '$modifier'}");
+            }
+        }
+
+        $modifier = trim($key);
+        switch (strtoupper($key)) {
+            case 'UP':
+                $keys[] = behat_keys::ARROW_UP;
+                break;
+            case 'DOWN':
+                $keys[] = behat_keys::ARROW_DOWN;
+                break;
+            case 'LEFT':
+                $keys[] = behat_keys::ARROW_LEFT;
+                break;
+            case 'RIGHT':
+                $keys[] = behat_keys::ARROW_RIGHT;
+                break;
+            case 'HOME':
+                $keys[] = behat_keys::HOME;
+                break;
+            case 'END':
+                $keys[] = behat_keys::END;
+                break;
+            case 'INSERT':
+                $keys[] = behat_keys::INSERT;
+                break;
+            case 'BACKSPACE':
+                $keys[] = behat_keys::BACKSPACE;
+                break;
+            case 'DELETE':
+                $keys[] = behat_keys::DELETE;
+                break;
+            case 'PAGEUP':
+            case 'PAGE_UP':
+                $keys[] = behat_keys::PAGE_UP;
+                break;
+            case 'PAGEDOWN':
+            case 'PAGE_DOWN':
+                $keys[] = behat_keys::PAGE_DOWN;
+                break;
+            case 'ESCAPE':
+                $keys[] = behat_keys::ESCAPE;
+                break;
+            case 'ENTER':
+                $keys[] = behat_keys::ENTER;
+                break;
+            case 'TAB':
+                $keys[] = behat_keys::TAB;
+                break;
+            case 'SPACE':
+                $keys[] = behat_keys::SPACE;
+                break;
+            default:
+                throw new \coding_exception("Unknown key '$key'}");
+        }
+
+        behat_base::type_keys($this->getSession(), $keys);
+    }
+
+    /**
      * Trigger a keydown event for a key on a specific element.
      *
      * @When /^I press key "(?P<key_string>(?:[^"]|\\")*)" in "(?P<element_string>(?:[^"]|\\")*)" "(?P<selector_string>[^"]*)"$/
@@ -1682,7 +1860,8 @@ EOF;
             list($modifier, $char) = preg_split('/-/', $key, 2);
             $modifier = strtolower($modifier);
             if (!in_array($modifier, $validmodifiers)) {
-                throw new ExpectationException(sprintf('Unknown key modifier: %s.', $modifier));
+                throw new ExpectationException(sprintf('Unknown key modifier: %s.', $modifier),
+                    $this->getSession());
             }
         }
         if (is_numeric($char)) {
@@ -1709,12 +1888,8 @@ EOF;
         }
         // Gets the node based on the requested selector type and locator.
         $node = $this->get_selected_node($selectortype, $element);
-        $driver = $this->getSession()->getDriver();
-        if ($driver instanceof \Moodle\BehatExtension\Driver\MoodleSelenium2Driver) {
-            $driver->post_key("\xEE\x80\x84", $node->getXpath());
-        } else {
-            $driver->keyDown($node->getXpath(), "\t");
-        }
+        $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
+        $this->execute('behat_general::i_press_named_key', ['', 'tab']);
     }
 
     /**
@@ -1759,7 +1934,7 @@ EOF;
         $xpath = addslashes_js($element->getXpath());
         $script = 'return (function() { return document.activeElement === document.evaluate("' . $xpath . '",
                 document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; })(); ';
-        $targetisfocused = $this->getSession()->evaluateScript($script);
+        $targetisfocused = $this->evaluate_script($script);
         if ($not == ' not') {
             if ($targetisfocused) {
                 throw new ExpectationException("$nodeelement $nodeselectortype is focused", $this->getSession());
@@ -1791,7 +1966,7 @@ EOF;
         $xpath = addslashes_js($element->getXpath());
         $script = 'return (function() { return document.activeElement === document.evaluate("' . $xpath . '",
                 document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; })(); ';
-        $targetisfocused = $this->getSession()->evaluateScript($script);
+        $targetisfocused = $this->evaluate_script($script);
         if ($not == ' not') {
             if ($targetisfocused) {
                 throw new ExpectationException("$nodeelement $nodeselectortype is focused", $this->getSession());
@@ -1811,12 +1986,11 @@ EOF;
      * @throws DriverException
      */
     public function i_manually_press_tab($shift = '') {
-        if (!$this->running_javascript()) {
-            throw new DriverException($shift . ' Tab press step is not available with Javascript disabled');
+        if (empty($shift)) {
+            $this->execute('behat_general::i_press_named_key', ['', 'tab']);
+        } else {
+            $this->execute('behat_general::i_press_named_key', ['shift', 'tab']);
         }
-
-        $value = ($shift == ' shift') ? [\WebDriver\Key::SHIFT . \WebDriver\Key::TAB] : [\WebDriver\Key::TAB];
-        $this->getSession()->getDriver()->getWebDriverSession()->activeElement()->postValue(['value' => $value]);
     }
 
     /**
@@ -1832,5 +2006,75 @@ EOF;
         // Gets the node based on the requested selector type and locator.
         $node = $this->get_selected_node($selectortype, $element);
         $this->js_trigger_click($node);
+    }
+
+    /**
+     * Checks, that the specified element contains the specified text a certain amount of times.
+     * When running Javascript tests it also considers that texts may be hidden.
+     *
+     * @Then /^I should see "(?P<elementscount_number>\d+)" occurrences of "(?P<text_string>(?:[^"]|\\")*)" in the "(?P<element_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)"$/
+     * @throws ElementNotFoundException
+     * @throws ExpectationException
+     * @param int    $elementscount How many occurrences of the element we look for.
+     * @param string $text
+     * @param string $element Element we look in.
+     * @param string $selectortype The type of element where we are looking in.
+     */
+    public function i_should_see_occurrences_of_in_element($elementscount, $text, $element, $selectortype) {
+
+        // Getting the container where the text should be found.
+        $container = $this->get_selected_node($selectortype, $element);
+
+        // Looking for all the matching nodes without any other descendant matching the
+        // same xpath (we are using contains(., ....).
+        $xpathliteral = behat_context_helper::escape($text);
+        $xpath = "/descendant-or-self::*[contains(., $xpathliteral)]" .
+                "[count(descendant::*[contains(., $xpathliteral)]) = 0]";
+
+        $nodes = $this->find_all('xpath', $xpath, false, $container);
+
+        if ($this->running_javascript()) {
+            $nodes = array_filter($nodes, function($node) {
+                return $node->isVisible();
+            });
+        }
+
+        if ($elementscount != count($nodes)) {
+            throw new ExpectationException('Found '.count($nodes).' elements in column. Expected '.$elementscount,
+                    $this->getSession());
+        }
+    }
+
+    /**
+     * Manually press enter key.
+     *
+     * @When /^I press enter/
+     * @throws DriverException
+     */
+    public function i_manually_press_enter() {
+        $this->execute('behat_general::i_press_named_key', ['', 'enter']);
+    }
+
+    /**
+     * Visit a local URL relative to the behat root.
+     *
+     * @When I visit :localurl
+     *
+     * @param string|moodle_url $localurl The URL relative to the behat_wwwroot to visit.
+     */
+    public function i_visit($localurl): void {
+        $localurl = new moodle_url($localurl);
+        $this->getSession()->visit($this->locate_path($localurl->out_as_local_url(false)));
+    }
+
+    /**
+     * Increase the webdriver timeouts.
+     *
+     * This should be reset between scenarios, or can be called again to decrease the timeouts.
+     *
+     * @Given I mark this test as slow setting a timeout factor of :factor
+     */
+    public function i_mark_this_test_as_long_running(int $factor = 2): void {
+        $this->set_test_timeout_factor($factor);
     }
 }

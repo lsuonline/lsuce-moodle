@@ -26,7 +26,21 @@ $string['mhaairs:myaddinstance'] = 'Add an instance of McGraw-Hill AAIRS block t
 $string['mhaairs:viewadmindoc'  ] = 'View Administrator Documentation';
 $string['mhaairs:viewteacherdoc'] = 'View Teacher Documentation';
 $string['mhaairs:addinstance'   ] = 'Add a new McGraw-Hill AAIRS block';
-$string['privacy:metadata'] = 'The McGraw-Hill AAIRS block does not store or display any personal data.';
+
+// Strings for privacy.
+$string['privacy:metadata:externalpurpose'] = 'The mhaairs plugin provides user information and context to MHC.';
+$string['privacy:metadata:userid'] = 'The ID of the user accessing MHC.';
+$string['privacy:metadata:username'] = 'The username of the user accessing MHC.';
+$string['privacy:metadata:useridnumber'] = 'The ID number of the user accessing MHC.';
+$string['privacy:metadata:userfirstname'] = 'The firstname of the user accessing MHC.';
+$string['privacy:metadata:userlastname'] = 'The lastname of the user accessing MHC.';
+$string['privacy:metadata:useremail'] = 'The email address of the user accessing MHC.';
+$string['privacy:metadata:userrole'] = 'The role in the course for the user accessing MHC, normalized to MHC roles.';
+$string['privacy:metadata:courseid'] = 'The ID of the course the user is accessing MHC from.';
+$string['privacy:metadata:courseidnumber'] = 'The ID number of the course the user is accessing MHC from.';
+$string['privacy:metadata:courseshortname'] = 'The shortname of the course the user is accessing MHC from.';
+$string['privacy:metadata:coursefullname'] = 'The fullname of the course the user is accessing MHC from.';
+$string['privacy:metadata:coursecategory'] = 'The category of the course the user is accessing MHC from.';
 
 // Strings for the edit_form file.
 $string['linktype'         ] = 'Link Type';
@@ -39,6 +53,12 @@ $string['edit_prelabel'    ] = 'Links to Display';
 $string['secretlabel'] = 'Shared Secret';
 $string['customernumberlabel'] = 'Customer Number';
 $string['sslonlylabel'] = 'SSL Only';
+$string['endpointurllabel'] = 'End point url';
+$string['endpointurldesc'] = 'Specify the end point base url if different from the default.';
+$string['instructorroleslabel'] = 'Instructor roles';
+$string['instructorrolesdesc'] = 'By default instructor roles are those whose archetype is editingteacher or teacher. If you wish to designate other roles as instructor roles, enter their short names separated by comma (e.g. faculty,lecturer).';
+$string['studentroleslabel'] = 'Student roles';
+$string['studentrolesdesc'] = 'By default student roles are those whose archetype is student. If you wish to designate other roles as instructor roles, enter their short names separated by comma (e.g. learner,trainee).';
 $string['conskeylabel'] = 'Consumer Key';
 $string['baseaddresslabel'] = 'Service Address';
 $string['service_down_msg'] = 'One or more of the web services is currently down or your client access data are not correctly configured. Please contact McGraw-Hill help for further action.';

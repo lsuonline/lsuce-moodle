@@ -69,7 +69,7 @@ class gallery_page {
         $filenames = [];
         $this->imagecount = 0;
         foreach ($this->files as $storedfile) {
-            if (!$storedfile->is_valid_image()) {
+            if (!file_mimetype_in_typegroup($storedfile->get_mimetype(), 'web_image')) {
                 continue;
             }
 

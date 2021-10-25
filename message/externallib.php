@@ -88,6 +88,14 @@ class core_message_external extends external_api {
             'messages' => $messages
         ]);
 
+        // Validate messages content before posting them.
+        foreach ($params['messages'] as $message) {
+            // Check message length.
+            if (strlen($message['text']) > \core_message\api::MESSAGE_MAX_LENGTH) {
+                throw new moodle_exception('errormessagetoolong', 'message');
+            }
+        }
+
         $messages = [];
         foreach ($params['messages'] as $message) {
             $createdmessage = \core_message\api::send_message_to_conversation($USER->id, $params['conversationid'], $message['text'],
@@ -187,9 +195,15 @@ class core_message_external extends external_api {
                 $errormessage = get_string('touserdoesntexist', 'message', $message['touserid']);
             }
 
+            // Check message length.
+            if ($success && strlen($message['text']) > \core_message\api::MESSAGE_MAX_LENGTH) {
+                $success = false;
+                $errormessage = get_string('errormessagetoolong', 'message');
+            }
+
             // TODO MDL-31118 performance improvement - edit the function so we can pass an array instead userid
             // Check if the recipient can be messaged by the sender.
-            if ($success && !\core_message\api::can_post_message($tousers[$message['touserid']], $USER)) {
+            if ($success && !\core_message\api::can_send_message($tousers[$message['touserid']]->id, $USER->id)) {
                 $success = false;
                 $errormessage = get_string('usercantbemessaged', 'message', fullname(\core_user::get_user($message['touserid'])));
             }
@@ -215,6 +229,9 @@ class core_message_external extends external_api {
                 //          We should have thrown exceptions as these errors prevent results to be returned.
                 // See http://docs.moodle.org/dev/Errors_handling_in_web_services#When_to_send_a_warning_on_the_server_side .
                 $resultmsg['msgid'] = -1;
+                if (!isset($errormessage)) { // Nobody has set a message error or thrown an exception, let's set it.
+                    $errormessage = get_string('messageundeliveredbynotificationsettings', 'error');
+                }
                 $resultmsg['errormessage'] = $errormessage;
             }
 
@@ -581,6 +598,11 @@ class core_message_external extends external_api {
         $capability = 'moodle/site:manageallmessaging';
         if (($USER->id != $params['userid']) && !has_capability($capability, $context)) {
             throw new required_capability_exception($context, $capability, 'nopermissions', '');
+        }
+
+        // If the blocking is going to be useless then don't do it.
+        if (\core_message\api::can_send_message($userid, $blockeduserid, true)) {
+            return [];
         }
 
         if (!\core_message\api::is_blocked($params['userid'], $params['blockeduserid'])) {
@@ -1250,8 +1272,8 @@ class core_message_external extends external_api {
         return new external_single_structure(
             array(
                 'id' => new external_value(PARAM_INT, 'The conversation id'),
-                'name' => new external_value(PARAM_TEXT, 'The conversation name, if set', VALUE_DEFAULT, null),
-                'subname' => new external_value(PARAM_TEXT, 'A subtitle for the conversation name, if set', VALUE_DEFAULT, null),
+                'name' => new external_value(PARAM_RAW, 'The conversation name, if set', VALUE_DEFAULT, null),
+                'subname' => new external_value(PARAM_RAW, 'A subtitle for the conversation name, if set', VALUE_DEFAULT, null),
                 'imageurl' => new external_value(PARAM_URL, 'A link to the conversation picture, if set', VALUE_DEFAULT, null),
                 'type' => new external_value(PARAM_INT, 'The type of the conversation (1=individual,2=group,3=self)'),
                 'membercount' => new external_value(PARAM_INT, 'Total number of conversation members'),
@@ -1290,6 +1312,8 @@ class core_message_external extends external_api {
             'isblocked' => new external_value(PARAM_BOOL, 'If the user has been blocked'),
             'iscontact' => new external_value(PARAM_BOOL, 'Is the user a contact?'),
             'isdeleted' => new external_value(PARAM_BOOL, 'Is the user deleted?'),
+            'canmessageevenifblocked' => new external_value(PARAM_BOOL,
+                'If the user can still message even if they get blocked'),
             'canmessage' => new external_value(PARAM_BOOL, 'If the user can be messaged'),
             'requirescontact' => new external_value(PARAM_BOOL, 'If the user requires to be contacts'),
         ];
@@ -1309,7 +1333,7 @@ class core_message_external extends external_api {
             array(
                 'id' => new external_value(PARAM_INT, 'Conversations id'),
                 'type' => new external_value(PARAM_INT, 'Conversation type: private or public'),
-                'name' => new external_value(PARAM_TEXT, 'Multilang compatible conversation name'. VALUE_OPTIONAL),
+                'name' => new external_value(PARAM_RAW, 'Multilang compatible conversation name'. VALUE_OPTIONAL),
                 'timecreated' => new external_value(PARAM_INT, 'The timecreated timestamp for the conversation'),
             ), 'information about conversation', VALUE_OPTIONAL),
             'Conversations between users', VALUE_OPTIONAL
@@ -3248,6 +3272,9 @@ class core_message_external extends external_api {
                 'useridfrom' => new external_value(
                     PARAM_INT, 'the user id who send the message, 0 for any user. -10 or -20 for no-reply or support user',
                     VALUE_DEFAULT, 0),
+                'timecreatedto' => new external_value(
+                    PARAM_INT, 'mark messages created before this time as read, 0 for all messages',
+                    VALUE_DEFAULT, 0),
             )
         );
     }
@@ -3260,9 +3287,10 @@ class core_message_external extends external_api {
      * @throws moodle_exception
      * @param  int      $useridto       the user id who received the message
      * @param  int      $useridfrom     the user id who send the message. -10 or -20 for no-reply or support user
+     * @param  int      $timecreatedto  mark message created before this time as read, 0 for all messages
      * @return external_description
      */
-    public static function mark_all_notifications_as_read($useridto, $useridfrom) {
+    public static function mark_all_notifications_as_read($useridto, $useridfrom, $timecreatedto = 0) {
         global $USER;
 
         $params = self::validate_parameters(
@@ -3270,6 +3298,7 @@ class core_message_external extends external_api {
             array(
                 'useridto' => $useridto,
                 'useridfrom' => $useridfrom,
+                'timecreatedto' => $timecreatedto,
             )
         );
 
@@ -3278,6 +3307,7 @@ class core_message_external extends external_api {
 
         $useridto = $params['useridto'];
         $useridfrom = $params['useridfrom'];
+        $timecreatedto = $params['timecreatedto'];
 
         if (!empty($useridto)) {
             if (core_user::is_real_user($useridto)) {
@@ -3299,7 +3329,7 @@ class core_message_external extends external_api {
             throw new moodle_exception('accessdenied', 'admin');
         }
 
-        \core_message\api::mark_all_notifications_as_read($useridto, $useridfrom);
+        \core_message\api::mark_all_notifications_as_read($useridto, $useridfrom, $timecreatedto);
 
         return true;
     }
@@ -3612,11 +3642,6 @@ class core_message_external extends external_api {
      */
     public static function mark_notification_read($notificationid, $timeread) {
         global $CFG, $DB, $USER;
-
-        // Check if private messaging between users is allowed.
-        if (empty($CFG->messaging)) {
-            throw new moodle_exception('disabled', 'message');
-        }
 
         // Warnings array, it can be empty at the end but is mandatory.
         $warnings = array();
@@ -4113,11 +4138,6 @@ class core_message_external extends external_api {
      */
     public static function message_processor_config_form($userid, $name, $formvalues) {
         global $USER, $CFG;
-
-        // Check if messaging is enabled.
-        if (empty($CFG->messaging)) {
-            throw new moodle_exception('disabled', 'message');
-        }
 
         $params = self::validate_parameters(
             self::message_processor_config_form_parameters(),

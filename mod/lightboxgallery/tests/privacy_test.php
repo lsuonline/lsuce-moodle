@@ -158,7 +158,6 @@ class mod_lightboxgallery_privacy_testcase extends provider_testcase {
     }
 
     public function test_export_data_for_user() {
-        global $DB;
         $dg = $this->getDataGenerator();
 
         $c1 = $dg->create_course();
@@ -177,7 +176,8 @@ class mod_lightboxgallery_privacy_testcase extends provider_testcase {
         $this->create_comment($cm1b->id, $u2->id, 'cm1b_u2');
         $this->create_comment($cm1c->id, $u1->id, 'cm1c_u1');
 
-        provider::export_user_data(new approved_contextlist($u1, 'mod_lightboxgallery', [$cm1actx->id, $cm1bctx->id, $cm1cctx->id]));
+        provider::export_user_data(new approved_contextlist($u1, 'mod_lightboxgallery',
+            [$cm1actx->id, $cm1bctx->id, $cm1cctx->id]));
 
         $data = writer::with_context($cm1actx)->get_data([]);
         $this->assertNotEmpty($data);
@@ -191,7 +191,8 @@ class mod_lightboxgallery_privacy_testcase extends provider_testcase {
         $this->assert_exported_comments($data->comments, $u1, $cm1c);
 
         writer::reset();
-        provider::export_user_data(new approved_contextlist($u2, 'mod_lightboxgallery', [$cm1actx->id, $cm1bctx->id, $cm1cctx->id]));
+        provider::export_user_data(new approved_contextlist($u2, 'mod_lightboxgallery',
+            [$cm1actx->id, $cm1bctx->id, $cm1cctx->id]));
 
         $data = writer::with_context($cm1actx)->get_data([]);
         $this->assertNotEmpty($data);

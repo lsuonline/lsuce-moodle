@@ -1639,6 +1639,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
  *     commonly used in moodle the following groups:
  *       - web_image - image that can be included as <img> in HTML
  *       - image - image that we can parse using GD to find it's dimensions, also used for portfolio format
+ *       - optimised_image - image that will be processed and optimised
  *       - video - file that can be imported as video in text editor
  *       - audio - file that can be imported as audio in text editor
  *       - archive - we can extract files from this archive
@@ -2159,23 +2160,26 @@ function readfile_accel($file, $mimetype, $accelerate) {
         }
     }
 
-    if ($accelerate and !empty($CFG->xsendfile)) {
-        if (empty($CFG->disablebyteserving) and $mimetype !== 'text/plain') {
-            header('Accept-Ranges: bytes');
-        } else {
-            header('Accept-Ranges: none');
-        }
+    if ($accelerate and empty($CFG->disablebyteserving) and $mimetype !== 'text/plain') {
+        header('Accept-Ranges: bytes');
+    } else {
+        header('Accept-Ranges: none');
+    }
 
+    if ($accelerate) {
         if (is_object($file)) {
             $fs = get_file_storage();
-            if ($fs->xsendfile($file->get_contenthash())) {
-                return;
+            if ($fs->supports_xsendfile()) {
+                if ($fs->xsendfile_file($file)) {
+                    return;
+                }
             }
-
         } else {
-            require_once("$CFG->libdir/xsendfilelib.php");
-            if (xsendfile($file)) {
-                return;
+            if (!empty($CFG->xsendfile)) {
+                require_once("$CFG->libdir/xsendfilelib.php");
+                if (xsendfile($file)) {
+                    return;
+                }
             }
         }
     }
@@ -2185,7 +2189,6 @@ function readfile_accel($file, $mimetype, $accelerate) {
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', $lastmodified) .' GMT');
 
     if ($accelerate and empty($CFG->disablebyteserving) and $mimetype !== 'text/plain') {
-        header('Accept-Ranges: bytes');
 
         if (!empty($_SERVER['HTTP_RANGE']) and strpos($_SERVER['HTTP_RANGE'],'bytes=') !== FALSE) {
             // byteserving stuff - for acrobat reader and download accelerators
@@ -2217,25 +2220,38 @@ function readfile_accel($file, $mimetype, $accelerate) {
             if ($ranges) {
                 if (is_object($file)) {
                     $handle = $file->get_content_file_handle();
+                    if ($handle === false) {
+                        throw new file_exception('storedfilecannotreadfile', $file->get_filename());
+                    }
                 } else {
                     $handle = fopen($file, 'rb');
+                    if ($handle === false) {
+                        throw new file_exception('cannotopenfile', $file);
+                    }
                 }
                 byteserving_send_file($handle, $mimetype, $ranges, $filesize);
             }
         }
-    } else {
-        // Do not byteserve
-        header('Accept-Ranges: none');
     }
 
-    header('Content-Length: '.$filesize);
+    header('Content-Length: ' . $filesize);
 
-    if ($filesize > 10000000) {
-        // for large files try to flush and close all buffers to conserve memory
-        while(@ob_get_level()) {
-            if (!@ob_end_flush()) {
-                break;
+    if (!empty($_SERVER['REQUEST_METHOD']) and $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+        exit;
+    }
+
+    while (ob_get_level()) {
+        $handlerstack = ob_list_handlers();
+        $activehandler = array_pop($handlerstack);
+        if ($activehandler === 'default output handler') {
+            // We do not expect any content in the buffer when we are serving files.
+            $buffercontents = ob_get_clean();
+            if ($buffercontents !== '') {
+                error_log('Non-empty default output handler buffer detected while serving the file ' . $file);
             }
+        } else {
+            // Some handlers such as zlib output compression may have file signature buffered - flush it.
+            ob_end_flush();
         }
     }
 
@@ -2243,7 +2259,9 @@ function readfile_accel($file, $mimetype, $accelerate) {
     if (is_object($file)) {
         $file->readfile();
     } else {
-        readfile_allow_large($file, $filesize);
+        if (readfile_allow_large($file, $filesize) === false) {
+            throw new file_exception('cannotopenfile', $file);
+        }
     }
 }
 
@@ -2251,10 +2269,10 @@ function readfile_accel($file, $mimetype, $accelerate) {
  * Similar to readfile_accel() but designed for strings.
  * @param string $string
  * @param string $mimetype
- * @param bool $accelerate
+ * @param bool $accelerate Ignored
  * @return void
  */
-function readstring_accel($string, $mimetype, $accelerate) {
+function readstring_accel($string, $mimetype, $accelerate = false) {
     global $CFG;
 
     if ($mimetype === 'text/plain') {
@@ -2265,14 +2283,6 @@ function readstring_accel($string, $mimetype, $accelerate) {
     }
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', time()) .' GMT');
     header('Accept-Ranges: none');
-
-    if ($accelerate and !empty($CFG->xsendfile)) {
-        $fs = get_file_storage();
-        if ($fs->xsendfile(sha1($string))) {
-            return;
-        }
-    }
-
     header('Content-Length: '.strlen($string));
     echo $string;
 }
@@ -2308,6 +2318,9 @@ function send_temp_file($path, $filename, $pathisstring=false) {
         $filename = urlencode($filename);
     }
 
+    // If this file was requested from a form, then mark download as complete.
+    \core_form\util::form_download_complete();
+
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     if (is_https()) { // HTTPS sites - watch out for IE! KB812935 and KB316431.
         header('Cache-Control: private, max-age=10, no-transform');
@@ -2321,7 +2334,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
 
     // send the contents - we can not accelerate this because the file will be deleted asap
     if ($pathisstring) {
-        readstring_accel($path, $mimetype, false);
+        readstring_accel($path, $mimetype);
     } else {
         readfile_accel($path, $mimetype, false);
         @unlink($path);
@@ -2459,6 +2472,9 @@ function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring
 
     if ($forcedownload) {
         header('Content-Disposition: attachment; filename="'.$filename.'"');
+
+        // If this file was requested from a form, then mark download as complete.
+        \core_form\util::form_download_complete();
     } else if ($mimetype !== 'application/x-shockwave-flash') {
         // If this is an swf don't pass content-disposition with filename as this makes the flash player treat the file
         // as an upload and enforces security that may prevent the file from being loaded.
@@ -2507,7 +2523,7 @@ function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring
     if (empty($filter)) {
         // send the contents
         if ($pathisstring) {
-            readstring_accel($path, $mimetype, !$dontdie);
+            readstring_accel($path, $mimetype);
         } else {
             readfile_accel($path, $mimetype, !$dontdie);
         }
@@ -2527,7 +2543,7 @@ function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring
             }
             $output = format_text($text, FORMAT_HTML, $options, $COURSE->id);
 
-            readstring_accel($output, $mimetype, false);
+            readstring_accel($output, $mimetype);
 
         } else if (($mimetype == 'text/plain') and ($filter == 1)) {
             // only filter text if filter all files is selected
@@ -2543,12 +2559,12 @@ function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring
             }
             $output = '<pre>'. format_text($text, FORMAT_MOODLE, $options, $COURSE->id) .'</pre>';
 
-            readstring_accel($output, $mimetype, false);
+            readstring_accel($output, $mimetype);
 
         } else {
             // send the contents
             if ($pathisstring) {
-                readstring_accel($path, $mimetype, !$dontdie);
+                readstring_accel($path, $mimetype);
             } else {
                 readfile_accel($path, $mimetype, !$dontdie);
             }
@@ -3103,7 +3119,7 @@ class curl {
      */
     public function resetopt() {
         $this->options = array();
-        $this->options['CURLOPT_USERAGENT']         = 'MoodleBot/1.0';
+        $this->options['CURLOPT_USERAGENT']         = \core_useragent::get_moodlebot_useragent();
         // True to include the header in the output
         $this->options['CURLOPT_HEADER']            = 0;
         // True to Exclude the body from the output
@@ -3346,7 +3362,7 @@ class curl {
         } else if (!empty($this->options['CURLOPT_USERAGENT'])) {
             $useragent = $this->options['CURLOPT_USERAGENT'];
         } else {
-            $useragent = 'MoodleBot/1.0';
+            $useragent = \core_useragent::get_moodlebot_useragent();
         }
 
         // Set headers.
@@ -4896,8 +4912,29 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null, $offlin
             \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, $sendfileoptions);
         }
+    } else if ($component === 'contentbank') {
+        if ($filearea != 'public' || isguestuser()) {
+            send_file_not_found();
+        }
 
-        // ========================================================================================================================
+        if ($context->contextlevel == CONTEXT_SYSTEM || $context->contextlevel == CONTEXT_COURSECAT) {
+            require_login();
+        } else if ($context->contextlevel == CONTEXT_COURSE) {
+            require_login($course);
+        } else {
+            send_file_not_found();
+        }
+
+        $itemid = (int)array_shift($args);
+        $filename = array_pop($args);
+        $filepath = $args ? '/'.implode('/', $args).'/' : '/';
+        if (!$file = $fs->get_file($context->id, $component, $filearea, $itemid, $filepath, $filename) or
+            $file->is_directory()) {
+            send_file_not_found();
+        }
+
+        \core\session\manager::write_close(); // Unlock session during file serving.
+        send_stored_file($file, 0, 0, true, $sendfileoptions); // must force download - security!
     } else if (strpos($component, 'mod_') === 0) {
         $modname = substr($component, 4);
         if (!file_exists("$CFG->dirroot/mod/$modname/lib.php")) {

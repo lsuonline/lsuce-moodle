@@ -88,9 +88,7 @@ class mod_questionnaire_generator extends testing_module_generator {
             'respondenttype'        => 'fullname',
             'resp_eligible'         => 'all',
             'resp_view'             => 0,
-            'useopendate'           => true, // Used in form only to indicate opendate can be used.
             'opendate'              => 0,
-            'useclosedate'          => true, // Used in form only to indicate closedate can be used.
             'closedate'             => 0,
             'resume'                => 0,
             'navigate'              => 0,
@@ -561,7 +559,7 @@ class mod_questionnaire_generator extends testing_module_generator {
         $numopts = count($opts);
 
         if ($number > (count($opts) / 2)) {
-            throw new coding_exception('Maxiumum number of options is '.($opts / 2));
+            throw new coding_exception('Maxiumum number of options is '.(count($opts) / 2));
         }
 
         $retopts = [];

@@ -315,7 +315,7 @@ switch ($cmd) {
                                                                         'name' => 'search_course_title'));
 
         $coursesearchform .= html_writer::label(get_string('integration', 'turnitintooltwo').': ', 'search_course_integration');
-        $coursesearchform .= html_writer::select($tiiintegrationids, 'search_course_integration', '', array('' => 'choosedots'),
+        $coursesearchform .= html_writer::select(turnitintooltwo_get_integration_ids(), 'search_course_integration', '', array('' => 'choosedots'),
                                                                 array('id' => 'search_course_integration'));
 
         $coursesearchform .= html_writer::label(get_string('ced', 'turnitintooltwo').': ', 'search_course_end_date');
@@ -327,15 +327,8 @@ switch ($cmd) {
 
         $output .= $OUTPUT->box($coursesearchform, 'generalbox', 'course_search_options');
 
-        $displaylist = array();
+        $displaylist = core_course_category::make_categories_list('');
         $parentlist = array();
-
-        if (file_exists($CFG->libdir.'/coursecatlib.php')) {
-            require_once($CFG->libdir.'/coursecatlib.php');
-            $displaylist = coursecat::make_categories_list('');
-        } else {
-            make_categories_list($displaylist, $parentlist, '');
-        }
 
         $categoryselectlabel = html_writer::label(get_string('selectcoursecategory', 'turnitintooltwo'),
                                                     'create_course_category');
@@ -353,12 +346,12 @@ switch ($cmd) {
                                     'create_checkboxes');
 
         $table = new html_table();
-        $table->id = "courseBrowserTable";
+        $table->id = "mod_turnitintooltwo_course_browser_table";
         $rows = array();
 
         // Make up json array for drop down in table.
         $integrationidsjson = array();
-        foreach ($tiiintegrationids as $k => $v) {
+        foreach (turnitintooltwo_get_integration_ids() as $k => $v) {
             $integrationidsjson[] = array('value' => $k, 'label' => $v);
         }
         $output .= html_writer::script('var integration_ids = '.json_encode($integrationidsjson));

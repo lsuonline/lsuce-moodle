@@ -384,7 +384,7 @@ class cc2moodle {
             if (isset($CFG->defaultblocks)) {
                 $blocknames = $CFG->defaultblocks;
             } else {
-                $blocknames = 'participants,activity_modules,search_forums,course_list:news_items,calendar_upcoming,recent_activity';
+                $blocknames = 'activity_modules,search_forums,course_list:news_items,calendar_upcoming,recent_activity';
             }
         }
 
@@ -794,7 +794,7 @@ class cc2moodle {
         }
     }
 
-    protected function critical_error ($text) {
+    protected static function critical_error ($text) {
 
         $path_to_log = static::log_file();
 

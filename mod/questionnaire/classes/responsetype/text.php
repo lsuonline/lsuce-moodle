@@ -51,12 +51,8 @@ class text extends responsetype {
      */
     static public function answers_from_webform($responsedata, $question) {
         $answers = [];
-        if (isset($responsedata->{'q'.$question->id}) && !empty($responsedata->{'q'.$question->id})) {
+        if (isset($responsedata->{'q'.$question->id}) && (strlen($responsedata->{'q'.$question->id}) > 0)) {
             $val = $responsedata->{'q' . $question->id};
-            if ($question->type_id == QUESNUMERIC) {
-                $val = str_replace(",", ".", $val); // Allow commas as well as points in decimal numbers.
-                $val = preg_replace("/[^0-9.\-]*(-?[0-9]*\.?[0-9]*).*/", '\1', $val);
-            }
             $record = new \stdClass();
             $record->responseid = $responsedata->rid;
             $record->questionid = $question->id;
@@ -133,10 +129,15 @@ class text extends responsetype {
 
     /**
      * Provide a template for results screen if defined.
+     * @param bool $pdf
      * @return mixed The template string or false/
      */
-    public function results_template() {
-        return 'mod_questionnaire/results_text';
+    public function results_template($pdf = false) {
+        if ($pdf) {
+            return 'mod_questionnaire/resultspdf_text';
+        } else {
+            return 'mod_questionnaire/results_text';
+        }
     }
 
     /**
@@ -155,20 +156,7 @@ class text extends responsetype {
         if ($rows = $this->get_results($rids, $anonymous)) {
             $numrespondents = count($rids);
             $numresponses = count($rows);
-            $isnumeric = $this->question->type_id == QUESNUMERIC;
-            // Count identical answers (numeric questions only).
-            if ($isnumeric) {
-                $counts = [];
-                foreach ($rows as $row) {
-                    if (!empty($row->response) || $row->response === "0") {
-                        $textidx = clean_text($row->response);
-                        $counts[$textidx] = !empty($counts[$textidx]) ? ($counts[$textidx] + 1) : 1;
-                    }
-                }
-                $pagetags = $this->get_results_tags($counts, $numrespondents, $numresponses, $prtotal);
-            } else {
-                $pagetags = $this->get_results_tags($rows, $numrespondents, $numresponses, $prtotal);
-            }
+            $pagetags = $this->get_results_tags($rows, $numrespondents, $numresponses, $prtotal);
         } else {
             $pagetags = new \stdClass();
         }
@@ -206,6 +194,7 @@ class text extends responsetype {
                     '&currentgroupid='.$currentgroupid;
             }
             $users = [];
+            $evencolor = false;
             foreach ($weights as $row) {
                 $response = new \stdClass();
                 $response->text = format_text($row->response, FORMAT_HTML);
@@ -219,7 +208,10 @@ class text extends responsetype {
                 } else {
                     $response->respondent = '';
                 }
+                // The 'evencolor' attribute is used by the PDF template.
+                $response->evencolor = $evencolor;
                 $pagetags->responses[] = (object)['response' => $response];
+                $evencolor = !$evencolor;
             }
 
             if ($showtotals == 1) {
@@ -234,29 +226,38 @@ class text extends responsetype {
 
             if (!empty($weights) && is_array($weights)) {
                 ksort($weights);
+                $evencolor = false;
                 foreach ($weights as $text => $num) {
                     $response = new \stdClass();
                     $response->text = $text;
                     $response->respondent = $num;
+                    // The 'evencolor' attribute is used by the PDF template.
+                    $response->evencolor = $evencolor;
                     $nbresponses += $num;
                     $sum += $text * $num;
+                    $evencolor = !$evencolor;
                     $pagetags->responses[] = (object)['response' => $response];
                 }
 
                 $response = new \stdClass();
                 $response->text = $sum;
                 $response->respondent = $strtotal;
+                $response->evencolor = $evencolor;
                 $pagetags->responses[] = (object)['response' => $response];
+                $evencolor = !$evencolor;
 
                 $response = new \stdClass();
                 $response->respondent = $straverage;
                 $avg = $sum / $nbresponses;
                 $response->text = sprintf('%.' . $this->question->precise . 'f', $avg);
+                $response->evencolor = $evencolor;
                 $pagetags->responses[] = (object)['response' => $response];
+                $evencolor = !$evencolor;
 
                 if ($showtotals == 1) {
                     $pagetags->total = new \stdClass();
                     $pagetags->total->total = "$respondents/$participants";
+                    $pagetags->total->evencolor = $evencolor;
                 }
             }
         }

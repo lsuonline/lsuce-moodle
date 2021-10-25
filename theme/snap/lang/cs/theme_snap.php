@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,6 +27,7 @@ $string['action:changeassetvisibility'] = 'změnit viditelnost komponenty';
 $string['action:duplicateasset'] = 'duplicitní komponenta';
 $string['action:changesectionvisibility'] = 'změnit viditelnost části';
 $string['action:highlightsectionvisibility'] = 'zvýraznit viditelnost části';
+$string['action:sectiontoc'] = 'získat obsah sekce';
 $string['addanewsection'] = 'Vytvořit novou sekci';
 $string['addresourceoractivity'] = 'Vytvořit výukovou aktivitu';
 $string['admin'] = 'Správa';
@@ -58,6 +59,7 @@ $string['changecoverimage'] = 'Změnit titulní obrázek';
 $string['changefullname'] = 'Změnit název webu';
 $string['chapters'] = 'Kapitoly';
 $string['choosereadme'] = '<div class="clearfix"><div class="theme_screenshot"><h2>Snap</h2><img class=img-polaroid src="snap/pix/screenshot.jpg" /></div></div>';
+$string['close'] = 'Zavřít';
 $string['conditional'] = 'Podmíněné';
 $string['contents'] = 'Obsah';
 $string['contributed'] = 'Přispěno';
@@ -66,9 +68,11 @@ $string['coursecontacts'] = 'Kontakty kurzu';
 $string['coursedisplay'] = 'Zobrazení kurzu';
 $string['coursefootertoggle'] = 'Zápatí kurzu';
 $string['coursefootertoggledesc'] = 'Zápatí kurzu zobrazuje uživatelům na stránce kurzu užitečné informace, například kontakty kurzu, popis kurzu a poslední aktivity v kurzu.';
-$string['courseformatnotification'] = 'Formát kurzu, který aktuálně používáte, není motivem Snap plně podporován. V Blackboard Open LMS se pro optimální prostředí doporučuje používat u motivu Snap formát kurzu Témata nebo Týdně. Formát kurzu lze změnit v <a href="{$a}">nastavení kurzu</a>.';
+$string['courseformatnotification'] = 'Formát kurzu, který aktuálně používáte, není motivem Snap plně podporován. V zájmu optimálního chování doporučujeme u motivu Snap v systému Open LMS používat formát kurzu Témata nebo Týdně. Formát kurzu lze změnit v <a href="{$a}">nastaveních kurzu</a>.';
 $string['coursefixydefaulttext'] = 'Aktuálně nejste registrováni v žádných kurzech.<br>Kurzy, do kterých jste registrováni, se budou zobrazovat zde.';
 $string['coursegrade'] = 'Klasifikace kurzu:';
+$string['coursepartialrender'] = 'Povolit „líné“ načítání sekcí kurzu';
+$string['coursepartialrenderdesc'] = 'Pokud je tato možnost povolena, budou se sekce kurzu načítat na vyžádání při výběru uživatelem. Díky tomu se budou kurzy s velkým množstvím obsahu načítat rychleji.';
 $string['coursenavigation'] = 'Navigace kurzu';
 $string['coursesummaryfilesunsuitable'] = 'Před pokusem o změnu titulního obrázku smažte soubory v souhrnu kurzu';
 $string['coursetools'] = 'Panel kurzu';
@@ -83,10 +87,12 @@ $string['comingsoon'] = 'Již brzy!';
 $string['createsection'] = 'Vytvořit sekci';
 $string['current'] = 'Aktuální';
 $string['customcss'] = 'Vlastní šablona stylů CSS';
-$string['customcssdesc'] = 'Upozorňujeme, že velké možnosti provází velká zodpovědnost. Pokud přidáním kódu CSS zde vznikne jakýkoli problém, bude na vás, abyste ho vyřešili. Podpora Blackboard Open LMS neřeší problémy s obsahem týkajícím se kódu CSS ani k němu neposkytuje podporu.';
+$string['customcssdesc'] = 'Upozorňujeme, že velké možnosti provází velká zodpovědnost. Pokud zde přidaný kód CSS způsobí jakýkoli problém, bude na vás, abyste ho vyřešili. Podpora systému Open LMS neřeší problémy s obsahem týkajícím se kódu CSS ani k němu neposkytuje podporu.';
 $string['customtopbar'] = 'Navigační panel';
 $string['customisenavbar'] = 'Změnit barvy navigačního panelu';
 $string['customisenavbutton'] = 'Změnit barvy tlačítka Moje kurzy';
+$string['customisecustommenu'] = 'Změnit barvu textu vlastní nabídky';
+$string['custommenutext'] = 'Barva textu vlastní nabídky';
 $string['deadlines'] = 'Termíny';
 $string['deadlinestoggle'] = 'Termíny';
 $string['deadlinestoggledesc'] = 'Zobrazuje uživatelům blížící se termíny aktivit v kurzech, kde jsou zapsáni.';
@@ -109,6 +115,8 @@ $string['editcoursesettings'] = 'Nastavení kurzu';
 $string['editcoursetopic'] = 'Upravit část';
 $string['editcustomfooter'] = 'Upravit zápatí';
 $string['editcustommenu'] = 'Upravit vlastní nabídku';
+$string['error'] = 'Chyba';
+$string['errorgettingfeed'] = 'Při načítání položek kanálu došlo k chybě.';
 $string['error:categorycolorinvalidjson'] = 'Nesprávný formát JSON pro kategorie kurzů';
 $string['error:categorycolorinvalidvalue'] = 'ID záznamu nebo hodnota barvy pro kategorii {$a} nejsou platné';
 $string['error:categorynotfound'] = 'Záznam kategorie s ID {$a} nebyl nalezen';
@@ -120,6 +128,7 @@ $string['error:failedtochangesectionvisibility'] = 'Skrytí/zobrazení části s
 $string['error:failedtohighlightsection'] = 'Zvýraznění části se nezdařilo';
 $string['error:failedtoduplicateasset'] = 'Duplikování se nezdařilo';
 $string['error:failedtodeleteasset'] = 'Odstranění komponenty se nezdařilo';
+$string['error:failedtotoc'] = 'Nepodařilo se načíst obsah.';
 $string['extension'] = 'Rozšíření {$a}';
 $string['facebook'] = 'Facebook';
 $string['facebookdesc'] = 'Adresa URL vaší stránky na Facebooku';
@@ -135,6 +144,14 @@ $string['featurespotsheading'] = 'Záhlaví míst pro zvláštní prvky';
 $string['featureonetitle'] = 'Nadpis prvku 1';
 $string['featuretwotitle'] = 'Nadpis prvku 2';
 $string['featurethreetitle'] = 'Nadpis prvku 3';
+$string['featureonetitlelink'] = 'Titulní odkaz prvku 1';
+$string['featuretwotitlelink'] = 'Titulní odkaz prvku 2';
+$string['featurethreetitlelink'] = 'Titulní odkaz prvku 3';
+$string['featuretitlelinkdesc'] = 'Zadejte adresu URL, na kterou bude tento zvláštní prvek odkazovat. Můžete přidat externí odkazy, nebo interní odkazy v rámci vašeho webu. Pokud chcete přidat interní odkaz, zkopírujte část z adresy URL webu včetně lomítka (/). Pokud chcete například použít odkaz na kurz, bude vypadat zhruba takto: „/course/view.php?id=160“. Externí odkaz bude začínat textem „https://“.';
+$string['featureonetitlecb'] = 'Otevření prvku 1 v novém okně';
+$string['featuretwotitlecb'] = 'Otevření prvku 2 v novém okně';
+$string['featurethreetitlecb'] = 'Otevření prvku 3 v novém okně';
+$string['featuretitlecbdesc'] = 'Pokud je tato možnost povolena, bude se odkaz zvláštního prvku otevírat v novém okně.';
 $string['featureonetext'] = 'Obsah prvku 1';
 $string['featuretwotext'] = 'Obsah prvku 2';
 $string['featurethreetext'] = 'Obsah prvku 3';
@@ -197,7 +214,7 @@ Příklad:<br>
 "12":"#CC0084",<br>
 "56":"#CC0087",<br>
 "89":"#CCF084"}';
-$string['knowledgebase'] = 'Znalostní báze Blackboard Open LMS';
+$string['knowledgebase'] = 'Znalostní báze Open LMS';
 $string['list'] = 'Seznam';
 $string['linkedin'] = 'LinkedIn';
 $string['linkedindesc'] = 'Adresa URL profilu vaší organizace na LinkedInu';
@@ -246,13 +263,19 @@ $string['personalmenu'] = 'Osobní nabídka';
 $string['personalmenufeatures'] = 'Prvky osobní nabídky';
 $string['personalmenulogintoggle'] = 'Zobrazit osobní nabídku při přihlášení';
 $string['personalmenulogintoggledesc'] = 'Otevře osobní nabídku hned po přihlášení.';
+$string['personalmenuadvancedfeedsenable'] = 'Povolit pokročilé kanály (experimentální)';
+$string['personalmenuadvancedfeedsenabledesc'] = 'Pokročilé kanály načítají určité položky osobní nabídky, což umožňuje kratší dobu načítání a obnovuje obsah na vyžádání.';
+$string['personalmenuadvancedfeedsperpage'] = 'Počet zobrazených položek pokročilých kanálů';
+$string['personalmenuadvancedfeedsperpagedesc'] = 'Vyberte počet položek, které se v kanálu zobrazí. Uživatelé mohou další položky zobrazit výběrem možnosti <strong>Zobrazit více</strong>.';
+$string['personalmenuadvancedfeedslifetime'] = 'Rozšířená životnost kanálů';
+$string['personalmenuadvancedfeedslifetimedesc'] = 'Určete dobu, po kterou budou kanály po přihlášení uloženy ve vyrovnávací paměti prohlížeče. Když nastavíte hodnotu 0, kanály se do vyrovnávací paměti prohlížeče nebudou ukládat.';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'Titulní obrázek';
 $string['posterdesc'] = 'Jedná se o velký obrázek v záhlaví titulní stránky vašeho webu. Nejlepší je použít obrázek na šířku (1200 x 600 pixelů nebo více).';
-$string['poweredbyrunby'] = 'Sestaveno pomocí systému <a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a>,
-    produkt používá technologii <a href="https://moodle.com/" target="_blank">Moodle</a>.<br>
-    Copyright &#169; {$a} Blackboard Inc., všechna práva vyhrazena.';
+$string['poweredbyrunby'] = 'Sestaveno pomocí systému <a href="https://{$a->subdomain}.openlms.net/" target="_blank" rel="noopener">Open LMS</a>,
+který používá technologii <a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>.<br>
+Copyright &#169; {$a->year} Open LMS, všechna práva vyhrazena.';
 $string['previoussection'] = 'Předchozí sekce';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'ID kurzu, který uživatel přidal do oblíbených';
 $string['privacy:metadata:theme_snap_course_favorites:userid'] = 'ID uživatele, který kurz přidal do oblíbených';
@@ -271,7 +294,9 @@ $string['region-side-top'] = 'Nahoře';
 $string['released'] = 'Vydáno: {$a}';
 $string['reopened'] = 'Znovu otevřeno';
 $string['resourcedisplay'] = 'Zobrazení zdrojů';
-$string['resourcedisplayhelp'] = 'Vyberte, jak se ve vašem kurzu budou zobrazovat přílohy a odkazy.';
+$string['resourcedisplayhelp'] = 'Vyberte, jak se ve vašem kurzu budou zobrazovat přílohy a odkazy. Motiv Snap nepodporuje multimediální soubory v popisu karet s malou aktivitou a karet zdrojů.';
+$string['displaydescription'] = 'Zobrazit popis';
+$string['displaydescriptionhelp'] = 'Vyberte, pokud chcete na nové stránce jako první zobrazit popis zdroje a aktivit adresy URL. Studenti se k obsahu dostanou přes tento popis.';
 $string['search'] = 'Prohledat obsah';
 $string['seriffont'] = 'Písmo Serif';
 $string['seriffont_desc'] = 'Toto písmo je používáno pro většinu obsahu generovaného uživateli. S písmem serif je obsah generovaný uživateli čitelnější a více působí dojmem, že byl psán člověkem.';
@@ -294,10 +319,12 @@ $string['topicactions'] = 'Akce tématu';
 $string['twitter'] = 'Twitter';
 $string['twitterdesc'] = 'Adresa URL vašeho účtu na Twitteru';
 $string['unenrolme'] = 'Zrušit moji registraci do kurzu';
+$string['enrolme'] = 'Zaregistrovat se';
 $string['unread'] = 'nepřečtené';
 $string['unsupportedcoverimagetype'] = 'Nepodporovaný typ titulního obrázku ({$a})';
 $string['via'] = 'prostřednictvím';
 $string['viewcourse'] = 'Zobrazit kurz';
+$string['viewmore'] = 'Zobrazit více';
 $string['viewyourprofile'] = 'Zobrazit profil';
 $string['viewmyfeedback'] = 'Zobrazit moji zpětnou vazbu';
 $string['viewcalendar'] = 'Zobrazit můj kalendář';
@@ -331,9 +358,36 @@ $string['cachedef_profile_based_branding'] = 'Vyrovnávací paměť pro značky 
 $string['cachedef_course_card_bg_image'] = 'Vyrovnávací paměť pro obrázek na pozadí kurzu';
 $string['cachedef_course_card_teacher_avatar'] = 'Vyrovnávací paměť pro avatary učitelů';
 $string['cachedef_course_card_teacher_avatar_index'] = 'Vyrovnávací paměť pro index avatarů učitelů';
-$string['accesforumstringdis'] = 'Možnosti zobrazení';
-$string['accesforumstringmov'] = 'Možnosti posunutí';
-$string['accescalendarstring'] = 'Kalendář';
+$string['accessforumstringdis'] = 'Možnosti zobrazení';
+$string['accessforumstringmov'] = 'Možnosti přesunutí';
+$string['accesscalendarstring'] = 'Kalendář';
+$string['accessglobalsearchstring'] = 'Hledat';
 $string['admineventwarning'] = 'K zobrazení událostí ze všech kurzů, ';
 $string['gotocalendarsnap'] = 'přejít na kalendář stránek';
 $string['quizattemptswarn'] = 'Vylučuje pokusy od pozastavených uživatelů';
+$string['quizfeedback'] = 'Zpětná vazba';
+$string['validratio'] = 'Tato kombinace barev vyhovuje hodnotě minimálního poměru WCAG 2.0 – 4,5:1';
+$string['invalidratio'] = 'Tato kombinace barev nevyhovuje <a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">hodnotě minimálního poměru WCAG 2.0 – 4,5:1</a>. Hodnota: "{$a}"';
+$string['imageinvalidratio'] = 'Tento obrázek by mohl mít problémy s kontrastem, protože nevyhovuje hodnotě minimálního poměru WCAG 2.0 – 4,5:1. Průměrná hodnota pixelů: "{$a}"';
+$string['catinvalidratio'] = 'Následující kategorie barev nevyhovují
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">hodnotě minimálního poměru WCAG 2.0 – 4,5:1</a>:
+Barva pozadí vůči webu (bílá): "{$a->white}". Barva pozadí vůči navigačnímu panelu: "{$a->custombar}". Barva pozadí vůči tlačítku Moje kurzy: "{$a->customnav}"';
+$string['imageinvalidratiocategory'] = 'Tento obrázek by mohl mít problémy s barvou motivu, protože nevyhovuje hodnotě minimálního poměru WCAG 2.0 – 4,5:1. Průměrná hodnota pixelů: "{$a}"';
+$string['lazyload_mod_page'] = 'Povolit výchozí „líné“ načítání zdrojů stránky';
+$string['lazyload_mod_page_description'] = 'Pokud je tato možnost povolena, výrazně se sníží doba načítání kurzů, které mají mnoho stránek.';
+$string['pmadvancedfeed_viewmore'] = 'Zobrazit více';
+$string['pmadvancedfeed_reload'] = 'Obnovit';
+$string['multimediacard'] = 'V motivu Snap se v zobrazeních karet aktivit nezobrazí multimediální soubory. Použije se to pro domovskou stránku a stránky kurzu pouze u karet s malou aktivitou a karet zdrojů.';
+$string['enabledlogin'] = 'Zobrazené možnosti přihlášení';
+$string['enabledlogindesc'] = 'Vyberte možnosti přihlášení, které se mají zobrazovat.';
+$string['moodlelogin'] = 'Zobrazit pouze přihlášení přes Moodle';
+$string['alternativelogin'] = 'Zobrazit pouze alternativní možnosti přihlášení';
+$string['bothlogin'] = 'Zobrazit obě možnosti přihlášení';
+$string['enabledloginorder'] = 'Pořadí možností přihlášení';
+$string['enabledloginorderdesc'] = 'Vyberte, která možnost přihlášení má být zobrazena jako první.';
+$string['moodleloginfirst'] = 'Zobrazit nejdříve přihlášení přes Moodle';
+$string['alternativeloginfirst'] = 'Zobrazit nejdříve alternativní možnosti přihlášení';
+$string['alternativeloginoptions'] = 'Alternativní možnosti přihlášení';
+$string['openmessagedrawer'] = 'Otevře šuplík zpráv. ';
+$string['design_mod_page'] = 'Povolit předchozí vzhled zdrojů stránek';
+$string['design_mod_page_description'] = 'Pokud je tato možnost povolena, bude se obsah zdrojů stránek zobrazovat v rámci stejné stránky, kurzu nebo titulní stránky.';

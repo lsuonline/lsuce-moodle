@@ -108,7 +108,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
         return 'mssql';
     }
 
-   /**
+    /**
      * Returns more specific database driver type
      * Note: can be used before connect()
      * @return string db type mysqli, pgsql, oci, mssql, sqlsrv
@@ -117,7 +117,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
         return 'sqlsrv';
     }
 
-   /**
+    /**
      * Returns general database library name
      * Note: can be used before connect()
      * @return string db type pdo, native
@@ -534,24 +534,12 @@ class sqlsrv_native_moodle_database extends moodle_database {
     }
 
     /**
-     * Returns detailed information about columns in table. This information is cached internally.
+     * Returns detailed information about columns in table.
+     *
      * @param string $table name
-     * @param bool $usecache
      * @return array array of database_column_info objects indexed with column names
      */
-    public function get_columns($table, $usecache = true) {
-        if ($usecache) {
-            if ($this->temptables->is_temptable($table)) {
-                if ($data = $this->get_temp_tables_cache()->get($table)) {
-                    return $data;
-                }
-            } else {
-                if ($data = $this->get_metacache()->get($table)) {
-                    return $data;
-                }
-            }
-        }
-
+    protected function fetch_columns(string $table): array {
         $structure = array();
 
         if (!$this->temptables->is_temptable($table)) { // normal table, get metadata from own schema
@@ -641,14 +629,6 @@ class sqlsrv_native_moodle_database extends moodle_database {
             $structure[$info->name] = new database_column_info($info);
         }
         $this->free_result($result);
-
-        if ($usecache) {
-            if ($this->temptables->is_temptable($table)) {
-                $this->get_temp_tables_cache()->set($table, $structure);
-            } else {
-                $this->get_metacache()->set($table, $structure);
-            }
-        }
 
         return $structure;
     }
@@ -1138,7 +1118,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
      * If the return ID isn't required, then this just reports success as true/false.
      * $data is an object containing needed data
      * @param string $table The database table to be inserted into
-     * @param object $data A data object with values for one or more fields in the record
+     * @param object|array $dataobject A data object with values for one or more fields in the record
      * @param bool $returnid Should the id of the newly created record entry be returned? If this option is not requested then true/false is returned.
      * @return bool|int true or new id
      * @throws dml_exception A DML specific exception is thrown for any errors.

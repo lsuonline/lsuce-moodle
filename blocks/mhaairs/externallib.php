@@ -86,21 +86,13 @@ class block_mhaairs_gradebookservice_external extends external_api {
         global $USER, $DB;
 
         $logger = MHLog::instance();
-        $logger->log('==================================');
-        $logger->log('New webservice request started on '. $logger->time_stamp);
-        $logger->log('Entry parameters:');
-        $logger->log("source = {$source}");
-        $logger->log("courseid = {$courseid}");
-        $logger->log("itemtype = {$itemtype}");
-        $logger->log("itemmodule = {$itemmodule}");
-        $logger->log("iteminstance = {$iteminstance}");
-        $logger->log("itemnumber = {$itemnumber}");
-        $logger->log("grades = {$grades}");
-        $logger->log("itemdetails = {$itemdetails}");
+        $gradesstr = $grades ? urldecode($grades) : '';
+        $itemdetailsstr = $itemdetails ? urldecode($itemdetails) : '';
+        $logger->log("New webservice request started with the following parameters: source = {$source}, courseid = {$courseid}, itemtype = {$itemtype}, itemmodule = {$itemmodule}, iteminstance = {$iteminstance}, itemnumber = {$itemnumber}, grades = {$gradesstr}, itemdetails = {$itemdetailsstr}");
 
         // Gradebook sync must be enabled by admin in the block's site configuration.
         if (!$syncgrades = get_config('core', 'block_mhaairs_sync_gradebook')) {
-            $logger->log('Grade sync is not enabled in global settings. Returning 1.');
+            $logger->log('Grade update failed - Grade sync is not enabled in global settings.', 'X');
             return GRADE_UPDATE_FAILED;
         }
 
@@ -137,40 +129,40 @@ class block_mhaairs_gradebookservice_external extends external_api {
         $logger->log('Capability validated.');
 
         // Validate item details.
-        $logger->log("Checking if any item details were sent.");
         $itemdetails = json_decode(urldecode($itemdetails), true);
         $itemdetails = self::validate_item_details($itemdetails);
-        $logger->log('Item details validated: '. var_export($itemdetails, true));
+        $logger->log('Item details validated.');
 
         // Get the item details identity type variable.
         $identitytype = self::get_details_itentity_type($itemdetails);
 
         // Validate grades.
-        $logger->log("Checking if any grades were sent.");
         $grades = json_decode(urldecode($grades), true);
-        $grades = self::validate_grades($grades);
-        // HACK Make sure grades has identity type; take from item details if must.
-        if ($grades and !isset($grades['identity_type'])) {
-            $grades['identity_type'] = null;
-            if ($identitytype) {
-                $grades['identity_type'] = $identitytype;
-            }
+        $grades = self::validate_grades($grades, $identitytype);
+        if ($grades and !is_array($grades)) {
+            // There must be an error.
+            $logger->log($grades, 'X');
+            return GRADE_UPDATE_FAILED;
+        } else {
+            $logger->log('Grades validated.');
         }
-        $logger->log('Grades validated: '. var_export($grades, true));
 
         // Get the course.
-        if (!$course = self::get_course($courseid, $identitytype)) {
+        $course = self::get_course($courseid, $identitytype);
+        if (!is_object($course)) {
             // No valid course specified.
-            $logger->log("Course id received was not correct. courseid = {$courseid}.");
-            $logger->log('Returning '. GRADE_UPDATE_FAILED. '.');
+            $logger->log("Grade update failed - $course", 'X');
             return GRADE_UPDATE_FAILED;
         }
         $courseid = $course->id;
         $logger->log('Course validated.');
 
+        // Update grade item or user grade.
+        $result = GRADE_UPDATE_OK;
         if (!$grades) {
             // A request without grades is for creating/updating/deleting a grade item.
-            $result = self::update_grade_item(
+            $logger->log("Attempting to update grade item.");
+            $err = self::update_grade_item(
                 $source,
                 $courseid,
                 $iteminstance,
@@ -178,11 +170,16 @@ class block_mhaairs_gradebookservice_external extends external_api {
                 $itemdetails
             );
 
-            $resultverbose = ($result == GRADE_UPDATE_OK) ? 'completed successfully' : 'failed';
-            $logger->log("Grade item update $resultverbose");
+            if ($err) {
+                $logger->log("Grade item update failed - $err", 'X');
+                $result = GRADE_UPDATE_FAILED;
+            } else {
+                $logger->log('Grade item update completed successfully.');
+            }
 
         } else {
-            $result = self::update_user_grade(
+            $logger->log("Attempting to update user grade.");
+            $err = self::update_user_grade(
                 $source,
                 $courseid,
                 $iteminstance,
@@ -190,8 +187,12 @@ class block_mhaairs_gradebookservice_external extends external_api {
                 $grades
             );
 
-            $resultverbose = ($result == GRADE_UPDATE_OK) ? 'completed successfully' : 'failed';
-            $logger->log("User grade update $resultverbose");
+            if ($err) {
+                $logger->log("User grade update failed - $err", 'X');
+                $result = GRADE_UPDATE_FAILED;
+            } else {
+                $logger->log('User grade update completed successfully.');
+            }
         }
 
         return $result;
@@ -319,18 +320,11 @@ class block_mhaairs_gradebookservice_external extends external_api {
 
         // Validate grades.
         $grades = json_decode(urldecode($grades), true);
-        $grades = self::validate_grades($grades);
-        // HACK Make sure grades has identity type; take from item details if must.
-        if ($grades and !isset($grades['identity_type'])) {
-            $grades['identity_type'] = null;
-            if ($identitytype) {
-                $grades['identity_type'] = $identitytype;
-            }
-        }
+        $grades = self::validate_grades($grades, $identitytype);
 
         // Get the course.
         $course = self::get_course($courseid, $identitytype);
-        if ($course === false) {
+        if (!is_object($course)) {
             // No valid course specified.
             return GRADE_UPDATE_FAILED;
         }
@@ -345,7 +339,8 @@ class block_mhaairs_gradebookservice_external extends external_api {
             $iteminstance,
             $itemnumber
         );
-        if (!$gitem) {
+
+        if (!($gitem instanceof grade_item)) {
             return $result;
         }
 
@@ -363,7 +358,7 @@ class block_mhaairs_gradebookservice_external extends external_api {
             'grades' => array(),
         );
 
-        if ($grades) {
+        if (is_array($grades)) {
             if (!empty($grades['userid'])) {
                 $gradegrades = grade_grade::fetch_users_grades($gitem, array($grades['userid']), false);
             } else {
@@ -489,23 +484,13 @@ class block_mhaairs_gradebookservice_external extends external_api {
             $itemdetails
         );
 
-        // Are we deleting the item?
-        $isdeleting = self::is_deleting($itemdetails);
-
-        // No grade item is either successful deletion of failure on creation.
-        if (!$gitem) {
-            if (!$isdeleting) {
-                return GRADE_UPDATE_FAILED;
-            } else {
-                return GRADE_UPDATE_OK;
-            }
+        // No grade item is either successful deletion or failure on creation.
+        // Either way we return.
+        if (!($gitem instanceof grade_item)) {
+            return $gitem;
         }
 
-        // We might fail to delete.
-        if ($gitem and $isdeleting) {
-            return GRADE_UPDATE_FAILED;
-        }
-        return GRADE_UPDATE_OK;
+        return '';
     }
 
     /**
@@ -520,9 +505,14 @@ class block_mhaairs_gradebookservice_external extends external_api {
      * @throws moodle_exception
      */
     protected static function update_user_grade($source, $courseid, $iteminstance, $itemnumber, $grades) {
+        // Must have user id.
+        if (empty($grades['userid']) ) {
+            return 'Grade info is missing user id.';
+        }
+
         // Userid and rawgrade must be set.
-        if (!isset($grades['userid']) or !isset($grades['rawgrade'])) {
-            return GRADE_UPDATE_FAILED;
+        if (!isset($grades['rawgrade']) or $grades['rawgrade'] === '') {
+            return 'Grade info is missing raw grade.';
         }
 
         // Get the grade item.
@@ -536,16 +526,17 @@ class block_mhaairs_gradebookservice_external extends external_api {
         );
 
         // Verify grade item exists.
-        if (!$gitem) {
-            return GRADE_UPDATE_FAILED;
+        if (!($gitem instanceof grade_item)) {
+            // There is an error, so return it.
+            return $gitem;
         }
 
         // Update the user grade.
         if (!$gitem->update_final_grade($grades['userid'], $grades['rawgrade'], $source)) {
-            return GRADE_UPDATE_FAILED;
+            return 'Failed to update final grade with {$rawgrade} for {$userid}.';
         }
 
-        return GRADE_UPDATE_OK;
+        return '';
     }
 
     /**
@@ -583,7 +574,7 @@ class block_mhaairs_gradebookservice_external extends external_api {
             }
         }
 
-        // Remove empty deleted, b/c it grade_item cannot process it.
+        // Remove empty deleted, b/c grade_item cannot process it.
         if (empty($details['deleted'])) {
             unset($details['deleted']);
         }
@@ -605,14 +596,23 @@ class block_mhaairs_gradebookservice_external extends external_api {
      * Cleans the grades data and maps the userid to the internal id.
      *
      * @param array $grades An array user grade details.
+     * @param string $identitytype Identity type name.
      * @throws invalid_parameter_exception if $param is not of given type
-     * @return array|null
+     * @return array|null|string
      */
-    protected static function validate_grades($grades) {
+    protected static function validate_grades($grades, $identitytype = '') {
         global $DB;
 
         if (!$grades or $grades == "null") {
             return null;
+        }
+
+        // Make sure grades has identity type; take from item details if must.
+        if (empty($grades['identity_type'])) {
+            $grades['identity_type'] = '';
+            if ($identitytype) {
+                $grades['identity_type'] = $identitytype;
+            }
         }
 
         // The following are the variables that can be passed via grades.
@@ -626,17 +626,24 @@ class block_mhaairs_gradebookservice_external extends external_api {
         $details = array();
         // Check type of each parameter.
         foreach ($allowed as $var => $type) {
+            $details[$var] = '';
             if (isset($grades[$var]) and $grades[$var] !== '') {
                 $details[$var] = validate_param($grades[$var], $type);
             }
         }
 
+        // Must have user id.
+        if ($details['userid'] === '') {
+            return 'Missing user id/username value.';
+        }
+
         // Map userID to numerical userID if required.
-        $idtype = !empty($details['identity_type']) ? $details['identity_type'] : null;
-        if (!$idtype or ($idtype != 'lti')) {
+        if (!$details['identity_type'] or ($details['identity_type'] != 'lti')) {
             $userid = $DB->get_field('user', 'id', array('username' => $details['userid']));
             if ($userid !== false) {
                 $details['userid'] = $userid;
+            } else {
+                $details = "Could not find user id for username {$details['userid']}.";
             }
         }
 
@@ -715,7 +722,7 @@ class block_mhaairs_gradebookservice_external extends external_api {
 
         // We must have course id.
         if (empty($courseid)) {
-            return false;
+            return 'Empty course id.';
         }
 
         // Do we need to look up the course only by internal id?
@@ -738,12 +745,17 @@ class block_mhaairs_gradebookservice_external extends external_api {
             $course = $DB->get_record('course', $params);
         }
 
+        if (!$course) {
+            return "Could not find course with id $courseid.";
+        }
+
         return $course;
     }
 
     /**
      * Returns a grade item with the specified data.
      * If the item does not exist it is created.
+     * If a grade item cannot be returned, returns an error message.
      *
      * @param  string $source
      * @param  int $courseid        Course id
@@ -752,7 +764,7 @@ class block_mhaairs_gradebookservice_external extends external_api {
      * @param  int $iteminstance    Item instance
      * @param  int $itemnumber      Item number
      * @param  array $itemdetails   Item details
-     * @return grade_item           A grade_item instance
+     * @return grade_item|string    A grade_item instance or error message
      */
     private static function get_grade_item($source, $courseid, $itemtype, $itemmodule,
             $iteminstance = 0, $itemnumber = 0, $itemdetails = null) {
@@ -762,17 +774,21 @@ class block_mhaairs_gradebookservice_external extends external_api {
         if ($itemtype == 'course') {
             // We are looking for the course grade item,
             // so just return if exists.
-            $params = array(
+            $itemparams = array(
                 'courseid' => $courseid,
                 'itemtype' => $itemtype,
             );
 
-            return grade_item::fetch($params);
+            if (!$gitem = grade_item::fetch($itemparams)) {
+                $itemsparamsstr = json_encode($itemparams);
+                return "Could not find grade item with params: {$itemsparamsstr}.";
+            }
+            return $gitem;
         }
 
         // Must have item instance.
         if (empty($iteminstance)) {
-            return null;
+            return 'Cannot get grade item - missing item instance.';
         }
 
         // The target item params.
@@ -786,7 +802,11 @@ class block_mhaairs_gradebookservice_external extends external_api {
 
         // If there are no item details, we just need the item if exists.
         if (!$itemdetails) {
-            return grade_item::fetch($itemparams);
+            if (!$gitem = grade_item::fetch($itemparams)) {
+                $itemsparamsstr = json_encode($itemparams);
+                return "Could not find grade item with params: {$itemsparamsstr}.";
+            }
+            return $gitem;
         }
 
         // We are looking for an mhaairs manual item.
@@ -849,7 +869,9 @@ class block_mhaairs_gradebookservice_external extends external_api {
                     $gitem->itemmodule = $itemmodule;
                     $gitem->iteminstance = $iteminstance;
                     $gitem->itemnumber = $itemnumber;
-                    $gitem->update();
+                    if (!$gitem->update()) {
+                        return 'Failed to update existing grade item via core grade_item::update().';
+                    }
                     $existing = true;
                 }
             }
@@ -862,7 +884,7 @@ class block_mhaairs_gradebookservice_external extends external_api {
         if ($itemdetails and (!$gitem or !$existing)) {
             // If creating, must have item name; the rest can default.
             if (!$isdeleting and !$itemname) {
-                return null;
+                return 'Cannot create grade item - missing item name.';
             }
 
             $result = grade_update(
@@ -877,11 +899,24 @@ class block_mhaairs_gradebookservice_external extends external_api {
             );
 
             if ($result != GRADE_UPDATE_OK) {
-                return null;
+                if ($isdeleting) {
+                    return 'Failed to delete grade item via core grade_update.';
+                } else if (!$gitem) {
+                    return 'Failed to create grade item via core grade_update.';
+                } else {
+                    return 'Failed to update grade item via core grade_update.';
+                }
             }
 
+            // If successful deletion, nothing further to do here.
+            if ($isdeleting) {
+                return '';
+            }
+
+            // Otherwise, successful creation or update, so we should be
+            // able to get the grade item.
             if (!$gitem = grade_item::fetch($itemparams)) {
-                return null;
+                return 'Could not find the grade item after successful core grade_update.';
             }
 
             // Add the item to the specified category if applicable.

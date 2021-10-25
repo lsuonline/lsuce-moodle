@@ -61,11 +61,18 @@ function panopto_decorate_username($moodleusername) {
  */
 function panopto_generate_auth_code($payload) {
     $index = 1;
-    for ($x = 0; $x < 10; $x++) {
-        $thisservername = get_config('block_panopto', 'server_name' . ($x + 1));
+
+    $numservers = get_config('block_panopto', 'server_number');
+    $numservers = isset($numservers) ? $numservers : 0;
+
+    // Increment numservers by 1 to take into account starting at 0.
+    ++$numservers;
+
+    for ($serverwalker = 1; $serverwalker <= $numservers; ++$serverwalker) {
+        $thisservername = get_config('block_panopto', 'server_name' . $serverwalker);
         if (isset($thisservername) && !empty($thisservername)) {
             if (strpos($payload, $thisservername)) {
-                $index = $x + 1;
+                $index = $serverwalker;
                 break;
             }
         }
@@ -95,7 +102,7 @@ function panopto_validate_auth_code($payload, $authcode) {
  *
  * @param string apiurl
  */
-function generate_wsdl_service_params($apiurl) {
+function panopto_generate_wsdl_service_params($apiurl) {
     $serviceparams = array('wsdl_url' => $apiurl);
 
     // Check to see if the user set any proxy options
@@ -110,14 +117,40 @@ function generate_wsdl_service_params($apiurl) {
         $serviceparams['wsdl_proxy_port'] = $proxyport;
     }
 
+    $serviceparams['panopto_connection_timeout'] = get_config('block_panopto', 'panopto_connection_timeout');
+    $serviceparams['panopto_socket_timeout'] = get_config('block_panopto', 'panopto_socket_timeout');
+
     return $serviceparams;
+}
+
+function panopto_get_configured_panopto_servers() {
+
+    $numservers = get_config('block_panopto', 'server_number');
+    $numservers = isset($numservers) ? $numservers : 0;
+
+    // Increment numservers by 1 to take into account starting at 0.
+    ++$numservers;
+
+    $targetserverarray = array();
+    for ($serverwalker = 1; $serverwalker <= $numservers; ++$serverwalker) {
+
+        // Generate strings corresponding to potential servernames in the config.
+        $thisservername = get_config('block_panopto', 'server_name' . $serverwalker);
+        $thisappkey = get_config('block_panopto', 'application_key' . $serverwalker);
+
+        if (!panopto_is_string_empty($thisservername) && !panopto_is_string_empty($thisappkey)) {
+            $targetserverarray[$thisservername] = $thisservername;
+        }
+    }
+
+    return $targetserverarray;
 }
 
 /**
  * Returns a list of objects containing valid servername/appkey pairs we are targeting.
  *
  */
-function get_target_panopto_servers() {
+function panopto_get_target_panopto_servers() {
     $ret = array();
     $targetservers = explode(",", get_config('block_panopto', 'automatic_operation_target_server'));
 
@@ -153,7 +186,7 @@ function get_target_panopto_servers() {
  * Returns a list of objects containing valid servername/appkey pairs.
  *
  */
-function get_valid_panopto_servers() {
+function panopto_get_valid_panopto_servers() {
     $ret = array();
 
     $numservers = get_config('block_panopto', 'server_number');
@@ -186,7 +219,7 @@ function get_valid_panopto_servers() {
  *
  * @param string $panoptoservername the server we are trying to get the application key for
  */
-function get_panopto_app_key($panoptoservername) {
+function panopto_get_app_key($panoptoservername) {
     $numservers = get_config('block_panopto', 'server_number');
     $numservers = isset($numservers) ? $numservers : 0;
 
@@ -216,7 +249,7 @@ function get_panopto_app_key($panoptoservername) {
  * @param string $servername the name of the active server
  * @param string $applicationkey the key need for the user to be authenticated
  */
-function instantiate_panopto_user_soap_client($username, $servername, $applicationkey) {
+function panopto_instantiate_user_soap_client($username, $servername, $applicationkey) {
     // Compute web service credentials for given user.
     $apiuseruserkey = panopto_decorate_username($username);
     $apiuserauthcode = panopto_generate_auth_code($apiuseruserkey . '@' . $servername, $applicationkey);
@@ -232,7 +265,7 @@ function instantiate_panopto_user_soap_client($username, $servername, $applicati
  * @param string $servername the name of the active server
  * @param string $applicationkey the key need for the user to be authenticated
  */
-function instantiate_panopto_session_soap_client($username, $servername, $applicationkey) {
+function panopto_instantiate_session_soap_client($username, $servername, $applicationkey) {
     // Compute web service credentials for given user.
     $apiuseruserkey = panopto_decorate_username($username);
     $apiuserauthcode = panopto_generate_auth_code($apiuseruserkey . '@' . $servername, $applicationkey);
@@ -245,7 +278,7 @@ function instantiate_panopto_session_soap_client($username, $servername, $applic
  * Used to instantiate a soap client for calling Panopto's iAuth service.
  * Should be called only the first time an  auth soap client is needed for an instance.
  */
-function instantiate_panopto_auth_soap_client($username, $servername, $applicationkey) {
+function panopto_instantiate_auth_soap_client($username, $servername, $applicationkey) {
     // Compute web service credentials for given user.
     $apiuseruserkey = panopto_decorate_username($username);
     $apiuserauthcode = panopto_generate_auth_code($apiuseruserkey . '@' . $servername, $applicationkey);
@@ -259,7 +292,7 @@ function instantiate_panopto_auth_soap_client($username, $servername, $applicati
  *
  * @param string $name the string being checked for null or empty
  */
-function is_null_or_empty_string($name) {
+function panopto_is_string_empty($name) {
     return (!isset($name) || trim($name) === '');
 }
 
@@ -268,7 +301,7 @@ function is_null_or_empty_string($name) {
  *
  * @param string $guidstring the uid being tested in string format.
  */
-function is_guid_empty($guidstring) {
+function panopto_is_guid_empty($guidstring) {
     // Assuming the guid is valid
     $retVal = false;
     $val = array_sum(explode("-", $guidstring));
@@ -286,7 +319,7 @@ function is_guid_empty($guidstring) {
  *
  * @param string $userinfostring information to check
  */
-function user_info_valid($userinfostring) {
+function panopto_user_info_valid($userinfostring) {
     // Assuming the guid is valid
     $retVal = true;
 
@@ -296,5 +329,51 @@ function user_info_valid($userinfostring) {
     }
 
     return $retVal;
+}
+
+function panopto_get_all_roles_at_context_and_contextlevel($targetcontext) {
+    global $DB;
+
+    $sql = "SELECT r.*, rn.name AS contextalias
+        FROM {role} r
+        INNER JOIN {role_context_levels} rcl ON (rcl.contextlevel = :targetcontextlevel AND rcl.roleid = r.id)
+        LEFT JOIN {role_names} rn ON (rn.contextid = :targetcontext AND rn.roleid = r.id)
+        ORDER BY r.sortorder ASC";
+    return $DB->get_records_sql($sql, array('targetcontext'=>$targetcontext->id, 'targetcontextlevel'=>$targetcontext->contextlevel));
+}
+
+/**
+ * Unsets all system publishers that are not currently mapped 
+ *  and maps all roles that are currently set as publishers to have the proper capability
+ */
+function panopto_update_system_publishers() {
+    global $DB;
+    $capability = 'block/panopto:provision_aspublisher';
+    $systemcontext = context_system::instance();
+    $systemrolearray = panopto_get_all_roles_at_context_and_contextlevel($systemcontext);
+    $publisherrolesstring = get_config('block_panopto', 'publisher_system_role_mapping');
+    $publishersystemroles = explode(',', $publisherrolesstring);
+    $publisherprocessed = false;
+
+    // Remove the system publisher capability from all old publishers. 
+    foreach($systemrolearray as $possiblesystempublisher) {
+        $targetname = !empty($possiblesystempublisher->name) ? $possiblesystempublisher->name : $possiblesystempublisher->shortname;
+        if (!in_array($targetname, $publishersystemroles)) {
+            $publisherprocessed = true;
+            unassign_capability($capability, $possiblesystempublisher->id, $systemcontext);
+        }
+    }
+
+    // Build and process new/old changes to capabilities to roles and capabilities.
+    $publisherprocessed = \panopto_data::build_and_assign_context_capability_to_roles(
+        $systemcontext, 
+        $publishersystemroles, 
+        $capability
+    ) || $publisherprocessed;
+
+    // If any changes where made, context needs to be flagged as dirty to be re-cached.
+    if ($publisherprocessed) {
+        $systemcontext->mark_dirty();
+    }
 }
 /* End of file block_panopto_lib.php */

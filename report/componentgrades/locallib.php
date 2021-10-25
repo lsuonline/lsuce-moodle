@@ -33,7 +33,7 @@ function report_componentgrades_get_students($courseid) {
     global $DB;
     return $DB->get_records_sql('SELECT stu.id AS userid, stu.idnumber AS idnumber,
         stu.firstname, stu.lastname, stu.username AS student
-        FROM {user} AS stu
+        FROM {user} stu
         JOIN {user_enrolments} ue ON ue.userid = stu.id
         JOIN {enrol} enr ON ue.enrolid = enr.id
         WHERE enr.courseid = ?
@@ -72,7 +72,9 @@ function report_componentgrades_add_header(MoodleExcelWorkbook  $workbook, Moodl
     $sheet->write_string(5, 0, get_string('firstname', 'report_componentgrades'), $format2);
     $sheet->write_string(5, 1, get_string('lastname', 'report_componentgrades'), $format2);
     $sheet->write_string(5, 2, get_string('username', 'report_componentgrades'), $format2);
-    $sheet->write_string(5, 3, get_string('studentid', 'report_componentgrades'), $format2);
+    if (get_config('report_componentgrades', 'showstudentid')) {
+        $sheet->write_string(5, 3, get_string('studentid', 'report_componentgrades'), $format2);
+    }
     $sheet->set_column(0, 3, 10); // Set column widths to 10.
     /* TODO returning an arbitrary number needs fixing */
     return 4;

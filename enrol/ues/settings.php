@@ -38,6 +38,12 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_heading('enrol_ues_task_status',
         $s('task_status'), ues::get_task_status_description()));
 
+    // Add the username and password fields into Moodle so we can drop the credentials server.
+    $settings->add(new admin_setting_configtext('enrol_ues/username',
+        $s('uesusername'), $s('uesusername_desc'), 'username'));
+    $settings->add(new admin_setting_configpasswordunmask('enrol_ues/password',
+        $s('uespassword'), $s('uespassword_desc'), 'password'));
+
     // Internal Links.
     $urls = new stdClass;
     $urls->cleanup_url = $CFG->wwwroot . '/enrol/ues/cleanup.php';

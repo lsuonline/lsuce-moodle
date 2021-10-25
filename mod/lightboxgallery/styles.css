@@ -142,7 +142,8 @@
     z-index: 4033;
 }
 
-#page-mod-lightboxgallery-view #imageData #bottomNavDownload {
+#page-mod-lightboxgallery-view #imageData #bottomNavDownload,
+#page-mod-lightboxgallery-search #imageData #bottomNavDownload {
     background: url([[pix:lightboxgallery|download]]) no-repeat;
     float: right;
     height: 22px;

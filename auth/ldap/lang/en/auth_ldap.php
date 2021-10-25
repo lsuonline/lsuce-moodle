@@ -57,7 +57,7 @@ $string['auth_ldap_ldap_encoding'] = 'Encoding used by the LDAP server, most lik
 $string['auth_ldap_ldap_encoding_key'] = 'LDAP encoding';
 $string['auth_ldap_login_settings'] = 'Login settings';
 $string['auth_ldap_memberattribute'] = 'Optional: Overrides user member attribute, when users belongs to a group. Usually \'member\'';
-$string['auth_ldap_memberattribute_isdn'] = 'Optional: Overrides handling of member attribute values, either 0 or 1';
+$string['auth_ldap_memberattribute_isdn'] = 'Overrides handling of member attribute values';
 $string['auth_ldap_memberattribute_isdn_key'] = 'Member attribute uses dn';
 $string['auth_ldap_memberattribute_key'] = 'Member attribute';
 $string['auth_ldap_noconnect'] = 'LDAP-module cannot connect to server: {$a}';
@@ -164,8 +164,4 @@ $string['diag_toooldversion'] = 'It is very unlikely a modern LDAP server uses L
 $string['diag_emptycontext'] = 'Empty context found.';
 $string['diag_contextnotfound'] = 'Context {$a} doesn\'t exist or can\'t be read by bind DN.';
 $string['diag_rolegroupnotfound'] = 'Group {$a->group} for role {$a->localname} doesn\'t exist or can\'t be read by bind DN.';
-
-// Deprecated since Moodle 3.4.
-$string['auth_ldap_creators'] = 'List of groups or contexts whose members are allowed to create new courses. Separate multiple groups with \';\'. Usually something like \'cn=teachers,ou=staff,o=myorg\'';
-$string['auth_ldap_creators_key'] = 'Creators';
 $string['privacy:metadata'] = 'The LDAP server authentication plugin does not store any personal data.';

@@ -13,6 +13,10 @@
     }
 }
 
+.dir-rtl .custom-select {
+    background-position: 0.75rem center;
+}
+
 /*rtl:raw:
 .dropdown-menu {
     right: auto;
@@ -20,3 +24,7 @@
     text-align: right;
 }
 */
+
+.dir-rtl .custom-switch .custom-control-input:checked ~ .custom-control-label::after {
+    transform: translateX(-($custom-switch-width - $custom-control-indicator-size));
+}

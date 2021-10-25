@@ -59,13 +59,23 @@ class core_block_external extends external_api {
                 'visible'       => new external_value(PARAM_BOOL, 'Whether the block is visible.', VALUE_OPTIONAL),
                 'contents'      => new external_single_structure(
                     array(
-                        'title'         => new external_value(PARAM_TEXT, 'Block title.'),
+                        'title'         => new external_value(PARAM_RAW, 'Block title.'),
                         'content'       => new external_value(PARAM_RAW, 'Block contents.'),
                         'contentformat' => new external_format_value('content'),
                         'footer'        => new external_value(PARAM_RAW, 'Block footer.'),
                         'files'         => new external_files('Block files.'),
                     ),
                     'Block contents (if required).', VALUE_OPTIONAL
+                ),
+                'configs' => new external_multiple_structure(
+                    new external_single_structure(
+                        array(
+                            'name' => new external_value(PARAM_RAW, 'Name.'),
+                            'value' => new external_value(PARAM_RAW, 'JSON encoded representation of the config value.'),
+                            'type' => new external_value(PARAM_ALPHA, 'Type (instance or plugin).'),
+                        )
+                    ),
+                    'Block instance and plugin configuration settings.', VALUE_OPTIONAL
                 ),
             ), 'Block information.'
         );
@@ -81,6 +91,9 @@ class core_block_external extends external_api {
      */
     private static function get_all_current_page_blocks($includeinvisible = false, $returncontents = false) {
         global $PAGE, $OUTPUT;
+
+        // Set page URL to a fake URL to avoid errors.
+        $PAGE->set_url(new \moodle_url('/webservice/core_block_external/'));
 
         // Load the block instances for all the regions.
         $PAGE->blocks->load_blocks($includeinvisible);
@@ -110,6 +123,17 @@ class core_block_external extends external_api {
                 if ($returncontents) {
                     $block['contents'] = (array) $blockinstances[$bc->blockinstanceid]->get_content_for_external($OUTPUT);
                 }
+                $configs = (array) $blockinstances[$bc->blockinstanceid]->get_config_for_external();
+                foreach ($configs as $type => $data) {
+                    foreach ((array) $data as $name => $value) {
+                        $block['configs'][] = [
+                            'name' => $name,
+                            'value' => json_encode($value), // Always JSON encode, we may receive non-scalar values.
+                            'type' => $type,
+                        ];
+                    }
+                }
+
                 $allblocks[] = $block;
             }
         }

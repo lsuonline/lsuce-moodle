@@ -27,6 +27,7 @@ namespace mod_forum\local\exporters;
 defined('MOODLE_INTERNAL') || die();
 
 use mod_forum\local\entities\post as post_entity;
+use mod_forum\local\entities\discussion as discussion_entity;
 use mod_forum\local\exporters\author as author_exporter;
 use mod_forum\local\factories\exporter as exporter_factory;
 use core\external\exporter;
@@ -115,6 +116,12 @@ class post extends exporter {
             'isprivatereply' => ['type' => PARAM_BOOL],
             'haswordcount' => ['type' => PARAM_BOOL],
             'wordcount' => [
+                'type' => PARAM_INT,
+                'optional' => true,
+                'default' => null,
+                'null' => NULL_ALLOWED
+            ],
+            'charcount' => [
                 'type' => PARAM_INT,
                 'optional' => true,
                 'default' => null,
@@ -386,7 +393,7 @@ class post extends exporter {
             $author,
             $authorcontextid,
             $authorgroups,
-            ($canview && !$isdeleted),
+            $canview,
             $this->related
         );
         $exportedauthor = $authorexporter->export($output);
@@ -396,22 +403,27 @@ class post extends exporter {
 
         if ($loadcontent) {
             $subject = $post->get_subject();
-            $timecreated = $post->get_time_created();
+            $timecreated = $this->get_start_time($discussion, $post);
             $message = $this->get_message($post);
         } else {
             $subject = $isdeleted ? get_string('forumsubjectdeleted', 'forum') : get_string('forumsubjecthidden', 'forum');
             $message = $isdeleted ? get_string('forumbodydeleted', 'forum') : get_string('forumbodyhidden', 'forum');
             $timecreated = null;
-
-            if ($isdeleted) {
-                $exportedauthor->fullname = null;
-            }
         }
 
         $replysubject = $subject;
         $strre = get_string('re', 'forum');
         if (!(substr($replysubject, 0, strlen($strre)) == $strre)) {
             $replysubject = "{$strre} {$replysubject}";
+        }
+
+        $showwordcount = $forum->should_display_word_count();
+        if ($showwordcount) {
+            $wordcount = $post->get_wordcount() ?? count_words($message);
+            $charcount = $post->get_charcount() ?? count_letters($message);
+        } else {
+            $wordcount = null;
+            $charcount = null;
         }
 
         return [
@@ -428,8 +440,9 @@ class post extends exporter {
             'unread' => ($loadcontent && $readreceiptcollection) ? !$readreceiptcollection->has_user_read_post($user, $post) : null,
             'isdeleted' => $isdeleted,
             'isprivatereply' => $isprivatereply,
-            'haswordcount' => $forum->should_display_word_count(),
-            'wordcount' => $forum->should_display_word_count() ? count_words($message) : null,
+            'haswordcount' => $showwordcount,
+            'wordcount' => $wordcount,
+            'charcount' => $charcount,
             'capabilities' => [
                 'view' => $canview,
                 'edit' => $canedit,
@@ -626,9 +639,26 @@ class post extends exporter {
     private function get_author_subheading_html(stdClass $exportedauthor, int $timecreated) : string {
         $fullname = $exportedauthor->fullname;
         $profileurl = $exportedauthor->urls['profile'] ?? null;
-        $formatteddate = userdate($timecreated, get_string('strftimedaydatetime', 'core_langconfig'));
         $name = $profileurl ? "<a href=\"{$profileurl}\">{$fullname}</a>" : $fullname;
-        $date = "<time>{$formatteddate}</time>";
+        $date = userdate_htmltime($timecreated, get_string('strftimedaydatetime', 'core_langconfig'));
         return get_string('bynameondate', 'mod_forum', ['name' => $name, 'date' => $date]);
+    }
+
+    /**
+     * Get the start time for a post.
+     *
+     * @param discussion_entity $discussion entity
+     * @param post_entity $post entity
+     * @return int The start time (timestamp) for a post
+     */
+    private function get_start_time(discussion_entity $discussion, post_entity $post) {
+        global $CFG;
+
+        $posttime = $post->get_time_created();
+        $discussiontime = $discussion->get_time_start();
+        if (!empty($CFG->forum_enabletimedposts) && ($discussiontime > $posttime)) {
+            return $discussiontime;
+        }
+        return $posttime;
     }
 }

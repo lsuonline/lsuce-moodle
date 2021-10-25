@@ -34,6 +34,7 @@ use core_component;
 use moodle_exception;
 use context_system;
 use theme_config;
+use core\external\output\icon_system\load_fontawesome_map;
 
 /**
  * This class contains a list of webservice functions related to output.
@@ -51,7 +52,7 @@ class external extends external_api {
     public static function load_template_parameters() {
         return new external_function_parameters(
                 array('component' => new external_value(PARAM_COMPONENT, 'component containing the template'),
-                      'template' => new external_value(PARAM_ALPHANUMEXT, 'name of the template'),
+                      'template' => new external_value(PARAM_SAFEPATH, 'name of the template'),
                       'themename' => new external_value(PARAM_ALPHANUMEXT, 'The current theme.'),
                       'includecomments' => new external_value(PARAM_BOOL, 'Include comments or not', VALUE_DEFAULT, false)
                          )
@@ -102,7 +103,7 @@ class external extends external_api {
     public static function load_template_with_dependencies_parameters() {
         return new external_function_parameters([
             'component' => new external_value(PARAM_COMPONENT, 'component containing the template'),
-            'template' => new external_value(PARAM_ALPHANUMEXT, 'name of the template'),
+            'template' => new external_value(PARAM_SAFEPATH, 'name of the template'),
             'themename' => new external_value(PARAM_ALPHANUMEXT, 'The current theme.'),
             'includecomments' => new external_value(PARAM_BOOL, 'Include comments or not', VALUE_DEFAULT, false),
             'lang' => new external_value(PARAM_LANG, 'lang', VALUE_DEFAULT, null),
@@ -205,21 +206,9 @@ class external extends external_api {
      * @return array the mapping
      */
     public static function load_fontawesome_icon_map() {
-        $instance = icon_system::instance(icon_system::FONTAWESOME);
+        global $PAGE;
 
-        $map = $instance->get_icon_name_map();
-
-        $result = [];
-
-        foreach ($map as $from => $to) {
-            list($component, $pix) = explode(':', $from);
-            $one = [];
-            $one['component'] = $component;
-            $one['pix'] = $pix;
-            $one['to'] = $to;
-            $result[] = $one;
-        }
-        return $result;
+        return load_fontawesome_map::execute($PAGE->theme->name);
     }
 
     /**
@@ -228,13 +217,6 @@ class external extends external_api {
      * @return external_description
      */
     public static function load_fontawesome_icon_map_returns() {
-        return new external_multiple_structure(new external_single_structure(
-            array(
-                'component' => new external_value(PARAM_COMPONENT, 'The component for the icon.'),
-                'pix' => new external_value(PARAM_RAW, 'Value to map the icon from.'),
-                'to' => new external_value(PARAM_RAW, 'Value to map the icon to.')
-            )
-        ));
+        return load_fontawesome_map::execute_returns();
     }
 }
-

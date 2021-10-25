@@ -347,16 +347,46 @@ class MHUtil {
             $fields = 'id,category,fullname,shortname,idnumber,visible';
             $courses = enrol_get_users_courses($userid, true, $fields);
 
-            // Get equivalent roles to Tegrity student role.
-            list($intype, $rparams) = $DB->get_in_or_equal(array('student'));
-            if (!$studentroles = $DB->get_records_select('role', " archetype $intype ", $rparams)) {
-                $studentroles = array();
-            }
+            // Get all roles from DB.
+            $roles = $DB->get_records('role', null, '', 'shortname,id,archetype');
 
-            // Get equivalent roles to Tegrity instructor role.
-            list($intype, $rparams) = $DB->get_in_or_equal(array('teacher', 'editingteacher'));
-            if (!$instructorroles = $DB->get_records_select('role', " archetype $intype ", $rparams)) {
-                $instructorroles = array();
+            // Get equivalent roles to Tegrity student and instructor roles.
+            $studentroles = array();
+            $instructorroles = array();
+            if ($roles) {
+                // Student roles.
+                if ($shortnames = self::get_role_shortnames_from_setting('block_mhaairs_student_roles')) {
+                    // Get role ids for configured short name.
+                    foreach ($shortnames as $name) {
+                        if (!empty($roles[$name])) {
+                            $studentroles[$roles[$name]->id] = $name;
+                        }
+                    }
+                } else {
+                    // Get role ids for default archetypes.
+                    foreach ($roles as $role) {
+                        if ($role->archetype == 'student') {
+                            $studentroles[$role->id] = $role->shortname;
+                        }
+                    }
+                }
+
+                // Instructor roles.
+                if ($shortnames = self::get_role_shortnames_from_setting('block_mhaairs_instructor_roles')) {
+                    // Get role ids for configured short name.
+                    foreach ($shortnames as $name) {
+                        if (!empty($roles[$name])) {
+                            $instructorroles[$roles[$name]->id] = $name;
+                        }
+                    }
+                } else {
+                    // Get role ids for default archetypes.
+                    foreach ($roles as $role) {
+                        if ($role->archetype == 'editingteacher' or $role->archetype == 'teacher') {
+                            $instructorroles[$role->id] = $role->shortname;
+                        }
+                    }
+                }
             }
 
             foreach ($courses as $course) {
@@ -497,6 +527,27 @@ class MHUtil {
         $url = new moodle_url($serviceurl, array('token' => $encodedtoken));
         return $url;
     }
+
+    /**
+     * Returns a list of roles short names from a setting.
+     * @return array|null
+     */
+    protected static function get_role_shortnames_from_setting($settingname) {
+        global $CFG;
+
+        if (!empty($CFG->{$settingname})) {
+            $roleshortnames = [];
+            $shortnames = explode(',', $CFG->{$settingname});
+            foreach ($shortnames as $name) {
+                $name = s($name);
+                $roleshortnames[] = trim($name);
+            }
+            return array_unique($roleshortnames);
+        }
+
+        return null;
+    }
+
 }
 
 /**
@@ -610,10 +661,23 @@ class MHLog {
      * @param string $data
      * @return int|bool
      */
-    public function log($data) {
+    public function log($data, $rename = false) {
         if ($this->logenabled) {
-            if ($filepath = $this->filepath) {
-                return file_put_contents($this->filepath, $data.PHP_EOL, FILE_APPEND);
+            if ($this->filepath) {
+                // If we need to rename, we add an X in the file name.
+                // This is meant to allow identifying failed requests
+                // In the file names.
+                if ($rename) {
+                    $currentpath = $this->filepath;
+                    $this->_filepath = preg_replace('/(mhaairs_\d{8}_\d{6}_)/', '$1X_', $currentpath);
+                    if (file_exists($currentpath)) {
+                        $currentcontent = file_get_contents($currentpath);
+                        file_put_contents($this->filepath, $currentcontent, FILE_APPEND);
+                        unlink($currentpath);
+                    }
+                }
+                $line = $this->time_stamp. ': '. $data;
+                return file_put_contents($this->filepath, $line.PHP_EOL, FILE_APPEND);
             }
         }
         return false;
@@ -639,7 +703,7 @@ class MHLog {
         if ($this->_filepath === null) {
             if ($dir = $this->dirpath) {
                 $sep = DIRECTORY_SEPARATOR;
-                $fileprefix = userdate(time(), 'mhaairs_%Y-%m-%d_%H-%M-%S_');
+                $fileprefix = userdate(time(), 'mhaairs_%Y%m%d_%H%M%S_');
                 while (empty($this->_filepath)) {
                     $name = uniqid($fileprefix, true);
                     $fullname = "{$dir}{$sep}{$name}.log";
@@ -658,8 +722,7 @@ class MHLog {
      * @return string
      */
     public function get_time_stamp() {
-        $timeformat = get_string('strftimedatetime', 'core_langconfig');
-        return userdate(time(), $timeformat);
+        return userdate(time(), '%Y%m%d %H%M%S');
     }
 
     /**

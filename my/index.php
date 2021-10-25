@@ -52,12 +52,12 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 
 $strmymoodle = get_string('myhome');
 
-// BEGIN LSU /my Change.
+// BEGIN LSU site_home requirement.
 // Requires non priveleged users to use site_home instead of dashboard.
- if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
-     redirect(new moodle_url('/', array('redirect' => 0)));
- }
-// END LSU /my Change.
+if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
+    redirect(new moodle_url('/', array('redirect' => 0)));
+}
+// END LSU site_home requirement.
 
 if (isguestuser()) {  // Force them to see system default, no editing allowed
     // If guests are not allowed my moodle, send them to front page.
@@ -69,14 +69,15 @@ if (isguestuser()) {  // Force them to see system default, no editing allowed
     $USER->editing = $edit = 0;  // Just in case
     $context = context_system::instance();
     $PAGE->set_blocks_editing_capability('moodle/my:configsyspages');  // unlikely :)
-    $header = "$SITE->shortname: $strmymoodle (GUEST)";
+    $strguest = get_string('guest');
+    $header = "$SITE->shortname: $strmymoodle ($strguest)";
     $pagetitle = $header;
 
 } else {        // We are trying to view or edit our own My Moodle page
     $userid = $USER->id;  // Owner of the page
     $context = context_user::instance($USER->id);
     $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
-    $header = fullname($USER);
+    $header = "$SITE->shortname: $strmymoodle";
     $pagetitle = $strmymoodle;
 }
 
@@ -169,6 +170,10 @@ if (empty($CFG->forcedefaultmymoodle) && $PAGE->user_allowed_editing()) {
 }
 
 echo $OUTPUT->header();
+
+if (core_userfeedback::should_display_reminder()) {
+    core_userfeedback::print_reminder_block();
+}
 
 echo $OUTPUT->custom_block_region('content');
 

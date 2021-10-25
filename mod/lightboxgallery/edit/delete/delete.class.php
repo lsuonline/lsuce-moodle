@@ -32,10 +32,7 @@ class edit_delete extends edit_base {
 
     public function process_form() {
         global $CFG, $page;
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
-        $image->delete_file();
+        $this->lbgimage->delete_file();
         redirect($CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$this->cm->id.'&page='.$page.'&editing=1');
     }
 

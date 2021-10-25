@@ -22,17 +22,11 @@ interface post_filtered {
 }
 
 abstract class post_grades_screen {
-    public function is_law() {
-        $class = get_class($this);
-        return preg_match('/law/', $class) ? true : false;
-    }
 
     public function get_return_state() {
         require_once(dirname(__FILE__) . '/returnlib.php');
 
-        if (!$this->is_law()) {
-            return new post_grades_good_return();
-        }
+        return new post_grades_good_return();
 
         $s = ues::gen_str('block_post_grades');
 
@@ -40,7 +34,7 @@ abstract class post_grades_screen {
         $sections = ues_section::from_course($this->course, true);
         $section = post_grades::find_section($this->group, $sections);
 
-        // Filter Audits at teh screen level.
+        // Filter Audits at the screen level.
         $auditers = post_grades::pull_auditing_students($section);
         foreach ($auditers as $audit) {
             unset($this->students[$audit->id]);
@@ -48,68 +42,6 @@ abstract class post_grades_screen {
 
         // Shim for 1.9.
         $course = $section->course()->fill_meta();
-
-        if ($course->course_grade_type == 'LP') {
-            $scale = get_config('block_post_grades', 'scale');
-
-            $courseitem = grade_item::fetch_course_item($this->course->id);
-
-            // Force scale always for pass/fail courses.
-            if ($courseitem->scaleid != $scale) {
-                $courseitem->gradetype = 2;
-                $courseitem->scaleid = $scale;
-                $courseitem->gradepass = 2.0;
-
-                $courseitem->update();
-            }
-        }
-
-        $passthrough = array('CLI', 'IND');
-
-        $legalwriting = !empty($course->course_legal_writing);
-        $exception = !empty($course->exception);
-
-        if ($course->course_type == 'SEM') {
-            $return = new post_grades_no_item_return($this->course);
-        } else if ($course->course_first_year and $legalwriting) {
-            $return = new post_grades_no_item_return($this->course);
-
-            if ($return->is_ready() and count($sections) > 1) {
-                // Perform compliance on everyone.
-                $constructor = $this->constructor();
-                $cloned = $constructor($this->period, $this->course, 0);
-
-                $compliances = array(
-                    new post_grades_class_size(
-                        $cloned->students, $course, $this->course
-                    ),
-                    new post_grades_class_size(
-                        $this->students, $course, $this->course
-                    )
-                );
-
-                $titles = array(
-                    $s('course_compliance'),
-                    $s('section_compliance', $this->group->name)
-                );
-
-                return new post_grades_sequence_compliance(
-                    $return, $compliances, $titles
-                );
-            }
-        } else if ($course->course_first_year) {
-            // Anonymous grade checks.
-            $return = new post_grades_no_anonymous_item_return($this->course);
-        } else if ($course->course_grade_type == 'LP' or $exception or
-            in_array($course->course_type, $passthrough)) {
-
-            $return = new post_grades_no_item_return($this->course);
-        } else {
-            // Anonymous grade checks.
-            $return = new post_grades_no_anonymous_item_return($this->course);
-        }
-
-        return new post_grades_compliance_return($return, $this->students, $course);
     }
 
     public abstract function html();

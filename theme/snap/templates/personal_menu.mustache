@@ -23,6 +23,7 @@
 <nav id="snap-pm" tabindex="-1">
     <div id="snap-pm-inner">
         <!-- Header -->
+        {{#advancedfeeds}} <feed-error-modal></feed-error-modal> {{/advancedfeeds}}
         <header id="snap-pm-header" class="clearfix">
             <div class="pull-right">
                 <a id="snap-pm-close" class="js-snap-pm-trigger snap-action-icon snap-icon-close" href="#">
@@ -46,14 +47,8 @@
 
         <!-- Content -->
         <div id="snap-pm-content" class="row">
+            <!-- Courses -->
             <section id="snap-pm-courses" class="col-lg-9">
-                <h2 class="nav">Courses Help Links
-                    {{#cashelp}}
-                        {{prefix}}&nbsp;<a href="{{link}}"{{#target}} target="{{target}}"{{/target}}>{{title}}</a>
-                    {{/cashelp}}        
-                </h2>
-
-                <!-- Courses -->
                 <h2 class="sr-only">{{#str}}courses{{/str}}</h2>
 
 {{!
@@ -61,7 +56,7 @@
 }}
 
                 {{#coursenav}}
-                <!-- Nav tabs -->
+                    <!-- Nav tabs -->
                 <div id="snap-pm-accessible-tab">
                     <ul class="nav nav-tabs" role="tablist" id="snap-pm-courses-nav">
                             <li class="tab active">

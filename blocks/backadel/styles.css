@@ -334,3 +334,13 @@ div.backadel_table {
    margin-left: .5rem;
    margin-right: 0;
 }
+
+.path-blocks.path-blocks-backadel input {
+  float: right;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.path-blocks.path-blocks-backadel form {
+  padding-bottom: 1.5em;
+}

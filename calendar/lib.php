@@ -70,9 +70,15 @@ define('CALENDAR_TF_24', '%H:%M');
 define('CALENDAR_TF_12', '%I:%M %p');
 
 /**
- * CALENDAR_EVENT_GLOBAL - Global calendar event types
+ * CALENDAR_EVENT_GLOBAL - Site calendar event types
+ * @deprecated since 3.8
  */
 define('CALENDAR_EVENT_GLOBAL', 1);
+
+/**
+ * CALENDAR_EVENT_SITE - Site calendar event types
+ */
+define('CALENDAR_EVENT_SITE', 1);
 
 /**
  * CALENDAR_EVENT_COURSE - Course calendar event types
@@ -166,6 +172,7 @@ define('CALENDAR_EVENT_TYPE_ACTION', 1);
  * @property int $userid The user the event is associated with (0 if none)
  * @property int $repeatid If this is a repeated event this will be set to the
  *                          id of the original
+ * @property string $component If created by a plugin/component (other than module), the full frankenstyle name of a component
  * @property string $modulename If added by a module this will be the module name
  * @property int $instance If added by a module this will be the module instance
  * @property string $eventtype The event type
@@ -251,6 +258,10 @@ class calendar_event {
             $data->format = editors_get_preferred_format();
         }
 
+        if (empty($data->component)) {
+            $data->component = null;
+        }
+
         $this->properties = $data;
     }
 
@@ -331,6 +342,7 @@ class calendar_event {
             $context = \context_user::instance($this->properties->userid);
         } else if (isset($this->properties->userid) && $this->properties->userid > 0
             && $this->properties->userid != $USER->id &&
+            !empty($this->properties->modulename) &&
             isset($this->properties->instance) && $this->properties->instance > 0) {
             $cm = get_coursemodule_from_instance($this->properties->modulename, $this->properties->instance, 0,
                 false, MUST_EXIST);
@@ -956,6 +968,22 @@ class calendar_event {
     }
 
     /**
+     * Format the event name using the external API.
+     *
+     * This function should we used when text formatting is required in external functions.
+     *
+     * @return string Formatted name.
+     */
+    public function format_external_name() {
+        if ($this->editorcontext === null) {
+            // Switch on the event type to decide upon the appropriate context to use for this event.
+            $this->editorcontext = $this->get_context();
+        }
+
+        return external_format_string($this->properties->name, $this->editorcontext->id);
+    }
+
+    /**
      * Format the text using the external API.
      *
      * This function should we used when text formatting is required in external functions.
@@ -1268,6 +1296,12 @@ class calendar_information {
      * @param string|null $view preference view options (eg: day, month, upcoming)
      */
     public function add_sidecalendar_blocks(core_calendar_renderer $renderer, $showfilters=false, $view=null) {
+        global $PAGE;
+
+        if (!has_capability('moodle/block:view', $PAGE->context) ) {
+            return;
+        }
+
         if ($showfilters) {
             $filters = new block_contents();
             $filters->content = $renderer->event_filter();
@@ -1517,10 +1551,13 @@ function calendar_get_group_cached($groupid) {
 /**
  * Add calendar event metadata
  *
+ * @deprecated since 3.9
+ *
  * @param stdClass $event event info
  * @return stdClass $event metadata
  */
 function calendar_add_event_metadata($event) {
+    debugging('This function is no longer used', DEBUG_DEVELOPER);
     global $CFG, $OUTPUT;
 
     // Support multilang in event->name.
@@ -1551,8 +1588,8 @@ function calendar_add_event_metadata($event) {
         $event->cmid = $module->id;
     } else if ($event->courseid == SITEID) { // Site event.
         $event->icon = '<img src="' . $OUTPUT->image_url('i/siteevent') . '" alt="' .
-            get_string('globalevent', 'calendar') . '" class="icon" />';
-        $event->cssclass = 'calendar_event_global';
+            get_string('siteevent', 'calendar') . '" class="icon" />';
+        $event->cssclass = 'calendar_event_site';
     } else if ($event->courseid != 0 && $event->courseid != SITEID && $event->groupid == 0) { // Course event.
         $event->icon = '<img src="' . $OUTPUT->image_url('i/courseevent') . '" alt="' .
             get_string('courseevent', 'calendar') . '" class="icon" />';
@@ -1656,9 +1693,9 @@ function calendar_top_controls($type, $data) {
 
     switch ($type) {
         case 'frontpage':
-            $prevlink = calendar_get_link_previous(get_string('monthprev', 'access'), $urlbase, false, false, false,
+            $prevlink = calendar_get_link_previous(get_string('monthprev', 'calendar'), $urlbase, false, false, false,
                 true, $prevmonthtime);
-            $nextlink = calendar_get_link_next(get_string('monthnext', 'access'), $urlbase, false, false, false, true,
+            $nextlink = calendar_get_link_next(get_string('monthnext', 'calendar'), $urlbase, false, false, false, true,
                 $nextmonthtime);
             $calendarlink = calendar_get_link_href(new \moodle_url(CALENDAR_URL . 'view.php', array('view' => 'month')),
                 false, false, false, $time);
@@ -1680,9 +1717,9 @@ function calendar_top_controls($type, $data) {
 
             break;
         case 'course':
-            $prevlink = calendar_get_link_previous(get_string('monthprev', 'access'), $urlbase, false, false, false,
+            $prevlink = calendar_get_link_previous(get_string('monthprev', 'calendar'), $urlbase, false, false, false,
                 true, $prevmonthtime);
-            $nextlink = calendar_get_link_next(get_string('monthnext', 'access'), $urlbase, false, false, false,
+            $nextlink = calendar_get_link_next(get_string('monthnext', 'calendar'), $urlbase, false, false, false,
                 true, $nextmonthtime);
             $calendarlink = calendar_get_link_href(new \moodle_url(CALENDAR_URL . 'view.php', array('view' => 'month')),
                 false, false, false, $time);
@@ -1958,7 +1995,7 @@ function calendar_sub_month($month, $year) {
  * @param int $year the number of the year
  * @param array $eventsbyday event on specific day
  * @param array $durationbyday duration of the event in days
- * @param array $typesbyday event type (eg: global, course, user, or group)
+ * @param array $typesbyday event type (eg: site, course, user, or group)
  * @param array $courses list of courses
  * @return void
  */
@@ -1995,9 +2032,9 @@ function calendar_events_by_day($events, $month, $year, &$eventsbyday, &$duratio
 
             // Mark the day as having such an event.
             if ($event->courseid == SITEID && $event->groupid == 0) {
-                $typesbyday[$eventdaystart]['startglobal'] = true;
-                // Set event class for global event.
-                $events[$event->id]->class = 'calendar_event_global';
+                $typesbyday[$eventdaystart]['startsite'] = true;
+                // Set event class for site event.
+                $events[$event->id]->class = 'calendar_event_site';
             } else if ($event->courseid != 0 && $event->courseid != SITEID && $event->groupid == 0) {
                 $typesbyday[$eventdaystart]['startcourse'] = true;
                 // Set event class for course event.
@@ -2036,7 +2073,7 @@ function calendar_events_by_day($events, $month, $year, &$eventsbyday, &$duratio
         for ($i = $lowerbound + 1; $i <= $upperbound; ++$i) {
             $durationbyday[$i][] = $event->id;
             if ($event->courseid == SITEID && $event->groupid == 0) {
-                $typesbyday[$i]['durationglobal'] = true;
+                $typesbyday[$i]['durationsite'] = true;
             } else if ($event->courseid != 0 && $event->courseid != SITEID && $event->groupid == 0) {
                 $typesbyday[$i]['durationcourse'] = true;
             } else if ($event->groupid) {
@@ -2077,7 +2114,7 @@ function calendar_set_filters(array $courseeventsfrom, $ignorefilters = false, s
     if ($ignorefilters || calendar_show_event_type(CALENDAR_EVENT_COURSE, $user)) {
         $courses = array_keys($courseeventsfrom);
     }
-    if ($ignorefilters || calendar_show_event_type(CALENDAR_EVENT_GLOBAL, $user)) {
+    if ($ignorefilters || calendar_show_event_type(CALENDAR_EVENT_SITE, $user)) {
         $courses[] = SITEID;
     }
     $courses = array_unique($courses);
@@ -2270,6 +2307,11 @@ function calendar_edit_event_allowed($event, $manualedit = false) {
         return has_capability('moodle/course:manageactivities', $context);
     }
 
+    if ($manualedit && !empty($event->component)) {
+        // TODO possibly we can later add a callback similar to core_calendar_event_timestart_updated in the modules.
+        return false;
+    }
+
     // You cannot edit URL based calendar subscription events presently.
     if (!empty($event->subscriptionid)) {
         if (!empty($event->subscription->url)) {
@@ -2318,8 +2360,8 @@ function calendar_edit_event_allowed($event, $manualedit = false) {
  * @return bool Whether the user has permission to delete the event or not.
  */
 function calendar_delete_event_allowed($event) {
-    // Only allow delete if you have capabilities and it is not an module event.
-    return (calendar_edit_event_allowed($event) && empty($event->modulename));
+    // Only allow delete if you have capabilities and it is not an module or component event.
+    return (calendar_edit_event_allowed($event) && empty($event->modulename) && empty($event->component));
 }
 
 /**
@@ -2472,7 +2514,7 @@ function calendar_format_event_time($event, $now, $linkparams = null, $usecommon
  * @return bool True if the tyep should be displayed false otherwise
  */
 function calendar_show_event_type($type, $user = null) {
-    $default = CALENDAR_EVENT_GLOBAL + CALENDAR_EVENT_COURSE + CALENDAR_EVENT_GROUP + CALENDAR_EVENT_USER;
+    $default = CALENDAR_EVENT_SITE + CALENDAR_EVENT_COURSE + CALENDAR_EVENT_GROUP + CALENDAR_EVENT_USER;
 
     if (get_user_preferences('calendar_persistflt', 0, $user) === 0) {
         global $SESSION;
@@ -2498,7 +2540,7 @@ function calendar_show_event_type($type, $user = null) {
  */
 function calendar_set_event_type_display($type, $display = null, $user = null) {
     $persist = get_user_preferences('calendar_persistflt', 0, $user);
-    $default = CALENDAR_EVENT_GLOBAL + CALENDAR_EVENT_COURSE + CALENDAR_EVENT_GROUP
+    $default = CALENDAR_EVENT_SITE + CALENDAR_EVENT_COURSE + CALENDAR_EVENT_GROUP
             + CALENDAR_EVENT_USER + CALENDAR_EVENT_COURSECAT;
     if ($persist === 0) {
         global $SESSION;
@@ -3455,9 +3497,11 @@ function calendar_get_view(\calendar_information $calendar, $view, $includenavig
         $month->set_initialeventsloaded(!$skipevents);
         $month->set_showcoursefilter($view == "month");
         $data = $month->export($renderer);
+        $data->viewingmonth = true;
     } else if ($view == "day") {
         $day = new \core_calendar\external\calendar_day_exporter($calendar, $related);
         $data = $day->export($renderer);
+        $data->viewingday = true;
         $template = 'core_calendar/calendar_day';
     } else if ($view == "upcoming" || $view == "upcoming_mini") {
         $upcoming = new \core_calendar\external\calendar_upcoming_exporter($calendar, $related);
@@ -3465,6 +3509,7 @@ function calendar_get_view(\calendar_information $calendar, $view, $includenavig
 
         if ($view == "upcoming") {
             $template = 'core_calendar/calendar_upcoming';
+            $data->viewingupcoming = true;
         } else if ($view == "upcoming_mini") {
             $template = 'core_calendar/calendar_upcoming_mini';
         }
@@ -3505,6 +3550,9 @@ function calendar_output_fragment_event_form($args) {
     if ($starttime) {
         $formoptions['starttime'] = $starttime;
     }
+    // Let's check first which event types user can add.
+    $eventtypes = calendar_get_allowed_event_types($courseid);
+    $formoptions['eventtypes'] = $eventtypes;
 
     if (is_null($eventid)) {
         if (!empty($courseid)) {
@@ -3514,6 +3562,7 @@ function calendar_output_fragment_event_form($args) {
                 $formoptions['groups'][$groupid] = $groupdata->name;
             }
         }
+
         $mform = new \core_calendar\local\event\forms\create(
             null,
             $formoptions,
@@ -3523,9 +3572,6 @@ function calendar_output_fragment_event_form($args) {
             true,
             $data
         );
-
-        // Let's check first which event types user can add.
-        $eventtypes = calendar_get_allowed_event_types($courseid);
 
         // If the user is on course context and is allowed to add course events set the event type default to course.
         if (!empty($courseid) && !empty($eventtypes['course'])) {
@@ -3663,6 +3709,7 @@ function calendar_get_filter_types() {
         'course',
         'group',
         'user',
+        'other'
     ];
 
     return array_map(function($type) {
@@ -3670,7 +3717,7 @@ function calendar_get_filter_types() {
             'eventtype' => $type,
             'name' => get_string("eventtype{$type}", "calendar"),
             'icon' => true,
-            'key' => 'i/'.$type.'event',
+            'key' => 'i/' . $type . 'event',
             'component' => 'core'
         ];
     }, $types);

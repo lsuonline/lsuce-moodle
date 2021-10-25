@@ -1,6 +1,5 @@
 <?php
-
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -13,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Automatically generated strings for Moodle installer
@@ -39,5 +38,5 @@ $string['clitypevaluedefault'] = 'اكتب قيمة أو اضغط زر الإد�
 $string['cliunknowoption'] = 'خيارات غير معروفة: {$a} الرجاء استخدام -- خيار المساعدة.';
 $string['cliyesnoprompt'] = 'أدخل (Y) و تعني نعم أو (N) و تعني لا';
 $string['environmentrequireinstall'] = 'يجب تثبيته و تمكينه';
-$string['environmentrequireversion'] = 'مطلوب الإصدار {$a->needed} ، و أنت تشغل الإصدار {$a->current}';
+$string['environmentrequireversion'] = 'يتطلب الإصدار {$a->needed}، وأنت تستعمل الإصدار {$a->current}';
 $string['upgradekeyset'] = 'مفتاح التحديث (اتركها فارغة إن لم ترغب بتحديده)';

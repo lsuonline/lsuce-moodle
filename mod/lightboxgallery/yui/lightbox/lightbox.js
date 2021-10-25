@@ -179,10 +179,10 @@ YUI.add('moodle-mod_lightboxgallery-lightbox', function(Y) {
          *
          * @attribute resizeDuration
          * @type Number
-         * @default 0.5
+         * @default 0.05
          */
 		resizeDuration: {
-			value: 0.5,
+			value: 0.05,
 			validator: L.isNumber
 		},
 
@@ -578,15 +578,15 @@ YUI.add('moodle-mod_lightboxgallery-lightbox', function(Y) {
 			var lightBoxImage = this.get("lightboxImage");
 
 			if (this.get(ANIM)) {
-
+			    this._updateDetails();
 				var startOpacity = lightBoxImage.getStyle("display") === "none" ? 0 : lightBoxImage.getStyle("opacity") || 0,
 					anim = new Y.Anim({
 						node: lightBoxImage,
 						from: { opacity: startOpacity },
-						to: { opacity: 1 }
+						to: { opacity: 1 },
+						duration: 0.1
 					});
 
-				anim.on("end", this._updateDetails, this);
                 lightBoxImage.setStyle("width", imgWidth+'px');
                 lightBoxImage.setStyle("height", imgHeight+'px');
 				lightBoxImage.setStyle("opacity", startOpacity).show();
@@ -617,10 +617,7 @@ YUI.add('moodle-mod_lightboxgallery-lightbox', function(Y) {
 				this.get("caption").setContent(caption).show();
 			}
 
-			// If image is part of a set display "Image x of x"
-			if (imageArray.length > 1) {
-				this.get("numberDisplay").setContent(this.get("strings.labelImage") + " " + (activeImage + 1) + " " + this.get("strings.labelOf") + "  " + imageArray.length).show();
-			}
+			this.get("numberDisplay").setContent(this.get("strings.labelImage") + " " + (activeImage + 1) + " " + this.get("strings.labelOf") + "  " + imageArray.length).show();
 
 			var imageDataContainer = this.get("imageDataContainer");
 

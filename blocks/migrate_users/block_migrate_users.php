@@ -136,4 +136,8 @@ class block_migrate_users extends block_base {
     public function has_config() {
         return true;
     }
+
+    function _self_test() {
+        return true;
+    }
 }

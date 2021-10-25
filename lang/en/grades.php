@@ -30,6 +30,7 @@ $string['addfeedback'] = 'Add feedback';
 $string['addgradeletter'] = 'Add a grade letter';
 $string['addidnumbers'] = 'Add ID numbers';
 $string['additem'] = 'Add grade item';
+$string['additionalfeedback'] = 'Additional feedback';
 $string['addoutcome'] = 'Add an outcome';
 $string['addoutcomeitem'] = 'Add outcome item';
 $string['addscale'] = 'Add a scale';
@@ -93,7 +94,7 @@ $string['autosort'] = 'Auto-sort';
 $string['availableidnumbers'] = 'Available ID numbers';
 $string['average'] = 'Average';
 $string['averagesdecimalpoints'] = 'Decimals in column averages';
-$string['averagesdecimalpoints_help'] = 'This setting determines the number of decimal points to display for each average or whether the overall decimal points setting for the category or grade item is used (inherit).';
+$string['averagesdecimalpoints_help'] = 'This setting determines the number of decimal places to display for each average or whether the overall decimal places setting for the category or grade item is used (inherit).';
 $string['averagesdisplaytype'] = 'Column averages display type';
 $string['averagesdisplaytype_help'] = 'This setting determines whether the average (mean) is displayed as real grades, percentages or letters, or whether the display type for the category or grade item is used (inherit).';
 $string['backupwithoutgradebook'] = 'Backup does not contain gradebook configuration';
@@ -118,7 +119,8 @@ $string['categoryname'] = 'Category name';
 $string['categorytotal'] = 'Category total';
 $string['categorytotalname'] = 'Category total name';
 $string['categorytotalfull'] = '{$a->category} total';
-$string['combo'] = 'Tabs and Dropdown menu';
+$string['collapsecriterion'] = 'Collapse criterion';
+$string['combo'] = 'Tabs and drop-down menu';
 $string['compact'] = 'Compact';
 $string['componentcontrolsvisibility'] = 'Whether this grade item is hidden is controlled by the activity settings.';
 $string['contract'] = 'Contract category';
@@ -134,7 +136,7 @@ $string['coursesiamtaking'] = 'Courses I am taking';
 $string['coursesiamteaching'] = 'Courses I am teaching';
 $string['coursescales'] = 'Course scales';
 $string['coursesettings'] = 'Course settings';
-$string['coursesettingsexplanation'] = 'Course settings determine how the gradebook appears for all participants in the course.';
+$string['coursesettingsexplanation'] = 'Course grade settings determine how the gradebook appears for all participants in the course.';
 $string['coursetotal'] = 'Course total';
 $string['createcategory'] = 'Create category';
 $string['createcategoryerror'] = 'Could not create a new category';
@@ -142,8 +144,8 @@ $string['creatinggradebooksettings'] = 'Creating gradebook settings';
 $string['csv'] = 'CSV';
 $string['currentparentaggregation'] = 'Current parent aggregation';
 $string['curveto'] = 'Curve to';
-$string['decimalpoints'] = 'Overall decimal points';
-$string['decimalpoints_help'] = 'This setting determines the number of decimal points to display for each grade. It has no effect on grade calculations, which are made with an accuracy of 5 decimal places.';
+$string['decimalpoints'] = 'Overall decimal places';
+$string['decimalpoints_help'] = 'This setting determines the number of decimal places to display for each grade. It has no effect on grade calculations, which are made with an accuracy of 5 decimal places.';
 $string['default'] = 'Default';
 $string['defaultprev'] = 'Default ({$a})';
 $string['deletecategory'] = 'Delete category';
@@ -153,7 +155,7 @@ $string['displaylettergrade'] = 'Display letter grades';
 $string['displaypercent'] = 'Display percents';
 $string['displaypoints'] = 'Display points';
 $string['displayweighted'] = 'Display weighted grades';
-$string['dropdown'] = 'Dropdown menu';
+$string['dropdown'] = 'Drop-down menu';
 $string['droplow'] = 'Drop the lowest';
 $string['droplow_help'] = 'This setting enables a specified number of the lowest grades to be excluded from the aggregation.';
 $string['droplowestvalue'] = 'Set drop lowest grade value';
@@ -161,6 +163,7 @@ $string['dropped'] = 'Dropped';
 $string['droplowestvalues'] = 'Drop {$a} lowest values';
 $string['dropxlowest'] = 'Drop X lowest';
 $string['dropxlowestwarning'] = 'Note: If you use drop x lowest the grading assumes that all items in the category have the same point value. If point values differ results will be unpredictable';
+$string['duplicatedgradeitem'] = '{$a} (copy)';
 $string['duplicatescale'] = 'Duplicate scale';
 $string['edit'] = 'Edit';
 $string['editcalculation'] = 'Edit calculation';
@@ -194,6 +197,8 @@ $string['errorupdatinggradecategoryaggregateoutcomes'] = 'Error updating the "In
 $string['errorupdatinggradecategoryaggregation'] = 'Error updating the aggregation type of grade category ID {$a->id}';
 $string['errorupdatinggradeitemaggregationcoef'] = 'Error updating the aggregation coefficient (weight or extra credit) of grade item ID {$a->id}';
 $string['eventgradedeleted'] = 'Grade deleted';
+$string['eventgradeitemcreated'] = 'Grade item created';
+$string['eventgradeitemupdated'] = 'Grade item updated';
 $string['eventgradelettercreated'] = 'Grade letter created';
 $string['eventgradeletterdeleted'] = 'Grade letter deleted';
 $string['eventgradeletterupdated'] = 'Grade letter updated';
@@ -205,6 +210,7 @@ $string['eventusergraded'] = 'User graded';
 $string['excluded'] = 'Excluded';
 $string['excluded_help'] = 'If ticked, the grade will not be included in any aggregation.';
 $string['expand'] = 'Expand category';
+$string['expandcriterion'] = 'Expand criterion';
 $string['export'] = 'Export';
 $string['exportalloutcomes'] = 'Export all outcomes';
 $string['exportfeedback'] = 'Include feedback in export';
@@ -243,6 +249,7 @@ $string['full'] = 'Full';
 $string['fullmode'] = 'Change to full view';
 $string['generalsettings'] = 'General settings';
 $string['grade'] = 'Grade';
+$string['grade_help'] = 'The grade to award the student for their work.';
 $string['gradeadministration'] = 'Grade administration';
 $string['gradealreadyupdated'] = '{$a} grades have not been imported because the grades in the import file are older than in the grader report. To proceed with the grade import anyway, use the force import option.';
 $string['gradeanalysis'] = 'Grade analysis';
@@ -266,16 +273,16 @@ $string['gradedisplay'] = 'Grade display';
 $string['gradedisplaytype'] = 'Grade display type';
 $string['gradedisplaytype_help'] = 'This setting determines how grades are displayed in the grader and user reports.
 
-* Real - Actual grades
-* Percentage
-* Letter - Letters or words are used to represent a range of grades';
+* Letter - Letters or words are used to represent a range of grades, as defined in \'Letters\' in the gradebook setup
+* Percentage - Relative to maximum and minimum grades
+* Real - Actual grades or scale values';
 $string['gradedon'] = 'Graded: {$a}';
 $string['gradeexport'] = 'Grade export';
 $string['gradeexportcolumntype'] = '{$a->name} ({$a->extra})';
 $string['gradeexportcustomprofilefields'] = 'Grade export custom profile fields';
 $string['gradeexportcustomprofilefields_desc'] = 'Include these custom profile fields in the grade export, separated by commas.';
-$string['gradeexportdecimalpoints'] = 'Grade export decimal points';
-$string['gradeexportdecimalpoints_desc'] = 'The number of decimal points to display for export. This can be overridden during export.';
+$string['gradeexportdecimalpoints'] = 'Grade export decimal places';
+$string['gradeexportdecimalpoints_desc'] = 'The number of decimal places to display for export. This can be overridden during export.';
 $string['gradeexportdisplaytype'] = 'Grade export display type';
 $string['gradeexportdisplaytype_desc'] = 'Grades can be shown as real grades, as percentages (in reference to the minimum and maximum grades) or as letters (A, B, C etc..) during export. This can be overridden during export.';
 $string['gradeexportdisplaytypes'] = 'Grade export display types';
@@ -312,6 +319,8 @@ $string['grademax'] = 'Maximum grade';
 $string['grademax_help'] = 'This setting determines the maximum grade when using the value grade type. The maximum grade for an activity-based grade item is set on the activity settings page.';
 $string['grademin'] = 'Minimum grade';
 $string['grademin_help'] = 'This setting determines the minimum grade when using the value grade type.';
+$string['gradenotificationmessage'] = 'You have new feedback on your work for "{$a}"';
+$string['gradenotificationsubject'] = 'You have been graded';
 $string['gradeoutcomeitem'] = 'Grade outcome item';
 $string['gradeoutcomes'] = 'Outcomes';
 $string['gradeoutcomescourses'] = 'Course outcomes';
@@ -328,14 +337,13 @@ $string['gradepreferences'] = 'Grade preferences';
 $string['gradepreferenceshelp'] = 'Grade preferences Help';
 $string['gradepublishing'] = 'Enable publishing';
 $string['gradepublishinglink'] = 'Download: {$a}';
-$string['gradepublishing_help'] = 'Enable publishing in exports and imports: Exported grades can be accessed by accessing a URL, without having to log on to a Moodle site. Grades can be imported by accessing such a URL (which means that a Moodle site can import grades published by another site). By default only administrators may use this feature, please educate users before adding required capabilities to other roles (dangers of bookmark sharing and download accelerators, IP restrictions, etc.).';
+$string['gradepublishing_help'] = 'Grade publishing is a way of importing and exporting grades via a URL without being logged in to Moodle. If enabled, administrators and users with the permission to publish grades (by default, users with the role of manager only) are provided with grade export publishing settings in each course gradebook.';
 $string['gradereport'] = 'Grade report';
 $string['graderreport'] = 'Grader report';
 $string['grades'] = 'Grades';
 $string['gradesforuser'] = 'Grades for {$a->user}';
 $string['singleview'] = 'Single view for {$a}';
 $string['gradesonly'] = 'Change to grades only';
-// The following 2 strings were not in 3.11.
 $string['gradesmoduledeletionpendingwarning'] = 'Warning: Activity deletion in progress! Some grades are about to be removed.';
 $string['gradesmoduledeletionprefix'] = '[Deletion in progress]';
 $string['gradessettings'] = 'Grade settings';
@@ -352,6 +360,7 @@ $string['gradevaluetoobig'] = 'One of the grade values is larger than the allowe
 $string['gradeview'] = 'View grade';
 $string['gradewasmodifiedduringediting'] = 'The grade entered for {$a->itemname} for {$a->username} was ignored because it was more recently updated by someone else.';
 $string['gradeweighthelp'] = 'Grade weight help';
+$string['gradingmodulename'] = 'Grading ({$a})';
 $string['groupavg'] = 'Group average';
 $string['hidden'] = 'Hidden';
 $string['hidden_help'] = 'If ticked, grades are hidden from students. A hidden until date may be set if desired, to release grades after grading is completed.';
@@ -448,7 +457,7 @@ $string['letterreal'] = 'Letter (real)';
 $string['letters'] = 'Letters';
 $string['linkedactivity'] = 'Linked activity';
 $string['linkedactivity_help'] = 'This setting specifies an activity to which this outcome item is linked. This may be used to measure student performance on criteria not assessed by the activity grade.';
-$string['linktoactivity'] = 'Link to {$a->name} activity';
+$string['linktoactivity'] = 'Link to {$a->name} activity {$a->title}';
 $string['lock'] = 'Lock';
 $string['locked'] = 'Locked';
 $string['locked_help'] = 'If ticked, grades can no longer be automatically updated by the related activity.';
@@ -468,7 +477,6 @@ $string['max'] = 'Highest';
 $string['maxgrade'] = 'Max grade';
 $string['meanall'] = 'All grades';
 $string['meangraded'] = 'Non-empty grades';
-$string['meangradednozeros'] = 'Non-empty, non-zero grades';
 $string['meanselection'] = 'Grades selected for column averages';
 $string['meanselection_help'] = 'This setting determines whether cells with no grade should be included when calculating the average (mean) for each category or grade item.';
 $string['median'] = 'Median';
@@ -486,7 +494,7 @@ $string['missingitemtypeoreid'] = 'Array key (itemtype or eid) missing from 2nd 
 $string['missingscale'] = 'Scale must be selected';
 $string['mode'] = 'Mode';
 $string['modgrade'] = 'Grade';
-$string['modgrade_help'] = 'Select the type of grading used for this activity. If "scale" is chosen, you can then choose the scale from the "scale" dropdown. If using "point" grading, you can then enter the maximum grade available for this activity.';
+$string['modgrade_help'] = 'Select the type of grading used for this activity. If \'scale\' is chosen, you can then choose the scale from the drop-down menu. If using point grading, you can then enter the maximum grade available for this activity.';
 $string['modgradecantchangegradetype'] = 'You cannot change the type, as grades already exist for this item.';
 $string['modgradecantchangegradetypemsg'] = 'Some grades have already been awarded, so the grade type cannot be changed. If you wish to change the maximum grade, you must first choose whether or not to rescale existing grades.';
 $string['modgradecantchangegradetyporscalemsg'] = 'Some grades have already been awarded, so the grade type and scale cannot be changed.';
@@ -515,7 +523,6 @@ $string['modgradetypenone'] = 'None';
 $string['modgradetypepoint'] = 'Point';
 $string['modgradetypescale'] = 'Scale';
 $string['morethanmax'] = 'The grade entered for {$a->itemname} for {$a->username} is more than the maximum allowed';
-$string['notagrade'] = 'The grade entered for {$a->itemname} for {$a->username} is not a valid number';
 $string['moveselectedto'] = 'Move selected items to';
 $string['movingelement'] = 'Moving {$a}';
 $string['multfactor'] = 'Multiplicator';
@@ -557,6 +564,7 @@ $string['noselecteditems'] = 'no items were selected.';
 $string['notteachererror'] = 'You must be a teacher to use this feature.';
 $string['notenrolled'] = 'You are currently not enrolled in any courses.';
 $string['nousersloaded'] = 'No users loaded';
+$string['nouserstograde'] = 'No users to grade';
 $string['numberofgrades'] = 'Number of grades';
 $string['onascaleof'] = 'on a scale of {$a->grademin} to {$a->grademax}';
 $string['operations'] = 'Operations';
@@ -619,45 +627,45 @@ $string['prefletters'] = 'Grade letters and boundaries';
 $string['prefrows'] = 'Special rows';
 $string['prefshow'] = 'Show/hide toggles';
 $string['previewrows'] = 'Preview rows';
-// $string['privacy:metadata:categorieshistory'] = 'A record of previous versions of grade categories';
-// $string['privacy:metadata:filepurpose'] = 'Feedback files stored in the gradebook for a user.';
-// $string['privacy:metadata:grade_import_newitem'] = 'Temporary table for storing new grade_item names from grade import';
-// $string['privacy:metadata:grade_import_newitem:importcode'] = 'A unique batch code for identifying one batch of imports';
-// $string['privacy:metadata:grade_import_newitem:importer'] = 'User importing the data';
-// $string['privacy:metadata:grade_import_newitem:itemname'] = 'New grade item name';
-// $string['privacy:metadata:grade_import_values'] = 'Temporary table for importing grades';
-// $string['privacy:metadata:grade_import_values:feedback'] = 'Grade feedback';
-// $string['privacy:metadata:grade_import_values:finalgrade'] = 'Raw grade value';
-// $string['privacy:metadata:grade_import_values:importcode'] = 'A unique batch code for identifying one batch of imports';
-// $string['privacy:metadata:grade_import_values:importer'] = 'User importing the data';
-// $string['privacy:metadata:grade_import_values:importonlyfeedback'] = 'Flag if only feedback was imported';
-// $string['privacy:metadata:grade_import_values:userid'] = 'User whose grade was imported';
-// $string['privacy:metadata:grades'] = 'A record of grades';
-// $string['privacy:metadata:grades:aggregationstatus'] = 'The aggregation status';
-// $string['privacy:metadata:grades:aggregationweight'] = 'The weight in aggregation';
-// $string['privacy:metadata:grades:feedback'] = 'The feedback';
-// $string['privacy:metadata:grades:finalgrade'] = 'The grade';
-// $string['privacy:metadata:grades:information'] = 'Additional information about the grade';
-// $string['privacy:metadata:grades:timemodified'] = 'The time when the grade was last modified';
-// $string['privacy:metadata:grades:userid'] = 'The ID of the user whose grade it is';
-// $string['privacy:metadata:grades:usermodified'] = 'The ID of the user who last modified the record';
-// $string['privacy:metadata:gradeshistory'] = 'A record of the previous grades';
-// $string['privacy:metadata:history:loggeduser'] = 'The ID of the user who was logged in when the versioning occurred';
-// $string['privacy:metadata:history:timemodified'] = 'The time when grade versioning occurred';
-// $string['privacy:metadata:itemshistory'] = 'A record of previous versions of grade items';
-// $string['privacy:metadata:outcomes'] = 'A record of outcomes';
-// $string['privacy:metadata:outcomes:timemodified'] = 'The time when the record was modified';
-// $string['privacy:metadata:outcomes:usermodified'] = 'The user who last modified the record';
-// $string['privacy:metadata:outcomeshistory'] = 'A record of previous versions of outcomes';
-// $string['privacy:metadata:scale'] = 'A record of scales';
-// $string['privacy:metadata:scale:timemodified'] = 'The time when the record was last modified';
-// $string['privacy:metadata:scale:userid'] = 'The user who last modified the record';
-// $string['privacy:metadata:scalehistory'] = 'A record of previous versions of scales';
-// $string['privacy:path:relatedtome'] = 'Related to me';
-// $string['privacy:request:historyactiondelete'] = 'Delete';
-// $string['privacy:request:historyactioninsert'] = 'Insert';
-// $string['privacy:request:historyactionupdate'] = 'Update';
-// $string['privacy:request:unknowndeletedgradeitem'] = 'Unknown (the grade item was deleted)';
+$string['privacy:metadata:categorieshistory'] = 'A record of previous versions of grade categories';
+$string['privacy:metadata:filepurpose'] = 'Feedback files stored in the gradebook for a user.';
+$string['privacy:metadata:grade_import_newitem'] = 'Temporary table for storing new grade_item names from grade import';
+$string['privacy:metadata:grade_import_newitem:importcode'] = 'A unique batch code for identifying one batch of imports';
+$string['privacy:metadata:grade_import_newitem:importer'] = 'User importing the data';
+$string['privacy:metadata:grade_import_newitem:itemname'] = 'New grade item name';
+$string['privacy:metadata:grade_import_values'] = 'Temporary table for importing grades';
+$string['privacy:metadata:grade_import_values:feedback'] = 'Grade feedback';
+$string['privacy:metadata:grade_import_values:finalgrade'] = 'Raw grade value';
+$string['privacy:metadata:grade_import_values:importcode'] = 'A unique batch code for identifying one batch of imports';
+$string['privacy:metadata:grade_import_values:importer'] = 'User importing the data';
+$string['privacy:metadata:grade_import_values:importonlyfeedback'] = 'Flag if only feedback was imported';
+$string['privacy:metadata:grade_import_values:userid'] = 'User whose grade was imported';
+$string['privacy:metadata:grades'] = 'A record of grades';
+$string['privacy:metadata:grades:aggregationstatus'] = 'The aggregation status';
+$string['privacy:metadata:grades:aggregationweight'] = 'The weight in aggregation';
+$string['privacy:metadata:grades:feedback'] = 'The feedback';
+$string['privacy:metadata:grades:finalgrade'] = 'The grade';
+$string['privacy:metadata:grades:information'] = 'Additional information about the grade';
+$string['privacy:metadata:grades:timemodified'] = 'The time when the grade was last modified';
+$string['privacy:metadata:grades:userid'] = 'The ID of the user whose grade it is';
+$string['privacy:metadata:grades:usermodified'] = 'The ID of the user who last modified the record';
+$string['privacy:metadata:gradeshistory'] = 'A record of the previous grades';
+$string['privacy:metadata:history:loggeduser'] = 'The ID of the user who was logged in when the versioning occurred';
+$string['privacy:metadata:history:timemodified'] = 'The time when grade versioning occurred';
+$string['privacy:metadata:itemshistory'] = 'A record of previous versions of grade items';
+$string['privacy:metadata:outcomes'] = 'A record of outcomes';
+$string['privacy:metadata:outcomes:timemodified'] = 'The time when the record was modified';
+$string['privacy:metadata:outcomes:usermodified'] = 'The user who last modified the record';
+$string['privacy:metadata:outcomeshistory'] = 'A record of previous versions of outcomes';
+$string['privacy:metadata:scale'] = 'A record of scales';
+$string['privacy:metadata:scale:timemodified'] = 'The time when the record was last modified';
+$string['privacy:metadata:scale:userid'] = 'The user who last modified the record';
+$string['privacy:metadata:scalehistory'] = 'A record of previous versions of scales';
+$string['privacy:path:relatedtome'] = 'Related to me';
+$string['privacy:request:historyactiondelete'] = 'Delete';
+$string['privacy:request:historyactioninsert'] = 'Insert';
+$string['privacy:request:historyactionupdate'] = 'Update';
+$string['privacy:request:unknowndeletedgradeitem'] = 'Unknown (the grade item was deleted)';
 $string['profilereport'] = 'User profile report';
 $string['profilereport_help'] = 'Grade report used on user profile page.';
 $string['publishing'] = 'Publishing';
@@ -669,7 +677,7 @@ $string['quickgrading_help'] = 'If enabled, when editing is turned on, a text in
 Note that when a grade is edited in the grader report, an overridden flag is set, meaning that the grade can no longer be changed from within the related activity.';
 $string['range'] = 'Range';
 $string['rangesdecimalpoints'] = 'Decimals shown in ranges';
-$string['rangesdecimalpoints_help'] = 'This setting determines the number of decimal points to display for each range or whether the overall decimal points setting for the category or grade item is used (inherit).';
+$string['rangesdecimalpoints_help'] = 'This setting determines the number of decimal places to display for each range or whether the overall decimal places setting for the category or grade item is used (inherit).';
 $string['rangesdisplaytype'] = 'Range display type';
 $string['rangesdisplaytype_help'] = 'This setting determines whether the range is displayed as real grades, percentages or letters, or whether the display type for the category or grade item is used (inherit).';
 $string['rank'] = 'Rank';
@@ -722,24 +730,24 @@ $string['showanalysisicon'] = 'Show grade analysis icon';
 $string['showanalysisicon_desc'] = 'Whether to show grade analysis icon by default. If the activity module supports it, the grade analysis icon links to a page with more detailed explanation of the grade and how it was obtained.';
 $string['showanalysisicon_help'] = 'If the activity module supports it, the grade analysis icon links to a page with more detailed explanation of the grade and how it was obtained.';
 $string['showaverage'] = 'Show average';
-$string['showaverage_help'] = 'Show the average column? Students may be able to estimate other student\'s grades if the average is calculated from a small number of grades. For performance reasons the average is approximate if it is dependent on any hidden items.';
+$string['showaverage_help'] = 'Whether to show an average column. Note that participants may be able to estimate others\' grades if the average is calculated from a small number of grades. For performance reasons the average is approximate if it is dependent on any hidden items.';
 $string['showcontributiontocoursetotal'] = 'Show contribution to course total';
 $string['showcontributiontocoursetotal_help'] = 'Whether to show a column of percentages indicating how much each grade item contributes to the user\'s course total percentage (after weighting is applied).';
 $string['showfeedback'] = 'Show feedback';
-$string['showfeedback_help'] = 'Show the feedback column?';
+$string['showfeedback_help'] = 'Whether to show a column for feedback.';
 $string['showgrade'] = 'Show grades';
-$string['showgrade_help'] = 'Show the grade column?';
+$string['showgrade_help'] = 'Whether to show a column for grades.';
 $string['showingaggregatesonly'] = 'Showing aggregates only';
 $string['showingfullmode'] = 'Showing full view';
 $string['showinggradesonly'] = 'Showing grades only';
 $string['showlettergrade'] = 'Show letter grades';
-$string['showlettergrade_help'] = 'Show the letter grade column?';
+$string['showlettergrade_help'] = 'Whether to show a column for letter grades.';
 $string['showrange'] = 'Show ranges';
-$string['showrange_help'] = 'Show the range column?';
+$string['showrange_help'] = 'Whether to show a column for the range.';
 $string['showweight'] = 'Show weightings';
-$string['showweight_help'] = 'Show the grade weight column?';
-$string['rangedecimals'] = 'Range decimal points';
-$string['rangedecimals_help'] = 'The number of decimal points to display for range.';
+$string['showweight_help'] = 'Whether to show a column for the grade weight.';
+$string['rangedecimals'] = 'Range decimal places';
+$string['rangedecimals_help'] = 'The number of decimal places to display for the range.';
 $string['showactivityicons'] = 'Show activity icons';
 $string['showactivityicons_help'] = 'If enabled, activity icons are shown next to activity names.';
 $string['showallhidden'] = 'Show hidden';
@@ -767,7 +775,7 @@ $string['shownumberofgrades_help'] = 'If enabled, the number of grades used when
 $string['showonlyactiveenrol'] = 'Show only active enrolments';
 $string['showonlyactiveenrol_help'] = 'This setting determines, if only active enrolled users will be visible in gradebook report. If enabled suspended users will not be shown in gradebook.';
 $string['showpercentage'] = 'Show percentage';
-$string['showpercentage_help'] = 'Show the percentage value of each grade item?';
+$string['showpercentage_help'] = 'Whether to show the percentage value of each grade item.';
 $string['showquickfeedback'] = 'Show quick feedback';
 $string['showquickfeedback_help'] = 'If enabled, when editing is turned on, a feedback text input box with a dotted border appears for each grade, allowing the feedback for many grades to be edited at the same time. Changes are saved and highlighted when the update button is clicked.
 
@@ -775,7 +783,7 @@ Note that when feedback is edited in the grader report, an overridden flag is se
 $string['showranges'] = 'Show ranges';
 $string['showranges_help'] = 'If enabled, the grader report will contain an additional row displaying the range for each category and grade item.';
 $string['showrank'] = 'Show rank';
-$string['showrank_help'] = 'Show the position of the student in relation to the rest of the class for each grade item?';
+$string['showrank_help'] = 'Whether to show the position of the student in relation to the rest of the class for each grade item.';
 $string['showuserimage'] = 'Show user profile images';
 $string['showuserimage_help'] = 'Whether to show the user\'s profile image next to the name in the grader report.';
 $string['showverbose'] = 'Show {$a->category} {$a->itemmodule} {$a->itemname}';
@@ -867,20 +875,6 @@ $string['writinggradebookinfo'] = 'Writing gradebook settings';
 $string['xml'] = 'XML';
 $string['yes'] = 'Yes';
 $string['yourgrade'] = 'Your grade';
-$string['coursecateditable'] = 'Course category editable';
-$string['coursecateditable_help'] = 'Disabling will make the course category name an uneditable field.';
-
-// LSU enhancement.
-$string['w_ec'] = 'Weighted ' . $string['aggregationcoefextra'];
-$string['w_ec_help'] = 'By default, '.$string['aggregationcoefextra'].' items in either the '.$string['aggregateweightedmean2'].' or '.$string['aggregatesum'].' grade categories are weighted. Uncheck this option to allow extra credit items to simply add points to the aggregated category total.';
-// END LSU enhancement.
-
-// LSU enhancement.
-$string['manipulatecategories'] = 'Manipulate category totals';
-$string['manipulatecategories_help'] = 'Curve and offset category totals';
-$string['gradeitemmanualrecompute'] = 'Manual item recompute';
-$string['gradeitemmanualrecompute_help'] = 'Allow the gradebook to automatically adjust the raw grade boundaries when editing the real grade boundaries for Manual items.<br /><strong>When enabled, you will have the option of manipulating category totals.</strong>';
-// END LSU enhancement.
 
 // BEGIN LSU Better Letters.
 $string['letterscustompercents'] = 'Custom Percentages';
@@ -892,33 +886,35 @@ $string['lettersnames'] = 'Letter names';
 $string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
 // END LSU Better Letters.
 
-// BEGIN LSU Anonymous Grades.
-$string['anonymous'] = 'Anonymous';
-$string['anonymousadjusts'] = 'Anonymous adjusts +/-';
-$string['anonymousadjusts_help'] = 'In anonymous grading, final grades cannot be changed once committed. Adjustments allow changes within the specified constraints.';
-$string['anonymouscategories'] = 'Anonymous categories';
-$string['anonymouscategories_help'] = 'Anonymous grading will be limited to these course categories. If none are selected, then all categories will be allowed to use anonymous grading.';
-$string['anonymousfield'] = 'Anonymous field';
-$string['anonymousfield_help'] = 'The selected profile field will store the anonymous number. Create one [here]({$a}).';
-$string['anonymousgrading'] = 'Anonymous grading';
-$string['anonymousgrading_help'] = 'Enable anonymous grading in Moodle';
-$string['anonymousitem'] = 'Anonymous item';
-$string['anonymouslessthanmin'] = 'The adjustment entered for {$a->itemname} for {$a->username} is less than -{$a->boundary}.<br />Anonymous graded courses do not allow for unlimited grading.';
-$string['anonymousmorethanmax'] = 'The adjustment entered for {$a->itemname} for {$a->username} is more than {$a->boundary}.<br />Anonymous graded courses do not allow for unlimited grading.';
-$string['anonymousnotallowed'] = 'Directly editing anonymous grades is not allowed.';
-// END LSU Anonymous Grades.
+// BEGIN LSU Column Average No Zero.
+$string['meangradednozeros'] = 'Non-empty, non-zero grades';
+// END LSU Column Average No Zero.
 
-// BEGIN LSU Drop Lowest Limit.
+// BEGIN LSU Course Category Editable switch.
+$string['coursecateditable'] = 'Course category editable';
+$string['coursecateditable_help'] = 'Disabling will make the course category name an uneditable field.';
+// END LSU Course Category Editable switch.
+
+// BEGIN LSU Drop Lowest Limiting.
 $string['droplow_limit'] = 'Drop the lowest limit';
 $string['droplow_limit_help'] = 'By applying this setting, the drop setting will be ignored until the number of droppable grades are > than the drop number.';
-// END LSU Drop Lowest Limit.
+// END LSU Drop Lowest Limiting.
 
-// BEGIN LSU FERPA Student Privacy.
+// BEGIN LSU Manual Grade Raw Grade support.
+$string['manipulatecategories'] = 'Manipulate category totals';
+$string['manipulatecategories_help'] = 'Curve and offset category totals';
+$string['gradeitemmanualrecompute'] = 'Manual item recompute';
+$string['gradeitemmanualrecompute_help'] = 'Allow the gradebook to automatically adjust the raw grade boundaries when editing the real grade boundaries for Manual items.<br /><strong>When enabled, you will have the option of manipulating category totals.</strong>';
+// END LSU Manual Grade Raw Grade support.
+
+// BEGIN LSU Grade Privacy Aggreement.
 $string['privacy_ack'] = 'Student privacy';
 $string['privacy_ack_help'] = 'This setting blocks anyone from downloading student grades without confirming they will comply with all laws and policies regarding student rights.';
 $string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
 $string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
-// END LSU FERPA Student Privacy.
+// END LSU Grade Privacy Aggreement.
 
-// Deprecated since 3.0.
-$string['categoriesanditems'] = 'Categories and items';
+// BEGIN LSU SWM unweighted extra credit option
+$string['w_ec'] = 'Weighted ' . $string['aggregationcoefextra'];
+$string['w_ec_help'] = 'By default, '.$string['aggregationcoefextra'].' items in either the '.$string['aggregateweightedmean2'].' or '.$string['aggregatesum'].' grade categories are weighted. Uncheck this option to allow extra credit items to simply add points to the aggregated category total.';
+// END LSU SWM unweighted extra credit option

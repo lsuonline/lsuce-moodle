@@ -94,6 +94,11 @@ class api {
     const MESSAGE_CONVERSATION_DISABLED = 0;
 
     /**
+     * The max message length.
+     */
+    const MESSAGE_MAX_LENGTH = 4096;
+
+    /**
      * Handles searching for messages in the message area.
      *
      * @param int $userid The user id doing the searching
@@ -1312,7 +1317,7 @@ class api {
             // The last known message time is earlier than the one being requested so we can
             // just return an empty result set rather than having to query the DB.
             if ($lastcreated && $lastcreated < $timefrom) {
-                return [];
+                return helper::format_conversation_messages($userid, $convid, []);
             }
         }
 
@@ -1730,9 +1735,10 @@ class api {
      *
      * @param int $touserid the id of the message recipient
      * @param int|null $fromuserid the id of the message sender, null if all messages
+     * @param int|null $timecreatedto mark notifications created before this time as read
      * @return void
      */
-    public static function mark_all_notifications_as_read($touserid, $fromuserid = null) {
+    public static function mark_all_notifications_as_read($touserid, $fromuserid = null, $timecreatedto = null) {
         global $DB;
 
         $notificationsql = "SELECT n.*
@@ -1744,6 +1750,10 @@ class api {
             $notificationsql .= " AND useridfrom = ?";
             $notificationsparams[] = $fromuserid;
         }
+        if (!empty($timecreatedto)) {
+            $notificationsql .= " AND timecreated <= ?";
+            $notificationsparams[] = $timecreatedto;
+        }
 
         $notifications = $DB->get_recordset_sql($notificationsql, $notificationsparams);
         foreach ($notifications as $notification) {
@@ -1753,46 +1763,11 @@ class api {
     }
 
     /**
-     * Marks ALL messages being sent from $fromuserid to $touserid as read.
-     *
-     * Can be filtered by type.
-     *
      * @deprecated since 3.5
-     * @param int $touserid the id of the message recipient
-     * @param int $fromuserid the id of the message sender
-     * @param string $type filter the messages by type, either MESSAGE_TYPE_NOTIFICATION, MESSAGE_TYPE_MESSAGE or '' for all.
-     * @return void
      */
-    public static function mark_all_read_for_user($touserid, $fromuserid = 0, $type = '') {
-        debugging('\core_message\api::mark_all_read_for_user is deprecated. Please either use ' .
-            '\core_message\api::mark_all_notifications_read_for_user or \core_message\api::mark_all_messages_read_for_user',
-            DEBUG_DEVELOPER);
-
-        $type = strtolower($type);
-
-        $conversationid = null;
-        $ignoremessages = false;
-        if (!empty($fromuserid)) {
-            $conversationid = self::get_conversation_between_users([$touserid, $fromuserid]);
-            if (!$conversationid) { // If there is no conversation between the users then there are no messages to mark.
-                $ignoremessages = true;
-            }
-        }
-
-        if (!empty($type)) {
-            if ($type == MESSAGE_TYPE_NOTIFICATION) {
-                self::mark_all_notifications_as_read($touserid, $fromuserid);
-            } else if ($type == MESSAGE_TYPE_MESSAGE) {
-                if (!$ignoremessages) {
-                    self::mark_all_messages_as_read($touserid, $conversationid);
-                }
-            }
-        } else { // We want both.
-            self::mark_all_notifications_as_read($touserid, $fromuserid);
-            if (!$ignoremessages) {
-                self::mark_all_messages_as_read($touserid, $conversationid);
-            }
-        }
+    public static function mark_all_read_for_user() {
+        throw new \coding_exception('\core_message\api::mark_all_read_for_user has been removed. Please either use ' .
+            '\core_message\api::mark_all_notifications_as_read or \core_message\api::mark_all_messages_as_read');
     }
 
     /**
@@ -1844,6 +1819,8 @@ class api {
      * Determines if a user is permitted to send another user a private message.
      * If no sender is provided then it defaults to the logged in user.
      *
+     * @deprecated since 3.8
+     * @todo Final deprecation in MDL-66266
      * @param \stdClass $recipient The user object.
      * @param \stdClass|null $sender The user object.
      * @return bool true if user is permitted, false otherwise.
@@ -1851,22 +1828,39 @@ class api {
     public static function can_post_message($recipient, $sender = null) {
         global $USER;
 
+        debugging('\core_message\api::can_post_message is deprecated, please use ' .
+            '\core_message\api::can_send_message instead.', DEBUG_DEVELOPER);
+
         if (is_null($sender)) {
             // The message is from the logged in user, unless otherwise specified.
             $sender = $USER;
         }
 
+        return self::can_send_message($recipient->id, $sender->id);
+    }
+
+    /**
+     * Determines if a user is permitted to send another user a private message.
+     *
+     * @param int $recipientid The recipient user id.
+     * @param int $senderid The sender user id.
+     * @param bool $evenifblocked This lets the user know, that even if the recipient has blocked the user
+     *        the user is still able to send a message.
+     * @return bool true if user is permitted, false otherwise.
+     */
+    public static function can_send_message(int $recipientid, int $senderid, bool $evenifblocked = false) : bool {
         $systemcontext = \context_system::instance();
-        if (!has_capability('moodle/site:sendmessage', $systemcontext, $sender)) {
+
+        if (!has_capability('moodle/site:sendmessage', $systemcontext, $senderid)) {
             return false;
         }
 
-        if (has_capability('moodle/site:readallmessages', $systemcontext, $sender->id)) {
+        if (has_capability('moodle/site:readallmessages', $systemcontext, $senderid)) {
             return true;
         }
 
         // Check if the recipient can be messaged by the sender.
-        return (self::can_contact_user($recipient->id, $sender->id));
+        return self::can_contact_user($recipientid, $senderid, $evenifblocked);
     }
 
     /**
@@ -1964,10 +1958,15 @@ class api {
             ],
         ];
 
+        $userpicture = new \user_picture($eventdata->userfrom);
+        $userpicture->size = 1; // Use f1 size.
+        $userpicture = $userpicture->get_url($PAGE)->out(false);
+
         $conv = $DB->get_record('message_conversations', ['id' => $conversationid]);
         if ($conv->type == self::MESSAGE_CONVERSATION_TYPE_GROUP) {
             $convextrafields = self::get_linked_conversation_extra_fields([$conv]);
-            // Conversation image.
+            // Conversation images.
+            $customdata['notificationsendericonurl'] = $userpicture;
             $imageurl = isset($convextrafields[$conv->id]) ? $convextrafields[$conv->id]['imageurl'] : null;
             if ($imageurl) {
                 $customdata['notificationiconurl'] = $imageurl;
@@ -1980,12 +1979,15 @@ class api {
             }
             $customdata['conversationname'] = format_string($conv->name, true, ['context' => $convcontext]);
         } else if ($conv->type == self::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL) {
-            $userpicture = new \user_picture($eventdata->userfrom);
-            $customdata['notificationiconurl'] = $userpicture->get_url($PAGE)->out(false);
+            $customdata['notificationiconurl'] = $userpicture;
         }
         $eventdata->customdata = $customdata;
 
         $messageid = message_send($eventdata);
+
+        if (!$messageid) {
+            throw new \moodle_exception('messageundeliveredbynotificationsettings', 'moodle');
+        }
 
         $messagerecord = $DB->get_record('messages', ['id' => $messageid], 'id, useridfrom, fullmessage,
                 timecreated, fullmessagetrust');
@@ -2386,10 +2388,14 @@ class api {
     public static function get_conversation_between_users(array $userids) {
         global $DB;
 
-        $conversations = self::get_individual_conversations_between_users([$userids]);
-        $conversation = $conversations[0];
+        if (empty($userids)) {
+            return false;
+        }
 
-        if ($conversation) {
+        $hash = helper::get_conversation_hash($userids);
+
+        if ($conversation = $DB->get_record('message_conversations', ['type' => self::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL,
+                'convhash' => $hash])) {
             return $conversation->id;
         }
 
@@ -2415,11 +2421,15 @@ class api {
      *
      * Where null is returned for the pairing of [3, 4] since no record exists.
      *
+     * @deprecated since 3.8
      * @param array $useridsets An array of arrays where the inner array is the set of user ids
      * @return stdClass[] Array of conversation records
      */
     public static function get_individual_conversations_between_users(array $useridsets) : array {
         global $DB;
+
+        debugging('\core_message\api::get_individual_conversations_between_users is deprecated and no longer used',
+            DEBUG_DEVELOPER);
 
         if (empty($useridsets)) {
             return [];
@@ -2613,7 +2623,7 @@ class api {
      * @return \stdClass the request
      */
     public static function create_contact_request(int $userid, int $requesteduserid) : \stdClass {
-        global $DB, $PAGE;
+        global $DB, $PAGE, $SITE;
 
         $request = new \stdClass();
         $request->userid = $userid;
@@ -2626,10 +2636,17 @@ class api {
         $userfrom = \core_user::get_user($userid);
         $userfromfullname = fullname($userfrom);
         $userto = \core_user::get_user($requesteduserid);
-        $url = new \moodle_url('/message/pendingcontactrequests.php');
+        $url = new \moodle_url('/message/index.php', ['view' => 'contactrequests']);
 
-        $subject = get_string('messagecontactrequestsnotificationsubject', 'core_message', $userfromfullname);
-        $fullmessage = get_string('messagecontactrequestsnotification', 'core_message', $userfromfullname);
+        $subject = get_string_manager()->get_string('messagecontactrequestsubject', 'core_message', (object) [
+            'sitename' => format_string($SITE->fullname, true, ['context' => \context_system::instance()]),
+            'user' => $userfromfullname,
+        ], $userto->lang);
+
+        $fullmessage = get_string_manager()->get_string('messagecontactrequest', 'core_message', (object) [
+            'url' => $url->out(),
+            'user' => $userfromfullname,
+        ], $userto->lang);
 
         $message = new \core\message\message();
         $message->courseid = SITEID;
@@ -2645,6 +2662,7 @@ class api {
         $message->smallmessage = '';
         $message->contexturl = $url->out(false);
         $userpicture = new \user_picture($userfrom);
+        $userpicture->size = 1; // Use f1 size.
         $userpicture->includetoken = $userto->id; // Generate an out-of-session token for the user receiving the message.
         $message->customdata = [
             'notificationiconurl' => $userpicture->get_url($PAGE)->out(false),
@@ -2941,9 +2959,11 @@ class api {
      *
      * @param int $recipientid
      * @param int $senderid
+     * @param bool $evenifblocked This lets the user know, that even if the recipient has blocked the user
+     *        the user is still able to send a message.
      * @return bool true if recipient hasn't blocked sender and sender can contact to recipient, false otherwise.
      */
-    protected static function can_contact_user(int $recipientid, int $senderid) : bool {
+    protected static function can_contact_user(int $recipientid, int $senderid, bool $evenifblocked = false) : bool {
         if (has_capability('moodle/site:messageanyuser', \context_system::instance(), $senderid) ||
             $recipientid == $senderid) {
             // The sender has the ability to contact any user across the entire site or themselves.
@@ -2953,7 +2973,7 @@ class api {
         // The initial value of $cancontact is null to indicate that a value has not been determined.
         $cancontact = null;
 
-        if (self::is_blocked($recipientid, $senderid)) {
+        if (self::is_blocked($recipientid, $senderid) || $evenifblocked) {
             // The recipient has specifically blocked this sender.
             $cancontact = false;
         }

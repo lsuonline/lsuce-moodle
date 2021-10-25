@@ -133,8 +133,11 @@ if ($mform->is_cancelled()) {
         $data->grademin = 0;
     }
 
-    $hidden      = empty($data->hidden) ? 0: $data->hidden;
-    $hiddenuntil = empty($data->hiddenuntil) ? 0: $data->hiddenuntil;
+    $hide = empty($data->hiddenuntil) ? 0 : $data->hiddenuntil;
+    if (!$hide) {
+        $hide = empty($data->hidden) ? 0 : $data->hidden;
+    }
+
     unset($data->hidden);
     unset($data->hiddenuntil);
 
@@ -155,68 +158,55 @@ if ($mform->is_cancelled()) {
         $data->aggregationcoef2 = $defaults['aggregationcoef2'];
     }
 
-    $grade_item = new grade_item(array('id'=>$id, 'courseid'=>$courseid));
-    $oldmin = $grade_item->grademin;
-    $oldmax = $grade_item->grademax;
-    grade_item::set_properties($grade_item, $data);
-    $grade_item->outcomeid = null;
-
-    // BEGIN LSU Anonymous Grades
-    unset($grade_item->anonymous);
-    // END LSU Anonymous Grades
+    $gradeitem = new grade_item(array('id' => $id, 'courseid' => $courseid));
+    $oldmin = $gradeitem->grademin;
+    $oldmax = $gradeitem->grademax;
+    grade_item::set_properties($gradeitem, $data);
+    $gradeitem->outcomeid = null;
 
     // Handle null decimals value
     if (!property_exists($data, 'decimals') or $data->decimals < 0) {
-        $grade_item->decimals = null;
+        $gradeitem->decimals = null;
     }
 
-    if (empty($grade_item->id)) {
-        $grade_item->itemtype = 'manual'; // all new items to be manual only
-        $grade_item->insert();
-
-        // BEGIN LSU Anonymous Grades check
-        if (isset($data->anonymous) and grade_anonymous::is_supported($course)) {
-            $anon = new grade_anonymous(array('itemid' => $grade_item->id));
-            if (empty($anon->id)) {
-                $anon->insert();
-            }
-        }
-        // END LSU Anonymous Grades check
+    if (empty($gradeitem->id)) {
+        $gradeitem->itemtype = 'manual'; // All new items to be manual only.
+        $gradeitem->insert();
 
         // set parent if needed
         if (isset($data->parentcategory)) {
-            $grade_item->set_parent($data->parentcategory, false);
+            $gradeitem->set_parent($data->parentcategory, false);
         }
 
     } else {
-            // LSU Gradebook enhancement
-            $ec_test = isset($data->extracred);
-            if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
-                $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
-            }
-            if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
-                $grade_item->aggregationcoef2 = 0;
-                $grade_item->weightoverride = 1;
-            }
-            // END LSU Gradebook enhancement
-        $grade_item->update();
+
+        // BEGIN LSU Weighted Mean Extra Credit
+        $ectest = isset($data->extracred);
+        if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ectest == 1) {
+            $gradeitem->aggregationcoef = $gradeitem->aggregationcoef <> 0 ? abs($gradeitem->aggregationcoef) * -1 : -1;
+        }
+        if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
+            $gradeitem->aggregationcoef2 = 0;
+            $gradeitem->weightoverride = 1;
+        }
+
+        $gradeitem->update();
+        // END LSU Weighted Mean Extra Credit
 
         if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {
-            $newmin = $grade_item->grademin;
-            $newmax = $grade_item->grademax;
-            $grade_item->rescale_grades_keep_percentage($oldmin, $oldmax, $newmin, $newmax, 'gradebook');
+            $newmin = $gradeitem->grademin;
+            $newmax = $gradeitem->grademax;
+            $gradeitem->rescale_grades_keep_percentage($oldmin, $oldmax, $newmin, $newmax, 'gradebook');
         }
     }
 
-    // update hiding flag
-    if ($hiddenuntil) {
-        $grade_item->set_hidden($hiddenuntil, false);
-    } else {
-        $grade_item->set_hidden($hidden, false);
+    if ($item->cancontrolvisibility) {
+        // Update hiding flag.
+        $gradeitem->set_hidden($hide, false);
     }
 
-    $grade_item->set_locktime($locktime); // locktime first - it might be removed when unlocking
-    $grade_item->set_locked($locked, false, true);
+    $gradeitem->set_locktime($locktime); // Locktime first - it might be removed when unlocking.
+    $gradeitem->set_locked($locked, false, true);
 
     redirect($returnurl);
 }

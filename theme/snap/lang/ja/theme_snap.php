@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2020 Blackboard Inc. (http://www.blackboard.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,6 +27,7 @@ $string['action:changeassetvisibility'] = 'アセットの視認性をコント�
 $string['action:duplicateasset'] = 'アセットを複製する';
 $string['action:changesectionvisibility'] = 'セクションの視認性をコントロールする';
 $string['action:highlightsectionvisibility'] = 'セクションの可視性を強調表示する';
+$string['action:sectiontoc'] = 'セクションの目次を取得する';
 $string['addanewsection'] = '新しい問題を作成する ...';
 $string['addresourceoractivity'] = '学習アクティビティを作成する';
 $string['admin'] = '管理';
@@ -57,6 +58,7 @@ $string['changecoverimage'] = 'カバーイメージを変更する';
 $string['changefullname'] = 'サイト名を変更する';
 $string['chapters'] = '章';
 $string['choosereadme'] = '<div class="clearfix"><div class="theme_screenshot"><h2>Snap</h2><img class=img-polaroid src="snap/pix/screenshot.jpg" /></div></div>';
+$string['close'] = '閉じる';
 $string['conditional'] = '条件付き';
 $string['contents'] = 'コンテンツ';
 $string['contributed'] = '寄稿済み';
@@ -65,9 +67,11 @@ $string['coursecontacts'] = 'コース管理者';
 $string['coursedisplay'] = 'コース表示';
 $string['coursefootertoggle'] = 'コースフッタ';
 $string['coursefootertoggledesc'] = 'コースフッタには、コース管理者、コース説明、コースでの最近のアクティビティなど、コースページのユーザに役立つ情報が表示されます。';
-$string['courseformatnotification'] = '現在お使いのコース形式はSnapテーマでは完全にサポートされていません。Blackboard Open LMSで最高のエクスペリエンスを実現するには、トピックまたは週次コースの形式をSnapテーマと共に使用することをお勧めします。コース形式は<a href="{$a}">コース設定</a>で変更できます。';
+$string['courseformatnotification'] = '現在お使いのコース形式はSnapテーマでは完全にサポートされていません。Open LMSで最高のエクスペリエンスを実現するには、トピックまたは週次コースの形式をSnapテーマと共に使用することをお勧めします。コース形式は<a href="{$a}">コース設定</a>で変更できます。';
 $string['coursefixydefaulttext'] = '現在どのコースにも登録されていません。<br>登録済みのコースはここに表示されます。';
 $string['coursegrade'] = 'コース評定 :';
+$string['coursepartialrender'] = 'コースセクションの遅延読み込みを有効にする';
+$string['coursepartialrenderdesc'] = '有効にした場合、コースセクションの読み込みは、学生が選択したときにオンデマンドで行われます。これにより、コンテンツが大量にあるコースの読み込みが速くなります。';
 $string['coursenavigation'] = 'コースナビゲーション';
 $string['coursesummaryfilesunsuitable'] = 'カバーイメージを変更する前に、コース概要ファイルを空にしてください';
 $string['coursetools'] = 'コースダッシュボード';
@@ -82,10 +86,12 @@ $string['comingsoon'] = '準備中です！';
 $string['createsection'] = 'セクションを作成する';
 $string['current'] = '処理後';
 $string['customcss'] = 'カスタムCSS';
-$string['customcssdesc'] = '大きな力には大きな責任が伴うことに注意してください。ここで追加されたCSSによって問題が生じた場合、あなたが解決する責任があります。Blackboard Open LMSサポートはCSS関連のコンテンツに関してトラブルシューティングやヘルプを提供しません。';
+$string['customcssdesc'] = '大きな力には大きな責任が伴うことに注意してください。ここで追加されたCSSによって問題が生じた場合、あなたが解決する責任があります。Open LMSサポートはCSS関連のコンテンツに関してトラブルシューティングやヘルプを提供しません。';
 $string['customtopbar'] = 'ナビゲーションバー';
 $string['customisenavbar'] = 'ナビゲーションバーの色を変更する';
 $string['customisenavbutton'] = '[マイコース]ボタンの色を変更する';
+$string['customisecustommenu'] = 'カスタムメニューのテキストの色を変更する';
+$string['custommenutext'] = 'カスタムメニューのテキストの色';
 $string['deadlines'] = '終了日時';
 $string['deadlinestoggle'] = '期限';
 $string['deadlinestoggledesc'] = 'ユーザに対して、登録済みコースの今後の活動の終了日時が表示されます。';
@@ -108,6 +114,8 @@ $string['editcoursesettings'] = 'コース設定';
 $string['editcoursetopic'] = 'セクションを編集する';
 $string['editcustomfooter'] = 'フッタを編集する';
 $string['editcustommenu'] = 'カスタムメニューを編集する';
+$string['error'] = 'エラー';
+$string['errorgettingfeed'] = 'フィード項目の取得中にエラーが発生しました。';
 $string['error:categorycolorinvalidjson'] = 'コースカテゴリのJSONフォーマットが正しくありません';
 $string['error:categorycolorinvalidvalue'] = 'カテゴリ"{$a}"のレコードIDまたはカラー値が無効です';
 $string['error:categorynotfound'] = 'ID"{$a}"のカテゴリレコードは見つかりませんでした';
@@ -119,6 +127,7 @@ $string['error:failedtochangesectionvisibility'] = 'セクションの表示/非
 $string['error:failedtohighlightsection'] = 'セクションの強調表示に失敗しました';
 $string['error:failedtoduplicateasset'] = '複製に失敗しました';
 $string['error:failedtodeleteasset'] = 'アセットの削除に失敗しました';
+$string['error:failedtotoc'] = 'TOCの取得に失敗しました。';
 $string['extension'] = '拡張子 {$a}';
 $string['facebook'] = 'Facebook';
 $string['facebookdesc'] = 'あなたのFacebookページのURL。';
@@ -134,6 +143,14 @@ $string['featurespotsheading'] = '注目スポットのヘッダ';
 $string['featureonetitle'] = '注目スポット1のタイトル';
 $string['featuretwotitle'] = '注目スポット2のタイトル';
 $string['featurethreetitle'] = '注目スポット3のタイトル';
+$string['featureonetitlelink'] = '注目スポット1のタイトルのリンク';
+$string['featuretwotitlelink'] = '注目スポット2のタイトルのリンク';
+$string['featurethreetitlelink'] = '注目スポット3のタイトルのリンク';
+$string['featuretitlelinkdesc'] = 'この注目スポットをリンクするURLを入力します。サイト内に外部または内部のリンクを追加できます。内部リンクを追加する場合は、サイトURLから「/」を含めてコピーしてください。たとえば、コースへのリンクの場合、「/course/view.php?id=160」のようになります。外部リンクを追加する場合は、リンクをhttps://で開始します。';
+$string['featureonetitlecb'] = '注目スポット1を新しいウィンドウで開く';
+$string['featuretwotitlecb'] = '注目スポット2を新しいウィンドウで開く';
+$string['featurethreetitlecb'] = '注目スポット3を新しいウィンドウで開く';
+$string['featuretitlecbdesc'] = '有効にすると、注目スポットに追加されたリンクは新しいウィンドウで開かれます。';
 $string['featureonetext'] = '注目スポット1の内容';
 $string['featuretwotext'] = '注目スポット2の内容';
 $string['featurethreetext'] = '注目スポット3の内容';
@@ -195,7 +212,7 @@ $string['jsontextdescription'] = 'テキストエリアは指定されたJSONを
 "12":"#CC0084",<br>
 "56":"#CC0087",<br>
 "89":"#CCF084"}';
-$string['knowledgebase'] = 'Blackboard Open LMSナレッジベース';
+$string['knowledgebase'] = 'Open LMSナレッジベース';
 $string['list'] = 'リスト';
 $string['linkedin'] = 'LinkedIn';
 $string['linkedindesc'] = 'あなたの組織のLinkedInのURLです。';
@@ -244,12 +261,19 @@ $string['personalmenu'] = 'パーソナルメニュー';
 $string['personalmenufeatures'] = 'パーソナルメニュー機能';
 $string['personalmenulogintoggle'] = 'ログイン時に個人用メニューを表示する';
 $string['personalmenulogintoggledesc'] = 'ログイン後は個人用メニューを開く';
+$string['personalmenuadvancedfeedsenable'] = '高度なフィードを有効にする (実験的)';
+$string['personalmenuadvancedfeedsenabledesc'] = '高度なフィードでは、読み込み時間の高速化を可能にし、コンテンツをオンデマンドでリフレッシュする、個人的なメニュー項目が読み込みまれます。';
+$string['personalmenuadvancedfeedsperpage'] = '高度なフィード項目の表示数';
+$string['personalmenuadvancedfeedsperpagedesc'] = 'フィードで表示する項目の数を選択します。ユーザは[<strong>さらに表示</strong>]を選択して追加項目を表示できます。';
+$string['personalmenuadvancedfeedslifetime'] = '高度なフィードの有効期間';
+$string['personalmenuadvancedfeedslifetimedesc'] = 'ログイン後にフィードがブラウザにキャッシュされる時間を選択します。0を選択するとフィードはブラウザにキャッシュされません。';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
 $string['poster'] = 'カバーイメージ';
 $string['posterdesc'] = 'サイトのフロントページ用の大きいヘッダイメージです。横向きイメージ (1200 x 600ピクセル) 以上が最適です。';
-$string['poweredbyrunby'] = '<a href="https://www.blackboard.com/blackboard-open-lms" target="_blank">Blackboard Open LMS</a> (<a href="https://moodle.com/" target="_blank">Moodle</a>ベースの製品) で構築しています。<br>
-    Copyright &#169; {$a} Blackboard Inc, All Rights Reserved.';
+$string['poweredbyrunby'] = '<a href="https://{$a->subdomain}.openlms.net/" target="_blank" rel="noopener">Open LMS</a>,
+(<a href="https://moodle.com/" target="_blank" rel="noopener">Moodle</a>ベースの製品) で構築しています。<br>
+Copyright &#169; {$a->year} Open LMS, All Rights Reserved.';
 $string['previoussection'] = '前のセクション';
 $string['privacy:metadata:theme_snap_course_favorites:courseid'] = 'ユーザがお気に入りとしてマークしたコースのコースID';
 $string['privacy:metadata:theme_snap_course_favorites:userid'] = 'コースをお気に入りにマークしたユーザのユーザID';
@@ -268,7 +292,9 @@ $string['region-side-top'] = '上';
 $string['released'] = 'リリース済み : {$a}';
 $string['reopened'] = '再オープン';
 $string['resourcedisplay'] = 'リソース表示';
-$string['resourcedisplayhelp'] = '添付ファイルとリンクをコースにどのように表示するか選択します。';
+$string['resourcedisplayhelp'] = '添付ファイルとリンクをコースにどのように表示するか選択します。Snapテーマでは、小さいアクティビティとリソースカードの説明にあるマルチメディアファイルをサポートしていません。';
+$string['displaydescription'] = '説明を表示する';
+$string['displaydescriptionhelp'] = '選択すると、最初に新しいページにリソースとURLアクティビティの説明が表示されます。学生は、説明からコンテンツにアクセスします。';
 $string['search'] = 'コンテンツを検索する';
 $string['seriffont'] = 'Serifフォント';
 $string['seriffont_desc'] = 'このフォントは、ユーザが生成するコンテンツのほとんどに使用されます。Serifフォントを使用すると、コンテンツの読みやすさが増し、人間が書いたもののようになります。';
@@ -291,10 +317,12 @@ $string['topicactions'] = 'トピックアクション';
 $string['twitter'] = 'Twitter';
 $string['twitterdesc'] = 'あなたのTwitterアカウントのURLです。';
 $string['unenrolme'] = '登録抹消する';
+$string['enrolme'] = '受講登録する';
 $string['unread'] = '未読';
 $string['unsupportedcoverimagetype'] = 'サポートされていないカバーイメージタイプ ({$a}) です';
 $string['via'] = '方法 :';
 $string['viewcourse'] = 'コースを表示する';
+$string['viewmore'] = 'さらに表示する';
 $string['viewyourprofile'] = 'プロファイルを表示する';
 $string['viewmyfeedback'] = '私のフィードバックを表示する';
 $string['viewcalendar'] = '私の予定表を表示する';
@@ -328,9 +356,37 @@ $string['cachedef_profile_based_branding'] = 'プロファイルベースのブ�
 $string['cachedef_course_card_bg_image'] = 'コースの背景イメージのキャッシング。';
 $string['cachedef_course_card_teacher_avatar'] = '教師のアバターのキャッシング。';
 $string['cachedef_course_card_teacher_avatar_index'] = '教師のアバターのインデックスのキャッシング。';
-$string['accesforumstringdis'] = '表示オプション';
-$string['accesforumstringmov'] = '移動オプション';
-$string['accescalendarstring'] = 'カレンダー';
+$string['accessforumstringdis'] = '表示オプション';
+$string['accessforumstringmov'] = '移動オプション';
+$string['accesscalendarstring'] = 'カレンダー';
+$string['accessglobalsearchstring'] = '検索';
 $string['admineventwarning'] = 'すべてのコースのイベントを見るには、 ';
 $string['gotocalendarsnap'] = 'サイトカレンダーに移動します。';
 $string['quizattemptswarn'] = '一時停止ユーザの受験を除外する';
+$string['quizfeedback'] = 'フィードバック';
+$string['validratio'] = 'この色の組み合わせは、WCAG 2.0の最小比率値4.5:1に準拠しています';
+$string['invalidratio'] = 'この色の組み合わせは、
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0の最小比率値4.5:1</a>に準拠していません。値 : 「{$a}」';
+$string['imageinvalidratio'] = 'このイメージは、WCAG 2.0の最小比率値4.5:1に準拠していないため、コントラストに問題がある可能性があります。平均ピクセル値 : 「{$a}」';
+$string['catinvalidratio'] = '以下の色のカテゴリは、
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0の最小比率値4.5:1</a>に準拠していません :
+サイトの背景色 (白) に対して : 「{$a->white}」。ナビゲーションバーの背景色に対して : 「{$a->custombar}」。[マイコース]ボタンの背景色に対して : 「{$a->customnav}」';
+$string['imageinvalidratiocategory'] = 'このイメージは、WCAG 2.0最小比率値4.5:1に準拠していないため、テーマの色とのコントラストに問題がある可能性があります。平均ピクセル値 : 「{$a}」';
+$string['lazyload_mod_page'] = 'ページリソースのデフォルトの遅延読み込みを有効にする';
+$string['lazyload_mod_page_description'] = '有効にした場合、この設定は、大量のページがあるコースページの読み込み時間を大幅に短縮します。';
+$string['pmadvancedfeed_viewmore'] = 'さらに表示する';
+$string['pmadvancedfeed_reload'] = 'リフレッシュ';
+$string['multimediacard'] = 'マルチメディアファイルは、Snapテーマのアクティビティカード表示では表示されません。これは小さいアクティビティとリソースカードのホームページとコースページにのみ適用されます。';
+$string['enabledlogin'] = '表示するログインオプション';
+$string['enabledlogindesc'] = '表示する必要があるログインオプションを選択します。';
+$string['moodlelogin'] = 'Moodleログインのみ表示';
+$string['alternativelogin'] = '代替ログインオプションのみ表示';
+$string['bothlogin'] = '両方のログインオプションを表示';
+$string['enabledloginorder'] = 'ログインオプションの順番';
+$string['enabledloginorderdesc'] = '最初に表示するログインオプションを選択します。';
+$string['moodleloginfirst'] = '最初にMoodleログインを表示する';
+$string['alternativeloginfirst'] = '最初に代替ログインオプションを表示する';
+$string['alternativeloginoptions'] = '代替ログインオプション';
+$string['openmessagedrawer'] = 'メッセージングドロワーを開きます。 ';
+$string['design_mod_page'] = 'ページリソースの以前のデザインを有効にする';
+$string['design_mod_page_description'] = '有効にすると、ページリソースのコンテンツが、同じページ、コース、またはフロントページに表示されます。';

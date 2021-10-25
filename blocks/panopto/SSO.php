@@ -34,62 +34,104 @@ require_once(dirname(__FILE__) . '/lib/block_panopto_lib.php');
 
 $servername = required_param('serverName', PARAM_HOST);
 $callbackurl = required_param('callbackURL', PARAM_URL);
+$configuredserverarray = panopto_get_configured_panopto_servers();
 
-if (strpos($callbackurl, 'http%') !== false 
- || strpos($callbackurl, 'https%') !== false) {
-    $callbackurl = urldecode($callbackurl);
+$callbackverified = false;
+foreach($configuredserverarray as  $possibleserver) {
+    if (strcasecmp($possibleserver, $servername) == 0) {
+        $callbackhost = parse_url($callbackurl, PHP_URL_HOST);
+
+        if (stripos($callbackhost, $servername) !== false) {
+            $callbackverified = true;
+            break;
+        }
+    }
 }
 
-// A float doesn't have the required precision.
-$expiration = preg_replace('/[^0-9\.]/', '', required_param('expiration', PARAM_RAW));
+if ($callbackverified) {
+    if (strpos($callbackurl, 'http%') !== false 
+     || strpos($callbackurl, 'https%') !== false) {
+        $callbackurl = urldecode($callbackurl);
+    }
 
-$requestauthcode = required_param('authCode', PARAM_ALPHANUM);
-$action = optional_param('action', '', PARAM_ALPHA);
+    // A float doesn't have the required precision.
+    $expiration = preg_replace('/[^0-9\.]/', '', required_param('expiration', PARAM_RAW));
 
-$relogin = ($action == 'relogin');
+    $requestauthcode = required_param('authCode', PARAM_ALPHANUM);
+    $action = optional_param('action', '', PARAM_ALPHA);
 
-if ($relogin || (isset($USER->username) && ($USER->username == 'guest'))) {
-    require_logout();
+    $relogin = ($action == 'relogin');
 
-    // Return to this page, minus the "action=relogin" parameter.
-    redirect($CFG->wwwroot . '/blocks/panopto/SSO.php' .
-            "?authCode=$requestauthcode" .
-            "&serverName=$servername" .
-            "&expiration=$expiration" .
-            '&callbackURL=' . urlencode($callbackurl));
-    return;
-}
+    if ($relogin || (isset($USER->username) && ($USER->username == 'guest'))) {
+        require_logout();
 
-// No course ID (0).  Don't autologin guests (false).
-require_login(0, false);
+        // Return to this page, minus the "action=relogin" parameter.
+        redirect($CFG->wwwroot . '/blocks/panopto/SSO.php' .
+                "?authCode=$requestauthcode" .
+                "&serverName=$servername" .
+                "&expiration=$expiration" .
+                '&callbackURL=' . urlencode($callbackurl));
+        return;
+    }
 
-// Reproduce canonically-ordered incoming auth payload.
-$requestauthpayload = 'serverName=' . $servername . '&expiration=' . $expiration;
+    // No course ID (0).  Don't autologin guests (false).
+    require_login(0, false);
 
-// Verify passed in parameters are properly signed.
-if (panopto_validate_auth_code($requestauthpayload, $requestauthcode)) {
-    $userkey = panopto_decorate_username($USER->username);
+    // Reproduce canonically-ordered incoming auth payload.
+    $requestauthpayload = 'serverName=' . $servername . '&expiration=' . $expiration;
 
-    // Generate canonically-ordered auth payload string.
-    $responseparams = 'serverName=' . $servername . '&externalUserKey=' . $userkey . '&expiration=' . $expiration;
-    // Sign payload with shared key and hash.
-    $responseauthcode = panopto_generate_auth_code($responseparams);
+    // Verify passed in parameters are properly signed.
+    if (panopto_validate_auth_code($requestauthpayload, $requestauthcode)) {
+        $userkey = panopto_decorate_username($USER->username);
 
-    // Encode user key in case the backslash causes a sequence to be interpreted as an escape sequence
-    // (e.g. in the case of usernames that begin with digits).
-    // Maintain the original canonical string to avoid signature mismatch.
-    $responseparamsencoded = 'serverName=' . $servername . '&externalUserKey=' . urlencode($userkey) . '&expiration=' . $expiration;
 
-    $separator = (strpos($callbackurl, '?') ? '&' : '?');
-    $redirecturl = $callbackurl . $separator . $responseparamsencoded . '&authCode=' . $responseauthcode;
+        $selectedssotype = get_config('block_panopto', 'sso_sync_type');
+        $ssosynctask = new \block_panopto\task\sync_user_login();
 
-    // Redirect to Panopto Focus login page.
-    redirect($redirecturl);
+        $targetserver = new stdClass();
+        $targetserver->name = $servername;
+        $targetserver->appkey = panopto_get_app_key($servername);
+
+        $ssosynctask->set_custom_data(array(
+            'userid' => $USER->id,
+            'targetservers' => array($targetserver)
+        ));
+
+        switch ($selectedssotype) {
+            case 'sync':
+                $ssosynctask->execute();
+            break;
+            case 'asyncsync':
+                \core\task\manager::queue_adhoc_task($ssosynctask);
+            break;
+        }
+        // Generate canonically-ordered auth payload string.
+        $responseparams = 'serverName=' . $servername . '&externalUserKey=' . $userkey . '&expiration=' . $expiration;
+        // Sign payload with shared key and hash.
+        $responseauthcode = panopto_generate_auth_code($responseparams);
+
+        // Encode user key in case the backslash causes a sequence to be interpreted as an escape sequence
+        // (e.g. in the case of usernames that begin with digits).
+        // Maintain the original canonical string to avoid signature mismatch.
+        $responseparamsencoded = 'serverName=' . $servername . '&externalUserKey=' . urlencode($userkey) . '&expiration=' . $expiration;
+
+        $separator = (strpos($callbackurl, '?') ? '&' : '?');
+        $redirecturl = $callbackurl . $separator . $responseparamsencoded . '&authCode=' . $responseauthcode;
+
+        // Redirect to Panopto Focus login page.
+        redirect($redirecturl);
+    } else {
+        echo $OUTPUT->header();
+
+        echo get_string('sso_invalid_authcode', 'block_panopto');
+
+        echo $OUTPUT->footer();
+    }
 } else {
-    echo $OUTPUT->header();
+        echo $OUTPUT->header();
 
-    echo 'Invalid auth code.';
+        echo get_string('sso_invalid_server', 'block_panopto');
 
-    echo $OUTPUT->footer();
+        echo $OUTPUT->footer();
 }
 /* End of file SSO.php */

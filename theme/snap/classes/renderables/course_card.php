@@ -157,10 +157,6 @@ class course_card implements \renderable {
         $this->favorited = $this->service->favorited($this->courseid);
         $togglestrkey = !$this->favorited ? 'favorite' : 'favorited';
         $this->toggletitle = get_string($togglestrkey, 'theme_snap', $this->fullname);
-        if (class_exists('local_cas_help_links_button_renderer')) {
-            $this->apply_cas_course_links($this->course);
-        }
-        $this->switch_my_toggle();
         $this->apply_contact_avatars();
         $this->apply_image_css();
     }
@@ -275,6 +271,7 @@ class course_card implements \renderable {
      * @param [] $avatars
      */
     private function disperse_avatars($avatars) {
+        // Let's put the interesting avatars first!
         if (count($avatars) > 5) {
             // Show 4 avatars and link to show more.
             $this->visibleavatars = array_slice($avatars, 0, 4);
@@ -287,32 +284,7 @@ class course_card implements \renderable {
         $this->hiddenavatarcount = count($this->hiddenavatars);
     }
 
-     /**
-       * Add CAS help links.
-     */
-    private function apply_cas_course_links($course) {
-        $cascourselink = \local_cas_help_links_button_renderer::get_html_for_snap($course);
-        $this->cascourselink = $cascourselink;
-    }
-
     /**
-     * Switch from black favorite toggles.
-     */
-    private function switch_my_toggle() {
-        global $CFG, $USER;
-        require_once($CFG->dirroot.'/user/profile/lib.php');
-        profile_load_custom_fields($USER);
-
-        // Removed due to color issues
-        if ($USER->profile['limitmycolors'] == 1) {
-            $mycolors = 1;
-        } else {
-            $mycolors = 0;
-        }
-        $this->mycolors = $mycolors;
-    }
-
-/**
      * This magic method is here purely so that doing strval($coursecard->model) yields a json encoded version of the
      * object that can be used in a template.
      * @return string

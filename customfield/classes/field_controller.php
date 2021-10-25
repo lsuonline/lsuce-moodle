@@ -124,6 +124,18 @@ abstract class field_controller {
     }
 
     /**
+     * Perform pre-processing of field values, for example those that originate from an external source (e.g. upload course tool)
+     *
+     * Override in plugin classes as necessary
+     *
+     * @param string $value
+     * @return mixed
+     */
+    public function parse_value(string $value) {
+        return $value;
+    }
+
+    /**
      * Validate the data on the field configuration form
      *
      * Plugins can override it
@@ -248,5 +260,24 @@ abstract class field_controller {
     public function get_formatted_name() : string {
         $context = $this->get_handler()->get_configuration_context();
         return format_string($this->get('name'), true, ['context' => $context]);
+    }
+
+    /**
+     * Does this custom field type support being used as part of the block_myoverview
+     * custom field grouping?
+     * @return bool
+     */
+    public function supports_course_grouping(): bool {
+        return false;
+    }
+
+    /**
+     * If this field supports course filtering, then this function needs overriding to
+     * return the formatted values for this.
+     * @param array $values the used values that need grouping
+     * @return array
+     */
+    public function course_grouping_format_values($values): array {
+        return [];
     }
 }

@@ -39,6 +39,7 @@ use context_system;
 use moodle_exception;
 use moodle_url;
 use core_text;
+use core_user;
 use coding_exception;
 
 /**
@@ -138,7 +139,7 @@ class external extends external_api {
             array(
                 'wwwroot' => new external_value(PARAM_RAW, 'Site URL.'),
                 'httpswwwroot' => new external_value(PARAM_RAW, 'Site https URL (if httpslogin is enabled).'),
-                'sitename' => new external_value(PARAM_TEXT, 'Site name.'),
+                'sitename' => new external_value(PARAM_RAW, 'Site name.'),
                 'guestlogin' => new external_value(PARAM_INT, 'Whether guest login is enabled.'),
                 'rememberusername' => new external_value(PARAM_INT, 'Values: 0 for No, 1 for Yes, 2 for optional.'),
                 'authloginviaemail' => new external_value(PARAM_INT, 'Whether log in via email is enabled.'),
@@ -179,6 +180,13 @@ class external extends external_api {
                 'langmenu' => new external_value(PARAM_INT, 'Whether the language menu should be displayed.', VALUE_OPTIONAL),
                 'langlist' => new external_value(PARAM_RAW, 'Languages on language menu.', VALUE_OPTIONAL),
                 'locale' => new external_value(PARAM_RAW, 'Sitewide locale.', VALUE_OPTIONAL),
+                'tool_mobile_minimumversion' => new external_value(PARAM_NOTAGS, 'Minimum required version to access.',
+                    VALUE_OPTIONAL),
+                'tool_mobile_iosappid' => new external_value(PARAM_ALPHANUM, 'iOS app\'s unique identifier.',
+                    VALUE_OPTIONAL),
+                'tool_mobile_androidappid' => new external_value(PARAM_NOTAGS, 'Android app\'s unique identifier.',
+                    VALUE_OPTIONAL),
+                'tool_mobile_setuplink' => new external_value(PARAM_URL, 'App download page.', VALUE_OPTIONAL),
                 'warnings' => new external_warnings(),
             )
         );
@@ -369,12 +377,12 @@ class external extends external_api {
 
     /**
      * Returns a piece of content to be displayed in the Mobile app, it usually returns a template, javascript and
-     * other structured data that will be used to render a view in the Mobile app..
+     * other structured data that will be used to render a view in the Mobile app.
      *
      * Callbacks (placed in \$component\output\mobile) that are called by this web service are responsible for doing the
      * appropriate security checks to access the information to be returned.
      *
-     * @param string $component fame of the component.
+     * @param string $component name of the component.
      * @param string $method function method name in class \$component\output\mobile.
      * @param array $args optional arguments for the method.
      * @return array HTML, JavaScript and other required data and information to create a view in the app.
@@ -423,6 +431,7 @@ class external extends external_api {
             'otherdata'  => $otherdata,
             'files'      => !empty($result['files']) ? $result['files'] : array(),
             'restrict'   => !empty($result['restrict']) ? $result['restrict'] : array(),
+            'disabled'   => !empty($result['disabled']) ? true : false,
         );
     }
 
@@ -465,7 +474,8 @@ class external extends external_api {
                         ),
                     ),
                     'Restrict this content to certain users or courses.'
-                )
+                ),
+                'disabled' => new external_value(PARAM_BOOL, 'Whether we consider this disabled or not.', VALUE_OPTIONAL),
             )
         );
     }
@@ -583,5 +593,162 @@ class external extends external_api {
                 ])
              )
         ]);
+    }
+
+    /**
+     * Returns description of get_tokens_for_qr_login() parameters.
+     *
+     * @return external_function_parameters
+     * @since  Moodle 3.9
+     */
+    public static function get_tokens_for_qr_login_parameters() {
+        return new external_function_parameters (
+            [
+                'qrloginkey' => new external_value(PARAM_ALPHANUMEXT, 'The user key for validating the request.'),
+                'userid' => new external_value(PARAM_INT, 'The user the key belongs to.'),
+            ]
+        );
+    }
+
+    /**
+     * Returns a WebService token (and private token) for QR login
+     *
+     * @param string $qrloginkey the user key generated and embedded into the QR code for validating the request
+     * @param int $userid the user the key belongs to
+     * @return array with the tokens and warnings
+     * @since  Moodle 3.9
+     */
+    public static function get_tokens_for_qr_login($qrloginkey, $userid) {
+        global $PAGE, $DB;
+
+        $params = self::validate_parameters(self::get_tokens_for_qr_login_parameters(),
+            ['qrloginkey' => $qrloginkey, 'userid' => $userid]);
+
+        $context = context_system::instance();
+        // We need this to make work the format text functions.
+        $PAGE->set_context($context);
+
+        $qrcodetype = get_config('tool_mobile', 'qrcodetype');
+        if ($qrcodetype != api::QR_CODE_LOGIN) {
+            throw new moodle_exception('qrcodedisabled', 'tool_mobile');
+        }
+
+        // Only requests from the Moodle mobile or desktop app. This enhances security to avoid any type of XSS attack.
+        // This code goes intentionally here and not inside the check_autologin_prerequisites() function because it
+        // is used by other PHP scripts that can be opened in any browser.
+        if (!\core_useragent::is_moodle_app()) {
+            throw new moodle_exception('apprequired', 'tool_mobile');
+        }
+        api::check_autologin_prerequisites($params['userid']);  // Checks https, avoid site admins using this...
+
+        // Validate and delete the key.
+        $key = validate_user_key($params['qrloginkey'], 'tool_mobile', null);
+        delete_user_key('tool_mobile', $params['userid']);
+
+        // Double check key belong to user.
+        if ($key->userid != $params['userid']) {
+            throw new moodle_exception('invalidkey');
+        }
+
+        // Key validated, check user.
+        $user = core_user::get_user($key->userid, '*', MUST_EXIST);
+        core_user::require_active_user($user, true, true);
+
+        // Generate WS tokens.
+        \core\session\manager::set_user($user);
+
+        // Check if the service exists and is enabled.
+        $service = $DB->get_record('external_services', ['shortname' => MOODLE_OFFICIAL_MOBILE_SERVICE, 'enabled' => 1]);
+        if (empty($service)) {
+            // will throw exception if no token found
+            throw new moodle_exception('servicenotavailable', 'webservice');
+        }
+
+        // Get an existing token or create a new one.
+        $token = external_generate_token_for_current_user($service);
+        $privatetoken = $token->privatetoken; // Save it here, the next function removes it.
+        external_log_token_request($token);
+
+        $result = [
+            'token' => $token->token,
+            'privatetoken' => $privatetoken ?: '',
+            'warnings' => [],
+        ];
+        return $result;
+    }
+
+    /**
+     * Returns description of get_tokens_for_qr_login() result value.
+     *
+     * @return external_description
+     * @since  Moodle 3.9
+     */
+    public static function get_tokens_for_qr_login_returns() {
+        return new external_single_structure(
+            [
+                'token' => new external_value(PARAM_ALPHANUM, 'A valid WebService token for the official mobile app service.'),
+                'privatetoken' => new external_value(PARAM_ALPHANUM, 'Private token used for auto-login processes.'),
+                'warnings' => new external_warnings(),
+            ]
+        );
+    }
+
+    /**
+     * Returns description of validate_subscription_key() parameters.
+     *
+     * @return external_function_parameters
+     * @since  Moodle 3.9
+     */
+    public static function validate_subscription_key_parameters() {
+        return new external_function_parameters(
+            [
+                'key' => new external_value(PARAM_RAW, 'Site subscription temporary key.'),
+            ]
+        );
+    }
+
+    /**
+     * Check if the given site subscription key is valid
+     *
+     * @param string $key subscriptiion temporary key
+     * @return array with the settings and warnings
+     * @since  Moodle 3.9
+     */
+    public static function validate_subscription_key(string $key): array {
+        global $CFG, $PAGE;
+
+        $params = self::validate_parameters(self::validate_subscription_key_parameters(), ['key' => $key]);
+
+        $context = context_system::instance();
+        $PAGE->set_context($context);
+
+        $validated = false;
+        $sitesubscriptionkey = get_config('tool_mobile', 'sitesubscriptionkey');
+        if (!empty($sitesubscriptionkey) && $CFG->enablemobilewebservice && empty($CFG->disablemobileappsubscription)) {
+            $sitesubscriptionkey = json_decode($sitesubscriptionkey);
+            $validated = time() < $sitesubscriptionkey->validuntil && $params['key'] === $sitesubscriptionkey->key;
+            // Delete existing, even if not validated to enforce security and attacks prevention.
+            unset_config('sitesubscriptionkey', 'tool_mobile');
+        }
+
+        return [
+            'validated' => $validated,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Returns description of validate_subscription_key() result value.
+     *
+     * @return external_description
+     * @since  Moodle 3.9
+     */
+    public static function validate_subscription_key_returns() {
+        return new external_single_structure(
+            [
+                'validated' => new external_value(PARAM_BOOL, 'Whether the key is validated or not.'),
+                'warnings' => new external_warnings(),
+            ]
+        );
     }
 }

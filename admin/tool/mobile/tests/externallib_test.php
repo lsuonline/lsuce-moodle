@@ -71,7 +71,7 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
 
         $expected = array(
             'wwwroot' => $CFG->wwwroot,
-            'httpswwwroot' => $CFG->httpswwwroot,
+            'httpswwwroot' => $CFG->wwwroot,
             'sitename' => external_format_string($SITE->fullname, $context->id, true),
             'guestlogin' => $CFG->guestloginbutton,
             'rememberusername' => $CFG->rememberusername,
@@ -95,6 +95,10 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
             'langmenu' => $CFG->langmenu,
             'langlist' => $CFG->langlist,
             'locale' => $CFG->locale,
+            'tool_mobile_minimumversion' => '',
+            'tool_mobile_iosappid' => get_config('tool_mobile', 'iosappid'),
+            'tool_mobile_androidappid' => get_config('tool_mobile', 'androidappid'),
+            'tool_mobile_setuplink' => get_config('tool_mobile', 'setuplink'),
             'warnings' => array()
         );
         $this->assertEquals($expected, $result);
@@ -112,6 +116,7 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
         set_config('autolang', 1);
         set_config('lang', 'a_b');  // Set invalid lang.
         set_config('disabledfeatures', 'myoverview', 'tool_mobile');
+        set_config('minimumversion', '3.8.0', 'tool_mobile');
 
         // Enable couple of issuers.
         $issuer = \core\oauth2\api::create_standard_issuer('google');
@@ -136,6 +141,7 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
         $expected['autolang'] = '1';
         $expected['lang'] = ''; // Expect empty because it was set to an invalid lang.
         $expected['tool_mobile_disabledfeatures'] = 'myoverview';
+        $expected['tool_mobile_minimumversion'] = '3.8.0';
 
         if ($logourl = $OUTPUT->get_logo_url()) {
             $expected['logourl'] = $logourl->out(false);
@@ -216,6 +222,17 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
             array('name' => 'calendar_lookahead', 'value' => $CFG->calendar_lookahead),
             array('name' => 'calendar_maxevents', 'value' => $CFG->calendar_maxevents),
         );
+        $colornumbers = range(1, 10);
+        foreach ($colornumbers as $number) {
+            $expected[] = [
+                'name' => 'core_admin_coursecolor' . $number,
+                'value' => get_config('core_admin', 'coursecolor' . $number)
+            ];
+        }
+        $expected[] = ['name' => 'supportname', 'value' => $CFG->supportname];
+        $expected[] = ['name' => 'supportemail', 'value' => $CFG->supportemail];
+        $expected[] = ['name' => 'supportpage', 'value' => $CFG->supportpage];
+
         $this->assertCount(0, $result['warnings']);
         $this->assertEquals($expected, $result['settings']);
 
@@ -403,6 +420,19 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
         $this->assertEquals(array(1, 2), $result['restrict']['users']);
         $this->assertEquals(array(3, 4), $result['restrict']['courses']);
         $this->assertEmpty($result['files']);
+        $this->assertFalse($result['disabled']);
+    }
+
+    /**
+     * Test get_content disabled.
+     */
+    public function test_get_content_disabled() {
+
+        $paramval = 16;
+        $result = external::get_content('tool_mobile', 'test_view_disabled',
+            array(array('name' => 'param1', 'value' => $paramval)));
+        $result = external_api::clean_returnvalue(external::get_content_returns(), $result);
+        $this->assertTrue($result['disabled']);
     }
 
     /**
@@ -573,5 +603,193 @@ class tool_mobile_external_testcase extends externallib_advanced_testcase {
         $SESSION->lang = 'en'; // We expect filtered text in english.
         $expected = format_text($expected, $course->summaryformat, ['para' => false, 'filter' => true]);
         $this->assertEquals($expected, $data->courses[0]->summary);
+    }
+
+    /*
+     * Test get_tokens_for_qr_login.
+     */
+    public function test_get_tokens_for_qr_login() {
+        global $DB, $CFG, $USER;
+
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $qrloginkey = api::get_qrlogin_key();
+
+        // Generate new tokens, the ones we expect to receive.
+        $service = $DB->get_record('external_services', array('shortname' => MOODLE_OFFICIAL_MOBILE_SERVICE));
+        $token = external_generate_token_for_current_user($service);
+
+        // Fake the app.
+        core_useragent::instance(true, 'Mozilla/5.0 (Linux; Android 7.1.1; Moto G Play Build/NPIS26.48-43-2; wv) ' .
+                'AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.99 Mobile Safari/537.36 MoodleMobile');
+
+        $result = external::get_tokens_for_qr_login($qrloginkey, $USER->id);
+        $result = external_api::clean_returnvalue(external::get_tokens_for_qr_login_returns(), $result);
+
+        $this->assertEmpty($result['warnings']);
+        $this->assertEquals($token->token, $result['token']);
+        $this->assertEquals($token->privatetoken, $result['privatetoken']);
+
+        // Now, try with an invalid key.
+        $this->expectException('moodle_exception');
+        $this->expectExceptionMessage(get_string('invalidkey', 'error'));
+        $result = external::get_tokens_for_qr_login(random_string('64'), $user->id);
+    }
+
+    /**
+     * Test get_tokens_for_qr_login missing QR code enabled.
+     */
+    public function test_get_tokens_for_qr_login_missing_enableqr() {
+        global $CFG, $USER;
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        set_config('qrcodetype', tool_mobile\api::QR_CODE_DISABLED, 'tool_mobile');
+
+        $this->expectExceptionMessage(get_string('qrcodedisabled', 'tool_mobile'));
+        $result = external::get_tokens_for_qr_login('', $USER->id);
+    }
+
+    /**
+     * Test get_tokens_for_qr_login missing ws.
+     */
+    public function test_get_tokens_for_qr_login_missing_ws() {
+        global $CFG;
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        // Fake the app.
+        core_useragent::instance(true, 'Mozilla/5.0 (Linux; Android 7.1.1; Moto G Play Build/NPIS26.48-43-2; wv) ' .
+            'AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.99 Mobile Safari/537.36 MoodleMobile');
+
+        // Need to disable webservices to verify that's checked.
+        $CFG->enablewebservices = 0;
+        $CFG->enablemobilewebservice = 0;
+
+        $this->setAdminUser();
+        $this->expectException('moodle_exception');
+        $this->expectExceptionMessage(get_string('enablewsdescription', 'webservice'));
+        $result = external::get_tokens_for_qr_login('', $user->id);
+    }
+
+    /**
+     * Test get_tokens_for_qr_login missing https.
+     */
+    public function test_get_tokens_for_qr_login_missing_https() {
+        global $CFG, $USER;
+
+        // Fake the app.
+        core_useragent::instance(true, 'Mozilla/5.0 (Linux; Android 7.1.1; Moto G Play Build/NPIS26.48-43-2; wv) ' .
+            'AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.99 Mobile Safari/537.36 MoodleMobile');
+
+        // Need to simulate a non HTTPS site here.
+        $CFG->wwwroot = str_replace('https:', 'http:', $CFG->wwwroot);
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $this->expectException('moodle_exception');
+        $this->expectExceptionMessage(get_string('httpsrequired', 'tool_mobile'));
+        $result = external::get_tokens_for_qr_login('', $USER->id);
+    }
+
+    /**
+     * Test get_tokens_for_qr_login missing admin.
+     */
+    public function test_get_tokens_for_qr_login_missing_admin() {
+        global $CFG, $USER;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        // Fake the app.
+        core_useragent::instance(true, 'Mozilla/5.0 (Linux; Android 7.1.1; Moto G Play Build/NPIS26.48-43-2; wv) ' .
+            'AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.99 Mobile Safari/537.36 MoodleMobile');
+
+        $this->expectException('moodle_exception');
+        $this->expectExceptionMessage(get_string('autologinnotallowedtoadmins', 'tool_mobile'));
+        $result = external::get_tokens_for_qr_login('', $USER->id);
+    }
+
+    /**
+     * Test get_tokens_for_qr_login missing app_request.
+     */
+    public function test_get_tokens_for_qr_login_missing_app_request() {
+        global $CFG, $USER;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $this->expectException('moodle_exception');
+        $this->expectExceptionMessage(get_string('apprequired', 'tool_mobile'));
+        $result = external::get_tokens_for_qr_login('', $USER->id);
+    }
+
+    /**
+     * Test validate subscription key.
+     */
+    public function test_validate_subscription_key_valid() {
+        $this->resetAfterTest(true);
+
+        $sitesubscriptionkey = ['validuntil' => time() + MINSECS, 'key' => complex_random_string(32)];
+        set_config('sitesubscriptionkey', json_encode($sitesubscriptionkey), 'tool_mobile');
+
+        $result = external::validate_subscription_key($sitesubscriptionkey['key']);
+        $result = external_api::clean_returnvalue(external::validate_subscription_key_returns(), $result);
+        $this->assertEmpty($result['warnings']);
+        $this->assertTrue($result['validated']);
+    }
+
+    /**
+     * Test validate subscription key invalid first and then a valid one.
+     */
+    public function test_validate_subscription_key_invalid_key_first() {
+        $this->resetAfterTest(true);
+
+        $sitesubscriptionkey = ['validuntil' => time() + MINSECS, 'key' => complex_random_string(32)];
+        set_config('sitesubscriptionkey', json_encode($sitesubscriptionkey), 'tool_mobile');
+
+        $result = external::validate_subscription_key('fakekey');
+        $result = external_api::clean_returnvalue(external::validate_subscription_key_returns(), $result);
+        $this->assertEmpty($result['warnings']);
+        $this->assertFalse($result['validated']);
+
+        // The valid one has been invalidated because the previous attempt.
+        $result = external::validate_subscription_key($sitesubscriptionkey['key']);
+        $result = external_api::clean_returnvalue(external::validate_subscription_key_returns(), $result);
+        $this->assertEmpty($result['warnings']);
+        $this->assertFalse($result['validated']);
+    }
+
+    /**
+     * Test validate subscription key invalid.
+     */
+    public function test_validate_subscription_key_invalid_key() {
+        $this->resetAfterTest(true);
+
+        $result = external::validate_subscription_key('fakekey');
+        $result = external_api::clean_returnvalue(external::validate_subscription_key_returns(), $result);
+        $this->assertEmpty($result['warnings']);
+        $this->assertFalse($result['validated']);
+    }
+
+    /**
+     * Test validate subscription key invalid.
+     */
+    public function test_validate_subscription_key_outdated() {
+        $this->resetAfterTest(true);
+
+        $sitesubscriptionkey = ['validuntil' => time() - MINSECS, 'key' => complex_random_string(32)];
+        set_config('sitesubscriptionkey', json_encode($sitesubscriptionkey), 'tool_mobile');
+
+        $result = external::validate_subscription_key($sitesubscriptionkey['key']);
+        $result = external_api::clean_returnvalue(external::validate_subscription_key_returns(), $result);
+        $this->assertEmpty($result['warnings']);
+        $this->assertFalse($result['validated']);
     }
 }

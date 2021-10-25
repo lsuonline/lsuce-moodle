@@ -125,9 +125,11 @@ class provider implements
 
         $params = ['userid' => $user->id, 'contextlevel' => CONTEXT_MODULE] + $contextparams;
 
-        // Reference to the lightboxgallery activity seen in the last iteration of the loop. By comparing this with the current record, and
-        // because we know the results are ordered, we know when we've moved to the answers for a new lightboxgallery activity and therefore
-        // when we can export the complete data for the last activity.
+        // Reference to the lightboxgallery activity seen in the last iteration
+        // of the loop. By comparing this with the current record, and because
+        // we know the results are ordered, we know when we've moved to the
+        // answers for a new lightboxgallery activity and therefore when we can
+        // export the complete data for the last activity.
         $lastcmid = null;
 
         $lbgcomments = $DB->get_recordset_sql($sql, $params);
@@ -187,15 +189,15 @@ class provider implements
         }
 
         $sql = "SELECT lbgc.userid
-                FROM {context} c
-                JOIN {course_modules} cm ON cm.id = c.instanceid AND c.contextlevel = :contextlevel
+                FROM {course_modules} cm
                 JOIN {modules} m ON m.id = cm.module AND m.name = :modname
                 JOIN {lightboxgallery} lbg ON lbg.id = cm.instance
-                JOIN {lightboxgallery_comments} lbgc ON lbgc.gallery = lbg.id";
+                JOIN {lightboxgallery_comments} lbgc ON lbgc.gallery = lbg.id
+                WHERE cm.id = :instanceid";
 
         $params = [
             'modname'       => 'lightboxgallery',
-            'contextlevel'  => \CONTEXT_MODULE,
+            'instanceid'    => $context->instanceid,
         ];
 
         $userlist->add_from_sql('userid', $sql, $params);

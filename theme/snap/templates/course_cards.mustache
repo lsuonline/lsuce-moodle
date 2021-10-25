@@ -48,7 +48,7 @@
 }}
 <div data-hidden="{{^published}}true{{/published}}{{#published}}false{{/published}}" data-courseid="{{courseid}}" data-category="{{category}}" data-model="{{model}}" data-href="{{{url}}}" data-shortname="{{shortname}}" class="coursecard{{#favorited}} favorited{{/favorited}}" style="{{imagecss}}" tabindex="-1"{{#lazyloadimageurl}} data-image-url="{{.}}"{{/lazyloadimageurl}}>
     {{^archived}}
-    <button class="snap-icon-toggle favoritetoggle{{#mycolors}}c{{/mycolors}}" title="{{toggletitle}}" aria-pressed="{{#favorited}}true{{/favorited}}{{^favorited}}false{{/favorited}}"></button>
+    <button class="snap-icon-toggle favoritetoggle" title="{{toggletitle}}" aria-pressed="{{#favorited}}true{{/favorited}}{{^favorited}}false{{/favorited}}"></button>
     {{/archived}}
     <div class="coursecard-body">
         <h3><a class="coursecard-coursename" href="{{{url}}}">{{{fullname}}}</a></h3>
@@ -60,9 +60,6 @@
             <div class="completionstatus outoftotal">{{#str}}progresstotal, completion, {"complete":{{completion.complete}},"total":{{completion.total}} }{{/str}}<span class="pull-right">{{completion.progress}}%</span></div>
             <div class="completion-line" style="width:{{completion.progress}}%"></div>
             {{/completion.render}}
-            {{#cascourselink}}
-            <small>{{{cascourselink}}}</small>
-            {{/cascourselink}}
         </div>
         {{^published}}
         <small class="published-status text-warning">

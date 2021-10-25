@@ -221,6 +221,11 @@ class block_base {
     public function get_content_for_output($output) {
         global $CFG;
 
+        // We can exit early if the current user doesn't have the capability to view the block.
+        if (!has_capability('moodle/block:view', $this->context)) {
+            return null;
+        }
+
         $bc = new block_contents($this->html_attributes());
         $bc->attributes['data-block'] = $this->name();
         $bc->blockinstanceid = $this->instance->id;
@@ -303,6 +308,21 @@ class block_base {
         }
 
         return $bc;
+    }
+
+    /**
+     * Return the plugin config settings for external functions.
+     *
+     * In some cases the configs will need formatting or be returned only if the current user has some capabilities enabled.
+     *
+     * @return stdClass the configs for both the block instance and plugin (as object with name -> value)
+     * @since Moodle 3.8
+     */
+    public function get_config_for_external() {
+        return (object) [
+            'instance' => new stdClass(),
+            'plugin' => new stdClass(),
+        ];
     }
 
     /**

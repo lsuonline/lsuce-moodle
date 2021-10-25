@@ -1,18 +1,31 @@
-<?php
-/**
- * WARNING! Never ever edit this file for local development!
- * Instead, create a config_local.php with your config for Moodle.
- *
- * @author Mark Nielsen
- */
+<?php  // Moodle configuration file
 
-if (!empty($_SERVER['MR_CONFIG_FILENAME'])) {
-    $_mdl_config_file = $_SERVER['MR_CONFIG_FILENAME'];
-} else {
-    $_mdl_config_file = dirname(__FILE__).'/config_local.php';
-}
-if (file_exists($_mdl_config_file)) {
-    include $_mdl_config_file;
-} else {
-    die('There is no site configured for this url');
-}
+unset($CFG);
+global $CFG;
+$CFG = new stdClass();
+
+$CFG->dbtype    = 'mysqli';
+$CFG->dblibrary = 'native';
+$CFG->dbhost    = 'lsuonline.cluster-cfeugorgzbik.us-east-2.rds.amazonaws.com';
+$CFG->dbname    = 'testrusso_CE39';
+$CFG->dbuser    = 'admin';
+$CFG->dbpass    = '7raGQ5MLeCq9WQtna51ZaT6QmqakcApF';
+$CFG->prefix    = 'mdl_';
+$CFG->dboptions = array (
+  'dbpersist' => 0,
+  'dbport' => '',
+  'dbsocket' => '',
+  'dbcollation' => 'utf8mb4_unicode_ci',
+);
+
+$CFG->sslproxy  = true;
+$CFG->wwwroot   = 'https://testrusso.lsu.edu/ce39';
+$CFG->dataroot  = '/var/moodledata/ce39';
+$CFG->admin     = 'admin';
+
+$CFG->directorypermissions = 0777;
+
+require_once(__DIR__ . '/lib/setup.php');
+
+// There is no php closing tag in this file,
+// it is intentional because it prevents trailing whitespace problems!

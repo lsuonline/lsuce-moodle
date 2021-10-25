@@ -57,8 +57,9 @@ $string['autonumberquestions'] = 'Auto number questions';
 $string['autonumberpages'] = 'Auto number pages';
 $string['autonumberpagesandquestions'] = 'Auto number pages and questions';
 $string['average'] = 'Average';
-$string['averagerank'] = 'Average rank';
 $string['averageposition'] = 'Average position';
+$string['averagerank'] = 'Average rank';
+$string['averagesrow'] = 'Averages (where applicable):';
 $string['bodytext'] = 'Body text';
 $string['boxesnbexact'] = 'exactly {$a} box(es).';
 $string['boxesnbmax'] = 'a maximum of {$a} box(es).';
@@ -86,14 +87,15 @@ $string['checkbreaksremoved'] = 'Removed {$a} extra Page break(s).';
 $string['checknotstarted'] = 'Select not started';
 $string['checkstarted'] = 'Select started';
 $string['clicktoswitch'] = '(click to switch)';
+$string['closebeforeopen'] = 'You have specified a close date before the open date.';
 $string['closed'] = 'The questionnaire was closed on {$a}. Thanks.';
-$string['closedate'] = 'Use Close Date';
+$string['closedate'] = 'Allow responses until';
 $string['closeson'] = 'Questionnaire closes on {$a}';
-$string['closedate_help'] = 'You can specify a date to close the questionnaire here. Check the check box, and select the date and time you want.
- Users will not be able to fill out the questionnaire after that date. If this is not selected, it will never be closed.';
 $string['completionsubmit'] = 'Student must submit this questionnaire to complete it';
 $string['condition'] = 'Condition';
 $string['confalts'] = '- OR - <br />Confirmation page';
+$string['configemailreporting'] = 'Allow reports by email';
+$string['configemailreportinglong'] = 'Enables options for some reports to be emailed directly to specified email addresses.';
 $string['configusergraph'] = 'Display charts for "Personality Test" feedback';
 $string['configusergraphlong'] = 'Use the <a href="http://www.rgraph.net/">Rgraph</a> library to display "Personality Test" feedback charts.';
 $string['configmaxsections'] = 'Maximum feedback sections';
@@ -121,7 +123,7 @@ $string['date_link'] = 'mod/questionnaire/questions#Date';
 $string['dateformatting'] = 'Use the year-month-day format, e.g. for March 4th, 1945:&nbsp; <strong>1945-03-04</strong>';
 // Prior to release 3.6.0, you could specify an input date format in the above string. Now, the format must be as below. This
 // string is used now in case sites modified the above string.
-$string['strictdateformatting'] = 'Use the year-month-day format, e.g. for March 4th, 1945:&nbsp; <strong>1945-03-04</strong>';
+$string['strictdateformatting'] = 'Enter the date using the date picker below, or by using the \'YYYY-MM-DD\' format.';
 $string['deleteallresponses'] = 'Delete ALL Responses';
 $string['deletecurrentquestion'] = 'Delete question {$a}';
 $string['deletedallgroupresp'] = 'Deleted ALL Responses in group {$a}';
@@ -140,10 +142,12 @@ $string['didnotrespondtoquestion'] = 'Did not respond to question';
 $string['directwarnings'] = 'Direct dependencies to this question will be removed. This will affect:';
 $string['displaymethod'] = 'Display method not defined for question.';
 $string['download'] = 'Download';
-$string['downloadtextformat'] = 'Download as CSV';
-$string['downloadtextformat_help'] = 'This feature enables you to save all the responses of a questionnaire to a text file (CSV).
- This file can then be imported into a spreadsheet (e.g. MS Excel or Open Office Calc) or a statistical package for further processing the data.';
+$string['downloadpdf'] = 'Download PDF';
+$string['downloadtextformat'] = 'Download';
+$string['downloadtextformat_help'] = 'This feature enables you to save all the responses of a questionnaire to a selectable, supported file format.
+ You can choose to include extra data items in the export, as well as choose to automatically send the file to selected users.';
 $string['downloadtextformat_link'] = 'mod/questionnaire/report#Download_in_text_format';
+$string['downloadtypes'] = 'Report type';
 $string['dropdown'] = 'Dropdown Box';
 $string['dropdown_help'] = 'There is no real advantage to using the Dropdown Box over using the Radio Buttons
  except perhaps for longish lists of options, to save screen space.';
@@ -153,6 +157,15 @@ $string['editingfeedback'] = 'Editing feedback settings';
 $string['editingquestionnaire'] = 'Editing Questionnaire Settings';
 $string['editquestion'] = 'Editing {$a} question';
 $string['email'] = 'Email';
+$string['emailextra'] = 'Send download to emails';
+$string['emailextra_help'] = 'Will send the download file to the listed email addresses, separated by commas. Note that NO security or privacy checking is done.
+ \'allowemailreporting\' must be enabled in module settings to access this.';
+$string['emailsnotspecified'] = 'No email(s) were specified.';
+$string['emailroles'] = 'Send download to roles';
+$string['emailroles_help'] = 'Will send the download file to all roles with "mod/questionnaire:submissionnotification" capability via email.
+ \'allowemailreporting\' must be enabled in module settings to access this.';
+$string['emailsend'] = 'Send reports';
+$string['emailssent'] = 'Downloads sent to specified email(s).';
 $string['errnewname'] = 'Sorry, name already in use. Pick a new name.';
 $string['erroropening'] = 'Error opening questionnaire.';
 $string['errortable'] = 'Error system table corrupt.';
@@ -239,6 +252,7 @@ $string['gradesdeleted'] = 'Questionnaire grades deleted';
 $string['headingtext'] = 'Heading text';
 $string['horizontal'] = 'Horizontal';
 $string['id'] = 'ID';
+$string['includerankaverages'] = 'Include rank question averages';
 $string['includechoicecodes'] = 'Include choice codes';
 $string['includechoicetext'] = 'Include choice text';
 $string['includeincomplete'] = "Include incomplete responses";
@@ -338,9 +352,8 @@ $string['numberscaleitems_help'] = 'Nb of scale items is the *number of items* t
 $string['numeric'] = 'Numeric';
 $string['numeric_help'] = 'Use this question type if you expect the response to be a correctly formatted number.';
 $string['of'] = 'of';
-$string['opendate'] = 'Use Open Date';
-$string['opendate_help'] = 'You can specify a date to open the questionnaire here. Check the check box, and select the date and time you want.
- Users will not be able to fill out the questionnaire before that date. If this is not selected, it will be open immediately.';
+$string['openafterclose'] = 'You have specified an open date after the close date';
+$string['opendate'] = 'Allow responses from';
 $string['option'] = 'option {$a}';
 $string['optional'] = 'Optional - At least one of this dependencies has to be fulfilled.';
 $string['optionalname'] = 'Question Name';
@@ -437,6 +450,10 @@ $string['privacy:metadata:questionnaire_resp_single:question_id'] = 'The ID of t
 $string['privacy:metadata:questionnaire_resp_single:choice_id'] = 'The ID of the choice record for this response.';
 
 $string['private'] = 'Private';
+$string['progressbar'] = 'Show progress bar';
+$string['progresshelp'] = 'Progress Bar';
+$string['progresshelp_help'] = 'Move on to the next page to fill up the progress bar';
+$string['progressbar_info'] = 'Questionnaire {$a} complete.';
 $string['public'] = 'Public';
 $string['publiccopy'] = 'Copy:';
 $string['publicoriginal'] = 'Original:';
@@ -552,7 +569,7 @@ $string['send_message'] = 'Send message to selected users';
 $string['send_message_to'] = 'Send message to:';
 $string['sendemail_help'] = 'Sends a copy of each submission to the specified address or addresses.
 You can provide more than one address by separating them with commas.
-Leave blank for no email backup.';
+Leave blank for no email backup. \'allowemailreporting\' must be enabled in module settings to access this.';
 $string['set'] = 'set';
 $string['settings'] = 'Settings';
 $string['settingssaved'] = 'Settings saved';
@@ -574,6 +591,7 @@ $string['subtitle'] = 'Subtitle';
 $string['subtitle_help'] = 'Subtitle of this questionnaire. Appears below the title on the first page only.';
 $string['subject'] = 'Subject';
 $string['summary'] = 'Summary';
+$string['summaryreportattached'] = 'Questionnaire summary report attached';
 $string['surveynotexists'] = 'questionnaire does not exist.';
 $string['surveyowner'] = 'You must be a questionnaire owner to perform this operation.';
 $string['surveyresponse'] = 'Response from questionnaire';

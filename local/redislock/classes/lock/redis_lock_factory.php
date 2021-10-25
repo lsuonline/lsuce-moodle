@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use core\lock\lock_factory;
 use core\lock\lock;
+use local_redislock\api\shared_redis_connection;
 
 /**
  * Redis-backed lock factory class.
@@ -56,24 +57,56 @@ class redis_lock_factory implements lock_factory {
     protected $openlocks = [];
 
     /**
-     * @var boolean Enables logging
+     * @var boolean Should verbose logs be emitted.
      */
     protected $logging;
 
     /**
+     * @var string Redis server connection string.
+     */
+    private $redisserver;
+
+    /**
+     * @var boolean Shared connection enabled.
+     */
+    private $shareconnection;
+
+    /**
+     * @var int Connection count.
+     */
+    private static $conncount = 0;
+
+    /**
+     * @var string|null Redis password.
+     */
+    private $auth;
+
+    /**
      * @param string $type The type this lock is used for (e.g. cron, cache).
      * @param \Redis|null $redis An instance of the PHPRedis extension class.
-     * @param boolean|null $logging Enables logging
+     * @param boolean|null $logging Should verbose logs be emitted.
      * @throws \coding_exception
      */
     public function __construct($type, \Redis $redis = null, $logging = null) {
-        $this->type = $type;
+        global $CFG;
 
+        $this->type = $type;
+        $this->redisserver = $CFG->local_redislock_redis_server ?? null;
+        $this->shareconnection = empty($CFG->local_redislock_disable_shared_connection);
+        $this->auth = $CFG->local_redislock_redis_auth ?? null;
         if (is_null($redis)) {
+            shared_redis_connection::get_instance()->add_factory();
             $redis = $this->bootstrap_redis();
+        } else {
+            // If a Redis instance is set, we shouldn't share it as we don't know who else is using it.
+            $this->shareconnection = false;
         }
         if (is_null($logging)) {
-            $logging = (CLI_SCRIPT && debugging() && !PHPUNIT_TEST);
+            if (isset($CFG->local_redislock_logging)) {
+                $logging = (bool) $CFG->local_redislock_logging;
+            } else {
+                $logging = (CLI_SCRIPT && debugging() && !PHPUNIT_TEST);
+            }
         }
         $this->redis   = $redis;
         $this->logging = $logging;
@@ -142,6 +175,11 @@ class redis_lock_factory implements lock_factory {
             $resource = $CFG->dbname . '_' . $resource;
         }
 
+        if ($this->shareconnection) {
+            // Re-get the Redis shared connection in case it's be cleared or recreated elsewhere.
+            $this->redis = $this->bootstrap_redis();
+        }
+
         $this->log('Waiting to get '.$resource.' lock');
 
         $exception = false;
@@ -154,6 +192,10 @@ class redis_lock_factory implements lock_factory {
             } catch (\RedisException $e) {
                 // If there has been a redis exception, we will try to reconnect.
                 $exception = $e;
+                if (!$this->shareconnection) {
+                    self::$conncount--;
+                }
+                shared_redis_connection::get_instance()->clear(); // Delete shared connection.
                 $this->log("Got exception while trying to get lock: {$e->getMessage()}");
                 $this->log("Attempting to reconnect to Redis");
                 $this->redis = $this->bootstrap_redis();
@@ -191,6 +233,11 @@ class redis_lock_factory implements lock_factory {
     public function release_lock(lock $lock) {
         $resource = $lock->get_key();
 
+        if ($this->shareconnection) {
+            // Re-get the Redis shared connection in case it's be cleared or recreated elsewhere.
+            $this->redis = $this->bootstrap_redis();
+        }
+
         // We will retry connecting and releasing up to 5 times.
         $failcount = 0;
         $value = false;
@@ -206,6 +253,10 @@ class redis_lock_factory implements lock_factory {
                 }
 
                 // If there has been a redis exception, we will try to reconnect.
+                if (!$this->shareconnection) {
+                    self::$conncount--;
+                }
+                shared_redis_connection::get_instance()->clear(); // Delete shared connection.
                 $this->log("Got exception while trying to release lock: {$e->getMessage()}");
                 $this->log('Attempting to reconnect to Redis');
                 $this->redis = $this->bootstrap_redis();
@@ -266,7 +317,18 @@ class redis_lock_factory implements lock_factory {
             $lock->release();
         }
 
-        $this->redis->close();
+        if (!$this->shareconnection) {
+            // Connection is not shared. Closing now!
+            $this->redis->close();
+            self::$conncount--;
+            $conncount = self::$conncount;
+            $this->log("Connection to Redis from factory type {$this->type} is closed, {$conncount} remaining.");
+        } else {
+            shared_redis_connection::get_instance()->remove_factory();
+            if (empty(shared_redis_connection::get_instance()->get_factory_count())) {
+                shared_redis_connection::get_instance()->close();
+            }
+        }
     }
 
     /**
@@ -287,19 +349,38 @@ class redis_lock_factory implements lock_factory {
      * @throws \coding_exception
      */
     protected function bootstrap_redis() {
-        global $CFG;
+        if (!is_null($redis = shared_redis_connection::get_instance()->get_redis())) {
+            // Reuse the connection if available.
+            return $redis;
+        }
 
         if (!class_exists('Redis')) {
             throw new \coding_exception('Redis class not found, Redis PHP Extension is probably not installed on host: '
                     . $this->get_hostname());
         }
-        if (empty($CFG->local_redislock_redis_server)) {
+        if (empty($this->redisserver)) {
             throw new \coding_exception('Redis connection string is not configured in $CFG->local_redislock_redis_server');
         }
 
         try {
+            // Default port.
+            $port = 6379;
+            $server = $this->redisserver;
+            if (strpos($this->redisserver, ':')) {
+                $serverconf = explode(':', $this->redisserver);
+                $server = $serverconf[0];
+                $port = $serverconf[1];
+            }
             $redis = new \Redis();
-            $redis->connect($CFG->local_redislock_redis_server);
+            $redis->connect($server, $port);
+            if (!empty($this->auth)) {
+                $redis->auth($this->auth);
+            }
+            if ($this->shareconnection) {
+                shared_redis_connection::get_instance()->set_redis($redis); // Reusing the connection.
+            } else {
+                self::$conncount++;
+            }
         } catch (\RedisException $e) {
             throw new \coding_exception("RedisException caught on host {$this->get_hostname()} with message: {$e->getMessage()}");
         }

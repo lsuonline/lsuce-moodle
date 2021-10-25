@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 defined('MOODLE_INTERNAL') || die();
-$plugin->version  = 2018031201;   // The (date) version of this module + 2 extra digital for daily versions
+$plugin->version  = 2018061101;   // The (date) version of this module + 2 extra digital for daily versions
                                   // This version number is displayed into /admin/forms.php
 // sbd TODO: Assess. 2010112400=2.0, 2014051200=2.7.
 $plugin->requires = 2010112400;  // Requires this Moodle version - at least 2.0
 $plugin->cron     = 0; // Disabled.
-$plugin->release = '1.02 (Build: 2018031201)';
+$plugin->release = '1.03 (Build: 2018061101)';
 $plugin->maturity = MATURITY_STABLE; // One of: MATURITY_ALPHA, MATURITY_BETA, MATURITY_RC or MATURITY_STABLE.
 // As far as I know, any other than MATURITY_STABLE has no side effects except a warning on install validation.
 // Optional.  Allows to declare explicit dependency on other plugin(s) for this plugin to work.

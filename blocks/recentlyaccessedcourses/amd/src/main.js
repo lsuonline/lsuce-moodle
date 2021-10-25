@@ -47,6 +47,7 @@ define(
         // Constants.
         var NUM_COURSES_TOTAL = 10;
         var SELECTORS = {
+            BLOCK_CONTAINER: '[data-region="recentlyaccessedcourses"]',
             CARD_CONTAINER: '[data-region="card-deck"]',
             COURSE_IS_FAVOURITE: '[data-region="is-favourite"]',
             CONTENT: '[data-region="view-content"]',
@@ -145,7 +146,9 @@ define(
          * @return {promise} Resolved with list of rendered courses as jQuery objects.
          */
         var renderAllCourses = function(courses) {
+            var showcoursecategory = $(SELECTORS.BLOCK_CONTAINER).data('displaycoursecategory');
             var promises = courses.map(function(course) {
+                course.showcoursecategory = showcoursecategory;
                 return Templates.render('block_recentlyaccessedcourses/course-card', course);
             });
 
@@ -203,6 +206,11 @@ define(
                 var overflow = (viewIndex + availableVisibleCards) - numberOfCourses;
                 start = viewIndex - overflow;
                 start = start >= 0 ? start : 0;
+            }
+
+            // At least show one card.
+            if (availableVisibleCards === 0) {
+                availableVisibleCards = 1;
             }
 
             var coursesToShow = allCourses.slice(start, start + availableVisibleCards);

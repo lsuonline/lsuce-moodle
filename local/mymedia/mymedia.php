@@ -35,41 +35,7 @@ require_capability('local/mymedia:view', $context);
 $PAGE->set_context(context_system::instance());
 $header =  fullname($USER) . ": " . get_string('heading_mymedia', 'local_mymedia');
 
-// BEGIN LSU Nav node addition.
-// Set the URL as per Moodle guidelines.
 $PAGE->set_url('/local/mymedia/mymedia.php');
-
-// Add the optional page-params to know what course we came from.
-$pageparams = [
-    'courseid' => optional_param('courseid', 1, PARAM_INT)
-];
-
-// Sanity check to be sure we don't ever error out.
-if ($pageparams['courseid']) {
-    $courseid = $pageparams['courseid'];
-} else {
-    $courseid = 1;
-}
-
-// Get the course object for reuse.
-$course = get_course($courseid);
-
-// Add a link to the site home.
-$PAGE->navbar->add(get_string('mycourses', 'moodle'), new moodle_url('/index.php'));
-
-// If we are in a course, add its link to the navbar.
-if ($courseid > 1) {
-  $PAGE->navbar->add($course->shortname, new moodle_url('/course/view.php', array('id' => $courseid)));
-}
-
-// Add the kaltura mymedia system itself to the navbar.
-$PAGE->navbar->add(get_string('heading_mymedia', 'local_mymedia'),
-    new moodle_url('/local/mymedia/mymedia.php', array('courseid' => $courseid)));
-
-// Get the navbar items to render on page.
-$PAGE->navbar->get_items();
-// END LSU Nav node addition.
-
 $PAGE->set_pagetype('mymedia-index');
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title($header);

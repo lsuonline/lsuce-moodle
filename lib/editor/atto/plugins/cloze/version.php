@@ -18,13 +18,13 @@
  * Atto Cloze question editor version file.
  *
  * @package    atto_cloze
- * @copyright  2016 onward Daniel Thies <dthies@ccal.edu>
+ * @copyright  2016 onward Daniel Thies <dethies@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017072801;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2017072802;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2014051200;        // Requires this Moodle version.
 $plugin->component = 'atto_cloze';  // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_STABLE;

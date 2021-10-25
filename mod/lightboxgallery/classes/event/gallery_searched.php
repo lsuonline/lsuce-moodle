@@ -112,5 +112,9 @@ class gallery_searched extends \core\event\base {
         }
     }
 
+    public static function get_other_mapping() {
+        return [];
+    }
+
 }
 

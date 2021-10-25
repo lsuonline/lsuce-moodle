@@ -85,6 +85,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:e/bold' => 'fa-bold',
             'core:e/bullet_list' => 'fa-list-ul',
             'core:e/cancel' => 'fa-times',
+            'core:e/cancel_solid_circle' => 'fas fa-times-circle',
             'core:e/cell_props' => 'fa-info',
             'core:e/cite' => 'fa-quote-right',
             'core:e/cleanup_messy_code' => 'fa-eraser',
@@ -195,6 +196,8 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/assignroles' => 'fa-user-plus',
             'core:i/backup' => 'fa-file-zip-o',
             'core:i/badge' => 'fa-shield',
+            'core:i/breadcrumbdivider' => 'fa-angle-right',
+            'core:i/bullhorn' => 'fa-bullhorn',
             'core:i/calc' => 'fa-calculator',
             'core:i/calendar' => 'fa-calendar',
             'core:i/calendareventdescription' => 'fa-align-left',
@@ -206,17 +209,27 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/cohort' => 'fa-users',
             'core:i/competencies' => 'fa-check-square-o',
             'core:i/completion_self' => 'fa-user-o',
+            'core:i/contentbank' => 'fa-paint-brush',
             'core:i/dashboard' => 'fa-tachometer',
             'core:i/lock' => 'fa-lock',
             'core:i/categoryevent' => 'fa-cubes',
             'core:i/course' => 'fa-graduation-cap',
-            'core:i/courseevent' => 'fa-university',
+            'core:i/courseevent' => 'fa-graduation-cap',
             'core:i/customfield' => 'fa-hand-o-right',
             'core:i/db' => 'fa-database',
             'core:i/delete' => 'fa-trash',
             'core:i/down' => 'fa-arrow-down',
             'core:i/dragdrop' => 'fa-arrows',
             'core:i/duration' => 'fa-clock-o',
+            'core:i/emojicategoryactivities' => 'fa-futbol-o',
+            'core:i/emojicategoryanimalsnature' => 'fa-leaf',
+            'core:i/emojicategoryflags' => 'fa-flag',
+            'core:i/emojicategoryfooddrink' => 'fa-cutlery',
+            'core:i/emojicategoryobjects' => 'fa-lightbulb-o',
+            'core:i/emojicategoryrecent' => 'fa-clock-o',
+            'core:i/emojicategorysmileyspeople' => 'fa-smile-o',
+            'core:i/emojicategorysymbols' => 'fa-heart',
+            'core:i/emojicategorytravelplaces' => 'fa-plane',
             'core:i/edit' => 'fa-pencil',
             'core:i/email' => 'fa-envelope',
             'core:i/empty' => 'fa-fw',
@@ -232,6 +245,8 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/grade_incorrect' => 'fa-remove text-danger',
             'core:i/grade_partiallycorrect' => 'fa-check-square',
             'core:i/grades' => 'fa-table',
+            'core:i/grading' => 'fa-magic',
+            'core:i/gradingnotifications' => 'fa-bell-o',
             'core:i/groupevent' => 'fa-group',
             'core:i/groupn' => 'fa-user',
             'core:i/group' => 'fa-users',
@@ -241,6 +256,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/hide' => 'fa-eye',
             'core:i/hierarchylock' => 'fa-lock',
             'core:i/import' => 'fa-level-up',
+            'core:i/incorrect' => 'fa-exclamation',
             'core:i/info' => 'fa-info',
             'core:i/invalid' => 'fa-times text-danger',
             'core:i/item' => 'fa-circle',
@@ -256,6 +272,10 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/mean' => 'fa-calculator',
             'core:i/menu' => 'fa-ellipsis-v',
             'core:i/menubars' => 'fa-bars',
+            'core:i/messagecontentaudio' => 'fa-headphones',
+            'core:i/messagecontentimage' => 'fa-image',
+            'core:i/messagecontentvideo' => 'fa-film',
+            'core:i/messagecontentmultimediageneral' => 'fa-file-video-o',
             'core:i/mnethost' => 'fa-external-link',
             'core:i/moodle_host' => 'fa-graduation-cap',
             'core:i/moremenu' => 'fa-ellipsis-h',
@@ -269,6 +289,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/nosubcat' => 'fa-plus-square-o',
             'core:i/notifications' => 'fa-bell',
             'core:i/open' => 'fa-folder-open',
+            'core:i/otherevent' => 'fa-calendar',
             'core:i/outcomes' => 'fa-tasks',
             'core:i/payment' => 'fa-money',
             'core:i/permissionlock' => 'fa-lock',
@@ -303,6 +324,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/show' => 'fa-eye-slash',
             'core:i/siteevent' => 'fa-globe',
             'core:i/star' => 'fa-star',
+            'core:i/star-o' => 'fa-star-o',
             'core:i/star-rating' => 'fa-star',
             'core:i/stats' => 'fa-line-chart',
             'core:i/switch' => 'fa-exchange',
@@ -314,6 +336,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/unflagged' => 'fa-flag-o',
             'core:i/unlock' => 'fa-unlock',
             'core:i/up' => 'fa-arrow-up',
+            'core:i/upload' => 'fa-upload',
             'core:i/userevent' => 'fa-user',
             'core:i/user' => 'fa-user',
             'core:i/users' => 'fa-users',
@@ -417,7 +440,10 @@ class icon_system_fontawesome extends icon_system_font {
         if ($this->map === []) {
             $cache = \cache::make('core', 'fontawesomeiconmapping');
 
-            $this->map = $cache->get('mapping');
+            // Create different mapping keys for different icon system classes, there may be several different
+            // themes on the same site.
+            $mapkey = 'mapping_'.preg_replace('/[^a-zA-Z0-9_]/', '_', get_class($this));
+            $this->map = $cache->get($mapkey);
 
             if (empty($this->map)) {
                 $this->map = $this->get_core_icon_map();
@@ -431,7 +457,7 @@ class icon_system_fontawesome extends icon_system_font {
                         }
                     }
                 }
-                $cache->set('mapping', $this->map);
+                $cache->set($mapkey, $this->map);
             }
 
         }

@@ -16,7 +16,9 @@
 
 namespace theme_snap;
 
+use dml_exception;
 use grade_item;
+use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -172,7 +174,6 @@ class activity {
                     'itemtype'     => 'mod',
                     'itemmodule'   => $mod->modname,
                     'iteminstance' => $mod->instance,
-                    'itemnumber' => 0,
                 ]);
 
                 $coursecontext = \context_course::instance($courseid);
@@ -207,13 +208,14 @@ class activity {
     public static function assign_meta(\cm_info $modinst) {
         global $DB;
         static $submissionsenabled;
+        static $coursequeried;
 
         $courseid = $modinst->course;
 
         // Get count of enabled submission plugins grouped by assignment id.
         // Note, under normal circumstances we only run this once but with PHP unit tests, assignments are being
         // created one after the other and so this needs to be run each time during a PHP unit test.
-        if (empty($submissionsenabled) || PHPUNIT_TEST) {
+        if (empty($submissionsenabled) || $coursequeried !== $courseid || PHPUNIT_TEST) {
             $sql = "SELECT a.id, count(1) AS submissionsenabled
                       FROM {assign} a
                       JOIN {assign_plugin_config} ac ON ac.assignment = a.id
@@ -224,6 +226,7 @@ class activity {
                        AND plugin!='comments'
                   GROUP BY a.id;";
             $submissionsenabled = $DB->get_records_sql($sql, array($courseid));
+            $coursequeried = $courseid;
         }
 
         $submitselect = '';
@@ -704,6 +707,17 @@ class activity {
     }
 
     /**
+     * Get number of contributors to the database
+     *
+     * @param int $courseid
+     * @param int $modid
+     * @return int
+     */
+    public static function data_num_submissions($courseid, $modid) {
+        return self::std_num_submissions($courseid, $modid, 'data', 'dataid', 'data_records');
+    }
+
+    /**
      * Get number of ungraded quiz attempts for specific quiz
      *
      * @param int $courseid
@@ -1002,7 +1016,7 @@ class activity {
             } else {
                 $coursesparam = [$courseid => get_course($courseid)];
             }
-            $cachepfx = 'course'.$courseid.'_';
+            $cachepfx = 'course_'.$courseid;
             $eventsobj = self::user_activity_events($USER, $coursesparam, $tstart, $tend, $cachepfx, 1000);
             $events = $eventsobj->events;
             $eventsfromcache = $eventsobj->fromcache;
@@ -1084,7 +1098,6 @@ class activity {
                     JOIN {grade_items} gi
                       ON m.id = gi.iteminstance
                      AND gi.itemtype = 'mod'
-                     AND gi.itemnumber = 0
                      AND gi.itemmodule = :modname
                      AND gi.courseid = :courseid1
 
@@ -1276,10 +1289,12 @@ class activity {
      * Note - only deals with due, open, close event types.
      * @param int $tstart
      * @param int $tend
-     * @param \stdClass[] $courses
+     * @param stdClass[] $courses
+     * @param int $limit
      * @return array
+     * @throws dml_exception
      */
-    public static function get_calendar_activity_events($tstart, $tend, array $courses, $limit = 40) {
+    public static function get_calendar_activity_events($tstart, $tend, array $courses, $limit = 200) {
 
         $calendar = new \calendar_information(0, 0, 0, $tstart);
         $course = get_course(SITEID);
@@ -1343,14 +1358,16 @@ class activity {
      * @param int $tend
      * @param string $cacheprefix
      * @param int $limit
-     * @return stdClass
+     * @return object
      */
     public static function user_activity_events($userorid, array $courses, $tstart, $tend, $cacheprefix = '',
-                                                $limit = 40) {
+                                                $limit = 500) {
+        global $DB;
 
         $retobj = (object) [
             'timestamp' => null,
             'events' => [],
+            'courses' => [],
             'fromcache' => false
         ];
 
@@ -1363,20 +1380,26 @@ class activity {
         $dstart = strtotime(date('Y-m-d', $tstart));
         $dend = strtotime(date('Y-m-d', $tend));
 
-        $cachekey = $cacheprefix.$user->id.'_'.($dstart + $dend).'_'.$limit;
+        $freshkey = $user->id.'_'.($dstart + $dend).'_'.$limit;
+        $cachekey = $user->id.'_'.$cacheprefix;
 
         if (self::$phpunitallowcaching || !(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
             $muc = \cache::make('theme_snap', 'activity_deadlines');
             $cached = $muc->get($cachekey);
-
-            if ($cached && $cached->timestamp >= time() - HOURSECS) {
-
+            $cachefresh = false;
+            if ($cached && $cached->key !== $freshkey) {
+                $cachefresh = false;
+            } else if ($cached && $cached->timestamp >= time() - HOURSECS) {
                 $cachestamps = local::get_calendar_change_stamps();
-
                 $activitiesstamp = $cached->timestamp;
                 $cachefresh = true; // Until proven otherwise.
-
+                $coursecache = [];
                 foreach ($courses as $courseid => $course) {
+                    $coursecache[$courseid] = $course->shortname;
+
+                    if (!isset($cached->courses[$courseid])) {
+                        $cachefresh = false;
+                    }
                     if (isset($cachestamps[$courseid])) {
                         $stamp = $cachestamps[$courseid];
                         if ($stamp > $activitiesstamp) {
@@ -1384,11 +1407,31 @@ class activity {
                         }
                     }
                 }
-
-                if ($cachefresh) {
-                    $cached->fromcache = true; // Useful for debugging and unit testing.
-                    return $cached;
+                $cmids = [];
+                foreach ($cached->events as $event) {
+                    if (!empty($event->actionurl)) {
+                        $cmids[] = $event->actionurl->get_param("id");
+                    }
+                    if (!isset($courses[$event->courseid])) {
+                        $cachefresh = false;
+                    }
                 }
+                if (!empty($cmids)) {
+                    list($insql, $params) = $DB->get_in_or_equal($cmids);
+                    $sql = "SELECT deletioninprogress
+                          FROM {course_modules}
+                         WHERE id $insql
+                           AND deletioninprogress = 1";
+                    $deletioninprogress = $DB->get_record_sql($sql, $params);
+                }
+                if (!empty($deletioninprogress)) {
+                    $cachefresh = false;
+                }
+            }
+
+            if ($cachefresh) {
+                $cached->fromcache = true; // Useful for debugging and unit testing.
+                return $cached;
             }
         }
 
@@ -1403,8 +1446,12 @@ class activity {
         $tmparr = [];
         foreach ($events as $event) {
 
-            /** @var cm_info $cminfo */
-            list ($course, $cminfo) = get_course_and_cm_from_instance($event->instance, $event->modulename);
+            // Validation added to prevent array offset.
+            $courseid = array_key_exists($event->courseid, $courses) ? $courses[$event->courseid] : 0;
+
+            /** @var \cm_info $cminfo */
+            list ($course, $cminfo) = get_course_and_cm_from_instance(
+                    $event->instance, $event->modulename,  $courseid, $event->userid);
             unset($course);
 
             // We are only interested in modules with valid instances.
@@ -1428,6 +1475,11 @@ class activity {
             $tmparr[$event->id] = $event;
 
         }
+        if (!isset($coursecache)) {
+            foreach ($courses as $courseid => $course) {
+                $coursecache[$courseid] = $course->shortname;
+            }
+        }
         $events = $tmparr;
         unset($tmparr);
 
@@ -1435,6 +1487,8 @@ class activity {
         $retobj->events = $events;
 
         if (self::$phpunitallowcaching || !(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
+            $retobj->courses = $coursecache;
+            $retobj->key = $freshkey;
             $muc->set($cachekey, $retobj);
         }
 
@@ -1446,12 +1500,12 @@ class activity {
      *
      * All deadlines from today, then any from the next 6 months up to the
      * max requested.
-     * @param \stdClass|integer $userorid
+     * @param stdClass|integer $userorid
      * @param integer $maxdeadlines
-     * @return array
+     * @param integer $courseid
+     * @return stdClass
      */
-    public static function upcoming_deadlines($userorid, $maxdeadlines = 5) {
-
+    public static function upcoming_deadlines($userorid, $maxdeadlines = 500, $courseid = 0) {
         global $USER;
         $origuser = $USER;
         $user = local::get_user($userorid);
@@ -1463,9 +1517,26 @@ class activity {
         $tomorrow = new \DateTime('tomorrow', $tz);
         $tomorrowts = $tomorrow->getTimestamp();
 
+        $cacheprefix = 'deadlines';
         $courses = enrol_get_users_courses($user->id, true);
+        if ($courseid !== 0) {
+            $foundacourse = false;
+            foreach ($courses as $id => $course) {
+                if ($id == $courseid) {
+                    // We should only get deadlines for enrolled users, b/c they are the ones who get calendar updates.
+                    $courses = [$courseid => get_course($courseid)];
+                    $cacheprefix .= '_course_' . $courseid;
+                    $foundacourse = true;
+                    break;
+                }
+            }
+            if (!$foundacourse) {
+                // The user is not enrolled on this course, let's clean up the course lists.
+                $courses = [];
+            }
+        }
 
-        $eventsobj = self::user_activity_events($user, $courses, $todayts, $todayts + (YEARSECS / 2), 'deadlines');
+        $eventsobj = self::user_activity_events($user, $courses, $todayts, $todayts + (YEARSECS / 2), $cacheprefix);
 
         $events = $eventsobj->events;
         uasort($events, function($e1, $e2) {

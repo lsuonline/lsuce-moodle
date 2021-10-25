@@ -4,18 +4,22 @@ All notable changes to this project will be documented in this file.
 
 Note - All hash comments refer to the issue number. Eg. #169 refers to https://github.com/mdjnelson/moodle-mod_customcert/issues/169.
 
-## [3.7.5] - 2020-??-??
+## [3.8.5] - 2020-11-26
 
 ### Added
 
 - Added ability to select outcomes in the Grade element (#329).
 - The Grade Item Name element now works with all grade items, whereas before it was just activities (#346).
 - Added enrolment start and end dates to the date element (#328).
+- Added username to userfield form element (#390).
 
-## Changed
+### Changed
 
 - Removed unnecessary and confusing 'exampledata' string.
 - Do not email those who can manage the certificate (#376).
+- Do not force the PDF to be downloaded, instead send the file inline to the browser (#153).
+- Updated the 'emailstudents_help', 'emailteachers_help' and 'emailothers_help' strings to warn users about prematurely emailing the certificate (#276).
+- Do not email out certificates that contain no elements (#276).
 
 ### Fixed
 
@@ -27,7 +31,7 @@ Note - All hash comments refer to the issue number. Eg. #169 refers to https://g
 - Fixed exception being thrown when loading a template that has an image element but no image selected (#369).
 - Fixed issue with PDF being generated without a name (#333).
 
-## [3.7.4] - 2020-03-12
+## [3.8.4] - 2020-03-12
 
 ### Added
 
@@ -44,16 +48,17 @@ Note - All hash comments refer to the issue number. Eg. #169 refers to https://g
 - Fixed the displaying of names of a custom user field (#326).
 - Do not allow '0' as a value for width or height in QR code (#321).
 
-## [3.7.3] - 2020-03-09
+## [3.8.3] - 2020-03-09
 
 ### Fixed
 
 - Fixed foreign key violation (#331).
 
-## [3.7.2] - 2020-02-01
+## [3.8.2] - 2019-12-16
 
 ### Added
 
+- Added subplugins.json file (#312).
 - Re-added 'code' column to user report (#264).
 - Add 'userfullname' variable for email subject (#316).
 

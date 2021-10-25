@@ -26,7 +26,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'UES People';
+$string['pluginname'] = 'LSU People';
 $string['downloadconfirm'] = 'I assume the responsibility of guarding this data on my local drive.';
 $string['eventalllogsviewed'] = "Viewed all UES People logs";
 

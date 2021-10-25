@@ -28,12 +28,11 @@ define(
         'jquery',
         'core/ajax',
         'theme_snap/util',
-        'theme_snap/responsive_video',
         'theme_snap/ajax_notification',
         'core/str',
         'core/event'
     ],
-    function($, ajax, util, responsiveVideo, ajaxNotify, str, Event) {
+    function($, ajax, util, ajaxNotify, str, Event) {
 
         /**
          * Module has been completed.
@@ -115,9 +114,6 @@ define(
             if (completionHTML) {
                 updateModCompletion(pageMod, completionHTML);
             }
-
-            // If there is any video in the new content then we need to make it responsive.
-            responsiveVideo.apply();
         };
 
         /**
@@ -185,7 +181,11 @@ define(
                                     }
                                 });
                             }
-                        });
+                        }).then(
+                            ()=>{
+                                $(document).trigger('snap-course-content-loaded');
+                            }
+                        );
                     } else {
                         revealPageMod(pageMod);
                     }
@@ -234,7 +234,6 @@ define(
              */
             var lightboxclose = function() {
                 var lbox = lightbox();
-                window.opener.location.reload(true);
                 lbox.remove();
             };
 
@@ -288,15 +287,26 @@ define(
 
         return {
 
-            init: function() {
+            init: function(courseConfig) {
 
-                // Listeners
-                listenPageModuleReadMore();
+                // Listeners.
+                if (courseConfig.loadPageInCourse) {
+                    listenPageModuleReadMore();
+                }
                 listenManualCompletion();
 
                 // Add toggle class for hide/show activities/resources - additional to moodle adding dim.
-                $(document).on("click", '[data-action=hide],[data-action=show]', function() {
-                    $(this).closest('li.activity').toggleClass('draft');
+                $(document).on("click", '[data-action=hide],[data-action=show],[data-action=stealth]', function() {
+                    if ($(this).attr('data-action') === 'hide' ) {
+                        $(this).closest('li.activity').addClass('draft');
+                        $(this).closest('li.activity').removeClass('stealth');
+                    } else if ($(this).attr('data-action') === 'stealth') {
+                        $(this).closest('li.activity').removeClass('draft');
+                        $(this).closest('li.activity').addClass('stealth');
+                    } else if ($(this).attr('data-action') === 'show') {
+                        $(this).closest('li.activity').removeClass('draft');
+                        $(this).closest('li.activity').removeClass('stealth');
+                    }
                 });
 
                 // Make lightbox for list display of resources.
@@ -316,7 +326,9 @@ define(
                     }
 
                     // Excludes any clicks in the actions menu, on links or forms.
-                    var selector = '.snap-asset-completion-tracking, .snap-asset-actions, .contentafterlink a, .ally-actions';
+                    var selector = '.snap-asset-completion-tracking, ' +
+                        '.snap-asset-actions, .contentafterlink a, .ally-actions, ' +
+                        '.snap-header-card, .contentafterlink, .snap-asset-meta';
                     var withintarget = $(trigger).closest(selector).length;
                     if (!withintarget) {
                         if ($(this).hasClass('js-snap-media')) {

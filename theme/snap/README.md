@@ -1,7 +1,4 @@
-#Snap Theme
-
-SNAP Theme modified for LSU (ties into various LSU Moodle plugins).
-
+#Snap
 Snap is a Moodle theme that makes online learning an enjoyable and intuitive experience for learners and educators.
 
 Snap’s user-friendly design removes barriers to online learning, enabling you to create the modern, engaging experience users expect on the web today. Its intuitive layout is optimised for online learning, focusing on the things that matter - your learning activities and content.

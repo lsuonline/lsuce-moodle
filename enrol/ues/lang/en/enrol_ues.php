@@ -203,3 +203,9 @@ $string['session_key'] = 'Session';
 $string['sections'] = 'Sections';
 $string['in_session'] = 'In Session?';
 $string['clear_reprocess_task'] = 'Clear UES reprocess data';
+
+// Username / Password settings strings.
+$string['uesusername'] = 'UES Username';
+$string['uesusername_desc'] = 'UES Username for the webservice from which UES grabs enrollment data.';
+$string['uespassword'] = 'UES Password';
+$string['uespassword_desc'] = 'UES Password that matches the above username.';

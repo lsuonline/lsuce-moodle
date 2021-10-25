@@ -92,6 +92,24 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
         };
 
         /**
+         * Change save and cancel buttons from forms to the bottom on mobile mode.
+         */
+        $(window).on('resize', function() {
+            mobileFormChecker();
+        });
+
+        var mobileFormChecker = function() {
+            var savebuttonsformrequired = $('div[role=main] .mform div.snap-form-required fieldset > div.form-group.fitem');
+            var savebuttonsformadvanced = $('div[role=main] .mform div.snap-form-advanced > div:nth-of-type(3)');
+            var width = $(window).width();
+            if (width < 767) {
+                $('.snap-form-advanced').append(savebuttonsformrequired);
+            } else if (width > 767)  {
+                $('.snap-form-required fieldset#id_general').append(savebuttonsformadvanced);
+            }
+        };
+
+        /**
          * move PHP errors into header
          *
          * @author Guy Thomas
@@ -407,6 +425,15 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
             // Show fixed header on scroll down
             // using headroom js - http://wicky.nillia.ms/headroom.js/
             var myElement = document.querySelector("#mr-nav");
+            // Functions added to trigger on pin and unpin actions for the nav bar
+            var onPin = () => {
+                $('.snap-drawer-no-headroom').addClass('snap-drawer-headroom');
+                $('.snap-drawer-headroom').removeClass('snap-drawer-no-headroom');
+            };
+            var onUnpin = () => {
+                $('.snap-drawer-headroom').addClass('snap-drawer-no-headroom');
+                $('.snap-drawer-no-headroom').removeClass('snap-drawer-headroom');
+            };
             // Construct an instance of Headroom, passing the element.
             var headroom = new Headroom(myElement, {
                 "tolerance": 5,
@@ -422,7 +449,9 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     top: "headroom--top",
                     // when below offset
                     notTop: "headroom--not-top"
-                }
+                },
+                "onPin": onPin,
+                "onUnpin": onUnpin
             });
             // When not signed in always show mr-nav?
             if (!$('.notloggedin').length) {
@@ -485,7 +514,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                 $(href).toggleClass('state-visible').focus();
                 e.preventDefault();
 
-                if ($('.message-drawer').length) {
+                if ($('.message-app.main').length === 0) {
                     document.dispatchEvent(new Event("messages-drawer:toggle"));
                 }
             });
@@ -516,9 +545,9 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                 e.preventDefault();
             });
 
-            // Bootstrap js elements
+            // Bootstrap js elements.
 
-            // Iniitalise core bootsrtap tooltip js
+            // Iniitalise core bootstrap tooltip js.
             $(function() {
                 var supportsTouch = false;
                 if ('ontouchstart' in window) {
@@ -529,7 +558,10 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     supportsTouch = true;
                 }
                 if (!supportsTouch) {
-                    $('[data-toggle="tooltip"]').tooltip();
+                    var tooltipNode = $('[data-toggle="tooltip"]');
+                    if ($.isFunction(tooltipNode.tooltip)) {
+                        tooltipNode.tooltip();
+                    }
                 }
             });
         };
@@ -575,6 +607,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
              * @param {bool} inAlternativeRole
              * @param {string} brandColors
              * @param {int} gradingConstants
+             * @param {boolean} isAdmin
              */
             snapInit: function(courseConfig, pageHasCourseContent, siteMaxBytes, forcePassChange,
                                messageBadgeCountEnabled, userId, sitePolicyAcceptReqd, inAlternativeRole,
@@ -619,9 +652,30 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     addListeners(); // essential
                     applyBlockHash(); // change location hash if necessary
                     bodyClasses(); // add body classes
+                    mobileFormChecker();
 
                     // Make sure that the blocks are always within page-content for assig view page.
                     $('#page-mod-assign-view #page-content').append($('#moodle-blocks'));
+
+                    // Append resource card fadeout to content resource card.
+                    $('.snap-resource-long .contentafterlink .snap-resource-card-fadeout').each(function() {
+                        $(this).appendTo($(this).prevAll('.snap-resource-long .contentafterlink .no-overflow'));
+                    });
+
+                    // Remove from Dom the completion tracking when it is disabled for an activity.
+                    $('.snap-header-card .snap-header-card-icons .disabled-snap-asset-completion-tracking').remove();
+
+                    // Prepend asset type when activity is a folder to appear in the card header instead of the content.
+                    var folders = $('li.snap-activity.modtype_folder');
+                    $.each(folders, function (index, folder) {
+                        var content = $(folder).find('div.contentwithoutlink div.snap-assettype');
+                        if (content.length > 0) {
+                            if ($(folder).find('div.activityinstance div.snap-header-card .asset-type').length == 0) {
+                                var folderAssetTypeHeader = $(folder).find('div.activityinstance div.snap-header-card');
+                                content.prependTo(folderAssetTypeHeader);
+                            }
+                        }
+                    });
 
                     // Add a class to the body to show js is loaded.
                     $('body').addClass('snap-js-loaded');
@@ -646,6 +700,58 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                             $('.nav-link[href="' + tabHash + '"]').tab('show');
                             $(window).scrollTop(0);
                         }
+
+                        // Hide advanced feeds additional life time setting when advanced feeds are disabled.
+                        var changeNodeVisibilityOnChecked = function(selectorToCheck, selectorToChange) {
+                            var nodeToCheck = $(selectorToCheck), nodeToChange = $(selectorToChange);
+                            if (nodeToCheck.is(':checked')) {
+                                nodeToChange.show();
+                                return;
+                            }
+                            nodeToChange.hide();
+                        };
+                        var advFeedsCheckboxSelector = '#id_s_theme_snap_personalmenuadvancedfeedsenable';
+                        var advFeedsLifeTimeSelector = '#admin-personalmenuadvancedfeedslifetime';
+                        changeNodeVisibilityOnChecked(advFeedsCheckboxSelector, advFeedsLifeTimeSelector);
+                        $(advFeedsCheckboxSelector).on('click', function() {
+                            changeNodeVisibilityOnChecked(advFeedsCheckboxSelector, advFeedsLifeTimeSelector);
+                        });
+                    }
+
+                    // Add extra padding when the error validation message appears at the moment of enter a not valid
+                    // URL for feature spots.
+                    var firstlinkerror = $('#page-admin-setting-themesettingsnap #themesnapfeaturespots' +
+                        ' #admin-fs_one_title_link span.error');
+                    var secondlinkerror = $('#page-admin-setting-themesettingsnap #themesnapfeaturespots' +
+                        ' #admin-fs_two_title_link span.error');
+                    var thirdlinkerror = $('#page-admin-setting-themesettingsnap #themesnapfeaturespots' +
+                        ' #admin-fs_three_title_link span.error');
+                    var titlelinksettingone = $('#page-admin-setting-themesettingsnap #themesnapfeaturespots' +
+                        ' #admin-fs_one_title_link .form-label');
+                    var titlelinksettingtwo = $('#page-admin-setting-themesettingsnap #themesnapfeaturespots' +
+                        ' #admin-fs_two_title_link .form-label');
+                    var titlelinksettingthree = $('#page-admin-setting-themesettingsnap #themesnapfeaturespots' +
+                        ' #admin-fs_three_title_link .form-label');
+                    // Create an extra Div to wrap title links settings to avoid line break.
+                    $('#page-admin-setting-themesettingsnap #themesnapfeaturespots ' +
+                        '#admin-fs_three_title').nextUntil('#page-admin-setting-themesettingsnap #themesnapfeaturespots ' +
+                        '#admin-fs_one_title_link_cb').wrapAll("<div class=fs-title-links></div>");
+                    var linktitlestyle = {'padding-bottom': '2.1em'};
+
+                    // We need to modify the padding of these elements depending on the case, because when validating
+                    // the link and throwing an error, this will create an extra height to the parent and can break
+                    // the visualization of the settings page for Feature spots.
+                    if ((firstlinkerror).length) {
+                        titlelinksettingtwo.css(linktitlestyle);
+                        titlelinksettingthree.css(linktitlestyle);
+                    }
+                    if ((secondlinkerror).length) {
+                        titlelinksettingone.css(linktitlestyle);
+                        titlelinksettingthree.css(linktitlestyle);
+                    }
+                    if ((thirdlinkerror).length) {
+                        titlelinksettingone.css(linktitlestyle);
+                        titlelinksettingtwo.css(linktitlestyle);
                     }
 
                     if ($('body').hasClass('snap-pm-open')) {
@@ -659,11 +765,21 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         usedefaultname.value = '1';
                         usedefaultname.checked = true;
                         sname.required = "required";
+                        // Make sure that section does have at least one character.
+                        $(sname).attr("pattern", ".*\\S+.*");
                         $(usedefaultname).parent().css('display', 'none');
 
                         // Enable the cancel button.
                         $('#id_cancel').on('click', function() {
                             $(sname).removeAttr('required');
+                            $(sname).removeAttr('pattern');
+                            return true;
+                        });
+                    // Make sure that in other formats, "only spaces" name is not available.
+                    } else {
+                        $('#id_name_value').attr("pattern", ".*\\S+.*");
+                        $('#id_cancel').on('click', function() {
+                            $(sname).removeAttr('pattern');
                             return true;
                         });
                     }
@@ -707,7 +823,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         ];
                         vital = vital.join();
 
-                        $('#mform1 > fieldset').not(vital).wrapAll('<div class="snap-form-advanced col-md-4" />');
+                        $('form[id^="mform1"] > fieldset').not(vital).wrapAll('<div class="snap-form-advanced col-md-4" />');
 
                         // Add expand all to advanced column.
                         $(".snap-form-advanced").append($(".collapsible-actions"));
@@ -717,10 +833,10 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         }
 
                         // Sanitize required input into a single fieldset
-                        var mainForm = $("#mform1 fieldset:first");
-                        var appendTo = $("#mform1 fieldset:first .fcontainer");
+                        var mainForm = $('form[id^="mform1"] fieldset:first');
+                        var appendTo = $('form[id^="mform1"] fieldset:first .fcontainer');
 
-                        var required = $("#mform1 > fieldset").not("#mform1 > fieldset:first");
+                        var required = $('form[id^="mform1"] > fieldset').not('form[id^="mform1"] > fieldset:first');
                         for (var i = 0; i < required.length; i++) {
                             var content = $(required[i]).find('.fcontainer');
                             $(appendTo).append(content);
@@ -728,16 +844,37 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         }
                         $(mainForm).wrap('<div class="snap-form-required col-md-8" />');
 
-                        var description = $("#mform1 fieldset:first .fitem_feditor:not(.required)");
+                        var description = $('form[id^="mform1"] fieldset:first .fitem_feditor:not(.required)');
 
                         if (onModSettings && description) {
-                            var editingassignment = $('body').attr('id') == 'page-mod-assign-mod';
-                            var editingchoice = $('body').attr('id') == 'page-mod-choice-mod';
-                            var editingturnitin = $('body').attr('id') == 'page-mod-turnitintool-mod';
-                            var editingworkshop = $('body').attr('id') == 'page-mod-workshop-mod';
-                            if (!editingchoice && !editingassignment && !editingturnitin && !editingworkshop) {
+                            var noNeedDescSelectors = [
+                                'body#page-mod-assign-mod',
+                                'body#page-mod-choice-mod',
+                                'body#page-mod-turnitintool-mod',
+                                'body#page-mod-workshop-mod',
+                            ];
+                            var addMultiMessageSelectors = [
+                                'body#page-mod-url-mod',
+                                'body#page-mod-resource-mod',
+                                'body#page-mod-folder-mod',
+                                'body#page-mod-imscp-mod',
+                                'body#page-mod-lightboxgallery-mod',
+                                'body#page-mod-scorm-mod',
+                            ];
+                            if ($(noNeedDescSelectors.join()).length === 0) {
                                 $(appendTo).append(description);
                                 $(appendTo).append($('#fitem_id_showdescription'));
+                            }
+                            // Resource cards - add a message to this type of activities, these activities will not display
+                            // any multimedia.
+                            if ($(addMultiMessageSelectors.join()).length > 0) {
+                                str.get_strings([
+                                    {key : 'multimediacard', component : 'theme_snap'}
+                                ]).done(function(stringsjs) {
+                                    var activityCards = stringsjs[0];
+                                    var cardmultimedia = $("[id='id_showdescription']").closest('.form-group');
+                                    $(cardmultimedia).append(activityCards);
+                                });
                             }
                         }
 
@@ -750,7 +887,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         // Assignment - put due date in required, and attatchments in common settings.
                         var filemanager = $("#page-mod-assign-mod [data-fieldtype='filemanager']").closest('.form-group');
                         var duedate = $("#page-mod-assign-mod [for='id_duedate']").closest('.form-group');
-                        $("#page-mod-assign-mod .snap-form-advanced #id_modstandardelshdr .fcontainer").append(filemanager);
+                        $("#page-mod-assign-mod .snap-form-required #id_modstandardelshdr .fcontainer").append(filemanager);
                         $("#page-mod-assign-mod .snap-form-required .fcontainer").append(duedate);
 
                         // Move availablity at the top of advanced settings.
@@ -801,7 +938,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         $('.snap-form-advanced').prepend(availablity);
 
                         // Add save buttons.
-                        var savebuttons = $("#mform1 > .form-group:last");
+                        var savebuttons = $('form[id^="mform1"] > .form-group:last');
                         $(mainForm).append(savebuttons);
 
                         // Expand collapsed fieldsets when editing a mod that has errors in it.
@@ -887,17 +1024,25 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     }
 
                     // Add tab logic so search is focused before admin.
+                    var customMenu = $('ul#snap-navbar-content li:first-child a');
+                    var moodlePage = $("#moodle-page a:first");
                     var notificationsBtn = $('#nav-notification-popover-container > div.popover-region-toggle.nav-link');
                     var searchButton = $('.search-input-wrapper.nav-link > div[role="button"]');
                     var adminMenuTrigger = $('#admin-menu-trigger');
-                    var snapHome = $('#snap-home');
-                    if (notificationsBtn.length && searchButton.length && adminMenuTrigger.length && snapHome.length) {
+
+                    var lastElement;
+                    if (customMenu.length) {
+                        lastElement = customMenu;
+                    } else {
+                        lastElement = moodlePage;
+                    }
+                    if (notificationsBtn.length && searchButton.length && adminMenuTrigger.length && lastElement.length) {
                         // Update tab events because all elements have tabindex="0" and they are rendered funny.
                         require(
                             [
                                 'theme_snap/rearrange_tab_handler-lazy'
                             ], function(searchTabHandler) {
-                                searchTabHandler.init([notificationsBtn, searchButton, adminMenuTrigger, snapHome]);
+                                searchTabHandler.init([notificationsBtn, searchButton, adminMenuTrigger, lastElement]);
                             }
                         );
                     }
@@ -915,10 +1060,22 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         $('#mr-nav').removeClass('headroom--pinned').addClass('headroom--unpinned');
                     }
 
+                    // Re position submit buttons for forms when using mobile mode at the bottom of the form.
+                    var savebuttonsformrequired = $('div[role=main] .mform div.snap-form-required fieldset > div.form-group.fitem');
+                    var width = $(window).width();
+                    if (width < 767) {
+                        $('.snap-form-advanced').append(savebuttonsformrequired);
+                    }
+
                     waitForFullScreenButton();
                 });
-                accessibility.init();
+                accessibility.snapAxInit();
                 messages.init();
+
+                // Smooth scroll for go to top button.
+                $("div#goto-top-link > a").click(function() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
             }
         };
     }

@@ -146,7 +146,7 @@ function xmldb_customcert_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2018051705, 'customcert');
     }
 
-    if ($oldversion < 2019052003) {
+    if ($oldversion < 2019111803) {
         $table = new xmldb_table('customcert');
         $index = new xmldb_index('templateid', XMLDB_INDEX_UNIQUE, ['templateid']);
         if ($dbman->index_exists($table, $index)) {
@@ -163,7 +163,7 @@ function xmldb_customcert_upgrade($oldversion) {
         $key = new xmldb_key('templateid', XMLDB_KEY_FOREIGN, ['templateid'], 'customcert_templates', ['id']);
         $dbman->add_key($table, $key);
 
-        upgrade_mod_savepoint(true, 2019052003, 'customcert');
+        upgrade_mod_savepoint(true, 2019111803, 'customcert');
     }
 
     return true;

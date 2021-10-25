@@ -55,6 +55,7 @@ class backup_controller extends base_controller {
 
     protected $status; // Current status of the controller (created, planned, configured...)
 
+    /** @var backup_plan */
     protected $plan;   // Backup execution plan
     protected $includefiles; // Whether this backup includes files or not.
 
@@ -70,6 +71,12 @@ class backup_controller extends base_controller {
     protected $checksum; // Cache @checksumable results for lighter @is_checksum_correct() uses
 
     /**
+     * The role ids to keep in a copy operation.
+     * @var array
+     */
+    protected $keptroles = array();
+
+    /**
      * Constructor for the backup controller class.
      *
      * @param int $type Type of the backup; One of backup::TYPE_1COURSE, TYPE_1SECTION, TYPE_1ACTIVITY
@@ -78,8 +85,9 @@ class backup_controller extends base_controller {
      * @param bool $interactive Whether this backup will require user interaction; backup::INTERACTIVE_YES or INTERACTIVE_NO
      * @param int $mode One of backup::MODE_GENERAL, MODE_IMPORT, MODE_SAMESITE, MODE_HUB, MODE_AUTOMATED
      * @param int $userid The id of the user making the backup
+     * @param bool $releasesession Should release the session? backup::RELEASESESSION_YES or backup::RELEASESESSION_NO
      */
-    public function __construct($type, $id, $format, $interactive, $mode, $userid){
+    public function __construct($type, $id, $format, $interactive, $mode, $userid, $releasesession = backup::RELEASESESSION_NO) {
         $this->type = $type;
         $this->id   = $id;
         $this->courseid = backup_controller_dbops::get_courseid_from_type_id($this->type, $this->id);
@@ -87,6 +95,7 @@ class backup_controller extends base_controller {
         $this->interactive = $interactive;
         $this->mode = $mode;
         $this->userid = $userid;
+        $this->releasesession = $releasesession;
 
         // Apply some defaults
         $this->operation = backup::OPERATION_BACKUP;
@@ -94,7 +103,7 @@ class backup_controller extends base_controller {
         $this->checksum = '';
 
         // Set execution based on backup mode.
-        if ($mode == backup::MODE_ASYNC) {
+        if ($mode == backup::MODE_ASYNC || $mode == backup::MODE_COPY) {
             $this->execution = backup::EXECUTION_DELAYED;
         } else {
             $this->execution = backup::EXECUTION_INMEDIATE;
@@ -271,6 +280,37 @@ class backup_controller extends base_controller {
         return $this->includefiles;
     }
 
+    /**
+     * Returns the default value for $this->includefiles before we consider any settings.
+     *
+     * @return bool
+     * @throws dml_exception
+     */
+    protected function get_include_files_default() : bool {
+        // We normally include files.
+        $includefiles = true;
+
+        // In an import, we don't need to include files.
+        if ($this->get_mode() === backup::MODE_IMPORT) {
+            $includefiles = false;
+        }
+
+        // When a backup is intended for the same site, we don't need to include the files.
+        // Note, this setting is only used for duplication of an entire course.
+        if ($this->get_mode() === backup::MODE_SAMESITE || $this->get_mode() === backup::MODE_COPY) {
+            $includefiles = false;
+        }
+
+        // If backup is automated and we have set auto backup config to exclude
+        // files then set them to be excluded here.
+        $backupautofiles = (bool) get_config('backup', 'backup_auto_files');
+        if ($this->get_mode() === backup::MODE_AUTOMATED && !$backupautofiles) {
+            $includefiles = false;
+        }
+
+        return $includefiles;
+    }
+
     public function get_operation() {
         return $this->operation;
     }
@@ -319,6 +359,22 @@ class backup_controller extends base_controller {
     }
 
     /**
+     * Sets the user roles that should be kept in the destination course
+     * for a course copy operation.
+     *
+     * @param array $roleids
+     * @throws backup_controller_exception
+     */
+    public function set_kept_roles(array $roleids): void {
+        // Only allow of keeping user roles when controller is in copy mode.
+        if ($this->mode != backup::MODE_COPY) {
+            throw new backup_controller_exception('cannot_set_keep_roles_wrong_mode');
+        }
+
+        $this->keptroles = $roleids;
+    }
+
+    /**
      * Executes the backup
      * @return void Throws and exception of completes
      */
@@ -326,6 +382,17 @@ class backup_controller extends base_controller {
         // Basic/initial prevention against time/memory limits
         core_php_time_limit::raise(1 * 60 * 60); // 1 hour for 1 course initially granted
         raise_memory_limit(MEMORY_EXTRA);
+
+        // Release the session so other tabs in the same session are not blocked.
+        if ($this->get_releasesession() === backup::RELEASESESSION_YES) {
+            \core\session\manager::write_close();
+        }
+
+        // If the controller has decided that we can include files, then check the setting, otherwise do not include files.
+        if ($this->get_include_files()) {
+            $this->set_include_files((bool) $this->get_plan()->get_setting('files')->get_value());
+        }
+
         // If this is not a course backup, or single activity backup (e.g. duplicate) inform the plan we are not
         // including all the activities for sure. This will affect any
         // task/step executed conditionally to stop including information
@@ -334,6 +401,12 @@ class backup_controller extends base_controller {
             $this->log('notifying plan about excluded activities by type', backup::LOG_DEBUG);
             $this->plan->set_excluding_activities();
         }
+
+        // Handle copy operation specific settings.
+        if ($this->mode == backup::MODE_COPY) {
+            $this->plan->set_kept_roles($this->keptroles);
+        }
+
         return $this->plan->execute();
     }
 
@@ -386,35 +459,19 @@ class backup_controller extends base_controller {
         $this->log('applying plan defaults', backup::LOG_DEBUG);
         backup_controller_dbops::apply_config_defaults($this);
         $this->set_status(backup::STATUS_CONFIGURED);
-        $this->set_include_files();
+        $this->set_include_files($this->get_include_files_default());
     }
 
     /**
      * Set the initial value for the include_files setting.
      *
+     * @param bool $includefiles
      * @see backup_controller::get_include_files for further information on the purpose of this setting.
-     * @return int Indicates whether files should be included in backups.
      */
-    protected function set_include_files() {
-        // We normally include files.
-        $includefiles = true;
-
-        // In an import, we don't need to include files.
-        if ($this->get_mode() === backup::MODE_IMPORT) {
-            $includefiles = false;
-        }
-
-        // When a backup is intended for the same site, we don't need to include the files.
-        // Note, this setting is only used for duplication of an entire course.
-        if ($this->get_mode() === backup::MODE_SAMESITE) {
-            $includefiles = false;
-        }
-
-        $this->includefiles = (int) $includefiles;
+    protected function set_include_files(bool $includefiles) {
         $this->log("setting file inclusion to {$this->includefiles}", backup::LOG_DEBUG);
-        return $this->includefiles;
+        $this->includefiles = (int) $includefiles;
     }
-
 }
 
 /*

@@ -1,3 +1,34 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template core/filemanager_fileselect
+
+    This template renders the window with file information/actions.
+
+    Example context (json):
+    {
+        "helpicon": "<a class='btn ..'><i class='icon fa fa-question-circle ..'></i></a>",
+        "licensehelpicon": {
+            "text": "<ul><li><a href='http://en.wikipedia.org/wiki/All_rights_reserved'>All rights reserved</a></li></ul>",
+            "alt": "Help with Choose license"
+        },
+        "columns": true
+    }
+}}
 <div class="filemanager fp-select">
     <div class="fp-select-loading">
         {{#pix}}i/loading_small{{/pix}}
@@ -22,10 +53,7 @@
 
                 </div>
                 <div class="fp-license form-group row mx-0">
-                    <label class="form-control-label col-4 px-0">{{#str}}chooselicense, repository{{/str}}</label>
-                    <div class="col-8 form-inline pr-0">
-                        <select class="custom-select form-control"></select>
-                    </div>
+                    {{>core/filemanager_chooselicense}}
                 </div>
                 <div class="fp-path form-group row mx-0">
                     <label class="form-control-label col-4 px-0">{{#str}}path, repository{{/str}}</label>
@@ -34,13 +62,13 @@
                     </div>
                 </div>
                 <div class="fp-original form-group row mx-0">
-                    <label class="form-control-label col-4 px-0">{{#str}}original, repository{{/str}}</label>
+                    <div class="form-control-label col-4 px-0">{{#str}}original, repository{{/str}}</div>
                     <div class="col-8 form-inline">
                         <span class="fp-originloading">{{#pix}}i/loading_small{{/pix}} {{#str}}loading, repository{{/str}}</span><span class="fp-value"></span>
                     </div>
                 </div>
                 <div class="fp-reflist form-group row mx-0">
-                    <label class="form-control-label col-4 px-0">{{#str}}referenceslist, repository{{/str}}</label>
+                    <div class="form-control-label col-4 px-0">{{#str}}referenceslist, repository{{/str}}</div>
                     <div class="col-8 form-inline">
                         <p class="fp-refcount"></p>
                         <span class="fp-reflistloading">{{#pix}}i/loading_small{{/pix}} {{#str}}loading, repository{{/str}}</span>

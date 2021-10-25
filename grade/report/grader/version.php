@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2019121601;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2019051100;        // Requires this Moodle version
+// BEGIN LSU Manual Grade Raw Grade support.
+$plugin->version   = 2020061501;        // The current plugin version (Date: YYYYMMDDXX)
+// END LSU Manual Grade Raw Grade support.
+$plugin->requires  = 2020060900;        // Requires this Moodle version
 $plugin->component = 'gradereport_grader'; // Full name of the plugin (used for diagnostics)

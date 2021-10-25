@@ -40,11 +40,40 @@ require_once($CFG->dirroot . '/question/type/oumultiresponse/questiontype.php');
  */
 class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test_base {
 
+    public function test_shows_standrd_instruction_yes() {
+
+        // Create a multichoice single question.
+        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
+        $mc->shuffleanswers = false;
+        $mc->showstandardinstruction = true;
+        $this->start_attempt_at_question($mc, 'interactive', 3);
+        $this->render();
+
+        // Check for 'Show standard instruction'.
+        $standardinstruction = get_string('selectmulti', 'qtype_multichoice');
+        $this->assertStringContainsString($standardinstruction, $this->currentoutput);
+    }
+
+    public function test_shows_standrd_instruction_no() {
+
+        // Create a multichoice single question.
+        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
+        $mc->shuffleanswers = false;
+        $mc->showstandardinstruction = false;
+        $this->start_attempt_at_question($mc, 'interactive', 3);
+        $this->render();
+
+        // Check for 'Show standard instruction'.
+        $standardinstruction = get_string('selectmulti', 'qtype_multichoice');
+        $this->assertStringNotContainsString($standardinstruction, $this->currentoutput);
+    }
+
     public function test_interactive_behaviour() {
 
         // Create a multichoice single question.
         $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
         $mc->shuffleanswers = false;
+        $mc->showstandardinstruction = true;
         $this->start_attempt_at_question($mc, 'interactive', 3);
 
         // Check the initial state.
@@ -60,9 +89,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(3),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
 
         // Save the wrong answer.
         $this->process_submission(array('choice1' => '1', 'choice3' => '1'));
@@ -80,9 +107,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(3),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
 
         // Submit the wrong answer.
         $this->process_submission(array('choice1' => '1', 'choice3' => '1', '-submit' => '1'));
@@ -125,9 +150,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(2),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
 
         // Submit a partially right answer.
         $this->process_submission(array('choice0' => '1', 'choice3' => '1', '-submit' => '1'));
@@ -170,9 +193,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(1),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
 
         // Submit the right answer.
         $this->process_submission(array('choice0' => '1', 'choice2' => '1', '-submit' => '1'));
@@ -194,11 +215,13 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
 
         // Create a multichoice single question.
         $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
+        $mc->showstandardinstruction = 1;
         $mc->hints = array(
             new qtype_oumultiresponse_hint(1, 'Hint 1', FORMAT_HTML, true, true, true),
             new qtype_oumultiresponse_hint(2, 'Hint 2', FORMAT_HTML, true, true, true),
         );
         $mc->shuffleanswers = false;
+        $mc->showstandardinstruction = true;
         $this->start_attempt_at_question($mc, 'interactive', 3);
 
         // Check the initial state.
@@ -244,7 +267,9 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_hidden_expectation(
                         $this->quba->get_field_prefix($this->slot) . 'choice2'),
                 $this->get_does_not_contain_hidden_expectation(
-                        $this->quba->get_field_prefix($this->slot) . 'choice3'));
+                        $this->quba->get_field_prefix($this->slot) . 'choice3'),
+                new question_pattern_expectation('/' .
+                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
     }
 
     public function test_interactive_clear_wrong() {
@@ -256,6 +281,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
             new qtype_oumultiresponse_hint(2, 'Hint 2', FORMAT_HTML, true, true, true),
         );
         $mc->shuffleanswers = false;
+        $mc->showstandardinstruction = true;
         $this->start_attempt_at_question($mc, 'interactive', 3);
 
         // Check the initial state.
@@ -272,9 +298,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(3),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
 
         // Submit a wrong answer.
         $this->process_submission(array('choice1' => '1', 'choice3' => '1', '-submit' => '1'));
@@ -315,9 +339,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(2),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
 
         // Submit a partially right answer.
         $this->process_submission(array('choice0' => '1', 'choice3' => '1', '-submit' => '1'));
@@ -358,9 +380,7 @@ class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test
                 $this->get_does_not_contain_feedback_expectation(),
                 $this->get_does_not_contain_num_parts_correct(),
                 $this->get_tries_remaining_expectation(1),
-                $this->get_no_hint_visible_expectation(),
-                new question_pattern_expectation('/' .
-                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
+                $this->get_no_hint_visible_expectation());
     }
 
     public function test_interactive_bug_11263() {

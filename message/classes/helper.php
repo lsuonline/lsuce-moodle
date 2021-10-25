@@ -465,14 +465,12 @@ class helper {
     public static function messageuser_link_params(int $useridto) : array {
         global $USER;
 
-        // LSU Changed message-user-button to messages-user-button due to snap issues.
         return [
-            'id' => 'messages-user-button',
+            'id' => 'message-user-button',
             'role' => 'button',
             'data-conversationid' => api::get_conversation_between_users([$USER->id, $useridto]),
             'data-userid' => $useridto,
         ];
-        // LSU Changed message-user-button to messages-user-button due to snap issues.
     }
 
     /**
@@ -585,23 +583,24 @@ class helper {
 
             // Set contact and blocked status indicators.
             $data->iscontact = ($member->contactid) ? true : false;
-            $data->isblocked = ($member->blockedid) ? true : false;
+
+            // We don't want that a user has been blocked if they can message the user anyways.
+            $canmessageifblocked = api::can_send_message($referenceuserid, $member->id, true);
+            $data->isblocked = ($member->blockedid && !$canmessageifblocked) ? true : false;
 
             $data->isdeleted = ($member->deleted) ? true : false;
 
             $data->requirescontact = null;
             $data->canmessage = null;
+            $data->canmessageevenifblocked = null;
             if ($includeprivacyinfo) {
                 $privacysetting = api::get_user_privacy_messaging_preference($member->id);
                 $data->requirescontact = $privacysetting == api::MESSAGE_PRIVACY_ONLYCONTACTS;
 
-                $recipient = new \stdClass();
-                $recipient->id = $member->id;
-
-                $sender = new \stdClass();
-                $sender->id = $referenceuserid;
-
-                $data->canmessage = !$data->isdeleted && api::can_post_message($recipient, $sender);
+                // Here we check that if the sender wanted to block the recipient, the
+                // recipient would still be able to message them regardless.
+                $data->canmessageevenifblocked = !$data->isdeleted && $canmessageifblocked;
+                $data->canmessage = !$data->isdeleted && api::can_send_message($member->id, $referenceuserid);
             }
 
             // Populate the contact requests, even if we don't need them.
@@ -773,7 +772,9 @@ class helper {
                 'messageurl' => $messageurl,
                 'notification' => $notification
             ],
-            'isdrawer' => $isdrawer
+            'isdrawer' => $isdrawer,
+            'showemojipicker' => !empty($CFG->allowemojipicker),
+            'messagemaxlength' => api::MESSAGE_MAX_LENGTH,
         ];
 
         if ($sendtouser || $conversationid) {

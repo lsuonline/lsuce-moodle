@@ -76,10 +76,28 @@ class core_gradelib_testcase extends advanced_testcase {
         $letter->contextid = $context->id;
         $DB->insert_record('grade_letters', $letter);
 
+        // Pre-warm the cache, ensure that that the letter is cached.
+        $cache = cache::make('core', 'grade_letters');
+
+        // Check that the cache is empty beforehand.
+        $letters = $cache->get($context->id);
+        $this->assertFalse($letters);
+
+        // Call the function.
+        grade_get_letters($context);
+
+        $letters = $cache->get($context->id);
+        $this->assertEquals(1, count($letters));
+        $this->assertTrue(in_array($letter->letter, $letters));
+
         remove_grade_letters($context, false);
 
         // Confirm grade letter was deleted.
         $this->assertEquals(0, $DB->count_records('grade_letters'));
+
+        // Confirm grade letter is also deleted from cache.
+        $letters = $cache->get($context->id);
+        $this->assertFalse($letters);
     }
 
     /**
@@ -150,5 +168,137 @@ class core_gradelib_testcase extends advanced_testcase {
 
         // Now because of the failure, two things need updating.
         $this->assertEquals(2, $DB->count_records('grade_items', ['courseid' => $course->id, 'needsupdate' => 1]));
+    }
+
+    /**
+     * Tests for the grade_get_date_for_user_grade function.
+     *
+     * @dataProvider grade_get_date_for_user_grade_provider
+     * @param stdClass $grade
+     * @param stdClass $user
+     * @param int $expected
+     */
+    public function test_grade_get_date_for_user_grade(stdClass $grade, stdClass $user, ?int $expected): void {
+        $this->assertEquals($expected, grade_get_date_for_user_grade($grade, $user));
+    }
+
+    /**
+     * Data provider for tests of the grade_get_date_for_user_grade function.
+     *
+     * @return array
+     */
+    public function grade_get_date_for_user_grade_provider(): array {
+        $u1 = (object) [
+            'id' => 42,
+        ];
+        $u2 = (object) [
+            'id' => 930,
+        ];
+
+        $d1 = 1234567890;
+        $d2 = 9876543210;
+
+        $g1 = (object) [
+            'usermodified' => $u1->id,
+            'dategraded' => $d1,
+            'datesubmitted' => $d2,
+        ];
+        $g2 = (object) [
+            'usermodified' => $u1->id,
+            'dategraded' => $d1,
+            'datesubmitted' => 0,
+        ];
+
+        $g3 = (object) [
+            'usermodified' => $u1->id,
+            'dategraded' => null,
+            'datesubmitted' => $d2,
+        ];
+
+        return [
+            'If the user is the last person to have modified the grade_item then show the date that it was graded' => [
+                $g1,
+                $u1,
+                $d1,
+            ],
+            'If there is no grade and there is no feedback, then show graded date as null' => [
+                $g3,
+                $u1,
+                null,
+            ],
+            'If the user is not the last person to have modified the grade_item, ' .
+            'and there is no submission date, then show the date that it was submitted' => [
+                $g1,
+                $u2,
+                $d2,
+            ],
+            'If the user is not the last person to have modified the grade_item, ' .
+            'but there is no submission date, then show the date that it was graded' => [
+                $g2,
+                $u2,
+                $d1,
+            ],
+            'If the user is the last person to have modified the grade_item, ' .
+            'and there is no submission date, then still show the date that it was graded' => [
+                $g2,
+                $u1,
+                $d1,
+            ],
+        ];
+    }
+
+    /**
+     * Test the caching of grade letters.
+     */
+    public function test_get_grade_letters() {
+
+        $this->resetAfterTest();
+
+        // Setup some basics.
+        $course = $this->getDataGenerator()->create_course();
+        $context = context_course::instance($course->id);
+
+        $cache = cache::make('core', 'grade_letters');
+        $letters = $cache->get($context->id);
+
+        // Make sure the cache is empty.
+        $this->assertFalse($letters);
+
+        // Now check to see if the letters get cached.
+        $actual = grade_get_letters($context);
+
+        $expected = $cache->get($context->id);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    /**
+     * Test custom letters.
+     */
+    public function test_get_grade_letters_custom() {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $context = context_course::instance($course->id);
+
+        $cache = cache::make('core', 'grade_letters');
+        $letters = $cache->get($context->id);
+
+        // Make sure the cache is empty.
+        $this->assertFalse($letters);
+
+        // Add a grade letter to the course.
+        $letter = new stdClass();
+        $letter->letter = 'M';
+        $letter->lowerboundary = '100';
+        $letter->contextid = $context->id;
+        $DB->insert_record('grade_letters', $letter);
+
+        $actual = grade_get_letters($context);
+        $expected = $cache->get($context->id);
+
+        $this->assertEquals($expected, $actual);
     }
 }

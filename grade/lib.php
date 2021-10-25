@@ -717,11 +717,6 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
     $count = 0;
     $active = '';
 
-    // LSU Gradebook Enhancement: Hide quick edit from normally graded courses
-    $category = isset($PAGE->category->id) ? $PAGE->category->id : '1';
-    // LSU End Gradebook Enhancement: Hide quick edit from normally graded courses
-
-
     foreach ($plugin_info as $plugin_type => $plugins) {
         if ($plugin_type == 'strings') {
             continue;
@@ -733,15 +728,6 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
         $section = array();
 
         foreach ($plugins as $plugin) {
-
-            // LSU Gradebook Enhancement: Hide quick edit from normally graded courses
-            if ($category != $CFG->grade_anonymous_cats && $plugin->id == 'quick_edit') {
-                unset ($plugin);
-                continue;
-            }
-            // End LSU Gradebook Enhancement: Hide quick edit from normally graded courses
-
-
             $link = $plugin->link->out(false);
             $section[$link] = $plugin->string;
             $count++;
@@ -1805,8 +1791,9 @@ class grade_structure {
             return '';
         }
 
-        return $OUTPUT->action_icon($url, new pix_icon('t/preview',
-            get_string('gradeanalysis', 'core_grades')));
+        $title = get_string('gradeanalysis', 'core_grades');
+        return $OUTPUT->action_icon($url, new pix_icon('t/preview', ''), null,
+                ['title' => $title, 'aria-label' => $title]);
     }
 
     /**

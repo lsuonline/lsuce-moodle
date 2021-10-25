@@ -137,7 +137,16 @@ if (has_capability('moodle/grade:viewall', $context)) { //Teachers will see all 
             $user = $userdata->user;
             $report = new grade_report_user($courseid, $gpr, $context, $user->id, $viewasuser);
 
-            $studentnamelink = html_writer::link(new moodle_url('/user/view.php', array('id' => $report->user->id, 'course' => $courseid)), fullname($report->user));
+            // BEGIN LSU Alternate Names support.
+            $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+            if ($alternateused) {
+                $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;
+            } else {
+                $fullname = fullname($user);
+            }
+            $studentnamelink = html_writer::link(new moodle_url('/user/view.php', array('id' => $report->user->id, 'course' => $courseid)), $fullname);
+            // END LSU Alternate Names support.
+
             echo $OUTPUT->heading(get_string('pluginname', 'gradereport_user') . ' - ' . $studentnamelink);
 
             if ($report->fill_table()) {
@@ -149,11 +158,22 @@ if (has_capability('moodle/grade:viewall', $context)) { //Teachers will see all 
     } else { // Only show one user's report
         $report = new grade_report_user($courseid, $gpr, $context, $userid, $viewasuser);
 
-        $studentnamelink = html_writer::link(new moodle_url('/user/view.php', array('id' => $report->user->id, 'course' => $courseid)), fullname($report->user));
+        // BEGIN LSU Alternate Names support.
+        $user = $report->user;
+        $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+
+        if ($alternateused) {
+            $user->firstname = $report->user->alternatename . ' (' . $report->user->firstname . ') ';
+        }
+
+	$fullname = fullname($user);
+        $studentnamelink = html_writer::link(new moodle_url('/user/view.php', array('id' => $report->user->id, 'course' => $courseid)), $fullname);
         print_grade_page_head($courseid, 'report', 'user', get_string('pluginname', 'gradereport_user') . ' - ' . $studentnamelink,
-                false, false, true, null, null, $report->user);
+                false, false, true, null, null, $user);
+        // END LSU Alternate Names support.
 
         groups_print_course_menu($course, $gpr->get_return_url('index.php?id='.$courseid, array('userid'=>0)));
+
 
         if ($user_selector) {
             $showallusersoptions = true;

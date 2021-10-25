@@ -81,6 +81,9 @@ class mod_forum_generator extends testing_module_generator {
         if (!isset($record->forcesubscribe)) {
             $record->forcesubscribe = FORUM_CHOOSESUBSCRIBE;
         }
+        if (!isset($record->grade_forum)) {
+            $record->grade_forum = 0;
+        }
 
         return parent::create_instance($record, (array)$options);
     }
@@ -313,6 +316,7 @@ class mod_forum_generator extends testing_module_generator {
         }
 
         $record = (object) $record;
+        \mod_forum\local\entities\post::add_message_counts($record);
 
         // Add the post.
         $record->id = $DB->insert_record('forum_posts', $record);
@@ -367,9 +371,8 @@ class mod_forum_generator extends testing_module_generator {
     public function get_author_subheading_html(stdClass $exportedauthor, int $timecreated) : string {
         $fullname = $exportedauthor->fullname;
         $profileurl = $exportedauthor->urls['profile'] ?? null;
-        $formatteddate = userdate($timecreated, get_string('strftimedaydatetime', 'core_langconfig'));
         $name = $profileurl ? "<a href=\"{$profileurl}\">{$fullname}</a>" : $fullname;
-        $date = "<time>{$formatteddate}</time>";
+        $date = userdate_htmltime($timecreated, get_string('strftimedaydatetime', 'core_langconfig'));
         return get_string('bynameondate', 'mod_forum', ['name' => $name, 'date' => $date]);
     }
 }

@@ -123,8 +123,19 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
 
     } else { // Only show one user's report
         $report = new grade_report_overview($userid, $gpr, $context);
+
+        // BEGIN LSU Alternate Names support.
+        $user = $report->user;
+        $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+
+        if ($alternateused) {
+            $user->firstname = $report->user->alternatename . ' (' . $report->user->firstname . ') ';
+        }
+
         print_grade_page_head($courseid, 'report', 'overview', get_string('pluginname', 'gradereport_overview') .
-                ' - ' . fullname($report->user), false, false, true, null, null, $report->user);
+                ' - ' . fullname($user), false, false, true, null, null, $user);
+        // END LSU Alternate Names support.
+
         groups_print_course_menu($course, $gpr->get_return_url('index.php?id='.$courseid, array('userid'=>0)));
 
         if ($user_selector) {

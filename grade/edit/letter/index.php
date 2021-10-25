@@ -46,7 +46,6 @@ if (!$edit) {
 
 $returnurl = null;
 $editparam = null;
-
 // BEGIN LSU Better Letters.
 $custom = true;
 $decimals = $custom ? (int) get_config('moodle', 'grade_decimalpoints') : 2;
@@ -54,9 +53,6 @@ $decimals = $custom ? (int) get_config('moodle', 'grade_decimalpoints') : 2;
 
 if ($context->contextlevel == CONTEXT_SYSTEM or $context->contextlevel == CONTEXT_COURSECAT) {
     require_once $CFG->libdir.'/adminlib.php';
-    // LSU Gradebook enhancement.
-    require_login();
-    // End LSU Gradebook enhancement.
 
     admin_externalpage_setup('letters');
 
@@ -94,15 +90,12 @@ if (!$edit) {
     $max = 100;
     foreach($letters as $boundary=>$letter) {
         $line = array();
-
         // BEGIN LSU Better Letters.
         $line[] = format_float($max, $decimals).' %';
         $line[] = format_float($boundary, $decimals).' %';
         // END LSU Better Letters.
-
         $line[] = format_string($letter);
         $data[] = $line;
-
         // BEGIN LSU Better Letters.
         $max = $boundary - (1 / pow(10, $decimals));
         // END LSU Better Letters.
@@ -121,17 +114,13 @@ if (!$edit) {
     $table = new html_table();
     $table->id = 'grade-letters-view';
     $table->head  = array(get_string('max', 'grades'), get_string('min', 'grades'), get_string('letter', 'grades'));
-
     // BEGIN LSU Better Letters.
     $table->size  = array('33%', '33%', '34%');
     // END LSU Better Letters.
-
     $table->align = array('left', 'left', 'left');
-
     // BEGIN LSU Better Letters.
     $table->width = '40%';
     // END LSU Better Letters.
-
     $table->data  = $data;
     $table->tablealign  = 'center';
     echo html_writer::table($table);
@@ -150,12 +139,10 @@ if (!$edit) {
 
         $data->$gradelettername   = $letter;
         $data->$gradeboundaryname = $boundary;
-
         // BEGIN LSU Better Letters.
         $stored = "{$data->$gradeboundaryname}";
         $letters[$stored] = $letter;
         // END LSU Better Letters.
-
         $i++;
     }
     $data->override = $override;
@@ -167,6 +154,10 @@ if (!$edit) {
         redirect($returnurl);
 
     } else if ($data = $mform->get_data()) {
+
+        // Make sure we are updating the cache.
+        $cache = cache::make('core', 'grade_letters');
+
         if (!$admin and empty($data->override)) {
             $records = $DB->get_records('grade_letters', array('contextid' => $context->id));
             foreach ($records as $record) {
@@ -178,6 +169,9 @@ if (!$edit) {
                 ));
                 $event->trigger();
             }
+
+            // Make sure we clear the cache for this context.
+            $cache->delete($context->id);
             redirect($returnurl);
         }
 
@@ -250,6 +244,15 @@ if (!$edit) {
                 ));
                 $event->trigger();
             }
+        }
+
+        // Cache the changed letters.
+        if (!empty($letters)) {
+
+            // For some reason, the cache saves it in the order in which they were entered
+            // but we really want to order them in descending order so we sort it here.
+            krsort($letters);
+            $cache->set($context->id, $letters);
         }
 
         // Delete the unused records.

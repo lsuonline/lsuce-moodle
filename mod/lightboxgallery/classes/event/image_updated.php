@@ -98,4 +98,8 @@ class image_updated extends \core\event\base {
         return array($this->courseid, 'lightboxgallery', 'editimage', $logurl,
             $this->other['tab'].' '.$this->other['imagename'], $this->contextinstanceid, $this->userid);
     }
+
+    public static function get_other_mapping() {
+        return [];
+    }
 }

@@ -285,6 +285,15 @@ class tool_uploadcourse_course {
     }
 
     /**
+     * Return array of valid fields for default values
+     *
+     * @return array
+     */
+    protected function get_valid_fields() {
+        return array_merge(self::$validfields, \tool_uploadcourse_helper::get_custom_course_field_names());
+    }
+
+    /**
      * Assemble the course data based on defaults.
      *
      * This returns the final data to be passed to create_course().
@@ -293,7 +302,7 @@ class tool_uploadcourse_course {
      * @return array
      */
     protected function get_final_create_data($data) {
-        foreach (self::$validfields as $field) {
+        foreach ($this->get_valid_fields() as $field) {
             if (!isset($data[$field]) && isset($this->defaults[$field])) {
                 $data[$field] = $this->defaults[$field];
             }
@@ -316,9 +325,9 @@ class tool_uploadcourse_course {
         global $DB;
         $newdata = array();
         $existingdata = $DB->get_record('course', array('shortname' => $this->shortname));
-        foreach (self::$validfields as $field) {
+        foreach ($this->get_valid_fields() as $field) {
             if ($missingonly) {
-                if (!is_null($existingdata->$field) and $existingdata->$field !== '') {
+                if (isset($existingdata->$field) and $existingdata->$field !== '') {
                     continue;
                 }
             }
@@ -699,6 +708,27 @@ class tool_uploadcourse_course {
             $coursedata[$rolekey] = $rolename;
         }
 
+        // Custom fields. If the course already exists and mode isn't set to force creation, we can use its context.
+        if ($exists && $mode !== tool_uploadcourse_processor::MODE_CREATE_ALL) {
+            $context = context_course::instance($coursedata['id']);
+        } else {
+            // The category ID is taken from the defaults if it exists, otherwise from course data.
+            $context = context_coursecat::instance($this->defaults['category'] ?? $coursedata['category']);
+        }
+        $customfielddata = tool_uploadcourse_helper::get_custom_course_field_data($this->rawdata, $this->defaults, $context,
+            $errors);
+        if (!empty($errors)) {
+            foreach ($errors as $key => $message) {
+                $this->error($key, $message);
+            }
+
+            return false;
+        }
+
+        foreach ($customfielddata as $name => $value) {
+            $coursedata[$name] = $value;
+        }
+
         // Some validation.
         if (!empty($coursedata['format']) && !in_array($coursedata['format'], tool_uploadcourse_helper::get_course_formats())) {
             $this->error('invalidcourseformat', new lang_string('invalidcourseformat', 'tool_uploadcourse'));
@@ -872,36 +902,31 @@ class tool_uploadcourse_course {
             unset($method['delete']);
             unset($method['disable']);
 
-            if (!empty($instance) && $todelete) {
+            if ($todelete) {
                 // Remove the enrolment method.
-                foreach ($instances as $instance) {
-                    if ($instance->enrol == $enrolmethod) {
-                        $plugin = $enrolmentplugins[$instance->enrol];
-                        $plugin->delete_instance($instance);
-                        break;
-                    }
+                if ($instance) {
+                    $plugin = $enrolmentplugins[$instance->enrol];
+                    $plugin->delete_instance($instance);
                 }
             } else if (!empty($instance) && $todisable) {
                 // Disable the enrolment.
-                foreach ($instances as $instance) {
-                    if ($instance->enrol == $enrolmethod) {
-                        $plugin = $enrolmentplugins[$instance->enrol];
-                        $plugin->update_status($instance, ENROL_INSTANCE_DISABLED);
-                        $enrol_updated = true;
-                        break;
-                    }
-                }
+                $plugin = $enrolmentplugins[$instance->enrol];
+                $plugin->update_status($instance, ENROL_INSTANCE_DISABLED);
+                $enrol_updated = true;
             } else {
                 $plugin = null;
+
+                $status = ($todisable) ? ENROL_INSTANCE_DISABLED : ENROL_INSTANCE_ENABLED;
+
                 if (empty($instance)) {
                     $plugin = $enrolmentplugins[$enrolmethod];
-                    $instance = new stdClass();
-                    $instance->id = $plugin->add_default_instance($course);
+                    $instanceid = $plugin->add_default_instance($course);
+                    $instance = $DB->get_record('enrol', ['id' => $instanceid]);
                     $instance->roleid = $plugin->get_config('roleid');
-                    $instance->status = ENROL_INSTANCE_ENABLED;
+                    $plugin->update_status($instance, $status);
                 } else {
                     $plugin = $enrolmentplugins[$instance->enrol];
-                    $plugin->update_status($instance, ENROL_INSTANCE_ENABLED);
+                    $plugin->update_status($instance, $status);
                 }
 
                 // Now update values.

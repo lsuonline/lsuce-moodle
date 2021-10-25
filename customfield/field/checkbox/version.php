@@ -24,5 +24,5 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'customfield_checkbox';
-$plugin->version   = 2019052000;
-$plugin->requires  = 2019051100;
+$plugin->version   = 2020061500;
+$plugin->requires  = 2020060900;

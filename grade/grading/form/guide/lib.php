@@ -26,6 +26,9 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/grade/grading/form/lib.php');
 
+/** guide: Used to compare our gradeitem_type against. */
+const MARKING_GUIDE = 'guide';
+
 /**
  * This controller encapsulates the guide grading logic
  *
@@ -654,9 +657,12 @@ class gradingform_guide_controller extends gradingform_controller {
         }
         $returnvalue['maxscore'] = $maxscore;
         $returnvalue['minscore'] = 0;
-        if (!empty($this->moduleinstance->grade)) {
-            $graderange = make_grades_menu($this->moduleinstance->grade);
-            $returnvalue['modulegrade'] = count($graderange) - 1;
+        if (!$this->is_shared_template()) {
+            $fieldname = \core_grades\component_gradeitems::get_field_name_for_itemname($this->component, $this->area, 'grade');
+            if (!empty($this->moduleinstance->{$fieldname})) {
+                $graderange = make_grades_menu($this->moduleinstance->{$fieldname});
+                $returnvalue['modulegrade'] = count($graderange) - 1;
+            }
         }
         return $returnvalue;
     }
@@ -996,4 +1002,16 @@ class gradingform_guide_instance extends gradingform_instance {
             $gradingformelement->getName(), $value, $this->validationerrors);
         return $html;
     }
+}
+
+/**
+ * Get the icon mapping for font-awesome.
+ *
+ * @return array
+ */
+function gradingform_guide_get_fontawesome_icon_map(): array {
+    return [
+        'gradingform_guide:info' => 'fa-info-circle',
+        'gradingform_guide:plus' => 'fa-plus',
+    ];
 }

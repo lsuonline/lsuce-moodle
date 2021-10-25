@@ -338,7 +338,7 @@ function wiki_print_recent_activity($course, $viewfullnames, $timestart) {
     if (!$wikis) {
         return false;
     }
-    echo $OUTPUT->heading(get_string("updatedwikipages", 'wiki') . ':', 3);
+    echo $OUTPUT->heading(get_string("updatedwikipages", 'wiki') . ':', 6);
     foreach ($wikis as $wiki) {
         $cm = $modinfo->instances['wiki'][$wiki->wikiid];
         $link = $CFG->wwwroot . '/mod/wiki/view.php?pageid=' . $wiki->id;
@@ -366,25 +366,11 @@ function wiki_grades($wikiid) {
 }
 
 /**
- * This function returns if a scale is being used by one wiki
- * it it has support for grading and scales. Commented code should be
- * modified if necessary. See forum, glossary or journal modules
- * as reference.
- *
- * @param int $wikiid ID of an instance of this module
- * @return mixed
- * @todo Finish documenting this function
- **/
-function wiki_scale_used($wikiid, $scaleid) {
-    $return = false;
-
-    //$rec = get_record("wiki","id","$wikiid","scale","-$scaleid");
-    //
-    //if (!empty($rec)  && !empty($scaleid)) {
-    //    $return = true;
-    //}
-
-    return $return;
+ * @deprecated since Moodle 3.8
+ */
+function wiki_scale_used() {
+    throw new coding_exception('wiki_scale_used() can not be used anymore. Plugins can implement ' .
+        '<modname>_scale_used_anywhere, all implementations of <modname>_scale_used are now ignored');
 }
 
 /**

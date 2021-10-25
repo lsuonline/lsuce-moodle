@@ -45,8 +45,6 @@ class mod_lightboxgallery_lib_testcase extends advanced_testcase {
     public function test_lightboxgallery_edit_types() {
         $this->resetAfterTest();
 
-        $disabledplugins = explode(',', get_config('lightboxgallery', 'disabledplugins'));
-
         $types = ['caption', 'crop', 'delete', 'flip', 'resize', 'rotate', 'tag', 'thumbnail'];
 
         // Test showall returns all types..

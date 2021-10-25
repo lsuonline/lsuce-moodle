@@ -112,7 +112,7 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
 
         $this->resetAfterTest(true);
 
-        $CFG->defaultblocks_override = 'participants,search_forums,course_list:calendar_upcoming,recent_activity';
+        $CFG->defaultblocks_override = 'search_forums,course_list:calendar_upcoming,recent_activity';
 
         $user = $this->getDataGenerator()->create_user();
         $course = $this->getDataGenerator()->create_course();
@@ -126,10 +126,10 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
         // We need to execute the return values cleaning process to simulate the web service server.
         $result = external_api::clean_returnvalue(core_block_external::get_course_blocks_returns(), $result);
 
-        // Expect 5 default blocks.
-        $this->assertCount(5, $result['blocks']);
+        // Expect 4 default blocks.
+        $this->assertCount(4, $result['blocks']);
 
-        $expectedblocks = array('navigation', 'settings', 'participants', 'search_forums', 'course_list',
+        $expectedblocks = array('navigation', 'settings', 'search_forums', 'course_list',
                                 'calendar_upcoming', 'recent_activity');
         foreach ($result['blocks'] as $block) {
             if (!in_array($block['name'], $expectedblocks)) {
@@ -177,6 +177,9 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
         $blocks = $page->blocks->get_blocks_for_region($page->blocks->get_default_region());
         $block = end($blocks);
         $block = block_instance('html', $block->instance);
+        $nonscalar = [
+            'something' => true,
+        ];
         $configdata = (object) [
             'title' => $title,
             'text' => [
@@ -184,6 +187,7 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
                 'text' => $body,
                 'format' => $bodyformat,
             ],
+            'nonscalar' => $nonscalar
         ];
         $block->instance_config_save((object) $configdata);
         $filename = 'img.png';
@@ -213,6 +217,101 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
         $this->assertEquals('', $result['blocks'][0]['contents']['footer']);
         $this->assertCount(1, $result['blocks'][0]['contents']['files']);
         $this->assertEquals($newblock, $result['blocks'][0]['name']);
+        $configcounts = 0;
+        foreach ($result['blocks'][0]['configs'] as $config) {
+            if ($config['type'] = 'plugin' && $config['name'] == 'allowcssclasses' && $config['value'] == json_encode('0')) {
+                $configcounts++;
+            } else if ($config['type'] = 'instance' && $config['name'] == 'text' && $config['value'] == json_encode($body)) {
+                $configcounts++;
+            } else if ($config['type'] = 'instance' && $config['name'] == 'title' && $config['value'] == json_encode($title)) {
+                $configcounts++;
+            } else if ($config['type'] = 'instance' && $config['name'] == 'format' && $config['value'] == json_encode('0')) {
+                $configcounts++;
+            } else if ($config['type'] = 'instance' && $config['name'] == 'nonscalar' &&
+                    $config['value'] == json_encode($nonscalar)) {
+                $configcounts++;
+            }
+        }
+        $this->assertEquals(5, $configcounts);
+    }
+
+    /**
+     * Test get_course_blocks contents with mathjax.
+     */
+    public function test_get_course_blocks_contents_with_mathjax() {
+        global $DB, $CFG;
+
+        require_once($CFG->dirroot . '/lib/externallib.php');
+
+        $this->resetAfterTest(true);
+
+        // Enable MathJax filter in content and headings.
+        $this->configure_filters([
+            ['name' => 'mathjaxloader', 'state' => TEXTFILTER_ON, 'move' => -1, 'applytostrings' => true],
+        ]);
+
+        // Create a few stuff to test with.
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $studentrole = $DB->get_record('role', array('shortname' => 'student'));
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, $studentrole->id);
+        $coursecontext = context_course::instance($course->id);
+
+        // Create a HTML block.
+        $title = 'My block $$(a+b)=2$$';
+        $body = 'My block contents $$(a+b)=2$$';
+        $bodyformat = FORMAT_MOODLE;
+        $page = new moodle_page();
+        $page->set_context($coursecontext);
+        $page->set_pagelayout('course');
+        $course->format = course_get_format($course)->get_format();
+        $page->set_pagetype('course-view-' . $course->format);
+        $page->blocks->load_blocks();
+        $newblock = 'html';
+        $page->blocks->add_block_at_end_of_default_region($newblock);
+
+        $this->setUser($user);
+        // Re-create the page.
+        $page = new moodle_page();
+        $page->set_context($coursecontext);
+        $page->set_pagelayout('course');
+        $course->format = course_get_format($course)->get_format();
+        $page->set_pagetype('course-view-' . $course->format);
+        $page->blocks->load_blocks();
+        $blocks = $page->blocks->get_blocks_for_region($page->blocks->get_default_region());
+        $block = end($blocks);
+        $block = block_instance('html', $block->instance);
+        $nonscalar = [
+            'something' => true,
+        ];
+        $configdata = (object) [
+            'title' => $title,
+            'text' => [
+                'itemid' => 0,
+                'text' => $body,
+                'format' => $bodyformat,
+            ],
+            'nonscalar' => $nonscalar
+        ];
+        $block->instance_config_save((object) $configdata);
+
+        // Check for the new block.
+        $result = core_block_external::get_course_blocks($course->id, true);
+        $result = external_api::clean_returnvalue(core_block_external::get_course_blocks_returns(), $result);
+
+        // Format the original data.
+        $sitecontext = context_system::instance();
+        $title = external_format_string($title, $coursecontext->id);
+        list($body, $bodyformat) = external_format_text($body, $bodyformat, $coursecontext->id, 'block_html', 'content');
+
+        // Check that the block data is formatted.
+        $this->assertCount(1, $result['blocks']);
+        $this->assertStringContainsString('<span class="filter_mathjaxloader_equation">',
+                $result['blocks'][0]['contents']['title']);
+        $this->assertStringContainsString('<span class="filter_mathjaxloader_equation">',
+                $result['blocks'][0]['contents']['content']);
+        $this->assertEquals($title, $result['blocks'][0]['contents']['title']);
+        $this->assertEquals($body, $result['blocks'][0]['contents']['content']);
     }
 
     /**
@@ -224,6 +323,9 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
 
         $user = $this->getDataGenerator()->create_user();
         $PAGE->set_url('/my/index.php');    // Need this because some internal API calls require the $PAGE url to be set.
+
+        // Force a setting change to check the returned blocks settings.
+        set_config('displaycategories', 0, 'block_recentlyaccessedcourses');
 
         // Get the expected default blocks.
         $alldefaultblocksordered = $DB->get_records_menu('block_instances',
@@ -242,6 +344,14 @@ class core_block_externallib_testcase extends externallib_advanced_testcase {
             // Check all the returned blocks are in the expected blocks array.
             $this->assertContains($block['name'], $alldefaultblocksordered);
             $returnedblocks[] = $block['name'];
+            // Check the configuration returned for this default block.
+            if ($block['name'] == 'recentlyaccessedcourses') {
+                // Convert config to associative array to avoid DB sorting randomness.
+                $config = array_column($block['configs'], null, 'name');
+                $this->assertArrayHasKey('displaycategories', $config);
+                $this->assertEquals(json_encode('0'), $config['displaycategories']['value']);
+                $this->assertEquals('plugin', $config['displaycategories']['type']);
+            }
         }
         // Remove lp block.
         array_shift($alldefaultblocksordered);

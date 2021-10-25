@@ -543,6 +543,42 @@ class core_calendar_externallib_testcase extends externallib_advanced_testcase {
     }
 
     /**
+     * Test get_calendar_events with mathjax in the name.
+     */
+    public function test_get_calendar_events_with_mathjax() {
+        global $USER;
+
+        $this->resetAfterTest(true);
+        set_config('calendar_adminseesall', 1);
+        $this->setAdminUser();
+
+        // Enable MathJax filter in content and headings.
+        $this->configure_filters([
+            ['name' => 'mathjaxloader', 'state' => TEXTFILTER_ON, 'move' => -1, 'applytostrings' => true],
+        ]);
+
+        // Create a site event with mathjax in the name and description.
+        $siteevent = $this->create_calendar_event('Site Event $$(a+b)=2$$', $USER->id, 'site', 0, time(),
+                ['description' => 'Site Event Description $$(a+b)=2$$']);
+
+        // Now call the WebService.
+        $events = core_calendar_external::get_calendar_events();
+        $events = external_api::clean_returnvalue(core_calendar_external::get_calendar_events_returns(), $events);
+
+        // Format the original data.
+        $sitecontext = context_system::instance();
+        $siteevent->name = $siteevent->format_external_name();
+        list($siteevent->description, $siteevent->descriptionformat) = $siteevent->format_external_text();
+
+        // Check that the event data is formatted.
+        $this->assertCount(1, $events['events']);
+        $this->assertStringContainsString('<span class="filter_mathjaxloader_equation">', $events['events'][0]['name']);
+        $this->assertStringContainsString('<span class="filter_mathjaxloader_equation">', $events['events'][0]['description']);
+        $this->assertEquals($siteevent->name, $events['events'][0]['name']);
+        $this->assertEquals($siteevent->description, $events['events'][0]['description']);
+    }
+
+    /**
      * Test core_calendar_external::create_calendar_events
      */
     public function test_core_create_calendar_events() {
@@ -2372,7 +2408,7 @@ class core_calendar_externallib_testcase extends externallib_advanced_testcase {
         $data = external_api::clean_returnvalue(
             core_calendar_external::get_calendar_monthly_view_returns(),
             core_calendar_external::get_calendar_monthly_view($timestart->format('Y'), $timestart->format('n'),
-                                                              $course->id, null, false, true)
+                                                              $course->id, null, false, true, $timestart->format('j'))
         );
         $this->assertEquals($data['courseid'], $course->id);
         // User enrolled in the course can load the course calendar.
@@ -2380,7 +2416,7 @@ class core_calendar_externallib_testcase extends externallib_advanced_testcase {
         $data = external_api::clean_returnvalue(
             core_calendar_external::get_calendar_monthly_view_returns(),
             core_calendar_external::get_calendar_monthly_view($timestart->format('Y'), $timestart->format('n'),
-                                                              $course->id, null, false, true)
+                                                              $course->id, null, false, true, $timestart->format('j'))
         );
         $this->assertEquals($data['courseid'], $course->id);
         // User not enrolled in the course cannot load the course calendar.
@@ -2389,8 +2425,24 @@ class core_calendar_externallib_testcase extends externallib_advanced_testcase {
         $data = external_api::clean_returnvalue(
             core_calendar_external::get_calendar_monthly_view_returns(),
             core_calendar_external::get_calendar_monthly_view($timestart->format('Y'), $timestart->format('n'),
-                                                              $course->id, null, false, false)
+                                                              $course->id, null, false, false, $timestart->format('j'))
         );
+    }
+
+    /**
+     * Test get_calendar_monthly_view when a day parameter is provided.
+     */
+    public function test_get_calendar_monthly_view_with_day_provided() {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $timestart = new DateTime();
+        $data = external_api::clean_returnvalue(
+            core_calendar_external::get_calendar_monthly_view_returns(),
+            core_calendar_external::get_calendar_monthly_view($timestart->format('Y'), $timestart->format('n'),
+                                                              SITEID, null, false, true, $timestart->format('j'))
+        );
+        $this->assertEquals($data['date']['mday'], $timestart->format('d'));
     }
 
     /**
@@ -2695,5 +2747,88 @@ class core_calendar_externallib_testcase extends externallib_advanced_testcase {
             core_calendar_external::get_allowed_event_types($course->id)
         );
         $this->assertEquals(['user', 'course', 'group'], $data['allowedeventtypes']);
+    }
+
+    /**
+     * Test get_timestamps with string keys, with and without optional hour/minute values.
+     */
+    public function test_get_timestamps_string_keys() {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $time1 = new DateTime('2018-12-30 00:00:00');
+        $time2 = new DateTime('2019-03-27 23:59:00');
+
+        $dates = [
+            [
+                'key' => 'from',
+                'year' => $time1->format('Y'),
+                'month' => $time1->format('m'),
+                'day' => $time1->format('d'),
+            ],
+            [
+                'key' => 'to',
+                'year' => $time2->format('Y'),
+                'month' => (int) $time2->format('m'),
+                'day' => $time2->format('d'),
+                'hour' => $time2->format('H'),
+                'minute' => $time2->format('i'),
+            ],
+        ];
+
+        $expectedtimestamps = [
+            'from' => $time1->getTimestamp(),
+            'to' => $time2->getTimestamp(),
+        ];
+
+        $result = core_calendar_external::get_timestamps($dates);
+
+        $this->assertEquals(['timestamps'], array_keys($result));
+        $this->assertEquals(2, count($result['timestamps']));
+
+        foreach ($result['timestamps'] as $data) {
+            $this->assertTrue(in_array($data['key'], ['from', 'to']));
+            $this->assertEquals($expectedtimestamps[$data['key']], $data['timestamp']);
+        }
+    }
+
+    /**
+     * Test get_timestamps with no keys specified, with and without optional hour/minute values.
+     */
+    public function test_get_timestamps_no_keys() {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $time1 = new DateTime('2018-12-30 00:00:00');
+        $time2 = new DateTime('2019-03-27 23:59:00');
+
+        $dates = [
+            [
+                'year' => $time1->format('Y'),
+                'month' => $time1->format('m'),
+                'day' => $time1->format('d'),
+            ],
+            [
+                'year' => $time2->format('Y'),
+                'month' => (int) $time2->format('m'),
+                'day' => $time2->format('d'),
+                'hour' => $time2->format('H'),
+                'minute' => $time2->format('i'),
+            ],
+        ];
+
+        $expectedtimestamps = [
+            0 => $time1->getTimestamp(),
+            1 => $time2->getTimestamp(),
+        ];
+
+        $result = core_calendar_external::get_timestamps($dates);
+
+        $this->assertEquals(['timestamps'], array_keys($result));
+        $this->assertEquals(2, count($result['timestamps']));
+
+        foreach ($result['timestamps'] as $data) {
+            $this->assertEquals($expectedtimestamps[$data['key']], $data['timestamp']);
+        }
     }
 }
