@@ -38,6 +38,13 @@
   font-weight: 700;
 }
 
+#page-block-pu div.pu_you_sure ul {
+  text-align: left;
+  font-size: 75%;
+  font-weight: 400;
+  margin-top: 1em;
+}
+
 #page-block-pu div.pu_retry {
   float: left;
   width: 50%;

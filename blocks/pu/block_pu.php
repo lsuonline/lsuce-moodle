@@ -176,11 +176,19 @@ class block_pu extends block_list {
         // Depending on codecount and code status, display the correct stuff.
         if (isset($pcmidnew) && $this->pu_totalcount < $this->pu_codetotals && ($this->pu_usedcount > 0 || $this->pu_totalcount > 0)) {
             $this->add_item_to_content([
+                'lang_key' => get_string('pu_docs_touse', 'block_pu'),
+                'attributes' => array('class' => 'litem')
+            ]);
+            $this->add_item_to_content([
                 'lang_key' => get_string('pu_docs_used', 'block_pu'),
                 'attributes' => array('class' => 'litem')
             ]);
 
         } else if (isset($pcmidnew) && $this->pu_totalcount >= $this->pu_codetotals && ($this->pu_usedcount > 0 || $this->pu_totalcount > 0)) {
+            $this->add_item_to_content([
+                'lang_key' => get_string('pu_docs_touse', 'block_pu'),
+                'attributes' => array('class' => 'litem')
+            ]);
             $this->add_item_to_content([
                 'lang_key' => get_string('pu_docs_requestedall', 'block_pu'),
                 'attributes' => array('class' => 'litem')

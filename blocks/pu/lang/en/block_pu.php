@@ -24,7 +24,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Block.
-$string['pluginname'] = 'ProctorU Coupon Codes';
+$string['pluginname'] = 'ProctorU Testing Fee Codes';
 $string['foldername'] = 'ProctorU Coupons';
 
 // Tasks.
@@ -67,19 +67,19 @@ $string['pu_profilefield_help'] = 'This is either the standard user IDNumber or 
 $string['pu_block_intro_one'] = 'Here is your first coupon code for <strong>{$a->coursename}</strong>';
 $string['pu_block_intro_multi'] = 'Here are your {$a->numassigned} coupon codes for <strong>{$a->coursename}</strong>';
 $string['pu_docs_intro'] = 'What you need to know about coupon codes:';
-$string['pu_docs_intronone'] = 'You have been allocated {$a->numtotal} coupon codes for this course.
-                                <br>Please click the "Request a ProctorU coupon code" button to request your first coupon code for this course.';
-$string['pu_docs_allocatednum'] = 'You have <strong>requested</strong> {$a->numallocated} of the {$a->numtotal} coupon codes for this course.';
+$string['pu_docs_intronone'] = 'You have not claimed any coupon codes for this course yet.<br>If you are ready to schedule your exam, select the "<strong>Claim your code</strong>" button above.';
+$string['pu_docs_allocatednum'] = 'You have <strong>requested</strong> {$a->numallocated} of the {$a->numtotal} coupon codes allowed in this course.';
 $string['pu_docs_usednum'] = 'You have <strong>used</strong> {$a->numused} of the {$a->numtotal} coupon codes for this course.';
-$string['pu_docs_noneleft'] = 'You have used all of the coupon codes allocated for this course.<br>If you need another code, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
+$string['pu_docs_noneleft'] = 'You have used all of the coupon codes allowed for this course.<br>If you need another code, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
+$string['pu_docs_touse'] = 'To use your code, please go to your exam module in your course and use the "<strong>Schedule Exam</strong>" button to route to ProctorU.<br>You will use the top (latest) ProctorU testing fee code in place of payment.';
 $string['pu_docs_used'] = 'If you have used the top (latest) code and need another for your next exam, please click the "<strong>mark used</strong>" button below:';
-$string['pu_docs_requestedall'] = 'If you have used the top (latest) code, please click the "<strong>mark used</strong>" button below:';
-$string['pu_docs_invalid'] = 'If the top (latest) code does not work, request a replacement code by clicking on the "<strong>request replacement</strong>" button below:';
+$string['pu_docs_requestedall'] = 'If you have used the top (latest) code, please click the "<strong>Mark used</strong>" button below:';
+$string['pu_docs_invalid'] = 'If the top (latest) code does not work, request a replacement code by clicking on the "<strong>This code did not work</strong>" button below:';
 $string['pu_docs_invalidsused'] = 'You have received {$a->numused} replacement codes from the pool of {$a->numtotal} available for this course.';
 $string['pu_docs_invalidsfull'] = 'You have requested all of the available replacement codes available for this course.<br>If you need another code, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
 $string['pu_docs_invalidsnone'] = 'If there is a problem with your coupon code and need another, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
 $string['pu_used'] = 'Mark used';
-$string['pu_new'] = 'Request a ProctorU coupon code';
+$string['pu_new'] = 'Claim your code';
 $string['pu_past'] = 'Used code ';
 $string['import_codes'] = 'Import ProctorU coupon codes';
 $string['import_guild'] = 'Import GUILD data';
@@ -91,9 +91,12 @@ $string['pu_code_admin'] = 'Main ProctorU Admin';
 $string['pu_code_admin_help'] = 'The Moodle username designated to be the main ProctorU coupon code administrator.';
 
 // Interstitial strings.
-$string['pu_yousure'] = 'Are you sure you want to request a replacement ProctorU coupon code?';
-$string['pu_replace'] = 'Request replacement';
-$string['pu_try_again'] = 'Retry latest code';
+$string['pu_yousure'] = 'Are you sure you need a replacement code?<ul>
+                         <li>Have you already used the code in a previous exam?</li>
+                         <li>Have you marked a previously used code and requested one for a new exam?</li>
+                         <li>Have you copied and pasted the code without spaces before and after when paying for your appointment?</li></ul>';
+$string['pu_replace'] = 'This code did not work';
+$string['pu_try_again'] = 'Let me try this code again';
 
 // Error strings.
 $string['nopermissions'] = 'You do not have permission to modify coupon codes.';
