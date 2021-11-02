@@ -24,15 +24,15 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Block.
-$string['pluginname'] = 'ProctorU Testing Fee Codes';
-$string['foldername'] = 'ProctorU Coupons';
+$string['pluginname'] = 'ProctorU Access Codes';
+$string['foldername'] = 'ProctorU Access Codes';
 
 // Tasks.
 
 // Capabilities.
-$string['pu:admin'] = 'Administer the ProctorU Coupon Code system.';
-$string['pu:addinstance'] = 'Add a new ProctorU Coupon Code block to a course page';
-$string['pu:myaddinstance'] = 'Add a new ProctorU Coupon Code block to the /my page';
+$string['pu:admin'] = 'Administer the ProctorU Access Code system.';
+$string['pu:addinstance'] = 'Add a new ProctorU Access Code block to a course page';
+$string['pu:myaddinstance'] = 'Add a new ProctorU Access Code block to the /my page';
 
 // General terms.
 $string['backtocourse'] = 'Back to course';
@@ -40,22 +40,22 @@ $string['backtohome'] = 'Back to home';
 
 // Settings management.
 $string['default_numcodes'] = '# of exams';
-$string['default_numcodes_help'] = 'The default number of proctored exams (ProctorU coupon codes) issued to a user in a course';
-$string['pu_ccfile'] = 'Coupon Codes File';
-$string['pu_ccfile_help'] = 'The location for the ProctorU coupon codes file.<br>File has 5 fields with the code in the 2nd field and can contain a header.';
+$string['default_numcodes_help'] = 'The default number of proctored exams (ProctorU access codes) issued to a user in a course';
+$string['pu_ccfile'] = 'Access codes file';
+$string['pu_ccfile_help'] = 'The location for the ProctorU access codes file.<br>File has 5 fields with the access code in the 2nd field and can contain a header.';
 
 $string['pu_guildfile'] = 'Guild Mapping File';
 $string['pu_guildfile_help'] = 'The location for the GUILD section / student mapping file.<br>One comma seperated sectionid, LSUID pair per line with no header.<br>2021ENGL1001, 891234567';
 
 // Configuration.
 $string['manage_overrides'] = 'Manage overrides';
-$string['manage_overrides_help'] = 'Manage the number of proctored exams and replacement ProctorU coupon codes at the course shell level.
-                                    <strong>This setting, if overridden, will be the final determining factor for how many exams (coupon codes) 
-                                    and how many replacement coupon codes are allowed per person in the specified course.</strong>';
-$string['manage_overrides_help2'] = 'Please note the sitewide default for ProctorU coupon codes per course is {$a->percourse}.
+$string['manage_overrides_help'] = 'Manage the number of proctored exams and replacement ProctorU access codes at the course shell level.
+                                    <strong>This setting, if overridden, will be the final determining factor for how many exams (access codes) 
+                                    and how many replacement access codes are allowed per person in the specified course.</strong>';
+$string['manage_overrides_help2'] = 'Please note the sitewide default for ProctorU access codes per course is {$a->percourse}.
                                      The number of replacement codes is tied to the sitewide default of {$a->percourse} as well. Feel free to override these values below.';
 $string['override_numcodes'] = 'Number of exams';
-$string['override_numcodes_help'] = 'Override the default number of coupon codes for this course.';
+$string['override_numcodes_help'] = 'Override the default number of access codes for this course.';
 $string['override_numinvalid'] = 'Number of replacement codes';
 $string['override_numinvalid_help'] = 'Override the default number of replacement codes for this course. By default this is capped at the number of exams in this course.';
 $string['defaultsnull_codes'] = 'The defualt for this course is {$a->numcodes}.';
@@ -64,48 +64,47 @@ $string['pu_profilefield'] = 'Profile Field for import';
 $string['pu_profilefield_help'] = 'This is either the standard user IDNumber or whichever other additional profile field you choose.<br>This field is what we key on when importing data.';
 
 // Block strings.
-$string['pu_block_intro_one'] = 'Here is your first coupon code for <strong>{$a->coursename}</strong>';
-$string['pu_block_intro_multi'] = 'Here are your {$a->numassigned} coupon codes for <strong>{$a->coursename}</strong>';
-$string['pu_docs_intro'] = 'What you need to know about coupon codes:';
-$string['pu_docs_intronone'] = 'You have not claimed any coupon codes for this course yet.<br>If you are ready to schedule your exam, select the "<strong>Claim your code</strong>" button above.';
-$string['pu_docs_allocatednum'] = 'You have <strong>requested</strong> {$a->numallocated} of the {$a->numtotal} coupon codes allowed in this course.';
-$string['pu_docs_usednum'] = 'You have <strong>used</strong> {$a->numused} of the {$a->numtotal} coupon codes for this course.';
-$string['pu_docs_noneleft'] = 'You have used all of the coupon codes allowed for this course.<br>If you need another code, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
-$string['pu_docs_touse'] = 'To use your code, please go to your exam module in your course and use the "<strong>Schedule Exam</strong>" button to route to ProctorU.<br>You will use the top (latest) ProctorU testing fee code in place of payment.';
-$string['pu_docs_used'] = 'If you have used the top (latest) code and need another for your next exam, please click the "<strong>mark used</strong>" button below:';
-$string['pu_docs_requestedall'] = 'If you have used the top (latest) code, please click the "<strong>Mark used</strong>" button below:';
-$string['pu_docs_invalid'] = 'If the top (latest) code does not work, request a replacement code by clicking on the "<strong>This code did not work</strong>" button below:';
-$string['pu_docs_invalidsused'] = 'You have received {$a->numused} replacement codes from the pool of {$a->numtotal} available for this course.';
-$string['pu_docs_invalidsfull'] = 'You have requested all of the available replacement codes available for this course.<br>If you need another code, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
-$string['pu_docs_invalidsnone'] = 'If there is a problem with your coupon code and need another, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
+$string['pu_block_intro_one'] = 'Your first ProctorU access code for <strong>{$a->coursename}</strong> is:';
+$string['pu_block_intro_multi'] = 'Your {$a->numassigned} ProctorU access codes for <strong>{$a->coursename}</strong> are:';
+$string['pu_docs_intro'] = 'What you need to know about access codes:';
+$string['pu_docs_intronone'] = 'You have not claimed any ProctorU access codes for this course yet.<br>If you are ready to schedule your exam, select the "<strong>Claim your access code</strong>" button above.';
+$string['pu_docs_allocatednum'] = 'You have <strong>requested</strong> {$a->numallocated} of the {$a->numtotal} access codes allowed in this course.';
+$string['pu_docs_usednum'] = 'You have <strong>used</strong> {$a->numused} of the {$a->numtotal} access codes for this course.';
+$string['pu_docs_noneleft'] = 'You have used all of the access codes allowed for this course.<br>If you need another code, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
+$string['pu_docs_touse'] = 'To use your ProctorU access code, please go to your exam module in your course and use the "<strong>Schedule Exam</strong>" link to route to ProctorU.<br>You will use the top (latest) ProctorU access code in place of payment.';
+$string['pu_docs_used'] = 'If you have used the top (latest) access code and need another for your next exam, please click the "<strong>Mark used</strong>" button below:';
+$string['pu_docs_requestedall'] = 'If you have used the top (latest) access code, please click the "<strong>Mark used</strong>" button below:';
+$string['pu_docs_invalid'] = 'If the top (latest) access code does not work, request a replacement code by clicking on the "<strong>This access code did not work</strong>" button below:';
+$string['pu_docs_invalidsused'] = 'You have received {$a->numused} replacement access codes from the pool of {$a->numtotal} available for this course.';
+$string['pu_docs_invalidsfull'] = 'You have requested all of the available replacement access codes available for this course.<br>If you need another access code, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
+$string['pu_docs_invalidsnone'] = 'If there is a problem with your access code and need another, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
 $string['pu_used'] = 'Mark used';
-$string['pu_new'] = 'Claim your code';
+$string['pu_new'] = 'Claim your access code';
 $string['pu_past'] = 'Used code ';
-$string['import_codes'] = 'Import ProctorU coupon codes';
+$string['import_codes'] = 'Import ProctorU access codes';
 $string['import_guild'] = 'Import GUILD data';
-$string['import_unmap'] = 'Unmap orphaned ProctorU coupon codes';
-$string['pu_codeslow'] = 'Emails when ProctorU codes are low';
-$string['pu_mincodes'] = 'Minimum number of codes';
-$string['pu_mincodes_help'] = 'The minimum number of valid codes left in the system before an email is triggered.';
-$string['pu_code_admin'] = 'Main ProctorU Admin';
-$string['pu_code_admin_help'] = 'The Moodle username designated to be the main ProctorU coupon code administrator.';
+$string['import_unmap'] = 'Unmap orphaned ProctorU access codes';
+$string['pu_codeslow'] = 'Emails when ProctorU access codes are low';
+$string['pu_mincodes'] = 'Minimum number of access codes';
+$string['pu_mincodes_help'] = 'The minimum number of valid ProctorU access codes left in the system before an email is triggered.';
+$string['pu_code_admin'] = 'ProctorU administrators';
+$string['pu_code_admin_help'] = 'The Moodle usernames designated to be the ProctorU access code administrators.';
 
 // Interstitial strings.
-$string['pu_yousure'] = 'Are you sure you need a replacement code?<ul>
-                         <li>Have you already used the code in a previous exam?</li>
-                         <li>Have you marked a previously used code and requested one for a new exam?</li>
-                         <li>Have you copied and pasted the code without spaces before and after when paying for your appointment?</li></ul>';
-$string['pu_replace'] = 'This code did not work';
-$string['pu_try_again'] = 'Let me try this code again';
+$string['pu_yousure'] = 'Are you sure you need a replacement ProctorU access code?<ul>
+                         <li>Have you already used the access code in a previous testing session? If so, did you mark the previous access code used?</li>
+                         <li>Have you copied and pasted the access code without spaces before and after when paying for your testing session?</li></ul>';
+$string['pu_replace'] = 'This access code did not work';
+$string['pu_try_again'] = 'Let me try this access code again';
 
 // Error strings.
-$string['nopermissions'] = 'You do not have permission to modify coupon codes.';
+$string['nopermissions'] = 'You do not have permission to modify ProctorU access codes.';
 $string['no_override_permissions'] = 'You do not have permission to modify exam overrides.';
-$string['nopermission'] = 'You do not have permission to modify the requested coupon code.<br><br>Please contact an administrator if you believe you should be able to modify that specific code.';
-$string['markused'] = 'Successfully marked your latest coupon code as used and requested a new code.';
-$string['lastused'] = 'Successfully marked your final coupon code as used.';
-$string['markinvalid'] = 'Successfully marked your latest coupon code as invalid and requested a replacement code.';
-$string['assigned'] = 'You have been assigned a new ProctorU coupon code.';
+$string['nopermission'] = 'You do not have permission to modify the requested ProctorU access code.<br><br>Please contact an administrator if you believe you should be able to modify that specific code.';
+$string['markused'] = 'Successfully marked your latest ProctorU access code as used and requested a new code.';
+$string['lastused'] = 'Successfully marked your final ProctorU access code as used.';
+$string['markinvalid'] = 'Successfully marked your latest ProctorU access code as invalid and requested a replacement.';
+$string['assigned'] = 'You have been assigned a new ProctorU access code.';
 $string['nothingtodo'] = 'There was nothing to do.';
 $string['override_complete'] = 'Successfully saved override values.';
-$string['nomorecodes'] = 'The ProctorU coupon code system is out of codes, please contact <a href="mailto:answers@online.lsu.edu">answers@online.lsu.edu</a>.';
+$string['nomorecodes'] = 'The ProctorU access code system is out of codes, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
