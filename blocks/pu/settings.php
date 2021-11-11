@@ -101,10 +101,19 @@ if ($ADMIN->fulltree) {
 // Add the folder.
 $ADMIN->add('blockpufolder', $settings);
 
+// Prevent Moodle from adding settings block in standard location.
+$settings = null;
+
 // Set the url for the ProctorU override tool.
 $puoverride = new admin_externalpage('manage_overrides',
               new lang_string('manage_overrides', 'block_pu'),
               "$CFG->wwwroot/blocks/pu/overrides.php"
+);
+
+// Set the url for the ProctorU validate tool.
+$puinvalids = new admin_externalpage('manage_invalids',
+              new lang_string('manage_invalids', 'block_pu'),
+              "$CFG->wwwroot/blocks/pu/validate.php"
 );
 
 // Add the ProctorU override tool url.
@@ -113,7 +122,5 @@ $context = \context_system::instance();
 // Add the link for those who have access.
 if (has_capability('block/pu:admin', $context)) {
     $ADMIN->add('blockpufolder', $puoverride);
+    $ADMIN->add('blockpufolder', $puinvalids);
 }
-
-// Prevent Moodle from adding settings block in standard location.
-$settings = null;

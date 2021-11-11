@@ -81,6 +81,7 @@ $PAGE->set_pagetype('block-pu');
 $PAGE->set_pagelayout('standard');
 $PAGE->set_url(new moodle_url('/blocks/pu/replace.php', $pageparams));
 $PAGE->set_title(get_string('pluginname', 'block_pu'));
+$PAGE->requires->js(new moodle_url('/blocks/pu/js.js'));
 
 // Set the page heading.
 $PAGE->set_heading(get_string('pluginname', 'block_pu'));
@@ -103,7 +104,7 @@ $areyousure = html_writer::span($areyousurestr, 'pu_you_sure');
 $replacementlink = html_writer::link(new moodle_url('/blocks/pu/coder.php',
                                  $pageparams),
                                  get_string('pu_replace', 'block_pu'),
-                                 array('class' => 'btn btn-outline-secondary pu_replace'));
+                                 array('onclick' => 'processClick();', 'id' => 'nodbl', 'class' => 'btn btn-outline-secondary pu_replace'));
 
 $tryagainlink = html_writer::link(new moodle_url('/course/view.php',
                                array('id' => $courseid), $anchor = 'coursetools'),

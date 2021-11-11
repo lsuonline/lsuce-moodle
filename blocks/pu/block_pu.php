@@ -33,12 +33,13 @@ class block_pu extends block_list {
     public $coursecontext;
 
     public function init() {
-        global $CFG;
+        global $CFG, $PAGE;
 
         $this->title = get_string('pluginname', 'block_pu');
         $this->set_course();
         $this->set_user();
         $this->set_course_context();
+        $PAGE->requires->js(new moodle_url('/blocks/pu/js.js'));
 
         // Set these up for sanity's sake.
         if (isset($CFG->block_pu_defaultcodes)) {
@@ -133,7 +134,7 @@ class block_pu extends block_list {
                 'lang_key' => get_string('pu_new', 'block_pu'),
                 'page' => 'coder',
                 'query_string' => ['courseid' => $this->course->id, 'pcmid' => 0, 'function' => 'new'],
-                'attributes' => array('class' => 'btn btn-outline-secondary btn-sm pu_new')
+                'attributes' => array('onclick' => 'processClick();', 'id' => 'nodbl', 'class' => 'btn btn-outline-secondary btn-sm pu_new')
             ]);
         }
 
@@ -173,6 +174,13 @@ class block_pu extends block_list {
             'attributes' => array('class' => 'intro')
         ]);
 
+
+        // Don't show the block if the course override is set to 0 codes (ignoring invalid count).
+        if ($this->pu_codetotals == 0) {
+            unset($this->content);
+            return "";
+        }
+
         // Depending on codecount and code status, display the correct stuff.
         if (isset($pcmidnew) && $this->pu_totalcount < $this->pu_codetotals && ($this->pu_usedcount > 0 || $this->pu_totalcount > 0)) {
             $this->add_item_to_content([
@@ -201,7 +209,7 @@ class block_pu extends block_list {
                 'lang_key' => get_string('pu_used', 'block_pu'),
                 'page' => 'coder',
                 'query_string' => ['courseid' => $this->course->id, 'pcmid' => $pcmidnew, 'function' => 'used'],
-                'attributes' => array('class' => 'btn btn-outline-secondary btn-sm pu_used')
+                'attributes' => array('onclick' => 'processClick()', 'id' => 'nodbl', 'class' => 'btn btn-outline-secondary btn-sm pu_used')
             ]);
         }
 
@@ -211,7 +219,7 @@ class block_pu extends block_list {
                 'lang_key' => get_string('pu_new', 'block_pu'),
                 'page' => 'coder',
                 'query_string' => ['courseid' => $this->course->id, 'pcmid' => 0, 'function' => 'new'],
-                'attributes' => array('class' => 'btn btn-outline-secondary btn-sm pu_new')
+                'attributes' => array('onclick' => 'processClick();', 'id' => 'nodbl', 'class' => 'btn btn-outline-secondary btn-sm pu_new')
             ]);
         }
 

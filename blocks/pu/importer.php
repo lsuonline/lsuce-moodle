@@ -47,4 +47,4 @@ pu_import_helper::block_pu_guildimporter();
 pu_import_helper::block_pu_code_unmap();
 
 // Email out admins when coupon codes run low.
-pu_import_helper::pu_codeslow();
+pu_import_helper::block_pu_codeslow();

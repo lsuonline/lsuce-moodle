@@ -172,6 +172,7 @@ class pu_import_helper {
                     INNER JOIN mdl_block_pu_codemaps pcm ON pgm.id = pcm.guild
                     INNER JOIN mdl_block_pu_codes pc ON pc.id = pcm.code
                 WHERE pgm.current = 0
+                    AND pc.valid = 1
                     AND pc.used = 0';
 
 
@@ -181,17 +182,20 @@ class pu_import_helper {
         // Set up the SQL for updating the table.
         foreach ($orphans as $orphan) {
 
-            // Delete rows with this.
+            // Delete code mapping table rows with this.
             $dsql = "DELETE FROM {$cmtable} WHERE id = $orphan->pcmid";
 
-            // Update rows with this.
+            // Update codes table rows with this.
             $usql = "UPDATE {$codetable} SET valid = 1 WHERE id = $orphan->pcid";
 
-            // Update the unused 
-            $freeme   = $DB->execute($usql);
+            if ($orphan->pcvalid == 0) {
+                // We should never be here, but if we are, add this back to the pool.
+                $freeme = $DB->execute($usql);
 
-            if (isset($freeme)) {
-                echo("Dissacociated ProctorU coupon code: $orphan->pccode with id: $orphan->pcid and marked it valid.\n");
+                // If we've updated any rows, log it.
+                if (isset($freeme)) {
+                    echo("Dissacociated ProctorU coupon code: $orphan->pccode with id: $orphan->pcid and marked it valid.\n");
+                }
             }
 
             // Delete any unused coupon code mappings for non-current GUILD students.

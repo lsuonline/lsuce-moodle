@@ -25,7 +25,8 @@ defined('MOODLE_INTERNAL') || die();
 
 // Block.
 $string['pluginname'] = 'ProctorU Access Codes';
-$string['foldername'] = 'ProctorU Access Codes';
+$string['foldername'] = 'Manage ProctorU';
+$string['adminname'] = 'Manage ProctorU Codes';
 
 // Tasks.
 
@@ -48,6 +49,8 @@ $string['pu_guildfile'] = 'Guild Mapping File';
 $string['pu_guildfile_help'] = 'The location for the GUILD section / student mapping file.<br>One comma seperated sectionid, LSUID pair per line with no header.<br>2021ENGL1001, 891234567';
 
 // Configuration.
+$string['manage_invalids'] = 'Invalid codes';
+$string['manage_invalids_help'] = 'Manage whether invalid access codes are confirmed by ProctorU to either be "unused and valid" or "used or invalid" access codes.';
 $string['manage_overrides'] = 'Manage overrides';
 $string['manage_overrides_help'] = 'Manage the number of proctored exams and replacement ProctorU access codes at the course shell level.
                                     <strong>This setting, if overridden, will be the final determining factor for how many exams (access codes) 
@@ -89,6 +92,10 @@ $string['pu_mincodes'] = 'Minimum number of access codes';
 $string['pu_mincodes_help'] = 'The minimum number of valid ProctorU access codes left in the system before an email is triggered.';
 $string['pu_code_admin'] = 'ProctorU administrators';
 $string['pu_code_admin_help'] = 'The Moodle usernames designated to be the ProctorU access code administrators.';
+$string['invalid_code'] = '<strong>{$a->accesscode}</strong> - {$a->course} - {$a->user} - {$a->idnumber} - {$a->email}';
+$string['opts0'] = 'Do nothing'; 
+$string['opts1'] = 'Mark unused and valid'; 
+$string['opts2'] = 'Permanently mark used or invalid'; 
 
 // Interstitial strings.
 $string['pu_yousure'] = 'Are you sure you need a replacement ProctorU access code?<ul>
@@ -107,4 +114,5 @@ $string['markinvalid'] = 'Successfully marked your latest ProctorU access code a
 $string['assigned'] = 'You have been assigned a new ProctorU access code.';
 $string['nothingtodo'] = 'There was nothing to do.';
 $string['override_complete'] = 'Successfully saved override values.';
+$string['validate_complete'] = 'Successfully saved code validation values.';
 $string['nomorecodes'] = 'The ProctorU access code system is out of codes, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
