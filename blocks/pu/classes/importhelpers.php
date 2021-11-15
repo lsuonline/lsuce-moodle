@@ -358,6 +358,12 @@ class pu_import_helper {
         $d = array();
         $data = array();
 
+        // Short circuit this if we find a header row.
+        if ($fields[1] == 'PersonID') {
+            echo("We found a header row and skipped it.\n");
+            return false;
+        }
+
         // Populate the data.
         $d['courseidnumber'] = $fields[0];
         $d['useridnumber'] = $fields[1];
