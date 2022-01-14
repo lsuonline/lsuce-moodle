@@ -392,7 +392,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_label l
                    WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -419,7 +420,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_page p
                    WHERE (p.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR p.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+                       OR p.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR p.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -446,7 +448,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_page p
                    WHERE (p.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR p.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR p.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR p.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -473,7 +476,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_assign a
                    WHERE (a.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR a.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR a.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR a.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -527,7 +531,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_course_sections cs
                    WHERE (cs.summary LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR cs.summary LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR cs.summary LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR cs.summary LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -554,7 +559,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_quiz q
                    WHERE (q.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR q.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -581,7 +587,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_book b
                    WHERE (b.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR b.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR b.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR b.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -609,7 +616,8 @@ class kalpanmaps {
                    FROM mdl_book_chapters bc
                        INNER JOIN mdl_book b ON b.id = bc.bookid
                    WHERE (bc.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR bc.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+                       OR bc.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR bc.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -636,7 +644,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_forum f
                    WHERE (f.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR f.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -703,7 +712,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_lesson l
                    WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -731,7 +741,8 @@ class kalpanmaps {
                    FROM mdl_lesson_pages lp
                        INNER JOIN mdl_lesson l ON l.id = lp.lessonid
                    WHERE (lp.contents LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR lp.contents LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR lp.contents LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR lp.contents LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -818,7 +829,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_journal j
                    WHERE (j.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR j.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR j.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR j.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -872,7 +884,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_choice c
                    WHERE (c.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR c.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR c.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR c.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -899,7 +912,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_feedback f
                    WHERE (f.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR f.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -926,7 +940,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_glossary g
                    WHERE (g.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR g.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -965,7 +980,8 @@ class kalpanmaps {
                     INNER JOIN mdl_glossary g ON g.id = ge.glossaryid
                     ' . $joins . '
                    WHERE (g.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")
+		       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR g.intro LIKE "%<iframe src=\"https://www.kaltura.com%")
                     ' . $wheres;
 
         // Build the array of objects.
@@ -993,7 +1009,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_choicegroup gc
                    WHERE (gc.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR gc.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR gc.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR gc.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1020,7 +1037,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_lti l
                    WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1047,7 +1065,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_questionnaire q
                    WHERE (q.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR q.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1074,7 +1093,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_scorm sco
                    WHERE (sco.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR sco.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR sco.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR sco.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1101,7 +1121,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_survey s
                    WHERE (s.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR s.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR s.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR s.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1128,7 +1149,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_turnitintooltwo tii
                    WHERE (tii.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR tii.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR tii.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR tii.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1155,7 +1177,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_url u
                    WHERE (u.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR u.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR u.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR u.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1182,7 +1205,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_wiki w
                    WHERE (w.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR w.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1209,7 +1233,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_workshop w
                    WHERE (w.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR w.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1236,7 +1261,8 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_data db
                    WHERE (db.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR db.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR db.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR db.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1266,7 +1292,8 @@ class kalpanmaps {
                        INNER JOIN mdl_context ctx ON ctx.id = qc.contextid AND ctx.contextlevel = 50
                        INNER JOIN mdl_course c ON c.id = ctx.instanceid
                    WHERE (qq.questiontext LIKE "%<iframe id=\"kaltura_player\" src=\"%"
-                       OR qq.questiontext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%")';
+		       OR qq.questiontext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
+                       OR qq.questiontext LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1349,49 +1376,67 @@ class kalpanmaps {
         // Instantiate the new object.
         $kalmatches = new stdClass();
 
+        // Use this to differentiate between playlists and standard items.
+        $kalmatches->playlist = false;
+
         // Replace any line breaks so we can ensure regex will work.
-        $kalitem->itemdata = preg_replace( "/\r|\n/", "", $kalitem->itemdata);
+        $kalitem->itemdata = preg_replace( "/\r|\n/", " ", $kalitem->itemdata);
 
         // Grab the original Kaltura iframe in it's entirety and add it to the object.
         preg_match('/(<iframe id=.+?entry_id=.+?<\/iframe>)/', $kalitem->itemdata, $matches);
         $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
+        // Grab the original Kaltura playlist iframe in it's entirety and add it to the object.
+        if ($kalmatches->oldiframe == '') {
+            preg_match('/(\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/.+?<\/iframe\>)/', $kalitem->itemdata, $matches);
+            $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
+            $kalmatches->playlist = $kalmatches->oldiframe == '' ? false : true;
+            unset($matches);
+        }
+
         preg_match(
             '/(\<a href="http.+?kaf.kaltura.com\/browseandembed\/index\/media\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/',
             $kalitem->itemdata, $matches);
         $kalmatches->kalbutton = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
         // Rename "iframe" to a nonsensical "noframe" tag so we don't show up in future searches.
         $kalmatches->noframe = preg_replace('/iframe/', 'noframe', $kalmatches->oldiframe);
-
         unset($matches);
+
         // Grab the Kaltura entry_id and add it to the object.
         preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
+        // Grab the Kaltura playlist entry_id and add it to the object.
+        if ($kalmatches->oldiframe <> '' && $kalmatches->entryid == '' && $kalmatches->playlist == true) {
+            preg_match('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/(.+?)\?.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+            $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
+            unset($matches);
+        }
+
         // Grab the width and add it to the object.
-        preg_match('/\<iframe id=.+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe .+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches2);
         $kalmatches->width = isset($matches[1]) ? $matches[1] : (isset($matches2[4]) ? $matches2[4] : $CFG->local_kalpanmaps_width);
-
         unset($matches);
+
         // Grab the height and add it to the object.
-        preg_match('/\<iframe id=.+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe .+?height="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->height = isset($matches[1]) ? $matches[1] : (isset($matches2[5]) ? $matches2[5] : $CFG->local_kalpanmaps_height);
 
         // Rename "tinymce-kalturamedia-embed" to "LSU-PanoptoMedia-Embed".
         $kalmatches->kalbutton = preg_replace('/\>.+?\|\|(.+?) \[(.+?)\]\|\|\d.+\|\|\d.+\</', '>$1 - $2<', $kalmatches->kalbutton);
-
         unset($matches);
+
         // Grab anything that might be extra and add it to the object.
-        preg_match('/\<iframe id=.+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe .+?\>(.*?)\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
-
         unset($matches);
+
         preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches);
         $kalmatches->noframe = !empty($kalmatches->noframe)
@@ -1477,6 +1522,9 @@ class kalpanmaps {
         // Course sections.
         $kalitems = array_merge($kalitems, self::get_kal_course_sections($limit = 0));
 
+        // URLs.
+        $kalitems = array_merge($kalitems, self::get_kal_url($limit = 0));
+
         // Feedback.
         $kalitems = array_merge($kalitems, self::get_kal_feedback($limit = 0));
 
@@ -1549,6 +1597,9 @@ class kalpanmaps {
 
         // The link we're using for faculty items.
         $flink = '/Panopto/Pages/Embed.aspx?id=';
+
+        // The link we're using for faculty playlists.
+        $plink = '/Panopto/Pages/Embed.aspx?pid=';
 
         // The link for student data.
         $slink = '/Panopto/Pages/Viewer.aspx?id=';
@@ -1630,6 +1681,8 @@ class kalpanmaps {
             // Build the URL for the new data item depending on who generated the content.
             if ($kalitem->usertype == "student") {
                 $kalframe = 'https://' . $panoptourl . $slink . $panoptoid->panopto_id . '&' . $kalframeparms;
+            } else if ($panmatches->playlist == true) {
+                $kalframe = 'https://' . $panoptourl . $plink . $panoptoid->panopto_id . '&' . $kalframeparms;
             } else {
                 $kalframe = 'https://' . $panoptourl . $flink . $panoptoid->panopto_id . '&' . $kalframeparms;
             }
@@ -1654,7 +1707,7 @@ class kalpanmaps {
 
             // Replace the old iframe with the new one and a hidden version of itself.
             if ($panmatches->oldiframe <> '') {
-                if ($kalitem->tble == "course_sections") {
+                if ($kalitem->tble == "course_sections" && $panmatches->playlist == false) {
                     $kalitem->newitemdata = preg_replace('/\<iframe id=.+?entry_id=' .
                                           $panmatches->entryid .
                                           '.+?\<\/iframe\>/',
@@ -1667,6 +1720,43 @@ class kalpanmaps {
                                           '"> Panopto Video - ' .
                                           $panmatches->ifxtra .
                                           '</iframe>' .
+                                          '<!--HIDDEN ' .
+                                          $panmatches->noframe .
+                                          ' HIDDEN-->',
+                                          $kalitem->itemdata, 1);
+                } else if ($kalitem->tble == "course_sections" && $panmatches->playlist == true) {
+                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?widget_id\/' .
+                                          $panmatches->entryid .
+                                          '.+?\<\/iframe\>/',
+                                          '<iframe width="'.
+                                          $panmatches->width .
+                                          'px" height="'.
+                                          $panmatches->height .
+                                          'px" src="' .
+                                          $kalframe .
+                                          '"> Panopto Video - ' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          '<!--HIDDEN ' .
+                                          $panmatches->noframe .
+                                          ' HIDDEN-->',
+                                          $kalitem->itemdata, 1);
+                } else if ($panmatches->playlist == true) {
+                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?widget_id\/' .
+                                          $panmatches->entryid .
+                                          '\?.+?\<\/iframe\>/',
+                                          '<div style="max-width: ' .
+                                          $panmatches->width . 'px;">' .
+                                          '<div class="pandiv" style="padding-top: '
+                                          . (($panmatches->height / $panmatches->width) * 100) .
+                                          '%;">' .
+                                          '<iframe class="paniframe" src="' .
+                                          $kalframe .
+                                          '">Panopto Video - ' .
+                                          $panmatches->ifxtra .
+                                          '</iframe>' .
+                                          '</div>' .
+                                          '</div>' .
                                           '<!--HIDDEN ' .
                                           $panmatches->noframe .
                                           ' HIDDEN-->',
