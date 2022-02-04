@@ -68,3 +68,9 @@ $string['verbose'] = 'Verbose';
 $string['verbose_help'] = 'Enabling verbose logging will give an output of EVERY imported line and converted kalvidres resource. This may prove too large for storing as a task log. Please use with caution.';
 $string['purge'] = 'Purge data';
 $string['purge_help'] = 'Truncate the local_kalpanmaps table prior to importing.';
+
+// Strings for category limiting
+$string['categorylimit'] = 'Category Limiting';
+$string['categorylimit_help'] = 'Limit processing to specific course categories.';
+$string['categories'] = 'Categories';
+$string['categories_help'] = 'Limit to the selected course categories.';

@@ -376,6 +376,27 @@ class kalpanmaps {
     }
 
     /**
+     * Function for checking if the tool is supported in for a given course category.
+     *
+     * @return @bool
+     */
+    public static function is_supported($cid) {
+         global $CFG;
+
+         // Get the course object from the id.
+         $course = get_course($cid);
+
+         // Check to see if this course is in a supported category.
+	 $enabled = $CFG->local_kalpanmaps_categorylimit;
+         $ccats = $CFG->local_kalpanmaps_cats;
+         $cats = explode(',', $ccats);
+         $is_cat = ($enabled == 1 ? (empty($cats) or in_array($course->category, $cats)) : true);
+
+         // Return true or not based on above.
+         return ($is_cat);
+     }
+
+    /**
      * Function for grabbing label data where kaltura iframes are present.
      *
      * @return array $kalitems
@@ -391,9 +412,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_label l
+                       INNER JOIN mdl_course c ON c.id = l.course
                    WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
                        OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -419,9 +441,10 @@ class kalpanmaps {
                        "content" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_page p
+                       INNER JOIN mdl_course c ON c.id = p.course
                    WHERE (p.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
                        OR p.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR p.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR p.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -447,9 +470,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_page p
+                       INNER JOIN mdl_course c ON c.id = p.course
                    WHERE (p.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR p.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR p.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR p.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -475,9 +499,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_assign a
+                       INNER JOIN mdl_course c ON c.id = a.course
                    WHERE (a.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR a.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR a.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR a.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -504,7 +529,8 @@ class kalpanmaps {
                        "student" AS usertype
                    FROM mdl_assignsubmission_onlinetext aso
                        INNER JOIN mdl_assign a ON a.id = aso.assignment
-                   WHERE aso.onlinetext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"';
+                       INNER JOIN mdl_course c ON c.id = a.course
+		   WHERE aso.onlinetext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -530,9 +556,10 @@ class kalpanmaps {
                        "summary" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_course_sections cs
+                       INNER JOIN mdl_course c ON c.id = cs.course
                    WHERE (cs.summary LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR cs.summary LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR cs.summary LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR cs.summary LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -558,9 +585,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_quiz q
+                       INNER JOIN mdl_course c ON c.id = q.course
                    WHERE (q.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR q.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR q.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -586,9 +614,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_book b
+                       INNER JOIN mdl_course c ON c.id = b.course
                    WHERE (b.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR b.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR b.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR b.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -615,9 +644,10 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_book_chapters bc
                        INNER JOIN mdl_book b ON b.id = bc.bookid
+                       INNER JOIN mdl_course c ON c.id = b.course
                    WHERE (bc.content LIKE "%<iframe id=\"kaltura_player\" src=\"%"
                        OR bc.content LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR bc.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR bc.content LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -643,9 +673,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_forum f
+                       INNER JOIN mdl_course c ON c.id = f.course
                    WHERE (f.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR f.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR f.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -683,6 +714,7 @@ class kalpanmaps {
                   FROM mdl_forum_posts fp
                     INNER JOIN mdl_forum_discussions fd ON fd.id = fp.discussion
                     INNER JOIN mdl_forum f ON f.id = fd.forum
+                    INNER JOIN mdl_course c ON c.id = f.course
                     ' . $joins . '
                   WHERE fp.message LIKE "%browseandembed/index/media/entryid/%"
                     ' . $wheres;
@@ -711,9 +743,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_lesson l
+                       INNER JOIN mdl_course c ON c.id = l.course
                    WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -740,9 +773,10 @@ class kalpanmaps {
                        "faculty" AS usertype
                    FROM mdl_lesson_pages lp
                        INNER JOIN mdl_lesson l ON l.id = lp.lessonid
+                       INNER JOIN mdl_course c ON c.id = l.course
                    WHERE (lp.contents LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR lp.contents LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR lp.contents LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR lp.contents LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -772,7 +806,8 @@ class kalpanmaps {
                     ' . $usertype . '
                   FROM mdl_lesson_attempts la
                     INNER JOIN mdl_lesson l ON l.id = la.lessonid
-                  WHERE la.useranswer LIKE "%browseandembed/index/media/entryid/%"';
+                    INNER JOIN mdl_course c ON c.id = l.course
+		  WHERE la.useranswer LIKE "%browseandembed/index/media/entryid/%"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -802,7 +837,8 @@ class kalpanmaps {
                     ' . $usertype . '
                   FROM mdl_lesson_answers la
                     INNER JOIN mdl_lesson l ON l.id = la.lessonid
-                  WHERE la.answer LIKE "%browseandembed/index/media/entryid/%"';
+                    INNER JOIN mdl_course c ON c.id = l.course
+		  WHERE la.answer LIKE "%browseandembed/index/media/entryid/%"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -828,9 +864,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_journal j
+                       INNER JOIN mdl_course c ON c.id = j.course
                    WHERE (j.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR j.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR j.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR j.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -857,7 +894,8 @@ class kalpanmaps {
                        "student" AS usertype
                    FROM mdl_journal j
                        INNER JOIN mdl_journal_entries je ON je.journal = j.id
-                   WHERE je.text LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"';
+                       INNER JOIN mdl_course c ON c.id = j.course
+		   WHERE je.text LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"';
 
         // Build the array of objects.
         $kalitems = array();
@@ -883,9 +921,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_choice c
+                       INNER JOIN mdl_course cou ON cou.id = c.course
                    WHERE (c.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR c.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR c.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR c.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -911,9 +950,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_feedback f
+                       INNER JOIN mdl_course c ON c.id = f.course
                    WHERE (f.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR f.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR f.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR f.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -939,9 +979,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_glossary g
+                       INNER JOIN mdl_course c ON c.id = g.course
                    WHERE (g.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR g.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR g.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -979,6 +1020,7 @@ class kalpanmaps {
                   FROM mdl_glossary_entries ge
                     INNER JOIN mdl_glossary g ON g.id = ge.glossaryid
                     ' . $joins . '
+                       INNER JOIN mdl_course c ON c.id = g.course
                    WHERE (g.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR g.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
                        OR g.intro LIKE "%<iframe src=\"https://www.kaltura.com%")
@@ -1008,9 +1050,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_choicegroup gc
+                       INNER JOIN mdl_course c ON c.id = gc.course
                    WHERE (gc.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR gc.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR gc.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR gc.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1036,9 +1079,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_lti l
+                       INNER JOIN mdl_course c ON c.id = l.course
                    WHERE (l.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR l.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR l.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1064,9 +1108,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_questionnaire q
+                       INNER JOIN mdl_course c ON c.id = q.course
                    WHERE (q.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR q.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR q.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR q.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1092,9 +1137,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_scorm sco
+                       INNER JOIN mdl_course c ON c.id = sco.course
                    WHERE (sco.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR sco.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR sco.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR sco.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1120,9 +1166,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_survey s
+                       INNER JOIN mdl_course c ON c.id = s.course
                    WHERE (s.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR s.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR s.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR s.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1148,9 +1195,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_turnitintooltwo tii
+                       INNER JOIN mdl_course c ON c.id = tii.course
                    WHERE (tii.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR tii.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR tii.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR tii.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1176,9 +1224,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_url u
+                       INNER JOIN mdl_course c ON c.id = u.course
                    WHERE (u.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR u.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR u.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR u.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1204,9 +1253,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_wiki w
+                       INNER JOIN mdl_course c ON c.id = w.course
                    WHERE (w.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR w.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR w.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1232,9 +1282,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_workshop w
+                       INNER JOIN mdl_course c ON c.id = w.course
                    WHERE (w.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR w.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR w.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR w.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1260,9 +1311,10 @@ class kalpanmaps {
                        "intro" AS dataitem,
                        "faculty" AS usertype
                    FROM mdl_data db
+                       INNER JOIN mdl_course c ON c.id = db.course
                    WHERE (db.intro LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR db.intro LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR db.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR db.intro LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1293,7 +1345,7 @@ class kalpanmaps {
                        INNER JOIN mdl_course c ON c.id = ctx.instanceid
                    WHERE (qq.questiontext LIKE "%<iframe id=\"kaltura_player\" src=\"%"
 		       OR qq.questiontext LIKE "%<a href=\"%/browseandembed/index/media/entryid/%"
-                       OR qq.questiontext LIKE "%<iframe src=\"https://www.kaltura.com%")';
+		       OR qq.questiontext LIKE "%<iframe src=\"https://www.kaltura.com%")';
 
         // Build the array of objects.
         $kalitems = array();
@@ -1396,7 +1448,7 @@ class kalpanmaps {
         }
 
         preg_match(
-            '/(\<a href="http.+?kaf.kaltura.com\/browseandembed\/index\/media\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/',
+            '/(\<a href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/.+?\/playerSize\/.+?"\>.+?\<\/a\>)/',
             $kalitem->itemdata, $matches);
         $kalmatches->kalbutton = isset($matches[1]) ? $matches[1] : '';
         unset($matches);
@@ -1419,7 +1471,7 @@ class kalpanmaps {
 
         // Grab the width and add it to the object.
         preg_match('/\<iframe .+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-        preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
+	preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches2);
         $kalmatches->width = isset($matches[1]) ? $matches[1] : (isset($matches2[4]) ? $matches2[4] : $CFG->local_kalpanmaps_width);
         unset($matches);
@@ -1437,8 +1489,12 @@ class kalpanmaps {
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
         unset($matches);
 
-        preg_match('/(\<a) (href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
+	preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches);
+        // $kalmatches->entryid = $matches[3];
+        // $kalmatches->width = $matches[4];
+        // $kalmatches->height = $matches[5];
+        // $kalmatches->ifxtra = $matches[6];
         $kalmatches->noframe = !empty($kalmatches->noframe)
             ? $kalmatches->noframe
             : ($matches ? '<!-- HIDDEN <anchor ' . $matches[2] . '</anchor> HIDDEN -->' : '');
@@ -1454,20 +1510,29 @@ class kalpanmaps {
         }
 
         /*
-        echo'<xmp>';
+	echo"\n";
+	echo'<xmp>';
+	echo"\n";
         echo"kalbutton: ";
         print_r($kalmatches->kalbutton);
+	echo"\n";
         echo"\nnobutton: ";
         print_r($kalmatches->noframe);
+	echo"\n";
         echo"\nentry_id: ";
         print_r($kalmatches->entryid);
+	echo"\n";
         echo"\nwidth: ";
         print_r($kalmatches->width);
+	echo"\n";
         echo"\nheight: ";
         print_r($kalmatches->height);
+	echo"\n";
         echo"\nifextra: ";
         print_r($kalmatches->ifxtra);
+	echo"\n";
         echo'</xmp>';
+	echo"\n";
         */
 
         // Log the iframe info in verbose mode.
@@ -1637,6 +1702,10 @@ class kalpanmaps {
         // Loop through the kaltura items and do stuff.
         foreach ($kalitems as $kalitem) {
 
+        if (self::is_supported($kalitem->courseid)) {
+        $cc = get_course($kalitem->courseid); 
+        mtrace('Course ID: ' . $cc->id . ' is in Category ID: ' . $cc->category . ' and is supported. Processing.');
+
             // We have to foce links where Moodle prohibits embed code.
             $forcelinks = false;
             if (in_array($kalitem->tble, $forcelinked)) {
@@ -1784,7 +1853,7 @@ class kalpanmaps {
                 }
             } else {
                 if (($students && $kalitem->usertype == "student") || $forcelinks) {
-                     $kalitem->newitemdata = preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
+                     $kalitem->newitemdata = preg_replace('/\<a href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/' .
                                           $panmatches->entryid .
                                           '\/.+?\>.+?\<\/a\>/',
                                           '<a class="panlink" href="' .
@@ -1797,7 +1866,7 @@ class kalpanmaps {
                 } else {
                         if ($kalitem->tble == "course_sections") {
                             $kalitem->newitemdata =
-                                          preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
+                                          preg_replace('/\<a href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/' .
                                           $panmatches->entryid .
                                           '\/.+?\>.+?\<\/a\>/',
                                           '<iframe width="'.
@@ -1813,7 +1882,7 @@ class kalpanmaps {
                                           $kalitem->itemdata, 1);
                         } else {
                             $kalitem->newitemdata =
-                                          preg_replace('/\<a href="http.+?kaf.kaltura.com\/browseandembed\/.+?\/entryid\/' .
+                                          preg_replace('/\<a href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/' .
                                           $panmatches->entryid .
                                           '\/.+?\>.+?\<\/a\>/',
                                           '<div style="max-width: ' .
@@ -1876,6 +1945,9 @@ class kalpanmaps {
 
             // Rebuild the course cache.
             rebuild_course_cache($kalitem->courseid, true);
+        } else {
+            mtrace('Course ID: ' . $kalitem->courseid . ' is not supported. Skipping.');
+        }
         }
 
         // Log what we did.
