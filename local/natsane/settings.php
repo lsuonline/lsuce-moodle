@@ -24,19 +24,13 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
 
-    $yesno = [
-        0 => get_string('no'),
-        1 => get_string('yes')
-    ];
-
     $settings = new admin_settingpage('local_natsane', get_string('pluginname', 'local_natsane'));
 
     $ADMIN->add('localplugins', $settings);
 
     $settings->add(
-        new admin_setting_heading(
-            'local_natsane_header', '',
-            get_string('pluginname', 'local_natsane')
-        )
+        new admin_setting_heading('local_natsane_header', '',
+        get_string('pluginname_desc', 'local_natsane'))
     );
+
 }

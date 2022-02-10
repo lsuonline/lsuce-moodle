@@ -257,6 +257,7 @@ class natsane {
         $this->email_klog_report_to_admins();
     }
 
+
     /**
      * Emails a natural log report to admin users
      *
