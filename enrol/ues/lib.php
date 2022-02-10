@@ -1328,17 +1328,30 @@ class enrol_ues_plugin extends enrol_plugin {
     private function enroll_users($group, $users) {
         $instance = $this->get_instance($group->courseid);
 
-        // Pull this setting for future use.
+        // Pull this setting once.
         $recover = $this->setting('recover_grades');
+
+        // Require check once.
+        if ($recover and !function_exists('grade_recover_history_grades')) {
+            global $CFG;
+            require_once($CFG->libdir . '/gradelib.php');
+        }
+
+        $recovergradesfor = function($user) use ($recover, $instance) {
+            if ($recover) {
+                grade_recover_history_grades($user->userid, $instance->courseid);
+            }
+        };
 
         foreach ($users as $user) {
             $shortname = $this->determine_role($user);
             $roleid = $this->setting($shortname . '_role');
 
-            // Use the $recover setting to recover or not recover grades regardless of the system defaults.
-            $this->enrol_user($instance, $user->userid, $roleid, $timestart = 0, $timeend = 0, $status = null, $recovergrades = $recover);
+            $this->enrol_user($instance, $user->userid, $roleid);
 
             groups_add_member($group->id, $user->userid);
+
+            $recovergradesfor($user);
 
             $user->status = ues::ENROLLED;
             $user->save();
