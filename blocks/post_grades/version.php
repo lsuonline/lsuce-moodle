@@ -23,7 +23,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2021042300;
+$plugin->version = 2022021000;
 $plugin->requires = 2015051102;
 $plugin->component = 'block_post_grades';
 $plugin->maturity = MATURITY_STABLE;
