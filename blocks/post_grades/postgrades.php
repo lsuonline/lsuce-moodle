@@ -109,6 +109,9 @@ switch($period->post_type) {
     case 'final':
         $post_type = 'F';
         break;
+    case 'onlinefinal':
+        $post_type = 'O';
+        break;
     case 'degree':
         $post_type = 'D';
         break;
