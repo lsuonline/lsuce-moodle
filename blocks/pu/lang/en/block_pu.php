@@ -48,6 +48,8 @@ $string['pu_ccfile_help'] = 'The location for the ProctorU access codes file.<br
 $string['pu_guildfile'] = 'Guild Mapping File';
 $string['pu_guildfile_help'] = 'The location for the GUILD section / student mapping file.<br>One comma seperated sectionid, LSUID pair per line with no header.<br>2021ENGL1001, 891234567';
 
+$string['pu_sectionmap'] = 'Section Mapping';
+$string['pu_sectionmap_help'] = 'Use LSU style Universal Enrollment System course-section mapping method.';
 // Configuration.
 $string['manage_invalids'] = 'Invalid codes';
 $string['manage_invalids_help'] = 'Manage whether invalid access codes are confirmed by ProctorU to either be "unused and valid" or "used or invalid" access codes.';

@@ -210,6 +210,24 @@ class pu_import_helper {
     }
 
     /**
+     * Sets the "sectionmap" setting to let us know if we have to build sectionIDs for UES.
+     *
+     * @package   block_pu
+     * @param     @bool
+     *
+     */
+    public static function block_pu_sectionmap() {
+        global $CFG;
+
+        // If the setting is set, return its value.
+        $sectionmapping = isset($CFG->block_pu_sectionmap) ? 
+                          ($CFG->block_pu_sectionmap == 1 ? true : false) :
+                          false;
+
+        return $sectionmapping;
+    }
+
+    /**
      * Loops through data and calls block_pu_guildfield2db.
      *
      * @package   block_pu
@@ -237,18 +255,38 @@ class pu_import_helper {
         // Loop through the content.
         foreach ($content as $line) {
     
-            // Set the fields based on data from the line.
-            $fields = array_map('trim', $line);
+            if (self::block_pu_sectionmap()) {
+                // Set the fields based on data from the line.
+                $fields = array_map('trim', $line);
+
+                // If we have an empty bit, skip it.
+                if (!empty($fields[0]) && !empty($fields[1])) {
+
+                    // Add the data to the DB.
+                    $success = self::block_pu_guildfield2db($fields);
+
+                    // Log successes.
+                    if ($success) {
+                        // Increment the counter by one.
+                        $counter++;
+                    }
+                }
+
+            } else {
+                // Set the fields based on data from the line.
+                $fields = array_map('trim', $line);
     
-            // If we have an empty bit, skip it.
-            if (!empty($fields[0]) && !empty($fields[1])) {
+                // If we have an empty bit, skip it.
+                if (!empty($fields[0]) && !empty($fields[1])) {
     
-                // Add the data to the DB.
-                $success = self::block_pu_guildfield2db($fields);
+                    // Add the data to the DB.
+                    $success = self::block_pu_guildfield2db($fields);
     
-                if ($success) {
-                    // Increment the counter by one.
-                    $counter++;
+                    // Log successes.
+                    if ($success) {
+                        // Increment the counter by one.
+                        $counter++;
+                    }
                 }
             }
         }
@@ -312,7 +350,7 @@ class pu_import_helper {
             echo("We found a header row and skipped it.\n");
             return false;
         }
-    
+
         // Populate the data.
         $data['couponcode'] = $fields[1];
 
@@ -364,6 +402,15 @@ class pu_import_helper {
             return false;
         }
 
+        // Short circuit this if we find a UES formatted row.
+        if (!self::block_pu_sectionmap() && preg_match('/\d+-\S+ \S+-\S+-\d+-\d\d\d/', $fields[0])) {
+            echo("We found a UES formatted row and skipped it.\n");
+            return false;
+        } else if (self::block_pu_sectionmap() && !preg_match('/\d+-\S+ \S+-\S+-\d+-\d\d\d/', $fields[0])) {
+            echo("We found a non-UES formatted row and skipped it.\n");
+            return false;
+        }
+
         // Populate the data.
         $d['courseidnumber'] = $fields[0];
         $d['useridnumber'] = $fields[1];
@@ -391,8 +438,29 @@ class pu_import_helper {
         // Set this for later. 
         $coursetable = 'course';
     
-        // Get the course object based on the identifier.
-        $course = $DB->get_record($coursetable, array('shortname' => $d['courseidnumber']));
+        // If we're generating UES courses.
+        if (self::block_pu_sectionmap()) {
+            $coursesql = 'SELECT c.id
+                          FROM {course} c
+                          INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                          INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+                          INNER JOIN {enrol_ues_semesters} sem ON sem.id = sec.semesterid
+                          WHERE sec.idnumber IS NOT NULL
+                          AND sec.idnumber <> ""
+                          AND CONCAT(sem.year, "-",
+                                     sem.name, "-",
+                                     cou.department, "-",
+                                     cou.cou_number, "-",
+                                     sec.sec_number) = "' .
+                              $d['courseidnumber'] . '"';
+
+            $course = $DB->get_record_sql($coursesql);
+
+        } else {
+
+            // Get the course object based on the identifier.
+            $course = $DB->get_record($coursetable, array('shortname' => $d['courseidnumber']));
+        }
 
         // Get the user object based on the identifier.
         $user = $DB->get_record_sql($usersql);

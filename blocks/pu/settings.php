@@ -64,6 +64,16 @@ if ($ADMIN->fulltree) {
         )
     );
 
+    // Guild mapping sectionmap for UES.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_pu_sectionmap',
+            get_string('pu_sectionmap', 'block_pu'),
+            get_string('pu_sectionmap_help', 'block_pu'),
+            0 // Default.
+        )
+    );
+
     // ProctorU coupon code admin.
     $settings->add(
         new admin_setting_configtext(
