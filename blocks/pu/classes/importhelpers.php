@@ -351,15 +351,6 @@ class pu_import_helper {
             return false;
         }
 
-        // Short circuit this if we find a UES formatted row.
-        if (!self::block_pu_sectionmap() && preg_match('/\d+-\S+ \S+-\S+-\d+-\d\d\d/', $fields[0])) {
-            echo("We found a UES formatted row and skipped it.\n");
-            return false;
-        } else if (self::block_pu_sectionmap() && !preg_match('/\d+-\S+ \S+-\S+-\d+-\d\d\d/', $fields[0])) {
-            echo("We found a non-UES formatted row and skipped it.\n");
-            return false;
-        }
- 
         // Populate the data.
         $data['couponcode'] = $fields[1];
 
