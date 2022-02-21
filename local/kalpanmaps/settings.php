@@ -200,4 +200,24 @@ if ($hassiteconfig) {
         )
     );
 
+    // Add the category limit settings checkbox.
+    $settings->add(
+         new admin_setting_configcheckbox('local_kalpanmaps_categorylimit',
+             get_string('categorylimit', 'local_kalpanmaps'),
+             get_string('categorylimit_help', 'local_kalpanmaps'), 0
+         )
+     );
+
+    // Add the category limit course categories.
+     $course_cats = $DB->get_records_menu(
+         'course_categories', null, 'name ASC', 'id, name');
+
+    // Add the category milti-select limit settings.
+     $settings->add(
+         new admin_setting_configmultiselect(
+             'local_kalpanmaps_cats', get_string('categories', 'local_kalpanmaps'),
+                 get_string('categories_help', 'local_kalpanmaps'),
+                 array(), $course_cats
+         )
+     );
 }
