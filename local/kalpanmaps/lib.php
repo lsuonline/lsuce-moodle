@@ -692,7 +692,7 @@ class kalpanmaps {
      * @return array $kalitems
      */
     public static function get_kal_forum_posts($limit = 0, $students) {
-        global $DB;
+        global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
         $usertype = $students == 0 ? '"faculty" AS usertype' : '"student" AS usertype';
@@ -823,7 +823,7 @@ class kalpanmaps {
      * @return array $kalitems
      */
     public static function get_kal_lesson_answers($limit = 0) {
-        global $DB;
+        global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
         $usertype = '"faculty" AS usertype';
@@ -832,7 +832,7 @@ class kalpanmaps {
         $gksql = 'SELECT la.id AS id,
                     l.course AS courseid,
                     la.answer AS itemdata,
-                    "lesson_answer" AS tble,
+                    "lesson_answers" AS tble,
                     "answer" AS dataitem,
                     ' . $usertype . '
                   FROM mdl_lesson_answers la
@@ -998,7 +998,7 @@ class kalpanmaps {
      * @return array $kalitems
      */
     public static function get_kal_glossary_entries($limit = 0, $students) {
-        global $DB;
+        global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
         $usertype = $students == 0 ? '"faculty" AS usertype' : '"student" AS usertype';
