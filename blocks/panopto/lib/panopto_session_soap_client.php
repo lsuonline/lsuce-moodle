@@ -311,6 +311,7 @@ class panopto_session_soap_client extends PanoptoTimeoutSoapClient {
         $sortby = SessionManagementEnumFolderSortField::VALUE_NAME;
         $sortincreasing = true;
         $wildcardsearchnameonly = false;
+        $unmappedonly = true;
 
         $folderlistrequest = new SessionManagementStructListFoldersRequest(
             $pagination,
@@ -318,7 +319,8 @@ class panopto_session_soap_client extends PanoptoTimeoutSoapClient {
             $publiconly,
             $sortby,
             $sortincreasing,
-            $wildcardsearchnameonly
+            $wildcardsearchnameonly,
+            $unmappedonly
         );
         $searchquery = null;
 
@@ -368,6 +370,9 @@ class panopto_session_soap_client extends PanoptoTimeoutSoapClient {
                     ++$currentpage;
                     $folderstoget -= $resultsperpage;
                 }
+            } else if ($totalresults === 0) {
+                // In this case folderlist will be null but that is handled poorly in the UI.
+                $folderlist = array();
             }
 
             return $folderlist;
@@ -548,6 +553,28 @@ class panopto_session_soap_client extends PanoptoTimeoutSoapClient {
         } else {
             return $this->handle_error(
                 $this->sessionmanagementserviceupdate->getLastError()['SessionManagementServiceUpdate::UpdateFolderParent']
+            );
+        }
+    }
+
+    public function update_folder_external_id_with_provider($folderid, $externalid, $providername) {
+        
+        if (!isset($this->sessionmanagementserviceupdate)) {
+            $this->sessionmanagementserviceupdate = new SessionManagementServiceUpdate($this->serviceparams);
+        }
+
+        $updatefolderparams = new SessionManagementStructUpdateFolderExternalIdWithProvider(
+            $this->authparam, 
+            $folderid, 
+            $externalid,
+            $providername
+        );
+
+        if ($this->sessionmanagementserviceupdate->UpdateFolderExternalIdWithProvider($updatefolderparams)) {
+            return true;
+        } else {
+            return $this->handle_error(
+                $this->sessionmanagementserviceupdate->getLastError()['SessionManagementServiceUpdate::UpdateFolderExternalIdWithProvider']
             );
         }
     }
