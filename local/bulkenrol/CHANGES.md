@@ -4,8 +4,13 @@ moodle-local_bulkenrol
 Changes
 -------
 
-### Unreleased
+### v3.9-r3
 
+* 2021-10-20 - Improvement: Grant local/bulkenrol:enrolusers to manager archetype by default - Thanks to Luca Bösch.
+* 2021-10-19 - Improvement: Distinguish warnings caused by empty line or by invalid content - Thanks to Luca Bösch.
+* 2021-10-19 - Improvement: Use a enrol option as default - Thanks to gustavorivas96.
+* 2021-10-19 - Bugfix: Small typo in a language string - Thanks to Luca Bösch.
+* 2021-10-15 - Replace the deprecated print_error() function with a Moodle exception
 * 2021-02-05 - Move Moodle Plugin CI from Travis CI to Github actions
 
 ### v3.9-r2

@@ -31,6 +31,7 @@ $string['enrol_users'] = 'Enrol users';
 $string['enrolinfo_headline'] = 'Enrolment details';
 $string['enrolplugin'] = 'Enrolment plugin';
 $string['enrolplugin_desc'] = 'The enrolment method to be used to bulk enrol the users. If the configured enrolment method is not active / added in the course when the users are bulk-enrolled, it is automatically added / activated.';
+$string['error_empty_line'] = 'Line {$a->line} is empty and will be ignored.';
 $string['error_enrol_users'] = 'There was a problem when enrolling the users to the course.';
 $string['error_enrol_user'] = 'There was a problem when enrolling the user with e-mail <em>{$a->email}</em> to the course.';
 $string['error_exception_info'] = 'Exception information';
@@ -38,7 +39,7 @@ $string['error_getting_user_for_email'] = 'There was a problem when getting the 
 $string['error_group_add_members'] = 'There was a problem when adding the users to the course group(s).';
 $string['error_group_add_member'] = 'There was a problem when adding the user with e-mail <em>{$a->email}</em> to the course group <em>{$a->group}</em>.';
 $string['error_invalid_email'] = 'Invalid e-mail address found in line {$a->row} (<em>{$a->email}</em>). This line will be ignored.';
-$string['error_more_than_one_record_for_email'] = 'More than one existing Moodle user account with e-mail address <em>{$a}</em>em> found.<br /> This line will be ignored, none of the existing Moodle users will be enrolled.';
+$string['error_more_than_one_record_for_email'] = 'More than one existing Moodle user account with e-mail address <em>{$a}</em> found.<br />This line will be ignored, none of the existing Moodle users will be enrolled.';
 $string['error_no_email'] = 'No e-mail address found in line {$a->line} (<em>{$a->content}</em>). This line will be ignored.';
 $string['error_no_valid_email_in_list'] = 'No valid e-mail address was found in the given list.<br />Please <a href=\'{$a->url}\'>go back and check your input</a>.';
 $string['error_no_record_found_for_email'] = 'No existing Moodle user account with e-mail address <em>{$a}</em>.<br />This line will be ignored, there won\'t be a Moodle user account created on-the-fly.';
