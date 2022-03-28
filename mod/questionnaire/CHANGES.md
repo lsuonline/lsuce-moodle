@@ -1,33 +1,32 @@
 Release Notes
 
-_NOTE - The 3.9 releases will work on Moodle 3.7, Moodle 3.8, Moodle 3.9, and 3.10.
-The 3.5 releases will work on Moodle 3.7, 3.6, 3.5, 3.4 and 3.3._
+_NOTE - The 3.10 releases will work on Moodle 3.9, Moodle 3.10, and Moodle 3.11.
 
-##### Version 3.9.1 (Build - 2020111801)
-Improvements:
-* Updates to deprecated unit test functions for 3.10.
+##### Release 3.10.2 (Build - 2022030300)
+Note - this will be the last 3.10 branch release. The next releases will be in the 3.11 or 4.0 branch, depending on 4.0 compatibility.
 
-##### Version 3.9.0 (Build - 2020062300)
 Improvements:
 
-* [PR150](https://github.com/PoetOS/moodle-mod_questionnaire/pull/150): Added an indent to dependent questions on the question form.
-* [PR250](https://github.com/PoetOS/moodle-mod_questionnaire/pull/250): Added calendar action events.
-* [PR279](https://github.com/PoetOS/moodle-mod_questionnaire/pull/279): Added a progress bar.
-* [PR281](https://github.com/PoetOS/moodle-mod_questionnaire/pull/281): Adding CSS classes to mobile question view.
-* [GHI296](https://github.com/PoetOS/moodle-mod_questionnaire/issues/296): Replace deprecated 'download_as_dataformat' function.
-* [GHI295](https://github.com/PoetOS/moodle-mod_questionnaire/issues/295): Filter title and subtitle fields for output.
-* [PR284](https://github.com/PoetOS/moodle-mod_questionnaire/pull/284): Adding support for multilanguage in choice options.
-* [PR285](https://github.com/PoetOS/moodle-mod_questionnaire/pull/285): Allow multilanguage options to be displayed correctly in conditions.
-* [PR211](https://github.com/PoetOS/moodle-mod_questionnaire/pull/211): Improve upgrade step 2018050102.
-* [PR306](https://github.com/PoetOS/moodle-mod_questionnaire/pull/306): Save page responses on next and prev buttons.
+* Support for Iconic5 mobile app is now present. Thanks to Dani Palou!
 
 Bug fixes:
 
-* [GHI288](https://github.com/PoetOS/moodle-mod_questionnaire/issues/288): Fixed incorrect date display problems.
-* [GHI276](https://github.com/PoetOS/moodle-mod_questionnaire/issues/276): Ensure images are copied when a questionnaire is created from a copy.
-* [GHI291/GHI299](https://github.com/PoetOS/moodle-mod_questionnaire/issues/291): Getting rid of unnecessary warnings.
-* [GHI301/CONTRIB-8165](https://github.com/PoetOS/moodle-mod_questionnaire/issues/301): Allow zero as a valid answer in text boxes.
-* [GHI300](https://github.com/PoetOS/moodle-mod_questionnaire/issues/300): Ensure that close date cannot be earlier than open date.
-* [PR304](https://github.com/PoetOS/moodle-mod_questionnaire/pull/304): Restoring regression that removed incomplete responses checkbox.
+* GHPR331 Fixed printing of individual reponse for students.
+* GHI370 Fixed problem where HTML was slipping into question text when paging.
 
-(see CHANGES.TXT in release 3.8 for earlier changes.)
+##### Version 3.10.1 (Build - 2021080400)
+
+Bug fixes:
+
+* GHI353 Ensuring clean text on new and existing essay questions.
+* GHI319 Fixing question preview display.
+* GHP321 Added CSS rule to styles.css to enable horizontal and vertical resize.
+* GHI351 Ignore deleted questions but continue loop over remaining responses.
+
+##### Version 3.10.0 (Build - 2020111100)
+
+Improvements:
+
+* Setup for 3.11 compliance as well.
+
+(see CHANGES.TXT in release 3.9 for earlier changes.)
