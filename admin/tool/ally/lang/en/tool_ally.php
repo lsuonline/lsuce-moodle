@@ -18,7 +18,7 @@
  * Language definitions.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -90,6 +90,10 @@ $string['loglevel:none'] = 'None';
 $string['loglevel:light'] = 'Light';
 $string['loglevel:medium'] = 'Medium';
 $string['loglevel:all'] = 'All';
+
+$string['logcleanuptask'] = 'Ally log cleanup task';
+$string['loglifetimedays'] = 'Keep logs for this many days';
+$string['loglifetimedaysdesc'] = 'Retain Ally logs for this many days. Set to 0 to never delete logs. A scheduled task is (by default) set to run daily, and will remove log entries that are more than this many days old.';
 
 $string['logger:pushtoallysuccess'] = 'Successful push to ally end point';
 $string['logger:pushtoallyfail'] = 'Unsuccessful push to ally end point';

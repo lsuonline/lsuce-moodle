@@ -17,7 +17,7 @@
 /**
  * Trait for supporting embedded file mapping for html content.
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2018 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -57,16 +57,31 @@ trait embedded_file_map {
         if (!$doc) {
             return $content;
         }
-        $results = $doc->getElementsByTagName('img');
+        $results = [];
+
+        $anchorresults = $doc->getElementsByTagName('a');
+        foreach ($anchorresults as $anchorresult) {
+            if (!is_object($anchorresult->attributes) || !is_object($anchorresult->attributes->getNamedItem('href'))) {
+                continue;
+            }
+            $anchorresult->src = $anchorresult->attributes->getNamedItem('href')->nodeValue;
+            $results[] = $anchorresult;
+        }
+
+        $imgresults = $doc->getElementsByTagName('img');
+        foreach ($imgresults as $imgresult) {
+            if (!is_object($imgresult->attributes) || !is_object($imgresult->attributes->getNamedItem('src'))) {
+                continue;
+            }
+            $imgresult->src = $imgresult->attributes->getNamedItem('src')->nodeValue;
+            $results[] = $imgresult;
+        }
 
         $fs = new file_storage();
         $component = local::get_component_instance($content->component);
 
         foreach ($results as $result) {
-            if (!is_object($result->attributes) || !is_object($result->attributes->getNamedItem('src'))) {
-                continue;
-            }
-            $src = $result->attributes->getNamedItem('src')->nodeValue;
+            $src = $result->src;
 
             $componenttype = local::get_component_support_type($content->component);
             if ($componenttype === component_base::TYPE_MOD) {
@@ -123,7 +138,8 @@ trait embedded_file_map {
             if ($file) {
                 $content->embeddedfiles[] = [
                     'filename' => rawurlencode($file->get_filename()),
-                    'pathnamehash' => $file->get_pathnamehash()
+                    'pathnamehash' => $file->get_pathnamehash(),
+                    'tag' => $result->tagName
                 ];
             }
         }

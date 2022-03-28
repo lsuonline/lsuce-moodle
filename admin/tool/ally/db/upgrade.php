@@ -18,7 +18,7 @@
  * Upgrade path.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -279,6 +279,23 @@ function xmldb_tool_ally_upgrade($oldversion) {
         }
         // Ally savepoint reached.
         upgrade_plugin_savepoint(true, 2019061200, 'tool', 'ally');
+    }
+
+    if ($oldversion < 2020061102) {
+        // Table could be very large, so just clear it out.
+        $DB->delete_records('tool_ally_log');
+
+        // Define index time (not unique) to be added to tool_ally_log.
+        $table = new xmldb_table('tool_ally_log');
+        $index = new xmldb_index('time', XMLDB_INDEX_NOTUNIQUE, ['time']);
+
+        // Conditionally launch add index time.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Ally savepoint reached.
+        upgrade_plugin_savepoint(true, 2020061102, 'tool', 'ally');
     }
 
     return true;
