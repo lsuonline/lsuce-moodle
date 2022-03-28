@@ -54,6 +54,9 @@ $formparams = array('course' => $course, 'cm' => $cm, 'modcontext' => $context);
 $mform = new mod_attendance\form\export($att->url_export(), $formparams);
 
 if ($formdata = $mform->get_data()) {
+    // Exporting large courses may use a bit of memory/take a bit of time.
+    \core_php_time_limit::raise();
+    raise_memory_limit(MEMORY_HUGE);
 
     $pageparams = new mod_attendance_page_with_filter_controls();
     $pageparams->init($cm);
@@ -132,7 +135,7 @@ if ($formdata = $mform->get_data()) {
                 }
             }
         } else {
-            print_error('sessionsnotfound', 'attendance', $att->url_manage());
+            throw new moodle_exception('sessionsnotfound', 'mod_attendance', $att->url_manage());
         }
 
         $setnumber = -1;
@@ -207,7 +210,7 @@ if ($formdata = $mform->get_data()) {
         }
         exit;
     } else {
-        print_error('studentsnotfound', 'attendance', $att->url_manage());
+        throw new moodle_exception('studentsnotfound', 'mod_attendance', $att->url_manage());
     }
 }
 
