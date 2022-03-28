@@ -54,10 +54,9 @@ class turnitintooltwo_view {
      * Load the Javascript and CSS components for page.
      *
      * @global type $PAGE
-     * @global type $CFG
      */
     public function load_page_components($hidebg = false) {
-        global $PAGE, $CFG;
+        global $PAGE;
 
         // Include CSS.
         if ($hidebg) {
@@ -117,10 +116,11 @@ class turnitintooltwo_view {
      * Output the Menu in the settings area as an HTML list
      *
      * @global type $CFG
+     * @global type $DB
      * @return output the menu as an HTML list
      */
     public function draw_settings_menu($cmd) {
-        global $CFG, $OUTPUT, $DB;
+        global $CFG, $DB;
 
         $tabs = array();
 
@@ -369,16 +369,16 @@ class turnitintooltwo_view {
             }
 
             // Output a link for the student to accept the turnitin licence agreement.
-            $noscriptula = "";
-            $ula = "";
+            $noscripteula = "";
+            $eula = "";
             if ($userid == $USER->id) {
                 if ($eulaaccepted != 1) {
-                    $ula = html_writer::tag('p', get_string('turnitinula', 'turnitintooltwo'), array('class' => 'mod_turnitintooltwo_eula_text'));
-                    $ula .= html_writer::tag('div', self::output_dv_launch_form("useragreement", 0, $user->tiiuserid,
+                    $eula = html_writer::tag('p', get_string('turnitinula', 'turnitintooltwo'), array('class' => 'mod_turnitintooltwo_eula_text'));
+                    $eula .= html_writer::tag('div', self::output_dv_launch_form("useragreement", 0, $user->tiiuserid,
                                 "Learner", get_string('turnitinula_btn', 'turnitintooltwo'), false),
                                     array('class' => 'mod_turnitintooltwo_eula', 'data-userid' => $userid));
 
-                    $noscriptula = html_writer::tag('noscript',
+                    $noscripteula = html_writer::tag('noscript',
                                             $this->output_dv_launch_form("useragreement", 0, $user->tiiuserid, "Learner",
                                             get_string('turnitinula', 'turnitintooltwo'), false)." ".
                                                 get_string('noscriptula', 'turnitintooltwo'),
@@ -396,7 +396,7 @@ class turnitintooltwo_view {
 
             $optionsform = new turnitintooltwo_form($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
                                                     '&do=submitpaper&view_context='.$viewcontext, $customdata);
-            $output .= $ula.$noscriptula;
+            $output .= $eula.$noscripteula;
             $output .= $OUTPUT->box($optionsform->display(), "submission_form_container");
 
             $turnitincomms = new turnitintooltwo_comms();
@@ -622,13 +622,14 @@ class turnitintooltwo_view {
                 $messagesinbox = '';
                 if ($turnitintooltwouser->get_user_role() == 'Instructor') {
                     $icon = html_writer::tag('i', '', array('class' => 'fa fa-envelope-o fa-lg'));
+                    $loading_icon = $OUTPUT->pix_icon('loading',
+                        get_string('turnitinloading', 'turnitintooltwo'), 'mod_turnitintooltwo');
                     $messagesinbox = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
-                                                        '&user='.$turnitintooltwouser->id.'&do=loadmessages&view_context=box',
-                                                            $icon.' '.get_string('messagesinbox', 'turnitintooltwo').
-                                                            ' ('.html_writer::tag('span', '', array('class' => 'messages_amount')).
-                                                                html_writer::tag('span', $OUTPUT->pix_icon('loading',
-                                                                get_string('turnitinloading', 'turnitintooltwo'), 'mod_turnitintooltwo'),
-                                                                array('class' => 'mod_turnitintooltwo_messages_loading')).')',
+                                                    '&user='.$turnitintooltwouser->id.'&do=loadmessages&view_context=box',
+                                                        $icon.' '.get_string('messagesinbox', 'turnitintooltwo').
+                                                        ' ('.html_writer::tag('span', '', array('class' => 'messages_amount')).
+                                                            html_writer::tag('span', $loading_icon,
+                                                            array('class' => 'mod_turnitintooltwo_messages_loading')).')',
                                                 array("class" => "mod_turnitintooltwo_messages_inbox"));
                 }
 
@@ -1219,11 +1220,9 @@ class turnitintooltwo_view {
         }
 
         // Show Originality score with link to open document viewer.
-        if ( !empty($submission->id) && is_null($submission->submission_score) && $submission->submission_orcapable == 0 ) {
-            // Don't show if there is no OR score and submission is not OR capable.
-            $rawscore = null;
-            $score = '--';
-        } else if (!empty($submission->id) && !empty($submission->submission_objectid) &&
+        $rawscore = null;
+        $score = '--';
+        if (!empty($submission->id) && !empty($submission->submission_objectid) &&
                 ($istutor || $turnitintooltwoassignment->turnitintooltwo->studentreports)) {
 
             //Show score.
@@ -1262,10 +1261,6 @@ class turnitintooltwo_view {
                                 array('id' => 'origreport_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid,
                                     'class' => 'row_score origreport_open'));
             }
-
-        } else {
-            $rawscore = null;
-            $score = '--';
         }
 
         // Show grade and link to DV.
@@ -1424,8 +1419,14 @@ class turnitintooltwo_view {
                                             "id" => "upload_".$submission->submission_objectid."_".$partid."_".$submission->userid,
                                             'data-eula' => $eulaaccepted, 'data-user-type' => $istutor));
 
-            if (time() > $parts[$partid]->dtdue && $turnitintooltwoassignment->turnitintooltwo->allowlate == 0 && !$istutor) {
-                $upload = "&nbsp;";
+            $duedatepassed = time() > $parts[$partid]->dtdue;
+            $latesubmissionsallowed = $turnitintooltwoassignment->turnitintooltwo->allowlate;
+            $submissionexists = empty($submission->submission_objectid);
+
+            // Show option to submit only when due date has passed, late submissions are allowed and student has not submitted.
+            // An instructor will always have the ability to make a late submission - to account for student exemptions.
+            if (!$istutor && ($duedatepassed && ($latesubmissionsallowed == 0 || ($latesubmissionsallowed == 1 && !$submissionexists)))) {
+                $upload = "&nbsp";
             }
 
         } else {
@@ -1483,7 +1484,7 @@ class turnitintooltwo_view {
                                                 ));
         }
 
-        // The studentfirstname and studentlastname fields are for soting only, and thus should not be present if the user is a student.
+        // The studentfirstname and studentlastname fields are for sorting only, and thus should not be present if the user is a student.
         if (!$istutor) {
             $data = array($partid, $checkbox, $studentname, $rawtitle, $title, $objectid, $rawmodified, $modified);
         } else {
@@ -1876,8 +1877,6 @@ class turnitintooltwo_view {
         $rolestring = ($role == "Instructor") ? 'turnitintutors' : 'turnitinstudents';
         $cellheader = get_string($rolestring, 'turnitintooltwo');
         $output = "";
-        $enrollink = "";
-        $enrollingcontainer = "";
 
         if (has_capability('mod/turnitintooltwo:grade', context_module::instance($cm->id))) {
 
@@ -1895,8 +1894,9 @@ class turnitintooltwo_view {
                                                     get_string('enrolling', 'turnitintooltwo'),
                                                     'mod_turnitintooltwo')." ".
                                                         get_string('enrolling', 'turnitintooltwo'), 'enrolling_container');
+
+                $output .= $OUTPUT->box($enrollingcontainer.$enrollink, '');
             }
-            $output .= $OUTPUT->box($enrollingcontainer.$enrollink, '');
 
             // Output user role to hidden var for use in jQuery calls.
             $output .= $OUTPUT->box($role, '', 'user_role');

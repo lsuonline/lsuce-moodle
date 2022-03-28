@@ -89,7 +89,6 @@ function turnitintooltwo_get_integration_ids() {
 function turnitintooltwo_add_to_log($courseid, $eventname, $link, $desc, $cmid, $userid = 0) {
     global $USER;
 
-
     $eventname = str_replace(' ', '_', $eventname);
     $eventpath = '\mod_turnitintooltwo\event\\'.$eventname;
 
@@ -199,7 +198,7 @@ function turnitintooltwo_activitylog($string, $activity) {
  * @param  boolean $nullifnone
  */
 function turnitintooltwo_update_grades($turnitintooltwo, $userid = 0, $nullifnone = true) {
-    global $DB, $USER, $CFG;
+    global $DB;
 
     if ($userid != 0) {
         return;
@@ -367,7 +366,8 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
         }
 
         /* Set legacy to 0 for all TII2s so that we can have all recreated assignments on the same TII class.
-           Legacy is set to 1 only for migrated assignments that were migrated on a course where there were pre-existing V2 assignments.*/
+           Legacy is set to 1 only for migrated assignments that were migrated on
+           a course where there were pre-existing V2 assignments.*/
         if ($action == "NEWCLASS") {
             $update = new stdClass();
             $update->id = $turnitintooltwo->id;
@@ -493,13 +493,13 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
             $assignment->setEraterHandbook($eraterhandbook);
 
             // Generate the assignment dates depending on whether we are renewing them or not.
-            $date_start = turnitintooltwo_generate_part_dates($renewdates, "start", $turnitintooltwoassignment->turnitintooltwo, $i);
-            $date_due   = turnitintooltwo_generate_part_dates($renewdates, "due", $turnitintooltwoassignment->turnitintooltwo, $i);
-            $date_post  = turnitintooltwo_generate_part_dates($renewdates, "post", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $datestart = turnitintooltwo_generate_part_dates($renewdates, "start", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $datedue   = turnitintooltwo_generate_part_dates($renewdates, "due", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $datepost  = turnitintooltwo_generate_part_dates($renewdates, "post", $turnitintooltwoassignment->turnitintooltwo, $i);
 
-            $assignment->setStartDate($date_start);
-            $assignment->setDueDate($date_due);
-            $assignment->setFeedbackReleaseDate($date_post);
+            $assignment->setStartDate($datestart);
+            $assignment->setDueDate($datedue);
+            $assignment->setFeedbackReleaseDate($datepost);
 
             $attribute = "partname".$i;
             $tiititle = $turnitintooltwoassignment->turnitintooltwo->name." ".$turnitintooltwoassignment->turnitintooltwo->$attribute;
@@ -549,14 +549,14 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
  * Function called by turnitintooltwo_duplicate_recycle to generate part dates during the course reset process.
  *
  * @param int $renewdates Determines whether to use new dates or existing dates.
- * @param string $date_type "start", "due" or "post" - Determines the kind of date we need to return.
+ * @param string $datetype "start", "due" or "post" - Determines the kind of date we need to return.
  * @param object $part The assignment in which we need dates for.
  * @param int The counter used during the part creation.
  * @return int A timestamp for the date we requested.
  */
-function turnitintooltwo_generate_part_dates($renewdates, $date_type, $part, $i) {
+function turnitintooltwo_generate_part_dates($renewdates, $datetype, $part, $i) {
     if ($renewdates) {
-        switch ($date_type) {
+        switch ($datetype) {
             case 'start':
                 return gmdate("Y-m-d\TH:i:s\Z", time());
             case 'due':
@@ -566,7 +566,7 @@ function turnitintooltwo_generate_part_dates($renewdates, $date_type, $part, $i)
                 return NULL;
         }
     } else {
-        $attribute = "dt".$date_type.$i;
+        $attribute = "dt".$datetype.$i;
         return gmdate("Y-m-d\TH:i:s\Z", $part->$attribute);
     }
 }
@@ -595,7 +595,7 @@ function turnitintooltwo_reset_part_update($part, $i) {
  * @return array The Result of the turnitintooltwo_duplicate_recycle call
  */
 function turnitintooltwo_reset_userdata($data) {
-    $renew_dates = isset($data->renew_assignment_dates) ? 1 : null;
+    $renewdates = isset($data->renew_assignment_dates) ? 1 : null;
 
     $action = 'UNTOUCHED';
     switch ($data->reset_turnitintooltwo) {
@@ -607,7 +607,7 @@ function turnitintooltwo_reset_userdata($data) {
             break;
     }
 
-    $status = turnitintooltwo_duplicate_recycle($data->courseid, $action, $renew_dates);
+    $status = turnitintooltwo_duplicate_recycle($data->courseid, $action, $renewdates);
 
     return $status;
 }
@@ -709,7 +709,6 @@ function turnitintooltwo_cron() {
 
     // Perform gradebook migrations for submissions that were not actioned during the migration tool.
     turnitintooltwo_cron_migrate_gradebook();
-
 }
 
 /**
@@ -920,55 +919,6 @@ function turnitintooltwo_tempfile(array $filename, $suffix) {
     } while ( !touch($file) );
 
     return $file;
-}
-
-/**
- * Checks whether update is available for plugin from Turnitin.
- *
- * @param type $module
- * @return null
- */
-function turnitintooltwo_updateavailable($currentversion) {
-    global $CFG;
-
-    $updateneeded['update'] = 0;
-
-    try {
-        // Open connection.
-        $ch = curl_init();
-
-        // Set the url, number of POST vars, POST data.
-        curl_setopt($ch, CURLOPT_URL, "https://www.turnitin.com/static/resources/files/moodledirect2_latest.xml");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        if (isset($CFG->proxyhost) AND !empty($CFG->proxyhost)) {
-            curl_setopt($ch, CURLOPT_PROXY, $CFG->proxyhost.':'.$CFG->proxyport);
-        }
-        if (isset($CFG->proxyuser) AND !empty($CFG->proxyuser)) {
-            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, sprintf('%s:%s', $CFG->proxyuser, $CFG->proxypassword));
-        }
-
-        // Execute post.
-        $result = curl_exec($ch);
-
-        // Close connection.
-        curl_close($ch);
-
-        $xml = simplexml_load_string($result);
-        if ((isset($xml)) AND (isset($xml->version))) {
-            if ($xml->version > $currentversion) {
-                $updateneeded['update'] = 1;
-                $updateneeded['file'] = $xml->filename;
-            }
-        }
-
-    } catch (Exception $e) {
-        turnitintooltwo_comms::handle_exceptions($e, 'checkupdateavailableerror', false);
-    }
-
-    return $updateneeded;
 }
 
 /**
