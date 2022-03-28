@@ -24,12 +24,8 @@
 
 namespace qtype_multianswerwiris\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
-class provider implements
-    // This plugin does not store any personal user data.
-    \core_privacy\local\metadata\null_provider
-{
+// This plugin does not store any personal user data.
+class provider implements \core_privacy\local\metadata\null_provider {
     use \core_privacy\local\legacy_polyfill;
 
     /**
@@ -38,7 +34,9 @@ class provider implements
      *
      * @return  string
      */
+    // @codingStandardsIgnoreStart
     public static function _get_reason() {
+        // @codingStandardsIgnoreEnd
         return 'privacy:null_reason';
     }
 }
