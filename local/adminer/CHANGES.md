@@ -120,3 +120,12 @@
 
 ### Version 4.7.8 (2020120601 mdl-39)
 * increase version
+
+### Version 4.8.0 (2021030701 mdl-39)
+* increase version
+
+### Version 4.7.9 (2021030801 mdl-39)
+* Version 4.8.0 was throwing errors
+
+### Version 4.8.1 (2021051700 mdl-39)
+* it is based on adminer-4.8.1
