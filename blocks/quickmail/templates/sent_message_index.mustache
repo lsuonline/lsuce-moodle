@@ -30,7 +30,7 @@
         {{/ userCourseArray }}
     </select>
 
-    <table class="table table-hover">
+    <table class="table table-hover qm_sent_msgs">
         <thead>
             <tr>
                 {{#courseIsSorted}}
@@ -78,6 +78,13 @@
                 {{/sentAtIsSorted}}
 
                 <th></th>
+
+                {{#toggleSentEdit}}
+                    <th><a href="?courseid={{ courseId }}&sentedit=0">{{# str }} edit, block_quickmail {{/ str }}</a></th>
+                {{/toggleSentEdit}}
+                {{^toggleSentEdit}}
+                    <th><a href="?courseid={{ courseId }}&sentedit=1">{{# str }} edit, block_quickmail {{/ str }}</a></th>
+                {{/toggleSentEdit}}
             </tr>
         </thead>
         <tbody>
@@ -93,6 +100,12 @@
                     <td>
                         <a href="{{ openUrl }}" class="btn btn-primary btn-sm">{{# str }} view {{/ str }}</a>
                     </td>
+                    {{#toggleSentEdit}}
+                        <td><a href="#" class="qm_sm_trash btn btn-danger btn-sm" data-msgid="{{ id }}"><i class="fa fa-trash"></i></a></td>
+                    {{/toggleSentEdit}}
+                    {{^toggleSentEdit}}
+                        <td></td>
+                    {{/toggleSentEdit}}
                 </tr>
             {{/ tableRows }}
 
@@ -109,3 +122,10 @@
     
     <a href="{{ urlBack }}" class="btn btn-secondary">{{ urlBackLabel }}</a>
 </div>
+
+{{#js}}
+require(['jquery', 'block_quickmail/sent_messages'], function($, SM) {
+    console.log("Going to call init.......");
+    SM.init();
+});
+{{/js}}

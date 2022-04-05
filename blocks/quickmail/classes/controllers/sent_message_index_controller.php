@@ -73,7 +73,7 @@ class sent_message_index_controller extends base_controller {
 
         // Get this user's courses.
         $usercoursearray = course_repo::get_user_course_array($this->props->user);
-
+        
         $this->render_component('sent_message_index', [
             'messages' => $filteredmessages,
             'user_course_array' => $usercoursearray,
@@ -82,6 +82,7 @@ class sent_message_index_controller extends base_controller {
             'pagination' => $messages->pagination,
             'sort_by' => $this->props->page_params['sort'],
             'sort_dir' => $this->props->page_params['dir'],
+            'sent_edit' => $this->props->page_params['sent_edit']
         ]);
     }
 

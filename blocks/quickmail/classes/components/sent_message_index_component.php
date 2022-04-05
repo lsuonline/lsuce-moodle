@@ -48,6 +48,7 @@ class sent_message_index_component extends component implements \renderable {
         $this->sort_by = $this->get_param('sort_by');
         $this->sort_dir = $this->get_param('sort_dir');
         $this->user_course_array = $this->get_param('user_course_array');
+        $this->sent_edit_mode = $this->get_param('sent_edit');
     }
 
     /**
@@ -65,6 +66,13 @@ class sent_message_index_component extends component implements \renderable {
         $data->courseIsSorted = $this->is_attr_sorted('course');
         $data->subjectIsSorted = $this->is_attr_sorted('subject');
         $data->sentAtIsSorted = $this->is_attr_sorted('sent');
+        error_log("\n\n");
+        $data->toggleSentEdit = $this->sent_edit_mode ? $this->sent_edit_mode : null;
+        
+        error_log("\nDa fuck is dis: ". $this->sent_edit_mode);
+        error_log("\nDa fuck is type: ". gettype($this->sent_edit_mode));
+        error_log("\nGoing to send this as toggleSentEdit: ". $data->toggleSentEdit);
+        error_log("\n");
 
         $data = $this->include_pagination($data, $this->pagination);
 
