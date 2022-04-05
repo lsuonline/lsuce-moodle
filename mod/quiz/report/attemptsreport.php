@@ -381,4 +381,54 @@ abstract class quiz_attempts_report extends quiz_default_report {
         $msg = 'The function load_relevant_students() is deprecated. Please use get_students_joins() instead.';
         throw new coding_exception($msg);
     }
+
+    // ===================    UofL Start    ===================
+    /**
+     * Force close the quiz attempts
+     * @param object $quiz the quiz settings. Attempts that don't belong to
+     * this quiz are not deleted.
+     * @param object $cm the course_module object.
+     * @param array $attemptids the list of attempt ids to delete.
+     * @param array $allowed This list of userids that are visible in the report.
+     *      Users can only delete attempts that they are allowed to see in the report.
+     *      Empty means all users.
+     */
+    protected function forceclose_selected_attempts($quiz, $cm, $attemptids, $allowed) {
+        global $DB;
+        
+        $courseid = 0;
+        if (isset($quiz->course)) {
+            $courseid = $quiz->course;
+            $context = context_course::instance($courseid);
+        } else {
+            $context = context_system::instance();
+        }
+
+        foreach ($attemptids as $attemptid) {
+            
+            $attempt = $DB->get_record('quiz_attempts', array('id' => $attemptid));
+            $attemptobj = quiz_attempt::create($attempt->id);
+
+            if (!$attempt || $attempt->quiz != $quiz->id || $attempt->preview != 0) {
+                // Ensure the attempt exists, and belongs to this quiz. If not skip.
+                continue;
+            }
+            
+            $params = array(
+                // if context_course then courseid will autofill
+                'context' => $context,
+                'objectid' => $attemptid,
+                'other' => array(
+                    'quiz_id' => $attemptobj->get_quizid(),
+                    'cmid' => $attemptobj->get_cmid(),
+                    'url' => 'review.php?attempt=' . $attemptobj->get_attemptid()
+                )
+            );
+            $event = \mod_quiz\event\attempt_forceclose::create($params);
+            $event->trigger();
+
+            $attemptobj->process_finish(time(), true);
+        }
+    }
+    // ===================    UofL End      ===================
 }

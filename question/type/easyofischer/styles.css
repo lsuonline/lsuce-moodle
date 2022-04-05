@@ -1,0 +1,40 @@
+.que.easyofischer .answer {
+    padding: 0.3em;
+    width: auto;
+    display: inline;
+}
+.que.easyofischer .answer input {
+    width: 65%;
+}
+.que.easyofischer.applet {
+	width:520px;
+}
+.que.easyofischer.author {
+		float: right;
+		font-style: italic ;
+		font-size: 10px;
+}
+#page-question-type-easyofischer .mform .textareamonospace {
+    white-space: pre;
+    font-family: Andale Mono, Monaco, Courier New, DejaVu Sans Mono, monospace;
+}
+
+
+.que.easyofischer span.answerlabel {
+    vertical-align: top;
+}
+
+
+#divnew {padding:10px;border:1px solid #aaaaaa;  float: left;background-color:#ffffff;}
+
+div.flipable img[id^='oh']
+ {
+    transform: scale(-1, 1);
+    -moz-transform: scale(-1, 1);
+    -webkit-transform: scale(-1, 1);
+    -o-transform: scale(-1, 1);
+    -khtml-transform: scale(-1, 1);
+    -ms-transform: scale(-1, 1);
+}
+
+

@@ -1,0 +1,32 @@
+
+<div class='col-6 table-responsive tcs_stats_table header-fixed'>
+    <table class='table table-striped table-hover border rounded'>
+        <thead class='thead-inverse'>
+            <tr><th class='text-center' colspan={{header_colspan}}><h3>{{header_title}}</h3></th></tr>
+            <tr>
+                {{#table_head}}
+                    <th scope="col">{{table_head_chunk}}</th>
+                {{/table_head}}
+            </tr>
+        </thead>
+        <tbody class='tcs_stats_tbody'>
+            {{#table_row}}
+            <tr>
+                {{#table_data}}
+                <td>{{table_data_chunk}}</td>
+                {{/table_data}}
+            </tr>
+            {{/table_row}}
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+
+
+
+
+

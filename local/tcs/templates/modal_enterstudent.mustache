@@ -1,0 +1,119 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_studentsearch
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+{{! Built using https://www.bootply.com/bT04U82aHr# }}
+{{!
+css for this is in styles/modal_enterstudent.css
+.exam_course {
+    color: blue;
+}
+.exam_title {
+	color: blue;
+}
+
+ }}
+<div class="modal-dialog modal-lg" id="tcs_enter_student_modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="float-left"><h2>{{firstname}} {{lastname}}</h2></span><span class="float-right"><h2>{{uofl_id}}</h2></span>
+        </div>
+
+        <div class="modal-body">
+            {{! <h2>My Exams</h2> }}
+            <form id="tcs_enter_student_form">
+            <table class="table table-hover table-striped tcs_enterstu_table" id="tcs_enterstudent_table">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Exam Name</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{#exams}}       
+            <tr>
+                <td class="course_shortname_title">
+                    <div class="radio">
+                        <input type="radio" name="tcs_exam_check" data-examname="{{exam_name}}" id="examslist{{exrow}}" value="{{value}}" />
+                        <label for="examslist{{exrow}}">{{course_shortname}}</label>
+                    </div>
+                </td>
+                <td class="exam_title">
+                    {{exam_name}}
+                {{! <div class="radiotext"> }}
+                    {{! <label for='regular'>{{exam_name } } </label> }}
+                {{! </div> }}
+                </td>
+            </tr>
+            {{/exams}}
+            </tbody>
+            </table>
+            <!-- ======================================================= -->
+            <hr/>
+            <h2>Student Id</h2>  
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="uofl_radio1" value="UofL Card" checked>
+                <label class="form-check-label" for="uofl_radio1">UofL ID</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="drivers_radio2" value="Drivers License">
+                <label class="form-check-label" for="drivers_radio2">Driver's License</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="passport_radio3" value="Passport">
+                <label class="form-check-label" for="passport_radio3">Passport</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="other_id_radio4" value="Other">
+                <label class="form-check-label" for="other_id_radio4">Other (Please Specify in the comments)</label>
+            </div>
+
+            <hr/> 
+            <!-- ======================================================= -->
+            <h2>Exam Room #</h2>  
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_1" value="1" checked>
+                <label class="form-check-label" for="exam_room_1">1</label>
+            </div>
+                
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_2" value="2">
+                <label class="form-check-label" for="exam_room_2">2</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_3" value="3">
+                <label class="form-check-label" for="exam_room_3">3</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_4" value="4">
+                <label class="form-check-label" for="exam_room_4">4</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_5" value="5">
+                <label class="form-check-label" for="exam_room_5">5</label>
+            </div>
+
+            <hr/>
+            <!-- ======================================================= -->
+            
+            <div class="form-group">
+                <label for="tcs_comments_on_student"><h2>Comments</h2></label>
+                <textarea class="form-control" id="tcs_comments_on_student" rows="3"></textarea>
+            </div>
+            </form>
+        </div> <!-- Modal Body END -->
+    </div><!-- Modal Content END -->
+</div><!-- Modal Dialog END -->

@@ -1,0 +1,427 @@
+/* ==================================================================================== */
+/* =========================    University of Lethbridge   ============================ */
+/* ==================================================================================== */
+
+/* Small devices (landscape phones, 576px and up)
+@media (min-width: 576px) { ... }     sm
+
+// Medium devices (tablets, 768px and up)
+@media (min-width: 768px) { ... }     md
+
+// Large devices (desktops, 992px and up)
+@media (min-width: 992px) { ... }     lg
+
+// Extra large devices (large desktops, 1200px and up)
+@media (min-width: 1200px) { ... }    xl
+
+
+               |  Extra small   |  Small     |  Medium    |   Large     |  Extra large. |
+               |  <576px        |  ≥576px    |  ≥768px    |   ≥992px    |  ≥1200px.     |
+               |                |            |            |             |               |
+Max width      |  None (auto)   |  540px     |  720px     |   960px     |  1140px.      |
+Class prefix   |  .col-         |  .col-sm-  |  .col-md-  |   .col-lg-  |  .col-xl-     |
+
+*/
+
+
+div.notifytiny.debuggingmessage {
+    position: relative;
+    top: 90px;
+    padding-left: 25px;
+    padding-bottom: 10px;
+    /*background-color: #e795bb;*/
+}
+
+/* ==================================================================================== */
+/* ===============================    Editing Button   ================================ */
+/* ==================================================================================== */
+
+/* The secondary button in 3.9 was almost black switching back to pre 3.9 so people don't freak out */
+.btn-secondary, .btn-default {
+    color: #212529;
+    background-color: #e9ecef;
+    border-color: #e9ecef;
+}
+
+
+.uleth_edit_course_settings_container {
+  position: sticky;
+  position: -webkit-sticky;
+  top: 00px;
+  display: none;
+  /*margin-top: 8px;*/
+  /*position: fixed;*/
+  width: 100%;
+  z-index: 919;
+  height: 0;
+}
+
+.uleth_course_edit_toggle {
+    /*
+    position: relative;
+    right: 158px;
+    top: -6px;
+    position: fixed;
+    top: 92px;
+    width: 100%;
+    left: 0;
+    */
+}
+.uleth_edit_course_settings {
+    float: right;
+    position: relative;
+    top: 2px;
+    right: 160px;
+}
+
+/*
+.uleth_toggle_edit_btn {
+    float: right;
+    margin-right: 16px;
+}
+*/
+
+.uleth_toggle_edit_btn {
+    float: right;
+    margin-right: 16px;
+    position: relative;
+    top: 2px;
+    float: right;
+    right: 2px;
+    z-index: 1000;
+}
+
+nav#uleth_burgers_and_fries ol li {
+    z-index: 100;
+}
+
+/* ==================================================================================== */
+/* ===============================    Top White Navbar   ============================== */
+/* ==================================================================================== */
+/* Remove Message Icon so users cannot send messages (from the very top header) */
+div#nav-message-popover-container {
+    display: none;
+}
+
+/* User Menu on the right needs a little bump*/
+.uleth_main_top_nav ul.nav.navbar-nav.ml-auto {
+    margin-right: 7px !important;
+}
+
+/* Remove Message Icon so users cannot send messages (from within a users profile page) */
+div.userprofile > div.page-context-header div.btn-group.header-button-group {
+    display: none;
+}
+
+.uleth_main_top_nav {
+    z-index: 2000;
+    background-color: white;
+    /*width: 99%;*/
+    /*margin-right: 25px;*/
+}
+@media only screen and (max-width: 991px) {
+    .uleth_main_top_nav {
+        padding-top: 0px;
+        padding-bottom: 0px;
+    }
+}
+
+/* -------- Uleth Links --------*/
+/* change the UofL Links to a grey */
+a.nav-item.nav-link.uleth_main_nav_link {
+    color: rgba(0, 0, 0, 0.533);
+    margin-left: 5px !important;
+    font-family: GoogleFont, sans-serif, "Helvetica Neue", Arial;
+    font-size: 13.65px !important;
+}
+
+.uleth_toggler_icon {
+    color: #777;
+}
+
+div#uleth_burgers_n_pop {
+    width: auto;
+    margin-left: 110px;
+}
+
+/* -------- UofL LOGO --------*/
+a.uleth_main_nav_logo {
+    left: 4px !important;
+}
+
+a.navbar-brand.hidden-sm-down.uleth_main_nav_logo,
+a.navbar-brand.has-logo.uleth_main_nav_logo {
+    /*background-color: white;*/
+    /*position: relative;
+    top: -4px;
+    left: -15px;
+    padding-right: 0;*/
+    margin-right: 0;
+}
+
+a.navbar-brand.uleth_main_nav_logo img,
+a.navbar-brand.has-logo.uleth_main_nav_logo img {
+    height: 35px;
+    position: fixed;
+    top: 7px;
+}
+
+button#uleth_toggler_burger_icon:hover {
+    color: #2978e0;
+    border: 1px solid #61a5ff;
+}
+
+@media only screen and (max-width: 991px) {
+    /* Keep the usermenu in flex row */
+    ul.nav.navbar-nav.ml-auto.uleth_user_menu {
+        flex-direction: row;
+    }
+
+    /* The user menu is too high, bump down */
+    li.uleth_user_menu_items .dropdown-menu.dropdown-menu-right {
+        position: absolute !important;
+        left: -45px;
+        top: 39px;
+    }
+
+    a.uleth_main_nav_logo {
+        height: 50px;
+        width: 125px;
+        margin-left: 10px;
+    }
+
+    div#uleth_burgers_n_pop {
+        width: 200px;
+        margin-left: 0;
+        /*background-color: white;*/
+    }
+
+    span#uleth_burgers_fries_n_pop {
+        background-color: white;
+        position: fixed;
+        left: 150px;
+        top: 50px;
+        width: 200px;
+        padding-left: 10px;
+        border-color: #e9ecef !important;
+        border-width: 1px;
+        border-style: solid;
+    }
+}
+
+@media only screen and (max-width: 767px) {
+    /* The user menu is too high, bump down */
+    li.uleth_user_menu_items .dropdown-menu.dropdown-menu-right {
+        position: absolute !important;
+        left: -120px;
+        top: 39px;
+    }
+}
+
+/* 991 767 575 320 */
+
+/* ==================================================================================== */
+/* =================================    Blue Navbar   ================================= */
+/* ==================================================================================== */
+/*.navbar > .container, .navbar > .container-fluid.uofl_main_header_positioning_white_top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: normal;
+    justify-content: space-between;
+    height: 50px;
+}*/
+
+.navbar > .container,
+.navbar > .container-fluid.uofl_main_header_positioning {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: normal;
+    justify-content: space-between;
+    padding-top: 0px;
+    height: 40px;
+    position: fixed;
+}
+
+.uofl_main_header {
+    width: 100%;
+    background-color: #06559e;
+    position: fixed;
+    height: 40px;
+    top: 50px;
+    left: 0;
+    z-index: 200;
+}
+
+/* ==================================================================================== */
+/* ================================    WHITE Navbar    ================================ */
+/* ==================================================================================== */
+/* WHITE top UofL navbar, has the logo and links. The padding is now standard for the UofL */
+.uofl_breadcrumb_bar {
+    padding-left: 0 !important;
+    height: 40px;
+    position: relative;
+    top: 41px;
+    background-color: white;
+}
+
+.breadcrumb-nav.uleth_breadcrumb_title2 {
+    padding-top: 4px;
+}
+
+.uleth_breadcrumb_title3 {
+    position: relative;
+    top: -6px;
+    z-index: 100;
+}
+
+#uleth_burgers_and_fries {
+    height: 0;
+}
+
+/* ==================================================================================== */
+/* ==============================    Progress Bars    ================================= */
+/* ==================================================================================== */
+
+.dndupload-progress-inner {
+  background-color: #70be72;
+}
+
+/* ==================================================================================== */
+/* ================================    Main Body    =================================== */
+/* ==================================================================================== */
+body {
+    background-color: #DADCDE !important;
+    min-height: 100vh;
+}
+div.main_uofl_body {
+    margin-top: 50px;
+}
+
+.uleth_col3 {
+    margin-top: 10px;
+}
+
+.uleth_middle_block {
+    padding-left: 0;
+}
+
+.uleth_middleright_block {
+    margin-bottom: 16px;
+}
+
+div.uleth_left_middle_block, div.uleth_column2_block {
+  margin-bottom: 20px;
+}
+  
+@media only screen and (min-width: 992px) {
+  div.uleth_left_middle_block {
+    margin-bottom: 20px;
+  }
+    .uleth_middle_block {
+        padding-bottom: 15px;
+    }
+}
+
+@media only screen and (max-width: 991px) {
+    .uleth_middle_block {
+        padding-bottom: 15px;
+    }
+}
+
+@media only screen and (max-width: 575px) {
+    .uleth_middle_block {
+        padding-left: 15px;
+        padding-bottom: 15px;
+    }
+}
+/* ==================================================================================== */
+/* =============================   Secure Main Body     =============================== */
+/* ==================================================================================== */
+
+.uleth_secure_main_section {
+    width: 100% !important;
+}
+
+.uleth_secure_pre_block_section {
+  width: 100%;
+}
+
+.uleth_secure_main_section.has-blocks div.card.card-block {
+    padding: 15px;
+}
+
+/* ==================================================================================== */
+/* ===================================    Forms     =================================== */
+/* ==================================================================================== */
+/* Get rid of the stupid double arrows in the forms. */
+.custom-select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+div[id*="grader-container-"] {
+  top: 50px;
+  position: relative;
+  padding-bottom: 100px; }
+
+.toast-wrapper {
+    position: relative;
+    top: 45px;
+}
+/* ==================================================================================== */
+/* ===================================    BLOCKS    =================================== */
+/* ==================================================================================== */
+
+i.uleth_core_block {
+    color: #06559e;
+    float: left;
+    margin-right: 5px;
+    font-size: 2rem;
+    position: relative;
+}
+
+/* ==================================================================================== */
+/* ===============================    Random Mods    ================================== */
+/* ==================================================================================== */
+
+/* H5P CSS issue, this will expand H5P window out when editing content */
+#fitem_id_h5peditor .form-control-static {
+    width: 100%;
+}
+
+/* ==================================================================================== */
+/* ==============================    Grade Book    ==================================== */
+/* ==================================================================================== */
+/* This overrides the moodle.scss setting which pushes the gradebook below the left column */
+.path-grade-report-grader #region-main {
+  min-width: 0;
+  width: auto;
+}
+.grader_report_collapse {
+  padding: 2px 8px 2px 8px;
+  color: #b7babc;
+  border-radius: 11px;
+  border: 1px solid #b7babc;
+  cursor: pointer;
+}
+.grader_report_collapse:hover {
+  color: #00acdf;
+  border-color: #00acdf;
+}
+
+/* ==================================================================================== */
+/* =================================    Footer    ===================================== */
+/* ==================================================================================== */
+/* When the Site Admin block is expanded it overlaps onto the footer area */
+#page-footer {
+    /* margin-top: 45px; */
+
+}
+
+/* ==================================================================================== */
+/* ===============================    New From Boost    =============================== */
+/* ==================================================================================== */
+
+.alert a, #page-admin-index .releasenoteslink a, #page-admin-index .adminwarning a, #page-admin-index .adminerror a, .que .formulation a, .que .outcome a, .que .comment a, .assignfeedback_editpdf_widget .label a {
+  font-weight: 700; }

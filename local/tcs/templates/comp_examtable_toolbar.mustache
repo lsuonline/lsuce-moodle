@@ -1,0 +1,24 @@
+<div id="tcs_examtable_toolbar" class="row">
+    {{! Need some filter buttons 
+        - Filter by Visible
+        - Exams Closed (should not be visible anymore)
+        - Exams Open (show both visible and not)
+        - With an IP Restriction
+    }}
+    
+    {{! aria-pressed="true" }}
+    <div class="col-3">
+        <button type="button" id="add_manual_exam_btn" class="btn btn-success">Add Manual Exam</button>
+    </div>
+
+    <div class="col-9 d-flex justify-content-end">
+        <button type="button" class="btn btn-light">Filters: </button>
+        <button data-filterby="subnet" type="button" class="exam_filter_btn btn btn-success">TC Lab</button>
+        <button data-filterby="manual" type="button" class="exam_filter_btn btn btn-dark">Manual Exams</button>
+        <button data-filterby="visible" type="button" class="exam_filter_btn btn btn-primary">Visible</button>
+        <button data-filterby="hidden" type="button" class="exam_filter_btn btn btn-warning">Hidden</button>
+        <button data-filterby="finished" type="button" class="exam_filter_btn btn btn-danger">Finished</button>
+        <button data-filterby="no_filter" type="button" class="exam_filter_btn btn btn-secondary">Remove All Filters</button>
+    </div>
+</div>
+

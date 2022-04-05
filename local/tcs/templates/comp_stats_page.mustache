@@ -1,0 +1,35 @@
+<div class="row mb-3">
+    <!-- Note the < sign, this is for dynamic templates.... -->
+    {{#stats}}
+        {{< local_tcs/comp_statcard }}
+            {{$stat_color}}{{stat_color}}{{/stat_color}}
+            {{$stat_icon}}{{stat_icon}}{{/stat_icon}}
+            {{$stat_title}}{{stat_title}}{{/stat_title}}
+            {{$stat_small_title}}{{stat_small_title}}{{/stat_small_title}}
+            {{$stat_name}}{{stat_name}}{{/stat_name}}
+            {{$stat_data}}{{stat_data}}{{/stat_data}}
+        {{/ local_tcs/comp_statcard }}
+    {{/stats}}
+</div>
+<hr/>
+<div class="row mb-3">
+    <!-- Note the < sign, this is for dynamic templates.... -->
+    {{#smallstats}}
+        {{< local_tcs/comp_statcardsmall }}
+            {{$stat_color}}{{stat_color}}{{/stat_color}}
+            {{$stat_icon}}{{stat_icon}}{{/stat_icon}}
+            {{$stat_title}}{{stat_title}}{{/stat_title}}
+            {{$stat_small_title}}{{stat_small_title}}{{/stat_small_title}}
+            {{$stat_name}}{{stat_name}}{{/stat_name}}
+            {{$stat_data}}{{stat_data}}{{/stat_data}}
+
+        {{/ local_tcs/comp_statcardsmall }}
+    {{/smallstats}}
+
+</div>
+<hr/>
+<div class="row mb-3">
+    <div class="chart_example">
+        <canvas id="myChart" width="400" height="400"></canvas>
+    </div>
+</div>

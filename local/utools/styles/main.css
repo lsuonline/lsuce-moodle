@@ -1,0 +1,758 @@
+body, html {
+  height:100%;
+}
+
+div.main_uofl_body {
+    position: relative !important;
+    top: 39px;
+}
+
+/*  Moodle creates a bootstrap card for a local plugin's main body
+    remove the padding */
+div.main_uofl_body section#region-main > .card > .card-body {
+  padding: 0px;
+}
+
+/* =============================================== */
+/*                   CSS LOADERS                   */
+/* =============================================== */
+/* 
+  Spinner example found here: https://codepen.io/martinvd/pen/xbQJom 
+  this looks fun: https://codepen.io/ispal/pen/mVaaJe
+  https://codepen.io/42EG4M1/pen/bVMzze
+  https://codepen.io/jackrugile/pen/bjuCf
+  https://codepen.io/joshy/pen/eNvZyN
+  https://codepen.io/tashfene/pen/raEqrJ
+  https://codepen.io/WhiteWolfWizard/pen/xboraG
+  
+*/
+.utools_spinner_container {
+  /*position: absolute;*/
+  top: calc(50% - 32px);
+  left: calc(50% - 32px);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  perspective: 800px;
+  margin: auto;
+}
+
+.inner {
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;  
+}
+
+.inner.one {
+  left: 0%;
+  top: 0%;
+  animation: rotate-one 1s linear infinite;
+  border-bottom: 3px solid #EFEFFA;
+}
+
+.inner.two {
+  right: 0%;
+  top: 0%;
+  animation: rotate-two 1s linear infinite;
+  border-right: 3px solid #EFEFFA;
+}
+
+.inner.three {
+  right: 0%;
+  bottom: 0%;
+  animation: rotate-three 1s linear infinite;
+  border-top: 3px solid #EFEFFA;
+}
+
+@keyframes rotate-one {
+  0% {
+    transform: rotateX(35deg) rotateY(-45deg) rotateZ(0deg);
+  }
+  100% {
+    transform: rotateX(35deg) rotateY(-45deg) rotateZ(360deg);
+  }
+}
+
+@keyframes rotate-two {
+  0% {
+    transform: rotateX(50deg) rotateY(10deg) rotateZ(0deg);
+  }
+  100% {
+    transform: rotateX(50deg) rotateY(10deg) rotateZ(360deg);
+  }
+}
+
+@keyframes rotate-three {
+  0% {
+    transform: rotateX(35deg) rotateY(55deg) rotateZ(0deg);
+  }
+  100% {
+    transform: rotateX(35deg) rotateY(55deg) rotateZ(360deg);
+  }
+}
+
+/* =============================================== */
+/*                   Top Nav Bar                   */
+/* =============================================== */
+#utools_main_nav_bar {
+  margin-bottom: 0px !important;
+}
+
+/* =============================================== */
+/*                   Stat Cards                    */
+/* =============================================== */
+
+.stat_blue {
+    background-color: #2CA9D6;
+    color: #FFF;
+}
+.stat_yellow {
+    background-color: #FDC02F;
+    color: #FFF;
+}
+.stat_salmon {
+    background-color: #F66D6E;
+    color: #FFF;
+}
+.stat_lightblue {
+    background-color: #67C2DD;
+    color: #FFF;
+}
+.stat_charcoal {
+    background-color: #3b4146;
+    color: #FFF;
+}
+.stat_green {
+    background-color: #9cc96b;
+    color: #FFF;
+}
+.stat_purple {
+    background-color: #986291;
+    color: #FFF;
+}
+.stat_orange {
+    background-color: #ebaa4b;
+    color: #FFF;
+}
+.stat_teal {
+    background-color: #50c7a7;
+    color: #FFF;
+}
+
+/*
+ * Off Canvas sidebar at medium breakpoint
+ * --------------------------------------------------
+ */
+@media screen and (max-width: 992px) {
+
+  .row-offcanvas {
+    position: relative;
+    -webkit-transition: all 0.25s ease-out;
+    -moz-transition: all 0.25s ease-out;
+    transition: all 0.25s ease-out;
+  }
+
+  .row-offcanvas-left
+  .sidebar-offcanvas {
+    left: -33%;
+  }
+
+  .row-offcanvas-left.active {
+    left: 33%;
+    margin-left: -6px;
+  }
+
+  .sidebar-offcanvas {
+    position: absolute;
+    top: 0;
+    width: 33%;
+    height: 100%;
+  }
+}
+
+/*
+ * Off Canvas wider at sm breakpoint
+ * --------------------------------------------------
+ */
+@media screen and (max-width: 34em) {
+  .row-offcanvas-left
+  .sidebar-offcanvas {
+    left: -45%;
+  }
+
+  .row-offcanvas-left.active {
+    left: 45%;
+    margin-left: -6px;
+  }
+  
+  .sidebar-offcanvas {
+    width: 45%;
+  }
+}
+
+.card {
+    overflow:hidden;
+}
+
+.card-body .rotate {
+    z-index: 8;
+    float: right;
+    height: 100%;
+}
+
+.card-body .rotate i {
+    color: rgba(20, 20, 20, 0.15);
+    position: absolute;
+    left: 0;
+    left: auto;
+    right: -10px;
+    bottom: 0;
+    display: block;
+    -webkit-transform: rotate(-44deg);
+    -moz-transform: rotate(-44deg);
+    -o-transform: rotate(-44deg);
+    -ms-transform: rotate(-44deg);
+    transform: rotate(-44deg);
+}
+
+
+/*
+Color Palette from CoreUI
+============================
+
+General Backgrounds:
+------------------
+Main Body #E4E5E6 (light) #E0E1E2 (dark)
+
+Left Side Backgrounds:
+------------------
+Main body: #2A363D
+Selected Menu item: #2CA9D6
+Drop down background: #222B31
+
+Widget Backgrounds:
+------------------
+light blue: #67C2DD
+blue: #2CA9D6
+gray-blue #A5B7C1
+green: #52BC76
+yellow: #FDC02F
+salmon: #F66D6E
+red: #D1493C
+
+Form Headers:
+------------------
+Top Nav for form #F0F3F5
+
+
+
+------------------------------------------------------
+Bootstrap BreakPoints
+------------------------------------------------------
+
+// Extra small devices (portrait phones, less than 576px)
+@media (max-width: 575px) { ... }
+
+// Small devices (landscape phones, 576px and up)
+@media (min-width: 576px) and (max-width: 767px) { ... }
+
+// Medium devices (tablets, 768px and up)
+@media (min-width: 768px) and (max-width: 991px) { ... }
+
+// Large devices (desktops, 992px and up)
+@media (min-width: 992px) and (max-width: 1199px) { ... }
+
+// Extra large devices (large desktops, 1200px and up)
+@media (min-width: 1200px) { ... }
+These media queries are also available via Sass mixins:
+
+xs (for phones - screens less than 768px wide)
+sm (for tablets - screens equal to or greater than 768px wide)
+md (for small laptops - screens equal to or greater than 992px wide)
+lg (for laptops and desktops - screens equal to or greater than 1200px wide)
+* /
+
+/ * =============================================== * /
+/ *             General Bootstrap Cards             * /
+/ * =============================================== * /
+div.card-header {
+  background-color: #EEF1F4;
+}
+
+.dash_card_title {
+  margin-bottom: 0px;
+}
+
+.utools_mt_0 {margin-top: 0px;}
+.utools_mr_0 {margin-right: 0px;}
+.utools_ml_0 {margin-left: 0px;}
+.utools_mb_0 {margin-bottom: 0px;}
+
+.utools_pt_0 {padding-top: 0px;}
+.utools_pr_0 {padding-right: 0px;}
+.utools_pl_0 {padding-left: 0px;}
+.utools_pb_0 {padding-bottom: 0px;}
+
+/ * =============================================== * /
+/ *                      Cards                      * /
+/ * =============================================== * /
+#utools_app .card {
+
+  border: 1px solid #918f8f94;
+}
+
+.card-margin-left {
+  margin-left: 15px;
+}
+.card-margin-right {
+  margin-right: 15px;
+}
+
+/ * Let's shrink the block padding from 1.25 to 1.00 * /
+.card-block {
+  padding: 1.0rem;
+  
+}
+
+.card-body-padding {
+  padding: 10px;
+}
+
+.dash-card-body {
+  padding-right: 15px;
+}
+
+.dash-card-body.dash-card-pie,
+.dash-card-body.dash-card-flat {
+    display: inline-block;
+}
+
+/ * the pie charts are fat, trim them up * /
+/ *div.dash-card-pie .card-body {* /
+    / *padding: 0px !important;* /
+/ *}* /
+
+div.dash-card-pie .card,
+div.dash-card-flat .card {
+    padding: 0px !important;
+    min-height: 154px !important;
+}
+
+/ * =============================================== * /
+/ *                   Stat Cards                    * /
+/ * =============================================== * /
+
+.stat_blue {
+    background-color: #2CA9D6;
+    color: #FFF;
+}
+.stat_yellow {
+    background-color: #FDC02F;
+    color: #FFF;
+}
+.stat_salmon {
+    background-color: #F66D6E;
+    color: #FFF;
+}
+.stat_lightblue {
+    background-color: #67C2DD;
+    color: #FFF;
+}
+.stat_charcoal {
+    background-color: #3b4146;
+    color: #FFF;
+}
+.stat_green {
+    background-color: #9cc96b;
+    color: #FFF;
+}
+.stat_purple {
+    background-color: #986291;
+    color: #FFF;
+}
+.stat_orange {
+    background-color: #ebaa4b;
+    color: #FFF;
+}
+.stat_teal {
+    background-color: #50c7a7;
+    color: #FFF;
+}
+
+.sc-f-size {
+    margin: 5px;
+    float: left;
+}
+
+.sc-title {
+    color: #FFF;
+    text-align: center;
+    min-height: 41px;
+}
+
+.sc-data {
+    color: #FFF !important;
+    font-size: 50px;
+    min-height: 110px;
+}
+
+.card-title {
+    min-height: 44px;
+}
+
+.dash-card-body .card{
+  min-height: 8rem;
+  margin-top: 10px;
+}
+
+.dash-card-body .card-body {
+    min-height: 124px;
+}
+
+#da_pie_charts {
+  position: relative;
+  display: inline-block;
+  width: 110px;
+  height: 110px;
+  text-align: center;
+  padding-top: 25px;
+  font-size: 33px;
+}
+#da_pie_charts canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.percent {
+  display: inline-block;
+  line-height: 110px;
+  z-index: 2;
+}
+.percent:after {
+  content: '%';
+  margin-left: 0.1em;
+  font-size: .8em;
+}
+/ * =============================================== * /
+/ *                   Main Content                  * /
+/ * =============================================== * /
+
+/ * background of main content area #E0E1E2 * /
+div#utools_app {
+    min-height: 100vh;
+    background-color: #E0E1E2;
+    color: #000;
+    margin-left: -6px;
+    margin-right: -6px;
+    margin-top: -20px;
+}
+
+/ * =============================================== * /
+/ *                   Top Info Bar                  * /
+/ * =============================================== * /
+.utools_info_bar {
+    background-color: #383e4b;
+    color: #fff;
+}
+
+.utools-sidebar-toggle:hover {
+    background-color: #22262e;
+}
+.utools-sidebar-toggle {
+    border-color: #fff;
+    background-color: #383e4b;
+    color: #fff;
+    border-radius: 5px;
+
+    padding: 5px;
+    margin: 5px;
+    width: 30px;
+
+}
+
+.utools_info_bar_icons {
+    border-color: #383e4b;
+    background-color: #383e4b;
+    color: #fff;
+    padding: 5px;
+    margin: 5px;
+    width: 30px;
+
+}
+
+/ * =============================================== * /
+/ *Get rid of the padding and make use of all space * /
+div.container-fluid.main_uleth_container {
+    padding: 0 0rem !important;
+    background-color: #f3f3f3;
+}
+
+#region-main > .card.card-block {
+    padding: 0 0rem;
+}
+
+div#sidebar {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+div.main_uofl_body {
+    position: relative;
+    top: 33px;
+}
+
+.breadcrumb-nav.uleth_breadcrumb_title2 {
+    margin-left: 10px;
+}
+/ * =============================================== * /
+
+
+
+/ * =============================================== * /
+/ *                   Components                    * /
+/ * =============================================== * /
+
+/ * ------------    Student Check In   ------------ * /
+
+.custom-actions button.ui.button {
+  padding: 8px 8px;
+}
+.custom-actions button.ui.button > i.icon {
+  margin: auto !important;
+}
+
+/ * ------------    Auto Complete   ------------ * /
+.utools_user_dropdown_menu {
+  width: 400px;
+}
+@media (max-width:768px) {
+  .utools_user_dropdown_menu {
+    width: 100%;
+  }
+}
+
+.utools_user_dropdown_menu li.active a {
+  color: white;
+}
+.utools_user_dropdown_menu li {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+.utools_user_dropdown_menu li.active {
+  background-color: #4c98d0;
+  font-size: large;
+}
+
+/ *h1, h2  {
+  font-weight: normal;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+li {
+  display: inline-block;
+  margin: 0 10px;
+}
+a {
+  color: #42b983;
+}
+* /
+
+/  *
+table.table.student_checkin_table,
+table.table.student_checkin_table td {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
+div#student_checkin_table_wrapper {
+    padding: 10px;
+}
+
+.pagination {
+  margin-top: 0;
+}
+.btn.btn-border {
+  border: 1px solid;
+  margin-right: 2px;
+}
+.vuetable-pagination-info {
+  margin-top: 8px !important;
+}
+span.sort-icon {
+  float: right;
+  color: #ff9100;
+}
+
+.filter-bar {
+  margin-bottom: 8px;
+}
+
+.custom-actions button.ui.button {
+  padding: 8px 8px;
+}
+.custom-actions button.ui.button > i.icon {
+  margin: auto !important;
+}
+
+/ * ------------    Scheduler          ------------ * /
+/ * ------------    Exam Requests      ------------ * /
+/ * ------------    User Overrides     ------------ * /
+/ * ------------    Logs               ------------ * /
+/ * ------------    Settings           ------------ * /
+/ * ------------    Stats              ------------ * /
+/ * ------------    Print Passwords    ------------ * /
+
+/ * ------------    Side Bar START    ------------ * /
+
+
+
+#sidebar {
+    overflow: hidden;
+    z-index: 3;
+}
+#sidebar .list-group {
+    background-color: #383e4b;
+    min-height: 100vh;
+}
+#sidebar i {
+    margin-right: 6px;
+}
+
+#sidebar .list-group-item:hover {
+  background-color: #22262e;
+}
+/  *
+a:link 
+a:visited
+a:hover
+a:active
+* /
+.list-group-item a, 
+.list-group-item a:link,
+.list-group-item a:visited,
+.list-group-item a:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+#sidebar .list-group-item {
+    border-radius: 0;
+    background-color: #383e4b;
+    color: #fff;
+    border-left: 0;
+    border-right: 0;
+    white-space: nowrap;
+    display: block !important;
+}
+
+/ * highlight active menu * /
+#sidebar .list-group-item:not(.collapsed) {
+    background-color: #737884;
+}
+
+/ * closed state * /
+#sidebar .list-group .list-group-item[aria-expanded="false"]::after {
+  content: " \f0d7";
+  font-family: FontAwesome;
+  display: inline;
+  text-align: right;
+  padding-left: 5px;
+}
+
+/ * open state * /
+#sidebar .list-group .list-group-item[aria-expanded="true"] {
+  background-color: #22262e;
+}
+#sidebar .list-group .list-group-item[aria-expanded="true"]::after {
+  content: " \f0da";
+  font-family: FontAwesome;
+  display: inline;
+  text-align: right;
+  padding-left: 5px;
+}
+
+/ * level 1* /
+#sidebar .list-group .collapse .list-group-item,
+#sidebar .list-group .collapsing .list-group-item  {
+  padding-left: 20px;
+}
+
+/ * level 2* /
+#sidebar .list-group .collapse > .collapse .list-group-item,
+#sidebar .list-group .collapse > .collapsing .list-group-item {
+  padding-left: 30px;
+}
+
+/ * level 3* /
+#sidebar .list-group .collapse > .collapse > .collapse .list-group-item {
+  padding-left: 40px;
+}
+
+
+
+@media (max-width:768px) {
+    #sidebar {
+        min-width: 35px;
+        max-width: 40px;
+        overflow-y: auto;
+        overflow-x: visible;
+        transition: all 0.25s ease;
+        transform: translateX(-45px);
+        position: fixed;
+    }
+    
+    #sidebar.show {
+        transform: translateX(0);
+    }
+
+    #sidebar::-webkit-scrollbar{ width: 0px; }
+    
+    #sidebar, #sidebar .list-group {
+        min-width: 35px;
+        overflow: visible;
+    }
+    / * overlay sub levels on small screens * /
+    #sidebar .list-group .collapse.show, #sidebar .list-group .collapsing {
+        position: relative;
+        z-index: 1;
+        width: 190px;
+        top: 0;
+    }
+    #sidebar .list-group > .list-group-item {
+        text-align: center;
+        padding: .75rem .5rem;
+    }
+    / * hide caret icons of top level when collapsed * /
+    #sidebar .list-group > .list-group-item[aria-expanded="true"]::after,
+    #sidebar .list-group > .list-group-item[aria-expanded="false"]::after {
+        display:none;
+    }
+}
+
+.collapse.show {
+  visibility: visible;
+}
+.collapsing {
+  visibility: visible;
+  height: 0;
+  -webkit-transition-property: height, visibility;
+  transition-property: height, visibility;
+  -webkit-transition-timing-function: ease-out;
+  transition-timing-function: ease-out;
+}
+.collapsing.width {
+  -webkit-transition-property: width, visibility;
+  transition-property: width, visibility;
+  width: 0;
+  height: 100%;
+  -webkit-transition-timing-function: ease-out;
+  transition-timing-function: ease-out;
+}
+
+/ * ------------    Side Bar END      ------------  
+
+*/

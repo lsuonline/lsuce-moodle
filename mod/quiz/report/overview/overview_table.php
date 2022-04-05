@@ -225,6 +225,13 @@ class quiz_overview_table extends quiz_attempts_report_table {
             ];
             echo html_writer::empty_tag('input', $regradebuttonparams);
         }
+
+        // ===================    DALO Start    ===================
+        if (is_siteadmin()) {
+            echo '<button type="submit" value="forceclose" name="forceclose" class="btn btn-danger" style="margin-right: 15px;">' .
+                    get_string('forceclosequiz', 'quiz_overview') . '</button>';
+        }
+        // ===================    DALO End      ===================
         parent::submit_buttons();
     }
 

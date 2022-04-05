@@ -1,0 +1,130 @@
+<html>
+<head>
+<style type="text/css">
+
+#divnew {width:220px;height:240px;background-image: url(question/type/easyofischer/pix/1chiral.png);}
+#pos0 {width:40px;height:30px;padding:0px;border:1px solid #aaaaaa; position:relative; top:95px; left:-1px;}
+#pos1 {width:40px;height:30px;padding:0px;border:1px solid #aaaaaa; position:relative; top:-10px; left:79px;}
+#pos2 {width:40px;height:30px;padding:0px;border:1px solid #aaaaaa; position:relative; top:34px; left:160px;}
+#pos3 {width:40px;height:30px;padding:0px;border:1px solid #aaaaaa; position:relative; top:79px; left:80px;}
+
+
+</style>
+<script>
+
+/*
+function allowDrop(ev)
+{
+ev.preventDefault();
+}
+
+function drag(ev)
+{
+ev.dataTransfer.setData("Text",ev.target.id);
+console.log("id="+ev.target.id);
+origin = document.getElementById(ev.target.id); 
+//console.log("origin="+origin.parentNode.id);
+
+//if(origin.parentNode.id.charAt(0) != "d"){
+//document.getElementById('a'+origin.parentNode.id).value="";}
+ 
+}
+
+function drop(ev)
+{
+ev.preventDefault();
+var data=ev.dataTransfer.getData("Text");
+//console.log(ev);
+//console.log("data="+data);
+//console.log("targid="+ev.target.id);
+
+
+
+
+
+///console.log("origin parentNode="+origin.parentNode.id);
+
+///console.log("here it is="+ev.target.id.charAt(ev.target.id.length - 1));
+
+
+
+
+if(origin.parentNode.id.charAt(0) != "d"){
+document.getElementById('a'+origin.parentNode.id).value="";}
+
+
+
+
+if(ev.target.tagName == "IMG")
+{//console.log('must be image'+ev.target.id);
+///better remove existing image
+
+img=document.getElementById(ev.target.id);
+
+div=img.parentNode;
+//console.log(div);
+
+///move previous img
+
+//grouptype=img.id.substring(0, img.id.length - 1)
+//console.log("grouptype="+grouptype);
+
+if(ev.target.id.charAt(ev.target.id.length - 2) == 6){
+
+img=document.getElementById(ev.target.id);
+div=img.parentNode;
+div.innerHTML="";
+
+}
+else{
+imgdiv=document.getElementById("d"+img.id);
+imgdiv.appendChild(img);
+}
+///delete previous image
+//img.parentNode.removeChild(img);
+
+
+
+
+///add dragged image to div
+div.appendChild(document.getElementById(data));
+
+document.getElementById('a'+div.id).value=data;
+}
+else{
+
+document.getElementById('a'+ev.target.id).value=data;
+ev.target.appendChild(document.getElementById(data));
+}
+
+
+//document.getElementById('a'+data).value='';
+
+//ev.dataTransfer.removeChild(document.getElementById(ev.target.id));
+
+
+}
+
+*/
+</script>
+</head>
+<body>
+
+<!-- 
+<div id="fischer_template" style="overflow: hidden; padding: 10px; ">
+fischer template -->
+<div id="divnew" style="float:left;">
+
+<div class="dropabledivslot flipable" id="pos0"></div>
+<div class="dropabledivslot" id="pos1" ></div>
+<div class="dropabledivslot" id="pos2" ></div>
+<div class="dropabledivslot" id="pos3" ></div>
+
+
+</div>
+
+
+<input type="hidden" id="apos0" value=''>
+<input type="hidden" id="apos1" value=''>
+<input type="hidden" id="apos2" value=''>
+<input type="hidden" id="apos3" value=''>

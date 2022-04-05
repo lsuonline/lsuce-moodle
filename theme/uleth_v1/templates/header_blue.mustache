@@ -1,0 +1,30 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    Blue Header Bar
+}}
+<header id="page-header" class="navbar navbar-full bg-faded navbar-static-top uofl_main_header">
+    <div class="container-fluid navbar-nav uofl_main_header_positioning">
+        <div class="float-left">
+            <div class="page-context-header">
+                <div class="page-header-headings">
+                    <h3>{{{course_title}}}{{#is_admin}} - {{app_server}}{{/is_admin}}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

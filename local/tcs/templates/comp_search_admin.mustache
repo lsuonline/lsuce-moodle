@@ -1,0 +1,46 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_studentsearch
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+<!-- Search form -->
+{{! <form class="form-inline active-cyan-3 active-cyan-4"> }}
+  {{! <i class="fa fa-search" aria-hidden="true"></i> }}
+  {{! <input id="autoComplete" class="form-control form-control-sm ml-3 w-75" type="text" placeholder="Search Student" aria-label="Search"> }}
+<div id="tcs_admin_search_bar" class="tcs_admin_search">
+    {{! <input class="tcs_autocomp_in" id="autocomplete" type="text" tabindex="1"> }}
+
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="student_search_addon"><i class="fa fa-search"></i></span>
+        </div>
+        <input type="text" class="form-control tcs_autocomp_in" id="autocomplete_admin" placeholder="Enter Username or Student ID" aria-label="Enter Username or Student ID" aria-describedby="student_search_addon">
+    </div>
+
+
+    <div id="suggestions-container" style="position: relative; float: left; width: 400px; margin: 10px;"></div>
+    {{! <div class="autocomplete-suggestions"> }}
+        {{! <div class="autocomplete-group"></div>
+        <div class="autocomplete-suggestion autocomplete-selected">...</div>
+        <div class="autocomplete-suggestion">...</div>
+        <div class="autocomplete-suggestion">...</div> }}
+    {{! </div> }}
+    {{! <div class="mode">
+        <h4>mode</h4>
+        <div class="toggele">
+            <div class="toggeler">Strict</div>
+        </div>
+    </div> }}
+    {{! <div class="selection"></div> }}
+    <span id="enter_student_modal"></span>
+</div>
+{{! </form> }}

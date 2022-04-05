@@ -1,0 +1,20 @@
+.tcs_enterstu_table tbody tr {
+  cursor: pointer;
+}
+.tcs_enterstu_table .table thead tr th {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.tcs_enterstu_table .table tbody tr td {
+  padding-top: 15px;
+  padding-bottom: 10px;
+}
+
+/* .tcs_student_writers_list.col-12.py-2 {
+    position: relative;
+    top: -80px;
+} */
+/* .tcs_student_search_bar.col-xl-6.col-sm-6 {
+    position: relative;
+    top: 40px;
+} */

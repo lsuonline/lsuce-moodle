@@ -277,7 +277,19 @@ class quiz_overview_report extends quiz_attempts_report {
             $this->start_regrade($quiz, $cm);
             $this->regrade_attempts_needing_it($quiz, $groupstudentsjoins);
             $this->finish_regrade($redirecturl);
+
+        // ===================    DALO Start    ===================
+        } else if (optional_param('forceclose', 0, PARAM_BOOL) && confirm_sesskey()) {
+            // DALO ForceClose
+    	    global $CFG;
+            if ($attemptids = optional_param_array('attemptid', array(), PARAM_INT)) {
+                require_capability('moodle/site:config', $this->context);
+                $this->forceclose_selected_attempts($quiz, $cm, $attemptids, $allowedjoins);
+                redirect($CFG->wwwroot."/mod/quiz/report.php?id=".$cm->id."&mode=overview");
+                die;
+            }
         }
+        // ===================    DALO End      ===================
     }
 
     /**

@@ -22,6 +22,10 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ // ===================    DALO Start    ===================
+$string['forceclosequiz'] = 'Force Close Quiz';
+// ===================    DALO End      ===================
+
 $string['allattempts'] = 'Show all attempts';
 $string['allattemptscontributetograde'] = 'All attempts contribute to final grade for user.';
 $string['allstudents'] = 'Show all {$a}';

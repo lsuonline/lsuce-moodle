@@ -1,0 +1,22 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_statcard
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+<div class="col">
+    <div class="card text-white text-center {{$stat_color}}stat_blue{{/stat_color}}">
+        <div class="card-body statcardsmall_body">
+            <span class="tcs_stat_room_pos">{{$stat_title}}Test{{/stat_title}}</span>
+            <span class="{{$stat_name}}boink{{/stat_name}}">{{$stat_data}}-99{{/stat_data}}</span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,60 @@
+
+{{> theme_uleth_v2/head}}
+
+<body {{{ bodyattributes }}}>
+
+<div id="page-wrapper" class="uleth_blue_nav_n_down">
+
+    {{{ output.standard_top_of_body_html }}}
+
+    {{>theme_uleth_v2/navbar}}
+    {{> theme_uleth_v2/nav-drawer }}
+    
+    <div id="page" class="main_uleth_container">
+        {{!
+            For the blue bar, it renders in core_renderer.php -> full_header()
+        }}
+        
+
+        {{! This is used in Uleth_V1 and NOT V2 }}
+        {{! { output.full_header } }}
+        
+        {{! 
+            full_header_sub is a function called from core_renderer.php
+            which calls and renders theme_uleth_v1/header_white
+        }}
+
+        <div id="page-content" class="main_uofl_body">
+            
+            {{! {{{ output.course_content_header } } } }}
+            {{{ output.main_content }}}
+            {{! { { { output.activity_navigation } } } }}
+            {{! { { { output.course_content_footer } } } }}
+        </div>
+            
+    </div>
+    {{> theme_uleth_v2/footer}}
+</div>
+
+
+<script>
+
+    console.log("<<----------- LOCAL Layout -----  Template ****  ----->>");
+
+</script>
+
+</body>
+</html>
+
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader'], function() {
+    M.util.js_complete('theme_boost/loader');
+});
+
+M.util.js_pending('theme_boost/drawer');
+require(['theme_boost/drawer'], function(drawer) {
+    drawer.init();
+    M.util.js_complete('theme_boost/drawer');
+});
+{{/js}}

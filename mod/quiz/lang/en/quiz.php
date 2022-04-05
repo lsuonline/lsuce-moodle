@@ -1005,3 +1005,7 @@ $string['yourfinalgradeis'] = 'Your final grade for this quiz is {$a}.';
 $string['numattemptsmade'] = '{$a} attempts made on this quiz';
 $string['reviewofattempt'] = 'Review of attempt {$a}';
 $string['reviewofpreview'] = 'Review of preview';
+
+// ===================    DALO Start    ===================
+$string['eventreportforceclose'] = 'Quiz has been forced closed by admin';
+// ===================    DALO End      ===================

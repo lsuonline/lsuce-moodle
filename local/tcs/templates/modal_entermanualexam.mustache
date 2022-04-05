@@ -1,0 +1,201 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_studentsearch
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+{{! Built using https://www.bootply.com/bT04U82aHr# }}
+{{!
+css for this is in styles/modal_enterstudent.css
+.exam_course {
+    color: blue;
+}
+.exam_title {
+	color: blue;
+}
+
+ }}
+
+<div title="Add New Manual Exam">
+    <form id="tc_add_manual_exam_form" action="" method="POST">
+        <input type="hidden" name="exam_id_edit" id="tc_manual_exam_exam_id" value="{{exam_id}}" class="form-control" required>
+        <input type="hidden" name="row_id_edit" id="tc_manual_exam_row_id" value="{{id}}" class="form-control" required>
+        <div class="form-group">
+            <label for="course_name" class="required">Course Name</label>
+            <input class="form-control" type="text" name="course_name_edit" id="tc_manual_exam_course_name" value="{{course_name}}" required>
+        </div>
+        <div class="form-group">
+            <label for="exam_name_edit" class="required">Exam Name</label>
+            <input type="text" name="exam_name_edit" id="tc_manual_exam_exam_name" value="{{exam_name}}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="opening_date">Opening Date</label>
+            <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                <input type="text" id="tc_manual_exam_opening_date" class="form-control datetimepicker-input" data-target="#datetimepicker1" value="{{opening_date}}"/>
+                <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="closing_date">Closing Date</label>
+            <div class="input-group date" id="datetimepicker2" data-target-input="nearest">
+                <input type="text" id="tc_manual_exam_closing_date" class="form-control datetimepicker-input" data-target="#datetimepicker2" value="{{closing_date}}"/>
+                <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
+                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="text" name="password" id="tc_manual_exam_password" value="{{password}}" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="student_list">Student List (usernames & comma separated for ex: john.doe,jane.doe)</label>
+            <input type="text" name="student_list" id="tc_manual_exam_student_list" value="{{student_list}}" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <input type="text" name="notes" id="tc_manual_exam_notes" value="{{notes}}" class="form-control"><br/>
+            {{! <input class="btn btn-primary pull-right" name="tc_pass_admin_modal_submit" id="id_tc_pass_admin_modal_submit" type="submit" value="Submit"> }}
+        </div>
+
+    </form>
+</div>
+
+
+{{#js}}
+require(['local_tcs/_libs/moment', 'local_tcs/_bootstrap_libs/bootstrap-datetimepicker'], function(moment, datetimepicker) {
+    // DatePicker
+    // https://github.com/technovistalimited/bootstrap4-datetimepicker#user-content-basic-usage
+
+    $(function () {
+        $('.datetimepicker-input').datetimepicker({
+            {{! // Example format: Thursday March 10th, 5:16 pm }}
+            {{! format: 'YYYY-MM-DD hh:mm A', }}
+            format: 'dddd, MMMM Do, YYYY - h:mma',
+            // Your Icons
+            // as Bootstrap 4 is not using Glyphicons anymore
+            icons: {
+                time: 'fa fa-clock-o',
+                date: 'fa fa-calendar',
+                up: 'fa fa-chevron-up',
+                down: 'fa fa-chevron-down',
+                previous: 'fa fa-chevron-left',
+                next: 'fa fa-chevron-right',
+                today: 'fa fa-check',
+                clear: 'fa fa-trash',
+                close: 'fa fa-times'
+            },
+            debug: true
+        });
+    });
+});
+{{/js}}
+
+{{!
+    
+<div class="modal-dialog modal-lg" id="tcs_enter_student_modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="float-left"><h2>{{firstname} } {{lastname} }</h2></span><span class="float-right"><h2>{{uofl_id} }</h2></span>
+        </div>
+
+        <div class="modal-body">
+            <form id="tcs_enter_student_form">
+            <table class="table table-hover table-striped tcs_enterstu_table" id="tcs_enterstudent_table">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Exam Name</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{#exams} }       
+            <tr>
+                <td class="course_shortname_title">
+                    <div class="radio">
+                        <input type="radio" name="tcs_exam_check" data-exam_name="{{exam_name} }" id="examslist{{exrow} }" value="{{value} }" />
+                        <label for="examslist{{exrow} }">{{course_shortname} }</label>
+                    </div>
+                </td>
+                <td class="exam_title">
+                    {{exam_name} }
+                
+                </td>
+            </tr>
+            {{/exams} }
+            </tbody>
+            </table>
+            <!-- ======================================================= -->
+            <hr/>
+            <h2>Student Id</h2>  
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="uofl_radio1" value="UofL Card" checked>
+                <label class="form-check-label" for="uofl_radio1">UofL ID</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="drivers_radio2" value="Drivers License">
+                <label class="form-check-label" for="drivers_radio2">Driver's License</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="passport_radio3" value="Passport">
+                <label class="form-check-label" for="passport_radio3">Passport</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_identity_check" id="other_id_radio4" value="Other">
+                <label class="form-check-label" for="other_id_radio4">Other (Please Specify in the comments)</label>
+            </div>
+
+            <hr/> 
+            <!-- ======================================================= -->
+            <h2>Exam Room #</h2>  
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_1" value="1" checked>
+                <label class="form-check-label" for="exam_room_1">1</label>
+            </div>
+                
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_2" value="2">
+                <label class="form-check-label" for="exam_room_2">2</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_3" value="3">
+                <label class="form-check-label" for="exam_room_3">3</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_4" value="4">
+                <label class="form-check-label" for="exam_room_4">4</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="exam_room_check" id="exam_room_5" value="5">
+                <label class="form-check-label" for="exam_room_5">5</label>
+            </div>
+
+            <hr/>
+            <!-- ======================================================= -->
+            
+            <div class="form-group">
+                <label for="tcs_comments_on_student"><h2>Comments</h2></label>
+                <textarea class="form-control" id="tcs_comments_on_student" rows="3"></textarea>
+            </div>
+            </form>
+        </div> <!-- Modal Body END -->
+    </div><!-- Modal Content END -->
+</div><!-- Modal Dialog END -->
+}}

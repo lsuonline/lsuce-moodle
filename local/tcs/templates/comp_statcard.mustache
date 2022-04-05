@@ -1,0 +1,35 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_statcard
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+<div class="col py-2">
+    <div class="card text-white text-center h-100 {{$stat_color}}stat_blue{{/stat_color}}">
+        <div class="card-body">
+            <div class="rotate">
+                <i class="{{$stat_icon}}fa fa-users{{/stat_icon}}"></i>
+            </div>
+            <h6 class="text-uppercase">
+                {{$stat_title}}Test{{/stat_title}} 
+                {{$stat_small_title}}Sub Test{{/stat_small_title}}
+            </h6>
+            <h1 class="{{$stat_name}}boink{{/stat_name}}">
+                {{$stat_data}}-99{{/stat_data}}
+            </h1>
+            <div class="tcs_spinner_container hidden">
+                <div class="inner one"></div>
+                <div class="inner two"></div>
+                <div class="inner three"></div>
+            </div>
+        </div>
+    </div>
+</div>

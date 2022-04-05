@@ -1,0 +1,29 @@
+.page-context-header > .page-header-headings > h1 {
+    font-weight: bold;
+}
+
+.uleth_nav_bg {
+    background-color: #0F6FC5;
+}
+
+.nav-link.uleth_main_nav_link {
+    color: white !important;
+    font-weight: bold;
+}
+
+span.uleth_nav_links_w a.dropdown-toggle span {
+    color: white !important;
+    font-weight: bold;
+}
+
+span.uleth_nav_links_w a.dropdown-toggle::after {
+    color: white;
+}
+
+.uleth_nav_links_w div.dropdown.show a.dropdown-item.menu-action i {
+    color: #212529 !important;
+}
+
+.uleth_nav_links_w div.dropdown.show a.dropdown-item.menu-action:hover i {
+    color: white !important;
+}

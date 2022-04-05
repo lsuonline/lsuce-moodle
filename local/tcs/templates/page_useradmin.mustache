@@ -1,0 +1,60 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/page_userover
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+ {{! { { > local_tcs/comp_examtable_toolbar } } }}
+
+<span class="tcs_page_loader" id="page_useradmin">
+    <!-- *******************  Student Search *******************-->
+    {{> local_tcs/comp_search_admin }}
+    {{! { { > local_tcs/comp_examtable_toolbar} }  -- }} 
+    <!-- *******************  User Admin Table *******************-->
+    <div class="tcs_user_admin_list col-12 py-2">
+    <table class="table-hover"
+        id="tcs_user_admin_table"
+        data-unique-id="id"
+        data-pagination="true"
+        data-sort-name="id"
+        data-sort-order="asc"
+        data-show-toggle="false"
+        data-show-columns="true"
+        data-showFullscreen="true"
+        data-toolbar="#tcs_admin_search_bar"
+    >
+
+    <thead class="thead-light">
+        <tr>
+
+        <th data-field="id"             data-visible="false">id</th>
+        <th data-field="userid"         data-visible="false">userid</th>
+        <th data-field="name"           data-sortable="true" data-visible="true">name</th>
+        <th data-field="username"       data-sortable="true" data-visible="true">username</th>
+        <th data-field="access_level"   data-sortable="true" data-sortable="true" data-visible="true">Access Level</th>
+        <th data-field="exams"          data-visible="true">Exams</th>
+        <th data-field="edit_remove"    data-visible="true">Edit/Remove</th>
+        
+        </tr>
+    </thead>
+    </table>
+    {{! <table id="tcs_student_table_wacka" class="table-striped"></table> }}
+</div>
+<hr/>
+<span>
+
+{{#js}}
+require(['jquery', 'local_tcs/_bootstrap_libs/bootstrap-table', 'local_tcs/tcs_user_admin'], function($, bootTable, uAdmin) {
+    // https://bootstrap-table.com/docs/getting-started/usage/
+    uAdmin.initiateUserAdmin();
+    // End of Require
+});
+{{/js}}

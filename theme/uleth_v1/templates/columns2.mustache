@@ -1,0 +1,75 @@
+
+{{> theme_uleth_v1/head}}
+
+<body {{{ bodyattributes }}}>
+
+<div id="page-wrapper" class="uleth_blue_nav_n_down">
+
+    {{{ output.standard_top_of_body_html }}}
+
+    {{>theme_uleth_v1/navbar}}
+    {{>theme_uleth_v1/nav-drawer}}
+    <div id="page" class="container-fluid main_uleth_container">
+        {{!
+            For the blue bar, it renders in core_renderer.php -> full_header()
+        }}
+        
+        {{{ output.full_header }}}
+        {{{ output.full_header_sub }}} 
+        {{! 
+            full_header_sub is a function called from core_renderer.php
+            which calls and renders theme_uleth_v1/header_white
+        }}
+
+        <div id="page-content" class="row-fluid main_uofl_body">
+            <div id="region-main-box" class="{{{regionmainbox}}} uleth_column2_block">
+            <div class="row-fluid">
+            
+                <section data-region="blocks-column" class="hidden-print {{{sidepre}}} uleth_left_block">
+                    {{{ sidepreblocks }}}
+                </section>
+
+                <section id="region-main" {{#hasblocks}}class="has-blocks uleth_middleright_block {{{regionmain}}}"{{/hasblocks}}>
+                    <div class="card">
+                        <div class="card-body">
+                        {{#hasregionmainsettingsmenu}}
+                            <div class="region_main_settings_menu_proxy"></div>
+                        {{/hasregionmainsettingsmenu}}
+                        {{{ output.course_content_header }}}
+                        {{{ output.main_content }}}
+                        {{{ output.activity_navigation }}}
+                        {{{ output.course_content_footer }}}
+                        </div>
+                    </div>
+                </section>
+            </div>
+            </div>
+            {{#hasblocks}}
+            {{/hasblocks}}
+        </div>
+            
+    </div>
+    {{> theme_uleth_v1/footer}}
+</div>
+
+
+<script>
+
+    console.log("<<----------- C2 -----  Template ****  ----->>");
+
+</script>
+
+</body>
+</html>
+
+{{#js}}
+M.util.js_pending('theme_uleth_v1/loader');
+require(['theme_uleth_v1/loader'], function() {
+  M.util.js_complete('theme_uleth_v1/loader');
+});
+M.util.js_pending('theme_uleth_v1/drawer');
+require(['theme_uleth_v1/drawer'], function(mod) {
+    mod.init();
+  M.util.js_complete('theme_uleth_v1/drawer');
+});
+{{/js}}

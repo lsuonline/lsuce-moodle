@@ -1,0 +1,56 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_studentsearch
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+
+{{! Built using https://www.bootply.com/bT04U82aHr# }}
+{{!
+css for this is in styles/modal_enterstudent.css
+.exam_course {
+    color: blue;
+}
+.exam_title {
+	color: blue;
+}
+
+ }}
+<div class="modal-dialog modal-lg" id="tcs_addadminuser">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="float-left"><h2>{{firstname}} {{lastname}}</h2></span><span class="float-right"><h2>{{uofl_id}}</h2></span>
+        </div>
+
+        <div class="modal-body">
+          <form id="tcs_addadminuser_form">
+            <input type="hidden" id="tcs_uaf_id" value="{{uofl_id}}">
+            <input type="hidden" id="tcs_uaf_username" value="{{username}}">
+
+            <hr/>
+            <h2>Role Type</h2>  
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_user_admin_form" id="uofl_radio1" value="Test Centre" checked>
+                <label class="form-check-label" for="uofl_radio1">Test Centre</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_user_admin_form" id="drivers_radio2" value="Administrator">
+                <label class="form-check-label" for="drivers_radio2">Administrator</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tcs_user_admin_form" id="passport_radio3" value="Disability">
+                <label class="form-check-label" for="passport_radio3">Disability</label>
+            </div>
+            <hr/>
+            
+            </form>
+        </div> <!-- Modal Body END -->
+    </div><!-- Modal Content END -->
+</div><!-- Modal Dialog END -->

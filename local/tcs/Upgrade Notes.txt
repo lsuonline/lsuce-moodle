@@ -1,0 +1,174 @@
+These are the Reminders and Notes for the Upgrade of the TCMS -> TCS
+
+Changed Tables
+======================================================
+mdl_local_tcms_student_entry
+    - changed TABLE name from local_tcms_std_entry to mdl_local_tcms_student_entry
+    - changed deleted to finished
+    - last_changed column added (big int, 0 as def)
+    - room column added (char varying, length 5)
+
+mdl_local_tcms_exam_pass
+    ////////- change deleted to finished
+
+mdl_local_tcms_exam
+    - added this new table to replace both exam_pass and exam_status
+        this table must have:
+            id
+            courseid
+            coursename
+            examid
+            examname
+            closing_date
+            opening_date
+            notes
+            password
+            finished
+            visible
+            manual
+
+mdl_local_tcms_settings
+    - removed total_seats
+    - add t_name and t_value
+
+mdl_local_tcms_manualexam_std
+    - changed table name to local_tcms_manual_exams
+    - change manual_examid to manual_exam_id
+
+mdl_local_tcms_user_admin
+    - changed table name from mdl_local_tcms_useradmin to mdl_local_tcms_user_admin
+    - update code for tcms
+
+======================================================
+Queries to Run:
+======================================================
+-- Update tcms exam table
+ALTER TABLE mdl_local_tcms_exam RENAME coursename TO course_name;
+ALTER TABLE mdl_local_tcms_exam RENAME courseid TO course_id;
+ALTER TABLE mdl_local_tcms_exam RENAME examname TO exam_name;
+ALTER TABLE mdl_local_tcms_exam RENAME examid TO exam_id;
+
+-- Rename and update manual user admin table
+ALTER TABLE mdl_local_tcms_useradmin RENAME TO mdl_local_tcms_user_admin;
+
+-- Rename and update manual exam students table
+ALTER TABLE mdl_local_tcms_manualexam_std RENAME TO mdl_local_tcms_manual_exams;
+ALTER TABLE mdl_local_tcms_manual_exams RENAME manual_examid TO  manual_exam_id;
+
+-- Update Settings table
+-- ALTER TABLE mdl_local_tcms_settings DROP COLUMN total_seats;
+-- ALTER TABLE mdl_local_tcms_settings ADD COLUMN t_name VARCHAR;
+-- ALTER TABLE mdl_local_tcms_settings ADD COLUMN t_value VARCHAR;
+
+-- Exam Pass Table
+ALTER TABLE mdl_local_tcms_exam_pass RENAME deleted TO finished;
+
+
+-- Student Entry Table
+ALTER TABLE mdl_local_tcms_student_entry RENAME deleted TO finished;
+ALTER TABLE mdl_local_tcms_student_entry ADD COLUMN last_changed BIGINT;
+ALTER TABLE mdl_local_tcms_student_entry ADD COLUMN room VARCHAR;
+======================================================
+
+======================================================
+Code to Change:
+======================================================
+OLD TCMS:
+---------------------------------
+any mdl_local_tcms_manualexam_std instances to mdl_local_tcms_manual_exams
+
+
+
+
+FIX NOTES:
+======================================================
+- change cell's that can be edited to not display "empty" (comments cell)
+- if user has no UofL id then "=====>>>>>  ERROR 2 -> findUserData  <<<<<======="
+
+Thoughts and Random Notes:
+======================================================
+
+local_tcms_exam_status = MOODLE EXAMS
+local_tcms_exam_pass = MANUAL EXAMS
+
+
+mdl_local_tcms_exam
+    - manual - if admin adds manual exam, manual = true
+    - finished - From Task Manager?? mark as finished when admin hit's delete button
+    - visible - visible = true
+
+in Exam list, Status is for  
+
+
+======================================================
+TCMS Functions in OLD Version
+======================================================
+
+$DB->get_record('local_tcms_exam_status'
+$DB->insert_record('local_tcms_exam_status'
+$DB->update_record('local_tcms_exam_status'
+
+$DB->get_record_sql FROM mdl_local_tcms_exam_pass
+$DB->get_records_sql FROM mdl_local_tcms_exam_pass
+$DB->insert_record('local_tcms_exam_pass'
+$DB->update_record('local_tcms_exam_pass'
+$DB->update_record('local_tcms_exam_pass
+
+$DB->get_records_sql FROM mdl_local_tcms_manualexam_std
+$DB->delete_records_select('local_tcms_manualexam_std'
+$DB->insert_record('local_tcms_manualexam_std'
+$DB->insert_record('local_tcms_manualexam_std'
+
+
+
+
+getManualExams
+    GET mdl_local_tcms_exam_pass
+    GET mdl_local_tcms_manualexam_std
+
+addManualExams
+    INSERT local_tcms_exam_pass
+    INSERT local_tcms_manualexam_std
+
+updateManualExamStatus
+    UPDATE local_tcms_exam_pass
+
+editManualExam  
+    GET mdl_local_tcms_exam_pass
+    UPDATE local_tcms_exam_pass
+    DELETE local_tcms_manualexam_std
+    INSERT local_tcms_manualexam_std
+
+
+updateMoodleExamStatus
+    GET local_tcms_exam_status
+    INSERT local_tcms_exam_status
+    UPDATE local_tcms_exam_status
+
+
+
+local_tcms_exam_status = MOODLE EXAMS
+
+local_tcms_exam_pass = MANUAL EXAMS
+
+
+SELECT quiz.id as id, quiz.fullname as coursename, 
+    quiz.name as examname, 
+    quiz.timeopen as opening_date, 
+    quiz.timeclose as closing_date, 
+    quiz.password as password
+FROM (
+    SELECT mq.id, 
+        mq.course, 
+        mq.timeopen, 
+        mq.timeclose, 
+        mq.password,
+        mq.name, 
+        mc.fullname 
+    FROM mdl_quiz mq, mdl_course mc 
+    WHERE subnet like '% 142.66 %'
+    AND mq.course = mc.id
+    AND date(to_timestamp(mq.timeclose)) >= (select date(now()))
+) as quiz
+
+

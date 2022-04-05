@@ -1,0 +1,180 @@
+
+
+/* ==================================================================================== */
+/* ===================================    Landing Block   ============================= */
+
+/* get the stupid accordion to stretch out for 201803 */
+div.uleth_accordion_snip {
+    width: 100%;
+}
+
+div[id^="lb_my_courses_accord_"] {
+    width: 100%;
+    padding-bottom: 10px;
+}
+
+.lb_assn_quiz_icons {
+    width: 32px;
+    height: 32px;
+}
+
+.lb_assign_quiz_header_title > h4 > a {
+    color: #51a351;
+    padding-left: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+
+div.block_landing_block div.main_landing_block_body div.card {
+    padding: 6px 14px;
+}
+
+div.block_landing_block div#collapse_current_title {
+    margin-top: 5px;
+}
+
+div.block_landing_block div.card div[id*="collapse_"] {
+    margin-top: 5px;
+}
+
+div.block_landing_block div#lb_show_hide_toggle {
+    top: 0px; !important
+}
+div.block_landing_block div.lb_assign_quiz_header_title h4 {
+    margin-left: 10px;
+    top: 8px;
+    position: relative;
+}
+div.block_landing_block div.lb_assign_quiz_header_title_sh .lb_assignments_toggle, 
+div.block_landing_block div.lb_assign_quiz_header_title_sh .lb_quiz_toggle{
+    top: -13px;
+    position: relative;
+}
+
+div#future_title_heading {
+    border-bottom: 1px solid #e5e5e5;
+    /* -webkit-border-radius: 4px; */
+    -moz-border-radius: 4px;
+    /* border-radius: 4px; */
+    /* margin: 5px 0px 5px 0px; */
+    /*width: 105%;*/
+    position: relative;
+    /*right: 12px;*/
+}
+
+/* ==================================================================================== */
+
+#lb_show_hide_toggle{
+	position: relative;
+	top: 8px;
+	right: 10px;
+	padding: 5px 5px 1px 1px;
+}
+
+.main_landing_block_notifications h3, .main_landing_block_notifications h4, .main_landing_block_notifications h2{
+	color: #06559e;	
+}
+
+.accordion-heading a{
+	text-decoration: none;
+}
+.accordion-heading h4{
+	margin-left: 10px;
+}
+
+.lb_inactive_courses {
+	left: 12px;
+	position: relative;
+	color: #999;
+	font-weight: bold;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	font-size: 15px;
+}
+/*
+clicker { 
+    -moz-transition: all .2s ease-in;
+    -o-transition: all .2s ease-in;
+    -webkit-transition: all .2s ease-in;
+    transition: all .2s ease-in;
+    background: #f5f5f5; 
+    padding: 20px;
+}
+
+.clicker:hover { 
+    background: #eee;
+}
+*/
+
+
+
+.lb_assignments_container, .lb_quiz_container {
+
+    margin-bottom: 2px;
+    border: 1px solid #e5e5e5;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+}
+
+.lb_assign_quiz_header:hover, .row-fluid lb_assign_quiz_header:hover {
+    cursor: pointer;
+    cursor: hand;
+}
+
+.lb_assign_quiz_header {
+    /*border-bottom: 1px solid #e5e5e5;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px; 
+    margin: 5px 0px 5px 0px;*/
+}
+
+.lb_assign_quiz_header_title {
+    color: #51a351;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.lb_assign_quiz_header_title > h4 :not(a) {
+    padding-left: 10px;
+}
+
+.lb_assign_quiz_header_title > h3 {
+    position: relative;
+    /*left: 15px;*/
+}
+
+.lb_assignments_toggle, .lb_quiz_toggle {
+    position: relative;
+    top: 2px;
+    right: 5px;
+    color: #00acdf;
+}
+
+.assign.overview > div.name {
+    color: #5bb75b;
+}
+
+.assign.overview > div.info, .assign.overview > div.details {
+    position: relative;
+    left: 15px;
+} 
+
+.quiz.overview > div.name {
+    color: red;
+}
+
+.quiz.overview > div.info {
+    position: relative;
+    left: 15px;
+} 
+
+.lb_quiz_panel, .lb_assignment_panel {
+    margin-left: 20px;
+}
+
+.lb_no_data_to_show {
+    margin: 5px;
+}

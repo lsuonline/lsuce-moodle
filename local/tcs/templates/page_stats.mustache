@@ -1,0 +1,57 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/page_stats
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+<span class="tcs_page_loader" id="page_stats">
+{{! 
+    Current Dashboard has for small stats:
+    -------------------------------------------------
+    Student Count
+    Exams Today
+    Written Today
+    Written Semester
+
+    Stats Page has:
+    -------------------------------------------------
+    Student Count
+    Exams Today
+    Written Today
+    Written Semester
+    Total Exams in TC
+    Total Exams in Moodle
+    Today's Average Exam Time
+}}
+
+    <div class="row tcs_stats_table">
+      
+    </div>
+
+<!--     <div class="row tcs_bg_c border rounded">
+        <canvas id="test_tcs_chart1"></canvas>
+    </div> -->
+    <div class="row tcs_bg_c border rounded">
+        <!-- <button class="reset_the_zoom_bitch">Reset Zoom</button> -->
+        <!-- <button id="drag-switch" class="disable_the_zoom_drag_bitch">Disable drag mode</button> -->
+        <div class="col-6 border">
+            <canvas id="test_tcs_graph_chart1"></canvas>
+        </div>
+        <div class="col-6 border">
+            <canvas id="test_tcs_graph_chart2"></canvas>
+        </div>
+    </div>
+
+</span>
+{{#js}}
+require(['jquery', 'local_tcs/tcs_stats'], function($, stats) {
+    stats.initiateStats();
+});
+{{/js}}

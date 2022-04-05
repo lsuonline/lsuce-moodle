@@ -1,0 +1,69 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/page_examlogs
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+data-query-params="queryParams"  
+data-url="/lib/raw.php" 
+
+date-total-rows="79015"
+
+
+    function queryParams(params) {
+        console.log("Hit queryParams in this func bitch");
+        return {
+            limit: params.pageSize,
+            offset: params.pageSize * (params.pageNumber - 1),
+            search: params.searchText,
+            name: params.sortName,
+            order: params.sortOrder
+        };
+    }
+    
+}}
+<span class="tcs_page_loader" id="page_examlogs">
+    <!-- *******************  Exam Logs *******************-->
+    <div class="tcs_examlogs col-12 py-2">
+    <table class="table-hover"
+        id="tcs_examlogs_table"
+        data-toggle="table" 
+        data-unique-id="id"
+        
+        data-side-pagination="server"
+        data-pagination="true" 
+        {{! data-show-columns="true" }}
+        data-page-size="50" 
+        data-page-list="[10, 20, 50, 100, 200, 500]" 
+        {{! data-search="true" }}
+    >
+
+    <thead class="thead-light">
+        <tr>
+        <th data-field="id"             data-visible="false">id</th>
+        <th data-field="username"       data-sortable="true" data-visible="true">Username</th>
+        <th data-field="exam"           data-sortable="false" data-visible="true">Exam Name</th>
+        <th data-field="signed_in"      data-sortable="true" data-visible="true">Signed In</th>
+        <th data-field="signed_out"     data-sortable="true" data-visible="true">Signed Out</th>
+        <th data-field="notes"          data-sortable="false" data-visible="true">Notes</th>
+        </tr>
+    </thead>
+    </table>
+    {{! <table id="tcs_student_table_wacka" class="table-striped"></table> }}
+</div>
+<hr/>
+<span>
+
+{{#js}}
+require(['jquery', 'local_tcs/tcs_examlogs'], function($, logger) {
+    
+    logger.initiateLogTable();
+    // End of Require }}
+});
+{{/js}}

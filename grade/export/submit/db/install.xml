@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="grade/export/submit/db" VERSION="20111120" COMMENT="XMLDB file for Moodle grade/export/submit"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="submit" COMMENT="Default comment for submit, please edit me" NEXT="grade_submit_lmb_submissions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="grade_submit_lmb_submissions" COMMENT="List of final grade submissions to Banner using data from Moodle and the LMB." PREVIOUS="submit">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="courseid"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="false" SEQUENCE="false" COMMENT="Moodle course ID of the course which had grades submitted." PREVIOUS="id" NEXT="course_sourcedid"/>
+        <FIELD NAME="course_sourcedid" TYPE="char" LENGTH="200" NOTNULL="false" SEQUENCE="false" COMMENT="Sourcedid of this course." PREVIOUS="courseid" NEXT="submitter_userid"/>
+        <FIELD NAME="submitter_userid" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="false" SEQUENCE="false" COMMENT="Moodle id of the user who submitted grades." PREVIOUS="course_sourcedid" NEXT="submitter_sourcedid"/>
+        <FIELD NAME="submitter_sourcedid" TYPE="char" LENGTH="200" NOTNULL="false" SEQUENCE="false" COMMENT="Sourcedid of user who submitted grades." PREVIOUS="submitter_userid" NEXT="timesubmitted"/>
+        <FIELD NAME="timesubmitted" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="false" SEQUENCE="false" PREVIOUS="submitter_sourcedid" NEXT="response_received"/>
+        <FIELD NAME="response_received" TYPE="int" LENGTH="4" NOTNULL="false" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="timesubmitted" NEXT="succeeded"/>
+        <FIELD NAME="succeeded" TYPE="int" LENGTH="4" NOTNULL="false" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" COMMENT="Was the submission successful?" PREVIOUS="response_received" NEXT="error_message"/>
+        <FIELD NAME="error_message" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="If submission was a failure, this will be the received error." PREVIOUS="succeeded" NEXT="raw_xml"/>
+        <FIELD NAME="raw_xml" TYPE="text" LENGTH="big" NOTNULL="false" SEQUENCE="false" COMMENT="The raw xml" PREVIOUS="error_message"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>

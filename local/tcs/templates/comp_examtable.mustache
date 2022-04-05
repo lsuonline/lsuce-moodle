@@ -1,0 +1,112 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_examtable
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+    {{! data-search="true"
+    data-show-refresh="true"
+    data-show-toggle="true"
+    data-show-fullscreen="true"
+    data-show-columns="true"
+    data-detail-view="true"
+    data-show-export="true"
+    data-detail-formatter="detailFormatter"
+    data-minimum-count-columns="2"
+    data-show-pagination-switch="true"
+    data-pagination="true"
+    data-id-field="id"
+    data-page-list="[10, 25, 50, 100, ALL]"
+    data-show-footer="true"
+    data-side-pagination="server"
+    data-url="https://examples.wenzhixin.net.cn/examples/bootstrap_table/data"
+    data-response-handler="responseHandler"
+    }}
+
+
+    {{! TRY THIS:
+    https://stackoverflow.com/questions/39791568/how-do-you-add-bootstrap-buttons-in-bootstrap-table
+    
+    maybe this???
+    https://stackoverflow.com/questions/46516001/bootstrap-table-dynamic-button-in-row }}
+
+
+{{! data-id-field="id" }}
+{{! table-striped }}
+{{! data-advanced-search="true"
+    data-filter-control="true"  }}
+
+<!-- *******************  Student Search *******************-->
+{{> local_tcs/comp_examtable_toolbar}}
+    
+<div class="tcs_student_exam_list col-12 py-2">
+    <table class="table-hover"
+        id="tcs_exam_table"
+        data-unique-id="id"
+        data-pagination="true"
+        data-sort-name="id"
+        data-sort-order="asc"
+        data-show-toggle="false"
+        data-show-columns="true"
+        data-showFullscreen="true"
+        data-row-style="examRowStyle"
+        data-toolbar="#tcs_examtable_toolbar"
+        {{! data-toolbar-align="right" }}
+    >
+
+    <thead class="thead-light">
+        <tr>
+        <th data-field="id"             data-visible="false">id</th>
+        <th data-field="exam_id"        data-visible="false">exam id</th>
+        <th data-field="course_id"      data-visible="false">course id</th>
+        <th data-field="manual"         data-sortable="false" data-visible="false">Manual</th>
+        <th data-field="course_name"    data-sortable="true" data-order="asc">Course</th>
+        <th data-field="exam_name"      data-sortable="true">Exam</th>
+        <th data-field="opening_date"   data-sortable="true">Opening Date</th>
+        <th data-field="closing_date"   data-sortable="true">Closing Date</th>
+        <th data-field="password"       data-sortable="true">Password</th>
+        <th data-field="notes"          data-visible="true" data-editable="true" data-editable-typearea="text" id="tcs_notes">Notes</th>
+        <th data-field="student_list"   data-visible="false">Student List</th>
+        {{! **** NOTE **** CHANGES HERE have to be applied to the JS INIT as well
+         so in tcs_exam_table.js where bootstrapTable get's initialized, update the 
+         fields there as well }}
+        <th data-field="visible"        data-visible="true">Visibility</th>
+        <th data-field="subnet" 
+            data-visible="false"
+            data-sortable="false"
+            data-filter-data="var:subnet">SubNet</th>
+
+        <th data-field="finished"       data-visible="true">Finished</th>
+        <th data-field="edit_remove"    data-visible="true">Edit/Remove</th>
+        </tr>
+    </thead>
+    </table>
+    {{! <table id="tcs_student_table_wacka" class="table-striped"></table> }}
+</div>
+<hr/>
+
+{{#js}}
+require(['jquery', 'local_tcs/_bootstrap_libs/bootstrap-table', 'local_tcs/tcs_exam_table'], function($, BootstrapTable, sTable) {
+    // https://bootstrap-table.com/docs/getting-started/usage/
+    
+    sTable.initiateExamTable();
+    {{! function examRowStyle (row, index) {
+        console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        console.log("student_table_test() -> SUCCESSFULLY CALLED");
+        console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        return {
+            css: {
+                color: 'blue'
+            }
+        }
+    }; }}
+    // End of Require
+});
+{{/js}}

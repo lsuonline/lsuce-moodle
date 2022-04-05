@@ -1,0 +1,346 @@
+{{!
+**
+* ************************************************************************
+* *                   Test Centre Management System                     **
+* ************************************************************************
+@template local_tcs/comp_studenttable
+
+Test Centre Management System
+Author      David Lowe
+
+Example context (json): {}
+
+}}
+<div class="d-flex align-items-center">
+  <div class="mr-auto p-2">
+    <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+      Notify Creator and AJAX Tester
+    </button>
+  </div>
+  <div class="p-2">
+    <button class="m-2 p-3 btn btn-primary btn-lg" id="call_simple_ajax">AJAX</button>
+  </div>
+  <div class="p-2">
+    <button class="m-2 p-3 btn btn-primary btn-lg" id="call_simple_notify">Notify</button>
+  </div>
+</div>
+
+
+<div class="collapse" id="collapseExample">
+  <div class="card card-body">
+
+
+<form>
+
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_class">class</label>
+      <input type="text" class="form-control" id="iziToast_input_class" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_title">title</label>
+      <input type="text" class="form-control" id="iziToast_input_title" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_titleColor">titleColor</label>
+      <input type="text" class="form-control" id="iziToast_input_titleColor" placeholder="">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_titleSize">titleSize</label>
+      <input type="text" class="form-control" id="iziToast_input_titleSize" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_titleLineHeight">titleLineHeight</label>
+      <input type="text" class="form-control" id="iziToast_input_titleLineHeight" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_message">message</label>
+      <input type="text" class="form-control" id="iziToast_input_message" placeholder="">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_messageColor">messageColor</label>
+      <input type="text" class="form-control" id="iziToast_input_messageColor" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_messageSize">messageSize</label>
+      <input type="text" class="form-control" id="iziToast_input_messageSize" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_messageLineHeight">messageLineHeight</label>
+      <input type="text" class="form-control" id="iziToast_input_messageLineHeight" placeholder="">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_backgroundColor">backgroundColor</label>
+      <input type="text" class="form-control" id="iziToast_input_backgroundColor" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_theme">theme</label>
+      <input type="text" class="form-control" id="iziToast_input_theme" placeholder="light">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_color">color</label>
+      <input type="text" class="form-control" id="iziToast_input_color" placeholder="">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_icon">icon</label>
+      <input type="text" class="form-control" id="iziToast_input_icon" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_iconText">iconText</label>
+      <input type="text" class="form-control" id="iziToast_input_iconText" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_iconColor">iconColor</label>
+      <input type="text" class="form-control" id="iziToast_input_iconColor" placeholder="">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_iconUrl">iconUrl</label>
+      <input type="text" class="form-control" id="iziToast_input_iconUrl" placeholder="null">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_image">image</label>
+      <input type="text" class="form-control" id="iziToast_input_image" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_imageWidth">imageWidth</label>
+      <input type="text" class="form-control" id="iziToast_input_imageWidth" placeholder="50">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_maxWidth">maxWidth</label>
+      <input type="text" class="form-control" id="iziToast_input_maxWidth" placeholder="null">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_zindex">zindex</label>
+      <input type="text" class="form-control" id="iziToast_input_zindex" placeholder="null">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_layout">layout</label>
+      <input type="text" class="form-control" id="iziToast_input_layout" placeholder="1">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_balloon">balloon</label>
+      <input type="text" class="form-control" id="iziToast_input_balloon" placeholder="false">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_close">close</label>
+      <input type="text" class="form-control" id="iziToast_input_close" placeholder="true">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_closeOnEscape">closeOnEscape</label>
+      <input type="text" class="form-control" id="iziToast_input_closeOnEscape" placeholder="false">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_closeOnClick">closeOnClick</label>
+      <input type="text" class="form-control" id="iziToast_input_closeOnClick" placeholder="false">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_displayMode">displayMode</label>
+      <input type="text" class="form-control" id="iziToast_input_displayMode" placeholder="0">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_position">position</label>
+      <input type="text" class="form-control" id="iziToast_input_position" placeholder="topRight">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_target">target</label>
+      <input type="text" class="form-control" id="iziToast_input_target" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_targetFirst">targetFirst</label>
+      <input type="text" class="form-control" id="iziToast_input_targetFirst" placeholder="true">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_timeout">timeout</label>
+      <input type="text" class="form-control" id="iziToast_input_timeout" placeholder="5000">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_rtl">rtl</label>
+      <input type="text" class="form-control" id="iziToast_input_rtl" placeholder="false">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_animateInside">animateInside</label>
+      <input type="text" class="form-control" id="iziToast_input_animateInside" placeholder="true">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_drag">drag</label>
+      <input type="text" class="form-control" id="iziToast_input_drag" placeholder="true">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_pauseOnHover">pauseOnHover</label>
+      <input type="text" class="form-control" id="iziToast_input_pauseOnHover" placeholder="true">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_resetOnHover">resetOnHover</label>
+      <input type="text" class="form-control" id="iziToast_input_resetOnHover" placeholder="false">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_progressBar">progressBar</label>
+      <input type="text" class="form-control" id="iziToast_input_progressBar" placeholder="true">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_progressBarColor">progressBarColor</label>
+      <input type="text" class="form-control" id="iziToast_input_progressBarColor" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_progressBarEasing">progressBarEasing</label>
+      <input type="text" class="form-control" id="iziToast_input_progressBarEasing" placeholder="linear">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_overlay">overlay</label>
+      <input type="text" class="form-control" id="iziToast_input_overlay" placeholder="false">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_overlayClose">overlayClose</label>
+      <input type="text" class="form-control" id="iziToast_input_overlayClose" placeholder="false">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_overlayColor">overlayColor</label>
+      <input type="text" class="form-control" id="iziToast_input_overlayColor" placeholder="rgba(0, 0, 0, 0.6)">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_transitionIn">transitionIn</label>
+      <input type="text" class="form-control" id="iziToast_input_transitionIn" placeholder="fadeInUp">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_transitionOut">transitionOut</label>
+      <input type="text" class="form-control" id="iziToast_input_transitionOut" placeholder="fadeInOut">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_transitionInMobile">transitionInMobile</label>
+      <input type="text" class="form-control" id="iziToast_input_transitionInMobile" placeholder="fadeInUp">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_transitionOutMobile">transitionOutMobile</label>
+      <input type="text" class="form-control" id="iziToast_input_transitionOutMobile" placeholder="fadeInDown">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_buttons">buttons</label>
+      <input type="text" class="form-control" id="iziToast_input_buttons" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_inputs">inputs</label>
+      <input type="text" class="form-control" id="iziToast_input_inputs" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_onOpening">onOpening</label>
+      <input type="text" class="form-control" id="iziToast_input_onOpening" placeholder="">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_onOpened">onOpened</label>
+      <input type="text" class="form-control" id="iziToast_input_onOpened" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_onClosing">onClosing</label>
+      <input type="text" class="form-control" id="iziToast_input_onClosing" placeholder="">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="iziToast_input_onClosed">onClosed</label>
+      <input type="text" class="form-control" id="iziToast_input_onClosed" placeholder="">
+    </div>
+  </div>
+
+  {{! <div class="form-group row">
+    <div class="col-sm-10">
+      <button type="submit" class="btn btn-primary">Sign in</button>
+    </div>
+  </div> }}
+</form>
+</div>
+</div>
+{{#js}}
+require(['jquery', 'local_tcs/jaxy', 'local_tcs/iziToast'], function($, jaxy, iziToast) {
+    
+    $('body').on('click', '#call_simple_ajax', function () {
+        jaxy.tcsAjax(JSON.stringify({
+            'call': 'ajaxTest',
+            'params': {},
+            'class': 'StudentListAjax',
+        })).then(function(response) {
+            console.log("simple ajax test() -> what is the result: ", response);
+        });
+    });
+
+    $('body').on('click', '#call_simple_notify', function () {
+
+        iziToast.show({
+            class: $('#iziToast_input_class').val(),
+            title: ($('#iziToast_input_title').val() != '') ? $('#iziToast_input_title').val() : "My Title",
+            titleColor: $('#iziToast_input_titleColor').val(),
+            titleSize: $('#iziToast_input_titleSize').val(),
+            titleLineHeight: $('#iziToast_input_titleLineHeight').val(),
+            message: ($('#iziToast_input_message').val() != '') ? $('#iziToast_input_message').val() : "This is my message.",
+            messageColor: $('#iziToast_input_messageColor').val(),
+            messageSize: $('#iziToast_input_messageSize').val(),
+            messageLineHeight: $('#iziToast_input_messageLineHeight').val(),
+            backgroundColor: $('#iziToast_input_backgroundColor').val(),
+            theme: $('#iziToast_input_theme').val(),
+            color: $('#iziToast_input_color').val(),
+            icon: $('#iziToast_input_icon').val(),
+            iconText: $('#iziToast_input_iconText').val(),
+            iconColor: $('#iziToast_input_iconColor').val(),
+            iconUrl: $('#iziToast_input_iconUrl').val(),
+            image: $('#iziToast_input_image').val(),
+            imageWidth: ($('#iziToast_input_imageWidth').val() != '') ? $('#iziToast_input_imageWidth').val() : '50',
+            maxWidth: ($('#iziToast_input_maxWidth').val() != '') ? $('#iziToast_input_maxWidth').val() : null,
+            zindex: ($('#iziToast_input_zindex').val() != '') ? $('#iziToast_input_zindex').val() : null,
+            layout: ($('#iziToast_input_layout').val() != '') ? $('#iziToast_input_layout').val() : 1,
+            balloon: ($('#iziToast_input_balloon').val() != '') ? $('#iziToast_input_balloon').val() : 'false',
+            close: ($('#iziToast_input_close').val() != '') ? $('#iziToast_input_close').val() : 'false',
+            closeOnEscape: ($('#iziToast_input_closeOnEscape').val() != '') ? $('#iziToast_input_closeOnEscape').val() : 'false',
+            closeOnClick: ($('#iziToast_input_closeOnClick').val() != '') ? $('#iziToast_input_closeOnClick').val() : 'false',
+            displayMode: ($('#iziToast_input_displayMode').val() != '') ? $('#iziToast_input_displayMode').val() : 0,
+            position: ($('#iziToast_input_position').val() != '') ? $('#iziToast_input_position').val() : 'topRight',
+            target: $('#iziToast_input_target').val(),
+            targetFirst: ($('#iziToast_input_targetFirst').val() != '') ? $('#iziToast_input_targetFirst').val() : 'true',
+            timeout: ($('#iziToast_input_timeout').val() != '') ? $('#iziToast_input_timeout').val() : 5000,
+            rtl: ($('#iziToast_input_rtl').val() != '') ? $('#iziToast_input_rtl').val() : 'false',
+            animateInside: ($('#iziToast_input_animateInside').val() != '') ? $('#iziToast_input_animateInside').val() : 'true',
+            drag: ($('#iziToast_input_drag').val() != '') ? $('#iziToast_input_drag').val() : 'true',
+            pauseOnHover: ($('#iziToast_input_pauseOnHover').val() != '') ? $('#iziToast_input_pauseOnHover').val() : 'true',
+            resetOnHover: ($('#iziToast_input_resetOnHover').val() != '') ? $('#iziToast_input_resetOnHover').val() : 'false',
+            progressBar: ($('#iziToast_input_progressBar').val() != '') ? $('#iziToast_input_progressBar').val() : 'true',
+            progressBarColor: $('#iziToast_input_progressBarColor').val(),
+            progressBarEasing: ($('#iziToast_input_progressBarEasing').val() != '') ? $('#iziToast_input_progressBarEasing').val() : 'linear',
+            overlay: ($('#iziToast_input_overlay').val() != '') ? $('#iziToast_input_overlay').val() : 'false',
+            overlayClose: ($('#iziToast_input_overlayClose').val() != '') ? $('#iziToast_input_overlayClose').val() : 'false',
+            overlayColor: ($('#iziToast_input_overlayColor').val() != '') ? $('#iziToast_input_overlayColor').val() : 'rgba(0, 0, 0, 0.6)',
+            transitionIn: ($('#iziToast_input_transitionIn').val() != '') ? $('#iziToast_input_transitionIn').val() : 'fadeInUp',
+            transitionOut: ($('#iziToast_input_transitionOut').val() != '') ? $('#iziToast_input_transitionOut').val() : 'fadeInOut',
+            transitionInMobile: ($('#iziToast_input_transitionInMobile').val() != '') ? $('#iziToast_input_transitionInMobile').val() : 'fadeInUp',
+            transitionOutMobile: ($('#iziToast_input_transitionOutMobile').val() != '') ? $('#iziToast_input_transitionOutMobile').val() : 'fadeInDown',
+        });
+    });
+});
+{{/js}}
