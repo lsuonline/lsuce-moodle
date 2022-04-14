@@ -1464,7 +1464,7 @@ class kalpanmaps {
 
         // Grab the Kaltura playlist entry_id and add it to the object.
         if ($kalmatches->oldiframe <> '' && $kalmatches->entryid == '' && $kalmatches->playlist == true) {
-            preg_match('/\<iframe src=\"https:\/\/www\.kaltura\.com\/\S+\/widget_id\/.+?flashvars\[playlistAPI\.kpl0Id\]=(\S+)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+            preg_match('/\<iframe src=\"https:\/\/www\.kaltura\.com\/\S+\/widget_id\/.+?flashvars\[playlistAPI\.kpl0Id\]=(\S+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
             $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
             unset($matches);
         }
@@ -1491,10 +1491,6 @@ class kalpanmaps {
 
         preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches);
-        // $kalmatches->entryid = $matches[3];
-        // $kalmatches->width = $matches[4];
-        // $kalmatches->height = $matches[5];
-        // $kalmatches->ifxtra = $matches[6];
         $kalmatches->noframe = !empty($kalmatches->noframe)
             ? $kalmatches->noframe
             : ($matches ? '<!-- HIDDEN <anchor ' . $matches[2] . '</anchor> HIDDEN -->' : '');
