@@ -85,5 +85,4 @@ class sent_message_index_controller extends base_controller {
             'sent_edit' => $this->props->page_params['sent_edit']
         ]);
     }
-
 }

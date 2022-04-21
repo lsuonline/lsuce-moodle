@@ -498,7 +498,6 @@ class message extends \block_quickmail\persistents\persistent {
      */
     public function mark_as_deleted() {
         $this->set('deleted', 1);
-
         $this->update();
     }
 

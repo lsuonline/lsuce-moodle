@@ -197,3 +197,11 @@
 #page-block-quickmail div.msflex div.femptylabel div.felement {
   margin: 0;
 }
+
+th.qm_tb_col_spcr {
+  min-width: 120px;
+}
+
+.alnright {
+  text-align: right;
+}

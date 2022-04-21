@@ -66,16 +66,8 @@ class sent_message_index_component extends component implements \renderable {
         $data->courseIsSorted = $this->is_attr_sorted('course');
         $data->subjectIsSorted = $this->is_attr_sorted('subject');
         $data->sentAtIsSorted = $this->is_attr_sorted('sent');
-        error_log("\n\n");
         $data->toggleSentEdit = $this->sent_edit_mode ? $this->sent_edit_mode : null;
-        
-        error_log("\nDa fuck is dis: ". $this->sent_edit_mode);
-        error_log("\nDa fuck is type: ". gettype($this->sent_edit_mode));
-        error_log("\nGoing to send this as toggleSentEdit: ". $data->toggleSentEdit);
-        error_log("\n");
-
         $data = $this->include_pagination($data, $this->pagination);
-
         $data->tableRows = [];
 
         foreach ($this->messages as $message) {
