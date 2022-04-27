@@ -4,7 +4,7 @@
 }
 
 #page-block-quickmail label[for=id_select_signature_id] {
-    display: block !important;
+    display: block !important; /* stylelint-disable-line declaration-no-important */
 }
 
 #page-block-quickmail .field-label.user-field-label {
@@ -106,8 +106,8 @@
 }
 
 .device-type-mobile div.qm_links a.qml {
-    width: 9em !important;
-    height: 9em !important;
+    width: 9em !important; /* stylelint-disable-line declaration-no-important */
+    height: 9em !important; /* stylelint-disable-line declaration-no-important */
 }
 
 #page-block-quickmail div.qm_links a.qml:hover {
@@ -196,7 +196,7 @@
 
 #page-block-quickmail div.msflex div.multiselectfrom div.fitem_fselect.multiselectfrom div.fitemtitle,
 #page-block-quickmail div.msflex div.multiselectto div.fitem_fselect.multiselectto div.fitemtitle {
-    display: none !important;
+    display: none !important; /* stylelint-disable-line declaration-no-important */
 }
 
 #page-block-quickmail div.msflex div.femptylabel div.felement {
@@ -239,9 +239,9 @@
 }
 
 th.qm_tb_col_spcr {
-  min-width: 120px;
+    min-width: 120px;
 }
 
 .alnright {
-  text-align: right;
+    text-align: right;
 }
