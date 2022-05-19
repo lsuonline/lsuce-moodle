@@ -345,10 +345,12 @@ class manager {
                 'httponly' => $CFG->cookiehttponly,
             ];
 
-            if (self::should_use_samesite_none()) {
+            // BEGIN LSU Samesite Cookie Setting.
+            if (self::force_samesite_none || self::should_use_samesite_none()) {
                 // If $samesite is empty, we don't want there to be any SameSite attribute.
                 $sessionoptions['samesite'] = 'None';
             }
+            // END LSU Samesite Cookie Setting.
 
             session_set_cookie_params($sessionoptions);
         } else {
@@ -611,6 +613,24 @@ class manager {
         return false;
     }
 
+    // BEGIN LSU Samesite Cookie Setting.
+    /**
+     * Returns the config value for the forcing samesite cookies.
+     *
+     * @return @bool
+     */
+    private static function force_samesite_none(): bool {
+        global $CFG;
+
+        $force_samesite_none = isset($CFG->force_samesite_none) ? $CFG->force_samesite_none : 1;
+
+        if ($force_samesite_none == 1) {
+            return true;
+        }
+        return false;
+    }
+    // END LSU Samesite Cookie Setting.
+
     /**
      * Conditionally append the SameSite attribute to the session cookie if necessary.
      *
@@ -628,9 +648,11 @@ class manager {
             return;
         }
 
-        if (!self::should_use_samesite_none()) {
+        // BEGIN LSU Samesite Cookie Setting.
+        if (!self::force_samesite_none() && !self::should_use_samesite_none()) {
             return;
         }
+        // END LSU Samesite Cookie Setting.
 
         $cookies = headers_list();
         header_remove('Set-Cookie');
