@@ -333,6 +333,14 @@ $temp->add(new admin_setting_heading('noreplydomainheading', new lang_string('no
         new lang_string('noreplydomaindetail', 'admin')));
 $temp->add(new admin_setting_configtext('noreplyaddress', new lang_string('noreplyaddress', 'admin'),
           new lang_string('confignoreplyaddress', 'admin'), 'noreply@' . get_host_from_url($CFG->wwwroot), PARAM_EMAIL));
+
+// BEGIN LSU BCC Emails.
+$temp->add(new admin_setting_configcheckbox('bccallmail', new lang_string('bccallmail', 'admin'),
+          new lang_string('configbccallmail', 'admin'), 0));
+$temp->add(new admin_setting_configtext('bccaddress', new lang_string('bccaddress', 'admin'),
+          new lang_string('configbccaddress', 'admin'), 'bcc@' . get_host_from_url($CFG->wwwroot), PARAM_EMAIL));
+// END LSU BCC Emails.
+
 $temp->add(new admin_setting_configtextarea('allowedemaildomains',
         new lang_string('allowedemaildomains', 'admin'),
         new lang_string('configallowedemaildomains', 'admin'),

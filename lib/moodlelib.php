@@ -6114,6 +6114,13 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     }
     $mail = get_mailer();
 
+    // BEGIN LSU BCC Emails.
+    if ($CFG->bccallmail == 1) {
+        $mail->addCustomHeader("BCC: " . $CFG->bccaddress);
+        $mail->addBCC($CFG->bccaddress);
+    }
+    // END LSU BCC Emails.
+
     if (!empty($mail->SMTPDebug)) {
         echo '<pre>' . "\n";
     }
