@@ -166,19 +166,50 @@ class unified extends \local_o365\rest\o365api {
     }
 
     /**
-     * Get the tenant associated with the current account.
+     * Get the name of the default domain in the tenant associated with the current account.
      *
-     * @return string The tenant string.
+     * @return string
+     * @throws \moodle_exception
      */
-    public function get_tenant() {
+    public function get_default_domain_name_in_tenant() {
         $response = $this->apicall('get', '/domains');
         $response = $this->process_apicall_response($response, ['value' => null]);
         foreach ($response['value'] as $domain) {
-            if (!empty($domain['isInitial']) && isset($domain['id'])) {
+            if (!empty($domain['isDefault']) && isset($domain['id'])) {
                 return $domain['id'];
             }
         }
         throw new \moodle_exception('erroracpapcantgettenant', 'local_o365');
+    }
+
+    /**
+     * Get the names of the all domains in the tenant associated with the current account, with the default domain being the first.
+     *
+     * @return array
+     * @throws \moodle_exception
+     */
+    public function get_all_domain_names_in_tenant() {
+        $response = $this->apicall('get', '/domains');
+        $response = $this->process_apicall_response($response, ['value' => null]);
+        $defaultdomainname = '';
+        $domainnames = [];
+
+        foreach ($response['value'] as $domain) {
+            if (isset($domain['id'])) {
+                if (!empty($domain['isVerified'])) {
+                    if (!empty($domain['isDefault'])) {
+                        $defaultdomainname = $domain['id'];
+                    } else {
+                        $domainnames[] = $domain['id'];
+                    }
+                }
+            }
+
+        }
+
+        array_unshift($domainnames, $defaultdomainname);
+
+        return $domainnames;
     }
 
     /**
@@ -187,7 +218,7 @@ class unified extends \local_o365\rest\o365api {
      * @return string The OneDrive URL string.
      */
     public function get_odburl() {
-        $tenant = $this->get_tenant();
+        $tenant = $this->get_default_domain_name_in_tenant();
         $suffix = '.onmicrosoft.com';
         $sufflen = strlen($suffix);
         if (substr($tenant, -$sufflen) === $suffix) {
@@ -882,29 +913,16 @@ class unified extends \local_o365\rest\o365api {
      * Get user groups by passing user AD id.
      *
      * @param string $userobjectid - user AD id
-     * @param string $skiptoken
      * @return array|null
      */
-    public function get_user_groups($userobjectid, $skiptoken = '') {
+    public function get_user_groups($userobjectid) {
         $endpoint = "users/$userobjectid/transitiveMemberOf/microsoft.graph.group";
-
-        $odataqueries = [];
-        if (empty($skiptoken) || !is_string($skiptoken)) {
-            $skiptoken = '';
-        }
-        if (!empty($skiptoken)) {
-            $odataqueries[] = '$skiptoken=' . $skiptoken;
-        }
-        if (!empty($odataqueries)) {
-            $endpoint .= '?' . implode('&', $odataqueries);
-        }
-
         $response = $this->apicall('get', $endpoint);
         if ($this->httpclient->info['http_code'] == 200) {
             $result = $this->process_apicall_response($response, ['value' => null]);
             return $result;
         } else {
-            return ['value' => null];
+            return ['value' => []];
         }
     }
 
@@ -912,22 +930,10 @@ class unified extends \local_o365\rest\o365api {
      * Get user groups, including transitive groups, by passing user AD ID.
      *
      * @param string $userobjectid
-     * @param string $skiptoken
      * @return mixed
      */
-    public function get_user_transitive_groups($userobjectid, $skiptoken = '') {
+    public function get_user_transitive_groups($userobjectid) {
         $endpoint = "users/$userobjectid/getMemberGroups";
-
-        $odataqueries = [];
-        if (empty($skiptoken) || !is_string($skiptoken)) {
-            $skiptoken = '';
-        }
-        if (!empty($skiptoken)) {
-            $odataqueries[] = '$skiptoken=' . $skiptoken;
-        }
-        if (!empty($odataqueries)) {
-            $endpoint .= '?' . implode('&', $odataqueries);
-        }
 
         $response = $this->apicall('post', $endpoint, json_encode(['securityEnabledOnly' => false]));
         $result = $this->process_apicall_response($response, ['value' => null]);
@@ -938,22 +944,10 @@ class unified extends \local_o365\rest\o365api {
     /**
      * Get user teams by passing user AD id
      * @param string $userobjectid - user AD id
-     * @param string $skiptoken
      * @return array|null
      */
-    public function get_user_teams($userobjectid, $skiptoken = '') {
+    public function get_user_teams($userobjectid) {
         $endpoint = "users/$userobjectid/joinedTeams";
-
-        $odataqueries = [];
-        if (empty($skiptoken) || !is_string($skiptoken)) {
-            $skiptoken = '';
-        }
-        if (!empty($skiptoken)) {
-            $odataqueries[] = '$skiptoken=' . $skiptoken;
-        }
-        if (!empty($odataqueries)) {
-            $endpoint .= '?' . implode('&', $odataqueries);
-        }
 
         $response = $this->apicall('get', $endpoint);
         $result = $this->process_apicall_response($response, ['value' => null]);
@@ -1063,15 +1057,15 @@ class unified extends \local_o365\rest\o365api {
      * @param string $skiptoken
      * @return array|null Returned response, or null if error.
      */
-    public function get_calendars($upn, $skiptoken = '') {
+    public function get_calendars($upn, $skip = '') {
         $endpoint = '/users/' . $upn . '/calendars';
 
         $odataqueries = [];
-        if (empty($skiptoken) || !is_string($skiptoken)) {
-            $skiptoken = '';
+        if (empty($skip) || !is_string($skip)) {
+            $skip = '';
         }
-        if (!empty($skiptoken)) {
-            $odataqueries[] = '$skiptoken=' . $skiptoken;
+        if (!empty($skip)) {
+            $odataqueries[] = '$skip=' . $skip;
         }
         if (!empty($odataqueries)) {
             $endpoint .= '?' . implode('&', $odataqueries);
@@ -1246,20 +1240,20 @@ class unified extends \local_o365\rest\o365api {
      * @param string $calendarid The calendar ID to get events from. If empty, primary calendar used.
      * @param string $since datetime date('c') to get events since.
      * @param string $upn user's userPrincipalName
-     * @param string $skiptoken
+     * @param string $skip
      * @return array Array of events.
      */
-    public function get_events($calendarid, $since, $upn, $skiptoken = '') {
+    public function get_events($calendarid, $since, $upn, $skip = '') {
         \core_date::set_default_server_timezone();
         $endpoint = (!empty($calendarid)) ? '/users/' . $upn . '/calendars/' . $calendarid . '/events' :
             '/users/' . $upn . '/calendar/events';
 
         $odataqueries = [];
-        if (empty($skiptoken) || !is_string($skiptoken)) {
-            $skiptoken = '';
+        if (empty($skip) || !is_string($skip)) {
+            $skip = '';
         }
-        if (!empty($skiptoken)) {
-            $odataqueries[] = '$skiptoken=' . $skiptoken;
+        if (!empty($skip)) {
+            $odataqueries[] = '$skip=' . $skip;
         }
         if (!empty($since)) {
             // Pass datetime in UTC, regardless of Moodle timezone setting.
@@ -2241,7 +2235,7 @@ class unified extends \local_o365\rest\o365api {
                     $user->username);
                 return false;
             }
-            $httpclient = new \local_o365\httpclient();
+
             try {
                 $apiclient = \local_o365\utils::get_api();
             } catch (\Exception $e) {
@@ -2258,16 +2252,19 @@ class unified extends \local_o365\rest\o365api {
             if (static::is_configured() && empty($userdata['objectId']) && !empty($userdata['id'])) {
                 $userdata['objectId'] = $userdata['id'];
             }
-            $userobjectdata = (object)[
-                'type' => 'user',
-                'subtype' => '',
-                'objectid' => $userdata['objectId'],
-                'o365name' => $userdata['userPrincipalName'],
-                'moodleid' => $user->id,
-                'timecreated' => $now,
-                'timemodified' => $now,
-            ];
-            $userobjectdata->id = $DB->insert_record('local_o365_objects', $userobjectdata);
+            if (!$DB->record_exists('local_o365_objects', ['type' => 'user', 'moodleid' => $user->id])) {
+                $userobjectdata = (object)[
+                    'type' => 'user',
+                    'subtype' => '',
+                    'objectid' => $userdata['objectId'],
+                    'o365name' => $userdata['userPrincipalName'],
+                    'moodleid' => $user->id,
+                    'timecreated' => $now,
+                    'timemodified' => $now,
+                ];
+                $userobjectdata->id = $DB->insert_record('local_o365_objects', $userobjectdata);
+            }
+
             return $userobjectdata->o365name;
         }
     }

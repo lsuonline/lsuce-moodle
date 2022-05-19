@@ -386,11 +386,12 @@ class main {
         $calendars = $calendarresults['value'];
         while (!empty($calendarresults['@odata.nextLink'])) {
             $nextlink = parse_url($calendarresults['@odata.nextLink']);
+            $calendarresults = [];
             if (isset($nextlink['query'])) {
                 $query = [];
                 parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $calendarresults = $apiclient->get_calendars($o365upn, $query['$skiptoken']);
+                if (isset($query['$skip'])) {
+                    $calendarresults = $apiclient->get_calendars($o365upn, $query['$skip']);
                     $calendars = array_merge($calendars, $calendarresults['value']);
                 }
             }
@@ -414,11 +415,12 @@ class main {
         $events = $eventresults['value'];
         while (!empty($eventresults['@odata.nextLink'])) {
             $nextlink = parse_url($eventresults['@odata.nextLink']);
+            $eventresults = [];
             if (isset($nextlink['query'])) {
                 $query = [];
                 parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $eventresults = $apiclient->get_events($o365calid, $since, $o365upn, $query['$skiptoken']);
+                if (isset($query['$skip'])) {
+                    $eventresults = $apiclient->get_events($o365calid, $since, $o365upn, $query['$skip']);
                     $events = array_merge($events, $eventresults['value']);
                 }
             }

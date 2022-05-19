@@ -24,6 +24,8 @@
  * @copyright (C) 2014 onwards Microsoft, Inc. (http://microsoft.com/)
  */
 
+use local_o365\utils;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/local/o365/lib.php');
@@ -654,7 +656,7 @@ function xmldb_local_o365_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2020071504, 'local', 'o365');
     }
 
-    if ($result && $oldversion < 2020071506) {
+    if ($oldversion < 2020071506) {
         // Part 1: create local_o365_teams_cache table.
         if (!$dbman->table_exists('local_o365_teams_cache')) {
             // Define table local_o365_teams_cache to be created.
@@ -735,7 +737,7 @@ function xmldb_local_o365_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2020071506, 'local', 'o365');
     }
 
-    if ($result && $oldversion < 2020071507) {
+    if ($oldversion < 2020071507) {
         // Update aadsync settings to replace 'delete' with 'suspend'.
         $aadsyncsetting = get_config('local_o365', 'aadsync');
         set_config('aadsync', str_replace('delete', 'suspend', $aadsyncsetting), 'local_o365');
@@ -746,6 +748,56 @@ function xmldb_local_o365_upgrade($oldversion) {
 
         // O365 savepoint reached.
         upgrade_plugin_savepoint(true, 2020071507, 'local', 'o365');
+    }
+
+    if ($oldversion < 2020071542) {
+        // Update multi tenants setting.
+        utils::updatemultitenantssettings();
+
+        // O365 savepoint reached.
+        upgrade_plugin_savepoint(true, 2020071542, 'local', 'o365');
+    }
+
+    if ($oldversion < 2020071543) {
+        // Update "task_usersync_lastdelete" setting from timestamp to YYYYMMDD.
+        set_config('task_usersync_lastdelete', date('Ymd', strtotime('yesterday')), 'local_o365');
+
+        // O365 savepoint reached.
+        upgrade_plugin_savepoint(true, 2020071543, 'local', 'o365');
+    }
+
+    if ($oldversion < 2020071544) {
+        // Clean up SDS sync records.
+        local_o365\feature\sds\task\sync::clean_up_sds_sync_records();
+
+        // O365 savepoint reached.
+        upgrade_plugin_savepoint(true, 2020071544, 'local', 'o365');
+    }
+
+    if ($oldversion < 2020071545) {
+        // Remove duplicate entries for users in local_o365_objects.
+        $sql = "SELECT DISTINCT(a.id)
+                  FROM {local_o365_objects} a
+                  JOIN {local_o365_objects} b ON b.moodleid = a.moodleid AND a.o365name = b.o365name AND a.objectid = b.objectid
+                 WHERE a.type = :user1
+                   AND b.type = :user2
+                   AND a.id > b.id";
+        $duplicateentries = $DB->get_fieldset_sql($sql, ['user1' => 'user', 'user2' => 'user']);
+
+        if ($duplicateentries) {
+            $DB->delete_records_list('local_o365_objects', 'id', $duplicateentries);
+        }
+
+        // O365 savepoint reached.
+        upgrade_plugin_savepoint(true, 2020071545, 'local', 'o365');
+    }
+
+    if ($oldversion < 2020071547) {
+        // Reset last calendar sync run task.
+        set_config('calsyncinlastrun', 0, 'local_o365');
+
+        // O365 savepoint reached.
+        upgrade_plugin_savepoint(true, 2020071547, 'local', 'o365');
     }
 
     return true;

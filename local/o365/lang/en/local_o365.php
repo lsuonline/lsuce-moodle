@@ -310,6 +310,7 @@ $string['settings_usersynccreationrestriction_regex'] = 'Value is a regular expr
 $string['settings_maintenance'] = 'Maintenance';
 $string['settings_maintenance_details'] = 'Various maintenance tasks are available to resolve some common issues.';
 $string['settings_maintenance_linktext'] = 'View maintenance tools';
+$string['multi_tenants_settings_needs_update'] = 'Multi tenants settings needs to be updated. Please go to <a href="{$a}">multi tenants configuration page</a>.';
 
 // Settings in "Configure additional tenants" feature of the "Advanced" tab.
 $string['acp_tenants_title'] = 'Multitenancy';
@@ -336,8 +337,13 @@ $string['acp_tenants_none'] = 'You have not configured any tenants. If you have 
 $string['acp_tenants_revokeaccess'] = 'Revoke Access';
 $string['acp_tenants_tenant'] = 'Tenant';
 $string['acp_tenants_actions'] = 'Actions';
+$string['acp_tenants_delete'] = 'Delete';
 $string['acp_tenantsadd_desc'] = 'To grant access to an additional tenant, click the button below and log in to Microsoft 365 using an adminitrator account of the new tenant. You will be returned to the list of additional tenants where the new tenant will be listed. You will then be able to use Moodle with the new tenant.';
 $string['acp_tenantsadd_linktext'] = 'Proceed to Microsoft 365 login page';
+$string['acp_tenants_additional_tenants'] = 'Additional tenants';
+$string['acp_tenants_legacy_tenants'] = 'Legacy tenants (Action required)';
+$string['acp_tenants_legacy_tenants_help'] = 'Additional tenants below added previously may not work in the updated multitenancy workflow, and need to be fixed.<br/>
+Please use the "Add New Tenant" button above to add again.';
 
 // Settings in the "Health check" feature of the "Advanced" tab.
 $string['acp_healthcheck'] = 'Health Check';
@@ -534,7 +540,7 @@ Please also ensure the Azure app used for the integration has <b>EduRoster.Read.
 By default, the school data sync process happens in the Moodle cron, at 3am local server time. To change this schedule, please visit the <a href="{$a}">Scheduled tasks management page.</a><br /><br />';
 $string['settings_sds_coursecreation'] = 'Course Creation';
 $string['settings_sds_coursecreation_desc'] = 'These options control course creation in Moodle based on information in SDS.';
-$string['settings_sds_coursecreation_enabled'] = 'Create Courses';
+$string['settings_sds_coursecreation_enabled'] = 'Synced schools';
 $string['settings_sds_coursecreation_enabled_desc'] = 'Create courses for these schools.';
 $string['settings_sds_teams_enabled'] = 'Teams creation enabled';
 $string['settings_sds_teams_enabled_desc'] = 'This controls if Moodle courses created from syncing SDS classes are automatically connected to the Microsoft Team of the SDS class. This should be enabled only if Teams are automatically created from the SDS classes.';
@@ -560,6 +566,10 @@ $string['settings_sds_profilesync_desc'] = 'Select the SDS school from which Moo
 Note synchronisation of SDS fields will only happen when running the "Sync with SDS" scheduled task, and will not happen when running the "Sync users with Azure AD" scheduled task, nor when user logs in.';
 $string['settings_sds_noschools'] = '<div class="alert alert-info">You do not have any schools available in School data sync.</div>';
 $string['settings_sds_get_schools_error'] = '<div class="alert alert-info error">Failed to get SDS schools. Check the Azure app has required permission.</div>';
+$string['settings_sds_school_disabled_action'] = 'School sync disabled action';
+$string['settings_sds_school_disabled_action_desc'] = 'Action to the already connected Moodle courses when sync is disabled on an SDS school.';
+$string['settings_sds_school_disabled_action_keep_connected'] = 'Keep the Moodle course connected to the Team';
+$string['settings_sds_school_disabled_action_disconnect'] = 'Disconnect the Moodle course with the Team';
 
 // Settings in the "Teams Settings" tab.
 $string['settings_teams_banner_1'] = 'The Moodle app for <a href="https://aka.ms/MoodleLearnTeams" target="_blank">Microsoft Teams</a> allows you to easily access and collaborate around your Moodle courses in Teams. The Moodle app also consists of a Moodle Assistant bot, which will send Moodle notifications to students and teachers and answer questions about their courses, assignments, grades and students -- right within Teams!';
@@ -830,6 +840,8 @@ $string['task_processmatchqueue_err_o365useralreadymatched'] = 'Microsoft 365 us
 $string['task_processmatchqueue_err_o365useralreadyconnected'] = 'Microsoft 365 user is already connected to a Moodle user.';
 
 // Capabilities.
+$string['o365:accessbotstudentdata'] = 'Access student bot data';
+$string['o365:accessbotteacherdata'] = 'Access teacher bot data';
 $string['o365:manageconnectionlink'] = 'Manage Connection Link';
 $string['o365:manageconnectionunlink'] = 'Manage Connection Unlink';
 $string['o365:managegroups'] = 'Manage Groups';
