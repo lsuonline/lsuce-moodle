@@ -125,6 +125,10 @@ class message extends \block_quickmail\persistents\persistent {
                 'type' => PARAM_INT,
                 'default' => 0,
             ],
+            'deleted' => [
+                'type' => PARAM_INT,
+                'default' => 0,
+            ],
         ];
     }
 
@@ -484,6 +488,16 @@ class message extends \block_quickmail\persistents\persistent {
     public function mark_as_sending() {
         $this->set('is_sending', 1);
 
+        $this->update();
+    }
+    
+    /**
+     * Update this message as deleted
+     *
+     * @return void
+     */
+    public function mark_as_deleted() {
+        $this->set('deleted', 1);
         $this->update();
     }
 

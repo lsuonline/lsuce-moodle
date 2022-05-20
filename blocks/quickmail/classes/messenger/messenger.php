@@ -101,8 +101,8 @@ class messenger implements messenger_interface {
         return self::send_message_to_recipients(
             $message,
             $formdata,
-            $recipientuserids,
             $transformeddata->additional_emails,
+            $recipientuserids,
             $sendastasks
         );
     }
@@ -154,8 +154,8 @@ class messenger implements messenger_interface {
         return self::send_message_to_recipients(
             $message,
             $formdata,
-            $recipientuserids,
             $transformeddata->additional_emails,
+            $recipientuserids,
             $sendastasks
         );
     }
@@ -167,8 +167,8 @@ class messenger implements messenger_interface {
      *
      * @param  message  $message              message object instance being sent
      * @param  array    $formdata            posted moodle form data (used for file attachment purposes)
-     * @param  array    $recipientuserids   moodle user ids to receive the message
      * @param  array    $additionalemails    array of additional email addresses to send to, optional, defaults to empty
+     * @param  array    $recipientuserids   moodle user ids to receive the message
      * @param  bool     $sendastasks        if false, the message will be sent immediately
      * @return message
      * @throws critical_exception
@@ -176,8 +176,8 @@ class messenger implements messenger_interface {
     private static function send_message_to_recipients(
         $message,
         $formdata,
-        $recipientuserids = [],
         $additionalemails,
+        $recipientuserids = [],
         $sendastasks = true) {
         // Handle saving and syncing of any uploaded file attachments.
         message_file_handler::handle_posted_attachments($message, $formdata, 'attachments');
@@ -510,6 +510,13 @@ class messenger implements messenger_interface {
         foreach ($this->message->get_message_recipients() as $recipient) {
             // If any exceptions are thrown, gracefully move to the next recipient.
             if (!$recipient->has_been_sent_to()) {
+                // Verify the user still exists, edge cases have been found to have missing users.
+                $temp_user_id = (int)$recipient->get('user_id');
+                $temp_msg_id = (int)$recipient->get('message_id');
+                if ($recipient->account_exists($temp_user_id)) {
+                    $recipient->remove_recipient_from_message($temp_msg_id, $temp_user_id);
+                    continue;
+                }
                 try {
                     // Send to recipient now.
                     $this->send_to_recipient($recipient);
