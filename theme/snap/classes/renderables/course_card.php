@@ -130,6 +130,13 @@ class course_card implements \renderable {
      * @var int
      */
     private $contextid;
+    
+    // BEGIN LSU COURSE CARD QUICK LINKS.
+    /**
+     * @var array
+     */
+    private $quick_links;
+    // END LSU COURSE CARD QUICK LINKS.
 
     /**
      * @param \stdClass $course
@@ -142,6 +149,9 @@ class course_card implements \renderable {
         $this->service = $service ? : course::service();
         $this->apply_properties();
         $this->model = $this;
+        // BEGIN LSU COURSE CARD QUICK LINKS.
+        $this->quick_links = $this->apply_course_quick_links();
+        // END LSU COURSE CARD QUICK LINKS.
     }
 
     /**
@@ -295,4 +305,78 @@ class course_card implements \renderable {
         $this->model = $this;
         return $retval;
     }
+    // BEGIN LSU COURSE CARD QUICK LINKS.
+    /**
+     * LSU - Get the quick links for the course cards
+     * @return array - the quick links to show
+     */
+    public function get_course_quick_links() {
+        return $this->quick_links;
+    }
+    /**
+     * LSU - Adding some quick links in the course cards and need to check if the user has
+     *       the right permissions.
+     * @param object the user
+     * @return 
+     */
+    private function apply_course_quick_links() {
+        global $DB, $USER;
+        /*
+        Mail - https://moodle.lsu.edu/blocks/quickmail/qm.php?courseid=COURSE_ID
+        Grades - https://moodle.lsu.edu/grade/index.php?id=COURSE_ID
+        Participants - https://moodle.lsu.edu/user/index.php?id=COURSE_ID
+        Course Tools - https://moodle.lsu.edu/course/view.php?id=COURSE_ID#coursetools
+        fa-envelope-o
+        fa-table
+        fa-users
+        fa-wrench
+        */
+        
+        $context = \context_course::instance($this->courseid); // I used this also but no results
+        
+        // Is the user a student?
+        $isStudent = current(get_user_roles($context, $USER->id))->shortname == 'student' ? true : false;
+ 
+        if ($isStudent) {
+            // ok, let's check and see if quickmail is turned on/off
+            $params = array(
+                "coursesid" => $this->courseid,
+                "name" => "allowstudents"
+            );
+            $is_qm_on = $DB->get_record('block_quickmail_config', $params);
+            $qm_on = (isset($is_qm_on->value) && $is_qm_on->value == 0) ? true : false;
+            
+        } else {
+            // Not a student, what role and do they have quickmail capabilities.
+            $qm_on = has_capability('block/quickmail:cansend', $context, $USER) ? true : false;
+        }
+        
+        if ($qm_on || is_siteadmin()) {
+            $this_link = new \moodle_url('/blocks/quickmail/qm.php?courseid='. $this->courseid);
+            $this->quick_links[] = array(
+                "link" => $this_link->out(false),
+                "icon" => "fa-envelope-o"
+            );
+        }
+        // Grades
+        $this_link = new \moodle_url('/grade/index.php?id='. $this->courseid);
+        $this->quick_links[] = array(
+            "link" => $this_link->out(false),
+            "icon" => "fa-table"
+        );
+        // Participants
+        $this_link = new \moodle_url('/user/index.php?id='. $this->courseid);
+        $this->quick_links[] = array(
+            "link" => $this_link->out(false),
+            "icon" => "fa-users"
+        );
+        // Course Tools
+        $this_link = new \moodle_url('/course/view.php?id='. $this->courseid. "#coursetools");
+        $this->quick_links[] = array(
+            "link" => $this_link->out(false),
+            "icon" => "fa-wrench"
+        );
+        return $this->quick_links;
+    }
+    // END LSU COURSE CARD QUICK LINKS.
 }

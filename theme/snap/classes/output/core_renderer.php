@@ -673,6 +673,19 @@ class core_renderer extends \theme_boost\output\core_renderer {
         return $this->render_from_template('theme_snap/login_base_methods', $data);
     }
 
+    // BEGIN LSU COURSE CARD QUICK LINKS.
+    /**
+     * Personal menu or authenticate form.
+     */
+    public function get_quick_links($course) {
+        global $USER;
+
+        $ccard = new course_card($course);
+        // get the course quick links and return
+        return $ccard->get_course_quick_links();
+    }
+    // END LSU COURSE CARD QUICK LINKS.
+
     /**
      * Personal menu or authenticate form.
      */
