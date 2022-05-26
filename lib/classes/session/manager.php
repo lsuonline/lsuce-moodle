@@ -346,7 +346,7 @@ class manager {
             ];
 
             // BEGIN LSU Samesite Cookie Setting.
-            if (self::force_samesite_none || self::should_use_samesite_none()) {
+            if (self::force_samesite_none() || self::should_use_samesite_none()) {
                 // If $samesite is empty, we don't want there to be any SameSite attribute.
                 $sessionoptions['samesite'] = 'None';
             }
@@ -622,8 +622,7 @@ class manager {
     private static function force_samesite_none(): bool {
         global $CFG;
 
-        $force_samesite_none = isset($CFG->force_samesite_none) ? $CFG->force_samesite_none : 1;
-
+        $force_samesite_none = isset($CFG->force_samesite_none) ? $CFG->force_samesite_none : 0;
         if ($force_samesite_none == 1) {
             return true;
         }
