@@ -1,5 +1,5 @@
+/* BEGIN LSU Course Card Quick Links. */
 .cc_quick_link {
-    min-width: 120px;
     padding: 5px;
     background-color: white;
     border-radius: 5px;
@@ -15,8 +15,7 @@
 }
 
 .cc_quick_link_icon:hover {
-    
-    margin: auto;
+    transform-origin: 50% 50% !important;
     transition: 0.1s ease-out;
     -moz-transform: scale(1.2);
     /* Firefox */
@@ -32,3 +31,4 @@
     transform-origin: 0 0;
     /* Standard Property */
 }
+/* END LSU Course Card Quick Links. */

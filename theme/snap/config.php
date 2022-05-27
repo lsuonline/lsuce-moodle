@@ -71,9 +71,9 @@ $THEME->supportscssoptimisation = false;
 
 $THEME->editor_sheets = array('editor');
 
-// BEGIN LSU COURSE CARD QUICK LINKS.
+// BEGIN LSU Course Card Quick Links.
 $THEME->sheets = array('lsu');
-// END LSU COURSE CARD QUICK LINKS.
+// END LSU Course Card Quick Links.
 
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
 

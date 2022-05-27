@@ -16,14 +16,14 @@
 }}
 {{!
     This file was created to show quick access links on course cards.
-    Current links are:
-    Mail - https://moodle.lsu.edu/blocks/quickmail/qm.php?courseid=COURSE_ID
-    Grades - https://moodle.lsu.edu/grade/index.php?id=COURSE_ID
-    Participants - https://moodle.lsu.edu/user/index.php?id=COURSE_ID
-    Course Tools - https://moodle.lsu.edu/course/view.php?id=COURSE_ID#coursetools
+    Current links are Quickmail, grades, participants and course tools.
 }}
+{{! BEGIN LSU Course Card Quick Links. }}
+{{#ccqlrender}}
 <span class="cc_quick_link">
-    {{#quick_links}}
-    <a href="{{link}}" class=""><i class="fa {{icon}} cc_quick_link_icon"></i></a>
-    {{/quick_links}}
+    {{#quicklinks}}
+    <a href="{{link}}" class="" title="{{title}}"><i class="fa {{icon}} cc_quick_link_icon"></i></a>
+    {{/quicklinks}}
 </span>
+{{/ccqlrender}}
+{{! END LSU Course Card Quick Links. }}

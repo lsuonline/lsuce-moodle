@@ -92,27 +92,27 @@ class snap_personal_menu_controller extends controller_abstract {
         ));
     }
 
-    // BEGIN LSU COURSE CARD QUICK LINKS.
+    // BEGIN LSU Course Card Quick Links.
     /**
-     * For the coursecard template render quick links on the course cards
+     * For the coursecard template render quick links on the course cards.
      *
-     * @return string - Json obj.
+     * @return string - json obj.
      */
     public function get_course_card_quick_links_action() {
         global $PAGE;
-        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
         
+        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
         $courseid = optional_param('courseid', false, PARAM_SEQUENCE);
         $courses = enrol_get_my_courses();
+        $quicklinks = $renderer->get_quick_links($courses[$courseid]);
 
-        $quick_links = $renderer->get_quick_links($courses[$courseid]);
-        
         return json_encode(array(
-            'quick_links' => $quick_links,
+            'quicklinks' => $quicklinks['quicklinks'],
+            'ccqlrender' => $quicklinks['ccqlrender'],
             'courseid' => $courseid
         ));
     }
-    // END LSU COURSE CARD QUICK LINKS.
+    // END LSU Course Card Quick Links.
 
     /**
      * Get course information - progress / grades, etc
