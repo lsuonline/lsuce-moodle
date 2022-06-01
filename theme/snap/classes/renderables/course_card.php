@@ -415,7 +415,7 @@ class course_card implements \renderable {
             "icon" => "fa-dashboard",
             "title" => get_string("coursetools", "theme_snap")
         );
-        // Course Tools.
+        // Edit Course Settings.
         if ($isteacher) {
             $thislink = new \moodle_url('/course/edit.php?id='. $this->courseid);
             $linklist[] = array(
