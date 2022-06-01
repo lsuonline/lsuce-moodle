@@ -130,7 +130,7 @@ class course_card implements \renderable {
      * @var int
      */
     private $contextid;
-    
+
     // BEGIN LSU Course Card Quick Links.
     /**
      * @var array
@@ -318,7 +318,7 @@ class course_card implements \renderable {
     /**
      * Adding some quick links for the course cards for quick and easy access to sections of the course.
      * @param object the user
-     * @return 
+     * @return
      */
     private function apply_course_quick_links() {
         global $DB, $USER, $CFG;
@@ -338,23 +338,45 @@ class course_card implements \renderable {
 
         // Is the user a student?
         $isstudent = false;
-        $this->gradebookroles = $CFG->gradebookroles;
-        $roleids = explode(',', get_config('moodle', 'gradebookroles'));
-        foreach ($roleids as $roleid) {
-            if (user_has_role_assignment($USER->id, $roleid, $context->id)) {
+        $isteacher = false;
+
+        $sroleids = explode(',', get_config('moodle', 'gradebookroles'));
+        $troleids = explode(',', get_config('moodle', 'coursecontact'));
+
+        foreach ($sroleids as $sroleid) {
+            if (user_has_role_assignment($USER->id, $sroleid, $context->id)) {
                 $isstudent = true;
                 break;
             }
         }
 
-        if ($isstudent) {
-            // Check and see if quickmail is turned on/off.
-            $params = array(
-                "coursesid" => $this->courseid,
-                "name" => "allowstudents"
-            );
-            $isqmon = $DB->get_record('block_quickmail_config', $params);
-            $qmon = (isset($isqmon->value) && $isqmon->value == 0) ? true : false;
+        foreach ($troleids as $troleid) {
+            if (user_has_role_assignment($USER->id, $troleid, $context->id)) {
+                $isteacher = true;
+                break;
+            }
+        }
+
+        // Check to see if we're dealing with a student in the course.
+        if ($isstudent && !$isteacher) {
+
+            // Check course config for the QM settings in the course in question.
+            $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $this->courseid], '', 'name,value');
+
+            // Get the master block config for Quickmail.
+            $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
+
+            // Determine Quickmail allowstudents for this course.
+            // Negative 1 is set for "Never" allow students to use QM.
+            if ((int) $blockconfig < 0) {
+                $qmon = false;
+            } else {
+                // Get the correct setting for the course.
+                $qmon = array_key_exists('allowstudents', $courseconfig) ?
+                    ((int) $courseconfig['allowstudents'] > 0 ? true : false) :
+                    ((int) $blockconfig < 1 ? false : true);
+            }
+
         } else {
             // Not a student, what role and do they have for quickmail capabilities.
             $qmon = has_capability('block/quickmail:cansend', $context, $USER) ? true : false;
@@ -362,35 +384,46 @@ class course_card implements \renderable {
 
         // Now let's build the list of link items.
         $linklist = array();
+
+        // Quickmail.
         if ($qmon || is_siteadmin()) {
             $thislink = new \moodle_url('/blocks/quickmail/qm.php?courseid='. $this->courseid);
             $linklist[] = array(
                 "link" => $thislink->out(false),
                 "icon" => "fa-envelope-o",
-                "title" => "Quickmail"
+                "title" => get_string("pluginname", "block_quickmail")
             );
         }
-        // Grades
+        // Grades.
         $thislink = new \moodle_url('/grade/index.php?id='. $this->courseid);
         $linklist[] = array(
             "link" => $thislink->out(false),
             "icon" => "fa-table",
-            "title" => "Grades"
+            "title" => get_string("grades", "moodle")
         );
-        // Participants
+        // Participants.
         $thislink = new \moodle_url('/user/index.php?id='. $this->courseid);
         $linklist[] = array(
             "link" => $thislink->out(false),
             "icon" => "fa-users",
-            "title" => "Participants"
+            "title" => get_string("participants", "moodle")
         );
-        // Course Tools
+        // Course Tools.
         $thislink = new \moodle_url('/course/view.php?id='. $this->courseid. "#coursetools");
         $linklist[] = array(
             "link" => $thislink->out(false),
-            "icon" => "fa-wrench",
-            "title" => "Course Tools"
+            "icon" => "fa-dashboard",
+            "title" => get_string("coursetools", "theme_snap")
         );
+        // Course Tools.
+        if ($isteacher) {
+            $thislink = new \moodle_url('/course/edit.php?id='. $this->courseid);
+            $linklist[] = array(
+                "link" => $thislink->out(false),
+                "icon" => "fa-gear",
+                "title" => get_string("editsettings", "moodle")
+            );
+        }
         return array(
             "ccqlrender" => true,
             "quicklinks" => $linklist

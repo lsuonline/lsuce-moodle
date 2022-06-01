@@ -474,8 +474,7 @@ class local {
         $showgrades = get_config('theme_snap', 'showcoursegradepersonalmenu');
 
         // BEGIN LSU Course Card Quick Links.
-        // Get the rendered so we can call the quick links func to get the
-        // quick links
+        // Get renderer so we can call the quick links func to get the quick links.
         $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
         foreach ($courses as $course) {
             $quicklinks[$course->id] = $renderer->get_quick_links($course);

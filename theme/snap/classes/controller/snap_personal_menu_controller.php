@@ -100,7 +100,7 @@ class snap_personal_menu_controller extends controller_abstract {
      */
     public function get_course_card_quick_links_action() {
         global $PAGE;
-        
+
         $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
         $courseid = optional_param('courseid', false, PARAM_SEQUENCE);
         $courses = enrol_get_my_courses();
