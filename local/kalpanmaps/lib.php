@@ -692,7 +692,7 @@ class kalpanmaps {
      * @return array $kalitems
      */
     public static function get_kal_forum_posts($limit = 0, $students) {
-        global $DB;
+        global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
         $usertype = $students == 0 ? '"faculty" AS usertype' : '"student" AS usertype';
@@ -823,7 +823,7 @@ class kalpanmaps {
      * @return array $kalitems
      */
     public static function get_kal_lesson_answers($limit = 0) {
-        global $DB;
+        global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
         $usertype = '"faculty" AS usertype';
@@ -832,7 +832,7 @@ class kalpanmaps {
         $gksql = 'SELECT la.id AS id,
                     l.course AS courseid,
                     la.answer AS itemdata,
-                    "lesson_answer" AS tble,
+                    "lesson_answers" AS tble,
                     "answer" AS dataitem,
                     ' . $usertype . '
                   FROM mdl_lesson_answers la
@@ -998,7 +998,7 @@ class kalpanmaps {
      * @return array $kalitems
      */
     public static function get_kal_glossary_entries($limit = 0, $students) {
-        global $DB;
+        global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
         $usertype = $students == 0 ? '"faculty" AS usertype' : '"student" AS usertype';
@@ -1441,7 +1441,7 @@ class kalpanmaps {
 
         // Grab the original Kaltura playlist iframe in it's entirety and add it to the object.
         if ($kalmatches->oldiframe == '') {
-            preg_match('/(\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/.+?<\/iframe\>)/', $kalitem->itemdata, $matches);
+            preg_match('/(\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/.+?flashvars\[playlistAPI\.kpl0Id\]=.+?<\/iframe\>)/', $kalitem->itemdata, $matches);
             $kalmatches->oldiframe = isset($matches[1]) ? $matches[1] : '';
             $kalmatches->playlist = $kalmatches->oldiframe == '' ? false : true;
             unset($matches);
@@ -1458,20 +1458,20 @@ class kalpanmaps {
         unset($matches);
 
         // Grab the Kaltura entry_id and add it to the object.
-        preg_match('/\<iframe id=.+?entry_id=(.+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+        preg_match('/\<iframe id=.+?entry_id=(\S+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
         $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
         unset($matches);
 
         // Grab the Kaltura playlist entry_id and add it to the object.
         if ($kalmatches->oldiframe <> '' && $kalmatches->entryid == '' && $kalmatches->playlist == true) {
-            preg_match('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?\/widget_id\/(.+?)\?.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
+            preg_match('/\<iframe src=\"https:\/\/www\.kaltura\.com\/\S+\/widget_id\/.+?flashvars\[playlistAPI\.kpl0Id\]=(\S+?)&.+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
             $kalmatches->entryid = isset($matches[1]) ? $matches[1] : '';
             unset($matches);
         }
 
         // Grab the width and add it to the object.
         preg_match('/\<iframe .+?width="(.+?)".+?\<\/iframe\>/', $kalmatches->oldiframe, $matches);
-	preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
+        preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/\S+\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches2);
         $kalmatches->width = isset($matches[1]) ? $matches[1] : (isset($matches2[4]) ? $matches2[4] : $CFG->local_kalpanmaps_width);
         unset($matches);
@@ -1489,12 +1489,8 @@ class kalpanmaps {
         $kalmatches->ifxtra = isset($matches[1]) ? $matches[1] : '';
         unset($matches);
 
-	preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
+        preg_match('/(\<a) (href="http\S+kaf\S+\.com\/browseandembed\/.+?\/entryid\/(.+?)\/.+?\/playerSize\/(.+?)x(.+?)\/.+?"\>(.+?))\<\/a\>/',
             $kalmatches->kalbutton, $matches);
-        // $kalmatches->entryid = $matches[3];
-        // $kalmatches->width = $matches[4];
-        // $kalmatches->height = $matches[5];
-        // $kalmatches->ifxtra = $matches[6];
         $kalmatches->noframe = !empty($kalmatches->noframe)
             ? $kalmatches->noframe
             : ($matches ? '<!-- HIDDEN <anchor ' . $matches[2] . '</anchor> HIDDEN -->' : '');
@@ -1794,9 +1790,10 @@ class kalpanmaps {
                                           ' HIDDEN-->',
                                           $kalitem->itemdata, 1);
                 } else if ($kalitem->tble == "course_sections" && $panmatches->playlist == true) {
-                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?widget_id\/' .
+                    mtrace('We have encountered a Kaltura playlist ' . $panmatches->entryid . 'and will be replacing it with PanoptoID ' . $panoptoid->panopto_id . '.');
+                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/\S+\/widget_id\/.+?flashvars\[playlistAPI\.kpl0Id\]=' .
                                           $panmatches->entryid .
-                                          '.+?\<\/iframe\>/',
+                                          '&.+?\<\/iframe\>/',
                                           '<iframe width="'.
                                           $panmatches->width .
                                           'px" height="'.
@@ -1811,9 +1808,10 @@ class kalpanmaps {
                                           ' HIDDEN-->',
                                           $kalitem->itemdata, 1);
                 } else if ($panmatches->playlist == true) {
-                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/.+?widget_id\/' .
+                    mtrace('We have encountered a Kaltura playlist ' . $panmatches->entryid . 'and will be replacing it with PanoptoID ' . $panoptoid->panopto_id . '.');
+                    $kalitem->newitemdata = preg_replace('/\<iframe src=\"https:\/\/www\.kaltura\.com\/\S+\/widget_id\/.+?flashvars\[playlistAPI\.kpl0Id\]=' .
                                           $panmatches->entryid .
-                                          '\?.+?\<\/iframe\>/',
+                                          '&.+?\<\/iframe\>/',
                                           '<div style="max-width: ' .
                                           $panmatches->width . 'px;">' .
                                           '<div class="pandiv" style="padding-top: '
