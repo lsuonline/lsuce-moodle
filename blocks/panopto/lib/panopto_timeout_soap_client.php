@@ -28,6 +28,9 @@ class PanoptoTimeoutSoapClient extends SoapClient
 {
     private $socket_timeout;
     private $connect_timeout;
+    private $proxy_host;
+    private $proxy_port;
+    private $panoptocookies;
 
     public function __setConnectionTimeout($connect_timeout)
     {
@@ -53,13 +56,33 @@ class PanoptoTimeoutSoapClient extends SoapClient
         $this->socket_timeout = $socket_timeout;
     }
 
+    public function __setProxyHost($proxy_host) {
+        $this->proxy_host = $proxy_host;
+    }
+
+    public function __setProxyPort($proxy_port) {
+        $this->proxy_port = $proxy_port;
+    }
+
+    public function getpanoptocookies() 
+    {
+        return $this->panoptocookies;
+    }
+
     public function __doRequest($request, $location, $action, $version, $one_way = FALSE)
     {
-
-        if (!$this->socket_timeout && !$this->connect_timeout)
+        if (empty($this->socket_timeout) && empty($this->connect_timeout))
         {
             // Call via parent because we require no timeout
             $response = parent::__doRequest($request, $location, $action, $version, $one_way);
+
+            $lastresponseheaders = $this->__getLastResponseHeaders();
+            preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $lastresponseheaders, $matches);
+            $this->panoptocookies = array();
+            foreach($matches[1] as $item) {
+                parse_str($item, $cookie);
+                $this->panoptocookies = array_merge($this->panoptocookies, $cookie);
+            }
         }
         else
         {
@@ -68,7 +91,7 @@ class PanoptoTimeoutSoapClient extends SoapClient
             $options = [
                 'CURLOPT_VERBOSE' => FALSE,
                 'CURLOPT_RETURNTRANSFER' => TRUE,
-                'CURLOPT_HEADER' => FALSE,
+                'CURLOPT_HEADER' => TRUE,
                 'CURLOPT_HTTPHEADER' => array('Content-Type: text/xml',
                                               'SoapAction: ' . $action)
             ];
@@ -80,19 +103,39 @@ class PanoptoTimeoutSoapClient extends SoapClient
             if(!is_null($this->connect_timeout)) {
                 $options['CURLOPT_CONNECTTIMEOUT'] = $this->connect_timeout;
             }
-            
+
+            if(!empty($this->proxy_host)) {
+                $options['CURLOPT_PROXY'] = $this->proxy_host;
+            }
+
+            if(!empty($this->proxy_port)) {
+                $options['CURLOPT_PROXYPORT'] = $this->proxy_port;
+            }
             
             $response = $curl->post($location, $request, $options);
+
+            // get cookies
+            $actualresponseheaders = (isset($curl->info["header_size"]))?substr($response,0,$curl->info["header_size"]):"";
+            preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $actualresponseheaders, $matches);
+            $this->panoptocookies = array();
+            foreach($matches[1] as $item) {
+                parse_str($item, $cookie);
+                $this->panoptocookies = array_merge($this->panoptocookies, $cookie);
+            }
+
+            $actualResponse = (isset($curl->info["header_size"]))?substr($response,$curl->info["header_size"]):"";
 
             if ($curl->get_errno()) {
                 throw new Exception($response);
             }
+
+            $response = $actualResponse;
         }
 
         // Return?
         if (!$one_way)
         {
-            return ($response);
+            return $response;
         }
     }
 }

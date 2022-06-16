@@ -49,10 +49,12 @@ try {
     $failedautoprovisioning = false;
 
     $allowautoprovision = get_config('block_panopto', 'auto_provision_new_courses');
+    $usercanprovision = $panoptodata->can_user_provision($courseid);
+    
     if ((empty($panoptodata->servername) || 
         empty($panoptodata->instancename) || 
         empty($panoptodata->applicationkey)) &&
-        $panoptodata->can_user_provision($courseid) &&
+        $usercanprovision &&
         ($allowautoprovision == 'onblockview')) {
         
         $task = new \block_panopto\task\provision_course();
@@ -62,7 +64,7 @@ try {
 
         try {
             $task->execute();
-        }  catch (Exception $e) {
+        } catch (Exception $e) {
             $errormessage = $e->getMessage();
             $content->text .= "<span class='error'>" . $errormessage . '</span>';
             \panopto_data::print_log($errormessage);
@@ -81,7 +83,7 @@ try {
     if (!$failedautoprovisioning && (empty($panoptodata->servername) || empty($panoptodata->instancename) || empty($panoptodata->applicationkey))) {
         $content->text = get_string('unprovisioned', 'block_panopto');
 
-        if ($panoptodata->can_user_provision($courseid)) {
+        if ($usercanprovision) {
             $content->text .= '<br/>' .
             "<a href='$CFG->wwwroot/blocks/panopto/provision_course_internal.php?id=$courseid'>" .
             get_string('provision_course_link_text', 'block_panopto') . '</a>';
@@ -168,10 +170,28 @@ try {
 
                     if (!empty($completeddeliveries)) {
                         $i = 0;
+
+                        if (!function_exists('str_contains')) {
+                            function str_contains(string $haystack, string $needle): bool
+                            {
+                                return '' === $needle || false !== strpos($haystack, $needle);
+                            }
+                        }
+                        
                         foreach ($completeddeliveries as $completeddelivery) {
                             // Collapse to 3 lectures by default.
                             if ($i == 3) {
                                 $content->text .= "<div id='hiddenLecturesDiv'>";
+                            }
+
+                            if (!str_contains($completeddelivery->ViewerUrl, '?instance') && 
+                                !str_contains($completeddelivery->ViewerUrl, '&instance')) {
+                                if (str_contains($completeddelivery->ViewerUrl, '?')) {
+                                    $completeddelivery->ViewerUrl .= '&instance=' . $panoptodata->instancename; 
+                                } 
+                                else {
+                                    $completeddelivery->ViewerUrl .= '?instance=' . $panoptodata->instancename; 
+                                }
                             }
 
                             // Alternate gray background for readability.
