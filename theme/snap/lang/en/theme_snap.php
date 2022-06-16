@@ -307,6 +307,12 @@ $string['seriffont'] = 'Serif font';
 $string['seriffont_desc'] = 'This font is used for most user generated content. Using a serif font makes user generated content more readable, and feel like it is written by a human.';
 $string['showcoursegradepersonalmenu'] = 'Grades';
 $string['showcoursegradepersonalmenudesc'] = 'Show users their grade in course cards in the personal menu';
+
+// BEGIN LSU Course Card Quick Links.
+$string['showcoursecardquicklinks'] = 'Course Card Quick Links';
+$string['showcoursecardquicklinksdesc'] = 'Add quick links to the course cards for quick access to sections of the course';
+// END LSU Course Card Quick Links.
+
 $string['socialmedia'] = 'Social media';
 $string['submitted'] = 'Submitted';
 $string['sitedescription'] = 'Site description';

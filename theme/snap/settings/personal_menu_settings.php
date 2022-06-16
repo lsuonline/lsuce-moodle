@@ -26,6 +26,16 @@ $default = $checked;
 $setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
 $snapsettings->add($setting);
 
+// BEGIN LSU Course Card Quick Links.
+// Personal menu show course quick links in cards.
+$name = 'theme_snap/showcoursecardquicklinks';
+$title = new lang_string('showcoursecardquicklinks', 'theme_snap');
+$description = new lang_string('showcoursecardquicklinksdesc', 'theme_snap');
+$default = $checked;
+$setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
+$snapsettings->add($setting);
+// END LSU Course Card Quick Links.
+
 // Personal menu deadlines on/off.
 $name = 'theme_snap/deadlinestoggle';
 $title = new lang_string('deadlinestoggle', 'theme_snap');

@@ -458,6 +458,10 @@ class local {
      * @return bool | array
      */
     public static function courseinfo($courseids) {
+        // BEGIN LSU Course Card Quick Links.
+        global $PAGE;
+        $quicklinks = array();
+        // END LSU Course Card Quick Links.
         $courseinfo = array();
 
         $courses = enrol_get_my_courses(['enablecompletion', 'showgrades']);
@@ -469,17 +473,29 @@ class local {
 
         $showgrades = get_config('theme_snap', 'showcoursegradepersonalmenu');
 
+        // BEGIN LSU Course Card Quick Links.
+        // Get renderer so we can call the quick links func to get the quick links.
+        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($courses as $course) {
+            $quicklinks[$course->id] = $renderer->get_quick_links($course);
+        }
+        // END LSU Course Card Quick Links.
         foreach ($courseids as $courseid) {
             if (!isset($courses[$courseid])) {
                 // Don't throw an error, just carry on.
                 continue;
             }
             $course = $courses[$courseid];
-
             $courseinfo[$courseid] = (object) array(
                 'course' => $courseid,
                 'completion' => self::course_completion_progress($course)
             );
+
+            // BEGIN LSU Course Card Quick Links.
+            // Adding quicklinks to the course card.
+            $courseinfo[$courseid]->quicklinks = $quicklinks[$courseid]['quicklinks'];
+            $courseinfo[$courseid]->ccqlrender = $quicklinks[$courseid]['ccqlrender'];
+            // END LSU Course Card Quick Links.
 
             if (!empty($showgrades)) {
                 $feedback = self::course_grade($course);
