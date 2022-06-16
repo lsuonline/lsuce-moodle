@@ -16,8 +16,8 @@
 /**
  * Data to control defaults when creating and running a question
  *
- * @package    report_component_grades
- * @copyright  2019 Marcus Green
+ * @package    report_componentgrades
+ * @copyright  2021 Marcus Green
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die;
@@ -28,5 +28,12 @@ if ($ADMIN->fulltree) {
         get_string('showstudentid', 'report_componentgrades'),
         get_string('showstudentid_text', 'report_componentgrades'),
         0
+    ));
+
+    $settings->add(new admin_setting_configcheckbox(
+        'report_componentgrades/showgroups',
+        get_string('showgroups', 'report_componentgrades'),
+        get_string('showgroups_desc', 'report_componentgrades'),
+        1
     ));
 }
