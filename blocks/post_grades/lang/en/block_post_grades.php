@@ -80,5 +80,6 @@ $string['no_students'] = 'No students for {$a}';
 $string['midterm'] = 'Midterm';
 $string['onlinemidterm'] = 'Online Midterm';
 $string['final'] = 'Final';
+$string['onlinefinal'] = 'Online Final';
 $string['degree'] = 'Degree Candidate';
 $string['test'] = 'PG Test';

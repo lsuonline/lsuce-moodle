@@ -14,21 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
-/**
- * @package   block_post_grades
- * @copyright 2015, Louisiana State University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2022021000;
-$plugin->requires = 2015051102;
-$plugin->component = 'block_post_grades';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v2.1.0';
-
-$plugin->dependencies = array(
-    'enrol_ues' => 2019103100,
-);
+class post_grades_onlinefinal extends post_grades_student_table {
+    public function is_acceptable($student) {
+        return true;
+    }
+}
