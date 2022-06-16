@@ -18,7 +18,7 @@
  * Plugin version.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,8 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 /** @var stdClass $plugin */
 $plugin->component = 'tool_ally';
-$plugin->release   = '3.9.3';
-$plugin->version   = 2020061101;
+$plugin->release   = '3.9.5';
+$plugin->version   = 2020061102;
 $plugin->requires  = 2020061500;
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->dependencies = [

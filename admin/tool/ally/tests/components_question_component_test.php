@@ -19,7 +19,7 @@
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -38,7 +38,7 @@ require_once('abstract_testcase.php');
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tool_ally_components_question_component_testcase extends tool_ally_abstract_testcase {
@@ -69,7 +69,7 @@ class tool_ally_components_question_component_testcase extends tool_ally_abstrac
      */
     private $component;
 
-    public function setUp() {
+    public function setUp(): void {
         $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();

@@ -18,7 +18,7 @@
  * Admin settings.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -72,6 +72,9 @@ if ($hassiteconfig) {
     ];
     $settings->add(new admin_setting_configselect('tool_ally/logrange', new lang_string('logrange', 'tool_ally'),
         null, constants::RANGE_ALL, $choices));
+
+    $settings->add(new admin_setting_configtext('tool_ally/loglifetimedays', new lang_string('loglifetimedays', 'tool_ally'),
+        new lang_string('loglifetimedaysdesc', 'tool_ally'), '14', PARAM_INT));
 
     $config     = get_config('tool_ally');
     $configured = !empty($config) && !empty($config->adminurl) && !empty($config->key) && !empty($config->secret);
