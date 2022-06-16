@@ -1,4 +1,4 @@
-@editor @editor_atto @atto @atto_wiris @_bug_phantomjs
+@editor @editor_atto @atto @atto_wiris @_bug_phantomjs @wiris_mathtype @3.x
 Feature: Checking french quotes to prevent dissapear and post
 In order to check if french quotes can be displayed correctly
 I need to post with french quotes
@@ -14,6 +14,8 @@ I need to post with french quotes
       | user     | course | role           |
       | admin  | C1     | editingteacher |
     And the "wiris" filter is "on"
+    And the "mathjaxloader" filter is "off"
+    And the "urltolink" filter is "off"
     And I log in as "admin"
 
   @javascript
@@ -25,5 +27,4 @@ I need to post with french quotes
       | Page content | &laquo;Bonjour&raquo; |
     And I press "Save and display"
     Then "«Bonjour»" "text" should exist
-    And I navigate to "Edit settings" in current page administration
     Then Wirisformula should not exist

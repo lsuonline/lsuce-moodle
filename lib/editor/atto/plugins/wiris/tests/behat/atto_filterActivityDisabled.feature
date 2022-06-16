@@ -1,4 +1,4 @@
-@editor @editor_atto @atto @atto_wiris @_bug_phantomjs
+@editor @editor_atto @atto @atto_wiris @_bug_phantomjs @wiris_mathtype
 Feature: Check MathType disabled if filter disabled at activity forum level
 In order to check if MathType plugin is disabled if filter is disabled
 As an admin
@@ -15,6 +15,8 @@ I need not to be able to use MathType if filter is disabled
       | user     | course | role           |
       | admin  | C1     | editingteacher |
     And the "wiris" filter is "on"
+    And the "mathjaxloader" filter is "off"
+    And the "urltolink" filter is "off"
     And I log in as "admin"
 
   @javascript
@@ -29,8 +31,8 @@ I need not to be able to use MathType if filter is disabled
     And I navigate to "Filters" in current page administration
     And I turn MathType filter off
     And I press "Save changes"
-    And I follow "Test MathType for Atto on Moodle"
-    And I navigate to "Edit settings" in current page administration
+    And I click on "Back to Page: Test MathType for Atto on Moodle" "link"
+    And I navigate to "Settings" in current page administration
     Then "MathType" "button" should not exist
 
   @javascript

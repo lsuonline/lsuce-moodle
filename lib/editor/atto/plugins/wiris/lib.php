@@ -23,8 +23,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Initialise the js strings required for this module.
  */
@@ -33,7 +31,6 @@ function atto_wiris_strings_for_js() {
     $PAGE->requires->strings_for_js(
       array(
         'wiris_editor_title',
-        'wiris_cas_title',
         'wiris_chem_editor_title',
       ),
       'atto_wiris');

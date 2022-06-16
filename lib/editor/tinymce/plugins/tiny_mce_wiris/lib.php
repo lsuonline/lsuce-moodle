@@ -23,8 +23,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 class tinymce_tiny_mce_wiris extends editor_tinymce_plugin {
     protected $buttons = array('tiny_mce_wiris_formulaEditor', 'tiny_mce_wiris_CAS');
 
@@ -33,6 +31,10 @@ class tinymce_tiny_mce_wiris extends editor_tinymce_plugin {
         global $PAGE, $CFG, $COURSE;
         // We need to know if MathType filter are active in the context of the course.
         // If not MathTYPe filter should be disabled.
+
+        // Get MathType and Chemistry buttons enabled configuration.
+        $editorisactive = get_config('filter_wiris', 'editor_enable');
+        $chemistryisactive = get_config('filter_wiris', 'chem_editor_enable');
 
         if (!get_config('filter_wiris', 'allow_editorplugin_active_course')) {
             $context = context_course::instance($COURSE->id);
@@ -64,14 +66,14 @@ class tinymce_tiny_mce_wiris extends editor_tinymce_plugin {
         ),
         'tinymce_tiny_mce_wiris');
 
-        $PAGE->requires->js('/lib/editor/tinymce/plugins/tiny_mce_wiris/baseURL.js', false);
-
         // Add button after emoticon button in advancedbuttons3.
-        $added = $this->add_button_after($params, 3, 'tiny_mce_wiris_formulaEditor', '', false);
-        $added = $this->add_button_after($params, 3, 'tiny_mce_wiris_formulaEditorChemistry', '', false);
-        $added = $this->add_button_after($params, 3, 'tiny_mce_wiris_CAS', '', false);
-
-        // Add JS file, which uses default name.
+        if ($editorisactive) {
+            $added = $this->add_button_after($params, 3, 'tiny_mce_wiris_formulaEditor', '', false);
+        }
+        if ($chemistryisactive) {
+            $added = $this->add_button_after($params, 3, 'tiny_mce_wiris_formulaEditorChemistry', '', false);
+        }
+        // Add JS file using 'plugin.min.js' instead of default name.
         $this->add_js_plugin($params);
     }
 }
