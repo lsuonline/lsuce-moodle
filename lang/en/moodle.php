@@ -2302,3 +2302,8 @@ $string['sitemessage'] = 'Message users';
 // Deprecated since Moodle 3.9.
 $string['participantscount'] = 'Number of participants: {$a}';
 $string['userfilterplaceholder'] = 'Search keyword or select filter';
+
+// BEGIN LSU course restore limits to course ceators.
+$string['teachersrestore'] = 'Teachers can restore';
+$string['teachersrestore_desc'] = 'This setting determines if teachers with the appropriate permissions can restore courses.';
+// END LSU course restore limits to course ceators.
