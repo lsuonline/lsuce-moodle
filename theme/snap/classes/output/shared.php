@@ -834,18 +834,6 @@ EOF;
         }
         // End LSU Enhancement fix quickmail icon no showing up for students in course.
 
-        // BEGIN LSU Enhancement add Kaltura my media.
-        if (has_capability('local/mymedia:view', context_system::instance())) {
-            $iconurl = $OUTPUT->image_url('lsu/kaltura', 'core');
-            $mymediaicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-
-            $links[] = array(
-                'link' => 'local/mymedia/mymedia.php?courseid=' . $COURSE->id,
-                'title' => $mymediaicon.get_string('nav_mymedia', 'local_mymedia'),
-            );
-        }
-        // END LSU Enhancement add Kaltura my media.
-
         $config = get_config('tool_ally');
         $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);
         $runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
