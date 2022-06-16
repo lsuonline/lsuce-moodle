@@ -1488,3 +1488,8 @@ $string['configbccallmail'] = 'BCC all mail to the specified bcc address for ret
 $string['bccaddress'] = 'BCC address';
 $string['configbccaddress'] = 'IF BCC all mail is on, this address will receive all mail sent from this Moodle.';
 // END LSU BCC Emails.
+
+// BEGIN LSU SameSite Cookies.
+$string['forcesamesite'] = 'Force SameSite Cookies';
+$string['forcesamesitehelp'] = 'Forces SameSite=None for all cookies.';
+// END LSU SameSite Cookies.
