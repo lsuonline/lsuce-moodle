@@ -50,6 +50,7 @@ class compose_message_form extends \moodleform {
     public $userdefaultsignatureid;
     public $courseconfigarray;
     public $draftmessage;
+    public $draftattachment;
     public $includeddraftrecipients;
     public $excludeddraftrecipients;
     public $allowmentorcopy;
@@ -65,7 +66,7 @@ class compose_message_form extends \moodleform {
      * @param  message   $draftmessage
      * @return \block_quickmail\forms\compose_message_form
      */
-    public static function make($context, $user, $course, $courseuserdata = [], $draftmessage = null) {
+    public static function make($context, $user, $course, $courseuserdata = [], $draftmessage = null, $draftattachment = null) {
         $targeturl = self::generate_target_url([
             'courseid' => $course->id,
             'draftid' => !empty($draftmessage) ? $draftmessage->get('id') : 0,
@@ -108,6 +109,7 @@ class compose_message_form extends \moodleform {
             'user_default_signature_id' => $userdefaultsignatureid,
             'course_config_array' => $courseconfigarray,
             'draft_message' => $draftmessage,
+            'draft_attachment' => $draftattachment,
             'included_draft_recipients' => $includeddraftrecipients,
             'excluded_draft_recipients' => $excludeddraftrecipients,
             'allow_mentor_copy' => $allowmentorcopy,
@@ -132,6 +134,7 @@ class compose_message_form extends \moodleform {
         $this->user_default_signature_id = $this->_customdata['user_default_signature_id'];
         $this->course_config_array = $this->_customdata['course_config_array'];
         $this->draft_message = $this->_customdata['draft_message'];
+        $this->draft_attachment = $this->_customdata['draft_attachment'];
         $this->included_draft_recipients = $this->_customdata['included_draft_recipients'];
         $this->excluded_draft_recipients = $this->_customdata['excluded_draft_recipients'];
         $this->allow_mentor_copy = $this->_customdata['allow_mentor_copy'];
@@ -493,6 +496,17 @@ class compose_message_form extends \moodleform {
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
+
+        // If there are any draft attachments set the form and show it
+        if (!empty($this->draft_attachment)) {
+            if (empty($entry->id)) {
+                $entry = new \stdClass;
+                $entry->id = null;
+            }
+            $entry->attachments = $this->draft_attachment;
+            parent::set_data($entry);
+        }
+
     }
 
     /*

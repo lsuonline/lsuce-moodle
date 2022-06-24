@@ -66,7 +66,7 @@ $renderer = $PAGE->get_renderer('block_quickmail');
 if ($pageparams['draftid']) {
     // Attempt to fetch the draft which must belong to this course and user.
     $draftmessage = block_quickmail\repos\draft_repo::find_for_user_course_or_null($pageparams['draftid'], $USER->id, $course->id);
-
+    
     // If no valid draft message was found, reset param.
     if (empty($draftmessage)) {
         $pageparams['draftid'] = 0;
@@ -103,7 +103,8 @@ $composeform = \block_quickmail\forms\compose_message_form::make(
     $USER,
     $course,
     $courseuserdata,
-    $draftmessage
+    $draftmessage,
+    $attachmentsdraftitemid
 );
 
 // Handle the Request.

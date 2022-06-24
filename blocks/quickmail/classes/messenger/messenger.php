@@ -35,6 +35,7 @@ use block_quickmail\persistents\alternate_email;
 use block_quickmail\persistents\message_recipient;
 use block_quickmail\persistents\message_draft_recipient;
 use block_quickmail\persistents\message_additional_email;
+use block_quickmail\persistents\message_attachment;
 use block_quickmail\validators\message_form_validator;
 use block_quickmail\validators\save_draft_message_form_validator;
 use block_quickmail\requests\compose_request;
@@ -233,7 +234,8 @@ class messenger implements messenger_interface {
         // Get a message instance for this type, either from draft or freshly created.
         $message = self::get_message_instance('compose', $user, $course, $transformeddata, $draftmessage, true);
 
-        // TODO: Handle posted file attachments (moodle).
+        // Handle posted file attachments (moodle).
+        message_file_handler::handle_posted_attachments($message, $formdata, 'attachments');
 
         // Clear any existing draft recipients, and add those that have been recently submitted.
         $message->sync_compose_draft_recipients($transformeddata->included_entity_ids, $transformeddata->excluded_entity_ids);
@@ -251,8 +253,6 @@ class messenger implements messenger_interface {
 
         // Clear any existing additional emails, and add those that have been recently submitted.
         $message->sync_additional_emails($transformeddata->additional_emails);
-
-        // TODO: Sync posted attachments to message record.
 
         return $message;
     }
@@ -280,8 +280,8 @@ class messenger implements messenger_interface {
         // Get a message instance for this type, either from draft or freshly created.
         $message = self::get_message_instance('broadcast', $user, $course, $transformeddata, $draftmessage, true);
 
-        // TODO: handle posted file attachments (moodle).
-
+        // Handle posted file attachments (moodle).
+        message_file_handler::handle_posted_attachments($message, $formdata, 'attachments');
         // Clear any existing draft recipient filters, and add this recently submitted value.
         $message->sync_broadcast_draft_recipients($broadcastrecipientfilter->get_filter_value());
 
@@ -364,7 +364,84 @@ class messenger implements messenger_interface {
                 'email' => $additionalemail->get('email'),
             ]);
         }
+        // Duplicate the attached files.
+        $currentattachments = message_attachment::get_records(['message_id' => $draftid]);
+        $fs = get_file_storage();
+        // Grab context for CM.
+        $coursecontext = \context_course::instance($originaldraft->get('course_id'));
+        $filelist = array();
+        foreach ($currentattachments as $this_attach) {
+            // Create new file object.
+            $filelist[] = array(
+                "itemid" => $this_attach->get('id'),
+                "contextid" => $coursecontext->id,
+                "component" => 'block_quickmail',
+                "filepath" => $this_attach->get('path'),
+                "filename" => $this_attach->get('filename')
+            );
+        }
+        // --------------------------------------------------------------------
+        // If there are attachments to this draft then we need to duplicate
+        if (count($filelist) > 0) {
+            $attachmentsdraftitemid = file_get_submitted_draft_itemid('attachments');
+            // Prepare the draft area with any existing, relevant files.
+            file_prepare_draft_area(
+                $attachmentsdraftitemid,
+                $coursecontext->id,
+                'block_quickmail',
+                'attachments',
+                $newdraft->get('id') ?: null,
+                block_quickmail_config::get_filemanager_options()
+            );
 
+            $filestocopycontextid = $coursecontext->id;
+            $filestocopycomponent = "block_quickmail";
+            $filestocopyfilearea = "attachments";
+            $newfilelist = array();
+            // The area files list can be very large. Need to find the matching file.
+            if ($filestocopy = $fs->get_area_files($filestocopycontextid, $filestocopycomponent, $filestocopyfilearea)) {
+                foreach ($filestocopy as $filetocopy) {
+                    $tempfilename = null;
+                    $tempfilename = $filetocopy->get_filename();
+                    if ($tempfilename == ".") {
+                        continue;
+                    }
+                    // Compares our small list of files to all.
+                    $index = array_search($tempfilename, array_column($filelist, 'filename'));
+                    if ($index === false) {
+                        continue;
+                    } else {
+                        // $newfilename = time(). "_" .$tempfilename;
+                        $pathparts = pathinfo($tempfilename);
+                        $newfilename = $pathparts['filename']. "_". time(). ".". $pathparts['extension'];
+                        $destination = [
+                            'contextid' => $filestocopycontextid,
+                            'component' => $filestocopycomponent,
+                            'filearea' => $filestocopyfilearea,
+                            'itemid' => $newdraft->get('id'),
+                            'filename'  => $newfilename,
+                        ];
+                        $newfilelist[] = array(
+                            "itemid" => $newdraft->get('id'),
+                            "contextid" => $filestocopycontextid,
+                            "component" => $filestocopycomponent,
+                            "filepath" => $filetocopy->get_filepath(),
+                            "filename" => $newfilename
+                        );
+                        // Create a new file with a new filename.
+                        $fs->create_file_from_storedfile($destination, $filetocopy);
+                    }
+                }
+            }
+            // --------------------------------------------------------------------
+            // Handle posted file attachments (moodle).
+            // Formdata needs attachments and filearea
+            $formdata = new \stdClass();
+            $formdata->attachments = $attachmentsdraftitemid;
+            $formdata->filearea = "attachments";
+            $formdata->files = $newfilelist;
+            message_file_handler::handle_duplicate_attachments($newdraft, $formdata, 'attachments');
+        }
         return $newdraft;
     }
 

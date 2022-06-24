@@ -57,6 +57,22 @@ class message_file_handler {
      * @param  string   $filearea    "attachments"
      * @return void
      */
+    public static function handle_duplicate_attachments($message, $formdata, $filearea) {
+        $filehandler = new self($message);
+        // Prep the copies to be seen as uploaded files and handled the same way as original.
+        foreach ($formdata->files as $file) {
+            $filehandler->add_to_uploaded_files($filearea, $file['filepath'], $file['filename']);
+        }
+        $filehandler->sync_attachments();
+    }
+        /**
+     * Executes posted file attachments for the given message
+     *
+     * @param  message  $message
+     * @param  object   $formdata   mform post data
+     * @param  string   $filearea    "attachments"
+     * @return void
+     */
     public static function handle_posted_attachments($message, $formdata, $filearea) {
         $filehandler = new self($message);
 

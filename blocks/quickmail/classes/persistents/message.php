@@ -34,6 +34,7 @@ use block_quickmail\persistents\concerns\can_have_a_notification;
 use block_quickmail\persistents\concerns\can_be_soft_deleted;
 use block_quickmail\persistents\message_recipient;
 use block_quickmail\persistents\message_draft_recipient;
+use block_quickmail\persistents\message_draft_attachment;
 use block_quickmail\persistents\message_additional_email;
 use block_quickmail\persistents\message_attachment;
 use block_quickmail\persistents\notification;
@@ -511,6 +512,7 @@ class message extends \block_quickmail\persistents\persistent {
     protected function after_delete($result) {
         // If this was a draft message (which are hard deleted), delete all related data.
         if ($this->is_message_draft()) {
+            message_draft_attachment::clear_all_for_message($this);
             message_recipient::clear_all_for_message($this);
             message_draft_recipient::clear_all_for_message($this);
             message_additional_email::clear_all_for_message($this);
