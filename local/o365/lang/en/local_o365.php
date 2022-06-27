@@ -168,15 +168,12 @@ $string['settings_aadsync_emailsync'] = 'Match Azure usernames to moodle emails 
 $string['settings_addsync_tzsync'] = 'Sync Outlook timezone to Moodle in cronjob';
 $string['settings_addsync_tzsynconlogin'] = 'Sync Outlook timezone to Moodle on login';
 $string['settings_aadsync_guestsync'] = 'Sync guest users';
+$string['settings_suspend_delete_running_time'] = 'User suspension/deletion running time';
+$string['settings_suspend_delete_running_time_desc'] = 'If the option is enabled, suspension/delete feature of user sync function will run once a day, at the time configured in the Moodle instance default time zone.';
 
-// User field mappting.
-$string['settings_fieldmap'] = 'User Field Mapping';
-$string['settings_fieldmap_addmapping'] = 'Add Mapping';
-$string['settings_fieldmap_header_behavior'] = 'Updates';
-$string['settings_fieldmap_header_local'] = 'Moodle Field';
-$string['settings_fieldmap_header_remote'] = 'Active Directory Field';
-$string['settings_fieldmap_update_always'] = 'On login & creation';
-$string['settings_fieldmap_details'] = 'Field mapping setting has been moved to the <a href="{$a}">Open ID Connect authentication plugin</a>.';
+// User field mapping.
+$string['settings_fieldmap'] = 'User field mapping';
+$string['settings_fieldmap_details'] = 'Available in <a href="{$a}">Open ID Connect authentication plugin</a>.';
 
 // Settings in the "Course sync" section of the "Sync settings" tab.
 $string['settings_secthead_coursesync'] = 'Course Sync';
@@ -563,7 +560,8 @@ $string['settings_sds_profilesync_header_desc'] = 'These options control profile
 $string['settings_sds_profilesync_disabled'] = 'Disabled';
 $string['settings_sds_profilesync'] = 'Sync profile data from school';
 $string['settings_sds_profilesync_desc'] = 'Select the SDS school from which Moodle synchronises SDS specific profile data.<br/>
-Note synchronisation of SDS fields will only happen when running the "Sync with SDS" scheduled task, and will not happen when running the "Sync users with Azure AD" scheduled task, nor when user logs in.';
+Note synchronisation of SDS fields will only happen when running the "Sync with SDS" scheduled task, and will not happen when running the "Sync users with Azure AD" scheduled task, nor when user logs in.<br/>
+Note there is a known issue in Microsoft Graph API used by this feature that certain student and teacher school profile fields are not returned, therefore are unavilable to sync even when configured.';
 $string['settings_sds_noschools'] = '<div class="alert alert-info">You do not have any schools available in School data sync.</div>';
 $string['settings_sds_get_schools_error'] = '<div class="alert alert-info error">Failed to get SDS schools. Check the Azure app has required permission.</div>';
 $string['settings_sds_school_disabled_action'] = 'School sync disabled action';
@@ -628,6 +626,7 @@ $string['settings_bot_sharedsecret_desc'] = 'This shared secret will be also add
 $string['settings_download_teams_tab_app_manifest'] = 'Download manifest file';
 $string['settings_download_teams_tab_app_manifest_reminder'] = 'Please save all your changes before downloading the manifest.';
 $string['settings_publish_manifest_instruction'] = '<a href="https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/apps/apps-upload" target="_blank">Click here</a> to learn how to publish your downloaded Moodle app manifest file to all users in Teams.';
+$string['settings_deploy_bot'] = 'Deploy bot to Azure';
 
 // Settings in the "Teams Moodle app" tab.
 $string['settings_moodle_app_id'] = 'Moodle app ID';

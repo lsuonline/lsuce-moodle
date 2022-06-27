@@ -103,6 +103,8 @@ class usersync extends scheduled_task {
         // Do not time out when syncing users.
         @set_time_limit(0);
 
+        $fullsyncfailed = false;
+
         if (main::sync_option_enabled('nodelta') === true) {
             $skiptoken = $this->get_token('skiptokenfull');
             if (!empty($skiptoken)) {
@@ -122,6 +124,7 @@ class usersync extends scheduled_task {
                     $continue = (!empty($skiptoken));
                 }
             } catch (\Exception $e) {
+                $fullsyncfailed = true;
                 $this->mtrace('Error in full usersync: ' . $e->getMessage());
                 utils::debug($e->getMessage(), 'usersync task', $e);
                 $this->mtrace('Resetting skip and delta tokens.');
@@ -198,10 +201,35 @@ class usersync extends scheduled_task {
         if (main::sync_option_enabled('suspend') || main::sync_option_enabled('reenable')) {
             $lastrundate = get_config('local_o365', 'task_usersync_lastdelete');
             $rundelete = true;
+            $alreadyruntoday = false;
+
             if (strlen($lastrundate) == 10) {
                 $lastrundate = false;
             }
-            set_config('task_usersync_lastdelete', date('Ymd'), 'local_o365');
+            if ($lastrundate && $lastrundate >= date('Ymd')) {
+                $alreadyruntoday = true;
+                $rundelete = false;
+            }
+            if (!$alreadyruntoday) {
+                $suspensiontaskhour = get_config('local_o365', 'usersync_suspension_h');
+                $suspensiontaskminute = get_config('local_o365', 'usersync_suspension_m');
+                if (!$suspensiontaskhour) {
+                    $suspensiontaskhour = 0;
+                }
+                if(!$suspensiontaskminute) {
+                    $suspensiontaskminute = 0;
+                }
+                $currenthour = date('H');
+                $currentminute = date('i');
+                if ($currenthour > $suspensiontaskhour) {
+                    set_config('task_usersync_lastdelete', date('Ymd'), 'local_o365');
+                } else if (($currenthour == $suspensiontaskhour) && ($currentminute >= $suspensiontaskminute)) {
+                    set_config('task_usersync_lastdelete', date('Ymd'), 'local_o365');
+                } else {
+                    $rundelete = false;
+                }
+            }
+
             if ($lastrundate != false) {
                 if (date('Ymd') <= $lastrundate) {
                     $rundelete = false;
@@ -223,6 +251,7 @@ class usersync extends scheduled_task {
                             $continue = (!empty($skiptoken));
                         }
                     } catch (\Exception $e) {
+                        $fullsyncfailed = true;
                         $this->mtrace('Error in full usersync: ' . $e->getMessage());
                         utils::debug($e->getMessage(), 'usersync task', $e);
                         $this->mtrace('Resetting skip and delta tokens.');
@@ -230,13 +259,17 @@ class usersync extends scheduled_task {
                     }
                 }
 
-                if (main::sync_option_enabled('suspend')) {
-                    $this->mtrace('Suspending deleted users...');
-                    $usersync->suspend_users($users, main::sync_option_enabled('delete'));
-                }
-                if (main::sync_option_enabled('reenable')) {
-                    $this->mtrace('Re-enabling suspended users...');
-                    $usersync->reenable_suspsend_users($users, main::sync_option_enabled('disabledsync'));
+                if ($fullsyncfailed) {
+                    $this->mtrace('Full user sync failed, skip suspending users...');
+                } else {
+                    if (main::sync_option_enabled('suspend')) {
+                        $this->mtrace('Suspending deleted users...');
+                        $usersync->suspend_users($users, main::sync_option_enabled('delete'));
+                    }
+                    if (main::sync_option_enabled('reenable')) {
+                        $this->mtrace('Re-enabling suspended users...');
+                        $usersync->reenable_suspsend_users($users, main::sync_option_enabled('disabledsync'));
+                    }
                 }
             }
         }
