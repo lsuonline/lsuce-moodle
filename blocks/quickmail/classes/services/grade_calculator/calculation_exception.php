@@ -23,6 +23,8 @@
 
 namespace block_quickmail\services\grade_calculator;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 class calculation_exception extends \Exception {

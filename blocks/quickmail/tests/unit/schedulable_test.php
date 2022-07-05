@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -118,10 +123,10 @@ class block_quickmail_schedulable_testcase extends advanced_testcase {
 
         $schedulable->set_next_run_time();
 
-		// Segun Babalola, 2020-10-30
+        // Segun Babalola, 2020-10-30
         // Next run should be 1 week from last run time time.
-        $secondsInWeek = (7 * 24 * 60 * 60);
-        $nextrun = $lastrun + $secondsInWeek;
+        $secondsinweek = (7 * 24 * 60 * 60);
+        $nextrun = $lastrun + $secondsinweek;
 
         $this->assertEquals($nextrun, $schedulable->get_next_run_time());
     }

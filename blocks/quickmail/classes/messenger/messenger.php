@@ -23,6 +23,8 @@
 
 namespace block_quickmail\messenger;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\messenger\messenger_interface;
@@ -370,18 +372,18 @@ class messenger implements messenger_interface {
         // Grab context for CM.
         $coursecontext = \context_course::instance($originaldraft->get('course_id'));
         $filelist = array();
-        foreach ($currentattachments as $this_attach) {
+        foreach ($currentattachments as $thisattach) {
             // Create new file object.
             $filelist[] = array(
-                "itemid" => $this_attach->get('id'),
+                "itemid" => $thisattach->get('id'),
                 "contextid" => $coursecontext->id,
                 "component" => 'block_quickmail',
-                "filepath" => $this_attach->get('path'),
-                "filename" => $this_attach->get('filename')
+                "filepath" => $thisattach->get('path'),
+                "filename" => $thisattach->get('filename')
             );
         }
         // --------------------------------------------------------------------
-        // If there are attachments to this draft then we need to duplicate
+        // If there are attachments to this draft then we need to duplicate.
         if (count($filelist) > 0) {
             $attachmentsdraftitemid = file_get_submitted_draft_itemid('attachments');
             // Prepare the draft area with any existing, relevant files.
@@ -411,7 +413,6 @@ class messenger implements messenger_interface {
                     if ($index === false) {
                         continue;
                     } else {
-                        // $newfilename = time(). "_" .$tempfilename;
                         $pathparts = pathinfo($tempfilename);
                         $newfilename = $pathparts['filename']. "_". time(). ".". $pathparts['extension'];
                         $destination = [
@@ -435,7 +436,7 @@ class messenger implements messenger_interface {
             }
             // --------------------------------------------------------------------
             // Handle posted file attachments (moodle).
-            // Formdata needs attachments and filearea
+            // Formdata needs attachments and filearea.
             $formdata = new \stdClass();
             $formdata->attachments = $attachmentsdraftitemid;
             $formdata->filearea = "attachments";
@@ -588,10 +589,10 @@ class messenger implements messenger_interface {
             // If any exceptions are thrown, gracefully move to the next recipient.
             if (!$recipient->has_been_sent_to()) {
                 // Verify the user still exists, edge cases have been found to have missing users.
-                $temp_user_id = (int)$recipient->get('user_id');
-                $temp_msg_id = (int)$recipient->get('message_id');
-                if ($recipient->account_exists($temp_user_id)) {
-                    $recipient->remove_recipient_from_message($temp_msg_id, $temp_user_id);
+                $tempuserid = (int)$recipient->get('user_id');
+                $tempmsgid = (int)$recipient->get('message_id');
+                if ($recipient->account_exists($tempuserid)) {
+                    $recipient->remove_recipient_from_message($tempmsgid, $tempuserid);
                     continue;
                 }
                 try {

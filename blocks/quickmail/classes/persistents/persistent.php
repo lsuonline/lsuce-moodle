@@ -28,6 +28,8 @@
 
 namespace block_quickmail\persistents;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use coding_exception;

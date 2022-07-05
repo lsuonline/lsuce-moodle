@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -24,6 +25,10 @@
  * @author     Update by David Lowe
  */
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
+defined('MOODLE_INTERNAL') || die();
+
  // We defined the web service functions to install.
 $functions = array(
     'block_quickmail_qmAjax' => array(
@@ -43,6 +48,6 @@ $services = array(
             'block_quickmail_qmAjax'
         ),
         'restrictedusers' => 0,
-        'enabled'=>1,
+        'enabled' => 1,
     )
 );

@@ -23,6 +23,8 @@
 
 namespace block_quickmail\requests;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\requests\transformers\compose_transformer;

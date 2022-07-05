@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -133,9 +138,9 @@ class block_quickmail_user_repo_testcase extends advanced_testcase {
 
         list($course, $coursecontext, $enrolledusers, $groups) = $this->create_course_with_users_and_groups();
 
-        // Editingteacher (id: 3).
-        // Teacher (id: 4).
-        // Student (id: 5).
+        // Editing teacher - editingteacher (id: 3).
+        // Teacher         - teacher (id: 4).
+        // Student         - student (id: 5).
 
         // Get editingteacher users.
         $users = user_repo::get_course_role_users($coursecontext, 3);

@@ -66,7 +66,7 @@ $renderer = $PAGE->get_renderer('block_quickmail');
 if ($pageparams['draftid']) {
     // Attempt to fetch the draft which must belong to this course and user.
     $draftmessage = block_quickmail\repos\draft_repo::find_for_user_course_or_null($pageparams['draftid'], $USER->id, $course->id);
-    
+
     // If no valid draft message was found, reset param.
     if (empty($draftmessage)) {
         $pageparams['draftid'] = 0;
@@ -162,7 +162,7 @@ try {
 } catch (\block_quickmail\exceptions\validation_exception $e) {
     $composeform->set_error_exception($e);
 } catch (\block_quickmail\exceptions\critical_exception $e) {
-    print_error('critical_error', 'block_quickmail');
+    throw new moodle_exception('critical_error', 'block_quickmail');
 }
 
 // Render page.

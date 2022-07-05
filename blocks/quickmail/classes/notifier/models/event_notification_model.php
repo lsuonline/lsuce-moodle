@@ -23,6 +23,9 @@
 
 namespace block_quickmail\notifier\models;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+// phpcs:disable Generic.CodeAnalysis.UselessOverridingMethod.Found
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\notifier\models\interfaces\notification_model_interface;

@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -51,12 +56,13 @@ class block_quickmail_send_message_adhoc_task_testcase extends advanced_testcase
 
         $sendtime = time() + 10000;
 
-
         /*
          *  Segun Babalola, 2020-10-31
          *
-         *  Since the very action of creating messages with a "to_send_at" value of "now" will mean the messages are sent
-         *  immediately after creation (see call chain $this->create_messages() => messenger::compose() => self::send_message_to_recipients()),
+         *  Since the very action of creating messages with a
+         *  "to_send_at" value of "now" will mean the messages are sent
+         *  immediately after creation
+         *  (see call chain $this->create_messages() => messenger::compose() => self::send_message_to_recipients()),
          *  some of the assertions below is failing.
          *
          *  I'm modifying this test to create the message for a future send time so that the test is more appropriate.

@@ -23,6 +23,9 @@
 
 namespace block_quickmail\controllers\support;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+// phpcs:disable Generic.CodeAnalysis.UselessOverridingMethod.Found
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');

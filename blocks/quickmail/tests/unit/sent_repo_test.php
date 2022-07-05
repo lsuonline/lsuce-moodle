@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -275,8 +280,10 @@ class block_quickmail_sent_repo_testcase extends advanced_testcase {
     }
 
     // Helpers.
-    private function extract_ids(array $p_sents) {
-        return array_map( function($sent) { return $sent->get('id'); }, $p_sents);
+    private function extract_ids(array $psents) {
+        return array_map( function($sent) {
+            return $sent->get('id');
+        }, $psents);
     }
     private function create_message($issent = true) {
         return message::create_new([

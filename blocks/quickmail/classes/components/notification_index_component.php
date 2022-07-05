@@ -23,6 +23,8 @@
 
 namespace block_quickmail\components;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\components\component;
@@ -88,7 +90,6 @@ class notification_index_component extends component implements \renderable {
                 'editUrl' => $editurl->out(false),
             ];
         }
-
 
         $data->urlBack = new moodle_url('/course/view.php', ['id' => $this->courseid]);
         $data->urlBackLabel = block_quickmail_string::get('back_to_course');

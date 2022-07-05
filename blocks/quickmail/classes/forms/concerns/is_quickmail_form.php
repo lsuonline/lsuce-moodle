@@ -23,6 +23,8 @@
 
 namespace block_quickmail\forms\concerns;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 trait is_quickmail_form {

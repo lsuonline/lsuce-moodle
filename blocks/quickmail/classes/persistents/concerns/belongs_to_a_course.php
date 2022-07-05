@@ -23,6 +23,8 @@
 
 namespace block_quickmail\persistents\concerns;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use lang_string;

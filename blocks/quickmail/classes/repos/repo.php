@@ -23,6 +23,8 @@
 
 namespace block_quickmail\repos;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\repos\pagination\paginator;

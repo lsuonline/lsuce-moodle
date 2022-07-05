@@ -23,6 +23,8 @@
 
 namespace block_quickmail\validators;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail_config;

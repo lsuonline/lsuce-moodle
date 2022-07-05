@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -45,8 +50,6 @@ class block_quickmail_event_notification_handler_testcase extends advanced_testc
         ]);
 
         event_notification_handler::course_entered($userstudents[0]->id, $course->id);
-
-     //   var_dump('woohoo!');die;
     }
 
 }

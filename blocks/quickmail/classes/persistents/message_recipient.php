@@ -23,6 +23,8 @@
 
 namespace block_quickmail\persistents;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\persistents\concerns\enhanced_persistent;
@@ -84,27 +86,27 @@ class message_recipient extends \block_quickmail\persistents\persistent {
     public function has_been_sent_to() {
         return (bool) $this->get('sent_at');
     }
-    
+
     // Getters.
     /**
-     * Checks if the account still exists as some users may get 
+     * Checks if the account still exists as some users may get
      * "deleted" before a queue'd message is sent.
      *
      * @param  int        user_id
      * @return bool
      */
-    public function account_exists($user_id = 0) {
+    public function account_exists($qmuserid = 0) {
         global $DB;
         // First check the user exists.
-        
-        $user_test_record = array_values($DB->get_records_sql(
+
+        $usertestrecord = array_values($DB->get_records_sql(
             'SELECT deleted
                 FROM mdl_user
                 WHERE id = ?',
-            array($user_id)
+            array($qmuserid)
         ));
-        
-        return (bool) $user_test_record[0]->deleted;
+
+        return (bool) $usertestrecord[0]->deleted;
     }
 
     // Setters.
@@ -125,18 +127,19 @@ class message_recipient extends \block_quickmail\persistents\persistent {
 
         $this->update();
     }
-    // Maintenance
+
     /**
      * Deletes a recipient for this message
      *
-     * @param  int message_id 
-     * @param  int user_id 
+     * @param  int message_id
+     * @param  int user_id
      * @return void
      */
-    public function remove_recipient_from_message($message_id = 0, $user_id = 0) {
+    // Maintenance.
+    public function remove_recipient_from_message($qmmessageid = 0, $qmuserid = 0) {
         global $DB;
         // Delete recipient belonging to this message.
-        $DB->delete_records('block_quickmail_msg_recips', ['message_id' => $message_id, 'user_id' => $user_id]);
+        $DB->delete_records('block_quickmail_msg_recips', ['message_id' => $qmmessageid, 'user_id' => $qmuserid]);
     }
 
     // Custom Static Methods.

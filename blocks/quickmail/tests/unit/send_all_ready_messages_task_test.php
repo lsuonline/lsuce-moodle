@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -62,12 +67,6 @@ class block_quickmail_send_all_ready_messages_task_testcase extends advanced_tes
          *  dispatched immediately after creation).
          *  Also, the execute() method of task isn't defined with a parameter, so removing it.
          */
-        /*
-        \phpunit_util::run_all_adhoc_tasks();
-
-        // Should be no tasks fire yet, so no emails.
-        $this->assertEquals(0, $this->email_sink_email_count($sink));
-        */
         $task = new send_all_ready_messages_task();
 
         $task->execute();

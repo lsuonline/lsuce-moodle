@@ -23,6 +23,8 @@
 
 namespace block_quickmail\components;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 class component {

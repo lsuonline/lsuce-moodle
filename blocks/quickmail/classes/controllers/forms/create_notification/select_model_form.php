@@ -23,6 +23,8 @@
 
 namespace block_quickmail\controllers\forms\create_notification;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');

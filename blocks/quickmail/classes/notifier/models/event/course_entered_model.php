@@ -23,6 +23,8 @@
 
 namespace block_quickmail\notifier\models\event;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\notifier\models\interfaces\event_notification_model_interface;

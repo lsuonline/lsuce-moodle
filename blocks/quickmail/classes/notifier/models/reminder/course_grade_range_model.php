@@ -23,6 +23,8 @@
 
 namespace block_quickmail\notifier\models\reminder;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\notifier\models\interfaces\reminder_notification_model_interface;

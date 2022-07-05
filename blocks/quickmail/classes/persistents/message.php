@@ -23,6 +23,8 @@
 
 namespace block_quickmail\persistents;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail_cache;
@@ -491,7 +493,7 @@ class message extends \block_quickmail\persistents\persistent {
 
         $this->update();
     }
-    
+
     /**
      * Update this message as deleted
      *
@@ -688,7 +690,7 @@ class message extends \block_quickmail\persistents\persistent {
             }
         }
 
-        // Refresh record (necessary?)
+        // Refresh record (necessary)?
         $this->read();
     }
 

@@ -23,6 +23,8 @@
 
 namespace block_quickmail\tasks;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use core\task\scheduled_task;

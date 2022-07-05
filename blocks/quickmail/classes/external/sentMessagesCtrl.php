@@ -1,11 +1,28 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// phpcs:disable moodle.NamingConventions.ValidFunctionName.LowercaseMethod
+
 /**
  * ************************************************************************
  *                            QuickMail
  * ************************************************************************
  * Web Service to allow users to remove messages in the "Sent Message History"
  * This does NOT actually delete the msg record but marks it as "deleted".
- 
+
  * @package    block - Quickmail
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards Chad Mazilly, Robert Russo, Jason Peak, Dave Elliott, Adam Zapletal, Philip Cali
@@ -13,13 +30,12 @@
  * @author     Update by David Lowe
  */
 
-class sentMessagesCtrl
-{
+class sentMessagesCtrl {
     public function removeSentMessages($data) {
         global $USER;
 
         $success = "success";
-        $fail_msg = "The messages have been successfully removed";
+        $failmsg = "The messages have been successfully removed";
         foreach ($data->ids as $id) {
 
             // Authentication.
@@ -28,13 +44,13 @@ class sentMessagesCtrl
             // Check that the message has not been deleted.
             if (!$message = \block_quickmail\persistents\message::find_or_null($id)) {
                 $success = "error";
-                $fail_msg = "Cannot find this sent message";
+                $failmsg = "Cannot find this sent message";
             }
-            
+
             // Check that the user can delete this message.
             if ($message->get('user_id') !== $USER->id) {
                 $success = "error";
-                $fail_msg = "This user cannot delete the sent message(s)";
+                $failmsg = "This user cannot delete the sent message(s)";
             }
 
             $message->mark_as_deleted();
@@ -43,7 +59,7 @@ class sentMessagesCtrl
         return array(
             'success' => $success,
             'data' => $data,
-            'msg' => $fail_msg
+            'msg' => $failmsg
         );
     }
 }

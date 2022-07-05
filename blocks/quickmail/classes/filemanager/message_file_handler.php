@@ -23,6 +23,8 @@
 
 namespace block_quickmail\filemanager;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail_config;
@@ -65,7 +67,8 @@ class message_file_handler {
         }
         $filehandler->sync_attachments();
     }
-        /**
+
+    /**
      * Executes posted file attachments for the given message
      *
      * @param  message  $message

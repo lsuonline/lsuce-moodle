@@ -23,6 +23,8 @@
 
 namespace block_quickmail\messenger\message\data_mapper;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail_string;

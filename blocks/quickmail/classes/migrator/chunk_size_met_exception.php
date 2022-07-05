@@ -23,6 +23,8 @@
 
 namespace block_quickmail\migrator;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 class chunk_size_met_exception extends \Exception {

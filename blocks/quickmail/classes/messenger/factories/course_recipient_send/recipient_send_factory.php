@@ -23,6 +23,8 @@
 
 namespace block_quickmail\messenger\factories\course_recipient_send;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\messenger\message\subject_prepender;

@@ -23,6 +23,8 @@
 
 namespace block_quickmail\services;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\persistents\alternate_email;

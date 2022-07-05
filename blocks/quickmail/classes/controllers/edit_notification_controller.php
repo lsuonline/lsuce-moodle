@@ -23,6 +23,8 @@
 
 namespace block_quickmail\controllers;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\controllers\support\base_controller;

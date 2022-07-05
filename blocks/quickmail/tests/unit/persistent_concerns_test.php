@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -85,8 +90,8 @@ class block_quickmail_persistent_concerns_testcase extends advanced_testcase {
 
         $timestamp = $message->get('timecreated');
 
-		// Segun Babalola, 2020-10-30
-		// Actual dates are using config format, so use the same format here to prevent test failure.
+        // Segun Babalola, 2020-10-30
+        // Actual dates are using config format, so use the same format here to prevent test failure.
         $datetimeformat = get_string('strftimedatetime', 'langconfig');
 
         $this->assertEquals(userdate($timestamp, $datetimeformat), $message->get_readable_date('timecreated'));

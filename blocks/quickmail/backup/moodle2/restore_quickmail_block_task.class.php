@@ -21,6 +21,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/blocks/quickmail/backup/moodle2/restore_quickmail_stepslib.php');
@@ -111,12 +113,12 @@ class restore_quickmail_block_task extends restore_block_task {
         return array();
     }
 
-    static public function define_decode_contents() {
+    public static function define_decode_contents() {
         // TODO: Perhaps we'll need this when moving away from email zip attachments.
         return array();
     }
 
-    static public function define_decode_rules() {
+    public static function define_decode_rules() {
         return array();
     }
 }

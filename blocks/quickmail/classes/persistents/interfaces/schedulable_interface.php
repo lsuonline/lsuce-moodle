@@ -23,6 +23,8 @@
 
 namespace block_quickmail\persistents\interfaces;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 interface schedulable_interface {

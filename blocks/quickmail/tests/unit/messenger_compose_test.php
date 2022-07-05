@@ -21,6 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// phpcs:disable moodle.PHPUnit.TestCaseNames.NoMatch
+// phpcs:disable moodle.PHPUnit.TestCaseNames.MissingNS
+
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
@@ -233,8 +238,8 @@ class block_quickmail_messenger_compose_testcase extends advanced_testcase {
     }
 
     public function test_messenger_sends_a_receipt_if_asked() {
-		// Segun Babalola, 2020-10-30
-		// Various minor fixes to get tests passing.
+        // Segun Babalola, 2020-10-30
+        // Various minor fixes to get tests passing.
 
         // Reset all changes automatically after this test.
         $this->resetAfterTest(true);

@@ -23,6 +23,8 @@
 
 namespace block_quickmail\forms;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');
@@ -497,7 +499,7 @@ class compose_message_form extends \moodleform {
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
 
-        // If there are any draft attachments set the form and show it
+        // If there are any draft attachments set the form and show it.
         if (!empty($this->draft_attachment)) {
             if (empty($entry->id)) {
                 $entry = new \stdClass;
@@ -526,8 +528,8 @@ class compose_message_form extends \moodleform {
 
         // Additional_emails - make sure each is valid.
         $cleansedadditionalemails = preg_replace('/\s+/', '', $data['additional_emails']);
-        // some users prefer the semi-colon to separate addresses 
-        // so let's just change that back to a comma and carry on.
+        // Some users prefer the semi-colon to separate addresses.
+        // Let's just change that back to a comma and carry on.
         $cleansedadditionalemails = preg_replace('/;/', ',', $data['additional_emails']);
 
         if (!empty($cleansedadditionalemails) && count(array_filter(explode(',', $cleansedadditionalemails), function($email) {

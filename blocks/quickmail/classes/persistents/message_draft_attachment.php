@@ -23,6 +23,8 @@
 
 namespace block_quickmail\persistents;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\persistents\concerns\enhanced_persistent;
@@ -53,7 +55,7 @@ class message_draft_attachment extends \block_quickmail\persistents\persistent {
             'path' => [
                 'type' => PARAM_TEXT, // Role, user, group, filter.
             ],
-            
+
         ];
     }
 
@@ -75,7 +77,7 @@ class message_draft_attachment extends \block_quickmail\persistents\persistent {
         $thiscourseid = $message->get('course_id');
 
         foreach ($records as $record) {
-            // Get file
+            // Get file.
             $file = $fs->get_file(
                 \context_course::instance($thiscourseid)->id,
                 'block_quickmail',
@@ -85,7 +87,7 @@ class message_draft_attachment extends \block_quickmail\persistents\persistent {
                 $record->filename
             );
 
-            // Delete it if it exists
+            // Delete the file if it exists.
             if ($file) {
                 $file->delete();
             }

@@ -23,6 +23,8 @@
 
 namespace block_quickmail\exceptions;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 class validation_exception extends \Exception {

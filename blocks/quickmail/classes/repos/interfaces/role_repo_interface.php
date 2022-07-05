@@ -23,6 +23,8 @@
 
 namespace block_quickmail\repos\interfaces;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 interface role_repo_interface {

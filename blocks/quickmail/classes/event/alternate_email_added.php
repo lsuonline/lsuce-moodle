@@ -23,11 +23,12 @@
 
 namespace block_quickmail\event;
 
+// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalNotNeeded
+
 defined('MOODLE_INTERNAL') || die();
 
 class alternate_email_added extends \core\event\base {
     protected function init() {
-        // Standard CRUD c(reate), r(ead), u(pdate), d(elete).
         $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
     }
