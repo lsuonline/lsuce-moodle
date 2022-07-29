@@ -1,0 +1,117 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * @package    block_lsuxe Cross Enrollment
+ * @copyright  2008 onwards Louisiana State University
+ * @copyright  2008 onwards David Lowe
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+ define(['jquery', 'core/notification', 'core/modal_factory', 'core/modal_events'], function($, notification, MF, ME) {
+    'use strict';
+
+    return {
+
+        /**
+         * To remove a record let's confirm that the user wants to do this.
+         * Type can be either: success, warning, info, error
+         *  Example:
+         *  noti.callNoti({
+         *      message: "This is a success test",
+         *      type: "success"
+         *  });
+         * @param {obj} A simple object with the 'message' and 'type' of notification.
+         * @return void
+         */
+        callRemoveModi: function(data) {
+            var this_data = data;
+            var promiseObj = new Promise(function (resolve) {
+
+                console.log("What is the data passed into Modi: ", data);
+                MF.create({
+                    type: MF.types.SAVE_CANCEL,
+                    title: 'Delete item',
+                    body: 'Do you really want to delete?',
+                })
+                .then(function(modal) {
+                // .then(function() {
+                    modal.setSaveButtonText('Delete');
+                    var root = modal.getRoot();
+                    root.on(ME.save, function() {
+                        console.log("Do we have the data object still: ", this_data);
+                        resolve({"status": true, "data": this_data});
+                    });
+                    // root.on(ME.cancel, function() {
+                    //     console.log("The button was cancelled");
+                    //     resolve({"status": false});
+                    // });
+                    modal.show();
+                });
+            });
+            return promiseObj;
+        },
+
+        /**
+         * A simple way to call the Moodle core notification system.
+         * Type can be either: success, warning, info, error
+         *  Example:
+         *  noti.callNoti({
+         *      message: "This is a success test",
+         *      type: "success"
+         *  });
+         * @param {obj} A simple object with the 'message' and 'type' of notification.
+         * @return void
+         */
+        callNoti: function(data) {
+            if (!data.hasOwnProperty('message')) {
+                console.log("ERROR -> Notification was called but with no message, aborting.");
+            }
+            if (!data.hasOwnProperty('type')) {
+                // default to info
+                data.type = "info";
+            }
+            notification.addNotification(data);
+        },
+        /**
+         * Store the reponse object to showcase a message after reload.
+         * @param {obj} Server Response {'success', 'data', 'msg'}
+         *
+         * @return void
+         */
+        storeMsg: function(data) {
+            // Save data to sessionStorage
+            sessionStorage.setItem('sent_delete_success', data.success);
+            sessionStorage.setItem('sent_delete_msg', data.msg);
+        },
+        /**
+         *  If a message is stored then show the notification and remove it.
+         * @param void
+         * @return void
+         */
+        showMsg: function() {
+            // Save data to sessionStorage
+            if (sessionStorage.getItem('sent_delete_msg')) {
+                this.callNoti({
+                    message: sessionStorage.getItem('sent_delete_msg'),
+                    type: sessionStorage.getItem('sent_delete_success')
+                });
+                // Remove saved data from sessionStorage
+                sessionStorage.removeItem('sent_delete_msg');
+                sessionStorage.removeItem('sent_delete_success');
+            }
+        }
+    };
+});
