@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -29,12 +31,12 @@ use templatable;
 use stdClass;
 
 class mappings_create implements renderable, templatable {
-    /** @var string $sometext Some text to show how to pass data to a template. */
-    private $sometext = null;
+    /** @var string $somevariable Some text to show how to pass data to a template. */
+    // private $somevariable = null;
 
     // public function __construct(): void {
     public function __construct() {
-        // $this->sometext = $sometext;
+        // $this->somevariable = $somevariable;
     }
 
     /**
@@ -44,10 +46,7 @@ class mappings_create implements renderable, templatable {
      */
     // public function export_for_template(renderer_base $output): stdClass {
     public function export_for_template(renderer_base $output) {
-        // $data = new stdClass();
-        // $data->sometext = $this->sometext;
-        // return $data;
-        // $mform = new \block_lsuxe\form\mappings_create();
-        // return $mform->render();
+        // TODO: Remove this file if not used.
+        // This is currently not being used but here (for now) in case we need it.
     }
 }

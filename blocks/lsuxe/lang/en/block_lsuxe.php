@@ -16,6 +16,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -29,11 +31,16 @@ $string['adminname'] = 'Manage Cross Enrollments';
 $string['settings'] = 'Settings';
 
 // Tasks.
+$string['lsuxe_courses'] = 'Fetch Remote Courseids';
+$string['lsuxe_groups'] = 'Fetch Remote Groupids';
+$string['lsuxe_users'] = 'Verify and Create Remote Users';
+$string['lsuxe_enroll'] = 'Basic LSU Cross Enrollment';
+$string['lsuxe_full_enroll'] = 'FULL LSU Cross Enrollment';
 
 // Capabilities.
-$string['xe:admin'] = 'Administer the Cross Enrollment system.';
-$string['xe:addinstance'] = 'Add a new Cross Enrollment block to a course page';
-$string['xe:myaddinstance'] = 'Add a new Cross Enrollment block to the /my page';
+$string['lsuxe:admin'] = 'Administer the Cross Enrollment system.';
+$string['lsuxe:addinstance'] = 'Add a new Cross Enrollment block to a course page';
+$string['lsuxe:myaddinstance'] = 'Add a new Cross Enrollment block to the /my page';
 
 // General Terms.
 $string['backtocourse'] = 'Back to course';
@@ -63,7 +70,9 @@ $string['moodles_create'] = 'Moodles - Create';
 
 // Forms New Mappings.
 $string['newmapping'] = 'Create New Mapping';
-$string['newmmoodle'] = 'Create New Instance';
+$string['newmoodle'] = 'Create New Instance';
+$string['updatemapping'] = 'Update Mapping';
+$string['updatemoodle'] = 'Update Instance';
 $string['srccourseshortname'] = 'Source Course Shortname';
 $string['srccoursegroupname'] = 'Source Group Shortname';
 $string['destmoodleinstance'] = 'Destination Moodle Instance';
@@ -76,6 +85,7 @@ $string['updatenow'] = 'Update Now';
 $string['edit'] = 'Edit';
 $string['delete'] = 'Delete';
 $string['nomappings'] = 'No Mappings to view';
+$string['manualgroupentry'] = 'Click manually enter a group name.';
 
 // Forms New Moodles.
 $string['instanceurl'] = 'Moodle Instance URL';
@@ -103,6 +113,8 @@ $string['verificationsuccess'] = 'Verification Success!';
 $string['verified'] = 'Verified';
 $string['creatednewmapping'] = 'The new mapping has been created';
 $string['creatednewmoodle'] = 'The new moodle instance has been created';
+$string['updatedmapping'] = 'The mapping has been updated';
+$string['updatedmoodle'] = 'The moodle instance has been updated';
 $string['deletemapping'] = 'The mapping has been removed';
 $string['deletemoodle'] = 'The moodle instance has been removed';
 

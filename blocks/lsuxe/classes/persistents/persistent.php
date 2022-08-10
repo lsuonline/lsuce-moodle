@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe Cross Enrollment
+ * Cross Enrollment Tool
+ *
+ * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -65,17 +67,17 @@ abstract class persistent extends \core\persistent {
     // }
 
     /**
-     * Get al the records for mappings. The returning array is formatted 
-     * to suite templates.
+     * Get al the records for mappings. The returning array is formatted
+     * for templates.
      * @return array
      */
     // public function check
     public static function get_all_records($this_form = null) {
         global $DB;
 
-        $sql = 'SELECT * FROM {' . static::TABLE . '}';
+        $sql = 'SELECT * FROM {' . static::TABLE . '} WHERE timedeleted IS NULL';
 
-        $recordset = $DB->get_records(static::TABLE);
+        $recordset = $DB->get_records_sql($sql);
         $these_mappings = array();
         foreach ($recordset as $record) {
             // convert record from obj to array

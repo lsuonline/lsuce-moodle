@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -47,6 +49,6 @@ class moodles_view implements renderable, templatable {
         $helpers = new \lsuxe_helpers();
 
         $data = $pname->get_all_records("moodles");
-        return $helpers->transform_for_view($data, "moodles");
+        return $pname->transform_for_view($data, $helpers);
     }
 }

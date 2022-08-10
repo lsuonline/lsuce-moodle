@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -29,12 +31,12 @@ use templatable;
 use stdClass;
 
 class moodles_create implements renderable, templatable {
-    /** @var string $sometext Some text to show how to pass data to a template. */
-    // private $sometext = null;
+    /** @var string $somevariable Some text to show how to pass data to a template. */
+    // private $somevariable = null;
 
-    // public function __construct($sometext): void {
-    public function __construct($sometext) {
-        // $this->sometext = $sometext;
+    // public function __construct($somevariable): void {
+    public function __construct() {
+        // $this->somevariable = $somevariable;
     }
 
     /**
@@ -43,8 +45,6 @@ class moodles_create implements renderable, templatable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output): stdClass {
-        // $data = new stdClass();
-        // $data->sometext = $this->sometext;
-        // return $data;
+        // TODO: Remove this file if not used.
     }
 }

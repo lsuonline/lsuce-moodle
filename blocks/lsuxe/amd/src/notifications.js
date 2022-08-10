@@ -14,19 +14,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe Cross Enrollment
+ * Cross Enrollment Tool
+ *
+ * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- define(['jquery', 'core/notification', 'core/modal_factory', 'core/modal_events'], function($, notification, MF, ME) {
+ define(['jquery', 'core/notification', 'core/modal_factory', 'core/modal_events'],
+    function($, notification, MF, ME) {
     'use strict';
 
     return {
 
         /**
-         * To remove a record let's confirm that the user wants to do this.
+         * Confirmation window to SAVE or CANCEL
          * Type can be either: success, warning, info, error
          *  Example:
          *  noti.callNoti({
@@ -40,24 +43,17 @@
             var this_data = data;
             var promiseObj = new Promise(function (resolve) {
 
-                console.log("What is the data passed into Modi: ", data);
                 MF.create({
                     type: MF.types.SAVE_CANCEL,
                     title: 'Delete item',
                     body: 'Do you really want to delete?',
                 })
                 .then(function(modal) {
-                // .then(function() {
                     modal.setSaveButtonText('Delete');
                     var root = modal.getRoot();
                     root.on(ME.save, function() {
-                        console.log("Do we have the data object still: ", this_data);
                         resolve({"status": true, "data": this_data});
                     });
-                    // root.on(ME.cancel, function() {
-                    //     console.log("The button was cancelled");
-                    //     resolve({"status": false});
-                    // });
                     modal.show();
                 });
             });
@@ -85,8 +81,9 @@
             }
             notification.addNotification(data);
         },
+
         /**
-         * Store the reponse object to showcase a message after reload.
+         * Store the reponse object to showcase a message after page reload.
          * @param {obj} Server Response {'success', 'data', 'msg'}
          *
          * @return void
@@ -96,6 +93,7 @@
             sessionStorage.setItem('sent_delete_success', data.success);
             sessionStorage.setItem('sent_delete_msg', data.msg);
         },
+
         /**
          *  If a message is stored then show the notification and remove it.
          * @param void

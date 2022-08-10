@@ -1,5 +1,5 @@
-// This file is part of Moodle - http://moodle.org/
-//
+<?php
+
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -22,25 +22,27 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/form_events'],
-    function($, XELib, XEEvents) {
-    'use strict';
-    return {
+// We defined the web service functions to install.
+$functions = array(
+    'block_lsuxe_XEAjax' => array(
+        'classname'   => 'block_lsuxe_external',
+        'methodname'  => 'XEAjax',
+        'classpath'   => 'blocks/lsuxe/externallib.php',
+        'description' => 'Entry point for Cross Enrollment Rest Services',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+);
 
-        /**
-         * This is the starting function for the Cross Enrollment Tool
-         * @param {object} extras is data coming from PHP
-         */
-        init: function() {
-            // Clear the session storage so it won't last outside of the form page.
-            sessionStorage.removeItem("currentToken");
-            sessionStorage.removeItem("currentUrl");
-
-            // Process any data being sent here.
-            XELib.preLoadConfig();
-
-            // Register any click events and other start up processes.
-            XEEvents.init();
-        }
-    };
-});
+// We define the services to install as pre-build services. A pre-build service is not editable by administrator.
+$services = array(
+    'LSUXE Service' => array(
+        'functions' => array (
+            'block_lsuxe_XEAjax'
+        ),
+        'restrictedusers' => 0,
+        'enabled'=>1,
+    )
+);
+// Sample Request URL: 
+// [$CFG->wwwroot, whatever your url is]/lib/ajax/service.php?sesskey=[sesskey]&info=block_lsuxe_XEAjax

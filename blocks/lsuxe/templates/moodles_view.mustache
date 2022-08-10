@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -24,7 +26,7 @@
 
 <div class="block_lsuxe_container">
 
-    <table class="table table-hover lsuxe_mappings_table">
+    <table class="table table-hover table-striped lsuxe_moodles_table">
         <thead>
             <tr>
                 {{#moodleURL}}
@@ -82,9 +84,9 @@
                     <td>{{ token }}</td>
                     <td>{{ tokenexpire }}</td>
                     <td>{{{ updateinterval }}}</td>
-                    <td><button class="btn btn-success mview_update"><i class="fa fa-refresh"></button></td>
-                    <td><button class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
-                    <td><button class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
+                    <td><button type="submit" class="btn btn-success mview_update"><i class="fa fa-refresh"></button></td>
+                    <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
+                    <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
                 </tr>
             </form>
             {{/ moodles }}

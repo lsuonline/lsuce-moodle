@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -33,10 +35,13 @@ $context = \context_system::instance();
 
 $pageparams = [
     'vform' => optional_param('vform', 0, PARAM_INT),
-    'sort' => optional_param('sort', 'sent', PARAM_TEXT), // Field name.
-    'dir' => optional_param('dir', 'desc', PARAM_TEXT), // Asc|desc.
+    // TODO: Sort by field name.
+    'sort' => optional_param('sort', 'sent', PARAM_TEXT),
+    // TODO: Asc|desc.
+    'dir' => optional_param('dir', 'desc', PARAM_TEXT),
+    // TODO: need to implement pagination......maybe?
     'page' => optional_param('page', 1, PARAM_INT),
-    'per_page' => 10, // Adjust as necessary, maybe turn into real param?
+    'per_page' => 10,
     'sent_action' => optional_param('sentaction', "", PARAM_TEXT),
     'sent_data' => optional_param('sentdata', 0, PARAM_INT),
 ];
@@ -48,11 +53,18 @@ $sectiontitle = get_string('newmapping', 'block_lsuxe');
 $url = new moodle_url('/blocks/lsuxe/mappings.php', $pageparams);
 $worky = null;
 
+// Are we looking at the form to add/update or the list?
+$viewform = false;
+if ($pageparams['vform'] == 1) {
+    // Ok then, we are looking at the FORM.
+    $viewform = true;
+}
 //------------------------------------------------------------------------
 // If we want to push any data to javascript then we can add it here
 $initialload = array(
     "wwwroot" => $CFG->wwwroot,
-    "xe_form" => "mappings"
+    "xe_form" => "mappings",
+    "xe_viewform" => $viewform
 );
 $initialload = json_encode($initialload, JSON_HEX_APOS|JSON_HEX_QUOT);
 $xtras = "<script>window.__SERVER__=true</script>".
@@ -78,18 +90,15 @@ if ($pageparams['sent_action'] === "delete") {
     \core\notification::success(get_string('deletemapping', 'block_lsuxe'));
 }
 
-if ($pageparams['vform'] == 1) {
+if ($viewform == true) {
 
     // We are viewing the form so are we updating or creating a new record?
     if ($pageparams['sent_action'] === "update") {
+        // Update the section title
+        $sectiontitle = get_string('updatemapping', 'block_lsuxe');
         // Get the course record that you want.
-
         $this_mapping = $DB->get_record('block_lsuxe_mappings', array('id' => (int)$pageparams['sent_data']));
-        error_log("\n\n");
-        error_log(" What is this mapping: ". print_r($this_mapping, 1). " ");
-        error_log("\n\n");
         // Pass the time created value in an array.
-        // $customdata = array('timecreated' => $course->timecreated);
         $mform = new \block_lsuxe\form\mappings_form(null, $this_mapping);
     } else {
         $mform = new \block_lsuxe\form\mappings_form();
@@ -106,8 +115,8 @@ if ($pageparams['vform'] == 1) {
     } else if ($fromform = $mform->get_data()) {
         // When the form is submitted, and the data is successfully validated,
         // the `get_data()` function will return the data posted in the form.
-        // error_log("mappings.php -> What is the form data: ". $fromform);
         $worky = $worky ?? new \block_lsuxe\controllers\form_controller("mappings");
+        // form_controller will process and use matching persistent.
         $worky->process_form($fromform);
     } else {
         // This branch is executed if the form is submitted but the data doesn't
@@ -115,6 +124,7 @@ if ($pageparams['vform'] == 1) {
         $mform->set_data($fromform);
     }
     echo $output->header();
+    echo $xtras;
     echo $output->heading($sectiontitle);
     $mform->display();
 

@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -106,34 +108,32 @@ class block_lsuxe extends block_list {
                 'lang_key' => get_string('mappings_view', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
                 'page' => 'mappings',
-                'query_string' => ['view' => 1]
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_create', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
                 'page' => 'mappings',
+                'query_string' => ['vform' => 1]
             ]);
             
             $this->add_item_to_content([
                 'lang_key' => get_string('tokens_view', 'block_lsuxe'),
                 'icon_key' => 't/unlock',
                 'page' => 'tokens',
-                'query_string' => ['view' => 1]
-                // 'query_string' => ['courseid' => $this->course->id]
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_view', 'block_lsuxe'),
                 'icon_key' => 't/calc',
                 'page' => 'moodles',
-                'query_string' => ['view' => 1]
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_create', 'block_lsuxe'),
                 'icon_key' => 't/calc',
                 'page' => 'moodles',
+                'query_string' => ['vform' => 1]
             ]);
             
         }
@@ -194,7 +194,7 @@ class block_lsuxe extends block_list {
     }
 
     public function cron() {
-        mtrace( "Hey, my cron script is running" );
+        // mtrace( "Hey, my cron script is running" );
         // do something
         return true;
     }

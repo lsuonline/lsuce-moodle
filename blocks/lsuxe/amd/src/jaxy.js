@@ -14,43 +14,76 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe Cross Enrollment
+ * Cross Enrollment Tool
+ *
+ * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- define([
-    'jquery',
-    'core/ajax',
-], function($, Ajax) {
+define(['jquery', 'core/ajax',],
+    function($, Ajax) {
     'use strict';
-
     return {
         /**
-         * A Javascript Promise Wrapper to make AJAX calls.
+         * AJAX method to access the external services for Cross Enrollment
          *
-         * Valid args are:
-         * int example 2     Only get events after this time
-         *
-         * @method fetchSWE
-         * @param {object} args The request arguments
+         * @param {object} The request arguments
+         * Format to make calls is:
+         *      'call': [the function name],
+                'params': data you want to pass in JSON format,
+                'class': [class name AND file name, should match]
          * @return {promise} Resolved with an array of the calendar events
          */
-        xeAjax: function(data_chunk) {
+        XEAjax: function(data_chunk) {
             var promiseObj = new Promise(function(resolve, reject) {
-                console.log("xeAjax() -> START, let's Poke the Server");
                 var send_this = [{
-                    methodname: 'block_quickmail_xeAjax',
+                    methodname: 'block_lsuxe_XEAjax',
                     args: {
                         datachunk: data_chunk,
                     }
                 }];
                 Ajax.call(send_this)[0].then(function(results) {
-                    console.log("xeAjax() -> SUCCESS, what is result: ", results);
+                    // console.log("XEAjax() -> SUCCESS, what is result: ", results);
                     resolve(JSON.parse(results.data));
                 }).catch(function(ev) {
+                    console.log("XEAjax() -> JAXY Fail :-(");
+                    console.log("XEAjax() -> JAXY Fail going to reject: ", ev);
                     reject(ev);
+                });
+            });
+            return promiseObj;
+        },
+
+        /**
+         * AJAX method to access the remote Moodle instances.
+         * Going to use default jQuery ajax, not Moodles, for more control.
+         *
+         * @param {object} The request arguments
+         * Format to make calls is:
+         *      type: GET or POST,
+                data: {
+                    wstoken: x
+                    wsfunction: x
+                    moodlewsrestformat: x
+                },
+                url: domain + '/webservice/rest/server.php',
+         * @return {promise} Resolved with an array of the calendar events
+         */
+        XERemoteAjax: function(data_chunk) {
+            var promiseObj = new Promise(function(resolve, reject) {
+                $.ajax({
+                    type: data_chunk.type ,
+                    data: data_chunk.data,
+                    url: data_chunk.url,
+                    success: function (data) {
+                        resolve(data);
+                    },
+                    error: function (error) {
+                        console.log("Remote Ajax Error: ", error);
+                        reject(error);
+                    },
                 });
             });
             return promiseObj;

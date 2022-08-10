@@ -8,11 +8,16 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="url" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The URL for the Moodle instance"/>
+        <FIELD NAME="teacherrole" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The teacher role id for the remote system"/>
+        <FIELD NAME="studentrole" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The student role id for the remote system"/>
         <FIELD NAME="token" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" COMMENT="The token"/>
         <FIELD NAME="tokenexpire" TYPE="int" LENGTH="11" NOTNULL="true" SEQUENCE="false" COMMENT="Token expiration date"/>
         <FIELD NAME="updateinterval" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Default update interval"/>
+        <FIELD NAME="usercreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="User ID of the user who created this entry."/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The timestamp at which the record was modified. It is automatically set."/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The timestamp at which the record was modified. It is automatically set, and defaults to 0."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="User ID of the user who last modified this entry."/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The timestamp at which the record was modified. It is automatically set, and defaults to 0."/>
+        <FIELD NAME="userdeleted" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="User ID of the user who deleted this entry."/>
         <FIELD NAME="timedeleted" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="The timestamp at which the record was deleted. It is automatically set, and defaults to 0."/>
       </FIELDS>
       <KEYS>
@@ -50,10 +55,7 @@
         <KEY NAME="shortname" TYPE="foreign" FIELDS="shortname" REFTABLE="course" REFFIELDS="shortname"/>
         <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="groups" REFFIELDS="id"/>
         <KEY NAME="groupname" TYPE="foreign" FIELDS="groupname" REFTABLE="groups" REFFIELDS="name"/>
-        <KEY NAME="authmethod" TYPE="foreign" FIELDS="authmethod" REFTABLE="user" REFFIELDS="auth"/>
         <KEY NAME="usercreated" TYPE="foreign" FIELDS="usercreated" REFTABLE="user" REFFIELDS="id"/>
-        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
-        <KEY NAME="userdeleted" TYPE="foreign" FIELDS="userdeleted" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="starttime" UNIQUE="false" FIELDS="starttime"/>
