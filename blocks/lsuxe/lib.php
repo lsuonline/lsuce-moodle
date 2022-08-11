@@ -40,6 +40,7 @@ class lsuxe_helpers {
         $moodleurl = new \moodle_url($url, $urlparams);
         redirect($moodleurl, '', $delay);
     }
+
     /**
      * Config Converter - config settings that have multiple lines with
      * a key value settings will be broken down and converted into an
@@ -96,6 +97,7 @@ class lsuxe_helpers {
                 stu.status AS "status",
                 "student" AS "role",
                 u.auth AS "auth",
+                xemm.id AS "xemmid",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -130,6 +132,7 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
                 AND xemm.timedeleted IS NULL
+                AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed
 
             UNION
 
@@ -148,6 +151,7 @@ class lsuxe_helpers {
                 stu.status AS "status",
                 "editingteacher" AS "role",
                 u.auth AS "auth",
+                xemm.id AS "xemmid",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -181,7 +185,8 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
-                AND xemm.timedeleted IS NULL';
+                AND xemm.timedeleted IS NULL
+                AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed';
 
         // Generic Moodle enrollment / suspension data.
         $gsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
@@ -199,6 +204,7 @@ class lsuxe_helpers {
                 IF(ue.status = 0, "enrolled", "unenrolled") AS "status",
                 mr.shortname AS "role",
                 u.auth AS "auth",
+                xemm.id AS "xemmid",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -229,7 +235,8 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
-                AND xemm.timedeleted IS NULL';
+                AND xemm.timedeleted IS NULL
+                AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed';
 
         // Check to see if we're forcing Moodle enrollment.
         $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
@@ -270,6 +277,29 @@ class lsuxe_helpers {
 
         // Return the appropriate value.
         return $isues;
+    }
+
+    /**
+     *
+     * @return @bool
+     */
+    public static function processed($xemmid) {
+        global $DB;
+
+        // Set the xemm table name.
+        $xemtable = 'block_lsuxe_mappings';
+
+        // Set the time.
+        $now = time();
+
+        // Build the minimal data object for update.
+        $dataobject = array('id' => $xemmid, 'timeprocessed' => $now);
+
+        // Update the timestamp.
+        $return = $DB->update_record($xemtable, $dataobject);
+
+        // Return the appropriate value.
+        return $return;
     }
 
     /**
@@ -782,8 +812,14 @@ class lsuxe_helpers {
      * @return @bool
      */
     public static function xe_enroll_user($user, $remoteuserid) {
+        global $CFG;
+
         $role = isset($CFG->xestudentrolename) ? $CFG->xestudentrolename : 'student';
-        $roleid = $user->role == $role ? $user->studentrole : $user->teacherrole;
+
+        $studentrole = $user->studentrole < 99 ? $user->studentrole : $CFG->block_lsuxe_xestudentroleid;
+        $teacherrole = $user->teacherrole < 99 ? $user->teacherrole : $CFG->block_lsuxe_xeteacherroleid;
+
+        $roleid = $user->role == $role ? $studentrole : $teacherrole;
 
         // Set the enrollment page params.
         $pageparams = [

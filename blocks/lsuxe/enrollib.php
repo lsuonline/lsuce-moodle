@@ -76,6 +76,9 @@ class lsuxe {
             }
 
             $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+
+            lsuxe_helpers::processed($user->xemmid);
+
             mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
         }
 
@@ -208,6 +211,9 @@ class lsuxe {
             }
 
             $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+
+            lsuxe_helpers::processed($user->xemmid);
+
             mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
         }
 

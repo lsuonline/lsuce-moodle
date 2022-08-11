@@ -41,7 +41,7 @@ $services = array(
             'block_lsuxe_XEAjax'
         ),
         'restrictedusers' => 0,
-        'enabled'=>1,
+        'enabled'=>1
     )
 );
 // Sample Request URL: 

@@ -96,7 +96,7 @@ class moodles extends \block_lsuxe\persistents\persistent {
                 'type' => PARAM_INT,
                 'default' => null,
                 'null' => NULL_ALLOWED
-            ],
+            ]
         ];
     }
 
@@ -110,7 +110,7 @@ class moodles extends \block_lsuxe\persistents\persistent {
             // DB Column Name => Form Name
             'url' => 'instanceurl',
             'token' => 'instancetoken',
-            'updateinterval' => 'defaultupdateinterval',
+            'updateinterval' => 'defaultupdateinterval'
             // 'tokenexpire' => 'tokenexpiration'
             // 'enabletoken' => 'enabletokenexpiration'
         );
@@ -125,7 +125,7 @@ class moodles extends \block_lsuxe\persistents\persistent {
         return array(
             // DB Column Name => Form Name
             'url' => 'instanceurl',
-            'token' => 'instancetoken',
+            'token' => 'instancetoken'
         );
     }
 

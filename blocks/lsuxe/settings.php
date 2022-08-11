@@ -26,10 +26,19 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Create the settings block.
-$settings = new admin_settingpage($section, get_string('settings'));
+$settings = new admin_settingpage($section, get_string('settings', 'block_lsuxe'));
 
 // Make sure only admins see this one.
 if ($ADMIN->fulltree) {
+    // --------------------------------
+    // Dashboard Link
+    $settings->add(
+        new admin_setting_heading(
+            'lsuxe_link_back_title',
+            get_string('lsuxe_link_back_title', 'block_lsuxe'),
+            ''
+        )
+    );
     // --------------------------------
     // LSUXE Settings Title.
     $settings->add(
@@ -52,6 +61,67 @@ if ($ADMIN->fulltree) {
             Daily 24
             Hourly 1',
             PARAM_TEXT
+        )
+    );
+
+    // --------------------------------
+    // LSUXE Settings Title.
+    $settings->add(
+        new admin_setting_heading(
+            'block_lsuxe_roles_title',
+            get_string('xe_roles_title', 'block_lsuxe'),
+            ''
+        )
+    );
+
+    // Remote student role id.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_lsuxe_xestudentroleid',
+            get_string('xe_studentroleid', 'block_lsuxe'),
+            get_string('xe_studentroleid_help', 'block_lsuxe'),
+            5 // Default.
+        )
+    );
+
+    // Remote teacher role id.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_lsuxe_xeteacherroleid',
+            get_string('xe_teacherroleid', 'block_lsuxe'),
+            get_string('xe_teacherroleid_help', 'block_lsuxe'),
+            3 // Default.
+        )
+    );
+
+    // LSUXE Experimental Title.
+    $settings->add(
+        new admin_setting_heading(
+            'block_lsuxe_xe_experimental_title',
+            get_string('xe_experimental_title', 'block_lsuxe'),
+            ''
+        )
+    );
+
+    // --------------------------------
+    // Use AJAX for form autocomplete.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_lsuxe_enable_form_auto',
+            get_string('xe_form_auto_enable', 'block_lsuxe'),
+            get_string('xe_form_auto_enable_desc', 'block_lsuxe'),
+            0
+        )
+    );
+
+    // --------------------------------
+    // Use AJAX for form autocomplete.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_lsuxe_enable_dest_test',
+            get_string('xe_form_enable_dest_source_test', 'block_lsuxe'),
+            get_string('xe_form_enable_dest_source_test_desc', 'block_lsuxe'),
+            0
         )
     );
 }

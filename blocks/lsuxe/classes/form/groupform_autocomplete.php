@@ -65,7 +65,7 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
         $validattributes = array(
             'ajax' => 'block_lsuxe/destcourse_source',
             'data-contextid' => $contextid,
-            'data-onlyvisible' => $this->onlyvisible ? '1' : '0',
+            'data-onlyvisible' => $this->onlyvisible ? '1' : '0'
         );
         if (!empty($options['multiple'])) {
             $validattributes['multiple'] = 'multiple';

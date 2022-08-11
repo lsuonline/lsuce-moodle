@@ -46,11 +46,14 @@ class mappings_view implements renderable, templatable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output): array {
+        global $CFG;
         $pname = new mappings();
         $helpers = new \lsuxe_helpers();
 
         $data = $pname->get_all_records("mappings");
         $updated_data = $pname->transform_for_view($data, $helpers);
+        $updated_data['xeurl'] = $CFG->wwwroot;
+        
         return $updated_data;
     }
 }

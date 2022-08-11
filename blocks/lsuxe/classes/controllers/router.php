@@ -81,6 +81,33 @@ class router {
         return $results;
     }
 
+    /**
+     * Verify if the course and group exists
+     * @param  array containing course name and group name
+     * @return array
+     */
+    public function verifyCourse($params) {
+        $results = array();
+
+        $fuzzy = new \block_lsuxe\models\mixed();
+        $dbresult = $fuzzy->verifyCourseGroup($params);
+        $dbcount = count($dbresult);
+
+        if ($dbcount == 0) {
+            $return_obj->success = false;
+            $return_obj->msg = "Either the course shortname and/or group name do not exist.";
+        } else if ($dbcount > 1) {
+            $return_obj->success = false;
+            $return_obj->msg = "There are multiple records.";
+        } else {
+            $return_obj->success = true;
+            $dbresult = array_values($dbresult);
+            $return_obj->data = $dbresult[0];
+        }
+
+        return $return_obj;
+    }
+
     public function testService($params) {
         return array("success" => true);
     }

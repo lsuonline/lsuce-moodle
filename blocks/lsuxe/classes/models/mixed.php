@@ -38,7 +38,7 @@ class mixed {
      * @param  object containing the course id and name
      * @return array
      */
-    public function getCourseGroupData($params) {
+    public function getCourseGroupData($params = false) {
         global $DB;
         
         $courseid = isset($params->courseid) ? $params->courseid : null;
@@ -92,5 +92,44 @@ class mixed {
         }
 
         return $return_obj;
+    }
+
+    /**
+     * Does the course and group exist?
+     * @param  object containing the course shortname and group name
+     * @return array
+     */
+    public function verifyCourseGroup($params = false) {
+        global $DB;
+        $coursename = isset($params->coursename) ? $params->coursename : null;
+        $groupname = isset($params->groupname) ? $params->groupname : null;
+        $return_obj = new \stdClass();
+        
+        $coursedata = $DB->get_records_sql(
+            'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
+            FROM mdl_course c, mdl_groups g
+            WHERE c.id = g.courseid AND c.shortname = ? AND g.name = ?',
+            array($coursename, $groupname)
+        );
+
+        return $coursedata;
+    }
+
+    /**
+     * Fetch the course and group
+     * @param  array containing course name and group name
+     * @return array
+     */
+    public function getCourseGroupInfo($coursename = false, $groupname = false) {
+        global $DB;
+        
+        $coursedata = $DB->get_record_sql(
+            'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
+            FROM mdl_course c, mdl_groups g
+            WHERE c.id = g.courseid AND c.shortname = ? AND g.name = ?',
+            array($coursename, $groupname)
+        );
+
+        return $coursedata;
     }
 }

@@ -34,6 +34,7 @@
          * @return void
          */
         registerEvents: function () {
+            // var that = this;
 
             $('.block_lsuxe_container .mview_update').on('click', function() {
                 // record will be the id of the record in the db
@@ -67,8 +68,8 @@
                         // Convert all the form elements values to a serialised string.
                         this_form.append('<input type="hidden" name="sentaction" value="delete" />');
                         this_form.submit();
-                    } else {
-                        console.log("NOPE the thingy is false");
+                    // } else {
+                        // console.log("NOPE the thingy is false");
                     }
                 });
             });
@@ -81,7 +82,6 @@
          */
         init: function() {
             var that = this;
-
             // register events
             that.registerEvents();
         },

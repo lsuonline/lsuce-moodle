@@ -22,8 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- define(['jquery', 'block_lsuxe/xe_lib'],
-    function($, XELib) {
+ define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/notifications'],
+    function($, XELib, Noti) {
     'use strict';
     return {
         /**
@@ -35,7 +35,6 @@
         getTokenReady: function () {
             // Check to see if this is the first time landing or not.
             var url = $('#id_available_moodle_instances option:selected').text();
-
             XELib.getTokenForURL(url).then(function (response) {
                 if (response.success == true) {
                     sessionStorage.setItem("currentToken", response.data);
@@ -69,6 +68,35 @@
         setHiddenValue: function (tag, value) {
             $('input[name='+tag+']').val(value);
         },
+
+        /**
+         * Verify the source course and group
+         * @param {object} the json object sent to the server
+         * @return resolved data
+         */
+        verifySourceCourse: function (params) {
+            return XELib.jaxyPromise({
+                'call': 'verifyCourse',
+                'params': params,
+                'class': 'router'
+            });
+        },
+
+        verifyDestCourse: function (params) {
+            var new_params = {
+                'type': 'GET',
+                'url': sessionStorage.getItem("currentUrl") + '/webservice/rest/server.php',
+                'data': {
+                    'wstoken': sessionStorage.getItem("currentToken"),
+                    'wsfunction': 'core_course_get_courses_by_field',
+                    'moodlewsrestformat': 'json',
+                    'field': 'shortname',
+                    'value': params.coursename
+                }
+            };
+            return XELib.jaxyRemotePromise(new_params);
+         },
+
         // ==================================================================
         // ==================================================================
         // ==================================================================
@@ -79,11 +107,9 @@
         // ==================================================================
 
         checkMarkOn: function (tag) {
-            console.log("checkMarkOn() -> has been called.");
             $(tag + ' .circle-loader').css('visibility', 'visible');
         },
         checkMarkOff: function (tag) {
-            console.log("checkMarkOff() -> has been called.");
             $(tag + ' .circle-loader').css('visibility', 'hidden');
         },
         checkMarkLoading: function (tag) {
@@ -96,7 +122,6 @@
                 $(cl).toggleClass('load-complete');
                 $(cm).toggle();
             }
-            console.log("checkMarkLoading() -> has been called.");
 
             // $('.xe_confirm_url > .checkmark').toggle();
         },
@@ -110,12 +135,10 @@
             }
         },
         crossMarkOn: function (tag) {
-            console.log("crossMarkOn() -> has been called.");
             $(tag + ' .circle-cross-loader').css('visibility', 'visible');
         },
 
         crossMarkOff: function (tag) {
-            console.log("crossMarkOff() -> has been called.");
             $(tag + ' .circle-cross-loader').css('visibility', 'hidden');
         },
 
@@ -124,15 +147,15 @@
          * @return void
          */
         registerMoodleEvents: function() {
-            var that = this,
-                url_tag = '.xe_confirm_url',
-                token_tag = '.xe_confirm_token';
+            var that = this;
+                // url_tag = '.xe_confirm_url',
+                // token_tag = '.xe_confirm_token';
             // Moodle URL Events
             // Check if the URL is valid
             // -------------------------------------------
+            /*
             $("#id_instanceurl").on("input", function() {
                 // that.handleInputValidation(this, ".xe_confirm_url");
-                console.log("What is the input length: " + this.value.length);
                 if (this.value.length > 0) {
                     // Show the circle loading
 
@@ -145,21 +168,17 @@
             // -------------------------------------------
             // When the user clicks out of the Moodle URL input box, check if url is valid.
             $('#id_instanceurl').on('blur',  function() {
-                // that.handleBlurValidation(this, '.xe_confirm_url');
-                // console.log("What is the url to check: " + this.value);
-
                 // user has clicked out of the URL input, let's check it.
                 if (this.value.length > 0) {
                     // there is something in the input, let's verify it's correct
                     if (XELib.isValidUrl(this.value)) {
-                        console.log("The url is valid");
                         that.checkMarkComplete(url_tag);
                         that.crossMarkOff(url_tag);
 
                     } else {
                         that.checkMarkOff(url_tag);
                         that.crossMarkOn(url_tag);
-                        console.log("The url is NOT valid");
+                        sessionStorage("The url is NOT valid");
                         // $('.xe_confirm_url > .circle-cross-loader').css('visibility', 'visible');
                     }
                 } else {
@@ -199,8 +218,6 @@
 
                 } else {
                     that.crossMarkOn(token_tag);
-                    console.log("The token is NOT valid");
-                    // $('.xe_confirm_token > .circle-cross-loader').css('visibility', 'visible');
                 }
             });
             // -------------------------------------------
@@ -210,38 +227,38 @@
                 that.crossMarkOff(token_tag);
 
             });
-
-            // $('body').keypress(function(e){
-            //     console.log('keypress', String.fromCharCode( e.which ));
-            //     console.log('what is ewhich: ' + e.which);
-            //     if (e.which == 49) {
-            //         $('.xe_confirm_url .circle-loader').toggleClass('load-complete');
-            //         $('.xe_confirm_url .checkmark').toggle();
-
-            //     } else if (e.which == 50) {
-            //         $('.xe_confirm_token .circle-loader').toggleClass('load-complete');
-            //         $('.xe_confirm_token .checkmark').toggle();
-            //     }
-            // });
-
+            */
+            // This is for the Moodles Form
             $('#id_verifysource').on('click', function() {
                 var test_url = $("#id_instanceurl").val(),
                     test_token = $("#id_instancetoken").val();
 
-                console.log("What is the token: " + test_token);
                 var params = {
                     'type': 'GET',
-                    'url': test_url + '/admin/webservice/testclient.php',
+                    // 'type': 'POST',
+                    // 'url': test_url + '/admin/webservice/testclient.php',
+                    'url': test_url + '/webservice/rest/server.php',
                     'data': {
                         'wstoken': test_token,
-                        'wsfunction': 'core_course_get_categories',
-                        'moodlewsrestformat': 'json'
+                        'wsfunction': 'block_lsuxe_XEAjax',
+                        'moodlewsrestformat': 'json',
+                        'datachunk': {
+                            'call': 'testService',
+                            'params': {},
+                            'class': 'router'
+                        }
                     }
                 };
 
                 XELib.testWebServices(params).then(function (response) {
                     console.log("What is the response for the test server: ", response);
                 });
+            });
+
+            // Register events on the moodles form.
+            // onChange event for the URL selector
+            $('select#id_available_moodle_instances').on('change', function() {
+                that.getTokenReady();
             });
         },
 
@@ -314,10 +331,79 @@
                 that.setHiddenValue('srccoursegroupid', new_value);
             });
 
-            // Register events on the moodles form.
-            // onChange event for the URL selector
-            $('select#id_available_moodle_instances').on('change', function() {
-                that.getTokenReady();
+            // Verify the Course and Group Names.
+            $('#id_verifysource').on('click', function() {
+
+                var coursename = $("#id_srccourseshortname").val(),
+                    groupname = $("#id_srccoursegroupname").val();
+
+                if (coursename.length < 1) {
+                    // User forgot to enter a course name.
+                    Noti.callNoti({
+                        message: "Ooops, you forgot to enter a course short name",
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                if (groupname.length < 1) {
+                    // User forgot to enter a course name.
+                    Noti.callNoti({
+                        message: "Ooops, you forgot to enter a group name",
+                        type: 'error'
+                    });
+                    return;
+                }
+                that.verifySourceCourse({
+                    'coursename': coursename,
+                    'groupname': groupname
+                }).then( function (response) {
+                    if (response.success == false) {
+                        Noti.callNoti({
+                            message: response.msg,
+                            type: 'error'
+                        });
+                    } else {
+                        // Populate the hidden fields since we are here.
+                        that.setHiddenValue('srccourseid', response.data.groupid);
+                        that.setHiddenValue('srccoursegroupid', response.data.id);
+                        Noti.callNoti({
+                            message: "Everything checks out for the sourse course and group.",
+                            type: 'success'
+                        });
+                    }
+                });
+
+            });
+
+            $('#id_verifydest').on('click', function() {
+                var destname = $("#id_destcourseshortname").val();
+
+                that.verifyDestCourse({
+                    'coursename': destname
+                }).then( function (response){
+                    if (("courses" in response)) {
+                        // how many courses were retrieved
+                        if (response.courses.length == 1) {
+                            that.setHiddenValue('destcourseid', response.courses[0].id);
+                            Noti.callNoti({
+                                message: "Destination course is there and waiting for you.",
+                                type: 'success'
+                            });
+                        } else {
+                            Noti.callNoti({
+                                message: "There seems to be more than one course with that shortname.",
+                                type: 'warn'
+                            });
+                        }
+                    } else {
+                        // FALSE
+                        Noti.callNoti({
+                            message: "The course: " + destname + " was not found on the destination server.",
+                            type: 'error'
+                        });
+                    }
+                });
             });
         },
 

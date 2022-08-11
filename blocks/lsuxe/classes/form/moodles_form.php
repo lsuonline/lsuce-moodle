@@ -43,6 +43,8 @@ class moodles_form extends \moodleform {
         }
 
         $mform =& $this->_form;
+
+        $enable_dest_test = get_config('moodle', "block_lsuxe_enable_dest_test");
         // checkmark from here:
         // https://codepen.io/scottloway/pen/zqoLyQ
 
@@ -59,7 +61,7 @@ class moodles_form extends \moodleform {
         $urlgroup[] =& $mform->createElement(
             'text',
             'instanceurl',
-            get_string('instanceurl', 'block_lsuxe'),
+            get_string('instanceurl', 'block_lsuxe')
         );
         $mform->setType(
             'instanceurl',
@@ -85,7 +87,7 @@ class moodles_form extends \moodleform {
         // $mform->addElement(
             'text',
             'instancetoken',
-            get_string('instancetoken', 'block_lsuxe'),
+            get_string('instancetoken', 'block_lsuxe')
         );
         $mform->setType(
             'instancetoken',
@@ -136,7 +138,7 @@ class moodles_form extends \moodleform {
         $tokenexpiregroup[] =& $mform->createElement(
             'advcheckbox',
             'enabletokenexpiration',
-            get_string('tokenenable', 'block_lsuxe'),
+            get_string('tokenenable', 'block_lsuxe')
         );
         if (isset($this->_customdata->tokenexpire) && $this->_customdata->tokenexpire != "0") {
             $mform->setDefault('enabletokenexpiration', 1);
@@ -161,9 +163,11 @@ class moodles_form extends \moodleform {
         // The button can either be Save or Update for the submit action.
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('saveinstance', 'block_lsuxe');
         $buttons = [
-            $mform->createElement('submit', 'send', $thissubmitbutton),
-            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe')),
+            $mform->createElement('submit', 'send', $thissubmitbutton)
         ];
+        if ($enable_dest_test) {
+            $buttons[] = $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'));
+        }
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
     }

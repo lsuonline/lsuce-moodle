@@ -24,11 +24,15 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+global $CFG;
+    // Link to get back
+$string['lsuxe_link_back_title'] = '<a href="'.$CFG->wwwroot.'/blocks/lsuxe/lsuxe.php">Back to XE Dashboard</a>';
+
 // Block.
 $string['pluginname'] = 'Cross Enrollment Tool';
 $string['foldername'] = 'Cross Enrollments';
 $string['adminname'] = 'Manage Cross Enrollments';
-$string['settings'] = 'Settings';
+$string['settings'] = 'Cross Enrollments';
 
 // Tasks.
 $string['lsuxe_courses'] = 'Fetch Remote Courseids';
@@ -48,6 +52,11 @@ $string['backtohome'] = 'Back to home';
 
 // Configuration.
 $string['manage_overrides'] = 'Manage overrides';
+$string['xe_roles_title'] = 'Default Remote Role IDs';
+$string['xe_studentroleid'] = 'Remote student roleid';
+$string['xe_studentroleid_help'] = 'The default student role id for the role you wish to assign "students" to in the remote Moodle instance.';
+$string['xe_teacherroleid'] = 'Remote teacher roleid';
+$string['xe_teacherroleid_help'] = 'The default teacher role id for the role you wish to assign "teachers" to in the remote Moodle instance.';
 
 // Links.
 $string['xedashboard'] = 'XE Dashboard';
@@ -75,6 +84,8 @@ $string['updatemapping'] = 'Update Mapping';
 $string['updatemoodle'] = 'Update Instance';
 $string['srccourseshortname'] = 'Source Course Shortname';
 $string['srccoursegroupname'] = 'Source Group Shortname';
+$string['coursestarttime'] = 'Course Start Time';
+$string['courseendtime'] = 'Course End Time';
 $string['destmoodleinstance'] = 'Destination Moodle Instance';
 $string['destcourseshortname'] = 'Destination Course Shortname';
 $string['destcoursegroupname'] = 'Destination Course Group Prefix';
@@ -128,4 +139,9 @@ $string['instancetokenverify'] = 'A Moodle token is required from the destinatio
 
 // Settings
 $string['xe_interval_main_title'] = 'Update Interval Times.';
-$string['xe_interval_list'] = 'Comma seperated list of intervals to choose from.';
+$string['xe_interval_list'] = 'List of intervals to choose from in a matching format.';
+$string['xe_experimental_title'] = 'Experimental Settings.';
+$string['xe_form_auto_enable'] = 'Enable Form Autocompletion.';
+$string['xe_form_auto_enable_desc'] = 'This will use core ajax features and webservices to fetch data and auto populate the form fields to make the form easy to use while reducing potential typing errors. WARNING: ajax calls may fail.';
+$string['xe_form_enable_dest_source_test'] = 'Enable Verify Destination.';
+$string['xe_form_enable_dest_source_test_desc'] = 'This is currently in development and is designed to verify that the remote server is ready when creating new mappings or new moodle instances.';

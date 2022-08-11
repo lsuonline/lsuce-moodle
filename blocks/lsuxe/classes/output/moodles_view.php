@@ -45,10 +45,14 @@ class moodles_view implements renderable, templatable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output): array {
+        global $CFG;
         $pname = new moodles();
         $helpers = new \lsuxe_helpers();
 
         $data = $pname->get_all_records("moodles");
-        return $pname->transform_for_view($data, $helpers);
+        $updated_data = $pname->transform_for_view($data, $helpers);
+        $updated_data['xeurl'] = $CFG->wwwroot;
+
+        return $updated_data;
     }
 }

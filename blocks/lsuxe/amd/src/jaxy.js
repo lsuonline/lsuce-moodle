@@ -45,7 +45,6 @@ define(['jquery', 'core/ajax',],
                     }
                 }];
                 Ajax.call(send_this)[0].then(function(results) {
-                    // console.log("XEAjax() -> SUCCESS, what is result: ", results);
                     resolve(JSON.parse(results.data));
                 }).catch(function(ev) {
                     console.log("XEAjax() -> JAXY Fail :-(");

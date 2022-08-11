@@ -202,7 +202,7 @@ class form_controller {
         $po = new $pname();
         $records = array();
 
-        $persist_list = $po->get_records();
+        $persist_list = $po->get_records(["timedeleted" => NULL]);
         foreach ($persist_list as $pitem) {
             $temprecord = $pitem->to_record();
             if ($maintain_id) {

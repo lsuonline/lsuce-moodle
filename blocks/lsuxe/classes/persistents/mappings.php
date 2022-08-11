@@ -24,6 +24,7 @@
  */
 
 namespace block_lsuxe\persistents;
+use block_lsuxe\models;
 
 class mappings extends \block_lsuxe\persistents\persistent {
 // class mappings extends \core\persistent {
@@ -129,7 +130,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 'type' => PARAM_INT,
                 'default' => null,
                 'null' => NULL_ALLOWED
-            ],
+            ]
         ];
     }
 
@@ -143,7 +144,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
             // DB Column Name => Form Name
             'shortname' => 'srccourseshortname',
             'groupname' => 'srccoursegroupname',
-            'destcourseshortname' => 'destcourseshortname',
+            'destcourseshortname' => 'destcourseshortname'
             // 'destgroupprefix' => 'destcoursegroupname'
 
             // Variable names from the form
@@ -184,37 +185,69 @@ class mappings extends \block_lsuxe\persistents\persistent {
     public function column_form_custom(&$to_save, $data, $update = false) {
         global $DB, $USER;
 
-        // The course shortname field is an autocomplete that returns the course id
-        $courseid = $to_save->shortname;
+        // ----------------------------------------------------------------------
+        // -------------------  AUTOCOMPLETE  -----------------------------------
+        // ----------------------------------------------------------------------
+        $enable_autocomplete = get_config('moodle', "block_lsuxe_enable_form_auto");
+        if ($enable_autocomplete) {
+            // The course shortname field is an autocomplete that returns the course id
+            $courseid = $to_save->shortname;
 
-        $coursedata = $DB->get_record_sql(
-            'SELECT g.id as groupid, c.id as courseid, c.idnumber, c.shortname, g.name as groupname
-            FROM mdl_course c, mdl_groups g
-            WHERE c.id = g.courseid AND c.id = ?',
-            array($courseid)
-        );
-        // Current form data ready to go
-        //      shortname (to be converted)
-        //      groupname
-        //      destcourseshortname
-        //      destgroupprefix
-        //      destmoodleid
-        //      updateinterval (to be converted)
-        // Remaining fields to store based on install.xml
-        //      courseid
-        //      authmethod
-        //      destcourseid
-        //      destgroupid
-        //      starttime
-        //      endtime
+            $coursedata = $DB->get_record_sql(
+                'SELECT g.id as groupid, c.id as courseid, c.idnumber, c.shortname, g.name as groupname
+                FROM mdl_course c, mdl_groups g
+                WHERE c.id = g.courseid AND c.id = ?',
+                array($courseid)
+            );
+            // we'll have the course id
+            $to_save->courseid = $coursedata->courseid;
+            $to_save->shortname = $coursedata->shortname;
 
-        //      -usercreated
-        //      -timecreated
-        //      -usermodified
-        //      -timemodified
-        //      userdeleted
-        //      timedeleted
-        //      timeprocessed
+            // Handle the group stuff
+            // The source groupname varies and have to check if the user used a select form or RAW Text.
+            if (array_key_exists("selectgroupentry", $data) && $data->selectgroupentry == "1") {
+                // The user used RAW Text to enter the group name
+                $to_save->groupname = $data->srccoursegroupnametext;
+            } else {
+                // The user used the select which means we have groupid and name
+                $to_save->groupname = $data->srccoursegroupname;
+                $to_save->groupid = $data->srccoursegroupid;
+            }
+
+            // Destination Course
+            if (strpos($data->destcourseshortname, '__') !== false) {
+                $split_dest_info = explode("__", $data->destcourseshortname);
+                $to_save->destcourseid = $split_dest_info[0];
+                $to_save->destcourseshortname = $split_dest_info[1];
+
+            // } else {
+                // TODO: Need to implement manual text for destination course
+                // TODO: Need to implement manual text for destination group
+            }
+        } else {
+        // -------------------  Manual ------------------------------------------
+            // Save course id and group id, will be present if user verified.
+            // But if the user didn't verify, then fetch the data.
+            if (isset($data->srccourseid) && $data->srccourseid != 0) {
+                $to_save->courseid = $data->srccourseid;
+                $to_save->groupid = $data->srccoursegroupid;
+            } else {
+                // User didn't verify, then fetch the data.
+                $fuzzy = new \block_lsuxe\models\mixed();
+                $dbresult = $fuzzy->getCourseGroupInfo($to_save->shortname, $to_save->groupname);
+
+                $to_save->courseid = $dbresult->id;
+                $to_save->groupid = $dbresult->groupid;
+            }
+            // Save the groupname
+            $to_save->groupname = $data->srccoursegroupname;
+
+            // Save course id if user verified the destination course.
+            if (isset($data->destcourseid) && $data->destcourseid != 0) {
+                $to_save->destcourseid = $data->destcourseid;
+            }
+        }
+
 
         // If it's new then update first time fields.
         if ($update == false) {
@@ -227,47 +260,16 @@ class mappings extends \block_lsuxe\persistents\persistent {
         }
 
         // The interval is a select and will be a string, need to typecast it.
-        $to_save->courseid = $coursedata->courseid;
-        $to_save->shortname = $coursedata->shortname;
-
-        // The source groupname varies and have to check if the user used a select form or RAW Text.
-        if ($data->selectgroupentry == "1") {
-            // The user used RAW Text to enter the group name
-            $to_save->groupname = $data->srccoursegroupnametext;
-        } else {
-            // The user used the select which means we have groupid and name
-            $to_save->groupname = $data->srccoursegroupname;
-            $to_save->groupid = $data->srccoursegroupid;
-        }
-
         $to_save->updateinterval = (int) $data->defaultupdateinterval;
+        
+        // Update the start and end times (if any).
+        $to_save->starttime = (int) $data->starttime;
+        $to_save->endtime = (int) $data->endtime;
 
 
         // TODO: course idnumber is available in $coursedata->idnumber, do we want to store this?
         // TODO: authmethod is REQUIRED so a placeholder is set for now.
         $to_save->authmethod = "manual";
-
-        if (strpos($data->destcourseshortname, '__') !== false) {
-            $split_dest_info = explode("__", $data->destcourseshortname);
-            $to_save->destcourseid = $split_dest_info[0];
-            $to_save->destcourseshortname = $split_dest_info[1];
-        
-        // } else {
-            // TODO: Need to implement manual text for destination course
-            // TODO: Need to implement manual text for destination group
-        }
-
-        // TODO: How do we want to retrieve the following
-        // $to_save->destgroupid            AJAX?
-        // $to_save->authmethod             AJAX?
-        // $to_save->destcourseid           AJAX?
-        // $to_save->starttime              Is this source or dest course start time?
-        // $to_save->endtime                Is this source or dest course start time?
-        // $to_save->userdeleted            ?
-        // $to_save->usermodified           Admin made a change?
-        // $to_save->timedeleted            We removing the mapping or make hidden?
-        // $to_save->timemodified           Update based on mapping update?
-        // $to_save->timeprocessed          Task process time?
     }
 
     /**

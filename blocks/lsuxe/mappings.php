@@ -28,7 +28,7 @@ require_once('../../config.php');
 // Authentication.
 require_login();
 if (!is_siteadmin()) {
-    $helpers->redirect_to_url('/my');
+    $helpers->redirect_to_url($CFG->wwwroot);
 }
 
 $context = \context_system::instance();
@@ -43,14 +43,14 @@ $pageparams = [
     'page' => optional_param('page', 1, PARAM_INT),
     'per_page' => 10,
     'sent_action' => optional_param('sentaction', "", PARAM_TEXT),
-    'sent_data' => optional_param('sentdata', 0, PARAM_INT),
+    'sent_data' => optional_param('sentdata', 0, PARAM_INT)
 ];
 
 // Setup the page.
 $title = get_string('pluginname', 'block_lsuxe') . ': ' . get_string('mappings', 'block_lsuxe');
 $pagetitle = $title;
 $sectiontitle = get_string('newmapping', 'block_lsuxe');
-$url = new moodle_url('/blocks/lsuxe/mappings.php', $pageparams);
+$url = new moodle_url($CFG->wwwroot . '/blocks/lsuxe/mappings.php', $pageparams);
 $worky = null;
 
 // Are we looking at the form to add/update or the list?
@@ -79,7 +79,7 @@ $PAGE->set_heading($title);
 // Navbar Bread Crumbs
 $PAGE->navbar->add(get_string('xedashboard', 'block_lsuxe'), new moodle_url('lsuxe.php'));
 $PAGE->navbar->add(get_string('mappings', 'block_lsuxe'), new moodle_url('mappings.php'));
-$PAGE->requires->css(new moodle_url('/blocks/lsuxe/style.css'));
+$PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/lsuxe/style.css'));
 $PAGE->requires->js_call_amd('block_lsuxe/main', 'init');
 $output = $PAGE->get_renderer('block_lsuxe');
 

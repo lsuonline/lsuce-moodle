@@ -56,37 +56,37 @@ echo $output->heading($sectiontitle);
 $dashboard_links = array(
     array(
         // The Mappinges View.
-        'url' => '/blocks/lsuxe/mappings.php',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/mappings.php',
         'icon' => 'list',
         'lang' => get_string('mappings_view', 'block_lsuxe')
     ),
     array(
         // The Mappinges Form.
-        'url' => '/blocks/lsuxe/mappings.php?vform=1',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/mappings.php?vform=1',
         'icon' => 'plus-square-o',
         'lang' => get_string('mappings_create', 'block_lsuxe')
     ),
     array(
         // The Moodles View.
-        'url' => '/blocks/lsuxe/moodles.php',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/moodles.php',
         'icon' => 'list',
         'lang' => get_string('moodles_view', 'block_lsuxe')
     ),
     array(
         // The Mappinges Form.
-        'url' => '/blocks/lsuxe/moodles.php?vform=1',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/moodles.php?vform=1',
         'icon' => 'plus-square-o',
         'lang' => get_string('moodles_create', 'block_lsuxe')
     ),
     array(
         // Tokens.
-        'url' => '/admin/settings.php?section=webservicetokens',
+        'url' => $CFG->wwwroot . '/admin/settings.php?section=webservicetokens',
         'icon' => 'key',
         'lang' => get_string('manage_tokens', 'block_lsuxe')
     ),
     array(
         // The Settings Page.
-        'url' => '/admin/settings.php?section=blocksettinglsuxe',
+        'url' => $CFG->wwwroot . '/admin/settings.php?section=blocksettinglsuxe',
         'icon' => 'cog',
         'lang' => get_string('settings', 'block_lsuxe')
     ),
