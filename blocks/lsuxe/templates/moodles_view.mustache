@@ -80,11 +80,11 @@
             <form method="POST" id="map_form_{{id}}">
                 <tr data-rowid='{{id}}'>
                     <input type="hidden" value="{{id}}" name="sentdata"/>
-                    <td>{{ url }}</td>
-                    <td>{{ token }}</td>
-                    <td>{{ tokenexpire }}</td>
-                    <td>{{{ updateinterval }}}</td>
-                    <td><button type="submit" class="btn btn-success mview_update"><i class="fa fa-refresh"></button></td>
+                    <td><a href="{{url}}" target="_blank">{{url}}</a></td>
+                    <td><a href="{{url}}/admin/settings.php?section=webservicetokens" target="_blank">{{token}}</a></td>
+                    <td>{{tokenexpire}}</td>
+                    <td>{{{updateinterval}}}</td>
+                    <td><a href="{{xeurl}}/blocks/lsuxe/reprocess.php?{{xeparms}}{{id}}" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></a></td>
                     <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
                     <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
                 </tr>

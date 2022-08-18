@@ -171,7 +171,8 @@ class mappings extends \block_lsuxe\persistents\persistent {
             'destcourseshortname' => 'destcourseshortname',
             'destgroupprefix' => 'destcoursegroupname',
             'destmoodleid' => 'available_moodle_instances',
-            'updateinterval' => 'defaultupdateinterval'
+            'updateinterval' => 'defaultupdateinterval',
+            'authmethod' => 'authmethod'
         );
     }
 
@@ -184,7 +185,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
      */
     public function column_form_custom(&$to_save, $data, $update = false) {
         global $DB, $USER;
-
         // ----------------------------------------------------------------------
         // -------------------  AUTOCOMPLETE  -----------------------------------
         // ----------------------------------------------------------------------
@@ -204,7 +204,8 @@ class mappings extends \block_lsuxe\persistents\persistent {
             $to_save->shortname = $coursedata->shortname;
 
             // Handle the group stuff
-            // The source groupname varies and have to check if the user used a select form or RAW Text.
+            // The source groupname varies and have to check if the user used a
+            // select form or RAW Text.
             if (array_key_exists("selectgroupentry", $data) && $data->selectgroupentry == "1") {
                 // The user used RAW Text to enter the group name
                 $to_save->groupname = $data->srccoursegroupnametext;
@@ -225,7 +226,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 // TODO: Need to implement manual text for destination group
             }
         } else {
-        // -------------------  Manual ------------------------------------------
+            // -------------------  Manual ---------------------------------
             // Save course id and group id, will be present if user verified.
             // But if the user didn't verify, then fetch the data.
             if (isset($data->srccourseid) && $data->srccourseid != 0) {
@@ -235,9 +236,9 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 // User didn't verify, then fetch the data.
                 $fuzzy = new \block_lsuxe\models\mixed();
                 $dbresult = $fuzzy->getCourseGroupInfo($to_save->shortname, $to_save->groupname);
-
                 $to_save->courseid = $dbresult->id;
                 $to_save->groupid = $dbresult->groupid;
+                
             }
             // Save the groupname
             $to_save->groupname = $data->srccoursegroupname;
@@ -265,11 +266,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
         // Update the start and end times (if any).
         $to_save->starttime = (int) $data->starttime;
         $to_save->endtime = (int) $data->endtime;
-
-
-        // TODO: course idnumber is available in $coursedata->idnumber, do we want to store this?
-        // TODO: authmethod is REQUIRED so a placeholder is set for now.
-        $to_save->authmethod = "manual";
     }
 
     /**

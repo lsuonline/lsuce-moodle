@@ -23,13 +23,21 @@
 
 
 span.xe_card_icon {
-    font-size: 125px;
+    font-size: 100px;
 }
 
 .lsuxe_dash_link {
     text-decoration: none;
 }
 
+.lsuxe_form_container input.form-control,
+.lsuxe_form_container select#id_available_moodle_instances {
+    width: 50%;
+}
+
+.lsuxe_dash_link .card {
+    margin-bottom: 20px;
+}
 /* Define vars we'll be using */
 /*$brand-success: #5cb85c;*/
 /*

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -50,7 +49,6 @@ class block_lsuxe_external extends external_api {
      * @return string welcome message
      */
     public static function XEAjax($datachunk) {
-
         $datachunk = json_decode($datachunk);
         $class_obj = isset($datachunk->class) ? $datachunk->class : null;
         $function = isset($datachunk->call) ? $datachunk->call : null;
@@ -71,7 +69,7 @@ class block_lsuxe_external extends external_api {
             $left_over_data = call_user_func(array($xe_class, $function), $params);
         } else {
             // TODO: If we want custom logging for this plugin then replace.
-            error_log("\nAJAX.php => Rejected, method does not exist!!!");
+            error_log("\nXEAjax.php => Rejected, method does not exist!!!");
             die (json_encode(array("success" => "false")));
         }
 

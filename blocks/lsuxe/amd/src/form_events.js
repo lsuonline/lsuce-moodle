@@ -22,10 +22,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ // define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/notifications', 'block_lsuxe/verify'],
  define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/notifications'],
+    // function($, XELib, Noti, Veri) {
     function($, XELib, Noti) {
     'use strict';
     return {
+
         /**
          * Fetch the token for the current selected URL. Store in temp sessionStorage
          *
@@ -61,9 +64,10 @@
         /**
          * Moodle removes any changed option/select elements. In order to maintain
          * the data push data into hidden some that are in the form's page.
-         * @param string name of the tag to be changed
-         * @param string the value to insert
-         * @return resolved data
+         *
+         * @param {string} tag name of the tag to be changed
+         * @param {string} value the value to insert
+         * @return {void}
          */
         setHiddenValue: function (tag, value) {
             $('input[name='+tag+']').val(value);
@@ -71,8 +75,9 @@
 
         /**
          * Verify the source course and group
-         * @param {object} the json object sent to the server
-         * @return resolved data
+         *
+         * @param {object} params the json object sent to the server
+         * @return {Object} resolved data
          */
         verifySourceCourse: function (params) {
             return XELib.jaxyPromise({
@@ -106,45 +111,9 @@
         // ==================================================================
         // ==================================================================
 
-        checkMarkOn: function (tag) {
-            $(tag + ' .circle-loader').css('visibility', 'visible');
-        },
-        checkMarkOff: function (tag) {
-            $(tag + ' .circle-loader').css('visibility', 'hidden');
-        },
-        checkMarkLoading: function (tag) {
-            // make sure it's on
-            var cl = tag + ' .circle-loader',
-                cm = tag + ' .checkmark';
-
-            this.checkMarkOn(tag);
-            if ($(cl).hasClass('load-complete')) {
-                $(cl).toggleClass('load-complete');
-                $(cm).toggle();
-            }
-
-            // $('.xe_confirm_url > .checkmark').toggle();
-        },
-        checkMarkComplete: function (tag) {
-            var cl = tag + ' .circle-loader',
-                cm = tag + ' .checkmark';
-
-            if (!$(cl).hasClass('load-complete')) {
-                $(cl).toggleClass('load-complete');
-                $(cm).toggle();
-            }
-        },
-        crossMarkOn: function (tag) {
-            $(tag + ' .circle-cross-loader').css('visibility', 'visible');
-        },
-
-        crossMarkOff: function (tag) {
-            $(tag + ' .circle-cross-loader').css('visibility', 'hidden');
-        },
-
         /**
          * Register all the events for the Mappings Form Page.
-         * @return void
+         * @return {void}
          */
         registerMoodleEvents: function() {
             var that = this;
@@ -233,6 +202,15 @@
                 var test_url = $("#id_instanceurl").val(),
                     test_token = $("#id_instancetoken").val();
 
+                // console.log("What is the tag name1: " + this.prop("tagName"));
+                // console.log("What is the tag name2: " + $(this).prop("tagName"));
+                // that.checkMarkLoading(url_tag);
+                // that.crossMarkOn(token_tag);
+                // that.checkMarkOff(url_tag);
+                // checkMarkComplete
+                // crossMarkOn
+                // crossMarkOff
+
                 var params = {
                     'type': 'GET',
                     // 'type': 'POST',
@@ -242,18 +220,46 @@
                         'wstoken': test_token,
                         'wsfunction': 'block_lsuxe_XEAjax',
                         'moodlewsrestformat': 'json',
-                        'datachunk': {
+                        // 'data': {
+                        'datachunk': JSON.stringify({
                             'call': 'testService',
-                            'params': {},
+                            'params': {
+                                // 'test1': 'fart1',
+                                // 'test2': 'fart2'
+                            },
                             'class': 'router'
-                        }
+                        })
                     }
                 };
 
                 XELib.testWebServices(params).then(function (response) {
-                    console.log("What is the response for the test server: ", response);
+                    console.log("test returned, response is: ", response);
+                    if (response.success == false) {
+                        Noti.callNoti({
+                            message: response.msg,
+                            type: 'error'
+                        });
+                    } else {
+                        Noti.callNoti({
+                            message: "Successfully said hello to the remote Moodle instance .",
+                            type: 'success'
+                        });
+                    }
+
                 });
             });
+
+            // var new_params = {
+            //     'type': 'GET',
+            //     'url': sessionStorage.getItem("currentUrl") + '/webservice/rest/server.php',
+            //     'data': {
+            //         'wstoken': sessionStorage.getItem("currentToken"),
+            //         'wsfunction': 'core_course_get_courses_by_field',
+            //         'moodlewsrestformat': 'json',
+            //         'field': 'shortname',
+            //         'value': params.coursename
+            //     }
+            // };
 
             // Register events on the moodles form.
             // onChange event for the URL selector
@@ -333,7 +339,6 @@
 
             // Verify the Course and Group Names.
             $('#id_verifysource').on('click', function() {
-
                 var coursename = $("#id_srccourseshortname").val(),
                     groupname = $("#id_srccoursegroupname").val();
 
@@ -365,8 +370,8 @@
                         });
                     } else {
                         // Populate the hidden fields since we are here.
-                        that.setHiddenValue('srccourseid', response.data.groupid);
-                        that.setHiddenValue('srccoursegroupid', response.data.id);
+                        that.setHiddenValue('srccourseid', response.data.id);
+                        that.setHiddenValue('srccoursegroupid', response.data.groupid);
                         Noti.callNoti({
                             message: "Everything checks out for the sourse course and group.",
                             type: 'success'
@@ -422,6 +427,7 @@
             } else if (sessionStorage.getItem('xe_form') == "moodles" && sessionStorage.getItem('xe_viewform') == "true") {
                 // Register events on the mappings form.
                 this.registerMoodleEvents();
+                // Veri.registerCheckMarkTags()
                 // TODO: move from template to here.
             }
         },

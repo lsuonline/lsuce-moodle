@@ -44,8 +44,8 @@ define(['jquery', 'core/ajax',],
                         datachunk: data_chunk,
                     }
                 }];
-                Ajax.call(send_this)[0].then(function(results) {
-                    resolve(JSON.parse(results.data));
+                Ajax.call(send_this)[0].then(function(response) {
+                    resolve(JSON.parse(response.data));
                 }).catch(function(ev) {
                     console.log("XEAjax() -> JAXY Fail :-(");
                     console.log("XEAjax() -> JAXY Fail going to reject: ", ev);
@@ -71,18 +71,34 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
-            var promiseObj = new Promise(function(resolve, reject) {
+            var promiseObj = new Promise(function(resolve) {
                 $.ajax({
-                    type: data_chunk.type ,
+                    type: data_chunk.type,
                     data: data_chunk.data,
                     url: data_chunk.url,
-                    success: function (data) {
-                        resolve(data);
-                    },
-                    error: function (error) {
-                        console.log("Remote Ajax Error: ", error);
-                        reject(error);
-                    },
+                // }).then(function (response) {
+                //     console.log("XEREMOTE what is responses: ", responses);
+                //     resolve(JSON.parse(responses.data));
+                // });
+
+                }).done(function (response) {
+                    // If token is incorrect Moodle will throw an exception.
+                    if (response.hasOwnProperty('exception')) {
+                        resolve({
+                            'success': false,
+                            'msg': response.message
+                        });
+                    } else {
+                        resolve(JSON.parse(response.data));
+                    }
+                }).fail(function ( jqXHR, textStatus, errorThrown ) {
+                    console.log(jqXHR);
+                    console.log(textStatus);
+                    console.log(errorThrown);
+                    resolve({
+                        'success': false,
+                        'msg': "Could not connect to the server."
+                    });
                 });
             });
             return promiseObj;

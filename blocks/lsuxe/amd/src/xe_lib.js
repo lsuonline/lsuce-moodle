@@ -158,6 +158,7 @@ define(['jquery', 'block_lsuxe/jaxy'],
         jaxyRemotePromise: function (data) {
             var promiseObj = new Promise(function (resolve) {
                 jaxy.XERemoteAjax(data).then(function (response) {
+                    console.log("jaxyRemotePromise returned, response is: ", results);
                     resolve(response);
                 });
             });

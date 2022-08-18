@@ -64,7 +64,7 @@ if ($ADMIN->fulltree) {
         )
     );
 
-    // --------------------------------
+    // ----------------------------------------------------------------
     // LSUXE Settings Title.
     $settings->add(
         new admin_setting_heading(
@@ -94,6 +94,20 @@ if ($ADMIN->fulltree) {
         )
     );
 
+    // --------------------------------
+    // Auth methods.
+    $settings->add(
+        new admin_setting_configtextarea(
+            'block_lsuxe_xe_auth_method',
+            get_string('xe_auth_method_title', 'block_lsuxe'),
+            'List of authentications',
+            'manual
+            CAS
+            LDAP',
+            PARAM_TEXT
+        )
+    );
+    // ----------------------------------------------------------------
     // LSUXE Experimental Title.
     $settings->add(
         new admin_setting_heading(
@@ -103,7 +117,6 @@ if ($ADMIN->fulltree) {
         )
     );
 
-    // --------------------------------
     // Use AJAX for form autocomplete.
     $settings->add(
         new admin_setting_configcheckbox(

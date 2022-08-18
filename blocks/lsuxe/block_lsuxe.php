@@ -36,11 +36,6 @@ class block_lsuxe extends block_list {
         global $PAGE;
 
         $this->title = get_string('pluginname', 'block_lsuxe');
-        // $this->set_course();
-        // $this->set_user();
-        // $this->set_course_context();
-        // $extras = array();
-        // $PAGE->requires->js_call_amd('block_lsuxe/main', 'init', $extras);
     }
 
    /**
@@ -83,7 +78,7 @@ class block_lsuxe extends block_list {
     }
 
     function get_content() {
-        global $CFG, $OUTPUT;
+        global $COURSE, $OUTPUT;
 
         if ($this->content !== null) {
             return $this->content;
@@ -96,43 +91,39 @@ class block_lsuxe extends block_list {
 
         $this->content = $this->get_new_content_container();
 
-        // $coursecontext = context_course::instance($this->course->id);
-        // $systemcontext = context_system::instance();
-
-        if (is_siteadmin()) {
+        if (is_siteadmin() && $COURSE->id == 1) {
 
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_view', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
-                'page' => 'mappings'
+                'page' => '/blocks/lsuxe/mappings.php'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_create', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
-                'page' => 'mappings',
+                'page' => '/blocks/lsuxe/mappings.php',
                 'query_string' => ['vform' => 1]
             ]);
             
             $this->add_item_to_content([
                 'lang_key' => get_string('tokens_view', 'block_lsuxe'),
                 'icon_key' => 't/unlock',
-                'page' => 'tokens'
+                'page' => '/admin/settings.php?section=webservicetokens'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_view', 'block_lsuxe'),
                 'icon_key' => 't/calc',
-                'page' => 'moodles'
+                'page' => '/blocks/lsuxe/moodles.php'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_create', 'block_lsuxe'),
                 'icon_key' => 't/calc',
-                'page' => 'moodles',
+                'page' => '/blocks/lsuxe/moodles.php',
                 'query_string' => ['vform' => 1]
             ]);
-            
         }
         
         return $this->content;
@@ -167,7 +158,7 @@ class block_lsuxe extends block_list {
         $icon = $OUTPUT->pix_icon($params['icon_key'], $label, 'moodle', ['class' => 'icon']);
 
         return html_writer::link(
-            new moodle_url($CFG->wwwroot . '/blocks/lsuxe/' . $params['page'] . '.php', $params['query_string']),
+            new moodle_url($CFG->wwwroot . $params['page'] , $params['query_string']),
             $icon . $label
         );
     }
@@ -175,19 +166,13 @@ class block_lsuxe extends block_list {
     // my moodle can only have SITEID and it's redundant here, so take it away
     public function applicable_formats() {
         return array(
-            'all' => true, // TODO: remove this once done dev
             'site' => true,
-            'my' => true,
-            'site-index' => true,
-            'course-view' => false, 
-            'course-view-social' => false,
-            'mod' => false, 
-            'mod-quiz' => false
+            'course-view' => false
         );
     }
 
     public function instance_allow_multiple() {
-        return true;
+        return false;
     }
 
     public function cron() {

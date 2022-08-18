@@ -25,7 +25,8 @@
  */
 
 global $CFG;
-    // Link to get back
+
+// Link to get back
 $string['lsuxe_link_back_title'] = '<a href="'.$CFG->wwwroot.'/blocks/lsuxe/lsuxe.php">Back to XE Dashboard</a>';
 
 // Block.
@@ -33,6 +34,7 @@ $string['pluginname'] = 'Cross Enrollment Tool';
 $string['foldername'] = 'Cross Enrollments';
 $string['adminname'] = 'Manage Cross Enrollments';
 $string['settings'] = 'Cross Enrollments';
+$string['reprocess'] = 'Reprocess';
 
 // Tasks.
 $string['lsuxe_courses'] = 'Fetch Remote Courseids';
@@ -91,6 +93,7 @@ $string['destcourseshortname'] = 'Destination Course Shortname';
 $string['destcoursegroupname'] = 'Destination Course Group Prefix';
 $string['courseupdateinterval'] = 'Course Update Interval';
 $string['defaultupdateinterval'] = 'Default Update Interval';
+$string['authmethod'] = 'Authentication for this Moodle instance.';
 $string['updateinterval'] = 'Update Interval';
 $string['updatenow'] = 'Update Now';
 $string['edit'] = 'Edit';
@@ -115,7 +118,7 @@ $string['verifyinstance'] = 'Verify Moodle Instance';
 $string['addnewmapping'] = 'Add New XE Mapping';
 $string['addnewmapping'] = 'Add New Moodle Instance';
 
-// Notifications.
+// Notifications & Errors
 $string['notice'] = 'Notice!';
 $string['noticesub'] = 'We are unable to run enrollment for an entire instance in a browser window, so it has been scheduled to run at the very next opportunity.';
 $string['verificationfail'] = 'Verification Failure!';
@@ -128,6 +131,8 @@ $string['updatedmapping'] = 'The mapping has been updated';
 $string['updatedmoodle'] = 'The moodle instance has been updated';
 $string['deletemapping'] = 'The mapping has been removed';
 $string['deletemoodle'] = 'The moodle instance has been removed';
+$string['mappingsformcourseerror'] = 'The course you have entered cannot be found, please try again.';
+$string['mappingsformgrouperror'] = 'The group you have entered cannot be found, please try again.';
 
 // Validation.
 $string['srccourseshortnameverify'] = 'Please include a course shortname.';
@@ -140,8 +145,15 @@ $string['instancetokenverify'] = 'A Moodle token is required from the destinatio
 // Settings
 $string['xe_interval_main_title'] = 'Update Interval Times.';
 $string['xe_interval_list'] = 'List of intervals to choose from in a matching format.';
+$string['xe_auth_method'] = 'List of authentication methods.';
 $string['xe_experimental_title'] = 'Experimental Settings.';
 $string['xe_form_auto_enable'] = 'Enable Form Autocompletion.';
 $string['xe_form_auto_enable_desc'] = 'This will use core ajax features and webservices to fetch data and auto populate the form fields to make the form easy to use while reducing potential typing errors. WARNING: ajax calls may fail.';
 $string['xe_form_enable_dest_source_test'] = 'Enable Verify Destination.';
 $string['xe_form_enable_dest_source_test_desc'] = 'This is currently in development and is designed to verify that the remote server is ready when creating new mappings or new moodle instances.';
+
+// Reprocessing
+$string['reprocess_course'] = 'Reprocess Course';
+$string['reprocess_moodle'] = 'Reprocess Moodle Instance';
+$string['xebacktocourse'] = 'Back to course';
+$string['xebacktomoodle'] = 'Back to XE dashboard';

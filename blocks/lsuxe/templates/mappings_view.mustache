@@ -93,12 +93,12 @@
                 <tr data-rowid='{{id}}'>
                     <input type="hidden" value="{{id}}" name="sentdata"/>
                     <input type="hidden" value="{{destmoodleid}}" name="destmoodleid"/>
-                    <td>{{ moodleurl }}</td>
-                    <td>{{ shortname }}</td>
-                    <td>{{ groupname }}</td>
-                    <td>{{ destcourseshortname }}</td>
-                    <td>{{{ updateinterval }}}</td>
-                    <td><button type="submit" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></button></td>
+                    <td>{{moodleurl}}</td>
+                    <td><a href="{{xeurl}}/course/view.php?id={{courseid}}" target="_blank">{{shortname}}</a></td>
+                    <td><a href="{{xeurl}}/group/index.php?id={{groupid}}" target="_blank">{{groupname}}</a></td>
+                    <td><a href="{{moodleurl}}/course/view.php?id={{courseid}}" target="_blank">{{destcourseshortname}}</a></td>
+                    <td>{{{updateinterval}}}</td>
+                    <td><a href="{{xeurl}}/blocks/lsuxe/reprocess.php?{{xeparms}}{{courseid}}" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></a></td>
                     <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
                     <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
                 </tr>

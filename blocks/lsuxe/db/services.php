@@ -44,5 +44,3 @@ $services = array(
         'enabled'=>1
     )
 );
-// Sample Request URL: 
-// [$CFG->wwwroot, whatever your url is]/lib/ajax/service.php?sesskey=[sesskey]&info=block_lsuxe_XEAjax

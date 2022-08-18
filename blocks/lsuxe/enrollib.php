@@ -34,6 +34,12 @@ class lsuxe {
      * @return boolean
      */
     public function run_lsuxe_full_enroll() {
+        $parms = array(
+            'intervals' => 'true',
+            'courseid' => '1',
+            'moodleid' => '0',
+            'function' => 'full'
+        );
 
         $starttime = microtime(true);
 
@@ -43,13 +49,13 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        lsuxe_helpers::xe_write_destcourse();
+        lsuxe_helpers::xe_write_destcourse($parms);
 
-        $groups = lsuxe_helpers::xe_get_groups();
+        $groups = lsuxe_helpers::xe_get_groups($parms);
 
         lsuxe_helpers::xe_write_destgroups($groups);
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments($parms);
 
         $count = 0;
         foreach ($users as $user) {
@@ -123,7 +129,7 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {
@@ -187,7 +193,7 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {

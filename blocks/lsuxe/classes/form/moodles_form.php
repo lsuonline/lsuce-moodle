@@ -44,6 +44,9 @@ class moodles_form extends \moodleform {
 
         $mform =& $this->_form;
 
+        // For styling purposes.
+        $mform->addElement('html', '<span class="lsuxe_form_container">');
+
         $enable_dest_test = get_config('moodle', "block_lsuxe_enable_dest_test");
         // checkmark from here:
         // https://codepen.io/scottloway/pen/zqoLyQ
@@ -57,8 +60,9 @@ class moodles_form extends \moodleform {
             '<span>';
         // --------------------------------
         // Moodle Instance URL.
-        $urlgroup = array();
-        $urlgroup[] =& $mform->createElement(
+        // $urlgroup = array();
+        // $urlgroup[] =& $mform->createElement(
+        $mform->addElement(
             'text',
             'instanceurl',
             get_string('instanceurl', 'block_lsuxe')
@@ -71,19 +75,20 @@ class moodles_form extends \moodleform {
             $mform->setDefault('instanceurl', $this->_customdata->url);
         }
         // Wrap the checkmark so we can control it for tokens
-        $urlconfirmhtml = '<div class="xe_confirm_url">'.$checkmark.'</div';
-        $urlgroup[] =& $mform->createElement(
-            'html', $urlconfirmhtml
-        );
-        $mform->addGroup($urlgroup, 'url_group', get_string('instanceurl', 'block_lsuxe'), ' ', false);
+        // $urlconfirmhtml = '<div class="xe_confirm_url">'.$checkmark.'</div';
+        // $urlgroup[] =& $mform->createElement(
+        //     'html', $urlconfirmhtml
+        // );
+        // $mform->addGroup($urlgroup, 'url_group', get_string('instanceurl', 'block_lsuxe'), ' ', false);
         
         // ----------------------------------------------------------------
         // ----------------------------------------------------------------
         // ----------------------------------------------------------------
         // --------------------------------
         // Moodle Instance Token.
-        $tokengroup = array();
-        $tokengroup[] =& $mform->createElement(
+        // $tokengroup = array();
+        // $tokengroup[] =& $mform->createElement(
+        $mform->addElement(
         // $mform->addElement(
             'text',
             'instancetoken',
@@ -97,15 +102,13 @@ class moodles_form extends \moodleform {
             $mform->setDefault('instancetoken', $this->_customdata->token);
         }
         // Wrap the checkmark so we can control it for tokens
-        $tokenconfirmhtml = '<div class="xe_confirm_token">'.$checkmark.'</div';
-        $tokengroup[] =& $mform->createElement(
-            'html', $tokenconfirmhtml
-        );
-        $mform->addGroup($tokengroup, 'token_group', get_string('instancetoken', 'block_lsuxe'), ' ', false);
+        // $tokenconfirmhtml = '<div class="xe_confirm_token">'.$checkmark.'</div';
+        // $tokengroup[] =& $mform->createElement(
+        //     'html', $tokenconfirmhtml
+        // );
+        // $mform->addGroup($tokengroup, 'token_group', get_string('instancetoken', 'block_lsuxe'), ' ', false);
         // ----------------------------------------------------------------
         // ----------------------------------------------------------------
-
-
 
         // --------------------------------
         // Interval.
@@ -169,7 +172,13 @@ class moodles_form extends \moodleform {
             $buttons[] = $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'));
         }
 
+        // Wrap the checkmark so we can control it for tokens
+        $urlconfirmhtml = '<div class="xe_verify">'.$checkmark.'</div';
+        $buttons[] =& $mform->createElement(
+            'html', $urlconfirmhtml
+        );
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
+        $mform->addElement('html', '</span>');
     }
 
     /*

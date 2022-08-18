@@ -116,6 +116,8 @@ class form_controller {
                 $po->create();
             } else {
                 $validate_errors = $po->get_errors();
+                error_log("form_controller() -> ERROR: ". print_r($validate_errors, 1));
+                // \core\notification::error(get_string('mappingsformcourseerror', 'block_lsuxe'));
                 // TODO: convert error_log to a logging system
                 return false;
             }

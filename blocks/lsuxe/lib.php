@@ -49,24 +49,37 @@ class lsuxe_helpers {
      * Weekly 168
      * .....etc
      * Becomes (Monthly => 720, Weekly => 168)
-     * @param  string  $config setting
+     * @param  string $config_string setting
+     * @param  string $array_type by default multi, use mirror to miror key/value
+     *         
      * @return array
      */
-    public function config_to_array($config_string) {
+    public function config_to_array($config_string, $array_type = "multi") {
+
         $config_name = get_config('moodle', $config_string);
 
         // Strip the line breaks
         $break_stripped = preg_replace("/\r|\n/", " ", $config_name);
-
-        // make sure there are not double spaces.
+        // Make sure there are not double spaces.
         $break_stripped = str_replace("  ", " ", $break_stripped);
+        // Remove any spaces or line breaks from start or end.
+        $break_stripped = trim($break_stripped);
 
-        // now convert to arry and transform to an assoc. array
         $exploded = explode(" ", $break_stripped);
         $exploded_count = count($exploded);
         $final = array();
-        for ($i = 0; $i < $exploded_count; $i+=2) {
-            $final[$exploded[$i+1]] = $exploded[$i];
+
+        if ($array_type == "multi") {
+            // now convert to array and transform to an assoc. array
+            for ($i = 0; $i < $exploded_count; $i+=2) {
+                $final[$exploded[$i+1]] = $exploded[$i];
+            }
+        } else if ($array_type == "mirror") {
+            // it's possible there may be an extra line break from user input.
+            for ($i = 0; $i < $exploded_count; $i++) {
+                $tempval = $exploded[$i];
+                $final[$tempval] = $tempval;
+            }
         }
         return $final;
     }
@@ -76,10 +89,20 @@ class lsuxe_helpers {
      *
      * @return @array of $user objects.
      */
-    public static function xe_current_enrollments() {
+    public static function xe_current_enrollments($parms) {
         global $DB, $CFG;
 
-//TODO: Update interval tracking and processing.
+        $interval = isset($parms['intervals']) == true
+                    ? ' AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed'
+                    : '';
+
+        if ($parms['function'] = 'course' && $parms['courseid'] > 1) {
+            $wheres = "AND xemm.courseid = " . $parms['courseid'];
+        } else if ($parms['function'] = 'moodle' && $parms['moodleid'] > 0) {
+            $wheres = "AND xem.id = " . $parms['moodleid'];
+        } else {
+            $wheres = '';
+        }
 
         // LSU UES Specific enrollemnt / unenrollment data.
         $lsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
@@ -105,9 +128,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -117,13 +138,11 @@ class lsuxe_helpers {
                 INNER JOIN {user} u ON u.id = stu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -132,7 +151,7 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
                 AND xemm.timedeleted IS NULL
-                AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed
+                ' . $interval . $wheres . '
 
             UNION
 
@@ -159,9 +178,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -171,13 +188,11 @@ class lsuxe_helpers {
                 INNER JOIN {user} u ON u.id = stu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -186,7 +201,7 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
                 AND xemm.timedeleted IS NULL
-                AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed';
+                ' . $interval . $wheres;
 
         // Generic Moodle enrollment / suspension data.
         $gsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
@@ -212,9 +227,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -228,7 +241,7 @@ class lsuxe_helpers {
                     AND ctx.instanceid = c.id
                     AND ctx.contextlevel = "50"
                 INNER JOIN {groups} g ON g.courseid = c.id
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id
                     AND u.id = gm.userid
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
@@ -236,7 +249,7 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
                 AND xemm.timedeleted IS NULL
-                AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed';
+                ' . $interval . $wheres;
 
         // Check to see if we're forcing Moodle enrollment.
         $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
@@ -307,8 +320,16 @@ class lsuxe_helpers {
      *
      * @return @array of objects
      */
-    public static function xe_get_destcourse() {
+    public static function xe_get_destcourse($parms=null) {
         global $DB;
+
+        if ($parms['function'] = 'course' && $parms['courseid'] > 1) {
+            $wheres = "AND xemm.courseid = " . $parms['courseid'];
+        } else if ($parms['function'] = 'moodle' && $parms['moodleid'] > 0) {
+            $wheres = "AND xem.id = " . $parms['moodleid'];
+        } else {
+            $wheres = '';
+        }
 
         // Build the SQL for grabbing the data.
         $sql = 'SELECT xemm.id AS xemmid,
@@ -319,7 +340,8 @@ class lsuxe_helpers {
                    INNER JOIN {block_lsuxe_mappings} xemm ON xemm.destmoodleid = xem.id
                WHERE xemm.destcourseid IS NULL
                    AND UNIX_TIMESTAMP() > xemm.starttime
-                   AND UNIX_TIMESTAMP() < xemm.endtime';
+                   AND UNIX_TIMESTAMP() < xemm.endtime
+                   ' . $wheres;
 
         // Get the data from the SQL.
         $courses = $DB->get_records_sql($sql);
@@ -332,11 +354,11 @@ class lsuxe_helpers {
      *
      * @return @array of objects
      */
-    public static function xe_write_destcourse() {
+    public static function xe_write_destcourse($parms=null) {
         global $DB;
 
         // Grab the list.
-        $courses = self::xe_get_destcourse();
+        $courses = self::xe_get_destcourse($parms);
 
         // Loop through the data we got above.
         foreach ($courses as $course) {
@@ -409,8 +431,16 @@ class lsuxe_helpers {
      *
      * @return true
      */
-    public static function xe_get_groups() {
+    public static function xe_get_groups($parms) {
         global $DB;
+
+        if ($parms['function'] = 'course' && $parms['courseid'] > 1) {
+            $wheres = "AND xemm.courseid = " . $parms['courseid'];
+        } else if ($parms['function'] = 'moodle' && $parms['moodleid'] > 0) {
+            $wheres = "AND xem.id = " . $parms['moodleid'];
+        } else {
+            $wheres = '';
+        }
 
         // Build the SQL to get the appropriate data for the webservice.
         $sql = 'SELECT xemm.id AS xemmid,
@@ -424,7 +454,8 @@ class lsuxe_helpers {
                WHERE xemm.destgroupid IS NULL
                    AND xemm.destcourseid IS NOT NULL
                    AND UNIX_TIMESTAMP() > xemm.starttime
-                   AND UNIX_TIMESTAMP() < xemm.endtime';
+                   AND UNIX_TIMESTAMP() < xemm.endtime
+                   ' . $wheres;
 
         // Actually get the data.
         $groups = $DB->get_records_sql($sql);

@@ -27,46 +27,6 @@ defined('MOODLE_INTERNAL') || die();
 // Define the task defaults.
 $tasks = array(
     array(
-        'classname' => 'block_lsuxe\task\lsuxe_courses',
-        'blocking' => 0,
-        'minute' => '0',
-        'hour' => '3',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    ),
-
-    array(
-        'classname' => 'block_lsuxe\task\lsuxe_users',
-        'blocking' => 0,
-        'minute' => '10',
-        'hour' => '*',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    ),
-
-    array(
-        'classname' => 'block_lsuxe\task\lsuxe_groups',
-        'blocking' => 0,
-        'minute' => '5',
-        'hour' => '*',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    ),
-
-    array(
-        'classname' => 'block_lsuxe\task\lsuxe_enroll',
-        'blocking' => 0,
-        'minute' => '30',
-        'hour' => '3',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    ),
-
-    array(
         'classname' => 'block_lsuxe\task\lsuxe_full_enroll',
         'blocking' => 0,
         'minute' => '30',

@@ -52,6 +52,7 @@ class moodles_view implements renderable, templatable {
         $data = $pname->get_all_records("moodles");
         $updated_data = $pname->transform_for_view($data, $helpers);
         $updated_data['xeurl'] = $CFG->wwwroot;
+        $updated_data['xeparms'] = "intervals=false&function=moodle&courseid=1&moodleid=";
 
         return $updated_data;
     }

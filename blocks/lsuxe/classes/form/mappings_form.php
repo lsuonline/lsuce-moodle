@@ -17,27 +17,32 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\form;
 
+
 use block_lsuxe\controllers\form_controller;
 use block_lsuxe\form\groupform_autocomplete;
+use block_lsuxe\models;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 
-\MoodleQuickForm::registerElementType('groupform_autocomplete',
+\MoodleQuickForm::registerElementType(
+    'groupform_autocomplete',
     $CFG->dirroot . '/blocks/lsuxe/classes/form/groupform_autocomplete.php',
-    '\\block_lsuxe\\form\\groupform_autocomplete');
+    '\\block_lsuxe\\form\\groupform_autocomplete'
+);
 
 class mappings_form extends \moodleform {
     /*
      * Moodle form definition
      */
-    public function definition() {
+    public function definition()
+    {
         global $CFG;
         $mappingsctrl = new form_controller("moodles");
         $helpers = new \lsuxe_helpers();
@@ -50,8 +55,8 @@ class mappings_form extends \moodleform {
         // Get data for the form
         $mform =& $this->_form;
 
-        // This is for styling purposes, not using.....yet.
-        // $mform->addElement('html', '<span class="lsuxe_course_picker">');
+        // For styling purposes.
+        $mform->addElement('html', '<span class="lsuxe_form_container">');
         // --------------------------------
         // Course Shortname.
         $enable_autocomplete = get_config('moodle', "block_lsuxe_enable_form_auto");
@@ -82,8 +87,9 @@ class mappings_form extends \moodleform {
             );
             $mform->setDefault('selectgroupentry', 0);
 
-            // Select Source Group Name, there could be MULTIPLE groups to choose form 
-            // ** NOTE ** this must also match in the form_events.js code where the group form resets
+            // Select Source Group Name, there could be MULTIPLE groups to choose
+            // from. ** NOTE ** this must also match in the form_events.js code
+            // where the group form resets.
             if (isset($this->_customdata->groupname)) {
                 $defaultgroupselect = array($this->_customdata->groupid => $this->_customdata->groupname);
             } else {
@@ -178,10 +184,24 @@ class mappings_form extends \moodleform {
             'available_moodle_instances',
             get_string('destmoodleinstance', 'block_lsuxe'),
             $moodleinstances,
-            []
+            ['class' => 'eatshitake_mushrooms']
         );
         if (isset($this->_customdata->destgroupprefix)) {
             $mform->setDefault('available_moodle_instances', $this->_customdata->destmoodleid);
+        }
+
+        // --------------------------------
+        // Auth Method.
+        $authmethods = $helpers->config_to_array('block_lsuxe_xe_auth_method', "mirror");
+        $authselect = $mform->addElement(
+            'select',
+            'authmethod',
+            get_string('authmethod', 'block_lsuxe'),
+            $authmethods,
+            []
+        );
+        if (isset($this->_customdata->authmethod)) {
+            $authselect->setSelected($this->_customdata->authmethod);
         }
 
         if ($enable_autocomplete) {
@@ -327,22 +347,37 @@ class mappings_form extends \moodleform {
         }
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
-        // $mform->addElement('html', '</span>');
+        $mform->addElement('html', '</span>');
     }
 
-    /*
+    /**
      * Moodle form validation
+     * 
+     * @param array $data  Data from the form.
+     * @param array $files Any files in the form.
+     * 
+     * @return array Errors returned for the required elements.
      */
-    public function validation($data, $files) {
+    public function validation($data, $files)
+    {
         $errors = [];
+        $fuzzy = new \block_lsuxe\models\mixed();
 
         // Check that we have at least one recipient.
         if (empty($data['srccourseshortname'])) {
             $errors['srccourseshortname'] = get_string('srccourseshortnameverify', 'block_lsuxe');
+        } else {
+            if (!$fuzzy->checkCourseExists($data['srccourseshortname'])) {
+                $errors['srccourseshortname'] = get_string('mappingsformcourseerror', 'block_lsuxe');
+            }
         }
 
         if (empty($data['srccoursegroupname'])) {
             $errors['srccoursegroupname'] = get_string('srccoursegroupnameverify', 'block_lsuxe');
+        } else {
+            if (!$fuzzy->checkGroupExists($data['srccoursegroupname'])) {
+                $errors['srccoursegroupname'] = get_string('mappingsformgrouperror', 'block_lsuxe');
+            }
         }
 
         if (empty($data['destcourseshortname'])) {

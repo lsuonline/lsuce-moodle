@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_lsuxe';
-$plugin->version   = 2022091000;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->version   = 2022091200;        // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires  = 2016112900;        // Requires this Moodle version
 $plugin->release = "v1.1";
 $plugin->maturity = MATURITY_STABLE;

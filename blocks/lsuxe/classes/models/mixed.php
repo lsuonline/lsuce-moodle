@@ -120,6 +120,24 @@ class mixed {
      * @param  array containing course name and group name
      * @return array
      */
+    public function checkCourseExists($coursename = false) {
+        global $DB;
+        $coursecount = $DB->count_records("course", array("shortname" => $coursename));
+        return $coursecount;
+
+    }
+
+    public function checkGroupExists($groupname = false, $courseid = 0) {
+        global $DB;
+        $groupcount = $DB->count_records("groups", array("name" => $groupname));
+        return $groupcount;    
+    }
+
+    /**
+     * Fetch the course and group
+     * @param  array containing course name and group name
+     * @return array
+     */
     public function getCourseGroupInfo($coursename = false, $groupname = false) {
         global $DB;
         
