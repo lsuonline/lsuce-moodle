@@ -100,7 +100,7 @@ if ($ADMIN->fulltree) {
         new admin_setting_configtextarea(
             'block_lsuxe_xe_auth_method',
             get_string('xe_auth_method_title', 'block_lsuxe'),
-            'List of authentications',
+            get_string('xe_auth_method_hint', 'block_lsuxe'),
             'manual
             CAS
             LDAP',
