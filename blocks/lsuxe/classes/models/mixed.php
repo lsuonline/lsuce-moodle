@@ -103,6 +103,12 @@ class mixed {
         global $DB;
         $coursename = isset($params->coursename) ? $params->coursename : null;
         $groupname = isset($params->groupname) ? $params->groupname : null;
+
+        error_log(" \n\n ");
+        error_log(" What is the coursename: ". $coursename);
+        error_log(" What is the groupname: ". $groupname);
+        error_log(" \n\n ");
+
         $return_obj = new \stdClass();
         
         $coursedata = $DB->get_records_sql(
@@ -120,9 +126,13 @@ class mixed {
      * @param  array containing course name and group name
      * @return array
      */
-    public function checkCourseExists($coursename = false) {
+    public function checkCourseExists($coursename = false, $use_id = false) {
         global $DB;
-        $coursecount = $DB->count_records("course", array("shortname" => $coursename));
+        if ($use_id) {
+            $coursecount = $DB->count_records("course", array("id" => $coursename));
+        } else {
+            $coursecount = $DB->count_records("course", array("shortname" => $coursename));
+        }
         return $coursecount;
 
     }

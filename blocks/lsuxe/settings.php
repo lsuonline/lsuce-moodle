@@ -101,9 +101,9 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_xe_auth_method',
             get_string('xe_auth_method_title', 'block_lsuxe'),
             get_string('xe_auth_method_hint', 'block_lsuxe'),
-            'manual
-            CAS
-            LDAP',
+            'manual\n'.
+            'cas\n'.
+            'ldap',
             PARAM_TEXT
         )
     );

@@ -34,6 +34,7 @@ define(['jquery', 'block_lsuxe/jaxy'],
          * @return null
          */
         preLoadConfig: function() {
+            console.log("preLoadConfig() -> START ----------------------");
             var window_stat = {};
 
             if (window.__SERVER__ === "true" || window.__SERVER__ === true) {
@@ -50,7 +51,17 @@ define(['jquery', 'block_lsuxe/jaxy'],
                 console.log("WARNING: window.__SERVER__ was not set");
             }
             for (var key in window_stat) {
-                sessionStorage.setItem(key, window_stat[key]);
+                // If typeof yourVariable === 'object', it's an object or null.
+                if (typeof(window_stat[key]) === 'object') {
+                    console.log("YESSSSSSSS key is array");
+                    let subkey_list = window_stat[key];
+                    for (var subkey in subkey_list) {
+                        sessionStorage.setItem(subkey, subkey_list[subkey]);
+                    }
+                } else {
+                    console.log("Nope key is val, store it");
+                    sessionStorage.setItem(key, window_stat[key]);
+                }
             }
         },
 
@@ -156,8 +167,10 @@ define(['jquery', 'block_lsuxe/jaxy'],
          * @return {Promise}
          */
         jaxyRemotePromise: function (data) {
+            console.log("jaxyRemotePromise() -> what is data to send: ", data);
             var promiseObj = new Promise(function (resolve) {
                 jaxy.XERemoteAjax(data).then(function (response) {
+                    console.log("jaxyRemotePromise() -> What is the response: ", response);
                     resolve(response);
                 });
             });

@@ -34,6 +34,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'block_lsuxe/xe_lib'],
          * @return {Promise}
          */
          getCourses: function (params) {
+            console.log("What is the current URL: " + sessionStorage.getItem("currentUrl"));
+            console.log("What is the current token: " + sessionStorage.getItem("currentToken"));
+
             var params = {
                 'type': 'GET',
                 'url': sessionStorage.getItem("currentUrl") + '/webservice/rest/server.php',
@@ -43,6 +46,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'block_lsuxe/xe_lib'],
                     'moodlewsrestformat': 'json'
                 }
             };
+            console.log("What is the params: ", params);
             return XELib.jaxyRemotePromise(params);
          },
 

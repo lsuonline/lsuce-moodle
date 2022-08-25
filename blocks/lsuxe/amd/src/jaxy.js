@@ -26,6 +26,11 @@ define(['jquery', 'core/ajax',],
     function($, Ajax) {
     'use strict';
     return {
+
+        isAorO: function(val) {
+            return val instanceof Array || val instanceof Object ? true : false;
+        },
+
         /**
          * AJAX method to access the external services for Cross Enrollment
          *
@@ -71,6 +76,7 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
+            var that = this;
             var promiseObj = new Promise(function(resolve) {
                 $.ajax({
                     type: data_chunk.type,
@@ -83,13 +89,25 @@ define(['jquery', 'core/ajax',],
 
                 }).done(function (response) {
                     // If token is incorrect Moodle will throw an exception.
+                    console.log("AJAX DONE -> What is response: ", response);
                     if (response.hasOwnProperty('exception')) {
+                        console.log("AJAX DONE -> response has exception");
                         resolve({
                             'success': false,
                             'msg': response.message
                         });
                     } else {
-                        resolve(JSON.parse(response.data));
+                        // Need to handle the response. If the request is for Moodle Core
+                        // then the response is an array or object (isAorO).
+                        // otherwise it's a stringified JSON object.
+                        console.log("AJAX DONE -> response has NO exception, checking if JSON......");
+                        if (that.isAorO(response)) {
+                            console.log("AJAX DONE -> NO - the response is NOT a JSON object, it's an object or array");
+                            resolve(response);
+                        } else {
+                            console.log("AJAX DONE -> YES - the response is a JSON object");
+                            resolve(JSON.parse(response.data));
+                        }
                     }
                 }).fail(function ( jqXHR, textStatus, errorThrown ) {
                     console.log(jqXHR);

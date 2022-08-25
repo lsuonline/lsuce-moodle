@@ -64,7 +64,10 @@ if ($pageparams['vform'] == 1) {
 $initialload = array(
     "wwwroot" => $CFG->wwwroot,
     "xe_form" => "mappings",
-    "xe_viewform" => $viewform
+    "xe_viewform" => $viewform,
+    "settings" => array(
+        "xes_autocomplete" => get_config('moodle', "block_lsuxe_enable_form_auto")
+    )
 );
 $initialload = json_encode($initialload, JSON_HEX_APOS|JSON_HEX_QUOT);
 $xtras = "<script>window.__SERVER__=true</script>".

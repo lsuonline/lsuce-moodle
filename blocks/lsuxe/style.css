@@ -30,14 +30,33 @@ span.xe_card_icon {
     text-decoration: none;
 }
 
-.lsuxe_form_container input.form-control,
-.lsuxe_form_container select#id_available_moodle_instances {
-    width: 50%;
-}
 
 .lsuxe_dash_link .card {
     margin-bottom: 20px;
 }
+
+/* ================================ */
+/*              Forms               */
+/* ================================ */
+.lsuxe_form_container .form-inline.felement > select.custom-select,
+.lsuxe_form_container .form-inline.felement > input.form-control,
+.lsuxe_form_container select#id_available_moodle_instances {
+    width: 50%;
+}
+
+.lsuxe_form_container .d-md-inline-block.mr-md-2.position-relative {
+    width: 50%;
+}
+
+.lsuxe_form_container .form-inline.felement .form-autocomplete-selection input.form-control {
+    width: 100%;
+}
+
+.lsuxe_form_container input[id^="form_autocomplete_input"] {
+    width: 100% !important;
+}
+
+/*.d-md-inline-block.mr-md-2.position-relative*/
 /* Define vars we'll be using */
 /*$brand-success: #5cb85c;*/
 /*

@@ -29,6 +29,9 @@
     'use strict';
     return {
 
+        test: function() {
+            console.log("MooForm Test Success");
+        },
         /**
          * Fetch the token for the current selected URL. Store in temp sessionStorage
          *
@@ -273,19 +276,14 @@
          */
         registerMappingEvents: function() {
             var that = this,
-                src_form_select = $("#id_srccourseshortname"),
-                dest_form_select = $("#id_destcourseshortname");
+                form_select = $("#id_srccourseshortname");
 
-            dest_form_select.change(function() {
-                console.log("dest click");
-            });
+            form_select.change(function() {
 
-            src_form_select.change(function() {
-
-                if (src_form_select.val()) {
+                if (form_select.val()) {
                     // change invokes any change so only make an ajax call if there is value
                     that.getGroupData({
-                        'courseid': src_form_select.val(),
+                        'courseid': form_select.val(),
                         'coursename': $( "#id_srccourseshortname option:selected" ).text()
                     },).then(function (response) {
                         // if the text is disabled then use select
@@ -343,20 +341,8 @@
 
             // Verify the Course and Group Names.
             $('#id_verifysource').on('click', function() {
-
-                console.log("------------ verify source ------------");
-                var coursename = "",
-                    groupname = "";
-
-                // If we are using the autocomplete feature then the jquery
-                // selector is different.
-                if (sessionStorage.getItem("xes_autocomplete") == "1") {
-                    coursename = $("#id_srccourseshortname").find("option:selected").text();
-                    groupname = $("#id_srccoursegroupnameselect").find("option:selected").text();
-                } else {
-                    groupname = $("#id_srccourseshortname").val();
+                var coursename = $("#id_srccourseshortname").val(),
                     groupname = $("#id_srccoursegroupname").val();
-                }
 
                 if (coursename.length < 1) {
                     // User forgot to enter a course name.

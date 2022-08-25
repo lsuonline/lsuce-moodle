@@ -206,7 +206,8 @@ class mappings extends \block_lsuxe\persistents\persistent {
             // Handle the group stuff
             // The source groupname varies and have to check if the user used a
             // select form or RAW Text.
-            if (array_key_exists("selectgroupentry", $data) && $data->selectgroupentry == "1") {
+
+            if (property_exists($data, "selectgroupentry") && $data->selectgroupentry == "1") {
                 // The user used RAW Text to enter the group name
                 $to_save->groupname = $data->srccoursegroupnametext;
             } else {
@@ -266,6 +267,11 @@ class mappings extends \block_lsuxe\persistents\persistent {
         // Update the start and end times (if any).
         $to_save->starttime = (int) $data->starttime;
         $to_save->endtime = (int) $data->endtime;
+        error_log(" \n\n ");
+        error_log(" Mappings Persistent \n");
+        error_log(" what is to_save ". print_r($to_save, 1));
+        error_log(" what is data ". print_r($data, 1));
+        error_log(" \n\n ");
     }
 
     /**
