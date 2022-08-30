@@ -82,9 +82,8 @@
 
                 <th>{{# str }} enrolenddate, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} updateinterval, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} updatenow, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} edit, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} delete, block_lsuxe {{/ str }}</th>
+                <th>{{# str }} recovernow, block_lsuxe {{/ str }}</th>
+                
                 
             </tr>
         </thead>
@@ -100,24 +99,20 @@
                     <td><a href="{{moodleurl}}/course/view.php?id={{courseid}}" target="_blank">{{destcourseshortname}}</a></td>
                     <td>{{endtime}}</td>
                     <td>{{{updateinterval}}}</td>
-                    <td><a href="{{xeurl}}/blocks/lsuxe/reprocess.php?{{xeparms}}{{courseid}}" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></a></td>
-                    <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
-                    <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
+                    <td><button type="submit" class="btn btn-warning mview_recover"><i class="fa fa-undo"></i></button></td>
                 </tr>
             </form>
             {{/ mappings }}
 
             {{^ mappings }}
                 <tr>
-                    <td colspan="7" align="center">{{# str }} nomappings, block_lsuxe {{/ str }}</td>
+                    <td colspan="7" align="center">{{# str }} noarchives, block_lsuxe {{/ str }}</td>
                 </tr>
             {{/ mappings }}
 
         </tbody>
     </table>
-    <span class="pull-right">
-        <a href="{{xeurl}}/blocks/lsuxe/mappings.php?vform=1" class="btn btn-info">Create New</a>
-    </span>
+    
     {{! This will load the JS for the views that have basic create, update, delete buttons }}
     {{> block_lsuxe/buttons }}
 </div>

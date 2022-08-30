@@ -28,6 +28,16 @@ defined('MOODLE_INTERNAL') || die();
 // Create the settings block.
 $settings = new admin_settingpage($section, get_string('settings', 'block_lsuxe'));
 
+$auth_default = 'manual
+cas
+ldap';
+
+$interval_default = 'Monthly 720
+Weekly 168
+Daily 24
+Hourly 1';
+
+
 // Make sure only admins see this one.
 if ($ADMIN->fulltree) {
     // --------------------------------
@@ -56,10 +66,7 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_interval_list',
             get_string('xe_interval_list', 'block_lsuxe'),
             'List of Moodle instances',
-            'Monthly 720
-            Weekly 168
-            Daily 24
-            Hourly 1',
+            $interval_default,
             PARAM_TEXT
         )
     );
@@ -101,9 +108,7 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_xe_auth_method',
             get_string('xe_auth_method_title', 'block_lsuxe'),
             get_string('xe_auth_method_hint', 'block_lsuxe'),
-            'manual\n'.
-            'cas\n'.
-            'ldap',
+            $auth_default,
             PARAM_TEXT
         )
     );

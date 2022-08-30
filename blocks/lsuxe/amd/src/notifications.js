@@ -31,25 +31,21 @@
         /**
          * Confirmation window to SAVE or CANCEL
          * Type can be either: success, warning, info, error
-         *  Example:
-         *  noti.callNoti({
-         *      message: "This is a success test",
-         *      type: "success"
-         *  });
          * @param {obj} A simple object with the 'message' and 'type' of notification.
          * @return void
          */
-        callRemoveModi: function(data) {
+        callYesNoModi: function(data) {
             var this_data = data;
             var promiseObj = new Promise(function (resolve) {
 
                 MF.create({
                     type: MF.types.SAVE_CANCEL,
-                    title: 'Delete item',
-                    body: 'Do you really want to delete?',
+                    title: this_data.title,
+                    body: this_data.body
+                    // body: this_data.body + '<span class="xe_confirm_trigger"></span>'
                 })
                 .then(function(modal) {
-                    modal.setSaveButtonText('Delete');
+                    modal.setSaveButtonText(this_data.save_button);
                     var root = modal.getRoot();
                     root.on(ME.save, function() {
                         resolve({"status": true, "data": this_data});

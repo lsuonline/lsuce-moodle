@@ -267,11 +267,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
         // Update the start and end times (if any).
         $to_save->starttime = (int) $data->starttime;
         $to_save->endtime = (int) $data->endtime;
-        error_log(" \n\n ");
-        error_log(" Mappings Persistent \n");
-        error_log(" what is to_save ". print_r($to_save, 1));
-        error_log(" what is data ". print_r($data, 1));
-        error_log(" \n\n ");
     }
 
     /**
@@ -305,6 +300,9 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 // the moodle instance may have been deleted.
                 $this_record['moodleurl'] = "The URL has been deleted.";
             }
+
+            // Convert timestamp to readable date for enrollment endtime.
+            $this_record['endtime'] = userdate($this_record['endtime']);
         }
         return $data;
     }
@@ -330,11 +328,27 @@ class mappings extends \block_lsuxe\persistents\persistent {
      */
     protected function after_update($result) {
         global $CFG;
-        redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php',
-            get_string('updatedmapping', 'block_lsuxe'),
-            null,
-            \core\output\notification::NOTIFY_SUCCESS
-        );
+        // The action should still be stored so let's use that to redirect accordingly.
+        $action = optional_param('sentaction', "", PARAM_TEXT);
+        if ($action === "recovered") {
+            redirect($CFG->wwwroot . '/blocks/lsuxe/archives.php',
+                get_string('recoverarchive', 'block_lsuxe'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        } else if ($action === "delete") {
+            redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php',
+                get_string('deletemapping', 'block_lsuxe'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        } else {
+            redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php',
+                get_string('updatedmapping', 'block_lsuxe'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        }
     }
 
     /*

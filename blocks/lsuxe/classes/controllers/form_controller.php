@@ -129,6 +129,27 @@ class form_controller {
     }
 
     /**
+     * Recover this record.
+     * @param  object $data
+     * @return bool
+     */
+    public function recover_record($record) {
+        global $USER;
+        $pname = $this->persist_path . $this->persistent_name;
+        $po = new $pname($record);
+
+        // Check whether a record exists.
+        $exists = $po->record_exists($record);
+        // Permanently delete the object from the database.
+        if ($exists) {
+            // $po->delete();
+            $po->set('userdeleted', $USER->id);
+            $po->set('timedeleted', NULL);
+            $po->update();
+        }
+    }
+
+    /**
      * Update this record.
      * @param  object $data
      * @return bool
@@ -172,7 +193,7 @@ class form_controller {
             // $po->delete();
             $po->set('userdeleted', $USER->id);
             $po->set('timedeleted', time());
-            $po->update();
+            $po->update("facker");
         }
     }
 

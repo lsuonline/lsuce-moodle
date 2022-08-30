@@ -235,7 +235,6 @@
                 };
 
                 XELib.testWebServices(params).then(function (response) {
-                    console.log("test returned, response is: ", response);
                     if (response.success == false) {
                         Noti.callNoti({
                             message: response.msg,

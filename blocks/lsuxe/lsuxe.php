@@ -69,7 +69,7 @@ $dashboard_links = array(
     array(
         // The Moodles View.
         'url' => $CFG->wwwroot . '/blocks/lsuxe/moodles.php',
-        'icon' => 'list',
+        'icon' => 'server',
         'lang' => get_string('moodles_view', 'block_lsuxe')
     ),
     array(
@@ -83,6 +83,12 @@ $dashboard_links = array(
         'url' => $CFG->wwwroot . '/admin/settings.php?section=webservicetokens',
         'icon' => 'key',
         'lang' => get_string('manage_tokens', 'block_lsuxe')
+    ),
+    array(
+        // Archives.
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/archives.php',
+        'icon' => 'archive',
+        'lang' => get_string('archives', 'block_lsuxe')
     ),
     array(
         // The Settings Page.

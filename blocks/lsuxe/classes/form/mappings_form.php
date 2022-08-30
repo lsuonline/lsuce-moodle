@@ -39,16 +39,6 @@ require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 
 class mappings_form extends \moodleform {
     
-    /** @var true if using autocomplete?. */
-    // protected $enable_autocomplete;
-    // protected $enable_dest_test;
-
-    // public function __construct() {
-        // $this->enable_autocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
-        // $this->enable_dest_test = (bool)get_config('moodle', "block_lsuxe_enable_dest_test");
-        // return parent::__construct();
-    // }
-
     /*
      * Moodle form definition
      */
@@ -63,11 +53,6 @@ class mappings_form extends \moodleform {
             $formupdating = true;
         }
 
-        error_log(" \n\n ");
-        error_log(" \n------------------------------------------------\n ");
-        error_log(" ~~~~~~~~~~~~~ What is _customdata: ". print_r($this->_customdata, 1));
-        error_log(" \n------------------------------------------------\n ");
-        error_log(" \n\n ");
         $enable_autocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
         $enable_dest_test = (bool)get_config('moodle', "block_lsuxe_enable_dest_test");
         // Get data for the form
@@ -77,7 +62,6 @@ class mappings_form extends \moodleform {
         $mform->addElement('html', '<span class="lsuxe_form_container">');
         // --------------------------------
         // Course Shortname.
-        // if ($this->enable_autocomplete) {
         if ($enable_autocomplete) {
             // USE THE AUTOCOMPLETE FEATURES FOR COURSE AND GROUP.
             $options = array('multiple' => false);
@@ -85,34 +69,18 @@ class mappings_form extends \moodleform {
                 'course',
                 'srccourseshortname',
                 get_string('srccourseshortname', 'block_lsuxe'),
-                $options,
-                // array('ajax' => 'block_lsuxe/course_search')
+                $options
             );
 
             if (isset($this->_customdata->shortname)) {
-                error_log(" \n\n ");
-                error_log(" do we have shortname: ". $this->_customdata->shortname);
-                error_log(" \n\n ");
                 $courseselect->setValue($this->_customdata->courseid);
             }
 
             // ----------------------------------------------------------------
-            // ------------------- Source Group  ------------------------------
-            // Override for manual group name entry.
-            // $mform->addElement(
-            //     'advcheckbox',
-            //     'selectgroupentry',
-            //     get_string('manualgroupentry', 'block_lsuxe')
-            // );
-            // $mform->setDefault('selectgroupentry', 0);
-
             // Select Source Group Name, there could be MULTIPLE groups to choose
             // from. ** NOTE ** this must also match in the form_events.js code
             // where the group form resets.
             if (isset($this->_customdata->groupname)) {
-                error_log(" \n\n ");
-                error_log(" do we have groupname: ". $this->_customdata->groupname);
-                error_log(" \n\n ");
                 $defaultgroupselect = array($this->_customdata->groupid => $this->_customdata->groupname);
             } else {
                 $defaultgroupselect = array("Please search for a course first");
@@ -126,28 +94,6 @@ class mappings_form extends \moodleform {
                 $defaultgroupselect
             );
 
-            // --------------------------------
-            // Manual Source Group Name.
-            // $mform->addElement(
-            //     'text',
-            //     'srccoursegroupnametext',
-            //     get_string('srccoursegroupname', 'block_lsuxe')
-            // );
-            // $mform->setType(
-            //     'srccoursegroupnametext',
-            //     PARAM_TEXT
-            // );
-            // if (isset($this->_customdata->groupname)) {
-            //     $mform->setDefault('srccoursegroupnametext', $this->_customdata->groupname);
-            // }
-
-            // $mform->disabledIf('srccoursegroupnameselect', 'selectgroupentry', 'checked');
-            // $mform->disabledIf('srccoursegroupnametext', 'selectgroupentry', 'notchecked');
-            
-            // $mform->hideIf('srccoursegroupnameselect', 'selectgroupentry', 'checked');
-            // $mform->hideIf('srccoursegroupnametext', 'selectgroupentry', 'notchecked');
-            // ----------------------------------------------------------------
-            // ----------------------------------------------------------------
         } else {
             // MANUAL ENTER THE COURSE AND GROUP INTO THE FIELDS
             $mform->addElement(
@@ -229,19 +175,19 @@ class mappings_form extends \moodleform {
         if ($enable_autocomplete) {
             // --------------------------------
             // Destination Course Group name autocomplete
-            $mform->addElement(
+            $destcourseselect = $mform->addElement(
                 'groupform_autocomplete',
-                // 'autocomplete',
                 'destcourseshortname',
                 get_string('destcourseshortname', 'block_lsuxe')
-                // $deez_attributes
             );
-            // $mform->setType(
-            //     'destcourseshortname',
-            //     PARAM_TEXT
-            // );
+            
             if (isset($this->_customdata->destcourseshortname)) {
-                $mform->setDefault('destcourseshortname', $this->_customdata->destcourseshortname);
+                $destcourseselect->setValue(
+                    array(
+                        $this->_customdata->destcourseid,
+                        $this->_customdata->destcourseshortname
+                    )
+                );
             }
 
             // --------------------------------
@@ -358,17 +304,24 @@ class mappings_form extends \moodleform {
 
         // --------------------------------
         // Buttons!
+        // If using the autocomplete we don't need to verify the source and dest as it's an
+        // autocomplete feature.
         // The button can either be Save or Update for the submit action.
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('savemapping', 'block_lsuxe');
-        $buttons = [
-            $mform->createElement('submit', 'send', $thissubmitbutton),
-            $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe'))
-        ];
-        if ($enable_dest_test) {
-            $buttons[] = $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'));
+        
+        if ($enable_autocomplete) {
+            $mform->addElement('submit', 'send', $thissubmitbutton);
+        } else {
+            $buttons = [
+                $mform->createElement('submit', 'send', $thissubmitbutton),
+                $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe'))
+            ];
+            if ($enable_dest_test) {
+                $buttons[] = $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'));
+            }
+            $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
         }
 
-        $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
         $mform->addElement('html', '</span>');
     }
 
@@ -385,12 +338,7 @@ class mappings_form extends \moodleform {
         $errors = [];
         $fuzzy = new \block_lsuxe\models\mixed();
 
-        // error_log(" \n\n ");
-        // error_log(" ------------ Validation ------------ \n");
-        // error_log(" What is course shortname: ". $data['srccourseshortname']);
-        
         $enable_autocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
-        // $enable_dest_test = (bool)get_config('moodle', "block_lsuxe_enable_dest_test");
 
         // Check that we have at least one recipient.
         if (empty($data['srccourseshortname'])) {

@@ -103,12 +103,6 @@ class mixed {
         global $DB;
         $coursename = isset($params->coursename) ? $params->coursename : null;
         $groupname = isset($params->groupname) ? $params->groupname : null;
-
-        error_log(" \n\n ");
-        error_log(" What is the coursename: ". $coursename);
-        error_log(" What is the groupname: ". $groupname);
-        error_log(" \n\n ");
-
         $return_obj = new \stdClass();
         
         $coursedata = $DB->get_records_sql(

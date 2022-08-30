@@ -82,16 +82,9 @@ define(['jquery', 'core/ajax',],
                     type: data_chunk.type,
                     data: data_chunk.data,
                     url: data_chunk.url,
-                // }).then(function (response) {
-                //     console.log("XEREMOTE what is responses: ", responses);
-                //     resolve(JSON.parse(responses.data));
-                // });
-
                 }).done(function (response) {
                     // If token is incorrect Moodle will throw an exception.
-                    console.log("AJAX DONE -> What is response: ", response);
                     if (response.hasOwnProperty('exception')) {
-                        console.log("AJAX DONE -> response has exception");
                         resolve({
                             'success': false,
                             'msg': response.message
@@ -100,12 +93,9 @@ define(['jquery', 'core/ajax',],
                         // Need to handle the response. If the request is for Moodle Core
                         // then the response is an array or object (isAorO).
                         // otherwise it's a stringified JSON object.
-                        console.log("AJAX DONE -> response has NO exception, checking if JSON......");
                         if (that.isAorO(response)) {
-                            console.log("AJAX DONE -> NO - the response is NOT a JSON object, it's an object or array");
                             resolve(response);
                         } else {
-                            console.log("AJAX DONE -> YES - the response is a JSON object");
                             resolve(JSON.parse(response.data));
                         }
                     }

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -79,6 +78,13 @@ $string['moodlesurl'] = 'Moodle URL';
 $string['moodles_view'] = 'Moodles - View';
 $string['moodles_create'] = 'Moodles - Create';
 
+// Archives Page.
+$string['archives'] = 'Archives';
+$string['deletearchive'] = 'This mapping has been removed.';
+$string['recoverarchive'] = 'The mapping has been recovered.';
+$string['recovernow'] = 'Recover Mapping';
+$string['noarchives'] = 'Nothing has been archived yet.';
+
 // Forms New Mappings.
 $string['newmapping'] = 'Create New Mapping';
 $string['newmoodle'] = 'Create New Instance';
@@ -100,6 +106,7 @@ $string['edit'] = 'Edit';
 $string['delete'] = 'Delete';
 $string['nomappings'] = 'No Mappings to view';
 $string['manualgroupentry'] = 'Click manually enter a group name.';
+$string['enrolenddate'] = 'Enrolment End Date.';
 
 // Forms New Moodles.
 $string['instanceurl'] = 'Moodle Instance URL';

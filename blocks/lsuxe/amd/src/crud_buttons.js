@@ -34,14 +34,51 @@
          * @return void
          */
         registerEvents: function () {
-            // var that = this;
 
-            $('.block_lsuxe_container .mview_update').on('click', function() {
+            // --------------------------------
+            // Recover Mapping
+            // --------------------------------
+            $('.block_lsuxe_container .mview_recover').on('click', function(ev) {
+                ev.preventDefault();
+                var row_data = {
+                    "record": $(this).closest("tr").data("rowid"),
+                    "this_form": $(this).closest("form"),
+                    "title": 'Recover Mapping',
+                    "body": 'Do you really want to recover this?',
+                    "save_button": "Recover"
+                };
+
+                noti.callYesNoModi(row_data).then(function (response) {
+                    if (response.status == true) {
+                        var this_form = $('#map_form_'+response.data.record);
+                        // Convert all the form elements values to a serialised string.
+                        this_form.append('<input type="hidden" name="sentaction" value="recovered" />');
+                        this_form.submit();
+                    // } else {
+                        // console.log("NOPE the thingy is false");
+                    }
+                });
+            });
+
+            // --------------------------------
+            // Update (handled by form submit to reprocess.php)
+            // --------------------------------
+            // $('.block_lsuxe_container .mview_update').on('click', function() {
                 // record will be the id of the record in the db
                 // var record = $(this).closest("tr").data("rowid");
                 // TODO: finish this by calling some scheduled task to run NOW.
-            });
+            // });
 
+            // TODO: allow user to hit enter when dialog pops up.
+            // $('#page-blocks-lsuxe-mappings .xe_confirm_trigger')
+            //     .parent().find('span.xe_confirm_trigger')
+            //     .on('enter', function(ev) {
+            //         console.log("Did this work....?");
+            // });
+
+            // --------------------------------
+            // Edit Mapping
+            // --------------------------------
             $('.block_lsuxe_container .mview_edit').on('click', function(ev) {
                 ev.preventDefault();
                 var record = $(this).closest("tr").data("rowid"),
@@ -54,15 +91,21 @@
                 XELib.pushPost(url, send_this);
             });
 
+            // --------------------------------
+            // Delete Mapping
+            // --------------------------------
             $('.block_lsuxe_container .mview_delete').on('click', function(ev) {
                 ev.preventDefault();
 
                 var row_data = {
                     "record": $(this).closest("tr").data("rowid"),
-                    "this_form": $(this).closest("form")
+                    "this_form": $(this).closest("form"),
+                    "title": 'Delete item',
+                    "body": 'Do you really want to delete?',
+                    "save_button": "Delete"
                 };
 
-                noti.callRemoveModi(row_data).then(function (response) {
+                noti.callYesNoModi(row_data).then(function (response) {
                     if (response.status == true) {
                         var this_form = $('#map_form_'+response.data.record);
                         // Convert all the form elements values to a serialised string.

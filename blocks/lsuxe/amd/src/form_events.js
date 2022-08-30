@@ -43,6 +43,7 @@
                     sessionStorage.setItem("currentToken", response.data);
                     sessionStorage.setItem("currentUrl", url);
                 } else {
+                    console.log("ERROR: Failed to get the token :-( ");
                     // TODO: Send Notification to user that token is crap
                 }
             });
@@ -74,7 +75,7 @@
         },
 
         /**
-         * Verify the source course and group
+         * Verify the source course and group.
          *
          * @param {object} params the json object sent to the server
          * @return {Object} resolved data
@@ -87,6 +88,12 @@
             });
         },
 
+        /**
+         * Verify the destination course.
+         *
+         * @param {object} params the json object sent to the server
+         * @return {Object} resolved data
+         */
         verifyDestCourse: function (params) {
             var new_params = {
                 'type': 'GET',
@@ -100,8 +107,22 @@
                 }
             };
             return XELib.jaxyRemotePromise(new_params);
-         },
+        },
 
+
+        /**
+         * Reset the dropdown for the source group.
+         *
+         * @return null
+         */
+        resetGroupList: function () {
+            $('#id_srccoursegroupnameselect').empty();
+            $('#id_srccoursegroupnametext').text();
+            $('#id_srccoursegroupnameselect')
+                .append($("<option></option>")
+                .attr("value", 0)
+                .text("Please search for a course first"));
+        },
         // ==================================================================
         // ==================================================================
         // ==================================================================
@@ -116,7 +137,7 @@
          * @return {void}
          */
         registerMoodleEvents: function() {
-            var that = this;
+            // var that = this;
                 // url_tag = '.xe_confirm_url',
                 // token_tag = '.xe_confirm_token';
             // Moodle URL Events
@@ -202,15 +223,6 @@
                 var test_url = $("#id_instanceurl").val(),
                     test_token = $("#id_instancetoken").val();
 
-                // console.log("What is the tag name1: " + this.prop("tagName"));
-                // console.log("What is the tag name2: " + $(this).prop("tagName"));
-                // that.checkMarkLoading(url_tag);
-                // that.crossMarkOn(token_tag);
-                // that.checkMarkOff(url_tag);
-                // checkMarkComplete
-                // crossMarkOn
-                // crossMarkOff
-
                 var params = {
                     'type': 'GET',
                     // 'type': 'POST',
@@ -232,7 +244,6 @@
                 };
 
                 XELib.testWebServices(params).then(function (response) {
-                    console.log("test returned, response is: ", response);
                     if (response.success == false) {
                         Noti.callNoti({
                             message: response.msg,
@@ -259,12 +270,6 @@
             //         'value': params.coursename
             //     }
             // };
-
-            // Register events on the moodles form.
-            // onChange event for the URL selector
-            $('select#id_available_moodle_instances').on('change', function() {
-                that.getTokenReady();
-            });
         },
 
         /**
@@ -273,15 +278,9 @@
          */
         registerMappingEvents: function() {
             var that = this,
-                src_form_select = $("#id_srccourseshortname"),
-                dest_form_select = $("#id_destcourseshortname");
-
-            dest_form_select.change(function() {
-                console.log("dest click");
-            });
+                src_form_select = $("#id_srccourseshortname");
 
             src_form_select.change(function() {
-
                 if (src_form_select.val()) {
                     // change invokes any change so only make an ajax call if there is value
                     that.getGroupData({
@@ -289,12 +288,11 @@
                         'coursename': $( "#id_srccourseshortname option:selected" ).text()
                     },).then(function (response) {
                         // if the text is disabled then use select
-                        if (response.count == 1) {
-                            // Single entry so let's update the text field
-                            $('#id_srccoursegroupnameselect').val(response.data.groupname);
-                            $('#id_srccoursegroupname').val(response.data.groupname);
+                        if (response.count == 0) {
+                            // There are no groups, reset.
+                            that.resetGroupList();
 
-                        } else if (response.count > 1) {
+                        } else {
                             // Multiple groups, so let's unhide the select
                             $('#id_srccoursegroupnameselect').empty();
                             var first_choice = "";
@@ -316,35 +314,25 @@
                             // select option.
                             that.setHiddenValue('srccoursegroupname', first_choice.groupname);
                             that.setHiddenValue('srccoursegroupid', first_choice.groupid);
-                        } else {
-                            // TODO: The count is neither 1 or greate than 1 so no groups?
-                            // display no groups.
                         }
 
                     });
                 } else {
                     // if there is no value in the course name then clear out the group name.
-                    $('#id_srccoursegroupnameselect').empty();
-                    $('#id_srccoursegroupnametext').text();
-                    $('#id_srccoursegroupnameselect')
-                        .append($("<option></option>")
-                        .attr("value", 0)
-                        .text("Please search for a course first"));
+                    that.resetGroupList();
                 }
             });
 
             // Any changes to the group element, update the hidden.
             $("#id_srccoursegroupnameselect").change(function() {
-                var new_value = $(this).find("option:selected").attr('value');
-                var new_text = $(this).find("option:selected").text();
+                var new_value = $(this).find("option:selected").attr('value'),
+                    new_text = $(this).find("option:selected").text();
                 that.setHiddenValue('srccoursegroupname', new_text);
                 that.setHiddenValue('srccoursegroupid', new_value);
             });
 
             // Verify the Course and Group Names.
             $('#id_verifysource').on('click', function() {
-
-                console.log("------------ verify source ------------");
                 var coursename = "",
                     groupname = "";
 
@@ -354,7 +342,7 @@
                     coursename = $("#id_srccourseshortname").find("option:selected").text();
                     groupname = $("#id_srccoursegroupnameselect").find("option:selected").text();
                 } else {
-                    groupname = $("#id_srccourseshortname").val();
+                    coursename = $("#id_srccourseshortname").val();
                     groupname = $("#id_srccoursegroupname").val();
                 }
 
@@ -426,6 +414,12 @@
                     }
                 });
             });
+
+            // Register events on the moodles form.
+            // onChange event for the URL selector
+            $('select#id_available_moodle_instances').on('change', function() {
+                that.getTokenReady();
+            });
         },
 
         /**
@@ -448,6 +442,12 @@
             }
         },
 
+        /**
+         * The entry point for the mappings and moodles form.
+         * Register the events and load the token.
+         *
+         * @return null
+         */
         init: function () {
             this.registerEvents();
             this.getTokenReady();

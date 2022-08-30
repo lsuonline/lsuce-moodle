@@ -91,9 +91,6 @@ class router {
 
         $fuzzy = new \block_lsuxe\models\mixed();
         $dbresult = $fuzzy->verifyCourseGroup($params);
-        error_log(" \n\n ");
-        error_log(" What is the result: ". print_r($dbresult, 1));
-        error_log(" \n\n ");
         $dbcount = count($dbresult);
 
         if ($dbcount == 0) {

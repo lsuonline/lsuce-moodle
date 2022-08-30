@@ -79,12 +79,14 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
      *
      * @param  string|array $value The value to set.
      * @return boolean
-     */
+     *
     public function setValue($value) {
         global $DB;
 
         $values = (array) $value;
         $ids = array();
+        $this_key = 0;
+        $this_val = 0;
 
         foreach ($values as $onevalue) {
             if (!empty($onevalue) && (!$this->optionExists($onevalue)) &&
@@ -93,8 +95,20 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
             }
         }
 
+        if (count($ids) == 1) {
+            $this_key = $value;
+            $this_val = $this->exportValue($value);
+        } else if (count($ids) == 2) {
+            $this_key = $value[0];
+            $this_val = $value[1];
+        }
+
         if (empty($ids)) {
             return $this->setSelected(array());
         }
+
+        $this->addOption($this_val, $this_key);
+        return $this->setSelected($this_key);
     }
+    */
 }

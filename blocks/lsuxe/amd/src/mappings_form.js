@@ -113,8 +113,6 @@
 
         verifyDest: function (jqo) {
             let that = this;
-            console.log("verifyDest() -> what is jqo: ", jqo);
-            console.log("mappings_form -> verifyDest() -> what is this: ", this);
             var destname = $("#id_destcourseshortname").val();
 
             that.verifyDestCourse({
@@ -147,8 +145,6 @@
         // Verify the Course and Group Names.
         verifySource: function (jqo) {
             let that = this;
-            console.log("verifySource() -> what is jqo: ", jqo);
-            console.log("mappings_form -> verifySource() -> what is this: ", this);
             var coursename = $("#id_srccourseshortname").val(),
                 groupname = "";
 
@@ -207,12 +203,8 @@
             that.setHiddenValue('srccoursegroupid', new_value);
         },
 
-        srcCourse: function (jqo, fuck) {
+        srcCourse: function (jqo) {
             var that = this;
-            console.log("srcCourse() -> what is jqo: ", jqo);
-            console.log("srcCourse() -> what the fuck: ", fuck);
-            console.log("mappings_form -> srcCourse() -> what is this: ", this);
-
             // $(this).children("option:selected").text();
             // $(this).find(":selected").val();
             // $(this).val();

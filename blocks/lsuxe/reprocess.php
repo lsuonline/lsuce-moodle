@@ -99,7 +99,7 @@ foreach ($users as $user) {
     if ($user->status == 'enrolled') {
         $enrolluser = lsuxe_helpers::xe_enroll_user($user, $remoteuser['id']);
         $enrolgroup = lsuxe_helpers::xe_add_user_to_group($user, $remoteuser['id']);
-    } else {
+    } else if ($user->status == 'unenrolled') {
         $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
     }
 
