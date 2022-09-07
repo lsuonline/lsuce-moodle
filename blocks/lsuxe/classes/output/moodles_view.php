@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\output;
@@ -30,14 +30,14 @@ use renderer_base;
 use templatable;
 use stdClass;
 use block_lsuxe\persistents\moodles;
+
+require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_login();
 
 class moodles_view implements renderable, templatable {
     /** @var string $sometext Some text to show how to pass data to a template. */
     private $sometext = null;
-
-    // public function __construct($sometext): void {
-    public function __construct() {}
 
     /**
      * Export this data so it can be used as the context for a mustache template.
@@ -47,13 +47,21 @@ class moodles_view implements renderable, templatable {
     public function export_for_template(renderer_base $output): array {
         global $CFG;
         $pname = new moodles();
+        $fuzzy = new \block_lsuxe\models\xemixed();
         $helpers = new \lsuxe_helpers();
 
         $data = $pname->get_all_records("moodles");
-        $updated_data = $pname->transform_for_view($data, $helpers);
-        $updated_data['xeurl'] = $CFG->wwwroot;
-        $updated_data['xeparms'] = "intervals=false&function=moodle&courseid=1&moodleid=";
+        $mappingscount = $fuzzy->get_mappings_count();
 
-        return $updated_data;
+        $updateddata = $pname->transform_for_view($data, $helpers);
+
+        foreach ($updateddata['moodles'] as &$snippet) {
+            $snippet['mappingslinked'] = isset($mappingscount[$snippet['id']]->count) ?
+                $mappingscount[$snippet['id']]->count : 0;
+        }
+
+        $updateddata['xeurl'] = $CFG->wwwroot;
+        $updateddata['xeparms'] = "intervals=false&function=moodle&courseid=1&moodleid=";
+        return $updateddata;
     }
 }

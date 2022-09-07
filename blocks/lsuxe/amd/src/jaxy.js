@@ -16,17 +16,22 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 define(['jquery', 'core/ajax',],
     function($, Ajax) {
     'use strict';
     return {
-
+        /**
+         * Quick check to see if the data chunk is array or object.
+         *
+         * @param object or array
+         * @return bool - If true then it's array or obj
+         */
         isAorO: function(val) {
             return val instanceof Array || val instanceof Object ? true : false;
         },
@@ -44,7 +49,7 @@ define(['jquery', 'core/ajax',],
         XEAjax: function(data_chunk) {
             var promiseObj = new Promise(function(resolve, reject) {
                 var send_this = [{
-                    methodname: 'block_lsuxe_XEAjax',
+                    methodname: 'block_lsuxe_xeajax',
                     args: {
                         datachunk: data_chunk,
                     }

@@ -17,13 +17,11 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
 
 class lsuxe_helpers {
 
@@ -49,34 +47,34 @@ class lsuxe_helpers {
      * Weekly 168
      * .....etc
      * Becomes (Monthly => 720, Weekly => 168)
-     * @param  string $config_string setting
-     * @param  string $array_type by default multi, use mirror to miror key/value
-     *         
+     * @param  string $configstring setting
+     * @param  string $arraytype by default multi, use mirror to miror key/value
+     *
      * @return array
      */
-    public function config_to_array($config_string, $array_type = "multi") {
+    public function config_to_array($configstring, $arraytype = "multi") {
 
-        $config_name = get_config('moodle', $config_string);
+        $configname = get_config('moodle', $configstring);
 
-        // Strip the line breaks
-        $break_stripped = preg_replace("/\r|\n/", " ", $config_name);
+        // Strip the line breaks.
+        $breakstripped = preg_replace("/\r|\n/", " ", $configname);
         // Make sure there are not double spaces.
-        $break_stripped = str_replace("  ", " ", $break_stripped);
+        $breakstripped = str_replace("  ", " ", $breakstripped);
         // Remove any spaces or line breaks from start or end.
-        $break_stripped = trim($break_stripped);
+        $breakstripped = trim($breakstripped);
 
-        $exploded = explode(" ", $break_stripped);
-        $exploded_count = count($exploded);
+        $exploded = explode(" ", $breakstripped);
+        $explodedcount = count($exploded);
         $final = array();
 
-        if ($array_type == "multi") {
-            // now convert to array and transform to an assoc. array
-            for ($i = 0; $i < $exploded_count; $i+=2) {
-                $final[$exploded[$i+1]] = $exploded[$i];
+        if ($arraytype == "multi") {
+            // Now convert to array and transform to an assoc. array.
+            for ($i = 0; $i < $explodedcount; $i += 2) {
+                $final[$exploded[$i + 1]] = $exploded[$i];
             }
-        } else if ($array_type == "mirror") {
-            // it's possible there may be an extra line break from user input.
-            for ($i = 0; $i < $exploded_count; $i++) {
+        } else if ($arraytype == "mirror") {
+            // It's possible there may be an extra line break from user input.
+            for ($i = 0; $i < $explodedcount; $i++) {
                 $tempval = $exploded[$i];
                 $final[$tempval] = $tempval;
             }
@@ -378,7 +376,7 @@ class lsuxe_helpers {
             $defaults = array(
                 CURLOPT_URL => 'https://' . $course->destmoodle . '/webservice/rest/server.php',
                 CURLOPT_HEADER => 0,
-                CURLOPT_RETURNTRANSFER => TRUE,
+                CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 4,
                 CURLOPT_POST => false,
                 CURLOPT_POSTFIELDS => $pageparams,
@@ -418,10 +416,13 @@ class lsuxe_helpers {
                 ];
 
                 // Write the data.
-                if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
-                    mtrace("We have written the destination courseid ($destcourseid) for <strong>$course->destshortname</strong> to the local DB.");
+                if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk = false)) {
+                    mtrace("We have written the destination courseid ($destcourseid) "
+                        . "for <strong>$course->destshortname</strong> to the local DB.");
                 } else {
-                    $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
+                    $errors[] = array(
+                        "DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB."
+                    );
                 }
             }
         }
@@ -484,7 +485,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $group->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -515,7 +516,8 @@ class lsuxe_helpers {
             // If we have a match, store the destination group id and exit the loop.
             if ($destgroupnamexp == $destgroupname) {
                 $destgroupid = $returnedgroup['id'];
-                mtrace("We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
+                mtrace("We found a destination <strong>$destgroupname</strong> "
+                    . "group that matches the local group <strong>$destgroupnamexp</strong>.");
                 break;
             } else {
                 $destgroupid = null;
@@ -543,8 +545,9 @@ class lsuxe_helpers {
             ];
             // Write it locally.
             $destgroupnamexp = $group->destgroupprefix . " " . $group->groupname;
-            $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
-            mtrace("We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
+            $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk = false);
+            mtrace("We have written a destination groupid ($destgroupid) record "
+                . "for <strong>$destgroupnamexp</strong> to the local DB.");
         } else {
             // Create the remote group.
             $destgroupid = self::xe_create_remote_group($group);
@@ -563,9 +566,9 @@ class lsuxe_helpers {
         foreach ($groups as $group) {
             $destgroup = self::xe_write_destgroup($group);
         }
-   }
+    }
 
-     public static function xe_create_remote_group($group) {
+    public static function xe_create_remote_group($group) {
         global $DB;
 
         // Set the group creation page params.
@@ -582,7 +585,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $group->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -606,7 +609,8 @@ class lsuxe_helpers {
 
         // Another sanity check to make sure it's set before we write it.
         if (isset($destgroupid)) {
-            mtrace("We have created a remote group <strong>$group->destgroupprefix $group->groupname</strong> with id ($destgroupid).");
+            mtrace("We have created a remote group <strong>$group->destgroupprefix "
+                . "$group->groupname</strong> with id ($destgroupid).");
             // Set the data object for writing to our DB.
             self::xe_write_destgroup($group);
         }
@@ -635,7 +639,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -742,7 +746,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -804,7 +808,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -869,7 +873,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -902,7 +906,7 @@ class lsuxe_helpers {
             // Success.
             mtrace("Enrolled " . $user->username . " with remote userid"
                     . " $remoteuserid as $user->role in"
-                    . " the remote courseid " . $user->destcourseid 
+                    . " the remote courseid " . $user->destcourseid
                     . " on https://" . $user->destmoodle . ".");
         }
 
@@ -935,7 +939,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -994,7 +998,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,

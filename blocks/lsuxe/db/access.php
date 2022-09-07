@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 $capabilities = array(
 
     'block/lsuxe:myaddinstance' => array(
-        // 'riskbitmask' => RISK_PERSONAL,
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => array(
@@ -50,15 +49,4 @@ $capabilities = array(
 
         'clonepermissionsfrom' => 'moodle/site:manageblocks'
     ),
-
-    // 'block/xe:admin' => array(
-    //     'riskbitmask' => RISK_CONFIG,
-    //     'captype' => 'write',
-    //     'contextlevel' => CONTEXT_SYSTEM,
-    //     'archetypes' => array(
-    //         'manager' => CAP_ALLOW,
-    //         'frontpage' => CAP_PREVENT,
-    //         'user' => CAP_PREVENT
-    //     ),
-    // )
 );

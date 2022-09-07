@@ -16,10 +16,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
  define(['jquery', 'core/notification', 'core/modal_factory', 'core/modal_events'],
@@ -42,7 +42,6 @@
                     type: MF.types.SAVE_CANCEL,
                     title: this_data.title,
                     body: this_data.body
-                    // body: this_data.body + '<span class="xe_confirm_trigger"></span>'
                 })
                 .then(function(modal) {
                     modal.setSaveButtonText(this_data.save_button);
@@ -75,6 +74,25 @@
                 // default to info
                 data.type = "info";
             }
+            notification.addNotification(data);
+        },
+
+        /**
+         * An alert using the Moodle core notification system.
+         * Type can be either: success, warning, info, error
+         *  Example:
+         *  noti.callNoti({
+         *      title: "Hello",
+         *      message: "This is an alert",
+         *  });
+         * @param {obj} A simple object with the 'message' and 'type' of notification.
+         * @return void
+         */
+        callAlert: function(data) {
+            if (!data.hasOwnProperty('title')) {
+                console.log("ERROR -> An alert was called but with no message, aborting.");
+            }
+
             notification.addNotification(data);
         },
 

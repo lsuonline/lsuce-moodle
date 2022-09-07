@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,17 +17,19 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 // We defined the web service functions to install.
 $functions = array(
-    'block_lsuxe_XEAjax' => array(
+    'block_lsuxe_xeajax' => array(
         'classname'   => 'block_lsuxe_external',
-        'methodname'  => 'XEAjax',
+        'methodname'  => 'xeajax',
         'classpath'   => 'blocks/lsuxe/externallib.php',
         'description' => 'Entry point for Cross Enrollment Rest Services',
         'type'        => 'write',
@@ -38,9 +41,9 @@ $functions = array(
 $services = array(
     'LSUXE Service' => array(
         'functions' => array (
-            'block_lsuxe_XEAjax'
+            'block_lsuxe_xeajax'
         ),
         'restrictedusers' => 0,
-        'enabled'=>1
+        'enabled' => 1
     )
 );

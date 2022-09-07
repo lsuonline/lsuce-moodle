@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once('../../config.php');
@@ -53,24 +53,24 @@ $url = new moodle_url($CFG->wwwroot . '/blocks/lsuxe/archives.php', $pageparams)
 $worky = null;
 
 // Are we looking at the form to add/update or the list?
-//------------------------------------------------------------------------
-// If we want to push any data to javascript then we can add it here
+// ------------------------------------------------------------------------
+// If we want to push any data to javascript then we can add it here.
 $initialload = array(
     "wwwroot" => $CFG->wwwroot,
     "xe_form" => "none",
     "xe_viewform" => 0
 );
-$initialload = json_encode($initialload, JSON_HEX_APOS|JSON_HEX_QUOT);
+$initialload = json_encode($initialload, JSON_HEX_APOS | JSON_HEX_QUOT);
 $xtras = "<script>window.__SERVER__=true</script>".
     "<script>window.__INITIAL_STATE__='".$initialload."'</script>";
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
 
-// Navbar Bread Crumbs
+// Navbar Bread Crumbs.
 $PAGE->navbar->add(get_string('xedashboard', 'block_lsuxe'), new moodle_url('lsuxe.php'));
 $PAGE->navbar->add(get_string('archives', 'block_lsuxe'), new moodle_url('archives.php'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/lsuxe/style.css'));
@@ -85,7 +85,7 @@ if ($pageparams['sent_action'] === "recovered") {
 }
 
 
-// View the Moodle Instances
+// View the Moodle Instances.
 echo $output->header();
 echo $xtras;
 $renderable = new \block_lsuxe\output\archives_view();

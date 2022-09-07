@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\models;
@@ -28,22 +28,19 @@ namespace block_lsuxe\models;
 /**
  * Mixed functions to retrieve info from the DB.
  */
-class mixed {
-
-    // public function __construct() {
-    // }
+class xemixed {
 
     /**
      * Retrieve basic info about the course and it's group information.
      * @param  object containing the course id and name
      * @return array
      */
-    public function getCourseGroupData($params = false) {
+    public function get_course_group_data($params = false) {
         global $DB;
-        
+
         $courseid = isset($params->courseid) ? $params->courseid : null;
         $coursename = isset($params->coursename) ? $params->coursename : null;
-        $return_obj = new \stdClass();
+        $returnobj = new \stdClass();
 
         $coursedata = $DB->get_records_sql(
             'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
@@ -52,13 +49,13 @@ class mixed {
             array($courseid)
         );
         if (count($coursedata) == 0) {
-            $return_obj->success = false;
-            $return_obj->msg = "There are no groups for this course.";
-            return $return_obj;
+            $returnobj->success = false;
+            $returnobj->msg = "There are no groups for this course.";
+            return $returnobj;
         } else {
-            $return_obj->success = true;
-            $return_obj->data = $coursedata;
-            return $return_obj;
+            $returnobj->success = true;
+            $returnobj->data = $coursedata;
+            return $returnobj;
         }
     }
 
@@ -67,31 +64,31 @@ class mixed {
      * @param  object containing the course id and name
      * @return array
      */
-    public function getTokenData($url = false) {
+    public function get_token_data($url = false) {
         global $DB;
-        $return_obj = new \stdClass();
+        $returnobj = new \stdClass();
 
         if ($url == false ) {
-            $return_obj->success = false;
-            $return_obj->msg = "The token was not passed to the destination";
-            return $return_obj;
+            $returnobj->success = false;
+            $returnobj->msg = "The token was not passed to the destination";
+            return $returnobj;
         }
 
-        $token_result = $DB->get_record_sql(
+        $tokenresult = $DB->get_record_sql(
             'SELECT token from mdl_block_lsuxe_moodles where url=?',
             array($url)
         );
 
-        if (strlen($token_result->token) < 32) {
-            $return_obj->success = false;
-            $return_obj->msg = "The token stored on the destination did not meet the token requirements.";
+        if (strlen($tokenresult->token) < 32) {
+            $returnobj->success = false;
+            $returnobj->msg = "The token stored on the destination did not meet the token requirements.";
 
         } else {
-            $return_obj->success = true;
-            $return_obj->data = $token_result->token;
+            $returnobj->success = true;
+            $returnobj->data = $tokenresult->token;
         }
 
-        return $return_obj;
+        return $returnobj;
     }
 
     /**
@@ -99,12 +96,12 @@ class mixed {
      * @param  object containing the course shortname and group name
      * @return array
      */
-    public function verifyCourseGroup($params = false) {
+    public function verify_course_group($params = false) {
         global $DB;
         $coursename = isset($params->coursename) ? $params->coursename : null;
         $groupname = isset($params->groupname) ? $params->groupname : null;
-        $return_obj = new \stdClass();
-        
+        $returnobj = new \stdClass();
+
         $coursedata = $DB->get_records_sql(
             'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
             FROM mdl_course c, mdl_groups g
@@ -120,9 +117,9 @@ class mixed {
      * @param  array containing course name and group name
      * @return array
      */
-    public function checkCourseExists($coursename = false, $use_id = false) {
+    public function check_course_exists($coursename = false, $useid = false) {
         global $DB;
-        if ($use_id) {
+        if ($useid) {
             $coursecount = $DB->count_records("course", array("id" => $coursename));
         } else {
             $coursecount = $DB->count_records("course", array("shortname" => $coursename));
@@ -131,10 +128,10 @@ class mixed {
 
     }
 
-    public function checkGroupExists($groupname = false, $courseid = 0) {
+    public function check_group_exists($groupname = false, $courseid = 0) {
         global $DB;
         $groupcount = $DB->count_records("groups", array("name" => $groupname));
-        return $groupcount;    
+        return $groupcount;
     }
 
     /**
@@ -142,9 +139,9 @@ class mixed {
      * @param  array containing course name and group name
      * @return array
      */
-    public function getCourseGroupInfo($coursename = false, $groupname = false) {
+    public function get_course_group_info($coursename = false, $groupname = false) {
         global $DB;
-        
+
         $coursedata = $DB->get_record_sql(
             'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
             FROM mdl_course c, mdl_groups g
@@ -153,5 +150,21 @@ class mixed {
         );
 
         return $coursedata;
+    }
+
+    /**
+     * Fetch the number of mappings for each URL
+     * @return array of counts
+     */
+    public function get_mappings_count() {
+        global $DB;
+
+        $mapcount = $DB->get_records_sql(
+            'SELECT destmoodleid, COUNT(*) as count
+            FROM mdl_block_lsuxe_mappings
+            GROUP BY destmoodleid'
+        );
+
+        return $mapcount;
     }
 }

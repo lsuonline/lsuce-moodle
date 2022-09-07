@@ -17,15 +17,13 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\persistents;
-
-defined('MOODLE_INTERNAL') || die();
 
 // We need to alias the invalid_persistent_exception, because the persistent classes from
 // core_competency used to throw a \core_competency\invalid_persistent_exception. They now
@@ -35,7 +33,6 @@ defined('MOODLE_INTERNAL') || die();
 // do not trigger a class loading. Note that for this trick to work, all the classes
 // which were extending \core_competency\persistent still need to extend it or the alias
 // won't be effective.
-// class_alias('core\\invalid_persistent_exception', 'core_competency\\invalid_persistent_exception');
 
 /**
  * Abstract class for core_competency objects saved to the DB.
@@ -47,33 +44,12 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class persistent extends \core\persistent {
-    // /**
-    //  * Magic method to capture getters and setters.
-    //  * This is only available for competency persistents for backwards compatibility.
-    //  * It is recommended to use get('propertyname') and set('propertyname', 'value') directly.
-    //  *
-    //  * @param  string $method Callee.
-    //  * @param  array $arguments List of arguments.
-    //  * @return mixed
-    //  */
-    // final public function __call($method, $arguments) {
-    //     debugging('Use of magic setters and getters is deprecated. Use get() and set().', DEBUG_DEVELOPER);
-    //     if (strpos($method, 'get_') === 0) {
-    //         return $this->get(substr($method, 4));
-    //     } else if (strpos($method, 'set_') === 0) {
-    //         return $this->set(substr($method, 4), $arguments[0]);
-    //     }
-    //     throw new \coding_exception('Unexpected method call: ' . $method);
-    // }
-
     /**
      * Get al the records for mappings. The returning array is formatted
      * for templates.
      * @return array
      */
-    // public function check
-    public static function get_all_records($this_form = null, $where = null, $order = "DESC") {
-    // public static function get_all_records($this_form = null) {
+    public static function get_all_records($thisform = null, $where = null, $order = "DESC") {
         global $DB;
 
         if ($where == null) {
@@ -85,13 +61,13 @@ abstract class persistent extends \core\persistent {
             ORDER BY timecreated '. $order;
 
         $recordset = $DB->get_records_sql($sql);
-        $these_mappings = array();
+        $thesemappings = array();
         foreach ($recordset as $record) {
-            // convert record from obj to array
+            // Convert record from obj to array.
             $temp = (array) $record;
-            $these_mappings[] = $temp;
+            $thesemappings[] = $temp;
         }
 
-        return array($this_form => $these_mappings);
+        return array($thisform => $thesemappings);
     }
 }

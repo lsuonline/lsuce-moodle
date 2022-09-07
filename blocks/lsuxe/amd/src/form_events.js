@@ -16,10 +16,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
  // define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/notifications', 'block_lsuxe/verify'],
@@ -56,7 +56,7 @@
          */
         getGroupData: function (params) {
             return XELib.jaxyPromise({
-                'call': 'getGroupData',
+                'call': 'get_group_data',
                 'params': params,
                 'class': 'router'
             });
@@ -82,7 +82,7 @@
          */
         verifySourceCourse: function (params) {
             return XELib.jaxyPromise({
-                'call': 'verifyCourse',
+                'call': 'verify_course',
                 'params': params,
                 'class': 'router'
             });
@@ -109,7 +109,6 @@
             return XELib.jaxyRemotePromise(new_params);
         },
 
-
         /**
          * Reset the dropdown for the source group.
          *
@@ -123,101 +122,12 @@
                 .attr("value", 0)
                 .text("Please search for a course first"));
         },
-        // ==================================================================
-        // ==================================================================
-        // ==================================================================
-        // ==================================================================
-        // ==================================================================
-        // ==================================================================
-        // ==================================================================
-        // ==================================================================
 
         /**
          * Register all the events for the Mappings Form Page.
          * @return {void}
          */
         registerMoodleEvents: function() {
-            // var that = this;
-                // url_tag = '.xe_confirm_url',
-                // token_tag = '.xe_confirm_token';
-            // Moodle URL Events
-            // Check if the URL is valid
-            // -------------------------------------------
-            /*
-            $("#id_instanceurl").on("input", function() {
-                // that.handleInputValidation(this, ".xe_confirm_url");
-                if (this.value.length > 0) {
-                    // Show the circle loading
-
-                    that.checkMarkLoading(url_tag);
-                }
-                if (this.value.length == 0) {
-                    that.checkMarkOff(url_tag);
-                }
-            });
-            // -------------------------------------------
-            // When the user clicks out of the Moodle URL input box, check if url is valid.
-            $('#id_instanceurl').on('blur',  function() {
-                // user has clicked out of the URL input, let's check it.
-                if (this.value.length > 0) {
-                    // there is something in the input, let's verify it's correct
-                    if (XELib.isValidUrl(this.value)) {
-                        that.checkMarkComplete(url_tag);
-                        that.crossMarkOff(url_tag);
-
-                    } else {
-                        that.checkMarkOff(url_tag);
-                        that.crossMarkOn(url_tag);
-                        sessionStorage("The url is NOT valid");
-                        // $('.xe_confirm_url > .circle-cross-loader').css('visibility', 'visible');
-                    }
-                } else {
-                    that.checkMarkOff(url_tag);
-                    that.crossMarkOff(url_tag);
-                }
-            });
-            // -------------------------------------------
-            $('#id_instanceurl').on('focus',  function() {
-                // No matter what, if a user clicks in the input, remove the crossmark.
-                that.crossMarkOff(url_tag);
-            });
-
-            // ===========================================
-            // ===========================================
-            // Handle the token input.
-            $("#id_instancetoken").on('input', function() {
-                if (this.value.length > 0) {
-                    // Show the circle loading
-                    that.checkMarkLoading(token_tag);
-                }
-                if (this.value.length == 0) {
-                    that.checkMarkOff(token_tag);
-                }
-            });
-            // -------------------------------------------
-            $("#id_instancetoken").on('blur', function() {
-                // that.handleBlurValidation(this, ".xe_confirm_token");
-                if (this.value.length > 31) {
-                    // The token length is correct
-                    that.checkMarkComplete(token_tag);
-                    that.crossMarkOff(token_tag);
-
-                } else if (this.value.length < 1) {
-                    that.checkMarkOff(token_tag);
-                    that.crossMarkOff(token_tag);
-
-                } else {
-                    that.crossMarkOn(token_tag);
-                }
-            });
-            // -------------------------------------------
-            $('#id_instancetoken').on('focus',  function() {
-                // that.handleInputValidation(this, ".xe_confirm_token");
-                // No matter what, if a user clicks in the input, remove the crossmark.
-                that.crossMarkOff(token_tag);
-
-            });
-            */
             // This is for the Moodles Form
             $('#id_verifysource').on('click', function() {
                 var test_url = $("#id_instanceurl").val(),
@@ -230,11 +140,11 @@
                     'url': test_url + '/webservice/rest/server.php',
                     'data': {
                         'wstoken': test_token,
-                        'wsfunction': 'block_lsuxe_XEAjax',
+                        'wsfunction': 'block_lsuxe_xeajax',
                         'moodlewsrestformat': 'json',
                         // 'data': {
                         'datachunk': JSON.stringify({
-                            'call': 'testService',
+                            'call': 'test_service',
                             'params': {
                                 'test': 'test',
                             },
@@ -258,18 +168,6 @@
 
                 });
             });
-
-            // var new_params = {
-            //     'type': 'GET',
-            //     'url': sessionStorage.getItem("currentUrl") + '/webservice/rest/server.php',
-            //     'data': {
-            //         'wstoken': sessionStorage.getItem("currentToken"),
-            //         'wsfunction': 'core_course_get_courses_by_field',
-            //         'moodlewsrestformat': 'json',
-            //         'field': 'shortname',
-            //         'value': params.coursename
-            //     }
-            // };
         },
 
         /**
@@ -415,7 +313,7 @@
                 });
             });
 
-            // Register events on the moodles form.
+            // Register events on the moodles form,
             // onChange event for the URL selector
             $('select#id_available_moodle_instances').on('change', function() {
                 that.getTokenReady();

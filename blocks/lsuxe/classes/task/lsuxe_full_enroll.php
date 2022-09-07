@@ -23,9 +23,8 @@
  * @copyright  2022 onwards LSUOnline & Continuing Education
  * @copyright  2022 onwards Robert Russo
  */
-namespace block_lsuxe\task;
 
-defined('MOODLE_INTERNAL') || die();
+namespace block_lsuxe\task;
 
 /**
  * Extend the Moodle scheduled task class with ours.

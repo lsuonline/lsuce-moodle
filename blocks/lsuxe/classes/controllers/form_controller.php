@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\controllers;
@@ -30,17 +30,16 @@ use block_lsuxe\persistents\moodles;
 
 class form_controller {
 
-    private $persistent_name;
-    private $persistent_object;
+    private $persistentname;
     private $persistpath;
     /**
      * Construct the form to work with the persistents.
      *
      * @param string  the name of the object/persistent we are working with
      */
-    public function __construct($this_obj) {
-        $this->persistent_name = $this_obj;
-        $this->persist_path = "\\block_lsuxe\\persistents\\";
+    public function __construct($thisobj) {
+        $this->persistentname = $thisobj;
+        $this->persistpath = "\\block_lsuxe\\persistents\\";
     }
 
     /**
@@ -74,14 +73,13 @@ class form_controller {
      * @return bool
      */
     public function check_for_existing($data) {
-        // global $DB;
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname();
-        $col_props = $po->column_record_check();
+        $colprops = $po->column_record_check();
         $params = array();
 
         // Let's get the conditions for this persistent object.
-        foreach ($col_props as $key => $val) {
+        foreach ($colprops as $key => $val) {
             $params[$key] = $data->$val;
         }
         $count = $po::count_records($params);
@@ -94,31 +92,30 @@ class form_controller {
      * @return bool
      */
     public function save_record($data) {
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname();
         // Get the matching columns for this form object.
-        $col_props = $po->column_form_symetric();
-        $to_save = new \stdClass();
+        $colprops = $po->column_form_symetric();
+        $tosave = new \stdClass();
 
         // Let's gather the form data and map to the DB columns.
-        foreach ($col_props as $key => $val) {
-            $to_save->$key = $data->$val;
+        foreach ($colprops as $key => $val) {
+            $tosave->$key = $data->$val;
         }
 
         // Now to add any specific fields for this form object.
-        $po->column_form_custom($to_save, $data);
+        $po->column_form_custom($tosave, $data);
         unset($po);
 
         try {
             // Check whether the object is valid.
-            $po = new $pname(0, $to_save);
+            $po = new $pname(0, $tosave);
             if ($po->is_valid()) {
                 $po->create();
             } else {
-                $validate_errors = $po->get_errors();
-                error_log("form_controller() -> ERROR: ". print_r($validate_errors, 1));
-                // \core\notification::error(get_string('mappingsformcourseerror', 'block_lsuxe'));
-                // TODO: convert error_log to a logging system
+                $validateerrors = $po->get_errors();
+                debugging("There is a validation error, please check the inputs.");
+                // TODO: convert error_log to a logging system.
                 return false;
             }
 
@@ -135,16 +132,15 @@ class form_controller {
      */
     public function recover_record($record) {
         global $USER;
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname($record);
 
         // Check whether a record exists.
         $exists = $po->record_exists($record);
         // Permanently delete the object from the database.
         if ($exists) {
-            // $po->delete();
             $po->set('userdeleted', $USER->id);
-            $po->set('timedeleted', NULL);
+            $po->set('timedeleted', null);
             $po->update();
         }
     }
@@ -155,22 +151,22 @@ class form_controller {
      * @return bool
      */
     public function update_record($data) {
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname($data->id);
         // Get the matching columns for this form object.
-        $col_props = $po->column_form_symetric();
-        $to_save = new \stdClass();
+        $colprops = $po->column_form_symetric();
+        $tosave = new \stdClass();
 
         // Let's gather the form data and map to the DB columns.
-        foreach ($col_props as $key => $val) {
-            $to_save->$key = $data->$val;
+        foreach ($colprops as $key => $val) {
+            $tosave->$key = $data->$val;
         }
 
         // Now to add any specific fields for this form object.
-        $po->column_form_custom($to_save, $data, true);
+        $po->column_form_custom($tosave, $data, true);
 
         // Let's gather the form data.
-        foreach ($to_save as $key => $val) {
+        foreach ($tosave as $key => $val) {
             $po->set($key, $val);
         }
         $po->update();
@@ -183,17 +179,16 @@ class form_controller {
      */
     public function delete_record($record) {
         global $USER;
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname($record);
 
         // Check whether a record exists.
         $exists = $po->record_exists($record);
         // Permanently delete the object from the database.
         if ($exists) {
-            // $po->delete();
             $po->set('userdeleted', $USER->id);
             $po->set('timedeleted', time());
-            $po->update("facker");
+            $po->update();
         }
     }
 
@@ -202,12 +197,12 @@ class form_controller {
      * @return array
      */
     public function get_records() {
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname();
         $records = array();
 
-        $persist_list = $po->get_records();
-        foreach ($persist_list as $pitem) {
+        $persistlist = $po->get_records();
+        foreach ($persistlist as $pitem) {
             $records[] = $pitem->to_record();
         }
         return $records;
@@ -218,17 +213,17 @@ class form_controller {
      * @param string - this will be the coloumn name
      * @return array
      */
-    public function get_records_by_prop($property, $maintain_id = false) {
+    public function get_records_by_prop($property, $maintainid = false) {
 
         // Create object in the database.
-        $pname = $this->persist_path . $this->persistent_name;
+        $pname = $this->persistpath . $this->persistentname;
         $po = new $pname();
         $records = array();
 
-        $persist_list = $po->get_records(["timedeleted" => NULL]);
-        foreach ($persist_list as $pitem) {
+        $persistlist = $po->get_records(["timedeleted" => null]);
+        foreach ($persistlist as $pitem) {
             $temprecord = $pitem->to_record();
-            if ($maintain_id) {
+            if ($maintainid) {
                 $records[$temprecord->id] = $temprecord->$property;
             } else {
                 $records[] = $temprecord->$property;

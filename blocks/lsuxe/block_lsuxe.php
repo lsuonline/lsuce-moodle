@@ -17,13 +17,11 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
 
 class block_lsuxe extends block_list {
 
@@ -32,41 +30,9 @@ class block_lsuxe extends block_list {
     public $content;
     public $coursecontext;
 
-    function init() {
-        global $PAGE;
-
+    public function init() {
         $this->title = get_string('pluginname', 'block_lsuxe');
     }
-
-   /**
-     * Returns the course object
-     *
-     * @return @object
-     */
-    // public function set_course() {
-    //     global $COURSE;
-    //     $this->course = $COURSE;
-    // }
-
-    /**
-     * Returns the user object
-     *
-     * @return @object
-     */
-    // public function set_user() {
-    //     global $USER;
-    //     $this->user = $USER;
-    // }
-
-    /**
-     * Sets and returns this course's context
-     *
-     * @return @context
-     */
-    // private function set_course_context() {
-    //     $this->course_context = context_course::instance($this->course->id);
-    // }
-
 
     /**
      * Indicates that this block has its own configuration settings
@@ -77,7 +43,7 @@ class block_lsuxe extends block_list {
         return true;
     }
 
-    function get_content() {
+    public function get_content() {
         global $COURSE, $OUTPUT;
 
         if ($this->content !== null) {
@@ -105,7 +71,7 @@ class block_lsuxe extends block_list {
                 'page' => '/blocks/lsuxe/mappings.php',
                 'query_string' => ['vform' => 1]
             ]);
-            
+
             $this->add_item_to_content([
                 'lang_key' => get_string('tokens_view', 'block_lsuxe'),
                 'icon_key' => 't/unlock',
@@ -125,7 +91,7 @@ class block_lsuxe extends block_list {
                 'query_string' => ['vform' => 1]
             ]);
         }
-        
+
         return $this->content;
     }
 
@@ -162,8 +128,8 @@ class block_lsuxe extends block_list {
             $icon . $label
         );
     }
-    
-    // my moodle can only have SITEID and it's redundant here, so take it away
+
+    // My moodle can only have SITEID and it's redundant here, so take it away.
     public function applicable_formats() {
         return array(
             'site' => true,
@@ -176,13 +142,11 @@ class block_lsuxe extends block_list {
     }
 
     public function cron() {
-        // mtrace( "Hey, my cron script is running" );
-        // do something
         return true;
     }
 
     /**
-     * Returns an empty "block list" content container to be filled with content
+     * Returns an empty "block list" content container to be filled with content.
      *
      * @return @object
      */

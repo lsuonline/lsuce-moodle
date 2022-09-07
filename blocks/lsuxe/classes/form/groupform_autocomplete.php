@@ -17,16 +17,18 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\form;
 
 use coding_exception;
 use MoodleQuickForm_autocomplete;
+
+defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir . '/form/autocomplete.php');
@@ -39,8 +41,8 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
     /**
      * Constructor.
      *
-     * @param string $elementName Element name
-     * @param mixed $elementLabel Label(s) for an element
+     * @param string $elementname Element name
+     * @param mixed $elementlabel Label(s) for an element
      * @param array $options Options to control the element's display
      *        Valid options are:
      *        - context context The context.
@@ -48,7 +50,7 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
      *        - multiple bool Whether or not the field accepts more than one values.
      *        - onlyvisible bool Whether or not only visible framework can be listed.
      */
-    public function __construct($elementName = null, $elementLabel = null, $options = array()) {
+    public function __construct($elementname = null, $elementlabel = null, $options = array()) {
 
         $contextid = null;
         if (!empty($options['contextid'])) {
@@ -71,44 +73,6 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
             $validattributes['multiple'] = 'multiple';
         }
 
-        parent::__construct($elementName, $elementLabel, array(), $validattributes);
+        parent::__construct($elementname, $elementlabel, array(), $validattributes);
     }
-
-    /**
-     * Set the value of this element.
-     *
-     * @param  string|array $value The value to set.
-     * @return boolean
-     *
-    public function setValue($value) {
-        global $DB;
-
-        $values = (array) $value;
-        $ids = array();
-        $this_key = 0;
-        $this_val = 0;
-
-        foreach ($values as $onevalue) {
-            if (!empty($onevalue) && (!$this->optionExists($onevalue)) &&
-                    ($onevalue !== '_qf__force_multiselect_submission')) {
-                array_push($ids, $onevalue);
-            }
-        }
-
-        if (count($ids) == 1) {
-            $this_key = $value;
-            $this_val = $this->exportValue($value);
-        } else if (count($ids) == 2) {
-            $this_key = $value[0];
-            $this_val = $value[1];
-        }
-
-        if (empty($ids)) {
-            return $this->setSelected(array());
-        }
-
-        $this->addOption($this_val, $this_key);
-        return $this->setSelected($this_key);
-    }
-    */
 }

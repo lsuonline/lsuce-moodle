@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -28,11 +28,11 @@ defined('MOODLE_INTERNAL') || die();
 // Create the settings block.
 $settings = new admin_settingpage($section, get_string('settings', 'block_lsuxe'));
 
-$auth_default = 'manual
+$authdefault = 'manual
 cas
 ldap';
 
-$interval_default = 'Monthly 720
+$intervaldefault = 'Monthly 720
 Weekly 168
 Daily 24
 Hourly 1';
@@ -41,7 +41,7 @@ Hourly 1';
 // Make sure only admins see this one.
 if ($ADMIN->fulltree) {
     // --------------------------------
-    // Dashboard Link
+    // Dashboard Link.
     $settings->add(
         new admin_setting_heading(
             'lsuxe_link_back_title',
@@ -66,7 +66,7 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_interval_list',
             get_string('xe_interval_list', 'block_lsuxe'),
             'List of Moodle instances',
-            $interval_default,
+            $intervaldefault,
             PARAM_TEXT
         )
     );
@@ -108,7 +108,7 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_xe_auth_method',
             get_string('xe_auth_method_title', 'block_lsuxe'),
             get_string('xe_auth_method_hint', 'block_lsuxe'),
-            $auth_default,
+            $authdefault,
             PARAM_TEXT
         )
     );
@@ -139,6 +139,17 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_enable_dest_test',
             get_string('xe_form_enable_dest_source_test', 'block_lsuxe'),
             get_string('xe_form_enable_dest_source_test_desc', 'block_lsuxe'),
+            0
+        )
+    );
+
+    // --------------------------------
+    // Enable wide view for Mappings/Moodles list.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_lsuxe_enable_wide_view',
+            get_string('xe_form_enable_wide_view', 'block_lsuxe'),
+            get_string('xe_form_enable_wide_view_desc', 'block_lsuxe'),
             0
         )
     );

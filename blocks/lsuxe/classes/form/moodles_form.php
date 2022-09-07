@@ -17,15 +17,19 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 
 namespace block_lsuxe\form;
 
 use block_lsuxe\controllers\form_controller;
+
+defined('MOODLE_INTERNAL') || die();
+global $CFG;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 
 class moodles_form extends \moodleform {
@@ -34,7 +38,7 @@ class moodles_form extends \moodleform {
      * Moodle form definition
      */
     public function definition() {
-        
+
         $mappingsctrl = new form_controller("moodles");
         $helpers = new \lsuxe_helpers();
         $formupdating = false;
@@ -47,9 +51,7 @@ class moodles_form extends \moodleform {
         // For styling purposes.
         $mform->addElement('html', '<span class="lsuxe_form_container">');
 
-        $enable_dest_test = get_config('moodle', "block_lsuxe_enable_dest_test");
-        // checkmark from here:
-        // https://codepen.io/scottloway/pen/zqoLyQ
+        $enabledesttest = get_config('moodle', "block_lsuxe_enable_dest_test");
 
         $checkmark = ''.
             '<div class="circle-loader">'.
@@ -60,8 +62,6 @@ class moodles_form extends \moodleform {
             '<span>';
         // --------------------------------
         // Moodle Instance URL.
-        // $urlgroup = array();
-        // $urlgroup[] =& $mform->createElement(
         $mform->addElement(
             'text',
             'instanceurl',
@@ -74,22 +74,10 @@ class moodles_form extends \moodleform {
         if (isset($this->_customdata->url)) {
             $mform->setDefault('instanceurl', $this->_customdata->url);
         }
-        // Wrap the checkmark so we can control it for tokens
-        // $urlconfirmhtml = '<div class="xe_confirm_url">'.$checkmark.'</div';
-        // $urlgroup[] =& $mform->createElement(
-        //     'html', $urlconfirmhtml
-        // );
-        // $mform->addGroup($urlgroup, 'url_group', get_string('instanceurl', 'block_lsuxe'), ' ', false);
-        
-        // ----------------------------------------------------------------
-        // ----------------------------------------------------------------
-        // ----------------------------------------------------------------
+
         // --------------------------------
         // Moodle Instance Token.
-        // $tokengroup = array();
-        // $tokengroup[] =& $mform->createElement(
         $mform->addElement(
-        // $mform->addElement(
             'text',
             'instancetoken',
             get_string('instancetoken', 'block_lsuxe')
@@ -101,14 +89,6 @@ class moodles_form extends \moodleform {
         if (isset($this->_customdata->token)) {
             $mform->setDefault('instancetoken', $this->_customdata->token);
         }
-        // Wrap the checkmark so we can control it for tokens
-        // $tokenconfirmhtml = '<div class="xe_confirm_token">'.$checkmark.'</div';
-        // $tokengroup[] =& $mform->createElement(
-        //     'html', $tokenconfirmhtml
-        // );
-        // $mform->addGroup($tokengroup, 'token_group', get_string('instancetoken', 'block_lsuxe'), ' ', false);
-        // ----------------------------------------------------------------
-        // ----------------------------------------------------------------
 
         // --------------------------------
         // Interval.
@@ -152,7 +132,7 @@ class moodles_form extends \moodleform {
         // Hidden Elements.
         // For Page control list or view form.
         $mform->addElement('hidden', 'vform');
-        $mform->setType('vform', PARAM_INT); 
+        $mform->setType('vform', PARAM_INT);
         $mform->setConstant('vform', 1);
 
         $mform->addElement('hidden', 'id');
@@ -168,11 +148,11 @@ class moodles_form extends \moodleform {
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton)
         ];
-        if ($enable_dest_test) {
+        if ($enabledesttest) {
             $buttons[] = $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'));
         }
 
-        // Wrap the checkmark so we can control it for tokens
+        // Wrap the checkmark so we can control it for tokens.
         $urlconfirmhtml = '<div class="xe_verify">'.$checkmark.'</div';
         $buttons[] =& $mform->createElement(
             'html', $urlconfirmhtml

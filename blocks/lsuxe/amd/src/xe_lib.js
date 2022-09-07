@@ -16,10 +16,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 define(['jquery', 'block_lsuxe/jaxy'],
@@ -103,7 +103,7 @@ define(['jquery', 'block_lsuxe/jaxy'],
          */
         getTokenForURL: function (url) {
             return this.jaxyPromise({
-                'call': 'getToken',
+                'call': 'get_token',
                 'params': {
                     'url': url
                 },
@@ -111,6 +111,12 @@ define(['jquery', 'block_lsuxe/jaxy'],
             });
         },
 
+        /**
+         * Check the URL to see if it's valid. This is a work in progress.
+         *
+         * @param {string} token
+         * @return {string}
+         */
         isValidUrl: function (urlString) {
             var urlPattern = new RegExp('^(https?:\\/\\/)?'+ // validate protocol
             '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // validate domain name

@@ -16,10 +16,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
  define(['jquery', 'block_lsuxe/notifications', 'block_lsuxe/xe_lib'],
@@ -36,7 +36,7 @@
         registerEvents: function () {
 
             // --------------------------------
-            // Recover Mapping
+            // Recover Mapping.
             // --------------------------------
             $('.block_lsuxe_container .mview_recover').on('click', function(ev) {
                 ev.preventDefault();
@@ -61,23 +61,7 @@
             });
 
             // --------------------------------
-            // Update (handled by form submit to reprocess.php)
-            // --------------------------------
-            // $('.block_lsuxe_container .mview_update').on('click', function() {
-                // record will be the id of the record in the db
-                // var record = $(this).closest("tr").data("rowid");
-                // TODO: finish this by calling some scheduled task to run NOW.
-            // });
-
-            // TODO: allow user to hit enter when dialog pops up.
-            // $('#page-blocks-lsuxe-mappings .xe_confirm_trigger')
-            //     .parent().find('span.xe_confirm_trigger')
-            //     .on('enter', function(ev) {
-            //         console.log("Did this work....?");
-            // });
-
-            // --------------------------------
-            // Edit Mapping
+            // Edit Mapping.
             // --------------------------------
             $('.block_lsuxe_container .mview_edit').on('click', function(ev) {
                 ev.preventDefault();
@@ -92,12 +76,13 @@
             });
 
             // --------------------------------
-            // Delete Mapping
+            // Delete Mapping.
             // --------------------------------
             $('.block_lsuxe_container .mview_delete').on('click', function(ev) {
                 ev.preventDefault();
 
-                var row_data = {
+                var links = $(this).closest("tr").data("mlinks"),
+                row_data = {
                     "record": $(this).closest("tr").data("rowid"),
                     "this_form": $(this).closest("form"),
                     "title": 'Delete item',
@@ -105,16 +90,21 @@
                     "save_button": "Delete"
                 };
 
-                noti.callYesNoModi(row_data).then(function (response) {
-                    if (response.status == true) {
-                        var this_form = $('#map_form_'+response.data.record);
-                        // Convert all the form elements values to a serialised string.
-                        this_form.append('<input type="hidden" name="sentaction" value="delete" />');
-                        this_form.submit();
-                    // } else {
-                        // console.log("NOPE the thingy is false");
-                    }
-                });
+                if (links > 1) {
+                    noti.callAlert({
+                        "title": "Aborted",
+                        "message": "Cannot delete this while mappings are linked."
+                    });
+                } else {
+                    noti.callYesNoModi(row_data).then(function (response) {
+                        if (response.status == true) {
+                            var this_form = $('#map_form_' + response.data.record);
+                            // Convert all the form elements values to a serialised string.
+                            this_form.append('<input type="hidden" name="sentaction" value="delete" />');
+                            this_form.submit();
+                        }
+                    });
+                }
             });
         },
 
@@ -125,7 +115,7 @@
          */
         init: function() {
             var that = this;
-            // register events
+            // Register events.
             that.registerEvents();
         },
     };

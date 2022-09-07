@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once('../../config.php');
@@ -50,6 +50,7 @@ $pageparams = [
 $title = get_string('pluginname', 'block_lsuxe') . ': ' . get_string('moodles', 'block_lsuxe');
 $pagetitle = $title;
 $sectiontitle = get_string('newmoodle', 'block_lsuxe');
+$enablewideview = (bool)get_config('moodle', "block_lsuxe_enable_wide_view");
 $url = new moodle_url($CFG->wwwroot . '/blocks/lsuxe/moodles.php', $pageparams);
 $worky = null;
 
@@ -59,27 +60,30 @@ if ($pageparams['vform'] == 1) {
     // Ok then, we are looking at the FORM.
     $viewform = true;
 }
-//------------------------------------------------------------------------
-// If we want to push any data to javascript then we can add it here
+// ------------------------------------------------------------------------
+// If we want to push any data to javascript then we can add it here.
 $initialload = array(
     "wwwroot" => $CFG->wwwroot,
     "xe_form" => "moodles",
     "xe_viewform" => $viewform
 );
-$initialload = json_encode($initialload, JSON_HEX_APOS|JSON_HEX_QUOT);
+$initialload = json_encode($initialload, JSON_HEX_APOS | JSON_HEX_QUOT);
 $xtras = "<script>window.__SERVER__=true</script>".
     "<script>window.__INITIAL_STATE__='".$initialload."'</script>";
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
 
-// Navbar Bread Crumbs
+// Navbar Bread Crumbs.
 $PAGE->navbar->add(get_string('xedashboard', 'block_lsuxe'), new moodle_url('lsuxe.php'));
 $PAGE->navbar->add(get_string('moodles', 'block_lsuxe'), new moodle_url('moodles.php'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/lsuxe/style.css'));
+if ($enablewideview) {
+    $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/lsuxe/xestyles/style.css'));
+}
 $PAGE->requires->js_call_amd('block_lsuxe/main', 'init');
 $output = $PAGE->get_renderer('block_lsuxe');
 
@@ -90,23 +94,22 @@ if ($pageparams['sent_action'] === "delete") {
     \core\notification::success(get_string('deletemoodle', 'block_lsuxe'));
 }
 
-// Create a Moodle Instance
+// Create a Moodle Instance.
 if ($viewform == true) {
 
     // We are viewing the form so are we updating or creating a new record?
     if ($pageparams['sent_action'] === "update") {
-        // Update the section title
+        // Update the section title.
         $sectiontitle = get_string('updatemoodle', 'block_lsuxe');
         // Get the course record that you want.
-        $this_moodle = $DB->get_record('block_lsuxe_moodles', array('id' => (int)$pageparams['sent_data']));
+        $thismoodle = $DB->get_record('block_lsuxe_moodles', array('id' => (int)$pageparams['sent_data']));
         // Pass the time created value in an array.
-        // $customdata = array('timecreated' => $course->timecreated);
-        $mform = new \block_lsuxe\form\moodles_form(null, $this_moodle);
+        $mform = new \block_lsuxe\form\moodles_form(null, $thismoodle);
     } else {
         $mform = new \block_lsuxe\form\moodles_form();
     }
 
-    // Create/Update Moodles
+    // Create/Update Moodles.
     $fromform = $mform->get_data();
 
     if ($mform->is_cancelled()) {
@@ -118,7 +121,7 @@ if ($viewform == true) {
         // When the form is submitted, and the data is successfully validated,
         // the `get_data()` function will return the data posted in the form.
         $worky = $worky ?? new \block_lsuxe\controllers\form_controller("moodles");
-        // form_controller will process and use matching persistent.
+        // The form_controller will process and use matching persistent.
         $worky->process_form($fromform);
     } else {
         // This branch is executed if the form is submitted but the data doesn't
@@ -132,7 +135,7 @@ if ($viewform == true) {
 
 } else {
 
-    // View the Moodle Instances
+    // View the Moodle Instances.
     echo $output->header();
     echo $xtras;
     $renderable = new \block_lsuxe\output\moodles_view();

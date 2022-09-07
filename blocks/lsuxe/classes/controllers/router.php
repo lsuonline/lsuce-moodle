@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 use block_lsuxe\models;
@@ -28,22 +28,14 @@ use block_lsuxe\models;
 class router {
 
     /**
-     * Construct the form to work with the persistents.
-     *
-     * @param string  the name of the object/persistent we are working with
-     */
-    // public function __construct() {
-    // }
-
-    /**
      * Retrieve basic info about the course and it's group information.
      * @param  object containing the course id and name
      * @return array
      */
-    public function getGroupData($params) {
+    public function get_group_data($params) {
 
-        $fuzzy = new \block_lsuxe\models\mixed();
-        $dbresult = $fuzzy->getCourseGroupData($params);
+        $fuzzy = new \block_lsuxe\models\xemixed();
+        $dbresult = $fuzzy->get_course_group_data($params);
         $results = array();
 
         if ($dbresult->success == true) {
@@ -63,12 +55,12 @@ class router {
      * @param  array list of params being sent, but should only have url.
      * @return array
      */
-    public function getToken($params) {
+    public function get_token($params) {
 
         $url = isset($params->url) ? $params->url : null;
-        $fuzzy = new \block_lsuxe\models\mixed();
+        $fuzzy = new \block_lsuxe\models\xemixed();
         $results = array();
-        $dbresult = $fuzzy->getTokenData($url);
+        $dbresult = $fuzzy->get_token_data($url);
 
         if ($dbresult->success == true) {
             $results["success"] = true;
@@ -86,29 +78,29 @@ class router {
      * @param  array containing course name and group name
      * @return array
      */
-    public function verifyCourse($params) {
+    public function verify_course($params) {
         $results = array();
 
-        $fuzzy = new \block_lsuxe\models\mixed();
-        $dbresult = $fuzzy->verifyCourseGroup($params);
+        $fuzzy = new \block_lsuxe\models\xemixed();
+        $dbresult = $fuzzy->verify_course_group($params);
         $dbcount = count($dbresult);
 
         if ($dbcount == 0) {
-            $return_obj->success = false;
-            $return_obj->msg = "Either the course shortname and/or group name do not exist.";
+            $returnobj->success = false;
+            $returnobj->msg = "Either the course shortname and/or group name do not exist.";
         } else if ($dbcount > 1) {
-            $return_obj->success = false;
-            $return_obj->msg = "There are multiple records.";
+            $returnobj->success = false;
+            $returnobj->msg = "There are multiple records.";
         } else {
-            $return_obj->success = true;
+            $returnobj->success = true;
             $dbresult = array_values($dbresult);
-            $return_obj->data = $dbresult[0];
+            $returnobj->data = $dbresult[0];
         }
 
-        return $return_obj;
+        return $returnobj;
     }
 
-    public function testService($params) {
+    public function test_service($params) {
         return array("success" => true);
     }
 }

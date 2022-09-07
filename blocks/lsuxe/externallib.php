@@ -17,23 +17,23 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') or die();
+defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . "/externallib.php");
 
 class block_lsuxe_external extends external_api {
 
     /**
-     * Returns description of method parameters
+     * Returns description of method parameters.
      * @return external_function_parameters
      */
-    public static function XEAjax_parameters() {
+    public static function xeajax_parameters() {
         return new external_function_parameters(
             array(
                 'datachunk' => new external_value(
@@ -45,42 +45,42 @@ class block_lsuxe_external extends external_api {
     }
 
     /**
-     * Returns welcome message
+     * Returns welcome message.
      * @return string welcome message
      */
-    public static function XEAjax($datachunk) {
+    public static function xeajax($datachunk) {
         $datachunk = json_decode($datachunk);
-        $class_obj = isset($datachunk->class) ? $datachunk->class : null;
+        $classobj = isset($datachunk->class) ? $datachunk->class : null;
         $function = isset($datachunk->call) ? $datachunk->call : null;
         $params = isset($datachunk->params) ? $datachunk->params : array("empty" => true);
 
-        if (isset($class_obj)) {
-            include_once('classes/controllers/'.$class_obj.'.php');
-            $xe_class = new $class_obj();
+        if (isset($classobj)) {
+            include_once('classes/controllers/'.$classobj.'.php');
+            $xeclass = new $classobj();
         } else {
             // TODO: If we want custom logging for this plugin then replace.
-            error_log("\nXEAjax => Rejected, no file specified!!!");
+            debugging("\nXEAjax => Rejected, no file specified!!!");
             die (json_encode(array("success" => "false")));
         }
 
-        // now let's call the method
-        $left_over_data = null;
-        if (method_exists($xe_class, $function)) {
-            $left_over_data = call_user_func(array($xe_class, $function), $params);
+        // Now let's call the method.
+        $leftoverdata = null;
+        if (method_exists($xeclass, $function)) {
+            $leftoverdata = call_user_func(array($xeclass, $function), $params);
         } else {
             // TODO: If we want custom logging for this plugin then replace.
-            error_log("\nXEAjax.php => Rejected, method does not exist!!!");
+            debugging("\nXEAjax.php => Rejected, method does not exist!!!");
             die (json_encode(array("success" => "false")));
         }
 
-        return array('data' => json_encode($left_over_data));
+        return array('data' => json_encode($leftoverdata));
     }
 
     /**
-     * Returns description of method result value
+     * Returns description of method result value.
      * @return external_description
      */
-    public static function XEAjax_returns() {
+    public static function xeajax_returns() {
         return new external_single_structure(
             array(
                 'data' => new external_value(PARAM_TEXT, 'JSON encoded goodness')

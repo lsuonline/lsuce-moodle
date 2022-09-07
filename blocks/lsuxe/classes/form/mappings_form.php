@@ -25,10 +25,12 @@
 
 namespace block_lsuxe\form;
 
-
 use block_lsuxe\controllers\form_controller;
 use block_lsuxe\form\groupform_autocomplete;
 use block_lsuxe\models;
+
+defined('MOODLE_INTERNAL') || die();
+global $CFG;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 
 \MoodleQuickForm::registerElementType(
@@ -38,12 +40,11 @@ require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 );
 
 class mappings_form extends \moodleform {
-    
+
     /*
      * Moodle form definition
      */
-    public function definition()
-    {
+    public function definition() {
         global $CFG;
         $mappingsctrl = new form_controller("moodles");
         $helpers = new \lsuxe_helpers();
@@ -53,16 +54,16 @@ class mappings_form extends \moodleform {
             $formupdating = true;
         }
 
-        $enable_autocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
-        $enable_dest_test = (bool)get_config('moodle', "block_lsuxe_enable_dest_test");
-        // Get data for the form
+        $enableautocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
+        $enabledesttest = (bool)get_config('moodle', "block_lsuxe_enable_dest_test");
+        // Get data for the form.
         $mform =& $this->_form;
 
         // For styling purposes.
         $mform->addElement('html', '<span class="lsuxe_form_container">');
         // --------------------------------
         // Course Shortname.
-        if ($enable_autocomplete) {
+        if ($enableautocomplete) {
             // USE THE AUTOCOMPLETE FEATURES FOR COURSE AND GROUP.
             $options = array('multiple' => false);
             $courseselect = $mform->addElement(
@@ -95,7 +96,7 @@ class mappings_form extends \moodleform {
             );
 
         } else {
-            // MANUAL ENTER THE COURSE AND GROUP INTO THE FIELDS
+            // MANUAL ENTER THE COURSE AND GROUP INTO THE FIELDS.
             $mform->addElement(
                 'text',
                 'srccourseshortname',
@@ -109,7 +110,7 @@ class mappings_form extends \moodleform {
             if (isset($this->_customdata->shortname)) {
                 $mform->setDefault('srccourseshortname', $this->_customdata->shortname);
             }
-            
+
             // --------------------------------
             $mform->addElement(
                 'text',
@@ -144,7 +145,7 @@ class mappings_form extends \moodleform {
         if (isset($this->_customdata->endtime) && $this->_customdata->endtime != "0") {
             $mform->setDefault('endtime', $this->_customdata->endtime);
         }
-        
+
         // --------------------------------
         // Moodle Instance.
         $mform->addElement(
@@ -172,15 +173,15 @@ class mappings_form extends \moodleform {
             $authselect->setSelected($this->_customdata->authmethod);
         }
 
-        if ($enable_autocomplete) {
+        if ($enableautocomplete) {
             // --------------------------------
-            // Destination Course Group name autocomplete
+            // Destination Course Group name autocomplete.
             $destcourseselect = $mform->addElement(
                 'groupform_autocomplete',
                 'destcourseshortname',
                 get_string('destcourseshortname', 'block_lsuxe')
             );
-            
+
             if (isset($this->_customdata->destcourseshortname)) {
                 $destcourseselect->setValue(
                     array(
@@ -191,7 +192,7 @@ class mappings_form extends \moodleform {
             }
 
             // --------------------------------
-            // Destination Course Group name manual entry
+            // Destination Course Group name manual entry.
             $mform->addElement(
                 'text',
                 'destcoursegroupname',
@@ -215,7 +216,7 @@ class mappings_form extends \moodleform {
 
         } else {
             // --------------------------------
-            // Destination Course Group name autocomplete
+            // Destination Course Group name autocomplete.
             $mform->addElement(
                 'text',
                 'destcourseshortname',
@@ -230,7 +231,7 @@ class mappings_form extends \moodleform {
             }
 
             // --------------------------------
-            // Destination Course Group name manual entry
+            // Destination Course Group name manual entry.
             $mform->addElement(
                 'text',
                 'destcoursegroupname',
@@ -280,7 +281,7 @@ class mappings_form extends \moodleform {
         } else {
             $mform->setDefault('srccoursegroupid', "");
         }
-        
+
         // --------------------------------
         $mform->addElement('hidden', 'destcourseid');
         $mform->setType('destcourseid', PARAM_INT);
@@ -292,12 +293,12 @@ class mappings_form extends \moodleform {
 
         // For Page control list or view form.
         $mform->addElement('hidden', 'vform');
-        $mform->setType('vform', PARAM_INT); 
+        $mform->setType('vform', PARAM_INT);
         $mform->setConstant('vform', 1);
 
         // Record id which is used to update.
         $mform->addElement('hidden', 'id');
-        $mform->setType('id', PARAM_INT); 
+        $mform->setType('id', PARAM_INT);
         if ($formupdating) {
             $mform->setDefault('id', $this->_customdata->id);
         }
@@ -308,15 +309,15 @@ class mappings_form extends \moodleform {
         // autocomplete feature.
         // The button can either be Save or Update for the submit action.
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('savemapping', 'block_lsuxe');
-        
-        if ($enable_autocomplete) {
+
+        if ($enableautocomplete) {
             $mform->addElement('submit', 'send', $thissubmitbutton);
         } else {
             $buttons = [
                 $mform->createElement('submit', 'send', $thissubmitbutton),
                 $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe'))
             ];
-            if ($enable_dest_test) {
+            if ($enabledesttest) {
                 $buttons[] = $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'));
             }
             $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
@@ -327,24 +328,23 @@ class mappings_form extends \moodleform {
 
     /**
      * Moodle form validation
-     * 
+     *
      * @param array $data  Data from the form.
      * @param array $files Any files in the form.
-     * 
+     *
      * @return array Errors returned for the required elements.
      */
-    public function validation($data, $files)
-    {
+    public function validation($data, $files) {
         $errors = [];
-        $fuzzy = new \block_lsuxe\models\mixed();
+        $fuzzy = new \block_lsuxe\models\xemixed();
 
-        $enable_autocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
+        $enableautocomplete = (bool)get_config('moodle', "block_lsuxe_enable_form_auto");
 
         // Check that we have at least one recipient.
         if (empty($data['srccourseshortname'])) {
             $errors['srccourseshortname'] = get_string('srccourseshortnameverify', 'block_lsuxe');
         } else {
-            if (!$fuzzy->checkCourseExists($data['srccourseshortname'], $enable_autocomplete)) {
+            if (!$fuzzy->check_course_exists($data['srccourseshortname'], $enableautocomplete)) {
                 $errors['srccourseshortname'] = get_string('mappingsformcourseerror', 'block_lsuxe');
             }
         }
@@ -352,7 +352,7 @@ class mappings_form extends \moodleform {
         if (empty($data['srccoursegroupname'])) {
             $errors['srccoursegroupname'] = get_string('srccoursegroupnameverify', 'block_lsuxe');
         } else {
-            if (!$fuzzy->checkGroupExists($data['srccoursegroupname'])) {
+            if (!$fuzzy->check_group_exists($data['srccoursegroupname'])) {
                 $errors['srccoursegroupname'] = get_string('mappingsformgrouperror', 'block_lsuxe');
             }
         }
@@ -366,5 +366,5 @@ class mappings_form extends \moodleform {
         }
 
         return $errors;
-    }    
+    }
 }

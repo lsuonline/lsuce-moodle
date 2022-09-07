@@ -17,10 +17,10 @@
 /**
  * Cross Enrollment Tool
  *
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\output;
@@ -30,16 +30,12 @@ use renderer_base;
 use templatable;
 use stdClass;
 use block_lsuxe\persistents\mappings;
-require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 
+require_once('../../config.php');
+require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_login();
 
 class mappings_view implements renderable, templatable {
-    /** @var string $sometext Some text to show how to pass data to a template. */
-
-    // public function __construct($sometext): void {
-    public function __construct() {
-    }
-
     /**
      * Export this data so it can be used as the context for a mustache template.
      *
@@ -51,10 +47,10 @@ class mappings_view implements renderable, templatable {
         $helpers = new \lsuxe_helpers();
 
         $data = $pname->get_all_records("mappings");
-        $updated_data = $pname->transform_for_view($data, $helpers);
-        $updated_data['xeurl'] = $CFG->wwwroot;
-        $updated_data['xeparms'] = "intervals=false&moodleid=0&function=course&courseid=";
-        
-        return $updated_data;
+        $updateddata = $pname->transform_for_view($data, $helpers);
+        $updateddata['xeurl'] = $CFG->wwwroot;
+        $updateddata['xeparms'] = "intervals=false&moodleid=0&function=course&courseid=";
+
+        return $updateddata;
     }
 }
