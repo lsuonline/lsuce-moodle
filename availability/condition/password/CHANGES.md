@@ -4,6 +4,19 @@ moodle-availability_password
 Changes
 -------
 
+### v3.9-r5
+
+* 2022-07-22 - Backport Bugfix "Adding type parameter to save()" from 3.11 to 3.9, solves #17
+* 2022-07-10 - Add Visual checks section to UPGRADE.md
+* 2022-07-10 - Add Capabilities section to README.md
+
+### v3.9-r4
+
+* 2022-06-26 - Make codechecker happy again
+* 2022-06-26 - Updated Moodle Plugin CI to latest upstream recommendations
+* 2022-06-26 - Add UPGRADE.md as internal upgrade documentation
+* 2022-06-26 - Update maintainers and copyrights in README.md.
+
 ### v3.9-r3
 
 * 2021-02-05 - Move Moodle Plugin CI from Travis CI to Github actions
