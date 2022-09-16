@@ -202,6 +202,11 @@ if ($hassiteconfig) {
         $desc = new lang_string('settings_fieldmap_details', 'local_o365', $oidcsettingspageurl->out(false));
         $settings->add(new auth_oidc_admin_setting_label('local_o365/fieldmap', $label, $desc, null));
 
+        $label = new lang_string('settings_suspend_delete_running_time', 'local_o365');
+        $desc = new lang_string('settings_suspend_delete_running_time_desc', 'local_o365');
+        $settings->add(new admin_setting_configtime('local_o365/usersync_suspension_h', 'usersync_suspension_m',
+            $label, $desc, ['h' => 2, 'm' => 30]));
+
         // Course sync section.
         $label = new lang_string('settings_secthead_coursesync', 'local_o365');
         $desc = new lang_string('settings_secthead_coursesync_desc', 'local_o365');
@@ -634,7 +639,8 @@ if ($hassiteconfig) {
         $deploybuttonhtml .= html_writer::empty_tag('br');
         $deploybuttonhtml .= html_writer::empty_tag('br');
         $deploybuttonhtml .= html_writer::link('https://aka.ms/DeployMoodleTeamsBot',
-            html_writer::img('http://azuredeploy.net/deploybutton.png', ''), ['target' => '_blank']);
+            html_writer::img(new moodle_url('/local/o365/pix/deploybutton.png'), get_string('settings_deploy_bot', 'local_o365')),
+            ['target' => '_blank']);
         $deploybuttonhtml .= html_writer::empty_tag('br');
         $deploybuttonhtml .= html_writer::link('https://aka.ms/MoodleTeamsBotHelp',
             get_string('settings_teams_deploy_bot_2', 'local_o365'), ['target' => '_blank']);
