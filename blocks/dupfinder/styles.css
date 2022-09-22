@@ -1,0 +1,21 @@
+/**
+ * UES Dupe Finder
+ *
+ * @package   block_dupfinder
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards Robert Russo, David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+span.df_card_icon {
+    font-size: 100px;
+}
+
+.dupfinder_dash_link {
+    text-decoration: none;
+}
+
+
+.dupfinder_dash_link .card {
+    margin-bottom: 20px;
+}
