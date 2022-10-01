@@ -86,10 +86,10 @@ class pearson_mapping_form extends moodleform {
                 $encodewarning = get_string('encodingtypepre', 'gradeimport_pearson'). $encodingtype.
                     get_string('encodingtypepost', 'gradeimport_pearson');
                 \core\notification::warning($encodewarning);
-            }
 
-            if ($encodeenabled) {
-                $file_text = helpers::fixMSWord($file_text);
+                if ($encodeenabled) {
+                    $file_text = helpers::fixMSWord($file_text);
+                }
             }
         }
 

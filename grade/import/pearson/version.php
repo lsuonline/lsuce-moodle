@@ -26,7 +26,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2016072800;
+$plugin->version  = 2022092800;
 $plugin->requires  = 2015111000;        // Requires this Moodle version
 $plugin->component = 'gradeimport_pearson';  // Full name of the plugin (used for diagnostics)
 ?>
