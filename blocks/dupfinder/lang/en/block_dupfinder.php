@@ -30,7 +30,7 @@ global $CFG;
 $string['df_link_back_title'] = '<a href="'.$CFG->wwwroot.'/blocks/dupfinder/dupfinder.php">Back to Dup Finder Dashboard</a>';
 
 // Block.
-$string['pluginname'] = 'UES Dupe Finder';
+$string['pluginname'] = 'UES Dup Finder';
 $string['pluginname_desc'] = 'UES Duplicate User Search';
 $string['get_dupes'] = 'Get duplicates';
 
@@ -47,10 +47,15 @@ $string['df_session'] = 'Session';
 $string['df_session_help'] = 'The session code, example "C"';
 $string['df_debugloc'] = 'Debug Files Location';
 $string['df_debugloc_help'] = 'File storage area for extra debugging. XML enrollment files stored here.';
-
+$string['df_email_settings'] = 'Email Settings';
+$string['df_emailadmins_title'] = 'Email All Admin Users';
+$string['df_emailadmins_desc'] = 'Checking this will ignore the email list below and email ALL administrators.';
+$string['df_emaillist_title'] = 'List of Users to Email';
+$string['df_emaillist_desc'] = 'Add a comma seperated list of email addresses to get this report.
+    For example: user1@testemail.com,user2@testemail.com,user3@testemail.com';
 
 // Tasks.
-$string['df_fixer'] = 'UES Find and Fix Duplicate Enrollments';
+$string['df_checker'] = 'UES Find and Fix Duplicate Enrollments';
 
 // Links.
 $string['dashboard'] = 'Dashboard';
@@ -58,3 +63,16 @@ $string['manualtrigger'] = 'Manual Trigger';
 $string['manual'] = 'Manual';
 $string['settings'] = 'Settings';
 $string['dfdashboard'] = 'DF Dashboard';
+
+// Page Text & Table Headers.
+$string['dfusername'] = 'Username';
+$string['dfemail'] = 'Email';
+$string['dffirstname'] = 'First Name';
+$string['dflastname'] = 'Last Name';
+$string['dfidnumber'] = 'ID Number';
+$string['dfdeptcode'] = 'Department Code';
+$string['dfcoursenumber'] = 'Course Number';
+$string['dfcoursesection'] = 'Section';
+$string['clicktorun'] = 'Click the search button to find duplicates.';
+// $string['dfusername'] = '';
+

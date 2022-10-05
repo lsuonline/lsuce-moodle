@@ -30,10 +30,20 @@ use renderer_base;
 use templatable;
 use stdClass;
 
-require_once('../../config.php');
-require_login();
+// require_once('../../config.php');
+// require_once('../../base.php');
+
+// require_login();
 
 class manual_view implements renderable, templatable {
+
+    /** @var string $dupes Broken users found, send to template. */
+    private $dupes = null;
+
+    public function __construct($dupes, $isblock = true) {
+        $this->dupes = $dupes;
+        $this->isblock = $isblock;
+    }
     /**
      * Export this data so it can be used as the context for a mustache template.
      *
@@ -49,7 +59,26 @@ class manual_view implements renderable, templatable {
         // $updateddata['xeurl'] = $CFG->wwwroot;
         // $updateddata['xeparms'] = "intervals=false&moodleid=0&function=course&courseid=";
 
-        $updateddata = array();
-        return $updateddata;
+        // $df = new helpers();
+
+        // $data = $df->gettestdata();
+        // $xml = $df->objectify($data);
+        // $dupes = $df->finddupes($xml);
+        $templatedata = array();
+        // error_log("\n -------------------------------- \n");
+        foreach ($this->dupes as $duplist) {
+            foreach ($duplist as $dupstudentobj => $dupstudent) {
+                $templatedata['dupes'][] = $dupstudent;
+                // error_log("\n duplist: \n". print_r($dupstudentobj, 1));
+                // error_log("\n fart: \n". print_r($dupstudent, 1));
+            }
+        }
+        // error_log("\n -------------------------------- \n");
+        // error_log("\n OUTPUT -> RENDERABLE\n What is the output: ". print_r($this->dupes, 1));
+
+        // $updateddata = array();
+        $templatedata['dfurl'] = $CFG->wwwroot;
+        $templatedata['isblock'] = $this->isblock;
+        return $templatedata;
     }
 }

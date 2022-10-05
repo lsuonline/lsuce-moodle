@@ -28,96 +28,43 @@
     <table class="table table-hover table-striped dupfinder_manual_table">
         <thead>
             <tr>
-                {{#moodleURL}}
-                    {{#isSortedAsc}}
-                        <th><a href="?sort=url&dir=desc">{{# str }} moodlesurl, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
-                    {{/isSortedAsc}}
-
-                    {{^isSortedAsc}}
-                        <th><a href="?sort=url&dir=asc">{{# str }} moodlesurl, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
-                    {{/isSortedAsc}}
-                {{/moodleURL}}
-                {{^moodleURL}}
-                    <th><a href="?sort=url&dir=asc">{{# str }} moodlesurl, block_lsuxe {{/ str }}</a></th>
-                {{/moodleURL}}
-
-                {{#sourceShortname}}
-                    {{#isSortedAsc}}
-                        <th><a href="?sort=subject&dir=desc">{{# str }} srccourseshortname, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
-                    {{/isSortedAsc}}
-
-                    {{^isSortedAsc}}
-                        <th><a href="?sort=subject&dir=asc">{{# str }} srccourseshortname, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
-                    {{/isSortedAsc}}
-                {{/sourceShortname}}
-                {{^sourceShortname}}
-                    <th><a href="?sort=subject&dir=asc">{{# str }} srccourseshortname, block_lsuxe {{/ str }}</a></th>
-                {{/sourceShortname}}
-
-                {{#sourceGroup}}
-                    {{#isSortedAsc}}
-                        <th><a href="?sort=sent&dir=desc">{{# str }} srccoursegroupname, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
-                    {{/isSortedAsc}}
-
-                    {{^isSortedAsc}}
-                        <th><a href="?sort=sent&dir=asc">{{# str }} srccoursegroupname, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
-                    {{/isSortedAsc}}
-                {{/sourceGroup}}
-                {{^sourceGroup}}
-                    <th><a href="?sort=sent&dir=asc">{{# str }} srccoursegroupname, block_lsuxe {{/ str }}</a></th>
-                {{/sourceGroup}}
-
-                {{#destShortname}}
-                    {{#isSortedAsc}}
-                        <th><a href="?sort=subject&dir=desc">{{# str }} destcourseshortname, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
-                    {{/isSortedAsc}}
-
-                    {{^isSortedAsc}}
-                        <th><a href="?sort=subject&dir=asc">{{# str }} destcourseshortname, block_lsuxe {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
-                    {{/isSortedAsc}}
-                {{/destShortname}}
-                {{^destShortname}}
-                    <th><a href="?sort=subject&dir=asc">{{# str }} destcourseshortname, block_lsuxe {{/ str }}</a></th>
-                {{/destShortname}}
-
-                <th>{{# str }} enrolenddate, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} updateinterval, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} updatenow, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} edit, block_lsuxe {{/ str }}</th>
-                <th>{{# str }} delete, block_lsuxe {{/ str }}</th>
-                
+                <th>{{# str }} dfusername, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dfemail, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dffirstname, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dflastname, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dfidnumber, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dfdeptcode, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dfcoursenumber, block_dupfinder {{/ str }}</th>
+                <th>{{# str }} dfcoursesection, block_dupfinder {{/ str }}</th>
             </tr>
         </thead>
         <tbody>
-            {{# mappings}}
-            <form method="POST" id="map_form_{{id}}">
-                <tr data-rowid='{{id}}'>
-                    <input type="hidden" value="{{id}}" name="sentdata"/>
-                    <input type="hidden" value="{{destmoodleid}}" name="destmoodleid"/>
-                    <td>{{moodleurl}}</td>
-                    <td><a href="{{xeurl}}/course/view.php?id={{courseid}}" target="_blank">{{shortname}}</a></td>
-                    <td><a href="{{xeurl}}/group/index.php?id={{groupid}}" target="_blank">{{groupname}}</a></td>
-                    <td><a href="{{moodleurl}}/course/view.php?id={{courseid}}" target="_blank">{{destcourseshortname}}</a></td>
-                    <td>{{endtime}}</td>
-                    <td>{{{updateinterval}}}</td>
-                    <td><a href="{{xeurl}}/blocks/lsuxe/reprocess.php?{{xeparms}}{{courseid}}" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></a></td>
-                    <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
-                    <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
-                </tr>
+            {{# dupes}}
+            <tr>
+                <td><a href="{{dfurl}}/user/profile.php?id={{id}}" target="_blank">{{mismatch}}</a></td>
+                <td>{{email}}</td>
+                <td>{{firstname}}</td>
+                <td>{{lastname}}</td>
+                <td>{{idnumber}}</td>
+                <td>{{department}}</td>
+                <td>{{number}}</td>
+                <td>{{section}}</td>
+            </tr>
+            
             </form>
-            {{/ mappings }}
+            {{/ dupes }}
 
-            {{^ mappings }}
+            {{^ dupes }}
                 <tr>
-                    <td colspan="7" align="center">{{# str }} nomappings, block_lsuxe {{/ str }}</td>
+                    <td colspan="9" align="center">{{# str }} clicktorun, block_dupfinder {{/ str }}</td>
                 </tr>
-            {{/ mappings }}
+            {{/ dupes }}
 
         </tbody>
     </table>
-    <span class="pull-right">
-        <a href="{{xeurl}}/blocks/lsuxe/mappings.php?vform=1" class="btn btn-info">Create New</a>
-    </span>
-    {{! This will load the JS for the views that have basic create, update, delete buttons }}
-    {{> block_lsuxe/buttons }}
+    {{#isblock}}
+        <span class="pull-right">
+            <a href="{{dfurl}}/blocks/dupfinder/manual.php?runmanual=1" class="btn btn-info">Search for Duplicates Now</a>
+        </span>
+    {{/isblock}}
 </div>

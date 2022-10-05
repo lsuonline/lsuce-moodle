@@ -28,7 +28,7 @@ namespace block_dupfinder\task;
 /**
  * Extend the Moodle scheduled task class with ours.
  */
-class dupfinder_fixer extends \core\task\scheduled_task {
+class dupfinder_checker extends \core\task\scheduled_task {
 
     /**
      * Get a descriptive name for this task (shown to admins).
@@ -37,7 +37,7 @@ class dupfinder_fixer extends \core\task\scheduled_task {
      */
     public function get_name() {
 
-        return get_string('df_fixer', 'block_dupfinder');
+        return get_string('df_checker', 'block_dupfinder');
 
     }
 
@@ -49,15 +49,21 @@ class dupfinder_fixer extends \core\task\scheduled_task {
     public function execute() {
         global $CFG;
 
-        require_once($CFG->dirroot . '/blocks/dupfinder/base.php');
+        require_once($CFG->dirroot . '/blocks/dupfinder/helpers.php');
         $df = new \helpers();
 
-        $data = $df->getdata();
-        $xml = $df->objectify($data);
+        // $data = $df->getdata();
+        // $xml = $df->objectify($data);
+        // $dupes = $df->finddupes($xml);
+        $xml = $df->gettestdata();
         $dupes = $df->finddupes($xml);
 
-        echo"\n";
-        var_dump($dupes);
-        echo"\n";
+        $df->emailduplicates($dupes);
+        error_log(PHP_EOL.PHP_EOL);
+        error_log(PHP_EOL. " Dup checker has completed. ". PHP_EOL);
+        error_log(PHP_EOL.PHP_EOL);
+        // echo"\n";
+        // var_dump($dupes);
+        // echo"\n";
     }
 }

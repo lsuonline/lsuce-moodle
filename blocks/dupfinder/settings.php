@@ -105,4 +105,36 @@ if ($ADMIN->fulltree) {
         )
     );
 
+    // --------------------------------
+    // Email Settings.
+    $settings->add(
+        new admin_setting_heading(
+            'block_dupfinder_email_settings_title',
+            get_string('df_email_settings', 'block_dupfinder'),
+            ''
+        )
+    );
+
+    // Check to email all admins.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_dupfinder/emailalladmins',
+            get_string('df_emailadmins_title', 'block_dupfinder'),
+            get_string('df_emailadmins_desc', 'block_dupfinder'),
+            1
+        )
+    );
+
+    // Debug files location.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_dupfinder/emaillist',
+            get_string('df_emaillist_title', 'block_dupfinder'),
+            get_string('df_emaillist_desc', 'block_dupfinder'),
+            '',
+            PARAM_TEXT
+        )
+    );
+
+
 }

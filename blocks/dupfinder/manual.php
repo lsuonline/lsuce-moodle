@@ -25,6 +25,10 @@
 
 require_once('../../config.php');
 
+// global $CFG;
+require_once($CFG->dirroot . '/blocks/dupfinder/helpers.php');
+
+
 // Authentication.
 require_login();
 if (!is_siteadmin()) {
@@ -34,16 +38,7 @@ if (!is_siteadmin()) {
 $context = \context_system::instance();
 
 $pageparams = [
-    // 'vform' => optional_param('vform', 0, PARAM_INT),
-    // // TODO: Sort by field name.
-    // 'sort' => optional_param('sort', 'sent', PARAM_TEXT),
-    // // TODO: Asc|desc.
-    // 'dir' => optional_param('dir', 'desc', PARAM_TEXT),
-    // // TODO: need to implement pagination......maybe?
-    // 'page' => optional_param('page', 1, PARAM_INT),
-    // 'per_page' => 10,
-    // 'sent_action' => optional_param('sentaction', "", PARAM_TEXT),
-    // 'sent_data' => optional_param('sentdata', 0, PARAM_INT)
+    'runmanual' => optional_param('runmanual', 0, PARAM_INT),
 ];
 
 // Setup the page.
@@ -53,6 +48,7 @@ $sectiontitle = get_string('manualtrigger', 'block_dupfinder');
 // $enablewideview = (bool)get_config('moodle', "block_dupfinder_enable_wide_view");
 $url = new moodle_url($CFG->wwwroot . '/blocks/dupfinder/manual.php', $pageparams);
 $worky = null;
+$df = new helpers();
 
 // Are we looking at the form to add/update or the list?
 // $viewform = false;
@@ -90,59 +86,32 @@ $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/dupfinder/style.css
 // $PAGE->requires->js_call_amd('block_lsuxe/main', 'init');
 $output = $PAGE->get_renderer('block_dupfinder');
 
+// View the Duplicates, if any.
+echo $output->header();
 // If the sent action is delete then the user just deleted a row, let's process it.
-// if ($pageparams['sent_action'] === "delete") {
-//     $worky = new \block_lsuxe\controllers\form_controller("mappings");
-//     $worky->delete_record((int)$pageparams['sent_data']);
-//     \core\notification::success(get_string('deletemapping', 'block_lsuxe'));
-// }
 
-/*
-if ($viewform == true) {
+// $userstarttime = microtime(true);
 
-    // We are viewing the form so are we updating or creating a new record?
-    if ($pageparams['sent_action'] === "update") {
-        // Update the section title.
-        $sectiontitle = get_string('updatemapping', 'block_lsuxe');
-        // Get the course record that you want.
-        $thismapping = $DB->get_record('block_lsuxe_mappings', array('id' => (int)$pageparams['sent_data']));
-        // Pass the time created value in an array.
-        $mform = new \block_lsuxe\form\mappings_form(null, $thismapping);
-    } else {
-        $mform = new \block_lsuxe\form\mappings_form();
-    }
+$dupes = null;
 
-    // Create/Update Mappings.
-    $fromform = $mform->get_data();
-
-    if ($mform->is_cancelled()) {
-        // If there is a cancel element on the form, and it was pressed,
-        // then the `is_cancelled()` function will return true.
-        // You can handle the cancel operation here.
-        redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php');
-    } else if ($fromform = $mform->get_data()) {
-        // When the form is submitted, and the data is successfully validated,
-        // the `get_data()` function will return the data posted in the form.
-        $worky = $worky ?? new \block_lsuxe\controllers\form_controller("mappings");
-        // The form_controller will process and use matching persistent.
-        $worky->process_form($fromform);
-    } else {
-        // This branch is executed if the form is submitted but the data doesn't
-        // validate and the form should be redisplayed or on the first display of the form.
-        $mform->set_data($fromform);
-    }
-    echo $output->header();
-    echo $xtras;
-    echo $output->heading($sectiontitle);
-    $mform->display();
-
+if ($pageparams['runmanual'] == 1) {
+    $starttime = microtime(true);
+    $xml = $df->gettestdata();
+    $dupes = $df->finddupes($xml);
+    // error_log("\n -------------------------------- \n");
+    // error_log("\n manual.php -> do we have dupes: ". print_r($dupes, 1));
+    // error_log("\n -------------------------------- \n");
+    $elapsedtime = round(microtime(true) - $starttime, 3);
+    mtrace(PHP_EOL. "This entire process took " . $elapsedtime . " seconds.". PHP_EOL);
 } else {
-*/
-    // View the Mappings.
-    echo $output->header();
-    // echo $xtras;
-    $renderable = new \block_dupfinder\output\manual_view();
-    echo $output->render($renderable);
-// }
+    $dupes = array();
+}
 
+// mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
+
+
+
+// echo $xtras;
+$renderable = new \block_dupfinder\output\manual_view($dupes, true);
+echo $output->render($renderable);
 echo $output->footer();

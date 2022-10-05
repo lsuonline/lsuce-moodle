@@ -15,15 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_dupfinder
- * @copyright  2022 onwards LSU Online & Continuing Education
- * @copyright  2008 onwards Robert Russo
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * UES Dupe Finder
+ *
+ * @package   block_dupfinder
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards Robert Russo, David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_dupfinder';
-$plugin->version = 2022091502;
-$plugin->requires = 2020010100;
-$plugin->release = "v1.0";
+// Define the task defaults.
+$tasks = array(
+    array(
+        'classname' => 'block_dupfinder\task\dupfinder_checker',
+        'blocking' => 0,
+        'minute' => '30',
+        'hour' => '3',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    )
+);
