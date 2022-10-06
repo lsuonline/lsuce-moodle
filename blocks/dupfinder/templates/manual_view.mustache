@@ -63,8 +63,13 @@
         </tbody>
     </table>
     {{#isblock}}
-        <span class="pull-right">
+        <span class="pull-left">
             <a href="{{dfurl}}/blocks/dupfinder/manual.php?runmanual=1" class="btn btn-info">Search for Duplicates Now</a>
         </span>
+        {{#emailbtn}}
+            <span class="pull-right">
+                <a href="{{dfurl}}/blocks/dupfinder/manual.php?runmanual=1&emailadmins=1" class="btn btn-warning">Email This To Admins</a>
+            </span>
+        {{/emailbtn}}
     {{/isblock}}
 </div>

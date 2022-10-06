@@ -48,14 +48,13 @@ $PAGE->navbar->add(get_string('dfdashboard', 'block_dupfinder'), new moodle_url(
 $PAGE->requires->css(new moodle_url('/blocks/dupfinder/style.css'));
 $output = $PAGE->get_renderer('block_dupfinder');
 
-
 echo $output->header();
 echo $output->heading($sectiontitle);
 
 // Links.
 $dashboardlinks = array(
     array(
-        // The Mappinges View.
+        // Manual view of users with anomolies.
         'url' => $CFG->wwwroot . '/blocks/dupfinder/manual.php',
         'icon' => 'list',
         'lang' => get_string('manualtrigger', 'block_dupfinder')

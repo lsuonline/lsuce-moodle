@@ -23,10 +23,9 @@
 
 // Make sure this can only run via CLI.
 define('CLI_SCRIPT', true);
+defined('MOODLE_INTERNAL') || die();
 
 // Require config and CLIlib.
-// require_once('/var/www/html/39/config.php');
-// global $CFG;
 require_once(dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'config.php');
 require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->dirroot . '/blocks/dupfinder/helpers.php');
@@ -39,14 +38,12 @@ if (CLI_MAINTENANCE) {
 
 $df = new helpers();
 
-// $data = $df->getdata();
-// $xml = $df->objectify($data);
-// $dupes = $df->finddupes($xml);
+$data = $df->getdata();
+$xml = $df->objectify($data);
+$dupes = $df->finddupes($xml, false);
 
-$xml = $df->gettestdata();
-$dupes = $df->finddupes($xml);
-$df->emailduplicates($dupes);
+$emailsuccess = $df->emailduplicates($dupes);
 
-echo"\n";
-var_dump($dupes);
-echo"\n";
+if ($emailsuccess) {
+    mtrace(get_string('emailsent', 'block_dupfinder'));
+}

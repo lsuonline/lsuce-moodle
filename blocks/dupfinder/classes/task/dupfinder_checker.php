@@ -36,9 +36,7 @@ class dupfinder_checker extends \core\task\scheduled_task {
      * @return string
      */
     public function get_name() {
-
         return get_string('df_checker', 'block_dupfinder');
-
     }
 
     /**
@@ -51,19 +49,14 @@ class dupfinder_checker extends \core\task\scheduled_task {
 
         require_once($CFG->dirroot . '/blocks/dupfinder/helpers.php');
         $df = new \helpers();
+        $starttime = microtime(true);
 
-        // $data = $df->getdata();
-        // $xml = $df->objectify($data);
-        // $dupes = $df->finddupes($xml);
-        $xml = $df->gettestdata();
-        $dupes = $df->finddupes($xml);
+        $data = $df->getdata();
+        $xml = $df->objectify($data);
+        $dupes = $df->finddupes($xml, false);
 
         $df->emailduplicates($dupes);
-        error_log(PHP_EOL.PHP_EOL);
-        error_log(PHP_EOL. " Dup checker has completed. ". PHP_EOL);
-        error_log(PHP_EOL.PHP_EOL);
-        // echo"\n";
-        // var_dump($dupes);
-        // echo"\n";
+        $elapsedtime = round(microtime(true) - $starttime, 3);
+        mtrace(PHP_EOL. "\nThis entire process took " . $elapsedtime . " seconds.". PHP_EOL);
     }
 }

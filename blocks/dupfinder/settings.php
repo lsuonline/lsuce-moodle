@@ -45,6 +45,16 @@ if ($ADMIN->fulltree) {
         )
     );
 
+    // DAS Webservice URL.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_dupfinder/url',
+            get_string('df_url', 'block_dupfinder'),
+            get_string('df_url_help', 'block_dupfinder'),
+            '', PARAM_TEXT
+        )
+    );
+
     // DAS Webservice Username.
     $settings->add(
         new admin_setting_configtext(

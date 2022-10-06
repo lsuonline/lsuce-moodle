@@ -35,6 +35,8 @@ $string['pluginname_desc'] = 'UES Duplicate User Search';
 $string['get_dupes'] = 'Get duplicates';
 
 // Configuration.
+$string['df_url'] = 'DAS URL';
+$string['df_url_help'] = 'Web Services URL for DAS';
 $string['df_username'] = 'DAS Username';
 $string['df_username_help'] = 'Web Services username for DAS';
 $string['df_password'] = 'DAS Password';
@@ -74,5 +76,8 @@ $string['dfdeptcode'] = 'Department Code';
 $string['dfcoursenumber'] = 'Course Number';
 $string['dfcoursesection'] = 'Section';
 $string['clicktorun'] = 'Click the search button to find duplicates.';
-// $string['dfusername'] = '';
 
+// Notifications.
+$string['emailsent'] = 'Successfully sent email to admins for duplicate users.';
+$string['xmlissues'] = 'Warning: There is no xml data, please check the settings.';
+$string['nodupsfound'] = 'Excellent, there are no issues with users.';

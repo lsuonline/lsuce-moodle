@@ -21,8 +21,6 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 class block_dupfinder extends block_list {
     public $user;
     public $content;

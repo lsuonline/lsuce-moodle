@@ -23,11 +23,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
-
-// global $CFG;
+require_once(dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'config.php');
 require_once($CFG->dirroot . '/blocks/dupfinder/helpers.php');
-
 
 // Authentication.
 require_login();
@@ -39,37 +36,16 @@ $context = \context_system::instance();
 
 $pageparams = [
     'runmanual' => optional_param('runmanual', 0, PARAM_INT),
+    'emailadmins' => optional_param('emailadmins', 0, PARAM_INT),
 ];
 
 // Setup the page.
 $title = get_string('pluginname', 'block_dupfinder') . ': ' . get_string('manualtrigger', 'block_dupfinder');
 $pagetitle = $title;
 $sectiontitle = get_string('manualtrigger', 'block_dupfinder');
-// $enablewideview = (bool)get_config('moodle', "block_dupfinder_enable_wide_view");
 $url = new moodle_url($CFG->wwwroot . '/blocks/dupfinder/manual.php', $pageparams);
 $worky = null;
 $df = new helpers();
-
-// Are we looking at the form to add/update or the list?
-// $viewform = false;
-// if ($pageparams['vform'] == 1) {
-    // Ok then, we are looking at the FORM.
-    // $viewform = true;
-// }
-// ------------------------------------------------------------------------
-// If we want to push any data to javascript then we can add it here.
-// $initialload = array(
-//     "wwwroot" => $CFG->wwwroot,
-//     "xe_form" => "mappings",
-//     "xe_viewform" => $viewform,
-//     "settings" => array(
-//         "xes_autocomplete" => get_config('moodle', "block_dupfinder_enable_form_auto")
-//     )
-// );
-// $initialload = json_encode($initialload, JSON_HEX_APOS | JSON_HEX_QUOT);
-// $xtras = "<script>window.__SERVER__=true</script>".
-//     "<script>window.__INITIAL_STATE__='".$initialload."'</script>";
-// ------------------------------------------------------------------------
 
 $PAGE->set_context($context);
 $PAGE->set_url($url);
@@ -80,38 +56,44 @@ $PAGE->set_heading($title);
 $PAGE->navbar->add(get_string('dfdashboard', 'block_dupfinder'), new moodle_url('dupfinder.php'));
 $PAGE->navbar->add(get_string('manual', 'block_dupfinder'), new moodle_url('manual.php'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/dupfinder/style.css'));
-// if ($enablewideview) {
-    // $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/lsuxe/xestyles/style.css'));
-// }
-// $PAGE->requires->js_call_amd('block_lsuxe/main', 'init');
+
 $output = $PAGE->get_renderer('block_dupfinder');
 
 // View the Duplicates, if any.
 echo $output->header();
-// If the sent action is delete then the user just deleted a row, let's process it.
-
-// $userstarttime = microtime(true);
 
 $dupes = null;
 
+
 if ($pageparams['runmanual'] == 1) {
     $starttime = microtime(true);
-    $xml = $df->gettestdata();
-    $dupes = $df->finddupes($xml);
-    // error_log("\n -------------------------------- \n");
-    // error_log("\n manual.php -> do we have dupes: ". print_r($dupes, 1));
-    // error_log("\n -------------------------------- \n");
+    $dupes = array();
+
+    // $xml = $df->gettestdata();
+    $data = $df->getdata();
+    $xml = $df->objectify($data);
+    if (empty($xml)) {
+        \core\notification::warning(get_string('xmlissues', 'block_dupfinder'));        
+    } else {
+        $dupes = $df->finddupes($xml);
+        if ($dupes) {
+            if ($pageparams['emailadmins'] == 1) {
+                $emailsuccess = $df->emailduplicates($dupes);
+                if ($emailsuccess) {
+                    \core\notification::success(get_string('emailsent', 'block_dupfinder'));
+                }
+            }
+        } else {
+            \core\notification::success(get_string('nodupsfound', 'block_dupfinder'));
+        }
+    }
+
     $elapsedtime = round(microtime(true) - $starttime, 3);
-    mtrace(PHP_EOL. "This entire process took " . $elapsedtime . " seconds.". PHP_EOL);
+    mtrace(PHP_EOL. "\nThis entire process took " . $elapsedtime . " seconds.". PHP_EOL);
 } else {
     $dupes = array();
 }
 
-// mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
-
-
-
-// echo $xtras;
 $renderable = new \block_dupfinder\output\manual_view($dupes, true);
 echo $output->render($renderable);
 echo $output->footer();

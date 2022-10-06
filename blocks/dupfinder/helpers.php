@@ -25,6 +25,12 @@ defined('MOODLE_INTERNAL') || die();
 
 class helpers {
 
+    /**
+     * Convert the XML file to an array of objects to be processed.
+     *
+     * @param array $xml xml file.
+     * @return array user accounts.
+     */
     public function objectify($xml) {
         if (isset($xml)) {
             $objects = simplexml_load_string($xml);
@@ -35,19 +41,16 @@ class helpers {
         }
     }
 
-/*
-      ["LSU_ID"]=>
-      ["DEPT_CODE"]=>
-      ["COURSE_NBR"]=>
-      ["SECTION_NBR"]=>
-      ["CREDIT_HRS"]=>
-      ["INDIV_NAME"]=>
-      ["PRIMARY_ACCESS_ID"]=>
-      ["WITHHOLD_DIR_FLG"]=>
-*/
-    public function finddupes($xml) {
+    /**
+     * Loop through the XML and match against the user records to find any possible
+     * incomplete accounts.
+     * @param array $xml a loaded xml file ready to be processed.
+     * @param bool $hidetrace let's mtrace when running the task.
+     * @return array of duplicate accounts.
+     */
+    public function finddupes($xml, $hidetrace = true) {
         global $DB;
-        
+
         $counter = 0;
         $sqls = array();
         $dupes = array();
@@ -66,24 +69,26 @@ class helpers {
 
             $dupe = $DB->get_records_sql($sql);
             if (!empty($dupe)) {
-                // echo("Found duplicate student: $student->PRIMARY_ACCESS_ID at $counter.\n");
-                mtrace("Found duplicate student: $student->PRIMARY_ACCESS_ID at $counter.\n");
+                $hidetrace ?: mtrace("Found duplicate student: $student->PRIMARY_ACCESS_ID at $counter.");
                 $dupes[] = array_merge($dupe);
             }
             $sqls[] = $sql;
             $userelapsedtime = round(microtime(true) - $userstarttime, 3);
-            // mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
         }
         return $dupes;
     }
 
+    /**
+     * Test data to use while debugging and testing.
+     *
+     * @return @string $xml
+     */
     public function gettestdata() {
-        error_log(" \n\n ");
-        error_log(" \n gettestdata() -> loading up the test XML file. \n ");
-        error_log(" \n\n ");
-        $xml = simplexml_load_file("/Users/davidlowe/Sites/scp_temp_transfer/20221S-HIST.xml") or die("Error: Cannot create object");
+        // This is a sample from my machine.
+        $xml = simplexml_load_file("/Users/davidlowe/Sites/scp_temp_transfer/20221S-HIST.xml");
         return $xml;
     }
+
     /**
      * Grabs the xml from DAS.
      *
@@ -102,7 +107,7 @@ class helpers {
         $debugging  = $CFG->debugdisplay == 1 ? 1 : 0;
 
         // Set the URL for the REST command to get our enrollment data.
-        $url = "https://das.lsu.edu/data_access_service/DynamicSqlServlet?widget1=$username&widget2=$password&serviceId=MOODLE_STUDENTS_BY_DEPT&1=01&2=$semester&3=$department&4=1590&5=$session";
+        $url = get_config('block_dupfinder', 'dataurl');
 
         // Set up the CURL handler.
         $curl = curl_init($url);
@@ -135,63 +140,54 @@ class helpers {
         return($xml);
     }
 
+    /**
+     * Grabs the xml from DAS.
+     *
+     * @return @string $xml
+     */
     public function emailduplicates($dupes = array()) {
         global $PAGE;
-
-        $dupcount = count($dupes);
-        if ($dupcount > 1) {
-            error_log("\n\n there are $dupcount duplicates that need fixing, need to email admin \n");
-        } else {
-            error_log("\n\n there are NO DUPES to report........ \n ");
-        }
 
         // All admins.
         $alladmins   = get_config('block_dupfinder', 'emailalladmins');
 
         // Send emails from the noreply user.
-        $emailFrom = core_user::get_noreply_user();
+        $emailfrom = core_user::get_noreply_user();
 
-        if ($alladmins) { // Add Moodle Administrators.
+        // Add Moodle Administrators.
+        if ($alladmins) {
             $admins = get_admins();
-        } else {          // Only main Moodle Administrator.
-            $admins = [get_admin()];
-        }
-
-
-        // Get To: users.
-        if ($alladmins) { // Add Moodle Administrators.
-            $admins = get_admins();
-        } else {          // Only main Moodle Administrator.
+        } else {
+            // Only main Moodle Administrator.
             $admins = [get_admin()];
         }
 
         $message = "Hello Administrator,".PHP_EOL."The following users were found in the system with missing data.". PHP_EOL;
         $message .= PHP_EOL;
         $templatedata = array();
-        error_log(PHP_EOL. " Build the message......". PHP_EOL);
+
         $subject = "Dup Finder anomolies";
         $output = $PAGE->get_renderer('block_dupfinder');
         $renderable = new \block_dupfinder\output\manual_view($dupes, false);
         $message = $output->render($renderable);
 
-        $debug = false;
-
         // Send email message to the desired Moodle administrators.
-        if (!empty($admins)) { // For each admin...
+        if (!empty($admins)) {
+            // For each admin...
             foreach ($admins as $admin) {
-                if ($debug) { // Debug mode - Does not actually send emails.
-                    // Just display what we got.                    
-                    error_log(PHP_EOL.PHP_EOL);
-                    error_log(PHP_EOL. $admin->email);
-                    error_log(PHP_EOL. $emailFrom->email);
-                    error_log(PHP_EOL. "SUBJECT: $subject");
-                    error_log(PHP_EOL. "TEXT MESSAGE: ". html_to_text($message));
-                    error_log(PHP_EOL. "HTML MESSAGE: $message");
-                    error_log(PHP_EOL.PHP_EOL);
-                } else {      // Actually send the email.
-                    email_to_user($admin, $emailFrom, $subject, html_to_text($message), $message);
+                if (debugging()) {
+                    // Let's not send emails in debug mode.
+                    mtrace(PHP_EOL.PHP_EOL);
+                    mtrace(PHP_EOL. $admin->email);
+                    mtrace(PHP_EOL. $emailfrom->email);
+                    mtrace(PHP_EOL. "SUBJECT: $subject");
+                    mtrace(PHP_EOL. "TEXT MESSAGE: ". html_to_text($message));
+                    mtrace(PHP_EOL. "HTML MESSAGE: $message");
+                    mtrace(PHP_EOL.PHP_EOL);
+                } else {
+                    return email_to_user($admin, $emailfrom, $subject, html_to_text($message), $message);
                 }
-            }    
+            }
         }
     }
 }
