@@ -1,7 +1,7 @@
 var sclicked = false;
 
-document.getElementById("nodbl").addEventListener("click", function(event) {
-});
+// document.getElementById("nodbl").addEventListener("click", function(event) {
+// });
 
 function processClick() {
     if (sclicked == false) {
