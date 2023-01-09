@@ -27,7 +27,7 @@ class SheetIterator implements IteratorInterface
         // Fetch all available sheets
         $this->sheets = $sheetManager->getSheets();
 
-        if (count($this->sheets) === 0) {
+        if (\count($this->sheets) === 0) {
             throw new NoSheetsFoundException('The file must contain at least one sheet.');
         }
     }
@@ -38,6 +38,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->currentSheetIndex = 0;
@@ -49,9 +50,10 @@ class SheetIterator implements IteratorInterface
      *
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
-        return ($this->currentSheetIndex < count($this->sheets));
+        return ($this->currentSheetIndex < \count($this->sheets));
     }
 
     /**
@@ -60,6 +62,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         // Using isset here because it is way faster than array_key_exists...
@@ -77,6 +80,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return \Box\Spout\Reader\XLSX\Sheet
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->sheets[$this->currentSheetIndex];
@@ -88,6 +92,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->currentSheetIndex + 1;
@@ -98,6 +103,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function end()
     {
         // make sure we are not leaking memory in case the iteration stopped before the end

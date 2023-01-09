@@ -25,6 +25,8 @@
 use core_h5p\factory;
 use core_h5p\framework;
 use core_h5p\local\library\autoloader;
+use Moodle\H5PCore;
+use Moodle\H5PEditorEndpoints;
 
 define('AJAX_SCRIPT', true);
 
@@ -44,6 +46,9 @@ $action = required_param('action', PARAM_ALPHA);
 $factory = new factory();
 $editor = $factory->get_editor();
 
+// Set context to default system context.
+$PAGE->set_context(null);
+
 switch ($action) {
     // Load list of libraries or details for library.
     case 'libraries':
@@ -52,7 +57,9 @@ switch ($action) {
         $major = optional_param('majorVersion', 0, PARAM_INT);
         $minor = optional_param('minorVersion', 0, PARAM_INT);
 
-        $language = optional_param('default-language', null, PARAM_ALPHA);
+        // Normalise Moodle language using underscore, as opposed to H5P which uses dash.
+        $language = optional_param('default-language', null, PARAM_RAW);
+        $language = clean_param(str_replace('-', '_', $language), PARAM_LANG);
 
         if (!empty($name)) {
             $editor->ajax->action(H5PEditorEndpoints::SINGLE_LIBRARY, $name,
@@ -80,7 +87,7 @@ switch ($action) {
         foreach ($_FILES as $uploadedfile) {
             $filename = clean_param($uploadedfile['name'], PARAM_FILE);
             if ($uploadedfile['size'] > $maxsize) {
-                H5PCore::ajaxError(get_string('maxbytesfile', 'error', ['file' => $filename, 'size' => display_size($maxsize)]));
+                H5PCore::ajaxError(get_string('maxbytesfile', 'error', ['file' => $filename, 'size' => display_size($maxsize, 0)]));
                 return;
             }
             \core\antivirus\manager::scan_file($uploadedfile['tmp_name'], $filename, true);

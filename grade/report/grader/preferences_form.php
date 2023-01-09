@@ -86,12 +86,7 @@ class grader_report_preferences_form extends moodleform {
                                                                           0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5);
                 $preferences['prefrows']['meanselection']  = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
                                                                    GRADE_REPORT_MEAN_ALL => get_string('meanall', 'grades'),
-                                                                   // BEGIN LSU Column Average No Zero.
-                                                                   GRADE_REPORT_MEAN_GRADED => get_string('meangraded', 'grades'),
-                                                                   GRADE_REPORT_MEAN_GRADED_NO_ZEROS => get_string('meangradednozeros', 'grades'));
-                                                                   // END LSU Column Average No Zero.
-
-
+                                                                   GRADE_REPORT_MEAN_GRADED => get_string('meangraded', 'grades'));
 
                 $advanced = array_merge($advanced, array('averagesdisplaytype', 'averagesdecimalpoints'));
             }
@@ -195,7 +190,7 @@ class grader_report_preferences_form extends moodleform {
         $mform->setType('id', PARAM_INT);
         $mform->setDefault('id', $course->id);
 
-        $this->add_action_buttons();
+        $this->add_action_buttons(false);
     }
 
 /// perform some extra moodle validation

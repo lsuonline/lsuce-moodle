@@ -14,15 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
- * Unit tests for the numerical question definition class.
+ * Unit tests for the numerical questions answers processor.
  *
- * @package moodlecore
- * @subpackage questiontypes
- * @copyright 2008 The Open University
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    qtype_numerical
+ * @category   test
+ * @copyright  2008 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace qtype_numerical;
+
+use qtype_numerical_answer_processor;
+
+defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/question/type/numerical/questiontype.php');
@@ -33,7 +38,15 @@ class testable_qtype_numerical_answer_processor extends qtype_numerical_answer_p
     }
 }
 
-class qtype_numerical_answer_processor_test extends advanced_testcase {
+/**
+ * Unit test for the numerical questions answers processor.
+ *
+ * @package    qtype_numerical
+ * @category   test
+ * @copyright  2008 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class answerprocessor_test extends \advanced_testcase {
     public function test_parse_response() {
         $ap = new testable_qtype_numerical_answer_processor(
                 array('m' => 1, 'cm' => 100), false, '.', ',');
@@ -89,13 +102,13 @@ class qtype_numerical_answer_processor_test extends advanced_testcase {
         if (is_null($exectedval)) {
             $this->assertNull($val);
         } else {
-            $this->assertEquals($exectedval, $val, '', 0.0001);
+            $this->assertEqualsWithDelta($exectedval, $val, 0.0001);
         }
         $this->assertEquals($expectedunit, $unit);
         if (is_null($expectedmultiplier)) {
             $this->assertNull($multiplier);
         } else {
-            $this->assertEquals($expectedmultiplier, $multiplier, '', 0.0001);
+            $this->assertEqualsWithDelta($expectedmultiplier, $multiplier, 0.0001);
         }
     }
 
@@ -141,7 +154,6 @@ class qtype_numerical_answer_processor_test extends advanced_testcase {
         $this->assertEquals(array('1e-6', '%', 0.01), $ap->apply_units('1e-6 %'));
         $this->assertEquals(array('100', '', null), $ap->apply_units('100'));
     }
-
 
     public function test_currency() {
         $ap = new qtype_numerical_answer_processor(array('$' => 1, '£' => 1), true, '.', ',');

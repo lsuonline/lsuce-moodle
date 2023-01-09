@@ -451,10 +451,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
     protected function process_person_tag($tagcontents) {
         global $CFG, $DB;
 
-        // BEGIN LSU change to add moodle lib for sending passwords.
-        require_once($CFG->dirroot . '/lib/moodlelib.php');
-        // END LSU change to add moodle lib for sending passwords.
-
         // Get plugin configs.
         $imssourcedidfallback   = $this->get_config('imssourcedidfallback');
         $fixcaseusernames       = $this->get_config('fixcaseusernames');
@@ -462,12 +458,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         $imsdeleteusers         = $this->get_config('imsdeleteusers');
         $createnewusers         = $this->get_config('createnewusers');
         $imsupdateusers         = $this->get_config('imsupdateusers');
-
-        // BEGIN LSU IMS Profile Field support.
-        $pfield                 = $this->get_config('profilefield');
-        $pfielddata             = $DB->get_record('user_info_field', array('shortname'=>$pfield), 'id', IGNORE_MISSING);
-        $profilefieldid         = $pfielddata->id;
-        // END LSU IMS Profile Field support.
 
         $person = new stdClass();
         if (preg_match('{<sourcedid>.*?<id>(.+?)</id>.*?</sourcedid>}is', $tagcontents, $matches)) {
@@ -493,18 +483,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         if (preg_match('{<userid\s+authenticationtype\s*=\s*"*(.+?)"*>.*?</userid>}is', $tagcontents, $matches)) {
             $person->auth = trim($matches[1]);
         }
-
-        // BEGIN LSU IMS Profile Field support.
-        $matches = array();
-        if (preg_match('{<profile_field\s+fieldname\s*=\s*"*(.+?)"*>.*?</profile_field>}is', $tagcontents, $matches)) {
-            $person->pfieldsn = trim($matches[1]);
-        }
-
-        $matches = array();
-        if (preg_match('{<profile_field.*?>(.*?)</profile_field>}is', $tagcontents, $matches)) {
-            $person->pfieldvalue = trim($matches[1]);
-        }
-        // END LSU IMS Profile Field support.
 
         if ($imssourcedidfallback && trim($person->username) == '') {
             // This is the point where we can fall back to useing the "sourcedid" if "userid" is not supplied.
@@ -571,24 +549,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                     $person->id = $id;
                     $DB->update_record('user', $person);
                     $this->log_line("Updated user $person->username");
-                    // BEGIN LSU IMS Profile Field support.
-                    if (isset($person->pfieldvalue) && isset($profilefieldid)) {
-                        $infodataid              = $DB->get_record('user_info_data', array('fieldid' => $profilefieldid, 'userid' => $person->id), 'id', IGNORE_MISSING);
-                        $infodata                = new stdClass();
-                        $infodata->userid        = $person->id;
-                        $infodata->fieldid       = $profilefieldid;
-                        $infodata->data          = $person->pfieldvalue;
-                        $infodata->dataformat    = 0;
-                        if ($infodataid) {
-                            $infodata->id = $infodataid->id;
-                            $DB->update_record('user_info_data', (array) $infodata, $bulk = false);
-                            $this->log_line("Updated $pfield for existing user $person->username");
-                        } else {
-                            $DB->insert_record('user_info_data', $infodata);
-                            $this->log_line("Inserted $pfield for existing user $person->username");
-                        }
-                    }
-                    // END LSU IMS Profile Fild Support.
                 } else {
                     $this->log_line("Ignoring update request for non-existent user $person->username");
                 }
@@ -617,54 +577,18 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                         $auth = reset($auth);
                         $person->auth = $auth;
                     }
-
-                    // BEGIN LSU IMS Profile Field support.
-                    if (empty($person->pfieldsn)) {
-                        $person->pfieldsn = $pfield;
-                    }
-                    // END LSU IMS Profile Field support.
-
-                    // BEGIN LSU change to add passwords for manual users without them.
-                    if ($person->auth == 'manual') {
-                        $person->password = 'to be generated';
-                    }
-                    // END LSU change to add passwords for manual users without them.
                     $person->confirmed = 1;
                     $person->timemodified = time();
                     $person->mnethostid = $CFG->mnet_localhost_id;
                     $id = $DB->insert_record('user', $person);
-
-                    // BEGIN LSU IMS Profile Field support.
-                    if (isset($person->pfieldvalue) && isset($profilefieldid)) {
-                        $infodataid              = $DB->get_record('user_info_data', array('fieldid' => $profilefieldid, 'userid' => $id), 'id', IGNORE_MISSING);
-                        $infodata                = new stdClass();
-                        $infodata->userid        = $id;
-                        $infodata->fieldid       = $profilefieldid;
-                        $infodata->data          = $person->pfieldvalue;
-                        $infodata->dataformat    = 0;
-
-                        if (isset($infodataid->id)) {
-                            $infodata->id = $infodataid->id;
-                            $DB->update_record('user_info_data', (array) $infodata, $bulk = false);
-                            $this->log_line("Updated $pfield for new user $person->username");
-                        } else {
-                            $DB->insert_record('user_info_data', $infodata);
-                            $this->log_line("Inserted $pfield for new user $person->username");
-                        }
-                    }
-                    // END LSU IMS Profile Field support.
-
                     $this->log_line("Created user record ('.$id.') for user '$person->username' (ID number $person->idnumber).");
-                    // BEGIN LSU change to add passwords for manual users without them.
-                    if ($person->password == 'to be generated') {
-                        set_user_preference('auth_forcepasswordchange', 1, $id);
-                        set_user_preference('create_password', 1, $id);
-                        $this->log_line("Sending $person->username password via cron");
-                    }
-                    // END LSU change to add passwords for manual users without them.
                 }
             } else if ($createnewusers) {
-                $this->log_line("User record already exists for user '$person->username' (ID number $person->idnumber).");
+
+                $username = $person->username ?? "[unknown username]";
+                $personnumber = $person->idnumber ?? "[unknown ID number]";
+
+                $this->log_line("User record already exists for user '" . $username . "' (ID number " . $personnumber . ").");
 
                 // It is totally wrong to mess with deleted users flag directly in database!!!
                 // There is no official way to undelete user, sorry..
@@ -763,10 +687,12 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
 
                     // Decide the "real" role (i.e. the Moodle role) that this user should be assigned to.
                     // Zero means this roletype is supposed to be skipped.
-                    $moodleroleid = $this->rolemappings[$member->roletype];
+                    $moodleroleid = (isset($member->roletype) && isset($this->rolemappings[$member->roletype]))
+                        ? $this->rolemappings[$member->roletype] : null;
                     if (!$moodleroleid) {
-                        $this->log_line("SKIPPING role $member->roletype for $memberstoreobj->userid "
-                            ."($member->idnumber) in course $memberstoreobj->course");
+                        $this->log_line("SKIPPING role " .
+                            ($member->roletype ?? "[]") . " for $memberstoreobj->userid " .
+                            "($member->idnumber) in course $memberstoreobj->course");
                         continue;
                     }
 
@@ -781,9 +707,7 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                             $einstance = $DB->get_record('enrol', array('id' => $enrolid));
                         }
 
-                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
-                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end, $status = ENROL_USER_ACTIVE);
-                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
+                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end);
 
                         $this->log_line("Enrolled user #$memberstoreobj->userid ($member->idnumber) "
                             ."to role $member->roletype in course $memberstoreobj->course");
@@ -823,27 +747,80 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
 
                     } else if ($this->get_config('imsunenrol')) {
                         // Unenrol member.
+                        $unenrolsetting = $this->get_config('unenrolaction');
 
                         $einstances = $DB->get_records('enrol',
                             array('enrol' => $memberstoreobj->enrol, 'courseid' => $courseobj->id));
-                        foreach ($einstances as $einstance) {
-                            // Unenrol the user from all imsenterprise enrolment instances.
-                            // BEGIN LSU suspend user versus unenrol them.
-                            $this->update_user_enrol($einstance, $memberstoreobj->userid, ENROL_USER_SUSPENDED);
-                            // END LSU suspend user versus unenrol them.
+
+                        switch ($unenrolsetting) {
+                            case ENROL_EXT_REMOVED_SUSPEND:
+                            case ENROL_EXT_REMOVED_SUSPENDNOROLES: {
+                                foreach ($einstances as $einstance) {
+                                    $this->update_user_enrol($einstance, $memberstoreobj->userid,
+                                    ENROL_USER_SUSPENDED, $timeframe->begin, $timeframe->end);
+
+                                    $this->log_line("Suspending user enrolment for $member->idnumber in " .
+                                    " course $ship->coursecode ");
+
+                                    if (intval($unenrolsetting) === intval(ENROL_EXT_REMOVED_SUSPENDNOROLES)) {
+                                        if (!$context =
+                                            context_course::instance($courseobj->id, IGNORE_MISSING)) {
+
+                                            $this->log_line("Unable to process IMS unenrolment request " .
+                                                " because course context not found. User: " .
+                                                "#$memberstoreobj->userid ($member->idnumber) , " .
+                                                " course: $memberstoreobj->course");
+                                        } else {
+
+                                            role_unassign_all([
+                                                'contextid' => $context->id,
+                                                'userid' => $memberstoreobj->userid,
+                                                'component' => 'enrol_imsenterprise',
+                                                'itemid' => $einstance->id
+                                            ]);
+
+                                            $this->log_line("Removing role assignments for user " .
+                                                "$member->idnumber from role $moodleroleid in course " .
+                                                "$ship->coursecode ");
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+
+                            case ENROL_EXT_REMOVED_UNENROL: {
+                                foreach ($einstances as $einstance) {
+                                    $this->unenrol_user($einstance, $memberstoreobj->userid);
+                                    $this->log_line("Removing user enrolment record for $member->idnumber " .
+                                        " in course $ship->coursecode ");
+                                }
+                            }
+                            break;
+
+                            case ENROL_EXT_REMOVED_KEEP: {
+                                $this->log_line("Processed KEEP IMS unenrol instruction (i.e. do nothing)");
+                            }
+                            break;
+
+                            default:
+                                $this->log_line("Unable to process IMS unenrolment request because " .
+                                    " the value set for plugin parameter, unenrol action, is not recognised. " .
+                                    " User: #$memberstoreobj->userid ($member->idnumber) " .
+                                    " , course: $memberstoreobj->course");
+                                break;
                         }
 
                         $membersuntally++;
-                        $this->log_line("Unenrolled $member->idnumber from role $moodleroleid in course");
                     }
 
                 }
             }
             $this->log_line("Added $memberstally users to course $ship->coursecode");
             if ($membersuntally > 0) {
-                $this->log_line("Removed $membersuntally users from course $ship->coursecode");
+                $this->log_line("Processed $membersuntally unenrol instructions for course $ship->coursecode");
             }
         }
+
     } // End process_membership_tag().
 
     /**
@@ -891,19 +868,14 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         // Explanatory note: The matching will ONLY match if the attribute restrict="1"
         // because otherwise the time markers should be ignored (participation should be
         // allowed outside the period).
-        // BEGIN LSU change to start / end time.
-        $matches = array();
-        if (preg_match('{<begin restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}', $string, $matches)) {
+        if (preg_match('{<begin\s+restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}is', $string, $matches)) {
             $ret->begin = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
         }
 
         $matches = array();
-        // Example time: 2021-01-13 - 10:52:13.
-        if (preg_match('{<end restrict="1">(\d\d\d\d)-(\d\d)-(\d\d) - (\d\d):(\d\d):(\d\d)</end>}', $string, $matches)) {
-            $ret->end = mktime($matches[4], $matches[5], $matches[6], $matches[2], $matches[3], $matches[1]);
+        if (preg_match('{<end\s+restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</end>}is', $string, $matches)) {
+            $ret->end = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
         }
-        // END LSU change to add time.
-
         return $ret;
     }
 
@@ -938,20 +910,6 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
             $this->coursemappings[$courseattr] = $this->get_config('imscoursemap' . $courseattr);
         }
     }
-
-    /**
-     * Called whenever anybody tries (from the normal interface) to remove a group
-     * member which is registered as being created by this component. (Not called
-     * when deleting an entire group or course at once.)
-     * @param int $itemid Item ID that was stored in the group_members entry
-     * @param int $groupid Group ID
-     * @param int $userid User ID being removed from group
-     * @return bool True if the remove is permitted, false to give an error
-     */
-    public function enrol_imsenterprise_allow_group_member_remove($itemid, $groupid, $userid) {
-        return false;
-    }
-
 
     /**
      * Get the default category id (often known as 'Miscellaneous'),
@@ -1080,4 +1038,17 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         $context = context_course::instance($instance->courseid);
         return has_capability('enrol/imsenterprise:config', $context);
     }
+}
+
+/**
+ * Called whenever anybody tries (from the normal interface) to remove a group
+ * member which is registered as being created by this component. (Not called
+ * when deleting an entire group or course at once.)
+ * @param int $itemid Item ID that was stored in the group_members entry
+ * @param int $groupid Group ID
+ * @param int $userid User ID being removed from group
+ * @return bool True if the remove is permitted, false to give an error
+ */
+function enrol_imsenterprise_allow_group_member_remove($itemid, $groupid, $userid) {
+    return false;
 }

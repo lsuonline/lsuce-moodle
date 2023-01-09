@@ -17,20 +17,16 @@ Feature: Workshop should remember collapsed/expanded sections in view page.
       | teacher1 | c1     | editingteacher |
       | student1 | c1     | student        |
     And the following "activities" exist:
-      | activity | name       | intro                  | course | idnumber  |
-      | workshop | Workshop 1 | Workshop 1 description | c1     | workshop1 |
+      | activity | name       | course | idnumber  |
+      | workshop | Workshop 1 | c1     | workshop1 |
 
   @javascript
   Scenario: Check section in view page can be remembered.
-    Given I log in as "teacher1"
-    And I am on "Course1" course homepage
-    And I follow "Workshop 1"
+    Given I am on the "Workshop 1" "workshop activity" page logged in as teacher1
     When I change phase in workshop "Workshop 1" to "Submission phase"
     And I wait until the page is ready
-    And I log out
-    And I log in as "student1"
-    And I am on "Course1" course homepage
-    And I follow "Workshop 1"
+
+    And I am on the "Workshop 1" "workshop activity" page logged in as student1
     Then I should see "You have not submitted your work yet"
     And I click on "Your submission" "link"
     And I should not see "You have not submitted your work yet"

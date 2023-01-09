@@ -34,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2012 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_enrollib_testcase extends advanced_testcase {
+class enrollib_test extends advanced_testcase {
 
     public function test_enrol_get_all_users_courses() {
         global $DB, $CFG;
@@ -159,7 +159,7 @@ class core_enrollib_testcase extends advanced_testcase {
         $course = reset($courses);
         context_helper::preload_from_record($course);
         $course = (array)$course;
-        $this->assertEquals($basefields, array_keys($course), '', 0, 10, true);
+        $this->assertEqualsCanonicalizing($basefields, array_keys($course));
 
         $courses = enrol_get_all_users_courses($user2->id, false, 'timecreated');
         $course = reset($courses);
@@ -1037,6 +1037,59 @@ class core_enrollib_testcase extends advanced_testcase {
     }
 
     /**
+     * Data provider for {@see test_enrol_get_my_courses_by_time}
+     *
+     * @return array
+     */
+    public function enrol_get_my_courses_by_time_provider(): array {
+        return [
+            'No start or end time' =>
+                [null, null, true],
+            'Start time now, no end time' =>
+                [0, null, true],
+            'Start time now, end time in the future' =>
+                [0, MINSECS, true],
+            'Start time in the past, no end time' =>
+                [-MINSECS, null, true],
+            'Start time in the past, end time in the future' =>
+                [-MINSECS, MINSECS, true],
+            'Start time in the past, end time in the past' =>
+                [-DAYSECS, -HOURSECS, false],
+            'Start time in the future' =>
+                [MINSECS, null, false],
+        ];
+    }
+
+    /**
+     * Test that expected course enrolments are returned when they have timestart / timeend specified
+     *
+     * @param int|null $timestartoffset Null for 0, otherwise offset from current time
+     * @param int|null $timeendoffset Null for 0, otherwise offset from current time
+     * @param bool $expectreturn
+     *
+     * @dataProvider enrol_get_my_courses_by_time_provider
+     */
+    public function test_enrol_get_my_courses_by_time(?int $timestartoffset, ?int $timeendoffset, bool $expectreturn): void {
+        $this->resetAfterTest();
+
+        $time = time();
+        $timestart = $timestartoffset === null ? 0 : $time + $timestartoffset;
+        $timeend = $timeendoffset === null ? 0 : $time + $timeendoffset;
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_and_enrol($course, 'student', null, 'manual', $timestart, $timeend);
+        $this->setUser($user);
+
+        $courses = enrol_get_my_courses();
+        if ($expectreturn) {
+            $this->assertCount(1, $courses);
+            $this->assertEquals($course->id, reset($courses)->id);
+        } else {
+            $this->assertEmpty($courses);
+        }
+    }
+
+    /**
      * test_course_users
      *
      * @return void
@@ -1361,5 +1414,301 @@ class core_enrollib_testcase extends advanced_testcase {
         $duration = enrol_calculate_duration($timestart, $timeend);
         $durationinday = $duration / DAYSECS;
         $this->assertEquals(9, $durationinday);
+    }
+
+    /**
+     * Test get_enrolled_with_capabilities_join cannotmatchanyrows attribute.
+     *
+     * @dataProvider get_enrolled_with_capabilities_join_cannotmatchanyrows_data()
+     * @param string $capability the tested capability
+     * @param bool $useprohibit if the capability must be assigned to prohibit
+     * @param int $expectedmatch expected cannotmatchanyrows value
+     * @param int $expectedcount expceted count value
+     */
+    public function test_get_enrolled_with_capabilities_join_cannotmatchanyrows(
+        string $capability,
+        bool $useprohibit,
+        int $expectedmatch,
+        int $expectedcount
+    ) {
+        global $DB, $CFG;
+
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $context = context_course::instance($course->id);
+
+        $roleid = $CFG->defaultuserroleid;
+
+        // Override capability if necessary.
+        if ($useprohibit && $capability) {
+            assign_capability($capability, CAP_PROHIBIT, $roleid, $context);
+        }
+
+        // Check if we must enrol or not.
+        $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+
+        $join = get_enrolled_with_capabilities_join($context, '', $capability);
+
+        // Execute query.
+        $sql = "SELECT COUNT(DISTINCT u.id)
+                  FROM {user} u {$join->joins}
+                 WHERE {$join->wheres}";
+        $countrecords = $DB->count_records_sql($sql, $join->params);
+
+        // Validate cannotmatchanyrows.
+        $this->assertEquals($expectedmatch, $join->cannotmatchanyrows);
+        $this->assertEquals($expectedcount, $countrecords);
+    }
+
+    /**
+     * Data provider for test_get_enrolled_with_capabilities_join_cannotmatchanyrows
+     *
+     * @return @array of testing scenarios
+     */
+    public function get_enrolled_with_capabilities_join_cannotmatchanyrows_data() {
+        return [
+            'no prohibits, no capability' => [
+                'capability' => '',
+                'useprohibit' => false,
+                'expectedmatch' => 0,
+                'expectedcount' => 1,
+            ],
+            'no prohibits with capability' => [
+                'capability' => 'moodle/course:manageactivities',
+                'useprohibit' => false,
+                'expectedmatch' => 0,
+                'expectedcount' => 1,
+            ],
+            'prohibits with capability' => [
+                'capability' => 'moodle/course:manageactivities',
+                'useprohibit' => true,
+                'expectedmatch' => 1,
+                'expectedcount' => 0,
+            ],
+        ];
+    }
+
+    /**
+     * Test last_time_enrolments_synced not recorded with "force" option for enrol_check_plugins.
+     * @covers ::enrol_check_plugins
+     */
+    public function test_enrol_check_plugins_with_forced_option() {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertNull(get_user_preferences('last_time_enrolments_synced', null, $user));
+        enrol_check_plugins($user);
+        $this->assertNull(get_user_preferences('last_time_enrolments_synced', null, $user));
+    }
+
+    /**
+     * Data provided for test_enrol_check_plugins_with_empty_config_value test.
+     * @return array
+     */
+    public function empty_config_data_provider(): array {
+        return [
+            [0],
+            ["0"],
+            [false],
+            [''],
+            ['string'],
+        ];
+    }
+
+    /**
+     * Test that empty 'enrolments_sync_interval' is treated as forced option for enrol_check_plugins.
+     *
+     * @dataProvider empty_config_data_provider
+     * @covers ::enrol_check_plugins
+     *
+     * @param mixed $config Config value.
+     */
+    public function test_enrol_check_plugins_with_empty_config_value($config) {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->enrolments_sync_interval = $config;
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertNull(get_user_preferences('last_time_enrolments_synced', null, $user));
+        enrol_check_plugins($user, false);
+        $this->assertNull(get_user_preferences('last_time_enrolments_synced', null, $user));
+    }
+
+    /**
+     * Test last_time_enrolments_synced is recorded without "force" option for enrol_check_plugins.
+     * @covers ::enrol_check_plugins
+     */
+    public function test_last_time_enrolments_synced_is_set_if_not_forced() {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertNull(get_user_preferences('last_time_enrolments_synced', null, $user));
+
+        enrol_check_plugins($user, false);
+        $firstrun = get_user_preferences('last_time_enrolments_synced', null, $user);
+        $this->assertNotNull($firstrun);
+        sleep(1);
+
+        enrol_check_plugins($user, false);
+        $secondrun = get_user_preferences('last_time_enrolments_synced', null, $user);
+        $this->assertNotNull($secondrun);
+        $this->assertTrue((int)$secondrun == (int)$firstrun);
+    }
+
+    /**
+     * Test last_time_enrolments_synced is recorded correctly without "force" option for enrol_check_plugins.
+     * @covers ::enrol_check_plugins
+     */
+    public function test_last_time_enrolments_synced_is_set_if_not_forced_if_have_not_passed_interval() {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->enrolments_sync_interval = 1;
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertNull(get_user_preferences('last_time_enrolments_synced', null, $user));
+
+        enrol_check_plugins($user, false);
+        $firstrun = get_user_preferences('last_time_enrolments_synced', null, $user);
+        $this->assertNotNull($firstrun);
+        sleep(2);
+
+        enrol_check_plugins($user, false);
+        $secondrun = get_user_preferences('last_time_enrolments_synced', null, $user);
+        $this->assertNotNull($secondrun);
+        $this->assertTrue((int)$secondrun > (int)$firstrun);
+    }
+
+    /**
+     * Test enrol_selfenrol_available function behavior.
+     *
+     * @covers ::enrol_selfenrol_available
+     */
+    public function test_enrol_selfenrol_available() {
+        global $DB, $CFG;
+
+        $this->resetAfterTest();
+        $this->preventResetByRollback(); // Messaging does not like transactions...
+
+        $selfplugin = enrol_get_plugin('self');
+
+        $user1 = $this->getDataGenerator()->create_user();
+        $user2 = $this->getDataGenerator()->create_user();
+
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        $course = $this->getDataGenerator()->create_course();
+        $cohort1 = $this->getDataGenerator()->create_cohort();
+        $cohort2 = $this->getDataGenerator()->create_cohort();
+
+        // New enrolments are allowed and enrolment instance is enabled.
+        $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'self'], '*', MUST_EXIST);
+        $instance->customint6 = 1;
+        $DB->update_record('enrol', $instance);
+        $selfplugin->update_status($instance, ENROL_INSTANCE_ENABLED);
+        $this->setUser($user1);
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+
+        $canntenrolerror = get_string('canntenrol', 'enrol_self');
+
+        // New enrolments are not allowed, but enrolment instance is enabled.
+        $instance->customint6 = 0;
+        $DB->update_record('enrol', $instance);
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+
+        // New enrolments are allowed, but enrolment instance is disabled.
+        $instance->customint6 = 1;
+        $DB->update_record('enrol', $instance);
+        $selfplugin->update_status($instance, ENROL_INSTANCE_DISABLED);
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+
+        // New enrolments are not allowed and enrolment instance is disabled.
+        $instance->customint6 = 0;
+        $DB->update_record('enrol', $instance);
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+
+        // Enable enrolment instance for the rest of the tests.
+        $selfplugin->update_status($instance, ENROL_INSTANCE_ENABLED);
+
+        // Enrol start date is in future.
+        $instance->customint6 = 1;
+        $instance->enrolstartdate = time() + 60;
+        $DB->update_record('enrol', $instance);
+        $error = get_string('canntenrolearly', 'enrol_self', userdate($instance->enrolstartdate));
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+
+        // Enrol start date is in past.
+        $instance->enrolstartdate = time() - 60;
+        $DB->update_record('enrol', $instance);
+        $this->setUser($user1);
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+
+        // Enrol end date is in future.
+        $instance->enrolstartdate = 0;
+        $instance->enrolenddate = time() + 60;
+        $DB->update_record('enrol', $instance);
+        $this->setUser($user1);
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+
+        // Enrol end date is in past.
+        $instance->enrolenddate = time() - 60;
+        $DB->update_record('enrol', $instance);
+        $error = get_string('canntenrollate', 'enrol_self', userdate($instance->enrolenddate));
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+
+        // Maximum enrolments reached.
+        $instance->customint3 = 1;
+        $instance->enrolenddate = 0;
+        $DB->update_record('enrol', $instance);
+        $selfplugin->enrol_user($instance, $user2->id, $studentrole->id);
+        $error = get_string('maxenrolledreached', 'enrol_self');
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+
+        // Maximum enrolments not reached.
+        $instance->customint3 = 3;
+        $DB->update_record('enrol', $instance);
+        $this->setUser($user1);
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertTrue(enrol_selfenrol_available($course->id));
+
+        require_once("$CFG->dirroot/cohort/lib.php");
+        cohort_add_member($cohort1->id, $user2->id);
+
+        // Cohort test.
+        $instance->customint5 = $cohort1->id;
+        $DB->update_record('enrol', $instance);
+        $error = get_string('cohortnonmemberinfo', 'enrol_self', $cohort1->name);
+        $this->setUser($user1);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setGuestUser();
+        $this->assertFalse(enrol_selfenrol_available($course->id));
+        $this->setUser($user2);
+        $this->assertFalse(enrol_selfenrol_available($course->id));
     }
 }

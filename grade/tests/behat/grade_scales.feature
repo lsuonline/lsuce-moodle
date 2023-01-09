@@ -43,35 +43,27 @@ Feature: View gradebook when scales are used
     And the following "activities" exist:
       | activity | course | idnumber | name                | intro             | gradecategory  |
       | assign   | C1     | a1       | Test assignment one | Submit something! | Sub category 1 |
-    And I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Test assignment one"
-    And I navigate to "Edit settings" in current page administration
+    And I am on the "Test assignment one" "assign activity editing" page logged in as teacher1
     And I expand all fieldsets
     And I set the field "grade[modgrade_type]" to "Scale"
     And I set the field "grade[modgrade_scale]" to "EN Letterscale"
     And I press "Save and display"
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     And I click on "Grade" "link" in the "Student 1" "table_row"
     And I set the field "Grade" to "A"
     And I press "Save changes"
-    And I press "OK"
     And I click on "[data-action=next-user]" "css_element"
     And I set the field "Grade" to "B"
     And I press "Save changes"
-    And I press "OK"
     And I click on "[data-action=next-user]" "css_element"
     And I set the field "Grade" to "C"
     And I press "Save changes"
-    And I press "OK"
     And I click on "[data-action=next-user]" "css_element"
     And I set the field "Grade" to "D"
     And I press "Save changes"
-    And I press "OK"
     And I click on "[data-action=next-user]" "css_element"
     And I set the field "Grade" to "F"
     And I press "Save changes"
-    And I press "OK"
     And I am on "Course 1" course homepage
     And I navigate to "Setup > Course grade settings" in the course gradebook
     And I set the field "Show weightings" to "Show"
@@ -94,7 +86,7 @@ Feature: View gradebook when scales are used
       | Range              | F–A      | 0.00–5.00      | 0.00–5.00    |
       | Overall average    | C        | 3.00           | 3.00         |
     And I navigate to "View > User report" in the course gradebook
-    And I select "Student 3" from the "Select all or one user" singleselect
+    And I click on "Student 3" in the "user" search widget
     And the following should exist in the "user-grade" table:
       | Grade item          | Grade | Range | Percentage | Contribution to course total |
       | Test assignment one | C     | F–A   | 50.00 %    | 60.00 %                      |
@@ -140,7 +132,7 @@ Feature: View gradebook when scales are used
       | Range              | F–A      | 1.00–5.00      | 0.00–100.00    |
       | Overall average    | C        | 3.00           | <overallavg>   |
     And I navigate to "View > User report" in the course gradebook
-    And I select "Student 3" from the "Select all or one user" singleselect
+    And I click on "Student 3" in the "user" search widget
     And the following should exist in the "user-grade" table:
       | Grade item                   | Grade          | Range | Percentage    | Contribution to course total |
       | Test assignment one          | C              | F–A   | 50.00 %       | <contrib3>                   |

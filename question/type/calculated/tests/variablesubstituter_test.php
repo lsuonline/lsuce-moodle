@@ -14,15 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Unit tests for qtype_calculated_variable_substituter.
- *
- * @package    qtype
- * @subpackage calculated
- * @copyright  2011 The Open University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace qtype_calculated;
 
+use qtype_calculated_variable_substituter;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -30,14 +24,14 @@ global $CFG;
 require_once($CFG->dirroot . '/question/type/calculated/question.php');
 require_once($CFG->dirroot . '/question/type/calculated/questiontype.php');
 
-
 /**
  * Unit tests for {@link qtype_calculated_variable_substituter}.
  *
+ * @package    qtype_calculated
  * @copyright  2011 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_calculated_variable_substituter_test extends advanced_testcase {
+class variablesubstituter_test extends \advanced_testcase {
     public function test_simple_expression() {
         $vs = new qtype_calculated_variable_substituter(array('a' => 1, 'b' => 2), '.');
         $this->assertEquals(3, $vs->calculate('{a} + {b}'));
@@ -48,32 +42,23 @@ class qtype_calculated_variable_substituter_test extends advanced_testcase {
         $this->assertEquals(1, $vs->calculate('{a}-{b}'));
     }
 
-    /**
-     * @expectedException moodle_exception
-     */
     public function test_cannot_use_nonnumbers() {
+        $this->expectException(\moodle_exception::class);
         $vs = new qtype_calculated_variable_substituter(array('a' => 'frog', 'b' => -2), '.');
     }
 
-    /**
-     * @expectedException moodle_exception
-     */
     public function test_invalid_expression() {
         $vs = new qtype_calculated_variable_substituter(array('a' => 1, 'b' => 2), '.');
+        $this->expectException(\moodle_exception::class);
         $vs->calculate('{a} + {b}?');
     }
 
-    /**
-     * @expectedException moodle_exception
-     */
     public function test_tricky_invalid_expression() {
         $vs = new qtype_calculated_variable_substituter(array('a' => 1, 'b' => 2), '.');
+        $this->expectException(\moodle_exception::class);
         $vs->calculate('{a}{b}'); // Have to make sure this does not just evaluate to 12.
     }
 
-    /**
-     * @expectedException moodle_exception
-     */
     public function test_division_by_zero_expression() {
 
         if (intval(PHP_VERSION) < 7) {
@@ -81,6 +66,7 @@ class qtype_calculated_variable_substituter_test extends advanced_testcase {
         }
 
         $vs = new qtype_calculated_variable_substituter(array('a' => 1, 'b' => 0), '.');
+        $this->expectException(\moodle_exception::class);
         $vs->calculate('{a} / {b}');
     }
 
@@ -141,5 +127,13 @@ class qtype_calculated_variable_substituter_test extends advanced_testcase {
 
         $this->assertSame('0,12', $vs->format_float(0.12345, 2, 2));
         $this->assertSame('0,0012', $vs->format_float(0.0012345, 4, 1));
+    }
+
+    public function test_format_float_nan_inf() {
+        $vs = new qtype_calculated_variable_substituter([ ], '.');
+
+        $this->assertSame('NAN', $vs->format_float(NAN));
+        $this->assertSame('INF', $vs->format_float(INF));
+        $this->assertSame('-INF', $vs->format_float(-INF));
     }
 }

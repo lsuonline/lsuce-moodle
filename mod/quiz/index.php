@@ -29,7 +29,7 @@ require_once("locallib.php");
 $id = required_param('id', PARAM_INT);
 $PAGE->set_url('/mod/quiz/index.php', array('id'=>$id));
 if (!$course = $DB->get_record('course', array('id' => $id))) {
-    print_error('invalidcourseid');
+    throw new \moodle_exception('invalidcourseid');
 }
 $coursecontext = context_course::instance($id);
 require_login($course);
@@ -125,8 +125,8 @@ foreach ($quizzes as $quiz) {
             $strsection = $quiz->section;
             $strsection = get_section_name($course, $quiz->section);
         }
-        if ($currentsection) {
-            $learningtable->data[] = 'hr';
+        if ($currentsection !== "") {
+            $table->data[] = 'hr';
         }
         $currentsection = $quiz->section;
     }

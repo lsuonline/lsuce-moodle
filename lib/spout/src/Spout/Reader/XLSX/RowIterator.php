@@ -35,7 +35,7 @@ class RowIterator implements IteratorInterface
     /** @var string Path of the XLSX file being read */
     protected $filePath;
 
-    /** @var string $sheetDataXMLFilePath Path of the sheet data XML file as in [Content_Types].xml */
+    /** @var string Path of the sheet data XML file as in [Content_Types].xml */
     protected $sheetDataXMLFilePath;
 
     /** @var \Box\Spout\Reader\Wrapper\XMLReader The XMLReader object that will help read sheet's XML data */
@@ -127,7 +127,7 @@ class RowIterator implements IteratorInterface
      */
     protected function normalizeSheetDataXMLFilePath($sheetDataXMLFilePath)
     {
-        return ltrim($sheetDataXMLFilePath, '/');
+        return \ltrim($sheetDataXMLFilePath, '/');
     }
 
     /**
@@ -139,6 +139,7 @@ class RowIterator implements IteratorInterface
      * @throws \Box\Spout\Common\Exception\IOException If the sheet data XML cannot be read
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->xmlReader->close();
@@ -163,6 +164,7 @@ class RowIterator implements IteratorInterface
      *
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return (!$this->hasReachedEndOfFile);
@@ -176,6 +178,7 @@ class RowIterator implements IteratorInterface
      * @throws \Box\Spout\Common\Exception\IOException If unable to read the sheet data XML
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->nextRowIndexToBeProcessed++;
@@ -234,7 +237,7 @@ class RowIterator implements IteratorInterface
     {
         // Read dimensions of the sheet
         $dimensionRef = $xmlReader->getAttribute(self::XML_ATTRIBUTE_REF); // returns 'A1:M13' for instance (or 'A1' for empty sheet)
-        if (preg_match('/[A-Z]+\d+:([A-Z]+\d+)/', $dimensionRef, $matches)) {
+        if (\preg_match('/[A-Z]+\d+:([A-Z]+\d+)/', $dimensionRef, $matches)) {
             $this->numColumns = CellHelper::getColumnIndexFromCellIndex($matches[1]) + 1;
         }
 
@@ -257,11 +260,11 @@ class RowIterator implements IteratorInterface
         $numberOfColumnsForRow = $this->numColumns;
         $spans = $xmlReader->getAttribute(self::XML_ATTRIBUTE_SPANS); // returns '1:5' for instance
         if ($spans) {
-            list(, $numberOfColumnsForRow) = explode(':', $spans);
+            list(, $numberOfColumnsForRow) = \explode(':', $spans);
             $numberOfColumnsForRow = (int) $numberOfColumnsForRow;
         }
 
-        $cells = array_fill(0, $numberOfColumnsForRow, $this->entityFactory->createCell(''));
+        $cells = \array_fill(0, $numberOfColumnsForRow, $this->entityFactory->createCell(''));
         $this->currentlyProcessedRow->setCells($cells);
 
         return XMLProcessor::PROCESSING_CONTINUE;
@@ -374,6 +377,7 @@ class RowIterator implements IteratorInterface
      *
      * @return Row|null
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         $rowToBeProcessed = $this->rowBuffer;
@@ -399,6 +403,7 @@ class RowIterator implements IteratorInterface
      *
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         // TODO: This should return $this->nextRowIndexToBeProcessed
@@ -414,6 +419,7 @@ class RowIterator implements IteratorInterface
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function end()
     {
         $this->xmlReader->close();

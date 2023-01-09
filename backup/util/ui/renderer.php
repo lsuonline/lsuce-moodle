@@ -203,7 +203,7 @@ class core_backup_renderer extends plugin_renderer_base {
                         $table->data = array();
                     }
                     $name = get_string('pluginname', $activity->modulename);
-                    $icon = new image_icon('icon', '', $activity->modulename, ['class' => 'iconlarge icon-pre']);
+                    $icon = new image_icon('monologo', '', $activity->modulename, ['class' => 'iconlarge icon-pre']);
                     $table->data[] = array(
                         $this->output->render($icon).$name,
                         $activity->title,
@@ -553,7 +553,8 @@ class core_backup_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Displays a continue button
+     * Displays a continue button, overriding core renderer method of the same in order
+     * to override submission method of the button form
      *
      * @param string|moodle_url $url
      * @param string $method
@@ -566,7 +567,6 @@ class core_backup_renderer extends plugin_renderer_base {
         if ($method != 'post') {
             $method = 'get';
         }
-        $url->param('sesskey', sesskey());
         $button = new single_button($url, get_string('continue'), $method, true);
         $button->class = 'continuebutton';
         return $this->render($button);
@@ -735,7 +735,7 @@ class core_backup_renderer extends plugin_renderer_base {
      * @return string
      */
     public function render_restore_course_search(restore_course_search $component) {
-        $output = html_writer::start_tag('div', array('class' => 'restore-course-search form-inline mb-1'));
+        $output = html_writer::start_tag('div', array('class' => 'restore-course-search mb-1'));
         $output .= html_writer::start_tag('div', array('class' => 'rcs-results table-sm w-75'));
 
         $table = new html_table();
@@ -781,24 +781,14 @@ class core_backup_renderer extends plugin_renderer_base {
         $output .= html_writer::table($table);
         $output .= html_writer::end_tag('div');
 
-        $output .= html_writer::start_tag('div', array('class' => 'rcs-search'));
-        $attrs = array(
-            'type' => 'text',
-            'name' => restore_course_search::$VAR_SEARCH,
-            'value' => $component->get_search(),
-            'aria-label' => get_string('searchcourses'),
-            'placeholder' => get_string('searchcourses'),
-            'class' => 'form-control'
-        );
-        $output .= html_writer::empty_tag('input', $attrs);
-        $attrs = array(
-            'type' => 'submit',
-            'name' => 'searchcourses',
-            'value' => get_string('search'),
-            'class' => 'btn btn-secondary'
-        );
-        $output .= html_writer::empty_tag('input', $attrs);
-        $output .= html_writer::end_tag('div');
+        $data = [
+            'inform' => true,
+            'extraclasses' => 'rcs-search mb-3 w-25',
+            'inputname' => restore_course_search::$VAR_SEARCH,
+            'searchstring' => get_string('searchcourses'),
+            'query' => $component->get_search(),
+        ];
+        $output .= $this->output->render_from_template('core/search_input', $data);
 
         $output .= html_writer::end_tag('div');
         return $output;
@@ -911,7 +901,7 @@ class core_backup_renderer extends plugin_renderer_base {
      * @return string
      */
     public function render_restore_category_search(restore_category_search $component) {
-        $output = html_writer::start_tag('div', array('class' => 'restore-course-search form-inline mb-1'));
+        $output = html_writer::start_tag('div', array('class' => 'restore-course-search mb-1'));
         $output .= html_writer::start_tag('div', array('class' => 'rcs-results table-sm w-75'));
 
         $table = new html_table();
@@ -960,24 +950,14 @@ class core_backup_renderer extends plugin_renderer_base {
         $output .= html_writer::table($table);
         $output .= html_writer::end_tag('div');
 
-        $output .= html_writer::start_tag('div', array('class' => 'rcs-search'));
-        $attrs = array(
-            'type' => 'text',
-            'name' => restore_category_search::$VAR_SEARCH,
-            'value' => $component->get_search(),
-            'aria-label' => get_string('searchcoursecategories'),
-            'placeholder' => get_string('searchcoursecategories'),
-            'class' => 'form-control'
-        );
-        $output .= html_writer::empty_tag('input', $attrs);
-        $attrs = array(
-            'type' => 'submit',
-            'name' => 'searchcourses',
-            'value' => get_string('search'),
-            'class' => 'btn btn-secondary'
-        );
-        $output .= html_writer::empty_tag('input', $attrs);
-        $output .= html_writer::end_tag('div');
+        $data = [
+            'inform' => true,
+            'extraclasses' => 'rcs-search mb-3 w-25',
+            'inputname' => restore_category_search::$VAR_SEARCH,
+            'searchstring' => get_string('searchcoursecategories'),
+            'query' => $component->get_search(),
+        ];
+        $output .= $this->output->render_from_template('core/search_input', $data);
 
         $output .= html_writer::end_tag('div');
         return $output;
@@ -1042,7 +1022,7 @@ class core_backup_renderer extends plugin_renderer_base {
         $tabledata = array();
 
         // Get all in progress course copies for this user.
-        $copies = \core_backup\copy\copy::get_copies($userid, $courseid);
+        $copies = \copy_helper::get_copies($userid, $courseid);
 
         foreach ($copies as $copy) {
             $sourceurl = new \moodle_url('/course/view.php', array('id' => $copy->sourceid));
@@ -1050,7 +1030,7 @@ class core_backup_renderer extends plugin_renderer_base {
             $tablerow = array(
                 html_writer::link($sourceurl, $copy->source),
                 $copy->destination,
-                userdate($copy->time),
+                userdate($copy->timecreated),
                 get_string($copy->operation),
                 $this->get_status_display($copy->status, $copy->backupid, $copy->restoreid, $copy->operation)
             );

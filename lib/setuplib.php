@@ -419,10 +419,9 @@ function default_exception_handler($ex) {
  * @param string $errstr
  * @param string $errfile
  * @param int $errline
- * @param array $errcontext
  * @return bool false means use default error handler
  */
-function default_error_handler($errno, $errstr, $errfile, $errline, $errcontext) {
+function default_error_handler($errno, $errstr, $errfile, $errline) {
     if ($errno == 4096) {
         //fatal catchable error
         throw new coding_exception('PHP catchable fatal error', $errstr);
@@ -479,23 +478,6 @@ function is_early_init($backtrace) {
         }
     }
     return false;
-}
-
-/**
- * Abort execution by throwing of a general exception,
- * default exception handler displays the error message in most cases.
- *
- * @param string $errorcode The name of the language string containing the error message.
- *      Normally this should be in the error.php lang file.
- * @param string $module The language file to get the error message from.
- * @param string $link The url where the user will be prompted to continue.
- *      If no url is provided the user will be directed to the site index page.
- * @param object $a Extra words and phrases that might be required in the error string
- * @param string $debuginfo optional debugging information
- * @return void, always throws exception!
- */
-function print_error($errorcode, $module = 'error', $link = '', $a = null, $debuginfo = null) {
-    throw new moodle_exception($errorcode, $module, $link, $a, $debuginfo);
 }
 
 /**
@@ -567,7 +549,7 @@ function get_exception_info($ex) {
     if (function_exists('clean_text')) {
         $message = clean_text($message);
     } else {
-        $message = htmlspecialchars($message);
+        $message = htmlspecialchars($message, ENT_COMPAT);
     }
 
     if (!empty($CFG->errordocroot)) {
@@ -589,12 +571,7 @@ function get_exception_info($ex) {
     $moreinfourl = $errordoclink . 'error/' . $modulelink . '/' . $errorcode;
 
     if (empty($link)) {
-        if (!empty($SESSION->fromurl)) {
-            $link = $SESSION->fromurl;
-            unset($SESSION->fromurl);
-        } else {
-            $link = $CFG->wwwroot .'/';
-        }
+        $link = get_local_referer(false) ?: ($CFG->wwwroot . '/');
     }
 
     // When printing an error the continue button should never link offsite.
@@ -619,24 +596,12 @@ function get_exception_info($ex) {
 }
 
 /**
- * Generate a V4 UUID.
- *
- * Unique is hard. Very hard. Attempt to use the PECL UUID function if available, and if not then revert to
- * constructing the uuid using mt_rand.
- *
- * It is important that this token is not solely based on time as this could lead
- * to duplicates in a clustered environment (especially on VMs due to poor time precision).
- *
- * @see https://tools.ietf.org/html/rfc4122
- *
  * @deprecated since Moodle 3.8 MDL-61038 - please do not use this function any more.
  * @see \core\uuid::generate()
- *
- * @return string The uuid.
  */
 function generate_uuid() {
-    debugging('generate_uuid() is deprecated. Please use \core\uuid::generate() instead.', DEBUG_DEVELOPER);
-    return \core\uuid::generate();
+    throw new coding_exception('generate_uuid() cannot be used anymore. Please use ' .
+        '\core\uuid::generate() instead.');
 }
 
 /**
@@ -664,6 +629,9 @@ function generate_uuid() {
  */
 function get_docs_url($path = null) {
     global $CFG;
+    if ($path === null) {
+        $path = '';
+    }
 
     // Absolute URLs are used unmodified.
     if (substr($path, 0, 7) === 'http://' || substr($path, 0, 8) === 'https://') {
@@ -732,18 +700,23 @@ function format_backtrace($callers, $plaintext = false) {
         if (!isset($caller['file'])) {
             $caller['file'] = 'unknownfile'; // probably call_user_func()
         }
-        $from .= $plaintext ? '* ' : '<li>';
-        $from .= 'line ' . $caller['line'] . ' of ' . str_replace($dirroot, '', $caller['file']);
+        $line = $plaintext ? '* ' : '<li>';
+        $line .= 'line ' . $caller['line'] . ' of ' . str_replace($dirroot, '', $caller['file']);
         if (isset($caller['function'])) {
-            $from .= ': call to ';
+            $line .= ': call to ';
             if (isset($caller['class'])) {
-                $from .= $caller['class'] . $caller['type'];
+                $line .= $caller['class'] . $caller['type'];
             }
-            $from .= $caller['function'] . '()';
+            $line .= $caller['function'] . '()';
         } else if (isset($caller['exception'])) {
-            $from .= ': '.$caller['exception'].' thrown';
+            $line .= ': '.$caller['exception'].' thrown';
         }
-        $from .= $plaintext ? "\n" : '</li>';
+
+        // Remove any non printable chars.
+        $line = preg_replace('/[[:^print:]]/', '', $line);
+
+        $line .= $plaintext ? "\n" : '</li>';
+        $from .= $line;
     }
     $from .= $plaintext ? '' : '</ul>';
 
@@ -778,7 +751,7 @@ function setup_validate_php_configuration() {
    // this must be very fast - no slow checks here!!!
 
    if (ini_get_bool('session.auto_start')) {
-       print_error('sessionautostartwarning', 'admin');
+        throw new \moodle_exception('sessionautostartwarning', 'admin');
    }
 }
 
@@ -809,6 +782,53 @@ function initialise_cfg() {
 }
 
 /**
+ * Cache any immutable config locally to avoid constant DB lookups.
+ *
+ * Only to be used only from lib/setup.php
+ */
+function initialise_local_config_cache() {
+    global $CFG;
+
+    $bootstrapcachefile = $CFG->localcachedir . '/bootstrap.php';
+
+    if (!empty($CFG->siteidentifier) && !file_exists($bootstrapcachefile)) {
+        $contents = "<?php
+// ********** This file is generated DO NOT EDIT **********
+\$CFG->siteidentifier = '" . addslashes($CFG->siteidentifier) . "';
+\$CFG->bootstraphash = '" . hash_local_config_cache() . "';
+// Only if the file is not stale and has not been defined.
+if (\$CFG->bootstraphash === hash_local_config_cache() && !defined('SYSCONTEXTID')) {
+    define('SYSCONTEXTID', ".SYSCONTEXTID.");
+}
+";
+
+        $temp = $bootstrapcachefile . '.tmp' . uniqid();
+        file_put_contents($temp, $contents);
+        @chmod($temp, $CFG->filepermissions);
+        rename($temp, $bootstrapcachefile);
+    }
+}
+
+/**
+ * Calculate a proper hash to be able to invalidate stale cached configs.
+ *
+ * Only to be used to verify bootstrap.php status.
+ *
+ * @return string md5 hash of all the sensible bits deciding if cached config is stale or no.
+ */
+function hash_local_config_cache() {
+    global $CFG;
+
+    // This is pretty much {@see moodle_database::get_settings_hash()} that is used
+    // as identifier for the database meta information MUC cache. Should be enough to
+    // react against any of the normal changes (new prefix, change of DB type) while
+    // *incorrectly* keeping the old dataroot directory unmodified with stale data.
+    // This may need more stuff to be considered if it's discovered that there are
+    // more variables making the file stale.
+    return md5($CFG->dbtype . $CFG->dbhost . $CFG->dbuser . $CFG->dbname . $CFG->prefix);
+}
+
+/**
  * Initialises $FULLME and friends. Private function. Should only be called from
  * setup.php.
  */
@@ -817,7 +837,7 @@ function initialise_fullme() {
 
     // Detect common config error.
     if (substr($CFG->wwwroot, -1) == '/') {
-        print_error('wwwrootslash', 'error');
+        throw new \moodle_exception('wwwrootslash', 'error');
     }
 
     if (CLI_SCRIPT) {
@@ -884,7 +904,7 @@ function initialise_fullme() {
     if (empty($CFG->sslproxy)) {
         if ($rurl['scheme'] === 'http' and $wwwroot['scheme'] === 'https') {
             if (defined('REQUIRE_CORRECT_ACCESS') && REQUIRE_CORRECT_ACCESS) {
-                print_error('sslonlyaccess', 'error');
+                throw new \moodle_exception('sslonlyaccess', 'error');
             } else {
                 redirect($CFG->wwwroot, get_string('wwwrootmismatch', 'error', $CFG->wwwroot), 3);
             }
@@ -898,10 +918,11 @@ function initialise_fullme() {
         $_SERVER['SERVER_PORT'] = 443; // Assume default ssl port for the proxy.
     }
 
-    // hopefully this will stop all those "clever" admins trying to set up moodle
-    // with two different addresses in intranet and Internet
-    if (!empty($CFG->reverseproxy) && $rurl['host'] === $wwwroot['host']) {
-        print_error('reverseproxyabused', 'error');
+    // Hopefully this will stop all those "clever" admins trying to set up moodle
+    // with two different addresses in intranet and Internet.
+    // Port forwarding is still allowed!
+    if (!empty($CFG->reverseproxy) && $rurl['host'] === $wwwroot['host'] && (empty($wwwroot['port']) || $rurl['port'] === $wwwroot['port'])) {
+        throw new \moodle_exception('reverseproxyabused', 'error');
     }
 
     $hostandport = $rurl['scheme'] . '://' . $wwwroot['host'];
@@ -951,7 +972,7 @@ function setup_get_remote_url() {
     } else {
         $rurl['host'] = null;
     }
-    $rurl['port'] = $_SERVER['SERVER_PORT'];
+    $rurl['port'] = (int)$_SERVER['SERVER_PORT'];
     $rurl['path'] = $_SERVER['SCRIPT_NAME']; // Script path without slash arguments
     $rurl['scheme'] = (empty($_SERVER['HTTPS']) or $_SERVER['HTTPS'] === 'off' or $_SERVER['HTTPS'] === 'Off' or $_SERVER['HTTPS'] === 'OFF') ? 'http' : 'https';
 
@@ -1325,17 +1346,19 @@ function get_real_size($size = 0) {
     }
 
     static $binaryprefixes = array(
-        'K' => 1024,
-        'k' => 1024,
-        'M' => 1048576,
-        'm' => 1048576,
-        'G' => 1073741824,
-        'g' => 1073741824,
-        'T' => 1099511627776,
-        't' => 1099511627776,
+        'K' => 1024 ** 1,
+        'k' => 1024 ** 1,
+        'M' => 1024 ** 2,
+        'm' => 1024 ** 2,
+        'G' => 1024 ** 3,
+        'g' => 1024 ** 3,
+        'T' => 1024 ** 4,
+        't' => 1024 ** 4,
+        'P' => 1024 ** 5,
+        'p' => 1024 ** 5,
     );
 
-    if (preg_match('/^([0-9]+)([KMGT])/i', $size, $matches)) {
+    if (preg_match('/^([0-9]+)([KMGTP])/i', $size, $matches)) {
         return $matches[1] * $binaryprefixes[$matches[2]];
     }
 
@@ -1391,7 +1414,7 @@ function disable_output_buffering() {
  */
 function is_major_upgrade_required() {
     global $CFG;
-    $lastmajordbchanges = 2019050100.01;
+    $lastmajordbchanges = 2022101400.03; // This should be the version where the breaking changes happen.
 
     $required = empty($CFG->version);
     $required = $required || (float)$CFG->version < $lastmajordbchanges;
@@ -1416,7 +1439,7 @@ function redirect_if_major_upgrade_required() {
         $url = $CFG->wwwroot . '/' . $CFG->admin . '/index.php';
         @header($_SERVER['SERVER_PROTOCOL'] . ' 303 See Other');
         @header('Location: ' . $url);
-        echo bootstrap_renderer::plain_redirect_message(htmlspecialchars($url));
+        echo bootstrap_renderer::plain_redirect_message(htmlspecialchars($url, ENT_COMPAT));
         exit;
     }
 }
@@ -1496,8 +1519,9 @@ function make_unique_writable_directory($basedir, $exceptiononerror = true) {
     }
 
     do {
-        // Generate a new (hopefully unique) directory name.
-        $uniquedir = $basedir . DIRECTORY_SEPARATOR . \core\uuid::generate();
+        // Let's use uniqid() because it's "unique enough" (microtime based). The loop does handle repetitions.
+        // Windows and old PHP don't like very long paths, so try to keep this shorter. See MDL-69975.
+        $uniquedir = $basedir . DIRECTORY_SEPARATOR . uniqid();
     } while (
             // Ensure that basedir is still writable - if we do not check, we could get stuck in a loop here.
             is_writable($basedir) &&
@@ -1633,14 +1657,16 @@ function get_request_storage_directory($exceptiononerror = true, bool $forcecrea
     $createnewdirectory = $forcecreate || !$writabledirectoryexists;
 
     if ($createnewdirectory) {
-        if ($CFG->localcachedir !== "$CFG->dataroot/localcache") {
-            check_dir_exists($CFG->localcachedir, true, true);
-            protect_directory($CFG->localcachedir);
-        } else {
-            protect_directory($CFG->dataroot);
-        }
 
-        if ($dir = make_unique_writable_directory($CFG->localcachedir, $exceptiononerror)) {
+        // Let's add the first chars of siteidentifier only. This is to help separate
+        // paths on systems which host multiple moodles. We don't use the full id
+        // as Windows and old PHP don't like very long paths. See MDL-69975.
+        $basedir = $CFG->localrequestdir . '/' . substr($CFG->siteidentifier, 0, 4);
+
+        make_writable_directory($basedir);
+        protect_directory($basedir);
+
+        if ($dir = make_unique_writable_directory($basedir, $exceptiononerror)) {
             // Register a shutdown handler to remove the directory.
             \core_shutdown_manager::register_function('remove_dir', [$dir]);
         }
@@ -1666,7 +1692,7 @@ function get_request_storage_directory($exceptiononerror = true, bool $forcecrea
  * @param   bool    $forcecreate Force creation of a new parent directory
  * @return  string  The full path to directory if successful, false if not; may throw exception
  */
-function make_request_directory($exceptiononerror = true, bool $forcecreate = false) {
+function make_request_directory(bool $exceptiononerror = true, bool $forcecreate = false) {
     $basedir = get_request_storage_directory($exceptiononerror, $forcecreate);
     return make_unique_writable_directory($basedir, $exceptiononerror);
 }
@@ -1853,7 +1879,7 @@ function set_access_log_user() {
                 apache_note('MOODLEUSER', $logname);
             }
 
-            if ($logmethod == 'header') {
+            if ($logmethod == 'header' && !headers_sent()) {
                 header("X-MOODLEUSER: $logname");
             }
         }
@@ -1968,11 +1994,7 @@ class bootstrap_renderer {
     public static function early_error_content($message, $moreinfourl, $link, $backtrace, $debuginfo = null) {
         global $CFG;
 
-        $content = '<div style="margin-top: 6em; margin-left:auto; margin-right:auto; color:#990000; text-align:center; font-size:large; border-width:1px;
-border-color:black; background-color:#ffffee; border-style:solid; border-radius: 20px; border-collapse: collapse;
-width: 80%; -moz-border-radius: 20px; padding: 15px">
-' . $message . '
-</div>';
+        $content = "<div class='alert-danger'>$message</div>";
         // Check whether debug is set.
         $debug = (!empty($CFG->debug) && $CFG->debug >= DEBUG_DEVELOPER);
         // Also check we have it set in the config file. This occurs if the method to read the config table from the
@@ -2047,7 +2069,7 @@ width: 80%; -moz-border-radius: 20px; padding: 15px">
         // In the name of protocol correctness, monitoring and performance
         // profiling, set the appropriate error headers for machine consumption.
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-        @header($protocol . ' 503 Service Unavailable');
+        @header($protocol . ' 500 Internal Server Error');
 
         // better disable any caching
         @header('Content-Type: text/html; charset=utf-8');
@@ -2117,6 +2139,8 @@ width: 80%; -moz-border-radius: 20px; padding: 15px">
      * @return string html page
      */
     public static function plain_page($title, $content, $meta = '') {
+        global $CFG;
+
         if (function_exists('get_string') && function_exists('get_html_lang')) {
             $htmllang = get_html_lang();
         } else {
@@ -2131,12 +2155,29 @@ width: 80%; -moz-border-radius: 20px; padding: 15px">
             }
         }
 
-        return '<!DOCTYPE html>
-<html ' . $htmllang . '>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-'.$meta.'
-<title>' . $title . '</title>
-</head><body>' . $content . $footer . '</body></html>';
+        ob_start();
+        include($CFG->dirroot . '/error/plainpage.php');
+        $html = ob_get_contents();
+        ob_end_clean();
+
+        return $html;
+    }
+}
+
+/**
+ * Add http stream instrumentation
+ *
+ * This detects which any reads or writes to a php stream which uses
+ * the 'http' handler. Ideally 100% of traffic uses the Moodle curl
+ * libraries which do not use php streams.
+ *
+ * @param array $code stream callback code
+ */
+function proxy_log_callback($code) {
+    if ($code == STREAM_NOTIFY_CONNECT) {
+        $trace = debug_backtrace();
+        $function = $trace[count($trace) - 1];
+        $error = "Unsafe internet IO detected: {$function['function']} with arguments " . join(', ', $function['args']) . "\n";
+        error_log($error . format_backtrace($trace, true)); // phpcs:ignore
     }
 }

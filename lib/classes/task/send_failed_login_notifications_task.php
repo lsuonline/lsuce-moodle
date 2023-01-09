@@ -115,7 +115,8 @@ class send_failed_login_notifications_task extends scheduled_task {
 
         // Now, select all the login error logged records belonging to the ips and infos
         // since lastnotifyfailure, that we have stored in the cache_flags table.
-        $namefields = get_all_user_name_fields(true, 'u');
+        $userfieldsapi = \core_user\fields::for_name();
+        $namefields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
         $sql = "SELECT * FROM (
                         SELECT l.*, u.username, $namefields
                           FROM {" . $logtable . "} l
@@ -145,7 +146,7 @@ class send_failed_login_notifications_task extends scheduled_task {
             $a->time = userdate($log->timecreated);
             if (empty($log->username)) {
                 // Entries with no valid username. We get attempted username from the event's other field.
-                $other = \tool_log\helper\reader::decode_other($log->other);
+                $other = \tool_log\local\privacy\helper::decode_other($log->other);
                 $a->info = empty($other['username']) ? '' : $other['username'];
                 $a->name = get_string('unknownuser');
             } else {

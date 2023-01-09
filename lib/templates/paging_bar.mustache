@@ -54,15 +54,18 @@
         <ul class="mt-1 pagination " data-page-size="{{pagesize}}">
             {{#previous}}
                 <li class="page-item" data-page-number="{{page}}">
-                    <a href="{{url}}" class="page-link" aria-label="Previous">
+                    <a href="{{url}}" class="page-link">
                         <span aria-hidden="true">&laquo;</span>
-                        <span class="sr-only">{{#str}}previous{{/str}}</span>
+                        <span class="sr-only">{{#str}}previouspage, moodle{{/str}}</span>
                     </a>
                 </li>
             {{/previous}}
             {{#first}}
                 <li class="page-item" data-page-number="{{page}}">
-                    <a href="{{url}}" class="page-link">{{page}}</a>
+                    <a href="{{url}}" class="page-link">
+                        <span aria-hidden="true">{{page}}</span>
+                        <span class="sr-only">{{#str}}pagea, moodle, {{page}}{{/str}}</span>
+                    </a>
                 </li>
                 <li class="page-item disabled" data-page-number="{{page}}">
                     <span class="page-link">&hellip;</span>
@@ -70,11 +73,9 @@
             {{/first}}
             {{#pages}}
                 <li class="page-item {{#active}}active{{/active}}" data-page-number="{{page}}">
-                    <a href="{{#url}}{{.}}{{/url}}{{^url}}#{{/url}}" class="page-link">
-                        {{page}}
-                        {{#active}}
-                            <span class="sr-only">{{#str}}currentinparentheses, theme_boost{{/str}}</span>
-                        {{/active}}
+                    <a href="{{#url}}{{.}}{{/url}}{{^url}}#{{/url}}" class="page-link" {{#active}}aria-current="page"{{/active}}>
+                        <span aria-hidden="true">{{page}}</span>
+                        <span class="sr-only">{{#str}}pagea, moodle, {{page}}{{/str}}</span>
                     </a>
                 </li>
             {{/pages}}
@@ -83,14 +84,17 @@
                     <span class="page-link">&hellip;</span>
                 </li>
                 <li class="page-item" data-page-number="{{page}}">
-                    <a href="{{url}}" class="page-link">{{page}}</a>
+                    <a href="{{url}}" class="page-link">
+                        <span aria-hidden="true">{{page}}</span>
+                        <span class="sr-only">{{#str}}pagea, moodle, {{page}}{{/str}}</span>
+                    </a>
                 </li>
             {{/last}}
             {{#next}}
                 <li class="page-item" data-page-number="{{page}}">
-                    <a href="{{url}}" class="page-link" aria-label="Next">
+                    <a href="{{url}}" class="page-link">
                         <span aria-hidden="true">&raquo;</span>
-                        <span class="sr-only">{{#str}}next{{/str}}</span>
+                        <span class="sr-only">{{#str}}nextpage, moodle{{/str}}</span>
                     </a>
                 </li>
             {{/next}}

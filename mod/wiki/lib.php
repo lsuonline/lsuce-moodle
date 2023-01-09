@@ -258,7 +258,7 @@ function wiki_reset_course_form_definition(&$mform) {
  * @uses FEATURE_GRADE_HAS_GRADE
  * @uses FEATURE_GRADE_OUTCOMES
  * @param string $feature
- * @return mixed True if yes (some features may use other values)
+ * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function wiki_supports($feature) {
     switch ($feature) {
@@ -282,6 +282,8 @@ function wiki_supports($feature) {
         return true;
     case FEATURE_COMMENT:
         return true;
+    case FEATURE_MOD_PURPOSE:
+        return MOD_PURPOSE_COLLABORATION;
 
     default:
         return null;
@@ -441,102 +443,106 @@ function wiki_pluginfile($course, $cm, $context, $filearea, $args, $forcedownloa
     }
 }
 
+/**
+ * Search for wiki
+ *
+ * @param stdClass $cm course module object
+ * @param string $search searchword.
+ * @param stdClass $subwiki Optional Subwiki.
+ * @return Search wiki input form
+ */
 function wiki_search_form($cm, $search = '', $subwiki = null) {
-    global $CFG, $OUTPUT;
+    global $OUTPUT;
 
-    $output = '<div class="wikisearch">';
-    $output .= '<form method="post" action="' . $CFG->wwwroot . '/mod/wiki/search.php" style="display:inline">';
-    $output .= '<fieldset class="invisiblefieldset">';
-    $output .= '<legend class="accesshide">'. get_string('searchwikis', 'wiki') .'</legend>';
-    $output .= '<label class="accesshide" for="searchwiki">' . get_string("searchterms", "wiki") . '</label>';
-    $output .= '<input id="searchwiki" name="searchstring" type="text" size="18" value="' . s($search, true) . '" alt="search" />';
-    $output .= '<input name="courseid" type="hidden" value="' . $cm->course . '" />';
-    $output .= '<input name="cmid" type="hidden" value="' . $cm->id . '" />';
+    $hiddenfields = [
+        (object) ['type' => 'hidden', 'name' => 'courseid', 'value' => $cm->course],
+        (object) ['type' => 'hidden', 'name' => 'cmid', 'value' => $cm->id],
+        (object) ['type' => 'hidden', 'name' => 'searchwikicontent', 'value' => 1],
+    ];
     if (!empty($subwiki->id)) {
-        $output .= '<input name="subwikiid" type="hidden" value="' . $subwiki->id . '" />';
+        $hiddenfields[] = (object) ['type' => 'hidden', 'name' => 'subwikiid', 'value' => $subwiki->id];
     }
-    $output .= '<input name="searchwikicontent" type="hidden" value="1" />';
-    $output .= '<input value="' . get_string('searchwikis', 'wiki') . '" class="btn btn-secondary" type="submit" />';
-    $output .= '</fieldset>';
-    $output .= '</form>';
-    $output .= '</div>';
-
-    return $output;
+    $data = [
+        'action' => new moodle_url('/mod/wiki/search.php'),
+        'hiddenfields' => $hiddenfields,
+        'inputname' => 'searchstring',
+        'query' => s($search, true),
+        'searchstring' => get_string('searchwikis', 'wiki'),
+        'extraclasses' => 'mt-2'
+    ];
+    return $OUTPUT->render_from_template('core/search_input', $data);
 }
-function wiki_extend_navigation(navigation_node $navref, $course, $module, $cm) {
-    global $CFG, $PAGE, $USER;
+
+/**
+ * Extends the global navigation tree by adding wiki nodes if there is a relevant content
+ *
+ * This can be called by an AJAX request so do not rely on $PAGE as it might not be set up properly.
+ *
+ * @param navigation_node $navref An object representing the navigation tree node of the workshop module instance
+ * @param stdClass $course the course object
+ * @param stdClass $instance the activity record object
+ * @param cm_info $cm the course module object
+ */
+function wiki_extend_navigation(navigation_node $navref, stdClass $course, stdClass $instance, cm_info $cm) {
+    global $CFG, $USER;
 
     require_once($CFG->dirroot . '/mod/wiki/locallib.php');
 
     $context = context_module::instance($cm->id);
-    $url = $PAGE->url;
-    $userid = 0;
-    if ($module->wikimode == 'individual') {
-        $userid = $USER->id;
-    }
+    $userid = ($instance->wikimode == 'individual') ? $USER->id : 0;
+    $gid = groups_get_activity_group($cm) ?: 0;
 
-    if (!$wiki = wiki_get_wiki($cm->instance)) {
-        return false;
-    }
-
-    if (!$gid = groups_get_activity_group($cm)) {
-        $gid = 0;
-    }
     if (!$subwiki = wiki_get_subwiki_by_group($cm->instance, $gid, $userid)) {
-        return null;
-    } else {
-        $swid = $subwiki->id;
+        return;
     }
 
-    $pageid = $url->param('pageid');
-    $cmid = $url->param('id');
-    if (empty($pageid) && !empty($cmid)) {
+    $pageid = optional_param('pageid', null, PARAM_INT);
+    if (empty($pageid)) {
         // wiki main page
-        $page = wiki_get_page_by_title($swid, $wiki->firstpagetitle);
+        $page = wiki_get_page_by_title($subwiki->id, $instance->firstpagetitle);
         $pageid = $page->id;
     }
 
     if (wiki_can_create_pages($context)) {
-        $link = new moodle_url('/mod/wiki/create.php', array('action' => 'new', 'swid' => $swid));
-        $node = $navref->add(get_string('newpage', 'wiki'), $link, navigation_node::TYPE_SETTING);
+        $link = new moodle_url('/mod/wiki/create.php', ['action' => 'new', 'swid' => $subwiki->id]);
+        $navref->add(get_string('newpage', 'wiki'), $link, navigation_node::TYPE_SETTING);
     }
 
-    if (is_numeric($pageid)) {
+    if (empty($pageid)) {
+        return;
+    }
 
-        if (has_capability('mod/wiki:viewpage', $context)) {
-            $link = new moodle_url('/mod/wiki/view.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('view', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+    $canviewpage = has_capability('mod/wiki:viewpage', $context);
 
-        if (wiki_user_can_edit($subwiki)) {
-            $link = new moodle_url('/mod/wiki/edit.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('edit', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+    if ($canviewpage) {
+        $link = new moodle_url('/mod/wiki/view.php', ['pageid' => $pageid]);
+        $navref->add(get_string('view', 'wiki'), $link, navigation_node::TYPE_SETTING);
+    }
 
-        if (has_capability('mod/wiki:viewcomment', $context)) {
-            $link = new moodle_url('/mod/wiki/comments.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('comments', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+    if (wiki_user_can_edit($subwiki)) {
+        $link = new moodle_url('/mod/wiki/edit.php', ['pageid' => $pageid]);
+        $navref->add(get_string('edit', 'wiki'), $link, navigation_node::TYPE_SETTING);
+    }
 
-        if (has_capability('mod/wiki:viewpage', $context)) {
-            $link = new moodle_url('/mod/wiki/history.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('history', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+    if (has_capability('mod/wiki:viewcomment', $context)) {
+        $link = new moodle_url('/mod/wiki/comments.php', ['pageid' => $pageid]);
+        $navref->add(get_string('comments', 'wiki'), $link, navigation_node::TYPE_SETTING);
+    }
 
-        if (has_capability('mod/wiki:viewpage', $context)) {
-            $link = new moodle_url('/mod/wiki/map.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('map', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+    if ($canviewpage) {
+        $link = new moodle_url('/mod/wiki/history.php', ['pageid' => $pageid]);
+        $navref->add(get_string('history', 'wiki'), $link, navigation_node::TYPE_SETTING);
 
-        if (has_capability('mod/wiki:viewpage', $context)) {
-            $link = new moodle_url('/mod/wiki/files.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('files', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+        $link = new moodle_url('/mod/wiki/map.php', ['pageid' => $pageid]);
+        $navref->add(get_string('map', 'wiki'), $link, navigation_node::TYPE_SETTING);
 
-        if (has_capability('mod/wiki:managewiki', $context)) {
-            $link = new moodle_url('/mod/wiki/admin.php', array('pageid' => $pageid));
-            $node = $navref->add(get_string('admin', 'wiki'), $link, navigation_node::TYPE_SETTING);
-        }
+        $link = new moodle_url('/mod/wiki/files.php', ['pageid' => $pageid]);
+        $navref->add(get_string('files', 'wiki'), $link, navigation_node::TYPE_SETTING);
+    }
+
+    if (has_capability('mod/wiki:managewiki', $context)) {
+        $link = new moodle_url('/mod/wiki/admin.php', ['pageid' => $pageid]);
+        $navref->add(get_string('admin', 'wiki'), $link, navigation_node::TYPE_SETTING);
     }
 }
 /**

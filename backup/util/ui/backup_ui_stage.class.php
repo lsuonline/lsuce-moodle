@@ -116,7 +116,9 @@ class backup_ui_stage_initial extends backup_ui_stage {
                         if (isset($data->$name) &&  $data->$name != $setting->get_value()) {
                             $setting->set_value($data->$name);
                             $changes++;
-                        } else if (!isset($data->$name) && $setting->get_ui_type() == backup_setting::UI_HTML_CHECKBOX && $setting->get_value()) {
+                        } else if (!isset($data->$name) && $setting->get_value() &&
+                                $setting->get_ui_type() == backup_setting::UI_HTML_CHECKBOX &&
+                                $setting->get_status() !== backup_setting::LOCKED_BY_HIERARCHY) {
                             $setting->set_value(0);
                             $changes++;
                         }
@@ -641,7 +643,7 @@ class backup_ui_stage_complete extends backup_ui_stage_final {
         }
         $output .= $renderer->get_samesite_notification();
         $output .= $renderer->notification(get_string('executionsuccess', 'backup'), 'notifysuccess');
-        $output .= $renderer->continue_button($restorerul);
+        $output .= $renderer->continue_button($restorerul, 'get');
         $output .= $renderer->box_end();
 
         return $output;

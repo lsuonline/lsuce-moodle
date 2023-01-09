@@ -57,12 +57,12 @@ Feature: We can understand the gradebook user report
     And I click on "Move" "link" in the "EN Test assignment four" "table_row"
     And I click on "Move to here" "link" in the "//tbody//tr[position()=last()-3]" "xpath_element"
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Mean of grades aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Mean of grades |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -74,7 +74,7 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 5.83 % |
       | EN Test assignment six | 33.33 % | 30.00 | 2.50 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Weighted mean of grades aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Weighted mean of grades |
@@ -87,7 +87,7 @@ Feature: We can understand the gradebook user report
     And I set the following settings for grade item "EN Sub category":
       | Item weight | 1.0 |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -99,7 +99,7 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 4.67 % |
       | EN Test assignment six | 33.33 % | 30.00 | 2.00 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Simple weighted mean of grades aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Simple weighted mean of grades |
@@ -108,7 +108,7 @@ Feature: We can understand the gradebook user report
     And I set the following settings for grade item "EN Test assignment three":
       | Extra credit | 1 |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -120,14 +120,14 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 7.78 % |
       | EN Test assignment six | 33.33 % | 30.00 | 3.33 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Mean of grades (with extra credits) aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Mean of grades (with extra credits) |
     And I set the following settings for grade item "EN Test assignment three":
       | Extra credit weight | 1.0 |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -139,12 +139,12 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 7.78 % |
       | EN Test assignment six | 33.33 % | 30.00 | 3.33 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Median of grades aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Median of grades |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -156,12 +156,12 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 11.67 % |
       | EN Test assignment six | 33.33 % | 30.00 | 5.00 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Lowest grade aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Lowest grade |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -173,12 +173,12 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 0.00 % |
       | EN Test assignment six | 33.33 % | 30.00 | 0.00 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Highest grade aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Highest grade |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -190,12 +190,12 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 0.00 % |
       | EN Test assignment six | 33.33 % | 30.00 | 0.00 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: Mode of grades aggregation
     And I set the following settings for grade item "Course 1":
       | Aggregation | Mode of grades |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -207,7 +207,7 @@ Feature: We can understand the gradebook user report
       | EN Test assignment five | 33.33 % | 70.00 | 0.00 % |
       | EN Test assignment six | 33.33 % | 30.00 | 0.00 % |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: View user report with mixed aggregation methods
     And I set the following settings for grade item "Course 1":
       | Aggregation | Natural |
@@ -216,7 +216,7 @@ Feature: We can understand the gradebook user report
     And I set the following settings for grade item "EN Test assignment three":
       | Extra credit | 1 |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:
@@ -230,12 +230,12 @@ Feature: We can understand the gradebook user report
       | EN Sub category totalWeighted mean of grades. | 33.33 % | 36.67 | - |
       | Course total | - | 156.67 | - |
 
-  @javascript
+  @javascript @skip_chrome_zerosize
   Scenario: View user report with natural aggregation
     And I set the following settings for grade item "EN Test assignment three":
       | Extra credit | 1 |
     And I navigate to "View > User report" in the course gradebook
-    And I set the field "Select all or one user" to "Student 1"
+    And I click on "Student 1" in the "user" search widget
 
     # Check the values in the weights column.
     Then the following should exist in the "user-grade" table:

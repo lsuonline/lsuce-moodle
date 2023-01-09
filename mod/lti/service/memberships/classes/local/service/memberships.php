@@ -103,6 +103,15 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
     }
 
     /**
+     * Get the scope(s) defined by this service.
+     *
+     * @return array
+     */
+    public function get_scopes() {
+        return [self::SCOPE_MEMBERSHIPS_READ];
+    }
+
+    /**
      * Get the JSON for members.
      *
      * @param \mod_lti\local\ltiservice\resource_base $resource       Resource handling the request
@@ -421,7 +430,10 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
                                             'source.value' => format_string($user->lastname)],
                 'Person.email.primary' => ['type' => 'email',
                                             'member.field' => 'email',
-                                            'source.value' => format_string($user->email)]
+                                            'source.value' => format_string($user->email)],
+                'User.username'        => ['type' => 'name',
+                                           'member.field' => 'ext_user_username',
+                                           'source.value' => format_string($user->username)],
             ];
 
             if (!is_null($lti)) {
@@ -535,6 +547,7 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
         if (isset($tool->{$this->get_component_id()})) {
             if ($tool->{$this->get_component_id()} == parent::SERVICE_ENABLED && $this->is_used_in_context($typeid, $courseid)) {
                 $launchparameters['context_memberships_url'] = '$ToolProxyBinding.memberships.url';
+                $launchparameters['context_memberships_v2_url'] = '$ToolProxyBinding.memberships.url';
                 $launchparameters['context_memberships_versions'] = '1.0,2.0';
             }
         }

@@ -239,28 +239,6 @@ define('GRADE_REPORT_MEAN_ALL', 0);
  */
 define('GRADE_REPORT_MEAN_GRADED', 1);
 
-// BEGIN LSU Column Average No Zero.
-/**
- * GRADE_REPORT_MEAN_GRADED_NO_ZEROS - Only include grade items where the student has a grade greater than 0 when calculating the mean.
- */
-define('GRADE_REPORT_MEAN_GRADED_NO_ZEROS', 2);
-// END LSU Column Average No Zero.
-
-/**
- * GRADE_NAVMETHOD_DROPDOWN - Display a drop down box to allow navigation within the gradebook
- */
-define('GRADE_NAVMETHOD_DROPDOWN', 0);
-
-/**
- * GRADE_NAVMETHOD_TABS - Display tabs to allow navigation within the gradebook
- */
-define('GRADE_NAVMETHOD_TABS', 1);
-
-/**
- * GRADE_NAVMETHOD_TABS - Display both a drop down and tabs to allow navigation within the gradebook
- */
-define('GRADE_NAVMETHOD_COMBO', 2);
-
 /**
  * GRADE_MIN_MAX_FROM_GRADE_ITEM - Get the grade min/max from the grade item.
  */

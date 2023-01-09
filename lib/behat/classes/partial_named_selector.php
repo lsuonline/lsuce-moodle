@@ -52,7 +52,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
             $this->registerReplacement($from, implode(' or ', $tos));
         }
 
-        $this->registerReplacement('%iconMatch%', "(contains(concat(' ', @class, ' '), ' icon ') or name() = 'img')");
+        $this->registerReplacement('%iconMatch%', "(contains(concat(' ', @class, ' '), ' icon ') or self::img)");
         $this->registerReplacement('%imgAltMatch%', './/*[%iconMatch% and (%altMatch% or %titleMatch%)]');
         parent::__construct();
     }
@@ -86,6 +86,8 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
      */
     protected static $allowedselectors = array(
         'activity' => 'activity',
+        'actionmenu' => 'actionmenu',
+        'badge' => 'badge',
         'block' => 'block',
         'button' => 'button',
         'checkbox' => 'checkbox',
@@ -107,6 +109,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'link' => 'link',
         'link_or_button' => 'link_or_button',
         'list_item' => 'list_item',
+        'menuitem' => 'menuitem',
         'optgroup' => 'optgroup',
         'option' => 'option',
         'question' => 'question',
@@ -137,6 +140,20 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'activity' => <<<XPATH
 .//li[contains(concat(' ', normalize-space(@class), ' '), ' activity ')][descendant::*[contains(normalize-space(.), %locator%)]]
 XPATH
+        , 'actionmenu' => <<<XPATH
+.//*[
+    contains(concat(' ', normalize-space(@class), ' '), ' action-menu ')
+        and
+    descendant::*[
+        contains(concat(' ', normalize-space(@class), ' '), ' dropdown-toggle ')
+            and
+        (contains(normalize-space(.), %locator%) or descendant::*[%titleMatch%])
+    ]
+]
+XPATH
+        , 'badge' => <<<XPATH
+.//span[(contains(@class, 'badge')) and text()[contains(., %locator%)]]
+XPATH
         , 'block' => <<<XPATH
 .//*[@data-block][contains(concat(' ', normalize-space(@class), ' '), concat(' ', %locator%, ' ')) or
      descendant::*[self::h2|self::h3|self::h4|self::h5][normalize-space(.) = %locator%]  or
@@ -144,6 +161,7 @@ XPATH
 XPATH
         , 'dialogue' => <<<XPATH
 .//div[contains(concat(' ', normalize-space(@class), ' '), ' moodle-dialogue ') and
+    not(contains(concat(' ', normalize-space(@class), ' '), ' moodle-dialogue-hidden ')) and
     normalize-space(descendant::div[
         contains(concat(' ', normalize-space(@class), ' '), ' moodle-dialogue-hd ')
         ]) = %locator%] |
@@ -196,6 +214,9 @@ XPATH
 XPATH
         , 'list_item' => <<<XPATH
 .//li[contains(normalize-space(.), %locator%) and not(.//li[contains(normalize-space(.), %locator%)])]
+XPATH
+        , 'menuitem' => <<<XPATH
+.//*[@role='menuitem'][%titleMatch% or %ariaLabelMatch% or text()[contains(., %locator%)]]
 XPATH
         , 'question' => <<<XPATH
 .//div[contains(concat(' ', normalize-space(@class), ' '), ' que ')]
@@ -270,6 +291,11 @@ XPATH
             'date_time' => <<<XPATH
 .//fieldset[(%idMatch% or ./legend[%exactTagTextMatch%]) and (@data-fieldtype='date' or @data-fieldtype='date_time')]
 XPATH
+        ,
+            'select_menu' => <<<XPATH
+//*[@role='combobox'][@aria-labelledby = //label[contains(normalize-space(string(.)), %locator%)]/@id]
+XPATH
+        ,
         ],
     ];
 

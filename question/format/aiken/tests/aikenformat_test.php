@@ -52,23 +52,26 @@ class aikenformat_test extends question_testcase {
         ob_end_clean();
 
         // Check that there were some expected errors.
-        $this->assertContains('Error importing question A question with too few answers', $output);
-        $this->assertContains('Question must have at least 2 answers on line 3', $output);
-        $this->assertContains('Question not started on line 5', $output);
-        $this->assertContains('Question not started on line 7', $output);
-        $this->assertContains('Error importing question A question started but not finished', $output);
-        $this->assertContains('Question not completed before next question start on line 18', $output);
+        $this->assertStringContainsString('Error importing question A question with too few answers', $output);
+        $this->assertStringContainsString('Question must have at least 2 answers on line 3', $output);
+        $this->assertStringContainsString('Question not started on line 5', $output);
+        $this->assertStringContainsString('Question not started on line 7', $output);
+        $this->assertStringContainsString('Error importing question A question started but not finished', $output);
+        $this->assertStringContainsString('Question not completed before next question start on line 18', $output);
 
-        // There are two expected questions.
-        $this->assertCount(2, $questions);
+        // There are three expected questions.
+        $this->assertCount(3, $questions);
 
         $q1 = null;
         $q2 = null;
+        $q3 = null;
         foreach ($questions as $question) {
             if ($question->name === 'A good question') {
                 $q1 = $question;
             } else if ($question->name === 'A second good question') {
                 $q2 = $question;
+            } else if ($question->name === 'A third good question with HTML chars such as > < &') {
+                $q3 = $question;
             }
         }
 
@@ -83,5 +86,11 @@ class aikenformat_test extends question_testcase {
         $this->assertEquals(1, $q2->fraction[1]);
         $this->assertEquals('Incorrect (No space)', $q2->answer[0]['text']);
         $this->assertEquals('Correct (No space)', $q2->answer[1]['text']);
+
+        // Check the third good question that has anwsers with special HTML chars such as <, >, and &.
+        $this->assertCount(2, $q3->answer);
+        $this->assertEquals(1, $q3->fraction[0]);
+        $this->assertEquals('Correct (&lt; &gt; &amp;)', $q3->answer[0]['text']);
+        $this->assertEquals('Incorrect (&lt; &gt; &amp;)', $q3->answer[1]['text']);
     }
 }

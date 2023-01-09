@@ -364,7 +364,7 @@ class core_date {
             'Dateline Standard Time' => 'Etc/GMT+12',
             'Hawaiian Standard Time' => 'Pacific/Honolulu',
             'Alaskan Standard Time' => 'America/Anchorage',
-            'Pacific Standard Time (Mexico)' => 'America/Santa_Isabel',
+            'Pacific Standard Time (Mexico)' => 'America/Tijuana',
             'Pacific Standard Time' => 'America/Los_Angeles',
             'US Mountain Standard Time' => 'America/Phoenix',
             'Mountain Standard Time (Mexico)' => 'America/Chihuahua',
@@ -376,8 +376,8 @@ class core_date {
             'SA Pacific Standard Time' => 'America/Bogota',
             'S.A. Pacific Standard Time' => 'America/Bogota',
             'Eastern Standard Time' => 'America/New_York',
-            'US Eastern Standard Time' => 'America/Indianapolis',
-            'U.S. Eastern Standard Time' => 'America/Indianapolis',
+            'US Eastern Standard Time' => 'America/Indiana/Indianapolis',
+            'U.S. Eastern Standard Time' => 'America/Indiana/Indianapolis',
             'Venezuela Standard Time' => 'America/Caracas',
             'Paraguay Standard Time' => 'America/Asuncion',
             'Atlantic Standard Time' => 'America/Halifax',
@@ -389,7 +389,7 @@ class core_date {
             'Newfoundland Standard Time' => 'America/St_Johns',
             'Newfoundland and Labrador Standard Time' => 'America/St_Johns',
             'E. South America Standard Time' => 'America/Sao_Paulo',
-            'Argentina Standard Time' => 'America/Buenos_Aires',
+            'Argentina Standard Time' => 'America/Argentina/Buenos_Aires',
             'SA Eastern Standard Time' => 'America/Cayenne',
             'S.A. Eastern Standard Time' => 'America/Cayenne',
             'Greenland Standard Time' => 'America/Godthab',
@@ -435,11 +435,11 @@ class core_date {
             'Pakistan Standard Time' => 'Asia/Karachi',
             'India Standard Time' => 'Asia/Kolkata', // PHP and Windows differ in spelling.
             'Sri Lanka Standard Time' => 'Asia/Colombo',
-            'Nepal Standard Time' => 'Asia/Katmandu',
+            'Nepal Standard Time' => 'Asia/Kathmandu',
             'Central Asia Standard Time' => 'Asia/Almaty',
             'Bangladesh Standard Time' => 'Asia/Dhaka',
             'N. Central Asia Standard Time' => 'Asia/Novosibirsk',
-            'Myanmar Standard Time' => 'Asia/Rangoon',
+            'Myanmar Standard Time' => 'Asia/Yangon',
             'SE Asia Standard Time' => 'Asia/Bangkok',
             'S.E. Asia Standard Time' => 'Asia/Bangkok',
             'North Asia Standard Time' => 'Asia/Krasnoyarsk',
@@ -480,34 +480,106 @@ class core_date {
             'Armenian Standard Time' => 'Asia/Yerevan',
             'Kamchatka Standard Time' => 'Asia/Kamchatka',
 
-            // A lot more bad legacy time zones.
+            // A lot more bad legacy (deprecated) time zones.
+            'Australia/ACT' => 'Australia/Sydney',
+            'Australia/LHI' => 'Australia/Lord_Howe',
+            'Australia/North' => 'Australia/Darwin',
+            'Australia/NSW' => 'Australia/Sydney',
+            'Australia/Queensland' => 'Australia/Brisbane',
+            'Australia/South' => 'Australia/Adelaide',
+            'Australia/Tasmania' => 'Australia/Hobart',
+            'Australia/Victoria' => 'Australia/Melbourne',
+            'Australia/West' => 'Australia/Perth',
+            'Brazil/Acre' => 'America/Rio_Branco',
+            'Brazil/DeNoronha' => 'America/Noronha',
+            'Brazil/East' => 'America/Sao_Paulo',
+            'Brazil/West' => 'America/Manaus',
+            'Canada/Atlantic' => 'America/Halifax',
+            'Canada/Central' => 'America/Winnipeg',
+            'Canada/Eastern' => 'America/Toronto',
+            'Canada/Mountain' => 'America/Edmonton',
+            'Canada/Newfoundland' => 'America/St_Johns',
+            'Canada/Pacific' => 'America/Vancouver',
+            'Canada/Saskatchewan' => 'America/Regina',
+            'Canada/Yukon' => 'America/Whitehorse',
+            'CDT' => 'America/Chicago',
             'CET' => 'Europe/Berlin',
             'Central European Time' => 'Europe/Berlin',
-            'CST' => 'America/Chicago',
             'Central Time' => 'America/Chicago',
-            'CST6CDT' => 'America/Chicago',
-            'CDT' => 'America/Chicago',
+            'Chile/Continental' => 'America/Santiago',
+            'Chile/EasterIsland' => 'Pacific/Easter',
             'China Time' => 'Asia/Shanghai',
+            'CST' => 'America/Chicago',
+            'CST6CDT' => 'America/Chicago',
+            'Cuba' => 'America/Havana',
             'EDT' => 'America/New_York',
-            'EST' => 'America/New_York',
+            'EET' => 'Europe/Kiev',
+            'Egypt' => 'Africa/Cairo',
+            'Eire' => 'Europe/Dublin',
+            'EST' => 'America/Cancun',
             'EST5EDT' => 'America/New_York',
             'Eastern Time' => 'America/New_York',
-            'IST' => 'Asia/Kolkata',
-            'India Time' => 'Asia/Kolkata',
-            'JST' => 'Asia/Tokyo',
-            'Japan Time' => 'Asia/Tokyo',
-            'Japan Standard Time' => 'Asia/Tokyo',
-            'MDT' => 'America/Denver',
-            'MST' => 'America/Denver',
-            'MST7MDT' => 'America/Denver',
-            'PDT' => 'America/Los_Angeles',
-            'PST' => 'America/Los_Angeles',
-            'Pacific Time' => 'America/Los_Angeles',
-            'PST8PDT' => 'America/Los_Angeles',
-            'HST' => 'Pacific/Honolulu',
-            'WET' => 'Europe/London',
-            'EET' => 'Europe/Kiev',
+            'Etc/Greenwich' => 'Etc/GMT',
+            'Etc/UCT' => 'Etc/UTC',
+            'Etc/Universal' => 'Etc/UTC',
+            'Etc/Zulu' => 'Etc/UTC',
             'FET' => 'Europe/Minsk',
+            'GB' => 'Europe/London',
+            'GB-Eire' => 'Europe/London',
+            'Greenwich' => 'Etc/GMT',
+            'Hongkong' => 'Asia/Hong_Kong',
+            'HST' => 'Pacific/Honolulu',
+            'Iceland' => 'Atlantic/Reykjavik',
+            'India Time' => 'Asia/Kolkata',
+            'Iran' => 'Asia/Tehran',
+            'Israel' => 'Asia/Jerusalem',
+            'IST' => 'Asia/Kolkata',
+            'Jamaica' => 'America/Jamaica',
+            'Japan' => 'Asia/Tokyo',
+            'Japan Standard Time' => 'Asia/Tokyo',
+            'Japan Time' => 'Asia/Tokyo',
+            'JST' => 'Asia/Tokyo',
+            'Kwajalein' => 'Pacific/Kwajalein',
+            'Libya' => 'Africa/Tripoli',
+            'MDT' => 'America/Denver',
+            'MET' => 'Europe/Paris',
+            'Mexico/BajaNorte' => 'America/Tijuana',
+            'Mexico/BajaSur' => 'America/Mazatlan',
+            'Mexico/General' => 'America/Mexico_City',
+            'MST' => 'America/Phoenix',
+            'MST7MDT' => 'America/Denver',
+            'Navajo' => 'America/Denver',
+            'NZ' => 'Pacific/Auckland',
+            'NZ-CHAT' => 'Pacific/Chatham',
+            'Pacific Time' => 'America/Los_Angeles',
+            'PDT' => 'America/Los_Angeles',
+            'Poland' => 'Europe/Warsaw',
+            'Portugal' => 'Europe/Lisbon',
+            'PRC' => 'Asia/Shanghai',
+            'PST' => 'America/Los_Angeles',
+            'PST8PDT' => 'America/Los_Angeles',
+            'ROC' => 'Asia/Taipei',
+            'ROK' => 'Asia/Seoul',
+            'Singapore' => 'Asia/Singapore',
+            'Turkey' => 'Europe/Istanbul',
+            'UCT' => 'Etc/UTC',
+            'Universal' => 'Etc/UTC',
+            'US/Alaska' => 'America/Anchorage',
+            'US/Aleutian' => 'America/Adak',
+            'US/Arizona' => 'America/Phoenix',
+            'US/Central' => 'America/Chicago',
+            'US/East-Indiana' => 'America/Indiana/Indianapolis',
+            'US/Eastern' => 'America/New_York',
+            'US/Hawaii' => 'Pacific/Honolulu',
+            'US/Indiana-Starke' => 'America/Indiana/Knox',
+            'US/Michigan' => 'America/Detroit',
+            'US/Mountain' => 'America/Denver',
+            'US/Pacific' => 'America/Los_Angeles',
+            'US/Pacific-New' => 'America/Los_Angeles',
+            'US/Samoa' => 'Pacific/Pago_Pago',
+            'W-SU' => 'Europe/Moscow',
+            'WET' => 'Europe/London',
+            'Zulu' => 'Etc/UTC',
 
             // Some UTC variations.
             'UTC-01' => 'Etc/GMT+1',
@@ -525,8 +597,57 @@ class core_date {
             'Etc/GMT-0' => 'Etc/GMT',
             'Etc/GMT0' => 'Etc/GMT',
 
-            // And lastly some alternative city spelling.
+            // Link old timezone names with their new names.
+            'Africa/Asmera' => 'Africa/Asmara',
+            'Africa/Timbuktu' => 'Africa/Abidjan',
+            'America/Argentina/ComodRivadavia' => 'America/Argentina/Catamarca',
+            'America/Atka' => 'America/Adak',
+            'America/Buenos_Aires' => 'America/Argentina/Buenos_Aires',
+            'America/Catamarca' => 'America/Argentina/Catamarca',
+            'America/Coral_Harbour' => 'America/Atikokan',
+            'America/Cordoba' => 'America/Argentina/Cordoba',
+            'America/Ensenada' => 'America/Tijuana',
+            'America/Fort_Wayne' => 'America/Indiana/Indianapolis',
+            'America/Indianapolis' => 'America/Indiana/Indianapolis',
+            'America/Jujuy' => 'America/Argentina/Jujuy',
+            'America/Knox_IN' => 'America/Indiana/Knox',
+            'America/Louisville' => 'America/Kentucky/Louisville',
+            'America/Mendoza' => 'America/Argentina/Mendoza',
+            'America/Montreal' => 'America/Toronto',
+            'America/Porto_Acre' => 'America/Rio_Branco',
+            'America/Rosario' => 'America/Argentina/Cordoba',
+            'America/Santa_Isabel' => 'America/Tijuana',
+            'America/Shiprock' => 'America/Denver',
+            'America/Virgin' => 'America/Port_of_Spain',
+            'Antarctica/South_Pole' => 'Pacific/Auckland',
+            'Asia/Ashkhabad' => 'Asia/Ashgabat',
             'Asia/Calcutta' => 'Asia/Kolkata',
+            'Asia/Chongqing' => 'Asia/Shanghai',
+            'Asia/Chungking' => 'Asia/Shanghai',
+            'Asia/Dacca' => 'Asia/Dhaka',
+            'Asia/Harbin' => 'Asia/Shanghai',
+            'Asia/Istanbul' => 'Europe/Istanbul',
+            'Asia/Kashgar' => 'Asia/Urumqi',
+            'Asia/Katmandu' => 'Asia/Kathmandu',
+            'Asia/Macao' => 'Asia/Macau',
+            'Asia/Rangoon' => 'Asia/Yangon',
+            'Asia/Saigon' => 'Asia/Ho_Chi_Minh',
+            'Asia/Tel_Aviv' => 'Asia/Jerusalem',
+            'Asia/Thimbu' => 'Asia/Thimphu',
+            'Asia/Ujung_Pandang' => 'Asia/Makassar',
+            'Asia/Ulan_Bator' => 'Asia/Ulaanbaatar',
+            'Atlantic/Faeroe' => 'Atlantic/Faroe',
+            'Atlantic/Jan_Mayen' => 'Europe/Oslo',
+            'Australia/Canberra' => 'Australia/Sydney',
+            'Australia/Yancowinna' => 'Australia/Broken_Hill',
+            'Europe/Belfast' => 'Europe/London',
+            'Europe/Nicosia' => 'Asia/Nicosia',
+            'Europe/Tiraspol' => 'Europe/Chisinau',
+            'Pacific/Johnston' => 'Pacific/Honolulu',
+            'Pacific/Ponape' => 'Pacific/Pohnpei',
+            'Pacific/Samoa' => 'Pacific/Pago_Pago',
+            'Pacific/Truk' => 'Pacific/Chuuk',
+            'Pacific/Yap' => 'Pacific/Chuuk',
         );
 
         // Legacy GMT fallback.
@@ -570,5 +691,217 @@ class core_date {
                 unset(self::$badzones[$zone]);
             }
         }
+    }
+
+    /**
+     * Locale-formatted strftime using IntlDateFormatter (PHP 8.1 compatible)
+     * This provides a cross-platform alternative to strftime() for when it will be removed from PHP.
+     * Note that output can be slightly different between libc sprintf and this function as it is using ICU.
+     *
+     * From:
+     * https://github.com/alphp/strftime
+     *
+     * @param  string $format Date format
+     * @param  int|string|DateTime $timestamp Timestamp
+     * @param  string|null $locale
+     * @return string
+     * @author BohwaZ <https://bohwaz.net/>
+     */
+    public static function strftime(string $format, $timestamp = null, ?string $locale = null) : string {
+        // Moodle-specific modification. For the IntlDateFormatter we need to use unix-style locale
+        // from the string 'locale' even for Windows, so we can neither use moodle_getlocale().
+        // nor rely on the setlocale() use below. We also ignore $CFG->locale because it can use
+        // Windows format.
+        $locale = $locale ?: get_string('locale', 'langconfig');
+
+        // The following code is taken from https://github.com/alphp/strftime without modifications.
+        // phpcs:disable
+        if (!($timestamp instanceof DateTimeInterface)) {
+          $timestamp = is_int($timestamp) ? '@' . $timestamp : (string) $timestamp;
+
+          try {
+            $timestamp = new DateTime($timestamp);
+          } catch (Exception $e) {
+            throw new InvalidArgumentException('$timestamp argument is neither a valid UNIX timestamp, a valid date-time string or a DateTime object.', 0, $e);
+          }
+        }
+
+        $timestamp->setTimezone(new DateTimeZone(date_default_timezone_get()));
+
+        if (empty($locale)) {
+          // get current locale
+          $locale = setlocale(LC_TIME, '0');
+        }
+        // remove trailing part not supported by ext-intl locale
+        $locale = preg_replace('/[^\w-].*$/', '', $locale);
+
+        $intl_formats = [
+          '%a' => 'EEE',	// An abbreviated textual representation of the day	Sun through Sat
+          '%A' => 'EEEE',	// A full textual representation of the day	Sunday through Saturday
+          '%b' => 'MMM',	// Abbreviated month name, based on the locale	Jan through Dec
+          '%B' => 'MMMM',	// Full month name, based on the locale	January through December
+          '%h' => 'MMM',	// Abbreviated month name, based on the locale (an alias of %b)	Jan through Dec
+        ];
+
+        $intl_formatter = function (DateTimeInterface $timestamp, string $format) use ($intl_formats, $locale) {
+          $tz = $timestamp->getTimezone();
+          $date_type = IntlDateFormatter::FULL;
+          $time_type = IntlDateFormatter::FULL;
+          $pattern = '';
+
+          switch ($format) {
+            // %c = Preferred date and time stamp based on locale
+            // Example: Tue Feb 5 00:45:10 2009 for February 5, 2009 at 12:45:10 AM
+            case '%c':
+              $date_type = IntlDateFormatter::LONG;
+              $time_type = IntlDateFormatter::SHORT;
+              break;
+
+            // %x = Preferred date representation based on locale, without the time
+            // Example: 02/05/09 for February 5, 2009
+            case '%x':
+              $date_type = IntlDateFormatter::SHORT;
+              $time_type = IntlDateFormatter::NONE;
+              break;
+
+            // Localized time format
+            case '%X':
+              $date_type = IntlDateFormatter::NONE;
+              $time_type = IntlDateFormatter::MEDIUM;
+              break;
+
+            default:
+              $pattern = $intl_formats[$format];
+          }
+
+          // In October 1582, the Gregorian calendar replaced the Julian in much of Europe, and
+          //  the 4th October was followed by the 15th October.
+          // ICU (including IntlDateFormattter) interprets and formats dates based on this cutover.
+          // Posix (including strftime) and timelib (including DateTimeImmutable) instead use
+          //  a "proleptic Gregorian calendar" - they pretend the Gregorian calendar has existed forever.
+          // This leads to the same instants in time, as expressed in Unix time, having different representations
+          //  in formatted strings.
+          // To adjust for this, a custom calendar can be supplied with a cutover date arbitrarily far in the past.
+          $calendar = IntlGregorianCalendar::createInstance();
+          $calendar->setGregorianChange(PHP_INT_MIN);
+
+          return (new IntlDateFormatter($locale, $date_type, $time_type, $tz, $calendar, $pattern))->format($timestamp);
+        };
+
+        // Same order as https://www.php.net/manual/en/function.strftime.php
+        $translation_table = [
+          // Day
+          '%a' => $intl_formatter,
+          '%A' => $intl_formatter,
+          '%d' => 'd',
+          '%e' => function ($timestamp) {
+            return sprintf('% 2u', $timestamp->format('j'));
+          },
+          '%j' => function ($timestamp) {
+            // Day number in year, 001 to 366
+            return sprintf('%03d', $timestamp->format('z')+1);
+          },
+          '%u' => 'N',
+          '%w' => 'w',
+
+          // Week
+          '%U' => function ($timestamp) {
+            // Number of weeks between date and first Sunday of year
+            $day = new DateTime(sprintf('%d-01 Sunday', $timestamp->format('Y')));
+            return sprintf('%02u', 1 + ($timestamp->format('z') - $day->format('z')) / 7);
+          },
+          '%V' => 'W',
+          '%W' => function ($timestamp) {
+            // Number of weeks between date and first Monday of year
+            $day = new DateTime(sprintf('%d-01 Monday', $timestamp->format('Y')));
+            return sprintf('%02u', 1 + ($timestamp->format('z') - $day->format('z')) / 7);
+          },
+
+          // Month
+          '%b' => $intl_formatter,
+          '%B' => $intl_formatter,
+          '%h' => $intl_formatter,
+          '%m' => 'm',
+
+          // Year
+          '%C' => function ($timestamp) {
+            // Century (-1): 19 for 20th century
+            return floor($timestamp->format('Y') / 100);
+          },
+          '%g' => function ($timestamp) {
+            return substr($timestamp->format('o'), -2);
+          },
+          '%G' => 'o',
+          '%y' => 'y',
+          '%Y' => 'Y',
+
+          // Time
+          '%H' => 'H',
+          '%k' => function ($timestamp) {
+            return sprintf('% 2u', $timestamp->format('G'));
+          },
+          '%I' => 'h',
+          '%l' => function ($timestamp) {
+            return sprintf('% 2u', $timestamp->format('g'));
+          },
+          '%M' => 'i',
+          '%p' => 'A', // AM PM (this is reversed on purpose!)
+          '%P' => 'a', // am pm
+          '%r' => 'h:i:s A', // %I:%M:%S %p
+          '%R' => 'H:i', // %H:%M
+          '%S' => 's',
+          '%T' => 'H:i:s', // %H:%M:%S
+          '%X' => $intl_formatter, // Preferred time representation based on locale, without the date
+
+          // Timezone
+          '%z' => 'O',
+          '%Z' => 'T',
+
+          // Time and Date Stamps
+          '%c' => $intl_formatter,
+          '%D' => 'm/d/Y',
+          '%F' => 'Y-m-d',
+          '%s' => 'U',
+          '%x' => $intl_formatter,
+        ];
+
+        $out = preg_replace_callback('/(?<!%)%([_#-]?)([a-zA-Z])/', function ($match) use ($translation_table, $timestamp) {
+          $prefix = $match[1];
+          $char = $match[2];
+          $pattern = '%'.$char;
+          if ($pattern == '%n') {
+            return "\n";
+          } elseif ($pattern == '%t') {
+            return "\t";
+          }
+
+          if (!isset($translation_table[$pattern])) {
+            throw new InvalidArgumentException(sprintf('Format "%s" is unknown in time format', $pattern));
+          }
+
+          $replace = $translation_table[$pattern];
+
+          if (is_string($replace)) {
+            $result = $timestamp->format($replace);
+          } else {
+            $result = $replace($timestamp, $pattern);
+          }
+
+          switch ($prefix) {
+            case '_':
+              // replace leading zeros with spaces but keep last char if also zero
+              return preg_replace('/\G0(?=.)/', ' ', $result);
+            case '#':
+            case '-':
+              // remove leading zeros but keep last char if also zero
+              return preg_replace('/^0+(?=.)/', '', $result);
+          }
+
+          return $result;
+        }, $format);
+
+        $out = str_replace('%%', '%', $out);
+        return $out;
+        // phpcs:enable
     }
 }

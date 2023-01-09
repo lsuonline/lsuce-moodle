@@ -71,6 +71,19 @@ class lock {
     }
 
     /**
+     * Sets the lock factory that owns a lock. This function should not be called under normal use.
+     * It is intended only for cases like {@see timing_wrapper_lock_factory} where we wrap a lock
+     * factory.
+     *
+     * When used, it should be called immediately after constructing the lock.
+     *
+     * @param lock_factory $factory New lock factory that owns this lock
+     */
+    public function init_factory(lock_factory $factory): void {
+        $this->factory = $factory;
+    }
+
+    /**
      * Return the unique key representing this lock.
      * @return string|int lock key.
      */
@@ -80,10 +93,15 @@ class lock {
 
     /**
      * Extend the lifetime of this lock. Not supported by all factories.
+     *
+     * @deprecated since Moodle 3.10.
      * @param int $maxlifetime - the new lifetime for the lock (in seconds).
      * @return bool
      */
     public function extend($maxlifetime = 86400) {
+        debugging('The function extend() is deprecated, please do not use it anymore.',
+            DEBUG_DEVELOPER);
+
         if ($this->factory) {
             return $this->factory->extend_lock($this, $maxlifetime);
         }

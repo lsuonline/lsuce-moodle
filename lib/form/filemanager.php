@@ -254,7 +254,7 @@ class MoodleQuickForm_filemanager extends HTML_QuickForm_element implements temp
 
         // security - never ever allow guest/not logged in user to upload anything or use this element!
         if (isguestuser() or !isloggedin()) {
-            print_error('noguest');
+            throw new \moodle_exception('noguest');
         }
 
         if ($this->_flagFrozen) {
@@ -328,9 +328,9 @@ class MoodleQuickForm_filemanager extends HTML_QuickForm_element implements temp
         }
 
         $filetypesutil = new \core_form\filetypes_util();
-        $whitelist = $filetypesutil->normalize_file_types($this->_options['accepted_types']);
+        $allowlist = $filetypesutil->normalize_file_types($this->_options['accepted_types']);
 
-        if (empty($whitelist) || $whitelist === ['*']) {
+        if (empty($allowlist) || $allowlist === ['*']) {
             // Any file type is allowed, nothing to check here.
             return;
         }
@@ -344,14 +344,14 @@ class MoodleQuickForm_filemanager extends HTML_QuickForm_element implements temp
         }
 
         foreach ($draftfiles as $file) {
-            if (!$filetypesutil->is_allowed_file_type($file->filename, $whitelist)) {
+            if (!$filetypesutil->is_allowed_file_type($file->filename, $allowlist)) {
                 $wrongfiles[] = $file->filename;
             }
         }
 
         if ($wrongfiles) {
             $a = array(
-                'whitelist' => implode(', ', $whitelist),
+                'allowlist' => implode(', ', $allowlist),
                 'wrongfiles' => implode(', ', $wrongfiles),
             );
             return get_string('err_wrongfileextension', 'core_form', $a);

@@ -1,12 +1,12 @@
 <?php
 /*
- * Copyright 2015-2017 MongoDB, Inc.
+ * Copyright 2015-present MongoDB, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ namespace MongoDB\Model;
 
 use MongoDB\BSON\Serializable;
 use MongoDB\Exception\InvalidArgumentException;
+
 use function is_array;
 use function is_float;
 use function is_int;
@@ -35,7 +36,7 @@ use function sprintf;
  * @internal
  * @see \MongoDB\Collection::createIndexes()
  * @see https://github.com/mongodb/specifications/blob/master/source/enumerate-indexes.rst
- * @see http://docs.mongodb.org/manual/reference/method/db.collection.createIndex/
+ * @see https://mongodb.com/docs/manual/reference/method/db.collection.createIndex/
  */
 class IndexInput implements Serializable
 {
@@ -62,14 +63,6 @@ class IndexInput implements Serializable
             }
         }
 
-        if (! isset($index['ns'])) {
-            throw new InvalidArgumentException('Required "ns" option is missing from index specification');
-        }
-
-        if (! is_string($index['ns'])) {
-            throw InvalidArgumentException::invalidType('"ns" option', $index['ns'], 'string');
-        }
-
         if (! isset($index['name'])) {
             $index['name'] = generate_index_name($index['key']);
         }
@@ -83,10 +76,8 @@ class IndexInput implements Serializable
 
     /**
      * Return the index name.
-     *
-     * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->index['name'];
     }
@@ -95,10 +86,9 @@ class IndexInput implements Serializable
      * Serialize the index information to BSON for index creation.
      *
      * @see \MongoDB\Collection::createIndexes()
-     * @see http://php.net/mongodb-bson-serializable.bsonserialize
-     * @return array
+     * @see https://php.net/mongodb-bson-serializable.bsonserialize
      */
-    public function bsonSerialize()
+    public function bsonSerialize(): array
     {
         return $this->index;
     }

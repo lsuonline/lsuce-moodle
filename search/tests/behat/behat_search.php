@@ -27,6 +27,7 @@
 require_once(__DIR__ . '/../../../lib/behat/behat_base.php');
 
 use Behat\Gherkin\Node\TableNode as TableNode;
+use Moodle\BehatExtension\Exception\SkippedException;
 
 /**
  * Behat search-related step definitions.
@@ -44,14 +45,15 @@ class behat_search extends behat_base {
      * @param string $query Query to search for
      */
     public function i_search_for_using_the_header_global_search_box($query) {
-        // Hover over the search icon.
-        $this->execute('behat_general::i_hover', ['.icon[title=Search]', 'css_element']);
+        // Click the search icon.
+        $this->execute("behat_general::i_click_on", [get_string('togglesearch', 'core'), 'button']);
 
         // Set the field.
         $this->execute('behat_forms::i_set_the_field_to', ['q', $query]);
 
         // Submit the form.
-        $this->execute_script('return document.querySelector(".search-input-form.expanded").submit();');
+        $this->execute("behat_general::i_click_on_in_the",
+            [get_string('search', 'core'), 'button', '#usernavigation', 'css_element']);
     }
 
     /**
@@ -144,5 +146,16 @@ class behat_search extends behat_base {
      */
     public function i_update_the_global_search_index() {
         \core_search\manager::instance()->index(false);
+    }
+
+    /**
+     * This step looks to see if Solr is installed or skip the rest of the scenario otherwise
+     *
+     * @Given /^solr is installed/
+     */
+    public function solr_is_installed() {
+        if (!function_exists('solr_get_version')) {
+            throw new SkippedException('Skipping this scenario because Solr is not installed.');
+        }
     }
 }

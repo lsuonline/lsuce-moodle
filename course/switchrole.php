@@ -88,7 +88,7 @@ if ($switchrole > 0 && has_capability('moodle/role:switchroles', $context)) {
         $roles[0] = get_string('switchrolereturn');
         $assumedrole = $USER->access['rsw'][$context->path];
     }
-    $availableroles = get_switchable_roles($context);
+    $availableroles = get_switchable_roles($context, ROLENAME_BOTH);
     if (is_array($availableroles)) {
         foreach ($availableroles as $key => $role) {
             if ($assumedrole == (int)$key) {
@@ -102,7 +102,7 @@ if ($switchrole > 0 && has_capability('moodle/role:switchroles', $context)) {
     foreach ($roles as $key => $role) {
         $url = new moodle_url('/course/switchrole.php', array('id' => $id, 'switchrole' => $key, 'returnurl' => $returnurl));
         // Button encodes special characters, apply htmlspecialchars_decode() to avoid double escaping.
-        echo $OUTPUT->container($OUTPUT->single_button($url, htmlspecialchars_decode($role)), 'mx-3 mb-1');
+        echo $OUTPUT->container($OUTPUT->single_button($url, htmlspecialchars_decode($role, ENT_COMPAT)), 'mx-3 mb-1');
     }
 
     $url = new moodle_url($returnurl);

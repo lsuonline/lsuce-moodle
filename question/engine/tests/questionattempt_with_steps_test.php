@@ -14,18 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * This file contains tests for the question_attempt class.
- *
- * Action methods like start, process_action and finish are assumed to be
- * tested by walkthrough tests in the various behaviours.
- *
- * @package    moodlecore
- * @subpackage questionengine
- * @copyright  2009 The Open University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace core_question;
 
+use question_attempt;
+use question_attempt_step;
+use question_state;
+use testable_question_attempt;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -33,19 +27,23 @@ global $CFG;
 require_once(__DIR__ . '/../lib.php');
 require_once(__DIR__ . '/helpers.php');
 
-
 /**
  * These tests use a standard fixture of a {@link question_attempt} with three steps.
  *
+ * Action methods like start, process_action and finish are assumed to be
+ * tested by walkthrough tests in the various behaviours.
+ *
+ * @package    core_question
+ * @category   test
  * @copyright  2009 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class question_attempt_with_steps_test extends advanced_testcase {
+class questionattempt_with_steps_test extends \advanced_testcase {
     private $question;
     private $qa;
 
-    protected function setUp() {
-        $this->question = test_question_maker::make_question('description');
+    protected function setUp(): void {
+        $this->question = \test_question_maker::make_question('description');
         $this->qa = new testable_question_attempt($this->question, 0, null, 2);
         for ($i = 0; $i < 3; $i++) {
             $step = new question_attempt_step(array('i' => $i));
@@ -53,14 +51,12 @@ class question_attempt_with_steps_test extends advanced_testcase {
         }
     }
 
-    protected function tearDown() {
+    protected function tearDown(): void {
         $this->qa = null;
     }
 
-    /**
-     * @expectedException moodle_exception
-     */
     public function test_get_step_before_start() {
+        $this->expectException(\moodle_exception::class);
         $step = $this->qa->get_step(-1);
     }
 
@@ -74,10 +70,8 @@ class question_attempt_with_steps_test extends advanced_testcase {
         $this->assertEquals(2, $step->get_qt_var('i'));
     }
 
-    /**
-     * @expectedException moodle_exception
-     */
     public function test_get_step_past_end() {
+        $this->expectException(\moodle_exception::class);
         $step = $this->qa->get_step(3);
     }
 

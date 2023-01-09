@@ -85,7 +85,7 @@ function core_login_process_password_reset($username, $email) {
     global $CFG, $DB;
 
     if (empty($username) && empty($email)) {
-        print_error('cannotmailconfirm');
+        throw new \moodle_exception('cannotmailconfirm');
     }
 
     // Next find the user account in the database which the requesting user claims to own.
@@ -135,7 +135,7 @@ function core_login_process_password_reset($username, $email) {
             if (send_password_change_info($user)) {
                 $pwresetstatus = PWRESET_STATUS_OTHEREMAILSENT;
             } else {
-                print_error('cannotmailconfirm');
+                throw new \moodle_exception('cannotmailconfirm');
             }
         } else {
             // The account the requesting user claims to be is entitled to change their password.
@@ -170,7 +170,7 @@ function core_login_process_password_reset($username, $email) {
                 if ($sendresult) {
                     $pwresetstatus = PWRESET_STATUS_TOKENSENT;
                 } else {
-                    print_error('cannotmailconfirm');
+                    throw new \moodle_exception('cannotmailconfirm');
                 }
             }
         }
@@ -253,13 +253,13 @@ function core_login_process_password_set($token) {
     if ($user->auth === 'nologin' or !is_enabled_auth($user->auth)) {
         // Bad luck - user is not able to login, do not let them set password.
         echo $OUTPUT->header();
-        print_error('forgotteninvalidurl');
+        throw new \moodle_exception('forgotteninvalidurl');
         die; // Never reached.
     }
 
     // Check this isn't guest user.
     if (isguestuser($user)) {
-        print_error('cannotresetguestpwd');
+        throw new \moodle_exception('cannotresetguestpwd');
     }
 
     // Token is correct, and unexpired.
@@ -284,7 +284,7 @@ function core_login_process_password_set($token) {
         $DB->delete_records('user_password_resets', array('id' => $user->tokenid));
         $userauth = get_auth_plugin($user->auth);
         if (!$userauth->user_update_password($user, $data->password)) {
-            print_error('errorpasswordupdate', 'auth');
+            throw new \moodle_exception('errorpasswordupdate', 'auth');
         }
         user_add_password_history($user->id, $data->password);
         if (!empty($CFG->passwordchangelogout)) {
@@ -352,9 +352,14 @@ function core_login_get_return_url() {
     if ($urltogo == ($CFG->wwwroot . '/')) {
         $homepage = get_home_page();
         // Go to my-moodle page instead of site homepage if defaulthomepage set to homepage_my.
-        if ($homepage == HOMEPAGE_MY && !is_siteadmin() && !isguestuser()) {
+        if ($homepage === HOMEPAGE_MY && !isguestuser()) {
             if ($urltogo == $CFG->wwwroot or $urltogo == $CFG->wwwroot.'/' or $urltogo == $CFG->wwwroot.'/index.php') {
                 $urltogo = $CFG->wwwroot.'/my/';
+            }
+        }
+        if ($homepage === HOMEPAGE_MYCOURSES && !isguestuser()) {
+            if ($urltogo == $CFG->wwwroot or $urltogo == $CFG->wwwroot.'/' or $urltogo == $CFG->wwwroot.'/index.php') {
+                $urltogo = $CFG->wwwroot.'/my/courses.php';
             }
         }
     }
@@ -387,7 +392,9 @@ function core_login_validate_forgot_password_data($data) {
                 $user = get_complete_user_data('email', $data['email'], null, true);
                 if (empty($user->confirmed)) {
                     send_confirmation_email($user);
-                    $errors['email'] = get_string('confirmednot');
+                    if (empty($CFG->protectusernames)) {
+                        $errors['email'] = get_string('confirmednot');
+                    }
                 }
             } catch (dml_missing_record_exception $missingexception) {
                 // User not found. Show error when $CFG->protectusernames is turned off.
@@ -396,7 +403,9 @@ function core_login_validate_forgot_password_data($data) {
                 }
             } catch (dml_multiple_records_exception $multipleexception) {
                 // Multiple records found. Ask the user to enter a username instead.
-                $errors['email'] = get_string('forgottenduplicate');
+                if (empty($CFG->protectusernames)) {
+                    $errors['email'] = get_string('forgottenduplicate');
+                }
             }
         }
 
@@ -404,7 +413,9 @@ function core_login_validate_forgot_password_data($data) {
         if ($user = get_complete_user_data('username', $data['username'])) {
             if (empty($user->confirmed)) {
                 send_confirmation_email($user);
-                $errors['email'] = get_string('confirmednot');
+                if (empty($CFG->protectusernames)) {
+                    $errors['username'] = get_string('confirmednot');
+                }
             }
         }
         if (!$user and empty($CFG->protectusernames)) {

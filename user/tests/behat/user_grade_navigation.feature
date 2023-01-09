@@ -1,4 +1,4 @@
-@core @core_user
+@core @core_user @javascript
 Feature: The student can navigate to their grades page and user grade report.
   In order to view my grades and the user grade report
   As a user
@@ -51,13 +51,10 @@ Feature: The student can navigate to their grades page and user grade report.
     | Test assignment three | 0.00 %( Empty ) | - | 0–150 | - | 0.00 % |
 
   Scenario: Change Grades settings to go to a custom url.
-    When I log in as "admin"
-    And I set the following administration settings values:
-    | grade_mygrades_report | External URL |
-    | gradereport_mygradeurl | /badges/mybadges.php |
-    And I log out
+    Given the following config values are set as admin:
+      | grade_mygrades_report  | external             |
+      | gradereport_mygradeurl | /badges/mybadges.php |
     And I log in as "student1"
-    And I follow "Student 1"
     And I follow "Grades" in the user menu
     Then I should see "My badges from Acceptance test site web site"
 

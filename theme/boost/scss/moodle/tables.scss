@@ -11,7 +11,8 @@
         border-top: $table-border-width solid $table-border-color;
     }
 
-    thead th {
+    thead th,
+    thead td {
         vertical-align: bottom;
         border-bottom: (2 * $table-border-width) solid $table-border-color;
     }
@@ -33,6 +34,11 @@
         @include hover {
             color: $table-hover-color;
             background-color: $table-hover-bg;
+            &.dimmed_text {
+                a:not(.menu-action) {
+                    color: $table-hover-color;
+                }
+            }
         }
     }
 }

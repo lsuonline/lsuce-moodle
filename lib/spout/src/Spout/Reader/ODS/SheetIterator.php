@@ -28,13 +28,13 @@ class SheetIterator implements IteratorInterface
     const XML_ATTRIBUTE_TABLE_STYLE_NAME = 'table:style-name';
     const XML_ATTRIBUTE_TABLE_DISPLAY = 'table:display';
 
-    /** @var string $filePath Path of the file to be read */
+    /** @var string Path of the file to be read */
     protected $filePath;
 
     /** @var \Box\Spout\Common\Manager\OptionsManagerInterface Reader's options manager */
     protected $optionsManager;
 
-    /** @var InternalEntityFactory $entityFactory Factory to create entities */
+    /** @var InternalEntityFactory Factory to create entities */
     protected $entityFactory;
 
     /** @var XMLReader The XMLReader object that will help read sheet's XML data */
@@ -79,6 +79,7 @@ class SheetIterator implements IteratorInterface
      * @throws \Box\Spout\Common\Exception\IOException If unable to open the XML file containing sheets' data
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->xmlReader->close();
@@ -131,6 +132,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->hasFoundSheet;
@@ -142,6 +144,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->hasFoundSheet = $this->xmlReader->readUntilNodeFound(self::XML_NODE_TABLE);
@@ -157,6 +160,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return \Box\Spout\Reader\ODS\Sheet
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         $escapedSheetName = $this->xmlReader->getAttribute(self::XML_ATTRIBUTE_TABLE_NAME);
@@ -214,6 +218,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->currentSheetIndex + 1;
@@ -224,6 +229,7 @@ class SheetIterator implements IteratorInterface
      *
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function end()
     {
         $this->xmlReader->close();

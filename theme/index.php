@@ -37,11 +37,14 @@ if (!empty($device)) {
     $devices = core_useragent::get_device_type_list();
     if (!in_array($device, $devices)) {
         // The provided device isn't a valid device throw an error.
-        print_error('invaliddevicetype');
+        throw new \moodle_exception('invaliddevicetype');
     }
 }
 
 unset($SESSION->theme);
+
+$PAGE->set_primary_active_tab('siteadminnode');
+$PAGE->navbar->add(get_string('themeselector', 'admin'), $PAGE->url);
 
 if ($reset and confirm_sesskey()) {
     theme_reset_all_caches();
@@ -115,7 +118,7 @@ if (!empty($CFG->enabledevicedetection) && empty($device)) {
                 $screenshoturl = new moodle_url('/theme/image.php',
                     array('theme' => $themename, 'image' => 'screenshot', 'component' => 'theme'));
                 // Contents of the screenshot/preview cell.
-                $screenshotcell = html_writer::empty_tag('img', array('class' => 'img-responsive img-fluid',
+                $screenshotcell = html_writer::empty_tag('img', array('class' => 'img-fluid',
                     'src' => $screenshoturl, 'alt' => $strthemename));
                 // Show the name of the picked theme.
                 $headingthemename = $OUTPUT->heading($strthemename, 3);
@@ -209,7 +212,7 @@ if (!empty($CFG->enabledevicedetection) && empty($device)) {
         $screenshotpath = new moodle_url('/theme/image.php',
             array('theme' => $themename, 'image' => 'screenshot', 'component' => 'theme'));
         // Contents of the first screenshot/preview cell.
-        $row[] = html_writer::empty_tag('img', array('class' => 'img-responsive img-fluid',
+        $row[] = html_writer::empty_tag('img', array('class' => 'img-fluid',
             'src' => $screenshotpath, 'alt' => $strthemename));
         // Contents of the second cell.
         $infocell = $OUTPUT->heading($strthemename, 3);

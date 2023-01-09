@@ -43,7 +43,7 @@ $string['creategrouping'] = 'Create grouping';
 $string['creategroupinselectedgrouping'] = 'Create group in grouping';
 $string['createingrouping'] = 'Grouping of auto-created groups';
 $string['createorphangroup'] = 'Create orphan group';
-$string['csvdelimiter'] = 'CSV delimiter';
+$string['csvdelimiter'] = 'CSV separator';
 $string['databaseupgradegroups'] = 'Groups version is now {$a}';
 $string['defaultgrouping'] = 'Default grouping';
 $string['defaultgroupingname'] = 'Grouping';
@@ -85,6 +85,7 @@ $string['eventgroupinggroupassigned'] = 'Group assigned to grouping';
 $string['eventgroupinggroupunassigned'] = 'Group unassigned from grouping';
 $string['eventgroupingupdated'] = 'Grouping updated';
 $string['existingmembers'] = 'Existing members: {$a}';
+$string['exportgroupsgroupings'] = 'Download groups and groupings as';
 $string['filtergroups'] = 'Filter groups by:';
 $string['group'] = 'Group';
 $string['groupaddedsuccesfully'] = 'Group {$a} added successfully';
@@ -134,12 +135,11 @@ $string['groupspreview'] = 'Groups preview';
 $string['groupsseparate'] = 'Separate groups';
 $string['groupsvisible'] = 'Visible groups';
 $string['grouptemplate'] = 'Group @';
-$string['hidepicture'] = 'Hide picture';
 $string['importgroups'] = 'Import groups';
 $string['importgroups_help'] = 'Groups may be imported via text file. The format of the file should be as follows:
 
 * Each line of the file contains one record
-* Each record is a series of data separated by commas
+* Each record is a series of data separated by the selected separator
 * The first record contains a list of fieldnames defining the format of the rest of the file
 * Required fieldname is groupname
 * Optional fieldnames are groupidnumber, description, enrolmentkey, groupingname, enablemessaging';
@@ -199,3 +199,6 @@ $string['usercount'] = 'User count';
 $string['usercounttotal'] = 'User count ({$a})';
 $string['usergroupmembership'] = 'Selected user\'s membership:';
 $string['memberofgroup'] = 'Group member of: {$a}';
+
+// Deprecated since Moodle 3.11.
+$string['hidepicture'] = 'Hide picture';

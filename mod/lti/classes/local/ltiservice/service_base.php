@@ -207,13 +207,24 @@ abstract class service_base {
     abstract public function get_resources();
 
     /**
-     * Get the scope(s) permitted for this service.
+     * Get the scope(s) permitted for this service in the context of a particular tool type.
      *
      * A null value indicates that no scopes are required to access the service.
      *
      * @return array|null
      */
     public function get_permitted_scopes() {
+        return null;
+    }
+
+    /**
+     * Get the scope(s) permitted for this service.
+     *
+     * A null value indicates that no scopes are required to access the service.
+     *
+     * @return array|null
+     */
+    public function get_scopes() {
         return null;
     }
 
@@ -242,6 +253,23 @@ abstract class service_base {
      */
     public function instance_updated(object $lti): void {
 
+    }
+
+    /**
+     * Called when the launch data is created, offering a possibility to alter the
+     * target link URI.
+     *
+     * @param string $messagetype message type for this launch
+     * @param string $targetlinkuri current target link uri
+     * @param null|string $customstr concatenated list of custom parameters
+     * @param int $courseid
+     * @param null|object $lti LTI Instance.
+     *
+     * @return array containing the target link URL and the custom params string to use.
+     */
+    public function override_endpoint(string $messagetype, string $targetlinkuri,
+            ?string $customstr, int $courseid, ?object $lti = null): array {
+        return [$targetlinkuri, $customstr];
     }
 
     /**

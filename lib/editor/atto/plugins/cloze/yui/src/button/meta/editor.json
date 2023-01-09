@@ -1,8 +1,0 @@
-{
-  "moodle-atto_cloze-button": {
-    "requires": [
-        "escape",
-        "moodle-tinymce_cloze-editor"
-    ]
-  }
-}

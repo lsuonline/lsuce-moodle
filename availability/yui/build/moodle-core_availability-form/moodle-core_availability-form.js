@@ -198,8 +198,11 @@ M.core_availability.form = {
         // If the groupmode and grouping id aren't set, disable it.
         var groupmode = Y.one('#id_groupmode');
         var groupingid = Y.one('#id_groupingid');
-        if ((!groupmode || Number(groupmode.get('value')) === 0) &&
-                (!groupingid || Number(groupingid.get('value')) === 0)) {
+        var groupavailability = Number(this.restrictByGroup.getData('groupavailability')) === 1;
+        var groupingavailability = Number(this.restrictByGroup.getData('groupingavailability')) === 1;
+
+        if ((!groupmode || Number(groupmode.get('value')) === 0 || !groupavailability) &&
+                (!groupingid || Number(groupingid.get('value')) === 0 || !groupingavailability)) {
             this.restrictByGroup.set('disabled', true);
             return;
         }
@@ -220,22 +223,28 @@ M.core_availability.form = {
         e.preventDefault();
 
         // Add the condition.
+        var groupmode = Y.one('#id_groupmode');
         var groupingid = Y.one('#id_groupingid');
+        var groupavailability = Number(this.restrictByGroup.getData('groupavailability')) === 1;
+        var groupingavailability = Number(this.restrictByGroup.getData('groupingavailability')) === 1;
+
         var newChild;
-        if (groupingid && Number(groupingid.get('value')) !== 0) {
+        if (groupingid && Number(groupingid.get('value')) !== 0 && groupingavailability) {
             // Add a grouping restriction if one is specified.
             newChild = new M.core_availability.Item(
                     {type: 'grouping', id: Number(groupingid.get('value'))}, true);
-        } else {
+        } else if (groupmode && groupavailability) {
             // Otherwise just add a group restriction.
             newChild = new M.core_availability.Item({type: 'group'}, true);
         }
 
         // Refresh HTML.
-        this.rootList.addChild(newChild);
-        this.update();
-        this.rootList.renumber();
-        this.rootList.updateHtml();
+        if (newChild !== null) {
+            this.rootList.addChild(newChild);
+            this.update();
+            this.rootList.renumber();
+            this.rootList.updateHtml();
+        }
     }
 };
 
@@ -374,7 +383,7 @@ M.core_availability.List = function(json, root, parentRoot) {
             '<option value="|">' + M.util.get_string('listheader_multi_or', 'availability') + '</option></select></label> ' +
             M.util.get_string('listheader_multi_after', 'availability') + '</span></div>' +
             '<div class="availability-children"></div>' +
-            '<div class="availability-none"><span class="p-x-1">' + M.util.get_string('none', 'moodle') + '</span></div>' +
+            '<div class="availability-none"><span class="px-3">' + M.util.get_string('none', 'moodle') + '</span></div>' +
             '<div class="clearfix mt-1"></div>' +
             '<div class="availability-button"></div></div><div class="clearfix"></div></div>');
     if (!root) {
@@ -962,7 +971,21 @@ M.core_availability.Item.prototype.fillErrors = function(errors) {
     // If any errors were added, add the marker to this item.
     var errorLabel = this.node.one('> .badge-warning');
     if (errors.length !== before && !errorLabel.get('firstChild')) {
-        errorLabel.appendChild(document.createTextNode(M.util.get_string('invalid', 'availability')));
+        var errorString = '';
+        // Fetch the last error code from the array of errors and split using the ':' delimiter.
+        var langString = errors[errors.length - 1].split(':');
+        var component = langString[0];
+        var identifier = langString[1];
+        // If get_string can't find the string, it will return the string in this format.
+        var undefinedString = '[[' + identifier + ',' + component + ']]';
+        // Get the lang string.
+        errorString = M.util.get_string(identifier, component);
+        if (errorString === undefinedString) {
+            // Use a generic invalid input message when the error lang string cannot be loaded.
+            errorString = M.util.get_string('invalid', 'availability');
+        }
+        // Show the error string.
+        errorLabel.appendChild(document.createTextNode(errorString));
     } else if (errors.length === before && errorLabel.get('firstChild')) {
         errorLabel.get('firstChild').remove();
     }
@@ -1132,7 +1155,7 @@ M.core_availability.EyeIcon.prototype.isHidden = function() {
  * @param {M.core_availability.Item|M.core_availability.List} toDelete Thing to delete
  */
 M.core_availability.DeleteIcon = function(toDelete) {
-    this.span = Y.Node.create('<a class="d-inline-block col-form-label availability-delete p-x-1" href="#" title="' +
+    this.span = Y.Node.create('<a class="d-inline-block col-form-label availability-delete px-3" href="#" title="' +
             M.util.get_string('delete', 'moodle') + '" role="button">');
     var img = Y.Node.create('<img src="' + M.util.image_url('t/delete', 'core') +
             '" alt="' + M.util.get_string('delete', 'moodle') + '" />');

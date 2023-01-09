@@ -23,7 +23,7 @@ H5P.$window = H5P.jQuery(window);
 H5P.instances = [];
 
 // Detect if we support fullscreen, and what prefix to use.
-if (document.documentElement.requestFullScreen) {
+if (document.documentElement.requestFullscreen) {
   /**
    * Browser prefix to use when entering fullscreen mode.
    * undefined means no fullscreen support.
@@ -377,10 +377,29 @@ H5P.init = function (target) {
 
   // Insert H5Ps that should be in iframes.
   H5P.jQuery('iframe.h5p-iframe:not(.h5p-initialized)', target).each(function () {
-    var contentId = H5P.jQuery(this).addClass('h5p-initialized').data('content-id');
-    this.contentDocument.open();
-    this.contentDocument.write('<!doctype html><html class="h5p-iframe"><head>' + H5P.getHeadTags(contentId) + '</head><body><div class="h5p-content" data-content-id="' + contentId + '"/></body></html>');
-    this.contentDocument.close();
+    const iframe = this;
+    const $iframe = H5P.jQuery(iframe);
+
+    const contentId = $iframe.data('content-id');
+    const contentData = H5PIntegration.contents['cid-' + contentId];
+    const contentLanguage = contentData && contentData.metadata && contentData.metadata.defaultLanguage
+      ? contentData.metadata.defaultLanguage : 'en';
+
+    const writeDocument = function () {
+      iframe.contentDocument.open();
+      iframe.contentDocument.write('<!doctype html><html class="h5p-iframe" lang="' + contentLanguage + '"><head>' + H5P.getHeadTags(contentId) + '</head><body><div class="h5p-content" data-content-id="' + contentId + '"/></body></html>');
+      iframe.contentDocument.close();
+    };
+
+    $iframe.addClass('h5p-initialized')
+    if (iframe.contentDocument === null) {
+      // In some Edge cases the iframe isn't always loaded when the page is ready.
+      $iframe.on('load', writeDocument);
+      $iframe.attr('src', 'about:blank');
+    }
+    else {
+      writeDocument();
+    }
   });
 };
 
@@ -657,7 +676,7 @@ H5P.fullScreen = function ($element, instance, exitCallback, body, forceSemiFull
     });
 
     if (H5P.fullScreenBrowserPrefix === '') {
-      $element[0].requestFullScreen();
+      $element[0].requestFullscreen();
     }
     else {
       var method = (H5P.fullScreenBrowserPrefix === 'ms' ? 'msRequestFullscreen' : H5P.fullScreenBrowserPrefix + 'RequestFullScreen');
@@ -1030,7 +1049,7 @@ H5P.t = function (key, vars, ns) {
 H5P.Dialog = function (name, title, content, $element) {
   /** @alias H5P.Dialog# */
   var self = this;
-  var $dialog = H5P.jQuery('<div class="h5p-popup-dialog h5p-' + name + '-dialog">\
+  var $dialog = H5P.jQuery('<div class="h5p-popup-dialog h5p-' + name + '-dialog" role="dialog" tabindex="-1">\
                               <div class="h5p-inner">\
                                 <h2>' + title + '</h2>\
                                 <div class="h5p-scroll-content">' + content + '</div>\
@@ -1053,6 +1072,12 @@ H5P.Dialog = function (name, title, content, $element) {
         .click(function () {
           self.close();
         })
+        .keypress(function (e) {
+          if (e.which === 13 || e.which === 32) {
+            self.close();
+            return false;
+          }
+        })
         .end()
       .find('a')
         .click(function (e) {
@@ -1072,6 +1097,7 @@ H5P.Dialog = function (name, title, content, $element) {
       $dialog.addClass('h5p-open'); // Fade in
       // Triggering an event, in case something has to be done after dialog has been opened.
       H5P.jQuery(self).trigger('dialog-opened', [$dialog]);
+      $dialog.focus();
     }, 1);
   };
 
@@ -1083,6 +1109,8 @@ H5P.Dialog = function (name, title, content, $element) {
     setTimeout(function () {
       $dialog.remove();
       H5P.jQuery(self).trigger('dialog-closed', [$dialog]);
+      $element.attr('tabindex', '-1');
+      $element.focus();
     }, 200);
   };
 };
@@ -1363,11 +1391,11 @@ H5P.openEmbedDialog = function ($element, embedCode, resizeCode, size, instance)
       var $expander = H5P.jQuery(this);
       var $content = $expander.next();
       if ($content.is(':visible')) {
-        $expander.removeClass('h5p-open').text(H5P.t('showAdvanced'));
+        $expander.removeClass('h5p-open').text(H5P.t('showAdvanced')).attr('aria-expanded', 'true');
         $content.hide();
       }
       else {
-        $expander.addClass('h5p-open').text(H5P.t('hideAdvanced'));
+        $expander.addClass('h5p-open').text(H5P.t('hideAdvanced')).attr('aria-expanded', 'false');
         $content.show();
       }
       $dialog.find('.h5p-embed-code-container').each(function () {
@@ -1378,6 +1406,7 @@ H5P.openEmbedDialog = function ($element, embedCode, resizeCode, size, instance)
     $dialog.find('.h5p-expander').click(expand).keypress(function (event) {
       if (event.keyCode === 32) {
         expand.apply(this);
+        return false;
       }
     });
   }).on('dialog-closed', function () {

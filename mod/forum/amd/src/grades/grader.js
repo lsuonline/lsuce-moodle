@@ -17,7 +17,6 @@
  * This module will tie together all of the different calls the gradable module will make.
  *
  * @module     mod_forum/grades/grader
- * @package    mod_forum
  * @copyright  2019 Andrew Nicols <andrew@nicols.co.uk>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -63,10 +62,11 @@ const getContentForUserIdFunction = (cmid, experimentalDisplayMode) => (userid) 
  *
  * @param {Number} cmid
  * @param {Number} groupID
+ * @param {Boolean} onlyActive Whether to fetch only the active enrolled users or all enrolled users in the course.
  * @return {Array} Array of users for a given context.
  */
-const getUsersForCmidFunction = (cmid, groupID) => async() => {
-    const context = await CourseRepository.getUsersFromCourseModuleID(cmid, groupID);
+const getUsersForCmidFunction = (cmid, groupID, onlyActive) => async() => {
+    const context = await CourseRepository.getUsersFromCourseModuleID(cmid, groupID, onlyActive);
 
     return context.users;
 };
@@ -113,6 +113,8 @@ const discussionPostMapper = (discussion) => {
  * Launch the Grader.
  *
  * @param {HTMLElement} rootNode the root HTML element describing what is to be graded
+ * @param {object} param
+ * @param {bool} [param.focusOnClose=null]
  */
 const launchWholeForumGrading = async(rootNode, {
     focusOnClose = null,
@@ -127,9 +129,10 @@ const launchWholeForumGrading = async(rootNode, {
     );
 
     const groupID = data.group ? data.group : 0;
+    const onlyActive = data.gradeOnlyActiveUsers;
 
     await Grader.launch(
-        getUsersForCmidFunction(data.cmid, groupID),
+        getUsersForCmidFunction(data.cmid, groupID, onlyActive),
         getContentForUserIdFunction(data.cmid, data.experimentalDisplayMode == "1"),
         gradingPanelFunctions.getter,
         gradingPanelFunctions.setter,
@@ -149,6 +152,8 @@ const launchWholeForumGrading = async(rootNode, {
  * Launch the Grader.
  *
  * @param {HTMLElement} rootNode the root HTML element describing what is to be graded
+ * @param {object} param
+ * @param {bool} [param.focusOnClose=null]
  */
 const launchViewGrading = async(rootNode, {
     focusOnClose = null,

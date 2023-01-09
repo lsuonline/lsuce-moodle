@@ -31,7 +31,7 @@ require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir . '/badgeslib.php');
 
 if (empty($CFG->enablebadges)) {
-    print_error('badgesdisabled', 'badges');
+    throw new \moodle_exception('badgesdisabled', 'badges');
 }
 
 $hash = required_param('b', PARAM_ALPHANUM); // Issued badge unique hash for badge assertion.
@@ -52,7 +52,7 @@ if (!is_null($action)) {
     } else { // Revoked badge.
         header("HTTP/1.0 410 Gone");
         $assertion = array();
-        if ($obversion == OPEN_BADGES_V2) {
+        if ($obversion >= OPEN_BADGES_V2) {
             $assertionurl = new moodle_url('/badges/assertion.php', array('b' => $hash));
             $assertion['id'] = $assertionurl->out();
         }

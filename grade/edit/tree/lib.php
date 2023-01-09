@@ -57,7 +57,7 @@ class grade_edit_tree {
     /**
      * Constructor
      */
-    public function __construct($gtree, $moving=false, $gpr) {
+    public function __construct($gtree, $moving, $gpr) {
         global $USER, $OUTPUT, $COURSE;
 
         $systemdefault = get_config('moodle', 'grade_report_showcalculations');
@@ -129,7 +129,6 @@ class grade_edit_tree {
         $actionsmenu = new action_menu();
         $actionsmenu->set_menu_trigger(get_string('edit'));
         $actionsmenu->set_owner_selector('grade-item-' . $eid);
-        $actionsmenu->set_alignment(action_menu::TL, action_menu::BL);
 
         if (!$is_category_item && ($icon = $this->gtree->get_edit_icon($element, $this->gpr, true))) {
             $actionsmenu->add($icon);
@@ -233,7 +232,6 @@ class grade_edit_tree {
                 if ($this->moving && $this->moving != $child_eid) {
 
                     $strmove     = get_string('move');
-                    $strmovehere = get_string('movehere');
                     $actions = $moveaction = ''; // no action icons when moving
 
                     $aurl = new moodle_url('index.php', array('id' => $COURSE->id, 'action' => 'move', 'eid' => $this->moving, 'moveafter' => $child_eid, 'sesskey' => sesskey()));
@@ -245,8 +243,7 @@ class grade_edit_tree {
                     $cell->colspan = 12;
                     $cell->attributes['class'] = 'movehere level' . ($level + 1) . ' level' . ($level % 2 ? 'even' : 'odd');
 
-                    $icon = new pix_icon('movehere', $strmovehere, null, array('class'=>'movetarget'));
-                    $cell->text = $OUTPUT->action_icon($aurl, $icon);
+                    $cell->text = html_writer::link($aurl, '', array('title' => get_string('movehere'), 'class' => 'movehere'));
 
                     $moveto = new html_table_row(array($cell));
                 }
@@ -411,22 +408,13 @@ class grade_edit_tree {
 
         if ($aggcoef == 'aggregationcoefweight' || $aggcoef == 'aggregationcoef' || $aggcoef == 'aggregationcoefextraweight') {
 
-            // BEGIN LSU Weighted Mean Extra Credit
-            if ($aggcoef == 'aggregationcoefweight' && $item->aggregationcoef < 0) {
-                $ec = get_string('aggregationhintextra', 'grades');
-                return $ec;
-            }
-            // END LSU Weighted Mean Extra Credit
-
             return $OUTPUT->render_from_template('core_grades/weight_field', [
                 'id' => $item->id,
                 'itemname' => $itemname,
                 'value' => self::format_number($item->aggregationcoef)
             ]);
 
-        // BEGIN LSU Weighted Mean Extra Credit
-        } else if ($aggcoef == 'aggregationcoefextraweightsum' || $aggcoef == 'aggregationcoefweight') {
-        // END LSU Weighted Mean Extra Credit
+        } else if ($aggcoef == 'aggregationcoefextraweightsum') {
 
             $tpldata = [
                 'id' => $item->id,
@@ -515,7 +503,7 @@ class grade_edit_tree {
         }
 
         if(!$after_el = $this->gtree->locate_element("cg$moveafter")) {
-            print_error('invalidelementid', '', $returnurl);
+            throw new \moodle_exception('invalidelementid', '', $returnurl);
         }
 
         $after = $after_el['object'];
@@ -524,7 +512,7 @@ class grade_edit_tree {
 
         foreach ($eids as $eid) {
             if (!$element = $this->gtree->locate_element($eid)) {
-                print_error('invalidelementid', '', $returnurl);
+                throw new \moodle_exception('invalidelementid', '', $returnurl);
             }
             $object = $element['object'];
 
@@ -555,11 +543,6 @@ class grade_edit_tree {
             if ($coefstring == 'aggregationcoefweight' || $coefstring == 'aggregationcoefextraweightsum' ||
                     $coefstring == 'aggregationcoefextraweight') {
                 $this->uses_weight = true;
-
-                // BEGIN LSU Weighted Mean Extra Credit
-                $this->uses_extra_credit = true;
-                // END LSU Weighted Mean Extra Credit
-
             }
 
             foreach($element['children'] as $child_el) {
@@ -578,6 +561,147 @@ class grade_edit_tree {
         }
 
         return $deepest_level;
+    }
+
+    /**
+     * Updates the provided gradecategory item with the provided data.
+     *
+     * @param grade_category $gradecategory The category to update.
+     * @param stdClass $data the data to update the category with.
+     * @return void
+     */
+    public static function update_gradecategory(grade_category $gradecategory, stdClass $data) {
+        // If no fullname is entered for a course category, put ? in the DB.
+        if (!isset($data->fullname) || $data->fullname == '') {
+            $data->fullname = '?';
+        }
+
+        if (!isset($data->aggregateonlygraded)) {
+            $data->aggregateonlygraded = 0;
+        }
+        if (!isset($data->aggregateoutcomes)) {
+            $data->aggregateoutcomes = 0;
+        }
+        grade_category::set_properties($gradecategory, $data);
+
+        // CATEGORY.
+        if (empty($gradecategory->id)) {
+            $gradecategory->insert();
+
+        } else {
+            $gradecategory->update();
+        }
+
+        // GRADE ITEM.
+        // Grade item data saved with prefix "grade_item_".
+        $itemdata = new stdClass();
+        foreach ($data as $k => $v) {
+            if (preg_match('/grade_item_(.*)/', $k, $matches)) {
+                $itemdata->{$matches[1]} = $v;
+            }
+        }
+
+        if (!isset($itemdata->aggregationcoef)) {
+            $itemdata->aggregationcoef = 0;
+        }
+
+        if (!isset($itemdata->gradepass) || $itemdata->gradepass == '') {
+            $itemdata->gradepass = 0;
+        }
+
+        if (!isset($itemdata->grademax) || $itemdata->grademax == '') {
+            $itemdata->grademax = 0;
+        }
+
+        if (!isset($itemdata->grademin) || $itemdata->grademin == '') {
+            $itemdata->grademin = 0;
+        }
+
+        $hidden      = empty($itemdata->hidden) ? 0 : $itemdata->hidden;
+        $hiddenuntil = empty($itemdata->hiddenuntil) ? 0 : $itemdata->hiddenuntil;
+        unset($itemdata->hidden);
+        unset($itemdata->hiddenuntil);
+
+        $locked   = empty($itemdata->locked) ? 0 : $itemdata->locked;
+        $locktime = empty($itemdata->locktime) ? 0 : $itemdata->locktime;
+        unset($itemdata->locked);
+        unset($itemdata->locktime);
+
+        $convert = array('grademax', 'grademin', 'gradepass', 'multfactor', 'plusfactor', 'aggregationcoef', 'aggregationcoef2');
+        foreach ($convert as $param) {
+            if (property_exists($itemdata, $param)) {
+                $itemdata->$param = unformat_float($itemdata->$param);
+            }
+        }
+        if (isset($itemdata->aggregationcoef2)) {
+            $itemdata->aggregationcoef2 = $itemdata->aggregationcoef2 / 100.0;
+        }
+
+        // When creating a new category, a number of grade item fields are filled out automatically, and are required.
+        // If the user leaves these fields empty during creation of a category, we let the default values take effect.
+        // Otherwise, we let the user-entered grade item values take effect.
+        $gradeitem = $gradecategory->load_grade_item();
+        $gradeitemcopy = fullclone($gradeitem);
+        grade_item::set_properties($gradeitem, $itemdata);
+
+        if (empty($gradeitem->id)) {
+            $gradeitem->id = $gradeitemcopy->id;
+        }
+        if (empty($gradeitem->grademax) && $gradeitem->grademax != '0') {
+            $gradeitem->grademax = $gradeitemcopy->grademax;
+        }
+        if (empty($gradeitem->grademin) && $gradeitem->grademin != '0') {
+            $gradeitem->grademin = $gradeitemcopy->grademin;
+        }
+        if (empty($gradeitem->gradepass) && $gradeitem->gradepass != '0') {
+            $gradeitem->gradepass = $gradeitemcopy->gradepass;
+        }
+        if (empty($gradeitem->aggregationcoef) && $gradeitem->aggregationcoef != '0') {
+            $gradeitem->aggregationcoef = $gradeitemcopy->aggregationcoef;
+        }
+
+        // Handle null decimals value - must be done before update!
+        if (!property_exists($itemdata, 'decimals') or $itemdata->decimals < 0) {
+            $gradeitem->decimals = null;
+        }
+
+        // Change weightoverride flag. Check if the value is set, because it is not when the checkbox is not ticked.
+        $itemdata->weightoverride = isset($itemdata->weightoverride) ? $itemdata->weightoverride : 0;
+        if ($gradeitem->weightoverride != $itemdata->weightoverride && $gradecategory->aggregation == GRADE_AGGREGATE_SUM) {
+            // If we are using natural weight and the weight has been un-overriden, force parent category to recalculate weights.
+            $gradecategory->force_regrading();
+        }
+        $gradeitem->weightoverride = $itemdata->weightoverride;
+
+        $gradeitem->outcomeid = null;
+
+        // This means we want to rescale overridden grades as well.
+        if (!empty($data->grade_item_rescalegrades) && $data->grade_item_rescalegrades == 'yes') {
+            $gradeitem->markasoverriddenwhengraded = false;
+            $gradeitem->rescale_grades_keep_percentage($gradeitemcopy->grademin, $gradeitemcopy->grademax,
+                $gradeitem->grademin, $gradeitem->grademax, 'gradebook');
+        }
+
+        // Only update the category's 'hidden' status if it has changed. Leaving a category as 'unhidden' (checkbox left
+        // unmarked) and submitting the form without this conditional check will result in displaying any grade items that
+        // are in the category, including those that were previously 'hidden'.
+        if (($gradecategory->get_hidden() != $hiddenuntil) || ($gradecategory->get_hidden() != $hidden)) {
+            if ($hiddenuntil) {
+                $gradecategory->set_hidden($hiddenuntil, true);
+            } else {
+                $gradecategory->set_hidden($hidden, true);
+            }
+        }
+
+        $gradeitem->set_locktime($locktime); // Locktime first - it might be removed when unlocking.
+        $gradeitem->set_locked($locked, false, true);
+
+        $gradeitem->update(); // We don't need to insert it, it's already created when the category is created.
+
+        // Set parent if needed.
+        if (isset($data->parentcategory)) {
+            $gradecategory->set_parent($data->parentcategory, 'gradebook');
+        }
     }
 }
 
@@ -737,31 +861,6 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
         $item = $category->get_grade_item();
         $categorycell = parent::get_category_cell($category, $levelclass, $params);
         $categorycell->text = grade_edit_tree::get_weight_input($item);
-
-        // BEGIN LSU Weighted Mean Extra Credit
-        $parent_cat = $item->load_parent_category();
-        $isextracredit = false;
-        if ($item->aggregationcoef > 0) {
-            // For category grade items, we need the grandparent category.
-            // The parent is just category the grade item represents.
-            if ($item->is_category_item()) {
-                $grandparent_cat = $parent_cat->get_parent_category();
-                if ($grandparent_cat->is_extracredit_used() && $grandparent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                    $isextracredit = true;
-                }
-            } else if ($parent_cat->is_extracredit_used() && $parent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                $isextracredit = true;
-            }
-        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $item->aggregationcoef < 0) {
-            $isextracredit = true;
-        } else if ($item->aggregationcoef < 0) {
-            $isextracredit = true;
-        }
-        if ($isextracredit) {
-                $categorycell->text = get_string('aggregationhintextra', 'grades');
-        }
-        // END LSU Weighted Mean Extra Credit
-
         return $categorycell;
     }
 
@@ -780,30 +879,6 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
                 && ($object->gradetype != GRADE_TYPE_SCALE || !empty($CFG->grade_includescalesinaggregation))) {
             $itemcell->text = grade_edit_tree::get_weight_input($item);
         }
-
-        // BEGIN LSU Weighted Mean Extra Credit
-        $parent_cat = $object->load_parent_category();
-        $isextracredit = false;
-        if ($item->aggregationcoef > 0) {
-            // For category grade items, we need the grandparent category.
-            // The parent is just category the grade item represents.
-            if ($item->is_category_item()) {
-                $grandparent_cat = $parent_cat->get_parent_category();
-                if ($grandparent_cat->is_extracredit_used() && $grandparent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                    $isextracredit = true;
-                }
-            } else if ($parent_cat->is_extracredit_used() && $parent_cat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                $isextracredit = true;
-            }
-        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $item->aggregationcoef < 0) {
-            $isextracredit = true;
-        } else if ($item->aggregationcoef < 0) {
-            $isextracredit = true;
-        }
-        if ($isextracredit) {
-                $itemcell->text = get_string('aggregationhintextra', 'grades');
-        }
-        // END LSU Weighted Mean Extra Credit
 
         return $itemcell;
     }
@@ -861,26 +936,16 @@ class grade_edit_tree_column_range extends grade_edit_tree_column {
             // The parent is just category the grade item represents.
             if ($item->is_category_item()) {
                 $grandparentcat = $parentcat->get_parent_category();
-
-                // BEGIN LSU Weighted Mean Extra Credit
-                if ($grandparentcat->is_extracredit_used() && $grandparentcat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                // END LSU Weighted Mean Extra Credit
-
+                if ($grandparentcat->is_extracredit_used()) {
                     $isextracredit = true;
                 }
-
-            // BEGIN LSU Weighted Mean Extra Credit
-            } else if ($parentcat->is_extracredit_used() && $parentcat->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN) {
-            // END LSU Weighted Mean Extra Credit
-
+            } else if ($parentcat->is_extracredit_used()) {
                 $isextracredit = true;
             }
         }
         if ($isextracredit) {
             $grademax .= ' ' . html_writer::tag('abbr', get_string('aggregationcoefextrasumabbr', 'grades'),
-                // BEGIN LSU Weighted Mean Extra Credit
-                array('title' => get_string('aggregationhintextra', 'grades')));
-                // END LSU Weighted Mean Extra Credit
+                array('title' => get_string('aggregationcoefextrasum', 'grades')));
         }
 
         $itemcell = parent::get_item_cell($item, $params);
@@ -955,7 +1020,7 @@ class grade_edit_tree_column_select extends grade_edit_tree_column {
         $masterlabel = get_string('all');
         // Use category name if available.
         if ($category->fullname !== '?') {
-            $masterlabel = format_string($category->fullname);
+            $masterlabel = format_string($category->fullname, true, ['escape' => false]);
             // Limit the displayed category name to prevent the Select column from getting too wide.
             if (core_text::strlen($masterlabel) > 20) {
                 $masterlabel = get_string('textellipsis', 'core', core_text::substr($masterlabel, 0, 12));
@@ -981,7 +1046,7 @@ class grade_edit_tree_column_select extends grade_edit_tree_column {
 
     public function get_item_cell($item, $params) {
         if (empty($params['itemtype']) || empty($params['eid'])) {
-            print_error('missingitemtypeoreid', 'core_grades');
+            throw new \moodle_exception('missingitemtypeoreid', 'core_grades');
         }
         $itemcell = parent::get_item_cell($item, $params);
 
@@ -1025,4 +1090,3 @@ class grade_edit_tree_column_select extends grade_edit_tree_column {
         return $togglegroup;
     }
 }
-

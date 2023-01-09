@@ -28,11 +28,12 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir.'/upgradelib.php');
 require_once($CFG->libdir.'/db/upgradelib.php');
+require_once($CFG->dirroot . '/calendar/tests/helpers.php');
 
 /**
  * Tests various classes and functions in upgradelib.php library.
  */
-class core_upgradelib_testcase extends advanced_testcase {
+class upgradelib_test extends advanced_testcase {
 
     /**
      * Test the {@link upgrade_stale_php_files_present() function
@@ -894,214 +895,6 @@ class core_upgradelib_testcase extends advanced_testcase {
     }
 
     /**
-     * Test that the previous records are updated according to the reworded actions.
-     * @return null
-     */
-    public function test_upgrade_rename_prediction_actions_useful_incorrectly_flagged() {
-        global $DB;
-
-        $this->resetAfterTest();
-        $this->setAdminUser();
-
-        $models = $DB->get_records('analytics_models');
-        $upcomingactivitiesdue = null;
-        $noteaching = null;
-        foreach ($models as $model) {
-            if ($model->target === '\\core_user\\analytics\\target\\upcoming_activities_due') {
-                $upcomingactivitiesdue = new \core_analytics\model($model);
-            }
-            if ($model->target === '\\core_course\\analytics\\target\\no_teaching') {
-                $noteaching = new \core_analytics\model($model);
-            }
-        }
-
-        // Upcoming activities due generating some insights.
-        $course1 = $this->getDataGenerator()->create_course();
-        $attrs = ['course' => $course1, 'duedate' => time() + WEEKSECS - DAYSECS];
-        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance($attrs);
-        $student = $this->getDataGenerator()->create_user();
-        $usercontext = \context_user::instance($student->id);
-        $this->getDataGenerator()->enrol_user($student->id, $course1->id, 'student');
-        $upcomingactivitiesdue->predict();
-        list($ignored, $predictions) = $upcomingactivitiesdue->get_predictions($usercontext, true);
-        $prediction = reset($predictions);
-
-        $predictionaction = (object)[
-            'predictionid' => $prediction->get_prediction_data()->id,
-            'userid' => 2,
-            'actionname' => 'fixed',
-            'timecreated' => time()
-        ];
-        $DB->insert_record('analytics_prediction_actions', $predictionaction);
-        $predictionaction->actionname = 'notuseful';
-        $DB->insert_record('analytics_prediction_actions', $predictionaction);
-
-        upgrade_rename_prediction_actions_useful_incorrectly_flagged();
-
-        $this->assertEquals(0, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_FIXED]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_USEFUL]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_NOT_USEFUL]));
-        $this->assertEquals(0, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_INCORRECTLY_FLAGGED]));
-
-        // No teaching generating some insights.
-        $course2 = $this->getDataGenerator()->create_course(['startdate' => time() + (2 * DAYSECS)]);
-        $noteaching->predict();
-        list($ignored, $predictions) = $noteaching->get_predictions(\context_system::instance(), true);
-        $prediction = reset($predictions);
-
-        $predictionaction = (object)[
-            'predictionid' => $prediction->get_prediction_data()->id,
-            'userid' => 2,
-            'actionname' => 'notuseful',
-            'timecreated' => time()
-        ];
-        $DB->insert_record('analytics_prediction_actions', $predictionaction);
-        $predictionaction->actionname = 'fixed';
-        $DB->insert_record('analytics_prediction_actions', $predictionaction);
-
-        upgrade_rename_prediction_actions_useful_incorrectly_flagged();
-
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_FIXED]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_USEFUL]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_NOT_USEFUL]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_INCORRECTLY_FLAGGED]));
-
-        // We also check that there are no records incorrectly switched in upcomingactivitiesdue.
-        $upcomingactivitiesdue->clear();
-
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_FIXED]));
-        $this->assertEquals(0, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_USEFUL]));
-        $this->assertEquals(0, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_NOT_USEFUL]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_INCORRECTLY_FLAGGED]));
-
-        $upcomingactivitiesdue->predict();
-        list($ignored, $predictions) = $upcomingactivitiesdue->get_predictions($usercontext, true);
-        $prediction = reset($predictions);
-
-        $predictionaction = (object)[
-            'predictionid' => $prediction->get_prediction_data()->id,
-            'userid' => 2,
-            'actionname' => 'fixed',
-            'timecreated' => time()
-        ];
-        $DB->insert_record('analytics_prediction_actions', $predictionaction);
-        $predictionaction->actionname = 'notuseful';
-        $DB->insert_record('analytics_prediction_actions', $predictionaction);
-
-        upgrade_rename_prediction_actions_useful_incorrectly_flagged();
-
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_FIXED]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_USEFUL]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_NOT_USEFUL]));
-        $this->assertEquals(1, $DB->count_records('analytics_prediction_actions',
-            ['actionname' => \core_analytics\prediction::ACTION_INCORRECTLY_FLAGGED]));
-    }
-
-    /**
-     * Test the functionality of the {@link upgrade_convert_hub_config_site_param_names()} function.
-     */
-    public function test_upgrade_convert_hub_config_site_param_names() {
-
-        $config = (object) [
-            // This is how site settings related to registration at https://moodle.net are stored.
-            'site_name_httpsmoodlenet' => 'Foo Site',
-            'site_language_httpsmoodlenet' => 'en',
-            'site_emailalert_httpsmoodlenet' => 1,
-            // These are unexpected relics of a value as registered at the old http://hub.moodle.org site.
-            'site_name_httphubmoodleorg' => 'Bar Site',
-            'site_description_httphubmoodleorg' => 'Old description',
-            // This is the target value we are converting to - here it already somehow exists.
-            'site_emailalert' => 0,
-            // This is a setting not related to particular hub.
-            'custom' => 'Do not touch this',
-            // A setting defined for multiple alternative hubs.
-            'site_foo_httpfirsthuborg' => 'First',
-            'site_foo_httpanotherhubcom' => 'Another',
-            'site_foo_httpyetanotherhubcom' => 'Yet another',
-            // A setting defined for multiple alternative hubs and one referential one.
-            'site_bar_httpfirsthuborg' => 'First',
-            'site_bar_httpanotherhubcom' => 'Another',
-            'site_bar_httpsmoodlenet' => 'One hub to rule them all!',
-            'site_bar_httpyetanotherhubcom' => 'Yet another',
-        ];
-
-        $converted = upgrade_convert_hub_config_site_param_names($config, 'https://moodle.net');
-
-        // Values defined for the moodle.net take precedence over the ones defined for other hubs.
-        $this->assertSame($converted->site_name, 'Foo Site');
-        $this->assertSame($converted->site_bar, 'One hub to rule them all!');
-        $this->assertNull($converted->site_name_httpsmoodlenet);
-        $this->assertNull($converted->site_bar_httpfirsthuborg);
-        $this->assertNull($converted->site_bar_httpanotherhubcom);
-        $this->assertNull($converted->site_bar_httpyetanotherhubcom);
-        // Values defined for alternative hubs only do not have any guaranteed value. Just for convenience, we use the first one.
-        $this->assertSame($converted->site_foo, 'First');
-        $this->assertNull($converted->site_foo_httpfirsthuborg);
-        $this->assertNull($converted->site_foo_httpanotherhubcom);
-        $this->assertNull($converted->site_foo_httpyetanotherhubcom);
-        // Values that are already defined with the new name format are kept.
-        $this->assertSame($converted->site_emailalert, 0);
-        // Eventual custom values not following the expected hub-specific naming format, are kept.
-        $this->assertSame($converted->custom, 'Do not touch this');
-    }
-
-    /**
-     * Test the functionality of the {@link upgrade_analytics_fix_contextids_defaults} function.
-     */
-    public function test_upgrade_analytics_fix_contextids_defaults() {
-        global $DB, $USER;
-
-        $this->resetAfterTest();
-
-        $model = (object)[
-            'name' => 'asd',
-            'target' => 'ou',
-            'indicators' => '[]',
-            'version' => '1',
-            'timecreated' => time(),
-            'timemodified' => time(),
-            'usermodified' => $USER->id,
-            'contextids' => ''
-        ];
-        $DB->insert_record('analytics_models', $model);
-
-        $model->contextids = null;
-        $DB->insert_record('analytics_models', $model);
-
-        unset($model->contextids);
-        $DB->insert_record('analytics_models', $model);
-
-        $model->contextids = '0';
-        $DB->insert_record('analytics_models', $model);
-
-        $model->contextids = 'null';
-        $DB->insert_record('analytics_models', $model);
-
-        $select = $DB->sql_compare_text('contextids') . ' = :zero OR ' . $DB->sql_compare_text('contextids') . ' = :null';
-        $params = ['zero' => '0', 'null' => 'null'];
-        $this->assertEquals(2, $DB->count_records_select('analytics_models', $select, $params));
-
-        upgrade_analytics_fix_contextids_defaults();
-
-        $this->assertEquals(0, $DB->count_records_select('analytics_models', $select, $params));
-    }
-
-    /**
      * Test the functionality of {@link upgrade_core_licenses} function.
      */
     public function test_upgrade_core_licenses() {
@@ -1128,5 +921,551 @@ class core_upgradelib_testcase extends advanced_testcase {
         // A core license which was deleted prior to upgrade should not be reinstalled.
         $actualshortnames = $DB->get_records_menu('license', null, '', 'id, shortname');
         $this->assertNotContains($deletedcorelicenseshortname, $actualshortnames);
+    }
+
+    /**
+     * Execute same problematic query from upgrade step.
+     *
+     * @return bool
+     */
+    public function run_upgrade_step_query() {
+        global $DB;
+
+        return $DB->execute("UPDATE {event} SET userid = 0 WHERE eventtype <> 'user' OR priority <> 0");
+    }
+
+    /**
+     * Test the functionality of upgrade_calendar_events_status() function.
+     */
+    public function test_upgrade_calendar_events_status() {
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $events = create_standard_events(5);
+        $eventscount = count($events);
+
+        // Run same DB query as the problematic upgrade step.
+        $this->run_upgrade_step_query();
+
+        // Get the events info.
+        $status = upgrade_calendar_events_status(false);
+
+        // Total events.
+        $expected = [
+            'total' => (object)[
+                'count' => $eventscount,
+                'bad' => $eventscount - 5, // Event count excluding user events.
+            ],
+            'standard' => (object)[
+                'count' => $eventscount,
+                'bad' => $eventscount - 5, // Event count excluding user events.
+            ],
+        ];
+
+        $this->assertEquals($expected['standard']->count, $status['standard']->count);
+        $this->assertEquals($expected['standard']->bad, $status['standard']->bad);
+        $this->assertEquals($expected['total']->count, $status['total']->count);
+        $this->assertEquals($expected['total']->bad, $status['total']->bad);
+    }
+
+    /**
+     * Test the functionality of upgrade_calendar_events_get_teacherid() function.
+     */
+    public function test_upgrade_calendar_events_get_teacherid() {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        // Create a new course and enrol a user as editing teacher.
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+
+        // There's a teacher enrolled in the course, return its user id.
+        $userid = upgrade_calendar_events_get_teacherid($course->id);
+
+        // It should return the enrolled teacher by default.
+        $this->assertEquals($teacher->id, $userid);
+
+        // Un-enrol teacher from course.
+        $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'manual']);
+        enrol_get_plugin('manual')->unenrol_user($instance, $teacher->id);
+
+        // Since there are no teachers enrolled in the course, fallback to admin user id.
+        $admin = get_admin();
+        $userid = upgrade_calendar_events_get_teacherid($course->id);
+        $this->assertEquals($admin->id, $userid);
+    }
+
+    /**
+     * Test the functionality of upgrade_calendar_standard_events_fix() function.
+     */
+    public function test_upgrade_calendar_standard_events_fix() {
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $events = create_standard_events(5);
+        $eventscount = count($events);
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+
+        // There should be no standard events to be fixed.
+        $this->assertEquals(0, $info['standard']->bad);
+
+        // No events to be fixed, should return false.
+        $this->assertFalse(upgrade_calendar_standard_events_fix($info['standard'], false));
+
+        // Run same problematic DB query.
+        $this->run_upgrade_step_query();
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+
+        // There should be 20 events to be fixed (five from each type except user).
+        $this->assertEquals($eventscount - 5, $info['standard']->bad);
+
+        // Test the function runtime, passing -1 as end time.
+        // It should not be able to fix all events so fast, so some events should remain to be fixed in the next run.
+        $result = upgrade_calendar_standard_events_fix($info['standard'], false, -1);
+        $this->assertNotFalse($result);
+
+        // Call the function again, this time it will run until all events have been fixed.
+        $this->assertFalse(upgrade_calendar_standard_events_fix($info['standard'], false));
+
+        // Get the events info again.
+        $info = upgrade_calendar_events_status(false);
+
+        // All standard events should have been recovered.
+        // There should be no standard events flagged to be fixed.
+        $this->assertEquals(0, $info['standard']->bad);
+    }
+
+    /**
+     * Test the functionality of upgrade_calendar_subscription_events_fix() function.
+     */
+    public function test_upgrade_calendar_subscription_events_fix() {
+        global $CFG, $DB;
+
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        require_once($CFG->dirroot . '/lib/bennu/bennu.inc.php');
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Create event subscription.
+        $subscription = new stdClass;
+        $subscription->name = 'Repeated events';
+        $subscription->importfrom = CALENDAR_IMPORT_FROM_FILE;
+        $subscription->eventtype = 'site';
+        $id = calendar_add_subscription($subscription);
+
+        // Get repeated events ICS file.
+        $calendar = file_get_contents($CFG->dirroot . '/lib/tests/fixtures/repeated_events.ics');
+        $ical = new iCalendar();
+        $ical->unserialize($calendar);
+
+        // Import subscription events.
+        calendar_import_events_from_ical($ical, $id);
+
+        // Subscription should have added 18 events.
+        $eventscount = $DB->count_records('event');
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+
+        // There should be no subscription events to be fixed at this point.
+        $this->assertEquals(0, $info['subscription']->bad);
+
+        // No events to be fixed, should return false.
+        $this->assertFalse(upgrade_calendar_subscription_events_fix($info['subscription'], false));
+
+        // Run same problematic DB query.
+        $this->run_upgrade_step_query();
+
+        // Get the events info and assert total number of events is correct.
+        $info = upgrade_calendar_events_status(false);
+        $subscriptioninfo = $info['subscription'];
+
+        $this->assertEquals($eventscount, $subscriptioninfo->count);
+
+        // Since we have added our subscription as site, all sub events have been affected.
+        $this->assertEquals($eventscount, $subscriptioninfo->bad);
+
+        // Test the function runtime, passing -1 as end time.
+        // It should not be able to fix all events so fast, so some events should remain to be fixed in the next run.
+        $result = upgrade_calendar_subscription_events_fix($subscriptioninfo, false, -1);
+        $this->assertNotFalse($result);
+
+        // Call the function again, this time it will run until all events have been fixed.
+        $this->assertFalse(upgrade_calendar_subscription_events_fix($subscriptioninfo, false));
+
+        // Get the events info again.
+        $info = upgrade_calendar_events_status(false);
+
+        // All standard events should have been recovered.
+        // There should be no standard events flagged to be fixed.
+        $this->assertEquals(0, $info['subscription']->bad);
+    }
+
+    /**
+     * Test the functionality of upgrade_calendar_action_events_fix() function.
+     */
+    public function test_upgrade_calendar_action_events_fix() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Create a new course and a choice activity.
+        $course = $this->getDataGenerator()->create_course();
+        $choice = $this->getDataGenerator()->create_module('choice', ['course' => $course->id]);
+
+        // Create some action events.
+        create_action_event(['courseid' => $course->id, 'modulename' => 'choice', 'instance' => $choice->id,
+            'eventtype' => CHOICE_EVENT_TYPE_OPEN]);
+        create_action_event(['courseid' => $course->id, 'modulename' => 'choice', 'instance' => $choice->id,
+            'eventtype' => CHOICE_EVENT_TYPE_CLOSE]);
+
+        $eventscount = $DB->count_records('event');
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+        $actioninfo = $info['action'];
+
+        // There should be no standard events to be fixed.
+        $this->assertEquals(0, $actioninfo->bad);
+
+        // No events to be fixed, should return false.
+        $this->assertFalse(upgrade_calendar_action_events_fix($actioninfo, false));
+
+        // Run same problematic DB query.
+        $this->run_upgrade_step_query();
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+        $actioninfo = $info['action'];
+
+        // There should be 2 events to be fixed.
+        $this->assertEquals($eventscount, $actioninfo->bad);
+
+        // Test the function runtime, passing -1 as end time.
+        // It should not be able to fix all events so fast, so some events should remain to be fixed in the next run.
+        $this->assertNotFalse(upgrade_calendar_action_events_fix($actioninfo, false, -1));
+
+        // Call the function again, this time it will run until all events have been fixed.
+        $this->assertFalse(upgrade_calendar_action_events_fix($actioninfo, false));
+
+        // Get the events info again.
+        $info = upgrade_calendar_events_status(false);
+
+        // All standard events should have been recovered.
+        // There should be no standard events flagged to be fixed.
+        $this->assertEquals(0, $info['action']->bad);
+    }
+
+    /**
+     * Test the user override part of upgrade_calendar_override_events_fix() function.
+     */
+    public function test_upgrade_calendar_user_override_events_fix() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+
+        // Create a new course.
+        $course = $generator->create_course();
+
+        // Create few users and enrol as students.
+        $student1 = $generator->create_and_enrol($course, 'student');
+        $student2 = $generator->create_and_enrol($course, 'student');
+        $student3 = $generator->create_and_enrol($course, 'student');
+
+        // Create some activities and some override events.
+        foreach (['assign', 'lesson', 'quiz'] as $modulename) {
+            $instance = $generator->create_module($modulename, ['course' => $course->id]);
+            create_user_override_event($modulename, $instance->id, $student1->id);
+            create_user_override_event($modulename, $instance->id, $student2->id);
+            create_user_override_event($modulename, $instance->id, $student3->id);
+        }
+
+        // There should be 9 override events to be fixed (three from each module).
+        $eventscount = $DB->count_records('event');
+        $this->assertEquals(9, $eventscount);
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+        $overrideinfo = $info['override'];
+
+        // There should be no standard events to be fixed.
+        $this->assertEquals(0, $overrideinfo->bad);
+
+        // No events to be fixed, should return false.
+        $this->assertFalse(upgrade_calendar_override_events_fix($overrideinfo, false));
+
+        // Run same problematic DB query.
+        $this->run_upgrade_step_query();
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+        $overrideinfo = $info['override'];
+
+        // There should be 9 events to be fixed (three from each module).
+        $this->assertEquals($eventscount, $overrideinfo->bad);
+
+        // Call the function again, this time it will run until all events have been fixed.
+        $this->assertFalse(upgrade_calendar_override_events_fix($overrideinfo, false));
+
+        // Get the events info again.
+        $info = upgrade_calendar_events_status(false);
+
+        // All standard events should have been recovered.
+        // There should be no standard events flagged to be fixed.
+        $this->assertEquals(0, $info['override']->bad);
+    }
+
+    /**
+     * Test the group override part of upgrade_calendar_override_events_fix() function.
+     */
+    public function test_upgrade_calendar_group_override_events_fix() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+
+        // Create a new course and few groups.
+        $course = $generator->create_course();
+        $group1 = $generator->create_group(['courseid' => $course->id]);
+        $group2 = $generator->create_group(['courseid' => $course->id]);
+        $group3 = $generator->create_group(['courseid' => $course->id]);
+
+        // Create some activities and some override events.
+        foreach (['assign', 'lesson', 'quiz'] as $modulename) {
+            $instance = $generator->create_module($modulename, ['course' => $course->id]);
+            create_group_override_event($modulename, $instance->id, $course->id, $group1->id);
+            create_group_override_event($modulename, $instance->id, $course->id, $group2->id);
+            create_group_override_event($modulename, $instance->id, $course->id, $group3->id);
+        }
+
+        // There should be 9 override events to be fixed (three from each module).
+        $eventscount = $DB->count_records('event');
+        $this->assertEquals(9, $eventscount);
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+
+        // We classify group overrides as action events since they do not record the userid.
+        $groupoverrideinfo = $info['action'];
+
+        // There should be no events to be fixed.
+        $this->assertEquals(0, $groupoverrideinfo->bad);
+
+        // No events to be fixed, should return false.
+        $this->assertFalse(upgrade_calendar_action_events_fix($groupoverrideinfo, false));
+
+        // Run same problematic DB query.
+        $this->run_upgrade_step_query();
+
+        // Get the events info.
+        $info = upgrade_calendar_events_status(false);
+        $this->assertEquals(9, $info['action']->bad);
+
+        // Call the function again, this time it will run until all events have been fixed.
+        $this->assertFalse(upgrade_calendar_action_events_fix($info['action'], false));
+
+        // Since group override events do not set userid, these events should not be flagged to be fixed.
+        $this->assertEquals(0, $groupoverrideinfo->bad);
+    }
+
+    /**
+     * Test the admin_dir_usage check with no admin setting specified.
+     */
+    public function test_admin_dir_usage_not_set(): void {
+        $result = new environment_results("custom_checks");
+
+        $this->assertNull(check_admin_dir_usage($result));
+    }
+
+    /**
+     * Test the admin_dir_usage check with the default admin setting specified.
+     */
+    public function test_admin_dir_usage_is_default(): void {
+        global $CFG;
+
+        $CFG->admin = 'admin';
+
+        $result = new environment_results("custom_checks");
+        $this->assertNull(check_admin_dir_usage($result));
+    }
+
+    /**
+     * Test the admin_dir_usage check with a custom admin setting specified.
+     */
+    public function test_admin_dir_usage_non_standard(): void {
+        global $CFG;
+
+        $this->resetAfterTest(true);
+        $CFG->admin = 'notadmin';
+
+        $result = new environment_results("custom_checks");
+        $this->assertInstanceOf(environment_results::class, check_admin_dir_usage($result));
+        $this->assertEquals('admin_dir_usage', $result->getInfo());
+        $this->assertFalse($result->getStatus());
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the XML-RPC web service method is not set.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_webservice_is_not_set(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $result = new environment_results('custom_checks');
+        $this->assertNull(check_xmlrpc_usage($result));
+
+        $CFG->webserviceprotocols = 'rest';
+        $result = new environment_results('custom_checks');
+        $this->assertNull(check_xmlrpc_usage($result));
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the XML-RPC web service method is set.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_webservice_is_set(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->webserviceprotocols = 'xmlrpc,rest';
+
+        $result = new environment_results('custom_checks');
+        $this->assertInstanceOf(environment_results::class, check_xmlrpc_usage($result));
+        $this->assertEquals('xmlrpc_webservice_usage', $result->getInfo());
+        $this->assertFalse($result->getStatus());
+    }
+
+    /**
+     * Data provider of usermenu items.
+     *
+     * @return array
+     */
+    public function usermenu_items_dataprovider(): array {
+        return [
+            'Add new item to empty usermenu' => [
+                '',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+            ],
+            'Add new item to usermenu' => [
+                'profile,moodle|/user/profile.php
+grades,grades|/grade/report/mygrades.php',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+                'profile,moodle|/user/profile.php
+grades,grades|/grade/report/mygrades.php
+reports,core_reportbuilder|/reportbuilder/index.php',
+            ],
+            'Add existing item to usermenu' => [
+                'profile,moodle|/user/profile.php
+reports,core_reportbuilder|/reportbuilder/index.php
+calendar,core_calendar|/calendar/view.php?view=month',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+                'profile,moodle|/user/profile.php
+reports,core_reportbuilder|/reportbuilder/index.php
+calendar,core_calendar|/calendar/view.php?view=month',
+            ],
+        ];
+    }
+
+    /**
+     * Test the functionality of the {@link upgrade_add_item_to_usermenu()} function.
+     *
+     * @covers ::upgrade_add_item_to_usermenu
+     * @dataProvider usermenu_items_dataprovider
+     */
+    public function test_upgrade_add_item_to_usermenu(string $initialmenu, string $newmenuitem, string $expectedmenu) {
+        global $CFG;
+
+        $this->resetAfterTest();
+        // Set the base user menu.
+        $CFG->customusermenuitems = $initialmenu;
+
+        // Add the new item to the user menu.
+        upgrade_add_item_to_usermenu($newmenuitem);
+        $newcustomusermenu = $CFG->customusermenuitems;
+
+        $this->assertEquals($expectedmenu, $newcustomusermenu);
+    }
+
+    /**
+     * Test that file timestamps are corrected for copied files.
+     */
+    public function test_upgrade_fix_file_timestamps() {
+        global $DB;
+        $this->resetAfterTest();
+
+        // Add 2 files for testing, one with edited old timestamps.
+        $origtime = time();
+        $new = [
+            'contextid' => 123,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'file.txt',
+        ];
+        $old = [
+            'contextid' => 321,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'file.txt',
+        ];
+
+        // Create the file records. This will create a directory listing with the current time.
+        $fs = get_file_storage();
+        $newfile = $fs->create_file_from_string($new, 'new');
+        $oldfile = $fs->create_file_from_string($old, 'old');
+
+        // Manually set the timestamps to use on files.
+        $DB->set_field('files', 'timecreated', $origtime, [
+            'contextid' => $newfile->get_contextid(),
+            'component' => $newfile->get_component(),
+            'filearea' => $newfile->get_filearea(),
+            'itemid' => $newfile->get_itemid(),
+        ]);
+        $DB->set_field('files', 'timemodified', $origtime, [
+            'contextid' => $newfile->get_contextid(),
+            'component' => $newfile->get_component(),
+            'filearea' => $newfile->get_filearea(),
+            'itemid' => $newfile->get_itemid(),
+        ]);
+
+        $DB->set_field('files', 'timecreated', 1, ['id' => $oldfile->get_id()]);
+        $DB->set_field('files', 'timemodified', 1, ['id' => $oldfile->get_id()]);
+
+        upgrade_fix_file_timestamps();
+
+        // Check nothing changed on the new file.
+        $updatednew = $DB->get_record('files', ['id' => $newfile->get_id()]);
+        $this->assertEquals($origtime, $updatednew->timecreated);
+        $this->assertEquals($origtime, $updatednew->timemodified);
+
+        // Confirm that the file with old timestamps has been fixed.
+        $updatedold = $DB->get_record('files', ['id' => $oldfile->get_id()]);
+        $this->assertNotEquals(1, $updatedold->timecreated);
+        $this->assertNotEquals(1, $updatedold->timemodified);
+        $this->assertTrue($updatedold->timecreated >= $origtime);
+        $this->assertTrue($updatedold->timemodified >= $origtime);
     }
 }

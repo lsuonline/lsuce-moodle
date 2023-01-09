@@ -37,7 +37,7 @@ $newvalue = optional_param('newvalue', false, PARAM_TEXT);
 
 /// basic access checks
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('invalidcourseid');
+    throw new \moodle_exception('invalidcourseid');
 }
 $context = context_course::instance($course->id);
 require_login($course);
@@ -52,7 +52,7 @@ switch ($action) {
         if (!empty($userid) && !empty($itemid) && $newvalue !== false && !empty($type)) {
             // Save the grade or feedback
             if (!$grade_item = grade_item::fetch(array('id'=>$itemid, 'courseid'=>$courseid))) { // we must verify course id here!
-                print_error('invalidgradeitemid');
+                throw new \moodle_exception('invalidgradeitemid');
             }
 
             /**
@@ -91,7 +91,8 @@ switch ($action) {
                 }
 
                 if ($errorstr) {
-                    $user = $DB->get_record('user', array('id' => $userid), 'id, ' . get_all_user_name_fields(true));
+                    $userfieldsapi = \core_user\fields::for_name();
+                    $user = $DB->get_record('user', array('id' => $userid), 'id' . $userfieldsapi->get_sql()->selects);
                     $gradestr = new stdClass();
                     $gradestr->username = fullname($user);
                     $gradestr->itemname = $grade_item->get_name();

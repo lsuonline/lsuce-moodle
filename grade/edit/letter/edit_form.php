@@ -31,13 +31,12 @@ require_once $CFG->libdir.'/formslib.php';
 class edit_letter_form extends moodleform {
 
     public function definition() {
-	// BEGIN LSU Better Letters
-	global $DB;
-	// END LSU Better Letters
-
         $mform =& $this->_form;
-        $num   = $this->_customdata['num'];
-        $admin = $this->_customdata['admin'];
+
+        [
+            'lettercount' => $lettercount,
+            'admin' => $admin,
+        ] = $this->_customdata;
 
         $mform->addElement('header', 'gradeletters', get_string('gradeletters', 'grades'));
 
@@ -50,69 +49,35 @@ class edit_letter_form extends moodleform {
         $gradeletter       = get_string('gradeletter', 'grades');
         $gradeboundary     = get_string('gradeboundary', 'grades');
 
-        // BEGIN LSU Better Letters
-        $strict = get_config('moodle', 'grade_letters_strict');
+        // The fields to create the grade letter/boundary.
+        $elements = [];
+        $elements[] = $mform->createElement('text', 'gradeletter', "{$gradeletter} {no}");
+        $elements[] = $mform->createElement('static', '', '', '&ge;');
+        $elements[] = $mform->createElement('float', 'gradeboundary', "{$gradeboundary} {no}");
+        $elements[] = $mform->createElement('static', '', '', '%');
 
-        $default = get_config('moodle', 'grade_letters_names');
+        // Element options/rules, fields should be disabled unless "Override" is checked for course grade letters.
+        $options = [];
+        $options['gradeletter']['type'] = PARAM_TEXT;
 
-        if ($default and $scale = $DB->get_record('scale', array('id' => $default))) {
-            $default_letters = $scale->scale;
-        } else {
-           $default_letters = get_string('lettersdefaultletters', 'grades');
+        if (!$admin) {
+            $options['gradeletter']['disabledif'] = ['override', 'notchecked'];
+            $options['gradeboundary']['disabledif'] = ['override', 'notchecked'];
         }
 
-        $default_letters = array_reverse(explode(',', $default_letters));
-        $letters = array('' => get_string('unused', 'grades')) +
-            array_combine($default_letters, $default_letters);
-        // END LSU Better Letters
+        // Create our repeatable elements, each one a group comprised of the fields defined previously.
+        $this->repeat_elements([
+            $mform->createElement('group', 'gradeentry', "{$gradeletter} {no}", $elements, [' '], false)
+        ], $lettercount, $options, 'gradeentrycount', 'gradeentryadd', 3);
 
-        for ($i=1; $i<$num+1; $i++) {
-            $gradelettername = 'gradeletter'.$i;
-            $gradeboundaryname = 'gradeboundary'.$i;
-
-            $entry = array();
-            // BEGIN LSU Better Letters
-            if ($strict) {
-                $entry[] = $mform->createElement('select', $gradelettername, $gradeletter . " $i", $letters);
-            } else {
-                $entry[] = $mform->createElement('text', $gradelettername, $gradeletter . " $i");
-            }
-            // END LSU Better Letters
-
-            $mform->setType($gradelettername, PARAM_TEXT);
-
-            if (!$admin) {
-                $mform->disabledIf($gradelettername, 'override', 'notchecked');
-                // BEGIN LSU Better Letters
-                $mform->disabledIf($gradelettername, $gradeboundaryname, 'eq', -1);
-                // END LSU Better Letters
-            }
-
-            $entry[] = $mform->createElement('static', '', '', '&ge;');
-            $entry[] = $mform->createElement('text', $gradeboundaryname, $gradeboundary." $i");
-            $entry[] = $mform->createElement('static', '', '', '%');
-            $mform->addGroup($entry, 'gradeentry'.$i, $gradeletter." $i", array(' '), false);
-
-            $mform->setType($gradeboundaryname, PARAM_FLOAT);
-
-            if (!$admin) {
-                $mform->disabledIf($gradeboundaryname, 'override', 'notchecked');
-            }
+        // Add a help icon to first element group, if it exists.
+        if ($mform->elementExists('gradeentry[0]')) {
+            $mform->addHelpButton('gradeentry[0]', 'gradeletter', 'grades');
         }
 
-        if ($num > 0) {
-            $mform->addHelpButton('gradeentry1', 'gradeletter', 'grades');
-        }
-
-        // hidden params
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
-//-------------------------------------------------------------------------------
-        // buttons
-        $this->add_action_buttons(!$admin);
+        $this->add_action_buttons();
     }
-
 }
-
-

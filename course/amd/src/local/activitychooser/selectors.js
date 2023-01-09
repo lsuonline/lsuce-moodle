@@ -17,7 +17,6 @@
  * Define all of the selectors we will be using on the grading interface.
  *
  * @module     core_course/local/chooser/selectors
- * @package    core_course
  * @copyright  2019 Mathew May <mathew.solutions>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -84,8 +83,6 @@ export default {
         sitetopic: 'div.sitetopic',
         tab: 'a[data-toggle="tab"]',
         activetab: 'a[data-toggle="tab"][aria-selected="true"]',
-        visibletabs: 'a[data-toggle="tab"]:not(.d-none)',
-        searchicon: '.input-group-append .search-icon',
-        clearsearch: '.input-group-append .clear'
+        visibletabs: 'a[data-toggle="tab"]:not(.d-none)'
     },
 };

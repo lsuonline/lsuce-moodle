@@ -36,7 +36,11 @@ require_once(__DIR__.'/locallib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_url extends repository {
+    /** @var int Maximum time of recursion. */
+    const MAX_RECURSION_TIME = 5;
     var $processedfiles = array();
+    /** @var int Recursion counter. */
+    var $recursioncounter = 0;
 
     /**
      * @param int $repositoryid
@@ -124,10 +128,19 @@ EOD;
         if (empty($baseurl)) {
             $url = $relativeurl;
         } else {
-            $url = htmlspecialchars_decode(url_to_absolute($baseurl, $relativeurl));
+            $url = htmlspecialchars_decode(url_to_absolute($baseurl, $relativeurl), ENT_COMPAT);
         }
         if (in_array($url, $this->processedfiles)) {
-            // avoid endless recursion
+            // Avoid endless recursion for the same URL with same parameters.
+            return;
+        }
+        // Remove the query string before check.
+        $recursioncheckurl = preg_replace('/\?.*/', '', $url);
+        if (in_array($recursioncheckurl, $this->processedfiles)) {
+            $this->recursioncounter++;
+        }
+        if ($this->recursioncounter >= self::MAX_RECURSION_TIME) {
+            // Avoid endless recursion for the same URL with different parameters.
             return;
         }
         $this->processedfiles[] = $url;
@@ -197,7 +210,7 @@ EOD;
         if (empty($list['list'])) {
             $list['list'] = array();
         }
-        $src = url_to_absolute($baseurl, htmlspecialchars_decode($url));
+        $src = url_to_absolute($baseurl, htmlspecialchars_decode($url, ENT_COMPAT));
         foreach ($list['list'] as $image) {
             if ($image['source'] == $src) {
                 return;

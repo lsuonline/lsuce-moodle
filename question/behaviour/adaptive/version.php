@@ -26,8 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'qbehaviour_adaptive';
-$plugin->version   = 2020061500;
+$plugin->version   = 2022112800;
 
-$plugin->requires  = 2020060900;
+$plugin->requires  = 2022111800;
 
 $plugin->maturity  = MATURITY_STABLE;

@@ -31,6 +31,7 @@ use advanced_testcase;
 use context_course;
 use context_coursecat;
 use context_system;
+use Exception;
 
 global $CFG;
 require_once($CFG->dirroot . '/contentbank/tests/fixtures/testable_contenttype.php');
@@ -45,7 +46,7 @@ require_once($CFG->dirroot . '/contentbank/tests/fixtures/testable_content.php')
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \core_contentbank\contentbank
  */
-class core_contentbank_testcase extends advanced_testcase {
+class contentbank_test extends advanced_testcase {
 
     /**
      * Setup to ensure that fixtures are loaded.
@@ -205,9 +206,10 @@ class core_contentbank_testcase extends advanced_testcase {
      */
     public function test_search_contents(?string $search, string $where, int $expectedresult, array $contexts = [],
             array $contenttypes = null): void {
-        global $DB;
+        global $DB, $CFG;
 
         $this->resetAfterTest();
+        $this->setAdminUser();
 
         // Create users.
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
@@ -229,11 +231,12 @@ class core_contentbank_testcase extends advanced_testcase {
         }
 
         // Add some content to the content bank.
+        $filepath = $CFG->dirroot . '/h5p/tests/fixtures/filltheblanks.h5p';
         $generator = $this->getDataGenerator()->get_plugin_generator('core_contentbank');
         foreach ($contexts as $context) {
             $contextinstance = $existingcontexts[$context];
             $records = $generator->generate_contentbank_data('contenttype_h5p', 3,
-                $manager->id, $contextinstance, false);
+                $manager->id, $contextinstance, false, $filepath);
         }
 
         // Search for some content.
@@ -243,7 +246,7 @@ class core_contentbank_testcase extends advanced_testcase {
         $this->assertCount($expectedresult, $contents);
         if (!empty($contents) && !empty($search)) {
             foreach ($contents as $content) {
-                $this->assertContains($search, $content->get_name());
+                $this->assertStringContainsString($search, $content->get_name());
             }
         }
     }
@@ -356,12 +359,12 @@ class core_contentbank_testcase extends advanced_testcase {
      * @covers ::create_content_from_file
      */
     public function test_create_content_from_file() {
-        global $USER;
+        global $USER, $CFG;
 
         $this->resetAfterTest();
         $this->setAdminUser();
         $systemcontext = \context_system::instance();
-        $name = 'dummy_h5p.h5p';
+        $name = 'greeting-card-887.h5p';
 
         // Create a dummy H5P file.
         $dummyh5p = array(
@@ -373,8 +376,8 @@ class core_contentbank_testcase extends advanced_testcase {
             'filename' => $name,
             'userid' => $USER->id
         );
-        $fs = get_file_storage();
-        $dummyh5pfile = $fs->create_file_from_string($dummyh5p, 'Dummy H5Pcontent');
+        $path = $CFG->dirroot . '/h5p/tests/fixtures/' . $name;
+        $dummyh5pfile = \core_h5p\helper::create_fake_stored_file_from_path($path);
 
         $cb = new contentbank();
         $content = $cb->create_content_from_file($systemcontext, $USER->id, $dummyh5pfile);
@@ -557,7 +560,7 @@ class core_contentbank_testcase extends advanced_testcase {
             // Mock core_plugin_manager class and the method get_plugins_of_type.
             $pluginmanager = $this->getMockBuilder(\core_plugin_manager::class)
                 ->disableOriginalConstructor()
-                ->setMethods(['get_plugins_of_type'])
+                ->onlyMethods(['get_plugins_of_type'])
                 ->getMock();
 
             // Replace protected singletoninstance reference (core_plugin_manager property) with mock object.
@@ -602,6 +605,33 @@ class core_contentbank_testcase extends advanced_testcase {
 
         $actual = $cb->get_contenttypes_with_capability_feature('test2', null, $enabled);
         $this->assertEquals($contenttypescanfeature, array_values($actual));
+    }
+
+    /**
+     * Test the behaviour of get_content_from_id()
+     *
+     * @covers  ::get_content_from_id
+     */
+    public function test_get_content_from_id() {
+
+        $this->resetAfterTest();
+        $cb = new \core_contentbank\contentbank();
+
+        // Create a category and two courses.
+        $systemcontext = context_system::instance();
+
+        // Add some content to the content bank.
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_contentbank');
+        $contents = $generator->generate_contentbank_data(null, 3, 0, $systemcontext);
+        $content = reset($contents);
+
+        // Get the content instance form id.
+        $newinstance = $cb->get_content_from_id($content->get_id());
+        $this->assertEquals($content->get_id(), $newinstance->get_id());
+
+        // Now produce and exception with an innexistent id.
+        $this->expectException(Exception::class);
+        $cb->get_content_from_id(0);
     }
 
     /**

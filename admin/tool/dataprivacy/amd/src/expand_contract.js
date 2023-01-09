@@ -17,13 +17,11 @@
  * Potential user selector module.
  *
  * @module     tool_dataprivacy/expand_contract
- * @class      page-expand-contract
- * @package    tool_dataprivacy
  * @copyright  2018 Adrian Greeve
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/url', 'core/str'], function($, url, str) {
+define(['jquery', 'core/url', 'core/str', 'core/notification'], function($, url, str, Notification) {
 
     var expandedImage = $('<img alt="" src="' + url.imageUrl('t/expanded') + '"/>');
     var collapsedImage = $('<img alt="" src="' + url.imageUrl('t/collapsed') + '"/>');

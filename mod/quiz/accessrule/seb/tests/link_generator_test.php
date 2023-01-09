@@ -14,31 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * PHPUnit tests for link_generator.
- *
- * @package    quizaccess_seb
- * @author     Andrew Madden <andrewmadden@catalyst-au.net>
- * @copyright  2019 Catalyst IT
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-use quizaccess_seb\link_generator;
-
-defined('MOODLE_INTERNAL') || die();
+namespace quizaccess_seb;
 
 /**
  * PHPUnit tests for link_generator.
  *
- * @copyright  2020 Catalyst IT
+ * @package   quizaccess_seb
+ * @author    Andrew Madden <andrewmadden@catalyst-au.net>
+ * @copyright 2020 Catalyst IT
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class quizaccess_seb_link_generator_testcase extends advanced_testcase {
+class link_generator_test extends \advanced_testcase {
 
     /**
      * Called before every test.
      */
-    public function setUp() {
+    public function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
     }
@@ -95,8 +86,8 @@ class quizaccess_seb_link_generator_testcase extends advanced_testcase {
      * Test that link_generator can't not be instantiated with fake course module.
      */
     public function test_course_module_does_not_exist() {
-        $this->expectException(dml_exception::class);
-        $this->expectExceptionMessageRegExp("/^Can't find data record in database.*/");
+        $this->expectException(\dml_exception::class);
+        $this->expectExceptionMessageMatches("/^Can't find data record in database.*/");
         $generator = link_generator::get_link(123456, false);
     }
 }
