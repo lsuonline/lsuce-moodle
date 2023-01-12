@@ -46,3 +46,5 @@ atlassian-ide-plugin.xml
 
 # Syllabus
 /syllabus
+
+config_local.php
