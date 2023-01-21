@@ -44,6 +44,11 @@ class fee {
 
         // Fee Black List
         $this->fbl = $extras['feeblacklist'];
+        $this->finddup = $extras['feedup'];
+        // $this->removedup = $extras['removedup'];
+        $this->purgeit = $extras['purgeit'];
+        $this->restoreit = $extras['restoreit'];
+        $this->thisfilename = $extras['thisfilename'];
 
         $this->course = new \stdClass();
         // Represent the student object according to D1.
@@ -81,8 +86,8 @@ class fee {
         $this->accountcodes["PG000789"] = 1022465;
         $this->accountcodes["GR00002010"] = 1022463;
 
-        error_log("\n". $this->course->coursetitle. " - ". $this->course->coursenumber.
-            " (".$this->course->customSectionNumber.")");
+        // error_log("\n". $this->course->coursetitle. " - ". $this->course->coursenumber.
+        //     " (".$this->course->customSectionNumber.")");
     }
 
     public function init($rowdata = "", $extras = array()) {
@@ -96,14 +101,14 @@ class fee {
             }
 
             $temp1 = new \stdClass();
-            $temp1->ffa = $rowdata[$fi];
+            $temp1->ffa = number_format((float)$rowdata[$fi], 2, '.', '');
             $temp1->ffn = $rowdata[$fi+1];
             $temp1->rgl = $rowdata[$fi+2];
             $temp1->pam = $rowdata[$fi+3];
             $this->course->fees[] = $temp1;
         }
 
-        error_log("There are ".count($this->course->fees)." fees in the CSV file");
+        // error_log("There are ".count($this->course->fees)." fees in the CSV file");
         // 39 - Flat Fee Amount 2,
         // 40 - Flat Fee Name 2,
         // 41 - Fee Revenue GL Account 2,
@@ -145,40 +150,55 @@ class fee {
         $this->report->timer("search", $pend - $pstart);
 
         if ($foundcourse) {
+            error_log("\nFound ".$this->course->customSectionNumber);
             // Is this course in the black list?
-            if ($this->in_black_list()) {
-                error_log("\nHUZZZAAAHHHHH - This course is in the black list, aborting this course fee import!");
-                return true;
+            // if ($this->in_black_list()) {
+            //     error_log("\nHUZZZAAAHHHHH - This course is in the black list, aborting this course fee import!");
+            //     return true;
+            // }
+            if ($this->purgeit) {
+                return $this->purge_fees();
             }
 
+            if ($this->restoreit) {
+                return $this->restore_fees();
+            }
+
+            if ($this->finddup) {
+                $this->find_duplicates();
+                return true;
+            }
             // Find the missing fees from D1
-            error_log("There are ".count($this->course->d1fees)." D1 fees.");
-            $missing = $this->find_missing_fees2($this->course->d1fees, $this->course->fees);
-            if (count($missing) === 0) {
+            $missing = 0;
+            // Check if they are the same.
+            if (!$this->sameElements($this->course->d1fees, $this->course->fees)) {
+                // Dang, not the same. Let's find the missing.
+                $missing = $this->find_missing_fees3($this->course->d1fees, $this->course->fees);
+                error_log("There are ".count($this->course->fees)." fees in the CSV file");
+                error_log("There are ".count($this->course->d1fees)." D1 fees.");
+                error_log("Should be ".count($missing)." missing in D1.");
+            } else {
+
+            // return;
+            // if (count($missing) === 0) {
                 // list is empty.
                 error_log("Fees seem to match up with D1");
-                return true;
-            } else {
-                error_log("Will need to add ". count($missing). " fees to D1");
-            }
-            // Build a list of structured web service calls for the fees.
-            $built = $this->build_fee_list($missing);
-            $fee_failed = false;
-            foreach ($built as $addme) {
-
-                $pstart = microtime(true);
-                $addresult = $this->add_fee($addme);
-                $pend = microtime(true);
-                $this->report->timer("addup", $pend - $pstart);
-
-                if ($addresult['callsuccess'] == false) {
-                    $fee_failed = true;
+                if (count($this->course->fees) != count($this->course->d1fees)) {
+                    error_log("\e[0;31m ERROR The Fee Counts DO NOT MATCH.");
                 }
+                return true;
+            // } else {
+                // error_log("Will need to add ". count($missing). " fees to D1");
             }
+
+            $fee_failed = $this->add_fees($missing);
+
             // Add the fees to D1
             if ($fee_failed) {
                 return false;
+                error_log("\e[0;31mFees FAILED to be added, uh oh......");
             } else {
+                error_log("\e[0;32mFees were successfully added");
                 return true;
             }
 
@@ -192,12 +212,23 @@ class fee {
         return;
     }
 
+    public function sameElements($a, $b) {
+        sort($a); // D1
+        sort($b); // CSV
+        
+        if ($a == $b) {
+            return true;
+        } else {
+            return false;
+        }
+        // return $a == $b;
+    }
     public function transform_fees($d1fees) {
 
         $fee_list = array();
         if (!is_array($d1fees)) {
             $tempfee = new \stdClass();
-            $tempfee->ffa = $d1fees->amount;
+            $tempfee->ffa = number_format((float)$d1fees->amount, 2, '.', '');
             $tempfee->ffn = $d1fees->name;
             $tempfee->rgl = $d1fees->revenueGLAccount->code;
             $tempfee->pam = $d1fees->accountMapping->code;
@@ -207,7 +238,7 @@ class fee {
 
         foreach ($d1fees as $dfee) {
             $tempfee = new \stdClass();
-            $tempfee->ffa = $dfee->amount;
+            $tempfee->ffa = number_format((float)$dfee->amount, 2, '.', '');
             $tempfee->ffn = $dfee->name;
             $tempfee->rgl = $dfee->revenueGLAccount->code;
             $tempfee->pam = $dfee->accountMapping->code;
@@ -336,6 +367,53 @@ class fee {
     }
 
     /**
+     * Add the fees from the file.
+     * @param   @object   The enrollment object from the file
+     * @return  @object   return web service result
+     */
+    // a = d1
+    // b = csv (csv has more)
+    public function find_missing_fees3($d1, $csv) {
+
+        $the_missing = $csv;
+        foreach ($d1 as $dkey => $dee) {
+            foreach ($the_missing as $key => $val) {
+                // error_log("What is key: ". $key. " and val: ". print_r($val, 1));
+                if ($val == $dee) {
+                    // found it, now remove and continue
+                    unset($the_missing[$key]);
+                    break;
+                }
+            }
+        }
+        // if ($this->sameElements($csv, array_merge($the_missing, $d1))) {
+        //     error_log("Find Missing has verified the array's would be correct");
+        // } else {
+        //     error_log("GRRRRR, something is FACKED!!!!!");
+        // }
+        $result = "----------------------------------------";
+        $result .= "\nTHE ARRAYS ARE NOT EQUAL!!!!";
+        $result .= "\n". $this->course->coursetitle. " - ". $this->course->coursenumber.
+            " (".$this->course->customSectionNumber.") will have fees added";
+        $result .= "\n--------- Currently in D1 ---------";
+        $result .= "\n".print_r($d1, 1);
+        $result .= "\n--------- Currently in CSV ---------";
+        $result .= "\n".print_r($csv, 1);
+        $result .= "\n--------- Sending to D1 ---------";
+        $result .= "\n".print_r($the_missing, 1);
+        
+        $path_to_save = $this->report->reportspath. "/importer/logs/FeesSentToD1_".$this->thisfilename.".txt";
+        file_put_contents(
+            $path_to_save,
+            $result,
+            FILE_APPEND
+        );
+
+        return $the_missing;
+    }
+    /*
+    
+    /**
      * Compare two objects (active record models) and return the difference. It wil skip ID from both objects as
      * it will be obviously different
      * Note: make sure that the attributes of the first object are present in the second object, otherwise
@@ -345,7 +423,7 @@ class fee {
      * @param object $object2
      * 
      * @return array difference array in key-value pair, empty array if there is no difference
-     */
+     *
     public static function compareTwoObjects($object1, $object2) {
 
         $differences = [];
@@ -363,23 +441,35 @@ class fee {
         return $differences;
     }
 
-    /**
-     * Add the fees from the file.
-     * @param   @object   The enrollment object from the file
-     * @return  @object   return web service result
-     */
-    // a = d1
-    // b = csv (csv has more)
-    public function find_missing_fees2($a, $b) {
+    public function find_missing_fees2($d1, $csv) {
 
-        $a = json_decode(json_encode($a));
-        $b = json_decode(json_encode($b));
+        // $a = json_decode(json_encode($a));
+        // $b = json_decode(json_encode($b));
 
         // *** NOTE *** the first parameter has to be the CSV file as it'll have ALL the fees.
         // The second param will take away the dupes.
-        $diff = array_diff_key($b, $a);
+        // $diff = array_diff_key($b, $a);
+        // $diff = array_diff_assoc($b, $a);
 
-        return $diff;
+        $addnew = array();
+        foreach ($csv as $v) {
+            // remove white spaces from csv entry
+            $v = $this->cleanit($v);
+            $found = false;
+            foreach ($d1 as $dee) {
+                // remove white spaces from d1 entry
+                $dee = $this->cleanit($dee);
+                if ($v == $dee) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $addnew[] = $v;
+            }
+        }
+
+        return $addnew;
     }
 
     public function find_missing_fees() {
@@ -416,7 +506,7 @@ class fee {
      * @param   @object   The enrollment object from the file
      * @return  @object   return web service result
      */
-    public function build_fee_list($missing = false) {
+    public function build_fee_list($missing = false, $remove = false) {
 
         $list_of_fees = array();
         foreach ($missing as $fee) {
@@ -444,11 +534,15 @@ class fee {
 
             $tuitionFeeItems =  new \stdClass();
             $tuitionFeeItems->tuitionFeeItem =  new \stdClass();
-            $tuitionFeeItems->tuitionFeeItem->amount = $fee->ffa;
+            $tuitionFeeItems->tuitionFeeItem->amount = floatval(preg_replace("/[^0-9.]/", '', $fee->ffa));
             $tuitionFeeItems->tuitionFeeItem->discountable = true;
             $tuitionFeeItems->tuitionFeeItem->name = $fee->ffn;
             $tuitionFeeItems->tuitionFeeItem->surchargeable = false;
-            $tuitionFeeItems->tuitionFeeItem->associationMode = "create";
+            if ($remove) {
+                $tuitionFeeItems->tuitionFeeItem->associationMode = "delete";
+            } else {
+                $tuitionFeeItems->tuitionFeeItem->associationMode = "create";
+            }
             $tuitionFeeItems->tuitionFeeItem->accountMapping =  new \stdClass();
             $tuitionFeeItems->tuitionFeeItem->accountMapping->code = $fee->pam;
             $tuitionFeeItems->tuitionFeeItem->accountMapping->objectId = 1026531;
@@ -470,7 +564,78 @@ class fee {
      * @param   @object   The enrollment object from the file
      * @return  @object   return web service result
      */
-    public function add_fee($feebody = false) {
+    public function remove_fee_ws($feebody = false) {
+        // Get the data needed.
+        $s = helpers::get_d1_settings();
+
+        $params = new \stdClass();
+        
+        // Set the URL for the post command to get a list of the courses matching the parms.
+        $params->url = $s->wsurl.'/webservice/InternalViewRESTV2/updateCourseSection\?_type=json';
+
+        $params->body = $feebody;
+
+        $results = helpers::curly($params);
+        /* Produces this below
+        Add Fee -->> what are the results: stdClass Object
+        (
+            [updateCourseSectionResult] => stdClass Object
+                (
+                    [status] => OK
+                    [responseCode] => Success
+                    [code] => 005
+                    [courseCode] => OLMART
+                    [customSectionNumber] => OLMART.(1)
+                    [objectId] => 1110631
+                    [version] => 57
+                )
+        )
+        */
+        if (empty($results)) {
+            return array(
+                "callsuccess" => false,
+                "result" => false,
+                "msg" => "Failed to communicate with D1",
+                "errorCode" => "Error",
+                "sce" => "enrol"
+            );
+        }
+
+        // Write the results to a logging file.
+        $header = helpers::log_header();
+
+        if (property_exists($results, "SRSException")) {
+            $path_to_save = $this->report->reportspath. "/importer/logs/Remove_Fee_FAIL.txt";
+            file_put_contents(
+                $path_to_save,
+                $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
+                FILE_APPEND
+            );
+        }
+
+        if (property_exists($results, "SRSException")) {
+            return array(
+                "callsuccess" => false,
+                "result" => $results,
+                "requestdata" => $this->course,
+                "sce" => "add"
+            );
+        } else {
+            return array(
+                "callsuccess" => true,
+                "result" => $results,
+                "requestdata" => $this->course,
+                "sce" => "add"
+            );
+        }
+    }
+
+    /**
+     * Add the fees from the file.
+     * @param   @object   The enrollment object from the file
+     * @return  @object   return web service result
+     */
+    public function add_fee_ws($feebody = false) {
         // Get the data needed.
         $s = helpers::get_d1_settings();
 
@@ -536,21 +701,171 @@ class fee {
         }
     }
 
+    public function cleanit($fee) {
+        $tempval = new \stdClass();
+        $tempval->ffa = trim($fee->ffa);
+        $tempval->ffn = trim($fee->ffn);
+        $tempval->rgl = trim($fee->rgl);
+        $tempval->pam = trim($fee->pam);
+        return $tempval;
+    }
     /**
      * Update the enrollment record
      * @param   @object   The enrollment object from the file
      * @return  @object   return web service result
      */
-    public function update($enrollmentobj) {
+    public function find_duplicates() {
 
+        // error_log("********************************************************");
+        // error_log("What are the stupid d1 fees: ". print_r($this->course->d1fees, 1));
+        // error_log("What are the CSV fees: ". print_r($this->course->fees, 1));
+        // if (!$this->sameElements($this->course->d1fees, $this->course->fees)) {
+        //     error_log("\e[0;31mDup found for ". $this->course->customSectionNumber.
+        //         " D1 has ". count($this->course->d1fees). " and CSV has ". count($this->course->fees));
+        // }
+
+        $fee_counter = array();
+        foreach ($this->course->d1fees as $dee) {
+            if (array_key_exists($dee->ffn, $fee_counter)) {
+                $fee_counter[$dee->ffn]++;
+            } else {
+                $fee_counter[$dee->ffn] = 0;
+            }
+        }
+        // error_log("What is the fee_counter: ". print_r($fee_counter, 1));
+
+        foreach ($fee_counter as $key => $val) {
+            if ($val > 1) {
+                error_log($this->course->customSectionNumber. " has ". $val. " fees named: ". $key);
+            }
+        }
     }
 
-    /**
-     * Update the enrollment record
-     * @param   @object   The enrollment object from the file
-     * @return  @object   return web service result
-     */
-    public function delete($enrollmentobj) {
+    public function restore_fees() {
+        // Add the GeauxTiger Fee and then Purge
+        $fee_list = array();
+        $tempfee = new \stdClass();
+        $tempfee->ffa = "0.00";
+        $tempfee->ffn = "GeauxTigers";
+        $tempfee->rgl = "PG000788";
+        $tempfee->pam = "AM0000";
+        $fee_list[] = $tempfee;
 
+        if ($this->add_fees($this->course->fees)) {
+            // The fees have been added.
+            error_log("\e[0;32mFees were successfully added");
+
+            if (!$this->remove_fees($fee_list)) {
+                error_log("\e[0;31mRemoved the GeauxTigers Fee FAILED!");
+                // return false;
+            } else {
+                error_log("\e[0;32mRemoved the GeauxTigers Fee YAY!");
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function purge_fees() {
+        
+        // Add the GeauxTiger Fee and then Purge
+        $fee_list = array();
+        $tempfee = new \stdClass();
+        $tempfee->ffa = "0.00";
+        $tempfee->ffn = "GeauxTigers";
+        $tempfee->rgl = "PG000788";
+        $tempfee->pam = "AM0000";
+        $fee_list[] = $tempfee;
+
+
+        if ($addresult = $this->add_fees($fee_list)) {
+            // Remove all the fees.
+            if ($removeresult = $this->remove_fees($this->course->d1fees)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }        
+    }
+
+    public function add_fees($fees) {
+
+
+        // Build a list of structured web service calls for the fees.
+        $built = $this->build_fee_list($fees);
+
+        $fee_failed = false;
+        foreach ($built as $addme) {
+
+            $pstart = microtime(true);
+            $addresult = $this->add_fee_ws($addme);
+            $pend = microtime(true);
+            $this->report->timer("addup", $pend - $pstart);
+
+            if ($addresult['callsuccess'] == false) {
+                $fee_failed = true;
+            }
+        }
+        // Add the fees to D1
+        if ($fee_failed) {
+            return false;
+            error_log("\e[0;31mFees FAILED to be added, uh oh......");
+        } else {
+            error_log("\e[0;32mFees were successfully added");
+            return true;
+        }
+    }
+
+    public function remove_fees($fees) {
+
+        $built = $this->build_fee_list($fees, true);
+
+        $fee_failed = false;
+        foreach ($built as $removeme) {
+
+            $pstart = microtime(true);
+            $removeresult = $this->remove_fee_ws($removeme);
+
+            $pend = microtime(true);
+            $this->report->timer("addup", $pend - $pstart);
+            if ($removeresult['callsuccess'] == false) {
+                $fee_failed = true;
+            }
+        }
+        // Add the fees to D1
+        if ($fee_failed) {
+            return false;
+            error_log("\e[0;31mFees FAILED to be removed, uh oh......");
+        } else {
+            error_log("\e[0;32mFees were successfully removed");
+            return true;
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -77,17 +77,18 @@ class cert {
         $success = false;
         if (property_exists($results, "enrollStudentInCertificateResult")) {
             if ($results->enrollStudentInCertificateResult->responseCode == "Success") {
-                $update_msg = "User: ". $this->cert->enrollStudentInCertificateRequestDetail->attributeValue.
+                $update_msg = "\e[0;32mUser: ". $this->cert->enrollStudentInCertificateRequestDetail->attributeValue.
                     " was successfully added to the ". $this->cert->enrollStudentInCertificateRequestDetail->certificateCode.
                     " certificate.";
                 $success = true;
             }
         } else if (property_exists($results, "SRSException")) {
-            $update_msg = "** FAIL, User ". $this->cert->enrollStudentInCertificateRequestDetail->attributeValue.
+            $update_msg = "\e[0;31m** FAIL, User ". $this->cert->enrollStudentInCertificateRequestDetail->attributeValue.
             " FAILED to be enrolled in ". $this->cert->enrollStudentInCertificateRequestDetail->certificateCode;
             $update_msg .= "\n\nCode: ". $results->SRSException->errorCode. "\nmsg: ".$results->SRSException->message;
         }
         error_log($update_msg);
+        return $success;
     }
 
     public function post_process($result, $rowdata, $extras) {

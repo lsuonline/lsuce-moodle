@@ -147,6 +147,7 @@ class report {
     public function finish() {
 
         error_log("\n\n");
+        error_log("\e[0;37m");
         error_log("----------------------------------------------------");
         error_log("-----------   BUILD REPORTS   ----------------------");
         error_log("----------------------------------------------------");

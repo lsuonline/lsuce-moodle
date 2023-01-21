@@ -119,15 +119,25 @@ class enrollment {
         }
 
         if ($webreturn['callsuccess'] == true) {
-            error_log($this->enrollment->enrollStudentInSectionRequestDetail->attributeValue. " was successfully enrolled in ".
+            error_log("\e[0;32m".$this->enrollment->enrollStudentInSectionRequestDetail->attributeValue. " was successfully enrolled in ".
                 $this->enrollment->enrollStudentInSectionRequestDetail->courseNumber.
                 " - ". $this->enrollment->enrollStudentInSectionRequestDetail->customSectionNumber);
             return true;
         } else {
-            error_log($this->enrollment->enrollStudentInSectionRequestDetail->attributeValue. " failed to enrol");
-            error_log("Msg: ". $webreturn['errorCode']);
-            error_log("Error: ". $webreturn['msg']);
-            return false;
+
+            $msg = "\n\e[0;31m".$this->enrollment->enrollStudentInSectionRequestDetail->attributeValue. " failed to enrol";
+            $msg .= " \nError: ". $webreturn['errorCode']. " - ".$webreturn['msg'];
+
+            error_log($msg);
+
+            // If the user is already enrolled then don't add to failed enrollments list.
+            $findme = "is already enrolled to section";
+            $pos = strpos($webreturn['msg'], $findme);
+            if ($pos === false) {
+                return false;
+            } else {
+                return true;
+            }
         }
     }
 

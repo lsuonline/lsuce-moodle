@@ -42,28 +42,28 @@ class course {
         $this->totalcount = 0;
         $this->restcalled = false;
         $this->report = $report;
-        $this->settofuture = $extras["ucx"];
+            
 
+        $this->alltrue = isset($extras['ccw']) ? $extras['ccw'] : false;
+
+        // course_id
+        // code
+        // object_status_code
+        // current_status_code
+
+        // finalApprovalCourseStatus - True False
+        // bypassApproval - ??
+        // finalApprovalPublishingDate - dd MMM yyyy
         $this->course = new \stdClass();
-        $this->course->customSectionNumber = trim($cobj[4]);
-        $this->course->courseNumber = trim($cobj[1]);
+        $this->course->coursecode = trim($cobj[1]);
 
         $this->cu = new \stdClass();
-        $this->cu->updateCourseSectionRequestDetail = new \stdClass();
-        $this->cu->updateCourseSectionRequestDetail->courseSection = new \stdClass();
-        $this->cu->updateCourseSectionRequestDetail->courseSection->objectId = "";
-        $this->cu->updateCourseSectionRequestDetail->courseSection->code = "";
-        $this->cu->updateCourseSectionRequestDetail->courseSection->associationMode = "update";
-
-        // Get the CSV dates in
-        $this->cu->updateCourseSectionRequestDetail->courseSection->svEnrollmentBeginDate = $this->fix_for_d1_date($cobj[13]);
-        $this->cu->updateCourseSectionRequestDetail->courseSection->svEnrollmentEndDate = $this->fix_for_d1_date($cobj[14]);
-        $this->cu->updateCourseSectionRequestDetail->courseSection->pvAvailabilityBeginDate = $this->fix_for_d1_date($cobj[15]);
-        $this->cu->updateCourseSectionRequestDetail->courseSection->pvAvailabilityEndDate = $this->fix_for_d1_date($cobj[16]);
-        $this->cu->updateCourseSectionRequestDetail->courseSection->pvEnrollmentBeginDate = $this->fix_for_d1_date($cobj[17]);
-        $this->cu->updateCourseSectionRequestDetail->courseSection->pvEnrollmentEndDate = $this->fix_for_d1_date($cobj[18]);
-
-        $this->cu->updateCourseSectionRequestDetail->courseSection->gradingTemplateCode = $cobj[58];
+        $this->cu->updateCourseRequestDetail = new \stdClass();
+        $this->cu->updateCourseRequestDetail->course = new \stdClass();
+        $this->cu->updateCourseRequestDetail->course->objectId = $cobj[0];
+        $this->cu->updateCourseRequestDetail->course->objectStatusCode = $cobj[2];
+        // $this->cu->updateCourseRequestDetail->course->finalApprovalCourseStatus = $cobj[3];
+        $this->cu->updateCourseRequestDetail->course->associationMode = "update";
     }
 
     /**
@@ -73,87 +73,62 @@ class course {
      * @return  @bool   return success or fail
      */
     public function init($rowdata = "", $extras = array()) {
-
+        if ($this->alltrue) {
+            $this->cu->updateCourseRequestDetail->course->objectStatusCode = "Active";
+            // $this->cu->updateCourseRequestDetail->course->finalApprovalCourseStatus = "True";
+            // $this->cu->updateCourseRequestDetail->course->finalApprovalPublishingDate = "01 Jan 2023";
+        }
     }
     /**
      * Process the enrollment data using D1's web services.
      * @return  @bool   return success or fail
      */
     public function process() : bool {
-        $this->set_d1_date();
 
         $pstart = microtime(true);
-        $objid = $this->search_course();
-        $pend = microtime(true);
-        $this->report->timer("search", $pend - $pstart);
 
-        if ($objid) {
-            $pstart = microtime(true);
-            $updated = $this->update_course();
-            $pend = microtime(true);
-            $this->report->timer("addup", $pend - $pstart);
-            if ($updated) {
-                error_log("Course ". $this->course->customSectionNumber
-                    ." has been updated SUCCESSFULLY.");
-                return true;
-            } else {
-                error_log("ERROR: ". $this->course->customSectionNumber
-                    ." failed to update.");
-                return false;
-            }
+        // Run regular course date updates.
+        $updated = $this->update_course();
+            
+        $pend = microtime(true);
+        $this->report->timer("addup", $pend - $pstart);
+            
+        if ($updated) {
+            error_log("\e[0;32mCourse ". $this->course->coursecode
+                ." has been updated SUCCESSFULLY.");
+            return true;
         } else {
-            error_log("Search for ". $this->course->customSectionNumber. " failed!");
+            error_log("\e[0;31mERROR: ". $this->course->coursecode
+                ." failed to update.");
             return false;
         }
+        
     }
 
     public function post_process($result, $rowdata, $extras) {
         return;
     }
 
-    public function fix_for_d1_date($csvdate) {
-        // What is the csvdate: Jan/01/2010 00:00 AM
-        $newdatetime = \DateTime::createFromFormat('M/j/Y h:i a', trim($csvdate));
-        return $newdatetime->format('j M Y h:i:s a');
-    }
-
-    public function set_d1_date() {
-        if ($this->settofuture) {
-
-            $futuredatebegin = "1 Jan 2009 12:00:00 AM";
-            $futuredateend = "1 Jan 2199 12:00:00 AM";
-
-            $this->cu->updateCourseSectionRequestDetail->courseSection->svEnrollmentBeginDate = $futuredatebegin;
-            $this->cu->updateCourseSectionRequestDetail->courseSection->svEnrollmentEndDate = $futuredateend;
-
-            $this->cu->updateCourseSectionRequestDetail->courseSection->pvAvailabilityBeginDate = $futuredatebegin;
-            $this->cu->updateCourseSectionRequestDetail->courseSection->pvAvailabilityEndDate = $futuredateend;
-
-            $this->cu->updateCourseSectionRequestDetail->courseSection->pvEnrollmentBeginDate = $futuredatebegin;
-            $this->cu->updateCourseSectionRequestDetail->courseSection->pvEnrollmentEndDate = $futuredateend;
-        }
-    }
-
     /**
-     * Search for a enrollment in D1 to see if they exist or not
-     * level can be either: Ignore, Shortest, Short, Medium, Long, Full, Privileged
-     * @param   @object   The enrollment object from the file
-     * @return  @object   return web service result
+     * Update the course dates
+     * @return  @bool
      */
     public function update_course() {
         // Get the data needed.
         $s = helpers::get_d1_settings();
 
         $params = new \stdClass();
-        $params->url = $s->wsurl.'/webservice/InternalViewRESTV2/updateCourseSection\?_type=json';
+        $params->url = $s->wsurl.'/webservice/InternalViewREST/updateCourse?_type=json';
         $params->body = json_encode($this->cu);
+        // error_log("request body: \n\n". $params->body);
 
+        // die();
         $results = helpers::curly($params);
 
+        // error_log("curl results: \n\n". print_r($results, 1));
+
         $header = helpers::log_header();
-        // error_log("is bugging on: ". $this->bugfiles);
-        // This will write the results to a logging file.
-        // if ($this->bugfiles) {
+
         if (property_exists($results, "SRSException")) {
             $path_to_save = $this->report->reportspath. "/importer/logs/Course_Update_FAIL.txt";
             file_put_contents(
@@ -164,9 +139,9 @@ class course {
         }
 
         // For course section search use.
-        if (property_exists($results, "updateCourseSectionResult")) {
+        if (property_exists($results, "updateCourseResult")) {
 
-            if ($results->updateCourseSectionResult->responseCode == "Success") {
+            if ($results->updateCourseResult->responseCode == "Success") {
                 return true;
             } else {
                 return false;
@@ -182,7 +157,7 @@ class course {
      * level can be either: Ignore, Shortest, Short, Medium, Long, Full, Privileged
      * @param   @object   The enrollment object from the file
      * @return  @object   return web service result
-     */
+     *
     public function search_course() {
 
         // Get the data needed.
@@ -265,13 +240,44 @@ class course {
             return false;
         }
     }
-
-    /**
-     * Update the course record
-     * @param   @object   The course object from the file
-     * @return  @object   return web service result
-     */
-    // public function delete($courseobj) {
-
-    // }
+    */
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

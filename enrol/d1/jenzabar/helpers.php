@@ -38,6 +38,72 @@ class helpers {
         // self::$sigcalled = true;
     }
 
+    public static function get_help() {
+        $help = <<<EOL
+        No flags will run the default importer to import students and enrollments.
+
+        The importer will process any file in the 'unprocessed' folder.
+        Reports will be generated for successfully created students and enrolments as well 
+        as the failed attempts to create a student or enrolment. Those reports will be in the importer/reports
+        folder.
+
+        Here are your options:
+
+        ----------------------------------------------------------------------------------------
+        *** NOTE *** Default use of "php base.php" will import/create students and enrollments.
+        ----------------------------------------------------------------------------------------
+
+        General
+          -b=[x],        Optional: Row begin when processing a large file
+          -e=[x],        Optional: Row end when processing a large file
+          -n,            Optional: Name the output files (currently uses timestamp which can change every time process starts)
+                            Files are appended too. So if name exists then data will be appended rather than multiple files.
+          -h,    --help  Display's the list of commands for this script
+
+        Student/Enrollment
+          -a,            Required: To trigger student import/create and do enrollments (folder: /importer/student)
+          -s,            Optional: Import students only. (folder: /importer/student)
+          -g,            Optional: When creating the student write student row to CSV BUT with new XNumber.
+          -u,            Optional: Find and update student (temp hack to update LSU MF ID)
+
+        Bundle
+          -p,            Required: To trigger bundle enrollments import (folder: /importer/bundle)
+          -q,            Optional: Convert Bundle enrollments Jenza ID's to ObjectIds.
+
+        Fees
+          -f,            Required: To trigger Import more than 4 fees file. (folder: /importer/fees)
+          -d,            Optional: Find duplicate fees.
+          -i,            Purge Fees and add temp fee
+          -r,            Purge temp fee and add fees from csv
+
+        Certificates
+          -t,            Required: Enroll students in certificates. (folder: /importer/cert)
+
+        Course
+          -v,            Required: Update courses, default action is to update to original data. (in folder: /importer/course/)
+          -w,            Optional: Set to true if you want everything to be "Active" and in "Final Approval".
+        
+        Course Sections
+          -c,            Required: Update course sections, default is to set dates to original (folder: /importer/coursesection/)
+          -x,            Optional: When updating course sections set dates to far in the future.
+          -o,            Optional: Set this flag to include the grade template code.
+          -y,            Optional: Set this flag to run a custom function (WARNING: contents may change).
+          -z,            Optional: Set this flag to unenroll all students in the course section.
+          -j,            Optional: Set to true if you want to count how many sections are NOT in Final Approval.
+
+        File Processing
+          -m=[x],        Required: Extract enrollments from the main enrollment file given a list of custom sections (look in pfile.php)
+          --lf=[x],      Optional: name of the file to open and process in pfile folder (currently only ready for option 4)
+          --f1cm=[x]     Optional: In this file what column to use to match with file 2? (if f1 has email and f2 has email then match it)
+          --f2cm=[x]     Optional: In this file what column to use to match with file 1?
+          --f1cv=[x]     Optional: Which column's value we wanting 
+          --f2cd=[x]     Optional: Which column we inserting that data??
+                                    
+        ******************************************************************************************************************\n\n
+        EOL;
+        return $help;
+    }
+
     public static function get_d1_settings() {
         global $CFG;
 
@@ -264,7 +330,8 @@ class helpers {
         // preg_match('/^[\w-]+$/', $ding)
         $dong = preg_replace('/[^A-Za-z0-9\-]/', '', $ding); // Removes special chars.
         return preg_replace('/-+/', '-', $dong); // Replaces multiple hyphens with single one.
-   }
+    }
+
     public static function alphaStr($str) {
         // D1 allows: @~`-'.(),]].
         // Let's just use alpha numberic

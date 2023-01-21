@@ -99,13 +99,18 @@ class bundle {
 
             $result = $this->enroll_bundle();
             if ($result['callsuccess'] == true) {
-                error_log("Student: ". $this->eb->enrollStudentInBundleRequestDetail->attributeValue. " Successfully enrol in: ".
+                error_log("\e[0;32mStudent: ". $this->eb->enrollStudentInBundleRequestDetail->attributeValue. " Successfully enrol in: ".
                     $this->eb->enrollStudentInBundleRequestDetail->bundleProfileCode);
                 $processresult = true;
             } else {
-                error_log("Student: ". $this->eb->enrollStudentInBundleRequestDetail->attributeValue. " failed to enrol in: ".
-                    $this->eb->enrollStudentInBundleRequestDetail->bundleProfileCode);
-                error_log("Error: ". $result['errorCode']. " Msg: ". $result['msg']);
+
+                if(strpos($result['msg'], "is already enrolled in bundle") !== false){
+                    error_log("\e[0;34mNOTICE: ". $result['errorCode']. " Msg: ". $result['msg']);
+                } else {
+                    error_log("\e[0;31mStudent: ". $this->eb->enrollStudentInBundleRequestDetail->attributeValue. " failed to enrol in: ".
+                        $this->eb->enrollStudentInBundleRequestDetail->bundleProfileCode);
+                    error_log("\e[0;31mError: ". $result['errorCode']. " Msg: ". $result['msg']);
+                }
             }
 
             $pend = microtime(true);

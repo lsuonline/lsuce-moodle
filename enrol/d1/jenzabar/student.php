@@ -91,7 +91,7 @@ class student {
             $this->student->student->birthDate = $newDateString;
         }
 
-        !empty($jenzastudent[12]) ? $this->student->student->schoolStudentNumber = $jenzastudent[12] : null;
+        // !empty($jenzastudent[12]) ? $this->student->student->schoolStudentNumber = $jenzastudent[12] : null;
         !empty($jenzastudent[12]) ? $this->student->student->schoolPersonnelNumber = $jenzastudent[12] : null;
 
         // Have to make loginId Unique.
@@ -413,7 +413,19 @@ class student {
      * @return  @object   return web service result
      */
     public function process() {
-        
+        // Hijack to update the student
+        if ($this->updstu) {
+            
+            if ($updateresult = $this->update()) {
+                $update_msg = "Student ".$this->student->student->firstName1. " ". $this->student->student->lastName.
+                " was updated SUCCESSFULLY!";
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        // die();
         // The student may have an "associatedGroup". If they do then we need to obtain the group objectId.
         $gobjectId = "";
         if (isset($this->student->student->enrolmentGroups)) {
@@ -448,8 +460,8 @@ class student {
 
         // ---------- SEARCH ------------
         $searchresult = $this->search();
-
         // Hijack to update the student
+        /*
         if ($this->updstu) {
             $update_msg = "Student ".$this->student->student->firstName1. " ".
                 $this->student->student->lastName. " FAILED TO UPDATE!";
@@ -466,14 +478,15 @@ class student {
             error_log($update_msg);
             return;
         }
-
+        */
         $pend = microtime(true);
         $this->report->timer("search", $pend - $pstart);
 
         if ($searchresult["callsuccess"]) {
             if ($searchresult["result"]) {
+
                 // Search found a student.
-                error_log("Student ".$this->student->student->firstName1. " ". $this->student->student->lastName.
+                error_log(" \e[0;32mStudent ".$this->student->student->firstName1. " ". $this->student->student->lastName.
                     " - ".$searchresult['studentNumber']. " was found.");
                 $this->student->objectId = $searchresult["objectId"];
                 $this->student->webservice = $searchresult;
@@ -488,23 +501,22 @@ class student {
                 $this->report->timer("search", $pend - $pstart);
 
                 if ($createresult["result"] == false) {
-                    error_log("PS -->> Student ".$this->student->student->firstName1. " ".
-                        $this->student->student->lastName. " was NOT found, student was NOT created.");
-                    error_log("PS -->> Error: ".$createresult["msg"]);
+                    error_log(" \e[0;31mPS -->> Student ".$this->student->student->firstName1. " ". $this->student->student->lastName. " was NOT found, student was NOT created.");
+                    error_log(" \e[0;31mPS -->> Error: ".$createresult["msg"]);
+                    // error_log("PS -->> Student ".$this->student->student->firstName1. " ". $this->student->student->lastName. " was NOT found, student was NOT created.");
+                    // error_log("PS -->> Error: ".$createresult["msg"]);
                     return false;
                 } else {
-                    error_log("PS -->> Student ".$this->student->student->firstName1. " ".
-                        $this->student->student->lastName. " - ". $createresult['studentNumber'].
-                        " was NOT found, student has been created.");
+                    error_log(" \e[0;32mPS -->> Student ".$this->student->student->firstName1. " ".$this->student->student->lastName. " - ". $createresult['studentNumber']." was NOT found, student has been created.");
+                    // error_log("PS -->> Student ".$this->student->student->firstName1. " ".$this->student->student->lastName. " - ". $createresult['studentNumber']." was NOT found, student has been created.");
                     // return $createresult["objectId"];
                     $this->studenttemp->xnumber = $createresult['studentNumber'];
                     return $createresult["studentNumber"];
                 }
             }
-
         } else {
-            error_log("PS -->> Student ".$this->student->student->firstName1. " ". $this->student->student->lastName.
-                " failed for SEARCH ". $searchresult["msg"]);
+            error_log(" \e[0;31mPS -->> Student ".$this->student->student->firstName1. " ". $this->student->student->lastName." failed for SEARCH ". $searchresult["msg"]);
+            // error_log("PS -->> Student ".$this->student->student->firstName1. " ". $this->student->student->lastName." failed for SEARCH ". $searchresult["msg"]);
             return false;
         }
     }
@@ -558,8 +570,8 @@ class student {
             '"searchType": "begin_with",'.
             '"email": "'. $this->student->student->emails->email->emailAddress.'"}}}';
 
-        error_log("Request body for SEARCH: ");
-        error_log($params->body);
+        // error_log("Request body for SEARCH: ");
+        // error_log($params->body);
 
         $results = helpers::curly($params);
 
@@ -667,8 +679,8 @@ class student {
         $params->url = $s->wsurl.'/webservice/InternalViewRESTV2/createStudent?sendUsernameAndPasswordEmails=N&_type=json';
         // Set the POST body.
         $params->body = json_encode($this->student);
-        error_log("Request body for CREATE: ");
-        error_log($params->body);
+        // error_log("Request body for CREATE: ");
+        // error_log($params->body);
 
         $results = helpers::curly($params);
 
@@ -767,7 +779,9 @@ class student {
     public function update($searchresult) {
 
         $student_objectId = "";
-
+        // $this->student->student->schoolStudentNumber
+        // $this->student->student->schoolPersonnelNumber
+        
         if ($searchresult["callsuccess"]) {
             if ($searchresult["result"]) {
                 // Search found a student.
@@ -781,10 +795,14 @@ class student {
 
         $params = new \stdClass();
         // Set the URL for the post command to get a list of the courses matching the parms.
-        $params->url = $s->wsurl.'/webservice/InternalViewREST/updateStudent?matchOn=objectId&_type=json';
+        // $params->url = $s->wsurl.'/webservice/InternalViewREST/updateStudent?matchOn=objectId&_type=json';
+        $params->url = $s->wsurl.'/webservice/InternalViewREST/updateStudent?matchOn=studentNumber&_type=json';
         // Set the POST body.
+        /*
         $params->body = '{'.
             '"student": {'.
+                '"schoolPersonnelNumber": '. $this->student->student->schoolPersonnelNumber.','.
+                '"studentNumber": "'. $this->studenttemp->xnumber.'",'.
                 '"objectId": '.$student_objectId.','.
                 '"enrolmentGroups": {'.
                     '"enrolmentGroup": {'.
@@ -793,6 +811,13 @@ class student {
                         '"associationMode": "create"'.
                     '}'.
                 '}'.
+            '}'.
+        '}';
+        */
+        $params->body = '{'.
+            '"student": {'.
+                '"schoolPersonnelNumber": '. $this->student->student->schoolPersonnelNumber.','.
+                '"studentNumber": "'. $this->studenttemp->xnumber.'"'.
             '}'.
         '}';
 

@@ -36,12 +36,14 @@ error_log("---------------------------------------- \n");
 use enrol_d1\jenzabar\processor;
 use enrol_d1\jenzabar\helpers;
 use enrol_d1\jenzabar\report;
+use enrol_d1\jenzabar\pfile;
 
 global $CFG;
 
 require_once('processor.php');
 require_once('helpers.php');
 require_once('report.php');
+require_once('pfile.php');
 
 
 // ========================================================================
@@ -50,23 +52,41 @@ $shortopts  = "";
 // General - will default to import whatever is in the student folder (students and/or enrollments)
 $shortopts .= "b::";  // When processing a file, start at this row
 $shortopts .= "e::";  // End at this row
-$shortopts .= "w::";  // Write data to reports every X number of lines/loops/rows
 $shortopts .= "n::";  // name the output files (currently uses timestamp which can change every time process starts)
 
 // Students and Enrollments
+$shortopts .= "a::";  // Trigger to import students
 $shortopts .= "s::";  // Import Only Students
-$shortopts .= "u::";  // Call the update function, add your changes there.
 $shortopts .= "g::";  // Generate x numbers and export csv.
+$shortopts .= "u::";  // Call the update function, add your changes there.
+
 // Bundle
-$shortopts .= "p::";  // Import Bundle enrollments using p as package bundle/package ;-)
+$shortopts .= "p::";  // Trigger to import bundle enrollments using p as package bundle/package ;-)
 $shortopts .= "q::";  // Convert Bundle enrollments Jenza ID's to ObjectIds, folder: /importer/bundle
+
 // Fees
-$shortopts .= "f::";  // Import the more than 4 fees into courses
+$shortopts .= "f::";  // Trigger to import the more than 4 fees into courses
+$shortopts .= "d::";  // Find duplicate fees
+$shortopts .= "r::";  // Purge Fees and add temp fee
+$shortopts .= "i::";  // Purge temp fee and add fees from csv
+
 // Certificates
-$shortopts .= "t::";  // Enroll students in a certificate
+$shortopts .= "t::";  // Trigger to import enroll students in a certificate
+
 // Course
-$shortopts .= "c::";  // Run a course update on all courses
+$shortopts .= "v::";  // Update courses. This will update to the original status. File in folder: /importer/course/
+$shortopts .= "w::";  // Set to true if you want everything to be Active and in Final_Approval.
+
+// Course Section
+$shortopts .= "c::";  // Run a course sectionupdate on all courses
 $shortopts .= "x::";  // Set this flag to true if setting course enrollments to future date
+$shortopts .= "o::";  // Set this flag to skip dates and add grade template code
+$shortopts .= "y::";  // Set this flag to true for custom course update.
+$shortopts .= "z::";  // Set this flag to unenroll all students in the course.
+$shortopts .= "j::";  // Set to true if you want to count how many sections are NOT in Final Approval.
+
+// General File Processing
+$shortopts .= "m::";  // Do some file processing and pass in option number for which process to run.
 
 // Help
 $shortopts .= "h::";  // Optional value
@@ -77,75 +97,65 @@ $longopts  = array(
     "fees:",     // Import the more than 4 fees into courses
     "uc:",       // Run a course update on all courses
     "ucx:",      // Set this flag to true if setting course enrollments to future date
+    "lf1:",       // lf - load file. Set this flag to true if setting course enrollments to future date
+    "lf2:",       // lf - load file. Set this flag to true if setting course enrollments to future date
+    "f1cm:",     // In this file what column to use to match with file 2? (if f1 has email and f2 has email then match it)
+    "f2cm:",     // In this file what column to use to match with file 1?
+    "f1cv:",     // Which column's value we wanting 
+    "f2cd:",     // Which column we inserting that data??
     "help",      // Optional value
 );
 
 $options = getopt($shortopts, $longopts);
 // $help = isset($options['h']) ? $options['h'] : $options['help'];
-
 if (isset($options['h'])) {
-    $help = <<<EOL
-    No flags will run the default importer to import students and enrollments.
 
-    The importer will process any file in the 'unprocessed' folder.
-    Reports will be generated for successfully created students and enrolments as well 
-    as the failed attempts to create a student or enrolment. Those reports will be in the importer/reports
-    folder.
-
-    Here are your options:
-
-    General
-      -b=[x],        Row begin when processing a large file
-      -e=[x],        Row end when processing a large file
-      -w,            Report Write Count, write data to reports every X number of lines/loops/rows
-      -n,            Name the output files (currently uses timestamp which can change every time process starts)
-                     Files are appended too. So if name exists then data will be appended
-    Student/Enrollment
-      -s,            Import students only, folder: /importer/unprocessed
-      -u,            Find and update student (temp hack to update LSU MF ID)
-      -g,            Get the XNumber and generate a CSV 
-
-    Bundle
-      -p,            Import Bundle enrollments, , folder: /importer/bundle
-      -q,            Convert Bundle enrollments Jenza ID's to ObjectIds, folder: /importer/bundle
-
-    Fees
-      -f,            Import more than 4 fees file, folder: /importer/fees
-
-    Certificates
-      -t,            Enroll students in certificates, folder: /importer/cert
-
-    Course  
-      -c,            Update courses, folder: /importer/course/
-      -x,            When updating courses set dates to far in the future.
-      
-      
-      -h,     --help                  Display's the list of commands for this script
-                                
-    ******************************************************************************************************************\n\n
-    EOL;
+    $help = helpers::get_help();
     echo $help;
     die;
 }
 
+// General
 $rowbegin = $options['b'] ?? $options['rb'] ?? false;
 $rowend = $options['e'] ?? $options['re'] ?? false;
-$rwc = isset($options['w']) ? $options['w'] : 1000;
 $thisfilename = isset($options['n']) ? $options['n'] : false;
-
+// Student/Enrollment
+$stuenroll = isset($options['a']) ?? false;
 $stuonly = isset($options['s']) ?? false;
 $updstu = isset($options['u']) ?? false;
 $genx = isset($options['g']) ?? false;
-
+// Bundle
 $bundle = isset($options['p']) ?? $options['bun'] ?? false;
 $convertbundle = isset($options['q']) ?? false;
-
+// Fees
 $fees = isset($options['f']) ?? $options['fees'] ?? false;
-
+$finddup = isset($options['d']) ?? false;
+$purgeit = isset($options['i']) ?? false;
+$restoreit = isset($options['r']) ?? false;
+// Certificates
 $cert = isset($options['t']) ?? false;
 
+// Course
+$ccv = isset($options['v']) ?? false;
+$ccw = isset($options['w']) ?? false;
+
+// Course Section
 $uc = isset($options['c']) ?? $options['uc'] ?? false;
 $ucx = isset($options['x']) ?? $options['ucx'] ?? false;
+$uco = isset($options['o']) ?? false;
+$ucy = isset($options['y']) ?? false;
+$ucz = isset($options['z']) ?? false;
+$ucj = isset($options['j']) ?? false;
+
+// General File Processing
+$pfile = $options['m'] ?? false;
+$loadfile1 = $options['lf1'] ?? false;
+$loadfile2 = $options['lf2'] ?? false;
+
+$file1cm = $options['f1cm'] ?? false;
+$file2cm = $options['f2cm'] ?? false;
+$file1cv = $options['f1cv'] ?? false;
+$file2cd = $options['f2cd'] ?? false;
 
 
 // Let's handle the Ctrl-c mechanism so we can stop whatever process
@@ -177,7 +187,7 @@ $token = helpers::get_token();
 
 ini_set('memory_limit','256M');
 
-error_log("BASE -->> What is the token: ". $token);
+// error_log("BASE -->> What is the token: ". $token);
 if ($token == "" || empty($token)) {
     error_log("BASE -->> NO token, D1 might be unreachable - ABORTING!!!");
     die();
@@ -189,18 +199,34 @@ $movefile = false;
 // These are any flags/options for which ever process.
 $extras = [
     "ucx" => $ucx,
+    "uco" => $uco,
+    "ucy" => $ucy,
+    "ucz" => $ucz,
+    "ccw" => $ccw,
+    "ucj" => $ucj,
     "studentsonly" => $stuonly,
     "convertbundle" => $convertbundle,
     "updstu" => $updstu,
     "thisfilename" => $thisfilename,
-    "genx" => $genx
+    "genx" => $genx,
+    "feedup" => $finddup,
+    "purgeit" => $purgeit,
+    "restoreit" => $restoreit,
+    "pfile" => $pfile,
+    "loadfile1" => $loadfile1,
+    "loadfile2" => $loadfile2,
+    "file1cm" => $file1cm,
+    "file2cm" => $file2cm,
+    "file1cv" => $file1cv,
+    "file2cd" => $file2cd
 ];
 
+// Fees
 if ($fees) {
     error_log("************************************** WARNING ***************************************");
     error_log("You should check the account codes and their corresponding objectId's on the Web UI.");
     error_log("************************************** WARNING ***************************************");
-    $report = new report("fee", $rwc);
+    $report = new report("fee");
     $feez = new processor($report, "fee");
 
     // Fees have a black list to run against, load and send
@@ -215,9 +241,10 @@ if ($fees) {
     $overallgarburateend = microtime(true); 
     $executiontime = ($overallgarburateend - $overallgarburatestart);
 
-} else if ($uc) {
+// Course
+} else if ($ccv) {
 
-    $report = new report("course", $rwc);
+    $report = new report("course");
     $course = new processor($report, "course");
 
     $overallgarburatestart = microtime(true);
@@ -228,9 +255,24 @@ if ($fees) {
     $overallgarburateend = microtime(true);
     $executiontime = ($overallgarburateend - $overallgarburatestart);
 
+
+// Course Section
+} else if ($uc) {
+
+    $report = new report("coursesection");
+    $coursesection = new processor($report, "coursesection");
+
+    $overallgarburatestart = microtime(true);
+
+    $coursesection->load();
+    $coursesection->garburate($rowbegin, $rowend, $extras);
+
+    $overallgarburateend = microtime(true);
+    $executiontime = ($overallgarburateend - $overallgarburatestart);
+
 } else if ($cert) {
 
-    $report = new report("cert", $rwc);
+    $report = new report("cert");
     $cert = new processor($report, "cert");
 
     $overallgarburatestart = microtime(true);
@@ -243,7 +285,7 @@ if ($fees) {
 
 } else if ($bundle) {
 
-    $report = new report("bundle", $rwc);
+    $report = new report("bundle");
     $bundle = new processor($report, "bundle");
 
     $pstart = microtime(true);
@@ -254,9 +296,21 @@ if ($fees) {
     $pend = microtime(true);
     $report->timer("overall", $pend - $pstart);
 
-} else {
+} else if ($pfile) {
 
-    $report = new report("student", $rwc);
+    $report = new report("pfile");
+    // want to load the fees file
+    $pfileobj = new pfile($report, $rowbegin, $rowend, $extras);
+
+    $pfileobj->process($pfile);
+    $pstart = microtime(true);
+
+    $pend = microtime(true);
+    $report->timer("overall", $pend - $pstart);
+
+} else if ($stuenroll) {
+
+    $report = new report("student");
     $student = new processor($report, "student");
 
     $pstart = microtime(true);
@@ -283,6 +337,12 @@ if ($fees) {
     // }
     // } while ($count != 0);
     error_log("+++++++++++++++++++++++  File Processing End  +++++++++++++++++++++++");
+} else {
+
+    $help = helpers::get_help();
+    echo $help;
+
+    die();
 }
 
 $report->finish();

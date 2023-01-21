@@ -25,6 +25,7 @@
 namespace enrol_d1\jenzabar;
 
 use enrol_d1\jenzabar\file_loader;
+use enrol_d1\jenzabar\coursesection;
 use enrol_d1\jenzabar\course;
 use enrol_d1\jenzabar\student;
 use enrol_d1\jenzabar\bundle;
@@ -32,6 +33,7 @@ use enrol_d1\jenzabar\fee;
 use enrol_d1\jenzabar\cert;
 
 require_once('file_loader.php');
+require_once('coursesection.php');
 require_once('course.php');
 require_once('student.php');
 require_once('bundle.php');
@@ -144,7 +146,6 @@ class processor {
         $error_file = $this->reportspath. "/importer/reports/Failed_".$this->toprocess."_rows_". $thisfilename. ".csv";
         $this->handles['error_handle'] = fopen($error_file, "a");
 
-        // TODO: Make enrollment file seperate from the student process.
         if ($this->toprocess == "student") {
             $error_enrol_file = $this->reportspath. "/importer/reports/Failed_enrollment_rows_". $thisfilename. ".csv";
             $this->handles['error_enrol_handle'] = fopen($error_enrol_file, "a");
@@ -176,8 +177,8 @@ class processor {
                     break;
                 }
 
-                error_log("\n=====================================================================");
-                error_log("Processing Row: ". ($rowcount + 1). "   Average row time: ".
+                // error_log("\n=====================================================================");
+                error_log("\e[0;37mOn CSV Row: ". ($rowcount + 1). "   Processed: ". $totalcount ."   Average row time: ".
                     $this->report->average_time("row"). "   Total Time: ". $this->report->running_time());
 
                 $rowcount++;
@@ -185,11 +186,11 @@ class processor {
                 $reportcount++;
 
                 // Write to the reports every X number of rows.
-                if ($this->report->rwc != 0 && $reportcount >= $this->report->rwc) {
-                    error_log("\nHave hit the threshold for reports, going to write to file and then continue.");
-                    $this->report->save_and_clear();
-                    $reportcount = 0;
-                }
+                // if ($this->report->rwc != 0 && $reportcount >= $this->report->rwc) {
+                //     error_log("\nHave hit the threshold for reports, going to write to file and then continue.");
+                //     $this->report->save_and_clear();
+                //     $reportcount = 0;
+                // }
 
                 $pstart = microtime(true);
                 $facker = "enrol_d1\jenzabar\\".$this->toprocess;
