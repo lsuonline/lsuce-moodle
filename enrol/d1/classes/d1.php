@@ -769,11 +769,11 @@ class lsud1 {
 
         // Build the student object.
         $student = new stdClass();
-        $student->username     = $enrollment->username;
+        $student->username     = strtolower($enrollment->username);
         $student->idnumber     = $enrollment->xnumber;
         $student->d1id         = $enrollment->d1id;
         $student->lsuid        = $enrollment->lsuid;
-        $student->email        = $enrollment->email;
+        $student->email        = strtolower($enrollment->email);
         $student->firstname    = $enrollment->firstname;
         $student->lastname     = $enrollment->lastname;
         $student->timemodified = time();
@@ -1238,6 +1238,7 @@ die();
 
                     break;
                 } else {
+                    unset($user->auth);
                     // User object matches stored data but some differences exist, try to update the object.
                     if ($DB->update_record($table, $user, $bulk=false)) {
                         // mtrace("    Updated Moodle user with username: $user->username, idnumber: $user->idnumber, email: $user->email, and name: $user->firstname $user->lastname.");
@@ -1909,6 +1910,19 @@ die();
 
         $d1enrolled = $DB->get_record_sql($sql);
         return $d1enrolled;
+    }
+
+    public static function d1_lowercase() {
+        global $DB;
+        $sql = "UPDATE mdl_user
+                 SET email = lower(email),
+                   username = lower(username)
+               WHERE deleted = 0
+                 AND suspended = 0";
+
+        $lower = $DB->execute($sql);
+
+        return $lower;
     }
 
 }

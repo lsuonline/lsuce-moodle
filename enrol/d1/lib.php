@@ -312,6 +312,12 @@ class enrol_d1_plugin extends enrol_plugin {
 
     mtrace("  Updated mismatched and inserted any missing Moodle user idnumber profile fields.");
 
+    $lower = lsud1::d1_lowercase();
+
+    if ($lower) {
+        mtrace("  Converted remaining usernames and emails to lower case.");
+    }
+
     mtrace("Completed the processing of Moodle enrollments.");
     }
 
