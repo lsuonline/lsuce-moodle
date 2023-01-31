@@ -1436,7 +1436,7 @@ die();
         // If we're enrolling a student in the course.
         } else if ($enrollstatus == "enroll") {
             // Check to see if a user is enrolled via D1.
-            $check = check_d1_enr($stu->course, $stu->userid, $enrollend);
+            $check = check_d1_enr($stu->course, $stu->userid);
 
             // Set the start date if it's there.
             $enrollstart = isset($enrollstart) ? $enrollstart : 0;
@@ -1893,7 +1893,7 @@ die();
         if (is_null($enrollend)) {
             $where = "";
         } else {
-            $where = "AND ue.timeend = ' . $enrollend . '"
+            $where = "AND ue.timeend = ' . $enrollend . '";
         }
 
         $sql = 'SELECT ue.id AS enrollid,
