@@ -1167,7 +1167,7 @@ class lsud1 {
 
                 // If we're running via scheduled task.
                 if (!isset($courseid)) {
-                    mtrace('  Email: ' . $d1student->email . ' = Username: ' . $idn->username . ' = ID: ' . $idn->id);
+                  // mtrace('  Email: ' . $d1student->email . ' = Username: ' . $idn->username . ' = ID: ' . $idn->id);
                 }
             }
 
@@ -1199,10 +1199,10 @@ class lsud1 {
             }
 
             foreach($users['email'] as $idn) {
-                if (!isset($courseid)) {
-                    // mtrace('  Email: ' . $d1student->email . ' = Username: ' . $idn->username . ' = ID: ' . $idn->id);
-                }
+                mtrace('  Email: ' . $d1student->email . ' = Username: ' . $idn->username . ' = ID: ' . $idn->id);
             }
+var_dump($d1student);
+die();
             unset($users['email']);
         } else {
             $users['email'] = reset($users['email']);
@@ -1226,6 +1226,16 @@ class lsud1 {
                     // mtrace("    User ID: $user->id matched all parts of the Moodle user object.");
                     // User object matches stored data 1:1, grab the object.
                     $uo = $DB->get_record($table, array("id"=>$user->id), $fields='*', $strictness=IGNORE_MISSING);
+		    $d1student->userid = $uo->id;
+		    $d1student->id = $d1student->studentsid;
+		    $DB->update_record('enrol_d1_students', $d1student);
+
+/*
+mtrace("did not touch user: $uo->id from d1 record: $d1student->id and userid $d1student->userid.");
+var_dump($d1student);
+die();
+*/
+
                     break;
                 } else {
                     // User object matches stored data but some differences exist, try to update the object.
@@ -1233,6 +1243,14 @@ class lsud1 {
                         // mtrace("    Updated Moodle user with username: $user->username, idnumber: $user->idnumber, email: $user->email, and name: $user->firstname $user->lastname.");
                         // We successfully updated the user object and stored the data, fetch the data.
                         $uo = $DB->get_record($table, array("id"=>$user->id), $fields='*', $strictness=IGNORE_MISSING);
+                        $d1student->userid = $uo->id;
+                        $d1student->id = $d1student->studentsid;
+/*
+mtrace("Updated user: $uo->id from d1 record: $d1student->id and userid $d1student->userid.");
+var_dump($d1student);
+die();
+*/
+                        $DB->update_record('enrol_d1_students', $d1student);
                         break;
                     } else {
                         mtrace("    Failed to update Moodle user: $user->id with username: $user->username, idnumber: $user->idnumber, email: $user->email, and name: $user->firstname $user->lastname due to a DB error.");
@@ -1242,6 +1260,10 @@ class lsud1 {
                 // Update the userid of the d1student table JIC.
                 $d1student->userid = $uo->id;
                 $d1student->id = $d1student->studentsid;
+
+mtrace("Updated d1 record: $d1student->id and userid $d1student->userid.");
+var_dump($d1student);
+die();
 
                 $DB->update_record('enrol_d1_students', $d1student);
                 // If we found a user and did all the above, exit the loop.
@@ -1268,6 +1290,12 @@ class lsud1 {
             // Update the userid of the d1student table JIC.
             $d1student->userid = $uo->id;
             $d1student->id = $d1student->studentsid;
+
+/*
+mtrace("created user: $uo->id from d1 record: $d1student->id and userid $d1student->userid.");
+var_dump($d1student);
+die();
+*/
 
             $DB->update_record('enrol_d1_students', $d1student);
             return $uo;
@@ -1407,20 +1435,49 @@ class lsud1 {
             }
         // If we're enrolling a student in the course.
         } else if ($enrollstatus == "enroll") {
+            // Check to see if a user is enrolled via D1.
+            $check = check_d1_enr($stu->course, $stu->userid, $enrollend);
+
             // Set the start date if it's there.
             $enrollstart = isset($enrollstart) ? $enrollstart : 0;
+
             // Set their end date if it's there.
             $enrollend = isset($enrollend) ? $enrollend : 0;
 
-            // Do the nasty.
-            $enrolluser = $enroller->enrol_user(
+            if (!isset($check->enrollid)) {
+                // Do the nasty.
+                $enrolluser = $enroller->enrol_user(
                               $einstance,
                               $stu->userid,
                               $roleid,
                               $enrollstart,
                               $enrollend,
                               $status = ENROL_USER_ACTIVE);
-            mtrace("    User ID: $stu->userid enrolled into course: $stu->course.");
+                mtrace("    User ID: $stu->userid enrolled into course: $stu->course.");
+
+                // Require check once.
+                if (!function_exists('grade_recover_history_grades')) {
+                    global $CFG;
+                    require_once($CFG->libdir . '/gradelib.php');
+                }
+
+                $grade = grade_recover_history_grades($userid, $courseid);
+                if ($grade) {
+                    mtrace("      Grades recovered for userid: $userid in course: $courseid.");
+                }
+            } else if ($check->enrollend <> $enrollend) {
+                $enrolluser = $enroller->enrol_user(
+                              $einstance,
+                              $stu->userid,
+                              $roleid,
+                              $enrollstart,
+                              $enrollend,
+                              $status = ENROL_USER_ACTIVE);
+                mtrace("    User ID: $stu->userid enddate modified in course: $stu->course.");
+            } else {
+                mtrace("    Skipping user: $stu->userid already enrolled in course: $stu->course.");
+            }
+
         }
 
         // Update the D1 enrollment table with the appropriate action status.
@@ -1829,6 +1886,33 @@ class lsud1 {
         // Return the user_info_data.id if we were successful.
         return $data;
     }
+
+    public static function check_d1_enr($courseid, $userid, $enrollend = null) {
+        global $DB;
+
+        if (is_null($enrollend)) {
+            $where = "";
+        } else {
+            $where = "AND ue.timeend = ' . $enrollend . '"
+        }
+
+        $sql = 'SELECT ue.id AS enrollid,
+                       ue.timeend AS enrollend
+                FROM mdl_course c
+                    INNER JOIN mdl_enrol e ON e.courseid = c.id
+                    INNER JOIN mdl_user_enrolments ue ON ue.enrolid = e.id
+                WHERE e.enrol = "d1"
+                    AND c.id = ' . $courseid . '
+                    ' . $where . '
+                    AND ue.userid = ' . $userid;
+
+var_dump($sql);
+die();
+
+        $d1enrolled = $DB->get_record_sql($sql);
+        return $d1enrolled;
+    }
+
 }
 
 
