@@ -1436,7 +1436,7 @@ die();
         // If we're enrolling a student in the course.
         } else if ($enrollstatus == "enroll") {
             // Check to see if a user is enrolled via D1.
-            $check = check_d1_enr($stu->course, $stu->userid);
+            $check = self::check_d1_enr($stu->course, $stu->userid);
 
             // Set the start date if it's there.
             $enrollstart = isset($enrollstart) ? $enrollstart : 0;
@@ -1905,9 +1905,6 @@ die();
                     AND c.id = ' . $courseid . '
                     ' . $where . '
                     AND ue.userid = ' . $userid;
-
-var_dump($sql);
-die();
 
         $d1enrolled = $DB->get_record_sql($sql);
         return $d1enrolled;

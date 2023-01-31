@@ -261,15 +261,6 @@ class enrol_d1_plugin extends enrol_plugin {
                     }
 
                     if (!empty($d1enroll->userid)) {
-
-                        mtrace('    Userid ' . $d1enroll->userid
-                           . ' will be ' . $d1enroll->status
-                           . 'ed in courseid ' . $d1enroll->courseid 
-                           . ' (' . $d1enroll->courseidnumber
-                           . ') with a start time of '
-                           . $d1enroll->enrollstart
-                           . ' and end time of '
-                           . $d1enroll->enrollend . '.');
                         // Enroll the student.
                         $enroll = lsud1::d1_enrollment(
                               $d1enroll->courseid,
