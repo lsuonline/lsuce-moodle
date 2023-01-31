@@ -1902,6 +1902,7 @@ die();
                     INNER JOIN mdl_enrol e ON e.courseid = c.id
                     INNER JOIN mdl_user_enrolments ue ON ue.enrolid = e.id
                 WHERE e.enrol = "d1"
+                    AND ue.status = 0
                     AND c.id = ' . $courseid . '
                     ' . $where . '
                     AND ue.userid = ' . $userid;
