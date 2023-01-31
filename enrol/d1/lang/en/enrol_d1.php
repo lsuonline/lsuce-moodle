@@ -61,3 +61,9 @@ $string['d1_fieldid'] = 'Field id';
 $string['d1_fieldid_help'] = 'User profile field id used to house the secondary idnumber from D1.';
 $string['d1_id_pre'] = 'Prefix';
 $string['d1_id_pre_help'] = 'Custom user profile field prefix for pattern matching purposes.';
+
+// Permissions.
+$string['d1:showhide'] = 'Show / Hide enrollment instance';
+$string['d1:reprocess'] = 'Reprocess enrollments';
+$string['d1:delete'] = 'Delete enrollment instance';
+
