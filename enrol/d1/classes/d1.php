@@ -467,9 +467,10 @@ class lsud1 {
                     // Convert the start date to unix timestamp.
                     $sd = DateTime::createFromFormat('d M Y h:i:s A', $studentlistitem->enrollmentDate, new DateTimeZone('America/Chicago'));
                     $startdate = date_timestamp_get($sd);
-
+// var_dump($section->getCourseSectionResult->courseSection->sectionDueDateRule);
+// die();
                     // Conditionally get the end date if it's set.
-                    if (isset($section->getCourseSectionResult->courseSection->sectionDueDateRule->daysAfterEnroll)) {
+                    if (isset($section->getCourseSectionResult->courseSection->sectionDueDateRule->daysAfterEnroll) && $section->getCourseSectionResult->courseSection->sectionDueDateRule->dueDateRuleTypeCode <> "None") {
                         // Grab the number of days the section enrollment is valid.
                         $daysafter = $section->getCourseSectionResult->courseSection->sectionDueDateRule->daysAfterEnroll;
 
@@ -1201,8 +1202,6 @@ class lsud1 {
             foreach($users['email'] as $idn) {
                 mtrace('  Email: ' . $d1student->email . ' = Username: ' . $idn->username . ' = ID: ' . $idn->id);
             }
-var_dump($d1student);
-die();
             unset($users['email']);
         } else {
             $users['email'] = reset($users['email']);
@@ -1924,7 +1923,6 @@ die();
 
         return $lower;
     }
-
 }
 
 
