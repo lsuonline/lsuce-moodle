@@ -467,12 +467,15 @@ class lsud1 {
                     // Convert the start date to unix timestamp.
                     $sd = DateTime::createFromFormat('d M Y h:i:s A', $studentlistitem->enrollmentDate, new DateTimeZone('America/Chicago'));
                     $startdate = date_timestamp_get($sd);
-// var_dump($section->getCourseSectionResult->courseSection->sectionDueDateRule);
-// die();
+
                     // Conditionally get the end date if it's set.
-                    if (isset($section->getCourseSectionResult->courseSection->sectionDueDateRule->daysAfterEnroll) && $section->getCourseSectionResult->courseSection->sectionDueDateRule->dueDateRuleTypeCode <> "None") {
+                    if (isset($section->getCourseSectionResult->courseSection->sectionDueDateRule->daysAfterEnroll) && $section->getCourseSectionResult->courseSection->sectionDueDateRule->dueDateRuleTypeCode == "DaysAfterEnrollment") {
                         // Grab the number of days the section enrollment is valid.
                         $daysafter = $section->getCourseSectionResult->courseSection->sectionDueDateRule->daysAfterEnroll;
+                        // Grab the grace period.
+                        $graceperiod = $section->getCourseSectionResult->courseSection->sectionDueDateRule->gracePeriodDays;
+                        // Convert it to seconds.
+                        $gp = 86400 * $graceperiod;
 
                         // Grab the student enrollment start date.
                         $sdate = $studentlistitem->enrollmentDate;
@@ -495,8 +498,30 @@ class lsud1 {
                               $ed;
 
                         // Convert the date to unix timestamp.
-                        $enddate = date_timestamp_get($ed) + 86399;
-                        $duedate = date_timestamp_get($dd) + 86399;
+                        $enddate = date_timestamp_get($ed) + 86399 + $gp;
+                        $duedate = date_timestamp_get($dd) + 86399 + $gp;
+
+                    } else if (isset($section->getCourseSectionResult->courseSection->sectionDueDateRule->fixedDueDate) && $section->getCourseSectionResult->courseSection->sectionDueDateRule->dueDateRuleTypeCode == "FixDate") {
+                        // Grab the grace period.
+                        $graceperiod = $section->getCourseSectionResult->courseSection->sectionDueDateRule->gracePeriodDays;
+                        // Convert it to seconds.
+                        $gp = 86400 * $graceperiod;
+
+                        // Grab the fixed due date of the course section.
+                        $edate = $section->getCourseSectionResult->courseSection->sectionDueDateRule->fixedDueDate;
+
+                        // Build the date object from the string above.
+                        $ed = DateTime::createFromFormat('d M Y', $edate, new DateTimeZone('America/Chicago'));
+
+                        // In case we do not have a sectionDueDate, set it to the calculated end-date.
+                        $dd = isset($studentlistitem->sectionDueDate) ?
+                              DateTime::createFromFormat('d M Y h:i:s A', $studentlistitem->sectionDueDate, new DateTimeZone('America/Chicago')) :
+                              $ed;
+
+                        // Convert the date to unix timestamp.
+                        $enddate = date_timestamp_get($ed) + 86399 + $gp;
+                        $duedate = date_timestamp_get($dd) + 86399 + $gp;
+
                     } else {
                         $enddate = 0;
 
@@ -504,6 +529,7 @@ class lsud1 {
                         $dd = isset($studentlistitem->sectionDueDate) ?
                               DateTime::createFromFormat('d M Y h:i:s A', $studentlistitem->sectionDueDate, new DateTimeZone('America/Chicago')) :
                               null;
+
                         $duedate = isset($studentlistitem->sectionDueDate) ? date_timestamp_get($dd) : 0;
                     }
 
