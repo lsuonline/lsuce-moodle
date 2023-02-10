@@ -538,8 +538,35 @@
     white-space: normal;
 }
 
+// Print options for book resource.
+#page-mod-book-view {
+    .snap-page-heading-button > .action-menu {
+        float: right;
+    }
+    &.path-mod .activity-header:not(:empty),
+    .block_book_toc,
+    .action-menu-trigger .dropdown-menu {
+        border-radius: 0.5rem;
+    }
+    .dropdown-menu .dropdown-item {
+        padding-left: 1rem;
+        a {
+            &:focus,
+            &:hover {
+                text-decoration: none;
+                color: white;
+            }
+            img:first-child {
+                display: none;
+            }
+        }
+    }
+    #moodle-blocks .block_book_toc {
+        padding: 1rem;
+    }
+}
 
-// Print style guide for book
+// Print style guide for book.
 #page-mod-book-print {
     font-size: 18px !important;
     p, div.book_chapter {
@@ -940,6 +967,13 @@ body.format-tiles.editing {
         .description {
             margin-left: 10%;
         }
+        .activity-info {
+            margin-left: auto;
+            margin-right: 3rem;
+        }
+        .my-1 {
+            margin-left: 10%;
+        }
     }
 
     li.subtile {
@@ -1207,6 +1241,61 @@ body.format-tiles.editing {
             }
         }
     }
+
+    // Fix label content elements.
+    .modtype_label {
+        margin: 1em 1%;
+        &.activity-wrapper {
+            .my-1 {
+                margin-left: 5%;
+            }
+        }
+        .mod-indent {
+            float: none;
+        }
+        .mod-indent-outer {
+            margin-right: 2rem;
+        }
+        .activity-information [data-action="toggle-manual-completion"] {
+            margin-bottom: 1rem;
+        }
+        &.dimmed {
+            opacity: 1;
+        }
+        span.label_content.dimmed {
+            opacity: 0.7;
+        }
+    }
+
+    // Fix resource margin.
+    .modtype_resource:not(.subtile) {
+        margin: 1em 1%;
+    }
+
+    // Prevent section buttons to overlap activities.
+    .sectionbuttons {
+        top: 0 !important;
+    }
+
+    // Prevent Tile and section to overlap header in Snap.
+    .tile-clickable,
+    .moveablesection {
+        z-index: 11;
+    }
+
+    // Show modal in the back of the header.
+    .modal-backdrop.fade.in {
+        z-index: 10;
+    }
+
+    // Hide border in activities.
+    .section li {
+        &.activity,
+        .activitytitle {
+            border-bottom: none;
+        }
+    }
+
 }
 
 // Styles on section Actions for format Tiles.

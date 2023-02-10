@@ -582,6 +582,34 @@ li.modtype_page {
     }
 }
 
+// Adjust the mod resource view for In frame display option.
+body#page-mod-resource-view.path-mod-resource.pagelayout-frametop {
+
+    header#mr-nav,
+    .snap-custom-menu-spacer,
+    #page-mast,
+    footer#moodle-footer {
+        display:none;
+    }
+
+    #page-header {
+        padding-top: 1em;
+        padding-bottom: 0;
+    }
+
+    section#region-main {
+        padding-top: 0;
+        max-width: none;
+        .activity-header,
+        .activity-navigation {
+            display:none;
+        }
+    }
+    .snap-page-heading-button {
+        float: right;
+    }
+}
+
 .mediaplugin_videojs > div {
     max-width: none !important;
 }
@@ -1720,6 +1748,11 @@ header#page-header
     padding: 0 4% 4em;
     background-color: #f1f0ee;
     @include clearfix;
+    .text-center {
+        .btn-secondary {
+            margin-right: 1rem;
+        }
+    }
 }
 
 #news-articles {
@@ -1769,6 +1802,40 @@ header#page-header
 .news-article-message {
     display: none;
     padding: 2em 4%;
+}
+
+.paused-gif {
+    background-color: $nav-bg;
+    border-radius: 0.3em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    .snap-logo-anim-pause {
+        text-indent: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        background-position: center center;
+        background-size: contain;
+        background-repeat: no-repeat;
+        padding: 0.5em 1.4em;
+
+        display: inline-block;
+        background-color: transparent;
+        height: 40px;
+        width: 40px;
+    }
+    .snap-sitename-anim-pause {
+        color: $nav-color;
+        padding: 0.5em 1em;
+    }
+    .resume-anim {
+        color: $nav-color;
+        padding: 0.5em 0;
+        i.icon {
+            padding-left: 0.5em;
+            color: inherit;
+        }
+    }
 }
 
 .state-expanded {
@@ -2779,49 +2846,6 @@ ul.events-new + ul.events-underway {
 }
 
 // -------------------------
-// Grade table
-// -------------------------
-
-table.boxaligncenter.generaltable.user-grade {
-    background-color: #fff;
-
-    th {
-        font-weight: 500;
-    }
-
-    thead {
-        border-bottom: 1px solid #eee;
-    }
-
-    img.icon {
-        width: 1.3em;
-        height: 1.3em;
-    }
-
-    td.feedbacktext {
-        font-size: 1.3em;
-    }
-
-    th a {
-        font-size: 1.2em;
-    }
-
-    th {
-        padding: 0.75em !important;
-        border-color: #fff !important;
-    }
-
-    td {
-        border-color: #fff !important;
-    }
-
-    // Kill ridiculously unprofessional colour scheme
-    * {
-        background-color: #fff !important;
-    }
-}
-
-// -------------------------
 // Joule mods
 // -------------------------
 // Reports
@@ -3035,6 +3059,10 @@ table#user-grades tr.avg td.cell {
     }
 }
 
+.grader_report_edit_button {
+    display:none;
+}
+
 // TODO short term fix for Snap disappearing header interfering with scrolling Gradebook
 #page-grade-report-grader-index {
     header#mr-nav {
@@ -3048,6 +3076,10 @@ table#user-grades tr.avg td.cell {
         #studentheader {
             left: 0;
         }
+    }
+    &.path-grade-report-grader .grader_report_edit_button {
+        display: block;
+        margin-bottom: 1.5rem;
     }
 }
 
@@ -3607,10 +3639,10 @@ div[data-rel=fatalerror] {
 
 .iconhelp {
     & > img {
-        background-color: #ddd;
+        background-color: $icons-color;
         height: 16px;
         width: 16px;
-        border: 4px solid #ddd;
+        border: 4px solid $icons-color;
         border-radius: 50%;
         vertical-align: middle;
         margin-bottom: 3px;
@@ -5032,6 +5064,7 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
         width: inherit;
     }
 }
+
 // Fix header position in grader view.
 #page-mod-assign-grader.theme-snap {
     [data-region="grading-navigation-panel"] {
@@ -5131,4 +5164,14 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
             }
         }
     }
+}
+
+// Fix for screen reader focusable element that skip to main content position.
+.sr-only-focusable[href="#maincontent"]:focus {
+    z-index: 1031;
+    position: fixed;
+    background: #fff;
+    padding: 7px;
+    left: 0;
+    top: 0;
 }

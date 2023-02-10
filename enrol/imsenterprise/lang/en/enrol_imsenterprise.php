@@ -99,3 +99,7 @@ $string['disableenrolonly'] = 'Suspend enrolment only';
 $string['disableenrolmentandremoveallroles'] = 'Suspend enrolment and remove roles';
 $string['noaction'] = 'No action';
 $string['removeenrolmentandallroles'] = 'Delete enrolment and roles';
+// BEGIN LSU IMS Profile Field support.
+$string['profilefield'] = 'User profile field';
+$string['profilefielddesc'] = 'Specify an additional profile field you want populated by the IMS file. The IMS Enterprise file must be contained in the <profile_field> tag in the member area.';
+// END LSU IMS Profile Field support.

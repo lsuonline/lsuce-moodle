@@ -720,7 +720,15 @@ class grade_report_grader extends grade_report {
                 $usercell->text = $OUTPUT->user_picture($user, ['link' => false, 'visibletoscreenreaders' => false]);
             }
 
-            $fullname = fullname($user, $viewfullnames);
+            // BEGIN LSU Alternate Names support.
+            $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+            if ($alternateused) {
+                $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;
+            } else {
+                $fullname = fullname($user);
+            }
+            // END LSU Alternate Names support.
+
             $usercell->text = html_writer::link(
                     new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $this->course->id]),
                     $usercell->text . $fullname,
@@ -1092,6 +1100,13 @@ class grade_report_grader extends grade_report {
                     $itemcell->text .= "<span class='gradingerror{$hidden}'>" . $strerror . "</span>";
 
                 } else if (!empty($USER->editing)) {
+
+                    // BEGIN LSU Manual Grade Raw Grade support. 
+                    $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
+                    if ($item->is_manual_item() and $manualraw) {
+                        $gradeval = $grade->rawgrade;
+                    }
+                    // END LSU Manual Grade Raw Grade support.
 
                     if ($item->scaleid && !empty($scalesarray[$item->scaleid])) {
                         $itemcell->attributes['class'] .= ' grade_type_scale';
@@ -1525,6 +1540,10 @@ class grade_report_grader extends grade_report {
                 }
             }
 
+            // BEGIN LSU Column Average No Zero.
+            $no_grade_SQL = $meanselection == 2 ? ' AND g.finalgrade > 0 ': '';
+            // END LSU Column Average No Zero.
+
             // MDL-10875 Empty grades must be evaluated as grademin, NOT always 0
             // This query returns a count of ungraded grades (NULL finalgrade OR no matching record in grade_grades table)
             $sql = "SELECT gi.id, COUNT(DISTINCT u.id) AS count
@@ -1533,7 +1552,10 @@ class grade_report_grader extends grade_report {
                       JOIN {role_assignments} ra
                            ON ra.userid = u.id
                       LEFT OUTER JOIN {grade_grades} g
-                           ON (g.itemid = gi.id AND g.userid = u.id AND g.finalgrade IS NOT NULL)
+                           # BEGIN LSU Column Average No Zero.
+                           ON (g.itemid = gi.id AND g.userid = u.id AND (g.finalgrade IS NOT NULL $no_grade_SQL))
+                           # END LSU Column Average No Zero.
+
                       $groupsql
                      WHERE gi.courseid = :courseid
                            AND ra.roleid $gradebookrolessql
@@ -1567,8 +1589,9 @@ class grade_report_grader extends grade_report {
                 } else {
                     $ungradedcount = $ungradedcounts[$itemid]->count;
                 }
-
-                if ($meanselection == GRADE_REPORT_MEAN_GRADED) {
+                // BEGIN LSU Column Average No Zero.
+                if (($meanselection == GRADE_REPORT_MEAN_GRADED) || ($meanselection == GRADE_REPORT_MEAN_GRADED_NO_ZEROS)) {
+                // END LSU Column Average No Zero.
                     $meancount = $totalcount - $ungradedcount;
                 } else { // Bump up the sum by the number of ungraded items * grademin
                     $sumarray[$item->id] += $ungradedcount * $item->grademin;

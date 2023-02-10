@@ -165,6 +165,9 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
 
     $temp->add(new admin_setting_configcheckbox('cookiesecure', new lang_string('cookiesecure', 'admin'), new lang_string('configcookiesecure', 'admin'), 1));
     $temp->add(new admin_setting_configcheckbox('cookiehttponly', new lang_string('cookiehttponly', 'admin'), new lang_string('configcookiehttponly', 'admin'), 0));
+    // BEGIN LSU Samesite Cookie Setting.
+    $temp->add(new admin_setting_configcheckbox('force_samesite_none', new lang_string('forcesamesite', 'admin'), new lang_string('forcesamesitehelp', 'admin'), 0));
+    // END LSU Samesite Cookie Setting.
     $temp->add(new admin_setting_configcheckbox('allowframembedding', new lang_string('allowframembedding', 'admin'), new lang_string('allowframembedding_help', 'admin'), 0));
 
     // Settings elements used by the \core\files\curl_security_helper class.

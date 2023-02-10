@@ -1572,3 +1572,20 @@ $string['mediapluginswfnote'] = 'As a default security measure, normal users sho
 
 // Deprecated since Moodle 4.1.
 $string['multilangforceold'] = 'Force old multilang syntax: &lt;span&gt; without the class="multilang" and &lt;lang&gt;';
+
+// BEGIN LSU FERPA photos.
+$string['ferpaphotos'] = 'FERPA photo mode';
+$string['ferpaphotoshelp'] = 'Hides student photos from other students';
+// END LSU FERPA photos.
+
+// BEGIN LSU BCC Emails.
+$string['bccallmail'] = 'BCC all mail';
+$string['configbccallmail'] = 'BCC all mail to the specified bcc address for retention purposes.';
+$string['bccaddress'] = 'BCC address';
+$string['configbccaddress'] = 'IF BCC all mail is on, this address will receive all mail sent from this Moodle.';
+// END LSU BCC Emails.
+
+// BEGIN LSU SameSite Cookies.
+$string['forcesamesite'] = 'Force SameSite Cookies';
+$string['forcesamesitehelp'] = 'Forces SameSite=None for all cookies.';
+// END LSU SameSite Cookies.

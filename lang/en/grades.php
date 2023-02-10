@@ -906,3 +906,46 @@ $string['navmethod'] = 'Navigation method';
 $string['dropdown'] = 'Drop-down menu';
 $string['tabs'] = 'Tabs';
 $string['combo'] = 'Tabs and drop-down menu';
+
+// BEGIN LSU Better Letters.
+$string['letterscustompercents'] = 'Custom Percentages';
+$string['letterscustompercents_help'] = 'Allows for users to enter a value for the percents.';
+$string['lettersdefaultletters'] = 'F,D,C,B,A';
+$string['lettersstrictletter'] = 'Strict Letter names';
+$string['lettersstrictletter_help'] = 'This setting forces the default letter names defined with the selected Letter names.';
+$string['lettersnames'] = 'Letter names';
+$string['lettersname_help'] = 'This setting forces the default letter names defined with this system scale. __Note__: The default letter names are A-F.';
+// END LSU Better Letters.
+
+// BEGIN LSU Column Average No Zero.
+$string['meangradednozeros'] = 'Non-empty, non-zero grades';
+// END LSU Column Average No Zero.
+
+// BEGIN LSU Course Category Editable switch.
+$string['coursecateditable'] = 'Course category editable';
+$string['coursecateditable_help'] = 'Disabling will make the course category name an uneditable field.';
+// END LSU Course Category Editable switch.
+
+// BEGIN LSU Drop Lowest Limiting.
+$string['droplow_limit'] = 'Drop the lowest limit';
+$string['droplow_limit_help'] = 'By applying this setting, the drop setting will be ignored until the number of droppable grades are > than the drop number.';
+// END LSU Drop Lowest Limiting.
+
+// BEGIN LSU Manual Grade Raw Grade support.
+$string['manipulatecategories'] = 'Manipulate category totals';
+$string['manipulatecategories_help'] = 'Curve and offset category totals';
+$string['gradeitemmanualrecompute'] = 'Manual item recompute';
+$string['gradeitemmanualrecompute_help'] = 'Allow the gradebook to automatically adjust the raw grade boundaries when editing the real grade boundaries for Manual items.<br /><strong>When enabled, you will have the option of manipulating category totals.</strong>';
+// END LSU Manual Grade Raw Grade support.
+
+// BEGIN LSU Grade Privacy Aggreement.
+$string['privacy_ack'] = 'Student privacy';
+$string['privacy_ack_help'] = 'This setting blocks anyone from downloading student grades without confirming they will comply with all laws and policies regarding student rights.';
+$string['privacy_ack_required'] = 'I understand that I am downloading legally protected student data and will comply with all laws and policies related to the protection of student data.';
+$string['missing_privacy_ack_required'] = 'Please agree to the requirements below before downloading any student data.';
+// END LSU Grade Privacy Aggreement.
+
+// BEGIN LSU SWM unweighted extra credit option
+$string['w_ec'] = 'Weighted ' . $string['aggregationcoefextra'];
+$string['w_ec_help'] = 'By default, '.$string['aggregationcoefextra'].' items in either the '.$string['aggregateweightedmean2'].' or '.$string['aggregatesum'].' grade categories are weighted. Uncheck this option to allow extra credit items to simply add points to the aggregated category total.';
+// END LSU SWM unweighted extra credit option

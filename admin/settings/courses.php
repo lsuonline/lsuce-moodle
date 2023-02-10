@@ -129,6 +129,11 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) {
     $temp->add(new admin_setting_configcheckbox('moodlecourse/courseenddateenabled', get_string('courseenddateenabled'),
         get_string('courseenddateenabled_desc'), 1));
 
+    // BEGIN LSU course restore limits to course ceators.
+    $temp->add(new admin_setting_configcheckbox('teachersrestore', get_string('teachersrestore'),
+        get_string('teachersrestore_desc'), 1));
+    // END LSU course restore limits to course ceators.
+
     $temp->add(new admin_setting_configduration('moodlecourse/courseduration', get_string('courseduration'),
         get_string('courseduration_desc'), YEARSECS));
 

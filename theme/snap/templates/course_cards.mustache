@@ -50,6 +50,9 @@
     {{^archived}}
     <button class="snap-icon-toggle favoritetoggle" title="{{toggletitle}}" aria-pressed="{{#favorited}}true{{/favorited}}{{^favorited}}false{{/favorited}}"></button>
     {{/archived}}
+    {{! BEGIN LSU Course Card Quick Links. }}
+    {{> theme_snap/course_card_links }}
+    {{! END LSU Course Card Quick Links. }}
     <div class="coursecard-body">
         <h3><a class="coursecard-coursename" href="{{{url}}}">{{{fullname}}}</a></h3>
         <div class="coursecard-dynamicinfo">

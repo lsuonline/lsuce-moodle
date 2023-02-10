@@ -2406,3 +2406,7 @@ $string['registrationno'] = 'No, I do not wish to receive any emails';
 $string['createuserandpass'] = 'Choose your username and password';
 $string['descriptiona'] = 'Description: {$a}';
 $string['supplyinfo'] = 'More details';
+// BEGIN LSU course restore limits to course ceators.
+$string['teachersrestore'] = 'Teachers can restore';
+$string['teachersrestore_desc'] = 'This setting determines if teachers with the appropriate permissions can restore courses.';
+// END LSU course restore limits to course ceators.

@@ -385,10 +385,12 @@ class manager {
             'httponly' => $CFG->cookiehttponly,
         ];
 
-        if (self::should_use_samesite_none()) {
-            // If $samesite is empty, we don't want there to be any SameSite attribute.
-            $sessionoptions['samesite'] = 'None';
-        }
+            // BEGIN LSU Samesite Cookie Setting.
+            if (self::force_samesite_none() || self::should_use_samesite_none()) {
+                // If $samesite is empty, we don't want there to be any SameSite attribute.
+                $sessionoptions['samesite'] = 'None';
+            }
+            // END LSU Samesite Cookie Setting.
 
         session_set_cookie_params($sessionoptions);
 
@@ -641,6 +643,58 @@ class manager {
             return true;
         }
         return false;
+    }
+
+    // BEGIN LSU Samesite Cookie Setting.
+    /**
+     * Returns the config value for the forcing samesite cookies.
+     *
+     * @return @bool
+     */
+    private static function force_samesite_none(): bool {
+        global $CFG;
+
+        $force_samesite_none = isset($CFG->force_samesite_none) ? $CFG->force_samesite_none : 0;
+        if ($force_samesite_none == 1) {
+            return true;
+        }
+        return false;
+    }
+    // END LSU Samesite Cookie Setting.
+
+    /**
+     * Conditionally append the SameSite attribute to the session cookie if necessary.
+     *
+     * Contains a hack for versions of PHP lower than 7.3 as there is no API built into PHP cookie API
+     * for adding the SameSite setting.
+     *
+     * This won't change the Set-Cookie headers if:
+     *  - PHP 7.3 or higher is being used. That already adds the SameSite attribute without any hacks.
+     *  - If the samesite setting is empty.
+     *  - If the samesite setting is None but the browser is not compatible with that setting.
+     */
+    private static function append_samesite_cookie_attribute() {
+        if (version_compare(PHP_VERSION, '7.3.0', '>=')) {
+            // This hack is only necessary if we weren't able to set the samesite flag via the session_set_cookie_params API.
+            return;
+        }
+
+        // BEGIN LSU Samesite Cookie Setting.
+        if (!self::force_samesite_none() && !self::should_use_samesite_none()) {
+            return;
+        }
+        // END LSU Samesite Cookie Setting.
+
+        $cookies = headers_list();
+        header_remove('Set-Cookie');
+        $setcookiesession = 'Set-Cookie: ' . session_name() . '=';
+
+        foreach ($cookies as $cookie) {
+            if (strpos($cookie, $setcookiesession) === 0) {
+                $cookie .= '; SameSite=None';
+            }
+            header($cookie, false);
+        }
     }
 
     /**

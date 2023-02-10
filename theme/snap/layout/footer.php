@@ -24,6 +24,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
+// BEGIN LSU Move the custom menu to the bottom above the footer.
+$custommenu = $OUTPUT->custom_menu();
+if (!empty($custommenu)) {
+    echo '<div id="footer-snap-custom-menu">' . $custommenu . '</div>';
+}
+// END LSU Move the custom menu to the bottom above the footer.
 ?>
 
 <footer id="moodle-footer" role="contentinfo" class="clearfix">

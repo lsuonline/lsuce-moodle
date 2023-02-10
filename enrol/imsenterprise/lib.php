@@ -451,6 +451,10 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
     protected function process_person_tag($tagcontents) {
         global $CFG, $DB;
 
+        // BEGIN LSU change to add moodle lib for sending passwords.
+        require_once($CFG->dirroot . '/lib/moodlelib.php');
+        // END LSU change to add moodle lib for sending passwords.
+
         // Get plugin configs.
         $imssourcedidfallback   = $this->get_config('imssourcedidfallback');
         $fixcaseusernames       = $this->get_config('fixcaseusernames');
@@ -458,6 +462,12 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         $imsdeleteusers         = $this->get_config('imsdeleteusers');
         $createnewusers         = $this->get_config('createnewusers');
         $imsupdateusers         = $this->get_config('imsupdateusers');
+
+        // BEGIN LSU IMS Profile Field support.
+        $pfield                 = $this->get_config('profilefield');
+        $pfielddata             = $DB->get_record('user_info_field', array('shortname'=>$pfield), 'id', IGNORE_MISSING);
+        $profilefieldid         = $pfielddata->id;
+        // END LSU IMS Profile Field support.
 
         $person = new stdClass();
         if (preg_match('{<sourcedid>.*?<id>(.+?)</id>.*?</sourcedid>}is', $tagcontents, $matches)) {
@@ -483,6 +493,18 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         if (preg_match('{<userid\s+authenticationtype\s*=\s*"*(.+?)"*>.*?</userid>}is', $tagcontents, $matches)) {
             $person->auth = trim($matches[1]);
         }
+
+        // BEGIN LSU IMS Profile Field support.
+        $matches = array();
+        if (preg_match('{<profile_field\s+fieldname\s*=\s*"*(.+?)"*>.*?</profile_field>}is', $tagcontents, $matches)) {
+            $person->pfieldsn = trim($matches[1]);
+        }
+
+        $matches = array();
+        if (preg_match('{<profile_field.*?>(.*?)</profile_field>}is', $tagcontents, $matches)) {
+            $person->pfieldvalue = trim($matches[1]);
+        }
+        // END LSU IMS Profile Field support.
 
         if ($imssourcedidfallback && trim($person->username) == '') {
             // This is the point where we can fall back to useing the "sourcedid" if "userid" is not supplied.
@@ -549,6 +571,24 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                     $person->id = $id;
                     $DB->update_record('user', $person);
                     $this->log_line("Updated user $person->username");
+                    // BEGIN LSU IMS Profile Field support.
+                    if (isset($person->pfieldvalue) && isset($profilefieldid)) {
+                        $infodataid              = $DB->get_record('user_info_data', array('fieldid' => $profilefieldid, 'userid' => $person->id), 'id', IGNORE_MISSING);
+                        $infodata                = new stdClass();
+                        $infodata->userid        = $person->id;
+                        $infodata->fieldid       = $profilefieldid;
+                        $infodata->data          = $person->pfieldvalue;
+                        $infodata->dataformat    = 0;
+                        if ($infodataid) {
+                            $infodata->id = $infodataid->id;
+                            $DB->update_record('user_info_data', (array) $infodata, $bulk = false);
+                            $this->log_line("Updated $pfield for existing user $person->username");
+                        } else {
+                            $DB->insert_record('user_info_data', $infodata);
+                            $this->log_line("Inserted $pfield for existing user $person->username");
+                        }
+                    }
+                    // END LSU IMS Profile Fild Support.
                 } else {
                     $this->log_line("Ignoring update request for non-existent user $person->username");
                 }
@@ -577,11 +617,52 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                         $auth = reset($auth);
                         $person->auth = $auth;
                     }
+
+                    // BEGIN LSU IMS Profile Field support.
+                    if (empty($person->pfieldsn)) {
+                        $person->pfieldsn = $pfield;
+                    }
+                    // END LSU IMS Profile Field support.
+
+                    // BEGIN LSU change to add passwords for manual users without them.
+                    if ($person->auth == 'manual') {
+                        $person->password = 'to be generated';
+                    }
+                    // END LSU change to add passwords for manual users without them.
+
                     $person->confirmed = 1;
                     $person->timemodified = time();
                     $person->mnethostid = $CFG->mnet_localhost_id;
                     $id = $DB->insert_record('user', $person);
+
+                    // BEGIN LSU IMS Profile Field support.
+                    if (isset($person->pfieldvalue) && isset($profilefieldid)) {
+                        $infodataid              = $DB->get_record('user_info_data', array('fieldid' => $profilefieldid, 'userid' => $id), 'id', IGNORE_MISSING);
+                        $infodata                = new stdClass();
+                        $infodata->userid        = $id;
+                        $infodata->fieldid       = $profilefieldid;
+                        $infodata->data          = $person->pfieldvalue;
+                        $infodata->dataformat    = 0;
+
+                        if (isset($infodataid->id)) {
+                            $infodata->id = $infodataid->id;
+                            $DB->update_record('user_info_data', (array) $infodata, $bulk = false);
+                            $this->log_line("Updated $pfield for new user $person->username");
+                        } else {
+                            $DB->insert_record('user_info_data', $infodata);
+                            $this->log_line("Inserted $pfield for new user $person->username");
+                        }
+                    }
+                    // END LSU IMS Profile Field support.
+
                     $this->log_line("Created user record ('.$id.') for user '$person->username' (ID number $person->idnumber).");
+                    // BEGIN LSU change to add passwords for manual users without them.
+                    if ($person->password == 'to be generated') {
+                        set_user_preference('auth_forcepasswordchange', 1, $id);
+                        set_user_preference('create_password', 1, $id);
+                        $this->log_line("Sending $person->username password via cron");
+                    }
+                    // END LSU change to add passwords for manual users without them.
                 }
             } else if ($createnewusers) {
 
@@ -707,7 +788,9 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                             $einstance = $DB->get_record('enrol', array('id' => $enrolid));
                         }
 
-                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end);
+                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
+                        $this->enrol_user($einstance, $memberstoreobj->userid, $moodleroleid, $timeframe->begin, $timeframe->end, $status = ENROL_USER_ACTIVE);
+                        // BEGIN LSU change to allow user enrollment status to be set as active for working re-enrollments.
 
                         $this->log_line("Enrolled user #$memberstoreobj->userid ($member->idnumber) "
                             ."to role $member->roletype in course $memberstoreobj->course");
@@ -868,14 +951,18 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         // Explanatory note: The matching will ONLY match if the attribute restrict="1"
         // because otherwise the time markers should be ignored (participation should be
         // allowed outside the period).
-        if (preg_match('{<begin\s+restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}is', $string, $matches)) {
+        // BEGIN LSU change to start / end time.
+        $matches = array();
+        if (preg_match('{<begin restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</begin>}', $string, $matches)) {
             $ret->begin = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
         }
 
         $matches = array();
-        if (preg_match('{<end\s+restrict="1">(\d\d\d\d)-(\d\d)-(\d\d)</end>}is', $string, $matches)) {
-            $ret->end = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
+        // Example time: 2021-01-13 - 10:52:13.
+        if (preg_match('{<end restrict="1">(\d\d\d\d)-(\d\d)-(\d\d) - (\d\d):(\d\d):(\d\d)</end>}', $string, $matches)) {
+            $ret->end = mktime($matches[4], $matches[5], $matches[6], $matches[2], $matches[3], $matches[1]);
         }
+        // END LSU change to add time.
         return $ret;
     }
 

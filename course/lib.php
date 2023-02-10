@@ -3991,7 +3991,17 @@ function course_get_user_administration_options($course, $context) {
                         count(filter_get_available_in_context($context)) > 0;
     $options->reports = has_capability('moodle/site:viewreports', $context);
     $options->backup = has_capability('moodle/backup:backupcourse', $context);
-    $options->restore = has_capability('moodle/restore:restorecourse', $context);
+
+    // BEGIN LSU course restore limits to course ceators.
+    $teachersrestore = isset($CFG->teachersrestore) ? $CFG->teachersrestore : false;
+
+    if (!$teachersrestore) {
+        $options->restore = has_capability('moodle/restore:restorecourse', $context) && has_capability('moodle/course:create', $context);
+    } else {
+        $options->restore = has_capability('moodle/restore:restorecourse', $context);
+    }
+    // END LSU course restore limits to course ceators.
+
     $options->copy = \core_course\management\helper::can_copy_course($course->id);
     $options->files = ($course->legacyfiles == 2 && has_capability('moodle/course:managefiles', $context));
 

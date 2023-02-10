@@ -232,6 +232,12 @@ body[class^="format-"].theme-snap {
 }
 
 .format-topics:not(.no-number-toc) {
+
+    // Fix section counter when coursepartialrender is disabled.
+    &.path-course-view .sections {
+        counter-reset: annotation-list -1;
+    }
+
     li.section .sectionname .sectionnumber:before {
         content: counter(annotation-list) ".\00a0";
     }
@@ -1400,6 +1406,7 @@ body.snap-resource-card {
     &.snap-activity,
     &.launch-tiles-standard,
     &.launch-tiles-module-modal,
+    &.launch-tiles-resource-modal,
     &.activity-wrapper {
 
         margin: 1em 1%;
@@ -2274,11 +2281,17 @@ form.togglecompletion {
         display: none;
     }
 
+    .snap-asset-move {
+        input.sr-only[type="checkbox"] {
+            display: inherit;
+        }
+    }
+
     label.snap-asset-move .icon,
     a.snap-edit-asset .icon,
     .dropdown-toggle .icon {
         font-size: 1.3em;
-        color: #6c757d;
+        color: $icons-color;
     }
 }
 

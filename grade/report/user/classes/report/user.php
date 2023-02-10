@@ -601,6 +601,58 @@ class user extends grade_report {
                         $gradeitemdata['weightraw'] = $hint['weight'];
                         $gradeitemdata['weightformatted'] = $data['weight']['content'];
                     }
+
+                    // BEGIN LSU Weighted Mean Extra Credit
+                    $gradecat = $gradeobject->load_parent_category();
+                    $grandcat = $gradecat->load_parent_category();
+                    if (($gradecat->aggregation == GRADE_AGGREGATE_SUM)) {
+                        if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
+                            $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                        if ($hint['status'] == 'extra') {
+                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                    } 
+                    if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                        if ($hint['status'] == 'used') {
+                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                        if ($hint['status'] == 'novalue') {
+                            $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                    }
+                    if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2) {
+                        if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
+                            $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                        if ($hint['status'] == 'extra') {
+                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                    }
+                    if (isset($grandcat->aggregation)) {
+                        if (($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN || $grandcat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) && $gradeobject->itemtype == 'category') {
+                            if ($gradeobject->aggregationcoef < 0) {
+                                $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
+                                $gradeitemdata['status'] = $hint['status'];
+                            } else {
+                                $data['weight']['content'] = format_float($hint['weight'] * 100.0, 2) . ' %';
+                                $gradeitemdata['status'] = $hint['status'];
+                            } 
+                        }
+                    } else {
+                        if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $gradeobject->itemtype == 'category' && $gradeobject->aggregationcoef < 0) {
+                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
+                            $gradeitemdata['status'] = $hint['status'];
+                        }
+                    }
+                    // END LSU Weighted Mean Extra Credit
+
                     if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
                         $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
                         $gradeitemdata['status'] = $hint['status'];

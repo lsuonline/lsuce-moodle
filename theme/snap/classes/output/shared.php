@@ -27,12 +27,16 @@ namespace theme_snap\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
+// BEGIN LSU Enhancement add Kaltura my media.
+use context_system;
+// END LSU Enhancement add Kaltura my media.
 use core_component;
 use html_writer;
 use moodle_url;
 use stdClass;
 use theme_snap\local;
 use theme_snap\renderables\login_alternative_methods;
+use single_button;
 
 require_once($CFG->dirroot.'/grade/querylib.php');
 require_once($CFG->libdir.'/gradelib.php');
@@ -288,7 +292,7 @@ EOF;
      * @return void
      */
     public static function page_requires_js() {
-        global $CFG, $PAGE, $COURSE, $USER, $OUTPUT;
+        global $CFG, $PAGE, $COURSE, $USER, $OUTPUT, $SITE;
 
         $PAGE->requires->jquery();
         $PAGE->requires->js_amd_inline("require(['theme_boost/loader']);");
@@ -386,6 +390,11 @@ EOF;
             'loadPageInCourse' => !empty(get_config('theme_snap', 'design_mod_page')) && ($COURSE->format != 'tiles'),
         ];
 
+        $sitevars = (object)[
+            'hasLogo' => !empty(get_config('theme_snap', 'logo')),
+            'shortname' => $SITE->shortname,
+        ];
+
         $forcepwdchange = (bool) get_user_preferences('auth_forcepasswordchange', false);
         $conversationbadgecountenabled = isloggedin() && $PAGE->theme->settings->messagestoggle == 1;
 
@@ -457,7 +466,7 @@ EOF;
 
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
                      $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
-                     $gradingconstants];
+                     $gradingconstants, $sitevars];
         $initaxvars = [$localjoulegrader, $allyreport, $blockreports, $localcatalogue];
         $alternativelogins = new login_alternative_methods();
         if ($alternativelogins->potentialidps) {
@@ -813,6 +822,44 @@ EOF;
             }
         }
 
+        // Begin LSU Enhancement fix quickmail icon not showing up for students in course.
+        if ( \core_component::get_component_directory('block_quickmail') !== null) {
+
+            // Check course config
+            $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $COURSE->id], '', 'name,value');
+
+            // Get the master block config for Quickmail.
+            $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
+
+            // Determine Quickmail allowstudents for this course.
+            if ((int) $blockconfig < 0) {
+                $courseallowstudents = 0;
+            } else {
+                $courseallowstudents = array_key_exists('allowstudents', $courseconfig) ?
+                    $courseconfig['allowstudents'] :
+                    $blockconfig;
+            }
+
+            // Show QM icon and link for those who cansend OR students.
+            if (has_capability('block/quickmail:cansend', $coursecontext) OR $courseallowstudents == 1) {
+                // Set the icon appropriate for the version.
+                if ($CFG->version > 2017051500.00) {
+                    $iconurl = $OUTPUT->image_url('t/email', 'core');
+                } else {
+                    $iconurl = $OUTPUT->pix_url('t/email', 'core');
+                }
+
+                // Build the HTML for the icon.
+                $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                // Build the link and add it to the array of links.
+                $links[] = array(
+                    'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
+                    'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
+                 );
+            }
+        }
+        // End LSU Enhancement fix quickmail icon no showing up for students in course.
+
         $config = get_config('tool_ally');
         $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);
         $runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
@@ -1053,5 +1100,32 @@ EOF;
             ];
         }
         return $link;
+    }
+
+    /**
+     * Grade reports edit button.
+     */
+    public static function get_grader_reports_edit_button() {
+        global $COURSE, $USER, $OUTPUT, $PAGE;
+        if ($COURSE->id === null || $USER->editing === null) {
+            return "";
+        }
+        $options = array (
+            'type' => 'report',
+            'plugin' => 'grader',
+            'id' => $COURSE->id,
+            'sesskey' => sesskey(),
+
+        );
+        if ($USER->editing == 1) {
+            $options['edit'] = 0;
+            $string = get_string('turneditingoff');
+        } else {
+            $options['edit'] = 1;
+            $string = get_string('turneditingon');
+        }
+        $url = new moodle_url('index.php', $options);
+        $button = $OUTPUT->single_button($url, $string, 'get', ['class' => 'grader_report_edit_button']);
+        $PAGE->set_button($button);
     }
 }

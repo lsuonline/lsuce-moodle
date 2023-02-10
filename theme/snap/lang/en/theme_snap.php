@@ -83,6 +83,7 @@ $string['courseactivitieslabel'] = 'Section activities';
 $string['coursetools'] = 'Course Dashboard';
 $string['coverdisplay'] = 'Cover display';
 $string['covercarousel'] = 'Cover carousel';
+$string['covercarousellabel'] = 'Carousel';
 $string['covercarouselon'] = 'Use Cover carousel';
 $string['covercarouseldescription'] = '<p>The carousel is a set of rotating banners, or a slideshow, that displays on the homepage of your site instead of the cover image.</p>
 <p>Add up to 3 images, a title for each slide, and an optional subtitle. Images of 1200 x 600 pixels work best.</p>';
@@ -305,11 +306,18 @@ $string['released'] = 'Released: {$a}';
 $string['reopened'] = 'Reopened';
 $string['resourcedisplay'] = 'Resource display';
 $string['resourcedisplayhelp'] = 'Select how attachments and links appear in your course. The Snap theme doesn\'t support multimedia files in the small activity and resource cards\' description.';
+$string['resumegraphicsanim'] = 'Resume GIF';
 $string['displaydescription'] = 'Display description';
 $string['displaydescriptionhelp'] = 'Select to show a description of resource activities in a new page first. Students will access content from the description.';
 $string['search'] = 'Search contents';
 $string['showcoursegradepersonalmenu'] = 'Grades';
 $string['showcoursegradepersonalmenudesc'] = 'Show users their grade in course cards in the personal menu';
+
+// BEGIN LSU Course Card Quick Links.
+$string['showcoursecardquicklinks'] = 'Course Card Quick Links';
+$string['showcoursecardquicklinksdesc'] = 'Add quick links to the course cards for quick access to sections of the course';
+// END LSU Course Card Quick Links.
+
 $string['socialmedia'] = 'Social media';
 $string['submitted'] = 'Submitted';
 $string['sitedescription'] = 'Site description';

@@ -96,11 +96,26 @@ class core_grades_renderer extends plugin_renderer_base {
     public function user_heading(stdClass $user, int $courseid, bool $showbuttons = true) : string {
         global $USER;
 
+        // BEGIN LSU Alternate Names support.
+        $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+
+        if ($alternateused) {
+            $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;
+        } else {
+            $fullname = fullname($user);
+        }
+
         $headingdata = [
             'userprofileurl' => (new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $courseid]))->out(false),
-            'name' => fullname($user),
+            'name' => $fullname,
             'image' => $this->user_picture($user, ['size' => 50, 'link' => false])
         ];
+        // $headingdata = [
+        //     'userprofileurl' => (new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $courseid]))->out(false),
+        //     'name' => fullname($user),
+        //     'image' => $this->user_picture($user, ['size' => 50, 'link' => false])
+        // ];
+        // END LSU Alternate Names support.
 
         if ($showbuttons) {
             // Generate the data for the 'message' button.
