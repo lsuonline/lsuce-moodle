@@ -147,10 +147,9 @@ if (!$edit) {
         $data->gradeletter[$i] = $letter;
         $data->gradeboundary[$i] = $boundary;
         // BEGIN LSU Better Letters.
-        $gradeboundaryname = 'gradeboundary'.$i;
-        $stored = "{$data->$gradeboundaryname}";
-        $letters[$stored] = $letter;
+        $letters[$boundary] = $letter;
         // END LSU Better Letters.
+        
         $i++;
     }
     $data->override = $override;

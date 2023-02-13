@@ -54,10 +54,9 @@ class edit_letter_form extends moodleform {
 
         // BEGIN LSU Better Letters
         $strict = get_config('moodle', 'grade_letters_strict');
-
         $default = get_config('moodle', 'grade_letters_names');
 
-        if ($default and $scale = $DB->get_record('scale', array('id' => $default))) {
+        if ($default && $scale = $DB->get_record('scale', array('id' => $default))) {
             $default_letters = $scale->scale;
         } else {
            $default_letters = get_string('lettersdefaultletters', 'grades');
@@ -72,13 +71,13 @@ class edit_letter_form extends moodleform {
         $elements = [];
         // BEGIN LSU Better Letters
         if ($strict) {
-            $elements[] = $mform->createElement('select', "{$gradeletter}{no}", $gradeletter . " $i", $letters);
+            $elements[] = $mform->createElement('select', "{$gradeletter} {no}", "{$gradeletter} {no}", $letters);
         } else {
-            $elements[] = $mform->createElement('text', "{$gradeletter}{no}", $gradeletter . " $i");
+            // $elements[] = $mform->createElement('text', "{$gradeletter}{no}", $gradeletter . " $i");
+            $elements[] = $mform->createElement('text', 'gradeletter', "{$gradeletter} {no}");
         }
         // END LSU Better Letters
 
-        $elements[] = $mform->createElement('text', 'gradeletter', "{$gradeletter} {no}");
         $elements[] = $mform->createElement('static', '', '', '&ge;');
         $elements[] = $mform->createElement('float', 'gradeboundary', "{$gradeboundary} {no}");
         $elements[] = $mform->createElement('static', '', '', '%');
