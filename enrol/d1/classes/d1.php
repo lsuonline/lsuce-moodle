@@ -530,7 +530,7 @@ class lsud1 {
                               DateTime::createFromFormat('d M Y h:i:s A', $studentlistitem->sectionDueDate, new DateTimeZone('America/Chicago')) :
                               null;
 
-                        $duedate = isset($studentlistitem->sectionDueDate) ? date_timestamp_get($dd) : 0;
+                        $duedate = isset($studentlistitem->sectionDueDate) ? date_timestamp_get($dd) + 86399 : 0;
                     }
 
                     $lsuid = isset($studentlistitem->studentScoolPersonnelNumber) ? $studentlistitem->studentScoolPersonnelNumber : '';
