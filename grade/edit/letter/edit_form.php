@@ -71,9 +71,8 @@ class edit_letter_form extends moodleform {
         $elements = [];
         // BEGIN LSU Better Letters
         if ($strict) {
-            $elements[] = $mform->createElement('select', "{$gradeletter} {no}", "{$gradeletter} {no}", $letters);
+            $elements[] = $mform->createElement('select', "gradeletter", "{$gradeletter} {no}", $letters);
         } else {
-            // $elements[] = $mform->createElement('text', "{$gradeletter}{no}", $gradeletter . " $i");
             $elements[] = $mform->createElement('text', 'gradeletter', "{$gradeletter} {no}");
         }
         // END LSU Better Letters
