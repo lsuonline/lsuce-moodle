@@ -99,6 +99,18 @@ define(
                 // Only relevant for main course page.
                 return;
             }
+
+            // We know the params at 0 is a section id.
+            // Params will be in the format: #section-[number]&module-[cmid], e.g: #section-1&module-7255.
+            var urlParams = location.hash.split("&"),
+                section = urlParams[0],
+                mod = urlParams[1] || null;
+
+            // We are done here. H5P will handle the section shown within its iframe.
+            if (section.startsWith('#h5pbook')) {
+                return;
+            }
+
             var sectionSetByServer = '';
 
             if ($('.section.main.state-visible.set-by-server').length) {
@@ -109,11 +121,6 @@ define(
                     '#tiles-section').removeClass('state-visible');
             }
 
-            // We know the params at 0 is a section id.
-            // Params will be in the format: #section-[number]&module-[cmid], e.g: #section-1&module-7255.
-            var urlParams = location.hash.split("&"),
-                section = urlParams[0],
-                mod = urlParams[1] || null;
             if (section == '') {
                 var qs = location.search.substring(1);
                 var sparameters = qs.split('&');
@@ -214,6 +221,14 @@ define(
             }
             if (section == '' && self.courseConfig.format == 'tiles') {
                 $('#tiles-section').addClass('state-visible').focus();
+            }
+
+            // When usejsnavforsinglesection is enabled, tiles-section will be shown instead of single-section.
+            // We need to ensure that tiles-section is visible when course tools is not.
+            if (self.courseConfig.format == 'tiles') {
+                if (!$(courseTools).hasClass('state-visible') && !$('#tiles-section').hasClass('state-visible')) {
+                    $('#tiles-section').addClass('state-visible');
+                }
             }
 
             // Store last activity/resource accessed on sessionStorage

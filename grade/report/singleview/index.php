@@ -117,6 +117,19 @@ if ($itemtype == 'user' || $itemtype == 'user_select') {
 }
 
 if ($itemtype == 'user') {
+    // BEGIN LSU Alternate Names support.
+    // Not needed as it's now in grade renderer.
+    // $user = $report->screen->item;
+
+    // $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+
+    // if ($alternateused) {
+    //     $user->firstname = $report->screen->item->alternatename . ' (' . $report->screen->item->firstname . ') ';
+    // }
+
+    // print_grade_page_head($course->id, 'report', 'singleview', $reportname, false, false, true, null, null, $user);
+    // END LSU Alternate Names support.
+
     print_grade_page_head($course->id, 'report', 'singleview', $reportname, false, $button,
         true, null, null, $report->screen->item, $actionbar);
 } else {
