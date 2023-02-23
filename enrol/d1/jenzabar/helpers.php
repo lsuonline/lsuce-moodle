@@ -38,6 +38,45 @@ class helpers {
         // self::$sigcalled = true;
     }
 
+    public static function check_dirs() {
+        global $CFG;
+        $debugfiles = get_config('enrol_d1', 'debugfiles');
+        
+        if (!file_exists($debugfiles."/d1debug/importer")) {
+            error_log("This dir, importer, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/course")) {
+            error_log("This dir, course, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/course", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/coursesection")) {
+            error_log("This dir, coursesection, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/coursesection", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/logs")) {
+            error_log("This dir, logs, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/logs", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/pfile")) {
+            error_log("This dir, pfile, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/pfile", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/pfile/logs")) {
+            error_log("This dir, logs, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/pfile/logs", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/reports")) {
+            error_log("This dir, reports, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/reports", 0777, true);
+        }
+        if (!file_exists($debugfiles."/d1debug/importer/student")) {
+            error_log("This dir, student, was not found. Creating.....");
+            mkdir($debugfiles."/d1debug/importer/student", 0777, true);
+        }
+    }
+
+
     public static function get_help() {
         $help = <<<EOL
         No flags will run the default importer to import students and enrollments.
@@ -93,7 +132,9 @@ class helpers {
 
         File Processing
           -m=[x],        Required: Extract enrollments from the main enrollment file given a list of custom sections (look in pfile.php)
-          --lf=[x],      Optional: name of the file to open and process in pfile folder (currently only ready for option 4)
+          --opt=[x],     Optional: Switch for "quick_updater" function. Loops through a simple file calls the function based on value passed in. 
+          --lf1=[x],     Optional: name of the file to open and process in pfile folder (currently only ready for option 4)
+          --lf2=[x],     Optional: name of the second file to open and process in pfile folder (currently only ready for option 4)
           --f1cm=[x]     Optional: In this file what column to use to match with file 2? (if f1 has email and f2 has email then match it)
           --f2cm=[x]     Optional: In this file what column to use to match with file 1?
           --f1cv=[x]     Optional: Which column's value we wanting 
@@ -235,7 +276,7 @@ class helpers {
      * @param  @object $params
      * @return @object $s
      */
-    public static function curly($params) {
+    public static function curly($params, $get = false) {
         // Get the data needed.
         // $s = self::get_d1_settings();
 
@@ -259,8 +300,13 @@ class helpers {
             // Se the CURL options.
             curl_setopt($curl, CURLOPT_HEADER, false);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_POST, true);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $params->body);
+            if ($get) {
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
+            } else {
+                curl_setopt($curl, CURLOPT_POST, true);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $params->body);
+            }
+            // curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
 
             // Grab the response.
@@ -468,6 +514,7 @@ class helpers {
      *   Returns the key of the value in the array, or null if the value is not found.
      */
     public static function in_bundle_list1($objid) {
+        return;
         // Set the left pointer to 0.
         $left = 0;
         // Set the right pointer to the length of the array -1.

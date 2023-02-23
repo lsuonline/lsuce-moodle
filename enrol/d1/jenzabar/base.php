@@ -94,11 +94,14 @@ $shortopts .= "h::";  // Optional value
 $longopts  = array(
     "rb:",       // When processing a file, start at this row
     "re:",       // End at this row
+    "cc:",       // Create the course
+    "cs:",       // Create the course section
     "fees:",     // Import the more than 4 fees into courses
     "uc:",       // Run a course update on all courses
     "ucx:",      // Set this flag to true if setting course enrollments to future date
-    "lf1:",       // lf - load file. Set this flag to true if setting course enrollments to future date
-    "lf2:",       // lf - load file. Set this flag to true if setting course enrollments to future date
+    "opt:",      // Switch for "quick_updater" function. Loops through a simple file calls the function based on value passed in. 
+    "lf1:",      // lf - load file. Set this flag to true if setting course enrollments to future date
+    "lf2:",      // lf - load file. Set this flag to true if setting course enrollments to future date
     "f1cm:",     // In this file what column to use to match with file 2? (if f1 has email and f2 has email then match it)
     "f2cm:",     // In this file what column to use to match with file 1?
     "f1cv:",     // Which column's value we wanting 
@@ -138,9 +141,11 @@ $cert = isset($options['t']) ?? false;
 // Course
 $ccv = isset($options['v']) ?? false;
 $ccw = isset($options['w']) ?? false;
+$cc = $options['cc'] ?? false;
 
 // Course Section
 $uc = isset($options['c']) ?? $options['uc'] ?? false;
+$cs = $options['cs'] ?? false;
 $ucx = isset($options['x']) ?? $options['ucx'] ?? false;
 $uco = isset($options['o']) ?? false;
 $ucy = isset($options['y']) ?? false;
@@ -149,6 +154,7 @@ $ucj = isset($options['j']) ?? false;
 
 // General File Processing
 $pfile = $options['m'] ?? false;
+$swiopt = $options['opt'] ?? false;
 $loadfile1 = $options['lf1'] ?? false;
 $loadfile2 = $options['lf2'] ?? false;
 
@@ -157,6 +163,8 @@ $file2cm = $options['f2cm'] ?? false;
 $file1cv = $options['f1cv'] ?? false;
 $file2cd = $options['f2cd'] ?? false;
 
+// Make sure the folders are present
+helpers::check_dirs();
 
 // Let's handle the Ctrl-c mechanism so we can stop whatever process
 // and write do a final build for the reports so we don't lose any info.
@@ -187,7 +195,6 @@ $token = helpers::get_token();
 
 ini_set('memory_limit','256M');
 
-// error_log("BASE -->> What is the token: ". $token);
 if ($token == "" || empty($token)) {
     error_log("BASE -->> NO token, D1 might be unreachable - ABORTING!!!");
     die();
@@ -204,6 +211,8 @@ $extras = [
     "ucz" => $ucz,
     "ccw" => $ccw,
     "ucj" => $ucj,
+    "cc" => $cc,
+    "cs" => $cs,
     "studentsonly" => $stuonly,
     "convertbundle" => $convertbundle,
     "updstu" => $updstu,
@@ -213,6 +222,7 @@ $extras = [
     "purgeit" => $purgeit,
     "restoreit" => $restoreit,
     "pfile" => $pfile,
+    "swiopt" => $swiopt,
     "loadfile1" => $loadfile1,
     "loadfile2" => $loadfile2,
     "file1cm" => $file1cm,
@@ -230,8 +240,8 @@ if ($fees) {
     $feez = new processor($report, "fee");
 
     // Fees have a black list to run against, load and send
-    $feez_file = $report->reportspath."/importer/core_fee_black_list.csv";
-    $extras['feeblacklist'] = $feez->load_extra_files($feez_file, "index_black_list");
+    // $feez_file = $report->reportspath."/importer/core_fee_black_list.csv";
+    // $extras['feeblacklist'] = $feez->load_extra_files($feez_file, "index_black_list");
     
     $overallgarburatestart = microtime(true); 
     
@@ -315,28 +325,17 @@ if ($fees) {
 
     $pstart = microtime(true);
 
-    // do {
-        // $count is the number of files remaining in the unprocessed folder.
     $count = $student->load();
 
     // Fees have a black list to run against, load and send
-    $student_file = $report->reportspath."/importer/core_bundle_enroll.csv";
-    helpers::load_bundle_list($student->load_extra_files($student_file));
+    // $student_file = $report->reportspath."/importer/core_bundle_enroll.csv";
+    // helpers::load_bundle_list($student->load_extra_files($student_file));
 
     $d1ready = $student->garburate($rowbegin, $rowend, $extras);
 
     $pend = microtime(true);
     $report->timer("overall", $pend - $pstart);
 
-    // $report->clean();
-
-    // if ($movefile) {
-    //     $se->moveFile();
-    // } else {
-    //     $count = 0;
-    // }
-    // } while ($count != 0);
-    error_log("+++++++++++++++++++++++  File Processing End  +++++++++++++++++++++++");
 } else {
 
     $help = helpers::get_help();

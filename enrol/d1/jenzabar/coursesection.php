@@ -34,6 +34,7 @@ class coursesection {
     public $restcalled;
     public $report;
     public $settofuture;
+    public $cs;
 
     public function __construct(&$report, $cobj, $extras) {
         $this->bugfiles = get_config('enrol_d1', 'extradebug');
@@ -46,6 +47,8 @@ class coursesection {
         $this->altupdate = $extras["ucy"];
         $this->unenroll = $extras["ucz"];
         $this->gtcode = $extras["uco"];
+        
+        $this->cs = $extras["cs"];
         
 
         $this->getinfo = $extras["ucj"];
@@ -74,6 +77,95 @@ class coursesection {
     public function init($rowdata = "", $extras = array()) {
         // if the default of -c is used then include original dates.
         // if other functions or updates are needed and they are set then don't do anything with dates.
+        if ($this->cs) {
+            error_log(" **************** Under construction **************** ");
+            /*
+            $this->request = new \stdClass();
+            $this->request->createCourseSectionRequestDetail = new \stdClass();
+            $cs = new \stdClass();
+            
+            $cs->associatedCourse = new \stdClass();
+            $cs->associatedCourse->courseNumber = $rowdata[1];
+            $cs->sectionTitle = $rowdata[2];
+            $cs->customSectionNumber = $rowdata[4];
+            $cs->finalApprovalCourseSectionStatus = "Final Approval";
+            $cs->associatedTerm = new \stdClass();
+            $cs->associatedTerm->code = $rowdata[8];
+            
+            $cs->activeWaitListSize = 
+            $cs->applicability = 
+            $cs->associatedTerm =  = new \stdClass();
+            $cs->associatedTerm->code = 
+            $cs->distanceLearning = 
+            
+            
+            $cs->minimumAcademicUnit = $rowdata[9];
+            $cs->maximumAcademicUnit = $rowdata[10];
+
+            $cs->overrideMinimumCEUnit = $rowdata[11];
+            $cs->overrideMaximumCEUnit = $rowdata[12];
+
+            $cs->svEnrollmentBeginDate = $rowdata[13];
+            $cs->svEnrollmentEndDate = $rowdata[14];
+            $cs->pvAvailabilityBeginDate = $rowdata[15];
+            $cs->pvAvailabilityEndDate = $rowdata[16];
+            $cs->pvEnrollmentBeginDate = $rowdata[17];
+            $cs->pvEnrollmentEndDate = $rowdata[18];
+
+            $cs->maximumEnrollmentSize = $rowdata[20];
+            $cs->minimumEnrollmentSize = $rowdata[21];
+            $cs->maximumWaitListSize = $rowdata[22];
+            $cs->activeWaitListSize = $rowdata[23];
+            $cs->isProctoredExam = $rowdata[24];
+            
+            Section Fee Credit Non-Credit?????
+
+            $cs->courseSectionFees = new \stdClass();
+            $cs->courseSectionFees = new \stdClass();
+            /courseSectionFee/associatedSectionFeeTuitionProfiles/associatedSectionFeeTuitionProfile/associatedTuitionProfile/publishedCode
+
+
+            $cs->isProctoredExam = $rowdata[32];
+            */
+            /*
+            {
+                "createCourseSectionRequestDetail": {
+                    "courseSection": {
+                        "activeWaitListSize": "2",
+                        "applicability": "Public",
+                        "associatedCourse": {
+                            "objectId": "3049069"
+                        },
+                        "associatedTerm": {
+                            "code": "Winter 2019"
+                        },
+                        "distanceLearning": "N",
+                        "maximumEnrollmentSize": "5",
+                        "maximumWaitListSize": "3",
+                        "minimumEnrollmentSize": "3",
+                        "sectionTitle": "Become a Social Media Manager - Part 3",
+                        "svEnrollmentBeginDate": "03 Nov 2019 00:00:00 AM",
+                        "svEnrollmentEndDate": "30 Nov 2020 00:00:00 AM"
+                    },
+                    "finalApprovalCourseSectionStatus": "Final Approval"
+                }
+            }
+            */
+
+        } else {
+            $this->course = new \stdClass();
+            $this->course->customSectionNumber = trim($rowdata[4]);
+            $this->course->courseNumber = trim($rowdata[1]);
+
+            $this->cu = new \stdClass();
+            $this->cu->updateCourseSectionRequestDetail = new \stdClass();
+            $this->cu->updateCourseSectionRequestDetail->courseSection = new \stdClass();
+            $this->cu->updateCourseSectionRequestDetail->courseSection->objectId = "";
+            $this->cu->updateCourseSectionRequestDetail->courseSection->code = "";
+            $this->cu->updateCourseSectionRequestDetail->courseSection->associationMode = "update";
+        }
+
+
         if (!$this->altupdate) {
             // $this->cu->updateCourseSectionRequestDetail->courseSection->customSectionNumber = 
         // } else {

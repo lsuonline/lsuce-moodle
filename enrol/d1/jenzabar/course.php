@@ -42,6 +42,8 @@ class course {
         $this->totalcount = 0;
         $this->restcalled = false;
         $this->report = $report;
+
+        $this->cc = $extras["cc"];
             
 
         $this->alltrue = isset($extras['ccw']) ? $extras['ccw'] : false;
@@ -54,16 +56,7 @@ class course {
         // finalApprovalCourseStatus - True False
         // bypassApproval - ??
         // finalApprovalPublishingDate - dd MMM yyyy
-        $this->course = new \stdClass();
-        $this->course->coursecode = trim($cobj[1]);
-
-        $this->cu = new \stdClass();
-        $this->cu->updateCourseRequestDetail = new \stdClass();
-        $this->cu->updateCourseRequestDetail->course = new \stdClass();
-        $this->cu->updateCourseRequestDetail->course->objectId = $cobj[0];
-        $this->cu->updateCourseRequestDetail->course->objectStatusCode = $cobj[2];
-        // $this->cu->updateCourseRequestDetail->course->finalApprovalCourseStatus = $cobj[3];
-        $this->cu->updateCourseRequestDetail->course->associationMode = "update";
+        
     }
 
     /**
@@ -73,6 +66,83 @@ class course {
      * @return  @bool   return success or fail
      */
     public function init($rowdata = "", $extras = array()) {
+        
+        if ($this->cc) {
+            error_log(" **************** Under construction **************** ");
+            // $this->request = new \stdClass();
+            // $this->request->createCourseRequestDetail = new \stdClass();
+            // $this->request->createCourseRequestDetail->availableForCredit
+            // $this->request->createCourseRequestDetail->finalApprovalCourseStatus
+            // $this->request->createCourseRequestDetail->course = new \stdClass();
+            
+            // $this->request->createCourseRequestDetail->course->courseNumber = $rowdata[0];
+            // $this->request->createCourseRequestDetail->course->disciplineCode = $rowdata[1];
+            // $this->request->createCourseRequestDetail->course->finalApprovalCourseStatus = "true";
+            // $this->request->createCourseRequestDetail->course->applicability = $rowdata[4];
+            // $this->request->createCourseRequestDetail->course->name = $rowdata[5];
+            // $this->request->createCourseRequestDetail->course->programOffice = new \stdClass();
+            // $this->request->createCourseRequestDetail->course->programOffice->code = $rowdata[6];
+            // $this->request->createCourseRequestDetail->course->associatedCostingUnit = new \stdClass();
+            // $this->request->createCourseRequestDetail->course->associatedCostingUnit->code = $rowdata[7];
+            // $this->request->createCourseRequestDetail->course->bypassApproval = "true";
+
+
+            // $this->request->createCourseRequestDetail->course->applicability
+            // $this->request->createCourseRequestDetail->course->associatedCourseCategories
+            // $this->request->createCourseRequestDetail->course->programOffice
+            // $this->request->createCourseRequestDetail->course->associatedProgramAreas
+            // $this->request->createCourseRequestDetail->course->disciplineCode
+            // $this->request->createCourseRequestDetail->course->maximumCourseHours
+            // $this->request->createCourseRequestDetail->course->name
+            // $this->request->createCourseRequestDetail->course->officialCourseDescriptionInternal
+            // $this->request->createCourseRequestDetail->course->officialCourseDescriptionPublic
+            
+
+            // {
+            //     "createCourseRequestDetail": {
+            //         "availableForCredit": "None",
+            //         "course": {
+            //             "applicability": "Public",
+            //             "associatedCostingUnit": {
+            //                 "code": "CU0020"
+            //             },
+            //             "associatedCourseCategories": {
+            //                 "associatedCourseCategory": {
+            //                     "code": "CC0008"
+            //                 }
+            //             },
+            //             "programOffice": {
+            //                 "code": "PO0014"
+            //             },
+            //             "associatedProgramAreas": {
+            //                 "associatedProgramArea": {
+            //                     "code": "PA0025"
+            //                 }
+            //             },
+            //             "disciplineCode": "ART",
+            //             "maximumCourseHours": "20",
+            //             "name": "Instagram 101",
+            //             "officialCourseDescriptionInternal": "First course of two",
+            //             "officialCourseDescriptionPublic": "Get all the essentials about Instagram"
+            //         },
+            //         "finalApprovalCourseStatus": "initial"
+            //     }
+            // }
+
+        } else {
+            $this->course = new \stdClass();
+            $this->course->coursecode = trim($rowdata[1]);
+
+            $this->cu = new \stdClass();
+            $this->cu->updateCourseRequestDetail = new \stdClass();
+            $this->cu->updateCourseRequestDetail->course = new \stdClass();
+            $this->cu->updateCourseRequestDetail->course->objectId = $rowdata[0];
+            $this->cu->updateCourseRequestDetail->course->objectStatusCode = $rowdata[1];
+            // $this->cu->updateCourseRequestDetail->course->finalApprovalCourseStatus = $rowdata[2];
+            $this->cu->updateCourseRequestDetail->course->associationMode = "update";
+        }
+
+
         if ($this->alltrue) {
             $this->cu->updateCourseRequestDetail->course->objectStatusCode = "Active";
             // $this->cu->updateCourseRequestDetail->course->finalApprovalCourseStatus = "True";
@@ -88,7 +158,13 @@ class course {
         $pstart = microtime(true);
 
         // Run regular course date updates.
-        $updated = $this->update_course();
+        if ($this->cc) {
+            $create = $this->create_course();
+        } else {
+            $updated = $this->update_course();
+        }
+
+
             
         $pend = microtime(true);
         $this->report->timer("addup", $pend - $pstart);
@@ -147,7 +223,47 @@ class course {
                 return false;
             }
         } else if (property_exists($results, "SRSException")) {
-            error_log("*** ERROR *** in update: ". $results->SRSException->errorCode. " - ". $results->SRSException->message);
+            error_log("*** ERROR *** ".$this->cu->updateCourseRequestDetail->course->objectId." in update: ". $results->SRSException->errorCode. " - ". $results->SRSException->message);
+            return false;
+        }
+    }
+
+
+    public function create_course() {
+        // Get the data needed.
+        $s = helpers::get_d1_settings();
+
+        $params = new \stdClass();
+        $params->url = $s->wsurl.'/webservice/InternalViewRESTV2/createCourse?_type=json';
+        $params->body = json_encode($this->cu);
+        // error_log("request body: \n\n". $params->body);
+
+        // die();
+        $results = helpers::curly($params);
+
+        // error_log("curl results: \n\n". print_r($results, 1));
+
+        $header = helpers::log_header();
+
+        if (property_exists($results, "SRSException")) {
+            $path_to_save = $this->report->reportspath. "/importer/logs/Course_Update_FAIL.txt";
+            file_put_contents(
+                $path_to_save,
+                $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
+                FILE_APPEND
+            );
+        }
+
+        // For course section search use.
+        if (property_exists($results, "updateCourseResult")) {
+
+            if ($results->updateCourseResult->responseCode == "Success") {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (property_exists($results, "SRSException")) {
+            error_log("*** ERROR *** ".$this->cu->updateCourseRequestDetail->course->objectId." in update: ". $results->SRSException->errorCode. " - ". $results->SRSException->message);
             return false;
         }
     }

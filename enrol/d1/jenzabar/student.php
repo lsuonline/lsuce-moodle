@@ -35,13 +35,18 @@ class student {
     private $bugfiles;
     public $report;
     public $updstu;
+    public $thisfilename;
 
     public function __construct(&$report, $jenzastudent = "", $extras = false) {
         $this->report = $report;
         $this->studenttemp = new \stdClass();
         $this->updstu = false;
+        $this->updstu = false;
         // $this->enrolonly = false;
 
+        if (empty($extras['thisfilename'])) {
+            $this->thisfilename = $extras['thisfilename'];
+        }
         if (!empty($extras['updstu'])) {
             $this->updstu = true;
         }
@@ -172,7 +177,7 @@ class student {
         // }
 
         // Address Type Code.
-        !empty($jenzastudent[16]) ? $this->student->student->addresses->address->typeCode = $jenzastudent[16] : null;
+        !empty($jenzastudent[16]) ? $this->student->student->addresses->address->typeCode = $jenzastudent[16] : "Contact";
 
         // The import has holes for the street, make sure a placeholder is there.
         if (empty($jenzastudent[17]) || $jenzastudent[17] == "" || strtolower($jenzastudent[17]) == "na") {
@@ -189,7 +194,9 @@ class student {
             $this->student->student->addresses->address->city = helpers::alphaNumStr($jenzastudent[19]);
         }
 
-        if (empty($jenzastudent[24]) || $jenzastudent[24] == "" || strtolower($jenzastudent[24]) == "na") {
+
+
+        if (empty($jenzastudent[23]) || $jenzastudent[23] == "" || strtolower($jenzastudent[23]) == "na") {
             $this->student->student->addresses->address->postalZip = "70802";
         } else {
             $this->student->student->addresses->address->postalZip = $jenzastudent[23];
@@ -536,10 +543,11 @@ class student {
             } else {
                 // Match on the X studentNumber.
                 $matchon = "studentNumber";
-                $bundle_code = helpers::in_bundle_list1($studidentifier);
+                // $bundle_code = helpers::in_bundle_list1($studidentifier);
             }
 
             $enrollment = new enrollment($this->report, $studidentifier, $rowdata, $bundle_code, $matchon);
+            $enrollment->init($rowdata, $extras);
             return $enrollment->process();
         } else {
             // Not doing enrollment, so return true otherwise this will write to the enroll fail report.
@@ -589,7 +597,7 @@ class student {
         $header = helpers::log_header();
 
         if (property_exists($results, "SRSException")) {
-            $path_to_save = $this->report->reportspath. "/importer/logs/Student_Search_FAIL.txt";
+            $path_to_save = $this->report->reportspath. "/importer/logs/Student_Search_FAIL_".$this->thisfilename.".txt";
             file_put_contents(
                 $path_to_save,
                 $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
@@ -688,7 +696,7 @@ class student {
         $header = helpers::log_header();
 
         if (property_exists($results, "SRSException")) {
-            $path_to_save = $this->report->reportspath. "/importer/logs/Student_Create_FAIL.txt";
+            $path_to_save = $this->report->reportspath. "/importer/logs/Student_Create_FAIL_".$this->thisfilename.".txt";
             file_put_contents(
                 $path_to_save,
                 $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,

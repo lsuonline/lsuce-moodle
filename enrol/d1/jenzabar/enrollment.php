@@ -33,6 +33,7 @@ class enrollment {
     public $pagenumber;
     public $pagesize;
     public $totalcount;
+    public $thisfilename;
 
     public function __construct(&$report, $studobjid = false, $jenzaenrollment = "", $bundle_code = false, $matchon = "objectId") {
 
@@ -41,6 +42,7 @@ class enrollment {
         $this->totalcount = 0;
         $this->restcalled = false;
         $this->report = $report;
+        $this->thisfilename = "";
         $this->bugfiles = get_config('enrol_d1', 'extradebug');
 
         if ($studobjid == false) {
@@ -63,12 +65,12 @@ class enrollment {
         $this->enrollment->enrollStudentInSectionRequestDetail->attributeValue = $studobjid;
         $this->enrollment->enrollStudentInSectionRequestDetail->courseNumber = $jenzaenrollment[56];
         $this->enrollment->enrollStudentInSectionRequestDetail->matchOn = $matchon;
-        $this->enrollment->enrollStudentInSectionRequestDetail->customSectionNumber = $jenzaenrollment[58];
+        $this->enrollment->enrollStudentInSectionRequestDetail->customSectionNumber = trim($jenzaenrollment[58]);
         $this->enrollment->enrollStudentInSectionRequestDetail->paymentAmount = $jenzaenrollment[70];
 
-        if ($bundle_code) {
-            $this->enrollment->enrollStudentInSectionRequestDetail->bundleCode = $bundle_code;
-        }
+        // if ($bundle_code) {
+        //     $this->enrollment->enrollStudentInSectionRequestDetail->bundleCode = $bundle_code;
+        // }
 
         !empty($jenzaenrollment[57]) ? $this->enrollment->enrollStudentInSectionRequestDetail->sectionNumber = str_pad($jenzaenrollment[57], 3, '0', STR_PAD_LEFT) : "";
         !empty($jenzaenrollment[60]) ? $this->enrollment->enrollStudentInSectionRequestDetail->academicUnits = $jenzaenrollment[60] : "";
@@ -80,9 +82,17 @@ class enrollment {
         !empty($jenzastudent[70]) ? $this->enrollment->enrollStudentInSectionRequestDetail->paymentAmount = $jenzastudent[70] : null;
         !empty($jenzastudent[71]) ? $this->enrollment->enrollStudentInSectionRequestDetail->outstandingAmount = $jenzastudent[71] : null;
         !empty($jenzastudent[72]) ? $this->enrollment->enrollStudentInSectionRequestDetail->invoiceDueDate = helpers::fix_for_d1_date($jenzastudent[72]) : null;
-
         !empty($jenzaenrollment[73]) ? $this->enrollment->enrollStudentInSectionRequestDetail->transactionBasketComments = $jenzaenrollment[73] : null;
     }
+
+    public function init($rowdata, $extras) {
+
+        if (!empty($extras['thisfilename'])) {
+            $this->thisfilename = $extras['thisfilename'];
+        }
+        return;
+    }
+
 
     /**
      * Process the enrollment data using D1's web services.
@@ -161,8 +171,8 @@ class enrollment {
         $params->url = $s->wsurl.'/webservice/InternalViewRESTV2/searchCourseSection?informationLevel=full&_type=json';
 
         if ($this->enrollment->enrollStudentInSectionRequestDetail->customSectionNumber != "") {
-            $search_criteria = '"courseCode": "'.$this->enrollment->enrollStudentInSectionRequestDetail->courseNumber.'",'.
-                '"advancedCriteria": {'.
+            // $search_criteria = '"courseCode": "'.$this->enrollment->enrollStudentInSectionRequestDetail->courseNumber.'",'.
+            $search_criteria = '"advancedCriteria": {'.
                     '"customSectionNumber": "'.$this->enrollment->enrollStudentInSectionRequestDetail->customSectionNumber.'"'.
                 '}';
         } else {
@@ -179,14 +189,14 @@ class enrollment {
                 '}'.
             '}'.
         '}';
-
+        // error_log("body output: ". $params_body);
         $results = helpers::curly($params);
 
         // This will write the results to a logging file.
         $header = helpers::log_header();
 
         if (property_exists($results, "SRSException")) {
-            $path_to_save = $this->report->reportspath. "/importer/logs/Course_Search_FAIL.txt";
+            $path_to_save = $this->report->reportspath. "/importer/logs/Course_Search_FAIL_".$this->thisfilename.".txt";
             file_put_contents(
                 $path_to_save,
                 $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
@@ -265,7 +275,7 @@ class enrollment {
         $header = helpers::log_header();
 
         if (property_exists($results, "SRSException")) {
-            $path_to_save = $this->report->reportspath. "/importer/logs/Student_Enroll_FAIL.txt";
+            $path_to_save = $this->report->reportspath. "/importer/logs/Student_Enroll_FAIL".$this->thisfilename.".txt";
             file_put_contents(
                 $path_to_save,
                 $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
