@@ -42,6 +42,9 @@ use theme_snap\services\course;
 use theme_snap\renderables\settings_link;
 use theme_snap\renderables\genius_dashboard_link;
 use theme_snap\renderables\course_card;
+// BEGIN LSU Extra Course Tabs.
+use theme_snap\renderables\remote_card;
+// END LSU Extra Course Tabs.
 use theme_snap\renderables\course_toc;
 use theme_snap\renderables\featured_courses;
 
@@ -846,16 +849,83 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $currentcourses = $favorited + $notfavorited;
         $published = []; // Published course & favorites when user visible.
         $hidden = []; // Hidden courses.
-        foreach ($currentcourses as $course) {
-            $ccard = new course_card($course);
-            if (isset($favorited[$course->id]) || $course->visible) {
-                $published[] = $ccard;
+
+        // BEGIN LSU Extra Course Tabs.
+
+        // Get the debugging settings.
+        $debugging  = $CFG->debugdisplay == 1 ? 1 : 0;
+
+        // Get the tab settings.
+        $et1 = get_config('theme_snap', 'extratab1toggle');
+        $et2 = get_config('theme_snap', 'extratab2toggle');
+        $et3 = get_config('theme_snap', 'extratab3toggle');
+        $enr1 = get_config('theme_snap', 'extratab1enrolled');
+        $enr2 = get_config('theme_snap', 'extratab2enrolled');
+        $enr3 = get_config('theme_snap', 'extratab3enrolled');
+        $dl1 = get_config('theme_snap', 'extratab1datelimits');
+        $dl2 = get_config('theme_snap', 'extratab2datelimits');
+        $dl3 = get_config('theme_snap', 'extratab3datelimits');
+        if ($et1) {
+            $et1courses = course::get_et_courses('extratab1', 1, 0);
+            if (isset($etcourses)) {
+                $etcourses = array_merge($etcourses, $et1courses);
+            } else {
+                $etcourses = $et1courses;
             }
         }
+        if ($et2) {
+            $et2courses = course::get_et_courses('extratab2', 1, 0);
+            if (isset($etcourses)) {
+                $etcourses = array_merge($etcourses, $et2courses);
+            } else {
+                $etcourses = $et2courses;
+            }
+        }
+        if ($et3) {
+            $et3courses = course::get_et_courses('extratab3', 1, 0);
+            if (isset($etcourses)) {
+                $etcourses = array_merge($etcourses, $et3courses);
+            } else {
+                $etcourses = $et3courses;
+            }
+        }
+        // END LSU Extra Course Tabs.
+
         foreach ($currentcourses as $course) {
-            $ccard = new course_card($course);
-            if (!isset($favorited[$course->id]) && !$course->visible) {
-                $hidden[] = $ccard;
+            // BEGIN LSU Extra Course Tabs.
+            if (isset($etcourses)) {
+                foreach ($etcourses as $etcourse) {
+                    if ($course->id == $etcourse->id) {
+                        unset($course);
+                        break 1;
+                    }
+                }
+            }
+            if (isset($course)) {
+                $ccard = new course_card($course);
+                if (isset($favorited[$course->id]) || $course->visible) {
+                    $published[] = $ccard;
+                }
+            }
+            // END LSU Extra Course Tabs.
+        }
+
+        foreach ($currentcourses as $course) {
+            // BEGIN LSU Extra Course Tabs.
+            if (isset($etcourses)) {
+                foreach ($etcourses as $etcourse) {
+                    if ($course->id == $etcourse->id) {
+                        unset($course);
+                          break 1;
+                    }
+                }
+            }
+            // END LSU Extra Course Tabs.
+            if (isset($course)) {
+                $ccard = new course_card($course);
+                if (!isset($favorited[$course->id]) && !$course->visible) {
+                    $hidden[] = $ccard;
+                }
             }
         }
 
@@ -875,6 +945,178 @@ class core_renderer extends \theme_boost\output\core_renderer {
             ];
         }
 
+        // BEGIN LSU Extra Course Tabs.
+        // Get the basic remote courses settings.
+        $rc      = get_config('theme_snap', 'remotecoursestoggle');
+        $rcoptin = get_config('theme_snap', 'remotecoursesoptin') == 0 ? 1 : 0;
+
+        // If the user has a preference, use it.
+        if (isset($USER->profile['snap_remotecourses'])) {
+           $userc = $USER->profile['snap_remotecourses'];
+
+        // Otherwise check to see if it's opt-in and display accordingly.
+        } else {
+           $userc = $rcoptin ? $rcoptin : 0;
+        }
+
+        // Get the remote course cache timeout value.
+        $rcdays = get_config('theme_snap', 'cachetimeout');
+        $rcdays = $rcdays ? $rcdays : 10;
+        $rccache = 86400 * $rcdays;
+
+        // If we want to grab remote courses, do it.
+        if ($rc && $userc == 1) {
+            global $DB;
+
+            // Grab the other courses from the local cache.
+            $rccontainer = $DB->get_record('theme_snap_remotes', array('userid' => $USER->id));
+
+            // If we have data for the user.
+            if ($rccontainer) {
+
+                // Decode the data for future use.
+                $rccourses = json_decode($rccontainer->rcjson);
+
+            // We have no stored local record.
+            } else {
+
+                // Set the data as false.
+                $rccourses = false;
+            }
+
+            // We have no stored local record.
+            if (!$rccontainer) {
+
+                if ($debugging) {
+                    echo("We have no local cache for $USER->username.<br>");
+                }
+
+                // Fetch the remote courses.
+                $remotecourses = course::get_remote_courses($USER, $debugging);
+
+                // Insert the record.
+                $inserted = course::insert_remote_courses(json_encode($remotecourses), $USER->id);
+
+                // If we have an exception, set remote courses to false.
+                if (isset($remotecourses->exception)) {
+                    $remotecourses = false;
+                }
+
+            // We have a valid stored cache, but no courses in the remote system for this user.
+            } else if (isset($rccourses->exception) && $rccontainer->lastupdated > (time() - $rccache)) {
+
+                if ($debugging) {
+                    echo("We have a valid exception cache stored for $USER->username.<br>");
+                }
+
+                // If we have a valid cached exception, set remote courses to false.
+                $remotecourses = false;
+
+            // We have an expired stored local record.
+            } else if ($rccontainer->lastupdated < (time() - $rccache)) {
+
+                if ($debugging) {
+                    echo("We have an expired cache for $USER->username.<br>");
+                }
+
+                // Fetch the remote courses.
+                $remotecourses = course::get_remote_courses($USER, $debugging);
+
+                // Update the local record.
+                $updated = course::update_remote_courses(json_encode($remotecourses), $USER->id, $rccontainer->id);
+
+                // If we have an exception, set remote courses to false.
+                if (isset($remotecourses->exception)) {
+                    $remotecourses = false;
+                }
+
+                // We are good, we just use the cached record.
+            } else {
+
+                if ($debugging) {
+                    echo("We have a valid cache for $USER->username, use it.<br>");
+                }
+
+                // Decode the cached record.
+                $remotecourses = $rccourses;
+            }
+
+            // Make sure the name has no spaces.
+            $rcname = preg_replace('/\s+/', '-', get_string('remotecourses', 'theme_snap'));
+
+            // Get the config from the remote courses plugin config.
+            $lpid = get_config('theme_snap', 'localproxy');
+
+            // Get the course object for the local proxy course.
+            $localproxy = get_course($lpid);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            if ($remotecourses) {
+                foreach($remotecourses as $remotecourse) {
+                    $remotecourse->remoteid  = $remotecourse->id;
+                    $remotecourse->category  = $localproxy->category;
+                    $remotecourse->id        = $localproxy->id;
+                    $remotecourse->idnumber  = $localproxy->idnumber;
+                    $remotecourse->startdate = $localproxy->startdate;
+                    $remotecourse->enddate   = $localproxy->enddate;
+                    $remotecourse->endyear   = $rcname;
+                    $remotecourse->visible   = "1";
+                    $ccard = new course_card($remotecourse);
+                    $ccard->archived = true;
+                    $pastcourses[$rcname][] = $remotecourse;
+                }
+            }
+        }
+
+        // Get the extra tab 1 setting.
+        $et1name = preg_replace('/\s+/', '-', get_config('theme_snap', 'extratab1name'));
+        $et2name = preg_replace('/\s+/', '-', get_config('theme_snap', 'extratab2name'));
+        $et3name = preg_replace('/\s+/', '-', get_config('theme_snap', 'extratab3name'));
+
+        // If we want to grab and show extra tab 1, do it.
+        if ($et1) {
+            // Grab the courses for extra tab 1.
+            $et1courses = course::get_et_courses('extratab1', $enr1, $dl1);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            foreach($et1courses as $et1course) {
+                $et1course->endyear   = $et1name;
+                $et1course->visible   = "1";
+                $ccard = new course_card($et1course);
+                $ccard->archived = true;
+                $pastcourses[$et1name][] = $et1course;
+            }
+        }
+
+        if ($et2) {
+            // Grab the courses for extra tab 1.
+            $et2courses = course::get_et_courses('extratab2', $enr2, $dl2);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            foreach($et2courses as $et2course) {
+                $et2course->endyear   = $et2name;
+                $et2course->visible   = "1";
+                $ccard = new course_card($et2course);
+                $ccard->archived = true;
+                $pastcourses[$et2name][] = $et2course;
+            }
+        }
+
+        if ($et3) {
+            // Grab the courses for extra tab 1.
+            $et3courses = course::get_et_courses('extratab3', $enr3, $dl3);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            foreach($et3courses as $et3course) {
+                $et3course->endyear   = $et3name;
+                $et3course->visible   = "1";
+                $ccard = new course_card($et3course);
+                $ccard->archived = true;
+                $pastcourses[$et3name][] = $et3course;
+            }
+        }
+        // END LSU Extra Course Tabs.
+
         // Past courses data.
         $pastcourselist = [];
         foreach ($pastcourses as $yearcourses) {
@@ -887,6 +1129,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
                 $courses[] = $ccard;
             }
             $endyear = array_values($yearcourses)[0]->endyear;
+
             $year = (object) [
                  'year' => $endyear,
                  'courses' => $courses
@@ -917,6 +1160,11 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $url = new moodle_url('/course/');
             $browseallcourses = $this->column_header_icon_link('browseallcourses', 'courses', $url);
         }
+
+        // BEGIN LSU Extra Course Tabs.
+        // Make sure we have the latest list of pastcourses to work from.
+        $coursenav = !empty($pastcourses);
+        // END LSU Extra Course Tabs.
 
         $data = (object) [
             'userpicture' => $picture,
