@@ -41,38 +41,39 @@ class helpers {
     public static function check_dirs() {
         global $CFG;
         $debugfiles = get_config('enrol_d1', 'debugfiles');
-        
-        if (!file_exists($debugfiles."/d1debug/importer")) {
+        error_log("What is debugfiles: ". $debugfiles);
+
+        if (!file_exists($debugfiles."/importer")) {
             error_log("This dir, importer, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer", 0777, true);
+            mkdir($debugfiles."/importer", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/course")) {
+        if (!file_exists($debugfiles."/importer/course")) {
             error_log("This dir, course, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/course", 0777, true);
+            mkdir($debugfiles."/importer/course", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/coursesection")) {
+        if (!file_exists($debugfiles."/importer/coursesection")) {
             error_log("This dir, coursesection, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/coursesection", 0777, true);
+            mkdir($debugfiles."/importer/coursesection", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/logs")) {
+        if (!file_exists($debugfiles."/importer/logs")) {
             error_log("This dir, logs, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/logs", 0777, true);
+            mkdir($debugfiles."/importer/logs", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/pfile")) {
+        if (!file_exists($debugfiles."/importer/pfile")) {
             error_log("This dir, pfile, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/pfile", 0777, true);
+            mkdir($debugfiles."/importer/pfile", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/pfile/logs")) {
+        if (!file_exists($debugfiles."/importer/pfile/logs")) {
             error_log("This dir, logs, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/pfile/logs", 0777, true);
+            mkdir($debugfiles."/importer/pfile/logs", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/reports")) {
+        if (!file_exists($debugfiles."/importer/reports")) {
             error_log("This dir, reports, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/reports", 0777, true);
+            mkdir($debugfiles."/importer/reports", 0777, true);
         }
-        if (!file_exists($debugfiles."/d1debug/importer/student")) {
+        if (!file_exists($debugfiles."/importer/student")) {
             error_log("This dir, student, was not found. Creating.....");
-            mkdir($debugfiles."/d1debug/importer/student", 0777, true);
+            mkdir($debugfiles."/importer/student", 0777, true);
         }
     }
 
@@ -321,6 +322,7 @@ class helpers {
             // Decode the response.
             $response = json_decode($json_response);
 
+
             if (property_exists($response, "SRSException")) {
                 if ($response->SRSException->message == "Access denied.") {
                     error_log("\n*******************   WARNING   *******************");
@@ -332,6 +334,7 @@ class helpers {
                     break;
                 }
             } else {
+                // error_log("\n*******************   cURL FAILED Completely   *******************");
                 // It's a different fail so exit
                 break;
             }

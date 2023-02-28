@@ -372,6 +372,9 @@ class pfile {
                     case 8:
                         $result = $this->course_counter($cc);    
                         break;
+                    case 9:
+                        $result = $this->drop_bundle($cc);    
+                        break;
                 }
                 $pend = microtime(true);
                 $this->report->timer("row", $pend - $pstart);
@@ -379,16 +382,18 @@ class pfile {
                 // $result = $this->bundle_checker($cc);
                 // $result = $this->unenrol_bundler($cc);
 
-                /*
+                
+                
+                
                 if ($result['success']) {
+                    error_log($result['msg']);
                     // error_log("\e[0;32mXorO: ". $cc[1]. " - ". $result['msg']);
-                    error_log("\e[0;32m".$result['msg']);
                 } else {
-                    error_log("\e[0;31m". $result['msg']);
+                    error_log($result['msg']);
                     // error_log("\e[0;31mRow: ". $rowcount. " Booooo - ". $cc[1]. " failed to update.\n". $result['msg']);
                     $this->report->failed();
                 }
-                */
+
                 
                 // fputcsv($bits_handle, (array)$result);
                 // if ($result['success']) {
@@ -1514,6 +1519,72 @@ class pfile {
             );
         }
 
+    }
+
+    public function drop_bundle($ss) {
+        $s = helpers::get_d1_settings();
+        
+        $request = new \stdClass();
+        $request->dropStudentFromBundleRequestDetail = new \stdClass();
+        $request->dropStudentFromBundleRequestDetail->matchOn = "studentNumber";
+        $request->dropStudentFromBundleRequestDetail->attributeValue = $ss[0];
+        $request->dropStudentFromBundleRequestDetail->bundleProfileCode = $ss[1];
+        $request->dropStudentFromBundleRequestDetail->dropReason = "Data Migration Cleanup";
+        
+        $params = new \stdClass();
+        $params->url = $s->wsurl.'/webservice/InternalViewREST/dropStudentFromBundle?_type=json';
+        
+        $params->body = json_encode($request);
+        
+        // error_log("\nWould drop user: ". $ss[0]. " from: ". $ss[1]);
+        // return array(
+        //     "success" => true,
+        //     "msg" => "\e[0;32m".$ss[0]. " successfully dropped bundle ".$ss[1]." \n"
+        // );
+
+        $results = helpers::curly($params);
+
+        $header = helpers::log_header();
+        
+        if (property_exists($results, "SRSException")) {
+            // $path_to_save = $this->report->reportspath. "/importer/pfile/logs/".$this->loadlog;
+            $path_to_save = $this->loadlog;
+            file_put_contents(
+                $path_to_save,
+                $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
+                FILE_APPEND
+            );
+        }
+
+        // For course section search use.
+        if (property_exists($results, "dropStudentFromBundleResult")) {
+
+            if ($results->dropStudentFromBundleResult->responseCode == "Success") {
+                return array(
+                    "success" => true,
+                    "msg" => "\e[0;32m".$ss[0]. " successfully dropped bundle ".$ss[1]." \n"
+                );
+            } else {
+                return array(
+                    "success" => false,
+                    "msg" => "\e[0;31m".$ss[0]. " *** ERROR *** FAILED to drop bundle ".$ss[1]."\n",
+                );
+            }
+        } else if (property_exists($results, "SRSException")) {
+            $error_code = "";
+            if (property_exists($results->SRSException, "errorCode")) {
+                $error_code = $results->SRSException->errorCode;
+            } else if (property_exists($results->SRSException, "cause")) {
+                $error_code = "EXCEPTION";
+            }
+            
+            // error_log("*** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message);
+            // return false;
+            return array(
+                "success" => false,
+                "msg" => "\e[0;31m".$ss[0]. " *** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message."\n"
+            );
+        }
     }
 
     public function create_contact_method($ss) {
