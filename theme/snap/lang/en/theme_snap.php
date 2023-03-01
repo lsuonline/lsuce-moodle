@@ -468,4 +468,5 @@ $string['extratab3searchterm_help'] = 'The term you wish to search for.';
 $string['beginswith'] = 'Begins With';
 $string['contains'] = 'Contains';
 $string['endswith'] = 'Ends With';
+$string['regex'] = 'Regular Expression';
 // END LSU Extra Course Tabs.

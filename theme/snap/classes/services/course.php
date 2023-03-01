@@ -157,12 +157,18 @@ class course {
         $etsearchopts  = get_config('theme_snap', $tab . 'searchopts');
         $etsearchfield = get_config('theme_snap', $tab . 'coursefield');
         $userid        = $USER->id;
-        if ($etsearchopts = 0) {
+        if ($etsearchopts == 0) {
+            $term = "LIKE";
             $searcher = $etsearchterm . '%';
-        } else if ($etsearchopts = 1) {
+        } else if ($etsearchopts == 1) {
+            $term = "LIKE";
             $searcher = '%' . $etsearchterm . '%';
-        } else {
+        } else if ($etsearchopts == 2) {
+            $term = "LIKE";
             $searcher = '%' . $etsearchterm;
+        } else {
+            $term = "REGEXP";
+            $searcher = $etsearchterm;
         }
         if ($datelimit) {
             $limiter = "AND c.startdate < UNIX_TIMESTAMP()
@@ -172,7 +178,7 @@ class course {
         }
 
         $all = "SELECT * FROM mdl_course c
-                WHERE c.$etsearchfield LIKE '$searcher'"
+                WHERE c.$etsearchfield $term '$searcher'"
                   . $limiter;
 
         $current = "SELECT c.* FROM mdl_user u
@@ -180,7 +186,7 @@ class course {
                       INNER JOIN mdl_enrol e ON e.id = ue.enrolid
                       INNER JOIN mdl_course c ON e.courseid = c.id
                     WHERE u.id = $userid
-                      AND c.$etsearchfield LIKE '$searcher'
+                      AND c.$etsearchfield $term '$searcher'
                       AND ue.status = 0
                       AND (ue.timeend > UNIX_TIMESTAMP() OR ue.timeend = 0) "
                       . $limiter .

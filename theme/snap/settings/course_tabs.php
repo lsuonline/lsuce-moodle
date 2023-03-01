@@ -131,9 +131,10 @@ $default = '0';
 $enabledloginchoices = [
     '0' => new lang_string('beginswith', 'theme_snap'),
     '1' => new lang_string('contains', 'theme_snap'),
-    '2' => new lang_string('endswith', 'theme_snap')
+    '2' => new lang_string('endswith', 'theme_snap'),
+    '3' => new lang_string('regex', 'theme_snap')
 ];
-$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices);
+$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices, 40);
 $snapsettings->add($setting);
 
 // Extra tab 1 search term.
@@ -203,9 +204,10 @@ $default = '0';
 $enabledloginchoices = [
     '0' => new lang_string('beginswith', 'theme_snap'),
     '1' => new lang_string('contains', 'theme_snap'),
-    '2' => new lang_string('endswith', 'theme_snap')
+    '2' => new lang_string('endswith', 'theme_snap'),
+    '3' => new lang_string('regex', 'theme_snap')
 ];
-$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices);
+$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices, 40);
 $snapsettings->add($setting);
 
 // Extra tab 2 prefix.
@@ -275,9 +277,10 @@ $default = '0';
 $enabledloginchoices = [
     '0' => new lang_string('beginswith', 'theme_snap'),
     '1' => new lang_string('contains', 'theme_snap'),
-    '3' => new lang_string('endswith', 'theme_snap')
+    '3' => new lang_string('endswith', 'theme_snap'),
+    '3' => new lang_string('regex', 'theme_snap')
 ];
-$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices);
+$setting = new admin_setting_configselect($name, $title, $description, $default, $enabledloginchoices, 40);
 $snapsettings->add($setting);
 
 // Extra tab 3 prefix.
