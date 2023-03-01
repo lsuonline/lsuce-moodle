@@ -132,6 +132,9 @@ class pfile {
             case 7:
                 $this->enroll_compare();
                 break;
+            case 8:
+                $this->d1_moodle_compare();
+                break;
         }
         $pend = microtime(true);
         $this->report->timer("search", $pend - $pstart);
@@ -2482,13 +2485,84 @@ class pfile {
         fclose($f1_handle);
         fclose($f2_handle);
     }
+
+    public function d1_moodle_compare() {
+
+        // This should be the D1 Archive export
+        if ($this->loadfile1 != "" ) {
+            $file_to_open1 = $this->loadfile1;
+        } else {
+            error_log("Sorry, there is no file to load....????");
+        }
+
+        // File to to be the moodle user export
+        if ($this->loadfile2 != "" ) {
+            $file_to_open2 = $this->loadfile2;
+        } else {
+            error_log("Sorry, there is no file to load....????");
+        }
+
+        $mm = $this->report->reportspath. "/importer/pfile/mismatchers.csv";
+        $mm_handle = fopen($mm, "w");
+
+        $mismatch = array();
+        $emailnotfound = 0;
+        $matchcount = 0;
+        $mismatchcount = 0;
+
+        $mm_counter = 0;
+        $zz_counter = 0;
+        // =================================================
+
+        if (($f1_handle = fopen($file_to_open1, "r")) !== FALSE) {
+            while (($xx = fgetcsv($f1_handle, 5000, ",")) !== FALSE) {
+                //  $xx[3] is email
+                //  $xx[4] is loginid
+                $mm_counter++;
+                $foundemail = false;
+                $usernamesmatch = false;
+
+                if (($f2_handle = fopen($file_to_open2, "r")) !== FALSE) {
+                    while (($zz = fgetcsv($f2_handle, 5000, ",")) !== FALSE) {
+                        // $zz[12] is email
+                        // $zz[7] is username
+                        $zz_counter++;
+
+                        // Are the emails the same?
+                        if ($xx[3] == $zz[12]) {
+                            $foundemail = true;
+
+                            // are usernames the same?
+                            if ($xx[4] == $zz[7]) {
+                                $usernamesmatch = true;
+                                $matchcount++;
+                            } else {
+                                $temp = new \stdClass();
+                                $temp->d1_email = $xx[3];
+                                $temp->d1_username = $xx[4];
+                                $temp->mood_email = $zz[12];
+                                $temp->mood_username = $zz[7];
+                                array_push($mismatch, $temp);
+                                $mismatchcount++;
+
+                                fputcsv($mm_handle, (array)$temp);
+                            }
+                            break;
+                        }
+                    }
+                    fclose($f2_handle);
+                }
+
+                if (!$foundemail) {
+                    $emailnotfound++;
+                    error_log("Could not find ". $xx[3]. " in the moodle file");
+                }
+            }
+        }
+
+        error_log("----------------  Done processing files  ----------------");
+        error_log("This many matches: ". $matchcount);
+        error_log("This many mismatches: ". $mismatchcount);
+        error_log("Email not found: ". $emailnotfound);
+    }
 }
-
-
-
-
-
-
-
-
-
