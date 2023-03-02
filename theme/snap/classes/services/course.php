@@ -52,7 +52,7 @@ class course {
         return $instance;
     }
 
-// BEGIN LSU Extra Course Tabs.
+    // BEGIN LSU Extra Course Tabs.
     public static function get_remote_courses($user, $debugging) {
         global $DB;
 
@@ -198,7 +198,7 @@ class course {
 
         return $courses;
     }
-// END LSU Extra Course Tabs.
+    // END LSU Extra Course Tabs.
 
     /**
      * Return false if the summary files are is not suitable for course cover images.

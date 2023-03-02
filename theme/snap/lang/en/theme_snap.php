@@ -464,6 +464,8 @@ $string['extratab3searchopts'] = 'Search Option';
 $string['extratab3searchopts_help'] = 'How you want the search to be carried out.';
 $string['extratab3searchterm'] = 'Search Term';
 $string['extratab3searchterm_help'] = 'The term you wish to search for.';
+$string['extratab3repop'] = 'Repopulate empty course tab?';
+$string['extratab3repop_help'] = 'Repopulate the main course tab from tab 3 if tab 3 is populated and coure tab is empty.';
 
 $string['beginswith'] = 'Begins With';
 $string['contains'] = 'Contains';

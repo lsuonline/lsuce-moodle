@@ -690,7 +690,12 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * Personal menu or authenticate form.
      */
     public function personal_menu() {
+        // BEGIN LSU Course Card Quick Links.
         global $USER, $CFG;
+
+        // Use the can view gradebook and can manage activities as the capability we check for.
+        $caps = ['gradereport/grader:view', 'moodle/course:manageactivities'];
+        // END LSU Course Card Quick Links.
 
         if (!isloggedin() || isguestuser()) {
             $enabledlogin = get_config('theme_snap', 'enabledlogin');
@@ -851,38 +856,47 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $hidden = []; // Hidden courses.
 
         // BEGIN LSU Extra Course Tabs.
-
         // Get the debugging settings.
         $debugging  = $CFG->debugdisplay == 1 ? 1 : 0;
 
         // Get the tab settings.
-        $et1 = get_config('theme_snap', 'extratab1toggle');
-        $et2 = get_config('theme_snap', 'extratab2toggle');
-        $et3 = get_config('theme_snap', 'extratab3toggle');
-        $enr1 = get_config('theme_snap', 'extratab1enrolled');
-        $enr2 = get_config('theme_snap', 'extratab2enrolled');
-        $enr3 = get_config('theme_snap', 'extratab3enrolled');
-        $dl1 = get_config('theme_snap', 'extratab1datelimits');
-        $dl2 = get_config('theme_snap', 'extratab2datelimits');
-        $dl3 = get_config('theme_snap', 'extratab3datelimits');
+        $et1      = get_config('theme_snap', 'extratab1toggle');
+        $et2      = get_config('theme_snap', 'extratab2toggle');
+        $et3      = get_config('theme_snap', 'extratab3toggle');
+        $dl1      = get_config('theme_snap', 'extratab1datelimits');
+        $dl2      = get_config('theme_snap', 'extratab2datelimits');
+        $dl3      = get_config('theme_snap', 'extratab3datelimits');
+        $enr1     = get_config('theme_snap', 'extratab1enrolled');
+        $enr2     = get_config('theme_snap', 'extratab2enrolled');
+        $enr3     = get_config('theme_snap', 'extratab3enrolled');
+        $et3repop = get_config('theme_snap', 'extratab3repop');
+        // If extra tab 1 is enabled.
         if ($et1) {
+            // Get the courses for extra tab 1.
             $et1courses = course::get_et_courses('extratab1', 1, 0);
+            // If we have any courses, merge them into the overall extra tabs array.
             if (isset($etcourses)) {
                 $etcourses = array_merge($etcourses, $et1courses);
             } else {
                 $etcourses = $et1courses;
             }
         }
+        // If extra tab 2 is enabled.
         if ($et2) {
+            // Get the courses for extra tab 2.
             $et2courses = course::get_et_courses('extratab2', 1, 0);
+            // If we have any courses, merge them into the overall extra tabs array.
             if (isset($etcourses)) {
                 $etcourses = array_merge($etcourses, $et2courses);
             } else {
                 $etcourses = $et2courses;
             }
         }
+        // If extra tab 3 is enabled.
         if ($et3) {
+            // Get the courses for extra tab 3.
             $et3courses = course::get_et_courses('extratab3', 1, 0);
+            // If we have any courses, merge them into the overall extra tabs array.
             if (isset($etcourses)) {
                 $etcourses = array_merge($etcourses, $et3courses);
             } else {
@@ -893,21 +907,57 @@ class core_renderer extends \theme_boost\output\core_renderer {
 
         foreach ($currentcourses as $course) {
             // BEGIN LSU Extra Course Tabs.
+            // If we have extra courses, remove them from the array.
             if (isset($etcourses)) {
+                // Loop through the extra tab courses.
                 foreach ($etcourses as $etcourse) {
+                    // Check for a match.
                     if ($course->id == $etcourse->id) {
+                        // Remove it.
                         unset($course);
                         break 1;
                     }
                 }
             }
+            // If we have a course.
             if (isset($course)) {
+                // Build a course card for it.
                 $ccard = new course_card($course);
                 if (isset($favorited[$course->id]) || $course->visible) {
                     $published[] = $ccard;
                 }
             }
             // END LSU Extra Course Tabs.
+        }
+
+        // BEGIN LSU Extra Course Tabs.
+        // Set this helper to false for now.
+        $et3empty = false;
+
+        if ($et3repop) {
+            // If we have 0 published courses and we have courses in tab 3.
+            if (count($published) == 0 && isset($et3courses)) {
+                foreach ($et3courses as $course) {
+                    // Get the course context for this course.
+                    $coursecontext = context_course::instance($course->id);
+                    // Check to see if the logged in user has any of thise caps anywhere.
+                    $canmanageacts = has_any_capability($caps, $coursecontext);
+                    // Students cannot manage those things.
+                    $isstudent = !$canmanageacts;
+                    if (isset($course)) {
+                        $ccard = new course_card($course);
+                        $et3empty = true;
+                        // Add the visible or favorited courses to the main tab.
+                        if (isset($favorited[$course->id]) || $course->visible) {
+                            $published[] = $ccard;
+                        }
+                        // Add the hidden courses to the hidden tab for faculty.
+                        if (!isset($favorited[$course->id]) && !$course->visible && !$isstudent) {
+                            $hidden[] = $ccard;
+                        }
+                    }
+                }
+            }
         }
 
         foreach ($currentcourses as $course) {
@@ -946,17 +996,20 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
 
         // BEGIN LSU Extra Course Tabs.
-        // Get the basic remote courses settings.
+        // Are we using remote courses?
         $rc      = get_config('theme_snap', 'remotecoursestoggle');
-        $rcoptin = get_config('theme_snap', 'remotecoursesoptin') == 0 ? 1 : 0;
+        // Is it opt-in or not?
+        $rcoptin = get_config('theme_snap', 'remotecoursesoptin');
 
-        // If the user has a preference, use it.
-        if (isset($USER->profile['snap_remotecourses'])) {
-           $userc = $USER->profile['snap_remotecourses'];
+        // Get the STORED user preference DO NOT CACHE OR USE USER object.
+        $fieldvalue = $USER->profile['snap_remotecourses'];
 
-        // Otherwise check to see if it's opt-in and display accordingly.
+        if ($rcoptin) {
+            // Make sure the preference is EXPRESSLY set to show, otherwise hide.
+            $userc = $fieldvalue === "Opt-In" ? 1 : 0;
         } else {
-           $userc = $rcoptin ? $rcoptin : 0;
+            // Make sure the preference is EXPRESSLY set to hide, otherwise show.
+            $userc = $fieldvalue === "Opt-Out" ? 0 : 1;
         }
 
         // Get the remote course cache timeout value.
@@ -1060,7 +1113,6 @@ class core_renderer extends \theme_boost\output\core_renderer {
                     $remotecourse->startdate = $localproxy->startdate;
                     $remotecourse->enddate   = $localproxy->enddate;
                     $remotecourse->endyear   = $rcname;
-                    $remotecourse->visible   = "1";
                     $ccard = new course_card($remotecourse);
                     $ccard->archived = true;
                     $pastcourses[$rcname][] = $remotecourse;
@@ -1081,7 +1133,6 @@ class core_renderer extends \theme_boost\output\core_renderer {
             // Loop through the other courses and fill in the info from the local proxy as needed.
             foreach($et1courses as $et1course) {
                 $et1course->endyear   = $et1name;
-                $et1course->visible   = "1";
                 $ccard = new course_card($et1course);
                 $ccard->archived = true;
                 $pastcourses[$et1name][] = $et1course;
@@ -1095,24 +1146,38 @@ class core_renderer extends \theme_boost\output\core_renderer {
             // Loop through the other courses and fill in the info from the local proxy as needed.
             foreach($et2courses as $et2course) {
                 $et2course->endyear   = $et2name;
-                $et2course->visible   = "1";
                 $ccard = new course_card($et2course);
                 $ccard->archived = true;
                 $pastcourses[$et2name][] = $et2course;
             }
         }
 
-        if ($et3) {
+        if ($et3 && $et3empty == false) {
             // Grab the courses for extra tab 1.
             $et3courses = course::get_et_courses('extratab3', $enr3, $dl3);
 
             // Loop through the other courses and fill in the info from the local proxy as needed.
             foreach($et3courses as $et3course) {
-                $et3course->endyear   = $et3name;
-                $et3course->visible   = "1";
-                $ccard = new course_card($et3course);
-                $ccard->archived = true;
-                $pastcourses[$et3name][] = $et3course;
+                // Get the course context for this course.
+                $coursecontext = context_course::instance($et3course->id);
+                // Check to see if the logged in user has any of thise caps anywhere.
+                $canmanageacts = has_any_capability($caps, $coursecontext);
+                // Students cannot manage those things.
+                $isstudent = !$canmanageacts;
+
+                // If you are not a student, load the course regardless of the visibility.
+                if (!$isstudent) {
+                    $et3course->endyear   = $et3name;
+                    $ccard = new course_card($et3course);
+                    $ccard->archived = true;
+                    $pastcourses[$et3name][] = $et3course;
+                // If you are a student, only load visible courses.
+                } else if ($et3course->visible == 1 && $isstudent) {
+                    $et3course->endyear   = $et3name;
+                    $ccard = new course_card($et3course);
+                    $ccard->archived = true;
+                    $pastcourses[$et3name][] = $et3course;
+                }
             }
         }
         // END LSU Extra Course Tabs.

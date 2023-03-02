@@ -240,7 +240,7 @@ $default = $unchecked;
 $setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
 $snapsettings->add($setting);
 
-// Extra tab 1 require course enddate and within timeframe.
+// Extra tab 3 require course enddate and within timeframe.
 $name = 'theme_snap/extratab3datelimits';
 $title = new lang_string('extratab3datelimits', 'theme_snap');
 $description = new lang_string('extratab3datelimits_help', 'theme_snap');
@@ -291,9 +291,13 @@ $default = 'Master ';
 $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 16);
 $snapsettings->add($setting);
 
-
-
-
+// Extra tab 3 repopulate courses from tab 3 if main course tab is empty.
+$name = 'theme_snap/extratab3repop';
+$title = new lang_string('extratab3repop', 'theme_snap');
+$description = new lang_string('extratab3repop_help', 'theme_snap');
+$default = $unchecked;
+$setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
+$snapsettings->add($setting);
 
 // Add all the settings.
 $settings->add($snapsettings);
