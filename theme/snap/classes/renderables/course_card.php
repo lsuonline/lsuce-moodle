@@ -208,7 +208,9 @@ class course_card implements \renderable {
         }
         $isajax = defined('AJAX_SCRIPT') && AJAX_SCRIPT;
         if (!empty($bgimage)) {
-            if (!$isajax && $count <= 12) {
+// BEGIN LSU Extra Course Tabs INCREASE
+            if (!$isajax && $count <= 120) {
+// END LSU Extra Course Tabs INCREASE
                 $this->imagecss = "background-image: url($bgimage);";
             } else {
                 $this->lazyloadimageurl = $bgimage;
