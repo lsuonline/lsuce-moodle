@@ -934,7 +934,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         // Set this helper to false for now.
         $et3empty = false;
 
-        if ($et3repop) {
+        if ($et3 && $et3repop) {
             // If we have 0 published courses and we have courses in tab 3.
             if (count($published) == 0 && isset($et3courses)) {
                 foreach ($et3courses as $course) {

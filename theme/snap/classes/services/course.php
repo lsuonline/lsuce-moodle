@@ -54,8 +54,6 @@ class course {
 
     // BEGIN LSU Extra Course Tabs.
     public static function get_remote_courses($user, $debugging) {
-        global $DB;
-
         // Get the current time.
         $timer1 = microtime(true);
 
