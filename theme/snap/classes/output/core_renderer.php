@@ -959,6 +959,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
                 }
             }
         }
+        // END LSU Extra Course Tabs.
 
         foreach ($currentcourses as $course) {
             // BEGIN LSU Extra Course Tabs.
