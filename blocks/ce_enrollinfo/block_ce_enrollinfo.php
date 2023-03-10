@@ -189,17 +189,28 @@ class block_ce_enrollinfo extends block_base {
         $lsuid = ($return && $return->lsuid <> 0) ? $return->lsuid : get_string('ce_missing_lsuid', 'block_ce_enrollinfo');
 
         $this->content = new stdClass;
-        $this->content->text = get_string('cestring_lsuid', 'block_ce_enrollinfo', $lsuid);
-        $this->content->text .= '<br /><br />';
-        $this->content->text .= get_string('cestring_formattedstartdate', 'block_ce_enrollinfo', $formattedstartdate);
-        $this->content->text .= '<br /><br />';
-        $this->content->text .= get_string('cestring_threeweekdate', 'block_ce_enrollinfo', $threeweekdate);
-        $this->content->text .= '<br /><br />';
-        $this->content->text .= get_string('cestring_formattedenddate', 'block_ce_enrollinfo', $formattedenddate);
-        $this->content->text .= '<br /><br />';
-        $this->content->text .= get_string('cestring_formattedtimeleft', 'block_ce_enrollinfo', $formattedtimeleft);
-        $this->content->text .= '<br /><br />';
-        $this->content->text .= get_string('ce_timezone', 'block_ce_enrollinfo');
+        $this->content->text = '';
+        if ($return && $return->lsuid <> 0) {
+            $this->content->text .= get_string('cestring_lsuid', 'block_ce_enrollinfo', $lsuid);
+            $this->content->text .= '<br /><br />';
+        }
+        if ($formattedstartdate <> "") {
+            $this->content->text .= get_string('cestring_formattedstartdate', 'block_ce_enrollinfo', $formattedstartdate);
+            $this->content->text .= '<br /><br />';
+        }
+        if ($threeweekdate <> "") {
+            $this->content->text .= get_string('cestring_threeweekdate', 'block_ce_enrollinfo', $threeweekdate);
+            $this->content->text .= '<br /><br />';
+        }
+        if ($enddate <> 0) {
+            $this->content->text .= get_string('cestring_formattedenddate', 'block_ce_enrollinfo', $formattedenddate);
+            $this->content->text .= '<br /><br />';
+            $this->content->text .= get_string('cestring_formattedtimeleft', 'block_ce_enrollinfo', $formattedtimeleft);
+            $this->content->text .= '<br /><br />';
+        }
+        if ($enddate <> 0 && $threeweekdate <> "" && $formattedstartdate <> "") {
+            $this->content->text .= get_string('ce_timezone', 'block_ce_enrollinfo');
+        }
         return $this->content;
     }
 }
