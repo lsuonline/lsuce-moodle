@@ -17,14 +17,15 @@ define([
          */
         qmAjax: function(data_chunk) {
             var promiseObj = new Promise(function(resolve, reject) {
-
+                console.log("qmAjax() -> START, let's Poke the Server");
                 var send_this = [{
-                    methodname: 'block_quickmail_qm_ajax',
+                    methodname: 'block_quickmail_qmAjax',
                     args: {
                         datachunk: data_chunk,
                     }
                 }];
                 Ajax.call(send_this)[0].then(function(results) {
+                    console.log("qmAjax() -> SUCCESS, what is result: ", results);
                     resolve(JSON.parse(results.data));
                 }).catch(function(ev) {
                     reject(ev);

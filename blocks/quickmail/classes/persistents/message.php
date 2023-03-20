@@ -490,7 +490,7 @@ class message extends \block_quickmail\persistents\persistent {
 
         $this->update();
     }
-
+    
     /**
      * Update this message as deleted
      *
@@ -686,7 +686,7 @@ class message extends \block_quickmail\persistents\persistent {
             }
         }
 
-        // Refresh record (necessary?).
+        // Refresh record (necessary?)
         $this->read();
     }
 

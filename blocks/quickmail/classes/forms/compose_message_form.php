@@ -512,8 +512,8 @@ class compose_message_form extends \moodleform {
 
         // Additional_emails - make sure each is valid.
         $cleansedadditionalemails = preg_replace('/\s+/', '', $data['additional_emails']);
-        // Some users prefer the semi-colon to separate addresses.
-        // So let's just change that back to a comma and carry on.
+        // some users prefer the semi-colon to separate addresses 
+        // so let's just change that back to a comma and carry on.
         $cleansedadditionalemails = preg_replace('/;/', ',', $data['additional_emails']);
 
         if (!empty($cleansedadditionalemails) && count(array_filter(explode(',', $cleansedadditionalemails), function($email) {
