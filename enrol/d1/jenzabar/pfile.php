@@ -378,6 +378,12 @@ class pfile {
                     case 9:
                         $result = $this->drop_bundle($cc);    
                         break;
+                    case 10:
+                        $result = $this->unenroll_cert($cc);    
+                        break;
+                    case 11:
+                        $result = $this->enroll_cert($cc);    
+                        break;
                 }
                 $pend = microtime(true);
                 $this->report->timer("row", $pend - $pstart);
@@ -1586,6 +1592,152 @@ class pfile {
             return array(
                 "success" => false,
                 "msg" => "\e[0;31m".$ss[0]. " *** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message."\n"
+            );
+        }
+    }
+
+    public function unenroll_cert($ss) {
+        $s = helpers::get_d1_settings();
+
+        $request = new \stdClass();
+        /*
+        {
+            "dropStudentFromCertificateRequestDetail": {
+                "attributeValue": "X001873",
+                "certificateCode": "MC_ACCT",
+                "matchOn": "studentNumber"
+            }
+        }
+        */
+        $request->dropStudentFromCertificateRequestDetail = new \stdClass();
+        $request->dropStudentFromCertificateRequestDetail->matchOn = "studentNumber";
+        $request->dropStudentFromCertificateRequestDetail->attributeValue = $ss[1];
+        $request->dropStudentFromCertificateRequestDetail->certificateCode = $ss[2];
+
+        $params = new \stdClass();
+        $params->url = $s->wsurl.'/webservice/InternalViewREST/dropStudentFromCertificate?_type=json';
+
+        $params->body = json_encode($request);
+
+        error_log("unenroll_cert func, What is XNumber: ". $ss[1]. " and cert code: ". $ss[2]);
+        // return array(
+        //     "success" => true,
+        //     "msg" => "\e[0;32m".$ss[0]. " successfully dropped cert ".$ss[1]." \n"
+        // );
+        $results = helpers::curly($params);
+
+        $header = helpers::log_header();
+        
+        if (property_exists($results, "SRSException")) {
+            // $path_to_save = $this->report->reportspath. "/importer/pfile/logs/".$this->loadlog;
+            $path_to_save = $this->loadlog;
+            file_put_contents(
+                $path_to_save,
+                $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
+                FILE_APPEND
+            );
+        }
+
+        // For course section search use.
+        if (property_exists($results, "dropStudentFromCertificateResult")) {
+
+            if ($results->dropStudentFromCertificateResult->responseCode == "Success") {
+                return array(
+                    "success" => true,
+                    "msg" => "\e[0;32m".$ss[1]. " successfully dropped cert ".$ss[2]." \n"
+                );
+            } else {
+                return array(
+                    "success" => false,
+                    "msg" => "\e[0;31m".$ss[1]. " *** ERROR *** FAILED to drop cert ".$ss[2]."\n",
+                );
+            }
+        } else if (property_exists($results, "SRSException")) {
+            $error_code = "";
+            if (property_exists($results->SRSException, "errorCode")) {
+                $error_code = $results->SRSException->errorCode;
+            } else if (property_exists($results->SRSException, "cause")) {
+                $error_code = "EXCEPTION";
+            }
+
+            // error_log("*** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message);
+            // return false;
+            return array(
+                "success" => false,
+                "msg" => "\e[0;31m".$ss[1]. " *** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message."\n"
+            );
+        }
+    }
+
+    public function enroll_cert($ss) {
+        $s = helpers::get_d1_settings();
+
+        $request = new \stdClass();
+        /*
+        {
+            "dropStudentFromCertificateRequestDetail": {
+                "attributeValue": "X001873",
+                "certificateCode": "MC_ACCT",
+                "matchOn": "studentNumber"
+            }
+        }
+        */
+        $request->enrollStudentInCertificateRequestDetail = new \stdClass();
+        $request->enrollStudentInCertificateRequestDetail->matchOn = "studentNumber";
+        $request->enrollStudentInCertificateRequestDetail->attributeValue = $ss[1];
+        $request->enrollStudentInCertificateRequestDetail->certificateCode = $ss[2];
+
+        $params = new \stdClass();
+        $params->url = $s->wsurl.'/webservice/InternalViewREST/enrollStudentInCertificate?_type=json';
+
+        $params->body = json_encode($request);
+
+        // error_log("unenroll_cert func, What is XNumber: ". $ss[1]. " and cert code: ". $ss[2]);
+        // return array(
+        //     "success" => true,
+        //     "msg" => "\e[0;32m".$ss[0]. " successfully dropped cert ".$ss[1]." \n"
+        // );
+        $results = helpers::curly($params);
+
+        $header = helpers::log_header();
+        
+        if (property_exists($results, "SRSException")) {
+            // $path_to_save = $this->report->reportspath. "/importer/pfile/logs/".$this->loadlog;
+            $path_to_save = $this->loadlog;
+            file_put_contents(
+                $path_to_save,
+                $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
+                FILE_APPEND
+            );
+        }
+
+        // For course section search use.
+        if (property_exists($results, "enrollStudentInCertificateResult")) {
+
+            if ($results->enrollStudentInCertificateResult->responseCode == "Success") {
+                return array(
+                    "success" => true,
+                    "msg" => "\e[0;32m".$ss[1]. " successfully enrolled cert ".$ss[2]." \n"
+                );
+            } else {
+                return array(
+                    "success" => false,
+                    "msg" => "\e[0;31m".$ss[1]. " *** ERROR *** FAILED to enroll cert ".$ss[2]."\n",
+                );
+            }
+        } else if (property_exists($results, "SRSException")) {
+            $error_code = "";
+            if (property_exists($results->SRSException, "errorCode")) {
+                $error_code = $results->SRSException->errorCode;
+            } else if (property_exists($results->SRSException, "cause")) {
+                $error_code = "EXCEPTION";
+            }
+
+            // error_log("*** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message);
+            // return false;
+            return array(
+                "success" => false,
+                "msg" => "\e[0;31m".$ss[1]. " *** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message."\n"
             );
         }
     }
