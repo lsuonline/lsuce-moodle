@@ -6,14 +6,13 @@ define([
     'use strict';
 
     let removeSentItems = function(data) {
-        console.log("What are the item(s): ", data);
         jaxy.qmAjax(JSON.stringify({
-            'call': 'removeSentMessages',
+            'call': 'remove_sent_messages',
             'params': {
                 'ids': data
             },
             'path': 'classes/external/',
-            'class': 'sentMessagesCtrl'
+            'class': 'sent_messages_ctrl'
         // eslint-disable-next-line promise/always-return
         })).then(function (response) {
             noti.storeMsg(response);
@@ -31,22 +30,19 @@ define([
 
     return {
         init: function() {
-            // Show any pending messages
+            // Show any pending messages.
             noti.showMsg();
 
-            console.log("sent_messages => init() => START");
-            // Single Click Delete (Trash Icon)
+            // Single Click Delete (Trash Icon).
             $('.qm_sent_msgs').on('click', '.qm_sm_trash', function (ev) {
                 ev.preventDefault();
-                console.log("What is the id: " + $(this).data("msgid"));
                 removeSentItems([$(this).data("msgid")]);
             });
 
-            // Single Checkbox Click
+            // Single Checkbox Click.
             // If more than 1 checkbox is checked then show the "remove selected" button.
             $('.qm_sm_cb').click(function() {
                 let counter = $(":checkbox:checked").length;
-                console.log("How many are checked: " + counter);
                 if (counter > 1) {
                     $("#qm_sm_selected_remove").show();
                 } else {
@@ -54,13 +50,13 @@ define([
                 }
             });
 
-            // Select ALL Checkboxes
+            // Select ALL Checkboxes.
             $("#qm_sm_select_all").click(function () {
                 $("#qm_sm_selected_remove").toggle(this.checked);
                 $('input:checkbox').prop('checked', this.checked);
             });
 
-            // Remove Selected Button Click
+            // Remove Selected Button Click.
             $('.qm_sent_msgs').on('click', '#qm_sm_selected_remove', function (ev) {
                 ev.preventDefault();
                 let remove_list = [];
