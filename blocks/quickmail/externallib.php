@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -24,17 +25,17 @@
  * @author     Update by David Lowe
  */
 
-defined('MOODLE_INTERNAL') or die();
+defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . "/externallib.php");
 
 class block_quickmail_external extends external_api {
-    
+
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      */
-    public static function qmAjax_parameters() {
+    public static function qm_ajax_parameters() {
         return new external_function_parameters(
             array(
                 'datachunk' => new external_value(
@@ -49,49 +50,48 @@ class block_quickmail_external extends external_api {
      * Returns welcome message
      * @return string welcome message
      */
-    public static function qmAjax($datachunk) {
+    public static function qm_ajax($datachunk) {
         global $CFG, $USER;
 
         $datachunk = json_decode($datachunk);
 
-        $class_obj = isset($datachunk->class) ? $datachunk->class : null;
+        $classobj = isset($datachunk->class) ? $datachunk->class : null;
         $function = isset($datachunk->call) ? $datachunk->call : null;
         $params = isset($datachunk->params) ? $datachunk->params : null;
         $path = isset($datachunk->path) ? $datachunk->path : null;
-        
+
         if (!isset($params)) {
             $params = array("empty" => "true");
         }
 
-        // it could be either GET or POST, let's check......
-        if (isset($class_obj)) {
-            $this_file = $CFG->dirroot. '/blocks/quickmail/'. $path. $class_obj. '.php';
-            include_once($this_file);
-            $qmajax = new $class_obj();
+        // It could be either GET or POST, let's check.
+        if (isset($classobj)) {
+            $thisfile = $CFG->dirroot. '/blocks/quickmail/'. $path. $classobj. '.php';
+            include_once($thisfile);
+            $qmajax = new $classobj();
         }
 
-        // now let's call the method
-        $ret_obj_data = null;
+        // Now let's call the method.
+        $retobjdata = null;
         if (method_exists($qmajax, $function)) {
-            $ret_obj_data = call_user_func(array($qmajax, $function), $params);
+            $retobjdata = call_user_func(array($qmajax, $function), $params);
         }
 
-        $ret_json_data = [
-            'data' => json_encode($ret_obj_data)
+        $retjsondata = [
+            'data' => json_encode($retobjdata)
         ];
-        return $ret_json_data;
+        return $retjsondata;
     }
 
     /**
      * Returns description of method result value
      * @return external_description
      */
-    public static function qmAjax_returns() {
+    public static function qm_ajax_returns() {
         return new external_single_structure(
             array(
                 'data' => new external_value(PARAM_TEXT, 'JSON encoded goodness')
             )
         );
     }
-    
 }
