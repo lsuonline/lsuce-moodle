@@ -45,15 +45,9 @@ class mixpanel extends analytics {
         if (!empty($token) && self::should_track($config)) {
             $res['trackerId'] = 'mixpanel';
             $res['token'] = $token;
+            $res['staticShares'] = self::get_static_shares($config);
         }
 
         return $res;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public static function get_config_settings() {
-        return ['mixpaneltoken'];
     }
 }

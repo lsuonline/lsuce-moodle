@@ -26,13 +26,12 @@ defined('MOODLE_INTERNAL') || die();
 
 $functions = [
     'local_liquidus_event_definition' => [
-        'classname'       => 'local_liquidus\\webservice\\event_definition',
-        'methodname'      => 'service',
-        'description'     => 'Event definition',
-        'type'            => 'read',
-        'ajax'            => true,
-        'loginrequired'   => true,
-        'readonlysession' => true,
+        'classname'     => 'local_liquidus\\webservice\\event_definition',
+        'methodname'    => 'service',
+        'description'   => 'Event definition',
+        'type'          => 'read',
+        'ajax'          => true,
+        'loginrequired' => true
     ]
 ];
 

@@ -23,46 +23,48 @@
 define(['jquery', 'core/log', 'local_liquidus/router'],
 function($, Log, Router) {
 
-    const requireTracker = (trackerInfo) => {
+    var requireTracker = function(trackerInfo) {
         if (!trackerInfo.trackerId) {
             return;
         }
 
-        // Initialize tracker's static shares.
-        trackerInfo.staticShares = {};
+        /* global localLiquidusCurrentPlugins */
+        if (trackerInfo.staticShares
+            && trackerInfo.staticShares.plugins
+            && typeof localLiquidusCurrentPlugins !== 'undefined') {
+            trackerInfo.staticShares.plugins = localLiquidusCurrentPlugins;
+        }
 
-        /* global localLiquidusShares */
-        if (typeof localLiquidusShares !== 'undefined'
-            && typeof localLiquidusShares[trackerInfo.trackerId] !== 'undefined'
-        ) {
-            Log.debug(`[${trackerInfo.trackerId}] Found shares, loading.`);
-            trackerInfo.staticShares = localLiquidusShares[trackerInfo.trackerId];
+        /* global localLiquidusUserRole */
+        if (trackerInfo.staticShares
+            && trackerInfo.staticShares.userRole
+            && typeof localLiquidusUserRole !== 'undefined') {
+            trackerInfo.staticShares.userRole = localLiquidusUserRole;
         }
 
         require(['local_liquidus/' + trackerInfo.trackerId + '-lazy'], function(tracker) {
-            Log.debug(`[${trackerInfo.trackerId}] Loaded tracker. Initializing.`);
-            Log.debug(trackerInfo);
-            tracker.loadTracker(trackerInfo)
-                .done(() => Router.registerTracker(tracker))
-            ;
+            Log.debug('Loaded ' + trackerInfo.trackerId + ' tracker. Initializing.');
+            tracker.loadTracker(trackerInfo).done(function() {
+                Router.registerTracker(tracker);
+            });
         });
     };
 
-    /**
-     * Create a single instance for Liquidus to configure a single tracker.
-     * @param trackerInfo
-     * @constructor
-     */
-    const Liquidus = function(trackerInfo) {
-        Log.debug(`[${trackerInfo.trackerId}] Loading Liquidus.`);
-        Router.init().done(() => {
-            requireTracker(trackerInfo);
-        });
+    var Liquidus = function(trackersInfo, eventDef) {
+        Log.debug('Loading Liquidus.');
+
+        Router.init(eventDef);
+
+        Log.debug(trackersInfo);
+        // Load a new dependency.
+        for (var t in trackersInfo) {
+            requireTracker(trackersInfo[t]);
+        }
     };
 
     return {
-        'init': (trackerInfo) => {
-            return new Liquidus(trackerInfo);
+        'init': function(trackersInfo, eventDef) {
+            return new Liquidus(trackersInfo, eventDef);
         }
     };
 });

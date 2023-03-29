@@ -21,9 +21,11 @@
  * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-namespace local_aws_sdk;
+
 use local_aws_sdk\aws_apcu_cache;
 use local_aws_sdk\aws_sdk;
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Tests SDK class.
@@ -32,7 +34,7 @@ use local_aws_sdk\aws_sdk;
  * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class aws_sdk_test extends \advanced_testcase {
+class local_aws_sdk_aws_sdk_testcase extends advanced_testcase {
     /**
      * Test various use cases for creating config.
      *
@@ -54,7 +56,7 @@ class aws_sdk_test extends \advanced_testcase {
      * Test error handling for missing CFG value.
      */
     public function test_config_from_cfg_missing_cfg() {
-        $this->expectException(\coding_exception::class);
+        $this->expectException(coding_exception::class);
         aws_sdk::config_from_cfg('asdf_asdf_hodor');
     }
 
@@ -68,7 +70,7 @@ class aws_sdk_test extends \advanced_testcase {
 
         $CFG->phpunit_local_aws_sdk_test = 'hodor';
 
-        $this->expectException(\coding_exception::class);
+        $this->expectException(coding_exception::class);
         aws_sdk::config_from_cfg('phpunit_local_aws_sdk_test');
     }
 
@@ -85,7 +87,7 @@ class aws_sdk_test extends \advanced_testcase {
             'credentials_cache' => 'hodor',
         ];
 
-        $this->expectException(\coding_exception::class);
+        $this->expectException(coding_exception::class);
         aws_sdk::config_from_cfg('phpunit_local_aws_sdk_test');
     }
 

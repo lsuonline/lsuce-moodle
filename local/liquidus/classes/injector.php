@@ -23,7 +23,6 @@
 namespace local_liquidus;
 
 use local_liquidus\api\analytics;
-use moodle_url;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -35,25 +34,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class injector {
-
-    /*
-     * Constants related to provider specific settings.
-     */
-    const SETTING_PAGE_TYPE_EVENT = 'pagetypeevent';
-    const SETTING_TRACK_FORMS = 'trackforms';
-
-    /*
-     * Constant that specifies which setting is allowed on which provider.
-     */
-    const SETTING_PROVIDER_MAPPING = [
-        self::SETTING_PAGE_TYPE_EVENT => [
-            'mixpanel' => true,
-        ],
-        self::SETTING_TRACK_FORMS => [
-            'mixpanel' => true,
-        ],
-    ];
-
     /** @var injector */
     private static $instance;
 
@@ -62,27 +42,6 @@ class injector {
 
     /** @var null|\stdClass  */
     private $testpage;
-
-    /** @var string[] */
-    private $analyticstypes;
-
-    private static string $scripturl = '';
-
-    /**
-     * Get string containing JS appcues script url.
-     *
-     * @return string
-     */
-    public static function get_appcues_scripturl(): string {
-        return self::$scripturl;
-    }
-
-    /**
-     * Clear string containing JS appcues script url.
-     */
-    public static function clear_appcues_scripturl() : void {
-        self::$scripturl = '';
-    }
 
     private function __construct() {
         $this->reset();
@@ -96,29 +55,27 @@ class injector {
     }
 
     public function inject() {
-        global $PAGE, $OUTPUT;
+        global $PAGE;
+
+        if (!isloggedin()) {
+            return;
+        }
 
         if ($this->injected) {
             return;
         }
         $this->injected = true;
 
-        if (!isloggedin()) {
-            return;
-        }
-
-        $configs = $this->get_available_configs();
+        $configs = $this->getAvailableConfigs();
         if (empty($configs)) {
             return;
         }
 
-        if (empty($this->analyticstypes)) {
-            $this->get_analytics_types();
-        }
-
+        $analyticstypes = ['segment', 'keenio', 'kinesis', 'google', 'mixpanel'];
         $trackersinfo = [];
-        foreach ($this->analyticstypes as $type) {
-            $trackersinfo = array_merge($trackersinfo, $this->retrieve_tracker_info_all_configs($type, $configs));
+        $engine = null;
+        foreach ($analyticstypes as $type) {
+            $trackersinfo = array_merge($trackersinfo, $this->retrieveTrackerInfoAllConfigs($type, $configs));
         }
 
         if (empty($trackersinfo)) {
@@ -131,24 +88,7 @@ class injector {
             $page = $this->testpage;
         }
 
-        // Add script tags for appcues
-        foreach ($trackersinfo as $info) {
-            if (isset($info['scripturl']) && !empty($url = $info['scripturl']) && $info['trackerId'] == "appcues") {
-                if (strpos($url, 'http') === false && is_callable('is_https')) {
-                    $url = (is_https() ? 'https' : 'http') . "://{$url}";
-                } else {
-                    $url = "https://{$url}"; // Force https.
-                }
-
-                self::$scripturl = $OUTPUT->render_from_template('local_liquidus/appcues', ['url' => $url]);
-
-                if (!PHPUNIT_TEST) {
-                    echo self::$scripturl;
-                }
-
-            }
-            $page->requires->js_call_amd('local_liquidus/main', 'init', [$info]);
-        }
+        $page->requires->js_call_amd('local_liquidus/main', 'init', [$trackersinfo]);
     }
 
     /**
@@ -157,7 +97,6 @@ class injector {
     public function reset() {
         $this->injected = false;
         $this->testpage = null;
-        $this->analyticstypes = [];
     }
 
     /**
@@ -178,7 +117,7 @@ class injector {
      * @return array
      * @throws \dml_exception
      */
-    private function retrieve_tracker_info_all_configs($type, $configs): array {
+    private function retrieveTrackerInfoAllConfigs($type, $configs): array {
         $result = [];
         foreach ($configs as $config) {
             $trackerinfo = $this->retrieveTrackerInfo($type, $config);
@@ -211,20 +150,6 @@ class injector {
                 // Returning null ensures that the tracker is not included.
                 return null;
             }
-
-            if (!empty($scripturl = $engine::get_script_url($config))) {
-                $trackerinfo['scripturl'] = $scripturl;
-            }
-
-            foreach (self::SETTING_PROVIDER_MAPPING as $setting => $providers) {
-                if (isset($providers[$type])) {
-                    $trackerinfo[$setting] = !empty($config->{"{$type}_{$setting}"});
-                }
-            }
-
-            // Last but not least, inject static shares to HTML.
-            $engine::build_static_shares($config);
-
             return $trackerinfo;
         }
         return null;
@@ -235,9 +160,8 @@ class injector {
      * @return array
      * @throws \dml_exception
      */
-    private function get_available_configs() {
+    private function getAvailableConfigs() {
         global $CFG;
-
         $configs = [];
         // Normal Moodle config for client use.
         $configs[] = get_config('local_liquidus');
@@ -247,29 +171,9 @@ class injector {
         }
 
         return array_filter($configs, function($config) {
-            if (!isset($config->enabled)) {
-                return;
-            }
             $pluginenabled = $config->enabled;
             $shouldtrack = analytics::should_track($config);
             return !empty($pluginenabled) && $shouldtrack;
         });
-    }
-
-    /**
-     * Retrieves the analytics types.
-     * @return array|false
-     */
-    public function get_analytics_types() {
-        global $CFG;
-
-        if (empty($this->analyticstypes)) {
-            $this->analyticstypes = array_diff(scandir($CFG->dirroot . '/local/liquidus/classes/api'), ['..', '.', 'analytics.php']);
-            array_walk($this->analyticstypes, function(&$item) {
-                $item = basename($item, '.php');
-            });
-        }
-
-        return $this->analyticstypes;
     }
 }

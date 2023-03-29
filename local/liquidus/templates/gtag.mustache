@@ -14,7 +14,7 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template local_liquidus/gtag
+    @template local_liquidus/guniversal
 
     Template for adding the Google Universal Tracking script.
 
@@ -29,18 +29,12 @@
 
     Example context (json):
     { "siteid": UA-90210-15 }
-    It is necessary the MESASUREMENT ID, not the property ID.
 }}
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id={{siteid}}"></script>
+<script src="https://www.googletagmanager.com/gtag/js?id={{siteid}}"></script>
 <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    {{#uacodes}}
-        gtag('config', '{{{.}}}');
-    {{/uacodes}}
-    {{#gacodes}}
-        gtag('config', '{{{.}}}', {'course_id' : '{{courseId}}'});
-    {{/gacodes}}
+    gtag('config', '{{siteid}}');
 </script>

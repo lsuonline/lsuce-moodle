@@ -21,10 +21,12 @@
  * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-namespace local_aws_sdk;
+
 use Aws\Credentials\Credentials;
 use local_aws_sdk\aws_apcu_cache;
 use local_aws_sdk\aws_sdk;
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Tests for APCu cache.
@@ -33,11 +35,11 @@ use local_aws_sdk\aws_sdk;
  * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class aws_apcu_cache_test extends \advanced_testcase {
+class local_aws_sdk_aws_apcu_cache_testcase extends advanced_testcase {
 
     const TEST_KEY = 'phpunit_local_aws_sdk_test';
 
-    protected function setUp(): void {
+    protected function setUp() {
         if (!extension_loaded('apcu')) {
             $this->markTestSkipped('The APCu extension is not loaded');
         }
@@ -49,7 +51,7 @@ class aws_apcu_cache_test extends \advanced_testcase {
         }
     }
 
-    protected function tearDown(): void {
+    protected function tearDown() {
         apcu_delete(self::TEST_KEY);
     }
 

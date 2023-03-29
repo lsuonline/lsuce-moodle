@@ -24,6 +24,8 @@
 
 namespace local_aws_sdk;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Utility to help use the AWS SDK.
  *

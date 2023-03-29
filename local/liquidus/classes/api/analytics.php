@@ -34,90 +34,30 @@ use core\session\manager;
  */
 abstract class analytics {
 
-    // Unidentifiable static shares.
     const STATIC_USER_HASH = 'userhash';
     const STATIC_USER_ROLE = 'userrole';
     const STATIC_CONTEXT_LEVEL = 'contextlevel';
     const STATIC_PAGE_TYPE = 'pagetype';
     const STATIC_PLUGINS = 'plugins';
-    const STATIC_COURSE_ID = 'courseid';
-    const STATIC_PAGE_URL = 'pageurl';
-    const STATIC_PAGE_PATH = 'pagepath';
-    const STATIC_SITE_SHORT_NAME = 'siteshortname';
-    const STATIC_LANGUAGE = 'sitelanguage';
-    const STATIC_SITE_HASH = 'sitehash';
-    const STATIC_MROOMS_VERSION = 'mroomsversion';
-    const STATIC_MOODLE_VERSION = 'moodleversion';
-    const STATIC_THEME = 'theme';
-    const STATIC_IS_SUPPORT_USER = 'issupportuser';
-
-    // Identifiable static shares.
-    const STATIC_USER_ID = 'userid';
-    const STATIC_USER_EMAIL = 'useremail';
 
     const STATIC_SHARES_ALWAYS = [
         self::STATIC_USER_HASH,
-        self::STATIC_SITE_HASH,
-        self::STATIC_IS_SUPPORT_USER,
     ];
 
-    const UNIDENTIFIABLE_STATIC_SHARES = [
+    const STATIC_SHARES = [
         self::STATIC_USER_ROLE,
         self::STATIC_CONTEXT_LEVEL,
         self::STATIC_PAGE_TYPE,
         self::STATIC_PLUGINS,
-        self::STATIC_COURSE_ID,
-        self::STATIC_PAGE_URL,
-        self::STATIC_PAGE_PATH,
-        self::STATIC_SITE_SHORT_NAME,
-        self::STATIC_LANGUAGE,
-        self::STATIC_MROOMS_VERSION,
-        self::STATIC_MOODLE_VERSION,
-        self::STATIC_THEME,
-    ];
-
-    const IDENTIFIABLE_STATIC_SHARES = [
-        self::STATIC_USER_ID,
-        self::STATIC_USER_EMAIL,
     ];
 
     const STATIC_SHARES_CAMEL_CASE = [
         self::STATIC_USER_HASH => 'userHash',
         self::STATIC_USER_ROLE => 'userRole',
-        self::STATIC_USER_ID => 'userId',
-        self::STATIC_USER_EMAIL => 'userEmail',
         self::STATIC_CONTEXT_LEVEL => 'contextLevel',
         self::STATIC_PAGE_TYPE => 'pageType',
         self::STATIC_PLUGINS => 'plugins',
-        self::STATIC_COURSE_ID => 'courseId',
-        self::STATIC_PAGE_URL => 'pageUrl',
-        self::STATIC_PAGE_PATH => 'pagePath',
-        self::STATIC_SITE_SHORT_NAME => 'siteShortName',
-        self::STATIC_LANGUAGE => 'siteLanguage',
-        self::STATIC_SITE_HASH => 'siteHash',
-        self::STATIC_MROOMS_VERSION => 'mRoomsVersion',
-        self::STATIC_MOODLE_VERSION => 'moodleVersion',
-        self::STATIC_THEME => 'theme',
-        self::STATIC_IS_SUPPORT_USER => 'isSupportUser'
     ];
-
-    private static string $renderedstaticshares = '';
-
-    /**
-     * Get string of JS scripts containing the static shares.
-     *
-     * @return string
-     */
-    public static function get_rendered_static_shares(): string {
-        return self::$renderedstaticshares;
-    }
-
-    /**
-     * Clear string of JS scripts containing the static shares.
-     */
-    public static function clear_rendered_static_shares() : void {
-        self::$renderedstaticshares = '';
-    }
 
     /**
      * Encode a substring if required.
@@ -141,24 +81,22 @@ abstract class analytics {
      * @param bool|int $leadingslash Whether to add a leading slash to the URL.
      * @return string A URL to use for tracking.
      */
-    public static function track_path($urlencode = false, $leadingslash = false) {
+    public static function trackurl($urlencode = false, $leadingslash = false) {
         global $DB, $PAGE;
-
-        $id = $PAGE->context->id;
-        $pageinfo = get_context_info_array($id);
-        $trackurl = '';
+        $pageinfo = get_context_info_array($PAGE->context->id);
+        $trackurl = "";
 
         if ($leadingslash) {
-            $trackurl .= '/';
+            $trackurl .= "/";
         }
 
         // Adds course category name.
         if (isset($pageinfo[1]->category)) {
             if ($category = $DB->get_record('course_categories', ['id' => $pageinfo[1]->category])
             ) {
-                $cats = explode('/', $category->path);
+                $cats = explode("/", $category->path);
                 foreach (array_filter($cats) as $cat) {
-                    if ($categorydepth = $DB->get_record('course_categories', ['id' => $cat])) {
+                    if ($categorydepth = $DB->get_record("course_categories", ["id" => $cat])) {
                         $trackurl .= self::might_encode($categorydepth->name, $urlencode).'/';
                     }
                 }
@@ -193,20 +131,15 @@ abstract class analytics {
     /**
      * Whether to track this request.
      *
-     * @param \stdClass $config Config object.
+     * @param \stdClass $config
      * @return boolean
      *   The outcome of our deliberations.
      */
     public static function should_track($config) {
         $tracknonadmin = !empty($config->tracknonadmin);
-        $checkadmin = is_siteadmin();
 
-        if ($tracknonadmin == 1 && !$checkadmin) {
+        if ($tracknonadmin == 1 && !is_siteadmin()) {
             return true;
-        }
-
-        if ($tracknonadmin == 0 && !$checkadmin) {
-            return false;
         }
 
         $trackadmin = !empty($config->trackadmin);
@@ -222,20 +155,15 @@ abstract class analytics {
 
     /**
      * Gets an array with all the static info.
-     * @param \stdClass $config Config object.
+     * @param \stdClass $config
+     * @return array
      */
-    public static function build_static_shares($config) {
-        global $USER, $PAGE, $SITE, $CFG, $DB;
+    public static function get_static_shares($config) {
+        global $USER, $PAGE;
 
+        $res = [];
         if (!isloggedin()) {
-            return;
-        }
-
-        $id = $PAGE->context->id;
-
-        // Early return if context is not set or was deleted
-        if (!$DB->record_exists('context', ['id' => $id])) {
-            return;
+            return $res;
         }
 
         $user = $USER;
@@ -248,40 +176,25 @@ abstract class analytics {
             }
         }
 
-        $provider = static::get_my_provider_name();
-        $staticshares = [];
-        $unidentifiablestaticsharesettingkey = "{$provider}_unidentifiable_staticshares";
-        if (property_exists($config, $unidentifiablestaticsharesettingkey)) {
-            $unidentifiablestaticshares = $config->{$unidentifiablestaticsharesettingkey};
-            if (!empty($unidentifiablestaticshares)) {
-                $staticshares = array_merge($staticshares, explode(',', $unidentifiablestaticshares));
-            }
-        }
-
-        if (!empty($CFG->local_liquidus_identifiable_share_providers) && in_array($provider, $CFG->local_liquidus_identifiable_share_providers)) {
-            $identifiablestaticsharessettingskey = "{$provider}_identifiable_staticshares";
-            if (property_exists($config, $identifiablestaticsharessettingskey)) {
-                $identifiablestaticshares = $config->{$identifiablestaticsharessettingskey};
-                if (!empty($identifiablestaticshares)) {
-                    $staticshares = array_merge($staticshares, explode(',', $identifiablestaticshares));
-                }
-            }
+        $staticshares = $config->staticshares;
+        if (!empty($staticshares)) {
+            $staticshares = explode(',', $staticshares);
+        } else {
+            $staticshares = [];
         }
 
         // Add static shares which must always be used to the static shares array.
         $staticshares = array_merge(self::STATIC_SHARES_ALWAYS, $staticshares);
 
+        $shares = [];
         foreach ($staticshares as $staticshare) {
-            if (in_array($staticshare, self::IDENTIFIABLE_STATIC_SHARES) && empty($config->share_identifiable)) {
-                continue;
-            }
             $value = '';
             switch ($staticshare) {
                 case self::STATIC_USER_HASH:
-                    $value = sha1($SITE->shortname . '-' . $user->id . '-' . $user->username);
+                    $value = sha1($user->id . '-' . $user->username);
                     break;
                 case self::STATIC_USER_ROLE:
-                    self::add_user_roles_to_html($PAGE->context, $user->id);
+                    $value = self::add_user_roles_to_footer($PAGE->context, $user->id);
                     break;
                 case self::STATIC_CONTEXT_LEVEL:
                     $value = $PAGE->context->contextlevel;
@@ -290,82 +203,22 @@ abstract class analytics {
                     $value = $PAGE->pagetype;
                     break;
                 case self::STATIC_PLUGINS:
-                    self::add_current_plugins_called_to_html();
-                    break;
-                case self::STATIC_COURSE_ID:
-                    $value = $PAGE->course->id;
-                    break;
-                case self::STATIC_PAGE_URL:
-                    $value = $PAGE->url->out(false);
-                    break;
-                case self::STATIC_PAGE_PATH:
-                    $value = self::track_path();
-                    break;
-                case self::STATIC_LANGUAGE:
-                    $value = current_language();
-                    break;
-                case self::STATIC_USER_EMAIL:
-                    $value = $user->email;
-                    break;
-                case self::STATIC_USER_ID:
-                    $value = $SITE->id . '|' . $user->id;
-                    break;
-                case self::STATIC_SITE_SHORT_NAME:
-                    $value = $SITE->shortname;
-                    break;
-                case self::STATIC_SITE_HASH:
-                    $value = sha1(parse_url($PAGE->url->out(false))['host']);
-                    break;
-                case self::STATIC_THEME:
-                    $value = $PAGE->theme->name;
-                    break;
-                case self::STATIC_IS_SUPPORT_USER:
-                    $value = self::identify_support_users($user->email);
-                    break;
-                case self::STATIC_MROOMS_VERSION:
-                    $value = self::get_mrooms_version();
-                    break;
-                case self::STATIC_MOODLE_VERSION:
-                    $value = self::get_moodle_version();
+                    $value = self::add_current_plugins_called_to_footer();
                     break;
             }
 
             if (!empty($value)) {
-                self::encode_and_add_json_to_html($staticshare, $value);
+                $shares[self::STATIC_SHARES_CAMEL_CASE[$staticshare]] = $value;
             }
         }
+
+        return $shares;
     }
 
-    private static function get_mrooms_version() {
-        mr_local_mrooms_version();
-        $version = [];
-        $localmroomsversion = LOCAL_MROOMS_JOULEVERSION;
-
-        $localmroomsversiondate = explode("Build:", $localmroomsversion);
-        $localmroomsversiondate = preg_replace("/[^0-9]/", "", end($localmroomsversiondate));
-
-        $version["name"] = $localmroomsversion;
-        $version["date"] = strtotime($localmroomsversiondate);
-
-        return $version;
-    }
-
-    private static function get_moodle_version() {
-        global $CFG;
-
-        $version = [];
-        $moodleversionrelease = $CFG->release;
-
-        $moodleversiondate= explode("Build:", $moodleversionrelease);
-        $moodleversiondate = preg_replace("/[^0-9]/", "", end($moodleversiondate));
-
-        $version["name"] = $moodleversionrelease;
-        $version["date"] = strtotime($moodleversiondate);
-
-        return $version;
-    }
-
-    private static function add_current_plugins_called_to_html() {
+    /**
+     * @return boolean
+     */
+    private static function add_current_plugins_called_to_footer() {
         $currfile = __FILE__;
         $files = get_included_files();
 
@@ -389,10 +242,6 @@ abstract class analytics {
                     $id = $exploded[1];
                 }
 
-                if ($id === 'liquidus') { //Don't include Liquidus in the list.
-                    return;
-                }
-
                 if (in_array($type, $validplugintypes)) {
                     if (!isset($plugins[$type])) {
                         $plugins[$type] = [];
@@ -405,11 +254,17 @@ abstract class analytics {
             }
         });
 
-        // Adding plugin list straight to HTML.
-        self::encode_and_add_json_to_html(self::STATIC_PLUGINS, $plugins);
+        // Adding plugin list straight to footer, explanation: @see \local_liquidus\api\analytics::add_json_to_footer.
+        $json = json_encode($plugins);
+        self::add_json_to_footer('localLiquidusCurrentPlugins', $json);
+
+        return true;
     }
 
-    private static function add_user_roles_to_html(context $context, int $userid) {
+    /**
+     * @return boolean
+     */
+    private static function add_user_roles_to_footer(context $context, int $userid) {
         $roles = get_user_roles($context, $userid);
 
         $rolenames = [];
@@ -417,81 +272,31 @@ abstract class analytics {
             $rolenames[] = $role->shortname;
         }
 
-        if (empty($rolenames)) {
-            if (is_siteadmin()) { // Check if the user has an admin role if no role can be retrieved
-                $rolenames[] = 'siteadmin';
-            } else {
-                $rolenames[] = 'norole';
-            }
-        }
+        // Adding user roles straight to footer, explanation: @see \local_liquidus\api\analytics::add_json_to_footer.
+        $json = json_encode($rolenames);
+        self::add_json_to_footer('localLiquidusUserRole', $json);
 
-        // Adding user roles straight to HTML.
-        self::encode_and_add_json_to_html(self::STATIC_USER_ROLE, $rolenames);
+        return true;
     }
 
-    public static function identify_support_users(string $email) {
+    /**
+     * @param $varname
+     * @param $json
+     */
+    private static function add_json_to_footer($varname, $json) {
         global $CFG;
 
-        $emaildomainarray = explode("@", $email);
-        if (!isset($CFG->local_liquidus_olms_cfg->support_user_domains)) {
-            return "no";
+        $script = <<<HTML
+            <script>
+                var $varname = $json;
+            </script>
+HTML;
+
+        if (!isset($CFG->additionalhtmlfooter)) {
+            $CFG->additionalhtmlfooter = '';
         }
-
-        $supportuserdomains = $CFG->local_liquidus_olms_cfg->support_user_domains;
-        if (in_array(end($emaildomainarray), $supportuserdomains) || in_array($email, $supportuserdomains)) {
-            return "yes";
-        }
-
-        return "no";
-    }
-
-    /**
-     * @param string $share Share identifier.
-     * @param array|string $value Share value. This will be encoded as json.
-     */
-    private static function encode_and_add_json_to_html($share, $value) {
-        global $OUTPUT;
-
-        $jsonvalue = json_encode($value);
-        $provider = static::get_my_provider_name();
-        $sharecamelcase = self::STATIC_SHARES_CAMEL_CASE[$share];
-
-        $data = [
-            'provider' => $provider,
-            'sharecamelcase' => $sharecamelcase,
-            'jsonvalue' => $jsonvalue
-        ];
-
-        $staticsharescript = $OUTPUT->render_from_template('local_liquidus/static_shares_scripts', $data);
-        self::$renderedstaticshares .= $staticsharescript;
-
-        if (!PHPUNIT_TEST){
-            echo $staticsharescript;
-        }
-
-
-    }
-
-    /**
-     * If this should be embedded
-     * @return string
-     */
-    public static function get_script_url($config) {
-        return '';
-    }
-
-    /**
-     * @return string[]
-     */
-    public abstract static function get_config_settings();
-
-    /**
-     * Get this classname, it should be the same as the provider.
-     * @return string
-     */
-    public static function get_my_provider_name() {
-        $classname = static::class;
-        $classparts = explode('\\', $classname);
-        return end($classparts);
+        // Note, we have to put the plugin list into the footer instead of passing them into the amd module as an
+        // argument. If you pass large amounts of data into the amd arguments then it throws a debug error.
+        $CFG->additionalhtmlfooter .= $script;
     }
 }

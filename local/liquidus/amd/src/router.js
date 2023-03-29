@@ -23,19 +23,13 @@
 define(['jquery', 'core/log', 'core/ajax', 'core/notification'],
 function($, Log, ajax, notification) {
 
-    const self = this;
+    var self = this;
 
     self.trackers = [];
 
-    self.eventDefArray = [];
-
-    self.initRun = false;
-
-    self.eventsLoaded = false;
-
     self.registerTracker = function(tracker) {
-        Log.debug(`[${tracker.trackerInfo.trackerId}] Registering tracker`);
-        self.trackers[tracker.trackerInfo.trackerId] = tracker;
+        Log.debug('Registering tracker ' + tracker.trackerInfo.trackerId);
+        self.trackers.push(tracker);
 
         // Send initial tracker events.
         tracker.identify();
@@ -43,151 +37,71 @@ function($, Log, ajax, notification) {
         if (tracker.heartBeat) {
             setInterval(tracker.heartBeat, 10000); // Heart beat.
         }
-        self.addEventTracking(tracker.trackerInfo.trackerId);
     };
 
     self.init = function() {
-        const dfd = $.Deferred();
-        if (self.initRun) {
-            self.whenTrue(() => {
-                return self.eventsLoaded;
-            }, () => {
-                dfd.resolve();
-            }, true);
-            return dfd;
-        }
-        self.initRun = true;
-
-        const promises = ajax.call([
+        var promises = ajax.call([
             {
                 methodname: 'local_liquidus_event_definition', args: {}
             },
         ]);
 
-        $.when(...promises).done(function(data) {
-            data.forEach((trackerDef) => {
-                self.eventDefArray[trackerDef.provider] = trackerDef;
-            });
-            self.eventsLoaded = true;
-            dfd.resolve();
+        promises[0].done(function(data) {
+            self.addEventTracking(data);
         }).fail(function(ex) {
             notification.exception(ex);
-            dfd.resolve();
         });
 
-        return dfd;
     };
 
-    self.addEventTracking = function(trackerId) {
-        const trackerDef = self.eventDefArray[trackerId];
-        if (typeof trackerDef === 'undefined') {
-            Log.debug(`[${trackerId}] No custom events configured.`);
+    self.addEventTracking = function(eventDefArray) {
+        if (!eventDefArray || eventDefArray.length === 0) {
             return;
         }
-        const tracker = self.trackers[trackerId];
-        trackerDef.definition.forEach((eDef) => {
-            Log.debug(`[${trackerDef.provider}] Looking for selector: ${eDef.testselector}`);
-            if ($(eDef.testselector).length) {
-                self.processDefinition(tracker, eDef);
+
+        Log.debug('Adding event tracking for:');
+        Log.debug(eventDefArray);
+        for (var e in eventDefArray) {
+            var edef = eventDefArray[e];
+            Log.debug('Looking for selector: ' + edef.testselector);
+            if ($(edef.testselector).length) {
+                self.processDefinition(edef);
             }
-        });
+        }
     };
 
-    self.processDefinition = (tracker, edef) => {
-        const trackerId = tracker.trackerInfo.trackerId;
-        Log.debug(`[${trackerId}] Adding event handling for custom event: ${edef.selector} -> ${edef.event}`);
+    self.processDefinition = function(edef) {
+        Log.debug('Adding event handling for custom event: ' + edef.selector + ' -> ' + edef.event);
         $(edef.selector).on(edef.event, function(evt) {
             evt.preventDefault();
 
-            const parentNode = $(this);
-
-            Log.debug(`[${trackerId}] Tracking custom event: ${edef.selector} -> ${edef.event}`);
+            Log.debug('Tracking custom event: ' + edef.selector + ' -> ' + edef.event);
 
             var data = {};
 
-            for (let i in edef.data) {
-                const ddef = edef.data[i];
-                Log.debug(`[${trackerId}] Looking for '${ddef.selector}' value.`);
-                const ddefNode = parentNode.find(ddef.selector);
-                if (ddefNode.length > 0) {
-                    Log.debug(`[${trackerId}] Selector '${ddef.selector}' value.`);
-                    ddefNode.each(function(index) {
-                        const dataNode = $(this);
-
-                        let id = dataNode.attr('id');
-                        if (typeof id === 'undefined') {
-                            id = dataNode.attr('name');
-                        }
-
-                        if (typeof id === 'undefined') {
-                            id = index;
-                        } else {
-                            id = index + '_' + id;
-                        }
-
-                        data[ddef.name + '_' + id] = null;
-
-                        let value;
-                        if (ddef.type === 'input') {
-                            value = dataNode.val();
-                        } else {
-                            value = dataNode.text();
-                        }
-                        if (typeof value !== 'undefined' && value !== '' && value !== null) {
-                            data[ddef.name + '_' + id] = value;
-                        }
-                    });
+            for (var d in edef.data) {
+                var ddef = edef.data[d];
+                Log.debug('Looking for ' + ddef.selector + 'value.');
+                if (ddef.type === 'input') {
+                    data[ddef.name] = $(ddef.selector).val();
                 }
+            }
+            Log.debug('Got these values:');
+            Log.debug(data);
 
+            var trackerPromises = [];
+            for (var t in self.trackers) {
+                var dfd = $.Deferred();
+                trackerPromises.push(dfd);
+                self.trackers[t].processEvent(dfd, edef.name, data);
             }
 
-            const dfd = $.Deferred();
-            tracker.processEvent(dfd, edef.name, data);
-
-            // Forcefully resolve the promise if it hasn't been already.
-            // This guarantees that the process is not stalled.
-            setTimeout(() => {
-                if (dfd.state() === 'pending') {
-                    Log.debug(`[${trackerId}] Failed to send data for: ${edef.selector} -> ${edef.event}`);
-                    dfd.resolve();
-                }
-            }, 1000);
-
-
-            dfd.then(() => {
-                Log.debug(`[${trackerId}] Processed: ${edef.selector} -> ${edef.event}, proceeding with event.`);
+            $.when.apply($, trackerPromises).then(function() {
+                Log.debug('Processed all trackers, proceeding with event.');
                 $(edef.selector).off(edef.event);
                 $(edef.selector).trigger(edef.event);
             });
         });
-    };
-
-    /**
-     * On function evaluating true.
-     *
-     * @param {function} func
-     * @param {function} callBack
-     * @param {boolean} forceCallBack
-     * @param {number} maxIterations
-     * @param {number} i
-     */
-    self.whenTrue = (func, callBack, forceCallBack, maxIterations, i) => {
-        maxIterations = !maxIterations ? 10 : maxIterations;
-        i = !i ? 0 : i + 1;
-        if (i > maxIterations) {
-            // Error, too long waiting for function to evaluate true.
-            if (forceCallBack) {
-                callBack();
-            }
-            return;
-        }
-        if (func()) {
-            callBack();
-        } else {
-            window.setTimeout(() => {
-                self.whenTrue(func, callBack, forceCallBack, maxIterations, i);
-            }, 200);
-        }
     };
 
     return {
