@@ -43,12 +43,6 @@ if ($PAGE->pagetype == "grade-report-grader-index" && $PAGE->user_allowed_editin
     // Show grader report edit button.
     shared::get_grader_reports_edit_button();
 }
-// Keep Dashboard enabled for Snap.
-$disablesnapmycourses = isset($CFG->theme_snap_disable_my_courses) ? $CFG->theme_snap_disable_my_courses : true;
-if ($disablesnapmycourses) {
-    global $CFG;
-    $CFG->enabledashboard = 1;
-}
 ?>
 
 <!-- Moodle js hooks -->
@@ -135,7 +129,9 @@ if ($hasadminbutton) {
     }
 }
 echo "<div class='snap-page-heading-button' >";
-echo $OUTPUT->page_heading_button();
+if ($PAGE->pagelayout !== 'admin') {
+    echo $OUTPUT->page_heading_button();
+}
 // Validation added to check if settings option should be displayed;
 $buildregionmainsettings = !$PAGE->include_region_main_settings_in_header_actions() && !local::show_setting_menu() ;
 $regionmainsettingsmenu = $buildregionmainsettings ? $OUTPUT->region_main_settings_menu() : false;

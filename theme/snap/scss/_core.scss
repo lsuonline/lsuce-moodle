@@ -292,22 +292,38 @@ table.boxwidthwide {
 
 }
 // Information notice in the sign up and forgot password pages.
-#page-login-signup,
-#page-login-forgot_password {
+#page-login-forgot_password,
+#page-login-signup {
     #notice {
-        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, .2);
-        border-radius: 5px;
         background-color: #fff;
-        width: 70%;
         Font-size: 1em;
         color: $body-color;
     }
 }
+#page-login-signup #notice {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, .2);
+    border-radius: 0.5rem;
+    width: 40%;
+    padding-top: 2em    !important;
+}
 
 // Styles for page-login-forgot_password page.
 #page-login-forgot_password {
-    #page-header {
-        padding-top: 3em;
+    #region-main {
+        max-width: 800px;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        padding: 1em 3em;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, .2);
+        .mform .fcontainer > .fitem {
+            padding-left: 0;
+        }
+    }
+    #page {
+        padding-bottom: 2em;
+    }
+    #moodle-footer {
+        margin-top: 0;
     }
     #id_searchbyemail,
     #id_searchbyusername {
@@ -323,6 +339,35 @@ table.boxwidthwide {
     #id_searchbyusername {
         > div > div:nth-child(2) {
             display: none;
+        }
+    }
+    #id_searchbyusernamecontainer,
+    #id_searchbyemailcontainer {
+        & > div:nth-child(1) {
+            display: flex;
+            & > div:nth-child(1) {
+                display: inline-block;
+                flex: 0 0 25%;
+                max-width: 25%;
+            }
+            & > div.form-inline.felement {
+                display: flex;
+                flex-flow: row wrap;
+                align-items: flex-start;
+                flex: 0 0 75%;
+                max-width: 75%;
+            }
+        }
+    }
+}
+@media (max-width: 767px) {
+    #region-main {
+        margin: 0 4% !important;
+    }
+    #id_searchbyusernamecontainer,
+    #id_searchbyemailcontainer {
+        & > div:nth-child(1) {
+            display: block !important;
         }
     }
 }
@@ -588,13 +633,10 @@ body#page-mod-resource-view.path-mod-resource.pagelayout-frametop {
     header#mr-nav,
     .snap-custom-menu-spacer,
     #page-mast,
-    footer#moodle-footer {
+    footer#moodle-footer,
+    #page-header,
+    .activity-header{
         display:none;
-    }
-
-    #page-header {
-        padding-top: 1em;
-        padding-bottom: 0;
     }
 
     section#region-main {
@@ -604,6 +646,17 @@ body#page-mod-resource-view.path-mod-resource.pagelayout-frametop {
     .snap-page-heading-button {
         display: none;
     }
+    #region-main-box {
+        margin-top: 0.8rem;
+    }
+    .activity-navigation {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        .row .col-md-4 {
+            min-height: 3rem;
+        }
+    }
+    height: 80%;
 }
 
 .mediaplugin_videojs > div {
@@ -936,6 +989,17 @@ a.yui3-button,
     // Block display for keyboard user focus.
     > a:focus {
         display: block;
+    }
+
+    // media o media
+    > a > img,
+    > img {
+        float: left;
+        display: block;
+        width: 36px;
+        margin: .3em 1em 0 .3em;
+        height: auto;
+        vertical-align: baseline;
     }
 
     // media o content
@@ -4298,12 +4362,6 @@ section#region-main {
         }
     }
 
-    // We need to maintain the content blocks width for the /my Dashboard page.
-    .activityiconcontainer.content {
-        width: 40px !important;
-        margin: 0;
-    }
-
     .snap-page-heading-button {
         display: flex;
         margin-bottom: 1.5rem;
@@ -4431,12 +4489,13 @@ section#region-main {
 header#mr-nav {
     #snap-custom-menu-header nav.navbar {
         width: 100%;
+        padding: 0 1rem;
         ul.snap-navbar-content {
             margin: 0;
             padding: 0;
             li.nav-item {
                 list-style: none;
-                max-width: 11em;
+                max-width: 20em;
                 &:hover {
                     outline: 0;
                 }
@@ -4451,7 +4510,7 @@ header#mr-nav {
                     overflow: hidden;
                     white-space: nowrap;
                     text-overflow: ellipsis;
-                    max-width: 11em;
+                    max-width: 20em;
                 }
                 a.nav-link {
                     height: 50px;
@@ -4462,8 +4521,7 @@ header#mr-nav {
                     &::after {
                         position: absolute;
                         right: 0.9em;
-                        top: 50%;
-                        margin-top: -0.1em;
+                        top: 38%;
                     }
                 }
                 // Animation and rotation of caret dropdown for custom menu.
