@@ -1,0 +1,100 @@
+{{!
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Local My Admin
+ *
+ * @package   local_myadmin
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+}}
+<span class="myadmin_page_loader" id="page_dashboard">
+    <!-- <h1 class="display-4 d-none d-sm-block">
+    MyAdmin Dashboard
+    </h1>
+    <p class="lead d-none d-sm-block">Plus off-canvas sidebar, based on Bootstrap v4</p>
+    -->
+    <div class="alert alert-warning fade collapse" role="alert" id="myAlert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">×</span>
+            <span class="sr-only">Close</span>
+        </button>
+        <strong>Holy guacamole!</strong> It\'s free.. this is an example theme.
+    </div>
+
+    <span>
+        <div class="row mb-3">
+    <!-- Note the < sign, this is for dynamic templates.... -->
+    {{#stats}}
+        {{< local_myadmin/comp_statcard }}
+            {{$stat_color}}{{stat_color}}{{/stat_color}}
+            {{$stat_icon}}{{stat_icon}}{{/stat_icon}}
+            {{$stat_title}}{{stat_title}}{{/stat_title}}
+            {{$stat_small_title}}{{stat_small_title}}{{/stat_small_title}}
+            {{$stat_name}}{{stat_name}}{{/stat_name}}
+            {{$stat_data}}{{stat_data}}{{/stat_data}}
+
+        {{/ local_myadmin/comp_statcard }}
+    {{/stats}}
+        </div>
+        <div class="row mb-3">
+    <!-- Note the < sign, this is for dynamic templates.... -->
+    {{#smallstats}}
+        {{< local_myadmin/comp_statcardsmall }}
+            {{$stat_color}}{{stat_color}}{{/stat_color}}
+            {{$stat_icon}}{{stat_icon}}{{/stat_icon}}
+            {{$stat_title}}{{stat_title}}{{/stat_title}}
+            {{$stat_small_title}}{{stat_small_title}}{{/stat_small_title}}
+            {{$stat_name}}{{stat_name}}{{/stat_name}}
+            {{$stat_data}}{{stat_data}}{{/stat_data}}
+
+        {{/ local_myadmin/comp_statcardsmall }}
+    {{/smallstats}}
+        </div>
+    </span>
+
+    <a id="features"></a>
+    <hr>
+
+    <!-- *******************  Admin User Page  *******************-->
+    {{#is_admin}}
+    <!-- *******************  Student Search *******************-->
+    {{> local_myadmin/comp_search_student}}
+    
+    <!-- *******************  Student Table *******************-->
+    {{> local_myadmin/comp_studenttable}}
+    {{! <hr> }}
+    {{/is_admin}}
+
+    <!-- *******************  Proctor/TC User Page  *******************-->
+    {{#is_tc_admin}}
+    <!-- *******************  Student Search *******************-->
+    {{> local_myadmin/comp_search_student}}
+    
+    <!-- *******************  Student Table *******************-->
+    {{> local_myadmin/comp_studenttable}}
+    {{! <hr> }}
+    {{/is_tc_admin}}
+    
+</span>
+
+{{#js}}
+require(['jquery'], function($) {
+    $('#page_dashboard').show();
+});
+{{/js}}

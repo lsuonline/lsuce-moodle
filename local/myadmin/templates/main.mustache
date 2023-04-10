@@ -1,0 +1,110 @@
+{{!
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Local My Admin
+ *
+ * @package   local_myadmin
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+}}
+
+
+<div id="myadmin_app">
+{{> local_myadmin/comp_header }}
+
+    <!-- *************************************************************************** -->
+    <!-- *************************************************************************** -->
+    
+    <!-- *************************************************************************** -->
+    {{! <div class="utools_main_body"> }}
+
+    <!-- Sidebar -->
+    <div class="myadmin_main_container">
+        <div class="myadmin_sidebar myadmin_sidebar_shadow">
+            {{> local_myadmin/comp_sidebar }}
+        </div>
+
+        <!-- Main Content -->
+        <div class="myadmin_main_outer">
+            <div class="myadmin_main_inner">
+                <div class="row">
+                    <div class="col-lg-12 mt-3" id="myadmin_page_switcher">
+                        {{#page_dashboard}}{{> local_myadmin/page_dashboard}}{{/page_dashboard}}
+                        {{#page_examlist}}{{> local_myadmin/page_examlist}}{{/page_examlist}}
+                        {{#page_scheduler}}{{> local_myadmin/page_scheduler}}{{/page_scheduler}}
+                        {{#page_examreqs}}{{> local_myadmin/page_examreqs}}{{/page_examreqs}}
+                        {{#page_useroverride}}{{> local_myadmin/page_useroverride}}{{/page_useroverride}}
+                        {{#page_examlogs}}{{> local_myadmin/page_examlogs}}{{/page_examlogs}}
+                        {{#page_settings}}{{> local_myadmin/page_settings}}{{/page_settings}}
+                        {{#page_stats}}{{> local_myadmin/page_stats}}{{/page_stats}}
+                        {{#page_printpass}}{{> local_myadmin/page_printpass}}{{/page_printpass}}
+                        {{#page_useradmin}}{{> local_myadmin/page_useradmin}}{{/page_useradmin}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! <div class="container-fluid" id="main">
+        <div class="row row-offcanvas row-offcanvas-left">
+            
+            { { > local_myadmin / comp_sidebar  } }
+            
+            <div class="col main mt-3" id="myadmin_page_switcher">
+                { { ! { { > local_myadmin/comp_notify_builder } }    } }
+                { { > local_myadmin/page_dashboard } }
+            </div>
+        </div>
+    </div> }}
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">Modal</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                        <span class="sr-only">Close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>This is a dashboard layout for Bootstrap 4. 
+                    This is an example of the Modal component which you can use to show content.
+                    Any content can be placed inside the modal and it can use the Bootstrap grid classes.</p>
+                    <p>
+                        <a href="https://www.codeply.com/go/KrUO8QpyXP" target="_ext">Grab the code at Codeply</a>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary-outline" data-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    {{! </div> }}
+    </div>
+    <!-- *************************************************************************** -->
+    
+    
+    <!-- *************************************************************************** -->
+    <!-- There is currently nothing in the footer -->
+    {{! { {  > local_myadmin/comp_footer } }  }}
+    <!-- *************************************************************************** -->
+</div>

@@ -1,0 +1,228 @@
+{{!
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Local My Admin
+ *
+ * @package   local_myadmin
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+}}
+
+    <!-- ******************************** -->
+    <li class="nav-item">
+        <a href="#examlist" class="nav-link" data-link="page_examlist" data-page_title="Exam List">
+            <i class="myadmin_sb_icon fa fa-list"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Exam List
+            </span>
+        </a>
+    </li>
+    <!-- ******************************** -->
+    <!-- ******************************************* -->
+    <!-- ADMIN -->
+    <!-- ******************************************* -->
+    <!-- ******************************** -->
+    
+    <!--
+    <li class="nav-item">
+        <a href="#" class="nav-link" data-link="page_stupidtest" data-page_title="Stupid Test">
+            <i class="myadmin_sb_icon fa fa-question-circle-o"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Stupid Test
+            </span>
+        </a>
+    </li>
+    -->
+    
+    <!--
+    <li class="nav-item">
+        <a href="#examreqs" class="nav-link" data-link="page_examreqs" data-page_title="Exam Requests">
+            <i class="myadmin_sb_icon fa fa-question-circle-o"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Exam Requests
+            </span>
+        </a>
+    </li>
+    -->
+    <!-- ******************************** -->
+    <!--
+    <li class="nav-item">
+        <a href="#scheduler" class="nav-link" data-link="page_scheduler" data-page_title="Scheduler">
+            <i class="myadmin_sb_icon fa fa-calendar"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Scheduler
+            </span>
+        </a>
+    </li>
+    -->
+    <!-- ******************************** -->
+    <!--
+    <li class="nav-item">
+        <a href="#useroverride" class="nav-link" data-link="page_useroverride" data-page_title="User Overrides">
+            <i class="myadmin_sb_icon fa fa-user-plus"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                User Overrides
+            </span>
+        </a>
+    </li>
+    -->
+    <!-- ******************************** -->
+    <!--
+    <li class="nav-item">
+        <a href="#examlogs" class="nav-link" data-link="page_examlogs" data-page_title="Exam Logs">
+            <i class="myadmin_sb_icon fa fa-list-alt"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Exam Logs
+            </span>
+        </a>
+    </li>
+    -->
+    
+    <!-- ******************************************* -->
+    <!-- ******************************** -->
+    <li class="nav-item">
+        <a href="#stats" class="nav-link" data-link="page_stats" data-page_title="Stats">
+            <i class="myadmin_sb_icon fa fa-pie-chart"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Stats
+            </span>
+        </a>
+    </li>
+
+    
+    <!-- ******************************** -->
+    <!--
+    <li class="nav-item">
+        <a href="#printpass" class="nav-link" data-link="page_printpass" data-page_title="Print Pretty Passwords">
+            <i class="myadmin_sb_icon fa fa-print"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Print Pretty Passwords
+            </span>
+        </a>
+    </li>
+    -->
+    <!-- ******************************** -->
+
+    <li class="nav-item">
+        <a href="#useradmin" class="nav-link" data-link="page_useradmin" data-page_title="User Admins">
+            <i class="myadmin_sb_icon fa fa-print"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                User Admins
+            </span>
+        </a>
+    </li>
+
+    <!-- ******************************** -->
+    <!--
+    <li class="nav-item">
+        {{! <a href="#" class="nav-link" data-link="page_builder" data-page_title="Builder"> }}
+        <a href="builder.php" class="nav-link" >
+            <i class="myadmin_sb_icon fa fa-print"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Builder
+            </span>
+        </a>
+    </li>
+    -->
+
+    <!-- ******************************** -->
+
+    <!--
+    <li class="nav-item">
+        <a href="{{settings_link}}/admin/settings.php?section=local_myadmin" class="nav-link" data-link="page_settings" data-page_title="Settings">
+            <i class="myadmin_sb_icon fa fa-cog"></i>
+            <span class="myadmin_sb_link d-md-inline">
+                Settings
+            </span>
+        </a>
+    </li>
+    -->
+
+
+    <!-- 
+    <li class="nav-item">
+        <a class="nav-link" href="#submenu1" data-toggle="collapse" data-target="#submenu1">Enrol / LMB ▾</a>
+        <ul class="list-unstyled flex-column pl-3 collapse" id="submenu1" aria-expanded="false">
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Live LMB Log
+                    </a>
+           </li>
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Dead Enrollments
+                    </a>
+           </li>
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Unenroll A User
+                    </a>
+           </li>
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Banner Compare Tool
+                    </a>
+           </li>
+        </ul>
+    </li>
+    < ! - - ******************************** - - >
+    <li class="nav-item">
+        <a class="nav-link" href="#submenu2" data-toggle="collapse" data-target="#submenu2">DB Tools ▾</a>
+        <ul class="list-unstyled flex-column pl-3 collapse" id="submenu2" aria-expanded="false">
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Courses w/ Students
+                    </a>
+           </li>
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Find Missing ID\'s
+                    </a>
+           </li>
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Course Restore
+                    </a>
+           </li>
+           <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Mass Enroll
+                    </a>
+           </li>
+        </ul>
+    </li>
+    < ! - - ********************************  - - >
+    <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="myadmin_sb_icon fa fa-list-alt"></i>
+                <span class="d-md-inline">
+                    Logs
+                </span>
+            </a>
+    </li>
+    < ! - -  ******************************** - - >
+    <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="myadmin_sb_icon fa fa-cog"></i>
+                <span class="d-md-inline">
+                    Settings
+                </span>
+            </a>
+    </li>
+    -->

@@ -1,0 +1,577 @@
+
+@import "hamburgers.css";
+/* https://github.com/jonsuh/hamburgers */
+
+body,
+html {
+    height: 100%;
+}
+
+div.main_uofl_body {
+    position: relative !important;
+    top: 20px;
+}
+
+/*  Moodle creates a bootstrap card for a local plugin's main body
+    remove the padding */
+div.main_uofl_body section#region-main > .card > .card-body {
+    padding: 0px;
+}
+
+.myadmin_page_loader {
+    display: none;
+    /*background-color::;*/
+}
+/* =============================================== */
+/*                  Title Coloring                 */
+/* =============================================== */
+
+
+/* =============================================== */
+/*              CSS Animated Burgers               */
+/* =============================================== */
+/* NOTE - hamburgers CSS is imported at bottom of this page */
+span.hamburger_container {
+    /* $hamburger-layer-color         : #000; */
+    position: relative;
+    left: 5px;
+    bottom: 5px;
+}
+
+
+.hamburger.is-active .hamburger-inner,
+.hamburger.is-active .hamburger-inner::before,
+.hamburger.is-active .hamburger-inner::after,
+.hamburger .hamburger-inner,
+.hamburger .hamburger-inner,
+.hamburger .hamburger-inner::before,
+.hamburger .hamburger-inner::after {
+    background-color: #2e343a;
+}
+
+.hamburger-inner,
+.hamburger-inner::before,
+.hamburger-inner::after {
+    width: 30px;
+    height: 2px;
+}
+
+button.hamburger:focus {
+    border: none;
+    outline: none;
+}
+
+/* =============================================== */
+/*                   CSS LOADERS                   */
+/* =============================================== */
+
+/*
+  Currently using this cool loading spinner example found here:
+  https://codepen.io/martinvd/pen/xbQJom
+
+  And these look fun:
+  https://codepen.io/ispal/pen/mVaaJe
+  https://codepen.io/42EG4M1/pen/bVMzze
+  https://codepen.io/jackrugile/pen/bjuCf
+  https://codepen.io/joshy/pen/eNvZyN
+  https://codepen.io/tashfene/pen/raEqrJ
+  https://codepen.io/WhiteWolfWizard/pen/xboraG
+
+*/
+.myadmin_spinner_container {
+    /*position: absolute;*/
+    top: calc(50% - 32px);
+    left: calc(50% - 32px);
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    perspective: 800px;
+    margin: auto;
+}
+
+.inner {
+    position: absolute;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.inner.one {
+    left: 0%;
+    top: 0%;
+    animation: rotate-one 1s linear infinite;
+    border-bottom: 3px solid #efeffa;
+}
+
+.inner.two {
+    right: 0%;
+    top: 0%;
+    animation: rotate-two 1s linear infinite;
+    border-right: 3px solid #efeffa;
+}
+
+.inner.three {
+    right: 0%;
+    bottom: 0%;
+    animation: rotate-three 1s linear infinite;
+    border-top: 3px solid #efeffa;
+}
+
+@keyframes rotate-one {
+    0% {
+        transform: rotateX(35deg) rotateY(-45deg) rotateZ(0deg);
+    }
+    100% {
+        transform: rotateX(35deg) rotateY(-45deg) rotateZ(360deg);
+    }
+}
+
+@keyframes rotate-two {
+    0% {
+        transform: rotateX(50deg) rotateY(10deg) rotateZ(0deg);
+    }
+    100% {
+        transform: rotateX(50deg) rotateY(10deg) rotateZ(360deg);
+    }
+}
+
+@keyframes rotate-three {
+    0% {
+        transform: rotateX(35deg) rotateY(55deg) rotateZ(0deg);
+    }
+    100% {
+        transform: rotateX(35deg) rotateY(55deg) rotateZ(360deg);
+    }
+}
+
+/* =============================================== */
+/*                      Icons                      */
+/* =============================================== */
+.myadmin_icon_size_2 {
+    font-size: 30px;
+    /* color:#2CA9D6; */
+    color: #2e343a;
+    /* background: #2E343A; */
+    z-index: 20;
+}
+
+/* =============================================== */
+/*                Whole Container                  */
+/* =============================================== */
+.fixed-header .myadmin_main_container {
+    padding-top: 60px;
+    background-color: #e4e5e6;
+}
+
+.myadmin_main_container {
+    flex: 1;
+    display: flex;
+    z-index: 8;
+    position: relative;
+    background-color: #dadcde;
+    height: 100vh;
+}
+
+/* =============================================== */
+/*                   Top Nav Bar                   */
+/* =============================================== */
+
+#myadmin_main_nav_bar {
+    margin-bottom: 0px !important;
+    z-index: 15;
+}
+
+.myadmin_settings_link {
+    /* background-color: #2CA9D6; */
+    background-color: #fff;
+    z-index: 15;
+    height: 45px;
+    position: fixed;
+    width: 100%;
+    top: 91px;
+    padding: 0;
+    margin: 0;
+    left: 0px;
+    border-radius: 0;
+    border-bottom: 1px solid #c8ced3;
+}
+
+.myadmin_settings_icon {
+    position: relative;
+    top: -102px;
+}
+/* breadcrumb */
+.myadmin_db_title {
+    color: #2e343a;
+    position: relative;
+    top: -60px;
+    margin-left: 80px;
+    margin-top: 5px;
+    font-size: x-large;
+    transition: all .2s;
+}
+
+.row.myadmin_nav_row_h,
+.row.myadmin_nav_row_h > [class^='col-'] {
+    height: 45px;
+}
+/* ------------------------------ */
+/* NAVBAR CLOSED */
+/* ------------------------------ */
+/* breadcrumb */
+.closed-sidebar .myadmin_db_title {
+    color: #2e343a;
+    position: relative;
+    top: -60px;
+    margin-left: 80px;
+    margin-top: 5px;
+    font-size: x-large;
+    transition: all .3s ease;
+}
+
+/* =============================================== */
+/*                   Side Bar                      */
+/* =============================================== */
+/* #myadmin_links li.nav-item { */
+.myadmin_sidebar_inner li > a.nav-link {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-left: 28px;
+    color: #fff;
+}
+.myadmin_sidebar_inner li.nav-item:hover {
+    background-color: #2ba8d5;
+}
+
+.myadmin_sidebar {
+    background: #2e343a;
+}
+
+.myadmin_sidebar {
+    position: fixed;
+    height: 100vh;
+}
+
+.myadmin_sidebar.myadmin_sidebar_shadow {
+    box-shadow: 7px 0 60px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    height: 100vh;
+}
+
+.myadmin_sidebar {
+    width: 280px;
+    display: flex;
+    z-index: 15;
+    overflow: hidden;
+    min-width: 280px;
+    position: relative;
+    flex: 0 0 280px;
+    transition: all .2s;
+}
+
+/* --------- Now the UL Nav Part --------- */
+.myadmin_sidebar .myadmin_scrollbar_sidebar {
+    z-index: 15;
+    width: 100%;
+}
+.myadmin_scrollbar_sidebar,
+.myadmin_scrollbar_container {
+    position: relative;
+    height: 100%;
+}
+.ps {
+    overflow: hidden !important;
+    overflow-anchor: none;
+    touch-action: auto;
+}
+
+/* --------- Now the inner part --------- */
+.myadmin_sidebar .myadmin_sidebar_inner {
+    padding: 2px 0rem 0rem;
+}
+
+/* ------------------------------ */
+/* NAVBAR CLOSED */
+/* ------------------------------ */
+.closed-sidebar .myadmin_sidebar {
+    transition: all .3s ease;
+    width: 80px;
+    min-width: 80px;
+    flex: 0 0 80px;
+    z-index: 13;
+}
+
+.closed-sidebar .myadmin_sidebar:hover {
+    transition: all .2s;
+    width: 280px;
+    min-width: 280px;
+    flex: 0 0 280px;
+    z-index: 13;
+}
+
+.closed-sidebar span.myadmin_sb_link {
+    padding: 0;
+    position: absolute;
+    opacity: 0;
+}
+
+.closed-sidebar .myadmin_sidebar:hover .myadmin_sb_link {
+    opacity: 1;
+    padding: 0;
+    position: relative;
+    left: 0px;
+    -webkit-transition: opacity .2s ease-in;
+    -moz-transition: opacity .2s ease-in;
+    -o-transition: opacity .2s ease-in;
+    -ms-transition: opacity .2s ease-in;
+    transition: opacity .2s ease-in;
+}
+
+
+.closed-sidebar .myadmin_sidebar .myadmin_sidebar_inner ul li a i.myadmin_sb_icon {
+    text-indent: 0;
+    left: 50%;
+}
+
+.myadmin_sb_icon {
+    font-size: 1.5em;
+}
+/* =============================================== */
+/*               Main Page Content                 */
+/* =============================================== */
+
+/* ======== Outer ======== */
+.myadmin_main_outer {
+    z-index: 10;
+}
+#myadmin_app.closed-sidebar .myadmin_main_outer {
+    z-index: 9;
+    padding-left: 90px;
+}
+
+
+#myadmin_app .myadmin_main_outer {
+    /* .myadmin_main .myadmin_main_outer { */
+    flex: 1;
+    flex-direction: column;
+    display: flex;
+    z-index: 9;
+    padding-left: 290px;
+    padding-right: 10px;
+    transition: all .2s;
+}
+
+#page-wrapper #page-footer {
+    padding-left: 290px;
+}
+/* ======== Inner ======== */
+.myadmin_main .myadmin_main_inner {
+    padding: 30px 30px 0;
+    flex: 1;
+}
+
+.myadmin_bg_c {
+    background-color: white;
+    padding: 5px;
+    margin: 5px;
+}
+
+.myadmin_bg_b {
+    border: solid 1px;
+}
+
+/* @media screen and (max-width: 992px) {
+
+} */
+
+/*
+    998+ the page is normal
+    997 - 993 main content is pushed down
+    992 - 768 menu is gone
+    767 - the button shows up
+*/
+
+
+/* =============================================== */
+/*                  Small Stat Cards               */
+/* =============================================== */
+
+.statcardsmall_body {
+    padding-top: 0%;
+    padding-bottom: 0%;
+}
+span[class^="myadmin_room_stat_"] {
+    font-size: 40px;
+    line-height: 1;
+    text-align: center;
+}
+.myadmin_stat_room_pos {
+    float: left;
+    top: 10px;
+    position: relative;
+}
+
+/* =============================================== */
+/*                   Stat Cards                    */
+/* =============================================== */
+
+.stat_blue {
+    background-color: #2ca9d6;
+    color: #fff;
+}
+.stat_yellow {
+    background-color: #fdc02f;
+    color: #fff;
+}
+.stat_salmon {
+    background-color: #f66d6e;
+    color: #fff;
+}
+.stat_danger {
+    background-color: #d9534f;
+    color: #fff;
+}
+.stat_light_pink {
+    background-color: #f8d7da;
+    color: #fff;
+}
+.stat_light_blue {
+    background-color: #67c2dd;
+    color: #fff;
+}
+.stat_charcoal {
+    background-color: #3b4146;
+    color: #fff;
+}
+.stat_green {
+    background-color: #9cc96b;
+    color: #fff;
+}
+.stat_purple {
+    background-color: #986291;
+    color: #fff;
+}
+.stat_orange {
+    background-color: #ebaa4b;
+    color: #fff;
+}
+.stat_teal {
+    background-color: #50c7a7;
+    color: #fff;
+}
+
+/* =============================================== */
+/*                Exam List Toolbar                */
+/* =============================================== */
+.myadmin_student_exam_list .bs-bars.float-left {
+    width: calc(100% - 100px);
+}
+
+.student_attempt_bypass {
+    padding-left: 10px;
+}
+
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+/* =============================================== */
+
+/*.myadmin_user_dropdown_menu {
+  width: 400px;
+}
+
+.myadmin_user_dropdown_menu li.active a {
+  color: white;
+}
+.myadmin_user_dropdown_menu li {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+.myadmin_user_dropdown_menu li.active {
+  background-color: #4c98d0;
+  font-size: large;
+}
+
+@media (max-width:768px) {
+  .myadmin_user_dropdown_menu {
+    width: 100%;
+  }
+}*/
+
+/* ------------    Page Switcher          ------------ */
+/* MyAdmin Page Switcher (Container) */
+div#myadmin_page_switcher {
+    background-color: #dadcde;
+}
+/* ------------    Dashboard          ------------ */
+#page_dashboard {
+    /* background-color: #dadcde; */
+    background-color: #fff;
+}
+
+div.myadmin_student_writers_list {
+    background-color: #fff;
+}
+/* ------------    Exam List      ------------ */
+
+div.myadmin_student_exam_list {
+    background-color: #fff;
+}
+
+/* ------------    Scheduler          ------------ */
+/* ------------    Exam Requests      ------------ */
+/* ------------    User Overrides     ------------ */
+/* ------------    Logs               ------------ */
+div.myadmin_examlogs {
+    background-color: #fff;
+}
+/* ------------    User Admins     ------------ */
+
+div.myadmin_user_admin_list {
+    background-color: #fff;
+}
+/* ------------    Settings           ------------ */
+/* ------------    Stats              ------------ */
+
+.myadmin_stats_table {
+    background-color: #fff;
+    padding: 5px;
+    position: relative;
+    height: 500px;
+    overflow: auto;
+}
+tbody.myadmin_stats_tbody {
+    /* overflow-y: scroll;
+    height: 500px;
+    width: 100%;*/
+    /*position: absolute;*/
+}
+
+.tableFixHead {
+    overflow-y: auto;
+    height: 100px;
+}
+.tableFixHead thead th {
+    position: sticky;
+    top: 0;
+}
+
+/* ------------    Print Passwords    ------------ */
