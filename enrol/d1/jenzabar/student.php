@@ -194,8 +194,6 @@ class student {
             $this->student->student->addresses->address->city = helpers::alphaNumStr($jenzastudent[19]);
         }
 
-
-
         if (empty($jenzastudent[23]) || $jenzastudent[23] == "" || strtolower($jenzastudent[23]) == "na") {
             $this->student->student->addresses->address->postalZip = "70802";
         } else {

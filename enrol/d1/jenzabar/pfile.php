@@ -384,6 +384,9 @@ class pfile {
                     case 11:
                         $result = $this->enroll_cert($cc);    
                         break;
+                    case 12:
+                        $result = $this->update_phone($cc);    
+                        break;
                 }
                 $pend = microtime(true);
                 $this->report->timer("row", $pend - $pstart);
@@ -1987,6 +1990,72 @@ class pfile {
                 "success" => false,
                 "msg" => "\e[0;31m".$ss[1]. " *** ERROR *** FAILED to update users address: ". $error_code."\n",
                 "foundempty" => $foundempty
+            );
+        }
+    }
+
+    public function update_phone($ss) {
+        $s = helpers::get_d1_settings();
+
+        $request = new \stdClass();
+        $request->student = new \stdClass();
+        $request->student->studentNumber = $ss[0];
+        $request->student->associationMode = "replace";
+        
+        // Phone
+        $request->student->telephones = new \stdClass();
+        $request->student->telephones->telephone = new \stdClass();
+        $request->student->telephones->telephone->areaCode = $ss[1];
+        $request->student->telephones->telephone->countryCallingCode = "1";
+        $request->student->telephones->telephone->telephoneNumber = $ss[2];
+        $request->student->telephones->telephone->preferred = "Y";
+
+        $params = new \stdClass();
+        $params->url = $s->wsurl.'/webservice/InternalViewREST/updateStudent?matchOn=studentNumber&_type=json';
+        
+        $params->body = json_encode($request);
+        
+        $results = helpers::curly($params);
+
+        $header = helpers::log_header();
+        
+        if (property_exists($results, "SRSException")) {
+            // $path_to_save = $this->report->reportspath. "/importer/pfile/logs/".$this->loadlog;
+            $path_to_save = $this->loadlog;
+            file_put_contents(
+                $path_to_save,
+                $header.print_r($results, 1).PHP_EOL."Data Used: ".PHP_EOL.$params->body,
+                FILE_APPEND
+            );
+        }
+
+        // For course section search use.
+        if (property_exists($results, "updateStudentResult")) {
+
+            if ($results->updateStudentResult->responseCode == "Success") {
+                return array(
+                    "success" => true,
+                    "msg" => "\e[0;32m".$ss[0]. " successfully updated users telephone.\n"
+                );
+            } else {
+                return array(
+                    "success" => false,
+                    "msg" => "\e[0;31m".$ss[0]. " *** ERROR *** FAILED to update users telephone.\n"
+                );
+            }
+        } else if (property_exists($results, "SRSException")) {
+            $error_code = "";
+            if (property_exists($results->SRSException, "errorCode")) {
+                $error_code = $results->SRSException->errorCode;
+            } else if (property_exists($results->SRSException, "cause")) {
+                $error_code = "EXCEPTION";
+            }
+            
+            // error_log("*** ERROR *** in update: ". $error_code . " - ". $results->SRSException->message);
+            // return false;
+            return array(
+                "success" => false,
+                "msg" => "\e[0;31m".$ss[0]. " *** ERROR *** FAILED to update users telephone: ". $error_code."\n"
             );
         }
     }
