@@ -28,7 +28,6 @@
     function($, XELib, Noti) {
     'use strict';
     return {
-
         /**
          * Fetch the token for the current selected URL. Store in temp sessionStorage
          *

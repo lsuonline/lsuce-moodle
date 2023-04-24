@@ -87,6 +87,7 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
         if (!empty($options['multiple'])) {
             $validattributes['multiple'] = 'multiple';
         }
+
         parent::__construct($elementname, $elementlabel, array(), $validattributes);
     }
 }

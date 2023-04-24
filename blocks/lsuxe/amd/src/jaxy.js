@@ -25,6 +25,7 @@
 define(['jquery', 'core/ajax',],
     function($, Ajax) {
     'use strict';
+
     return {
         /**
          * Quick check to see if the data chunk is array or object.
