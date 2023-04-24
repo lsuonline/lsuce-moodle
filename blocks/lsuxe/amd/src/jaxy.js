@@ -81,7 +81,7 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
-            var that = this;
+            // var that = this;
             var promiseObj = new Promise(function(resolve) {
                 $.ajax({
                     type: data_chunk.type,
@@ -98,7 +98,8 @@ define(['jquery', 'core/ajax',],
                         // Need to handle the response. If the request is for Moodle Core
                         // then the response is an array or object (isAorO).
                         // otherwise it's a stringified JSON object.
-                        if (that.isAorO(response)) {
+                        // if (that.isAorO(response)) {
+                        if (response instanceof Array || response instanceof Object) {
                             resolve(response);
                         } else {
                             resolve(JSON.parse(response.data));
