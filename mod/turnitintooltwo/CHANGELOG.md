@@ -1,3 +1,13 @@
+### Date:       2023-March-27
+### Release:    v2023032701
+
+#### Percentage grades now display in the assignment inbox
+We have fixed an issue for institutions using PHP 8+ which prevented the assignment inbox from loading when the assignment grade was set to display as a percentage.
+
+#### The PeerMark UI has been improved
+We have fixed an issue with the PeerMark manager modal, which previously caused the ‘+’ icon to appear cut off in the user interface.
+---
+
 ### Date:		2022-May-12
 ### Release:	v2022051201
 
