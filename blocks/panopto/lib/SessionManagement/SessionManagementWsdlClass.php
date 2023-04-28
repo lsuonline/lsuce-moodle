@@ -228,7 +228,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
             foreach($_arrayOfValues as $name=>$value)
                 $this->_set($name,$value);
         }
-        
+
         if(array_key_exists('panopto_socket_timeout', $_arrayOfValues)) {
             self::$soapClient->__setSocketTimeout($_arrayOfValues['panopto_socket_timeout']);
         }
@@ -620,6 +620,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::count()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function length()
     {
         return $this->count();
@@ -630,6 +631,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::getInternArrayToIterateIsArray()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return $this->getInternArrayToIterateIsArray()?count($this->getInternArrayToIterate()):-1;
@@ -639,6 +641,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::offsetGet()
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->offsetGet($this->internArrayToIterateOffset);
@@ -649,6 +652,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::setInternArrayToIterateOffset()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         return $this->setInternArrayToIterateOffset($this->getInternArrayToIterateOffset() + 1);
@@ -658,6 +662,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::setInternArrayToIterateOffset()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         return $this->setInternArrayToIterateOffset(0);
@@ -668,6 +673,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::offsetExists()
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->offsetExists($this->getInternArrayToIterateOffset());
@@ -677,6 +683,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @uses SessionManagementWsdlClass::getInternArrayToIterateOffset()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->getInternArrayToIterateOffset();
@@ -766,6 +773,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @param int $_offset
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($_offset)
     {
         return ($this->getInternArrayToIterateIsArray() && array_key_exists($_offset,$this->getInternArrayToIterate()));
@@ -776,6 +784,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @param int $_offset
      * @return mixed
      */
+    #[\ReturnTypeWillChange] 
     public function offsetGet($_offset)
     {
         return $this->offsetExists($_offset)?$this->internArrayToIterate[$_offset]:null;
@@ -786,6 +795,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @param mixed $_value
      * @return null
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($_offset,$_value)
     {
         return null;
@@ -795,6 +805,7 @@ class SessionManagementWsdlClass extends stdClass implements ArrayAccess,Iterato
      * @param mixed $_offset
      * @return null
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($_offset)
     {
         return null;
@@ -999,7 +1010,7 @@ class SessionManagementSoapClient extends PanoptoTimeoutSoapClient {
     }
 
     /**
-     * wrapper around dorequest so we can enforce https on all calls
+     * Wrapper around dorequest so we can enforce https on all calls
      *
      * @param object $request - the request being made
      * @param string $location - the location the request will be made to
@@ -1007,7 +1018,7 @@ class SessionManagementSoapClient extends PanoptoTimeoutSoapClient {
      * @param string $version
      * @param int $one_way
      */
-    public function __doRequest ($request, $location, $action, $version, $one_way = 0) {
+    public function __doRequest($request, $location, $action, $version, $one_way = 0) {
         if (get_config('block_panopto', 'enforce_https_on_wsdl')) {
             $location = str_replace('http://', 'https://', $location);
         }

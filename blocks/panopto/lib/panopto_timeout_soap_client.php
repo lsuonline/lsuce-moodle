@@ -23,7 +23,7 @@
  */
 
 // This can't be defined Moodle internal because it is called from Panopto to authorize login.
-
+// @codingStandardsIgnoreStart
 /**
  * Panopto timeout soap client class.
  *
@@ -121,6 +121,7 @@ class PanoptoTimeoutSoapClient extends SoapClient {
      * @param int $version the SOAP version
      * @param bool $one_way determine if response is expected or not
      */
+    #[\ReturnTypeWillChange]
     public function __doRequest($request, $location, $action, $version, $one_way = false) {
         if (empty($this->socket_timeout) && empty($this->connect_timeout)) {
             // Call via parent because we require no timeout.
@@ -186,5 +187,5 @@ class PanoptoTimeoutSoapClient extends SoapClient {
         }
     }
 }
-
+// @codingStandardsIgnoreEnd
 /* End of file panopto_timeout_soap_client.php */

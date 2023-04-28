@@ -24,7 +24,12 @@
 
 // This can't be defined Moodle internal because it is called from Panopto to authorize login.
 
-require_once(dirname(__FILE__) . '/../../config.php');
+// @codingStandardsIgnoreLine
+global $CFG;
+if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
+    require_once(dirname(__FILE__) . '/../../config.php');
+}
 require_once($CFG->libdir . '/weblib.php');
 require_once(dirname(__FILE__) . '/lib/block_panopto_lib.php');
 
@@ -102,7 +107,7 @@ if ($callbackverified) {
             break;
         }
 
-        // Strip ReturnUrl so we can append it on the end
+        // Strip ReturnUrl so we can append it on the end.
         parse_str(parse_url($callbackurl, PHP_URL_QUERY), $params);
         $returnurl = isset($params['ReturnUrl']) ? $params['ReturnUrl'] : "";
 
@@ -131,7 +136,7 @@ if ($callbackverified) {
         $responseparamsencoded =
             'serverName=' . $servername . '&externalUserKey=' . urlencode($userkey) . '&expiration=' . $expiration;
 
-        $fullreturnurl = !empty($returnurl) ? '&ReturnUrl=' . $returnurl . $fragment : "";
+        $fullreturnurl = !empty($returnurl) ? '&ReturnUrl=' . urlencode($returnurl) . $fragment : "";
         $separator = (strpos($url, '?') ? '&' : '?');
         $redirecturl = $url . $separator . $responseparamsencoded . '&authCode=' . $responseauthcode . $fullreturnurl;
 

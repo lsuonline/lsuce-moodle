@@ -28,14 +28,15 @@
 
 define('CLI_SCRIPT', true);
 
+// @codingStandardsIgnoreLine
 global $CFG;
 if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
     require_once(dirname(__FILE__) . '/../../../../config.php');
 }
-
+require_once(dirname(__FILE__) . '/../panopto_category_data.php');
 require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->libdir . '/formslib.php');
-require_once(dirname(__FILE__) . '/../panopto_category_data.php');
 
 $admin = get_admin();
 if (!$admin) {

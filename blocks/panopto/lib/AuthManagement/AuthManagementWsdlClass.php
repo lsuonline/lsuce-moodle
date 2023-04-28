@@ -207,6 +207,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_resetSoapClient allows to disable the SoapClient redefinition
      * @return AuthManagementWsdlClass
      */
+    #[\ReturnTypeWillChange]
     public function __construct($_arrayOfValues = array(),$_resetSoapClient = true)
     {
         $this->setLastError(array());
@@ -228,7 +229,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
             foreach($_arrayOfValues as $name=>$value)
                 $this->_set($name,$value);
         }
-        
+
         if(array_key_exists('panopto_socket_timeout', $_arrayOfValues)) {
             self::$soapClient->__setSocketTimeout($_arrayOfValues['panopto_socket_timeout']);
         }
@@ -253,6 +254,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param string $_className optional (used by inherited classes in order to always call this method)
      * @return AuthManagementWsdlClass|null
      */
+    #[\ReturnTypeWillChange]
     public static function __set_state(array $_array)
     {
         $_className = __CLASS__;
@@ -273,6 +275,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Static method getting current SoapClient
      * @return SoapClient
      */
+    #[\ReturnTypeWillChange]
     public static function getSoapClient()
     {
         return self::$soapClient;
@@ -295,6 +298,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param array $_wsdlOptions WSDL options
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function initSoapClient($_wsdlOptions)
     {
         if(class_exists('AuthManagementClassMap',true))
@@ -328,6 +332,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Then the overridding SoapClient class can override for example the SoapClient::__doRequest() method if it is needed.
      * @return string
      */
+    #[\ReturnTypeWillChange]
     public static function getSoapClientClassName()
     {
         if(class_exists('AuthManagementSoapClient') && is_subclass_of('AuthManagementSoapClient','PanoptoTimeoutSoapClient'))
@@ -364,6 +369,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses SOAP_USE_XSI_ARRAY_TYPE
      * @return array
      */
+    #[\ReturnTypeWillChange]
     public static function getDefaultWsdlOptions()
     {
         return array(
@@ -396,6 +402,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses SoapClient::__setLocation()
      * @param string $_location
      */
+    #[\ReturnTypeWillChange]
     public function setLocation($_location)
     {
         return self::getSoapClient()?self::getSoapClient()->__setLocation($_location):false;
@@ -409,6 +416,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_asDomDocument
      * @return DOMDocument|string
      */
+    #[\ReturnTypeWillChange]
     public function getLastRequest($_asDomDocument = false)
     {
         if(self::getSoapClient())
@@ -424,6 +432,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_asDomDocument
      * @return DOMDocument|string
      */
+    #[\ReturnTypeWillChange]
     public function getLastResponse($_asDomDocument = false)
     {
         if(self::getSoapClient())
@@ -439,6 +448,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_asArray allows to get the headers in an associative array
      * @return null|string|array
      */
+    #[\ReturnTypeWillChange]
     public function getLastRequestHeaders($_asArray = false)
     {
         $headers = self::getSoapClient()?self::getSoapClient()->__getLastRequestHeaders():null;
@@ -455,6 +465,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_asArray allows to get the headers in an associative array
      * @return null|string|array
      */
+    #[\ReturnTypeWillChange]
     public function getLastResponseHeaders($_asArray = false)
     {
         $headers = self::getSoapClient()?self::getSoapClient()->__getLastResponseHeaders():null;
@@ -470,6 +481,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_asDomDocument
      * @return DOMDocument|string|null
      */
+    #[\ReturnTypeWillChange]
     public static function getFormatedXml($_string,$_asDomDocument = false)
     {
         if(!empty($_string) && class_exists('DOMDocument'))
@@ -490,6 +502,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param string $_headers
      * @return array
      */
+    #[\ReturnTypeWillChange]
     public static function convertStringHeadersToArray($_headers)
     {
         $lines = explode("\r\n",$_headers);
@@ -516,6 +529,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param string $_actor
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function setSoapHeader($_nameSpace,$_name,$_data,$_mustUnderstand = false,$_actor = null)
     {
         if(self::getSoapClient())
@@ -548,6 +562,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param mixed $_headerValue
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function setHttpHeader($_headerName,$_headerValue)
     {
         if(self::getSoapClient() && !empty($_headerName))
@@ -621,6 +636,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::count()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function length()
     {
         return $this->count();
@@ -631,6 +647,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::getInternArrayToIterateIsArray()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return $this->getInternArrayToIterateIsArray()?count($this->getInternArrayToIterate()):-1;
@@ -640,6 +657,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::offsetGet()
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->offsetGet($this->internArrayToIterateOffset);
@@ -650,6 +668,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::setInternArrayToIterateOffset()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         return $this->setInternArrayToIterateOffset($this->getInternArrayToIterateOffset() + 1);
@@ -659,6 +678,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::setInternArrayToIterateOffset()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         return $this->setInternArrayToIterateOffset(0);
@@ -669,6 +689,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::offsetExists()
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->offsetExists($this->getInternArrayToIterateOffset());
@@ -678,6 +699,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::getInternArrayToIterateOffset()
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->getInternArrayToIterateOffset();
@@ -689,6 +711,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param int $_index
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function item($_index)
     {
         return $this->offsetGet($_index);
@@ -705,6 +728,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param mixed $_item value
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function add($_item)
     {
         if($this->getAttributeName() != '' && stripos($this->__toString(),'array') !== false)
@@ -734,6 +758,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::_get()
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function toSend()
     {
         if($this->getAttributeName() != '' && stripos($this->__toString(),'array') !== false)
@@ -746,6 +771,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::item()
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function first()
     {
         return $this->item(0);
@@ -756,6 +782,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses AuthManagementWsdlClass::length()
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function last()
     {
         return $this->item($this->length() - 1);
@@ -767,6 +794,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param int $_offset
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($_offset)
     {
         return ($this->getInternArrayToIterateIsArray() && array_key_exists($_offset,$this->getInternArrayToIterate()));
@@ -777,6 +805,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param int $_offset
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($_offset)
     {
         return $this->offsetExists($_offset)?$this->internArrayToIterate[$_offset]:null;
@@ -787,6 +816,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param mixed $_value
      * @return null
      */
+    #[\ReturnTypeWillChange]
     public function offsetSet($_offset,$_value)
     {
         return null;
@@ -796,6 +826,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param mixed $_offset
      * @return null
      */
+    #[\ReturnTypeWillChange]
     public function offsetUnset($_offset)
     {
         return null;
@@ -804,6 +835,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returning current result from Soap call
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function getResult()
     {
         return $this->result;
@@ -821,6 +853,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returning last errors occured during the calls
      * @return array
      */
+    #[\ReturnTypeWillChange]
     public function getLastError()
     {
         return $this->lastError;
@@ -849,6 +882,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param string $_methoName method name to get error from
      * @return SoapFault|null
      */
+    #[\ReturnTypeWillChange]
     public function getLastErrorForMethod($_methoName)
     {
         return (is_array($this->lastError) && array_key_exists($_methoName,$this->lastError))?$this->lastError[$_methoName]:null;
@@ -857,6 +891,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returning intern array to iterate trough
      * @return array
      */
+    #[\ReturnTypeWillChange]
     public function getInternArrayToIterate()
     {
         return $this->internArrayToIterate;
@@ -866,6 +901,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param array $_internArrayToIterate
      * @return array
      */
+    #[\ReturnTypeWillChange]
     public function setInternArrayToIterate($_internArrayToIterate)
     {
         return ($this->internArrayToIterate = $_internArrayToIterate);
@@ -874,6 +910,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returnint intern array index when iterating trough
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function getInternArrayToIterateOffset()
     {
         return $this->internArrayToIterateOffset;
@@ -890,6 +927,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_internCall indicates that methods is calling itself
      * @return void
      */
+    #[\ReturnTypeWillChange]
     public function initInternArrayToIterate($_array = array(),$_internCall = false)
     {
         if(stripos($this->__toString(),'array') !== false)
@@ -909,6 +947,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param int $_internArrayToIterateOffset
      * @return int
      */
+    #[\ReturnTypeWillChange]
     public function setInternArrayToIterateOffset($_internArrayToIterateOffset)
     {
         return ($this->internArrayToIterateOffset = $_internArrayToIterateOffset);
@@ -917,6 +956,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returning true if intern array is an actual array
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function getInternArrayToIterateIsArray()
     {
         return $this->internArrayToIterateIsArray;
@@ -926,6 +966,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param bool $_internArrayToIterateIsArray
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public function setInternArrayToIterateIsArray($_internArrayToIterateIsArray = false)
     {
         return ($this->internArrayToIterateIsArray = $_internArrayToIterateIsArray);
@@ -936,6 +977,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param mixed $_value property value to use
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function _set($_name,$_value)
     {
         $setMethod = 'set' . ucfirst($_name);
@@ -952,6 +994,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param string $_name property name to get
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function _get($_name)
     {
         $getMethod = 'get' . ucfirst($_name);
@@ -964,6 +1007,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returning alone attribute name when class is *array* type
      * @return string
      */
+    #[\ReturnTypeWillChange]
     public function getAttributeName()
     {
         return '';
@@ -973,6 +1017,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param mixed $_value the value to test
      * @return bool true|false
      */
+    #[\ReturnTypeWillChange]
     public static function valueIsValid($_value)
     {
         return true;
@@ -981,6 +1026,7 @@ class AuthManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method returning actual class name
      * @return string __CLASS__
      */
+    #[\ReturnTypeWillChange]
     public function __toString()
     {
         return __CLASS__;
@@ -995,12 +1041,13 @@ class AuthManagementSoapClient extends PanoptoTimeoutSoapClient {
     /**
      * Constructor wrapper
      */
+    #[\ReturnTypeWillChange]
     public function __construct ($wsdl, array $options = null) {
         parent::__construct($wsdl, $options);
     }
 
     /**
-     * wrapper around dorequest so we can enforce https on all calls
+     * Wrapper around dorequest so we can enforce https on all calls
      *
      * @param object $request - the request being made
      * @param string $location - the location the request will be made to
@@ -1008,7 +1055,8 @@ class AuthManagementSoapClient extends PanoptoTimeoutSoapClient {
      * @param string $version
      * @param int $one_way
      */
-    public function __doRequest ($request, $location, $action, $version, $one_way = 0) {
+    #[\ReturnTypeWillChange]
+    public function __doRequest($request, $location, $action, $version, $one_way = 0) {
         if (get_config('block_panopto', 'enforce_https_on_wsdl')) {
             $location = str_replace('http://', 'https://', $location);
         }

@@ -22,8 +22,10 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// @codingStandardsIgnoreLine
 global $CFG;
 if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
     require_once(dirname(__FILE__) . '/../../config.php');
 }
 require_once($CFG->libdir . '/formslib.php');
@@ -32,7 +34,6 @@ require_once(dirname(__FILE__) . '/lib/block_panopto_lib.php');
 require_once(dirname(__FILE__) . '/lib/panopto_data.php');
 
 global $courses;
-
 
 $numservers = get_config('block_panopto', 'server_number');
 $numservers = isset($numservers) ? $numservers : 0;
