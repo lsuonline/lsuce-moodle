@@ -22,11 +22,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// General
+// Link to get back.
+$string['gradeimport_pearson_link_back'] = '<a href="'.$CFG->wwwroot.'/admin/settings.php?section=gradeimportpearson">Back to Pearson Importer</a>';
+
+// General.
 $string['pluginname'] = 'Pearson file';
 $string['pearson:view'] = 'View the Pearson importer';
+$string['maintitle'] = 'Pearson Importer';
+$string['settings'] = 'Pearson Importer Settings';
 
-// Import Form
+// Import Form.
 $string['file'] = 'File';
 $string['upload_file'] = 'Upload File';
 $string['file_type'] = 'File Type';
@@ -36,16 +41,26 @@ $string['mastering_chemistry'] = 'Mastering Chemistry';
 $string['mastering_biology'] = 'Mastering Biology';
 $string['mastering_physics'] = 'Mastering Physics';
 
-// Mapping Form
+// Mapping Form.
 $string['map_grade_items'] = 'Map Grade Items';
 $string['ignore_this_item'] = 'Ignore this item';
 
-// Mapping Page
+// Mapping Page.
 $string['success'] = 'Grades were successfully imported';
 $string['failure'] = 'An error has occurred';
 
-// Results Form
+// Results Form.
 $string['import_results'] = 'Import Notices';
 $string['user_not_found'] = '{$a} is not enrolled in this course and was skipped';
 
-?>
+// Notifications.
+$string['encodingtypepre'] = 'Warning: The file that has been uploaded is encoded as ';
+$string['encodingtypepost'] = '. If the file does\'t import the grades please check the importer settings to enable file conversions.';
+
+// Settings.
+$string['gradeimport_pearson_convert_encoding_title'] = 'Find and convert non UTF-8 characters';
+$string['gradeimport_pearson_convert_encoding_desc'] = 'If a file has been exported using a different type of encoding then when this option is on it will convert the file to UTF-8';
+$string['gradeimport_pearson_encoding_list'] = 'List of encodings to check file against.';
+
+$string['gradeimport_pearson_encoding_message_title'] = 'File encode type warning.';
+$string['gradeimport_pearson_encoding_message_desc'] = 'If the file is not UTF-8 then a warning will be shown with the encoding type.';
