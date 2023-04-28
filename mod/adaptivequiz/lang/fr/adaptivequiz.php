@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,8 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
-
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
  * Strings for the French language.
  *
@@ -35,7 +35,7 @@ Les questions utilisées dans « questionnaire adaptatif » doivent :
 Le questionnaire adaptatif peut être configuré pour :
 
 * définir lui-même le ratio item-difficulté / utilisateur-niveaux à mesurer. 1-10, 1-16 et 1-100 sont des exemples de classements valides.
-* définir la précision requise avant que le questionnaire ne s’arrête. Pour établir un niveau, on considère souvent qu’une erreur de 5 % est une règle d’arrêt appropriée.	 
+* définir la précision requise avant que le questionnaire ne s’arrête. Pour établir un niveau, on considère souvent qu’une erreur de 5 % est une règle d’arrêt appropriée.
 * définir un nombre minimum de questions nécessitant une réponse
 * définir un nombre maximum de questions pouvant faire l’objet d’une réponse
 
@@ -106,7 +106,6 @@ $string['functiondisabledbysecuremode'] = 'Cette fonctionnalité est actuellemen
 $string['enterrequiredpassword'] = 'Entrez le mot de passe requis';
 $string['requirepasswordmessage'] = 'Pour débuter ce questionnaire vous devez connaître son mot de passe';
 $string['wrongpassword'] = 'Mot de passe incorrect';
-$string['noattemptrecords'] = 'Aucune tentative enregistrée pour le candidat';
 $string['attemptstate'] = 'État de la tentative';
 $string['attemptstopcriteria'] = 'Raison de l’abandon';
 $string['questionsattempted'] = 'Total des items tentés';
@@ -122,14 +121,12 @@ $string['reviewattemptreport'] = 'Revue de la tentative par {$a->fullname} soumi
 $string['deleteattemp'] = 'Supprimez la tentative';
 $string['confirmdeleteattempt'] = 'Confirmation de la suppression de la tentative à partir de  {$a->name}  soumise à {$a->timecompleted}';
 $string['attemptdeleted'] = 'Tentative supprimée pour {$a->name} soumise à  {$a->timecompleted}';
-$string['errordeletingattempt'] = 'L’enregistrement de la tentative est introuvable';
 $string['closeattempt'] = 'Clôturer la tentative';
 $string['confirmcloseattempt'] = 'Êtes vous certain(e) de vouloir clôturer et finaliser cette tentative de {$a->name}?';
 $string['confirmcloseattemptstats'] = 'Cette tentative commencée le {$a->started} a été mise à jour le {$a->modified}';
 $string['confirmcloseattemptscore'] = '{$a->num_questions} items ont été complétés et le score est de {$a->measure} {$a->standarderror}.';
 $string['attemptclosedstatus'] = 'Tentative clôturée manuellement par {$a->current_user_name} (user-id: {$a->current_user_id}) le {$a->now}.';
 $string['attemptclosed'] = 'La tentative a été clôturée manuellement';
-$string['errorclosingattempt'] = 'L’enregistrement de la tentative est introuvable';
 $string['errorclosingattempt_alreadycomplete'] = 'Cette tentative est déjà validée et ne peut être clôturée manuellement';
 $string['formstderror'] = 'Un pourcentage inférieur à 50 et supérieur ou égal à 0 doit être entré';
 $string['backtoviewattemptreport'] = 'Retour vers le rapport de tentative';
@@ -156,7 +153,6 @@ $string['attemptquestion_abilitylogits'] = 'Capacité mesurée (logits)';
 $string['attemptquestion_stderr'] = 'Erreur standard (&plusmn;&nbsp;logits)';
 $string['graphlegend_target'] = 'Niveau cible';
 $string['graphlegend_error'] = 'Erreur standard';
-$string['unknownuser'] = 'Utilisateur inconnu';
 $string['answerdistgraph_title'] = 'Communication de la réponse pour {$a->firstname} {$a->lastname}';
 $string['answerdistgraph_questiondifficulty'] = 'Niveau de l\'item';
 $string['answerdistgraph_numrightwrong'] = 'Nombre incorrect (-) / Nombre correct (+)';

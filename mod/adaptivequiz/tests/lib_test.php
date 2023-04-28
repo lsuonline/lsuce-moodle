@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Adaptive lib.php PHPUnit tests
@@ -21,21 +22,30 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace mod_adaptivequiz;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
+
 require_once($CFG->dirroot.'/mod/adaptivequiz/lib.php');
+
+use advanced_testcase;
+use mod_adaptivequiz\local\attempt\attempt_state;
+use stdClass;
 
 /**
  * @group mod_adaptivequiz
  */
-class mod_adaptivequiz_lib_testcase extends advanced_testcase {
+class lib_test extends advanced_testcase {
     /**
      * This functions loads data via the tests/fixtures/mod_adaptivequiz.xml file
      * @return void
      */
     protected function setup_test_data_xml() {
-        $this->loadDataSet($this->createXMLDataSet(__DIR__.'/fixtures/mod_adaptivequiz.xml'));
+        $this->dataset_from_files(
+            [__DIR__.'/fixtures/mod_adaptivequiz.xml']
+        )->to_database();
     }
 
     /**
@@ -60,11 +70,13 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * Test insertion of question category association records
+     * Test insertion of question category association records.
+     *
      * @dataProvider questioncat_association_records
      * @param int $instance: activity instance id
      * @param object $adaptivequiz: An object from the form in mod_form.php
      * @group adaptivequiz_lib_test
+     * @covers ::adaptivequiz_add_questcat_association
      */
     public function test_questioncat_association_insert($instance, stdClass $adaptivequiz) {
         global $DB;
@@ -87,11 +99,13 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * Test update of question category associations records
+     * Test update of question category associations records.
+     *
      * @dataProvider questioncat_association_records
      * @param int $instance: activity instance id
      * @param object $adaptivequiz: An object from the form in mod_form.php
      * @group adaptivequiz_lib_test
+     * @covers ::adaptivequiz_update_questcat_association
      */
     public function test_questioncat_association_update($instance, stdClass $adaptivequiz) {
         global $DB;
@@ -126,7 +140,9 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * This function tests the removal of an activity instance and all related data
+     * This function tests the removal of an activity instance and all related data.
+     *
+     * @covers ::adaptivequiz_delete_instance
      */
     public function test_adaptivequiz_delete_instance() {
         global $DB;
@@ -144,7 +160,9 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * This function tests the output from adaptivequiz_print_recent_mod_activity()
+     * This function tests the output from adaptivequiz_print_recent_mod_activity().
+     *
+     * @covers ::adaptivequiz_print_recent_mod_activity
      */
     public function test_adaptivequiz_print_recent_mod_activity_details_true() {
         $this->resetAfterTest(true);
@@ -163,7 +181,7 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
         $dummy->user->firstnamephonetic = 'user';
         $dummy->user->lastnamephonetic = 'phpunit';
         $dummy->content = new stdClass();
-        $dummy->content->attemptstate = 'inprogress';
+        $dummy->content->attemptstate = attempt_state::IN_PROGRESS;
         $dummy->content->questionsattempted = '12';
         $dummy->timestamp = 1234;
         $dummy->type = 'mod_adaptivequiz';
@@ -181,7 +199,9 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * This function tests the output from adaptivequiz_print_recent_mod_activity()
+     * This function tests the output from adaptivequiz_print_recent_mod_activity().
+     *
+     * @covers ::adaptivequiz_print_recent_mod_activity
      */
     public function test_adaptivequiz_print_recent_mod_activity_details_false() {
         $this->resetAfterTest(true);
@@ -200,7 +220,7 @@ class mod_adaptivequiz_lib_testcase extends advanced_testcase {
         $dummy->user->firstnamephonetic = 'user';
         $dummy->user->lastnamephonetic = 'phpunit';
         $dummy->content = new stdClass();
-        $dummy->content->attemptstate = 'inprogress';
+        $dummy->content->attemptstate = attempt_state::IN_PROGRESS;
         $dummy->content->questionsattempted = '12';
         $dummy->timestamp = 1234;
         $dummy->type = 'mod_adaptivequiz';

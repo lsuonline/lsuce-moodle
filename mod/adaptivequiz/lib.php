@@ -15,15 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Adaptive testing core library functions
- *
- * @package    mod_adaptivequiz
- * @category   activity
- * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2013 Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot.'/question/engine/lib.php');
+
+use mod_adaptivequiz\local\attempt\attempt_state;
 
 /**
  * Option controlling what options are offered on the quiz settings form.
@@ -39,9 +40,6 @@ define('ADAPTIVEQUIZ_GRADEHIGHEST', '1');
 define('ADAPTIVEQUIZ_ATTEMPTFIRST', '3');
 define('ADAPTIVEQUIZ_ATTEMPTLAST',  '4');
 
-require_once($CFG->dirroot.'/question/engine/lib.php');
-
-
 /**
  * Returns the information on whether the module supports a feature
  *
@@ -51,24 +49,39 @@ require_once($CFG->dirroot.'/question/engine/lib.php');
  */
 function adaptivequiz_supports($feature) {
     switch($feature) {
-        case FEATURE_GROUPS:
+        case FEATURE_GROUPS: {
             return true;
-        case FEATURE_GROUPINGS:
+        }
+        case FEATURE_GROUPINGS: {
             return true;
-        case FEATURE_MOD_INTRO:
+        }
+        case FEATURE_GROUPMEMBERSONLY: {
             return true;
-        case FEATURE_BACKUP_MOODLE2:
+        }
+        case FEATURE_MOD_INTRO: {
             return true;
-        case FEATURE_SHOW_DESCRIPTION:
+        }
+        case FEATURE_BACKUP_MOODLE2: {
             return true;
-        case FEATURE_GRADE_HAS_GRADE:
+        }
+        case FEATURE_SHOW_DESCRIPTION: {
             return true;
-		case FEATURE_USES_QUESTIONS:
+        }
+        case FEATURE_GRADE_HAS_GRADE: {
             return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS:
+        }
+        case FEATURE_USES_QUESTIONS: {
             return true;
-        default:
+        }
+        case FEATURE_MOD_PURPOSE: {
+            return MOD_PURPOSE_ASSESSMENT;
+        }
+        case FEATURE_COMPLETION_HAS_RULES: {
+            return true;
+        }
+        default: {
             return null;
+        }
     }
 }
 
@@ -115,7 +128,7 @@ function adaptivequiz_add_instance(stdClass $adaptivequiz, mod_adaptivequiz_mod_
  * @param object $adaptivequiz: An object from the form in mod_form.php
  * @return void
  */
-function adaptivequiz_add_questcat_association($instance = 0, stdClass $adaptivequiz) {
+function adaptivequiz_add_questcat_association(stdClass $adaptivequiz, $instance = 0) {
     global $DB;
 
     if (0 != $instance && !empty($adaptivequiz->questionpool)) {
@@ -135,7 +148,7 @@ function adaptivequiz_add_questcat_association($instance = 0, stdClass $adaptive
  * @param object $adaptivequiz: An object from the form in mod_form.php
  * @return void;
  */
-function adaptivequiz_update_questcat_association($instance = 0, stdClass $adaptivequiz) {
+function adaptivequiz_update_questcat_association(stdClass $adaptivequiz, $instance = 0) {
     global $DB;
 
     // Remove old references.
@@ -213,8 +226,7 @@ function adaptivequiz_delete_instance($id) {
     }
 
     // Remove association table data.
-	if ($DB->record_exists('adaptivequiz_question', array ('instance' => $id))) {
-    //if ($DB->get_record('adaptivequiz_question', array('instance' => $id))) {
+    if ($DB->record_exists('adaptivequiz_question', array ('instance' => $id))) {
         $DB->delete_records('adaptivequiz_question', array('instance' => $id));
     }
 
@@ -264,7 +276,7 @@ function adaptivequiz_user_complete($course, $user, $mod, $adaptivequiz) {
  * @return boolean
  */
 function adaptivequiz_print_recent_activity($course, $viewfullnames, $timestart) {
-    return false;  //  True if anything was printed, otherwise false.
+    return false;  // True if anything was printed, otherwise false.
 }
 
 /**
@@ -353,7 +365,7 @@ function adaptivequiz_get_recent_mod_activity(&$activities, &$index, $timestart,
                 continue;
             }
 
-            if ($groupmode == SEPARATEGROUPS and !$accessallgroups) {
+            if ($groupmode == SEPARATEGROUPS && !$accessallgroups) {
                 if (is_null($usersgroups)) {
                     $usersgroups = groups_get_all_groups($course->id, $attempt->userid, $cm->groupingid);
                     if (is_array($usersgroups)) {
@@ -587,7 +599,7 @@ function adaptivequiz_update_grades(stdClass $adaptivequiz, $userid=0, $nullifno
     if ($grades = adaptivequiz_get_user_grades($adaptivequiz, $userid)) {
         // Set all user grades.
         adaptivequiz_grade_item_update($adaptivequiz, $grades);
-    } else if ($userid and $nullifnone) {
+    } else if ($userid && $nullifnone) {
         // Reset all user grades.
         $grade = new stdClass();
         $grade->userid   = $userid;
@@ -677,83 +689,94 @@ function adaptivequiz_reset_gradebook($courseid) {
 }
 
 /**
- * Called via pluginfile.php -> question_pluginfile to serve files belonging to
- * a question in a question_attempt when that attempt is a quiz attempt.
+ * Called via pluginfile.php -> question_pluginfile to serve files belonging to a question in a question_attempt when that attempt
+ * is a quiz attempt.
  *
- * @package  mod_adaptivequiz
- * @category files
- * @param stdClass $course course settings object
- * @param stdClass $context context object
- * @param string $component the name of the component we are serving files for.
- * @param string $filearea the name of the file area.
- * @param int $qubaid the attempt usage id.
- * @param int $slot the id of a question in this quiz attempt.
- * @param array $args the remaining bits of the file path.
- * @param bool $forcedownload whether the user must be forced to download the file.
- * @param array $options additional options affecting the file serving
- * @return bool false if file not found, does not return if found - justsend the file
+ * @param stdClass $course Course settings object.
+ * @param context $context
+ * @param string $component The name of the component we are serving files for.
+ * @param string $filearea The name of the file area.
+ * @param int $qubaid The attempt usage id.
+ * @param int $slot The id of a question in this quiz attempt.
+ * @param array $args The remaining bits of the file path.
+ * @param bool $forcedownload Whether the user must be forced to download the file.
+ * @param array $options Additional options affecting the file serving.
+ * @return bool False if file not found, does not return if found - just send the file.
  */
-function mod_adaptivequiz_question_pluginfile($course, $context, $component,
-        $filearea, $qubaid, $slot, $args, $forcedownload, array $options=array()) {
+function mod_adaptivequiz_question_pluginfile($course, context $context, $component, $filearea, $qubaid, $slot, $args,
+    $forcedownload, array $options=[]) {
     global $CFG, $DB, $USER;
 
-    if (!$cm = get_coursemodule_from_id('adaptivequiz', $course->id)) {
-        print_error('invalidcoursemodule');
-    }
+    $attemptrec = $DB->get_record('adaptivequiz_attempt', ['uniqueid' => $qubaid], '*', MUST_EXIST);
+    $adaptivequiz  = $DB->get_record('adaptivequiz', ['id' => $attemptrec->instance], '*', MUST_EXIST);
+    $course = $DB->get_record('course', ['id' => $adaptivequiz->course], '*', MUST_EXIST);
+    $cm = get_coursemodule_from_instance('adaptivequiz', $adaptivequiz->id, $adaptivequiz->course, false, MUST_EXIST);
+
     require_login($course, true, $cm);
 
+    $modcontext = context_module::instance($cm->id);
+
     // Check if the user has the attempt capability.
-    if (!has_capability('mod/adaptivequiz:attempt', $context) && !has_capability('mod/adaptivequiz:viewreport', $context)) {
-      print_error('nopermission', 'adaptivequiz');
-    }
-
-    $quiz_context = $context->get_parent_context();
-    // Load the quiz data.
-    try {
-        $adaptivequiz  = $DB->get_record('adaptivequiz', array('id' => $quiz_context->instanceid), '*', MUST_EXIST);
-        $attemptrec = $DB->get_record('adaptivequiz_attempt', array('uniqueid' => $qubaid, 'instance' => $quiz_context->instanceid), '*', MUST_EXIST);
-    } catch (dml_exception $e) {
-
-        $url = new moodle_url('/mod/adaptivequiz/attempt.php', array('cmid' => $id));
-        $debuginfo = '';
-
-        if (!empty($e->debuginfo)) {
-            $debuginfo = $e->debuginfo;
-        }
-        print_error('invalidmodule', 'error', $url, $e->getMessage(), $debuginfo);
+    if (!has_capability('mod/adaptivequiz:attempt', $modcontext) && !has_capability('mod/adaptivequiz:viewreport', $modcontext)) {
+        throw new moodle_exception('nopermission', 'adaptivequiz');
     }
 
     // If we are reviewing an attempt, require the viewreport capability.
     if ($attemptrec->userid != $USER->id) {
-      require_capability('mod/adaptivequiz:viewreport', $context);
-    }
-    // Otherwise, check that the attempt is active.
-    else {
-      require_once($CFG->dirroot.'/mod/adaptivequiz/adaptiveattempt.class.php');
-      require_once($CFG->dirroot.'/mod/adaptivequiz/locallib.php');
+        require_capability('mod/adaptivequiz:viewreport', $modcontext);
+    } else {
+        // Otherwise, check that the attempt is active.
+        require_once($CFG->dirroot.'/mod/adaptivequiz/locallib.php');
 
-      // Check if the user has any previous attempts at this activity.
-      $count = adaptivequiz_count_user_previous_attempts($adaptivequiz->id, $USER->id);
-      if (!adaptivequiz_allowed_attempt($adaptivequiz->attempts, $count)) {
-          print_error('noattemptsallowed', 'adaptivequiz');
-      }
-
-      // Check if the uniqueid belongs to the same attempt record the user is currently using.
-      if (!adaptivequiz_uniqueid_part_of_attempt($qubaid, $cm->instance, $USER->id)) {
-          print_error('uniquenotpartofattempt', 'adaptivequiz');
-      }
-      // Verify that the attempt is still in progress.
-      if ($attemptrec->attemptstate != adaptiveattempt::ADAPTIVEQUIZ_ATTEMPT_INPROGRESS) {
-        print_error('notinprogress', 'adaptivequiz');
-      }
+        // Check if the user has any previous attempts at this activity.
+        $count = adaptivequiz_count_user_previous_attempts($adaptivequiz->id, $USER->id);
+        if (!adaptivequiz_allowed_attempt($adaptivequiz->attempts, $count)) {
+            throw new moodle_exception('noattemptsallowed', 'adaptivequiz');
+        }
+        // Check if the uniqueid belongs to the same attempt record the user is currently using.
+        if (!adaptivequiz_uniqueid_part_of_attempt($qubaid, $cm->instance, $USER->id)) {
+            throw new moodle_exception('uniquenotpartofattempt', 'adaptivequiz');
+        }
+        // Verify that the attempt is still in progress.
+        if ($attemptrec->attemptstate != attempt_state::IN_PROGRESS) {
+            throw new moodle_exception('notinprogress', 'adaptivequiz');
+        }
     }
 
     $fs = get_file_storage();
     $relativepath = implode('/', $args);
     $fullpath = "/$context->id/$component/$filearea/$relativepath";
-    if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
+
+    $file = $fs->get_file_by_hash(sha1($fullpath));
+    if (!$file) {
+        send_file_not_found();
+    }
+    if ($file->is_directory()) {
         send_file_not_found();
     }
 
     send_stored_file($file, 0, 0, $forcedownload, $options);
+}
+
+/**
+ * This callback is used by the core to add any "extra" information to the activity. For example, completion info.
+ *
+ * @return false|cached_cm_info
+ */
+function adaptivequiz_get_coursemodule_info(stdClass $coursemodule) {
+    global $DB;
+
+    $adaptivequiz = $DB->get_record('adaptivequiz', ['id' => $coursemodule->instance], 'id, name, completionattemptcompleted');
+    if (!$adaptivequiz) {
+        return false;
+    }
+
+    $result = new cached_cm_info();
+    $result->name = $adaptivequiz->name;
+
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $result->customdata['customcompletionrules']['completionattemptcompleted'] = $adaptivequiz->completionattemptcompleted;
+    }
+
+    return $result;
 }

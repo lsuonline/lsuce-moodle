@@ -15,25 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Adaptive quiz view report script
- *
- * This module was created as a collaborative effort between Middlebury College
- * and Remote Learner.
- *
- * @package    mod_adaptivequiz
  * @copyright  2013 Middlebury College {@link http://www.middlebury.edu/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once(dirname(__FILE__).'/../../../config.php');
 require_once($CFG->dirroot.'/lib/grouplib.php');
 require_once(dirname(__FILE__).'/../locallib.php');
-require_once(dirname(__FILE__).'/lib/quiz_analyser.class.php');
-require_once(dirname(__FILE__).'/renderer.php');
 
-require_once(dirname(__FILE__).'/lib/statistics/times_used_statistic.class.php');
-require_once(dirname(__FILE__).'/lib/statistics/percent_correct_statistic.class.php');
-require_once(dirname(__FILE__).'/lib/statistics/discrimination_statistic.class.php');
+use mod_adaptivequiz\local\questionanalysis\quiz_analyser;
+use mod_adaptivequiz\local\questionanalysis\statistics\discrimination_statistic;
+use mod_adaptivequiz\local\questionanalysis\statistics\percent_correct_statistic;
+use mod_adaptivequiz\local\questionanalysis\statistics\times_used_statistic;
 
 $id = required_param('cmid', PARAM_INT);
 $sortdir = optional_param('sortdir', 'DESC', PARAM_ALPHA);
@@ -41,10 +35,10 @@ $sort = optional_param('sort', 'times_used', PARAM_ALPHANUMEXT);
 $page = optional_param('page', 0, PARAM_INT);
 
 if (!$cm = get_coursemodule_from_id('adaptivequiz', $id)) {
-    print_error('invalidcoursemodule');
+    throw new moodle_exception('invalidcoursemodule');
 }
 if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
-    print_error("coursemisconf");
+    throw new moodle_exception("coursemisconf");
 }
 
 require_login($course, true, $cm);
@@ -60,14 +54,14 @@ $PAGE->set_title($title);
 
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
-$output = $PAGE->get_renderer('mod_adaptivequiz', 'questions');
+$output = $PAGE->get_renderer('mod_adaptivequiz', 'questionanalysis');
 
 
-$quizanalyzer = new adaptivequiz_quiz_analyser();
+$quizanalyzer = new quiz_analyser();
 $quizanalyzer->load_attempts($cm->instance);
-$quizanalyzer->add_statistic('times_used', new adaptivequiz_times_used_statistic());
-$quizanalyzer->add_statistic('percent_correct', new adaptivequiz_percent_correct_statistic());
-$quizanalyzer->add_statistic('discrimination', new adaptivequiz_discrimination_statistic());
+$quizanalyzer->add_statistic('times_used', new times_used_statistic());
+$quizanalyzer->add_statistic('percent_correct', new percent_correct_statistic());
+$quizanalyzer->add_statistic('discrimination', new discrimination_statistic());
 
 $headers = $quizanalyzer->get_header();
 $records = $quizanalyzer->get_records($sort, $sortdir);

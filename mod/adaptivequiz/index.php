@@ -15,18 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Definition of log events for the adaptive quiz module.
- *
- * This module was created as a collaborative effort between Middlebury College
- * and Remote Learner.
- *
- * @package    mod_adaptivequiz
  * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once(dirname(__FILE__).'/../../config.php');
 require_once($CFG->dirroot.'/mod/adaptivequiz/lib.php');
+
+use mod_adaptivequiz\event\course_module_instance_list_viewed;
 
 $id = required_param('id', PARAM_INT);   // Course.
 
@@ -34,7 +31,7 @@ $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 
 require_course_login($course);
 
-\mod_adaptivequiz\event\course_module_instance_list_viewed::create_from_course($course)->trigger();
+course_module_instance_list_viewed::create_from_course($course)->trigger();
 
 $coursecontext = context_course::instance($course->id);
 
@@ -73,7 +70,7 @@ foreach ($adaptivequizinstances as $adaptivequizinstance) {
             format_string($adaptivequizinstance->name, true));
     }
 
-    if ($course->format == 'weeks' or $course->format == 'topics') {
+    if ($course->format == 'weeks' || $course->format == 'topics') {
         $table->data[] = array($adaptivequizinstance->section, $link);
     } else {
         $table->data[] = array($link);

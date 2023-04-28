@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,22 +12,33 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Adaptive quiz renderer class
+ * Contains definition of the renderer class for the plugin.
  *
- * @copyright  2013 Remote-Learner {@link http://www.remote-learner.ca/}
- * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_adaptivequiz
+ * @copyright 2013 Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright 2022 onwards Vitaly Potenko <potenkov@gmail.com>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once $CFG->dirroot . '/mod/adaptivequiz/requiredpassword.class.php';
-require_once $CFG->dirroot . '/mod/adaptivequiz/catalgo.class.php';
+defined('MOODLE_INTERNAL') || die();
 
+use mod_adaptivequiz\form\requiredpassword;
+use mod_adaptivequiz\local\attempt\attempt_state;
+use mod_adaptivequiz\local\catalgo;
 use mod_adaptivequiz\output\ability_measure;
+use mod_adaptivequiz\output\attempt_progress;
+use mod_adaptivequiz\output\report\individual_user_attempts\individual_user_attempt_action;
+use mod_adaptivequiz\output\report\individual_user_attempts\individual_user_attempt_actions;
 use mod_adaptivequiz\output\user_attempt_summary;
 
+/**
+ * The renderer class for the plugin.
+ *
+ * @package mod_adaptivequiz
+ */
 class mod_adaptivequiz_renderer extends plugin_renderer_base {
     /** @var string $sortdir the sorting direction being used */
     protected $sortdir = '';
@@ -49,36 +61,21 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         'menubar' => false
     );
 
-    /**
-     * This function displays a form with a button to start the assessment attempt
-     * @param string $cmid course module id
-     * @return string HTML markup displaying the description and form with a submit button
-     */
-    public function display_start_attempt_form($cmid) {
-        $html = '';
+    public function attempt_controls_or_notification(int $cmid, bool $attemptallowed, bool $browsersecurityenabled): string {
+        if (!$attemptallowed) {
+            return html_writer::div(get_string('noattemptsallowed', 'adaptivequiz'), 'alert alert-info text-center');
+        }
 
-        $param = ['cmid' => $cmid];
-        $target = new moodle_url('/mod/adaptivequiz/attempt.php', $param);
-        $attributes = ['method' => 'POST', 'action' => $target];
+        if ($browsersecurityenabled) {
+            return $this->display_start_attempt_form_secured($cmid);
+        }
 
-        $html .= html_writer::start_div('text-center');
-
-        $html .= html_writer::start_tag('form', $attributes);
-
-        $html .= html_writer::empty_tag('br');
-        $html .= html_writer::empty_tag('br');
-
-        $buttonlabel = get_string('startattemptbtn', 'adaptivequiz');
-        $params = ['type' => 'submit', 'value' => $buttonlabel,
-            'class' => 'submitbtns adaptivequizbtn btn btn-secondary'];
-        $html .= html_writer::empty_tag('input', $params);
-        $params = ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()];
-        $html .= html_writer::empty_tag('input', $params);
-        $html .= html_writer::end_tag('form');
-
-        $html .= html_writer::end_div();
-
-        return $html;
+        return $this->render(new single_button(
+            new moodle_url('/mod/adaptivequiz/attempt.php', ['cmid' => $cmid, 'sesskey' => sesskey()]),
+            get_string('startattemptbtn', 'adaptivequiz'),
+            'post',
+            true
+        ));
     }
 
     /**
@@ -97,14 +94,15 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
     }
 
     /**
-     * This function generates the HTML markup to render the submission form
-     * @param int $cmid: course module id
-     * @param question_usage_by_activity $quba: a question usage by activity object
-     * @param int $slot: slot number of the question to be displayed
-     * @param int $level: difficulty level of question
-     * @return string - HTML markup
+     * This function generates the HTML markup to render the submission form.
+     *
+     * @param int $cmid
+     * @param question_usage_by_activity $quba
+     * @param int $slot Slot number of the question to be displayed.
+     * @param int $level Difficulty level of question.
+     * @param int $questionnumber The order number of question in the quiz.
      */
-    public function create_submit_form($cmid, $quba, $slot, $level) {
+    public function question_submit_form($cmid, $quba, $slot, $level, int $questionnumber): string {
         $output = '';
 
         $processurl = new moodle_url('/mod/adaptivequiz/attempt.php');
@@ -119,9 +117,9 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $options = new question_display_options();
         $options->hide_all_feedback();
         $options->flags = question_display_options::HIDDEN;
-        $options->marks = question_display_options::MAX_ONLY;
+        $options->marks = question_display_options::HIDDEN;
 
-        $output .= $quba->render_question($slot, $options);
+        $output .= $quba->render_question($slot, $options, $questionnumber);
 
         $output .= html_writer::start_tag('div', ['class' => 'submitbtns adaptivequizbtn mdl-align']);
         $output .= html_writer::empty_tag('input', ['type' => 'submit', 'name' => 'submitanswer',
@@ -169,22 +167,6 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
     }
 
     /**
-     * This function prints the question
-     * @param int $cmid: course module id
-     * @param question_usage_by_activity $quba: a question usage by activity object
-     * @param int $slot: slot number of the question to be displayed
-     * @param int $level: difficulty level of question
-     * @return string - HTML markup
-     */
-    public function print_question($cmid, $quba, $slot, $level) {
-        $output = '';
-        $output .= $this->header();
-        $output .= $this->create_submit_form($cmid, $quba, $slot, $level);
-        $output .= $this->footer();
-        return $output;
-    }
-
-    /**
      * @throws coding_exception
      */
     public function attempt_feedback(string $attemptfeedback, int $cmid, ?ability_measure $abilitymeasure,
@@ -214,7 +196,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
             $this->page->requires->js_init_call('M.mod_adaptivequiz.secure_window.init_close_button', [$url],
                 $this->adaptivequiz_get_js_module());
             $output .= html_writer::empty_tag('input', ['type' => 'button', 'value' => get_string('continue'),
-                'id' => 'secureclosebutton']);
+                'id' => 'secureclosebutton', 'class' => 'btn btn-primary']);
         }
 
         $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $cmid]);
@@ -270,132 +252,6 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
     }
 
     /**
-     * This function returns the HTML markup to display a table of the attempts taken at the activity
-     * @param stdClass $records attempt records from adaptivequiz_attempt table
-     * @param stdClass $cm course module object set to the instance of the activity
-     * @param string $sort the column the the table is to be sorted by
-     * @param string $sortdir the direction of the sort
-     * @return string HTML markup
-     */
-    public function print_report_table($records, $cm, $sort, $sortdir) {
-        $output = $this->heading(get_string('activityreports', 'adaptivequiz'));
-
-        $output .= html_writer::start_tag('div', array('class' => 'adpq_download'));
-        $csvurl = new moodle_url('/mod/adaptivequiz/viewreport.php',
-            array('cmid' => $cm->id, 'download' => 'csv', 'sort' => $sort, 'sortdir' => $sortdir));
-        $output .= html_writer::link($csvurl, get_string('downloadcsv', 'adaptivequiz'));
-        $output .= html_writer::end_tag('div');
-
-        $output .= $this->create_report_table($records, $cm, $sort, $sortdir);
-        return $output;
-    }
-
-    /**
-     * This function returns HTML markup to display a table of a users's attempt
-     * @param stdClass $records an array of user attempt table objects
-     * @param stdClass $cm course module object set to the instance of the activity
-     * @return string HTML markup
-     */
-    public function print_attempt_report_table($records, $cm) {
-        return $this->create_attempt_report_table($records, $cm);
-    }
-
-    /**
-     * This function generates the HTML required to display the initial reports table
-     * @param stdClass $records attempt records from adaptivequiz_attempt table
-     * @param stdClass $cm course module object set to the instance of the activity
-     * @param string $sort the column the the table is to be sorted by
-     * @param string $sortdir the direction of the sort
-     * @return string HTML markup
-     */
-    public function create_report_table($records, $cm, $sort, $sortdir) {
-        $output = '';
-
-        $table = new html_table();
-        $table->attributes['class'] = 'generaltable quizsummaryofattempt boxaligncenter';
-        $table->head = $this->format_report_table_headers($cm, $sort, $sortdir);
-        $table->align = array('center', 'center', 'center', 'center', 'center', '');
-        $table->size = array('', '', '', '', '');
-
-        $table->data = array();
-        $this->get_report_table_rows($records, $cm, $table);
-        $output .= html_writer::table($table);
-
-        return $output;
-    }
-
-    /**
-     * This function generates the HTML required to the attempts report table
-     * @param stdClass $records an array of user attempt table objects
-     * @param stdClass $cm course module object set to the instance of the activity
-     * @return string HTML markup
-     */
-    protected function create_attempt_report_table($records, $cm) {
-        $output = '';
-
-        $table = new html_table();
-        $table->attributes['class'] = 'generaltable quizsummaryofuserattempt boxaligncenter';
-
-        $attemptstate = get_string('attemptstate', 'adaptivequiz');
-        $attemptstopcriteria = get_string('attemptstopcriteria', 'adaptivequiz');
-        $questionsattempted = get_string('questionsattempted', 'adaptivequiz');
-        $score = get_string('score', 'adaptivequiz');
-        $timemodified = get_string('attemptfinishedtimestamp', 'adaptivequiz');
-        $timecreated = get_string('attemptstarttime', 'adaptivequiz');
-
-        $table->head = array($attemptstate, $attemptstopcriteria, $questionsattempted, $score, $timecreated, $timemodified, '');
-        $table->align = array('center', 'center', 'center', 'center', 'center', 'center', 'center');
-        $table->size = array('', '', '', '', '', '');
-        $table->data = array();
-
-        $this->get_attempt_report_table_rows($records, $cm, $table);
-        $output .= html_writer::table($table);
-
-        return $output;
-    }
-
-    /**
-     * This function generates the attempt report rows
-     * @param stdClass an array of user attempt table objects
-     * @param stdClass $cm course module object set to the instance of the activity
-     * @param html_table $table an instance of the html_table class
-     */
-    protected function get_attempt_report_table_rows($records, $cm, $table) {
-        $row = array();
-        $attemptstate = '';
-
-        foreach ($records as $record) {
-            $reviewurl = new moodle_url('/mod/adaptivequiz/reviewattempt.php',
-                array('uniqueid' => $record->uniqueid, 'cmid' => $cm->id, 'userid' => $record->userid));
-            $link = html_writer::link($reviewurl, get_string('reviewattempt', 'adaptivequiz'));
-            if ($record->attemptstate != ADAPTIVEQUIZ_ATTEMPT_COMPLETED) {
-                $closeurl = new moodle_url('/mod/adaptivequiz/closeattempt.php',
-                    array('uniqueid' => $record->uniqueid, 'cmid' => $cm->id, 'userid' => $record->userid));
-                $closelink = html_writer::link($closeurl, get_string('closeattempt', 'adaptivequiz'));
-            } else {
-                $closelink = '';
-            }
-            $deleteurl = new moodle_url('/mod/adaptivequiz/delattempt.php',
-                array('uniqueid' => $record->uniqueid, 'cmid' => $cm->id, 'userid' => $record->userid));
-            $dellink = html_writer::link($deleteurl, get_string('deleteattemp', 'adaptivequiz'));
-
-            if (0 == strcmp('inprogress', $record->attemptstate)) {
-                $attemptstate = get_string('recentinprogress', 'adaptivequiz');
-            } else {
-                $attemptstate = get_string('recentcomplete', 'adaptivequiz');
-            }
-
-            $measure = $this->format_measure_and_standard_error($record);
-
-            $row = array($attemptstate, format_string($record->attemptstopcriteria), $record->questionsattempted, $measure,
-                    userdate($record->timecreated), userdate($record->timemodified),
-                    $link.($closelink ? '&nbsp;&nbsp;'.$closelink : '').'&nbsp;&nbsp;'.$dellink);
-            $table->data[] = $row;
-            $table->rowclasses[] = 'studentattempt';
-        }
-    }
-
-    /**
      * This function creates the table header links that will be used to allow instructor to sort the data
      * @param stdClass $cm a course module object set to the instance of the activity
      * @param string $sort the column the the table is to be sorted by
@@ -403,10 +259,6 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
      * @return array an array of column headers (firstname / lastname, number of attempts, standard error)
      */
     public function format_report_table_headers($cm, $sort, $sortdir) {
-        global $OUTPUT;
-
-        $newsortdir = '';
-        $columnicon = '';
         $firstname = '';
         $lastname = '';
         $email = '';
@@ -418,12 +270,12 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         /* Determine the next sorting direction and icon to display */
         switch ($sortdir) {
             case 'ASC':
-                $imageparam = array('src' => $OUTPUT->image_url('t/down'), 'alt' => '');
+                $imageparam = array('src' => $this->image_url('t/down'), 'alt' => '');
                 $columnicon = html_writer::empty_tag('img', $imageparam);
                 $newsortdir = 'DESC';
                 break;
             default:
-                $imageparam = array('src' => $OUTPUT->image_url('t/up'), 'alt' => '');
+                $imageparam = array('src' => $this->image_url('t/up'), 'alt' => '');
                 $columnicon = html_writer::empty_tag('img', $imageparam);
                 $newsortdir = 'ASC';
                 break;
@@ -506,8 +358,6 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
      * @param html_table $table an instance of the html_table class
      */
     protected function get_report_table_rows($records, $cm, $table) {
-        $row = array();
-
         foreach ($records as $record) {
             $attemptlink = new moodle_url('/mod/adaptivequiz/viewattemptreport.php',
                 array('userid' => $record->id, 'cmid' => $cm->id));
@@ -542,14 +392,12 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
      * @return string HTML markup
      */
     public function print_paging_bar($totalrecords, $page, $perpage) {
-        global $OUTPUT;
-
         $baseurl = $this->sorturl;
         /* Set the currently set group filter and sort dir */
         $baseurl->params(array('group' => $this->groupid, 'sortdir' => $this->sortdir));
 
         $output = '';
-        $output .= $OUTPUT->paging_bar($totalrecords, $page, $perpage, $baseurl);
+        $output .= $this->paging_bar($totalrecords, $page, $perpage, $baseurl);
         return $output;
     }
 
@@ -574,59 +422,28 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Initialized secure browsing mode
+     * Initialize secure browsing mode.
      */
-    public function init_browser_security() {
+    public function init_browser_security($disablejsfeatures = true) {
         $this->page->set_popup_notification_allowed(false); // Prevent message notifications.
         $this->page->set_cacheable(false);
         $this->page->set_pagelayout('popup');
 
-        $this->page->add_body_class('quiz-secure-window');
-        $this->page->requires->js_init_call('M.mod_adaptivequiz.secure_window.init',
+        if ($disablejsfeatures) {
+            $this->page->add_body_class('quiz-secure-window');
+            $this->page->requires->js_init_call('M.mod_adaptivequiz.secure_window.init',
                 null, false, $this->adaptivequiz_get_js_module());
-    }
-
-    /**
-     * This functions prints the start attempt button to start a secured browser attempt
-     * TODO: fix function name typo
-     * @param int $cmid course module id
-     * @return string HTML markup for a button
-     */
-    public function display_start_attempt_form_scured($cmid) {
-        $param = ['cmid' => $cmid];
-        $url = new moodle_url('/mod/adaptivequiz/attempt.php', $param);
-
-        $buttonlabel = get_string('startattemptbtn', 'adaptivequiz');
-        $button = new single_button($url, $buttonlabel);
-        $button->class .= ' adaptivequizstartbuttondiv btn btn-secondary';
-
-        $this->page->requires->js_module($this->adaptivequiz_get_js_module());
-        $this->page->requires->js('/mod/adaptivequiz/module.js');
-
-        $popupaction = new popup_action('click', $url, 'adaptivequizpopup', self::$popupoptions);
-        $button->class .= ' adaptivequizsecuremoderequired';
-        $button->add_action(new component_action('click',
-                'M.mod_adaptivequiz.secure_window.start_attempt_action', [
-                    'url' => $url->out(false),
-                    'windowname' => 'adaptivequizpopup',
-                    'options' => $popupaction->get_js_options(),
-                    'fullscreen' => true,
-                    'startattemptwarning' => '',
-                ]));
-
-        $warning = html_writer::tag('noscript', $this->heading(get_string('noscript', 'quiz')));
-
-        return $this->render($button).$warning;
+        }
     }
 
     /**
      * This function displays a form for users to enter a password before entering the attempt
      * @param int $cmid course module id
-     * @return mod_adaptivequiz_requiredpassword instance of a formslib object
+     * @return requiredpassword instance of a formslib object
      */
-    public function display_password_form($cmid) {
+    public function display_password_form($cmid): requiredpassword {
         $url = new moodle_url('/mod/adaptivequiz/attempt.php');
-        return new mod_adaptivequiz_requiredpassword($url->out_omit_querystring(),
+        return new requiredpassword($url->out_omit_querystring(),
             array('hidden' => array('cmid' => $cmid, 'uniqueid' => 0)));
     }
 
@@ -707,12 +524,13 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
     /**
      * Answer the summery information about an attempt
      *
-     * @param stdClass $adaptivequiz The attempt record.
+     * @param stdClass $adaptivequiz See {@link mod_adaptivequiz_renderer::attempt_report_page_by_tab()}.
+     * @param stdClass $attempt See {@link mod_adaptivequiz_renderer::attempt_report_page_by_tab()}.
      * @param stdClass $user The user who took the quiz that created the attempt.
      * @return string
      * @throws coding_exception
      */
-    public function attempt_summary_listing(stdClass $adaptivequiz, stdClass $user): string {
+    public function attempt_summary_listing(stdClass $adaptivequiz, stdClass $attempt, stdClass $user): string {
         $table = new html_table();
         $table->attributes['class'] = 'generaltable attemptsummarytable';
 
@@ -731,7 +549,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('attempt_state', 'adaptivequiz'));
         $headercell->header = true;
 
-        $datacell = new html_table_cell($adaptivequiz->attemptstate);
+        $datacell = new html_table_cell($attempt->attemptstate);
 
         $row->cells = [$headercell, $datacell];
         $table->data[] = $row;
@@ -741,9 +559,9 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('score', 'adaptivequiz'));
         $headercell->header = true;
 
-        $abilityfraction = 1 / ( 1 + exp( (-1 * $adaptivequiz->measure) ) );
+        $abilityfraction = 1 / ( 1 + exp( (-1 * $attempt->measure) ) );
         $ability = (($adaptivequiz->highestlevel - $adaptivequiz->lowestlevel) * $abilityfraction) + $adaptivequiz->lowestlevel;
-        $stderror = catalgo::convert_logit_to_percent($adaptivequiz->standarderror);
+        $stderror = catalgo::convert_logit_to_percent($attempt->standarderror);
         $score = ($stderror > 0)
             ? round($ability, 2)." &nbsp; &plusmn; ".round($stderror * 100, 1)."%"
             : 'n/a';
@@ -757,7 +575,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('attemptstarttime', 'adaptivequiz'));
         $headercell->header = true;
 
-        $datacell = new html_table_cell(userdate($adaptivequiz->timecreated));
+        $datacell = new html_table_cell(userdate($attempt->timecreated));
 
         $row->cells = [$headercell, $datacell];
         $table->data[] = $row;
@@ -767,7 +585,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('attemptfinishedtimestamp', 'adaptivequiz'));
         $headercell->header = true;
 
-        $datacell = new html_table_cell(userdate($adaptivequiz->timemodified));
+        $datacell = new html_table_cell(userdate($attempt->timemodified));
 
         $row->cells = [$headercell, $datacell];
         $table->data[] = $row;
@@ -777,7 +595,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('attempttotaltime', 'adaptivequiz'));
         $headercell->header = true;
 
-        $totaltime = $adaptivequiz->timemodified - $adaptivequiz->timecreated;
+        $totaltime = $attempt->timemodified - $attempt->timecreated;
         $hours = floor($totaltime / 3600);
         $remainder = $totaltime - ($hours * 3600);
         $minutes = floor($remainder / 60);
@@ -793,7 +611,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('attemptstopcriteria', 'adaptivequiz'));
         $headercell->header = true;
 
-        $datacell = new html_table_cell($adaptivequiz->attemptstopcriteria);
+        $datacell = new html_table_cell($attempt->attemptstopcriteria);
 
         $row->cells = [$headercell, $datacell];
         $table->data[] = $row;
@@ -828,14 +646,15 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
     }
 
     /**
-     * @param moodle_url $pageurl
      * @param string $tabid
-     * @param stdClass $attempt A joined record from {adaptivequiz} and {adaptivequiz_attempt} which contains the
-     * required attempt data. The expected fields are: 'attemptstate', 'measure', 'highestlevel', 'lowestlevel',
-     * 'standarderror', 'timecreated', 'timemodified', 'attemptstopcriteria' and 'uniqueid'.
-     * @param stdClass $user A record from {user}. The expected fields are: 'id', 'firstname', 'lastname' and 'email'.
+     * @param stdClass $adaptivequiz A record from {adaptivequiz}. The expected fields are 'lowestlevel' and 'highestlevel'.
+     * @param stdClass $attempt A record from {adaptivequiz_attempt}. The expected fields are: 'attemptstate', 'measure',
+     *        'highestlevel', 'lowestlevel', 'standarderror', 'timecreated', 'timemodified', 'attemptstopcriteria' and 'uniqueid'.
+     * @param stdClass $user A record from {user}. The expected fields are: 'id', 'email' and those required for {@link fullname()}
+     *        call.
      * @param question_usage_by_activity $quba
      * @param int $cmid
+     * @param moodle_url $pageurl
      * @param int $page
      * @return string
      * @throws coding_exception
@@ -843,6 +662,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
      */
     public function attempt_report_page_by_tab(
         string $tabid,
+        stdClass $adaptivequiz,
         stdClass $attempt,
         stdClass $user,
         question_usage_by_activity $quba,
@@ -853,14 +673,14 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         if ($tabid == 'attemptgraph') {
             $return = $this->attempt_graph($attempt->uniqueid, $cmid, $user->id);
             $return .= html_writer::empty_tag('br');
-            $return .= $this->attempt_scoring_table($attempt, $quba);
+            $return .= $this->attempt_scoring_table($adaptivequiz, $quba);
 
             return $return;
         }
         if ($tabid == 'answerdistribution') {
             $return = $this->attempt_answer_distribution_graph($attempt->uniqueid, $cmid, $user->id);
             $return .= html_writer::empty_tag('br');
-            $return .= $this->attempt_answer_distribution_table($attempt, $quba);
+            $return .= $this->attempt_answer_distribution_table($adaptivequiz, $quba);
 
             return $return;
         }
@@ -868,7 +688,76 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
             return $this->attempt_questions_review($quba, $pageurl, $page);
         }
 
-        return $this->attempt_summary_listing($attempt, $user);
+        return $this->attempt_summary_listing($adaptivequiz, $attempt, $user);
+    }
+
+    public function reset_users_attempts_filter_action(moodle_url $url): string {
+        return html_writer::link($url, get_string('reportattemptsresetfilter', 'adaptivequiz'));
+    }
+
+    /**
+     * A wrapper method to call rendering of attempt progress, accepts minimum parameters to base rendering on.
+     */
+    public function attempt_progress(string $questionsanswered, string $maximumquestions): string {
+        return $this->render_attempt_progress(attempt_progress::with_defaults($questionsanswered, $maximumquestions));
+    }
+
+    /**
+     * Renders an attempt progress object, to be overridden by a theme if required.
+     */
+    protected function render_attempt_progress(attempt_progress $progress): string {
+        $progress = $progress->with_help_icon_content($this->help_icon('attemptquestionsprogress', 'adaptivequiz'));
+
+        return $this->render_from_template('mod_adaptivequiz/attempt_progress', $progress->export_for_template($this));
+    }
+
+    /**
+     * Outputs available action links for an attempt in the user's attempts report.
+     *
+     * @param stdClass $attempt A record from {adaptivequiz_attempt}.
+     */
+    public function individual_user_attempt_actions(stdClass $attempt): string {
+        $actions = new individual_user_attempt_actions();
+
+        $actions->add(
+            new individual_user_attempt_action(
+                new moodle_url('/mod/adaptivequiz/reviewattempt.php', ['attempt' => $attempt->id]),
+                new pix_icon('i/search', ''),
+                get_string('reviewattempt', 'adaptivequiz')
+            )
+        );
+
+        if ($attempt->attemptstate !== attempt_state::COMPLETED) {
+            $actions->add(
+                new individual_user_attempt_action(
+                    new moodle_url('/mod/adaptivequiz/closeattempt.php', ['attempt' => $attempt->id]),
+                    new pix_icon('t/stop', ''),
+                    get_string('closeattempt', 'adaptivequiz')
+                )
+            );
+        }
+
+        $actions->add(
+            new individual_user_attempt_action(
+                new moodle_url('/mod/adaptivequiz/delattempt.php', ['attempt' => $attempt->id]),
+                new pix_icon('t/delete', ''),
+                get_string('deleteattemp', 'adaptivequiz')
+            )
+        );
+
+        return $this->render($actions);
+    }
+
+    /**
+     * Renders the renderable actions object, intended to be overridden by the theme if needed.
+     *
+     * @param individual_user_attempt_actions $actions
+     */
+    protected function render_individual_user_attempt_actions(individual_user_attempt_actions $actions): string {
+        return $this->render_from_template(
+            'mod_adaptivequiz/report/individual_user_attempt_actions',
+            $actions->export_for_template($this)
+        );
     }
 
     /**
@@ -1172,7 +1061,7 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         $headercell = new html_table_cell(get_string('attemptfinishedtimestamp', 'adaptivequiz'));
         $headercell->header = true;
 
-        $datacell = ($summary->attemptstate == ADAPTIVEQUIZ_ATTEMPT_COMPLETED)
+        $datacell = ($summary->attemptstate == attempt_state::COMPLETED)
             ? userdate($summary->timefinished)
             : '-';
 
@@ -1200,6 +1089,32 @@ class mod_adaptivequiz_renderer extends plugin_renderer_base {
         }
 
         return html_writer::table($table);
+    }
+
+    /**
+     * This functions prints the start attempt button to start a secured browser attempt.
+     */
+    private function display_start_attempt_form_secured(int $cmid): string {
+        $url = new moodle_url('/mod/adaptivequiz/attempt.php', ['cmid' => $cmid]);
+
+        $button = new single_button($url, get_string('startattemptbtn', 'adaptivequiz'), 'post', true);
+
+        $this->page->requires->js_module($this->adaptivequiz_get_js_module());
+        $this->page->requires->js('/mod/adaptivequiz/module.js');
+
+        $popupaction = new popup_action('click', $url, 'adaptivequizpopup', self::$popupoptions);
+        $button->add_action(new component_action('click',
+            'M.mod_adaptivequiz.secure_window.start_attempt_action', [
+                'url' => $url->out(false),
+                'windowname' => 'adaptivequizpopup',
+                'options' => $popupaction->get_js_options(),
+                'fullscreen' => true,
+                'startattemptwarning' => '',
+            ]));
+
+        $warning = html_writer::tag('noscript', $this->heading(get_string('noscript', 'quiz')));
+
+        return $this->render($button).$warning;
     }
 }
 

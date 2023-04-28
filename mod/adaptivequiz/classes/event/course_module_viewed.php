@@ -17,15 +17,15 @@
 /**
  * Defines the course module viewed event.
  *
- * @package    mod_adaptivequiz
- * @author     Corey Wallis <corey.wallis@blackboard.com>
+ * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace mod_adaptivequiz\event;
-defined('MOODLE_INTERNAL') || die();
 
 class course_module_viewed extends \core\event\course_module_viewed {
+
     protected function init() {
         $this->data['objecttable'] = 'adaptivequiz';
         parent::init();

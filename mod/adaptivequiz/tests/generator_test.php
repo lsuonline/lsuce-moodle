@@ -17,19 +17,22 @@
 /**
  * Adaptive PHPUnit data generator testcase
  *
- * @package    mod
- * @subpackage adaptivequiz
- * @category   phpunit
  * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace mod_adaptivequiz;
+
+use advanced_testcase;
+use context_module;
+use mod_quiz_generator;
 
 /**
  * @group mod_adaptivequiz
+ * @covers \mod_adaptivequiz_generator
  */
-class mod_adaptivequiz_generator_testcase extends advanced_testcase {
+class generator_test extends advanced_testcase {
 
     /**
      * Unit test for adaptivequiz generator

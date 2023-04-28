@@ -15,22 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This module was created as a collaborative effort between Middlebury College
- * and Remote Learner.
+ * Structure step to restore one adaptivequiz activity.
  *
- * @package    mod_adaptivequiz
  * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-/**
- * Structure step to restore one adaptivequiz activity
- *
- * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 class restore_adaptivequiz_activity_structure_step extends restore_questions_activity_structure_step {
 
     /**

@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * A class to display a table with user's own attempts on the activity's view page.
@@ -22,10 +23,9 @@
 
 namespace mod_adaptivequiz\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 use coding_exception;
 use help_icon;
+use mod_adaptivequiz\local\attempt\attempt_state;
 use mod_adaptivequiz_renderer;
 use moodle_url;
 use stdClass;
@@ -53,7 +53,7 @@ final class user_attempts_table extends table_sql {
      * @throws coding_exception
      */
     public function init(moodle_url $baseurl, stdClass $adaptivequiz, int $userid): void {
-        $columns = ['state', 'timefinished',];
+        $columns = ['state', 'timefinished'];
         if ($adaptivequiz->showabilitymeasure) {
             $columns[] = 'measure';
         }
@@ -92,7 +92,7 @@ final class user_attempts_table extends table_sql {
     }
 
     protected function col_timefinished(stdClass $row): string {
-        if ($row->state != ADAPTIVEQUIZ_ATTEMPT_COMPLETED) {
+        if ($row->state != attempt_state::COMPLETED) {
             return '';
         }
 

@@ -25,7 +25,7 @@ Feature: Delete an attempt on adaptive quiz
       | Adaptive Quiz Questions | truefalse | TF2  | Second question |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I navigate to "Question bank > Questions" in current page administration
+    And I navigate to "Question bank" in current page administration
     And I set the field "Select a category" to "Adaptive Quiz Questions (2)"
     And I choose "Edit question" action for "TF1" in the question bank
     And I expand all fieldsets
@@ -48,11 +48,11 @@ Feature: Delete an attempt on adaptive quiz
       | Minimum number of questions  | 2                           |
       | Maximum number of questions  | 20                          |
       | Standard Error to stop       | 5                           |
+      | ID number                    | adaptivequiz1               |
     And I click on "Save and return to course" "button"
     And I log out
     And I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    And I am on the "adaptivequiz1" "Activity" page
     And I press "Start attempt"
     And I click on "True" "radio" in the "First question" "question"
     And I press "Submit answer"
@@ -63,10 +63,8 @@ Feature: Delete an attempt on adaptive quiz
 
   @javascript
   Scenario: Delete an individual attempt
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     And I click on "1" "link" in the "Peter The Student" "table_row"
     And I click on "Delete attempt" "link" in the "Completed" "table_row"
     And I press "Continue"
-    And I should see "No attempt records for this student"
+    And I should see "Nothing to display"

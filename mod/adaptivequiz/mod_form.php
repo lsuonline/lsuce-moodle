@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Definition of activity settings form.
@@ -23,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once $CFG->dirroot . '/course/moodleform_mod.php';
-require_once $CFG->dirroot . '/mod/adaptivequiz/locallib.php';
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once($CFG->dirroot . '/mod/adaptivequiz/locallib.php');
 
 use mod_adaptivequiz\local\repository\questions_repository;
 
@@ -50,12 +51,12 @@ class mod_adaptivequiz_mod_form extends moodleform_mod {
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->addHelpButton('name', 'adaptivequizname', 'adaptivequiz');
 
-        // Adding the standard "intro" and "introformat" fields...
+        // Adding the standard "intro" and "introformat" fields.
         // Use the non deprecated function if it exists.
         if (method_exists($this, 'standard_intro_elements')) {
             $this->standard_intro_elements();
         } else {
-            // Deprecated as of Moodle 2.9
+            // Deprecated as of Moodle 2.9.
             $this->add_intro_editor();
         }
 
@@ -124,6 +125,11 @@ class mod_adaptivequiz_mod_form extends moodleform_mod {
         $mform->addHelpButton('showabilitymeasure', 'showabilitymeasure', 'adaptivequiz');
         $mform->setDefault('showabilitymeasure', 0);
 
+        $mform->addElement('select', 'showattemptprogress', get_string('modformshowattemptprogress', 'adaptivequiz'),
+            [get_string('no'), get_string('yes')]);
+        $mform->addHelpButton('showattemptprogress', 'modformshowattemptprogress', 'adaptivequiz');
+        $mform->setDefault('showattemptprogress', 0);
+
         $mform->addElement('header', 'stopingconditionshdr', get_string('stopingconditionshdr', 'adaptivequiz'));
 
         $mform->addElement('text', 'minimumquestions', get_string('minimumquestions', 'adaptivequiz'),
@@ -166,6 +172,22 @@ class mod_adaptivequiz_mod_form extends moodleform_mod {
         $this->add_action_buttons();
     }
 
+    public function add_completion_rules(): array {
+        $form = $this->_form;
+        $form->addElement('checkbox', 'completionattemptcompleted', ' ',
+            get_string('completionattemptcompletedform', 'adaptivequiz'));
+
+        return ['completionattemptcompleted'];
+    }
+
+    public function completion_rule_enabled($data): bool {
+        if (!isset($data['completionattemptcompleted'])) {
+            return false;
+        }
+
+        return $data['completionattemptcompleted'] != 0;
+    }
+
     /**
      * Perform extra validation. @see validation() in moodleform_mod.php.
      *
@@ -176,7 +198,7 @@ class mod_adaptivequiz_mod_form extends moodleform_mod {
      * @throws dml_exception
      */
     public function validation($data, $files) {
-        $errors = [];
+        $errors = parent::validation($data, $files);
 
         if (empty($data['questionpool'])) {
             $errors['questionpool'] = get_string('formquestionpool', 'adaptivequiz');

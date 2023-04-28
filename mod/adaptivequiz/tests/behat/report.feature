@@ -1,5 +1,5 @@
 @mod @mod_adaptivequiz
-Feature: Attempt an adaptive quiz
+Feature: View students results in adaptive quiz
   In order to control what results students have on attempting adaptive quizzes
   As a teacher
   I need an access to attempts reporting
@@ -25,7 +25,7 @@ Feature: Attempt an adaptive quiz
       | Adaptive Quiz Questions | truefalse | TF2  | Second question | True   |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I navigate to "Question bank > Questions" in current page administration
+    And I navigate to "Question bank" in current page administration
     And I set the field "Select a category" to "Adaptive Quiz Questions (2)"
     And I choose "Edit question" action for "TF1" in the question bank
     And I expand all fieldsets
@@ -48,12 +48,12 @@ Feature: Attempt an adaptive quiz
       | Minimum number of questions  | 2                           |
       | Maximum number of questions  | 20                          |
       | Standard Error to stop       | 5                           |
+      | ID number                    | adaptivequiz1               |
     And I click on "Save and return to course" "button"
     And I am on "Course 1" course homepage
     And I log out
     And I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    And I am on the "adaptivequiz1" "Activity" page
     And I press "Start attempt"
     And I click on "True" "radio" in the "First question" "question"
     And I press "Submit answer"
@@ -64,38 +64,60 @@ Feature: Attempt an adaptive quiz
 
   @javascript
   Scenario: Attempts report
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     Then I should see "Attempts report"
     And "Peter The Student" "table_row" should exist
     And "Peter The Student" row "Number of attempts" column of "usersattemptstable" table should contain "1"
 
   @javascript
+  Scenario: Deleted user should not appear in the attempts report
+    Given the following "user" exists:
+      | username     | student2                    |
+      | firstname    | Henry                       |
+      | lastname     | The Student                 |
+      | email        | henrythestudent@example.com |
+    And the following "course enrolment" exists:
+      | user         | student2 |
+      | course       | C1       |
+      | role         | student  |
+    And I am on the "adaptivequiz1" "Activity" page logged in as "student2"
+    And I press "Start attempt"
+    And I click on "True" "radio" in the "First question" "question"
+    And I press "Submit answer"
+    And I click on "True" "radio" in the "Second question" "question"
+    And I press "Submit answer"
+    And I press "Continue"
+    And I log out
+    And I log in as "admin"
+    And I navigate to "Users > Accounts > Bulk user actions" in site administration
+    And I set the field "Available" to "Henry The Student"
+    And I press "Add to selection"
+    And I set the field "id_action" to "Delete"
+    And I press "Go"
+    And I press "Yes"
+    And I log out
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
+    Then "Henry The Student" "table_row" should not exist
+
+  @javascript
   Scenario: Individual user attempts report
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     And I click on "1" "link" in the "Peter The Student" "table_row"
     Then I should see "Adaptive Quiz - individual user attempts report for Peter The Student"
     And "Completed" "table_row" should exist
-    And "Completed" row "Reason for stopping attempt" column of "quizsummaryofuserattempt" table should contain "Unable to fetch a questions for level 5"
-    And "Completed" row "Sum of questions attempted" column of "quizsummaryofuserattempt" table should contain "2"
+    And "Completed" row "Reason for stopping attempt" column of "individualuserattemptstable" table should contain "Unable to fetch a question for level 5"
+    And "Completed" row "Sum of questions attempted" column of "individualuserattemptstable" table should contain "2"
 
   @javascript
   Scenario: View attempt summary
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     And I click on "1" "link" in the "Peter The Student" "table_row"
     And I click on "Review attempt" "link" in the "Completed" "table_row"
     Then I should see "Peter The Student (peterthestudent@example.com)" in the "User" "table_row"
 
   @javascript
   Scenario: View attempt graph
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     And I click on "1" "link" in the "Peter The Student" "table_row"
     And I click on "Review attempt" "link" in the "Completed" "table_row"
     And I click on "Attempt Graph" "link"
@@ -116,9 +138,7 @@ Feature: Attempt an adaptive quiz
 
   @javascript
   Scenario: View attempt answer distribution
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     And I click on "1" "link" in the "Peter The Student" "table_row"
     And I click on "Review attempt" "link" in the "Completed" "table_row"
     And I click on "Answer Distribution" "link"
@@ -136,9 +156,7 @@ Feature: Attempt an adaptive quiz
 
   @javascript
   Scenario: View attempt questions details
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
     And I click on "1" "link" in the "Peter The Student" "table_row"
     And I click on "Review attempt" "link" in the "Completed" "table_row"
     And I click on "Questions Details" "link"

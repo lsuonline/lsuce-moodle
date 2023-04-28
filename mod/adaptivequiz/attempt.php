@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Adaptive quiz attempt script.
@@ -21,22 +22,23 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__).'/../../config.php');
-require_once($CFG->dirroot.'/mod/adaptivequiz/locallib.php');
-require_once($CFG->dirroot.'/mod/adaptivequiz/adaptiveattempt.class.php');
-require_once($CFG->dirroot.'/mod/adaptivequiz/fetchquestion.class.php');
-require_once($CFG->dirroot.'/mod/adaptivequiz/catalgo.class.php');
-require_once($CFG->dirroot.'/tag/lib.php');
+require_once(__DIR__ . '/../../config.php');
+require_once($CFG->dirroot . '/mod/adaptivequiz/locallib.php');
+require_once($CFG->dirroot . '/tag/lib.php');
+
+use mod_adaptivequiz\local\attempt;
+use mod_adaptivequiz\local\catalgo;
+use mod_adaptivequiz\local\fetchquestion;
 
 $id = required_param('cmid', PARAM_INT); // Course module id.
-$uniqueid  = optional_param('uniqueid', 0, PARAM_INT);  // uniqueid of the attempt.
-$difflevel  = optional_param('dl', 0, PARAM_INT);  // difficulty level of question.
+$uniqueid  = optional_param('uniqueid', 0, PARAM_INT);  // Unique id of the attempt.
+$difflevel  = optional_param('dl', 0, PARAM_INT);  // Difficulty level of question.
 
 if (!$cm = get_coursemodule_from_id('adaptivequiz', $id)) {
-    print_error('invalidcoursemodule');
+    throw new moodle_exception('invalidcoursemodule');
 }
 if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
-    print_error("coursemisconf");
+    throw new moodle_exception('coursemisconf');
 }
 
 global $USER, $DB, $SESSION;
@@ -55,7 +57,7 @@ try {
         $debuginfo = $e->debuginfo;
     }
 
-    print_error('invalidmodule', 'error', $url, $e->getMessage(), $debuginfo);
+    throw new moodle_exception('invalidmodule', 'error', $url, $e->getMessage(), $debuginfo);
 }
 
 // Setup page global for standard viewing.
@@ -63,6 +65,8 @@ $viewurl = new moodle_url('/mod/adaptivequiz/view.php', array('id' => $cm->id));
 $PAGE->set_url('/mod/adaptivequiz/view.php', array('id' => $cm->id));
 $PAGE->set_title(format_string($adaptivequiz->name));
 $PAGE->set_context($context);
+$PAGE->activityheader->disable();
+$PAGE->add_body_class('limitedwidth');
 
 // Check if the user has the attempt capability.
 require_capability('mod/adaptivequiz:attempt', $context);
@@ -71,7 +75,7 @@ require_capability('mod/adaptivequiz:attempt', $context);
 $count = adaptivequiz_count_user_previous_attempts($adaptivequiz->id, $USER->id);
 
 if (!adaptivequiz_allowed_attempt($adaptivequiz->attempts, $count)) {
-    print_error('noattemptsallowed', 'adaptivequiz');
+    throw new moodle_exception('noattemptsallowed', 'adaptivequiz');
 }
 
 // Create an instance of the module renderer class.
@@ -99,7 +103,7 @@ if (!empty($adaptivequiz->password)) {
 }
 
 // Create an instance of the adaptiveattempt class.
-$adaptiveattempt = new adaptiveattempt($adaptivequiz, $USER->id);
+$adaptiveattempt = new attempt($adaptivequiz, $USER->id);
 $algo = new stdClass();
 $nextdiff = null;
 $standarderror = 0.0;
@@ -111,7 +115,7 @@ if (!empty($uniqueid) && confirm_sesskey()) {
     $attemptrec = $adaptiveattempt->get_attempt();
 
     if (!adaptivequiz_uniqueid_part_of_attempt($uniqueid, $cm->instance, $USER->id)) {
-        print_error('uniquenotpartofattempt', 'adaptivequiz');
+        throw new moodle_exception('uniquenotpartofattempt', 'adaptivequiz');
     }
 
     // Process student's responses.
@@ -146,7 +150,7 @@ if (!empty($uniqueid) && confirm_sesskey()) {
             // Something went wrong with updating the attempt.  Print an error.
             if (!$everythingokay) {
                 $url = new moodle_url('/mod/adaptivequiz/attempt.php', array('cmid' => $id));
-                print_error('unableupdatediffsum', 'adaptivequiz', $url);
+                throw new moodle_exception('unableupdatediffsum', 'adaptivequiz', $url);
             }
 
             // Check whether the status property is empty.
@@ -157,7 +161,7 @@ if (!empty($uniqueid) && confirm_sesskey()) {
                 $standarderror = $algo->get_standarderror();
                 // Set the attempt to complete, update the standard error and attempt message, then redirect the user to the
                 // attempt finished page.
-                adaptivequiz_complete_attempt($uniqueid, $cm->instance, $USER->id, $standarderror, $message);
+                adaptivequiz_complete_attempt($uniqueid, $adaptivequiz, $context, $USER->id, $standarderror, $message);
 
                 $param = array('cmid' => $cm->id, 'id' => $cm->instance, 'uattid' => $uniqueid);
                 $url = new moodle_url('/mod/adaptivequiz/attemptfinished.php', $param);
@@ -174,7 +178,7 @@ if (!empty($uniqueid) && confirm_sesskey()) {
         }
     } catch (question_out_of_sequence_exception $e) {
         $url = new moodle_url('/mod/adaptivequiz/attempt.php', array('cmid' => $id));
-        print_error('submissionoutofsequencefriendlymessage', 'question', $url);
+        throw new moodle_exception('submissionoutofsequencefriendlymessage', 'question', $url);
 
     } catch (Exception $e) {
         $url = new moodle_url('/mod/adaptivequiz/attempt.php', array('cmid' => $id));
@@ -184,7 +188,7 @@ if (!empty($uniqueid) && confirm_sesskey()) {
             $debuginfo = $e->debuginfo;
         }
 
-        print_error('errorprocessingresponses', 'question', $url, $e->getMessage(), $debuginfo);
+        throw new moodle_exception('errorprocessingresponses', 'question', $url, $e->getMessage(), $debuginfo);
     }
 }
 
@@ -225,7 +229,7 @@ if (empty($attemptstatus)) {
             (new moodle_url('/mod/adaptivequiz/view.php', ['id' => $cm->id]))->out());
     }
 
-    adaptivequiz_complete_attempt($uniqueid, $cm->instance, $USER->id, $standarderror, $message);
+    adaptivequiz_complete_attempt($uniqueid, $adaptivequiz, $context, $USER->id, $standarderror, $message);
     // Redirect the user to the attemptfeedback page.
     $param = array('cmid' => $cm->id, 'id' => $cm->instance, 'uattid' => $uniqueid);
     $url = new moodle_url('/mod/adaptivequiz/attemptfinished.php', $param);
@@ -263,19 +267,27 @@ if (!empty($adaptivequiz->browsersecurity)) {
     $PAGE->set_heading(format_string($course->fullname));
 }
 
+echo $output->header();
+
 // Check if the user entered a password.
 $condition = adaptivequiz_user_entered_password($adaptivequiz->id);
 
 if (!empty($adaptivequiz->password) && empty($condition)) {
-    echo $output->print_header();
-
     if ($passwordattempt) {
         $mform->set_data(array('message' => get_string('wrongpassword', 'adaptivequiz')));
     }
 
     $mform->display();
-    echo $output->print_footer();
 } else {
-    // Render the question to the page.
-    echo $output->print_question($id, $quba, $slot, $level);
+    $attemptrecord = $adaptiveattempt->get_attempt();
+
+    if ($adaptivequiz->showattemptprogress) {
+        echo $output->container_start('attempt-progress-container');
+        echo $output->attempt_progress($attemptrecord->questionsattempted, $adaptivequiz->maximumquestions);
+        echo $output->container_end();
+    }
+
+    echo $output->question_submit_form($id, $quba, $slot, $level, $attemptrecord->questionsattempted + 1);
 }
+
+echo $output->print_footer();

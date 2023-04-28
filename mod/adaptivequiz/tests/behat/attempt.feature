@@ -25,7 +25,7 @@ Feature: Attempt an adaptive quiz
       | Adaptive Quiz Questions | truefalse | Q2   | Second question |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I navigate to "Question bank > Questions" in current page administration
+    And I navigate to "Question bank" in current page administration
     And I set the field "Select a category" to "Adaptive Quiz Questions (2)"
     And I choose "Edit question" action for "Q1" in the question bank
     And I expand all fieldsets
@@ -49,42 +49,35 @@ Feature: Attempt an adaptive quiz
       | Maximum number of questions  | 2                           |
       | Standard Error to stop       | 20                          |
       | Attempts allowed             | 1                           |
+      | ID number                    | adaptivequiz1               |
     And I click on "Save and return to course" "button"
     And I log out
 
   @javascript
   Scenario: Attempt an adaptive quiz
-    When I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "student1"
     And I press "Start attempt"
     Then I should see "First question"
 
   @javascript
   Scenario: Return to a started attempt
-    When I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page logged in as "student1"
     And I press "Start attempt"
     And I click on "True" "radio"
     And I press "Submit answer"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    And I am on the "adaptivequiz1" "Activity" page
     And I press "Start attempt"
     Then I should see "Second question"
 
   @javascript
   Scenario: A student cannot attempt an adaptive quiz if no more attempts are allowed
-    Given I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    Given I am on the "adaptivequiz1" "Activity" page logged in as "student1"
     And I press "Start attempt"
     And I click on "True" "radio" in the "First question" "question"
     And I press "Submit answer"
     And I click on "True" "radio" in the "Second question" "question"
     And I press "Submit answer"
     And I press "Continue"
-    When I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    When I am on the "adaptivequiz1" "Activity" page
     Then "Start attempt" "button" should not be visible
     And I should see "No more attempts allowed at this activity"

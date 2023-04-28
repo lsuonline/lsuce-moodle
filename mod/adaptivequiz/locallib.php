@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Some utility functions for the adaptive quiz activity.
@@ -23,13 +24,20 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/mod/adaptivequiz/lib.php');
+require_once($CFG->dirroot . '/question/editlib.php');
+require_once($CFG->dirroot . '/lib/questionlib.php');
+require_once($CFG->dirroot . '/question/engine/lib.php');
+
+use core_question\local\bank\question_edit_contexts;
+use mod_adaptivequiz\event\attempt_completed;
+use mod_adaptivequiz\local\attempt\attempt_state;
+use mod_adaptivequiz\local\catalgo;
+use qbank_managecategories\helper as qbank_managecategories_helper;
+
 // Default tagging used.
 define('ADAPTIVEQUIZ_QUESTION_TAG', 'adpq_');
 
-// Attempt was completed.
-define('ADAPTIVEQUIZ_ATTEMPT_COMPLETED', 'complete');
-// Attempt is still in progress.
-define('ADAPTIVEQUIZ_ATTEMPT_INPROGRESS', 'inprogress');
 // Number of attempts to display on the reporting page.
 define('ADAPTIVEQUIZ_REC_PER_PAGE', 30);
 // Number of questions to display for review on the page at one time.
@@ -47,19 +55,14 @@ define('ADAPTIVEQUIZ_STOPCRI_MAXLEVEL', 'maxlevel');
 // The user achieved the minimum difficulty level defined by the adaptive parameters, unable to retrieve another question.
 define('ADAPTIVEQUIZ_STOPCRI_MINLEVEL', 'minlevel');
 
-require_once($CFG->dirroot.'/mod/adaptivequiz/lib.php');
-require_once($CFG->dirroot.'/question/editlib.php');
-require_once($CFG->dirroot.'/lib/questionlib.php');
-require_once($CFG->dirroot.'/question/engine/lib.php');
-
 /**
  * This function returns an array of question bank categories accessible to the
  * current user in the given context
- * @param object $context A context object
+ * @param context $context A context object
  * @return array An array whose keys are the question category ids and values
  * are the name of the question category
  */
-function adaptivequiz_get_question_categories($context) {
+function adaptivequiz_get_question_categories(context $context) {
     if (empty($context)) {
         return array();
     }
@@ -67,7 +70,7 @@ function adaptivequiz_get_question_categories($context) {
     $options      = array();
     $qesteditctx  = new question_edit_contexts($context);
     $contexts     = $qesteditctx->having_one_edit_tab_cap('editq');
-    $questioncats = question_category_options($contexts);
+    $questioncats = qbank_managecategories_helper::question_category_options($contexts);
 
     if (!empty($questioncats)) {
         foreach ($questioncats as $questioncatcourse) {
@@ -141,7 +144,7 @@ function adaptivequiz_count_user_previous_attempts($instanceid = 0, $userid = 0)
         return 0;
     }
 
-    $param = array('instance' => $instanceid, 'userid' => $userid, 'attemptstate' => ADAPTIVEQUIZ_ATTEMPT_COMPLETED);
+    $param = array('instance' => $instanceid, 'userid' => $userid, 'attemptstate' => attempt_state::COMPLETED);
     $count = $DB->count_records('adaptivequiz_attempt', $param);
 
     return $count;
@@ -205,7 +208,7 @@ function adaptivequiz_update_attempt_data($uniqueid, $instance, $userid, $level,
             $debuginfo = $e->debuginfo;
         }
 
-        print_error('updateattempterror', 'adaptivequiz', '', $e->getMessage(), $debuginfo);
+        throw new moodle_exception('updateattempterror', 'adaptivequiz', '', $e->getMessage(), $debuginfo);
     }
 
     $attempt->difficultysum = (float) $attempt->difficultysum + (float) $level;
@@ -222,33 +225,41 @@ function adaptivequiz_update_attempt_data($uniqueid, $instance, $userid, $level,
 /**
  * This function sets the complete status for an attempt.
  *
- * @param int $uniqueid uniqueid value of the {adaptivequiz_attempt} record.
- * @param int $instance instance value of the {adaptivequiz_attempt} record.
- * @param int $userid userid value of the {adaptivequiz_attempt} record.
- * @param string $standarderror
- * @param string $statusmessage The status message to log for the attempt.
  * @throws dml_exception
  * @throws coding_exception
  */
-function adaptivequiz_complete_attempt($uniqueid, $instance, $userid, $standarderror, $statusmessage): void {
+function adaptivequiz_complete_attempt(
+    int $uniqueid,
+    stdClass $adaptivequiz,
+    context_module $context,
+    int $userid,
+    string $standarderror,
+    string $statusmessage
+): void {
     global $DB;
 
-    if ($uniqueid < 1) {
-        throw new coding_exception("Unique id of an attempt to complete must be a positive integer, got $uniqueid.");
-    }
-
     $attempt = $DB->get_record('adaptivequiz_attempt',
-        ['uniqueid' => $uniqueid, 'instance' => $instance, 'userid' => $userid], '*', MUST_EXIST);
+        ['uniqueid' => $uniqueid, 'instance' => $adaptivequiz->id, 'userid' => $userid], '*', MUST_EXIST);
 
-    $attempt->attemptstate = ADAPTIVEQUIZ_ATTEMPT_COMPLETED;
+    // Need to keep the record as it is before triggering the event below.
+    $attemptrecordsnapshot = clone $attempt;
+
+    $attempt->attemptstate = attempt_state::COMPLETED;
     $attempt->attemptstopcriteria = $statusmessage;
     $attempt->timemodified = time();
     $attempt->standarderror = $standarderror;
     $DB->update_record('adaptivequiz_attempt', $attempt);
 
-    // Update the gradebook entries.
-    $adaptivequiz = $DB->get_record('adaptivequiz', array('id' => $instance));
     adaptivequiz_update_grades($adaptivequiz, $userid);
+
+    $event = attempt_completed::create([
+        'objectid' => $attempt->id,
+        'context' => $context,
+        'userid' => $userid
+    ]);
+    $event->add_record_snapshot('adaptivequiz_attempt', $attemptrecordsnapshot);
+    $event->add_record_snapshot('adaptivequiz', $adaptivequiz);
+    $event->trigger();
 }
 
 /**
@@ -274,42 +285,6 @@ function adaptivequiz_min_attempts_reached($uniqueid, $instance, $userid) {
     $exists = $DB->record_exists_sql($sql, $param);
 
     return $exists;
-}
-
-/**
- * This function constructs an ORDER BY caluse for the view attempts report page
- * @param string $sort the column to sort by
- * @param string $sortdir the direction to sort in
- * @return string an ordery by (ex. ORDER BY firstname ASC)
- */
-function adaptivequiz_construct_view_report_orderby($sort, $sortdir) {
-    $orderby = '';
-
-    switch (strtolower($sort)) {
-        case 'firstname':
-        case 'lastname':
-        case 'attempts':
-        case 'measure':
-        case 'stderror':
-        case 'timemodified':
-            $orderby = 'ORDER BY '.$sort;
-            break;
-        default:
-            $orderby = 'ORDER BY firstname';
-            break;
-    }
-
-    if (!empty($orderby)) {
-        switch (strtoupper($sortdir)) {
-            case 'DESC':
-                $orderby .= ' '.$sortdir;
-                break;
-            default:
-                $orderby .= ' ASC';
-        }
-    }
-
-    return $orderby;
 }
 
 /**
@@ -363,11 +338,10 @@ function adaptivequiz_get_grading_options() {
  */
 function adaptivequiz_get_user_grades($adaptivequiz, $userid = 0) {
     global $CFG, $DB;
-    require_once($CFG->dirroot.'/mod/adaptivequiz/catalgo.class.php');
 
     $params = array(
         'instance' => $adaptivequiz->id,
-        'attemptstate' => ADAPTIVEQUIZ_ATTEMPT_COMPLETED,
+        'attemptstate' => attempt_state::COMPLETED,
     );
     $userwhere = '';
     if ($userid) {

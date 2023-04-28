@@ -15,48 +15,35 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Adaptive quiz backup files
+ * Define all the backup steps that will be used by the backup_adaptivequiz_activity_task.
  *
- * This module was created as a collaborative effort between Middlebury College
- * and Remote Learner.
- *
- * @package    mod_adaptivequiz
- * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-defined('MOODLE_INTERNAL') || die();
-
-/**
- * Define all the backup steps that will be used by the backup_adaptivequiz_activity_task
- *
- * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_adaptivequiz
+ * @copyright 2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright 2022 onwards Vitaly Potenko <potenkov@gmail.com>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class backup_adaptivequiz_activity_structure_step extends backup_questions_activity_structure_step {
 
     /**
-     * Define the backup structure
-     * @return string the root element (adaptivequiz), wrapped into standard activity structure.
+     * Define the backup structure.
+     *
+     * @return backup_nested_element The root element (adaptivequiz), wrapped into standard activity structure.
      */
     protected function define_structure() {
         // To know if we are including userinfo.
         $userinfo = $this->get_setting_value('userinfo');
 
         // Define each element separated.
-        $nodes = array(
-                'name', 'intro', 'introformat', 'attempts', 'password', 'browsersecurity',
-                'attemptfeedback', 'attemptfeedbackformat', 'highestlevel', 'lowestlevel',
-                'minimumquestions', 'maximumquestions', 'standarderror', 'startinglevel',
-                'timecreated', 'timemodified');
-        $adaptivequiz = new backup_nested_element('adaptivequiz', array('id'), $nodes);
+        $nodes = ['name', 'intro', 'introformat', 'attempts', 'password', 'browsersecurity', 'attemptfeedback',
+            'attemptfeedbackformat', 'showabilitymeasure', 'showattemptprogress', 'highestlevel', 'lowestlevel', 'minimumquestions',
+            'maximumquestions', 'standarderror', 'startinglevel', 'timecreated', 'timemodified', 'completionattemptcompleted'];
+        $adaptivequiz = new backup_nested_element('adaptivequiz', ['id'], $nodes);
 
         // Attempts.
         $adaptiveattempts = new backup_nested_element('adaptiveattempts');
-        $nodes = array(
-                'userid', 'uniqueid', 'attemptstate', 'attemptstopcriteria', 'questionsattempted',
-                'difficultysum', 'standarderror', 'measure', 'timecreated', 'timemodified');
-        $adaptiveattempt = new backup_nested_element('adaptiveattempt', array('id'), $nodes);
+        $nodes = ['userid', 'uniqueid', 'attemptstate', 'attemptstopcriteria', 'questionsattempted', 'difficultysum',
+            'standarderror', 'measure', 'timecreated', 'timemodified'];
+        $adaptiveattempt = new backup_nested_element('adaptiveattempt', ['id'], $nodes);
 
         // This module is using questions, so produce the related question states and sessions.
         // attaching them to the $attempt element based in 'uniqueid' matching.
@@ -64,7 +51,7 @@ class backup_adaptivequiz_activity_structure_step extends backup_questions_activ
 
         // Activity to question categories reference.
         $adaptivequestioncats = new backup_nested_element('adatpivequestioncats');
-        $adaptivequestioncat = new backup_nested_element('adatpivequestioncat', array('id'), array('questioncategory'));
+        $adaptivequestioncat = new backup_nested_element('adatpivequestioncat', ['id'], ['questioncategory']);
 
         // Build the tree.
         $adaptivequiz->add_child($adaptiveattempts);
@@ -74,8 +61,8 @@ class backup_adaptivequiz_activity_structure_step extends backup_questions_activ
         $adaptivequestioncats->add_child($adaptivequestioncat);
 
         // Define sources.
-        $adaptivequiz->set_source_table('adaptivequiz', array('id' => backup::VAR_ACTIVITYID));
-        $adaptivequestioncat->set_source_table('adaptivequiz_question', array('instance' => backup::VAR_PARENTID));
+        $adaptivequiz->set_source_table('adaptivequiz', ['id' => backup::VAR_ACTIVITYID]);
+        $adaptivequestioncat->set_source_table('adaptivequiz_question', ['instance' => backup::VAR_PARENTID]);
 
         // All the rest of elements only happen if we are including user info.
         if ($userinfo) {
@@ -92,7 +79,6 @@ class backup_adaptivequiz_activity_structure_step extends backup_questions_activ
 
         $adaptivequiz->annotate_files('mod_adaptivequiz', 'intro', null); // This file area hasn't itemid.
 
-        // Return the root element (adaptivequiz), wrapped into standard activity structure.
         return $this->prepare_activity_structure($adaptivequiz);
     }
 }

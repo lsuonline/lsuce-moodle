@@ -16,7 +16,12 @@
 
 /**
  * Redirect users who clicked on a link in the gradebook.
+ *
+ * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 require_once(dirname(__FILE__).'/../../config.php');
 
 $id = required_param('id', PARAM_INT);          // Course module ID.
@@ -25,10 +30,10 @@ $itemnumber = optional_param('itemnumber', 0, PARAM_INT); // Item number, may be
 $userid = optional_param('userid', 0, PARAM_INT); // Graded user ID (optional).
 
 if (!$cm = get_coursemodule_from_id('adaptivequiz', $id)) {
-    print_error('invalidcoursemodule');
+    throw new moodle_exception('invalidcoursemodule');
 }
 if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
-    print_error("coursemisconf");
+    throw new moodle_exception("coursemisconf");
 }
 
 require_login($course, true, $cm);

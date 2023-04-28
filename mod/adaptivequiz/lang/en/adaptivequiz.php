@@ -3,7 +3,8 @@
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Strings for the English language.
@@ -27,10 +28,17 @@ $string['abilityestimated'] = 'Estimated ability';
 $string['abilityestimated_help'] = 'The estimated ability of a test-taker aligns with the question difficulty at which the test-taker has a 50% probability of answering the question correctly. To identify the performance level, match the ability value with the questions level range (see the range after the \'/\' symbol).';
 $string['attemptfeedbackdefaulttext'] = 'You\'ve finished the attempt, thank you for taking the quiz!';
 $string['attemptquestion_ability'] = 'Ability Measure';
+$string['attemptquestionsprogress'] = 'Questions progress: {$a}';
+$string['attemptquestionsprogress_help'] = 'The maximum number of questions displayed here is not necessarily the number of questions you have to take during the quiz. It is the MAXIMUM POSSIBLE number of questions you might take, the quiz may finish earlier if the ability measure is sufficiently defined.';
 $string['attempt_summary'] = 'Attempt Summary';
 $string['attemptsusernoprevious'] = 'You haven\'t attempted this quiz yet.';
 $string['attemptsuserprevious'] = 'Your previous attempts';
 $string['attemptnofirstquestion'] = 'Sorry, but couldn\'t define the first question to start the attempt, the quiz is possibly misconfigured. ';
+$string['completionattemptcompletedcminfo'] = 'Complete an attempt';
+$string['completionattemptcompletedform'] = 'Student must have al least one completed attempt on this activity';
+$string['eventattemptcompleted'] = 'Attempt completed';
+$string['modformshowattemptprogress'] = 'Show quiz progress to students';
+$string['modformshowattemptprogress_help'] = 'When selected, during attempt, a student will see a progress bar depicting how many questions are answered out of the maximum number.';
 $string['showabilitymeasure'] = 'Show ability measure to students';
 $string['showabilitymeasure_help'] = 'Sometimes it may be useful to reveal ability estimations to students after taking an adaptive quiz. With this setting enabled a student may see ability estimation in the attempts summary and right after finishing an attempt as well.';
 $string['questionspoolerrornovalidstartingquestions'] = 'The selected questions categories do not contain questions which are properly tagged to match the selected starting level of difficulty.';
@@ -40,7 +48,23 @@ $string['reportattemptgraphtab'] = 'Attempt Graph';
 $string['reportattemptgraphtabletitle'] = 'Table View of Attempt Graph';
 $string['reportattemptquestionsdetailstab'] = 'Questions Details';
 $string['reportattemptreviewpageheading'] = '{$a->quizname} - reviewing attempt by {$a->fullname} submitted on {$a->finished}';
+$string['reportattemptsbothenrolledandnotenrolled'] = 'all users who ever made attempts';
 $string['reportattemptsdownloadfilename'] = '{$a}_attempts_report';
+$string['reportattemptsenrolledwithattempts'] = 'participants who made attempts';
+$string['reportattemptsenrolledwithnoattempts'] = 'participants without attempts made';
+$string['reportattemptsfilterformsubmit'] = 'Filter';
+$string['reportattemptsfilterincludeinactiveenrolments'] = 'Include users with inactive enrolments';
+$string['reportattemptsfilterincludeinactiveenrolments_help'] = 'Whether include users with suspended enrolments.';
+$string['reportattemptsfilterusers'] = 'Show';
+$string['reportattemptsfilterformheader'] = 'Filtering';
+$string['reportattemptsnotenrolled'] = 'not enrolled users who made attempts';
+$string['reportattemptspersistentfilter'] = 'Persistent filter';
+$string['reportattemptspersistentfilter_help'] = 'When checked, the filter settings below will be stored when submitted, and then applied each time you visit the report page.';
+$string['reportattemptsprefsformheader'] = 'Report Preferences';
+$string['reportattemptsprefsformsubmit'] = 'Apply';
+$string['reportattemptsresetfilter'] = 'Reset filter';
+$string['reportattemptsshowinitialbars'] = 'Show initials bar';
+$string['reportattemptsusersperpage'] = 'Number of users displayed:';
 $string['reportattemptsummarytab'] = 'Attempt Summary';
 $string['reportindividualuserattemptpageheading'] = '{$a->quizname} - individual user attempts report for {$a->username}';
 $string['reportuserattemptstitleshort'] = '{$a}\'s attempts';
@@ -105,7 +129,7 @@ $string['attemptfeedback_help'] = 'The attempt feedback is displayed to the user
 $string['formquestionpool'] = 'Select at least one question category';
 $string['submitanswer'] = 'Submit answer';
 $string['startattemptbtn'] = 'Start attempt';
-$string['errorfetchingquest'] = 'Unable to fetch a questions for level {$a->level}';
+$string['errorfetchingquest'] = 'Unable to fetch a question for level {$a->level}';
 $string['leveloutofbounds'] = 'Requested level {$a->level} out of bounds for the attempt';
 $string['errorattemptstate'] = 'There was an error in determining the state of the attempt';
 $string['nopermission'] = 'You don\t have permission to view this resource';
@@ -129,7 +153,6 @@ $string['functiondisabledbysecuremode'] = 'That functionality is currently disab
 $string['enterrequiredpassword'] = 'Enter required password';
 $string['requirepasswordmessage'] = 'To attempt this quiz you need to know the quiz password';
 $string['wrongpassword'] = 'Password is incorrect';
-$string['noattemptrecords'] = 'No attempt records for this student';
 $string['attemptstate'] = 'State of attempt';
 $string['attemptstopcriteria'] = 'Reason for stopping attempt';
 $string['questionsattempted'] = 'Sum of questions attempted';
@@ -142,14 +165,12 @@ $string['reviewattemptreport'] = 'Reviewing attempt by {$a->fullname} submitted 
 $string['deleteattemp'] = 'Delete attempt';
 $string['confirmdeleteattempt'] = 'Confirming the deletion of attempt from {$a->name} submitted on {$a->timecompleted}';
 $string['attemptdeleted'] = 'Attempt deleted for {$a->name} submitted on {$a->timecompleted}';
-$string['errordeletingattempt'] = 'Attempt record was not found';
 $string['closeattempt'] = 'Close attempt';
 $string['confirmcloseattempt'] = 'Are you sure that you wish to close and finalize this attempt of {$a->name}?';
 $string['confirmcloseattemptstats'] = 'This attempt was started on {$a->started} and last updated on {$a->modified}.';
 $string['confirmcloseattemptscore'] = '{$a->num_questions} questions were answered and the score so far is {$a->measure} {$a->standarderror}.';
 $string['attemptclosedstatus'] = 'Manually closed by {$a->current_user_name} (user-id: {$a->current_user_id}) on {$a->now}.';
 $string['attemptclosed'] = 'The attempt has been manually closed.';
-$string['errorclosingattempt'] = 'Attempt record was not found';
 $string['errorclosingattempt_alreadycomplete'] = 'This attempt is already complete, it cannot be manually closed.';
 $string['formstderror'] = 'Must enter a percent less than 50 and greater than or equal to 0';
 $string['score'] = 'Score';
@@ -170,7 +191,6 @@ $string['attemptquestion_abilitylogits'] = 'Measured Ability (logits)';
 $string['attemptquestion_stderr'] = 'Standard Error (&plusmn;&nbsp;logits)';
 $string['graphlegend_target'] = 'Target Level';
 $string['graphlegend_error'] = 'Standard Error';
-$string['unknownuser'] = 'Unknown user';
 $string['answerdistgraph_title'] = 'Answer distribution for {$a->firstname} {$a->lastname}';
 $string['answerdistgraph_questiondifficulty'] = 'Question level';
 $string['answerdistgraph_numrightwrong'] = 'Num wrong (-)  /  Num right (+)';

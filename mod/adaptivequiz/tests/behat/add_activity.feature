@@ -30,13 +30,13 @@ Feature: Add an adaptive quiz
   Scenario: Add an adaptive quiz to a course to be visible to a student
     When I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-    And I navigate to "Question bank > Questions" in current page administration
+    And I navigate to "Question bank" in current page administration
     And I set the field "Select a category" to "Adaptive Quiz Questions (4)"
     And I choose "Edit question" action for "TF1" in the question bank
     And I expand all fieldsets
     And I set the field "Tags" to "adpq_1"
     And I press "id_submitbutton"
-    And I am on "Course 1" course homepage
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Adaptive Quiz" to section "1"
     And I set the following fields to these values:
       | Name                         | Adaptive Quiz               |
@@ -48,18 +48,17 @@ Feature: Add an adaptive quiz
       | Minimum number of questions  | 1                           |
       | Maximum number of questions  | 2                           |
       | Standard Error to stop       | 25                          |
+      | ID number                    | adaptivequiz1               |
     And I click on "Save and return to course" "button"
     And I log out
-    And I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I follow "Adaptive Quiz"
+    And I am on the "adaptivequiz1" "Activity" page logged in as "student1"
     Then "Start attempt" "button" should exist
 
   @javascript
   Scenario: It is impossible to create an adaptive quiz without a properly tagged question for the starting level of difficulty
     When I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-    And I navigate to "Question bank > Questions" in current page administration
+    And I navigate to "Question bank" in current page administration
     And I set the field "Select a category" to "Adaptive Quiz Questions (4)"
     And I choose "Edit question" action for "TF1" in the question bank
     And I expand all fieldsets
@@ -76,7 +75,7 @@ Feature: Add an adaptive quiz
     And I set the following fields to these values:
       | Tags | truefalse_1, TF |
     And I press "id_submitbutton"
-    And I am on "Course 1" course homepage
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Adaptive Quiz" to section "1"
     And I set the following fields to these values:
       | Name                         | Adaptive Quiz               |
