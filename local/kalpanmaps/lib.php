@@ -691,7 +691,7 @@ class kalpanmaps {
      *
      * @return array $kalitems
      */
-    public static function get_kal_forum_posts($limit = 0, $students) {
+    public static function get_kal_forum_posts($students, $limit = 0) {
         global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
@@ -997,7 +997,7 @@ class kalpanmaps {
      *
      * @return array $kalitems
      */
-    public static function get_kal_glossary_entries($limit = 0, $students) {
+    public static function get_kal_glossary_entries($students, $limit = 0) {
         global $CFG, $DB;
 
         // Set these up if we are NOT converting studen submissions.
