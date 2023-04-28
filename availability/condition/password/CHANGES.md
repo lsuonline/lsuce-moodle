@@ -4,25 +4,50 @@ moodle-availability_password
 Changes
 -------
 
-### v3.9-r5
+### v4.1-r1
 
-* 2022-07-22 - Backport Bugfix "Adding type parameter to save()" from 3.11 to 3.9, solves #17
+* 2023-01-21 - Prepare compatibility for Moodle 4.1.
+
+### v4.0-r2
+
+* 2023-03-19 - Bugfix: Availability password restrictions could not be edited anymore in lesson and external tool activity instances, solves #22. 
+* 2023-03-09 - Make codechecker happy again
+* 2022-02-28 - Fix location of Bootstrap in phpunit.xml
+* 2022-11-28 - Updated Moodle Plugin CI to latest upstream recommendations
+
+### v4.0-r1
+
+* 2022-07-12 - Fix availability form styling (which didn't use proper Bootstrap styles up to now)
+* 2022-07-12 - Fix Behat tests which broke with Moodle 4.0.
+* 2022-07-12 - Make codechecker happy again
+* 2022-07-12 - Prepare compatibility for Moodle 4.0.
+
+### v3.11-r3
+
 * 2022-07-10 - Add Visual checks section to UPGRADE.md
 * 2022-07-10 - Add Capabilities section to README.md
 
-### v3.9-r4
+### v3.11-r2
 
 * 2022-06-26 - Make codechecker happy again
 * 2022-06-26 - Updated Moodle Plugin CI to latest upstream recommendations
 * 2022-06-26 - Add UPGRADE.md as internal upgrade documentation
 * 2022-06-26 - Update maintainers and copyrights in README.md.
 
-### v3.9-r3
+### v3.11-r1
+
+* 2021-06-13 - Prepare compatibility for Moodle 3.11.
+* 2021-06-13 - Added definition for a PHPUnit availability_cohort_testsuite.
+* 2021-06-13 - Added type parameter to save().
+
+### v3.10-r2
 
 * 2021-02-05 - Move Moodle Plugin CI from Travis CI to Github actions
 
-### v3.9-r2
+### v3.10-r1
 
+* 2021-01-09 - Fix PHPUnit function declaration for Moodle 3.10.
+* 2021-01-09 - Prepare compatibility for Moodle 3.10.
 * 2021-01-06 - Change in Moodle release support:
                For the time being, this plugin is maintained for the most recent LTS release of Moodle as well as the most recent major release of Moodle.
                Bugfixes are backported to the LTS release. However, new features and improvements are not necessarily backported to the LTS release.
