@@ -28,10 +28,22 @@ class lsu_semesters extends lsu_source implements semester_processor {
         switch ($semester_code) {
             case self::FALL:
                 return array($year - 1, 'Fall');
+            case self::FALL1:
+                return array($year - 1, 'First Fall');
+            case self::FALL2:
+                return array($year - 1, 'Second Fall');
             case self::SPRING:
                 return array($year, 'Spring');
+            case self::SPRING1:
+                return array($year, 'First Spring');
+            case self::SPRING2:
+                return array($year, 'Second Spring');
             case self::SUMMER:
                 return array($year, 'Summer');
+            case self::SUMMER1:
+                return array($year, 'First Summer');
+            case self::SUMMER2:
+                return array($year - 1, 'Second Summer');
             case self::WINTER_INT:
                 return array($year - 1, 'WinterInt');
             case self::SPRING_INT:
@@ -66,13 +78,18 @@ class lsu_semesters extends lsu_source implements semester_processor {
                     $campus = 'LSU';
                     $starting = ($code == self::LSU_SEM);
                     break;
+                case self::ONLINE_SEM:
+                case self::ONLINE_FINAL:
+                    $campus = 'ONLINE';
+                    $starting = ($code == self::ONLINE_SEM);
+                    break;
                 case self::LAW_SEM:
                 case self::LAW_FINAL:
                     $campus = 'LAW';
                     $starting = ($code == self::LAW_SEM);
                     break;
                 default:
-                    continue;
+		    break;
             }
 
             if (!isset($lookup[$campus])) {
@@ -131,9 +148,10 @@ class lsu_courses extends lsu_source implements course_processor {
 
             $law_not = ($semester->campus == 'LAW' and $department != 'LAW');
             $lsu_not = ($semester->campus == 'LSU' and $department == 'LAW');
+            $online_not = ($semester->campus == 'ONLINE' and $department == 'LAW');
 
             // Course is not semester applicable.
-            if ($law_not or $lsu_not) {
+            if ($law_not or $lsu_not or $online_not) {
                 continue;
             }
 
@@ -182,7 +200,11 @@ class lsu_teachers_by_department extends lsu_teacher_format implements teacher_b
         }
 
         // Always use LSU campus code.
-        $campus = self::LSU_CAMPUS;
+        if ($semester->campus == 'ONLINE') {
+            $campus = self::ONLINE_CAMPUS;
+        } else {
+            $campus = self::LSU_CAMPUS;
+        }
 
         $params = array($semester->session_key, $department, $semester_term, $campus);
 
@@ -208,9 +230,9 @@ class lsu_students_by_department extends lsu_student_format implements student_b
     function students($semester, $department) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
 
-        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : self::LAW_CAMPUS;
+        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : ($semester->campus == 'ONLINE' ? self::ONLINE_CAMPUS : self::LAW_CAMPUS);
 
-        $inst = $semester->campus == 'LSU' ? self::LSU_INST : self::LAW_INST;
+        $inst = $semester->campus == 'LSU' || $semester->campus == 'ONLINE' ? self::LSU_INST : self::LAW_INST;
 
         $params = array($campus, $semester_term, $department, $inst, $semester->session_key);
 
@@ -245,7 +267,11 @@ class lsu_teachers extends lsu_teacher_format implements teacher_processor {
             return $teachers;
         }
 
-        $campus = self::LSU_CAMPUS;
+        if ($semester->campus == 'ONLINE') {
+            $campus = self::ONLINE_CAMPUS;
+        } else {
+            $campus = self::LSU_CAMPUS;
+        }
 
         $params = array($course->cou_number, $semester->session_key,
             $section->sec_number, $course->department, $semester_term, $campus);
@@ -266,7 +292,7 @@ class lsu_students extends lsu_student_format implements student_processor {
     function students($semester, $course, $section) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
 
-        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : self::LAW_CAMPUS;
+        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : ($semester->campus == 'ONLINE' ? self::ONLINE_CAMPUS : self::LAW_CAMPUS);
 
         $params = array($campus, $semester_term, $course->department,
             $course->cou_number, $section->sec_number, $semester->session_key);
@@ -291,6 +317,8 @@ class lsu_student_data extends lsu_source {
 
         if ($semester->campus == 'LSU') {
             $params += array(1 => self::LSU_INST, 2 => self::LSU_CAMPUS);
+        } else if ($semester->campus == 'ONLINE') {
+            $params += array(1 => self::LSU_INST, 2 => self::ONLINE_CAMPUS);
         } else {
             $params += array(1 => self::LAW_INST, 2 => self::LAW_CAMPUS);
         }
@@ -326,6 +354,11 @@ class lsu_degree extends lsu_source {
             $params += array(
                 1 => self::LSU_INST,
                 2 => self::LSU_CAMPUS
+            );
+        } else if ($semester->campus == 'ONLINE') {
+            $params += array(
+                1 => self::LSU_INST,
+                2 => self::ONLINE_CAMPUS
             );
         } else {
             $params += array(
@@ -382,10 +415,15 @@ class lsu_sports extends lsu_source {
     function find_season($time) {
         $now = getdate($time);
 
-        $june = 521;
-        $dec = 1231;
+        $june = get_config('local_lsu', 'junedate');
+        $dec = get_config('local_lsu', 'decemberdate');
+
+//        $june = 604;
+//        $dec = 1231;
 
         $cur = (int)(sprintf("%d%02d", $now['mon'], $now['mday']));
+
+        mtrace("Current - $cur, June - $june, December - $dec.");
 
         if ($cur >= $june and $cur <= $dec) {
             return ($now['year']) . substr($now['year'] + 1, 2);

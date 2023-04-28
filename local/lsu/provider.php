@@ -31,6 +31,7 @@ class lsu_enrollment_provider extends enrollment_provider {
         'credential_location' => 'https://secure.web.lsu.edu/credentials.php',
         'wsdl_location' => 'webService.wsdl',
         'semester_source' => 'MOODLE_SEMESTERS',
+        'semester_source2' => 'ONLINE_SEMESTERS',
         'course_source' => 'MOODLE_COURSES',
         'teacher_by_department' => 'MOODLE_INSTRUCTORS_BY_DEPT',
         'student_by_department' => 'MOODLE_STUDENTS_BY_DEPT',
@@ -112,6 +113,26 @@ class lsu_enrollment_provider extends enrollment_provider {
                 $_s($name), $_s($name. '_desc'), $default)
             );
         }
+
+        // June date.
+        $settings->add(
+            new admin_setting_configtext(
+                'local_lsu/junedate',
+                get_string('lsu_junedate', 'local_lsu'),
+                get_string('lsu_junedate_desc', 'local_lsu'),
+                604  // Default.
+            )
+        );
+
+        // December date.
+        $settings->add(
+            new admin_setting_configtext(
+                'local_lsu/decemberdate',
+                get_string('lsu_decemberdate', 'local_lsu'),
+                get_string('lsu_decemberdate_desc', 'local_lsu'),
+                1231  // Default.
+            )
+        );
     }
 
     public static function plugin_key() {
@@ -122,6 +143,13 @@ class lsu_enrollment_provider extends enrollment_provider {
         return new lsu_semesters(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('semester_source')
+        );
+    }
+
+    function semester_source2() {
+        return new lsu_semesters(
+            $this->username, $this->password,
+            $this->wsdl, $this->get_setting('semester_source2')
         );
     }
 

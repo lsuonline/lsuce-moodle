@@ -521,10 +521,21 @@ class enrol_ues_plugin extends enrol_plugin {
         $now = ues::format_time($time - $subdays);
 
         $this->log('Pulling Semesters for ' . $now . '...');
+        $onlinesemesters = array();
 
         try {
             $semestersource = $this->provider()->semester_source();
-            $semesters = $semestersource->semesters($now);
+            $semestersource2 = $this->provider()->semester_source2();
+
+            $semesters1 = $semestersource->semesters($now);
+            $semesters2 = $semestersource2->semesters($now);
+            foreach ($semesters2 as $onlinesemester) {
+                $onlinesemester->campus = "ONLINE";
+                $onlinesemesters[] = $onlinesemester;
+            }
+
+            $semesters = array_merge($onlinesemesters, $semesters1);
+
             $this->log('Processing ' . count($semesters) . " Semesters...\n");
             $psemesters = $this->process_semesters($semesters);
 
@@ -1667,7 +1678,7 @@ class enrol_ues_plugin extends enrol_plugin {
      */
     private function user_changed(ues_user $prev, ues_user $current) {
         global $DB;
-        $namefields   = user_picture::fields();
+        $namefields = \core_user\fields::for_userpic()->get_sql('', false, '', '', false)->selects;
         $sql          = "SELECT id, idnumber, $namefields FROM {user} WHERE id = :id";
 
         // The ues_user method does not currently upgrade with the alt names.

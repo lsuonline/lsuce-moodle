@@ -124,6 +124,13 @@ class online_enrollment_provider extends enrollment_provider {
         );
     }
 
+    function semester_source2() {
+        return new online_semesters(
+            $this->username, $this->password,
+            $this->wsdl, $this->get_setting('semester_source2')
+        );
+    }
+
     public function course_source() {
         return new online_courses(
             $this->username, $this->password,

@@ -44,6 +44,9 @@ $string['sports_information_desc'] = 'This will enable the pulling of student at
 $string['semester_source'] = 'Semester serviceId';
 $string['semester_source_desc'] = 'The web service id for campus semesters';
 
+$string['semester_source2'] = 'Online Semester serviceId';
+$string['semester_source2_desc'] = 'The web service id for online semesters';
+
 $string['course_source'] = 'Courses serviceId';
 $string['course_source_desc'] = 'The web service id for courses per semester';
 
@@ -70,6 +73,11 @@ $string['student_anonymous_source_desc'] = 'The web service id for anonymous num
 
 $string['student_ath_source'] = 'Athlete info serviceId';
 $string['student_ath_source_desc'] = 'The web service id for student athletes';
+
+$string['lsu_junedate'] = 'June Date';
+$string['lsu_junedate_desc'] = 'Date in June to override the season year.';
+$string['lsu_decemberdate'] = 'December Date';
+$string['lsu_decemberdate_desc'] = 'Date in December to override the season year.';
 
 // Error strings.
 $string['bad_file'] = 'Provide a *.wsdl* file';

@@ -20,8 +20,14 @@ ini_set('default_socket_timeout', 300);
 
 interface semester_codes {
     const FALL = '1S';
+    const FALL1 = '1L';
+    const FALL2 = '1P';
     const SPRING = '2S';
+    const SPRING1 = '2D';
+    const SPRING2 = '2L';
     const SUMMER = '3S';
+    const SUMMER1 = '3D';
+    const SUMMER2 = '1D';
     const WINTER_INT = '1T';
     const SPRING_INT = '2T';
     const SUMMER_INT = '3T';
@@ -29,15 +35,19 @@ interface semester_codes {
 
 interface institution_codes {
     const LSU_SEM = 'CLSB';
+    const ONLINE_SEM = 'CLSB';
     const LAW_SEM = 'LAWB';
 
     const LSU_FINAL = 'CLSE';
+    const ONLINE_FINAL = 'CLSE';
     const LAW_FINAL = 'LAWE';
 
     const LSU_CAMPUS = '01';
+    const ONLINE_CAMPUS = '01';
     const LAW_CAMPUS = '08';
 
     const LSU_INST = '1590';
+    const ONLINE_INST = '1590';
     const LAW_INST = '1595';
 }
 
@@ -119,12 +129,24 @@ abstract class lsu_source implements institution_codes, semester_codes {
         switch ($semester_name) {
             case 'Fall':
                 return $partial($semester_year + 1, self::FALL);
+            case 'First Fall':
+                return $partial($semester_year + 1, self::FALL1);
+            case 'Second Fall':
+                return $partial($semester_year + 1, self::FALL2);
             case 'WinterInt':
                 return $partial($semester_year + 1, self::WINTER_INT);
             case 'Summer':
                 return $partial($semester_year, self::SUMMER);
+            case 'First Summer':
+                return $partial($semester_year, self::SUMMER1);
+            case 'Second Summer':
+                return $partial($semester_year + 1, self::SUMMER2);
             case 'Spring':
                 return $partial($semester_year, self::SPRING);
+            case 'First Spring':
+                return $partial($semester_year, self::SPRING1);
+            case 'Second Spring':
+                return $partial($semester_year, self::SPRING2);
             case 'SummerInt':
                 return $partial($semester_year, self::SUMMER_INT);
             case 'SpringInt':

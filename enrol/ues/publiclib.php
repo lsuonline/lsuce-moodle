@@ -60,7 +60,8 @@ abstract class ues {
     }
 
     public static function format_time($time) {
-        return strftime('%Y-%m-%d', $time);
+	$ts = intval(strftime('%Y-%m-%d', $time));
+        return $ts;
     }
 
     public static function where($field = null) {
@@ -436,9 +437,9 @@ abstract class ues {
             $details = new stdClass();
             $details->status = (!$disabled) ? self::_s('run_adhoc_status_enabled') : self::_s('run_adhoc_status_disabled');
             if ($lasttime != "0") {
-                $details->last = self::_s('run_adhoc_last_run_time', date_format_string($lasttime, $timeformat, usertimezone()));
+                $details->last = self::_s('run_adhoc_last_run_time', date_format_string(intval($lasttime), $timeformat, usertimezone()));
             }
-            $details->next = self::_s('run_adhoc_next_run_time', date_format_string($nexttime, $timeformat, usertimezone()));
+            $details->next = self::_s('run_adhoc_next_run_time', date_format_string(intval($nexttime), $timeformat, usertimezone()));
 
             return self::_s('run_adhoc_scheduled_task_details', $details);
         }
