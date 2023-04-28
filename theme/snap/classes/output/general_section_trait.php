@@ -37,7 +37,9 @@ trait general_section_trait {
     protected function is_section_conditional(\section_info $section) {
         // Are there any conditional fields populated?
         if (!empty($section->availableinfo)
-            || !empty(json_decode($section->availability)->c)) {
+	    // BEGIN LSU Warning fix.
+            || !empty(json_decode(isset($section->availability))->c)) {
+	    // END LSU Warning fix.
             return true;
         }
         // OK - this isn't conditional.
