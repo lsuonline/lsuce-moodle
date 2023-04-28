@@ -47,7 +47,12 @@ abstract class student_gradeviewer {
                 $grade->finalgrade = null;
             }
 
-            $display = grade_format_gradevalue($grade->finalgrade, $courseitem);
+            $finalsggrade = sg_get_grade_for_course($course->id, $userid);
+
+            $display = $finalsggrade[0] ?
+            $finalsggrade[0] :
+            grade_format_gradevalue($grade->finalgrade, $courseitem);
+
             return "$name $display";
         };
     }
