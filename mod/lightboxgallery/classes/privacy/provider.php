@@ -18,6 +18,7 @@
  * Privacy Subsystem implementation for mod_lightboxgallery.
  *
  * @package    mod_lightboxgallery
+ * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

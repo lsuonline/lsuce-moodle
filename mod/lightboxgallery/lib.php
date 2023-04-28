@@ -52,6 +52,8 @@ function lightboxgallery_supports($feature) {
             return false;
         case FEATURE_BACKUP_MOODLE2:
             return true;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_CONTENT;
 
         default:
             return null;
@@ -212,8 +214,8 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
 
     $cm = $modinfo->cms[$cmid];
 
-    $userfields = user_picture::fields('u', null, 'userid');
-    $userfieldsnoalias = user_picture::fields();
+    $userfields = \core_user\fields::for_userpic()->get_sql('u', false, '', 'userid', false)->selects;
+    $userfieldsnoalias = \core_user\fields::get_picture_fields();
     $sql = "SELECT c.*, l.name, $userfields
               FROM {lightboxgallery_comments} c
                    JOIN {lightboxgallery} l ON l.id = c.gallery
@@ -244,8 +246,7 @@ function lightboxgallery_get_recent_mod_activity(&$activities, &$index, $timesta
             $activity->user = new stdClass();
             $activity->user->id = $comment->userid;
 
-            $fields = explode(',', $userfieldsnoalias);
-            foreach ($fields as $field) {
+            foreach ($userfieldsnoalias as $field) {
                 if ($field == 'id') {
                     continue;
                 }
@@ -292,7 +293,7 @@ function lightboxgallery_print_recent_mod_activity($activity, $courseid, $detail
 function lightboxgallery_print_recent_activity($course, $viewfullnames, $timestart) {
     global $DB, $CFG, $OUTPUT;
 
-    $userfields = get_all_user_name_fields(true, 'u');
+    $userfields = \core_user\fields::for_name()->get_sql('u', true, '', '', false)->selects;
     $sql = "SELECT c.*, l.name, $userfields
               FROM {lightboxgallery_comments} c
                    JOIN {lightboxgallery} l ON l.id = c.gallery
@@ -385,7 +386,7 @@ function lightboxgallery_pluginfile($course, $cm, $context, $filearea, $args, $f
         return false;
     }
 
-    send_stored_file($file, 0, 0, true); // Download MUST be forced - security!
+    send_stored_file($file, null, 0, true); // Download MUST be forced - security!
 
     return;
 

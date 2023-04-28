@@ -19,7 +19,7 @@
  *
  * @package    mod_lightboxgallery
  * @category   test
- * @author     Adam Olley <adam.olley@blackboard.com>
+ * @author     Adam Olley <adam.olley@openlms.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,12 +39,12 @@ require_once($CFG->dirroot . '/mod/lightboxgallery/lib.php');
  *
  * @package    mod_lightboxgallery
  * @category   test
- * @author     Adam Olley <adam.olley@blackboard.com>
+ * @author     Adam Olley <adam.olley@openlms.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_lightboxgallery_privacy_testcase extends provider_testcase {
 
-    public function setUp() {
+    public function setUp(): void {
         global $PAGE;
         $this->resetAfterTest();
         $PAGE->get_renderer('core');
