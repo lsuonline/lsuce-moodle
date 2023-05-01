@@ -1514,7 +1514,7 @@ HTML;
             $cbopeninnewtab = $feature . '_title_link_cb';
             $text = $feature . '_text';
             $image = $feature . '_image';
-            if (!empty($this->page->theme->settings->$title) && !empty($this->page->theme->settings->$text)) {
+            if (!empty($this->page->theme->settings->$title)) {
                 $img = '';
                 if (!empty($this->page->theme->settings->$image)) {
                     $url = $this->page->theme->setting_file_url($image, $image);
@@ -1596,7 +1596,8 @@ HTML;
         // Title without link.
         $nolinktitle = '<h3 class="snap-feature-title h5">' .s($title). '</h3>';
         // Content text for feature spots.
-        $fscontenttext = '<p class="snap-feature-text">' .format_text($text). '</p>';
+        $fscontenttext =
+            '<p class="snap-feature-text">' . format_text($text, FORMAT_MOODLE, ['para' => false]) . '</p>';
 
         if ($link) {
             $card = '<div class="snap-feature">

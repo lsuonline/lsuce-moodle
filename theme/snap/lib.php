@@ -140,7 +140,7 @@ function theme_snap_set_logo($css, $logo) {
     if (is_null($logo)) {
         $replacement = '';
     } else {
-        $replacement = "#snap-home.logo, .snap-logo-sitename, .snap-logo-anim-pause {background-image: url($logo);}";
+        $replacement = "#snap-home.logo, .snap-logo-sitename {background-image: url($logo);}";
     }
     $css = str_replace($tag, $replacement, $css);
     return $css;
@@ -342,6 +342,15 @@ function theme_snap_get_pre_scss($theme) {
             $settings['custom-menu-text-color'] = $settings['brand-primary'];
         }
     }
+
+    $settings['feature-spot-background-color'] = !empty($theme->settings->feature_spot_background_color) ?
+        $theme->settings->feature_spot_background_color : '#ffffff';
+
+    $settings['feature-spot-title-color'] = !empty($theme->settings->feature_spot_title_color) ?
+        $theme->settings->feature_spot_title_color : '#ff7f41';
+
+    $settings['feature-spot-description-color'] = !empty($theme->settings->feature_spot_description_color) ?
+        $theme->settings->feature_spot_description_color : '#565656';
 
     foreach ($settings as $key => $value) {
         $scss .= '$' . $key . ': ' . $value . ";\n";

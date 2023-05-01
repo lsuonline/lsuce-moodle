@@ -79,6 +79,7 @@ $string['coursepartialrender'] = 'Enable lazy loading for course sections';
 $string['coursepartialrenderdesc'] = 'If enabled, course sections load on demand when selected by a user. This helps courses with large amounts of content load faster.';
 $string['coursenavigation'] = 'Course navigation';
 $string['coursesummaryfilesunsuitable'] = 'Please empty your course summary files before you attempt to change the cover image';
+$string['courseactionslabel'] = 'actions';
 $string['courseactivitieslabel'] = 'Section activities';
 $string['coursetools'] = 'Course Dashboard';
 $string['coverdisplay'] = 'Cover display';
@@ -148,7 +149,8 @@ $string['favorited'] = 'Favorited {$a}';
 $string['featurespots'] = 'Feature spots';
 $string['featurespotsedit'] = 'Edit feature spots';
 $string['featurespotshelp'] = '<p>Add up to 3 feature spots to your site&#8217;s front page to highlight the main benefits to current and potential users.</p>
-<p>Add a title, content, and an optional image for each feature. Images should to be square, and no larger than 200px by 200px.</p>';
+<p>You can add an image, a title, and a content description to each feature. In order to see the feature in the front page, you must enter a title. The image and the content description sections are optional.</p>
+<p>Recommended image size is a square and no larger than 200px by 200px.</p>';
 $string['featurespotsheading'] = 'Feature spots heading';
 $string['featureonetitle'] = 'Feature 1 title';
 $string['featuretwotitle'] = 'Feature 2 title';
@@ -181,6 +183,11 @@ $string['featuredcourseeight'] = 'Featured course 8';
 $string['featuredcoursesedit'] = 'Edit featured courses';
 $string['featuredcoursesbrowseall'] = 'Browse all courses';
 $string['featuredcoursesbrowsealldesc'] = 'Add a browse all courses link';
+$string['feature_spot_background_color'] = 'Background color';
+$string['feature_spot_title_color'] = 'Title text color';
+$string['feature_spot_description_color'] = 'Description text color';
+$string['feature_spot_title_color_lower'] = 'title text color';
+$string['feature_spot_description_color_lower'] = 'description text color';
 $string['feedbackavailable'] = 'Feedback available';
 $string['feedbacktoggle'] = 'Feedback and grading';
 $string['feedbacktoggledesc'] = 'Show learners their most recent feedback, and educators the most recent submissions that need grading.';
@@ -244,6 +251,7 @@ $string['messagestoggle'] = 'Messages';
 $string['messagestoggledesc'] = 'Show users their most recent messages received over the last 12 weeks.';
 $string['more'] = 'More';
 $string['morenews'] = 'More news';
+$string['moreoptionslabel'] = 'More Options';
 $string['movingstartedhelp'] = 'Navigate to where you would like to place section "{$a}"';
 $string['movingdropsectionhelp'] = 'Place section "{$a->moving}" before section "{$a->before}"';
 $string['moving'] = 'Moving "{$a}"';
@@ -268,6 +276,7 @@ $string['notcontributed'] = 'Not contributed';
 $string['notpublished'] = 'Not published to students';
 $string['notsubmitted'] = 'Not Submitted';
 $string['overdue'] = 'Overdue';
+$string['pausegraphicsanim'] = 'Pause GIF animation.';
 $string['personalmenu'] = 'Personal menu';
 $string['personalmenufeatures'] = 'Personal menu features';
 $string['personalmenulogintoggle'] = 'Show personal menu on login';
@@ -306,7 +315,7 @@ $string['released'] = 'Released: {$a}';
 $string['reopened'] = 'Reopened';
 $string['resourcedisplay'] = 'Resource display';
 $string['resourcedisplayhelp'] = 'Select how attachments and links appear in your course. The Snap theme doesn\'t support multimedia files in the small activity and resource cards\' description.';
-$string['resumegraphicsanim'] = 'Resume GIF';
+$string['resumegraphicsanim'] = 'Resume GIF animation.';
 $string['displaydescription'] = 'Display description';
 $string['displaydescriptionhelp'] = 'Select to show a description of resource activities in a new page first. Students will access content from the description.';
 $string['search'] = 'Search contents';
@@ -389,6 +398,9 @@ $string['imageinvalidratio'] = 'This image could have contrast problems due not 
 $string['catinvalidratio'] = 'The following color categories don\'t comply with the
 <a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0 minimum ratio value 4.5:1</a> :
 Against site background color (white): "{$a->white}". Against navigation bar background color: "{$a->custombar}". Against My Courses button background color: "{$a->customnav}"';
+$string['spotinvalidratio'] = 'The background color doesn\'t comply with the
+<a href="https://www.w3.org/TR/WCAG20-TECHS/G18.html" target="_blank">WCAG 2.0 minimum ratio value 4.5:1</a>.
+Current value against {$a->name}: {$a->value}.';
 $string['imageinvalidratiocategory'] = 'This image could have contrast problems with the theme color due not compliance with the WCAG 2.0 minimum ratio value 4.5:1. Average pixel value: "{$a}"';
 $string['browseallcourses'] = 'Browse all courses';
 $string['lazyload_mod_page'] = 'Enable default lazy loading for page resources';

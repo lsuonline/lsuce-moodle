@@ -62,6 +62,7 @@ if ($ADMIN->fulltree) {
     $enrolls = $DB->get_records_sql($sql);
 
     // Loop through the enrollment methods and build an array.
+    $enrollmethods = array();
     foreach ($enrolls as $enroll) {
         $enrollmethods[$enroll->enrol] = $enroll->enrol;
     }
@@ -105,15 +106,17 @@ if ($ADMIN->fulltree) {
     );
 
     // Choose enrollment methods.
-    $settings->add(
-        new admin_setting_configmultiselect(
-            'enrol_studentstaff/enrollmethods',
-            get_string('ss_enrollmethods', 'enrol_studentstaff'),
-            get_string('ss_enrollmethods_help', 'enrol_studentstaff'),
-            null,  // Default.
-            $enrollmethods
-        )
-    );
+    if (isset($enrollmethods) && !empty($enrollmethods)) {
+        $settings->add(
+            new admin_setting_configmultiselect(
+                'enrol_studentstaff/enrollmethods',
+                get_string('ss_enrollmethods', 'enrol_studentstaff'),
+                get_string('ss_enrollmethods_help', 'enrol_studentstaff'),
+                null,  // Default.
+                $enrollmethods
+            )
+        );
+    }
 
     if (isset($systemroles)) {
         // Source system role.
@@ -127,7 +130,7 @@ if ($ADMIN->fulltree) {
             )
         );
     }
-
+//
     // Source course role.
     $settings->add(
        new admin_setting_configmultiselect(
@@ -138,7 +141,7 @@ if ($ADMIN->fulltree) {
             $courseroles
         )
     );
-
+//
     // Role to assign.
     $settings->add(
         new admin_setting_configselect(

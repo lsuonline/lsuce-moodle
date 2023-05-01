@@ -694,6 +694,27 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
     overflow: hidden;
 }
 
+#page-course-view-tiles .tiles[data-for="course_sectionlist"] {
+    visibility: hidden;
+    height: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+#page-course-view-tiles .tiles.state-visible[data-for="course_sectionlist"] {
+    visibility: visible;
+    height: auto;
+    width: 100%;
+    overflow: visible;
+}
+
+#page-course-view-tiles #snap-course-dashboard {
+    display: none;
+    &.state-visible {
+        display: block;
+    }
+}
+
 .course-content > ul li.section.state-visible, {
     overflow: visible;
 }
@@ -849,7 +870,7 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
 
             .activityicon {
                 width: 45px;
-                height: fit-content;
+                height: auto;
                 margin-right: 0.5em;
                 @include alakazam;
             }
@@ -1065,10 +1086,6 @@ body.snap-resource-list .section li.snap-resource {
 
     .snap-asset-link {
         font-size: 1em;
-    }
-
-    .activityiconcontainer {
-        background-color: transparent;
     }
 }
 
@@ -1294,7 +1311,6 @@ body.snap-resource-card {
 
         .activityicon {
             display: inline-block;
-            filter: opacity(0.5);
         }
         // The file/image activity is a special case and needs to override the normal behavior of the card icons,
         // since it has the type of activity name in the card header.
@@ -1477,11 +1493,6 @@ body.snap-resource-card {
     .activityicon {
         display: inline-block;
     }
-
-    // Override the black color of the icons from core.
-    .activityiconcontainer img.activityicon {
-        filter: opacity(0.5);
-    }
 }
 
 // -----------------------------------------------------------
@@ -1492,7 +1503,8 @@ body.snap-resource-card {
     &.launch-tiles-standard,
     &.launch-tiles-module-modal,
     &.launch-tiles-resource-modal,
-    &.activity-wrapper {
+    &.activity-wrapper,
+    &.snap-asset {
         margin: 1em 1%;
         padding-bottom: 2em;
 
@@ -1714,7 +1726,7 @@ body.snap-resource-card {
         }
     }
 }
-.path-admin,
+.path-admin:not(#page-admin-blocks),
 .path-backup {
     tr img.icon {
         margin-right: 1rem;
@@ -1732,7 +1744,8 @@ body.snap-resource-card {
 .path-course,
 .path-my {
     .block_calendar_upcoming,
-    .block-timeline {
+    .block-timeline,
+    .block_recentlyaccesseditems {
         .activityiconcontainer {
             margin: 0;
             padding: 0.2rem;
@@ -2953,6 +2966,17 @@ body.path-course-index {
 
 .modtype_page .asset-wrapper .snap-asset-completion-tracking {
     margin-right: 0.3em;
+}
+
+// Fix mark as done button for Tiles
+@include media-breakpoint-up(sm) {
+    body.theme-snap.format-tiles {
+        .activity-item {
+            .activity-info {
+                margin-left: auto;
+            }
+        }
+    }
 }
 
 // Forum grading modal.

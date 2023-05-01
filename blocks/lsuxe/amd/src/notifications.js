@@ -27,7 +27,6 @@
     'use strict';
 
     return {
-
         /**
          * Confirmation window to SAVE or CANCEL
          * Type can be either: success, warning, info, error
@@ -56,6 +55,16 @@
         },
 
         /**
+         * Check if a notification is already showing
+         * @param  {[type]} data [description]
+         * @return {[type]}      [description]
+         */
+        checkNoti: function() {
+            var noti_count = $('span.notifications').html().length;
+            return noti_count == 0 ? true : false;
+        },
+
+        /**
          * A simple way to call the Moodle core notification system.
          * Type can be either: success, warning, info, error
          *  Example:
@@ -74,7 +83,10 @@
                 // default to info
                 data.type = "info";
             }
-            notification.addNotification(data);
+            // Check to see if there is already a notification posted.
+            if (this.checkNoti()) {
+                notification.addNotification(data);
+            }
         },
 
         /**

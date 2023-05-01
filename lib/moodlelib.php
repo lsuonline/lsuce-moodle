@@ -6040,13 +6040,6 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     }
     $mail = get_mailer();
 
-    // BEGIN LSU BCC Emails.
-    if ($CFG->bccallmail == 1) {
-        $mail->addCustomHeader("BCC: " . $CFG->bccaddress);
-        $mail->addBCC($CFG->bccaddress);
-    }
-    // END LSU BCC Emails.
-
     if (!empty($mail->SMTPDebug)) {
         echo '<pre>' . "\n";
     }
@@ -6084,15 +6077,11 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     // and that the senders email setting is either displayed to everyone, or display to only other users that are enrolled
     // in a course with the sender.
     } else if ($usetrueaddress && can_send_from_real_email_address($from, $user)) {
-        // BEGIN LSU Quickmail alternate email option.
-        if ($CFG->altsendfrom <> 1) {
-            if (!validate_email($from->email)) {
-                debugging('email_to_user: Invalid from-email '.s($from->email).' - not sending');
-                // Better not to use $noreplyaddress in this case.
-                return false;
-            }
+        if (!validate_email($from->email)) {
+            debugging('email_to_user: Invalid from-email '.s($from->email).' - not sending');
+            // Better not to use $noreplyaddress in this case.
+            return false;
         }
-        // END LSU Quickmail alternate email option.
         $mail->From = $from->email;
         $fromdetails = new stdClass();
         $fromdetails->name = fullname($from);
@@ -8397,7 +8386,7 @@ function count_words($string) {
                 </                              # Start of close tag.
                 (?!                             # Do not match any of these specific close tag names.
                     a> | b> | del> | em> | i> |
-                    ins> | s> | small> |
+                    ins> | s> | small> | span> |
                     strong> | sub> | sup> | u>
                 )
                 \w+                             # But, apart from those execptions, match any tag name.

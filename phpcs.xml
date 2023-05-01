@@ -91,6 +91,10 @@
   <exclude-pattern>lib/http-message/</exclude-pattern>
   <exclude-pattern>lib/phpxmlrpc/</exclude-pattern>
   <exclude-pattern>local/adminer/lib/</exclude-pattern>
+  <exclude-pattern>local/codechecker/phpcs/</exclude-pattern>
+  <exclude-pattern>local/codechecker/PHPCompatibility/</exclude-pattern>
+  <exclude-pattern>local/codechecker/MoodleCS/</exclude-pattern>
+  <exclude-pattern>local/codechecker/moodle/</exclude-pattern>
   <exclude-pattern>media/player/videojs/amd/src/video-lazy.js</exclude-pattern>
   <exclude-pattern>media/player/videojs/amd/src/Youtube-lazy.js</exclude-pattern>
   <exclude-pattern>media/player/videojs/videojs/</exclude-pattern>

@@ -292,7 +292,7 @@ EOF;
      * @return void
      */
     public static function page_requires_js() {
-        global $CFG, $PAGE, $COURSE, $USER, $OUTPUT, $SITE;
+        global $CFG, $PAGE, $COURSE, $USER, $OUTPUT;
 
         $PAGE->requires->jquery();
         $PAGE->requires->js_amd_inline("require(['theme_boost/loader']);");
@@ -390,11 +390,6 @@ EOF;
             'loadPageInCourse' => !empty(get_config('theme_snap', 'design_mod_page')) && ($COURSE->format != 'tiles'),
         ];
 
-        $sitevars = (object)[
-            'hasLogo' => !empty(get_config('theme_snap', 'logo')),
-            'shortname' => $SITE->shortname,
-        ];
-
         $forcepwdchange = (bool) get_user_preferences('auth_forcepasswordchange', false);
         $conversationbadgecountenabled = isloggedin() && $PAGE->theme->settings->messagestoggle == 1;
 
@@ -467,7 +462,7 @@ EOF;
 
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
                      $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
-                     $gradingconstants, $sitevars, $disablesnapmycourses];
+                     $gradingconstants, $disablesnapmycourses];
         $initaxvars = [$localjoulegrader, $allyreport, $blockreports, $localcatalogue];
         $alternativelogins = new login_alternative_methods();
         if ($alternativelogins->potentialidps) {

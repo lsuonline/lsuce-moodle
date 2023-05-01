@@ -92,6 +92,10 @@ lib/php-enum/
 lib/http-message/
 lib/phpxmlrpc/
 local/adminer/lib/
+local/codechecker/phpcs/
+local/codechecker/PHPCompatibility/
+local/codechecker/MoodleCS/
+local/codechecker/moodle/
 media/player/videojs/amd/src/video-lazy.js
 media/player/videojs/amd/src/Youtube-lazy.js
 media/player/videojs/videojs/

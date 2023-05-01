@@ -18,6 +18,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="autosave_uniq_key" TYPE="unique" FIELDS="elementid, contextid, userid, pagehash" COMMENT="Unique key for the user in the form in the page."/>
       </KEYS>
     </TABLE>
   </TABLES>
