@@ -128,7 +128,7 @@ class lsupgd1 {
      *
      * @return @string $token
      */
-    public static function get_course_by($size, $type, $parm, $optionalparms = null, $level) {
+    public static function get_course_by($size, $type, $parm, $level, $optionalparms = null) {
         // Get the data needed.
         $s = self::get_d1_settings();
 
@@ -216,7 +216,7 @@ class lsupgd1 {
         $optionalparms = ', "advancedCriteria": {"sectionCode": "' . $sectionnumber . '"}';
 
         // Return the list of courses that match the course number and section number.
-        $courses = self::get_course_by('250','courseCode', $coursenumber, $optionalparms, 'Short');
+        $courses = self::get_course_by('250','courseCode', $coursenumber, 'Short', $optionalparms);
 
         if (!isset($courses->courseSectionProfiles->courseSectionProfile)) {
             mtrace("Course Section ID not found for $coursenumber - $sectionnumber. Trying to update its applicability to Public.");

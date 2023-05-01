@@ -205,7 +205,7 @@ class lsuid1 {
                 $optionalparms = ', "advancedCriteria": {"customSectionNumber": "' . trim($course->shortname) . '"}';
 
                 // Get the course info from the webservice.
-                $c = lsud1::get_course_by('250','courseCode', $coursename, $optionalparms, 'Short');
+                $c = lsud1::get_course_by('250','courseCode', $coursename, 'Short', $optionalparms);
 
                 // Make sure we have data.
                 if (!isset($c->courseSectionProfiles)) {
@@ -348,7 +348,7 @@ class lsuid1 {
                 $optionalparms = ', "advancedCriteria": {"customSectionNumber": "' . trim($course->shortname) . '"}';
 
                 // Get the course info from the webservice.
-                $c = lsud1::get_course_by('250','courseCode', $coursename, $optionalparms, 'Short');
+                $c = lsud1::get_course_by('250','courseCode', $coursename, 'Short', $optionalparms);
 
                 if (!isset($c->courseSectionProfiles)) {
                     mtrace("    We do not have a matching course for $course->shortname, skipping.");

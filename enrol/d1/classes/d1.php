@@ -256,7 +256,7 @@ class lsud1 {
      *
      * @return @string $token
      */
-    public static function get_course_by($size, $type, $parm, $optionalparms = null, $level) {
+    public static function get_course_by($size, $type, $parm, $level, $optionalparms = null) {
         // Get the data needed.
         $s = self::get_d1_settings();
 
@@ -1575,7 +1575,7 @@ die();
                 $optionalparms = ', "advancedCriteria": {"customSectionNumber": "' . trim($course->shortname) . '"}';
 
                 // Get the course info from the webservice.
-                $c = self::get_course_by('250','courseCode', $coursename, $optionalparms, 'Short');
+                $c = self::get_course_by('250','courseCode', $coursename, 'Short', $optionalparms);
 
                 // Make sure we have data.
                 if (!isset($c->courseSectionProfiles)) {
@@ -1715,7 +1715,7 @@ die();
                 $optionalparms = ', "advancedCriteria": {"customSectionNumber": "' . trim($course->shortname) . '"}';
 
                 // Get the course info from the webservice.
-                $c = self::get_course_by('250','courseCode', $coursename, $optionalparms, 'Short');
+                $c = self::get_course_by('250','courseCode', $coursename, 'Short', $optionalparms);
 
                 if (!isset($c->courseSectionProfiles)) {
                     mtrace("    We do not have a matching course for $course->shortname, skipping.");
