@@ -38,3 +38,6 @@ defined('MOODLE_INTERNAL') || die();
     $string['cestring_threeweekdate'] = 'Three-Week Date: <strong> {$a} </strong>';
     $string['cestring_formattedenddate'] = 'End Date: <strong> {$a} </strong>';
     $string['cestring_formattedtimeleft'] = 'Time Left: <strong> {$a} </strong>';
+    $string['ce_enrollinfo:myaddinstance'] = 'Add instance';
+    $string['ce_enrollinfo:canconfig'] = 'Can config';
+    $string['ce_enrollinfo:addinstance'] = 'My add instance';

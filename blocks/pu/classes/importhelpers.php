@@ -419,7 +419,7 @@ class pu_import_helper {
 
             $usersql = 'SELECT u.id AS userid
                         FROM mdl_user u
-                        WHERE u.idnumber = ' . $d['useridnumber'];
+                        WHERE u.idnumber = "' . $d['useridnumber'] . '"';
 
         } else {
             $field = $DB->get_record('user_info_field', array('shortname' => $CFG->block_pu_profile_field));

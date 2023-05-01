@@ -157,10 +157,20 @@ class course_card implements \renderable {
      */
     private function apply_properties() {
         $this->category = $this->course->category;
-        $this->url = new \moodle_url('/course/view.php', ['id' => $this->courseid]) . '';
-        $this->feedbackurl = new \moodle_url('/grade/report/user/index.php', ['id' => $this->courseid]) . '';
-        $this->shortname = $this->course->shortname;
-        $this->fullname = format_string($this->course->fullname);
+        // BEGIN LSU Extra Course Tabs.
+        if (isset($this->course->remoteid)) {
+            $baseurl = get_config('theme_snap', 'remotesite');
+            $this->url = $baseurl . '/course/view.php?id=' . $this->course->remoteid;
+            $this->feedbackurl = $baseurl . '/grade/report/user/index.php?id=' . $this->course->remoteid;
+            $this->shortname = $this->course->shortname;
+            $this->fullname = format_string($this->course->fullname);
+        } else {
+            $this->url = new \moodle_url('/course/view.php', ['id' => $this->courseid]) . '';
+            $this->feedbackurl = new \moodle_url('/grade/report/user/index.php', ['id' => $this->courseid]) . '';
+            $this->shortname = $this->course->shortname;
+            $this->fullname = format_string($this->course->fullname);
+        }
+        // END LSU Extra Course Tabs.
         $this->published = (bool)$this->course->visible;
         $this->favorited = $this->service->favorited($this->courseid);
         $togglestrkey = !$this->favorited ? 'favorite' : 'favorited';
@@ -192,7 +202,9 @@ class course_card implements \renderable {
         }
         $isajax = defined('AJAX_SCRIPT') && AJAX_SCRIPT;
         if (!empty($bgimage)) {
-            if (!$isajax && $count <= 12) {
+            // BEGIN LSU Extra Course Tabs.
+            if (!$isajax && $count <= 120) {
+            // END LSU Extra Course Tabs.
                 $this->imagecss = "background-image: url($bgimage);";
             } else {
                 $this->lazyloadimageurl = $bgimage;

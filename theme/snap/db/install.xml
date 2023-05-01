@@ -18,5 +18,22 @@
         <INDEX NAME="userid-courseid" UNIQUE="true" FIELDS="userid, courseid"/>
       </INDEXES>
     </TABLE>
+    <!-- BEGIN LSU Extra Course Tabs -->
+    <TABLE NAME="theme_snap_remotes" COMMENT="Default comment for the table, please edit me">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="rcjson" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="lastupdated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="true" FIELDS="userid"/>
+        <INDEX NAME="lastupdated" UNIQUE="false" FIELDS="lastupdated"/>
+      </INDEXES>
+    </TABLE>
+    <!-- END LSU Extra Course Tabs -->
   </TABLES>
 </XMLDB>

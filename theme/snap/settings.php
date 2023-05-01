@@ -34,6 +34,9 @@ if ($ADMIN->fulltree) {
     require('settings/personal_menu_settings.php');
     require('settings/feature_spots_settings.php');
     require('settings/featured_courses_settings.php');
+    // BEGIN LSU Extra Course Tabs.
+    require('settings/course_tabs.php');
+    // END LSU Extra Course Tabs.
     require('settings/course_settings.php');
     require('settings/social_media_settings.php');
     require('settings/navigation_bar_settings.php');
