@@ -17,14 +17,31 @@
 /**
  * @package    block_pu
  * @copyright  2021 onwards LSU Online & Continuing Education
- * @copyright  2021 onwards Robert Russo
+ * @copyright  2021 onwards Tim Hunt, Robert Russo, David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_pu';
-$plugin->version = 2022021801;
-$plugin->requires = 2016052300;
-$plugin->release = "v1.1";
-$plugin->maturity = MATURITY_STABLE;
+// We defined the web service functions to install.
+$functions = array(
+    'block_pu_pujax' => array(
+        'classname'   => 'block_pu_external',
+        'methodname'  => 'pujax',
+        'classpath'   => 'blocks/pu/externallib.php',
+        'description' => 'Entry point for Cross Enrollment Rest Services',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+);
+
+// We define the services to install as pre-build services. A pre-build service is not editable by administrator.
+$services = array(
+    'PU Service' => array(
+        'functions' => array (
+            'block_pu_pujax'
+        ),
+        'restrictedusers' => 0,
+        'enabled' => 1
+    )
+);

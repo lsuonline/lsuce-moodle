@@ -106,6 +106,16 @@ if ($ADMIN->fulltree) {
             )
         );
     }
+
+    // Copy File Settings.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_pu_copy_file',
+            get_string('pu_copy_file', 'block_pu'),
+            get_string('pu_copy_file_help', 'block_pu'),
+            null // Default.
+        )
+    );
 }
 
 // Add the folder.

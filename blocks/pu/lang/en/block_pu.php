@@ -68,13 +68,29 @@ $string['defaultsnull_codes'] = 'The defualt for this course is {$a->numcodes}.'
 $string['pu_profilefield'] = 'Profile Field for import';
 $string['pu_profilefield_help'] = 'This is either the standard user IDNumber or whichever other additional profile field you choose.<br>This field is what we key on when importing data.';
 
+// File Uploader
+$string['uploader'] = 'Uploader';
+$string['codeuploader'] = 'PU Code Uploader';
+$string['no_upload_permissions'] = 'You do not have permission to upload codes.';
+$string['pu_file_link'] = 'File Link';
+$string['pu_filename'] = 'File Name';
+$string['pu_filecreated'] = 'Created';
+$string['pu_filemodified'] = 'Last Modified';
+$string['pu_copy'] = 'Copy File';
+$string['pu_delete'] = 'Delete File';
+$string['pu_nofiles'] = 'No Files To Display';
+$string['dashboard'] = 'Dashboard';
+$string['pu_settings'] = 'PU Settings';
+$string['pu_copy_file'] = 'Copy File Location';
+$string['pu_copy_file_help'] = 'Files can be uploaded and copied to the location specified here. (include forward slash at the end/)';
+
 // Block strings.
 $string['pu_block_intro_one'] = 'Your first ProctorU access code for <strong>{$a->coursename}</strong> is:';
 $string['pu_block_intro_multi'] = 'Your {$a->numassigned} ProctorU access codes for <strong>{$a->coursename}</strong> are:';
 $string['pu_docs_intro'] = 'What you need to know about access codes:';
 $string['pu_docs_intronone'] = 'You have not claimed any ProctorU access codes for this course yet.<br>If you are ready to schedule your exam, select the "<strong>Claim your access code</strong>" button above.';
 $string['pu_docs_allocatednum'] = 'You have <strong>requested</strong> {$a->numallocated} of the {$a->numtotal} access codes allowed in this course.';
-$string['pu_docs_usednum'] = 'You have <strong>used</strong> {$a->numused} of the {$a->numtotal} access codes for this course.';
+$string['pu_docs_usednum'] = 'puYou have <strong>used</strong> {$a->numused} of the {$a->numtotal} access codes for this course.';
 $string['pu_docs_noneleft'] = 'You have used all of the access codes allowed for this course.<br>If you need another code, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
 $string['pu_docs_touse'] = 'To use your ProctorU access code, please go to your exam module in your course and use the "<strong>Schedule Exam</strong>" link to route to ProctorU.<br>You will use the top (latest) ProctorU access code in place of payment.';
 $string['pu_docs_used'] = 'If you have used the top (latest) access code and need another for your next exam, please click the "<strong>Mark used</strong>" button below:';
