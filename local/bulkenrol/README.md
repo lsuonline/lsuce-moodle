@@ -1,7 +1,7 @@
 moodle-local_bulkenrol
 ======================
 
-[![Moodle Plugin CI](https://github.com/moodle-an-hochschulen/moodle-local_bulkenrol/workflows/Moodle%20Plugin%20CI/badge.svg?branch=MOODLE_39_STABLE)](https://github.com/moodle-an-hochschulen/moodle-local_bulkenrol/actions?query=workflow%3A%22Moodle+Plugin+CI%22+branch%3AMOODLE_39_STABLE)
+[![Moodle Plugin CI](https://github.com/moodle-an-hochschulen/moodle-local_bulkenrol/workflows/Moodle%20Plugin%20CI/badge.svg?branch=master)](https://github.com/moodle-an-hochschulen/moodle-local_bulkenrol/actions?query=workflow%3A%22Moodle+Plugin+CI%22+branch%3Amaster)
 
 Moodle plugin which provides the possibility to bulk enrol a list of users who are identified by their e-mail adresses into a course.
 
@@ -9,7 +9,7 @@ Moodle plugin which provides the possibility to bulk enrol a list of users who a
 Requirements
 ------------
 
-This plugin requires Moodle 3.9+
+This plugin requires Moodle 4.1+
 
 
 Motivation for this plugin
@@ -41,10 +41,16 @@ After installing the plugin, it does not do anything to Moodle yet.
 To configure the plugin and its behaviour, please visit:
 Site administration -> Plugins -> Enrolments -> User bulk enrolment
 
-There, you find only one setting:
+There, you find two settings:
 
 ### 1. Enrolment plugin
 The enrolment method to be used to bulk enrol the users. If the configured enrolment method is not active / added in the course when the users are bulk-enrolled, it is automatically added / activated.
+
+### 2. Role
+The role to be used to bulk enrol the users.
+
+### 3. Navigation node placement
+The location where the navigation node for this functionality will be added within a course.
 
 
 Capabilities
@@ -59,7 +65,7 @@ By default, Moodle users are _not_ allowed to use the functionality provided by 
 How this plugin works
 ---------------------
 
-Teachers (rather users who have been granted the capability which is described in the "Capabilities" section above) will find an additional "User bulk enrolment" menu item within their course's course administration menu.
+Teachers (rather users who have been granted the capability which is described in the "Capabilities" section above) will find an additional "User bulk enrolment" menu item within the jump menu on the course's participants page.
 
 To enrol existing Moodle users into the course, the teacher will then have to add a list of e-mail adresses to the form on this page, one user / e-mail adress per line.
 

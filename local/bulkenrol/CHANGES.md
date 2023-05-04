@@ -4,18 +4,43 @@ moodle-local_bulkenrol
 Changes
 -------
 
-### v3.9-r5
+### v4.1-r1
+
+* 2023-01-21 - Prepare compatibility for Moodle 4.1.
+
+### v4.0-r3
+
+* 2023-04-26 - Allow teachers to configure the navigation node placement.
+* 2023-04-26 - Add a missing setting to README.md
+* 2023-03-12 - Tests: Fix a Behat test which broke after Moodle core upstream changes
+* 2023-03-11 - Make codechecker happy again
+* 2022-11-28 - Updated Moodle Plugin CI to latest upstream recommendations
+
+### v4.0-r2
+
+* 2022-07-12 - Fix README description how this plugin works in Moodle 4.0
+
+### v4.0-r1
+
+* 2022-07-12 - Fix Behat tests which broke with Moodle 4.0
+* 2022-07-12 - Prepare compatibility for Moodle 4.0.
+
+### v3.11-r3
 
 * 2022-07-10 - Add Visual checks section to UPGRADE.md
 
-### v3.9-r4
+### v3.11-r2
 
 * 2022-06-26 - Make codechecker happy again
 * 2022-06-26 - Updated Moodle Plugin CI to latest upstream recommendations
 * 2022-06-26 - Add UPGRADE.md as internal upgrade documentation
 * 2022-06-26 - Update maintainers and copyrights in README.md.
 
-### v3.9-r3
+### v3.11-r1
+
+* 2021-11-02 - Prepare compatibility for Moodle 3.11.
+
+### v3.10-r2
 
 * 2021-10-20 - Improvement: Grant local/bulkenrol:enrolusers to manager archetype by default - Thanks to Luca Bösch.
 * 2021-10-19 - Improvement: Distinguish warnings caused by empty line or by invalid content - Thanks to Luca Bösch.
@@ -24,8 +49,9 @@ Changes
 * 2021-10-15 - Replace the deprecated print_error() function with a Moodle exception
 * 2021-02-05 - Move Moodle Plugin CI from Travis CI to Github actions
 
-### v3.9-r2
+### v3.10-r1
 
+* 2021-01-09 - Prepare compatibility for Moodle 3.10.
 * 2021-01-06 - Change in Moodle release support:
                For the time being, this plugin is maintained for the most recent LTS release of Moodle as well as the most recent major release of Moodle.
                Bugfixes are backported to the LTS release. However, new features and improvements are not necessarily backported to the LTS release.
