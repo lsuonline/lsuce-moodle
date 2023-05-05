@@ -123,7 +123,7 @@ function xmldb_theme_snap_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2019051501, 'theme', 'snap');
     }
     // BEGIN LSU Extra Course Tabs.
-    if ($oldversion < 2020061109) {
+    if ($oldversion < 2023041100) {
 
         // Define table theme_snap_remotes to be created.
         $table = new xmldb_table('theme_snap_remotes');

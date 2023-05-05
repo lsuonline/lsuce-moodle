@@ -864,7 +864,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         // If extra tab 1 is enabled.
         if ($et1) {
             // Get the courses for extra tab 1.
-            $et1courses = course::get_et_courses('extratab1', 1, 0);
+            $et1courses = course::get_et_courses('extratab1', $et1, $dl1);
             // If we have any courses, merge them into the overall extra tabs array.
             if (isset($etcourses)) {
                 $etcourses = array_merge($etcourses, $et1courses);
@@ -875,7 +875,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         // If extra tab 2 is enabled.
         if ($et2) {
             // Get the courses for extra tab 2.
-            $et2courses = course::get_et_courses('extratab2', 1, 0);
+            $et2courses = course::get_et_courses('extratab2', $et2, $dl2);
             // If we have any courses, merge them into the overall extra tabs array.
             if (isset($etcourses)) {
                 $etcourses = array_merge($etcourses, $et2courses);
@@ -886,7 +886,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         // If extra tab 3 is enabled.
         if ($et3) {
             // Get the courses for extra tab 3.
-            $et3courses = course::get_et_courses('extratab3', 1, 0);
+            $et3courses = course::get_et_courses('extratab3', $et3, $dl3);
             // If we have any courses, merge them into the overall extra tabs array.
             if (isset($etcourses)) {
                 $etcourses = array_merge($etcourses, $et3courses);
@@ -926,8 +926,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $et3empty = false;
 
         if ($et3 && $et3repop) {
-            // If we have 0 published courses and we have courses in tab 3.
-            if (count($published) == 0 && isset($et3courses)) {
+            // If we have 0 published courses and 0 current coutrses + we have courses in tab 3.
+            if (count($published) == 0 && count($currentcourses) == 0 && isset($et3courses)) {
                 foreach ($et3courses as $course) {
                     // Get the course context for this course.
                     $coursecontext = context_course::instance($course->id);
@@ -1132,7 +1132,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
 
         if ($et2) {
-            // Grab the courses for extra tab 1.
+            // Grab the courses for extra tab 2.
             $et2courses = course::get_et_courses('extratab2', $enr2, $dl2);
 
             // Loop through the other courses and fill in the info from the local proxy as needed.
@@ -1145,7 +1145,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
 
         if ($et3 && $et3empty == false) {
-            // Grab the courses for extra tab 1.
+            // Grab the courses for extra tab 3.
             $et3courses = course::get_et_courses('extratab3', $enr3, $dl3);
 
             // Loop through the other courses and fill in the info from the local proxy as needed.
