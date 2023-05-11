@@ -23,63 +23,68 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 -->
+<form method="POST" id="nonmood_file_form">
+<table class="table table-hover table-striped nonmood_files_table">
+    <caption>Files in: {{currentpath}}</caption>
+    <thead>
+        <tr>
+            {{! -------------------- }}
+            {{#pu_filename}}
+                {{#isSortedAsc}}
+                    <th><a href="?sort=subject&dir=desc">{{# str }} pu_filename, block_pu {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
+                {{/isSortedAsc}}
 
+                {{^isSortedAsc}}
+                    <th><a href="?sort=subject&dir=asc">{{# str }} pu_filename, block_pu {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
+                {{/isSortedAsc}}
+            {{/pu_filename}}
+            {{^pu_filename}}
+                <th><a href="?sort=subject&dir=asc">{{# str }} pu_filename, block_pu {{/ str }}</a></th>
+            {{/pu_filename}}
+            {{! -------------------- }}
+            {{#pu_created}}
+                {{#isSortedAsc}}
+                    <th><a href="?sort=sent&dir=desc">{{# str }} pu_filecreated, block_pu {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
+                {{/isSortedAsc}}
 
-    <table class="table table-hover table-striped nonmood_files_table">
-        <caption>Files in: {{currentpath}}</caption>
-        <thead>
-            <tr>
-                {{! -------------------- }}
-                {{#pu_filename}}
-                    {{#isSortedAsc}}
-                        <th><a href="?sort=subject&dir=desc">{{# str }} pu_filename, block_pu {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
-                    {{/isSortedAsc}}
+                {{^isSortedAsc}}
+                    <th><a href="?sort=sent&dir=asc">{{# str }} pu_filecreated, block_pu {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
+                {{/isSortedAsc}}
+            {{/pu_created}}
+            {{^pu_created}}
+                <th><a href="?sort=sent&dir=asc">{{# str }} pu_filecreated, block_pu {{/ str }}</a></th>
+            {{/pu_created}}
+            {{! -------------------- }}
+            {{! <th>{{# str } } pu_copy, block_pu {{/ str } }</th> }}
+            <th>{{# str }} pu_delete, block_pu {{/ str }}</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        {{#non_mood_files}}
+            <tr data-rowid='{{form_value}}' class="nonmood_file_form_{{form_value}}">
+                <input type="hidden" value="{{nonmood_filename}}" name="nonmood_filename"/>
+                <input type="hidden" value="{{nonmood_hash}}" name="nonmood_hash"/>
+                <input type="hidden" value="nonmood" name="pu_or_nonmood"/>
 
-                    {{^isSortedAsc}}
-                        <th><a href="?sort=subject&dir=asc">{{# str }} pu_filename, block_pu {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
-                    {{/isSortedAsc}}
-                {{/pu_filename}}
-                {{^pu_filename}}
-                    <th><a href="?sort=subject&dir=asc">{{# str }} pu_filename, block_pu {{/ str }}</a></th>
-                {{/pu_filename}}
-                {{! -------------------- }}
-                {{#pu_created}}
-                    {{#isSortedAsc}}
-                        <th><a href="?sort=sent&dir=desc">{{# str }} pu_filecreated, block_pu {{/ str }}</a> {{#pix}} t/sort_asc {{/pix}}</th>
-                    {{/isSortedAsc}}
-
-                    {{^isSortedAsc}}
-                        <th><a href="?sort=sent&dir=asc">{{# str }} pu_filecreated, block_pu {{/ str }}</a> {{#pix}} t/sort_desc {{/pix}}</th>
-                    {{/isSortedAsc}}
-                {{/pu_created}}
-                {{^pu_created}}
-                    <th><a href="?sort=sent&dir=asc">{{# str }} pu_filecreated, block_pu {{/ str }}</a></th>
-                {{/pu_created}}
-                {{! -------------------- }}
-                {{! <th>{{# str } } pu_copy, block_pu {{/ str } }</th> }}
-                <th>{{# str }} pu_delete, block_pu {{/ str }}</th>
-                
+                <td>{{nonmood_filename}}</td>
+                <td>{{nonmood_modified}}</td>
+                <td><button type="submit" class="btn btn-danger nonmood_file_delete"><i class="fa fa-trash"></i></button></td>
             </tr>
-        </thead>
-        <tbody>
-            {{#non_mood_files}}
-            <form method="POST" id="nonmood_file_form_{{form_value}}">
-                <tr data-rowid='{{form_value}}'>
-                    <input type="hidden" value="{{nonmood_filename}}" name="nonmood_filename"/>
-                    <input type="hidden" value="{{nonmood_hash}}" name="nonmood_hash"/>
-                    <input type="hidden" value="nonmood" name="pu_or_nonmood"/>
+        {{/non_mood_files}}
+        
+        {{^non_mood_files}}
+            <tr>
+                <td colspan="5" align="center">{{# str }} pu_nofiles, block_pu {{/ str }}</td>
+            </tr>
+        {{/non_mood_files}}
 
-                    <td>{{nonmood_filename}}</td>
-                    <td>{{nonmood_modified}}</td>
-                    <td><button type="submit" class="btn btn-danger nonmood_file_delete"><i class="fa fa-trash"></i></button></td>
-                </tr>
-            </form>
-            {{/non_mood_files}}
-            {{^non_mood_files}}
-                <tr>
-                    <td colspan="5" align="center">{{# str }} pu_nofiles, block_pu {{/ str }}</td>
-                </tr>
-            {{/non_mood_files}}
+    </tbody>
+</table>
+</form>
 
-        </tbody>
-    </table>
+{{#js}}
+require(['jquery', 'block_pu/events'], function($, EV) {
+    EV.registerSysFileEvents();
+});
+{{/js}}

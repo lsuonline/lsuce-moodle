@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Block PU
+ * Proctor U
  *
  * @package   block_pu
  * @copyright 2021 onwards LSU Online & Continuing Education
@@ -82,7 +82,7 @@
                 {{! -------------------- }}
                 <th>{{# str }} pu_copy, block_pu {{/ str }}</th>
                 <th>{{# str }} pu_delete, block_pu {{/ str }}</th>
-                
+
             </tr>
         </thead>
         <tbody>
@@ -92,14 +92,13 @@
                     <input type="hidden" value="{{puid}}" name="pu_file_id"/>
                     <input type="hidden" value="{{fileid}}" name="mdl_file_id"/>
                     <input type="hidden" value="pu" name="pu_or_nonmood"/>
-                    
+
                     <td>{{pu_fileurl}}</td>
                     <td>{{pu_filename}}</td>
                     <td>{{pu_filecreated}}</td>
                     <td>{{pu_filemodified}}</td>
                     <td><button class="btn btn-primary pu_file_copy"><i class="fa fa-copy"></i></button></td>
                     <td><button type="submit" class="btn btn-danger pu_file_delete"><i class="fa fa-trash"></i></button></td>
-                    
                 </tr>
             </form>
             {{/pu_data}}
@@ -108,13 +107,19 @@
                     <td colspan="5" align="center">{{# str }} pu_nofiles, block_pu {{/ str }}</td>
                 </tr>
             {{/pu_data}}
-
         </tbody>
     </table>
     <span class="pull-right">
         <a href="{{pu_url}}/blocks/pu/uploader.php" class="btn btn-info">Add New File</a>
     </span>
-    {{> block_pu/non_mood_files}}
-    {{> block_pu/buttons }}
-    
+    <span class="non_mood_files_refresher">
+        {{> block_pu/non_mood_files}}
+    </span>
 </div>
+
+{{#js}}
+require(['jquery', 'block_pu/events'], function($, EV) {
+    EV.registerMooFileEvents();
+});
+{{/js}}
+

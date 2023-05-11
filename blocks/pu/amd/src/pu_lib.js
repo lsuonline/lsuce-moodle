@@ -14,11 +14,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Cross Enrollment Tool
+ * Proctor U File Uploader
  *
- * @package   block_lsuxe
- * @copyright 2008 onwards Louisiana State University
- * @copyright 2008 onwards David Lowe, Robert Russo
+ * @package   block_pu
+ * @copyright 2021 onwards Louisiana State University
+ * @copyright 2021 onwards David Lowe, Robert Russo
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -106,8 +106,20 @@ define(['jquery', 'block_pu/jaxy'],
             return this.jaxyRemotePromise(params);
         },
 
+        get_file_list: function () {
+            return this.jaxyPromise({
+                'call': 'get_file_list',
+                'class': 'pufile'
+            });
+        },
+
+        /**
+         * Simple request to check if the file already exist.
+         *
+         * @param {string} token
+         * @return {Promise}
+         */
         check_file_exists: function (params) {
-            console.log("check_file_exists() -> what is params: ", params);
             var to_send = {
                 'mfileid': params.data.mfileid,
                 'pufileid': params.data.record
@@ -118,6 +130,7 @@ define(['jquery', 'block_pu/jaxy'],
                 'class': 'pufile'
             });
         },
+
         /**
          * Get the token for the current selected URL
          *

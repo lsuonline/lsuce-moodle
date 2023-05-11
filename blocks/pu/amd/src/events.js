@@ -17,22 +17,62 @@
  * Cross Enrollment Tool
  *
  * @package   block_pu
- * @copyright 2008 onwards Louisiana State University
- * @copyright 2008 onwards David Lowe, Robert Russo
+ * @copyright 2021 onwards Louisiana State University
+ * @copyright 2021 onwards David Lowe, Robert Russo
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ // define(['jquery', 'block_pu/notifications', 'block_pu/pu_lib', 'block_pu/file_buttons', 'block_pu/refresh'],
  define(['jquery', 'block_pu/notifications', 'block_pu/pu_lib', 'block_pu/file_buttons'],
     function($, noti, PULib, FB) {
+    // function($, noti, PULib, FB, Refresh) {
     'use strict';
     return {
+        /**
+         * Register click events for the system files page. If the template is reloaded
+         * for the system files then the events need to called again. This will be called
+         * from the template file.
+         *
+         * @param null
+         * @return void
+         */
+        registerSysFileEvents: function () {
+            // --------------------------------
+            // Delete NON Moodle File.
+            // --------------------------------
+            $('.block_pu_container .nonmood_file_delete').on('click', function(ev) {
+                ev.preventDefault();
+
+                var row_data = {
+                    "record": $(this).closest("tr").data("rowid"),
+                    "title": 'Delete File',
+                    "body": 'Are you sure you want to delete this file?',
+                    "save_button": "Yes"
+                };
+                noti.callYesNoModi(row_data).then(function (response) {
+                    if (response.status == true) {
+                        var this_form = $('#nonmood_file_form');
+                        $('.nonmood_file_form_'+response.data.record+' > input').each(function(idx, item) {
+                            this_form.append('<input type="hidden" ' +
+                                'name="' + $(item).attr("name") + '" ' +
+                                'value = "'+ $(item).attr("value") + '" />');
+                        });
+                        this_form.append('<input type="hidden" name="action" value="delete" />');
+                        this_form.submit();
+                        // PULib.get_file_list(response).then(function (response) {
+                        //     Refresh.refreshGeneralFiles(response);
+                        // });
+                    }
+                });
+            });
+        },
         /**
          * Register click events for the page.
          *
          * @param null
          * @return void
          */
-        registerEvents: function () {
+        registerMooFileEvents: function () {
             // --------------------------------
             // Copy File.
             // --------------------------------
@@ -52,52 +92,20 @@
             });
 
             // --------------------------------
-            // Delete Non Moodle File.
-            // --------------------------------
-            $('.block_pu_container .nonmood_file_delete').on('click', function(ev) {
-                ev.preventDefault();
-
-                // var links = $(this).closest("tr").data("mlinks"),
-                var row_data = {
-                    "record": $(this).closest("tr").data("rowid"),
-                    // "this_form": $(this).closest("form"),
-                    "title": 'Delete File',
-                    "body": 'Are you sure you want to delete this file?',
-                    "save_button": "Hell Ya"
-                };
-                noti.callYesNoModi(row_data).then(function (response) {
-                    if (response.status == true) {
-                        var this_form = $('#nonmood_file_form_' + response.data.record);
-                        console.log("What is response when deleting: ", response);
-                        console.log("What is data when deleting: ", response.data);
-                        console.log("What is the record: " + response.data.record);
-                        console.log("What is this_form: ", this_form);
-                        // Convert all the form elements values to a serialised string.
-                        this_form.append('<input type="hidden" name="action" value="delete" />');
-                        this_form.submit();
-                    }
-                });
-            });
-            // --------------------------------
             // Delete Moodle File.
             // --------------------------------
-            $('.block_pu_container .pu_file_delete').on('click', function(ev) {
+            $('body .block_pu_container .pu_file_delete').on('click', function(ev) {
                 ev.preventDefault();
 
-                // var links = $(this).closest("tr").data("mlinks"),
                 var row_data = {
                     "record": $(this).closest("tr").data("rowid"),
-                    // "this_form": $(this).closest("form"),
                     "title": 'Delete File',
                     "body": 'Are you sure you want to delete this file?',
-                    "save_button": "Hell Ya"
+                    "save_button": "Yes"
                 };
-
                 noti.callYesNoModi(row_data).then(function (response) {
                     if (response.status == true) {
                         var this_form = $('#pu_file_form_' + response.data.record);
-                        console.log("What is response when deleting: ", response);
-                        console.log("What is data when deleting: ", response.data);
                         // Convert all the form elements values to a serialised string.
                         this_form.append('<input type="hidden" name="action" value="delete" />');
                         this_form.submit();
@@ -111,10 +119,10 @@
          * @param null
          * @return void
          */
-        init: function() {
-            var that = this;
-            // Register events.
-            that.registerEvents();
-        },
+        // init: function() {
+        //     var that = this;
+        //     // Register events.
+        //     that.registerMooFileEvents();
+        // },
     };
 });

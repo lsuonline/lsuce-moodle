@@ -22,14 +22,16 @@
  */
 
 require (dirname(dirname(dirname(__FILE__))) . '/config.php');
-// require (dirname(__FILE__) . '/lib.php');
 require (dirname(__FILE__) . '/classes/forms/upload_form.php');
 require (dirname(__FILE__) . '/classes/models/upload_model.php');
 
-$context = \context_system::instance();
-
-// context_block::instance($instance->id);
 require_login();
+
+$context = \context_system::instance();
+// Check to see if the user is admin.
+if (!has_capability('block/pu:admin', $context)) {
+    redirect($returnurl, get_string('no_upload_permissions', 'block_pu'), null, \core\output\notification::NOTIFY_ERROR);
+}
 
 $id = optional_param('id', 0, PARAM_INT);
 $n = optional_param('n', 0, PARAM_INT);
@@ -42,30 +44,16 @@ $params = array();
 $url = new moodle_url($CFG->wwwroot . '/blocks/pu/uploader.php');
 $viewlink = new moodle_url($CFG->wwwroot . '/blocks/pu/view.php');
 $uploadfile = null;
-
-
-
-
+$returnurl = new moodle_url('/');
 
 if ($id) {
-    // $cm = get_coursemodule_from_id('pu', $id, 0, false, MUST_EXIST);
-    // $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
     $uploadfile = $DB->get_record('block_pu_file', array('id' => $cm->instance), '*', MUST_EXIST);
-    // $managerrole = $DB->get_record('role', ['shortname' => 'manager']);
-    // role_change_permission($managerrole->id, $context, 'moodle/
 } else if ($n) {
     $uploadfile = $DB->get_record('block_pu_file', array('id' => $n), '*', MUST_EXIST);
-    // $course = $DB->get_record('course', array('id' => $uploadfile->course), '*', MUST_EXIST);
-    // $cm = get_coursemodule_from_instance('pu', $uploadfile->id, $course->id, false, MUST_EXIST);
 } else {
-    // error_log('You must specify a course_module ID or an instance ID');
-    // global $COURSE;
-    // $course = $COURSE;
-    
     $uploadfile = new stdClass();
     $uploadfile->name = "Upload A File";
     $uploadfile->id = 0;
-
 }    
 
 $PAGE->set_context($context);
@@ -74,18 +62,9 @@ $PAGE->set_title(format_string($uploadfile->name));
 
 $PAGE->navbar->add(get_string('dashboard', 'block_pu'), new moodle_url($CFG->wwwroot. "/my/"));
 $PAGE->navbar->add(get_string('pu_settings', 'block_pu'), new moodle_url($CFG->wwwroot. "/admin/settings.php?section=blocksettingpu"));
-// $PAGE->set_heading(format_string($course->fullname));
+
 // TODO: Add to lang file
 $PAGE->set_heading("Upload A File");
-// $modcontext = context_module::instance($cm->id);
-
-
-// echo $OUTPUT->header();
-// $this->course_context = context_course::instance($this->course->id);
-
-
-
-// require_login($course, true, $cm);
 
 $context = context_system::instance();
 // $event = \block_pu\event\course_module_viewed::create(array(
@@ -128,39 +107,11 @@ $htmltidbits = html_writer::start_tag( 'a', array( 'href' => "./view.php" ) )
         .html_writer::end_tag('button')
         .html_writer::end_tag( 'a' );
 
-// echo html_writer::start_tag( 'a', array( 'href' => "./uploader.php?id={$id}&action=DELETE" ) )
-//         .html_writer::start_tag( 'button', array( 'type' => 'button', 'class' => 'btn btn-danger', 'style' =>'margin:3%; width:20%' ) )
-//         .format_string( 'Delete File' )
-//         .html_writer::end_tag('button')
-//         .html_writer::end_tag( 'a' );
-
-
-
-// if ($action == 'DELETE' ) {
-    
-//     if ($delete == 'ConfirmDelete') {
-//         $model->delete($uploadfile->id, $file->block_pu_files);
-//         redirect($viewlink);    
-//     }
-    
-//     echo $OUTPUT->confirm(format_string( "Are you sure you want to delete this file"),
-//             "upload.php?id={$id}&action=DELETE&delete=ConfirmDelete", $CFG->wwwroot . '/mod/uploadfile/view.php?id=' . $id );
-
-//     echo $OUTPUT->footer();
-//     die();
-// }
-
-// ---------
-// CONFIGURE FILE MANAGER
-// ---------
-
-
 if ( $mform->is_cancelled() ) {
-    
      redirect($viewlink);
-    
+
 } else if ( $formdata = $mform->get_data() ) {
-    
+
     // Saves the form loaded file to the database in the files table.
     file_save_draft_area_files(
         // $formdata->attachments,
@@ -181,7 +132,7 @@ if ( $mform->is_cancelled() ) {
     // Get the path from the PU settings.
     $pupath = get_config('moodle', "block_pu_copy_file");
 
-    // Make sure the folder is there.    
+    // Make sure the folder is there.
     if (!is_dir($pupath)) {
         mkdir($pupath, 0777, true);
     }
@@ -198,16 +149,12 @@ if ( $mform->is_cancelled() ) {
     );
 
     // Save or update in local table uploadfile_files.
-    // $formdata->instance = $cm->instance;
-    error_log("What is action: ". $action);
     if ($action == 'ADD') {
         $model->save($formdata);
     } else {
         $formdata->id = $fileid;
         $model->update($formdata);
-    }    
-
-    error_log("uploader.php -> What is the redirect link: ". $viewlink);
+    }
     redirect ($viewlink);
 }
 
@@ -217,4 +164,3 @@ echo $htmltidbits;
 
 $mform->display();
 echo $OUTPUT->footer();
-

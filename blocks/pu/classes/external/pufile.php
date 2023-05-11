@@ -23,36 +23,44 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+global $CFG;
+require_once($CFG->dirroot . '/blocks/pu/lib.php');
 
 class pufile {
+
+    public function get_file_list() {
+        global $CFG;
+
+        $nonmoodlefiles = pu_helpers::get_system_file_list();
+        $tabledata = pu_helpers::get_pu_file_list();
+
+        $renderdata = array(
+            "pu_data" => $tabledata,
+            "pu_url" => $CFG->wwwroot,
+            "currentpath" => $settingspath,
+            "non_mood_files" => $nonmoodlefiles
+        );
+
+        return $renderdata;
+    }
+
     public function check_file_exists($params = null) {
-        error_log("\n\n**************************************");
-        // error_log("\npufile -> check_file_exists() -> START\n");
-        // error_log("\npufile -> what is params coming in: ". print_r($params, true). "\n");
         $mfileid = isset($params->mfileid) ? $params->mfileid : null;
         $pufileid = isset($params->pufileid) ? $params->pufileid : null;
         $fpath = get_config('moodle', "block_pu_copy_file");
 
-        error_log("\npufile -> what is mfileid: ". $mfileid. "   \n");
-        error_log("\npufile -> what is pufileid: ". $pufileid. "   \n");
-        error_log("\npufile -> what is fpath: ". $fpath. "   \n");
-        
-        // If file exists then report back to either deny or ask to replace?
-        
+        // If file exists then report back to deny.
         if ($mfileid) {
             $fs = get_file_storage();
-            // $fs->get_file(...);
             $file = $fs->get_file_by_id($mfileid);
             $fname = $file->get_filename();
 
             if (file_exists($fpath . $fname)) {
-                error_log("\n\n------>>>>>>>>   The file $fname exists");
                 return array(
                     "success" => false,
                     "msg" => "Sorry, this file already exists in that location."
                 );
             } else {
-                error_log("\n\n------>>>>>>>>   The file $fname does NOT exist");
                 $file->copy_content_to($fpath. $fname);
                 return array(
                     "success" => true,

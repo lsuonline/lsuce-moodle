@@ -24,9 +24,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 class upload_model {
-    
+
     /** Simple CRUD operations to handle the files.
-     * 
+     *
      * @param type form object
      * @return boolean
      */
@@ -34,46 +34,41 @@ class upload_model {
         global $DB;
         $trob = $this->transform($object);
         try {
-         
+
             $response = $DB->insert_record('block_pu_file', $trob, $returnid = true);
-            return $response;   
-            
+            return $response;
+
         } catch (Exception $exc) {
             echo $exc->getTraceAsString();
         }
-
     }
-    
+
     public function update($object) {
         global $DB;
-        
-        try{
+
+        try {
             $object->id = $object->idfile;
             $response = $DB->update_record('block_pu_file', $object, false);
-            return $response;    
+            return $response;
         } catch (Exception $ex) {
 
         }
-        
     }
 
     public function get($instance) {
         global $DB;
-        
-        try{
+
+        try {
             return $DB->get_records('block_pu_file', array('instance' => $instance), null, 'instance, block_pu_files')[$instance];
         } catch (Exception $ex) {
 
         }
-        
     }
-    
-    // public function delete($instance, $itemid) {
+
     public function delete($pfileid, $mfileid) {
         global $DB;
-        try{
+        try {
             $DB->delete_records('block_pu_file', array("id" => $pfileid));
-            // $DB->delete_records('files', array("itemid" => $itemid));
             $fs = get_file_storage();
             $file = $fs->get_file_by_id($mfileid);
             $file->delete();
@@ -81,23 +76,22 @@ class upload_model {
         } catch (Exception $ex) {
             error_log("Uh Oh....NOTICE - something didn't delete properly");
         }
-        
     }
 
     public function transform($object) {
         global $DB;
-        
+
         $sql = "SELECT * FROM mdl_files
-            WHERE itemid = ". $object->pu_file." 
+            WHERE itemid = ". $object->pu_file."
             AND filename <> '.'
             AND filearea <> 'draft'";
 
         $files = $DB->get_records_sql($sql);
         $count = count($files);
-        error_log("There are this many files: ". $count);
+
         if ($count == 1) {
             $files = array_values($files);
-            
+
             return array(
                 "fileid" => $files[0]->id,
                 "filename" => $files[0]->filename,
@@ -110,8 +104,5 @@ class upload_model {
             error_log("\e[0;31mupload_model -> ERROR: returned multiple objects");
             error_log("\e[0;31m****************************************************\n\n");
         }
-
     }
-
-
 }

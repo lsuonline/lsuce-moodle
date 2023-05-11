@@ -83,6 +83,7 @@ $string['dashboard'] = 'Dashboard';
 $string['pu_settings'] = 'PU Settings';
 $string['pu_copy_file'] = 'Copy File Location';
 $string['pu_copy_file_help'] = 'Files can be uploaded and copied to the location specified here. (include forward slash at the end/)';
+$string['no_upload_permissions'] = 'You do not have permission to upload and view files.';
 
 // Block strings.
 $string['pu_block_intro_one'] = 'Your first ProctorU access code for <strong>{$a->coursename}</strong> is:';

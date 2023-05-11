@@ -45,7 +45,6 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         PUjax: function(data_chunk) {
-            console.log("PUJAX What is chunk to send: ", data_chunk);
             var promiseObj = new Promise(function(resolve, reject) {
                 var send_this = [{
                     methodname: 'block_pu_pujax',
@@ -53,11 +52,10 @@ define(['jquery', 'core/ajax',],
                         datachunk: data_chunk,
                     }
                 }];
+
                 Ajax.call(send_this)[0].then(function(response) {
                     resolve(JSON.parse(response.data));
                 }).catch(function(ev) {
-                    console.log("PUjax() -> JAXY Fail :-(");
-                    console.log("PUjax() -> JAXY Fail going to reject: ", ev);
                     reject(ev);
                 });
             });

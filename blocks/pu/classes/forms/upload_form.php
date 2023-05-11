@@ -24,22 +24,20 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');
-// require_once($CFG->libdir . '/blocklib.php');
 
 class upload_form extends moodleform {
 
     function definition() {
         
-        $mform = $this->_form; // Don't forget the underscore!
+        $mform = $this->_form;
         $mform->addElement('hidden', 'idfile', true);
         $mform->setType('idfile', PARAM_TEXT);
-        
-        // FILE MANAGER        
+
+        // File Manager.
         $mform->addElement('filemanager', 'pu_file', format_string('File Manager'), 
-        // $mform->addElement('filemanager', 'attachments', format_string('File Manager'), 
                 null, $this->get_filemanager_options_array());
-        
-        // Buttons
+
+        // Buttons.
         $this->add_action_buttons();
     }
 
@@ -51,83 +49,4 @@ class upload_form extends moodleform {
         return array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1,
                 'accepted_types' => array('*'));
     }
-
 }
-
-/*
-    function definition() {
-        $mform =& $this->_form;
-
-        // $fileoptions = array('accepted_types' => array('.csv'));
-        $fileoptions = array(
-            'subdirs' => 0,
-            // 'maxbytes' => $maxbytes,
-            'areamaxbytes' => 10485760,
-            'maxfiles' => 10,
-            'accepted_types' => ['.csv'],
-            // 'accepted_types' => ['document'],
-            // 'return_types' => FILE_INTERNAL | FILE_EXTERNAL,
-        );
-
-        // $mform->addElement('filepicker', 'fileupload', 'File Upload', null, $fileoptions);
-
-        $mform->addElement(
-            'filemanager',
-            'puuploader',
-            get_string('codeuploader', 'block_pu'),
-            null,
-            $fileoptions  
-        );
-
-        // ---------------------------------------------------
-        /*
-        // Fetch the entry being edited, or create a placeholder.
-        if (empty($id)) {
-            $entry = (object) [
-                'id' => null,
-            ];
-        // } else {
-        //     $entry = $DB->get_records('block_pu', ['id' => $id]);
-        }
-
-        // Get an unused draft itemid which will be used for this form.
-        $draftitemid = file_get_submitted_draft_itemid('attachments');
-
-        // Copy the existing files which were previously uploaded
-        // into the draft area used by this form.
-        file_prepare_draft_area(
-            // The $draftitemid is the target location.
-            $draftitemid,
-
-            // The combination of contextid / component / filearea / itemid
-            // form the virtual bucket that files are currently stored in
-            // and will be copied from.
-            $context->id,
-            'block_pu',
-            'puuploader',
-            $entry->id,
-            [
-                'subdirs' => 0,
-                // 'maxbytes' => $maxbytes,
-                'maxfiles' => 50,
-            ]
-        );
-
-        // Set the itemid of draft area that the files have been moved to.
-        $entry->attachments = $draftitemid;
-        // $form->set_data($entry);
-        *
-        // ---------------------------------------------------
-
-        $mform->setType('puuploader', PARAM_FILE);
-
-        $mform->addRule('puuploader', null, 'required');
-
-        // $encodings = core_text::get_encodings();
-
-        // $mform->addElement('select', 'encoding', "Encoding", $encodings);
-
-        $this->add_action_buttons(true, "Submit");
-    }
-}
-*/

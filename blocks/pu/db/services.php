@@ -29,13 +29,14 @@ $functions = array(
         'classname'   => 'block_pu_external',
         'methodname'  => 'pujax',
         'classpath'   => 'blocks/pu/externallib.php',
-        'description' => 'Entry point for Cross Enrollment Rest Services',
+        'description' => 'Entry point for Proctor U File Uploading Rest Services',
         'type'        => 'write',
         'ajax'        => true
     ),
 );
 
-// We define the services to install as pre-build services. A pre-build service is not editable by administrator.
+// We define the services to install as pre-build services.
+// A pre-build service is not editable by administrator.
 $services = array(
     'PU Service' => array(
         'functions' => array (
