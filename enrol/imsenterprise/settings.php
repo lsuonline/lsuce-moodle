@@ -94,6 +94,10 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/updatecourses',
         get_string('updatecourses', 'enrol_imsenterprise'), get_string('updatecourses_desc', 'enrol_imsenterprise'), 0));
 
+    // BEGIN LSU
+    $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/updatecourseslong',
+        get_string('updatecourseslong', 'enrol_imsenterprise'), get_string('updatecourses_desclong', 'enrol_imsenterprise'), 0));
+    // ENDc LSU
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/createnewcategories',
         get_string('createnewcategories', 'enrol_imsenterprise'), get_string('createnewcategories_desc', 'enrol_imsenterprise'),
         0));
