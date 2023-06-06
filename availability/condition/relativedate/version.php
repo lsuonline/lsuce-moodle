@@ -18,16 +18,15 @@
  * Version info.
  *
  * @package   availability_relativedate
- * @copyright 2022 eWallah.net
+ * @copyright 2019 eWallah.net
  * @author    Renaat Debleu <info@eWallah.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
+$plugin->requires  = 2020061500;
 $plugin->component = 'availability_relativedate';
-$plugin->requires = 2021051700;
-$plugin->maturity = MATURITY_STABLE;
-$plugin->supported = [311, 402];
-$plugin->release = 'v4.0.7';
-$plugin->version = 2023060300;
+$plugin->maturity  = MATURITY_STABLE;
+$plugin->release = 'v3.9.9';
+$plugin->version = 2022031200;

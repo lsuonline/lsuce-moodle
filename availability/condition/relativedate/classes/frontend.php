@@ -18,7 +18,7 @@
  * Front-end class.
  *
  * @package   availability_relativedate
- * @copyright 2022 eWallah.net
+ * @copyright 2019 eWallah.net
  * @author    Renaat Debleu <info@eWallah.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -33,7 +33,7 @@ use stdClass;
  * Front-end class.
  *
  * @package   availability_relativedate
- * @copyright 2022 eWallah.net
+ * @copyright 2019 eWallah.net
  * @author    Renaat Debleu <info@eWallah.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -53,42 +53,15 @@ class frontend extends \core_availability\frontend {
         global $DB;
         $optionsdwm = self::convert_associative_array_for_js(condition::options_dwm(), 'field', 'display');
         $optionsstart = [(object)['field' => 1, 'display' => condition::options_start(1)],
-                         (object)['field' => 6, 'display' => condition::options_start(6)]];
-        if ($course->enddate != 0) {
-            $optionsstart[] = (object)['field' => 5, 'display' => condition::options_start(5)];
-            $optionsstart[] = (object)['field' => 2, 'display' => condition::options_start(2)];
-        }
-        $optionsstart[] = (object)['field' => 3, 'display' => condition::options_start(3)];
+                         (object)['field' => 2, 'display' => condition::options_start(2)],
+                         (object)['field' => 3, 'display' => condition::options_start(3)]];
         if ($DB->count_records_select('enrol', 'courseid = :courseid AND enrolenddate > 0', ['courseid' => $course->id]) > 0) {
             $optionsstart[] = (object)['field' => 4, 'display' => condition::options_start(4)];
         }
-        $activitysel = [];
-        if ($course->enablecompletion != 0) {
-            $cm = get_fast_modinfo($course);
-
-            $s = [];
-            // Gets only sections with content.
-            foreach ($cm->get_sections() as $sectionnum => $section) {
-                $sectioninfo = $cm->get_section_info($sectionnum);
-                $s['name'] = $sectioninfo->name;
-                if (empty($s['name'])) {
-                    $s['name'] = get_string('section') . ' ' . $sectionnum;
-                }
-                $s['coursemodules'] = [];
-                foreach ($section as $cmid) {
-                    $module = $cm->get_cm($cmid);
-                    // Get only course modules which are not deleted.
-                    if ($module->deletioninprogress == 0) {
-                        $s['coursemodules'][] = [
-                            'id' => $cmid,
-                            'name' => $module->name,
-                            'completionenabled' => $module->completion > 0];
-                    }
-                }
-                $activitysel[] = $s;
-            }
-            $optionsstart[] = (object)['field' => 7, 'display' => condition::options_start(7)];
+        $warnings = [];
+        if ($course->enddate == 0) {
+            $warnings[] = get_string('noenddate', 'availability_relativedate');
         }
-        return [$optionsdwm, $optionsstart, is_null($section), [], $activitysel];
+        return [$optionsdwm, $optionsstart, is_null($section), $warnings];
     }
 }

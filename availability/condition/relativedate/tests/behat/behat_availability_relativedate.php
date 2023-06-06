@@ -18,7 +18,7 @@
  * Step definitions to add enrolment.
  *
  * @package   availability_relativedate
- * @copyright 2022 eWallah.net
+ * @copyright 2019 eWallah.net
  * @author    Renaat Debleu <info@eWallah.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -28,15 +28,18 @@
 
 require_once(__DIR__ . '/../../../../../lib/behat/behat_base.php');
 
+use Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException;
+
 /**
  * Step definitions to add enrolment.
  *
  * @package   availability_relativedate
- * @copyright 2022 eWallah.net
+ * @copyright 2019 eWallah.net
  * @author    Renaat Debleu <info@eWallah.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class behat_availability_relativedate extends behat_base {
+
 
     /**
      * See a relative date
@@ -70,23 +73,6 @@ class behat_availability_relativedate extends behat_base {
     public function selfenrolment_exists_in_course_ending($course, $date) {
         $this->config_self_enrolment($course, '', $date);
     }
-
-    /**
-     * Make one activity available after another
-     * @Given /^I make "(?P<activity2>[^"]*)" relative date depending on "(?P<avtivity1>[^"]*)"$/
-     * @param string $activity1
-     * @param string $activity2
-     */
-    public function i_make_activity_relative_date_depending_on($activity1, $activity2) {
-        global $DB;
-        $cm1 = $this->get_course_module_for_identifier($activity1);
-        $cm2 = $this->get_course_module_for_identifier($activity2);
-        if ($cm1 && $cm2) {
-            $str = '{"op":"|","c":[{"type":"relativedate","n":1,"d":1,"s":7,"m":' . $cm1->id . '}],"show":true}';
-            $DB->set_field('course_modules', 'availability', $str, ['id' => $cm2->id]);
-        }
-    }
-
 
     /**
      * Configure self enrolment

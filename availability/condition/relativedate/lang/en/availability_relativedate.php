@@ -18,7 +18,7 @@
  * Language strings.
  *
  * @package   availability_relativedate
- * @copyright 2022 eWallah.net
+ * @copyright 2019 eWallah.net
  * @author    Renaat Debleu <info@eWallah.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,21 +26,15 @@
 $string['after'] = ' after ';
 $string['before'] = ' before ';
 $string['dateend'] = 'before course end date';
-$string['dateendafter'] = 'after course end date';
 $string['dateenrol'] = 'after user enrolment date';
 $string['dateendenrol'] = 'after enrolment method end date';
-$string['datecompletion'] = 'after completion of activity';
 $string['datestart'] = 'after course start date';
-$string['datestartbefore'] = 'before course start date';
 $string['day'] = 'day';
 $string['days'] = 'days';
 $string['description'] = 'Prevent access until a relative time is reached before/after a course or user date.';
 $string['from'] = 'From {$a->rnumber} {$a->rtime} {$a->rela}';
 $string['hour'] = 'hour';
 $string['hours'] = 'hours';
-$string['minute'] = 'minute';
-$string['minutes'] = 'minutes';
-$string['missing'] = '(missing)';
 $string['month'] = 'month';
 $string['months'] = 'months';
 $string['noenddate'] = 'This course has no end date';
