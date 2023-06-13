@@ -206,6 +206,11 @@
 
 /* ================================================ */
 
+/* Subject */
+#qm-mform-compose input.form-control {
+    width: 50%;
+}
+
 /* Auto Suggest Forms */
 #qm-mform-compose .form-autocomplete-suggestions {
     min-width: 362px;
