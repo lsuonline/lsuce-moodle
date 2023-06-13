@@ -141,7 +141,20 @@ class course_renderer extends \core_course_renderer {
             if ($mod->modname === 'resource') {
                 // Default for resources/attatchments e.g. pdf, doc, etc.
                 $modclasses = array('snap-resource', 'snap-mime-'.$mimetype, 'snap-resource-long');
-                if (in_array($mimetype, $this->snap_multimedia())) {
+                $resourcedisplayincourse = true;
+                $modresourceneoptions = array(
+                    RESOURCELIB_DISPLAY_EMBED,
+                    RESOURCELIB_DISPLAY_FRAME,
+                    RESOURCELIB_DISPLAY_NEW,
+                    RESOURCELIB_DISPLAY_DOWNLOAD,
+                    RESOURCELIB_DISPLAY_POPUP
+                );
+                if (!empty($mod->customdata['display'])) {
+                    if (in_array($mod->customdata['display'], $modresourceneoptions)) {
+                        $resourcedisplayincourse = false;
+                    }
+                }
+                if (in_array($mimetype, $this->snap_multimedia()) && $resourcedisplayincourse) {
                     $modclasses[] = 'js-snap-media';
                 }
                 // For images we overwrite with the native class.
@@ -1036,9 +1049,18 @@ class course_renderer extends \core_course_renderer {
         $imgarr = \theme_snap\local::extract_first_image($page->content);
 
         $thumbnail = '';
+
+        $preview = $page->summary;
+
         if ($imgarr) {
-            $img = html_writer::img($imgarr['src'], $imgarr['alt']);
-            $thumbnail = "<div class=summary-figure>$img</div>";
+            // Check that the image is not a tex equation.
+            if (strpos($imgarr['src'], "filter/tex/pix.php") == false) {
+                $img = html_writer::img($imgarr['src'], $imgarr['alt']);
+                $thumbnail = "<div class=summary-figure>$img</div>";
+            } else {
+                $preview = $page->content;
+                $preview = shorten_text($preview, 200);
+            }
         }
 
         $readmore = get_string('readmore', 'theme_snap');
@@ -1079,7 +1101,7 @@ class course_renderer extends \core_course_renderer {
         $o = "
         {$thumbnail}
         <div class='summary-text'>
-            {$page->summary}
+            {$preview}
             <p><a class='$pslinkclass' title='{$mod->name}' href='{$mod->url}' $pmcontextattribute>{$readmore}</a></p>
         </div>
 
@@ -1214,9 +1236,12 @@ class course_renderer extends \core_course_renderer {
 
         $target = '';
         $cmname = $mod->modname;
-
+        $iconurl = $mod->get_icon_url();
         $activityimg = "<div class='activityiconcontainer ".$cmname."'>";
-        $activityimg .= "<img class='iconlarge activityicon' alt='' role='presentation' src='".$mod->get_icon_url()."' />";
+        if (strpos($iconurl, $CFG->wwwroot) !== 0) { // For LTI activities with custom icon URLs.
+            $activityimg = "<div class='activityiconcontainer ".$cmname."' style='background-color:transparent;'>";
+        }
+        $activityimg .= "<img class='iconlarge activityicon' alt='' role='presentation' src='".$iconurl."' />";
         $activityimg .= "</div>";
 
         // Multimedia mods we want to open in the same window.
@@ -1224,20 +1249,24 @@ class course_renderer extends \core_course_renderer {
 
         $resourcedisplay = get_config('theme_snap', 'resourcedisplay');
         $displaydescription = get_config('theme_snap', 'displaydescription');
+        $resourceonclick = "";
         if ($mod->modname === 'resource') {
             $extension = $this->get_mod_type($mod)[1];
             if (in_array($extension, $snapmultimedia)) {
                 // For multimedia we need to handle the popup setting.
                 // If popup add a redirect param to prevent the intermediate page.
                 if ($mod->onclick) {
-                    $url .= "&amp;redirect=1";
+                    $resourceonclick = "onclick=\"{$mod->onclick}\"";
+                    $url = '';
                 }
             } else {
                 if ($resourcedisplay == 'card' && $displaydescription) {
                     $url .= "&amp;forceview=1";
                 } else {
-                    $url .= "&amp;redirect=1";
-                    $target = "target='_blank'";
+                    if ($mod->onclick) {
+                        $resourceonclick = "onclick=\"{$mod->onclick}\"";
+                        $url = '';
+                    }
                 }
             }
         }
@@ -1273,7 +1302,7 @@ class course_renderer extends \core_course_renderer {
         }
 
         if ($mod->uservisible) {
-            $output .= "<a $target $onclicklti class='mod-link' href='$url'>"
+            $output .= "<a $target $onclicklti $resourceonclick class='mod-link' href='$url'>"
                             .$activityimg.
                             "<p class='instancename'>$instancename</p>
                         </a>";

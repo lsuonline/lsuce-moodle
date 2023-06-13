@@ -24,6 +24,8 @@
 
 namespace theme_snap\output;
 
+use core\check\performance\debugging;
+
 trait general_section_trait {
 
     /**
@@ -36,9 +38,13 @@ trait general_section_trait {
      */
     protected function is_section_conditional(\section_info $section) {
         // Are there any conditional fields populated?
+        $sectionavailability = $section->availability === null ? '' : $section->availability;
         if (!empty($section->availableinfo)
+            || !empty(json_decode($sectionavailability)->c)) {
+
 	    // BEGIN LSU Warning fix.
-            || !empty(json_decode(isset($section->availability))->c)) {
+	    // SNAP people added line 41 above to address this warning (haven't tested)
+            // || !empty(json_decode(isset($section->availability))->c)) {
 	    // END LSU Warning fix.
             return true;
         }
