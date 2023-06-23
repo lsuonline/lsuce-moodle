@@ -406,6 +406,17 @@ $string['design_mod_page'] = 'Enable previous design for page resources';
 $string['design_mod_page_description'] = 'If enabled, page resource content will be displayed inside the same page, course or front page.';
 $string['design_activity_chooser'] = 'Roll back to the original design for the activity chooser';
 $string['design_activity_chooser_description'] = 'If enabled, the activity chooser will be displayed with the original design. This will affect the course and front pages.';
+// BEGIN LSU Extra Course Size.
+$string['enable_course_size'] = 'Enable course size tool.';
+$string['enable_course_size_description'] = 'If enabled, this will show the  course size based on a limit that is set by the admin.';
+$string['course_size_limit'] = 'Course size limit (MB)';
+$string['course_size_limit_description'] = 'Set the limit for the size of the course that instructors will be able to see.';
+
+$string['course_size'] = 'Course Size';
+$string['course_size_help'] = 'Indicates the total size of your course, including all course materials.';
+// END LSU Extra Course Size.
+
+
 $string['refreshdeadlinestask'] = 'Refresh deadlines cached data. This should be run before all users login.';
 
 // BEGIN LSU Extra Course Tabs.
