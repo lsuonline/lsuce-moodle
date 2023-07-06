@@ -31,6 +31,7 @@ use block_lsuxe\controllers\form_controller;
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_once($CFG->libdir . '/formslib.php');
 
 class moodles_form extends \moodleform {
 

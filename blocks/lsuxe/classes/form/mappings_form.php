@@ -28,10 +28,13 @@ namespace block_lsuxe\form;
 use block_lsuxe\controllers\form_controller;
 use block_lsuxe\form\groupform_autocomplete;
 use block_lsuxe\models;
+use MoodleQuickForm;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_once($CFG->libdir . '/formslib.php');
+
 
 \MoodleQuickForm::registerElementType(
     'groupform_autocomplete',
