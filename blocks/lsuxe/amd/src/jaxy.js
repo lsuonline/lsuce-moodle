@@ -22,8 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/ajax',],
-    function($, Ajax) {
+define(['jquery', 'core/ajax', 'block_lsuxe/notifications'],
+    function($, Ajax, Noti) {
     'use strict';
 
     return {
@@ -82,6 +82,13 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
+            if (data_chunk.url.substring(0, 4) == "http") {
+                Noti.callNoti({
+                    message: "URLs with a leading scheme (http, www) need to be removed in the Moodle's URL.",
+                    type: 'error'
+                });
+                return;
+            }
 
             var full_url = "https://"+data_chunk.url;
             console.log("The stupid fackin url is: " + full_url);
