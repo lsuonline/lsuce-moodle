@@ -82,9 +82,6 @@ define(['jquery', 'core/ajax', 'block_lsuxe/notifications'],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
-            console.log("XERemoteAjax -> Start");
-            console.log("XERemoteAjax -> what is data_chunk: ", data_chunk);
-
             if (data_chunk.url.substring(0, 4) == "http") {
                 Noti.callNoti({
                     message: "URLs with a leading scheme (http, www) need to be removed in the Moodle's URL.",
@@ -94,8 +91,6 @@ define(['jquery', 'core/ajax', 'block_lsuxe/notifications'],
             }
 
             var full_url = "https://"+data_chunk.url;
-            console.log("The stupid fackin url is: " + full_url);
-
             var promiseObj = new Promise(function(resolve) {
                 $.ajax({
                     type: data_chunk.type,
@@ -103,7 +98,6 @@ define(['jquery', 'core/ajax', 'block_lsuxe/notifications'],
                     url: full_url,
                 }).done(function (response) {
                     // If token is incorrect Moodle will throw an exception.
-                    console.log("What is the response: ", response);
                     if (response.hasOwnProperty('exception')) {
                         resolve({
                             'success': false,

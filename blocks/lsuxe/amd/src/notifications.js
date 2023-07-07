@@ -22,7 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- define(['jquery', 'core/notification', 'core/modal_factory', 'core/modal_events'],
+
+define(['jquery', 'core/notification', 'core/modal_factory', 'core/modal_events'],
     function($, notification, MF, ME) {
     'use strict';
 
