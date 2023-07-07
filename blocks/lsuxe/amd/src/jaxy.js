@@ -82,12 +82,13 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
-            // var that = this;
+
+            var full_url = "https://"+data_chunk.url;
             var promiseObj = new Promise(function(resolve) {
                 $.ajax({
                     type: data_chunk.type,
                     data: data_chunk.data,
-                    url: data_chunk.url,
+                    url: full_url,
                 }).done(function (response) {
                     // If token is incorrect Moodle will throw an exception.
                     if (response.hasOwnProperty('exception')) {
