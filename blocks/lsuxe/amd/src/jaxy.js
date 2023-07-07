@@ -84,6 +84,8 @@ define(['jquery', 'core/ajax',],
         XERemoteAjax: function(data_chunk) {
 
             var full_url = "https://"+data_chunk.url;
+            console.log("The stupid fackin url is: " + full_url);
+
             var promiseObj = new Promise(function(resolve) {
                 $.ajax({
                     type: data_chunk.type,
