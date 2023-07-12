@@ -1,7 +1,7 @@
 <?php
 // Respondus 4.0 Web Service Extension For Moodle
-// Copyright (c) 2009-2020 Respondus, Inc.  All Rights Reserved.
-// Date: February 14, 2020.
+// Copyright (c) 2009-2023 Respondus, Inc.  All Rights Reserved.
+// Date: June 08, 2023.
 defined("MOODLE_INTERNAL") || die();
 $logs = array(
     array("module" => "respondusws", "action" => "add", "mtable" => "respondusws", "field" => "name"),

@@ -1,7 +1,7 @@
 <?php
 // Respondus 4.0 Web Service Extension For Moodle
-// Copyright (c) 2009-2020 Respondus, Inc.  All Rights Reserved.
-// Date: February 14, 2020.
+// Copyright (c) 2009-2023 Respondus, Inc.  All Rights Reserved.
+// Date: June 08, 2023.
 $RWSEDBG = false;
 $RWSDBGL = "respondusws_err.log";
 $RWSIHLOG = false;
@@ -473,6 +473,8 @@ function RWSCMBVer() {
         || $r_bv == 2018062700
         || $r_bv == 2019011400
         || $r_bv == 2020021400
+        || $r_bv == 2022050900
+        || $r_bv == 2023060800
     ) {
         return;
     }
@@ -1628,26 +1630,32 @@ function RWSGUQCats($r_cid) {
             } else {
                 $r_ctx = get_context_instance(CONTEXT_MODULE, $r_qzm->id);
             }
-            if ($r_ctx != false) {
+            if ($r_ctx !== false) {
                 if (!in_array($r_ctx->id, $r_ctxs)) {
                     $r_ctxs[] = $r_ctx->id;
                 }
             }
         }
     }
+    $r_qcs = false;
     if (count($r_ctxs) == 0) {
         return array();
     } else if (count($r_ctxs) == 1) {
-        $r_qcs = get_categories_for_contexts($r_ctxs[0]);
-        if ($r_qcs === false || count($r_qcs) == 0) {
-            return array();
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_qcs = \qbank_managecategories\helper::get_categories_for_contexts($r_ctxs[0]);
+        } else {
+            $r_qcs = get_categories_for_contexts($r_ctxs[0]);
         }
     } else {
         $r_ctxl = implode(", ", $r_ctxs);
-        $r_qcs        = get_categories_for_contexts($r_ctxl);
-        if ($r_qcs === false || count($r_qcs) == 0) {
-            return array();
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_qcs = \qbank_managecategories\helper::get_categories_for_contexts($r_ctxl);
+        } else {
+            $r_qcs = get_categories_for_contexts($r_ctxl);
         }
+    }
+    if ($r_qcs === false || count($r_qcs) == 0) {
+        return array();
     }
     return $r_qcs;
 }
@@ -4240,9 +4248,12 @@ function RWSISARec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSSHA;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -4511,6 +4522,21 @@ function RWSISARec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -4526,8 +4552,11 @@ function RWSISARec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     $r_aid = array();
     foreach ($r_asrs as $r_an) {
         $r_an->question = $r_qst->id;
@@ -4564,9 +4593,12 @@ function RWSITFRec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSTRF;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -4736,6 +4768,21 @@ function RWSITFRec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -4751,8 +4798,11 @@ function RWSITFRec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     $r_tru->question = $r_qst->id;
     $r_tru->id       = $DB->insert_record("question_answers", $r_tru);
     $r_cmp      = "question";
@@ -4792,9 +4842,12 @@ function RWSIMARec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSMAN;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -4938,6 +4991,21 @@ function RWSIMARec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -4953,13 +5021,16 @@ function RWSIMARec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     $r_chid = array();
     foreach ($r_chn as $r_chd) {
         $r_chd->parent       = $r_qst->id;
         $r_chd->parent_qtype = $r_qst->qtype;
-        $r_chd->id           = RWSCChild($r_chd, $r_cid, $r_ctxi);
+        $r_chd->id           = RWSCChild($r_chd, $r_cid, $r_qci, $r_ctxi);
         if ($r_chd->id === false) {
             if (respondusws_floatcompare($CFG->version, 2011070100, 2) >= 0) {
                 question_delete_question($r_qst->id);
@@ -5002,7 +5073,10 @@ function RWSCCChild($r_qst, $r_fld) {
     $r_rxps = ($r_rxpt && $r_rxpc);
     $r_chd                     = new stdClass();
     $r_chd->name               = $r_qst->name;
-    $r_chd->category           = $r_qst->category;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_chd->category = $r_qst->category;
+    }
     $r_chd->questiontext       = $r_fld;
     $r_chd->questiontextformat = $r_qst->questiontextformat;
     $r_chd->questiontext = clean_param($r_chd->questiontext, PARAM_RAW);
@@ -5321,12 +5395,15 @@ function RWSGCFields($r_qstx) {
     }
     return $r_flds;
 }
-function RWSCChild($r_chd, $r_cid, $r_ctxi) {
+function RWSCChild($r_chd, $r_cid, $r_qci, $r_ctxi) {
     global $CFG;
     global $DB;
     global $RWSUID;
     global $RWSPFNAME;
-    $r_chd->hidden                = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_chd->hidden = 0;
+    }
     $r_chd->length                = 1;
     $r_chd->stamp                 = make_unique_id_code();
     $r_chd->createdby             = $RWSUID;
@@ -5338,6 +5415,21 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
     $r_chd->timemodified          = time();
     if ($r_chd->qtype == RWSNUM) {
         $r_chd->id = $DB->insert_record("question", $r_chd);
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_qb = new \stdClass();
+            $r_qb->questioncategoryid = $r_qci;
+            $r_qb->idnumber = null;
+            $r_qb->ownerid = $r_chd->createdby;
+            $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+            $r_qv = new \stdClass();
+            $r_qv->questionbankentryid = $r_qb->id;
+            $r_qv->questionid = $r_chd->id;
+            $r_qv->version = get_next_version($r_qb->id);
+            $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+            $r_qv->status = $r_sts;
+            $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+        } else {
+        }
         $r_cmp           = "question";
         $r_far            = "questiontext";
         $r_iti              = $r_chd->id;
@@ -5346,9 +5438,11 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
             $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
         );
         $DB->update_record("question", $r_chd);
-        $r_h = question_hash($r_chd);
-        $DB->set_field("question", "version", $r_h,
-            array("id" => $r_chd->id));
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        } else {
+            $r_h = question_hash($r_chd);
+            $DB->set_field("question", "version", $r_h, array("id" => $r_chd->id));
+        }
         $r_na = count($r_chd->answer);
         for ($r_i = 0; $r_i < $r_na; $r_i++) {
             $r_an                 = new stdClass();
@@ -5375,6 +5469,21 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
         }
     } else if ($r_chd->qtype == RWSSHA) {
         $r_chd->id = $DB->insert_record("question", $r_chd);
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_qb = new \stdClass();
+            $r_qb->questioncategoryid = $r_qci;
+            $r_qb->idnumber = null;
+            $r_qb->ownerid = $r_chd->createdby;
+            $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+            $r_qv = new \stdClass();
+            $r_qv->questionbankentryid = $r_qb->id;
+            $r_qv->questionid = $r_chd->id;
+            $r_qv->version = get_next_version($r_qb->id);
+            $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+            $r_qv->status = $r_sts;
+            $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+        } else {
+        }
         $r_cmp           = "question";
         $r_far            = "questiontext";
         $r_iti              = $r_chd->id;
@@ -5383,9 +5492,11 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
             $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
         );
         $DB->update_record("question", $r_chd);
-        $r_h = question_hash($r_chd);
-        $DB->set_field("question", "version", $r_h,
-            array("id" => $r_chd->id));
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        } else {
+            $r_h = question_hash($r_chd);
+            $DB->set_field("question", "version", $r_h, array("id" => $r_chd->id));
+        }
         $r_aid  = array();
         $r_na = count($r_chd->answer);
         for ($r_i = 0; $r_i < $r_na; $r_i++) {
@@ -5419,6 +5530,21 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
         }
     } else if ($r_chd->qtype == RWSMCH) {
         $r_chd->id = $DB->insert_record("question", $r_chd);
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_qb = new \stdClass();
+            $r_qb->questioncategoryid = $r_qci;
+            $r_qb->idnumber = null;
+            $r_qb->ownerid = $r_chd->createdby;
+            $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+            $r_qv = new \stdClass();
+            $r_qv->questionbankentryid = $r_qb->id;
+            $r_qv->questionid = $r_chd->id;
+            $r_qv->version = get_next_version($r_qb->id);
+            $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+            $r_qv->status = $r_sts;
+            $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+        } else {
+        }
         $r_cmp           = "question";
         $r_far            = "questiontext";
         $r_iti              = $r_chd->id;
@@ -5427,9 +5553,11 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
             $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
         );
         $DB->update_record("question", $r_chd);
-        $r_h = question_hash($r_chd);
-        $DB->set_field("question", "version", $r_h,
-            array("id" => $r_chd->id));
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        } else {
+            $r_h = question_hash($r_chd);
+            $DB->set_field("question", "version", $r_h, array("id" => $r_chd->id));
+        }
         $r_aid  = array();
         $r_na = count($r_chd->answer);
         for ($r_i = 0; $r_i < $r_na; $r_i++) {
@@ -5479,7 +5607,22 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
         }
     } else if ($r_chd->qtype == RWSRXP) {
         $r_chd->id = $DB->insert_record("question", $r_chd);
-        $r_h      = question_hash($r_chd);
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_qb = new \stdClass();
+            $r_qb->questioncategoryid = $r_qci;
+            $r_qb->idnumber = null;
+            $r_qb->ownerid = $r_chd->createdby;
+            $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+            $r_qv = new \stdClass();
+            $r_qv->questionbankentryid = $r_qb->id;
+            $r_qv->questionid = $r_chd->id;
+            $r_qv->version = get_next_version($r_qb->id);
+            $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+            $r_qv->status = $r_sts;
+            $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+        } else {
+            $r_h = question_hash($r_chd);
+        }
         $r_cmp           = "question";
         $r_far            = "questiontext";
         $r_iti              = $r_chd->id;
@@ -5488,8 +5631,10 @@ function RWSCChild($r_chd, $r_cid, $r_ctxi) {
             $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
         );
         $DB->update_record("question", $r_chd);
-        $DB->set_field("question", "version", $r_h,
-            array("id" => $r_chd->id));
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        } else {
+            $DB->set_field("question", "version", $r_h, array("id" => $r_chd->id));
+        }
         $r_aid  = array();
         $r_na = count($r_chd->answer);
         for ($r_i = 0; $r_i < $r_na; $r_i++) {
@@ -5539,9 +5684,12 @@ function RWSICRec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSCAL;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -6069,6 +6217,21 @@ function RWSICRec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -6084,8 +6247,11 @@ function RWSICRec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     $r_op                           = new stdClass();
     $r_op->question                 = $r_qst->id;
     $r_op->synchronize              = 0;
@@ -6162,7 +6328,11 @@ function RWSICRec($r_cid, $r_qci, $r_rcd) {
         if ($r_ds->status == 0) {
             $r_df->category = 0;
         } else {
-            $r_df->category = $r_qst->category;
+            if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+                $r_df->category = $r_qci;
+            } else {
+                $r_df->category = $r_qst->category;
+            }
         }
         $r_df->id = $DB->insert_record("question_dataset_definitions", $r_df);
         $r_qds                    = new stdClass();
@@ -6286,9 +6456,12 @@ function RWSIMCRec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSMCH;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -6696,6 +6869,21 @@ function RWSIMCRec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -6711,8 +6899,11 @@ function RWSIMCRec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     $r_aid = array();
     foreach ($r_asrs as $r_an) {
         $r_an->question = $r_qst->id;
@@ -6783,9 +6974,12 @@ function RWSIMRec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSMAT;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -7003,6 +7197,21 @@ function RWSIMRec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -7018,8 +7227,11 @@ function RWSIMRec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     $r_pis = array();
     foreach ($r_prs as $r_pr) {
         if (respondusws_floatcompare($CFG->version, 2013051400, 2) < 0) {
@@ -7074,9 +7286,12 @@ function RWSIDRec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSDES;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 0;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -7174,6 +7389,21 @@ function RWSIDRec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -7189,8 +7419,11 @@ function RWSIDRec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     return $r_qst->id;
 }
 function RWSIERec($r_cid, $r_qci, $r_rcd) {
@@ -7205,9 +7438,12 @@ function RWSIERec($r_cid, $r_qci, $r_rcd) {
     $r_qst             = new stdClass();
     $r_qst->qtype      = RWSESS;
     $r_qst->parent     = 0;
-    $r_qst->hidden     = 0;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_qst->hidden   = 0;
+        $r_qst->category = $r_qci;
+    }
     $r_qst->length     = 1;
-    $r_qst->category   = $r_qci;
     $r_qst->stamp      = make_unique_id_code();
     $r_qst->createdby  = $RWSUID;
     $r_qst->modifiedby = $RWSUID;
@@ -7335,6 +7571,21 @@ function RWSIERec($r_cid, $r_qci, $r_rcd) {
     $r_qst->timecreated  = time();
     $r_qst->timemodified = time();
     $r_qst->id           = $DB->insert_record("question", $r_qst);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qb = new \stdClass();
+        $r_qb->questioncategoryid = $r_qci;
+        $r_qb->idnumber = null;
+        $r_qb->ownerid = $r_qst->createdby;
+        $r_qb->id = $DB->insert_record("question_bank_entries", $r_qb);
+        $r_qv = new \stdClass();
+        $r_qv->questionbankentryid = $r_qb->id;
+        $r_qv->questionid = $r_qst->id;
+        $r_qv->version = get_next_version($r_qb->id);
+        $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $r_qv->status = $r_sts;
+        $r_qv->id = $DB->insert_record('question_versions', $r_qv);
+    } else {
+    }
     $r_cmp              = "question";
     $r_far               = "questiontext";
     $r_iti                 = $r_qst->id;
@@ -7350,8 +7601,11 @@ function RWSIERec($r_cid, $r_qci, $r_rcd) {
         $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt
     );
     $DB->update_record("question", $r_qst);
-    $r_h = question_hash($r_qst);
-    $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+    } else {
+        $r_h = question_hash($r_qst);
+        $DB->set_field("question", "version", $r_h, array("id" => $r_qst->id));
+    }
     if (respondusws_floatcompare($CFG->version, 2011070100, 2) >= 0) {
         $r_op                     = new stdClass();
         $r_op->questionid         = $r_qst->id;
@@ -7851,8 +8105,27 @@ function RWSESARec($r_qst) {
     } else {
         $r_bv = intval($r_rv);
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -7995,8 +8268,27 @@ function RWSETFRec($r_qst) {
     if ($r_qst->parent != 0) {
         return false;
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8101,8 +8393,27 @@ function RWSEMARec($r_qst) {
     if ($r_qst->parent != 0) {
         return false;
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8203,8 +8514,27 @@ function RWSECRec($r_qst) {
     } else {
         $r_bv = intval($r_rv);
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8423,8 +8753,27 @@ function RWSEMCRec($r_qst) {
     } else {
         $r_bv = intval($r_rv);
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8631,8 +8980,27 @@ function RWSEMRec($r_qst) {
     if ($r_qst->parent != 0) {
         return false;
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8748,8 +9116,27 @@ function RWSEDRec($r_qst) {
     if ($r_qst->parent != 0) {
         return false;
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8802,8 +9189,27 @@ function RWSEERec($r_qst) {
     if ($r_qst->parent != 0) {
         return false;
     }
-    $r_ctxi = $DB->get_field("question_categories", "contextid",
-        array("id" => $r_qst->category));
+    $r_ctxi = false;
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbi = $DB->get_field("question_versions", "questionbankentryid",
+          array("questionid" => $r_qst->id));
+        if ($r_qbi === false) {
+            return false;
+        }
+        $r_qcd = $DB->get_field("question_bank_entries", "questioncategoryid",
+          array("id" => $r_qbi));
+        if ($r_qcd === false) {
+            return false;
+        }
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qcd));
+    } else {
+        $r_ctxi = $DB->get_field("question_categories", "contextid",
+          array("id" => $r_qst->category));
+    }
+    if ($r_ctxi === false) {
+        return false;
+    }
     $r_fld = $r_qst->name;
     $r_fld = respondusws_utf8encode($r_fld);
     $r_fld  = pack("a*x", $r_fld);
@@ -8926,8 +9332,8 @@ function RWSDIData($r_fdat, $r_imd) {
             $r_ok = false;
         }
         if ($r_ok) {
-            foreach ($r_ress as $r_nm => $r_status) {
-                if ($r_status !== true) {
+            foreach ($r_ress as $r_nm => $r_sts) {
+                if ($r_sts !== true) {
                     $r_ok = false;
                     break;
                 }
@@ -8966,10 +9372,40 @@ function RWSMTFldr() {
 }
 function RWSEQCQues($r_qci, &$r_qfl, &$r_drp, $r_w64) {
     global $DB;
-    $r_drp = 0;
-    $r_qd   = "";
+    $r_drp   = 0;
+    $r_mss   = 0;
+    $r_qd     = "";
     $r_qtps     = array();
-    $r_qsts = $DB->get_records("question", array("category" => $r_qci));
+    $r_qsts = array();
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbl = $DB->get_records("question_bank_entries", array("questioncategoryid" => $r_qci));
+        foreach ($r_qbl as $r_qb) {
+            $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+            $r_qvl = $DB->get_records("question_versions",
+              array(
+                "questionbankentryid" => $r_qb->id,
+                "status" => "$r_sts"
+              ));
+            $r_qv = false;
+            foreach ($r_qvl as $r_qvi) {
+                if ($r_qv === false || $r_qvi->version > $r_qv->version) {
+                    $r_qv = $r_qvi;
+                }
+            }
+            if ($r_qv === false) {
+                $r_mss++;
+                continue;
+            }
+            $r_q = $DB->get_record("question", array("id" => $r_qv->questionid));
+            if ($r_q === false) {
+                $r_mss++;
+                continue;
+            }
+            $r_qsts[] = $r_q;
+        }
+    } else {
+        $r_qsts = $DB->get_records("question", array("category" => $r_qci));
+    }
     if (count($r_qsts) > 0) {
         foreach ($r_qsts as $r_q) {
             if ($r_q->parent == 0) {
@@ -8983,6 +9419,7 @@ function RWSEQCQues($r_qci, &$r_qfl, &$r_drp, $r_w64) {
     $r_ran = 0;
     $r_qd  = RWSEQues(
         $r_qtps, $r_qfl, $r_drp, $r_ran, $r_w64);
+    $r_drp += $r_mss;
     return $r_qd;
 }
 function RWSEQQues($r_qzmi, &$r_qfl, &$r_drp, &$r_ran, $r_w64) {
@@ -9007,7 +9444,57 @@ function RWSEQQues($r_qzmi, &$r_qfl, &$r_drp, &$r_ran, $r_w64) {
     if ($r_qiz === false) {
         RWSSErr("2044");
     }
-    if (respondusws_floatcompare($CFG->version, 2014051200, 2) >= 0) {
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qis = array();
+        $r_slts = $DB->get_records("quiz_slots", array("quizid" => $r_qiz->id), "slot");
+        foreach ($r_slts as $r_slt) {
+            $r_qr = $DB->get_record("question_references",
+              array(
+                "component" => "mod_quiz",
+                "questionarea" => "slot",
+                "itemid" => $r_slt->id
+              ));
+            if ($r_qr === false) {
+                $r_qsr = $DB->get_records("question_set_references",
+                  array(
+                    "component" => "mod_quiz",
+                    "questionarea" => "slot",
+                    "itemid" => $r_slt->id
+                  ));
+                if ($r_qsr === false) {
+                    $r_mss++;
+                    continue;
+                }
+                $r_ran++;
+                continue;
+            }
+            if ($r_qr->version) {
+                $r_qv = $DB->get_record("question_versions",
+                  array(
+                    "questionbankentryid" => $r_qr->questionbankentryid,
+                    "version" => $r_qr->version
+                  ));
+            } else {
+                $r_sts = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+                $r_qvl = $DB->get_records("question_versions",
+                  array(
+                    "questionbankentryid" => $r_qr->questionbankentryid,
+                    "status" => "$r_sts"
+                  ));
+                $r_qv = false;
+                foreach ($r_qvl as $r_qvi) {
+                    if ($r_qv === false || $r_qvi->version > $r_qv->version) {
+                        $r_qv = $r_qvi;
+                    }
+                }
+            }
+            if ($r_qv === false) {
+                $r_mss++;
+                continue;
+            }
+            $r_qis[] = $r_qv->questionid;
+        }
+    } else if (respondusws_floatcompare($CFG->version, 2014051200, 2) >= 0) {
         $r_qis = array();
         $r_slts = $DB->get_records("quiz_slots", array("quizid" => $r_qiz->id), "slot");
         foreach ($r_slts as $r_slt) {
@@ -9032,6 +9519,10 @@ function RWSEQQues($r_qzmi, &$r_qfl, &$r_drp, &$r_ran, $r_w64) {
     }
     if (count($r_qsts) < 1) {
         RWSSErr("2103");
+    }
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_drp += $r_ran;
+    } else {
     }
     $r_qd = RWSEQues(
         $r_qsts, $r_qfl, $r_drp, $r_ran, $r_w64);
@@ -9277,7 +9768,21 @@ function RWSDQCat($r_qci) {
             RWSDQCat($r_chd->id);
         }
     }
-    $r_qsts = $DB->get_records("question", array("category" => $r_qci));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbl = $DB->get_records("question_bank_entries", array("questioncategoryid" => $r_qci));
+        foreach ($r_qbl as $r_qb) {
+            $r_qvl = $DB->get_records("question_versions", array("questionbankentryid" => $r_qb->id));
+            foreach ($r_qvl as $r_qv) {
+                $r_q = $DB->get_record("question", array("id" => $r_qv->questionid));
+                if ($r_q === false) {
+                    continue;
+                }
+                $r_qsts[] = $r_q;
+            }
+        }
+    } else {
+        $r_qsts = $DB->get_records("question", array("category" => $r_qci));
+    }
     if (count($r_qsts) > 0) {
         foreach ($r_qsts as $r_q) {
             if (respondusws_floatcompare($CFG->version, 2011070100, 2) >= 0) {
@@ -9286,7 +9791,10 @@ function RWSDQCat($r_qci) {
                 delete_question($r_q->id);
             }
         }
-        $DB->delete_records("question", array("category" => $r_qci));
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        } else {
+            $DB->delete_records("question", array("category" => $r_qci));
+        }
     }
     $DB->delete_records("question_categories", array("id" => $r_qci));
 }
@@ -9302,7 +9810,21 @@ function RWSIQCUsed($r_qci) {
             }
         }
     }
-    $r_qsts = $DB->get_records("question", array("category" => $r_qci));
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        $r_qbl = $DB->get_records("question_bank_entries", array("questioncategoryid" => $r_qci));
+        foreach ($r_qbl as $r_qb) {
+            $r_qvl = $DB->get_records("question_versions", array("questionbankentryid" => $r_qb->id));
+            foreach ($r_qvl as $r_qv) {
+                $r_q = $DB->get_record("question", array("id" => $r_qv->questionid));
+                if ($r_q === false) {
+                    continue;
+                }
+                $r_qsts[] = $r_q;
+            }
+        }
+    } else {
+        $r_qsts = $DB->get_records("question", array("category" => $r_qci));
+    }
     if (count($r_qsts) > 0) {
         if (respondusws_floatcompare($CFG->version, 2011070100, 2) >= 0) {
             $r_qis = array();
@@ -9322,7 +9844,7 @@ function RWSIQCUsed($r_qci) {
     }
     return false;
 }
-function RWSPAtt($r_qtyp, $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt) {
+function RWSPAtt($r_qty, $r_cid, $r_ctxi, $r_cmp, $r_far, $r_iti, $r_txt) {
     global $CFG;
     global $RWSUID;
     $r_l = strlen($r_txt);
@@ -10240,7 +10762,11 @@ function RWSADQCat() {
     }
     $r_cid = RWSGCFCat($r_ctx);
     RWSCMUCourse($r_cid);
-    question_can_delete_cat($r_qci);
+    if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+        \qbank_managecategories\helper::question_can_delete_cat($r_qci);
+    } else {
+        question_can_delete_cat($r_qci);
+    }
     if (RWSIQCUsed($r_qci)) {
         RWSSErr("2066");
     }
@@ -10371,7 +10897,7 @@ function RWSAAQuiz() {
             $r_qiz->availableuntil = strtotime("23:59:59",
                 $r_qiz->availableuntil);
         }
-        $r_qiz->showavailability = CONDITION_STUDENTVIEW_HIDE;
+        $r_qiz->showavailability = 0;
     }
     RWSSQDefs($r_qiz);
     if ($r_imp) {
@@ -10769,13 +11295,11 @@ function RWSAAQRand() {
     if ($r_qg <= 0) {
         RWSSErr("2086");
     }
-    $r_mr = $DB->get_record("modules",
-        array("id" => $r_cmod->module));
+    $r_mr = $DB->get_record("modules", array("id" => $r_cmod->module));
     if ($r_mr === false) {
         RWSSErr("2043");
     }
-    $r_qiz = $DB->get_record($r_mr->name,
-        array("id" => $r_cmod->instance));
+    $r_qiz = $DB->get_record($r_mr->name, array("id" => $r_cmod->instance));
     if ($r_qiz === false) {
         RWSSErr("2044");
     }
@@ -10788,8 +11312,28 @@ function RWSAAQRand() {
     if (respondusws_floatcompare($CFG->version, 2018051700, 2) >= 0) {
         $r_cqm = false;
         quiz_add_random_questions($r_qiz, 0, $r_qca->id, $r_qct, $r_isc);
-        $DB->set_field("question", "defaultmark", $r_qg, array("qtype" => RWSRND, "category" => $r_qca->id));
-        $DB->set_field("quiz_slots", "maxmark", $r_qg, array("questioncategoryid" => $r_qca->id));
+        if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
+            $r_uctx = context_module::instance($r_qzmi);
+            if ($r_uctx !== false) {
+                $r_qsrl = $DB->get_records("question_set_references",
+                  array(
+                    "component" => "mod_quiz",
+                    "questionarea" => "slot",
+                    "usingcontextid" => $r_uctx->id,
+                    "questionscontextid" => $r_qca->contextid
+                  ));
+                foreach ($r_qsrl as $r_qsr) {
+                    $r_ft = json_decode($r_qsr->filtercondition);
+                    if ($r_ft->questioncategoryid != $r_qca->id) {
+                        continue;
+                    }
+                    $DB->set_field("quiz_slots", "maxmark", $r_qg, array("id" => $r_qsr->itemid));
+                }
+            }
+        } else {
+            $DB->set_field("question", "defaultmark", $r_qg, array("qtype" => RWSRND, "category" => $r_qca->id));
+            $DB->set_field("quiz_slots", "maxmark", $r_qg, array("questioncategoryid" => $r_qca->id));
+        }
     }
     for ($r_i = 0; $r_cqm && $r_i < $r_qct; $r_i++) {
         $r_qst               = new stdClass();

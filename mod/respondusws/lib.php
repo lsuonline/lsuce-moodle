@@ -1,7 +1,7 @@
 <?php
 // Respondus 4.0 Web Service Extension For Moodle
-// Copyright (c) 2009-2020 Respondus, Inc.  All Rights Reserved.
-// Date: February 14, 2020.
+// Copyright (c) 2009-2023 Respondus, Inc.  All Rights Reserved.
+// Date: June 08, 2023.
 defined("MOODLE_INTERNAL") || die();
 function respondusws_add_instance($instance) {
     global $DB;
@@ -143,7 +143,16 @@ function respondusws_get_coursemodule_info($course_module) {
     $info->name = $instance->name;
     return $info;
 }
-if ($CFG->version >= 2016052300) {
+if ($CFG->version >= 2020061500) {
+    function respondusws_get_course_content_items(\core_course\local\entity\content_item $defaultmodulecontentitem, \stdClass $user, \stdClass $course) {
+        $items = array();
+        return $items;
+    }
+    function mod_respondusws_get_all_content_items(\core_course\local\entity\content_item $defaultmodulecontentitem) {
+        $items = array();
+        return $items;
+    }
+} else if ($CFG->version >= 2016052300) {
     function respondusws_get_shortcuts($defaultitem) {
         $items = array();
         return $items;
@@ -183,8 +192,14 @@ function respondusws_reset_userdata($data) {
 function respondusws_check_file_access($attempt_id, $question_id, $context = null) {
     return true;
 }
-function respondusws_question_list_instances($question_id) {
-    return array();
+if (respondusws_floatcompare($CFG->version, 2011070100, 2) >= 0) {
+    function respondusws_questions_in_use($question_ids) {
+        return false;
+    }
+} else {
+    function respondusws_question_list_instances($question_id) {
+        return array();
+    }
 }
 function respondusws_supports($feature) {
     global $CFG;

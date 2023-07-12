@@ -52,12 +52,17 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 
 $strmymoodle = get_string('myhome');
 
-// BEGIN LSU site_home requirement.
-// Requires non priveleged users to use site_home instead of dashboard.
-if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
-    redirect(new moodle_url('/', array('redirect' => 0)));
+if (empty($CFG->enabledashboard)) {
+    // Dashboard is disabled, so the /my page shouldn't be displayed.
+    $defaultpage = get_default_home_page();
+    if ($defaultpage == HOMEPAGE_MYCOURSES) {
+        // If default page is set to "My courses", redirect to it.
+        redirect(new moodle_url('/my/courses.php'));
+    } else {
+        // Otherwise, raise an exception to inform the dashboard is disabled.
+        throw new moodle_exception('error:dashboardisdisabled', 'my');
+    }
 }
-// END LSU site_home requirement.
 
 if (isguestuser()) {  // Force them to see system default, no editing allowed
     // If guests are not allowed my moodle, send them to front page.
