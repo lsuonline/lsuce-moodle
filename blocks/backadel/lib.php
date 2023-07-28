@@ -83,6 +83,9 @@ function backadel_delete_course($courseid) {
 function generate_suffix($courseid) {
     $suffix = '';
 
+    // Set up the regex.
+    $re = '/@\S+/s';
+
     // Grab the allowed suffixes.
     $field = get_config('block_backadel', 'suffix');
 
@@ -100,6 +103,18 @@ function generate_suffix($courseid) {
             if ($users = get_role_users($r, $context, false)) {
                 // Loop through the users and grab the appropriate suffix.
                 foreach ($users as $k => $v) {
+
+                    // Clean up the username in case it's an email.
+                    if ($field == 'username') {
+                        $finder = preg_match($re, $v->$field, $match);
+
+                        // If we have a match, grab it.
+                        $search = $finder ? $match[0] : '';
+
+                        // Prune it.
+                        $v->$field = str_replace($search, "", $v->$field);
+                    }
+
                     $suffix .= '_' . $v->$field;
                 }
             }
