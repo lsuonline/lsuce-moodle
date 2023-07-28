@@ -28,7 +28,6 @@
     function($, XELib, Noti) {
     'use strict';
     return {
-
         /**
          * Fetch the token for the current selected URL. Store in temp sessionStorage
          *
@@ -275,12 +274,11 @@
                         that.setHiddenValue('srccourseid', response.data.id);
                         that.setHiddenValue('srccoursegroupid', response.data.groupid);
                         Noti.callNoti({
-                            message: "Everything checks out for the sourse course and group.",
+                            message: "Everything checks out for the source course and group.",
                             type: 'success'
                         });
                     }
                 });
-
             });
 
             $('#id_verifydest').on('click', function() {
@@ -293,6 +291,7 @@
                         // how many courses were retrieved
                         if (response.courses.length == 1) {
                             that.setHiddenValue('destcourseid', response.courses[0].id);
+
                             Noti.callNoti({
                                 message: "Destination course is there and waiting for you.",
                                 type: 'success'
@@ -317,6 +316,11 @@
             // onChange event for the URL selector
             $('select#id_available_moodle_instances').on('change', function() {
                 that.getTokenReady();
+
+                // Clear out the Destination Course Shorname
+                $('div.xe_dest_course_auto ul.form-autocomplete-suggestions').empty();
+                $('div.xe_dest_course_auto input').val('');
+                $('span.notifications').empty();
             });
         },
 

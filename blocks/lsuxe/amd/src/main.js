@@ -26,7 +26,6 @@
     function($, XELib, XEEvents) {
     'use strict';
     return {
-
         /**
          * This is the starting function for the Cross Enrollment Tool
          * @param {object} extras is data coming from PHP

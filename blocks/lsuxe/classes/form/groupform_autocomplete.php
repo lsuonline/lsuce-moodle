@@ -32,6 +32,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir . '/form/autocomplete.php');
+// require_once($CFG->libdir . '/formslib.php');
 
 class groupform_autocomplete extends MoodleQuickForm_autocomplete {
 
@@ -66,8 +67,23 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
 
         $validattributes = array(
             'ajax' => 'block_lsuxe/destcourse_source',
+            'extended' => true,
+            'multiple' => false,
+            // 'noselectionstring' => ""
             'data-contextid' => $contextid,
-            'data-onlyvisible' => $this->onlyvisible ? '1' : '0'
+            'data-onlyvisible' => $this->onlyvisible ? '1' : '0',
+            'class' => 'xe_dest_course_auto'
+            // Example of callback from here: https://docs.moodle.org/dev/lib/formslib.php_Form_Definition#autocomplete
+            // 'valuehtmlcallback' => function($value) {
+            //     global $DB, $OUTPUT;
+            //     $user = $DB->get_record('user', ['id' => (int)$value], '*', IGNORE_MISSING);
+            //     if (!$user || !user_can_view_profile($user)) {
+            //         return false;
+            //     }
+            //     $details = user_get_user_details($user);
+            //     return $OUTPUT->render_from_template(
+            //             'core_search/form-user-selector-suggestion', $details);
+            // }
         );
         if (!empty($options['multiple'])) {
             $validattributes['multiple'] = 'multiple';
