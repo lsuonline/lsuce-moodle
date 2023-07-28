@@ -63,10 +63,11 @@ class block_rollsheet extends block_list {
         }
 
         if ($permission) {
-            $content->items[] = html_writer::link($sheeturl, $sheetstr);
-            $content->items[] = html_writer::link($picurl, $picstr);
-            $content->icons[] = $OUTPUT->pix_icon('i/users', $sheetstr, 'moodle', $iconclass);
-            $content->icons[] = $OUTPUT->pix_icon('i/users', $picstr, 'moodle', $iconclass);
+            $sheeticon = $OUTPUT->pix_icon('i/users', $sheetstr, 'moodle', $iconclass);
+            $picicon = $OUTPUT->pix_icon('e/table', $picstr, 'moodle', $iconclass);
+
+            $content->items[] = html_writer::link($sheeturl, $sheeticon . $sheetstr);
+            $content->items[] = html_writer::link($picurl, $picicon . $picstr);
         }
         return $this->content;
     }

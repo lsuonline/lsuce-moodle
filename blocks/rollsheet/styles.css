@@ -29,11 +29,11 @@
 
 .path-blocks-rollsheet .absences {
   margin: 0 20px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: bold;
 }
 .path-blocks-rollsheet .disclaimer {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .path-blocks-rollsheet .center {
@@ -41,7 +41,7 @@
 }
 
 .path-blocks-rollsheet .rolltitle {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: bold;
   margin: 10px auto;
 }
@@ -59,9 +59,9 @@
 }
 
 .path-blocks-rollsheet table.roll {
-  font-size: 10px;
+  font-size: 15px;
   width: 99%;
-  margin: 10px auto;;
+  margin: 10px auto;
   background-color: #ffffff;
 }
 
@@ -81,6 +81,7 @@
 .path-blocks-rollsheet table.roll td {
   border: 1px solid #000000;
   vertical-align: middle;
+  padding: 2px;
 }
 
 .path-blocks-rollsheet p.center.disclaimer {
@@ -107,7 +108,7 @@
   display: inline-block;
   padding: 0;
   margin: 5px;
-  min-width: 140px;
+  min-width: 20%;
   height: 172px;
   text-align: center;
   background-color: #fff;
@@ -162,7 +163,7 @@
 
 .path-blocks-rollsheet-print table.roll th {
   vertical-align: top;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: normal;
   padding: 5px 0;
   width: 8%;
@@ -172,7 +173,6 @@
   width: auto;
   white-space: nowrap;
   padding-right: 10px;
-  font-size: 10px;
   vertical-align: bottom;
 }
 
