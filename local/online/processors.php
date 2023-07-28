@@ -405,7 +405,7 @@ class online_sports extends online_source {
     public function find_season($time) {
         $now = getdate($time);
 
-        $june = 521;
+        $june = 610;
         $dec = 1231;
 
         $cur = (int)(sprintf("%d%02d", $now['mon'], $now['mday']));

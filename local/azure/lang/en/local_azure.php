@@ -15,31 +15,31 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 // Setting strings.
-$string['pluginname'] = 'LSU Enrollment Provider';
-$string['pluginname_desc'] = 'LSU enrollment provider enhances the UES enrollment
-process with LSU enrollment information. The provider will give a link to
+$string['pluginname'] = 'LSU Azure Enrollment Provider';
+$string['pluginname_desc'] = 'LSU Azure enrollment provider enhances the UES enrollment
+process with LSU Azure enrollment information. The provider will give a link to
 admins to allow them to manually process student meta information:
 
 - Perform [reprocess]({$a->reprocessurl})
 ';
 
 $string['credential_location'] = 'Credential Location';
-$string['credential_location_desc'] = 'For security purposes, the login credentials for the LSU web service is stored on a local secure server. This is the complete url to access the credentials.';
+$string['credential_location_desc'] = 'For security purposes, the login credentials for the LSU Azure web service is stored on a local secure server. This is the complete url to access the credentials.';
 
 $string['wsdl_location'] = 'SOAP WSDL';
-$string['wsdl_location_desc'] = 'This is the wsdl used in SOAP requests to LSU\'s Data Access Service. The Moodle data directory *{$a->dataroot}* is assumed as the path base.';
+$string['wsdl_location_desc'] = 'This is the wsdl used in SOAP requests to LSU Azure\'s Data Access Service. The Moodle data directory *{$a->dataroot}* is assumed as the path base.';
 
 $string['student_data'] = 'Process Student Data';
-$string['student_data_desc'] = 'This will enable processing student data in the `postprocess` section of the LSU provider';
+$string['student_data_desc'] = 'This will enable processing student data in the `postprocess` section of the LSU Azure provider';
 
 $string['anonymous_numbers'] = 'Process LAW Numbers';
-$string['anonymous_numbers_desc'] = 'This will enable processing anonymous numbers in the `postprocess` section of the LSU provider';
+$string['anonymous_numbers_desc'] = 'This will enable processing anonymous numbers in the `postprocess` section of the LSU Azure provider';
 
 $string['degree_candidates'] = 'Process Degree Candidacy';
-$string['degree_candidates_desc'] = 'This will enabled processing degree candidate information in the `postprocess` section of the LSU provider';
+$string['degree_candidates_desc'] = 'This will enabled processing degree candidate information in the `postprocess` section of the LSU Azure provider';
 
 $string['sports_information'] = 'Sports Information';
-$string['sports_information_desc'] = 'This will enable the pulling of student athletic information in the `postprocess` section of the LSU provider';
+$string['sports_information_desc'] = 'This will enable the pulling of student athletic information in the `postprocess` section of the LSU Azure provider';
 
 $string['semester_source'] = 'Semester serviceId';
 $string['semester_source_desc'] = 'The web service id for campus semesters';
@@ -74,10 +74,10 @@ $string['student_anonymous_source_desc'] = 'The web service id for anonymous num
 $string['student_ath_source'] = 'Athlete info serviceId';
 $string['student_ath_source_desc'] = 'The web service id for student athletes';
 
-$string['lsu_junedate'] = 'June Date';
-$string['lsu_junedate_desc'] = 'Date in June to override the season year.';
-$string['lsu_decemberdate'] = 'December Date';
-$string['lsu_decemberdate_desc'] = 'Date in December to override the season year.';
+$string['azure_junedate'] = 'June Date';
+$string['azure_junedate_desc'] = 'Date in June to override the season year.';
+$string['azure_decemberdate'] = 'December Date';
+$string['azure_decemberdate_desc'] = 'Date in December to override the season year.';
 
 // Error strings.
 $string['bad_file'] = 'Provide a *.wsdl* file';
@@ -91,4 +91,4 @@ $string['reprocess'] = 'Reprocess Student Data';
 $string['reprocess_confirm'] = 'You are about to reprocess student meta
 information for all recognized semesters in session. Continue?';
 
-$string['local_lsu'] = 'LSU Enrollment Provider';
+$string['local_azure'] = 'LSU Azure Enrollment Provider';

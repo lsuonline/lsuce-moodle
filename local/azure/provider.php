@@ -21,14 +21,14 @@ require_once dirname(__FILE__) . '/processors.php';
 require_once($CFG->dirroot.'/enrol/ues/lib.php');
 require_once($CFG->dirroot.'/lib/enrollib.php');
 
-class lsu_enrollment_provider extends enrollment_provider {
+class azure_enrollment_provider extends enrollment_provider {
     public $url;
     public $wsdl;
     public $username;
     public $password;
 
     public $settings = array(
-        'credential_location' => 'https://secure.web.lsu.edu/credentials.php',
+        'credential_location' => 'https://secure.web.azure.edu/credentials.php',
         'wsdl_location' => 'webService.wsdl',
         'semester_source' => 'MOODLE_SEMESTERS',
         'semester_source2' => 'ONLINE_SEMESTERS',
@@ -44,10 +44,10 @@ class lsu_enrollment_provider extends enrollment_provider {
     );
 
     // User data caches to speed things up.
-    private $lsu_degree_cache = array();
-    private $lsu_student_data_cache = array();
-    private $lsu_sports_cache = array();
-    private $lsu_anonymous_cache = array();
+    private $azure_degree_cache = array();
+    private $azure_student_data_cache = array();
+    private $azure_sports_cache = array();
+    private $azure_anonymous_cache = array();
 
     function init() {
         global $CFG;
@@ -117,9 +117,9 @@ class lsu_enrollment_provider extends enrollment_provider {
         // June date.
         $settings->add(
             new admin_setting_configtext(
-                'local_lsu/junedate',
-                get_string('lsu_junedate', 'local_lsu'),
-                get_string('lsu_junedate_desc', 'local_lsu'),
+                'local_azure/junedate',
+                get_string('azure_junedate', 'local_azure'),
+                get_string('azure_junedate_desc', 'local_azure'),
                 604  // Default.
             )
         );
@@ -127,90 +127,90 @@ class lsu_enrollment_provider extends enrollment_provider {
         // December date.
         $settings->add(
             new admin_setting_configtext(
-                'local_lsu/decemberdate',
-                get_string('lsu_decemberdate', 'local_lsu'),
-                get_string('lsu_decemberdate_desc', 'local_lsu'),
+                'local_azure/decemberdate',
+                get_string('azure_decemberdate', 'local_azure'),
+                get_string('azure_decemberdate_desc', 'local_azure'),
                 1231  // Default.
             )
         );
     }
 
     public static function plugin_key() {
-        return 'local_lsu';
+        return 'local_azure';
     }
 
     function semester_source() {
-        return new lsu_semesters(
+        return new azure_semesters(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('semester_source')
         );
     }
 
     function semester_source2() {
-        return new lsu_semesters(
+        return new azure_semesters(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('semester_source2')
         );
     }
 
     function course_source() {
-        return new lsu_courses(
+        return new azure_courses(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('course_source')
         );
     }
 
     function teacher_source() {
-        return new lsu_teachers(
+        return new azure_teachers(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('teacher_source')
         );
     }
 
     function student_source() {
-        return new lsu_students(
+        return new azure_students(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_source')
         );
     }
 
     function student_data_source() {
-        return new lsu_student_data(
+        return new azure_student_data(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_data_source')
         );
     }
 
     function anonymous_source() {
-        return new lsu_anonymous(
+        return new azure_anonymous(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_anonymous_source')
         );
     }
 
     function degree_source() {
-        return new lsu_degree(
+        return new azure_degree(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_degree_source')
         );
     }
 
     function sports_source() {
-        return new lsu_sports(
+        return new azure_sports(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_ath_source')
         );
     }
 
     function teacher_department_source() {
-        return new lsu_teachers_by_department(
+        return new azure_teachers_by_department(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('teacher_by_department')
         );
     }
 
     function student_department_source() {
-        return new lsu_students_by_department(
+        return new azure_students_by_department(
             $this->username, $this->password,
             $this->wsdl, $this->get_setting('student_by_department')
         );
@@ -275,9 +275,9 @@ class lsu_enrollment_provider extends enrollment_provider {
 
                     $handler = new stdClass;
 
-                    $handler->file = '/enrol/ues/plugins/lsu/errors.php';
+                    $handler->file = '/enrol/ues/plugins/azure/errors.php';
                     $handler->function = array(
-                        'lsu_provider_error_handlers',
+                        'azure_provider_error_handlers',
                         'reprocess_' . $key
                     );
 
@@ -322,16 +322,16 @@ class lsu_enrollment_provider extends enrollment_provider {
             // Todo: Refactor to actually use Event 2 rather than simply calling the handlers directly.
             require_once($CFG->dirroot . '/blocks/cps/classes/ues_handler.php');
             switch ($name) {
-                case 'lsu_student_data': {
-                    blocks_cps_ues_handler::ues_lsu_student_data_updated($user);
+                case 'azure_student_data': {
+                    blocks_cps_ues_handler::ues_azure_student_data_updated($user);
                     break;
                 }
                 case 'xml_student_data': {
                     blocks_cps_ues_handler::ues_xml_student_data_updated($user);
                     break;
                 }
-                case 'lsu_anonymous': {
-                    blocks_cps_ues_handler::ues_lsu_anonymous_updated($user);
+                case 'azure_anonymous': {
+                    blocks_cps_ues_handler::ues_azure_anonymous_updated($user);
                     break;
                 }
                 case 'xml_anonymous': {
@@ -468,13 +468,13 @@ class lsu_enrollment_provider extends enrollment_provider {
      * Specialized cleanup fn to unenroll users from groups
      *
      * Use cases: unenroll members of orphaned groups
-     * Takes the output of @see lsu_enrollment_provider::findOrphanedGroups
+     * Takes the output of @see azure_enrollment_provider::findOrphanedGroups
      * and prepares it for unenrollment.
      *
      * @todo parameterize queries for semester prefix- remove hardcoded course prefeix!!!
      * @global object $DB
      * @param object[] $groupMembers rows from
-     * @see lsu_enrollment_provider::findOrphanedGroups
+     * @see azure_enrollment_provider::findOrphanedGroups
      */
     public function unenrollGroupsUsers($groupMembers) {
         $ues        = new enrol_ues_plugin();

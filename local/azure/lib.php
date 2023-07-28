@@ -18,7 +18,7 @@ defined('MOODLE_INTERNAL') || die();
 
 ini_set('default_socket_timeout', 300);
 
-interface semester_codes {
+interface azure_semester_codes {
     const FALL = '1S';
     const FALL1 = '1L';
     const FALL2 = '1P';
@@ -33,7 +33,7 @@ interface semester_codes {
     const SUMMER_INT = '3T';
 }
 
-interface institution_codes {
+interface azure_institution_codes {
     const LSU_SEM = 'CLSB';
     const ONLINE_SEM = 'CLSB';
     const LAW_SEM = 'LAWB';
@@ -51,7 +51,7 @@ interface institution_codes {
     const LAW_INST = '1595';
 }
 
-abstract class lsu_source implements institution_codes, semester_codes {
+abstract class azure_source implements azure_institution_codes, azure_semester_codes {
 
     // An LSU source requires these.
     public $serviceId;
@@ -113,7 +113,7 @@ abstract class lsu_source implements institution_codes, semester_codes {
 
         $first = $other[0];
 
-        if (strlen($first) == 1) {
+        if (strlen($first) == 1 && isset($other[1])) {
             $first = $first . ' ' . $other[1];
         }
 
@@ -155,7 +155,18 @@ abstract class lsu_source implements institution_codes, semester_codes {
     }
 }
 
-abstract class lsu_teacher_format extends lsu_source {
+abstract class azure_teacher_format extends azure_source {
+    public static function email_cleanse($email) {
+        // Get the setting.
+        $search = get_config('enrol_ues', 'user_email_cleanse') . '.';
+        // Use str_replace to replace "lsumail." with an empty string.
+        $result = str_replace($search, "", $email);
+        // Lowercase it.
+        $result = strtolower($result);
+        // Return the result.
+        return $result;
+    }
+
     public function format_teacher($xml_teacher) {
         $primary_flag = trim($xml_teacher->PRIMARY_INSTRUCTOR);
 
@@ -168,14 +179,34 @@ abstract class lsu_teacher_format extends lsu_source {
 
         $teacher->firstname = $first;
         $teacher->lastname = $last;
-        $teacher->username = (string) $xml_teacher->PRIMARY_ACCESS_ID;
+
+        $em = get_config('enrol_ues', 'username_email');
+
+        if ($em == 'em') {
+            $username = self::email_cleanse((string) $xml_teacher->PRIMARY_ACCESS_ID);
+        } else {
+            $username = (string) $xml_teacher->PRIMARY_ACCESS_ID;
+        }
+
+        $teacher->username = $username;
 
         return $teacher;
     }
 }
 
-abstract class lsu_student_format extends lsu_source {
+abstract class azure_student_format extends azure_source {
     const AUDIT = 'AU';
+
+    public static function email_cleanse($email) {
+        // Get the setting.
+        $search = get_config('enrol_ues', 'user_email_cleanse') . '.';
+        // Use str_replace to replace "lsumail." with an empty string.
+        $result = str_replace($search, "", $email);
+        // Lowercase it.
+        $result = strtolower($result);
+        // Return the result.
+        return $result;
+    }
 
     public function format_student($xml_student) {
         $student = new stdClass;
@@ -189,7 +220,15 @@ abstract class lsu_student_format extends lsu_source {
 
         list($first, $last) = $this->parse_name($xml_student->INDIV_NAME);
 
-        $student->username = (string) $xml_student->PRIMARY_ACCESS_ID;
+        $em = get_config('enrol_ues', 'username_email');
+
+        if ($em == 'em') {
+            $username = self::email_cleanse((string) $xml_student->PRIMARY_ACCESS_ID);
+        } else {
+            $username = (string) $xml_student->PRIMARY_ACCESS_ID;
+        }
+
+        $student->username = $username;
         $student->firstname = $first;
         $student->lastname = $last;
         $student->user_ferpa = trim((string)$xml_student->WITHHOLD_DIR_FLG) == 'P' ? 1 : 0;

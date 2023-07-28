@@ -18,7 +18,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once dirname(__FILE__) . '/lib.php';
 
-class lsu_semesters extends lsu_source implements semester_processor {
+class azure_semesters extends azure_source implements semester_processor {
 
     function parse_term($term) {
         $year = (int)substr($term, 0, 4);
@@ -133,7 +133,7 @@ class lsu_semesters extends lsu_source implements semester_processor {
     }
 }
 
-class lsu_courses extends lsu_source implements course_processor {
+class azure_courses extends azure_source implements course_processor {
 
     function courses($semester) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
@@ -147,11 +147,11 @@ class lsu_courses extends lsu_source implements course_processor {
             $course_number = (string) $xml_course->COURSE_NBR;
 
             $law_not = ($semester->campus == 'LAW' and $department != 'LAW');
-            $lsu_not = ($semester->campus == 'LSU' and $department == 'LAW');
+            $azure_not = ($semester->campus == 'LSU' and $department == 'LAW');
             $online_not = ($semester->campus == 'ONLINE' and $department == 'LAW');
 
             // Course is not semester applicable.
-            if ($law_not or $lsu_not or $online_not) {
+            if ($law_not or $azure_not or $online_not) {
                 continue;
             }
 
@@ -187,7 +187,7 @@ class lsu_courses extends lsu_source implements course_processor {
     }
 }
 
-class lsu_teachers_by_department extends lsu_teacher_format implements teacher_by_department {
+class azure_teachers_by_department extends azure_teacher_format implements teacher_by_department {
 
     function teachers($semester, $department) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
@@ -225,7 +225,7 @@ class lsu_teachers_by_department extends lsu_teacher_format implements teacher_b
     }
 }
 
-class lsu_students_by_department extends lsu_student_format implements student_by_department {
+class azure_students_by_department extends azure_student_format implements student_by_department {
 
     function students($semester, $department) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
@@ -255,7 +255,7 @@ class lsu_students_by_department extends lsu_student_format implements student_b
     }
 }
 
-class lsu_teachers extends lsu_teacher_format implements teacher_processor {
+class azure_teachers extends azure_teacher_format implements teacher_processor {
 
     function teachers($semester, $course, $section) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
@@ -287,7 +287,7 @@ class lsu_teachers extends lsu_teacher_format implements teacher_processor {
     }
 }
 
-class lsu_students extends lsu_student_format implements student_processor {
+class azure_students extends azure_student_format implements student_processor {
 
     function students($semester, $course, $section) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
@@ -309,7 +309,7 @@ class lsu_students extends lsu_student_format implements student_processor {
     }
 }
 
-class lsu_student_data extends lsu_source {
+class azure_student_data extends azure_source {
 
     function student_data($semester) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
@@ -344,7 +344,7 @@ class lsu_student_data extends lsu_source {
     }
 }
 
-class lsu_degree extends lsu_source {
+class azure_degree extends azure_source {
 
     function student_data($semester) {
         $term = $this->encode_semester($semester->year, $semester->name);
@@ -382,7 +382,7 @@ class lsu_degree extends lsu_source {
     }
 }
 
-class lsu_anonymous extends lsu_source {
+class azure_anonymous extends azure_source {
 
     function student_data($semester) {
         if ($semester->campus == 'LSU') {
@@ -405,7 +405,7 @@ class lsu_anonymous extends lsu_source {
     }
 }
 
-class lsu_sports extends lsu_source {
+class azure_sports extends azure_source {
 
     /**
      * @todo refactor to take advantage of the DateTime classes
@@ -415,8 +415,8 @@ class lsu_sports extends lsu_source {
     function find_season($time) {
         $now = getdate($time);
 
-        $june = get_config('local_lsu', 'junedate');
-        $dec = get_config('local_lsu', 'decemberdate');
+        $june = get_config('local_azure', 'junedate');
+        $dec = get_config('local_azure', 'decemberdate');
 
 //        $june = 604;
 //        $dec = 1231;
