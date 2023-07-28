@@ -1003,7 +1003,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $rcoptin = get_config('theme_snap', 'remotecoursesoptin');
 
         // Get the STORED user preference DO NOT CACHE OR USE USER object.
-        $fieldvalue = $USER->profile['snap_remotecourses'];
+        $fieldvalue = isset($USER->profile['snap_remotecourses']) ? $USER->profile['snap_remotecourses'] : "I choose not to run!";
 
         if ($rcoptin) {
             // Make sure the preference is EXPRESSLY set to show, otherwise hide.
