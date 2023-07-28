@@ -85,8 +85,16 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_heading('enrol_ues_user_settings',
         $s('user_settings'), ''));
 
+    $ueopts = array('un' => $s('un'), 'em' => $s('em'));
+
+    $settings->add(new admin_setting_configselect('enrol_ues/username_email',
+        $s('use_username_email'), $s('use_username_email_desc'), 'username', $ueopts));
+
     $settings->add(new admin_setting_configtext('enrol_ues/user_email',
         $s('user_email'), $s('user_email_desc'), '@example.com'));
+
+    $settings->add(new admin_setting_configtext('enrol_ues/user_email_cleanse',
+        $s('user_email_cleanse'), $s('user_email_cleanse_desc'), 'lsumail'));
 
     $settings->add(new admin_setting_configcheckbox('enrol_ues/user_confirm',
         $s('user_confirm'), $s('user_confirm_desc'), 1));

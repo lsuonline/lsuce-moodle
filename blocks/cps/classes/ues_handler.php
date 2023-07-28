@@ -432,10 +432,26 @@ abstract class blocks_cps_ues_handler {
         return blocks_cps_profile_field_helper::process($user, 'user_keypadid');
     }
 
+    public static function ues_azure_student_data_updated($user) {
+        if (empty($user->user_keypadid)) {
+            return blocks_cps_profile_field_helper::clear_field_data($user, 'user_keypadid');
+        }
+
+        return blocks_cps_profile_field_helper::process($user, 'user_keypadid');
+    }
+
     // Accommodate the Generic XML provider.
     public static function ues_xml_student_data_updated($user) {
         // Todo: Refactor to actually use Event 2 rather than simply calling the handler directly.
         self::ues_lsu_student_data_updated($user);
+    }
+
+    public static function ues_azure_anonymous_updated($user) {
+        if (empty($user->user_anonymous_number)) {
+            return blocks_cps_profile_field_helper::clear_field_data($user, 'user_anonymous_number');
+        }
+
+        return blocks_cps_profile_field_helper::process($user, 'user_anonymous_number');
     }
 
     public static function ues_lsu_anonymous_updated($user) {

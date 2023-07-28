@@ -83,7 +83,26 @@ abstract class simple_restore_utils {
         if (empty($crit)) {
             return "";
         }
-        $search = $crit == 'username' ? '_' . $USER->username : $course->{$crit};
+
+        // Set up the regex.
+        $re = '/@\S+/s';
+
+        // Get the username.
+        $username = $USER->username;
+
+        // Return the domain suffix from the username.
+        $finder = preg_match($re, $username, $match);
+
+        // If we have a match, grab it.
+        $search = $finder ? $match[0] : '';
+
+        // Prune it.
+        $result = str_replace($search, "", $username);
+
+        // If we have a match, use it, otherwise use the raw username.
+        $usernamed = $finder ? $result : $username;
+
+        $search = $crit == 'username' ? '_' . $usernamed : $course->{$crit};
         return "{$search}[_\.]";
     }
 

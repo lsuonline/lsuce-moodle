@@ -28,6 +28,9 @@ interface enrollment_factory {
     // Returns a semester_processor.
     public function semester_source();
 
+    // Returns a semester_processor.
+    public function semester_source2();
+
     // Returns a course_processor.
     public function course_source();
 
