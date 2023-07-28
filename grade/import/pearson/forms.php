@@ -21,6 +21,7 @@
  */
 
 require_once($CFG->libdir.'/formslib.php');
+require_once('lib.php');
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -73,6 +74,24 @@ class pearson_mapping_form extends moodleform {
 
         $file_text = isset($data['file_text']) ? $data['file_text'] : null;
         $file_type = isset($data['file_type']) ? $data['file_type'] : null;
+
+        if ($file_text != null) {
+            $encodeenabled = (bool)get_config('moodle', 'gradeimport_pearson_convert_encoding');
+            $encodingmsg = (bool)get_config('moodle', 'gradeimport_pearson_encoding_message');
+            $encodings = helpers::config_to_array('gradeimport_pearson_encoding_list', 'mirror');
+
+            $encodingtype = mb_detect_encoding($file_text, $encodings);
+
+            if ($encodingtype != "UTF-8" && $encodingmsg) {
+                $encodewarning = get_string('encodingtypepre', 'gradeimport_pearson'). $encodingtype.
+                    get_string('encodingtypepost', 'gradeimport_pearson');
+                \core\notification::warning($encodewarning);
+
+                if ($encodeenabled) {
+                    $file_text = helpers::fixMSWord($file_text);
+                }
+            }
+        }
 
         $mform->addElement('hidden', 'file_text', $file_text);
         $mform->setType('file_text', PARAM_TEXT);
