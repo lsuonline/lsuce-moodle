@@ -32,8 +32,6 @@ class block_pu_external extends external_api {
      * @return external_function_parameters
      */
     public static function pujax_parameters() {
-        // error_log("\n\n**************************************");
-        // error_log("\npujax -> parameters()\n");
         return new external_function_parameters(
             array(
                 'datachunk' => new external_value(
@@ -49,18 +47,11 @@ class block_pu_external extends external_api {
      * @return string welcome message
      */
     public static function pujax($datachunk) {
-        // error_log("\n\n**************************************");
-        // error_log("\npujax -> START\n");
         $datachunk = json_decode($datachunk);
-        // error_log("\nWhat is decoded datachunk: ". print_r($datachunk, true));
 
         $classobj = isset($datachunk->class) ? $datachunk->class : null;
         $function = isset($datachunk->call) ? $datachunk->call : null;
         $params = isset($datachunk->params) ? $datachunk->params : array("empty" => true);
-
-        // error_log("\nWhat is classobj: ". print_r($classobj, true));
-        // error_log("\nWhat is function: ". print_r($function, true));
-        // error_log("\nWhat is params: ". print_r($params, true));
 
         if (isset($classobj)) {
             include_once('classes/external/'.$classobj.'.php');
@@ -89,8 +80,6 @@ class block_pu_external extends external_api {
      * @return external_description
      */
     public static function pujax_returns() {
-        // error_log("\n\n**************************************");
-        // error_log("\npujax -> returns()\n");
         return new external_single_structure(
             array(
                 'data' => new external_value(PARAM_TEXT, 'JSON encoded goodness')

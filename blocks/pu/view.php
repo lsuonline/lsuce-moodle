@@ -58,7 +58,7 @@ $returnurl = new moodle_url('/');
 if ($action === "copy") {
 
     if (!isset($fpath)) {
-        error_log("FAIL, no destination set for this file.");
+        debugging("PU - FAIL: No destination set for this file.");
     } else {
         $fs = get_file_storage();
         $file = $fs->get_file_by_id($mfileid);
