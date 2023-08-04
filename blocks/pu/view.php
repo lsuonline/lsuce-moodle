@@ -24,19 +24,27 @@
 require (dirname(dirname(dirname(__FILE__))) . '/config.php');
 require (dirname(__FILE__) . '/classes/models/upload_model.php');
 
+// Require the user is logged in.
 require_login();
+
+// Set the context.
 $context = \context_system::instance();
+
+// Set the return url.
+$returnurl = new moodle_url('/');
+
 // Check to see if the user is admin.
 if (!has_capability('block/pu:admin', $context)) {
     redirect($returnurl, get_string('no_upload_permissions', 'block_pu'), null, \core\output\notification::NOTIFY_ERROR);
 }
 
+// Set the url for the page.
 $url = new moodle_url($CFG->wwwroot . '/blocks/pu/view.php');
 
+// Set up the rest of the page.
 $PAGE->set_context($context);
 $PAGE->set_url($url);
-$PAGE->set_title("Uploaded Files");
-$PAGE->navbar->add(get_string('dashboard', 'block_pu'), new moodle_url($CFG->wwwroot. "/my/"));
+$PAGE->set_title(get_string('manage_viewer', 'block_pu'));
 $PAGE->navbar->add(get_string('pu_settings', 'block_pu'), new moodle_url($CFG->wwwroot. "/admin/settings.php?section=blocksettingpu"));
 
 // Use the upload model to manage pu files.
@@ -45,20 +53,19 @@ $model = new upload_model();
 // This is the mdl_pu_files id NOT mdl_file id.
 $id = optional_param('id', 0, PARAM_INT);
 
-// Copy the file to destination or delete the file?
+// Set up some parms for future use.
 $action = optional_param('action', 0, PARAM_TEXT);
-
 $mfileid = optional_param('mdl_file_id', 0, PARAM_INT);
 $pfileid = optional_param('pu_file_id', 0, PARAM_INT);
 $filetype = optional_param('pu_or_nonmood', '', PARAM_TEXT);
 $nonmood_filename = optional_param('nonmood_filename', '', PARAM_TEXT);
-$fpath = get_config('moodle', "block_pu_copy_file");
-$returnurl = new moodle_url('/');
+$fpath = get_config('moodle', 'block_pu_copy_file');
 
+// Copy the file to destination or delete the file?
 if ($action === "copy") {
-
+    // We are copying the file, check to see if there's a destination configured.
     if (!isset($fpath)) {
-        debugging("PU - FAIL: No destination set for this file.");
+        debugging("PU - FAIL, no destination set for this file.");
     } else {
         $fs = get_file_storage();
         $file = $fs->get_file_by_id($mfileid);
@@ -66,6 +73,7 @@ if ($action === "copy") {
     }
 
 } else if ($action === "delete") {
+    // We are deleting the file.
     if ($filetype === "pu") {
         $model->delete($pfileid, $mfileid);
     } else if ($filetype === "nonmood") {
@@ -82,18 +90,24 @@ if ($action === "copy") {
 // $event->add_record_snapshot($PAGE->cm->modname, $uploadfile);
 // $event->trigger();
 
-// // TODO: Add to lang file
-$PAGE->set_heading("Uploaded Files");
+// Set the page heading.
+$PAGE->set_heading(get_string('manage_viewer', 'block_pu'));
 
+// Output the header.
 echo $OUTPUT->header();
 
+// Build the uploader button.
 echo html_writer::start_tag( 'a', array( 'href' => "./uploader.php" ) )
         .html_writer::start_tag( 'button', array( 'type' => 'button', 'class' => 'btn btn-primary', 'style' =>'margin:3%; width:20%' ) )
-        .format_string( 'Upload a File' )
+        .format_string( get_string('manage_uploader', 'block_pu') )
         .html_writer::end_tag('button')
         .html_writer::end_tag( 'a' );
 
+// Build the renderable.
 $renderable = new \block_pu\output\files_view();
 
+// output the page.
 echo $OUTPUT->render($renderable);
+
+// Output the footer.
 echo $OUTPUT->footer();

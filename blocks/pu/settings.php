@@ -17,7 +17,7 @@
 /**
  * @package    block_pu
  * @copyright  2021 onwards LSU Online & Continuing Education
- * @copyright  2021 onwards Robert Russo, David LOwe
+ * @copyright  2021 onwards Robert Russo, David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -44,6 +44,16 @@ if ($ADMIN->fulltree) {
         )
     );
 
+    // Copy File Settings.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_pu_copy_file',
+            get_string('pu_copy_file', 'block_pu'),
+            get_string('pu_copy_file_help', 'block_pu'),
+            null // Default.
+        )
+    );
+
     // Coupon code filename.
     $settings->add(
         new admin_setting_configtext(
@@ -61,6 +71,16 @@ if ($ADMIN->fulltree) {
             get_string('pu_guildfile', 'block_pu'),
             get_string('pu_guildfile_help', 'block_pu'),
             null // Default.
+        )
+    );
+
+    // ProctorU minimum number of lines in a GUILD file.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_pu_minlines',
+            get_string('pu_minlines', 'block_pu'),
+            get_string('pu_minlines_help', 'block_pu'),
+            50 // Default.
         )
     );
 
@@ -106,16 +126,6 @@ if ($ADMIN->fulltree) {
             )
         );
     }
-
-    // Copy File Settings.
-    $settings->add(
-        new admin_setting_configtext(
-            'block_pu_copy_file',
-            get_string('pu_copy_file', 'block_pu'),
-            get_string('pu_copy_file_help', 'block_pu'),
-            null // Default.
-        )
-    );
 }
 
 // Add the folder.

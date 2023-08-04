@@ -40,15 +40,6 @@ class block_pu extends block_list {
         $this->set_user();
         $this->set_course_context();
         $PAGE->requires->js(new moodle_url('/blocks/pu/js.js'));
-
-        // Set these up for sanity's sake.
-        // if (isset($CFG->block_pu_defaultcodes)) {
-        //     $this->pu_codetotals = $this->codetotals($this->course->id)->codecount;
-        //     $this->pu_invalidtotals = $this->codetotals($this->course->id)->invalidcount;
-        //     $this->pu_usedcount = $this->usedcount($uv = "used");
-        //     $this->pu_invalidcount = $this->usedcount($uv = "invalid");
-        //     $this->pu_totalcount = $this->usedcount($uv = "total");
-        // }
     }
 
     /**

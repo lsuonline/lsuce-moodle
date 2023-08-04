@@ -69,8 +69,9 @@ $string['pu_profilefield'] = 'Profile Field for import';
 $string['pu_profilefield_help'] = 'This is either the standard user IDNumber or whichever other additional profile field you choose.<br>This field is what we key on when importing data.';
 
 // File Uploader
-$string['uploader'] = 'Uploader';
-$string['codeuploader'] = 'PU Code Uploader';
+$string['manage_uploader'] = 'File Uploader';
+$string['manage_viewer'] = 'File Viewer';
+$string['pu_uploadstring'] = 'Upload a File';
 $string['no_upload_permissions'] = 'You do not have permission to upload codes.';
 $string['pu_file_link'] = 'File Link';
 $string['pu_filename'] = 'File Name';
@@ -84,10 +85,6 @@ $string['pu_settings'] = 'PU Settings';
 $string['pu_copy_file'] = 'Copy File Location';
 $string['pu_copy_file_help'] = 'Files can be uploaded and copied to the location specified here. (include forward slash at the end/)';
 $string['no_upload_permissions'] = 'You do not have permission to upload and view files.';
-$string['manage_uploader'] = 'File Uploader';
-$string['manage_viewer'] = 'File Viewer';
-
-
 
 // Block strings.
 $string['pu_block_intro_one'] = 'Your first ProctorU access code for <strong>{$a->coursename}</strong> is:';
@@ -95,7 +92,7 @@ $string['pu_block_intro_multi'] = 'Your {$a->numassigned} ProctorU access codes 
 $string['pu_docs_intro'] = 'What you need to know about access codes:';
 $string['pu_docs_intronone'] = 'You have not claimed any ProctorU access codes for this course yet.<br>If you are ready to schedule your exam, select the "<strong>Claim your access code</strong>" button above.';
 $string['pu_docs_allocatednum'] = 'You have <strong>requested</strong> {$a->numallocated} of the {$a->numtotal} access codes allowed in this course.';
-$string['pu_docs_usednum'] = 'puYou have <strong>used</strong> {$a->numused} of the {$a->numtotal} access codes for this course.';
+$string['pu_docs_usednum'] = 'You have <strong>used</strong> {$a->numused} of the {$a->numtotal} access codes for this course.';
 $string['pu_docs_noneleft'] = 'You have used all of the access codes allowed for this course.<br>If you need another code, please contact <a href="mailto:answers@outreach.lsu.edu">answers@outreach.lsu.edu</a>.';
 $string['pu_docs_touse'] = 'To use your ProctorU access code, please go to your exam module in your course and use the "<strong>Schedule Exam</strong>" link to route to ProctorU.<br>You will use the top (latest) ProctorU access code in place of payment.';
 $string['pu_docs_used'] = 'If you have used the top (latest) access code and need another for your next exam, please click the "<strong>Mark used</strong>" button below:';
@@ -113,6 +110,8 @@ $string['import_unmap'] = 'Unmap orphaned ProctorU access codes';
 $string['pu_codeslow'] = 'Emails when ProctorU access codes are low';
 $string['pu_mincodes'] = 'Minimum number of access codes';
 $string['pu_mincodes_help'] = 'The minimum number of valid ProctorU access codes left in the system before an email is triggered.';
+$string['pu_minlines'] = 'Minimum lines in GUILD file';
+$string['pu_minlines_help'] = 'The minimum number of lines in the provided GUILD file to process mapping.';
 $string['pu_code_admin'] = 'ProctorU administrators';
 $string['pu_code_admin_help'] = 'The Moodle usernames designated to be the ProctorU access code administrators.';
 $string['invalid_code'] = '<strong>{$a->accesscode}</strong> - {$a->course} - {$a->user} - {$a->idnumber} - {$a->email}';

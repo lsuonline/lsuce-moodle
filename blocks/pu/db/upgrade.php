@@ -28,7 +28,7 @@ function xmldb_block_pu_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
-    if ($oldversion < 2022021802) {
+    if ($oldversion < 2023080400) {
 
         if (!$dbman->table_exists('block_pu_file')) {
             $pufile = new xmldb_table('block_pu_file');
@@ -36,10 +36,8 @@ function xmldb_block_pu_upgrade($oldversion) {
             $pufile->add_field('fileid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
             $pufile->add_field('filename', XMLDB_TYPE_CHAR, '255', null, null, null, '0');
             $pufile->add_field('itemid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
-            // $pufile->add_field('introformat', XMLDB_TYPE_INTEGER, '255', null, null, null, '0');
             $pufile->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
             $pufile->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
-            // $pufile->add_field('grade', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
             
             // Adding keys to table block_quickmail_drafts.
             $pufile->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
