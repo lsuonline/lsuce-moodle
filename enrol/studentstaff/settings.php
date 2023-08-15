@@ -47,6 +47,7 @@ if ($ADMIN->fulltree) {
     $sroles = $DB->get_records_sql($sql);
 
     // Loop through these roles and build their array.
+    $systemroles = array();
     foreach ($sroles as $srole) {
         $systemroles[$srole->id] = $srole->shortname;
     }
@@ -62,6 +63,7 @@ if ($ADMIN->fulltree) {
     $enrolls = $DB->get_records_sql($sql);
 
     // Loop through the enrollment methods and build an array.
+    $enrollmethods = array();
     foreach ($enrolls as $enroll) {
         $enrollmethods[$enroll->enrol] = $enroll->enrol;
     }
@@ -104,27 +106,31 @@ if ($ADMIN->fulltree) {
         )
     );
 
-    // Choose enrollment methods.
-    $settings->add(
-        new admin_setting_configmultiselect(
-            'enrol_studentstaff/enrollmethods',
-            get_string('ss_enrollmethods', 'enrol_studentstaff'),
-            get_string('ss_enrollmethods_help', 'enrol_studentstaff'),
-            null,  // Default.
-            $enrollmethods
-        )
-    );
+    if (!empty($enrollmethods)) {
+        // Choose enrollment methods.
+        $settings->add(
+            new admin_setting_configmultiselect(
+                'enrol_studentstaff/enrollmethods',
+                get_string('ss_enrollmethods', 'enrol_studentstaff'),
+                get_string('ss_enrollmethods_help', 'enrol_studentstaff'),
+                null,  // Default.
+                $enrollmethods
+            )
+        );
+    }
 
-    // Source system role.
-    $settings->add(
-        new admin_setting_configmultiselect(
-            'enrol_studentstaff/siterolescheck',
-            get_string('ss_siterolescheck', 'enrol_studentstaff'),
-            get_string('ss_siterolescheck_help', 'enrol_studentstaff'),
-            array(1),  // Default.
-            $systemroles
-        )
-    );
+    if (!empty($systemroles)) {
+        // Source system role.
+        $settings->add(
+            new admin_setting_configmultiselect(
+                'enrol_studentstaff/siterolescheck',
+                get_string('ss_siterolescheck', 'enrol_studentstaff'),
+                get_string('ss_siterolescheck_help', 'enrol_studentstaff'),
+                array(1),  // Default.
+                $systemroles
+            )
+        );
+    }
 
     // Source course role.
     $settings->add(

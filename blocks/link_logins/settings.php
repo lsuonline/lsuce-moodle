@@ -22,57 +22,63 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 global $CFG, $DB;
+if ($ADMIN->fulltree) {
 
-// Get the list of issuers for later.
-$datas = $DB->get_records('oauth2_issuer', array('enabled' => 1, 'showonloginpage' => 1), $sort='', 'id, name');
+    // Get the list of issuers for later.
+    $datas = $DB->get_records('oauth2_issuer', array('enabled' => 1, 'showonloginpage' => 1), $sort='', 'id, name');
 
-// Set up the empty array.
-$issuers = array();
+    // Set up the empty array.
+    $issuers = array();
 
-// Loop through the data and build the key / value pair.
-foreach ($datas as $data) {
-    // Set the key / value pair here.
-    $issuers[$data->id] = $data->name;
+    // Loop through the data and build the key / value pair.
+    foreach ($datas as $data) {
+        // Set the key / value pair here.
+        $issuers[$data->id] = $data->name;
+    }
+
+    // Set up the allowed users.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_link_logins_allowed',
+            get_string('allowed_users', 'block_link_logins'),
+            get_string('allowed_users_desc', 'block_link_logins'),
+            'admin'
+        )
+    );
+
+    // Set the home domain.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_link_logins_homedomain',
+            get_string('homedomain', 'block_link_logins'),
+            get_string('homedomain_desc', 'block_link_logins'),
+            '@lsu.edu'
+        )
+    );
+
+    // Set the remote domain.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_link_logins_extdomain',
+            get_string('extdomain', 'block_link_logins'),
+            get_string('extdomain_desc', 'block_link_logins'),
+            'admin'
+        )
+    );
+
+    if (!empty($issuers)) {
+        // Set the issuerid.
+        $settings->add(
+            new admin_setting_configselect(
+                'block_link_logins_issuerid',
+                get_string('issuerid', 'block_link_logins'),
+                get_string('issuerid_desc', 'block_link_logins'),
+                1,
+                $issuers
+            )
+        );
+    }
 }
-
-// Set up the allowed users.
-$settings->add(
-    new admin_setting_configtext(
-        'block_link_logins_allowed',
-        get_string('allowed_users', 'block_link_logins'),
-        get_string('allowed_users_desc', 'block_link_logins'),
-        'admin'
-    )
-);
-
-// Set the home domain.
-$settings->add(
-    new admin_setting_configtext(
-        'block_link_logins_homedomain',
-        get_string('homedomain', 'block_link_logins'),
-        get_string('homedomain_desc', 'block_link_logins'),
-        '@lsu.edu'
-    )
-);
-
-// Set the remote domain.
-$settings->add(
-    new admin_setting_configtext(
-        'block_link_logins_extdomain',
-        get_string('extdomain', 'block_link_logins'),
-        get_string('extdomain_desc', 'block_link_logins'),
-        'admin'
-    )
-);
-
-// Set the issuerid.
-$settings->add(
-    new admin_setting_configselect(
-        'block_link_logins_issuerid',
-        get_string('issuerid', 'block_link_logins'),
-        get_string('issuerid_desc', 'block_link_logins'),
-        1,
-        $issuers
-    )
-);
