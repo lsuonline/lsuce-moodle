@@ -68,6 +68,24 @@ $string['defaultsnull_codes'] = 'The defualt for this course is {$a->numcodes}.'
 $string['pu_profilefield'] = 'Profile Field for import';
 $string['pu_profilefield_help'] = 'This is either the standard user IDNumber or whichever other additional profile field you choose.<br>This field is what we key on when importing data.';
 
+// File Uploader
+$string['manage_uploader'] = 'File Uploader';
+$string['manage_viewer'] = 'File Viewer';
+$string['pu_uploadstring'] = 'Upload a File';
+$string['no_upload_permissions'] = 'You do not have permission to upload codes.';
+$string['pu_file_link'] = 'File Link';
+$string['pu_filename'] = 'File Name';
+$string['pu_filecreated'] = 'Created';
+$string['pu_filemodified'] = 'Last Modified';
+$string['pu_copy'] = 'Copy File';
+$string['pu_delete'] = 'Delete File';
+$string['pu_nofiles'] = 'No Files To Display';
+$string['dashboard'] = 'Dashboard';
+$string['pu_settings'] = 'PU Settings';
+$string['pu_copy_file'] = 'Copy File Location';
+$string['pu_copy_file_help'] = 'Files can be uploaded and copied to the location specified here. (include forward slash at the end/)';
+$string['no_upload_permissions'] = 'You do not have permission to upload and view files.';
+
 // Block strings.
 $string['pu_block_intro_one'] = 'Your first ProctorU access code for <strong>{$a->coursename}</strong> is:';
 $string['pu_block_intro_multi'] = 'Your {$a->numassigned} ProctorU access codes for <strong>{$a->coursename}</strong> are:';
@@ -92,6 +110,8 @@ $string['import_unmap'] = 'Unmap orphaned ProctorU access codes';
 $string['pu_codeslow'] = 'Emails when ProctorU access codes are low';
 $string['pu_mincodes'] = 'Minimum number of access codes';
 $string['pu_mincodes_help'] = 'The minimum number of valid ProctorU access codes left in the system before an email is triggered.';
+$string['pu_minlines'] = 'Minimum lines in GUILD file';
+$string['pu_minlines_help'] = 'The minimum number of lines in the provided GUILD file to process mapping.';
 $string['pu_code_admin'] = 'ProctorU administrators';
 $string['pu_code_admin_help'] = 'The Moodle usernames designated to be the ProctorU access code administrators.';
 $string['invalid_code'] = '<strong>{$a->accesscode}</strong> - {$a->course} - {$a->user} - {$a->idnumber} - {$a->email}';

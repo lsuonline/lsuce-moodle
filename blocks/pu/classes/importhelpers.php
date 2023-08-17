@@ -86,7 +86,7 @@ class pu_import_helper {
      *
      */
     public static function block_pu_ccimport($content) {
-    
+
         // Set the counter for later.
         $counter = 0;
     
@@ -94,7 +94,7 @@ class pu_import_helper {
         $starttime = microtime(true);
     
         // Start the cli log.
-        echo("Importing coupon code data\n");
+        mtrace("Importing coupon code data.");
     
         // Loop through the content.
         foreach ($content as $line) {
@@ -119,7 +119,7 @@ class pu_import_helper {
         $elapsedtime = round(microtime(true) - $starttime, 1);
     
         // Finish the log, letting me know how many we did and how long it took.
-        echo("Completed importing " . $counter . " rows of data in " . $elapsedtime . " seconds.\n");
+        mtrace("Completed importing " . $counter . " rows of data in " . $elapsedtime . " seconds.");
     
         return $success;
     }
@@ -194,7 +194,7 @@ class pu_import_helper {
 
                 // If we've updated any rows, log it.
                 if (isset($freeme)) {
-                    echo("Dissacociated ProctorU coupon code: $orphan->pccode with id: $orphan->pcid and marked it valid.\n");
+                    mtrace("Dissacociated ProctorU coupon code: $orphan->pccode with id: $orphan->pcid and marked it valid.");
                 }
             }
 
@@ -202,7 +202,7 @@ class pu_import_helper {
             $deleteme = $DB->execute($dsql);
 
             if ($deleteme) {
-                echo("Deleted non-current code mapping: $orphan->pcmid for userid: $orphan->pgmuser in course: $orphan->pgmcourse.\n");
+                mtrace("Deleted non-current code mapping: $orphan->pcmid for userid: $orphan->pgmuser in course: $orphan->pgmcourse.");
             }
         }
 
@@ -235,6 +235,22 @@ class pu_import_helper {
      *
      */
     public static function block_pu_guildimport($content) {
+        global $CFG;
+
+        // Count the number of lines in the file.
+        $lines = is_array($content) ? count($content) : 0;
+
+        // Get the setting for the number of min lines or the default.
+        $minlines = isset($CFG->block_pu_minlines) ? $CFG->block_pu_minlines : 50;
+
+        // Add a failsafe for empty or corrupted GUILD import file.
+        if ($lines < $minlines) {
+            mtrace("Number of lines in GUILD file ($lines) is less than the required minumum of $minlines. Aborting import.");
+            return false;
+        } else {
+            mtrace("Number of lines in GUILD file ($lines) is above the configured limit of $minlines. Continuing import.");
+        }
+
         // Set the counter for later.
         $counter = 0;
     
@@ -246,11 +262,11 @@ class pu_import_helper {
 
         // Let the log know what we've done.
         if ($inactivate) {
-            echo("Deactivated existing GUILD mappings\n");
+            mtrace("Deactivated existing GUILD mappings.");
         }
     
         // Start the log.
-        echo("Importing GUILD mapping data\n");
+        mtrace("Importing GUILD mapping data.");
     
         // Loop through the content.
         foreach ($content as $line) {
@@ -295,7 +311,7 @@ class pu_import_helper {
         $elapsedtime = round(microtime(true) - $starttime, 1);
     
         // Finish the log, letting me know how many we did and how long it took.
-        echo("Completed importing " . $counter . " rows of data in " . $elapsedtime . " seconds.\n");
+        mtrace("Completed importing " . $counter . " rows of data in " . $elapsedtime . " seconds.");
     
         return $success;
     }
@@ -325,8 +341,12 @@ class pu_import_helper {
      */
     public static function block_pu_getguildcontent($filename) {
             // Grab the CSV from the file specified.
-            $content = array_map('str_getcsv', file($filename));
-    
+            if (file_exists($filename)) {
+                $content = array_map('str_getcsv', file($filename));
+            } else {
+                $content = array();
+                mtrace("ERROR: GUILD file is missing, please upload the mapping file to $filename.");
+            }
             return $content;
     }
 
@@ -347,7 +367,7 @@ class pu_import_helper {
 
         // Short circuit this if we find a header row.
         if ($fields[1] == 'Code') {
-            echo("We found a header row and skipped it.\n");
+            mtrace("We found a header row and skipped it.");
             return false;
         }
 
@@ -364,17 +384,17 @@ class pu_import_helper {
             $return = $DB->insert_record($table, $data, $returnid = true, $bulk = false);
     
             // Log the imports.
-            echo("  Imported coupon code: " .
+            mtrace("  Imported coupon code: " .
                 $data['couponcode'] .
                 " into block_pu_codes id: " .
                 $return .
-                ".\n");
+                ".");
         } else {
     
             // Log the skipped ones too.
-            echo("  Skipped existing coupon code: " .
+            mtrace("  Skipped existing coupon code: " .
                 $data['couponcode'] .
-                "\n");
+                ".");
         }
     
         // Return the block_pu_codes row id even though we don't use it.
@@ -398,16 +418,16 @@ class pu_import_helper {
 
         // Short circuit this if we find a header row.
         if ($fields[1] == 'PersonID') {
-            echo("We found a header row and skipped it.\n");
+            mtrace("We found a header row and skipped it.");
             return false;
         }
 
         // Short circuit this if we find a UES formatted row.
         if (!self::block_pu_sectionmap() && preg_match('/\d+-\S+ \S+-\S+-\d+-\d\d\d/', $fields[0])) {
-            echo("We found a UES formatted row and skipped it.\n");
+            mtrace("We found a UES formatted row and skipped it.");
             return false;
         } else if (self::block_pu_sectionmap() && !preg_match('/\d+-\S+ \S+-\S+-\d+-\d\d\d/', $fields[0])) {
-            echo("We found a non-UES formatted row and skipped it.\n");
+            mtrace("We found a non-UES formatted row and skipped it.");
             return false;
         }
 
@@ -479,22 +499,22 @@ class pu_import_helper {
         // Check to see if the course / user pair exists in the table.
         $exists = $DB->get_record($table, $data);
 
-        // If they do not exist.
-        if (!$exists) {
+        // If the record does not exist but the user and course do.
+        if (!$exists && isset($user->userid) && isset($course->id)) {
             // Insert the data and return the id of the newly inserted row.
             $return = $DB->insert_record($table, $data, $returnid = true, $bulk = false);
     
             // Log the imports.
-            echo("  Imported GUILD course: " .
+            mtrace("  Imported GUILD course: " .
                 $data['course'] .
                 " with student: " .
                 $data['user'] .
                 " into block_pu_guildmaps id: " .
                 $return .
-                ".\n");
+                ".");
 
-        // If they do exist.
-        } else {
+        // If the record does exist.
+        } else if ($exists) {
             // They exist but will not be current. Here, we make sure they are.
             $data['id'] = $exists->id;
             $data['current'] = 1;
@@ -503,12 +523,12 @@ class pu_import_helper {
             $return = $DB->update_record($table, $data, $bulk = false);
     
             // Log the updated ones too.
-            echo("  Updated existing GUILD course: " .
+            mtrace("  Updated existing GUILD course: " .
                 $data['course'] .
                 " with student: " .
                 $data['user'] .
                 " and marked them current." .
-                "\n");
+                ".");
         }
 
         // Return the block_pu_guildmaps row id even though we don't use it.
@@ -561,21 +581,21 @@ class pu_import_helper {
 
         // Log the data.
         $emailalert = '';
-        $emailalert .= "There are $codesleft codes left with a minimum of $mincodes specified. \n";
+        $emailalert .= "There are $codesleft codes left with a minimum of $mincodes specified. ";
 
         // Check to see fi we need to request more codes.
         if ($threshold < 1) {
 
             // Add some qualifiers if we need codes.
-            $emailalert .= "We have used $absv more codes than expected. \n\n";
-            $emailalert .= "Please add more codes as soon as possible. \n";
+            $emailalert .= "We have used $absv more codes than expected. ";
+            $emailalert .= "Please add more codes as soon as possible. ";
 
             // Email the alert.
             self::email_ccalert($emailalert);
         }
 
         // Log the alert.
-        echo($emailalert . "\n");
+        mtrace($emailalert);
     }
 
     /**
