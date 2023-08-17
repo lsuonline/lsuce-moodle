@@ -53,7 +53,7 @@ class writer extends base {
      */
     public function start_sheet($columns): void {
         $this->columns = array_map(static function(string $column): string {
-            return core_text::strtolower(clean_param($column, PARAM_ALPHA));
+            return core_text::strtolower(clean_param($column, PARAM_ALPHANUMEXT));
         }, $columns);
     }
 
