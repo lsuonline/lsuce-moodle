@@ -53,12 +53,15 @@ $context = context_system::instance();
 
 // Set up the rest of the page.
 $PAGE->set_context($context);
+$PAGE->set_pagetype('admin-setting-syllabusuploader');
 $PAGE->set_url($url);
 $PAGE->set_title(get_string('manage_viewer', 'local_syllabusuploader'));
-$PAGE->navbar->add(
-    get_string('settings', 'local_syllabusuploader'),
-    new moodle_url($CFG->wwwroot. "/admin/settings.php?section=syllabusuploader")
-);
+if (is_siteadmin()) {
+    $PAGE->navbar->add(
+        get_string('settings', 'local_syllabusuploader'),
+        new moodle_url($CFG->wwwroot. "/admin/settings.php?section=syllabusuploader")
+    );
+}
 $PAGE->navbar->add(
     get_string('manage_viewer', 'local_syllabusuploader'),
     new moodle_url($CFG->wwwroot. "/local/syllabusuploader/view.php")
@@ -125,6 +128,7 @@ $event->trigger();
 */
 // Set the page heading.
 $PAGE->set_heading(get_string('manage_viewer', 'local_syllabusuploader'));
+$PAGE->set_pagelayout('base');
 
 // Output the header.
 echo $OUTPUT->header();

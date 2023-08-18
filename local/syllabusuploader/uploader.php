@@ -79,12 +79,15 @@ if ($id) {
 $context = context_system::instance();
 // Set up the page.
 $PAGE->set_context($context);
+$PAGE->set_pagetype('admin-setting-syllabusuploader');
 $PAGE->set_url($url, $params);
 $PAGE->set_title(format_string($uploadfile->name));
-$PAGE->navbar->add(
-    get_string('settings', 'local_syllabusuploader'),
-    new moodle_url($CFG->wwwroot. "/admin/settings.php?section=syllabusuploader")
-);
+if (is_siteadmin()) {
+    $PAGE->navbar->add(
+        get_string('settings', 'local_syllabusuploader'),
+        new moodle_url($CFG->wwwroot. "/admin/settings.php?section=syllabusuploader")
+    );
+}
 $PAGE->navbar->add(
     get_string('manage_uploader', 'local_syllabusuploader'),
     new moodle_url($CFG->wwwroot. "/local/syllabusuploader/uploader.php")

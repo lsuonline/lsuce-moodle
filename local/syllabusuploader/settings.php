@@ -28,6 +28,7 @@ $context = \context_system::instance();
 
 // Check the cap and set the accressrule accordingly.
 $permitted = has_capability('local/syllabusuploader:admin', $context);
+$isadmin = is_siteadmin();
 
 // Get the allowed users from config.
 $alloweduserlist = get_config('moodle', 'local_syllabusuploader_admins');
@@ -55,7 +56,9 @@ foreach ($allowedusers as $alloweduser) {
 $fn = new lang_string('foldername', 'local_syllabusuploader');
 
 // Create the folder / submenu.
-$ADMIN->add('localplugins', new admin_category('local_syllabusuploader_folder', $fn));
+if ($isadmin) {
+    $ADMIN->add('localplugins', new admin_category('local_syllabusuploader_folder', $fn));
+}
 
 // Create the local settings.
 $settings = new admin_settingpage($section = "syllabusuploader", get_string('settings'));
@@ -144,7 +147,9 @@ if ($ADMIN->fulltree) {
 }
 
 // Add the folder.
-$ADMIN->add('local_syllabusuploader_folder', $settings);
+if ($isadmin) {
+    $ADMIN->add('local_syllabusuploader_folder', $settings);
+}
 
 // Prevent Moodle from adding settings local in standard location.
 $settings = null;
@@ -164,7 +169,7 @@ $suviewer = new admin_externalpage(
 );
 
 // Add the additional links for those who have access.
-if ($allowed) {
+if ($allowed && $isadmin) {
     $ADMIN->add('local_syllabusuploader_folder', $suuploader);
     $ADMIN->add('local_syllabusuploader_folder', $suviewer);
 }
