@@ -79,7 +79,6 @@ if ($id) {
 $context = context_system::instance();
 // Set up the page.
 $PAGE->set_context($context);
-$PAGE->set_pagetype('admin-setting-syllabusuploader');
 $PAGE->set_url($url, $params);
 $PAGE->set_title(format_string($uploadfile->name));
 if (is_siteadmin()) {

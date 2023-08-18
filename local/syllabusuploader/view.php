@@ -53,7 +53,6 @@ $context = context_system::instance();
 
 // Set up the rest of the page.
 $PAGE->set_context($context);
-$PAGE->set_pagetype('admin-setting-syllabusuploader');
 $PAGE->set_url($url);
 $PAGE->set_title(get_string('manage_viewer', 'local_syllabusuploader'));
 if (is_siteadmin()) {
