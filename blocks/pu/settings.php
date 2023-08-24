@@ -17,7 +17,7 @@
 /**
  * @package    block_pu
  * @copyright  2021 onwards LSU Online & Continuing Education
- * @copyright  2021 onwards Robert Russo, David Lowe
+ * @copyright  2021 onwards Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -44,16 +44,6 @@ if ($ADMIN->fulltree) {
         )
     );
 
-    // Copy File Settings.
-    $settings->add(
-        new admin_setting_configtext(
-            'block_pu_copy_file',
-            get_string('pu_copy_file', 'block_pu'),
-            get_string('pu_copy_file_help', 'block_pu'),
-            null // Default.
-        )
-    );
-
     // Coupon code filename.
     $settings->add(
         new admin_setting_configtext(
@@ -71,16 +61,6 @@ if ($ADMIN->fulltree) {
             get_string('pu_guildfile', 'block_pu'),
             get_string('pu_guildfile_help', 'block_pu'),
             null // Default.
-        )
-    );
-
-    // ProctorU minimum number of lines in a GUILD file.
-    $settings->add(
-        new admin_setting_configtext(
-            'block_pu_minlines',
-            get_string('pu_minlines', 'block_pu'),
-            get_string('pu_minlines_help', 'block_pu'),
-            50 // Default.
         )
     );
 
@@ -135,31 +115,15 @@ $ADMIN->add('blockpufolder', $settings);
 $settings = null;
 
 // Set the url for the ProctorU override tool.
-$puoverride = new admin_externalpage(
-    'manage_overrides',
-    new lang_string('manage_overrides', 'block_pu'),
-    "$CFG->wwwroot/blocks/pu/overrides.php"
+$puoverride = new admin_externalpage('manage_overrides',
+              new lang_string('manage_overrides', 'block_pu'),
+              "$CFG->wwwroot/blocks/pu/overrides.php"
 );
 
 // Set the url for the ProctorU validate tool.
-$puinvalids = new admin_externalpage(
-    'manage_invalids',
-    new lang_string('manage_invalids', 'block_pu'),
-    "$CFG->wwwroot/blocks/pu/validate.php"
-);
-
-// Set the url for the ProctorU file uploader.
-$puuploader = new admin_externalpage(
-    'manage_uploader',
-    new lang_string('manage_uploader', 'block_pu'),
-    "$CFG->wwwroot/blocks/pu/uploader.php"
-);
-
-// Set the url for the ProctorU file viewer.
-$puviewer = new admin_externalpage(
-    'manage_viewer',
-    new lang_string('manage_viewer', 'block_pu'),
-    "$CFG->wwwroot/blocks/pu/view.php"
+$puinvalids = new admin_externalpage('manage_invalids',
+              new lang_string('manage_invalids', 'block_pu'),
+              "$CFG->wwwroot/blocks/pu/validate.php"
 );
 
 // Add the ProctorU override tool url.
@@ -169,6 +133,4 @@ $context = \context_system::instance();
 if (has_capability('block/pu:admin', $context)) {
     $ADMIN->add('blockpufolder', $puoverride);
     $ADMIN->add('blockpufolder', $puinvalids);
-    $ADMIN->add('blockpufolder', $puuploader);
-    $ADMIN->add('blockpufolder', $puviewer);
 }
