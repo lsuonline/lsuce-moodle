@@ -448,7 +448,7 @@ class block_pu_helpers {
         global $DB;
 
         // Build the SQL for use.
-        $sql = 'SELECT course FROM {block_pu_guildmaps} GROUP BY course';
+        $sql = 'SELECT course FROM {block_pu_guildmaps} WHERE current = 1 GROUP BY course';
 
         // Get the GUILD course data.
         $guildcourses = $DB->get_records_sql($sql);
