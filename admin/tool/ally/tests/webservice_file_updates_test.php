@@ -18,9 +18,10 @@
  * Test for file updates webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\webservice\file_updates;
 use tool_ally\local;
@@ -33,18 +34,18 @@ require_once(__DIR__.'/abstract_testcase.php');
  * Test for file updates webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_webservice_file_updates_testcase extends tool_ally_abstract_testcase {
+class webservice_file_updates_test extends abstract_testcase {
     /**
      * Test the web service.
      */
     public function test_service() {
         global $DB;
         $this->resetAfterTest();
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $course      = $this->getDataGenerator()->create_course();
         $resource    = $this->getDataGenerator()->create_module('resource', ['course' => $course->id]);
@@ -55,7 +56,7 @@ class tool_ally_webservice_file_updates_testcase extends tool_ally_abstract_test
         $since = new \DateTimeImmutable('October 21 2015', new \DateTimeZone('UTC'));
         $filedate = $since->add(new \DateInterval('P3D'));
 
-        $tempobject = new stdClass();
+        $tempobject = new \stdClass();
         $tempobject->id = $fileupdated->get_id();
         $tempobject->timemodified = $filedate->getTimestamp();
         $tempobject->timecreated = $filedate->getTimestamp() - DAYSECS;
@@ -81,7 +82,7 @@ class tool_ally_webservice_file_updates_testcase extends tool_ally_abstract_test
         ];
 
         $files = file_updates::service($since->format(\DateTime::ISO8601));
-        $files = external_api::clean_returnvalue(file_updates::service_returns(), $files);
+        $files = \external_api::clean_returnvalue(file_updates::service_returns(), $files);
 
         $this->assertCount(2, $files);
 

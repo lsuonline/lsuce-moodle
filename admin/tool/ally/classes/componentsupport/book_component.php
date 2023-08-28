@@ -16,13 +16,11 @@
 
 /**
  * Html content support for book module.
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally\componentsupport;
-
-defined ('MOODLE_INTERNAL') || die();
 
 use cm_info;
 
@@ -38,7 +36,7 @@ use moodle_url;
 
 /**
  * Html content support for book module.
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class book_component extends component_base implements
@@ -132,9 +130,14 @@ SQL;
             return null;
         }
 
+        $chapters = $DB->get_records('book_chapters', ['bookid' => $bookid]);
+
+        if (empty($chapters)) {
+            return $content;
+        }
+
         list ($course, $cm) = get_course_and_cm_from_instance($bookid, 'book');
 
-        $chapters = $DB->get_records('book_chapters', ['bookid' => $bookid]);
         foreach ($chapters as $chapter) {
             $url = new \moodle_url('/mod/book/view.php', ['id' => $cm->id, 'chapterid' => $chapter->id]);
             $contentmodel = new component_content($chapter->id, 'book', 'book_chapters',

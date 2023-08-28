@@ -16,13 +16,11 @@
 
 /**
  * Html content support for book module.
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally\componentsupport;
-
-defined ('MOODLE_INTERNAL') || die();
 
 use tool_ally\componentsupport\interfaces\annotation_map;
 use tool_ally\componentsupport\interfaces\html_content as iface_html_content;
@@ -35,7 +33,7 @@ use moodle_url;
 
 /**
  * Html content support for block_html.
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_html_component extends component_base implements iface_html_content, annotation_map {

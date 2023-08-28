@@ -19,25 +19,24 @@
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\local_content;
 use tool_ally\componentsupport\forum_component;
 use tool_ally\testing\traits\component_assertions;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Testcase class for the tool_ally\components\forum_component class.
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_components_forum_component_testcase extends advanced_testcase {
+class components_forum_component_test extends abstract_testcase {
     use component_assertions;
 
     /**
@@ -98,7 +97,7 @@ class tool_ally_components_forum_component_testcase extends advanced_testcase {
         $this->teacher = $gen->create_user();
         $this->admin = get_admin();
         $this->course = $gen->create_course();
-        $this->coursecontext = context_course::instance($this->course->id);
+        $this->coursecontext = \context_course::instance($this->course->id);
         $gen->enrol_user($this->student->id, $this->course->id, 'student');
         $gen->enrol_user($this->teacher->id, $this->course->id, 'editingteacher');
         $forumdata = [
@@ -110,7 +109,7 @@ class tool_ally_components_forum_component_testcase extends advanced_testcase {
 
         // Add a discussion / post by teacher - should show up in results.
         $this->setUser($this->teacher);
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $this->course->id;
         $record->forum = $this->forum->id;
         $record->userid = $this->teacher->id;
@@ -119,7 +118,7 @@ class tool_ally_components_forum_component_testcase extends advanced_testcase {
 
         // Add a discussion / post by student - should NOT show up in results.
         $this->setUser($this->student);
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $this->course->id;
         $record->forum = $this->forum->id;
         $record->userid = $this->student->id;
@@ -146,7 +145,7 @@ class tool_ally_components_forum_component_testcase extends advanced_testcase {
     }
 
     public function test_get_discussion_html_content_items() {
-        $contentitems = phpunit_util::call_internal_method(
+        $contentitems = \phpunit_util::call_internal_method(
             $this->component, 'get_discussion_html_content_items', [
                 $this->course->id, $this->forum->id
             ],
@@ -193,5 +192,55 @@ class tool_ally_components_forum_component_testcase extends advanced_testcase {
         $_GET['d'] = $this->studentdiscussion->id;
         $cis = $this->component->get_annotation_maps($this->course->id);
         $this->assertEmpty($cis['posts']);
+    }
+
+    /**
+     * Test if file in use detection is working with this module.
+     */
+    public function test_check_file_in_use() {
+        $context = \context_module::instance($this->forum->cmid);
+
+        $usedfiles = [];
+        $unusedfiles = [];
+
+        // Check the intro.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_forum', $this->forum->id,
+            $this->forumtype, 'intro', $this->teacher);
+
+        // Now we are going to setup file associated with a teacher discussion.
+        $postid = $this->teacherdiscussion->firstpost;
+
+        // Check embedded post content.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_forum', $postid,
+            $this->forumtype . '_posts', 'message', $this->teacher);
+
+        // Add some attached files that are always in use.
+        list($file1, $file2) = $this->setup_check_files($context, 'mod_forum', 'attachment', $postid, $this->teacher);
+        $usedfiles[] = $file1; // Silly workaround for PHP code checker.
+        $usedfiles[] = $file2;
+
+        // Now setup a teacher post on a discussion.
+        $forumgen = self::getDataGenerator()->get_plugin_generator('mod_'.$this->forumtype);
+
+        $post = new \stdClass();
+        $post->discussion = $this->teacherdiscussion->id;
+        $post->userid = $this->teacher->id;
+        $post->parent = $this->teacherdiscussion->firstpost;
+        $post->messageformat = FORMAT_HTML;
+        $teacherpost = $forumgen->create_post($post);
+
+        $postid = $teacherpost->id;
+
+        // Check embedded post content.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_forum', $postid,
+            $this->forumtype . '_posts', 'message', $this->teacher);
+
+        // Add some attached files that are always in use.
+        list($file1, $file2) = $this->setup_check_files($context, 'mod_forum', 'attachment', $postid, $this->teacher);
+        $usedfiles[] = $file1; // Silly workaround for PHP code checker.
+        $usedfiles[] = $file2;
+
+        // This will double check that file iterator is working as expected.
+        $this->check_file_iterator_exclusion($context, $usedfiles, $unusedfiles);
     }
 }

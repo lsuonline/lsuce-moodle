@@ -18,7 +18,7 @@
  * Replace a file.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,13 +26,11 @@ namespace tool_ally\webservice;
 
 use tool_ally\local_file;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Replace a file.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class replace_file extends loggable_external_api {

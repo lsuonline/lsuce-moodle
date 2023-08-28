@@ -18,19 +18,17 @@
  * Course updates local library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Course updates local library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class local_course {
@@ -44,11 +42,17 @@ class local_course {
      * @return array
      */
     public static function to_crud($event) {
-        return [
+        $result = [
             'event_name' => $event->name,
             'event_time' => local::iso_8601($event->time),
             'context_id' => $event->courseid,
         ];
+
+        if (isset($event->sourcecourseid)) {
+            $result['source_context_id'] = $event->sourcecourseid;
+        }
+
+        return $result;
     }
 
     /**
@@ -66,3 +70,4 @@ class local_course {
         return array_keys($DB->get_records_sql($sql, [CONTEXT_MODULE, $courseid]));
     }
 }
+

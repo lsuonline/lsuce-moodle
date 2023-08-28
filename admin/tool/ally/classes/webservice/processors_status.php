@@ -18,7 +18,7 @@
  * Gets the queue status.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,13 +26,11 @@ namespace tool_ally\webservice;
 
 use tool_ally\push_config;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Gets the queue status.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class processors_status extends loggable_external_api {
@@ -77,9 +75,9 @@ class processors_status extends loggable_external_api {
         if ($contentqueue->oldest != null && $deletedqueue->oldest != null) {
             $oldestcontent = $contentqueue->oldest < $deletedqueue->oldest ? $contentqueue->oldest : $deletedqueue->oldest;
         } else if ($contentqueue->oldest == null && $deletedqueue->oldest != null) {
-            $oldestcontent = $deletedqueue ->oldest;
+            $oldestcontent = $deletedqueue->oldest;
         } else if ($contentqueue->oldest != null && $deletedqueue->oldest == null) {
-            $oldestcontent = $contentqueue ->oldest;
+            $oldestcontent = $contentqueue->oldest;
         }
         return (object)[
             'is_valid' => $config->is_valid(),

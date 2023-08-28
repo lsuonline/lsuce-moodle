@@ -19,9 +19,11 @@
  *
  * @package   tool_ally
  * @author    Sam Chaffee
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../../../../webservice/tests/helpers.php');
@@ -32,15 +34,15 @@ use tool_ally\webservice\courses;
  * Testcase class for Ally courses webservices.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_webservice_courses_testcase extends externallib_advanced_testcase {
+class webservice_courses_testcase extends \externallib_advanced_testcase {
 
     public function test_service() {
         $this->resetAfterTest();
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $course1 = $this->getDataGenerator()->create_course(['shortname' => 'C1', 'fullname' => 'Course 1']);
         $course2 = $this->getDataGenerator()->create_course(['shortname' => 'C2', 'fullname' => 'Course 2']);

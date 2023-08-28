@@ -18,10 +18,12 @@
  * Test files iterator.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
+use tool_ally\files_in_use;
 use tool_ally\files_iterator;
 use tool_ally\local;
 use tool_ally\role_assignments;
@@ -36,10 +38,10 @@ require_once(__DIR__.'/abstract_testcase.php');
  * Test files iterator.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
+class files_iterator_test extends abstract_testcase {
     /**
      * Test get_files.
      */
@@ -58,7 +60,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
 
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course->id)->id,
+            'contextid' => \context_course::instance($course->id)->id,
             'component' => 'mod_notwhitelisted',
             'filearea' => 'content',
             'itemid' => 0,
@@ -71,7 +73,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         $file1 = $fs->create_file_from_string($filerecord, $teststring);
 
         $filerecord = array(
-            'contextid' => context_course::instance($course->id)->id,
+            'contextid' => \context_course::instance($course->id)->id,
             'component' => 'mod_notwhitelisted',
             'filearea' => 'content',
             'itemid' => 0,
@@ -106,6 +108,39 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         foreach ($files as $file) {
             $this->assertContains($file->get_pathnamehash(), $hashes);
         }
+    }
+
+    public function test_get_files_pathname() {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $course    = $this->getDataGenerator()->create_course();
+        $user      = $this->getDataGenerator()->create_user();
+        $roleid    = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        $managerid = $DB->get_field('role', 'id', ['shortname' => 'manager'], MUST_EXIST);
+
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, $roleid);
+        $this->setUser($user);
+
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => \context_course::instance($course->id)->id,
+            'component' => 'course',
+            'filearea' => 'section',
+            'itemid' => 1,
+            'filepath' => '/gridimage/',
+            'filename' => 'test.txt',
+            'userid' => $user->id,
+            'modified' => time()
+        );
+        $teststring = 'moodletest';
+        $file1 = $fs->create_file_from_string($filerecord, $teststring);
+
+        $validator = new file_validator();
+        $files = new files_iterator($validator);
+        $this->assertEmpty(iterator_to_array($files));
+
     }
 
     /**
@@ -237,11 +272,20 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
 
         $this->resetAfterTest();
 
+        set_config('excludeunused', 1, 'tool_ally');
+
         $now = time();
 
         $dg = $this->getDataGenerator();
         $course1 = $dg->create_course();
         $course2 = $dg->create_course();
+        $intro = '<a href="@@PLUGINFILE@@/test.txt">1</a>' .
+                '<a href="@@PLUGINFILE@@/test2.txt">2</a>' .
+                '<a href="@@PLUGINFILE@@/test3.txt">3</a>' .
+                '<a href="@@PLUGINFILE@@/test4.txt">4</a>' .
+                '<a href="@@PLUGINFILE@@/test5.txt">5</a>';
+        $assign1 = $this->getDataGenerator()->create_module('assign', ['course' => $course1->id, 'intro' => $intro]);
+        $assign2 = $this->getDataGenerator()->create_module('assign', ['course' => $course2->id, 'intro' => $intro]);
         $user = $this->getDataGenerator()->create_user();
         $dg->enrol_user($user->id, $course1->id, 'editingteacher');
         $dg->enrol_user($user->id, $course2->id, 'student');
@@ -249,7 +293,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
 
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course1->id)->id,
+            'contextid' => \context_module::instance($assign1->cmid)->id,
             'component' => 'mod_assign',
             'filearea' => 'intro',
             'itemid' => 0,
@@ -274,7 +318,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Make sure files iterator includes it.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course1->id)->id,
+            'contextid' => \context_module::instance($assign1->cmid)->id,
             'component' => 'mod_assign',
             'filearea' => 'intro',
             'itemid' => 0,
@@ -300,7 +344,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // In this case, even though the file was created by a teacher, it should NOT be included.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course1->id)->id,
+            'contextid' => \context_module::instance($assign1->cmid)->id,
             'component' => 'mod_assign',
             'filearea' => 'notwhitelisted',
             'itemid' => 0,
@@ -327,7 +371,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Make sure files iterator DOES include it.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course2->id)->id,
+            'contextid' => \context_module::instance($assign2->cmid)->id,
             'component' => 'mod_assign',
             'filearea' => 'intro',
             'itemid' => 0,
@@ -351,7 +395,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Make sure files iterator does NOT include it.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course2->id)->id,
+            'contextid' => \context_module::instance($assign2->cmid)->id,
             'component' => 'mod_assign',
             'filearea' => 'notwhitelisted',
             'itemid' => 0,
@@ -381,6 +425,8 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
 
         $this->resetAfterTest();
 
+        set_config('excludeunused', 0, 'tool_ally');
+
         $course    = $this->getDataGenerator()->create_course();
         $user      = $this->getDataGenerator()->create_user();
         $roleid    = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
@@ -396,7 +442,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         $filecount = 100;
         for ($i = 0; $i < $filecount; $i++) {
             $filerecord = array(
-                'contextid' => context_course::instance($course->id)->id,
+                'contextid' => \context_course::instance($course->id)->id,
                 'component' => 'mod_assign',
                 'filearea' => 'intro',
                 'itemid' => 0,
@@ -444,7 +490,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Add a file in course where user is a teacher.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course1->id)->id,
+            'contextid' => \context_course::instance($course1->id)->id,
             'component' => 'mod_notwhitelisted',
             'filearea' => 'content',
             'itemid' => 0,
@@ -459,7 +505,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Add a file in course where user is not a teacher.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course2->id)->id,
+            'contextid' => \context_course::instance($course2->id)->id,
             'component' => 'mod_notwhitelisted',
             'filearea' => 'content',
             'itemid' => 0,
@@ -490,6 +536,8 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
     public function test_all_valid_files() {
         $this->resetAfterTest();
 
+        set_config('excludeunused', 0, 'tool_ally');
+
         $now = time();
 
         $dg = $this->getDataGenerator();
@@ -503,7 +551,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Create a file with a not whitelisted module.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course1->id)->id,
+            'contextid' => \context_course::instance($course1->id)->id,
             'component' => 'mod_notwhitelisted',
             'filearea' => 'content',
             'itemid' => 0,
@@ -539,7 +587,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         // Add another file in course where user is teacher but with a whitelisted module.
         $fs = get_file_storage();
         $filerecord = array(
-            'contextid' => context_course::instance($course1->id)->id,
+            'contextid' => \context_course::instance($course1->id)->id,
             'component' => 'mod_assign',
             'filearea' => 'intro',
             'itemid' => 0,
@@ -581,6 +629,8 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
 
         $this->resetAfterTest();
 
+        set_config('excludeunused', 0, 'tool_ally');
+
         $CFG->tool_ally_optimize_iteration_for_db = true;
 
         $course    = $this->getDataGenerator()->create_course();
@@ -597,7 +647,7 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
         $filecount = 100;
         for ($i = 0; $i < $filecount; $i++) {
             $filerecord = array(
-                'contextid' => context_course::instance($course->id)->id,
+                'contextid' => \context_course::instance($course->id)->id,
                 'component' => 'mod_assign',
                 'filearea' => 'intro',
                 'itemid' => 0,
@@ -624,4 +674,67 @@ class tool_ally_files_iterator_testcase extends tool_ally_abstract_testcase {
             $this->assertContains($hash, $queriedhashes);
         }
     }
+
+    /**
+     * Basic testing of files being in use or not.
+     */
+    public function test_unused_files() {
+        global $DB;
+
+        set_config('excludeunused', 1, 'tool_ally');
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('tool_ally');
+        $intro = '<img src="@@PLUGINFILE@@/subpath/used.jpg">';
+        $resource = $this->getDataGenerator()->create_module('resource', ['course' => $course->id, 'intro' => $intro]);
+        $resourcefile = $this->get_resource_file($resource);
+        $context = \context::instance_by_id($resourcefile->get_contextid());
+
+        $record = [
+                'contextid' => $context->id,
+                'component' => 'mod_resource',
+                'filearea'  => 'intro',
+                'filename'  => 'unused.jpg',
+        ];
+
+        // Save some files to the context.
+        $unusedfile = $generator->create_file($record);
+
+        $record['filepath'] = '/subpath/';
+        $record['filename'] = 'used.jpg';
+
+        $usedfile = $generator->create_file($record);
+
+        // Get the file ids, and test them.
+        $fileids = $this->get_file_ids_in_context($context);
+        $this->assertCount(2, $fileids);
+        $this->assertContains($resourcefile->get_id(), $fileids);
+        $this->assertTrue(in_array($usedfile->get_id(), $fileids));
+        $this->assertFalse(in_array($unusedfile->get_id(), $fileids));
+
+        // Now test with a blank intro.
+        $DB->set_field('resource', 'intro', '', ['id' => $resource->id]);
+        files_in_use::set_context_needs_updating($context);
+
+        $fileids = $this->get_file_ids_in_context($context);
+        $this->assertCount(1, $fileids);
+        $this->assertContains($resourcefile->get_id(), $fileids);
+        $this->assertNotContains($usedfile->get_id(), $fileids);
+        $this->assertNotContains($unusedfile->get_id(), $fileids);
+
+        // Now try with a different link format.
+        $pluginlink = $generator->create_full_link_for_file($usedfile, false);
+        $DB->set_field('resource', 'intro', $pluginlink, ['id' => $resource->id]);
+        files_in_use::set_context_needs_updating($context);
+
+        $fileids = $this->get_file_ids_in_context($context);
+        $this->assertCount(2, $fileids);
+        $this->assertContains($resourcefile->get_id(), $fileids);
+        $this->assertTrue(in_array($usedfile->get_id(), $fileids));
+        $this->assertNotContains($unusedfile->get_id(), $fileids);
+    }
+
 }

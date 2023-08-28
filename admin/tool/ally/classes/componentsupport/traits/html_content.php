@@ -17,7 +17,7 @@
 /**
  * Trait for supporting html content.
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -29,8 +29,6 @@ use tool_ally\models\component;
 use tool_ally\models\component_content;
 
 use stdClass;
-
-defined ('MOODLE_INTERNAL') || die();
 
 trait html_content {
 
@@ -136,6 +134,9 @@ trait html_content {
         // Record is still null, let's get it.
         if (empty($record)) {
             $record = $DB->get_record($table, ['id' => $id]);
+            if (isset($record->course) && !empty($courseid) && $record->course != $courseid) {
+                return null;
+            }
         }
         if (!$record) {
             return null;
@@ -315,7 +316,13 @@ trait html_content {
      * @throws \moodle_exception
      */
     protected function make_module_instance_url($module, $id) {
-        list($course, $cm) = get_course_and_cm_from_instance($id, $module);
+        try {
+            list($course, $cm) = get_course_and_cm_from_instance($id, $module);
+        } catch (\moodle_exception $e) {
+            // Sometimes this can get called before the module is in the core functions, so just return empty.
+            return '';
+        }
+
         return new \moodle_url('/course/view.php?id=' . $course->id . '#module-' . $cm->id) . '';
     }
 

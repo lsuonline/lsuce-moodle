@@ -19,9 +19,10 @@
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\local_content;
 use tool_ally\componentsupport\glossary_component;
@@ -29,15 +30,17 @@ use tool_ally\testing\traits\component_assertions;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once('abstract_testcase.php');
+
 /**
  * Testcase class for the tool_ally\componentsupport\glossary_component class.
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_components_glossary_component_testcase extends advanced_testcase {
+class components_glossary_component_test extends abstract_testcase {
     use component_assertions;
 
     /**
@@ -93,7 +96,7 @@ class tool_ally_components_glossary_component_testcase extends advanced_testcase
         $this->teacher = $gen->create_user();
         $this->admin = get_admin();
         $this->course = $gen->create_course();
-        $this->coursecontext = context_course::instance($this->course->id);
+        $this->coursecontext = \context_course::instance($this->course->id);
         $gen->enrol_user($this->student->id, $this->course->id, 'student');
         $gen->enrol_user($this->teacher->id, $this->course->id, 'editingteacher');
         $this->glossary = $gen->create_module('glossary', ['course' => $this->course->id, 'introformat' => FORMAT_HTML]);
@@ -101,32 +104,32 @@ class tool_ally_components_glossary_component_testcase extends advanced_testcase
 
         // Add an entry by teacher - should show up in results.
         $this->setUser($this->teacher);
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $this->course->id;
         $record->glossary = $this->glossary->id;
         $record->userid = $this->teacher->id;
         $record->definitionformat = FORMAT_HTML;
-        $this->teacherentry = $glossarygenerator->create_content($this->glossary, $record);
+        $this->teacherentry = $glossarygenerator->create_content($this->glossary, (array) $record);
 
         // Add an entry by student - should NOT show up in results.
         $this->setUser($this->student);
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $this->course->id;
         $record->glossary = $this->glossary->id;
         $record->userid = $this->student->id;
         $record->definitionformat = FORMAT_HTML;
-        $this->studententry = $glossarygenerator->create_content($this->glossary, $record);
+        $this->studententry = $glossarygenerator->create_content($this->glossary, (array) $record);
 
         $this->component = local_content::component_instance('glossary');
     }
 
     public function test_get_approved_author_ids_for_context() {
         $authorids = $this->component->get_approved_author_ids_for_context($this->coursecontext);
-        $this->assertContains($this->teacher->id, $authorids,
+        $this->assertTrue(in_array($this->teacher->id, $authorids),
                 'Teacher id '.$this->teacher->id.' should be in list of author ids.');
-        $this->assertContains($this->admin->id, $authorids,
+        $this->assertTrue(in_array($this->admin->id, $authorids),
                 'Admin id '.$this->admin->id.' should be in list of author ids.');
-        $this->assertNotContains($this->student->id, $authorids,
+        $this->assertFalse(in_array($this->student->id, $authorids),
                 'Student id '.$this->student->id.' should NOT be in list of author ids.');
     }
 
@@ -141,7 +144,7 @@ class tool_ally_components_glossary_component_testcase extends advanced_testcase
 
 
     public function test_get_entry_html_content_items() {
-        $contentitems = phpunit_util::call_internal_method(
+        $contentitems = \phpunit_util::call_internal_method(
             $this->component, 'get_entry_html_content_items', [
                 $this->course->id, $this->glossary->id
             ],
@@ -181,5 +184,38 @@ class tool_ally_components_glossary_component_testcase extends advanced_testcase
 
         $this->assertEquals('glossary:glossary_entries:definition:'.$this->teacherentry->id, reset($cis['entries']));
 
+    }
+
+    /**
+     * Test if file in use detection is working with this module.
+     */
+    public function test_check_file_in_use() {
+        $context = \context_module::instance($this->glossary->cmid);
+
+        $usedfiles = [];
+        $unusedfiles = [];
+
+        // Check the intro.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_glossary', $this->glossary->id,
+            'glossary', 'intro');
+
+        // Check the defintion text.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_glossary', $this->teacherentry->id,
+            'glossary_entries', 'definition', $this->teacher);
+
+        // Add some attachments.
+        list($file1, $file2) = $this->setup_check_files($context, 'mod_glossary', 'attachment',
+            $this->teacherentry->id, $this->teacher);
+        $usedfiles[] = $file1; // Silly workaround for PHP code checker.
+        $usedfiles[] = $file2;
+
+        // These student ones will never be included. We will confirm that below.
+        list($discard, $discard2) = $this->setup_check_files($context, 'mod_glossary', 'definition',
+            $this->studententry->id, $this->student);
+        list($discard, $discard2) = $this->setup_check_files($context, 'mod_glossary', 'attachment',
+            $this->studententry->id, $this->student);
+
+        // This will double check that file iterator is working as expected.
+        $this->check_file_iterator_exclusion($context, $usedfiles, $unusedfiles);
     }
 }

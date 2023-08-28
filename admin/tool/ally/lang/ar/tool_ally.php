@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @copyright  Copyright (c) 2023 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,6 +39,8 @@ $string['error:invalidcomponentident'] = 'معرف المكون {$a} غير صا
 $string['error:pluginfilequestiononly'] = 'يتم دعم مكونات السؤال فقط لعنوان URL هذا';
 $string['error:componentcontentnotfound'] = 'لم يتم العثور على محتوى لـ {$a}';
 $string['error:wstokenmissing'] = 'الرمز المميز لخدمة الويب مفقود. ربما يتعين على مستخدم مسؤول تشغيل التكوين التلقائي؟';
+$string['excludeunused'] = 'استبعاد الملفات غير المستخدمة';
+$string['excludeunuseddesc'] = 'حذف الملفات المرفقة بمحتوى HTML لكنها مرتبطة بـ/مُشار إليها في HTML.';
 $string['filecoursenotfound'] = 'الملف الذي تم تمريره لا ينتمي إلى أي مقرر دراسي';
 $string['fileupdatestask'] = 'دفع تحديثات الملف إلى Ally';
 $string['id'] = 'المعرف';
@@ -61,7 +63,7 @@ $string['hideexception'] = 'إخفاء الاستثناء';
 $string['usercapabilitymissing'] = 'لا توجد لدى المستخدم المتقدم الإمكانية الخاصة بحذف هذا الملف.';
 $string['autoconfigure'] = 'التكوين التلقائي لخدمة الويب Ally';
 $string['autoconfiguredesc'] = 'قم بإنشاء دور خدمة الويب والمستخدم تلقائيًا لـ ally.';
-$string['autoconfigureconfirmation'] = 'أنشئ دور خدمة ويب ومستخدم ally تلقائيًا وقم بتمكين خدمة الويب. سيتم تنفيذ الإجراءات التالية: <ul><li>إنشاء دور بعنوان \'ally_webservice\' ومستخدم باسم المستخدم \'ally_webuser\'</li><li>إضافة مستخدم \'ally_webuser\' إلى دور \'ally_webservice\'</li><li>تمكين خدمات الويب</li><li>تمكين باقي بروتوكول خدمة الويب</li><li>تمكين خدمة ويب ally</li><li>إنشاء رمز مميز للحساب \'ally_webuser\'</li></ul>';
+$string['autoconfigureconfirmation'] = 'قم بإنشاء دور ومستخدم لخدمة الويب تلقائيًا من أجل ally. وسيتم اتخاذ الإجراءات الآتية:<ul dir="rtl"><li>إنشاء دور معنون بـ "ally_webservice" ومستخدم باسم المستخدم "ally_webuser"</li><li>إضافة مستخدم "ally_webuser" إلى الدور "ally_webservice"</li><li>تمكين خدمات الويب</li><li>تمكين بروتوكول خدمة الويب للاختبار</li><li>تمكين خدمة الويب Ally</li><li>إنشاء رمز مميز لحساب "ally_webuser"</li></ul>';
 $string['autoconfigsuccess'] = 'نجاح - تم تكوين خدمة الويب Ally تلقائيًا.';
 $string['autoconfigtoken'] = 'الرمز المميز لخدمة الويب كما يلي:';
 $string['autoconfigapicall'] = 'يمكنك اختبار عمل خدمة الويب من خلال عنوان url التالي:';
@@ -73,6 +75,9 @@ $string['privacy:metadata:files:filecontents'] = 'تم إرسال المحتوى
 $string['privacy:metadata:files:mimetype'] = 'نوع الملف MIME، EG: نص/عادي، صورة/jpeg، وما إلى ذلك.';
 $string['privacy:metadata:files:pathnamehash'] = 'قم بتجزئة اسم مسار الملف لتعريفه بشكل فريد.';
 $string['privacy:metadata:files:timemodified'] = 'الوقت الذي تم فيه التعديل الأخير للحقل.';
+$string['cachedef_annotationmaps'] = 'تخزين بيانات التعليق التوضيحي للمقررات الدراسية';
+$string['cachedef_fileinusecache'] = 'التخزين المؤقت لملفات Ally المستخدمة';
+$string['cachedef_pluginfilesinhtml'] = 'التخزين المؤقت ملفات Ally بتنسيق HTML';
 $string['cachedef_request'] = 'التخزين المؤقت لطلب عامل تصفية Ally';
 $string['pushfilessummary'] = 'ملخص تحديثات ملف Ally.';
 $string['pushfilessummary:explanation'] = 'ملخص تحديثات الملفات المرسلة إلى Ally.';
@@ -85,6 +90,10 @@ $string['loglevel:none'] = 'بلا';
 $string['loglevel:light'] = 'بسيط';
 $string['loglevel:medium'] = 'متوسط';
 $string['loglevel:all'] = 'الكل';
+$string['logcleanuptask'] = 'مهمة تنظيف سجل Ally';
+$string['loglifetimedays'] = 'احتفظ بالسجلات لهذه الأيام عديدة';
+$string['loglifetimedaysdesc'] = 'احتفظ بسجلات Ally لهذه الأيام العديدة. قم بالتعيين إلى 0 لعدم حذف السجلات مطلقًا. ويتم تعيين مهمة مجدولة (افتراضيًا) للتشغيل يوميًا، وستحذف إدخالات السجل التي مضى عليها أكثر من هذه الأيام العديدة.';
+$string['logger:filtersetupdebugger'] = 'سجل إعداد عامل تصفية Ally';
 $string['logger:pushtoallysuccess'] = 'دفع ناجح إلى نقطة نهاية Ally';
 $string['logger:pushtoallyfail'] = 'دفع غير ناجح إلى نقطة نهاية Ally';
 $string['logger:pushfilesuccess'] = 'دفع ناجح للملف (الملفات) إلى نقطة نهاية Ally';
@@ -115,8 +124,8 @@ $string['logger:addingcourseevttoqueue'] = 'إضافة حدث المقرر ال�
 $string['logger:cmiderraticpremoddelete'] = 'يواجه معرف الوحدة النمطية للمقرر الدراسي مشاكل قبل حذفه.';
 $string['logger:cmiderraticpremoddelete_exp'] = 'لم يتم تحديد الوحدة النمطية بشكل صحيح، إما أنها غير موجودة بسبب حذف القسم أو أن هناك عاملًا آخر تسبب في تشغيل حذف موضع الإضافة ولم يتم العثور عليه.';
 $string['logger:servicefailure'] = 'فشلت العملية عند استهلاك الخدمة.';
-$string['logger:servicefailure_exp'] = '<br>الفصل الدراسي: {$a->class}<br>Params: {$a->params}';
+$string['logger:servicefailure_exp'] = '<br>الفئة: {‎$a->class}<br>المعلمات: {‎$a->params}';
 $string['logger:autoconfigfailureteachercap'] = 'فشلت العملية عند تعيين إمكانية النموذج الأولي للمدرس إلى دور خدمة ally_webservice.';
-$string['logger:autoconfigfailureteachercap_exp'] = '<br>الإمكانية: {$a->cap}<br>الصلاحية: {$a->permission}';
+$string['logger:autoconfigfailureteachercap_exp'] = '<br>القدرة: {‎$a->cap}<br>الإذن: {‎$a->permission}';
 $string['deferredcourseevents'] = 'إرسال أحداث المقرر الدراسي المؤجلة';
 $string['deferredcourseeventsdesc'] = 'السماح بإرسال أحداث المقرر الدراسي المخزنة التي تراكمت أثناء فشل الاتصال بـ Ally';

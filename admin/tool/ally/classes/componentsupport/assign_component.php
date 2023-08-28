@@ -17,13 +17,11 @@
 /**
  * Html content support for assignments.
  * @author Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally\componentsupport;
-
-defined ('MOODLE_INTERNAL') || die();
 
 use tool_ally\componentsupport\traits\embedded_file_map;
 use tool_ally\componentsupport\traits\html_content;
@@ -31,9 +29,12 @@ use tool_ally\componentsupport\interfaces\html_content as iface_html_content;
 use tool_ally\models\component;
 use tool_ally\models\component_content;
 
+use context;
+use stored_file;
+
 /**
  * Html content support for assignments.
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class assign_component extends component_base implements iface_html_content {
@@ -101,6 +102,15 @@ class assign_component extends component_base implements iface_html_content {
             return null;
         }
         return $this->make_module_instance_url($table, $id);
+    }
+
+    public function check_file_in_use(stored_file $file, ?context $context = null): bool {
+        if ($file->get_filearea() == 'introattachment') {
+            // All intro attachments are in use.
+            return true;
+        }
+
+        return $this->check_embedded_file_in_use($file, $context);
     }
 
 }

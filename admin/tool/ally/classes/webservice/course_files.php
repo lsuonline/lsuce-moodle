@@ -18,7 +18,7 @@
  * Provide a list of course files to process for accessibility.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,13 +28,11 @@ use tool_ally\local;
 use tool_ally\local_course;
 use tool_ally\local_file;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Provide a list of course files to process for accessibility.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_files extends loggable_external_api {

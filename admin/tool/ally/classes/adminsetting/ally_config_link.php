@@ -17,14 +17,12 @@
 /**
  * Admin setting for auto configuration.
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @package   tool_ally
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally\adminsetting;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * No setting - just heading and text.
