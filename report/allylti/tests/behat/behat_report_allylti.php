@@ -16,8 +16,8 @@
 
 /**
  * Ally lti report context
- * @author    Guy Thomas <osdev@blackboard.com>
- * @copyright Copyright (c) 2019 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -33,8 +33,8 @@ use \tool_ally\models\component_content;
 /**
  * Ally filter context
  *
- * @author    Guy Thomas <osdev@blackboard.com>
- * @copyright Copyright (c) 2019 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @category  test
  * @package   filter_ally
@@ -55,7 +55,7 @@ class behat_report_allylti extends behat_base {
      */
     public function navigate_ax_report() {
         if ($this->findnofail('xpath', '//div[@id="settingsnav"]')) {
-            $node = $this->find('xpath', '//div[@id="settingsnav"]//ul//li//p//span[contains(text(),"Reports")]');
+            $node = $this->find('xpath', '//div[@id="settingsnav"]//ul//li//p//a[text()="Reports"]');
             $node->click();
         }
 
