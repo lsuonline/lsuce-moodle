@@ -16,9 +16,9 @@
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
- * @author    Guy Thomas <osdev@blackboard.com>
+ * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -34,9 +34,9 @@ use tool_ally\logging\logger;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
- * @author    Guy Thomas <osdev@blackboard.com>
+ * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class filter_ally extends moodle_text_filter {
@@ -49,7 +49,7 @@ class filter_ally extends moodle_text_filter {
     /**
      * @var bool is the filter active in this context?
      */
-    private $filteractive = false;
+    private $filteractive = null;
 
     /**
      * @var array course ids for which we are currently annotating.
@@ -96,11 +96,17 @@ class filter_ally extends moodle_text_filter {
             if ($file->is_directory()) {
                 continue;
             }
-            $fullpath = $cm->context->id.'/'.$component.'/'.$filearea.'/'.
-                $file->get_itemid().'/'.
-                $file->get_filepath().'/'.
-                $file->get_filename();
-            $fullpath = str_replace('///', '/', $fullpath);
+
+            // Use the logic from moodle_url::make_pluginfile_url() to generate matching URL path.
+            $path = [];
+            $path[] = $cm->context->id;
+            $path[] = $component;
+            $path[] = $filearea;
+            if ($file->get_itemid() !== null) {
+                $path[] = $file->get_itemid();
+            }
+            $fullpath = implode('/', $path) . $file->get_filepath() . $file->get_filename();
+
             $map[$fullpath] = $file->get_pathnamehash();
         }
         return $map;
@@ -443,8 +449,13 @@ class filter_ally extends moodle_text_filter {
         // Note - we have to do this for the course context, we can't do granular module contexts since
         // a lot of the ally wrappers are applied via JS as opposed to via the filter - JS has no
         // awareness of contexts.
-        $activefilters = filter_get_active_in_context(context_course::instance($COURSE->id));
-        if (!isset($activefilters['ally'])) {
+        if ($this->filteractive === null) {
+            $activefilters = filter_get_active_in_context(context_course::instance($COURSE->id));
+            if (!isset($activefilters['ally'])) {
+                $this->filteractive = false;
+                return;
+            }
+        } else if ($this->filteractive === false) {
             return;
         }
         $this->filteractive = true;
@@ -453,7 +464,9 @@ class filter_ally extends moodle_text_filter {
             return;
         }
 
-        if ($PAGE->pagetype === 'admin-setting-additionalhtml' || $PAGE->pagetype === 'admin-search') {
+        if ($PAGE->pagetype === 'admin-setting-additionalhtml' ||
+            $PAGE->pagetype === 'admin-settings' ||
+            $PAGE->pagetype === 'admin-search') {
             return;
         }
 
@@ -464,7 +477,28 @@ class filter_ally extends moodle_text_filter {
 
         // This only requires execution once per request.
         static $jsinitialised = false;
-        if (!$jsinitialised) {
+        if (!empty($CFG->filter_ally_disable_check_pagetype) || $PAGE->pagetype === 'site-index') {
+            $jsinit = !$jsinitialised;
+        } else {
+            $jsinit = !$jsinitialised && $COURSE->id > 1;
+        }
+
+        if (!empty($CFG->filter_ally_enable_setup_debuger) && $this->is_course_page()) {
+            if (!$jsinitialised) {
+                $log = [
+                    'time' => time(),
+                    'url' => $PAGE->url->out(),
+                    'userid' => $USER->id,
+                    'courseid' => $COURSE->id,
+                    'pagetype' => $PAGE->pagetype,
+                    'pagelayout' => $PAGE->pagelayout,
+                    'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
+                ];
+                logger::get()->info('logger:filtersetupdebugger', $log);
+            }
+        }
+
+        if ($jsinit) {
 
             $sectionmap = $this->map_sections_to_ids();
             $sectionjson = json_encode($sectionmap);

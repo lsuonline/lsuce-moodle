@@ -17,7 +17,7 @@
 #
 # @package   filter_ally
 # @author    Guy Thomas
-# @copyright Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+# @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
 # @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @filter @filter_ally
@@ -49,14 +49,13 @@ Feature: In a lesson, rich content should have annotations.
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test lesson"
-    And I follow "Preview"
     #Note - the last lesson page appears first - hence lesson content 2 for title below.
     And the lesson page content entitled "Test lesson content 2" is annotated and contains text "Test content 2"
     And I press "Continue"
     And the lesson page content entitled "Test lesson content 1" is annotated and contains text "Test content 1"
     And I add 2 true false pages to lesson "Test lesson"
-    And I follow visible link "Edit" _ally_
-    And I follow visible link "Expanded" _ally_
+    And I click on "Edit lesson" "button"
+    And I select edit type "Expanded"
     And the lesson page content entitled "Test lesson content 1" is annotated and contains text "Test content 1"
     And the lesson page content entitled "Test lesson content 2" is annotated and contains text "Test content 2"
     And the lesson answer containing content "FALSE answer for 3" is annotated
