@@ -67,12 +67,14 @@ $settings->add(
 );
 
 // Set the issuerid.
-$settings->add(
-    new admin_setting_configselect(
-        'block_link_logins_issuerid',
-        get_string('issuerid', 'block_link_logins'),
-        get_string('issuerid_desc', 'block_link_logins'),
-        1,
-        $issuers
-    )
-);
+if ($issuers) {
+    $settings->add(
+        new admin_setting_configselect(
+            'block_link_logins_issuerid',
+            get_string('issuerid', 'block_link_logins'),
+            get_string('issuerid_desc', 'block_link_logins'),
+            1,
+            $issuers
+        )
+    );
+}
