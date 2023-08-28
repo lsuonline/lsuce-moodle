@@ -14,32 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Relative date availability privacy provider class.
- *
- * @package   availability_relativedate
- * @copyright 2022 eWallah.net
- * @author    Renaat Debleu <info@eWallah.net>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-namespace availability_relativedate\privacy;
+namespace availability_relativedate;
 
 /**
- * Provider class.
+ * Autoupdate for handling deleted course modules
  *
  * @package   availability_relativedate
  * @copyright 2022 eWallah.net
- * @author    Renaat Debleu <info@eWallah.net>
+ * @author    Stefan Hanauska <stefan.hanauska@altmuehlnet.de>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\null_provider {
+class autoupdate {
     /**
-     * Get the language string identifier with the component's language
-     * file to explain why this plugin stores no data.
+     * Called when a course_module_deleted event is triggered. Updates the completion state for all
+     * availability_relativedate instances in the course of the activity.
      *
-     * @return  string
+     * @param \core\event\base $event
+     * @return void
      */
-    public static function get_reason() : string {
-        return 'privacy:metadata';
+    public static function update_from_event(\core\event\base $event) : void {
+        $data = $event->get_data();
+        $courseid = $data['courseid'];
+        if (isset($courseid) && $courseid > 0) {
+            $modid = $data['objectid'];
+            if (condition::completion_value_used($courseid, $modid)) {
+                \core_availability\info::update_dependency_id_across_course($courseid, 'course_modules', $modid, -1);
+            }
+        }
     }
 }
