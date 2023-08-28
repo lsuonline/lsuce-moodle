@@ -89,7 +89,7 @@ class azure_semesters extends azure_source implements semester_processor {
                     $starting = ($code == self::LAW_SEM);
                     break;
                 default:
-                    continue;
+                    continue 2;
             }
 
             if (!isset($lookup[$campus])) {
@@ -230,7 +230,7 @@ class azure_students_by_department extends azure_student_format implements stude
     function students($semester, $department) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
 
-        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : $semester->campus == 'ONLINE' ? self::ONLINE_CAMPUS : self::LAW_CAMPUS;
+        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : ($semester->campus == 'ONLINE' ? self::ONLINE_CAMPUS : self::LAW_CAMPUS);
 
         $inst = $semester->campus == 'LSU' || $semester->campus == 'ONLINE' ? self::LSU_INST : self::LAW_INST;
 
@@ -292,7 +292,7 @@ class azure_students extends azure_student_format implements student_processor {
     function students($semester, $course, $section) {
         $semester_term = $this->encode_semester($semester->year, $semester->name);
 
-        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : $semester->campus == 'ONLINE' ? self::ONLINE_CAMPUS : self::LAW_CAMPUS;
+        $campus = $semester->campus == 'LSU' ? self::LSU_CAMPUS : ($semester->campus == 'ONLINE' ? self::ONLINE_CAMPUS : self::LAW_CAMPUS);
 
         $params = array($campus, $semester_term, $course->department,
             $course->cou_number, $section->sec_number, $semester->session_key);
