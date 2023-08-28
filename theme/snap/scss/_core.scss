@@ -866,6 +866,19 @@ a.yui3-button,
     margin-left: 1em;
 }
 
+.path-grade-report,
+.path-mod-lightboxgallery {
+    .snap-page-heading-button {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+}
+
+.path-grade-report-grader #region-main div[role="main"] {
+    overflow: auto;
+}
+
 #page-site-index .section-modchooser-link {
     clear: both;
     margin: 0;
@@ -3088,7 +3101,7 @@ table#user-grades tr.avg td.cell {
     }
 }
 
-.grader_report_edit_button {
+.grade_report_edit_button {
     display:none;
 }
 
@@ -3106,12 +3119,24 @@ table#user-grades tr.avg td.cell {
             left: 0;
         }
     }
-    &.path-grade-report-grader .grader_report_edit_button {
+    &.path-grade-report-grader .grade_report_edit_button {
         display: block;
         margin-bottom: 1.5rem;
     }
 }
 
+// Fix editing button in grade report single view.
+#page-grade-report-singleview-index.path-grade-report-singleview {
+    .grade_report_edit_button {
+        display: block;
+    }
+    .grade_report_edit_button.hidden {
+        display: none;
+    }
+    .search-widget .user-info.d-block {
+        padding: 6px;
+    }
+}
 #page-local-joulegrader-view {
     #local-joulegrader-navigation {
         border-bottom: thin solid #e5e5e5;
@@ -4939,8 +4964,9 @@ div[id^=snap-create-activity-] .section-modchooser-link {
 #page-question-type-ddimageortext #id_previewareaheader .ddarea.que.ddimageortext img.droppreview,
 #page-question-preview .droparea .dropzones img.draghome,
 #page-mod-quiz-attempt .droparea .dropzones img.draghome,
-#page-mod-quiz-review .droparea .dropzones img.draghome {
-    max-width: none !important;
+#page-mod-quiz-review .droparea .dropzones img.draghome,
+#page-question-bank-previewquestion-preview .droparea .dropzones img.draghome {
+    max-width: none;
 }
 
 // Change color contrast for quiz timer in a quiz attempt.
@@ -5240,9 +5266,11 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
     width: fit-content;
     padding: 0;
     background-color: $brand-primary;
+    border-radius: 5px;
 
     img {
         margin: 0;
+        border-radius: 5px;
     }
 
     .anim-play-resume-buttons {

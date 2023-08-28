@@ -1551,11 +1551,17 @@ body.snap-resource-card {
         &.modtype_workshop,
         &.modtype_journal,
         &.modtype_attendance,
-        &.modtype_hvp,
         &.modtype_h5pactivity {
             border-top-color: $color-assignment;
             .activityiconcontainer {
                 background-color: $color-assignment;
+            }
+        }
+
+        &.modtype_hvp {
+            border-top-color: $hvp-interactive-content;
+            .activityiconcontainer {
+                background-color: $hvp-interactive-content;
             }
         }
 
@@ -1750,13 +1756,15 @@ body.snap-resource-card {
     .block-timeline,
     .block_recentlyaccesseditems {
         .activityiconcontainer {
+            background-color: transparent;
             margin: 0;
             padding: 0.2rem;
             height: 45px;
             width: 45px;
             img.icon {
                 height: fit-content;
-                width: 45px;
+                min-width: 45px;
+                filter: none;
             }
         }
     }
