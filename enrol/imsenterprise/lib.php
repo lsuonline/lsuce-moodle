@@ -161,7 +161,14 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                     while ((!feof($fh)) && $this->continueprocessing) {
 
                         $line++;
-                        $curline = fgets($fh);
+
+                        // BEGIN LSU CLEANSE LINES.
+                        $oline = fgets($fh);
+
+                        // Remove non ascii chars.
+                        $curline = preg_replace('/[[:^ascii:]]/', '', $oline);
+                        // END LSU CLEANSE LINES.
+
                         $this->xmlcache .= $curline; // Add a line onto the XML cache.
 
                         while (true) {
