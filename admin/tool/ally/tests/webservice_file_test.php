@@ -18,9 +18,10 @@
  * Test for file webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\webservice\file;
 use tool_ally\local;
@@ -34,10 +35,10 @@ require_once(__DIR__.'/abstract_testcase.php');
  * Test for file webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
+class webservice_file_test extends abstract_testcase {
 
     /**
      * Test the web service when used to get a resource file.
@@ -51,15 +52,15 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $ac = new auto_config();
         $ac->configure();
 
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $course       = $this->getDataGenerator()->create_course();
         $resource     = $this->getDataGenerator()->create_module('resource', ['course' => $course->id]);
         $expectedfile = $this->get_resource_file($resource);
 
         $file = file::service($expectedfile->get_pathnamehash());
-        $file = external_api::clean_returnvalue(file::service_returns(), $file);
+        $file = \external_api::clean_returnvalue(file::service_returns(), $file);
 
         $timemodified = local::iso_8601_to_timestamp($file['timemodified']);
 
@@ -71,8 +72,8 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $this->assertEquals($expectedfile->get_mimetype(), $file['mimetype']);
         $this->assertEquals($expectedfile->get_contenthash(), $file['contenthash']);
         $this->assertEquals($expectedfile->get_timemodified(), $timemodified);
-        $this->assertRegExp('/.*pluginfile\.php.*mod_resource.*/', $file['url']);
-        $this->assertRegExp('/.*admin\/tool\/ally\/wspluginfile\.php\?pathnamehash=/', $file['downloadurl']);
+        $this->assertMatchesRegularExpression('/.*pluginfile\.php.*mod_resource.*/', $file['url']);
+        $this->assertMatchesRegularExpression('/.*admin\/tool\/ally\/wspluginfile\.php\?pathnamehash=/', $file['downloadurl']);
         $this->assertEquals($CFG->wwwroot.'/mod/resource/view.php?id='.$resource->cmid, $file['location']);
     }
 
@@ -88,8 +89,8 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $ac = new auto_config();
         $ac->configure();
 
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $course       = $this->getDataGenerator()->create_course();
         $user = $this->getDataGenerator()->create_user();
@@ -97,7 +98,7 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
 
         $options = array('course' => $course->id);
         $forum = $this->getDataGenerator()->create_module('forum', $options);
-        $forumcontext = context_module::instance($forum->cmid);
+        $forumcontext = \context_module::instance($forum->cmid);
 
         // Add a discussion.
         $record = array();
@@ -107,7 +108,7 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $discussion = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
 
         // Add a post with an attachment.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->discussion = $discussion->id;
         $record->userid = $user->id;
         $post = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_post($record);
@@ -126,7 +127,7 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $expectedfile = $fs->create_file_from_string($filerecordinline, $filecontents);
 
         $file = file::service($expectedfile->get_pathnamehash());
-        $file = external_api::clean_returnvalue(file::service_returns(), $file);
+        $file = \external_api::clean_returnvalue(file::service_returns(), $file);
 
         $timemodified = local::iso_8601_to_timestamp($file['timemodified']);
 
@@ -138,8 +139,8 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $this->assertEquals($expectedfile->get_mimetype(), $file['mimetype']);
         $this->assertEquals($expectedfile->get_contenthash(), $file['contenthash']);
         $this->assertEquals($expectedfile->get_timemodified(), $timemodified);
-        $this->assertRegExp('/.*pluginfile\.php.*mod_forum.*/', $file['url']);
-        $this->assertRegExp('/.*admin\/tool\/ally\/wspluginfile\.php\?pathnamehash=/', $file['downloadurl']);
+        $this->assertMatchesRegularExpression('/.*pluginfile\.php.*mod_forum.*/', $file['url']);
+        $this->assertMatchesRegularExpression('/.*admin\/tool\/ally\/wspluginfile\.php\?pathnamehash=/', $file['downloadurl']);
         $this->assertEquals($CFG->wwwroot.'/mod/forum/discuss.php?d='.$discussion->id.'#p'.$post->id, $file['location']);
     }
 
@@ -155,8 +156,8 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $ac = new auto_config();
         $ac->configure();
 
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $course       = $this->getDataGenerator()->create_course();
         $user = $this->getDataGenerator()->create_user();
@@ -164,7 +165,7 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
 
         $options = array('course' => $course->id);
         $forum = $this->getDataGenerator()->create_module('forum', $options);
-        $forumcontext = context_module::instance($forum->cmid);
+        $forumcontext = \context_module::instance($forum->cmid);
 
         // Add a post with an attachment.
         $filename = 'shouldbeanimage.jpg';
@@ -182,7 +183,7 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $expectedfile = $fs->create_file_from_string($filerecordinline, $filecontents);
 
         $file = file::service($expectedfile->get_pathnamehash());
-        $file = external_api::clean_returnvalue(file::service_returns(), $file);
+        $file = \external_api::clean_returnvalue(file::service_returns(), $file);
 
         $timemodified = local::iso_8601_to_timestamp($file['timemodified']);
 
@@ -194,8 +195,8 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $this->assertEquals($expectedfile->get_mimetype(), $file['mimetype']);
         $this->assertEquals($expectedfile->get_contenthash(), $file['contenthash']);
         $this->assertEquals($expectedfile->get_timemodified(), $timemodified);
-        $this->assertRegExp('/.*pluginfile\.php.*mod_forum.*/', $file['url']);
-        $this->assertRegExp('/.*admin\/tool\/ally\/wspluginfile\.php\?pathnamehash=/', $file['downloadurl']);
+        $this->assertMatchesRegularExpression('/.*pluginfile\.php.*mod_forum.*/', $file['url']);
+        $this->assertMatchesRegularExpression('/.*admin\/tool\/ally\/wspluginfile\.php\?pathnamehash=/', $file['downloadurl']);
         $this->assertEquals($CFG->wwwroot.'/mod/forum/view.php?id='.$forum->cmid, $file['location']);
     }
 
@@ -207,14 +208,14 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $ac = new auto_config();
         $ac->configure();
 
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $filename = 'somefile.txt';
         $filecontents = 'contents of file';
 
         $filerecord = array(
-            'contextid' => context_system::instance()->id,
+            'contextid' => \context_system::instance()->id,
             'component' => 'mod_somefakemodule',
             'filearea'  => 'intro',
             'itemid'    => 0,
@@ -224,6 +225,76 @@ class tool_ally_webservice_file_testcase extends tool_ally_abstract_testcase {
         $fs = get_file_storage();
         $file = $fs->create_file_from_string($filerecord, $filecontents);
 
+        $this->expectExceptionMessage(get_string('filenotfound', 'error'));
+        file::service($file->get_pathnamehash());
+    }
+
+    /**
+     * Test if the file in use setting properly changes the response of this service.
+     */
+    public function test_files_in_use() {
+        global $DB;
+        $this->resetAfterTest();
+
+        // Configure the service.
+        $ac = new auto_config();
+        $ac->configure();
+
+        $this->setAdminUser();
+
+        // First some setup.
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $assign = $gen->create_module('assign',
+            [
+                'course' => $course->id,
+                'introformat' => FORMAT_HTML,
+                'intro' => 'Text in intro'
+            ]
+        );
+        $context = \context_module::instance($assign->cmid);
+        $linkgen = $this->getDataGenerator()->get_plugin_generator('tool_ally');
+
+        list($usedfile, $unusedfile) = $this->setup_check_files($context, 'mod_assign', 'intro', 0);
+
+        // Update the intro with the link.
+        $link = $linkgen->create_pluginfile_link_for_file($usedfile);
+        $DB->set_field('assign', 'intro', $link, ['id' => $assign->id]);
+
+        // Test with the setting off.
+        set_config('excludeunused', 0, 'tool_ally');
+
+        // Should be able to get both files.
+        $this->assert_file_service_returns_file($usedfile);
+        $this->assert_file_service_returns_file($unusedfile);
+
+        // Test with the setting on.
+        set_config('excludeunused', 1, 'tool_ally');
+
+        // Should be able to get both files.
+        $this->assert_file_service_returns_file($usedfile);
+        $this->assert_file_service_not_returns_file($unusedfile);
+
+    }
+
+    /**
+     * Check if the file is returned by the file service.
+     *
+     * @param stored_file $file
+     */
+    protected function assert_file_service_returns_file(\stored_file $file) {
+        $foundfile = file::service($file->get_pathnamehash());
+        $foundfile = \external_api::clean_returnvalue(file::service_returns(), $foundfile);
+        $this->assertEquals($file->get_pathnamehash(), $foundfile['id']);
+        $this->assertEquals($file->get_filename(), $foundfile['name']);
+    }
+
+    /**
+     * Check if the file is not returned by the service.
+     *
+     * @param stored_file $file
+     */
+    protected function assert_file_service_not_returns_file(\stored_file $file) {
         $this->expectExceptionMessage(get_string('filenotfound', 'error'));
         file::service($file->get_pathnamehash());
     }

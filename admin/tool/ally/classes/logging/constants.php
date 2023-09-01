@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace tool_ally\logging;
-defined('MOODLE_INTERNAL') || die();
+
 /**
  * Define logging constants.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class constants {

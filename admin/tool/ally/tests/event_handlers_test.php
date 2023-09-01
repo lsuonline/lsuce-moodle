@@ -18,18 +18,22 @@
  * Tests for event handlers.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 
 require_once(__DIR__.'/abstract_testcase.php');
+require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
+require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
 
 use core\event\course_created;
 use core\event\course_updated;
+use core\event\course_restored;
 use core\event\course_section_created;
 use core\event\course_section_updated;
 use core\event\course_module_created;
@@ -46,19 +50,21 @@ use \mod_book\event\chapter_updated;
 
 use tool_ally\content_processor;
 use tool_ally\course_processor;
+use tool_ally\file_processor;
 use tool_ally\traceable_processor;
 
 use tool_ally\event_handlers;
+use tool_ally\files_in_use;
 use tool_ally\task\content_updates_task;
 use tool_ally\local_content;
 /**
  * Tests for event handlers.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_event_handlers_testcase extends tool_ally_abstract_testcase {
+class event_handlers_test extends abstract_testcase {
 
     public function setUp(): void {
         global $CFG;
@@ -72,10 +78,13 @@ class tool_ally_event_handlers_testcase extends tool_ally_abstract_testcase {
         set_config('key', 'key', 'tool_ally');
         set_config('secret', 'secret', 'tool_ally');
         set_config('push_cli_only', 0, 'tool_ally');
+        set_config('excludeunused', 1, 'tool_ally');
         content_processor::clear_push_traces();
         course_processor::clear_push_traces();
+        file_processor::clear_push_traces();
         content_processor::get_config(true);
         course_processor::get_config(true);
+        file_processor::get_config(true);
     }
 
     /**
@@ -114,6 +123,17 @@ class tool_ally_event_handlers_testcase extends tool_ally_abstract_testcase {
     }
 
     /**
+     * Check if a file with a provided file entity if (pathnamehash) is in the file pushtrace.
+     *
+     * @param $eventname
+     * @param $fileid
+     * @return bool
+     */
+    private function check_pushtrace_contains_file_id($eventname, $fileid) {
+        return $this->check_pushtrace_contains_key_value('file_processor', $eventname, 'entity_id', $fileid);
+    }
+
+    /**
      * Asserts inclusion of an entity id in content processor push traces.
      *
      * @param string $eventname
@@ -130,6 +150,19 @@ class tool_ally_event_handlers_testcase extends tool_ally_abstract_testcase {
     }
 
     /**
+     * @param $eventname
+     * @param $fileid
+     * @throws coding_exception
+     */
+    private function assert_pushtrace_contains_file_id($eventname, $fileid) {
+        $pushtraces = file_processor::get_push_traces($eventname);
+        $contains = $this->check_pushtrace_contains_file_id($eventname, $fileid);
+        $msg = 'Push trace does not contain an file id of ' . $fileid . "\n\n".
+            var_export($pushtraces, true);
+        $this->assertTrue($contains, $msg);
+    }
+
+    /**
      * @param string $eventname
      * @param string $entityid
      * @throws coding_exception
@@ -138,6 +171,19 @@ class tool_ally_event_handlers_testcase extends tool_ally_abstract_testcase {
         $pushtraces = content_processor::get_push_traces($eventname);
         $contains = $this->check_pushtrace_contains_entity_id($eventname, $entityid);
         $msg = 'Push trace does not contain an entity id of '.$entityid."\n\n".
+            var_export($pushtraces, true);
+        $this->assertFalse($contains, $msg);
+    }
+
+    /**
+     * @param $eventname
+     * @param $fileid
+     * @throws coding_exception
+     */
+    private function assert_pushtrace_not_contains_file_id($eventname, $fileid) {
+        $pushtraces = content_processor::get_push_traces($eventname);
+        $contains = $this->check_pushtrace_contains_file_id($eventname, $fileid);
+        $msg = 'Push trace does not contain an entity id of ' . $fileid . "\n\n".
             var_export($pushtraces, true);
         $this->assertFalse($contains, $msg);
     }
@@ -212,7 +258,7 @@ MSG;
         // Trigger a course created event.
         course_created::create([
             'objectid' => $course->id,
-            'context' => context_course::instance($course->id),
+            'context' => \context_course::instance($course->id),
             'other' => [
                 'shortname' => $course->shortname,
                 'fullname' => $course->fullname
@@ -236,7 +282,7 @@ MSG;
 
         course_updated::create([
             'objectid' => $course->id,
-            'context' => context_course::instance($course->id),
+            'context' => \context_course::instance($course->id),
             'other' => ['shortname' => $course->shortname]
         ])->trigger();
 
@@ -245,6 +291,105 @@ MSG;
 
         // Ensure section information is not included.
         $this->assert_pushtrace_not_contains_entity_regex('/course:course_sections:summary:/');
+    }
+
+    /**
+     * Basic test to see if a message is sent for course copies.
+     */
+    public function test_course_restored() {
+        global $DB, $CFG;
+
+        $course = $this->getDataGenerator()->create_course();
+        course_processor::clear_push_traces();
+
+        // Disable all backup loggers.
+        $CFG->backup_error_log_logger_level = \backup::LOG_NONE;
+        $CFG->backup_output_indented_logger_level = \backup::LOG_NONE;
+        $CFG->backup_file_logger_level = \backup::LOG_NONE;
+        $CFG->backup_database_logger_level = \backup::LOG_NONE;
+        $CFG->backup_file_logger_level_extra = \backup::LOG_NONE;
+
+        $this->setAdminUser();
+
+        // Test setup based on course_copy_test.
+        // Mock up the form data.
+        $formdata = new \stdClass;
+        $formdata->courseid = $course->id;
+        $formdata->fullname = 'copy course';
+        $formdata->shortname = 'copy course short';
+        $formdata->category = 1;
+        $formdata->visible = 0;
+        $formdata->startdate = 1582376400;
+        $formdata->enddate = 1582386400;
+        $formdata->idnumber = 123;
+        $formdata->userdata = 1;
+        $formdata->role_1 = 1;
+        $formdata->role_3 = 3;
+        $formdata->role_5 = 5;
+
+        // Create the course copy records and associated ad-hoc task.
+        $copydata = \copy_helper::process_formdata($formdata);
+        \copy_helper::create_copy($copydata);
+
+        // We are expecting trace output during this test, caused by the copy task.
+        $this->expectOutputRegex("/{$course->id}/");
+
+        // Execute adhoc task.
+        $now = time();
+        $task = \core\task\manager::get_next_adhoc_task($now);
+        $this->assertInstanceOf('\\core\\task\\asynchronous_copy_task', $task);
+        $task->execute();
+        \core\task\manager::adhoc_task_complete($task);
+
+        $newcourseid = $DB->get_field_sql('SELECT MAX(id) FROM {course}');
+
+        // Now make sure the pushtrace contains the event.
+        $contains = $this->check_pushtrace_contains_key_value('course_processor', event_handlers::API_COURSE_COPIED,
+            'context_id', $newcourseid);
+        $this->assertTrue($contains, "Course push trace with context_id of {$newcourseid} not found.");
+
+        $contains = $this->check_pushtrace_contains_key_value('course_processor', event_handlers::API_COURSE_COPIED,
+            'source_context_id', $course->id);
+        $this->assertTrue($contains, "Course push trace with source_context_id of {$course->id} not found.");
+    }
+
+    /**
+     * Basic test to see if a message is sent for course import.
+     */
+    public function test_course_imported() {
+        global $CFG, $USER;
+
+        $course = $this->getDataGenerator()->create_course();
+        $courseimport = $this->getDataGenerator()->create_course();
+        course_processor::clear_push_traces();
+
+        // Disable all backup loggers.
+        $CFG->backup_error_log_logger_level = \backup::LOG_NONE;
+        $CFG->backup_output_indented_logger_level = \backup::LOG_NONE;
+        $CFG->backup_file_logger_level = \backup::LOG_NONE;
+        $CFG->backup_database_logger_level = \backup::LOG_NONE;
+        $CFG->backup_file_logger_level_extra = \backup::LOG_NONE;
+
+        $this->setAdminUser();
+
+        // Import creates a backup for the samesite so includes course id on the back up.
+        $bc = new \backup_controller(\backup::TYPE_1COURSE, $course->id, \backup::FORMAT_MOODLE,
+            \backup::INTERACTIVE_NO, \backup::MODE_IMPORT, $USER->id);
+        $bc->execute_plan();
+        $bcid = $bc->get_backupid();
+
+        $bcrestore = new \restore_controller($bcid, $courseimport->id, \backup::INTERACTIVE_NO, \backup::MODE_IMPORT, $USER->id,
+            \backup::TARGET_EXISTING_ADDING);
+        $bcrestore->execute_precheck();
+        $bcrestore->execute_plan();
+
+        $contains = $this->check_pushtrace_contains_key_value('course_processor', event_handlers::API_COURSE_IMPORTED,
+            'context_id', $courseimport->id);
+        $this->assertTrue($contains, "Course push trace with context_id of {$courseimport->id} not found.");
+
+        $contains = $this->check_pushtrace_contains_key_value('course_processor', event_handlers::API_COURSE_IMPORTED,
+            'source_context_id', $course->id);
+        $this->assertTrue($contains, "Course push trace with source_context_id of {$course->id} not found.");
     }
 
     public function test_course_section_created() {
@@ -276,7 +421,7 @@ MSG;
         course_section_updated::create([
             'objectid' => $section0->id,
             'courseid' => $course->id,
-            'context' => context_course::instance($course->id),
+            'context' => \context_course::instance($course->id),
             'other' => array(
                 'sectionnum' => $section0->section
             )
@@ -307,7 +452,7 @@ MSG;
         course_section_updated::create([
             'objectid' => $section1->id,
             'courseid' => $course->id,
-            'context' => context_course::instance($course->id),
+            'context' => \context_course::instance($course->id),
             'other' => array(
                 'sectionnum' => $section1->section
             )
@@ -375,12 +520,44 @@ MSG;
             ['course' => $course->id, $modfield.'format' => FORMAT_HTML]);
         list ($course, $cm) = get_course_and_cm_from_cmid($mod->cmid);
 
-        $mod->$modfield = 'Updated '.$modfield.' with some text';
+        $context = \context_module::instance($mod->cmid);
+        // Make two files to use.
+        list($usedfile, $unusedfile) = $this->setup_check_files($context, 'mod_'.$modname, $filearea, 0);
 
+        // Confirm they didn't get sent yet.
+        $this->assert_pushtrace_not_contains_file_id("file_created", $usedfile->get_pathnamehash());
+        $this->assert_pushtrace_not_contains_file_id("file_created", $unusedfile->get_pathnamehash());
+
+        // They aren't in the content yet, so both should be false.
+        $this->assertFalse(files_in_use::check_file_in_use($usedfile));
+        $this->assertFalse(files_in_use::check_file_in_use($unusedfile));
+
+        // Still shouldn't be sent, since none are in use.
+        $this->assert_pushtrace_not_contains_file_id("file_created", $usedfile->get_pathnamehash());
+        $this->assert_pushtrace_not_contains_file_id("file_created", $unusedfile->get_pathnamehash());
+
+        // Make a link and put it in the field.
+        $generator = $this->getDataGenerator()->get_plugin_generator('tool_ally');
+        $link = $generator->create_pluginfile_link_for_file($usedfile);
+        $mod->$modfield = 'Updated ' . $modfield . ' with some a link ' . $link;
         $DB->update_record($modtable, $mod);
 
+        // Fire the update.
         course_module_updated::create_from_cm($cm)->trigger();
 
+        // Check that the records got marked as needing update.
+        $this->assertTrue($DB->record_exists('tool_ally_file_in_use', ['fileid' => $usedfile->get_id(), 'needsupdate' => 1]));
+        $this->assertTrue($DB->record_exists('tool_ally_file_in_use', ['fileid' => $unusedfile->get_id(), 'needsupdate' => 1]));
+
+        // Now see that it gets updated as expected.
+        $this->assertTrue(files_in_use::check_file_in_use($usedfile));
+        $this->assertFalse(files_in_use::check_file_in_use($unusedfile));
+
+        // And confirm that the one file got sent, but not the other.
+        $this->assert_pushtrace_contains_file_id("file_created", $usedfile->get_pathnamehash());
+        $this->assert_pushtrace_not_contains_file_id("file_created", $unusedfile->get_pathnamehash());
+
+        // Finally, check that the content update also got sent.
         $entityid = $modname.':'.$modtable.':'.$modfield.':'.$mod->id;
         $this->assert_pushtrace_contains_entity_id(event_handlers::API_RICH_CNT_UPDATED, $entityid);
 
@@ -395,9 +572,23 @@ MSG;
         $course = $this->getDataGenerator()->create_course();
         $mod = $this->getDataGenerator()->create_module($modname,
             ['course' => $course->id, $modfield.'format' => FORMAT_HTML, $modfield => 'Some content']);
+
+        // Setup some files.
+        $context = \context_module::instance($mod->cmid);
+        list($usedfile, $unusedfile) = $this->setup_check_files($context, 'mod_'.$modname, $modfield, 0);
+        $generator = $this->getDataGenerator()->get_plugin_generator('tool_ally');
+        $link = $generator->create_pluginfile_link_for_file($usedfile);
+        $mod->$modfield = 'Updated ' . $modfield . ' with some a link ' . $link;
+        $DB->update_record($modtable, $mod);
+        // Now make sure that records exist.
+        $this->assertCount(2, $DB->get_records('tool_ally_file_in_use', ['contextid' => $context->id]));
+
         $entityid = $modname.':'.$modtable.':'.$modfield.':'.$mod->id;
         list ($course, $cm) = get_course_and_cm_from_cmid($mod->cmid);
         course_delete_module($cm->id);
+
+        // Make sure the records were deleted.
+        $this->assertCount(0, $DB->get_records('tool_ally_file_in_use', ['contextid' => $context->id]));
 
         // Push should not have happened - it needs cron task to make it happen.
         $this->assert_pushtrace_not_contains_entity_id(event_handlers::API_RICH_CNT_DELETED, $entityid);
@@ -452,7 +643,7 @@ MSG;
         $this->setAdminUser();
 
         $mod = $this->check_module_updated_pushtraces('book', 'book', 'intro', 'intro');
-        $context = context_module::instance($mod->cmid);
+        $context = \context_module::instance($mod->cmid);
         $bookgenerator = self::getDataGenerator()->get_plugin_generator('mod_book');
 
         $data = [
@@ -477,7 +668,7 @@ MSG;
         $event->trigger();
 
         $chapter = $DB->get_record('book_chapters', ['id' => $chapter->id]);
-        $context = context_module::instance($mod->cmid);
+        $context = \context_module::instance($mod->cmid);
 
         $this->assert_pushtrace_contains_entity_id(event_handlers::API_RICH_CNT_CREATED, $entityid);
 
@@ -605,8 +796,8 @@ MSG;
         $dg = $this->getDataGenerator();
 
         $lesson = $this->check_module_updated_pushtraces('lesson', 'lesson', 'intro', 'intro');
-        $context = context_module::instance($lesson->cmid);
-        $lesson = new lesson($lesson);
+        $context = \context_module::instance($lesson->cmid);
+        $lesson = new \lesson($lesson);
 
         $pdg = $dg->get_plugin_generator('mod_lesson');
 
@@ -614,7 +805,7 @@ MSG;
         $questionpage->pageid = $questionpage->id;
         $questionpage->contents_editor = ['text' => 'some text', 'format' => FORMAT_HTML];
         $questionpage->answer_editor = [];
-        $mcpage = lesson_page_type_multichoice::create($questionpage, $lesson, $context, 0);
+        $mcpage = \lesson_page_type_multichoice::create($questionpage, $lesson, $context, 0);
         $mcpage->id = $questionpage->id;
         $mcpage->update($questionpage, $context);
 
@@ -665,7 +856,7 @@ MSG;
         $this->assert_pushtrace_contains_entity_id(event_handlers::API_RICH_CNT_CREATED, $entityid);
 
         // Add a discussion.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->forum = $forum->id;
         $record->userid = $USER->id;
         $record->course = $forum->course;
@@ -722,7 +913,7 @@ MSG;
         $introentityid = 'forum:forum:intro:'.$forum->id;
 
         // Add a discussion.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->forum = $forum->id;
         $record->userid = $USER->id;
         $record->course = $forum->course;
@@ -756,12 +947,12 @@ MSG;
         $this->assert_pushtrace_contains_entity_id(event_handlers::API_RICH_CNT_CREATED, $glossaryentityid);
 
         // Add an entry.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $course->id;
         $record->glossary = $glossary->id;
         $record->userid = $USER->id;
         $record->definitionformat = FORMAT_HTML;
-        $entry = self::getDataGenerator()->get_plugin_generator('mod_glossary')->create_content($glossary, $record);
+        $entry = self::getDataGenerator()->get_plugin_generator('mod_glossary')->create_content($glossary, (array) $record);
 
         $params = array(
             'context' => $cm->context,
@@ -822,7 +1013,7 @@ MSG;
         // Course creation triggers course_updated event.
         $createevent = \core\event\course_created::create([
             'objectid' => $course->id,
-            'context' => context_course::instance($course->id),
+            'context' => \context_course::instance($course->id),
             'other' => [
                 'shortname' => $course->shortname,
                 'fullname' => $course->fullname,
@@ -844,7 +1035,7 @@ MSG;
         // Course deletion triggers the event, so creating the Moodle course deletion event.
         $delevent = \core\event\course_deleted::create([
             'objectid' => $course->id,
-            'context' => context_course::instance($course->id),
+            'context' => \context_course::instance($course->id),
             'other' => [
                 'shortname' => $course->shortname,
                 'fullname' => $course->fullname,

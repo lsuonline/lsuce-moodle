@@ -17,16 +17,15 @@
 /**
  * Html file replacement support for core forum module
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally\componentsupport;
 
-defined ('MOODLE_INTERNAL') || die();
-
 use cm_info;
-
+use context;
+use stored_file;
 use tool_ally\componentsupport\interfaces\annotation_map;
 use tool_ally\componentsupport\interfaces\content_sub_tables;
 use tool_ally\componentsupport\interfaces\html_content as iface_html_content;
@@ -41,11 +40,11 @@ use moodle_url;
 /**
  * Html file / content replacement support for core forum module
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class forum_component extends file_component_base implements
-        iface_html_content, annotation_map, content_sub_tables {
+    iface_html_content, annotation_map, content_sub_tables {
 
     use html_content;
     use embedded_file_map;
@@ -71,8 +70,8 @@ class forum_component extends file_component_base implements
         $area = $file->get_filearea();
         $itemid = $file->get_itemid();
         if ($area === 'post') {
-            local_file::update_filenames_in_html('message', $this->type.'_posts', ' id = ? ',
-                    ['id' => $itemid], $this->oldfilename, $file->get_filename());
+            local_file::update_filenames_in_html('message', $this->type . '_posts', ' id = ? ',
+                ['id' => $itemid], $this->oldfilename, $file->get_filename());
         }
     }
 
@@ -101,8 +100,8 @@ class forum_component extends file_component_base implements
         list($userinsql, $userparams) = $DB->get_in_or_equal($userids);
 
         // Just get discussions - we aren't going to bother with posts.
-        $discussions = '{'.$this->type.'_discussions}';
-        $posts = '{'.$this->type.'_posts}';
+        $discussions = '{' . $this->type . '_discussions}';
+        $posts = '{' . $this->type . '_posts}';
 
         $forumfilter = '';
         $discussionfilter = '';
@@ -134,7 +133,7 @@ SQL;
         $rs = $DB->get_recordset_sql($sql, $params);
         foreach ($rs as $row) {
             $array[] = new component(
-                $row->id, $this->type, $this->type.'_posts', 'message', $courseid, $row->modified,
+                $row->id, $this->type, $this->type . '_posts', 'message', $courseid, $row->modified,
                 $row->messageformat, $row->subject);
         }
         $rs->close();
@@ -160,7 +159,7 @@ SQL;
             return [];
         }
 
-        if ($PAGE->pagetype === 'mod-'.$this->type.'-discuss') {
+        if ($PAGE->pagetype === 'mod-' . $this->type . '-discuss') {
             $discussion = optional_param('d', null, PARAM_INT);
             if ($discussion === null) {
                 return [];
@@ -185,12 +184,12 @@ SQL;
         return ['posts' => $posts, 'intros' => $forumintros];
     }
 
-    public function get_html_content($id, $table, $field, $courseid = null) : ?component_content {
+    public function get_html_content($id, $table, $field, $courseid = null): ?component_content {
         if (!$this->module_installed()) {
             return null;
         }
 
-        if ($table === $this->type.'_posts') {
+        if ($table === $this->type . '_posts') {
             return $this->std_get_html_content($id, $table, $field, $courseid, 'subject', 'modified');
         }
         return $this->std_get_html_content($id, $table, $field);
@@ -204,8 +203,8 @@ SQL;
         }
 
         $main = $this->get_html_content($id, $this->type, 'intro');
-        $discussions = '{'.$this->type.'_discussions}';
-        $poststable = '{'.$this->type.'_posts}';
+        $discussions = '{' . $this->type . '_discussions}';
+        $poststable = '{' . $this->type . '_posts}';
         $sql = <<<SQL
             SELECT fp.*,fd.course AS courseid
               FROM $discussions fd
@@ -218,7 +217,7 @@ SQL;
         $params = [FORMAT_HTML, $id];
         $stdposts = $DB->get_records_sql($sql, $params);
         $posts = array_map(function ($stdpost) {
-            $table = $this->type.'_posts';
+            $table = $this->type . '_posts';
             $field = 'message';
             $url = $this->make_url($stdpost->id, $table, $field, $stdpost->courseid);
             return new component_content(
@@ -237,6 +236,22 @@ SQL;
         return array_merge([$main], $posts);
     }
 
+    public function get_file_item($table, $field, $id) {
+        if ($table !== $this->type) {
+            return $id;
+        }
+
+        return parent::get_file_item($table, $field, $id);
+    }
+
+    public function get_file_area($table, $field) {
+        if ($field === 'message') {
+            return 'post';
+        }
+
+        return parent::get_file_area($table, $field);
+    }
+
     public function replace_html_content($id, $table, $field, $content) {
         return $this->std_replace_html_content($id, $table, $field, $content);
     }
@@ -253,7 +268,7 @@ SQL;
             return $forum->course;
         }
 
-        throw new \coding_exception('Invalid table used to recover course id '.$table);
+        throw new \coding_exception('Invalid table used to recover course id ' . $table);
     }
 
     public function resolve_module_instance_id($table, $id) {
@@ -262,13 +277,17 @@ SQL;
         if (!$this->module_installed()) {
             return -1;
         }
-        if ($table === 'forum_posts') {
+        $discussions = '{' . $this->type . '_discussions}';
+        $poststable = '{' . $this->type . '_posts}';
+        $forum = '{' . $this->type . '}';
+        $params = [$id];
+        if ($table === $this->type . '_posts') {
             $params = [$id];
             $sql = <<<SQL
             SELECT f.id
-              FROM {forum_posts} fp
-         LEFT JOIN {forum_discussions} fd ON fp.discussion = fd.id
-         LEFT JOIN {forum} f ON f.id = fd.forum
+              FROM $poststable fp
+         LEFT JOIN $discussions fd ON fp.discussion = fd.id
+         LEFT JOIN {$forum} f ON f.id = fd.forum
              WHERE fp.id = ?
 SQL;
             return $DB->get_field_sql($sql, $params);
@@ -284,7 +303,7 @@ SQL;
      */
     private function get_discussion_id_from_post_id($postid) {
         global $DB;
-        $post = $DB->get_record($this->type.'_posts', ['id' => $postid]);
+        $post = $DB->get_record($this->type . '_posts', ['id' => $postid]);
         return $post->discussion;
     }
 
@@ -303,10 +322,10 @@ SQL;
         if ($table === $this->type) {
             list ($course, $cm) = get_course_and_cm_from_instance($id, $this->type, $courseid);
             unset($course);
-            return new moodle_url('/mod/'.$this->type.'/view.php?id='.$cm->id).'';
-        } else if ($table === $this->type.'_posts') {
+            return new moodle_url('/mod/' . $this->type . '/view.php?id=' . $cm->id) . '';
+        } else if ($table === $this->type . '_posts') {
             $discussionid = $this->get_discussion_id_from_post_id($id);
-            return new moodle_url('/mod/'.$this->type.'/discuss.php?d='.$discussionid.'#p'.$id).'';
+            return new moodle_url('/mod/' . $this->type . '/discuss.php?d=' . $discussionid . '#p' . $id) . '';
         }
         return null;
     }
@@ -314,5 +333,80 @@ SQL;
     public function queue_delete_sub_tables(cm_info $cm) {
         $discussions = $this->get_discussion_html_content_items($cm->course, $cm->instance);
         $this->bulk_queue_delete_content($discussions);
+    }
+
+    public function check_file_in_use(stored_file $file, ?context $context = null): bool {
+        if ($file->get_filearea() == 'attachment') {
+            // All attachments are in use.
+            return true;
+        }
+
+        return $this->check_embedded_file_in_use($file, $context);
+    }
+
+    public function get_all_files_search_html(int $id): ?array {
+        global $DB;
+
+        // This is a modification of get_all_html_content where we get all forum posts made
+        // by course teachers, even if they aren't the first post in a discussion.
+
+        if (!$this->module_installed()) {
+            return [];
+        }
+
+        $pagetable = '{' . $this->type . '}';
+        $course = $DB->get_record_sql("
+                    SELECT c.*
+                      FROM $pagetable instance
+                      JOIN {course} c ON c.id = instance.course
+                     WHERE instance.id = ?", array($id), MUST_EXIST);
+        $modinfo = get_fast_modinfo($course);
+        $instances = $modinfo->get_instances_of($this->type);
+
+        if (empty($instances[$id])) {
+            return array();
+        }
+
+        list ($course, $cm) = get_course_and_cm_from_instance($id, $this->type);
+
+        // Limit to instructor userids.
+        $userids = $this->get_approved_author_ids_for_context(\context_course::instance($course->id));
+        list($userinsql, $userparams) = $DB->get_in_or_equal($userids);
+
+        $main = $this->get_html_content($id, $this->type, 'intro');
+        $discussions = '{' . $this->type . '_discussions}';
+        $poststable = '{' . $this->type . '_posts}';
+        $sql = <<<SQL
+            SELECT fp.*,fd.course AS courseid
+              FROM $discussions fd
+              JOIN $poststable fp
+               ON fp.discussion = fd.id
+               AND fp.messageformat = ?
+            WHERE fd.forum = ?
+              AND fp.userid $userinsql
+SQL;
+        $params = [FORMAT_HTML, $id];
+        $params = array_merge($params, $userparams);
+
+        $stdposts = $DB->get_records_sql($sql, $params);
+        $posts = array_map(function ($stdpost) {
+            $table = $this->type . '_posts';
+            $field = 'message';
+            $url = $this->make_url($stdpost->id, $table, $field, $stdpost->courseid);
+            return new component_content(
+                $stdpost->id,
+                $this->get_component_name(),
+                $table,
+                $field,
+                $stdpost->courseid,
+                $stdpost->modified,
+                $stdpost->messageformat,
+                $stdpost->message,
+                $stdpost->subject,
+                $url
+            );
+        }, $stdposts);
+
+        return array_merge([$main], $posts);
     }
 }

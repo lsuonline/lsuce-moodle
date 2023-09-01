@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @copyright  Copyright (c) 2023 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,6 +39,8 @@ $string['error:invalidcomponentident'] = 'Identifiant de composant non valide :
 $string['error:pluginfilequestiononly'] = 'Seuls les composants de questions sont pris en charge pour cette url';
 $string['error:componentcontentnotfound'] = 'Contenu introuvable pour {$a}';
 $string['error:wstokenmissing'] = 'Jeton de service Web manquant. Un utilisateur administrateur devra peut-être exécuter une configuration automatique.';
+$string['excludeunused'] = 'Exclure les fichiers inutilisés';
+$string['excludeunuseddesc'] = 'Omettre les fichiers joints au contenu HTML, mais liés/référencés dans le HTML.';
 $string['filecoursenotfound'] = 'Le fichier transmis n\'appartient à aucun cours';
 $string['fileupdatestask'] = 'Transmettre les mise à jour de fichiers vers Ally';
 $string['id'] = 'Identifiant';
@@ -61,7 +63,7 @@ $string['hideexception'] = 'Masquer l\'exception';
 $string['usercapabilitymissing'] = 'L\'utilisateur indiqué ne dispose pas de la capacité nécessaire à la suppression de ce fichier.';
 $string['autoconfigure'] = 'Configuration automatique du service Web Ally';
 $string['autoconfiguredesc'] = 'Crée automatiquement un rôle et un utilisateur de service Web pour Ally.';
-$string['autoconfigureconfirmation'] = 'Crée automatiquement un rôle et un utilisateur de service Web pour Ally et active le service Web. Les actions suivantes seront effectuées : <ul><li>création d\'un rôle intitulé "ally_webservice" et d\'un utilisateur avec le nom "ally_webuser"</li><li>ajout de l\'utilisateur "ally_webuser" au rôle "ally_webservice"</li><li>activation des services Web</li><li>activation du protocole des services Web REST</li><li>activation du service Web Ally</li><li>création d\'un jeton pour le compte "ally_webuser"</li></ul>';
+$string['autoconfigureconfirmation'] = 'Créer automatiquement un rôle et un utilisateur de service Web pour Ally et activer le service Web. Les actions suivantes seront exécutées :<ul><li>créer un rôle intitulé « ally_webservice » et un utilisateur avec le nom d\'utilisateur « ally_webuser »</li><li>ajoutez l\'utilisateur « ally_webuser » au rôle « ally_webservice »</li><li>activer les services Web</li><li>activer le protocole de service Web REST actif</li><li>activer le service Web Ally</li><li>créer un jeton pour le compte « ally_webuser »</li></ul>';
 $string['autoconfigsuccess'] = 'Réussite. Le service Web Ally a été automatiquement configuré.';
 $string['autoconfigtoken'] = 'Le jeton du service Web est le suivant :';
 $string['autoconfigapicall'] = 'Vérifiez que le service Web fonctionne à l\'aide de l\'URL suivante :';
@@ -73,18 +75,25 @@ $string['privacy:metadata:files:filecontents'] = 'Le contenu réel du fichier es
 $string['privacy:metadata:files:mimetype'] = 'Type MIME du fichier.Par ex. : texte/brut, image/jpeg, etc.';
 $string['privacy:metadata:files:pathnamehash'] = 'Hachage du nom du chemin d\'accès du fichier servant à l\'identifier de façon unique.';
 $string['privacy:metadata:files:timemodified'] = 'Heure de la dernière modification du champ.';
+$string['cachedef_annotationmaps'] = 'Stocker les données d\'annotation pour les cours';
+$string['cachedef_fileinusecache'] = 'Fichiers Ally dans le cache d\'utilisation';
+$string['cachedef_pluginfilesinhtml'] = 'Fichiers Ally dans le cache HTML';
 $string['cachedef_request'] = 'Cache de requête de filtre Ally';
 $string['pushfilessummary'] = 'Résumé des mises à jour de fichiers Ally.';
 $string['pushfilessummary:explanation'] = 'Résumé des mises à jour de fichiers envoyés à Ally.';
 $string['section'] = 'Section {$a}';
-$string['lessonanswertitle'] = 'Réponse pour la leçon "{$a}"';
-$string['lessonresponsetitle'] = 'Réponse pour la leçon "{$a}"';
+$string['lessonanswertitle'] = 'Réponse pour la leçon &quot;{$a}&quot;';
+$string['lessonresponsetitle'] = 'Réponse pour la leçon &quot;{$a}&quot;';
 $string['logs'] = 'Journaux Ally';
 $string['logrange'] = 'Plage de journal';
 $string['loglevel:none'] = 'Aucune';
 $string['loglevel:light'] = 'Faible';
 $string['loglevel:medium'] = 'Moyen';
 $string['loglevel:all'] = 'L\'ensemble';
+$string['logcleanuptask'] = 'Tâche de nettoyage du journal Ally';
+$string['loglifetimedays'] = 'Conserver les journaux pendant ce nombre de jours';
+$string['loglifetimedaysdesc'] = 'Conserver les journaux Ally pendant ce nombre de jours. Choisir la valeur 0 pour ne jamais supprimer les journaux. Une tâche planifiée est (par défaut) définie pour s\'exécuter quotidiennement, et supprimera les entrées de journal qui remontent plus loin que ce nombre de jours.';
+$string['logger:filtersetupdebugger'] = 'Journal de configuration du filtre Ally';
 $string['logger:pushtoallysuccess'] = 'Transmission vers le point d\'accès Ally réussie';
 $string['logger:pushtoallyfail'] = 'Échec de la transmission vers le point d\'accès Ally';
 $string['logger:pushfilesuccess'] = 'Transmission du ou des fichiers vers le point d\'accès Ally réussie';

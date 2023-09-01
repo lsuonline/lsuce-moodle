@@ -16,14 +16,12 @@
 
 /**
  * Renderable for ally wrapper.
- * @author    Guy Thomas <osdev@blackboard.com>
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace filter_ally\renderables;
-
-defined('MOODLE_INTERNAL') || die();
 
 class wrapper implements \renderable {
     public $html;

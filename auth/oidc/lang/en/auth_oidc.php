@@ -214,6 +214,7 @@ $string['error_endpoint_mismatch_token_endpoint'] = 'The configured token endpoi
 <li>When using "Microsoft identity platform (v2.0)" IdP type, use v2.0 endpoint, e.g. https://login.microsoftonline.com/common/oauth2/v2.0/authorize</li>
 </ul>';
 $string['error_empty_oidcresource'] = 'Resource cannot be empty when using Azure AD (v1.0) or other types of IdP.';
+$string['erroruserwithusernamealreadyexists'] = 'Error occurred when trying to rename your Moodle account. A Moodle user with the new username already exists. Ask your site administrator to resolve this first.';
 
 $string['eventuserauthed'] = 'User Authorized with OpenID Connect';
 $string['eventusercreated'] = 'User created with OpenID Connect';
@@ -312,6 +313,7 @@ $string['settings_fieldmap_field_manager_email'] = 'Manager email';
 $string['settings_fieldmap_field_teams'] = 'Teams';
 $string['settings_fieldmap_field_groups'] = 'Groups';
 $string['settings_fieldmap_field_roles'] = 'Roles';
+$string['settings_fieldmap_field_onPremisesSamAccountName'] = 'On-premises SAM account name';
 $string['settings_fieldmap_field_extensionattribute'] = 'Extension attribute {$a}';
 $string['settings_fieldmap_field_sds_school_id'] = 'SDS school ID ({$a})';
 $string['settings_fieldmap_field_sds_school_name'] = 'SDS school name ({$a})';

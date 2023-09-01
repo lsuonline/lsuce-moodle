@@ -18,7 +18,7 @@
  * File updates task.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -29,13 +29,11 @@ use tool_ally\local_course;
 use tool_ally\push_config;
 use tool_ally\push_course_updates;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * File updates task.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_updates_task extends scheduled_task {

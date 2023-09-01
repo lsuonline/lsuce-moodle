@@ -18,14 +18,13 @@
  * File library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally;
 
-defined('MOODLE_INTERNAL') || die();
-
+use stored_file;
 use tool_ally\componentsupport\component_base;
 use tool_ally\componentsupport\file_component_base;
 use tool_ally\componentsupport\interfaces\file_replacement;
@@ -37,7 +36,7 @@ use moodle_url;
  * File library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class local_file {
@@ -336,12 +335,13 @@ class local_file {
         // First, make sure this pluginfile.php is for the current site.
         // We're not interested in URLs pointing to other sites!
         $baseurl = new moodle_url('/pluginfile.php');
+        $drafturl = new moodle_url('/draftfile.php');
         $fileurl = new moodle_url($pluginfileurl);
-        if (!$fileurl->compare($baseurl, URL_MATCH_BASE)) {
+        if (!$fileurl->compare($baseurl, URL_MATCH_BASE) && !$fileurl->compare($drafturl, URL_MATCH_BASE)) {
             return;
         }
 
-        $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
+        $regex = '/(?:.*)(?:pluginfile\.php|draftfile\.php)(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
         $matches = [];
         $matched = preg_match($regex, $pluginfileurl, $matches);
         if (!$matched) {
@@ -526,5 +526,24 @@ class local_file {
         ], false);
 
         cache::instance()->invalidate_file_keys($file);
+    }
+
+    /**
+     * Remote a file from the deletion queue. This is needed because a file can be readded while still in
+     * the deletion queue, which would cause the file to be 'missing'.
+     *
+     * @param stored_file $file
+     */
+    public static function remove_file_from_deletion_queue(stored_file $file) {
+        global $DB;
+
+        $courseid = self::courseid($file);
+
+        $DB->delete_records('tool_ally_deleted_files', [
+            'courseid'     => $courseid,
+            'pathnamehash' => $file->get_pathnamehash(),
+            'contenthash'  => $file->get_contenthash(),
+        ]);
+
     }
 }

@@ -1087,6 +1087,16 @@ nodeToChange = $(selectorToChange);
                             $('#id_showdescription').parent().parent().parent().hide();
                         }
                     }
+                    // Remove disabled attribute for section name for topics format.
+                    if (onSectionSettings) {
+                        var sectionName = $("#page-course-editsection.format-topics .form-group #id_name_value");
+                        if (sectionName.length) {
+                            let sectionNameIsDiabled = document.getElementById('id_name_value').hasAttribute("disabled");
+                            if (sectionNameIsDiabled) {
+                                document.getElementById('id_name_value').removeAttribute("disabled");
+                            }
+                        }
+                    }
 
                     // Conversation counter for user badge.
                     if (messageBadgeCountEnabled) {
@@ -1198,6 +1208,24 @@ nodeToChange = $(selectorToChange);
                         blocksEditingOnButton.classList.add("hidden");
                     }
 
+                    // Hide edit button for main page in Grade report single view.
+                    const editingButton = $('#page-grade-report-singleview-index .grade_report_edit_button');
+                    if (editingButton.length && !$('.search-widget.dropdown').length) {
+                        editingButton.addClass("hidden");
+                    }
+
+                    // Change my courses link in the navigation block to open Snap personal menu.
+                    const myCoursesNavigationBlock = $('.theme-snap #moodle-blocks .block_navigation a');
+                    if (myCoursesNavigationBlock.length) {
+                        $('.theme-snap #moodle-blocks .block_navigation a').each(function( ) {
+                            if ($(this).attr('href') !== 'undefined' && $(this).attr('href') !== false) {
+                                if ($(this).attr('href').indexOf("my/courses.php") >= 0) {
+                                    $(this).addClass( "js-snap-pm-trigger" );
+                                }
+                            }
+                        });
+                    }
+
                     // Code for Tiles particular loading, needed before other scripts but after the document is ready.
                     var targetTilesSect = document.querySelector('section#tiles-section');
                     var configTilesSect = {childList: true, subtree: true};
@@ -1240,6 +1268,15 @@ nodeToChange = $(selectorToChange);
                         }, delay);
                     }
                 });
+
+                // Inherit transparent background color for divs containing non-default mod_url icons.
+                if (!document.body.classList.contains('snap-resource-card')) { // Only for Snap Resource display List.
+                    document.querySelectorAll('.activityiconcontainer.url').forEach(urlDiv => {
+                        if (urlDiv.querySelector('img[src*="/theme/image.php/snap/core/"][src*="/f/"]')) {
+                            urlDiv.style.backgroundColor = 'inherit';
+                        }
+                    });
+                }
 
             }
         };

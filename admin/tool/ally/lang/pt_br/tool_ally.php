@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @copyright  Copyright (c) 2023 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,6 +39,8 @@ $string['error:invalidcomponentident'] = 'Identificador de componente inválido 
 $string['error:pluginfilequestiononly'] = 'Somente componentes de questões são suportados para este URL';
 $string['error:componentcontentnotfound'] = 'Conteúdo não encontrado para {$a}';
 $string['error:wstokenmissing'] = 'Está faltando a chave de serviço da web. Talvez um usuário administrador precise executar a configuração automática?';
+$string['excludeunused'] = 'Excluir arquivos não utilizados';
+$string['excludeunuseddesc'] = 'Omitir arquivos anexados ao conteúdo HTML, mas vinculados ou que referenciam no HTML.';
 $string['filecoursenotfound'] = 'O arquivo transmitido não pertence a nenhum curso';
 $string['fileupdatestask'] = 'Enviar atualizações de arquivos para o Ally';
 $string['id'] = 'Código';
@@ -61,7 +63,7 @@ $string['hideexception'] = 'Ocultar exceção';
 $string['usercapabilitymissing'] = 'O usuário fornecido não pode excluir este arquivo.';
 $string['autoconfigure'] = 'Serviço da web do Ally de configuração automática';
 $string['autoconfiguredesc'] = 'Criar automaticamente o usuário e a função de serviço da web para o Ally.';
-$string['autoconfigureconfirmation'] = 'Criar automaticamente o usuário e a função de serviço da web para o Ally e ativar o serviço da web. As ações a seguir serão executadas: <ul><li>criar uma função intitulada \'ally_webservice\' e um usuário com nome de usuário \'ally_webuser\'</li><li>adicionar o usuário \'ally_webuser\' à função \'ally_webservice\'</li><li>ativar serviços da web</li><li>ativar o protocolo de serviço da web restante</li><li>ativar o serviço da web do Ally</li><li>criar uma chave para a conta \'ally_webuser\'</li></ul>';
+$string['autoconfigureconfirmation'] = 'Crie automaticamente a função de serviço da Web e o usuário para o Ally e ative o serviço da Web. As seguintes ações serão realizadas:<ul><li>criar uma função chamada \'ally_webservice\' e um usuário com o nome de usuário \'ally_webuser\'</li><li>adicionar o usuário \'ally_webuser\' à função \'ally_webservice\'</li><li>ativar os serviços da web</li><li>ativar o protocolo de serviço da web rest</li><li>ativar o serviço web do Ally</li><li>criar um token para a conta \'ally_webuser\'</li></ul>';
 $string['autoconfigsuccess'] = 'Sucesso - o serviço da web do Ally foi configurado automaticamente.';
 $string['autoconfigtoken'] = 'A chave de serviço da web é o seguinte:';
 $string['autoconfigapicall'] = 'Você pode testar se o serviço da web está funcionando por meio da seguinte URL:';
@@ -73,18 +75,25 @@ $string['privacy:metadata:files:filecontents'] = 'O conteúdo do arquivo real é
 $string['privacy:metadata:files:mimetype'] = 'O tipo MIME de arquivo (por exemplo: texto/simples, imagem/jpeg, entre outros).';
 $string['privacy:metadata:files:pathnamehash'] = 'O hash do nome de caminho do arquivo para identificá-lo com exclusividade.';
 $string['privacy:metadata:files:timemodified'] = 'A hora em que o campo foi modificado pela última vez.';
+$string['cachedef_annotationmaps'] = 'Armazenar dados de anotação para cursos';
+$string['cachedef_fileinusecache'] = 'Cache em uso de arquivos do Ally';
+$string['cachedef_pluginfilesinhtml'] = 'Cache em HTML de arquivos do Ally';
 $string['cachedef_request'] = 'Cache de solicitação de filtro do Ally';
 $string['pushfilessummary'] = 'Resumo das atualizações de arquivo do Ally.';
 $string['pushfilessummary:explanation'] = 'Resumo das atualizações de arquivo enviadas para o Ally.';
 $string['section'] = 'Seção {$a}';
-$string['lessonanswertitle'] = 'Resposta para a lição "{$a}"';
-$string['lessonresponsetitle'] = 'Resposta para a lição "{$a}"';
+$string['lessonanswertitle'] = 'Resposta para a lição &quot;{$a}&quot;';
+$string['lessonresponsetitle'] = 'Resposta para a lição &quot;{$a}&quot;';
 $string['logs'] = 'Registros do Ally';
 $string['logrange'] = 'Faixa de registros';
 $string['loglevel:none'] = 'Nenhuma';
 $string['loglevel:light'] = 'Leve';
 $string['loglevel:medium'] = 'Médio';
 $string['loglevel:all'] = 'Todas';
+$string['logcleanuptask'] = 'Tarefa de limpeza de registros do Ally';
+$string['loglifetimedays'] = 'Manter registros por essa quantidade de dias';
+$string['loglifetimedaysdesc'] = 'Manter registros do Ally por essa quantidade de dias. Defina como 0 para não excluir os registros. Uma tarefa agendada é (por padrão) definida para ser executada diariamente e removerá entradas de registro que tiverem mais do que essa quantidade de dias.';
+$string['logger:filtersetupdebugger'] = 'Registro de configuração do filtro do Ally';
 $string['logger:pushtoallysuccess'] = 'Push bem-sucedido para o terminal do Ally';
 $string['logger:pushtoallyfail'] = 'Push malsucedido para o terminal do Ally';
 $string['logger:pushfilesuccess'] = 'Push bem-sucedido de arquivo(s) para o terminal do Ally';
@@ -117,6 +126,6 @@ $string['logger:cmiderraticpremoddelete_exp'] = 'O módulo não foi identificado
 $string['logger:servicefailure'] = 'Falha ao consumir serviço.';
 $string['logger:servicefailure_exp'] = '<br>Classe: {$a->class}<br>Parâmetros: {$a->params}';
 $string['logger:autoconfigfailureteachercap'] = 'Falha ao atribuir uma competência de arquétipo de professor à função ally_webservice.';
-$string['logger:autoconfigfailureteachercap_exp'] = '<br>Competência: {$a->cap}<br>Permissão: {$a->permission}';
+$string['logger:autoconfigfailureteachercap_exp'] = '<br>Capacidade: {$a->cap}<br>Permissão: {$a->permission}';
 $string['deferredcourseevents'] = 'Enviar eventos adiados do curso';
 $string['deferredcourseeventsdesc'] = 'Permitir o envio de eventos armazenados do curso que se acumularam durante a falha de comunicação com o Ally';

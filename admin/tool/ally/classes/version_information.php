@@ -18,12 +18,13 @@
  * Version information class
  * @package tool_ally
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally;
-
+// Prepare for code checker update. Will be removed on INT-17966.
+// @codingStandardsIgnoreLine
 defined('MOODLE_INTERNAL') || die();
 
 use core_component,
@@ -34,7 +35,7 @@ use core_component,
  * Version information class
  * @package tool_ally
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class version_information {

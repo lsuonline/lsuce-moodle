@@ -17,7 +17,7 @@
 #
 # @package    filter_ally
 # @author     Guy Thomas
-# @copyright  Copyright (c) 2017 Blackboard Inc.
+# @copyright  Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @filter @filter_ally @_file_upload
@@ -75,7 +75,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log out
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I follow "Test forum name"
+    And I click on "Test forum name" "link" in the ".activityname" "css_element"
     And I follow "Teacher discussion"
     And I should see the feedback place holder for the post entitled "Teacher discussion" by "Teacher 1"
     And I should see the download place holder for the post entitled "Teacher discussion" by "Teacher 1"
@@ -130,7 +130,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I add a new discussion to "Course 1" forum with:
+    And I add a new discussion to "Social forum" forum with:
       | Subject | Teacher discussion |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/empty.txt |
@@ -188,3 +188,62 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
   | slasharguments |
   | 1              |
   | 0              |
+
+  @javascript
+  Scenario Outline: Forum posts annotations are added.
+    Given the following "courses" exist:
+      | fullname | shortname | category | format |
+      | Course 1 | C1        | 0        | topics |
+    And the following "users" exist:
+      | username | firstname | lastname | email                |
+      | student1 | Student   | 1        | student1@example.com |
+      | teacher1 | Teacher   | 1        | teacher1@example.com |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | student1 | C1     | student        |
+      | teacher1 | C1     | editingteacher        |
+    And the following config values are set as admin:
+      | config              | value            |
+      | slasharguments      | <slasharguments> |
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage with editing mode on
+    And I add a "<forumtypestr>" to section "1" and I fill the form with:
+      | Forum name | Test forum name |
+      | Forum type | Standard forum for general use |
+      | Description | Test forum description |
+    And I add a new discussion to "Test forum name" <forumtype> with:
+      | Subject | Teacher discussion |
+      | Message | This is the body |
+      | Attachment | lib/tests/fixtures/empty.txt |
+    And I reply "Teacher discussion" post from "Test forum name" <forumtype> with:
+      | Subject | Teacher reply (non image file) |
+      | Message | This is the body |
+      | Attachment | lib/tests/fixtures/upload_users.csv |
+    And I reply "Teacher discussion" post from "Test forum name" <forumtype> with:
+      | Subject | Teacher reply (image file) |
+      | Message | This is the body |
+      | Attachment | lib/tests/fixtures/gd-logo.png |
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
+    And I reply "Teacher discussion" post from "Test forum name" <forumtype> with:
+      | Subject | Student reply (non image file) |
+      | Message | This is the body |
+      | Attachment | lib/tests/fixtures/upload_users.csv |
+    And I reply "Teacher discussion" post from "Test forum name" <forumtype> with:
+      | Subject | Student reply (image file) |
+      | Message | This is the body |
+      | Attachment | lib/tests/fixtures/upload_users.csv |
+    And I log out
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I click on "Test forum name" "link" in the ".activityname" "css_element"
+    And I follow "Teacher discussion"
+    Then Forum should be annotated
+
+    Examples:
+      | forumtypestr      | forumtype         | slasharguments |
+      | Forum             | forum             | 1              |
+      | Forum             | forum             | 0              |
+

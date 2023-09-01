@@ -18,9 +18,10 @@
  * Test for file replace webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\webservice\replace_file;
 use tool_ally\local;
@@ -36,10 +37,10 @@ require_once($CFG->dirroot . '/mod/assign/tests/base_test.php');
  * Test for file replace webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_testcase {
+class webservice_replace_file_test extends abstract_testcase {
 
     /**
      * @var stdClass
@@ -59,9 +60,9 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
 
         $datagen = $this->getDataGenerator();
 
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
-        $this->assignUserCapability('moodle/course:managefiles', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
+        $this->assignUserCapability('moodle/course:managefiles', \context_system::instance()->id, $roleid);
         $this->teacher = $datagen->create_user();
         $this->course = $datagen->create_course();
 
@@ -84,7 +85,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $draftfile = $this->create_draft_file();
 
         $return = replace_file::service($file->get_pathnamehash(), $this->teacher->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $file->get_itemid());
@@ -109,11 +110,11 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
 
         $this->expectException(\moodle_exception::class);
         $return = replace_file::service($file->get_pathnamehash(), $otheruser->id, $fakeitemid);
-        external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         // Check file has not been changed.
         $newfile = $this->get_resource_file($resource);
-        $this->assertInstanceOf(\stored_file, $newfile);
+        $this->assertInstanceOf(stored_file, $newfile);
         $this->assertSame($file->get_filename(), $newfile->get_filename());
         $this->assertSame($file->get_content(), $newfile->get_content());
     }
@@ -136,7 +137,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $datagen = $this->getDataGenerator();
 
         $label = $datagen->create_module('label', ['course' => $this->course->id]);
-        $context = context_module::instance($label->cmid);
+        $context = \context_module::instance($label->cmid);
 
         $file = $this->create_test_file($context->id, 'mod_label', 'intro');
 
@@ -149,14 +150,14 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $draftfile = $this->create_draft_file();
 
         $return = replace_file::service($file->get_pathnamehash(), $this->teacher->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $file->get_itemid());
 
         $label = $DB->get_record('label', ['id' => $label->id]);
-        $this->assertNotContains('gd%20logo.png', $label->intro);
-        $this->assertContains('red%20dot.png', $label->intro);
+        $this->assertStringNotContainsString('gd%20logo.png', $label->intro);
+        $this->assertStringContainsString('red%20dot.png', $label->intro);
     }
 
     /**
@@ -168,7 +169,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $datagen = $this->getDataGenerator();
 
         $page = $datagen->create_module('page', ['course' => $this->course->id]);
-        $context = context_module::instance($page->cmid);
+        $context = \context_module::instance($page->cmid);
 
         $introfile = $this->create_test_file($context->id, 'mod_page', 'intro');
         $contentfile = $this->create_test_file($context->id, 'mod_page', 'content');
@@ -184,17 +185,17 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
 
         // Make sure only the intro field was updated in the page module instance.
         $page = $DB->get_record('page', ['id' => $page->id]);
-        $this->assertNotContains('gd%20logo.png', $page->intro);
-        $this->assertContains('red%20dot.png', $page->intro);
-        $this->assertContains('gd%20logo.png', $page->content);
-        $this->assertNotContains('red%20dot.png', $page->content);
+        $this->assertStringNotContainsString('gd%20logo.png', $page->intro);
+        $this->assertStringContainsString('red%20dot.png', $page->intro);
+        $this->assertStringContainsString('gd%20logo.png', $page->content);
+        $this->assertStringNotContainsString('red%20dot.png', $page->content);
 
         $this->replace_file($contentfile);
 
         // Make sure that the content field was update in the page module instance.
         $page = $DB->get_record('page', ['id' => $page->id]);
-        $this->assertNotContains('gd%20logo.png', $page->content);
-        $this->assertContains('red%20dot.png', $page->content);
+        $this->assertStringNotContainsString('gd%20logo.png', $page->content);
+        $this->assertStringContainsString('red%20dot.png', $page->content);
     }
 
     /**
@@ -203,7 +204,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
     public function test_service_course_html() {
         global $DB;
 
-        $context = context_course::instance($this->course->id);
+        $context = \context_course::instance($this->course->id);
         $file = $this->create_test_file($context->id, 'course', 'summary');
 
         $dobj = (object) [
@@ -215,14 +216,14 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $draftfile = $this->create_draft_file();
 
         $return = replace_file::service($file->get_pathnamehash(), $this->teacher->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $file->get_itemid());
 
         $course = $DB->get_record('course', ['id' => $this->course->id]);
-        $this->assertNotContains('gd%20logo.png', $course->summary);
-        $this->assertContains('red%20dot.png', $course->summary);
+        $this->assertStringNotContainsString('gd%20logo.png', $course->summary);
+        $this->assertStringContainsString('red%20dot.png', $course->summary);
     }
 
     /**
@@ -238,7 +239,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
 
         $datagen->enrol_user($this->teacher->id, $course->id, 'editingteacher');
 
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $file = $this->create_test_file($context->id, 'course', 'section');
 
         $section = $DB->get_record('course_sections', ['course' => $course->id, 'section' => 1]);
@@ -247,14 +248,14 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $draftfile = $this->create_draft_file();
 
         $return = replace_file::service($file->get_pathnamehash(), $this->teacher->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $file->get_itemid());
 
         $section = $DB->get_record('course_sections', ['course' => $course->id, 'section' => 1]);
-        $this->assertNotContains('gd%20logo.png', $section->summary);
-        $this->assertContains('red%20dot.png', $section->summary);
+        $this->assertStringNotContainsString('gd%20logo.png', $section->summary);
+        $this->assertStringContainsString('red%20dot.png', $section->summary);
     }
 
     /**
@@ -269,11 +270,11 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
             'format' => FORMAT_HTML
         ];
 
-        $time = new DateTime("now", core_date::get_user_timezone_object());
+        $time = new \DateTime("now", \core_date::get_user_timezone_object());
 
         $blockinsert = (object) [
             'blockname' => 'html',
-            'parentcontextid' => context_course::instance($this->course->id)->id,
+            'parentcontextid' => \context_course::instance($this->course->id)->id,
             'pagetypepattern' => 'course-view-*',
             'defaultregion' => 'side-pre',
             'defaultweight' => 1,
@@ -285,7 +286,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $blockid = $DB->insert_record('block_instances', $blockinsert);
         $block = $DB->get_record('block_instances', ['id' => $blockid]);
 
-        $context = context_block::instance($block->id);
+        $context = \context_block::instance($block->id);
         $file = $this->create_test_file($context->id, 'block_html', 'content');
 
         $configdata = (object) [
@@ -300,7 +301,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $draftfile = $this->create_draft_file();
 
         $return = replace_file::service($file->get_pathnamehash(), $this->teacher->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $file->get_itemid());
@@ -308,8 +309,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $block = $DB->get_record('block_instances', ['id' => $block->id]);
         $blockconfig = unserialize(base64_decode($block->configdata));
         $blockhtml = $blockconfig->text;
-        $this->assertNotContains('gd logo.png', $blockhtml);
-        $this->assertContains('red dot.png', $blockhtml);
+        $this->assertStringNotContainsString('gd logo.png', $blockhtml);
+        $this->assertStringContainsString('red dot.png', $blockhtml);
     }
 
     /**
@@ -325,7 +326,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         }
         $draftfile = $this->create_draft_file();
         $return = replace_file::service($originalfile->get_pathnamehash(), $user->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $originalfile->get_itemid());
     }
@@ -339,7 +340,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $datagen = $this->getDataGenerator();
 
         $forum = $datagen->create_module($forumtype, ['course' => $this->course->id]);
-        $context = context_module::instance($forum->cmid);
+        $context = \context_module::instance($forum->cmid);
         $forumfile = $this->create_test_file($context->id, 'mod_'.$forumtype, 'intro');
         $dobj = (object) [
             'id' => $forum->id
@@ -351,7 +352,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $fdg = $datagen->get_plugin_generator('mod_'.$forumtype);
 
         // Create discussion / post.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $this->course->id;
         $record->userid = $this->teacher->id;
         $record->forum = $forum->id;
@@ -363,7 +364,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $DB->update_record($forumtype.'_posts', $discussionpost);
 
         // Create post replying to discussion.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->discussion = $discussionpost->discussion;
         $record->parent = $discussionpost->id;
         $record->userid = $this->teacher->id;
@@ -378,16 +379,16 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
 
         // Ensure that forum main record has had file link replaced in HTML.
         $forum = $DB->get_record($forumtype, ['id' => $forum->id]);
-        $this->assertNotContains('gd%20logo.png', $forum->intro);
-        $this->assertContains('red%20dot.png', $forum->intro);
+        $this->assertStringNotContainsString('gd%20logo.png', $forum->intro);
+        $this->assertStringContainsString('red%20dot.png', $forum->intro);
 
         // Ensure that both discussion post and reply post have NOT had file link replaced in HTML.
         $discussionpost = $DB->get_record($forumtype.'_posts', ['id' => $discussionpost->id, 'parent' => 0]);
         $post = $DB->get_record($forumtype.'_posts', ['id' => $post->id]);
-        $this->assertContains('gd%20logo.png', $discussionpost->message);
-        $this->assertNotContains('red%20dot.png', $discussionpost->message);
-        $this->assertContains('gd%20logo.png', $post->message);
-        $this->assertNotContains('red%20dot.png', $post->message);
+        $this->assertStringContainsString('gd%20logo.png', $discussionpost->message);
+        $this->assertStringNotContainsString('red%20dot.png', $discussionpost->message);
+        $this->assertStringContainsString('gd%20logo.png', $post->message);
+        $this->assertStringNotContainsString('red%20dot.png', $post->message);
 
         // Replace discussion file.
         $this->replace_file($discussionfile);
@@ -395,18 +396,18 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         // Ensure that discussion post has had file link replaced but reply post has not.
         $discussionpost = $DB->get_record($forumtype.'_posts', ['id' => $discussionpost->id, 'parent' => 0]);
         $post = $DB->get_record($forumtype.'_posts', ['id' => $post->id]);
-        $this->assertNotContains('gd%20logo.png', $discussionpost->message);
-        $this->assertContains('red%20dot.png', $discussionpost->message);
-        $this->assertContains('gd%20logo.png', $post->message);
-        $this->assertNotContains('red%20dot.png', $post->message);
+        $this->assertStringNotContainsString('gd%20logo.png', $discussionpost->message);
+        $this->assertStringContainsString('red%20dot.png', $discussionpost->message);
+        $this->assertStringContainsString('gd%20logo.png', $post->message);
+        $this->assertStringNotContainsString('red%20dot.png', $post->message);
 
         // Replace reply post file.
         $this->replace_file($postfile);
 
         // Ensure that reply post has had file links replaced.
         $post = $DB->get_record($forumtype.'_posts', ['id' => $post->id]);
-        $this->assertNotContains('gd%20logo.png', $post->message);
-        $this->assertContains('red%20dot.png', $post->message);
+        $this->assertStringNotContainsString('gd%20logo.png', $post->message);
+        $this->assertStringContainsString('red%20dot.png', $post->message);
     }
 
     /**
@@ -433,7 +434,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $questionrow = $DB->get_record('question', ['id' => $question->id]);
 
         $quiz = $this->getDataGenerator()->create_module('quiz', array('course' => $this->course->id));
-        $context = context_course::instance($this->course->id);
+        $context = \context_course::instance($this->course->id);
         quiz_add_quiz_question($question->id, $quiz);
 
         $qfile = $this->create_test_file($context->id, 'question', 'questiontext', $question->id);
@@ -444,8 +445,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $this->replace_file($qfile);
 
         $questionrow = $DB->get_record('question', ['id' => $question->id]);
-        $this->assertNotContains('gd%20logo.png', $questionrow->questiontext);
-        $this->assertContains('red%20dot.png', $questionrow->questiontext);
+        $this->assertStringNotContainsString('gd%20logo.png', $questionrow->questiontext);
+        $this->assertStringContainsString('red%20dot.png', $questionrow->questiontext);
     }
 
     /**
@@ -453,8 +454,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
      * @param string $text
      */
     private function assert_file_processed_in_text($text) {
-        $this->assertNotContains('gd%20logo.png', $text);
-        $this->assertContains('red%20dot.png', $text);
+        $this->assertStringNotContainsString('gd%20logo.png', $text);
+        $this->assertStringContainsString('red%20dot.png', $text);
     }
 
     /**
@@ -462,8 +463,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
      * @param string $text
      */
     private function assert_file_not_processed_in_text($text) {
-        $this->assertContains('gd%20logo.png', $text);
-        $this->assertNotContains('red%20dot.png', $text);
+        $this->assertStringContainsString('gd%20logo.png', $text);
+        $this->assertStringNotContainsString('red%20dot.png', $text);
     }
 
     /**
@@ -480,7 +481,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $questionrow = $DB->get_record('question', ['id' => $question->id]);
 
         $quiz = $this->getDataGenerator()->create_module('quiz', array('course' => $this->course->id));
-        $context = context_course::instance($this->course->id);
+        $context = \context_course::instance($this->course->id);
         quiz_add_quiz_question($question->id, $quiz);
 
         $qfile = $this->create_test_file($context->id, 'question', 'questiontext', $question->id);
@@ -630,19 +631,25 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
             'penalty' => 1,
             'qtype' => 'ddmatch',
             'length' => 1,
-            'hidden' => 0,
             'timecreated' => time(),
             'timemodified' => time(),
             'createdby' => $USER->id,
             'modifiedby' => $USER->id,
             'stamp' => make_unique_id_code(),
         ]);
+        $bankentryid = $DB->insert_record('question_bank_entries', (object) [
+            'questioncategoryid' => $cat->id,
+            'ownerid' => $USER->id,
+        ]);
+        $DB->insert_record('question_versions', (object) [
+            'questionbankentryid' => $bankentryid,
+            'version' => 0,
+            'questionid' => $questionid,
+        ]);
         $question = $DB->get_record('question', ['id' => $questionid]);
-        $DB->set_field('question', 'version', question_hash($question),
-            array('id' => $questionid));
 
         $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id]);
-        $context = context_course::instance($this->course->id);
+        $context = \context_course::instance($this->course->id);
         quiz_add_quiz_question($questionid, $quiz);
 
         $qfile = $this->create_test_file($context->id, 'question', 'questiontext', $questionid);
@@ -652,8 +659,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
 
         // Make sure question has been processed.
         $question = $DB->get_record('question', ['id' => $questionid]);
-        $this->assertNotContains('gd%20logo.png', $question->questiontext);
-        $this->assertContains('red%20dot.png', $question->questiontext);
+        $this->assertStringNotContainsString('gd%20logo.png', $question->questiontext);
+        $this->assertStringContainsString('red%20dot.png', $question->questiontext);
 
         // Create sub questions.
         $subqa = (object) [
@@ -764,7 +771,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
             'id' => $lesson->id
         ];
         $dobj->intro = '<img src="@@PLUGINFILE@@/gd%20logo.png" alt="" width="100" height="100">';
-        $context = context_module::instance($lesson->cmid);
+        $context = \context_module::instance($lesson->cmid);
         $DB->update_record('lesson', $dobj);
 
         $lfile = $this->create_test_file($context->id, 'mod_lesson', 'intro');
@@ -773,8 +780,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $this->replace_file($lfile);
 
         $lessonrow = $DB->get_record('lesson', ['id' => $lesson->id]);
-        $this->assertNotContains('gd%20logo.png', $lessonrow->intro);
-        $this->assertContains('red%20dot.png', $lessonrow->intro);
+        $this->assertStringNotContainsString('gd%20logo.png', $lessonrow->intro);
+        $this->assertStringContainsString('red%20dot.png', $lessonrow->intro);
 
         // Lesson page content file replacement testing.
         $lessongenerator = $this->getDataGenerator()->get_plugin_generator('mod_lesson');
@@ -792,8 +799,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $this->replace_file($pfile);
 
         $pagerow = $DB->get_record('lesson_pages', ['id' => $page->id]);
-        $this->assertNotContains('gd%20logo.png', $pagerow->contents);
-        $this->assertContains('red%20dot.png', $pagerow->contents);
+        $this->assertStringNotContainsString('gd%20logo.png', $pagerow->contents);
+        $this->assertStringContainsString('red%20dot.png', $pagerow->contents);
     }
 
     /**
@@ -809,7 +816,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
             'id' => $glossary->id
         ];
         $dobj->intro = '<img src="@@PLUGINFILE@@/gd%20logo.png" alt="" width="100" height="100">';
-        $context = context_module::instance($glossary->cmid);
+        $context = \context_module::instance($glossary->cmid);
         $DB->update_record('glossary', $dobj);
 
         $gfile = $this->create_test_file($context->id, 'mod_glossary', 'intro');
@@ -818,8 +825,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $this->replace_file($gfile);
 
         $glossaryrow = $DB->get_record('glossary', ['id' => $glossary->id]);
-        $this->assertNotContains('gd%20logo.png', $glossaryrow->intro);
-        $this->assertContains('red%20dot.png', $glossaryrow->intro);
+        $this->assertStringNotContainsString('gd%20logo.png', $glossaryrow->intro);
+        $this->assertStringContainsString('red%20dot.png', $glossaryrow->intro);
 
         // Glossary entry file replacement testing.
         $glossarygenerator = $this->getDataGenerator()->get_plugin_generator('mod_glossary');
@@ -837,8 +844,8 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $this->replace_file($efile);
 
         $entryrow = $DB->get_record('glossary_entries', ['id' => $entry->id]);
-        $this->assertNotContains('gd%20logo.png', $entryrow->definition);
-        $this->assertContains('red%20dot.png', $entryrow->definition);
+        $this->assertStringNotContainsString('gd%20logo.png', $entryrow->definition);
+        $this->assertStringContainsString('red%20dot.png', $entryrow->definition);
     }
 
     /**
@@ -850,7 +857,7 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $datagen = $this->getDataGenerator();
 
         $label = $datagen->create_module('label', ['course' => $this->course->id]);
-        $context = context_module::instance($label->cmid);
+        $context = \context_module::instance($label->cmid);
 
         $filetoreplacename = 'file to replace.png';
         $filetoreplace = $this->create_test_file($context->id, 'mod_label', 'intro', 0, $filetoreplacename);
@@ -869,14 +876,14 @@ class tool_ally_webservice_replace_file_testcase extends tool_ally_abstract_test
         $draftfile = $this->create_draft_file($filename);
 
         $return = replace_file::service($filetoreplace->get_pathnamehash(), $this->teacher->id, $draftfile['itemid']);
-        $return = external_api::clean_returnvalue(replace_file::service_returns(), $return);
+        $return = \external_api::clean_returnvalue(replace_file::service_returns(), $return);
 
         $this->assertSame($return['success'], true);
         $this->assertNotSame($return['newid'], $filetoreplace->get_itemid());
 
         $label = $DB->get_record('label', ['id' => $label->id]);
-        $this->assertContains(rawurlencode($filename), $label->intro);
-        $this->assertContains(rawurlencode('name to increment (1).png'), $label->intro);
-        $this->assertNotContains(rawurlencode($filetoreplacename), $label->intro);
+        $this->assertStringContainsString(rawurlencode($filename), $label->intro);
+        $this->assertStringContainsString(rawurlencode('name to increment (1).png'), $label->intro);
+        $this->assertStringNotContainsString(rawurlencode($filetoreplacename), $label->intro);
     }
 }

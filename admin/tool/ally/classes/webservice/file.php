@@ -18,7 +18,7 @@
  * Get information about a single file.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,16 +26,15 @@ namespace tool_ally\webservice;
 
 use tool_ally\file_url_resolver;
 use tool_ally\file_validator;
+use tool_ally\files_in_use;
 use tool_ally\local;
 use tool_ally\local_file;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Get information about a single file.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class file extends loggable_external_api {
@@ -101,7 +100,11 @@ class file extends loggable_external_api {
         $filearea = $file->get_filearea();
         $wlkey = $component.'~'.$filearea;
 
-        if (!in_array($wlkey, file_validator::whitelist())) {
+        if (!in_array($wlkey, file_validator::whitelist()) || !file_validator::check_pathname($file)) {
+            throw new \moodle_exception('filenotfound', 'error');
+        }
+
+        if (!files_in_use::check_file_in_use($file)) {
             throw new \moodle_exception('filenotfound', 'error');
         }
 

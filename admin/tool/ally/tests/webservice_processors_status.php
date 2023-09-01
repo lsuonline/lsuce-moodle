@@ -18,9 +18,10 @@
  * Test for Process status webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\webservice\processors_status;
 
@@ -32,13 +33,13 @@ require_once(__DIR__.'/abstract_testcase.php');
  * Test for content webservice.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_webservice_processor_status_testcase extends tool_ally_abstract_testcase {
+class webservice_processors_status extends abstract_testcase {
     public function test_service_return() {
         $returns = processors_status::service_returns();
-        $this->assertTrue($returns instanceof external_single_structure);
+        $this->assertTrue($returns instanceof \external_single_structure);
     }
     public function test_service() {
 

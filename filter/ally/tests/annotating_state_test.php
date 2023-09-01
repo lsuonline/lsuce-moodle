@@ -17,21 +17,21 @@
 /**
  * Test filter loop avoidance.
  * @author    David Castro <david.castro@openlms.net>
- * @copyright Copyright (c) 2020 Open LMS.
+ * @copyright Copyright (c) 2020 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-defined('MOODLE_INTERNAL') || die();
+namespace filter_ally;
 
-class filter_ally_annotating_state_testcase extends advanced_testcase {
+class annotating_state_test extends \advanced_testcase {
     public function test_annotating_state() {
         $this->resetAfterTest();
         require_once(__DIR__.'/../filter.php');
         $courseid = 3;
 
-        $this->assertFalse(filter_ally::is_annotating($courseid));
-        filter_ally::start_annotating($courseid);
-        $this->assertTrue(filter_ally::is_annotating($courseid));
-        filter_ally::end_annotating($courseid);
-        $this->assertFalse(filter_ally::is_annotating($courseid));
+        $this->assertFalse(\filter_ally::is_annotating($courseid));
+        \filter_ally::start_annotating($courseid);
+        $this->assertTrue(\filter_ally::is_annotating($courseid));
+        \filter_ally::end_annotating($courseid);
+        $this->assertFalse(\filter_ally::is_annotating($courseid));
     }
 }

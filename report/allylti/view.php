@@ -19,7 +19,7 @@
  *
  * @package    report_allylti
  * @author     Sam Chaffee
- * @copyright  Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -31,7 +31,7 @@ require_once($CFG->dirroot . '/mod/lti/locallib.php');
 
 $undertest = defined('BEHAT_SITE_RUNNING') || PHPUNIT_TEST;
 if (!$undertest and is_callable('mr_off') and mr_off('report_allylti', '_MR_MISC')) {
-    print_error('notenabled', 'report_allylti');
+    new moodle_exception('notenabled', 'report_allylti');
 }
 
 $PAGE->set_context(context_system::instance());

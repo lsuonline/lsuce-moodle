@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @copyright  Copyright (c) 2023 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,6 +39,8 @@ $string['error:invalidcomponentident'] = 'Geçersiz bileşen tanımlayıcısı {
 $string['error:pluginfilequestiononly'] = 'Bu url için yalnızca soru bileşenleri desteklenir';
 $string['error:componentcontentnotfound'] = '{$a} için içerik bulunamadı';
 $string['error:wstokenmissing'] = 'Web hizmet belirteci yok. Bir yönetici kullanıcının otomatik yapılandırmayı çalıştırması gerekebilir.';
+$string['excludeunused'] = 'Kullanılmayan dosyaları hariç tut';
+$string['excludeunuseddesc'] = 'HTML\'deki bağlantılı dosyalar/referans dosyaları haricinde HTML içeriğine eklenmiş olan dosyaları yok sayın.';
 $string['filecoursenotfound'] = 'Aktarılan dosya herhangi bir kursa ait değil';
 $string['fileupdatestask'] = 'Dosya güncelleştirmelerini Ally\'a aktar';
 $string['id'] = 'Kimlik';
@@ -61,7 +63,7 @@ $string['hideexception'] = 'İstisnayı gizle';
 $string['usercapabilitymissing'] = 'Sağlanan kullanıcının bu dosyayı silme izni yok.';
 $string['autoconfigure'] = 'Ally web hizmetini otomatik yapılandır';
 $string['autoconfiguredesc'] = 'Ally için web hizmeti rolünü ve kullanıcıyı otomatik olarak oluşturun.';
-$string['autoconfigureconfirmation'] = 'Ally için web hizmeti rolünü ve kullanıcıyı otomatik olarak oluşturun ve web hizmetini etkinleştirin. Şu işlemler gerçekleştirilir: <ul><li>\'ally_webservice\' adlı bir rol ve \'ally_webuser\' kullanıcı adına sahip bir kullanıcı oluşturma</li><li>\'ally_webuser\' kullanıcısını \'ally_webservice\' rolüne ekleme</li><li>web hizmetlerini etkinleştirme</li><li>rest web hizmeti protokolünü etkinleştirme</li><li>ally web hizmetini etkinleştirme</li><li>\'ally_webuser\' hesabı için bir belirteç oluşturma</li></ul>';
+$string['autoconfigureconfirmation'] = 'Ally için web hizmeti rolünü ve kullanıcıyı otomatik olarak oluşturup web hizmetlerini etkinleştirin. Aşağıdaki işlemler gerçekleştirilecektir:<ul><li>"ally_webservice" isimli bir rol ve "ally_webuser" kullanıcı adına sahip bir kullanıcı oluşturma</li><li>"ally_webuser" adlı kullanıcıyı "ally_webservice" rolüne ekleme</li><li>web hizmetlerini etkinleştirme</li><li>rest web hizmeti protokollerini etkinleştirme</li><li>ally web hizmetini etkinleştirme</li><li>\'ally_webuser\' hesabı için bir belirteç oluşturma</li></ul>';
 $string['autoconfigsuccess'] = 'Başarılı - Ally web hizmeti otomatik olarak yapılandırıldı.';
 $string['autoconfigtoken'] = 'Web hizmeti belirteci aşağıdaki gibidir:';
 $string['autoconfigapicall'] = 'Web hizmetinin çalışıp çalışmadığını anlamak üzere test etmek için şu url\'yi kullanabilirsiniz:';
@@ -73,6 +75,9 @@ $string['privacy:metadata:files:filecontents'] = 'Asıl dosyanın içeriği eri�
 $string['privacy:metadata:files:mimetype'] = 'Dosya MIME türü, örneğin: Metin/düz, resim/jpeg, vb.';
 $string['privacy:metadata:files:pathnamehash'] = 'Dosyayı benzersiz şekilde tanımlayan yol adı karması.';
 $string['privacy:metadata:files:timemodified'] = 'Alanın son değiştirildiği zaman.';
+$string['cachedef_annotationmaps'] = 'Kurslar için ek açıklama verilerini sakla';
+$string['cachedef_fileinusecache'] = 'Dosyaları kullanılan önbellekte birleştir';
+$string['cachedef_pluginfilesinhtml'] = 'Dosyaları HTML önbelleğinde birleştir';
 $string['cachedef_request'] = 'Ally filtre isteği önbelleği';
 $string['pushfilessummary'] = 'Ally dosya güncelleştirme özeti.';
 $string['pushfilessummary:explanation'] = 'Ally\'a gönderilen dosya güncelleştirmelerinin özeti.';
@@ -85,6 +90,10 @@ $string['loglevel:none'] = 'Yok';
 $string['loglevel:light'] = 'Hafif';
 $string['loglevel:medium'] = 'Orta';
 $string['loglevel:all'] = 'Tümü';
+$string['logcleanuptask'] = 'Ally günlüğü temizleme görevi';
+$string['loglifetimedays'] = 'Günlükleri şu kadar gün boyunca sakla';
+$string['loglifetimedaysdesc'] = 'Ally günlüklerini şu kadar gün boyunca sakla. 0 ila günlükleri asla silme arasında bir değere ayarlayın. Zamanlanmış bir görev (varsayılan olarak) günlük olarak çalışacak şekilde ayarlanır ve belirtilen günden daha eski günlük girdilerini kaldırır.';
+$string['logger:filtersetupdebugger'] = 'Ally filtre kurulumu günlüğü';
 $string['logger:pushtoallysuccess'] = 'Ally uç noktasına başarılı aktarma';
 $string['logger:pushtoallyfail'] = 'Ally uç noktasına başarısız aktarma';
 $string['logger:pushfilesuccess'] = 'Ally uç noktasına başarılı dosya aktarma';

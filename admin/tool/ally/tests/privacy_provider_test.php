@@ -18,25 +18,24 @@
  * Test case for privacy implementation.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\types\external_location;
 use core_privacy\tests\provider_testcase;
 use tool_ally\privacy\provider;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Test case for privacy implementation.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_privacy_provider_testcase extends provider_testcase {
+class privacy_provider_test extends provider_testcase {
     /**
      * Test for provider::get_metadata().
      */

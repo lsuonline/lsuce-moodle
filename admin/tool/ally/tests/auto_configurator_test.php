@@ -19,24 +19,23 @@
  *
  * @package   tool_ally
  * @author    Sam Chaffee
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\auto_config_resolver;
 use tool_ally\auto_configurator;
 use tool_ally\auto_config;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Testcase class for the tool_ally\auto_configurator class.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_auto_configurator_testcase extends advanced_testcase {
+class auto_configurator_test extends \advanced_testcase {
 
     public function setUp(): void {
         $this->resetAfterTest(true);

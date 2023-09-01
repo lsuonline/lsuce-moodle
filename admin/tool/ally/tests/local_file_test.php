@@ -18,23 +18,22 @@
  * Tests for local_file library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\local_file;
 use tool_ally\auto_config;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Tests for local_file library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_local_file_testcase extends advanced_testcase {
+class local_file_test extends \advanced_testcase {
 
 
     public function test_generate_wspluginfile_signature_invalid_config() {

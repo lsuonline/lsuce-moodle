@@ -17,7 +17,7 @@
 /**
  * Web service auto configuration page
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -46,7 +46,7 @@ if ($action === 'confirm' || $action === 'view') {
     }
     $wstoken = local::get_ws_token();
     if (empty($wstoken->token)) {
-        print_error('error:wstokenmissing', 'tool_ally');
+        throw new moodle_exception('generalexceptionmessage', 'error', '', get_string('error:wstokenmissing', 'tool_ally'));
     }
     $token = $wstoken->token;
     $sampleapicall = $CFG->wwwroot.'/webservice/rest/server.php?wstoken='.$token.

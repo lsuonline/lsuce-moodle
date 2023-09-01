@@ -19,18 +19,16 @@
  *
  * @package    report_allylti
  * @author     Sam Chaffee
- * @copyright  Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace report_allylti\local;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Ally report LTI launch configuration.
  *
  * @package    report_allylti
- * @copyright  Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+ * @copyright  Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class launch_config {

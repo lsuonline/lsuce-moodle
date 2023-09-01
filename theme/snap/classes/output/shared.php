@@ -720,6 +720,19 @@ EOF;
             );
         }
 
+        // Personalised Learning Designer new design.
+        if (!empty($CFG->local_pld_experimental)) {
+            if (array_key_exists('pld', $localplugins) && has_capability('local/pld:editcourserules', $coursecontext)) {
+                $iconurl = $OUTPUT->image_url('pld', 'theme');
+                $pldicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                $pldname = get_string('pldexperimental', 'local_pld');
+                $links[] = array(
+                    'link' => 'local/pld/view.php?pldexperimental=1&courseid='.$COURSE->id,
+                    'title' => $pldicon.$pldname
+                );
+            }
+        }
+
         // Competencies if enabled.
         if (get_config('core_competency', 'enabled') && has_capability('moodle/competency:competencyview', $coursecontext)) {
             $iconurl = $OUTPUT->image_url('competencies', 'theme');
@@ -774,17 +787,6 @@ EOF;
                     'title' => $badgesicon.get_string('badges', 'badges')
                 );
             }
-        }
-
-        // Local catalogue if enabled.
-        if (array_key_exists('catalogue', $localplugins) && has_capability('local/catalogue:admingear', $coursecontext)) {
-            $iconurl = $OUTPUT->image_url('catalogue', 'theme');
-            $localcatalogueicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-            $localcataloguename = get_string('pluginname', 'local_catalogue');
-            $links[] = array(
-                'link' => 'local/catalogue/index.php',
-                'title' => $localcatalogueicon.$localcataloguename
-            );
         }
 
         // Mediasite. (GT Mod - core component check needs to be first in evaluation or capability check error will
@@ -994,7 +996,8 @@ EOF;
             $progress = local::course_completion_progress($COURSE);
             $userboard .= '<div class="col-xs-3 text-center snap-student-dashboard-progress">';
             $userboard .= '<h4 class="h6">' .get_string('progress', 'theme_snap'). '</h6>';
-            $userboard .= '<div class="js-progressbar-circle snap-progress-circle" value="' .round($progress->progress). '"></div>';
+            $userboard .= '<div class="js-progressbar-circle snap-progress-circle" value="'
+                .round($progress->progress ?? 0). '"></div>';
             $userboard .= '</div>';
         }
 
@@ -1101,18 +1104,20 @@ EOF;
     /**
      * Grade reports edit button.
      */
-    public static function get_grader_reports_edit_button() {
-        global $COURSE, $USER, $OUTPUT, $PAGE;
+    public static function get_grade_report_edit_button() {
+        global $COURSE, $USER, $OUTPUT;
         if ($COURSE->id === null || $USER->editing === null) {
             return "";
         }
-        $options = array (
-            'type' => 'report',
-            'plugin' => 'grader',
-            'id' => $COURSE->id,
-            'sesskey' => sesskey(),
 
-        );
+        $options['id'] = $COURSE->id;
+        $options['item'] = optional_param('item', '', PARAM_TEXT);
+        if ($options['item'] === 'user') {
+            $options['userid'] = optional_param('userid', '', PARAM_INT);
+        } else if ($options['item'] === 'grade') {
+            $options['itemid'] = optional_param('itemid', '', PARAM_INT);
+        }
+
         if ($USER->editing == 1) {
             $options['edit'] = 0;
             $string = get_string('turneditingoff');
@@ -1121,7 +1126,28 @@ EOF;
             $string = get_string('turneditingon');
         }
         $url = new moodle_url('index.php', $options);
-        $button = $OUTPUT->single_button($url, $string, 'get', ['class' => 'grader_report_edit_button']);
-        $PAGE->set_button($button);
+        return $OUTPUT->single_button($url, $string, 'get', ['class' => 'grade_report_edit_button']);
+    }
+
+    /**
+     * Create a button for toggling editing mode.
+     *
+     * @return string Html containing the edit button
+     */
+    public static function snap_edit_button() {
+        global $PAGE, $OUTPUT;
+        if ($PAGE->user_allowed_editing()) {
+
+            $temp = (object) [
+                'legacyseturl' => (new moodle_url('/editmode.php'))->out(false),
+                'pagecontextid' => $PAGE->context->id,
+                'pageurl' => $PAGE->url,
+                'sesskey' => sesskey(),
+            ];
+            if ($PAGE->user_is_editing()) {
+                $temp->checked = true;
+            }
+            return $OUTPUT->render_from_template('theme_snap/editbutton', $temp);
+        }
     }
 }

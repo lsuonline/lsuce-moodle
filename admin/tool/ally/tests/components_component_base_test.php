@@ -19,25 +19,24 @@
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\local_content;
 use tool_ally\componentsupport\glossary_component; // Note this could be any component that extends component_base.
 use tool_ally\testing\traits\component_assertions;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Testcase class for the tool_ally\componentsupport\component_base class.
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_components_component_base_testcase extends advanced_testcase {
+class components_component_base_test extends \advanced_testcase {
     use component_assertions;
 
     /**
@@ -78,7 +77,7 @@ class tool_ally_components_component_base_testcase extends advanced_testcase {
         $this->teacher = $gen->create_user();
         $this->admin = get_admin();
         $this->course = $gen->create_course();
-        $this->coursecontext = context_course::instance($this->course->id);
+        $this->coursecontext = \context_course::instance($this->course->id);
         $gen->enrol_user($this->student->id, $this->course->id, 'student');
         $gen->enrol_user($this->teacher->id, $this->course->id, 'editingteacher');
 
@@ -88,11 +87,11 @@ class tool_ally_components_component_base_testcase extends advanced_testcase {
 
     public function test_get_approved_author_ids_for_context() {
         $authorids = $this->component->get_approved_author_ids_for_context($this->coursecontext);
-        $this->assertContains($this->teacher->id, $authorids,
+        $this->assertTrue(in_array($this->teacher->id, $authorids),
                 'Teacher id '.$this->teacher->id.' should be in list of author ids.');
-        $this->assertContains($this->admin->id, $authorids,
+        $this->assertTrue(in_array($this->admin->id, $authorids),
                 'Admin id '.$this->admin->id.' should be in list of author ids.');
-        $this->assertNotContains($this->student->id, $authorids,
+        $this->assertFalse(in_array($this->student->id, $authorids),
                 'Student id '.$this->student->id.' should NOT be in list of author ids.');
     }
 

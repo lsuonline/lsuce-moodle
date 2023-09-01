@@ -18,9 +18,10 @@
  * Tests for local content library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\local_content;
 use tool_ally\models\component;
@@ -37,22 +38,22 @@ require_once(__DIR__.'/abstract_testcase.php');
  * Tests for local content library.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_local_content_testcase extends tool_ally_abstract_testcase {
+class local_content_test extends abstract_testcase {
 
     public function test_component_supports_html_content() {
 
-        $supported = phpunit_util::call_internal_method(
+        $supported = \phpunit_util::call_internal_method(
                 null, 'component_supports_html_content', ['label'],
-                tool_ally\local_content::class);
+            \tool_ally\local_content::class);
 
         $this->assertEquals(true, $supported);
 
-        $supported = phpunit_util::call_internal_method(
+        $supported = \phpunit_util::call_internal_method(
             null, 'component_supports_html_content', ['unknowncomponent'],
-            tool_ally\local_content::class);
+            \tool_ally\local_content::class);
 
         $this->assertEquals(false, $supported);
     }
@@ -75,8 +76,8 @@ class tool_ally_local_content_testcase extends tool_ally_abstract_testcase {
         global $DB;
 
         $this->resetAfterTest();
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $coursesummary = '<p>My course summary</p>';
         $course = $this->getDataGenerator()->create_course(
@@ -163,8 +164,8 @@ class tool_ally_local_content_testcase extends tool_ally_abstract_testcase {
 
         $this->resetAfterTest();
 
-        $roleid = $this->assignUserCapability('moodle/course:view', context_system::instance()->id);
-        $this->assignUserCapability('moodle/course:viewhiddencourses', context_system::instance()->id, $roleid);
+        $roleid = $this->assignUserCapability('moodle/course:view', \context_system::instance()->id);
+        $this->assignUserCapability('moodle/course:viewhiddencourses', \context_system::instance()->id, $roleid);
 
         $content = local_content::get_html_content(9999, 'course', 'course', 'summary');
         $this->assertEquals(null, $content);
@@ -182,7 +183,7 @@ class tool_ally_local_content_testcase extends tool_ally_abstract_testcase {
             $course->summaryformat,
             $coursesummary,
             $course->fullname,
-            new moodle_url('/course/edit.php?id='.$course->id).''
+            new \moodle_url('/course/edit.php?id='.$course->id).''
         );
 
         $content = local_content::get_html_content($course->id, 'course', 'course', 'summary');
@@ -204,13 +205,13 @@ class tool_ally_local_content_testcase extends tool_ally_abstract_testcase {
         $coursesummary = '<p>My course summary</p>';
         $course = $this->getDataGenerator()->create_course(
             ['summary' => $coursesummary, 'summaryformat' => FORMAT_HTML]);
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $annotation = local_content::get_annotation($context);
         $this->assertEmpty($annotation); // Course summaries / sections can't be annotated via php.
 
         $label = $this->getDataGenerator()->create_module('label',
             ['course' => $course->id]);
-        $context = context_module::instance($label->cmid);
+        $context = \context_module::instance($label->cmid);
         $annotation = local_content::get_annotation($context);
         $expected = 'label:label:intro:'.$label->id;
         $this->assertEquals($expected, $annotation);
@@ -247,4 +248,54 @@ class tool_ally_local_content_testcase extends tool_ally_abstract_testcase {
             $this->assertNull($content, 'Invalid content for ' . $compkey . ' should be null.');
         }
     }
+
+    public function test_get_pluginfiles_in_html() {
+        global $CFG;
+
+        // First, empty string will return null.
+        $html = '';
+        $results = local_content::get_pluginfiles_in_html($html);
+        $this->assertNull($results);
+
+        // Now just a boring string.
+        $html = 'something empty';
+        $results = local_content::get_pluginfiles_in_html($html);
+        $this->assertIsArray($results);
+        $this->assertCount(0, $results);
+
+        // Now some real a/img tags.
+        $sampleurl = "{$CFG->wwwroot}/pluginfile.php/1/tool_themeassets/assets/0/Folder 1/image2.png";
+        $drafturl = "{$CFG->wwwroot}/draftfile.php/5/user/draft/589727894/draft_image1.jpg";
+        $html = '<div><a href="@@PLUGINFILE@@/some/file/path.txt">A link</a>' .
+                '<a href="@@PLUGINFILE@@some/file/path2.txt">A link without starting /</a>' .
+                '<img src="@@PLUGINFILE@@/image.jpg">' .
+                '<img src="' . $sampleurl . '">' .
+                '<img src="' . $drafturl . '">' .
+                '<img src="https://google.com/notthis.jpg">';
+
+        $results = local_content::get_pluginfiles_in_html($html);
+        $this->assertCount(5, $results);
+
+        $tmpresults = [];
+        foreach ($results as $result) {
+            $tmpresults[$result->src] = $result;
+        }
+
+        $this->assertNotEmpty($tmpresults['some/file/path.txt']);
+        $this->assertEquals('a', $tmpresults['some/file/path.txt']->tagname);
+        $this->assertEquals('pathonly', $tmpresults['some/file/path.txt']->type);
+
+        $this->assertNotEmpty($tmpresults['some/file/path2.txt']);
+        $this->assertEquals('a', $tmpresults['some/file/path2.txt']->tagname);
+        $this->assertEquals('pathonly', $tmpresults['some/file/path2.txt']->type);
+
+        $this->assertNotEmpty($tmpresults['image.jpg']);
+        $this->assertEquals('img', $tmpresults['image.jpg']->tagname);
+        $this->assertEquals('pathonly', $tmpresults['image.jpg']->type);
+
+        $this->assertNotEmpty($tmpresults[$sampleurl]);
+        $this->assertEquals('img', $tmpresults[$sampleurl]->tagname);
+        $this->assertEquals('fullurl', $tmpresults[$sampleurl]->type);
+    }
+
 }

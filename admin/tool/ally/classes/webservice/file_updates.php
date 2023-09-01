@@ -19,7 +19,7 @@
  *
  * @package   tool_ally
  * @author    Sam Chaffee
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace tool_ally\webservice;
@@ -27,13 +27,11 @@ namespace tool_ally\webservice;
 use tool_ally\local;
 use tool_ally\local_file;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * File updates web service class definition.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class file_updates extends loggable_external_api {

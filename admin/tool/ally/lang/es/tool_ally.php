@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @copyright  Copyright (c) 2023 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,6 +39,8 @@ $string['error:invalidcomponentident'] = 'ID del componente no válido {$a}';
 $string['error:pluginfilequestiononly'] = 'Solo se admiten los componentes de las preguntas para esta URL';
 $string['error:componentcontentnotfound'] = 'No se encontró el contenido para {$a}';
 $string['error:wstokenmissing'] = 'Falta el token del servicio web. ¿Es posible que un usuario administrador necesite ejecutar la configuración automática?';
+$string['excludeunused'] = 'Excluir archivos sin usar';
+$string['excludeunuseddesc'] = 'Omitir archivos adjuntos al contenido HTML, pero permitir archivos vinculados/referencias en el HTML.';
 $string['filecoursenotfound'] = 'Los archivos aprobados no pertenecen a ningún curso';
 $string['fileupdatestask'] = 'Insertar actualizaciones de archivos en Ally';
 $string['id'] = 'ID';
@@ -61,7 +63,7 @@ $string['hideexception'] = 'Ocultar excepción';
 $string['usercapabilitymissing'] = 'El usuario suministrado no cuenta con el permiso para eliminar este archivo.';
 $string['autoconfigure'] = 'Configurar automáticamente el servicio web de Ally';
 $string['autoconfiguredesc'] = 'Cree un usuario y un rol de servicio web para Ally de forma automática.';
-$string['autoconfigureconfirmation'] = 'Cree un usuario y un rol de servicio web para Ally de forma automática y habilite el servicio web. Se deben llevar a cabo las siguientes acciones: <ul><li>crear un rol denominado "ally_webservice" y un usuario con el nombre de usuario "ally_webuser"</li><li>agregar el usuario "ally_webuser" al rol "ally_webservice"</li><li>habilitar los servicios web</li><li>habilitar el protocolo de servicio web rest</li><li>habilitar el servicio web de Ally</li><li>crear un token para la cuenta "ally_webuser"</li></ul>';
+$string['autoconfigureconfirmation'] = 'Cree un usuario y un rol de servicio web para Ally de forma automática y habilite el servicio web. Se deben llevar a cabo las siguientes acciones:<ul><li>crear un rol denominado "ally_webservice" y un usuario con el nombre de usuario "ally_webuser"</li><li>agregar el usuario "ally_webuser" al rol "ally_webservice"</li><li>habilitar servicios web</li><li>habilitar el protocolo de servicio web rest</li><li>habilitar el servicio web de Ally</li><li>crear un token para la cuenta "ally_webuser"</li></ul>';
 $string['autoconfigsuccess'] = 'Listo: el servicio web de Ally se configuró automáticamente.';
 $string['autoconfigtoken'] = 'El token del servicio web es el siguiente:';
 $string['autoconfigapicall'] = 'Puede probar el funcionamiento del servicio web a través de la siguiente URL:';
@@ -73,6 +75,9 @@ $string['privacy:metadata:files:filecontents'] = 'El contenido del archivo real 
 $string['privacy:metadata:files:mimetype'] = 'Tipo de archivo MIME. Por ejemplo: text/plain, image/jpeg, etc.';
 $string['privacy:metadata:files:pathnamehash'] = 'Función hash para el nombre de la ruta del archivo a fin de identificarlo de forma única.';
 $string['privacy:metadata:files:timemodified'] = 'Hora de la última modificación del campo.';
+$string['cachedef_annotationmaps'] = 'Almacenar datos de anotaciones para cursos';
+$string['cachedef_fileinusecache'] = 'Archivos de Ally en caché de uso';
+$string['cachedef_pluginfilesinhtml'] = 'Archivos de Ally en caché HTML';
 $string['cachedef_request'] = 'Caché de solicitud de filtros de Ally';
 $string['pushfilessummary'] = 'Resumen de actualizaciones de archivos de Ally.';
 $string['pushfilessummary:explanation'] = 'Resumen de las actualizaciones de archivos que se envían a Ally.';
@@ -85,6 +90,10 @@ $string['loglevel:none'] = 'Ninguno';
 $string['loglevel:light'] = 'Algo bajo';
 $string['loglevel:medium'] = 'Mediano';
 $string['loglevel:all'] = 'Todas';
+$string['logcleanuptask'] = 'Tarea de limpieza del registro de Ally';
+$string['loglifetimedays'] = 'Mantener los registros durante tantos días';
+$string['loglifetimedaysdesc'] = 'Conserve los registros de Ally durante este número de días. Establezca 0 para no borrar nunca los registros. Una tarea programada está (por defecto) configurada para ejecutarse diariamente, y eliminará las entradas de registro que tengan un número superior a este número de días.';
+$string['logger:filtersetupdebugger'] = 'Registro de configuración de filtro de Ally';
 $string['logger:pushtoallysuccess'] = 'Inserción exitosa en el punto de enlace de Ally';
 $string['logger:pushtoallyfail'] = 'Inserción fallida en el punto de enlace de Ally';
 $string['logger:pushfilesuccess'] = 'Inserción exitosa del/de los archivo(s) en el punto de enlace de Ally';

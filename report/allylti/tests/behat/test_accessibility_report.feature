@@ -16,7 +16,7 @@
 # Behat feature for Ally Accessibility report configuration.
 #
 # @package    report_allylti
-# @copyright  Copyright (c) 2019 Blackboard Inc. (http://www.blackboard.com)
+# @copyright  Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @report @report_allylti
@@ -37,6 +37,7 @@ Feature: Accessibility report should not be available to users that don't have A
     And I press "Save changes"
     Then I should see "Changes saved"
     Then I am on "Course 1" course homepage
+    And I navigate to "Reports" in current page administration
     Then I should see "Accessibility report"
 
   Scenario: Administrator should not see Accessibility without Ally configured in the site.

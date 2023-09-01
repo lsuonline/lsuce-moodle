@@ -19,9 +19,10 @@
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace tool_ally;
 
 use tool_ally\local_content;
 use tool_ally\componentsupport\glossary_component;
@@ -39,10 +40,10 @@ require_once('abstract_testcase.php');
  *
  * @package   tool_ally
  * @author    Guy Thomas
- * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_ally_components_page_component_testcase extends tool_ally_abstract_testcase {
+class components_page_component_test extends abstract_testcase {
     use component_assertions;
 
     /**
@@ -76,7 +77,7 @@ class tool_ally_components_page_component_testcase extends tool_ally_abstract_te
         $gen = $this->getDataGenerator();
         $this->admin = get_admin();
         $this->course = $gen->create_course();
-        $this->coursecontext = context_course::instance($this->course->id);
+        $this->coursecontext = \context_course::instance($this->course->id);
         $this->page = $gen->create_module('page',
             [
                 'course' => $this->course->id,
@@ -121,7 +122,7 @@ class tool_ally_components_page_component_testcase extends tool_ally_abstract_te
         $gen = $this->getDataGenerator();
         $this->admin = get_admin();
         $this->course = $gen->create_course();
-        $this->coursecontext = context_course::instance($this->course->id);
+        $this->coursecontext = \context_course::instance($this->course->id);
         $this->page = $gen->create_module('page',
                                           [
                                               'course' => $this->course->id,
@@ -132,5 +133,26 @@ class tool_ally_components_page_component_testcase extends tool_ally_abstract_te
         $this->assertEquals([], $cis['intros']);
         $this->assertEquals([], $cis['content']);
 
+    }
+
+    /**
+     * Test if file in use detection is working with this module.
+     */
+    public function test_check_file_in_use() {
+        $context = \context_module::instance($this->page->cmid);
+
+        $usedfiles = [];
+        $unusedfiles = [];
+
+        // Check the intro.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_page', $this->page->id,
+            'page', 'intro');
+
+        // Check the page content.
+        list($usedfiles[], $unusedfiles[]) = $this->check_html_files_in_use($context, 'mod_page', $this->page->id,
+            'page', 'content');
+
+        // This will double check that file iterator is working as expected.
+        $this->check_file_iterator_exclusion($context, $usedfiles, $unusedfiles);
     }
 }

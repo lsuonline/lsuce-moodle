@@ -18,16 +18,15 @@
  * Html file replacement support for glossary.
  * @package tool_ally
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_ally\componentsupport;
 
-defined ('MOODLE_INTERNAL') || die();
-
 use cm_info;
-
+use context;
+use stored_file;
 use tool_ally\componentsupport\interfaces\annotation_map;
 use tool_ally\componentsupport\interfaces\content_sub_tables;
 use tool_ally\componentsupport\interfaces\html_content as iface_html_content;
@@ -41,7 +40,7 @@ use tool_ally\models\component_content;
  * Html file replacement support for glossary.
  * @package tool_ally
  * @author    Guy Thomas <citricity@gmail.com>
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
+ * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class glossary_component extends file_component_base implements
@@ -176,11 +175,18 @@ SQL;
     }
 
     public function get_all_html_content($id) {
+        global $DB;
+
         if (!$this->module_installed()) {
             return;
         }
 
-        list ($course, $cm) = get_course_and_cm_from_instance($id, 'glossary');
+        $pagetable = '{glossary}';
+        $course = $DB->get_record_sql("
+                    SELECT c.*
+                      FROM $pagetable instance
+                      JOIN {course} c ON c.id = instance.course
+                     WHERE instance.id = ?", array($id), MUST_EXIST);
 
         $main = $this->get_html_content($id, 'glossary', 'intro');
         $entries = $this->get_entry_html_content_items($course->id, $id);
@@ -254,5 +260,14 @@ SQL;
             return $id;
         }
         return parent::get_file_item($table, $field, $id);
+    }
+
+    public function check_file_in_use(stored_file $file, ?context $context = null): bool {
+        if ($file->get_filearea() == 'attachment') {
+            // All attachments are in use.
+            return true;
+        }
+
+        return $this->check_embedded_file_in_use($file, $context);
     }
 }
