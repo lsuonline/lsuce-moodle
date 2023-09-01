@@ -46,6 +46,7 @@ if ($ADMIN->fulltree) {
     // Get the system roles.
     $sroles = $DB->get_records_sql($sql);
 
+    $systemroles = array();
     // Loop through these roles and build their array.
     foreach ($sroles as $srole) {
         $systemroles[$srole->id] = $srole->shortname;
@@ -61,6 +62,7 @@ if ($ADMIN->fulltree) {
     // Grab the enrollment methods.
     $enrolls = $DB->get_records_sql($sql);
 
+    $enrollmethods = array();
     // Loop through the enrollment methods and build an array.
     $enrollmethods = array();
     foreach ($enrolls as $enroll) {
@@ -105,8 +107,8 @@ if ($ADMIN->fulltree) {
         )
     );
 
-    // Choose enrollment methods.
-    if (isset($enrollmethods) && !empty($enrollmethods)) {
+    if (!empty($enrollmethods)) {
+        // Choose enrollment methods.
         $settings->add(
             new admin_setting_configmultiselect(
                 'enrol_studentstaff/enrollmethods',
@@ -118,7 +120,8 @@ if ($ADMIN->fulltree) {
         );
     }
 
-    if (isset($systemroles)) {
+
+    if (!empty($systemroles)) {
         // Source system role.
         $settings->add(
             new admin_setting_configmultiselect(
@@ -130,6 +133,7 @@ if ($ADMIN->fulltree) {
             )
         );
     }
+
 //
     // Source course role.
     $settings->add(
