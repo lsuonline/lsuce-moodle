@@ -25,7 +25,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-f
+
 // Block Base
 // class block_course_hider extends block_base {
 
