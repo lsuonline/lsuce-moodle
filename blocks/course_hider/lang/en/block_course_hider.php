@@ -70,7 +70,7 @@ $string['semestersectiondesc'] = 'Comma seperated list of the different types of
 $string['defaultyear'] = 'Choose a year';
 $string['defaultsemester'] = 'Choose a semester';
 $string['defaultsemestertype'] = 'Choose a type';
-$string['defaultsemestersection'] = 'Choose a section';
+$string['defaultsemestersection'] = 'Choose a session';
 
 $string['raw_input'] = 'Raw Text';
 $string['raw_input_desc'] = 'Leave this blank if you are not going to use it. <br>It is highly recommended'.
