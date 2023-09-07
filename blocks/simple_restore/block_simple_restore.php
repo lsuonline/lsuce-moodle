@@ -89,26 +89,43 @@ class block_simple_restore extends block_list {
      */
     public function get_content() {
         global $CFG, $COURSE, $OUTPUT;
-        if ($this->content !== null) {
+        if (!empty($this->content)) {
             return $this->content;
         }
+
+        // Create a fresh content container.
+        $this->content = $this->get_new_content_container();
 
         // Are we in archive mode or course context?
         if ($this->archive_mode) {
             // We are in archive mode.
-            $content = $this->get_site_content();
+            $content = $this->get_site_content($COURSE);
         } else {
             // We are in course context.
             $context = context_course::instance($COURSE->id);
             if (!simple_restore_utils::permission('canrestore', $context)) {
                 return $this->content;
             }
-            $content = $this->get_course_content();
+        $content = $this->get_course_content($COURSE);
         }
 
         $content->footer = '';
         $this->content = $content;
         return $this->content;
+    }
+
+    /**
+     * Returns an empty "block list" content container to be filled with content
+     *
+     * @return object
+     */
+    private function get_new_content_container() {
+        $content = new stdClass;
+        $content->items = [];
+        $content->icons = [];
+        $content->footer = '';
+
+        return $content;
     }
 
     /**
@@ -152,9 +169,7 @@ class block_simple_restore extends block_list {
      * @global type $COURSE
      * @return \stdclass
      */
-    private function get_course_content() {
-        global $COURSE;
-
+    private function get_course_content($course) {
         $importstr = simple_restore_utils::_s('restore_course');
         $deletestr = simple_restore_utils::_s('delete_restore');
 
@@ -162,14 +177,14 @@ class block_simple_restore extends block_list {
             'lang_key' => $importstr,
             'icon_key' => 'import',
             'page' => 'list',
-            'query_string' => ['id' => $COURSE->id, 'restore_to' => 1]
+            'query_string' => ['id' => $course->id, 'restore_to' => 1]
         ]);
 
         $this->add_item_to_content([
             'lang_key' => $deletestr,
             'icon_key' => 'overwrite',
             'page' => 'list',
-            'query_string' => ['id' => $COURSE->id, 'restore_to' => 0]
+            'query_string' => ['id' => $course->id, 'restore_to' => 0]
         ]);
 
         return $this->content;
@@ -182,16 +197,14 @@ class block_simple_restore extends block_list {
      * @global type $OUTPUT
      * @return \stdclass
      */
-    private function get_site_content() {
-        global $COURSE;
-
+    private function get_site_content($course) {
         $archivestr = simple_restore_utils::_s('archive_restore');
 
         $this->add_item_to_content([
             'lang_key' => $archivestr,
             'icon_key' => 'import',
             'page' => 'list',
-            'query_string' => ['id' => $COURSE->id, 'restore_to' => 1]
+            'query_string' => ['id' => $course->id, 'restore_to' => 1]
         ]);
 
         return $this->content;
