@@ -67,7 +67,6 @@ abstract class ues_dao_filter_builder implements IteratorAggregate {
         }
     }
 
-    #[\ReturnTypeWillChange]
     public function getiterator() {
         return new ArrayIterator($this->get());
     }

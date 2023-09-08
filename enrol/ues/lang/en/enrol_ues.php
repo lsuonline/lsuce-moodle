@@ -119,8 +119,14 @@ $string['email_report_desc'] = 'Email UES execution log to all admins.
 __Note__: Any errors will be reported regardless.';
 
 $string['user_settings'] = 'User Creation Settings';
+$string['un'] = 'Username';
+$string['em'] = 'E-mail';
+$string['use_username_email'] = 'Use Username or email?';
+$string['use_username_email_desc'] = 'When fetching user information, use username and generate an email based on the suffix provided below OR use the email address from the webservice and cleanse string provided below to generate a username.';
 $string['user_email'] = 'E-mail suffix';
 $string['user_email_desc'] = 'The created user will have this email domain appended to their username.';
+$string['user_email_cleanse'] = 'E-mail cleanse string';
+$string['user_email_cleanse_desc'] = 'The above string will be removed from the email domain.';
 $string['user_confirm'] = 'Confirmed';
 $string['user_confirm_desc'] = 'The user will be _confirmed_ upon creation.';
 $string['user_city'] = 'City/town';

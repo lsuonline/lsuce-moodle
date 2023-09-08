@@ -1603,17 +1603,27 @@ class enrol_ues_plugin extends enrol_plugin {
 
         $user = ues_user::upgrade($u);
 
+        $unorem = $this->setting('username_email');
+
         if ($prev = ues_user::get($exactparams, true)) {
             $user->id = $prev->id;
         } else if ($present and $prev = ues_user::get($byidnumber, true)) {
             $user->id = $prev->id;
-            // Update email.
-            $user->email = $user->username . $this->setting('user_email');
+            // Update email or username.
+            if ($unorem == 'un') {
+                $user->email = $user->username . $this->setting('user_email');
+            } else {
+                $user->email = $user->username;
+            }
         } else if ($prev = ues_user::get($byusername, true)) {
             $user->id = $prev->id;
         } else {
             global $CFG;
-            $user->email = $user->username . $this->setting('user_email');
+            if ($unorem == 'un') {
+                $user->email = $user->username . $this->setting('user_email');
+            } else {
+                $user->email = $user->username;
+            }
             $user->confirmed = $this->setting('user_confirm');
             $user->city = $this->setting('user_city');
             $user->country = $this->setting('user_country');
@@ -1715,6 +1725,9 @@ class enrol_ues_plugin extends enrol_plugin {
                     require_once($CFG->dirroot.'/blocks/cps/classes/ues_handler.php');
                     blocks_cps_ues_handler::preferred_name_legitimized($current);
                 }
+            } else {
+                // Don't update.
+                return false;
             }
             return true;
         }
