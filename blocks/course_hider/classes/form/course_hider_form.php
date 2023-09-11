@@ -118,7 +118,7 @@ class course_hider_form extends \moodleform {
             'static',
             'raw_description',
             "",
-            get_string('raw_input_desc', 'block_course_hider'),
+            get_string('raw_input_desc', 'block_course_hider')
         );
 
         $mform->addElement(

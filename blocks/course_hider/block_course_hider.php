@@ -69,7 +69,7 @@ class block_course_hider extends block_list {
             $this->content->text = $this->config->text;
         }
 
-        $this->content = '';
+        $this->content->text = '';
         if (empty($currentcontext)) {
             return $this->content;
         }

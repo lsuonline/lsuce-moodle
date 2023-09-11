@@ -29,7 +29,8 @@ require_once($CFG->dirroot . '/blocks/course_hider/lib.php');
 // Authentication.
 require_login();
 if (!is_siteadmin()) {
-    course_hider_helpers::redirect_to_url($CFG->wwwroot);
+    $redir = new course_hider_helpers();
+    $redir->redirect_to_url($CFG->wwwroot);
 }
 
 $context = \context_system::instance();
