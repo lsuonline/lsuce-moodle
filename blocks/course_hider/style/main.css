@@ -1,0 +1,27 @@
+/**
+ * New Block Template
+ *
+ * @package   block_template
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* This is kept out of styles.css as Moodle will pick this up. */
+.form-group.fitem.ch_hider_form {
+    min-width: 17%;
+    display: inline-block;
+}
+
+.ch-warning {
+	color: red !important;
+	font-size: large;
+}
+
+
+@media screen and (max-width: 600px) {
+	.form-group.fitem.ch_hider_form {
+		min-width: 100%;
+		display: block;
+	}
+}

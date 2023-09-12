@@ -79,17 +79,21 @@ $PAGE->navbar->add(get_string('ch_dashboard', 'block_course_hider'), $CFG->wwwro
 $PAGE->navbar->add(get_string('pluginname', 'block_course_hider'), new moodle_url('course_hider.php'));
 $PAGE->navbar->add(get_string('pluginname', 'block_course_hider'), new moodle_url('course_hider.php'));
 
-// $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/course_hider/style/style.css'));
+$PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/course_hider/style/main.css'));
 // $PAGE->requires->js_call_amd('block_course_hider/main', 'init');
 
 $output = $PAGE->get_renderer('block_course_hider');
 
-$mform = new \block_course_hider\form\course_hider_form();
+$toform = [
+    'btnpreview' => $pageparams['btnpreview']
+];
+$mform = new \block_course_hider\form\course_hider_form(null, $toform);
 
     // Create/Update.
 $fromform = $mform->get_data();
 $results = null;
-$worky = $worky ?? new \block_course_hider\controllers\form_controller("course");
+
+$worky = $worky ?? new \block_course_hider\controllers\form_controller();
 if ($mform->is_cancelled()) {
     // If there is a cancel element on the form, and it was pressed,
     // then the `is_cancelled()` function will return true.
@@ -113,8 +117,9 @@ $mform->display();
 if ($pageparams['btnpreview'] == 1) {
     $renderable = new \block_course_hider\output\course_hider_view($results);
     echo $output->render($renderable);
+    
 } else if ($pageparams['btnexecute'] == 1) {
-    $worky->execute_hider($results);
+    $worky->execute_hider($results, $fromform);
 }
 
 echo $output->footer();

@@ -31,9 +31,9 @@ class form_controller {
 
     private $partial;
     /**
-     * A simple example where AJAX lands in classes/controller/router.php and calls this func.
-     * @param  object containing the data
-     * @return array
+     * Let's process the form by getting the results and showing it.
+     * @param  object - the form data.
+     * @return array - list of courses.
      */
     public function process_form($params = false) {
         global $DB;
@@ -45,6 +45,8 @@ class form_controller {
             $snippet = "SELECT * FROM {course} WHERE visible='1' AND ".
                 "shortname LIKE '".$params->raw_input." %'";
         } else {
+
+            $showhidden = (isset($params->hiddenonly) && $params->hiddenonly == 1) ? '0' : '1';
 
             $years = \course_hider_helpers::getYears()[$params->ch_years] . " ";
             $semester = \course_hider_helpers::getSemester()[$params->ch_semester];
@@ -61,7 +63,7 @@ class form_controller {
 
             // Store the partial for later use.
             $this->partial = $years.$semtype.$semester.$section;
-            $snippet = "SELECT * FROM {course} WHERE visible='1' AND ".
+            $snippet = "SELECT * FROM {course} WHERE visible=$showhidden AND ".
                 "shortname LIKE '".$this->partial." %'";
         }
 
@@ -70,19 +72,36 @@ class form_controller {
         return $courses;
     }
 
-    public function execute_hider($courses = array()) {
+    /**
+     * Execute the form to make the courses either hidden or visible.
+     * @param  array - list of courses to process.
+     * @param  array - the form data.
+     * @return null
+     */
+    public function execute_hider($courses = array(), $fdata = array()) {
         global $DB, $CFG;
         $updatecount = 0;
         $time_start = microtime(true);
+        
+        if (isset($fdata->hiddenonly) && $fdata->hiddenonly == 1) {
+            // Execute on the hidden courses and make them visible.
+            $showhidden = '1';
+            $hiddentext = "visible";
+        } else {
+            // Execute on the visible courses and make them hidden.
+            $showhidden = '0';
+            $hiddentext = "hidden";
+        }
+
         foreach($courses as $course) {
             $dataobject = [
                 'id' => $course->id,
-                'visible' => 0,
+                'visible' => $showhidden,
             ];
             // Update the course to be hidden.
             $result = $DB->update_record('course', $dataobject, $bulk = false);
             $updatecount++;
-            mtrace("Course (".$course->id. "): <a href='".$CFG->wwwroot."/course/view.php?id=".$course->id."' target='_blank'>" .$course->shortname. " </a>has been updated to be hidden.<br>");
+            mtrace("Course (".$course->id. "): <a href='".$CFG->wwwroot."/course/view.php?id=".$course->id."' target='_blank'>" .$course->shortname. " </a>has been updated to be ".$hiddentext.".<br>");
         }
         $time_end = microtime(true);
         if ($updatecount == 0) {
@@ -93,7 +112,5 @@ class form_controller {
         }
         
         mtrace("<br>--- Process Complete ---<br>");
-    }
-
-    
+    }    
 }

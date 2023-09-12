@@ -50,7 +50,12 @@ class course_hider_form extends \moodleform {
 
         // Get data for the form.
         $mform =& $this->_form;
-
+        $showexecute = false;
+        if (isset($this->_customdata['btnpreview'])) {
+        // if (property_exists($this->_customdata, 'btnpreview')) {
+            $showexecute = $this->_customdata['btnpreview'];    
+        }
+        // isset($this->_customdata['btnpreview'])
         // For styling purposes, if needed.
         $mform->addElement('html', '<span class="course_hider_form_container">');
         
@@ -61,51 +66,65 @@ class course_hider_form extends \moodleform {
         $semester = \course_hider_helpers::getSemester();
         $section = \course_hider_helpers::getSemesterSection();
 
-        $mform->addElement(
-            'select',
-            'ch_years',
-            get_string('defaultyear', 'block_course_hider'),
-            $years
-        );
-        if (isset($this->_customdata->years)) {
-            $mform->setDefault('ch_years', $this->_customdata->ch_years);
-        }
+            $mform->addElement(
+                'select',
+                'ch_years',
+                get_string('defaultyear2', 'block_course_hider'),
+                $years,
+                array('class' => 'ch_hider_form')
+            );
+            if (isset($this->_customdata->years)) {
+                $mform->setDefault('ch_years', $this->_customdata->ch_years);
+            }
 
-        // --------------------------------
-        // Semester Type.
-        $mform->addElement(
-            'select',
-            'ch_semester_type',
-            get_string('defaultsemestertype', 'block_course_hider'),
-            $semtype
-        );
-        if (isset($this->_customdata->ch_semester_types)) {
-            $mform->setDefault('ch_semester_type', $this->_customdata->ch_semester);
-        }
+            // --------------------------------
+            // Semester Type.
+            $mform->addElement(
+                'select',
+                'ch_semester_type',
+                get_string('defaultsemestertype2', 'block_course_hider'),
+                $semtype,
+                array('class' => 'ch_hider_form')
+            );
+            if (isset($this->_customdata->ch_semester_types)) {
+                $mform->setDefault('ch_semester_type', $this->_customdata->ch_semester);
+            }
 
-        // --------------------------------
-        // Semester.
-        $mform->addElement(
-            'select',
-            'ch_semester',
-            get_string('defaultsemester', 'block_course_hider'),
-            $semester
-        );
-        if (isset($this->_customdata->semester)) {
-            $mform->setDefault('ch_semester', $this->_customdata->ch_semester);
-        }
+            // --------------------------------
+            // Semester.
+            $mform->addElement(
+                'select',
+                'ch_semester',
+                get_string('defaultsemester2', 'block_course_hider'),
+                $semester,
+                array('class' => 'ch_hider_form')
+            );
+            if (isset($this->_customdata->semester)) {
+                $mform->setDefault('ch_semester', $this->_customdata->ch_semester);
+            }
 
-        // --------------------------------
-        // Semester Section.
-        $mform->addElement(
-            'select',
-            'ch_semester_section',
-            get_string('defaultsemestersection', 'block_course_hider'),
-            $section
-        );
-        if (isset($this->_customdata->semester)) {
-            $mform->setDefault('ch_semester_section', $this->_customdata->ch_semester);
-        }
+            // --------------------------------
+            // Semester Section.
+            $mform->addElement(
+                'select',
+                'ch_semester_section',
+                get_string('defaultsemestersection2', 'block_course_hider'),
+                $section,
+                array('class' => 'ch_hider_form')
+            );
+            if (isset($this->_customdata->semester)) {
+                $mform->setDefault('ch_semester_section', $this->_customdata->ch_semester);
+            }
+            // 
+            // --------------------------------
+            // Show visible.
+            $mform->addElement(
+                'checkbox',
+                'hiddenonly',
+                get_string('hiddenonly', 'block_course_hider'),
+                '',
+                array('class' => 'ch_hider_form')
+            );
 
         // --------------------------------
         // Spacer.
@@ -113,20 +132,15 @@ class course_hider_form extends \moodleform {
 
         // --------------------------------
         // Manually search.
-        // 
-        $mform->addElement(
-            'static',
-            'raw_description',
-            "",
-            get_string('raw_input_desc', 'block_course_hider')
-        );
-
         $mform->addElement(
             'text',
             'raw_input',
             get_string('raw_input', 'block_course_hider'),
             "Highly recommend to preview before executing"
         );
+
+        $warning = get_string('raw_input_desc', 'block_course_hider');
+        $mform->addElement('html', '<span class="ch-warning"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i></span> '.$warning);
         $mform->setType(
             'raw_input',
             PARAM_TEXT
@@ -136,12 +150,22 @@ class course_hider_form extends \moodleform {
             $mform->setDefault('raw_input', $this->_customdata->raw_input);
         }
 
+        // // --------------------------------
+        // // Spacer.
+        // $mform->addElement('html', '<hr>');
+
+        // // --------------------------------
+        // // Show visible.
+        // $mform->addElement('checkbox', 'hiddenonly', get_string('hiddenonly', 'block_course_hider'));
         // --------------------------------
         // Hidden Elements.
         // For Page control list or view form.
         $mform->addElement('hidden', 'vpreview');
         $mform->setType('vpreview', PARAM_INT);
-        $mform->setConstant('vpreview', 1);
+        if ($this->_customdata['btnpreview'] == 1) {
+            $mform->setConstant('vpreview', 1);
+        } else 
+            $mform->setConstant('vpreview', 0);
 
         // --------------------------------
         // Buttons!
@@ -152,10 +176,14 @@ class course_hider_form extends \moodleform {
         
         $buttons = [
             $mform->createElement('submit', 'preview', get_string('previewquery', 'block_course_hider')),
-            $mform->createElement('submit', 'execute', get_string('executequery', 'block_course_hider')),
+            $mform->createElement('submit', 'execute', get_string('executequery', 'block_course_hider'))
+            // $mform->createElement('submit', 'execute', get_string('executequery', 'block_course_hider'), array('class' => 'btn btn-danger')),
         ];
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
         
+        // Disable execute until it has been previewed.
+        $mform->disabledIf('execute', 'vpreview', 'eq', 0);
+
         $mform->addElement('html', '</span>');
     }
 
