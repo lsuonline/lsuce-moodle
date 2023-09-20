@@ -141,7 +141,7 @@ class lsuxe_helpers {
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -192,7 +192,7 @@ class lsuxe_helpers {
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -242,7 +242,7 @@ class lsuxe_helpers {
                     AND ctx.instanceid = c.id
                     AND ctx.contextlevel = "50"
                 INNER JOIN {groups} g ON g.courseid = c.id
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id
                     AND u.id = gm.userid
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL

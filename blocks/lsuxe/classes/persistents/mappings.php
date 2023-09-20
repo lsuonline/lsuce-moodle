@@ -263,7 +263,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 $fields = '*'
             );
             if ($destmoodle) {
-                $thisrecord['moodleurl'] = $destmoodle->url;
+                $thisrecord['moodleurl'] = "https://".$destmoodle->url;
             } else {
                 // The moodle instance may have been deleted.
                 $thisrecord['moodleurl'] = "The URL has been deleted.";

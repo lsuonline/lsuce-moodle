@@ -28,7 +28,6 @@
     function($, XELib, Noti) {
     'use strict';
     return {
-
         /**
          * Fetch the token for the current selected URL. Store in temp sessionStorage
          *
@@ -275,12 +274,11 @@
                         that.setHiddenValue('srccourseid', response.data.id);
                         that.setHiddenValue('srccoursegroupid', response.data.groupid);
                         Noti.callNoti({
-                            message: "Everything checks out for the sourse course and group.",
+                            message: "Everything checks out for the source course and group.",
                             type: 'success'
                         });
                     }
                 });
-
             });
 
             $('#id_verifydest').on('click', function() {

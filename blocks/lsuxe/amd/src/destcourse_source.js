@@ -22,7 +22,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// define(['jquery', 'core/ajax', 'core/notification', 'block_lsuxe/xe_lib'],
 define(['jquery', 'core/ajax', 'block_lsuxe/notifications', 'block_lsuxe/xe_lib'],
     function($, Ajax, Noti, XELib) {
     'use strict';
@@ -97,7 +96,9 @@ define(['jquery', 'core/ajax', 'block_lsuxe/notifications', 'block_lsuxe/xe_lib'
                 'url': sessionStorage.getItem("currentUrl") + '/webservice/rest/server.php',
                 'data': {
                     'wstoken': sessionStorage.getItem("currentToken"),
-                    'wsfunction': 'core_course_get_courses',
+                    'wsfunction': 'core_course_search_courses',
+                    "criterianame": 'search',
+                    'criteriavalue': $('.xe_dest_sn_wrap input').val(),
                     'moodlewsrestformat': 'json'
                 }
             };
@@ -122,10 +123,10 @@ define(['jquery', 'core/ajax', 'block_lsuxe/notifications', 'block_lsuxe/xe_lib'
                     });
                     return;
                 }
-            } else if (results.length > 0) {
+            } else if (results.courses.length > 0) {
 
                 var options = [];
-                $.each(results, function(index, data) {
+                $.each(results.courses, function(index, data) {
                     options.push({
                         value: data.id + '__' + data.shortname,
                         label: data.shortname
