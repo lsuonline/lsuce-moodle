@@ -26,7 +26,6 @@ define(['jquery', 'block_lsuxe/jaxy'],
     function($, jaxy) {
     'use strict';
     return {
-
         /**
          * Store data in sessionStorage so it's available throughout
          *

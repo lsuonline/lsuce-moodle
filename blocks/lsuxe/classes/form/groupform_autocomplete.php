@@ -32,6 +32,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir . '/form/autocomplete.php');
+// require_once($CFG->libdir . '/formslib.php');
 
 class groupform_autocomplete extends MoodleQuickForm_autocomplete {
 
@@ -87,6 +88,7 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
         if (!empty($options['multiple'])) {
             $validattributes['multiple'] = 'multiple';
         }
+
         parent::__construct($elementname, $elementlabel, array(), $validattributes);
     }
 }

@@ -26,7 +26,6 @@
     function($, noti, XELib) {
     'use strict';
     return {
-
         /**
          * Register click events for the page.
          *

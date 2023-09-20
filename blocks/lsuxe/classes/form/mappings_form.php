@@ -28,10 +28,13 @@ namespace block_lsuxe\form;
 use block_lsuxe\controllers\form_controller;
 use block_lsuxe\form\groupform_autocomplete;
 use block_lsuxe\models;
+use MoodleQuickForm;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_once($CFG->libdir . '/formslib.php');
+
 
 \MoodleQuickForm::registerElementType(
     'groupform_autocomplete',
@@ -152,8 +155,7 @@ class mappings_form extends \moodleform {
             'select',
             'available_moodle_instances',
             get_string('destmoodleinstance', 'block_lsuxe'),
-            $moodleinstances,
-            ['class' => 'eatshitake_mushrooms']
+            $moodleinstances
         );
         if (isset($this->_customdata->destgroupprefix)) {
             $mform->setDefault('available_moodle_instances', $this->_customdata->destmoodleid);
@@ -176,10 +178,13 @@ class mappings_form extends \moodleform {
         if ($enableautocomplete) {
             // --------------------------------
             // Destination Course Group name autocomplete.
+            $mform->addElement('html', '<span class="xe_dest_sn_wrap">');
+
             $destcourseselect = $mform->addElement(
                 'groupform_autocomplete',
                 'destcourseshortname',
-                get_string('destcourseshortname', 'block_lsuxe')
+                get_string('destcourseshortname', 'block_lsuxe'),
+                ['class' => 'xe_dest_sn']
             );
 
             if (isset($this->_customdata->destcourseshortname)) {
@@ -190,6 +195,7 @@ class mappings_form extends \moodleform {
                     )
                 );
             }
+            $mform->addElement('html', '</span>');
 
             // --------------------------------
             // Destination Course Group name manual entry.
@@ -220,7 +226,8 @@ class mappings_form extends \moodleform {
             $mform->addElement(
                 'text',
                 'destcourseshortname',
-                get_string('destcourseshortname', 'block_lsuxe')
+                get_string('destcourseshortname', 'block_lsuxe'),
+                ['class' => 'xe_dest_sn']
             );
             $mform->setType(
                 'destcourseshortname',
