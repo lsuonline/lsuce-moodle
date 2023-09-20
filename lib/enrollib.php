@@ -529,6 +529,9 @@ function enrol_add_course_navigation(navigation_node $coursenode, $course) {
                     continue;
                 }
                 $plugin = $plugins[$instance->enrol];
+
+                // BEGIN LSU Remove unenrol link.
+                /*
                 if ($unenrollink = $plugin->get_unenrolself_link($instance)) {
                     $shortname = format_string($course->shortname, true, array('context' => $coursecontext));
                     $coursenode->add(get_string('unenrolme', 'core_enrol', $shortname), $unenrollink, navigation_node::TYPE_SETTING, null, 'unenrolself', new pix_icon('i/user', ''));
@@ -536,6 +539,9 @@ function enrol_add_course_navigation(navigation_node $coursenode, $course) {
                     break;
                     //TODO. deal with multiple unenrol links - not likely case, but still...
                 }
+                */
+                // END LSU Remove unenrol link.
+
             }
         } else {
             // enrol link if possible
