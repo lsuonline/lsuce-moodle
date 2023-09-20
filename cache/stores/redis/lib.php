@@ -328,7 +328,18 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return array An array of the values of the given keys.
      */
     public function get_many($keys) {
+        // BEGIN LSU fix for empty array.
+        if (empty($keys)) {
+            return [];
+        }
+        // END LSU fix for empty array.
+
         $values = $this->redis->hMGet($this->hash, $keys);
+        // BEGIN LSU fix for empty array.
+        if ($values === false) {
+            return [];
+        }
+        // END LSU fix for empty array.
 
         if ($this->compressor == self::COMPRESSOR_NONE) {
             return $values;

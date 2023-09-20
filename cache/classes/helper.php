@@ -765,7 +765,9 @@ class cache_helper {
                     if (strpos($key, cache_session::KEY_PREFIX) !== 0 || !is_array($value) || !isset($value['lastaccess'])) {
                         continue;
                     }
-                    if ((int)$value['lastaccess'] < $purgetime || true) {
+                    // BEGIN LSU session cache purging limits.
+                    if ((int)$value['lastaccess'] < $purgetime) {
+                    // END LSU session cache purging limits.
                         $todelete[] = $key;
                     }
                 }
