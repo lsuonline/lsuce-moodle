@@ -63,8 +63,12 @@ class ues_log extends ues_external implements ues_log_types {
         $f = array_map($toflatten, array_keys($params), array_values($params));
 
         $where = (!empty($f) ? ' AND ' : '') . implode(' AND ', $f);
-        $altnamefields = user_picture::fields('u', array(), "'ignore'");
-        $sql = "SELECT l.id, l.userid, {$altnamefields}, u.email, l.action, l.timestamp
+
+	$userfields = \core_user\fields::for_name()->get_required_fields();
+
+        $altnamefields = implode(',u.', $userfields);
+
+        $sql = "SELECT l.id, l.userid, $altnamefields, u.email, l.action, l.timestamp
                 FROM {enrol_ues_logs} l,
                     {user} u
                 WHERE u.id = l.userid $where ORDER BY $order";
