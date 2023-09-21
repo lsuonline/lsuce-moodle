@@ -194,7 +194,7 @@ function report_lsusql_generate_csv($report, $timenow, $isws) {
             }
         }
         if ($report->singlerow) {
-            array_unshift($data, strftime('%Y-%m-%d', $timenow));
+            array_unshift($data, core_date::strftime('%Y-%m-%d', $timenow));
         }
         report_lsusql_write_csv_row($handle, $data, $donotescape);
         $count += 1;
@@ -264,7 +264,7 @@ function report_lsusql_temp_cvs_name($reportid, $timestamp) {
     global $CFG;
     $path = 'admin_report_lsusql/temp/'.$reportid;
     make_upload_directory($path);
-    return array($CFG->dataroot.'/'.$path.'/'.strftime('%Y%m%d-%H%M%S', $timestamp).'.csv',
+    return array($CFG->dataroot . '/' . $path . '/' . core_date::strftime('%Y%m%d-%H%M%S', $timestamp) . '.csv',
                  $timestamp);
 }
 
@@ -272,7 +272,7 @@ function report_lsusql_scheduled_cvs_name($reportid, $timestart) {
     global $CFG;
     $path = 'admin_report_lsusql/'.$reportid;
     make_upload_directory($path);
-    return array($CFG->dataroot.'/'.$path.'/'.strftime('%Y%m%d-%H%M%S', $timestart).'.csv',
+    return array($CFG->dataroot . '/' . $path . '/' . core_date::strftime('%Y%m%d-%H%M%S', $timestart) . '.csv',
                  $timestart);
 }
 
@@ -714,7 +714,7 @@ function report_lsusql_delete_old_temp_files($upto) {
     global $CFG;
 
     $count = 0;
-    $comparison = strftime('%Y%m%d-%H%M%S', $upto).'csv';
+    $comparison = core_date::strftime('%Y%m%d-%H%M%S', $upto).'csv';
 
     $files = glob($CFG->dataroot.'/admin_report_lsusql/temp/*/*.csv');
     if (empty($files)) {
