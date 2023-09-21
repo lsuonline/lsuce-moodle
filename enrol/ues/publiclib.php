@@ -60,7 +60,8 @@ abstract class ues {
     }
 
     public static function format_time($time) {
-	$ts = intval(strftime('%Y-%m-%d', $time));
+        $ts = intval(core_date::strftime('%Y-%m-%d', $time));
+        // $ts = intval(strftime('%Y-%m-%d', $time));
         return $ts;
     }
 

@@ -140,8 +140,9 @@ $totables = function ($in, $section) use ($s, $courselabel, $OUTPUT, $baseurl) {
 
         $class = $log->action == 'AD' ? 'add' : 'drop';
         $action = '<span class = "table_'.$class.'">' . $log->action . '</span>';
+        $timestamp = (int) $log->timestamp;
 
-        $line = array($emaillink, $action, strftime('%F %T', $log->timestamp));
+        $line = array($emaillink, $action, core_date::strftime('%F %T', $timestamp));
         $table->data[] = new html_table_row($line);
     }
 

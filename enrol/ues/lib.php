@@ -344,7 +344,8 @@ class enrol_ues_plugin extends enrol_plugin {
         $micro = $diff - $sec;
 
         // Format the result as you want it - will contain something like "00:00:02.452".
-        $timeelapsed = strftime('%T', mktime(0, 0, $sec)) . str_replace('0.', '.', sprintf('%.3f', $micro));
+        $timeelapsed = core_date::strftime('%T', mktime(0, 0, $sec)) . str_replace('0.', '.', sprintf('%.3f', $micro));
+        // $timeelapsed = strftime('%T', mktime(0, 0, $sec)) . str_replace('0.', '.', sprintf('%.3f', $micro));
 
         return $timeelapsed;
     }
