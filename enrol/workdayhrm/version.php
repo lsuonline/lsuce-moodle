@@ -24,7 +24,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'enrol_workdayhrm';
-$plugin->version = 2023041300;
+$plugin->version = 2023092000;
 $plugin->requires = 2020010100;
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.0';
+$plugin->release = 'v1.1';

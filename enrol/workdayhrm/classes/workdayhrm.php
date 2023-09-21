@@ -199,7 +199,7 @@ class workdayhrm {
                 FROM {enrol_workdayhrm} w1
                   INNER JOIN {enrol_workdayhrm} w2 ON w1.work_email = w2.work_email
                 WHERE w1.id != w2.id
-                AND w1.current != 2
+                AND w1.iscurrent != 2
                 ORDER BY w1.work_email ASC,
                   w1.legal_last_name ASC,
                   w1.legal_first_name ASC';
@@ -225,7 +225,7 @@ class workdayhrm {
         $table = 'enrol_workdayhrm';
 
         // Set this to be ignored later on.
-        $dupe->current = 2;
+        $dupe->iscurrent = 2;
 
         // Set the time.
         $dupe->lastupdated = time();
@@ -397,7 +397,7 @@ class workdayhrm {
 
     public static function update_wdhrm_statuses_expired() {
         global $DB;
-        $sql = 'UPDATE {enrol_workdayhrm} wd SET wd.current = 0 WHERE wd.current = 1';
+        $sql = 'UPDATE {enrol_workdayhrm} wd SET wd.iscurrent = 0 WHERE wd.iscurrent = 1';
         $updater = $DB->execute($sql);
         return($updater);
     }
@@ -429,7 +429,7 @@ class workdayhrm {
         if (!is_null($manschoolid)) {
             $record->manager_school_id = self::fix_wdhrm_schoolid($manschoolid);
         }
-        $record->current = 1;
+        $record->iscurrent = 1;
         $record->lastupdated = time();
         unset($record->message);
 
@@ -493,7 +493,7 @@ class workdayhrm {
         if (!is_null($manschoolid)) {
             $record->manager_school_id = self::fix_wdhrm_schoolid($manschoolid);
         }
-        $record->current = 1;
+        $record->iscurrent = 1;
         $record->lastupdated = time();
 
         // Insert the record and return the id.

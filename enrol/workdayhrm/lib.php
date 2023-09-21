@@ -119,7 +119,7 @@ class enrol_workdayhrm_plugin extends enrol_plugin {
             $muser = workdayhrm::create_update_user($wdemployee, $s);
             workdayhrm::dtrace("    Finished checking to see if $wdemployee->legal_first_name $wdemployee->legal_last_name has a Moodle account.");
             workdayhrm::dtrace("      Beginning any enrollments for $wdemployee->legal_first_name $wdemployee->legal_last_name.");
-            $enrollstatus = $wdemployee->current == 1 ? 'enroll' : 'unenroll';
+            $enrollstatus = $wdemployee->iscurrent == 1 ? 'enroll' : 'unenroll';
             foreach ($courses as $course) {
                 workdayhrm::dtrace("        $enrollstatus" . "ing $muser->username into $course->shortname.");
                 if (!isset($muser->notreallyhere)) {
