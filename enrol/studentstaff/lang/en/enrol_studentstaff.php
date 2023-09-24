@@ -30,6 +30,8 @@ $string['pluginname_desc'] = 'This enrollment method will repeatedly check for s
 $string['ss_settings'] = 'Settings';
 $string['studentstaffcrontask'] = 'Student/Staff enrollment';
 $string['studentstaff_enroll'] = 'Student/Staff enrollment';
+$string['studentstaff:config'] = 'Configure Student/Staff enrollment';
+$string['studentstaff:unenrol'] = 'Unenroll a user from Student/Staff enrollment';
 
 // Privacy stuff.
 $string['privacy:metadata'] = 'The LSU Student/Staff enrolment plugin does not store any personal data.';

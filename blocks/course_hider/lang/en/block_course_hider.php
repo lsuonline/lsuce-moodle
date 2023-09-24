@@ -30,12 +30,13 @@ $string['pluginname'] = 'Course Hider';
 $string['foldername'] = 'Course Hider Tools';
 $string['hidecourses'] = 'Hide Courses';
 $string['settings'] = 'Settings';
+$string['course_hider:admin'] = 'Configure the Course Hider plugin';
 
 // Settings.
 $string['formoptionsheader'] = 'Form Options.';
 
 // Section Titles.
-$string['coursehidetitle'] = 'Course Hider TooL';
+$string['coursehidetitle'] = 'Course Hider Tool';
 $string['updatechform'] = 'Course Hider Update';
 
 // Navbar.

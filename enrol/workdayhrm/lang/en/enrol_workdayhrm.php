@@ -29,6 +29,9 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'Workday HRM Enrollment';
 $string['pluginname_desc'] = 'LSU Workday HRM Enrollment';
 $string['reprocess'] = 'Reprocess Workday HRM';
+$string['workdayhrm:reprocess'] = 'Reprocess Workday HRM';
+$string['workdayhrm:delete'] = 'Delete Workday HRM';
+$string['workdayhrm:showhide'] = 'Show/Hide Workday HRM';
 
 // The tasks.
 $string['workdayhrm_full_enroll'] = 'Workday HRM Enrollment';
