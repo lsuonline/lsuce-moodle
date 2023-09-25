@@ -873,7 +873,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
 
         // BEGIN LSU Extra Course Tabs.
         // Get the debugging settings.
-        $debugging  = $CFG->debugdisplay == 1 ? 1 : 0;
+        $debugging  = $CFG->debugdisplay == 1 && is_siteadmin() ? 1 : 0;
 
         // Get the tab settings.
         $et1      = get_config('theme_snap', 'extratab1toggle');
