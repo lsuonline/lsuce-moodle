@@ -396,9 +396,11 @@ class mysqli_native_moodle_database extends moodle_database {
         } else if ($this->get_row_format() !== 'Barracuda') {
             $this->compressedrowformatsupported = false;
 
-        } else if ($this->get_dbtype() === 'auroramysql') {
+        // BEGIN LSU Aurora DB check.
+        } else if ($this->get_dbtype() === 'auroramysql' || !is_null($this->is_auroradb())) {
             // Aurora MySQL doesn't support COMPRESSED and falls back to COMPACT if you try to use it.
             $this->compressedrowformatsupported = false;
+        // END LSU Aurora DB check.
 
         } else {
             // All the tests passed, we can safely use ROW_FORMAT=Compressed in sql statements.
@@ -407,6 +409,33 @@ class mysqli_native_moodle_database extends moodle_database {
 
         return $this->compressedrowformatsupported;
     }
+
+    // BEGIN LSU Aurora DB check.
+    /**
+     * Check if moodle is inside an instance of Amazon Aurora DB.
+     * From doc: "Amazon Aurora MySQL does not support compressed table
+     * (that is, tables created with ROW_FORMAT=COMPRESSED)".
+     * https://docs.aws.amazon.com/dms/latest/sbs/CHAP_MySQL2Aurora.RDSMySQL.html
+     * #CHAP_MySQL2Aurora.RDSMySQL.Snapshot.PreImport
+     * @return mixed|null
+     * @throws ddl_change_structure_exception
+     * @throws dml_read_exception
+     * @throws dml_write_exception
+     */
+    public function is_auroradb() {
+        $auroraversion = null;
+        $sql = 'SHOW VARIABLES LIKE "aurora_version"';
+        $this->query_start($sql, NULL, SQL_QUERY_AUX);
+        $result = $this->mysqli->query($sql);
+        $this->query_end($result);
+        if ($rec = $result->fetch_assoc()) {
+            $auroraversion = $rec['Value'];
+        }
+        $result->close();
+
+        return $auroraversion;
+    }
+    // END LSU Aurora DB check.
 
     /**
      * Check the database to see if innodb_file_per_table is on.
