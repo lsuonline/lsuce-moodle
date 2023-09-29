@@ -241,7 +241,7 @@ class edit_category_form extends moodleform {
 /// parent category related settings
         $mform->addElement('header', 'headerparent', get_string('parentcategory', 'grades'));
 
-        $mform->addElement('advcheckbox', 'grade_item_weightoverride', get_string('adjustedweight', 'grades'));
+        $mform->addElement('checkbox', 'grade_item_weightoverride', get_string('adjustedweight', 'grades'));
         $mform->addHelpButton('grade_item_weightoverride', 'weightoverride', 'grades');
 
         $mform->addElement('float', 'grade_item_aggregationcoef2', get_string('weight', 'grades'));
@@ -520,9 +520,10 @@ class edit_category_form extends moodleform {
                     $coefstring = $grade_item->get_coefstring();
 
                     // BEGIN LSU Weighted Mean extra credit.
-                    if ($coefstring == 'aggregationcoefextrasum' ||  ($coefstring == 'aggregationcoefweight' && $grade_item->aggregationcoef < 0) || $coefstring == 'aggregationcoefextraweightsum' ) {
-                    // END LSU Weighted Mean extra credit.
-                        // advcheckbox is not compatible with disabledIf!
+                    if ($coefstring == 'aggregationcoefextrasum'
+                        || ($coefstring == 'aggregationcoefweight' && $grade_item->aggregationcoef < 0)
+                        || $coefstring == 'aggregationcoefextraweightsum' ) {
+                        // END LSU Weighted Mean extra credit.
                         // BEGIN LSU Gradebook Enhancement.
                         if ($coefstring == 'aggregationcoefextraweightsum') {
                             $element =& $mform->createElement('checkbox', 'grade_item_aggregationcoef', get_string('aggregationcoefextrasum', 'grades'));
@@ -531,13 +532,14 @@ class edit_category_form extends moodleform {
                         }
                         // END LSU Gradebook Enhancement.
                         // BEGIN LSU Disable Extra Credit unless weight adjusted.
-                        $mform->disabledIf('grade_item_aggregationcoef', 'grade_item_weightoverride');
+                        $mform->hideIf('grade_item_aggregationcoef', 'grade_item_weightoverride', 'notchecked');
                         // END LSU Disable Extra Credit unless weight adjusted.
                     } else {
                         $element =& $mform->createElement('text', 'grade_item_aggregationcoef', get_string($coefstring, 'grades'));
-                        // BEGIN LSU Disable Extra Credit unless weight adjusted.
-                        $mform->disabledIf('grade_item_aggregationcoef', 'grade_item_weightoverride');
-                        // END LSU Disable Extra Credit unless weight adjusted.
+                        // BEGIN LSU Gradebook Enhancement.
+			$mform->hideIf('grade_item_aggregationcoef', 'grade_item_weightoverride', 'notchecked');
+			$mform->hideIf('grade_item_weightoverride', 'grade_item_extracred', 'checked');
+                        // END LSU Gradebook Enhancement.
                     }
                     $mform->insertElementBefore($element, 'parentcategory');
                     // BEGIN LSU Gradebook Enhancement.
@@ -559,6 +561,7 @@ class edit_category_form extends moodleform {
                             $mform->removeElement('grade_item_aggregationcoef2');
                         }
                         $element =& $mform->createElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
+                        $mform->hideIf('grade_item_extracred', 'grade_item_weightoverride', 'checked');
 
                         if ($mform->elementExists('parentcategory')) {
                             $mform->insertElementBefore($element, 'parentcategory');
@@ -575,9 +578,15 @@ class edit_category_form extends moodleform {
                         if ($mform->elementExists('grade_item_aggregationcoef')) {
                             $mform->removeElement('grade_item_aggregationcoef');
                         }
-                        $mform->addElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
+                        $element =& $mform->createElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
+
+                        if ($mform->elementExists('parentcategory')) {
+                            $mform->insertElementBefore($element, 'parentcategory');
+                        } else {
+                            $mform->insertElementBefore($element, 'id');
+                        }
                         if ($grade_item->aggregationcoef < 0) {
-                        $mform->setDefault('grade_item_extracred','1');
+                            $mform->setDefault('grade_item_extracred','1');
                         }
                     } else {
                         if ($mform->elementExists('grade_item_weightoverride')) {

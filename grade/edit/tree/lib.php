@@ -604,9 +604,15 @@ class grade_edit_tree {
         if (empty($gradecategory->id)) {
             $gradecategory->insert();
 
+        // BEGIN LSU Weighted Mean Extra Credit.
         } else {
+            $ectest = isset($data->grade_item_extracred);
+            if ($ectest == 1) {
+                $data->grade_item_aggregationcoef = -1;
+            }
             $gradecategory->update();
         }
+        // END LSU Weighted Mean Extra Credit.
 
         // GRADE ITEM.
         // Grade item data saved with prefix "grade_item_".
@@ -711,6 +717,17 @@ class grade_edit_tree {
 
         $gradeitem->set_locktime($locktime); // Locktime first - it might be removed when unlocking.
         $gradeitem->set_locked($locked, false, true);
+
+        // BEGIN LSU Weighted Mean Extra Credit.
+        $ectest = isset($data->grade_item_extracred);
+        $parentcategory = $gradeitem->get_parent_category();
+
+        if ($gradeitem->itemtype == 'category' && $parentcategory->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ectest == 1) {
+            $gradeitem->aggregationcoef = $gradeitem->aggregationcoef <> 0 ? abs($gradeitem->aggregationcoef) * -1 : -1;
+            $gradeitem->weightoverride = 0;
+            $gradeitem->aggregationcoef2 = 0;
+        }
+        // END LSU Weighted Mean Extra Credit.
 
         $gradeitem->update(); // We don't need to insert it, it's already created when the category is created.
 
