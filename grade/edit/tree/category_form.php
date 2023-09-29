@@ -530,10 +530,8 @@ class edit_category_form extends moodleform {
                         } else {
                             $element =& $mform->createElement('checkbox', 'grade_item_aggregationcoef', get_string($coefstring, 'grades'));
                         }
-                        // END LSU Gradebook Enhancement.
-                        // BEGIN LSU Disable Extra Credit unless weight adjusted.
                         $mform->hideIf('grade_item_aggregationcoef', 'grade_item_weightoverride', 'notchecked');
-                        // END LSU Disable Extra Credit unless weight adjusted.
+                        // END LSU Gradebook Enhancement.
                     } else {
                         $element =& $mform->createElement('text', 'grade_item_aggregationcoef', get_string($coefstring, 'grades'));
                         // BEGIN LSU Gradebook Enhancement.
