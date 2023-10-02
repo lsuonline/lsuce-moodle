@@ -91,10 +91,6 @@
   <exclude-pattern>lib/http-message/</exclude-pattern>
   <exclude-pattern>lib/phpxmlrpc/</exclude-pattern>
   <exclude-pattern>local/adminer/lib/</exclude-pattern>
-  <exclude-pattern>local/codechecker/phpcs/</exclude-pattern>
-  <exclude-pattern>local/codechecker/PHPCompatibility/</exclude-pattern>
-  <exclude-pattern>local/codechecker/MoodleCS/</exclude-pattern>
-  <exclude-pattern>local/codechecker/moodle/</exclude-pattern>
   <exclude-pattern>media/player/videojs/amd/src/video-lazy.js</exclude-pattern>
   <exclude-pattern>media/player/videojs/amd/src/Youtube-lazy.js</exclude-pattern>
   <exclude-pattern>media/player/videojs/videojs/</exclude-pattern>
@@ -113,7 +109,13 @@
   <exclude-pattern>mod/lightboxgallery/yui/lightbox/</exclude-pattern>
   <exclude-pattern>mod/lightboxgallery/assets/</exclude-pattern>
   <exclude-pattern>mod/questionnaire/javascript/RGraph/</exclude-pattern>
+  <exclude-pattern>plagiarism/turnitinsim/vendor/katzgrau/</exclude-pattern>
+  <exclude-pattern>plagiarism/turnitinsim/vendor/psr/</exclude-pattern>
+  <exclude-pattern>plagiarism/turnitinsim/vendor/composer/</exclude-pattern>
+  <exclude-pattern>plagiarism/turnitinsim/vendor/autoload.php</exclude-pattern>
   <exclude-pattern>question/type/wq/quizzes/</exclude-pattern>
+  <exclude-pattern>report/lpmonitoring/amd/src/bootstrap-colorpicker.js</exclude-pattern>
+  <exclude-pattern>report/lpmonitoring/amd/src/jquery.dataTables.js</exclude-pattern>
   <exclude-pattern>repository/s3/S3.php</exclude-pattern>
   <exclude-pattern>theme/boost/scss/bootstrap/</exclude-pattern>
   <exclude-pattern>theme/boost/amd/src/bootstrap/alert.js</exclude-pattern>

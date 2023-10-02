@@ -241,7 +241,7 @@ class edit_category_form extends moodleform {
 /// parent category related settings
         $mform->addElement('header', 'headerparent', get_string('parentcategory', 'grades'));
 
-        $mform->addElement('checkbox', 'grade_item_weightoverride', get_string('adjustedweight', 'grades'));
+        $mform->addElement('advcheckbox', 'grade_item_weightoverride', get_string('adjustedweight', 'grades'));
         $mform->addHelpButton('grade_item_weightoverride', 'weightoverride', 'grades');
 
         $mform->addElement('float', 'grade_item_aggregationcoef2', get_string('weight', 'grades'));
