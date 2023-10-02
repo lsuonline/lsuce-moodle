@@ -458,11 +458,10 @@ EOF;
         $blockreports = array_key_exists('reports', core_component::get_plugin_list('block'));
         $allyreport = (\core_component::get_component_directory('report_allylti') !== null);
         $localcatalogue = array_key_exists('catalogue', $localplugins);
-        $disablesnapmycourses = isset($CFG->theme_snap_disable_my_courses) ? $CFG->theme_snap_disable_my_courses : true;
 
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
                      $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
-                     $gradingconstants, $disablesnapmycourses];
+                     $gradingconstants];
         $initaxvars = [$localjoulegrader, $allyreport, $blockreports, $localcatalogue];
         $alternativelogins = new login_alternative_methods();
         if ($alternativelogins->potentialidps) {
@@ -480,7 +479,8 @@ EOF;
         // Does the page have editable course content?
         if ($pagehascoursecontent && $PAGE->user_allowed_editing()) {
             $canmanageacts = has_capability('moodle/course:manageactivities', context_course::instance($COURSE->id));
-            if ($canmanageacts && (empty($USER->editing) || $COURSE->id === SITEID)) {
+            if ($canmanageacts && (empty($USER->editing) || $COURSE->id === SITEID) && $COURSE->format !== 'tiles' ||
+                $canmanageacts && !empty($USER->editing) && $COURSE->format == 'tiles') {
                 $modinfo = get_fast_modinfo($COURSE);
                 $modnamesused = $modinfo->get_used_module_names();
 
@@ -1113,7 +1113,9 @@ EOF;
         $options['id'] = $COURSE->id;
         $options['item'] = optional_param('item', '', PARAM_TEXT);
         if ($options['item'] === 'user') {
-            $options['userid'] = optional_param('userid', '', PARAM_INT);
+            $userid = optional_param('userid', '', PARAM_INT);
+            $itemid = optional_param('itemid', '', PARAM_INT);
+            $options['itemid'] = $userid ?: $itemid;
         } else if ($options['item'] === 'grade') {
             $options['itemid'] = optional_param('itemid', '', PARAM_INT);
         }

@@ -879,6 +879,29 @@ a.yui3-button,
     overflow: auto;
 }
 
+.path-grade-report-grader #region-main div[role="main"]:has(.gradeparent) {
+    overflow: unset;
+
+    .user-grade td.evend2,
+    .user-grade th.evend2,
+    .user-grade td.oddd1,
+    .user-grade th.oddd1,
+    table#user-grades td.controls,
+    .path-grade-report-grader table tr.avg .cell,
+    .path-grade-report-grader table tr.range .cell,
+    table#user-grades tr.avg td.cell,
+    .user-grade td.oddd2,
+    .user-grade th.oddd2,
+    .user-grade td.oddd3,
+    .user-grade th.oddd3,
+    .user-grade td.evend3,
+    .user-grade th.evend3,
+    .user-grade td.oddd3,
+    .user-grade th.oddd3 {
+        background-color: #fff;
+    }
+}
+
 #page-site-index .section-modchooser-link {
     clear: both;
     margin: 0;
@@ -1217,6 +1240,68 @@ footer #moodle-footer
         color: darken($nav-button-color, 8%);
     }
 }
+// Styles for Snap user menu.
+#snap-header {
+
+    .pull-right.js-only.row {
+        margin-top: 1em;
+    }
+
+    #snap-home:not(.logo) {
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+
+    .snap-my-courses-link {
+        padding-bottom: 0.5rem;
+        align-self: center;
+        font-weight: bold;
+    }
+
+    .usermenu {
+        #user-menu-toggle {
+            padding-top: 0.15em;
+        }
+
+        .userpicture,
+        .userinitials {
+            width: 40px;
+            height: 40px;
+        }
+
+        &:hover {
+            .userpicture,
+            .userinitials {
+                @include alakazam;
+                transform: scale(1.1);
+            }
+        }
+
+        #user-action-menu {
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+            min-width: 13rem;
+            border-radius: 5px;
+            .carousel-item {
+                min-width: 13rem;
+                .header {
+                    padding: 0.25rem 0.75rem;
+                    .dir-rtl-hide {
+                        pointer-events: none;
+                    }
+                }
+            }
+        }
+
+        .dropdown-item.carousel-navigation-link::after {
+            font-family: FontAwesome;
+            content: "\f0da";
+            font-size: 1rem;
+            right: 0.75rem;
+            position: absolute;
+        }
+    }
+}
 
 #mr-nav #snap-pm-trigger:hover {
     text-decoration: none;
@@ -1288,7 +1373,7 @@ footer #moodle-footer
     // If logo image.
     &.logo {
         display: inline-block;
-        height: 45px;
+        height: 76px;
         background-color: transparent;
         background-repeat: no-repeat;
         background-size: contain;
@@ -1384,8 +1469,13 @@ footer #moodle-footer
     }
 }
 
+#page-login-index #page {
+    margin-top: 0;
+}
+
 #page {
     margin: 0;
+    margin-top: 2em;
     padding: 0;
     position: relative;
     left: 0;
@@ -1393,6 +1483,9 @@ footer #moodle-footer
     // When admin block is open
     &.offcanvas {
         left: -200px;
+    }
+    @include media-breakpoint-down(md) {
+        margin-top: 0;
     }
 }
 
@@ -5088,15 +5181,6 @@ div[id^=snap-create-activity-] .section-modchooser-link {
         margin-top: 2em;
     }
 }
-// Hide My Courses option from navigation settings.
-body#page-admin-setting-navigation.disable-my-courses #admin-defaulthomepage .custom-select option[value="3"],
-body#page-user-defaulthomepage.disable-my-courses select#id_defaulthomepage option[value="3"] {
-    display: none
-}
-// Block enabledashboard from navigation settings.
-body#page-admin-setting-navigation.disable-my-courses #admin-enabledashboard {
-    opacity: 0.7;
-}
 // -------------------------
 // Go to top button
 // -------------------------
@@ -5301,5 +5385,15 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
                 margin: 0 auto;
             }
         }
+    }
+}
+
+// Styles for My courses page in Snap.
+#page-my-index.page-mycourses {
+    .snap-page-my-courses-options  {
+        float: right;
+    }
+    .block_myoverview {
+        border: 0 !important;
     }
 }

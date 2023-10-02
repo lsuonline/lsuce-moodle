@@ -121,33 +121,45 @@ Feature: When the moodle theme is set to Snap,
     Then "#page-site-index" "css_element" should be visible
     And the following config values are set as admin:
       | defaulthomepage | 1 |
-    And I log out
     And I log in as "admin"
     Then "#page-my-index" "css_element" should be visible
     And I click on "#snap-home" "css_element"
     Then "#page-my-index" "css_element" should be visible
     And the following config values are set as admin:
+      | defaulthomepage | 3 |
+    And I log in as "admin"
+    Then "#page-my-index.page-mycourses" "css_element" should be visible
+    And I click on "#snap-home" "css_element"
+    Then "#page-my-index.page-mycourses" "css_element" should be visible
+    And the following config values are set as admin:
       | defaulthomepage | 2 |
     And I open the personal menu
-    And I follow "Preferences"
+    And I click on "#snap-pm-preferences" "css_element"
     And I follow "Start page"
     And I set the field with xpath "//select[@name='defaulthomepage']" to "Home"
     And I press "Save changes"
-    And I log out
     And I log in as "admin"
     Then "#page-site-index" "css_element" should be visible
     And I click on "#snap-home" "css_element"
     Then "#page-site-index" "css_element" should be visible
     And I open the personal menu
-    And I follow "Preferences"
+    And I click on "#snap-pm-preferences" "css_element"
     And I follow "Start page"
     And I set the field with xpath "//select[@name='defaulthomepage']" to "Dashboard"
     And I press "Save changes"
-    And I log out
     And I log in as "admin"
     Then "#page-my-index" "css_element" should be visible
     And I click on "#snap-home" "css_element"
     Then "#page-my-index" "css_element" should be visible
+    And I open the personal menu
+    And I click on "#snap-pm-preferences" "css_element"
+    And I follow "Start page"
+    And I set the field with xpath "//select[@name='defaulthomepage']" to "My courses"
+    And I press "Save changes"
+    And I log in as "admin"
+    Then "#page-my-index.page-mycourses" "css_element" should be visible
+    And I click on "#snap-home" "css_element"
+    Then "#page-my-index.page-mycourses" "css_element" should be visible
 
   @javascript
   Scenario: After login, admin user sees the expected links in the personal menu.
@@ -163,17 +175,3 @@ Feature: When the moodle theme is set to Snap,
     Then I should see "My programs"
     Then I should see "Switch role to..."
     Then I should see "Log out"
-
-  @javascript
-  Scenario: User opens the personal menu when the My courses link is clicked in the navigation block.
-    Given the following "courses" exist:
-      | fullname | shortname |
-      | Course 1 | C1        |
-    And I log in as "admin"
-    And I am on the course main page for "C1"
-    And I follow "Course Dashboard"
-    And I should see "Navigation"
-    And I click on "Site pages" "list_item" in the "Navigation" "block"
-    And I should see "My courses" in the ".block_navigation" "css_element"
-    And I click on "My courses" "link" in the "//section[@data-block='navigation']" "xpath_element"
-    Then "#snap-pm" "css_element" should be visible

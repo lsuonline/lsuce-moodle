@@ -37,11 +37,12 @@ use theme_snap\renderables\genius_dashboard_link;
 $homepage = get_home_page();
 if ($homepage === 1) {
     $defaulthomeurl = $CFG->wwwroot.'/my';
+} else if ($homepage === 3) {
+    $defaulthomeurl = $CFG->wwwroot.'/my/courses.php';
 } else {
     $defaulthomeurl = $CFG->wwwroot;
 }
 $sitefullname = format_string($SITE->fullname);
-
 $attrs = array(
     'aria-label' => get_string('home', 'theme_snap'),
     'id' => 'snap-home',
@@ -64,8 +65,8 @@ echo html_writer::link($defaulthomeurl, $sitefullname, $attrs);
         echo $OUTPUT->render($bblink);
         echo '</div>';
     }
-
-    echo $OUTPUT->personal_menu_trigger();
+    echo $OUTPUT->my_courses_nav_link();
+    echo $OUTPUT->user_menu_nav_dropdown();
     echo $OUTPUT->render_message_icon();
     echo $OUTPUT->render_notification_popups();
 
