@@ -33,6 +33,14 @@ $courseid = required_param('id', PARAM_INT);
 $bound    = required_param('bound', PARAM_RAW);
 $gradeid  = required_param('grade', PARAM_INT);
 $groupid  = optional_param('group', 0, PARAM_INT);
+$groupid  = isset($groupid) ? $groupid : 0;
+
+$parms = array(
+        'id' => $courseid,
+        'bound' => $bound,
+        'grade' => $gradeid,
+        'group' => $groupid
+);
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
@@ -50,18 +58,28 @@ require_capability('moodle/grade:viewall', $context);
 $strgrades  = get_string('grades');
 $reportname = get_string('pluginname', 'gradereport_grade_breakdown');
 
-$PAGE->set_url(new moodle_url('/grade/report/grade_breakdown/letter_report.php',
-    array(
-        'id' => $courseid,
-        'bound' => $bound,
-        'grade' => $gradeid,
-        'group' => $groupid
-    )
-));
+//$url = new moodle_url('/grade/report/grade_breakdown/letter_report.php', $parms);
+$url = new moodle_url('/grade/report/grade_breakdown/index.php', ['id' => $courseid]);
 
 $PAGE->set_context($context);
+$PAGE->set_url($url);
 
-print_grade_page_head($course->id, 'report', 'grade_breakdown', $reportname, false);
+$abar = new \core_grades\output\general_action_bar($PAGE->context, $PAGE->url, 'report', 'grade_breakdown');
+
+print_grade_page_head(
+    $course->id,
+    'report',
+    $active_plugin = 'grade_breakdown',
+    $heading = $reportname,
+    $return = false,
+    $buttons = false,
+    $shownavigation = true,
+    $headerhelpidentifier = null,
+    $headerhelpcomponent = null,
+    $user = null,
+    $actionbar = $abar,
+    $showtitle = true
+);
 
 // This grade report has the functionality to print the right
 // group selector
@@ -123,15 +141,19 @@ $grade_item = $DB->get_record_sql($sql, array(
     'courseid' => $courseid
 ));
 
+$decimals = $grade_item->decimals;
+
 $letters = grade_get_letters($context);
 
-$high = 100;
+$high = $CFG->unlimitedgrades = 1 ? 10000 : 100;
+
 foreach($letters as $boundary => $letter) {
     // Found it!
     if ($boundary == $bound) {
         break;
     }
-    $high = $boundary - (1 / (pow(10, $decimals)));
+    $val = (1 / (pow(10, $decimals)));
+    $high = $boundary - $val;
 }
 
 // In the event that we're looking at the max, students actually have the
@@ -143,7 +165,7 @@ $real_low  = $grade_item->grademax * ($bound / 100);
 
 $query_params = array(
     'courseid' => $courseid,
-    'gradeid' => $gradeid,
+    'gradeid' => $grade_item->id,
     'real_high' => $real_high,
     'real_low' => $real_low
 );
@@ -163,9 +185,13 @@ if ($groupid) {
 
 // Get all the grades for the users within the range specified with $real_high and $real_low
 
-$mainuserfields = user_picture::fields('u', array('id'), 'userid');
+$userfields = \core_user\fields::for_name()->get_required_fields();
 
-$sql = "SELECT u.id, $mainuserfields, g.id AS gradeid, g.finalgrade
+$mainuserfields = implode(',u.', $userfields);
+
+$highselect = $real_high >= 100 ? "" : "AND g.finalgrade <= $real_high";
+
+$sql = "SELECT u.id, $mainuserfields, g.id AS gradesid, g.finalgrade
                 $group_name
           FROM  {grade_grades} g,
                 {user} u
@@ -174,7 +200,7 @@ $sql = "SELECT u.id, $mainuserfields, g.id AS gradeid, g.finalgrade
               $group_where
               AND g.itemid = :gradeid
               AND g.userid IN ({$userids})
-              AND g.finalgrade <= :real_high
+              $highselect
               AND g.finalgrade >= :real_low
             ORDER BY g.finalgrade DESC";
 
@@ -189,16 +215,15 @@ if (!$grades) {
 
 // Get the Moodle version of this grade item
 $item_params = array('id' => $gradeid);
-$grade_item = grade_item::fetch($item_params);
+$gradeitem = grade_item::fetch($item_params);
 
-$name = $grade_item->get_name();
+$name = $gradeitem->get_name();
 
 $g_params = array('id' => $groupid);
 $groupname = ($groupid) ? ' in ' . $DB->get_field('groups', 'name', $g_params) : '';
 
 echo $OUTPUT->heading(get_string('user_grades', 'gradereport_grade_breakdown') .
     $letters[$bound] . ' for ' . $name . $groupname);
-
 
 $numusers = count($graded_users);
 
@@ -214,15 +239,15 @@ foreach ($grades as $userid => $gr) {
 
     $line[] = html_writer::link($url, fullname($gr));
 
-    $line[] = grade_format_gradevalue($gr->finalgrade, $grade_item, true,
+    $line[] = grade_format_gradevalue($gr->finalgrade, $gradeitem, true,
         GRADE_DISPLAY_TYPE_REAL);
 
-    $line[] = grade_format_gradevalue($gr->finalgrade, $grade_item, true,
+    $line[] = grade_format_gradevalue($gr->finalgrade, $gradeitem, true,
         GRADE_DISPLAY_TYPE_PERCENTAGE);
 
-    $line[] = find_rank($context, $grade_item, $gr, $groupid) . '/' . $numusers;
+    $line[] = find_rank($context, $gradeitem, $gr, $groupid) . '/' . $numusers;
 
-    $line[] = print_edit_link($courseid, $grade_item, $gr->gradeid);
+    $line[] = print_edit_link($courseid, $gradeitem, $gr->gradesid);
     $data[] = $line;
 }
 
