@@ -441,11 +441,14 @@ function grade_get_graded_users_select($report, $course, $userid, $groupid, $inc
     while ($userdata = $gui->next_user()) {
         $user = $userdata->user;
         $userfullname = fullname($user);
+        // BEGIN LSU Show emails in user dropdown.
+        $useremail = $user->email;
         if ($user->suspendedenrolment) {
-            $menususpendedusers[$user->id] = $userfullname;
+            $menususpendedusers[$user->id] = $userfullname  . ' (' . $useremail . ')';
         } else {
-            $menu[$user->id] = $userfullname;
+            $menu[$user->id] = $userfullname . ' (' . $useremail . ')';
         }
+        // END LSU Show emails in user dropdown.
     }
     $gui->close();
 
