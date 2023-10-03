@@ -113,8 +113,11 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
     }
 
     if (empty($userid)) {
-        print_grade_page_head($courseid, 'report', 'overview', false, false, false,
-            true, null, null, null, $actionbar);
+        // BEGIN LSU last report selected.
+        print_grade_page_head($COURSE->id, 'report', 'overview',
+            get_string('pluginname', 'gradereport_overview') . ' - ' . fullname($user),
+            false, false, true, null, null, $user);
+        // END LSU last report selected.
 
         groups_print_course_menu($course, $gpr->get_return_url('index.php?id='.$courseid, array('userid'=>0)));
 
@@ -134,10 +137,13 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
         if ($alternateused) {
             $user->firstname = $report->user->alternatename . ' (' . $report->user->firstname . ') ';
         }
-
-        print_grade_page_head($courseid, 'report', 'overview', get_string('pluginname', 'gradereport_overview') .
-                ' - ' . fullname($user), false, false, true, null, null, $user);
         // END LSU Alternate Names support.
+
+        // BEGIN LSU last report selected.
+        print_grade_page_head($COURSE->id, 'report', 'overview',
+            get_string('pluginname', 'gradereport_overview') . ' - ' . fullname($report->user),
+            false, false, true, null, null, $report->user, $actionbar);
+        // END LSU last report selected.
 
         groups_print_course_menu($course, $gpr->get_return_url('index.php?id='.$courseid, array('userid'=>0)));
 
@@ -183,9 +189,10 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
                 echo '<br />' . $report->print_table(true);
             }
         } else { // We have a course context. We must be navigating from the gradebook.
-            print_grade_page_head($courseid, 'report', 'overview', get_string('pluginname', 'gradereport_overview')
-                . ' - ' . fullname($report->user), false, false, true, null, null,
-                $report->user, $actionbar);
+            // BEGIN LSU last report selected.
+            print_grade_page_head($COURSE->id, 'report', 'overview',
+                get_string('pluginname', 'gradereport_overview'));
+            // END LSU last report selected.
             if ($report->fill_table()) {
                 echo '<br />' . $report->print_table(true);
             }
