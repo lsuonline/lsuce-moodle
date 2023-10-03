@@ -602,56 +602,53 @@ class user extends grade_report {
                         $gradeitemdata['weightformatted'] = $data['weight']['content'];
                     }
 
-                    // BEGIN LSU Weighted Mean Extra Credit
+                    // BEGIN LSU Weighted Mean Extra Credit.
+                    // We need the parent and grandparent for later.
                     $gradecat = $gradeobject->load_parent_category();
                     $grandcat = $gradecat->load_parent_category();
-                    if (($gradecat->aggregation == GRADE_AGGREGATE_SUM)) {
-                        if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
-                            $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
-                            $gradeitemdata['status'] = $hint['status'];
-                        }
-                        if ($hint['status'] == 'extra') {
-                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
-                            $gradeitemdata['status'] = $hint['status'];
-                        }
-                    } 
+
+                    // Why weight is stored as a string is beyond me. Float it.
+                    $hint['fweight'] = (float) $hint['weight'];
+
+                    // Fix weighted mean extra credit hinting.
                     if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                        if ($hint['status'] == 'used') {
-                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
-                            $gradeitemdata['status'] = $hint['status'];
-                        }
-                        if ($hint['status'] == 'novalue') {
-                            $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
-                            $gradeitemdata['status'] = $hint['status'];
-                        }
+
+                        // Build the correct hint status based on its current status and fweight.
+                        $hint['status'] = $hint['status'] == 'used' || $hint['status'] == 'extra'
+                            ? ($hint['fweight'] < 0 ? 'extra' : 'used')
+                            : $hint['status'];
                     }
-                    if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2) {
-                        if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
-                            $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
-                            $gradeitemdata['status'] = $hint['status'];
-                        }
-                        if ($hint['status'] == 'extra') {
-                            $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
-                            $gradeitemdata['status'] = $hint['status'];
-                        }
-                    }
+
+                    // If we have a grandparent grade category aggregation set.
                     if (isset($grandcat->aggregation)) {
-                        if (($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN || $grandcat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) && $gradeobject->itemtype == 'category') {
+
+                        // If the parent or grandparent aggregation is WM.
+                        if (($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN
+                            || $grandcat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN)
+                            && $gradeobject->itemtype == 'category') {
+
+                            // If we're dealing with an EC item show it as extra credit.
                             if ($gradeobject->aggregationcoef < 0) {
                                 $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
                                 $gradeitemdata['status'] = $hint['status'];
+
+                            // No EC, show the weight.
                             } else {
                                 $data['weight']['content'] = format_float($hint['weight'] * 100.0, 2) . ' %';
                                 $gradeitemdata['status'] = $hint['status'];
-                            } 
+                            }
                         }
+                    // We do not have a grandparent category.
                     } else {
-                        if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $gradeobject->itemtype == 'category' && $gradeobject->aggregationcoef < 0) {
+                        // We're dealing with a 1st level category that is extra credit.
+                        if ($gradecat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN
+                            && $gradeobject->itemtype == 'category'
+                            && $gradeobject->aggregationcoef < 0) {
                             $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
                             $gradeitemdata['status'] = $hint['status'];
                         }
                     }
-                    // END LSU Weighted Mean Extra Credit
+                    // END LSU Weighted Mean Extra Credit.
 
                     if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
                         $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
