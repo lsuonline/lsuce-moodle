@@ -368,6 +368,13 @@ class edit_item_form extends moodleform {
                     // BEGIN LSU Gradebook Enhancement.
                     $mform->hideIf('aggregationcoef', 'weightoverride', 'notchecked');
                     $mform->hideIf('weightoverride', 'extracred', 'checked');
+                    $mform->hideIf('aggregationcoef', 'gradetype', 'eq', GRADE_TYPE_TEXT);
+                    $mform->hideIf('aggregationcoef', 'gradetype', 'eq', GRADE_TYPE_NONE);
+                    $mform->hideIf('extracred', 'gradetype', 'eq', GRADE_TYPE_NONE);
+                    $mform->hideIf('extracred', 'gradetype', 'eq', GRADE_TYPE_TEXT);
+                    if ((float)$gradeitem->aggregationcoef <> 1) {
+                        $mform->removeElement('weightoverride');
+                    }
                     // END LSU Gradebook Enhancement.
                 }
                 // BEGIN LSU Gradebook Enhancement.
@@ -419,7 +426,6 @@ class edit_item_form extends moodleform {
                     $mform->removeElement('aggregationcoef');
                 }
                 $element =& $mform->createElement('checkbox', 'extracred', get_string('aggregationcoefextrasum', 'grades'));
-
                 if ($mform->elementExists('parentcategory')) {
                     $mform->insertElementBefore($element, 'parentcategory');
                 } else {

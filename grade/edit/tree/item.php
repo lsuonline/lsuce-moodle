@@ -170,6 +170,13 @@ if ($mform->is_cancelled()) {
     }
 
     if (empty($gradeitem->id)) {
+        // BEGIN LSU Weighted Mean Extra Credit
+        $ectest = isset($data->extracred);
+        if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ectest == 1) {
+            $gradeitem->aggregationcoef = $gradeitem->aggregationcoef <> 0 ? abs($gradeitem->aggregationcoef) * -1 : -1;
+        }
+        // END LSU Weighted Mean Extra Credit
+
         $gradeitem->itemtype = 'manual'; // All new items to be manual only.
         $gradeitem->insert();
 
