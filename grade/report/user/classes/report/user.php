@@ -628,11 +628,14 @@ class user extends grade_report {
                             && $gradeobject->itemtype == 'category') {
 
                             // If we're dealing with an EC item show it as extra credit.
-                            if ($gradeobject->aggregationcoef < 0) {
-                                $data['weight']['content'] = get_string('aggregationhintextra', 'grades');
-                                $gradeitemdata['status'] = $hint['status'];
-
-                            // No EC, show the weight.
+                            if ($hint['status'] == 'used' || $hint['status'] == 'extra') {
+                                if ($hint['fweight'] < 0) {
+                                    $hint['status'] = 'extra';
+                                    $data['weight']['content'] = '';
+                                } else {
+                                    $hint['status'] = 'used';
+                                    $data['weight']['content'] = format_float($hint['weight'] * 100.0, 2) . ' %';
+                                }
                             } else {
                                 $data['weight']['content'] = format_float($hint['weight'] * 100.0, 2) . ' %';
                                 $gradeitemdata['status'] = $hint['status'];
@@ -1010,8 +1013,16 @@ class user extends grade_report {
                 // of all the categories higher in the tree.
                 $parent = null;
                 do {
-                    if (!is_null($this->aggregationhints[$itemid]['weight'])) {
+
+                    // BEGIN LSU Custom Weights Extra Credit.
+                    if (!is_null($this->aggregationhints[$itemid]['weight']) &&
+                        floatval($this->aggregationhints[$itemid]['weight']) < 0) {
+                        $gradeval = null;
+                    }
+                    if (!is_null($this->aggregationhints[$itemid]['weight']) &&
+                        floatval($this->aggregationhints[$itemid]['weight']) >= 0) {
                         $gradeval *= $this->aggregationhints[$itemid]['weight'];
+                    // END LSU Custom Weights Extra Credit.
                     } else if (empty($parent)) {
                         // If we are in the first loop, and the weight is null, then we cannot calculate the contribution.
                         $gradeval = null;
