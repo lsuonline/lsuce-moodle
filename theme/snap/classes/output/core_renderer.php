@@ -1060,7 +1060,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
             if (!$rccontainer) {
 
                 if ($debugging) {
-                    echo("We have no local cache for $USER->username.<br>");
+                    echo("<span class = 'snap_debug_hidden'>We have no local cache for $USER->username.<br></span>");
                 }
 
                 // Fetch the remote courses.
@@ -1078,7 +1078,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
             } else if (isset($rccourses->exception) && $rccontainer->lastupdated > (time() - $rccache)) {
 
                 if ($debugging) {
-                    echo("We have a valid exception cache stored for $USER->username.<br>");
+                    echo("<span class = 'snap_debug_hidden'>We have a valid exception cache stored for $USER->username.<br></span>");
                 }
 
                 // If we have a valid cached exception, set remote courses to false.
