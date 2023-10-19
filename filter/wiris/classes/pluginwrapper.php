@@ -143,17 +143,13 @@ class filter_wiris_pluginwrapper {
         if (!in_array('atto', $editors)) {
             $editors[] = 'atto';
         }
-        // BEGIN LSU if branch doesn't exist then installation fails.
-        // if ($CFG->branch < 402) {
-        if (isset($CFG->branch) && $CFG->branch < 402) {
-        // LSU END
-            if (!in_array('tinymce', $editors)) {
-                $editors[] = 'tinymce';
-            }
-        } else {
-            if (!in_array('tiny', $editors)) {
-                $editors[] = 'tiny';
-            }
+
+        if (!in_array('tinymce', $editors)) {
+            $editors[] = 'tinymce';
+        }
+
+        if (!in_array('tiny', $editors)) {
+            $editors[] = 'tiny';
         }
 
         foreach ($editors as $editor) {
