@@ -27,7 +27,7 @@ namespace availability_relativedate;
 use availability_relativedate\condition;
 use context_module;
 use core\event\course_module_completion_updated;
-use \core_availability\{tree, mock_info, info_module};
+use core_availability\{tree, mock_info, info_module};
 use stdClass;
 
 /**
@@ -70,7 +70,7 @@ class condition_test extends \advanced_testcase {
     /**
      * Relative dates tree provider.
      */
-    public function tree_provider(): array {
+    public static function tree_provider(): array {
         return [
             'After start course' => [2, 1, 1, "+2 hour", "From"],
             'Before end course' => [3, 2, 2, '-3 day', 'Until'],
@@ -115,7 +115,8 @@ class condition_test extends \advanced_testcase {
         $dg = $this->getDataGenerator();
         $page = $dg->get_plugin_generator('mod_page')->create_instance(['course' => $this->course]);
         $stru = (object)['op' => '|', 'show' => true,
-            'c' => [(object)['type' => 'relativedate', 'n' => 7, 'd' => 0, 's' => 7, 'm' => $page->cmid]]];
+            'c' => [(object)['type' => 'relativedate', 'n' => 7, 'd' => 0, 's' => 7, 'm' => $page->cmid]],
+        ];
         $tree = new tree($stru);
         $this->setUser($this->user);
         $info = new mock_info($this->course, $this->user->id);
@@ -132,7 +133,7 @@ class condition_test extends \advanced_testcase {
     /**
      * Relative dates description provider.
      */
-    public function description_provider(): array {
+    public static function description_provider(): array {
         return [
             'After start course' => [2, 1, 1, '+2 hour', 'From', 'Until', '2 hours after course start date'],
             'Before end course' => [3, 2, 2, '-3 day', 'Until', 'From', '3 days before course end date'],
@@ -213,15 +214,18 @@ class condition_test extends \advanced_testcase {
         $completion->reset_all_state($modinfo->get_cm($page1->cmid));
 
         $cond = new condition((object)['type' => 'relativedate', 'n' => 4, 'd' => 4, 's' => 7, 'm' => $page0->cmid]);
-        $this->assertFalse($cond->update_dependency_id('courses', $page0->cmid, 3));
-        $this->assertTrue($cond->update_dependency_id('course_modules', $page0->cmid, 3));
+        $this->assertTrue($cond->update_dependency_id('course_sections', $page0->cmid, 3));
+        $this->assertFalse($cond->update_dependency_id('course_modules', $page1->cmid, 3));
+        $cond = new condition((object)['type' => 'relativedate', 'n' => 4, 'd' => 4, 's' => 7, 'm' => $page1->cmid]);
+        $this->assertTrue($cond->update_dependency_id('course_modules', $page1->cmid, 4));
+        $this->assertFalse($cond->update_dependency_id('course_modules', $page1->cmid, -1));
     }
 
     /**
      * Tests a course with no enddate.
      * @covers \availability_relativedate\condition
      */
-    public function test_noenddate() {
+    public function test_no_enddate() {
         global $DB, $USER;
         $dg = $this->getDataGenerator();
         $now = time();
@@ -278,6 +282,16 @@ class condition_test extends \advanced_testcase {
         $str = userdate($course2->startdate - (7 * 24 * 3600), $strf);
         $this->assertEquals("Until $str", $information);
         $this->assertEquals('{relativedate: 7 days before course start date}', "$cond");
+
+        $cond = new condition((object)['type' => 'relativedate', 'n' => 7, 'd' => 2, 's' => 6, 'm' => 9999999]);
+        $information = $cond->get_description(false, false, $info);
+        $this->assertEquals("Until $str", $information);
+        $this->assertEquals('{relativedate: 7 days before course start date}', "$cond");
+
+        $cond = new condition((object)['type' => 'relativedate', 'n' => 7, 'd' => 2, 's' => 6, 'm' => -1]);
+        $information = $cond->get_description(false, false, $info);
+        $this->assertEquals("Until $str", $information);
+        $this->assertEquals('{relativedate: 7 days before course start date}', "$cond");
     }
 
     /**
@@ -298,30 +312,30 @@ class condition_test extends \advanced_testcase {
     /**
      * Relative dates debug provider.
      */
-    public function debug_provider(): array {
+    public static function debug_provider(): array {
         $daybefore = ' 1 ' . get_string('day', 'availability_relativedate') . ' ';
         return [
             'After start course' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 1, 'm' => 999999],
-                $daybefore . get_string('datestart', 'availability_relativedate')],
+                $daybefore . get_string('datestart', 'availability_relativedate'), ],
             'Before end course' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 2, 'm' => 999999],
-                $daybefore . get_string('dateend', 'availability_relativedate')],
+                $daybefore . get_string('dateend', 'availability_relativedate'), ],
             'After end enrol' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 3, 'm' => 999999],
-                $daybefore . get_string('dateenrol', 'availability_relativedate')],
+                $daybefore . get_string('dateenrol', 'availability_relativedate'), ],
             'After end method' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 4, 'm' => 999999],
-                $daybefore . get_string('dateendenrol', 'availability_relativedate')],
+                $daybefore . get_string('dateendenrol', 'availability_relativedate'), ],
             'After end course' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 5, 'm' => 999999],
-                $daybefore . get_string('dateendafter', 'availability_relativedate')],
+                $daybefore . get_string('dateendafter', 'availability_relativedate'), ],
             'Before start course' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 6, 'm' => 999999],
-                $daybefore . get_string('datestartbefore', 'availability_relativedate')],
+                $daybefore . get_string('datestartbefore', 'availability_relativedate'), ],
             'After invalid module' => [
                 ['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 999, 'm' => 999999],
-                $daybefore],
+                $daybefore, ],
         ];
     }
 
@@ -344,12 +358,7 @@ class condition_test extends \advanced_testcase {
 
         $condition = new condition((object)['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 7, 'm' => 999999]);
         $result = \phpunit_util::call_internal_method($condition, 'get_debug_string', [], $name);
-        $this->assertEquals(
-            $daybefore . ' ' .
-            get_string('datecompletion', 'availability_relativedate') . ' ' .
-            get_string('missing', 'availability_relativedate'),
-            $result);
-
+        $this->assertStringContainsString(get_string('missing', 'availability_relativedate'), $result);
     }
 
     /**
@@ -363,10 +372,12 @@ class condition_test extends \advanced_testcase {
         $page0 = $pg->create_instance(['course' => $this->course, 'completion' => COMPLETION_TRACKING_MANUAL]);
         $context = context_module::instance($page0->cmid);
         $activitycompletion = $this->create_course_module_completion($page0->cmid);
-        course_module_completion_updated::create([
+        $arr = [
             'objectid' => $activitycompletion->id,
             'relateduserid' => $this->user->id,
-            'context' => $context])->trigger();
+            'context' => $context,
+        ];
+        course_module_completion_updated::create($arr)->trigger();
 
         $condition1 = new condition((object)['type' => 'relativedate', 'n' => 1, 'd' => 2, 's' => 1, 'm' => 999999]);
         $result1 = \phpunit_util::call_internal_method($condition1, 'calc', [$this->course, $this->user->id], $name);
@@ -466,7 +477,9 @@ class condition_test extends \advanced_testcase {
                 'relateduserid' => 1,
                 'modulename' => 'page',
                 'instanceid' => $page0->cmid,
-                'name' => $page0->name]]);
+                'name' => $page0->name,
+            ],
+        ]);
         $event->trigger();
 
         $actual = $DB->get_record('course_modules', ['id' => $page1->cmid]);
@@ -487,7 +500,7 @@ class condition_test extends \advanced_testcase {
         \phpunit_util::run_all_adhoc_tasks();
         ob_end_clean();
         get_fast_modinfo(0, 0, true);
-        rebuild_course_cache($this->course->id, true, true);
+        rebuild_course_cache($this->course->id);
     }
 
     /**

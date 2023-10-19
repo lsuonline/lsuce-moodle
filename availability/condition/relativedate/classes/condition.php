@@ -93,7 +93,7 @@ class condition extends \core_availability\condition {
             'n' => intval($this->relativenumber),
             'd' => intval($this->relativedwm),
             's' => intval($this->relativestart),
-            'm' => intval($this->relativecoursemodule)
+            'm' => intval($this->relativecoursemodule),
         ];
     }
 
@@ -162,10 +162,11 @@ class condition extends \core_availability\condition {
     protected function get_debug_string() {
         $modname = '';
         if ((int)$this->relativestart === 7) {
+            $modname = ' ';
             if ($this->relativecoursemodule != -1 && get_coursemodule_from_id('', $this->relativecoursemodule)) {
-                $modname = ' ' . \core_availability\condition::description_cm_name($this->relativecoursemodule);
+                $modname .= \core_availability\condition::description_cm_name($this->relativecoursemodule);
             } else {
-                $modname = ' ' . get_string('missing', 'availability_relativedate');
+                $modname .= \html_writer::span(get_string('missing', 'availability_relativedate'), 'alert alert-danger');
             }
         }
         return ' ' . $this->relativenumber . ' ' . self::options_dwm($this->relativenumber)[$this->relativedwm] . ' ' .
@@ -211,7 +212,7 @@ class condition extends \core_availability\condition {
             1 => get_string('hour' . $s, 'availability_relativedate'),
             2 => get_string('day' . $s, 'availability_relativedate'),
             3 => get_string('week' . $s, 'availability_relativedate'),
-            4 => get_string('month' . $s, 'availability_relativedate')
+            4 => get_string('month' . $s, 'availability_relativedate'),
         ];
     }
 
@@ -293,8 +294,13 @@ class condition extends \core_availability\condition {
                 $cm = new stdClass;
                 $cm->id = $this->relativecoursemodule;
                 $cm->course = $course->id;
-                $completion = new \completion_info($course);
-                return $this->fixdate("+$x", $completion->get_data($cm, false, $userid)->timemodified);
+                try {
+                    $completion = new \completion_info($course);
+                    $data = $completion->get_data($cm, false, $userid);
+                    return $this->fixdate("+$x", $data->timemodified);
+                } catch (Exception $e) {
+                    return 0;
+                }
         }
         // After course start date.
         return $this->fixdate("+$x", $course->startdate);
@@ -369,7 +375,7 @@ class condition extends \core_availability\condition {
     }
 
     /**
-     * Helper for updating ids (only implemented for course modules,not for sections)
+     * Helper for updating ids, implemented for course modules and sections
      *
      * @param string $table
      * @param int $oldid
@@ -377,7 +383,9 @@ class condition extends \core_availability\condition {
      * @return bool
      */
     public function update_dependency_id($table, $oldid, $newid) {
-        if ($table === 'course_modules' && (int)$this->relativestart === 7 && (int)$this->relativecoursemodule === (int)$oldid) {
+        if (($table === 'course_modules' || $table === 'course_sections') &&
+            (int)$this->relativestart === 7 &&
+            (int)$this->relativecoursemodule === (int)$oldid) {
             $this->relativecoursemodule = $newid;
             return true;
         }
