@@ -179,7 +179,7 @@ $snapsettings->add($setting);
 $name = 'theme_snap/extratab2name';
 $title = new lang_string('extratab2name', 'theme_snap');
 $description = new lang_string('extratab2name_help', 'theme_snap');
-$default = 'Master Courses';
+$default = 'Blueprint Courses';
 $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 16);
 $snapsettings->add($setting);
 
@@ -214,7 +214,7 @@ $snapsettings->add($setting);
 $name = 'theme_snap/extratab2searchterm';
 $title = new lang_string('extratab2searchterm', 'theme_snap');
 $description = new lang_string('extratab2searchterm_help', 'theme_snap');
-$default = 'Master ';
+$default = 'Blueprint ';
 $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 16);
 $snapsettings->add($setting);
 
@@ -252,7 +252,7 @@ $snapsettings->add($setting);
 $name = 'theme_snap/extratab3name';
 $title = new lang_string('extratab3name', 'theme_snap');
 $description = new lang_string('extratab3name_help', 'theme_snap');
-$default = 'Master Courses';
+$default = 'Blueprint Courses';
 $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 16);
 $snapsettings->add($setting);
 
@@ -287,7 +287,7 @@ $snapsettings->add($setting);
 $name = 'theme_snap/extratab3searchterm';
 $title = new lang_string('extratab3searchterm', 'theme_snap');
 $description = new lang_string('extratab3searchterm_help', 'theme_snap');
-$default = 'Master ';
+$default = 'Blueprint ';
 $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 16);
 $snapsettings->add($setting);
 

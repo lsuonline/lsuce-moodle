@@ -51,7 +51,7 @@ configure the CPS settings.';
 $string['department'] = 'Department';
 $string['cou_number'] = 'Course Number';
 
-$string['material_shortname'] = 'Master Course {department} {course_number} for {fullname}';
+$string['material_shortname'] = 'Blueprint Course {department} {course_number} for {fullname}';
 
 $string['setting'] = 'User preferences';
 $string['setting_help'] = 'Faculty are allowed to change their first name to a preferred name. This change will be permanent until otherwise specified.';
@@ -137,12 +137,12 @@ $string['unwant'] = 'Unwanted';
 $string['unwant_help'] = 'Unwanted sections will be removed from Moodle. Undoing
 an unwanted selection will re-enroll and/or re-create the sections in Moodle.';
 
-$string['material'] = 'Master Course';
-$string['material_help'] = 'A _Master Course_ is a Moodle course designated to store
+$string['material'] = 'Blueprint Course';
+$string['material_help'] = 'A _Blueprint Course_ is a Moodle course designated to store
 course materials for selected courses. These created courses will __not__
 contain student enrollment.';
 
-$string['creating_materials'] = 'Create master courses';
+$string['creating_materials'] = 'Create blueprint courses';
 
 $string['split'] = 'Splitting';
 $string['split_help'] = 'Splitting allows an instructor to separate online courses
