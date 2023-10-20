@@ -389,7 +389,8 @@ abstract class user_handler extends ues_dao {
     public function user() {
         if (empty($this->user)) {
 
-            $usernamefields = user_picture::fields();
+            $extrafields = \core_user\fields::for_userpic()->get_required_fields();
+            $usernamefields = implode(",", $extrafields);
 
             $user = ues_user::get(array('id' => $this->userid), true,
                 "{$usernamefields}, username, idnumber");
