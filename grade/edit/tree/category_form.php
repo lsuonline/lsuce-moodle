@@ -347,7 +347,9 @@ class edit_category_form extends moodleform {
             } else {
                 // if we wanted to change parent of existing category - we would have to verify there are no circular references in parents!!!
                 if ($mform->elementExists('parentcategory')) {
-                    $mform->hardFreeze('parentcategory');
+                      // BEGIN LSU Category moves.
+                      // $mform->hardFreeze('parentcategory');
+                      // END LSU Category moves.
                 }
                 $parent_cat = $grade_category->get_parent_category();
                 $mform->setDefault('currentparentaggregation', $this->aggregation_options[$parent_cat->aggregation]);

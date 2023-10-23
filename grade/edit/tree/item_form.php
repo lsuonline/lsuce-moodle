@@ -358,7 +358,9 @@ class edit_item_form extends moodleform {
 
         // If we wanted to change parent of existing item - we would have to verify there are no circular references in parents!!!
         if ($id && $mform->elementExists('parentcategory')) {
-            $mform->hardFreeze('parentcategory');
+              // BEGIN LSU Category moves.
+              // $mform->hardFreeze('parentcategory');
+              // END LSU Category moves.
         }
 
         $parentcategory->apply_forced_settings();
