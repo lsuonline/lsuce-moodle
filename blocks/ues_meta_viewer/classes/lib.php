@@ -94,13 +94,14 @@ abstract class meta_data_ui_element {
 
 class meta_data_text_box extends meta_data_ui_element {
     public function html() {
+        $data = $this->value() !== null ? $this->value() : '';
         $params = array(
             'type' => 'text',
             'placeholder' => $this->name(),
             'name' => $this->key()
         );
 
-        if (trim($this->value()) !== '') {
+        if (trim($data) !== '') {
             $params['value'] = $this->value();
         }
         return html_writer::empty_tag('input', $params);

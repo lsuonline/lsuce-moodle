@@ -85,8 +85,9 @@ foreach ($fields as $field) {
     $handlers[] = $handler;
 
     $value = $handler->value();
+    $vdata = $value !== null ? $value : '';
     // Only add searched fields as GET param.
-    if (trim($value) !== '') {
+    if (trim($vdata) !== '') {
         $params[$field] = $value;
     }
 }
