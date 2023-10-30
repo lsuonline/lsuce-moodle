@@ -195,13 +195,13 @@ abstract class cps_form extends moodleform implements generic_states {
 
         $moveleft = html_writer::empty_tag('input', array(
             'type' => 'button',
-            'value' => $OUTPUT->larrow(),
+            'value' => '&#8592;',
             'name' => 'move_left'
         ));
 
         $moveright = html_writer::empty_tag('input', array(
             'type' => 'button',
-            'value' => $OUTPUT->rarrow(),
+            'value' => '&#8594;',
             'name' => 'move_right'
         ));
 
