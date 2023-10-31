@@ -47,6 +47,7 @@ if ($ADMIN->fulltree) {
     $sroles = $DB->get_records_sql($sql);
 
     // Loop through these roles and build their array.
+    $systemroles = array();
     foreach ($sroles as $srole) {
         $systemroles[$srole->id] = $srole->shortname;
     }
@@ -118,7 +119,7 @@ if ($ADMIN->fulltree) {
         );
     }
 
-    if (isset($systemroles)) {
+    if (isset($systemroles) && !empty($systemroles)) {
         // Source system role.
         $settings->add(
             new admin_setting_configmultiselect(
@@ -130,7 +131,7 @@ if ($ADMIN->fulltree) {
             )
         );
     }
-//
+
     // Source course role.
     $settings->add(
        new admin_setting_configmultiselect(
@@ -141,7 +142,7 @@ if ($ADMIN->fulltree) {
             $courseroles
         )
     );
-//
+
     // Role to assign.
     $settings->add(
         new admin_setting_configselect(
