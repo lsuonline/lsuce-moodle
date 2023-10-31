@@ -19,7 +19,6 @@
 # @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net)
 # @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-
 @theme @theme_snap @theme_snap_color_check
 Feature: When the moodle theme is set to Snap, admins can change the color of the Navigation bar buttons.
 
@@ -47,6 +46,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color of th
     And I check element "a.js-snap-pm-trigger.snap-my-courses-menu" with color "#000000"
     And I check element "#snap-pm-trigger" with property "background-color" = "#FF0000"
     And I log out
+    And I am on site homepage
     And I check element "a.btn.btn-primary.snap-login-button" with color "#000000"
     And I check element "a.btn.btn-primary.snap-login-button" with property "background-color" = "#FF0000"
 

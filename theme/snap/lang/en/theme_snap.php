@@ -342,8 +342,8 @@ $string['topbarlinkcolor'] = 'Navigation bar link and icon color';
 $string['topbarbuttoncolor'] = 'My Courses background';
 $string['togglenavigation'] = 'Toggle navigation';
 $string['topicactions'] = 'Topic actions';
-$string['twitter'] = 'Twitter';
-$string['twitterdesc'] = 'The url of your twitter account.';
+$string['xakatwitter'] = '𝕏';
+$string['xakatwitterdesc'] = 'The url of your 𝕏 account.';
 $string['unenrolme'] = 'Unenrol me';
 $string['enrolme'] = 'Enrol me';
 $string['unread'] = 'unread';
@@ -444,6 +444,10 @@ $string['loginbgimg'] = 'Login background image';
 $string['loginbgimgdesc'] = 'Select the images that will appear on the background of the login page. To have a better experience with the images displayed, please upload files with an aspect ratio of 16:9 (resolution of 720p or dimensions of 1280x720 pixels). Uploaded images need to have the same dimensions for a correct visualization.';
 $string['stylish_template'] = 'Stylish template';
 $string['activityedit'] = 'Edit activity';
+$string['snapfeedsblocktitle'] = 'Snap feeds';
+$string['tiktok'] = 'TikTok';
+$string['tiktokdesc'] = 'The url of your tiktok account.';
+
 // BEGIN LSU Extra Course Tabs.
 $string['coursetabs'] = 'Course Tabs';
 $string['remotecourses'] = 'Remote Courses';

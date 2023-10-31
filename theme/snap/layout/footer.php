@@ -59,8 +59,8 @@ $socialmedialinks = '';
 if (!empty($PAGE->theme->settings->facebook)) {
     $socialmedialinks .= $this->social_menu_link('facebook', $PAGE->theme->settings->facebook);
 }
-if (!empty($PAGE->theme->settings->twitter)) {
-    $socialmedialinks .= $this->social_menu_link('twitter', $PAGE->theme->settings->twitter);
+if (!empty($PAGE->theme->settings->x)) {
+    $socialmedialinks .= $this->social_menu_link('x', $PAGE->theme->settings->x);
 }
 if (!empty($PAGE->theme->settings->linkedin)) {
     $socialmedialinks .= $this->social_menu_link('linkedin', $PAGE->theme->settings->linkedin);
@@ -70,6 +70,9 @@ if (!empty($PAGE->theme->settings->youtube)) {
 }
 if (!empty($PAGE->theme->settings->instagram)) {
     $socialmedialinks .= $this->social_menu_link('instagram', $PAGE->theme->settings->instagram);
+}
+if (!empty($PAGE->theme->settings->tiktok)) {
+    $socialmedialinks .= $this->social_menu_link('tiktok', $PAGE->theme->settings->tiktok);
 }
 if (!empty($socialmedialinks)) {
     echo '<div id="snap-socialmedia-links">' .$socialmedialinks. '</div>';

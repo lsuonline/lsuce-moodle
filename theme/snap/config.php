@@ -103,6 +103,15 @@ $THEME->sheets = array('lsu');
 
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
 
+// TODO - Remove this flag when the My Courses new layout development is completed.
+$newmycourseslayout = isset($CFG->theme_snap_my_courses_new_layout) ? $CFG->theme_snap_my_courses_new_layout : false;
+
+if ($newmycourseslayout) {
+    $mycourseslayoutfile = 'mycourses.php';
+} else {
+    $mycourseslayoutfile = 'default.php';
+}
+
 $THEME->layouts = array(
     // Most backwards compatible layout without the blocks - this is the layout used by default.
     'base' => array(
@@ -151,7 +160,7 @@ $THEME->layouts = array(
     ),
     // My courses page.
     'mycourses' => array(
-        'file' => 'default.php',
+        'file' => $mycourseslayoutfile,
         'regions' => array('side-pre'),
         'defaultregion' => 'side-pre',
     ),

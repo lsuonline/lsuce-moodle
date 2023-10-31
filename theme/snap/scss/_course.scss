@@ -1655,6 +1655,19 @@ body.snap-resource-card {
         }
 
         &.modtype_page {
+            .asset-wrapper .snap-asset-content {
+                .contentafterlink {
+                    .summary-figure {
+                        margin-bottom: 1em;
+                        margin-left: .5em;
+                    }
+                    .summary-text {
+                        img {
+                            margin-left: .5em;
+                        }
+                    }
+                }
+            }
             .activityiconcontainer {
                 background-color: $color-page;
             }

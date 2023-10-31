@@ -157,14 +157,18 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * @param string $url
      * @return string
      */
-    public function column_header_icon_link($langstring, $iconname, $url) {
+    public function column_header_icon_link($langstring, $iconname, $url, $location = '') {
         // @codingStandardsIgnoreStart
         // Core renderer has not $output attribute, but code checker requires it.
         global $OUTPUT;
         $text = get_string($langstring, 'theme_snap');
         $iconurl = $OUTPUT->image_url($iconname, 'theme');
         $icon = '<img class="svg-icon" role="presentation" src="' .$iconurl. '" alt="">';
-        $link = '<a class="snap-personal-menu-more" href="' .$url. '"><small>' .$text. '</small>' .$icon. '</a>';
+        if ($location == 'mycourses') {
+            $link = '<a class="snap-my-courses-more" href="' .$url. '"><small>' .$text. '</small>' .$icon. '</a>';
+        } else {
+            $link = '<a class="snap-personal-menu-more" href="' .$url. '"><small>' .$text. '</small>' .$icon. '</a>';
+        }
         return $link;
         // @codingStandardsIgnoreEnd
     }
@@ -316,7 +320,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * Render messages from users
      * @return string
      */
-    protected function render_messages() {
+    protected function render_messages($location = '') {
         if (empty($this->page->theme->settings->messagestoggle)) {
             return '';
         }
@@ -324,14 +328,20 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $heading = get_string('messages', 'theme_snap');
         if ($this->advanced_feeds_enabled()) {
             $o = ce_render_helper::get_instance()
-                ->render_feed_web_component('messages', $heading, get_string('nomessages', 'theme_snap'));
+                ->render_feed_web_component('messages', $heading, get_string('nomessages', 'theme_snap'),
+                    false, true, true, 0, $location);
         } else {
-            $o = '<h2>'.$heading.'</h2>';
-            $o .= '<div id="snap-personal-menu-messages"></div>';
+            if ($location == 'mycourses') {
+                $o = '<h2>'.$heading.'</h2>';
+                $o .= '<div id="snap-my-courses-messages"></div>';
+            } else {
+                $o = '<h2>'.$heading.'</h2>';
+                $o .= '<div id="snap-personal-menu-messages"></div>';
+            }
         }
 
         $url = new moodle_url('/message/');
-        $o .= $this->column_header_icon_link('viewmessaging', 'messages', $url);
+        $o .= $this->column_header_icon_link('viewmessaging', 'messages', $url, $location);
         return $o;
     }
 
@@ -341,7 +351,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
      *
      * @return string
      */
-    protected function render_forumposts() {
+    protected function render_forumposts($location = '') {
         global $USER;
         if (empty($this->page->theme->settings->forumpoststoggle)) {
             return '';
@@ -351,14 +361,20 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('forumposts', $heading,
-                            get_string('noforumposts', 'theme_snap'), $virtualpaging);
+                            get_string('noforumposts', 'theme_snap'), $virtualpaging,
+                 true, true, 0, $location);
         } else {
-            $o = '<h2>'.$heading.'</h2>
-            <div id="snap-personal-menu-forumposts"></div>';
+            if ($location == 'mycourses') {
+                $o = '<h2>'.$heading.'</h2>
+                <div id="snap-my-courses-forumposts"></div>';
+            } else {
+                $o = '<h2>'.$heading.'</h2>
+                <div id="snap-personal-menu-forumposts"></div>';
+            }
         }
 
         $url = new moodle_url('/mod/forum/user.php', ['id' => $USER->id]);
-        $o .= $this->column_header_icon_link('viewforumposts', 'forumposts', $url);
+        $o .= $this->column_header_icon_link('viewforumposts', 'forumposts', $url, $location);
         return $o;
     }
 
@@ -472,18 +488,18 @@ class core_renderer extends \theme_boost\output\core_renderer {
         return '';
     }
 
-    protected function render_callstoaction() {
+    protected function render_callstoaction($location = '') {
 
         $mobilemenu = '<div id="snap-pm-mobilemenu">';
         $mobilemenu .= $this->mobile_menu_link('courses', 'courses', '#snap-pm-courses');
-        $deadlines = $this->render_deadlines();
+        $deadlines = $this->render_deadlines($location);
         if (!empty($deadlines)) {
             $columns[] = $deadlines;
             $mobilemenu .= $this->mobile_menu_link('deadlines', 'calendar', $this->get_calltoaction_url('deadlines'));
         }
 
-        $graded = $this->render_graded();
-        $grading = $this->render_grading();
+        $graded = $this->render_graded($location);
+        $grading = $this->render_grading($location);
         if (empty($grading)) {
             $gradebookmenulink = $this->mobile_menu_link('recentfeedback', 'grading', $this->get_calltoaction_url('graded'));
         } else {
@@ -497,13 +513,13 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $mobilemenu .= $gradebookmenulink;
         }
 
-        $messages = $this->render_messages();
+        $messages = $this->render_messages($location);
         if (!empty($messages)) {
             $columns[] = $messages;
             $mobilemenu .= $this->mobile_menu_link('messages', 'messages', $this->get_calltoaction_url('messages'));
         }
 
-        $forumposts = $this->render_forumposts();
+        $forumposts = $this->render_forumposts($location);
         if (!empty($forumposts)) {
             $columns[] = $forumposts;
             $mobilemenu .= $this->mobile_menu_link('forumposts', 'forumposts', $this->get_calltoaction_url('forumposts'));
@@ -515,8 +531,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
              return '';
         } else {
             $sections = [];
-            $intelliboard = $this->render_intelliboard();
-            $intellicart = $this->render_intellicart();
+            $intelliboard = $this->render_intelliboard($location);
+            $intellicart = $this->render_intellicart($location);
             if (!empty($intelliboard)) {
                 $sections[] = $intelliboard;
             }
@@ -570,7 +586,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * Render all grading CTAs for markers
      * @return string
      */
-    protected function render_grading() {
+    protected function render_grading($location = '') {
         global $USER;
 
         if (!$this->feedback_toggle_enabled()) {
@@ -587,10 +603,16 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('grading', $heading,
-                            get_string('nograding', 'theme_snap'), $virtualpaging);
+                            get_string('nograding', 'theme_snap'), $virtualpaging,
+                true, true, 0, $location);
         } else {
-            $o = "<h2>$heading</h2>";
-            $o .= '<div id="snap-personal-menu-grading"></div>';
+            if ($location == 'mycourses') {
+                $o = "<h2>$heading</h2>";
+                $o .= '<div id="snap-my-courses-grading"></div>';
+            } else {
+                $o = "<h2>$heading</h2>";
+                $o .= '<div id="snap-personal-menu-grading"></div>';
+            }
         }
 
         return $o;
@@ -601,7 +623,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * Render all graded CTAs for students
      * @return string
      */
-    protected function render_graded() {
+    protected function render_graded($location = '') {
         if (!$this->feedback_toggle_enabled()) {
             return '';
         }
@@ -610,14 +632,20 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('graded', $heading,
-                            get_string('nograded', 'theme_snap'), $virtualpaging);
+                            get_string('nograded', 'theme_snap'), $virtualpaging,
+                true, true, 0, $location);
         } else {
-            $o = "<h2>$heading</h2>";
-            $o .= '<div id="snap-personal-menu-graded"></div>';
+            if ($location == 'mycourses') {
+                $o = "<h2>$heading</h2>";
+                $o .= '<div id="snap-my-courses-graded"></div>';
+            } else {
+                $o = "<h2>$heading</h2>";
+                $o .= '<div id="snap-personal-menu-graded"></div>';
+            }
         }
 
         $url = new moodle_url('/grade/report/mygrades.php');
-        $o .= $this->column_header_icon_link('viewmyfeedback', 'tick', $url);
+        $o .= $this->column_header_icon_link('viewmyfeedback', 'tick', $url, $location);
         return $o;
     }
 
@@ -625,7 +653,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * Render all course deadlines.
      * @return string
      */
-    protected function render_deadlines() {
+    protected function render_deadlines($location = '') {
         global $CFG;
 
         if ($this->page->theme->settings->deadlinestoggle == 0) {
@@ -636,14 +664,20 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($this->advanced_feeds_enabled()) {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('deadlines', $heading,
-                get_string('nodeadlines', 'theme_snap'), $virtualpaging);
+                get_string('nodeadlines', 'theme_snap'), $virtualpaging,
+                true, true, 0, $location);
         } else {
-            $o = "<h2>$heading</h2>";
-            $o .= '<div id="snap-personal-menu-deadlines"></div>';
+            if ($location == 'mycourses') {
+                $o = "<h2>$heading</h2>";
+                $o .= '<div id="snap-my-courses-deadlines"></div>';
+            } else {
+                $o = "<h2>$heading</h2>";
+                $o .= '<div id="snap-personal-menu-deadlines"></div>';
+            }
         }
 
         $calurl = $CFG->wwwroot.'/calendar/view.php?view=month';
-        $o .= $this->column_header_icon_link('viewcalendar', 'calendar', $calurl);
+        $o .= $this->column_header_icon_link('viewcalendar', 'calendar', $calurl, $location);
         return $o;
     }
 
@@ -1763,6 +1797,11 @@ HTML;
             $classes[] = $pbbclass;
         }
 
+        // Check if the custom menu is not empty.
+        if (!empty($CFG->custommenuitems)) {
+            $classes[] = 'contains-snap-custom_menu-spacer';
+        }
+
         // Remove duplicates if necessary.
         $classes = array_unique($classes);
 
@@ -2223,7 +2262,7 @@ HTML;
      * Render intelliboard links in personal menu.
      * @return string
      */
-    protected function render_intelliboard() {
+    protected function render_intelliboard($location = '') {
         $o = '';
         $links = '';
 
@@ -2259,10 +2298,17 @@ HTML;
         }
 
         $intelliboardheading = get_string('intelliboardroot', 'local_intelliboard');
-        $o = '<h2>' .$intelliboardheading. '</h2>';
-        $o .= '<div id="snap-personal-menu-intelliboard">'
+        if ($location == 'mycourses') {
+            $o = '<h2>' .$intelliboardheading. '</h2>';
+            $o .= '<div id="snap-my-courses-intelliboard">'
                 .$links.
                 '</div>';
+        } else {
+            $o = '<h2>' .$intelliboardheading. '</h2>';
+            $o .= '<div id="snap-personal-menu-intelliboard">'
+                .$links.
+                '</div>';
+        }
 
         return $o;
     }
@@ -2315,7 +2361,7 @@ HTML;
      * Render intellicart link in personal menu.
      * @return string
      */
-    protected function render_intellicart() {
+    protected function render_intellicart($location = '') {
         // @codingStandardsIgnoreStart
         // Core renderer has not $output attribute, but code checker requires it.
         global $OUTPUT;
@@ -2345,11 +2391,17 @@ HTML;
         }
 
         $intellicartheading = get_string('intellicart', 'local_intellicart');
-        $o = '<h2>' .$intellicartheading. '</h2>';
-        $o .= '<div id="snap-personal-menu-intellicart">'
-            .$link.
-            '</div>';
-
+        if ($location == 'mycourses') {
+            $o = '<h2>' .$intellicartheading. '</h2>';
+            $o .= '<div id="snap-my-courses-intellicart">'
+                .$link.
+                '</div>';
+        } else {
+            $o = '<h2>' .$intellicartheading. '</h2>';
+            $o .= '<div id="snap-personal-menu-intellicart">'
+                .$link.
+                '</div>';
+        }
         return $o;
         // @codingStandardsIgnoreEnd
     }
@@ -2454,7 +2506,7 @@ HTML;
 
             // Style to fix the block settings menu when custom menu is active.
             $css = '#page-content .block_settings.state-visible div.card-body {margin-top: 3em;}';
-            $css .= '#page-admin-purgecaches #notice, #notice.snap-continue-cancel {margin-top: 1.2em;}';
+            $css .= '#page-admin-purgecaches #notice, #notice.snap-continue-cancel {margin-top: 2.2em;}';
 
             $spacer .= "<style> {$css} </style>";
         }
@@ -2689,5 +2741,53 @@ HTML;
             $output .= $this->render_from_template('core/user_menu', $data);
         }
         return $output;
+    }
+
+    /**
+     * Snap feeds in My Courses.
+     *
+     * @return string.
+     */
+    public function snap_my_courses_feeds() {
+
+        $data = (object) [
+            'updates' => $this->render_callstoaction('mycourses'),
+        ];
+        $feeds = $this->render_from_template('theme_snap/snap_feeds', $data);
+        return $feeds;
+    }
+
+    /**
+     * My courses page content.
+     *
+     */
+    public function my_courses_snap_page_content() {
+
+        $browseallcourses = '';
+        if (!empty($CFG->navshowallcourses) || has_capability('moodle/site:config', context_system::instance())) {
+            $url = new moodle_url('/course/');
+            $browseallcourses = $this->column_header_icon_link('browseallcourses', 'courses', $url, 'mycourses');
+        }
+        $manager = new \core_privacy\local\sitepolicy\manager();
+        $policyurlexist = $manager->is_defined();
+        $sitepolicyacceptreqd = isloggedin() && $policyurlexist && empty($USER->policyagreed) && !is_siteadmin();
+
+        $data = (object) [
+            'custommenuspacer' => $this->custom_menu_spacer(),
+            'snapnavbar' => $this->snapnavbar(''),
+            'pageheading' => $this->page_heading(),
+            'courseheader' => $this->course_header(),
+            'browseallcourses' => $browseallcourses,
+            'maincontent' => $this->main_content(),
+            'coursesoptions' => $this->snap_my_courses_management_options(),
+            'snapfeeds' => $this->snap_my_courses_feeds(),
+            'standaraftermainregion' => $this->standard_after_main_region_html(),
+            'snapblocks' => $this->snap_blocks(),
+            'sitepolicyacceptreqd' => $sitepolicyacceptreqd,
+        ];
+
+        $content = $this->render_from_template('theme_snap/my_courses', $data);
+
+        return $content;
     }
 }

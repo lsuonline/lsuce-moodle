@@ -1003,7 +1003,9 @@ section#snap-add-new-section #summary-editor_parent #summary-editor_tbl {
         accent-color: $brand-primary;
     }
 }
-
+#report-content #id_filterheader .d-flex .ftoggler {
+    width: unset;
+}
 /**
  * Tiles course format.
  */
@@ -1407,5 +1409,60 @@ body.format-tiles.editing .section .snap-asset .actions {
         &:not(.show) {
             display: none;
         }
+    }
+}
+
+// Course catalogue styles.
+#page-local-catalogue-index {
+    .mform > .form-group {
+        margin-left: 0;
+    }
+
+    .filters {
+        // Make buttons inline
+        + div, + div + div {
+            display: inline-block;
+        }
+
+        // Align vertically
+        + div div {
+            margin-bottom: 2px !important;
+            margin-left: 0 !important;
+        }
+
+        // Align filters form to te left
+        .form-group {
+            margin-left: 0 !important;
+        }
+    }
+
+    // Center sorting direction icon
+    .course-sorting .sort-direction .icon {
+        &.fa-sort-desc {
+            transform: translateY(-4px);
+        }
+
+        &.fa-sort-asc {
+            transform: translateY(4px);
+        }
+    }
+
+    // Fix course box height
+    .local-catalogue-courses {
+        .coursebox .content {
+            overflow: auto;
+        }
+
+        .pagination {
+            @extend .mt-2;
+        }
+    }
+
+    #page-header {
+        padding-top: 6em;
+    }
+
+    &.contains-snap-custom_menu-spacer #page-header {
+        padding-top: 8em;
     }
 }
