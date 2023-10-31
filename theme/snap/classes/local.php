@@ -1758,8 +1758,15 @@ class local {
         $userforums = new user_forums($user, $limit);
         $forumids = $userforums->forumids();
         $forumidsallgroups = $userforums->forumidsallgroups();
-        $hsuforumids = $userforums->hsuforumids();
-        $hsuforumidsallgroups = $userforums->hsuforumidsallgroups();
+        // BEGIN LSU Removal of HSU Forum Post code.
+        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            $hsuforumids = $userforums->hsuforumids();
+            $hsuforumidsallgroups = $userforums->hsuforumidsallgroups();
+        } else {
+            $hsuforumids = array();
+            $hsuforumidsallgroups = array();
+        }
+        // END LSU Removal of HSU Forum Post code.
 
         if (empty($forumids) && empty($hsuforumids)) {
             return [];
@@ -1991,21 +1998,19 @@ class local {
         $groupsid['forum'] = $DB->get_records_sql($sqlforum, $params);
 
         // BEGIN LSU Removal of HSU Forum Post code.
-        // if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
-        //     $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
-        // }
-        // END LSU Removal of HSU Forum Post code.
-        
-        if (!get_config('hsuforum')) {
-            $groupsid['hsuforum'] = [];
-        } else {
-            // SQL for hsuforums.
-            $sqlhsuforum = "SELECT id, groupid
+        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            if (!get_config('hsuforum')) {
+                $groupsid['hsuforum'] = [];
+            } else {
+                // SQL for hsuforums.
+                $sqlhsuforum = "SELECT id, groupid
                               FROM {hsuforum_discussions}
                              WHERE id $insql";
 
-            $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+                $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+            }
         }
+        // END LSU Removal of HSU Forum Post code.
         return $groupsid;
     }
 
