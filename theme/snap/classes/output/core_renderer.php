@@ -988,7 +988,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
 
         if ($et3 && $et3repop) {
             // If we have 0 published courses and 0 current coutrses + we have courses in tab 3.
-            if (count($published) == 0 && count($currentcourses) == 0 && isset($et3courses)) {
+            if (count($published) == 0 && isset($et3courses)) {
                 foreach ($et3courses as $course) {
                     // Get the course context for this course.
                     $coursecontext = context_course::instance($course->id);
