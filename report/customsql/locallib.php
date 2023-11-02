@@ -41,8 +41,7 @@ function report_customsql_limitnum() {
     return $limitnum;
 }
 
-function report_customsql_execute_query($sql, $params = null,
-        $querylimit) {
+function report_customsql_execute_query($sql, $querylimit, $params = null) {
     global $CFG, $DB;
 
     $sql = preg_replace('/\bprefix_(?=\w+)/i', $CFG->prefix, $sql);
@@ -105,7 +104,7 @@ function report_customsql_generate_csv($report, $timenow) {
 
     $donotescape = isset($report->donotescape) ? $report->donotescape : 0;
 
-    $rs = report_customsql_execute_query($sql, $queryparams, $querylimit);
+    $rs = report_customsql_execute_query($sql, $querylimit, $queryparams);
 
     $csvfilenames = array();
     $csvtimestamp = null;

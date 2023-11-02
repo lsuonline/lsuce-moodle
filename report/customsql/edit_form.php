@@ -187,7 +187,7 @@ class report_customsql_edit_form extends moodleform {
 
             if (!isset($errors['params'])) {
                 try {
-                    $rs = report_customsql_execute_query($sql, $queryparams, 2);
+                    $rs = report_customsql_execute_query($sql, 2, $queryparams);
 
                     if (!empty($data['singlerow'])) {
                         // Count rows for Moodle 2 as all Moodle 1.9 useful and more performant
