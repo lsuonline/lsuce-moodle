@@ -916,6 +916,7 @@ class grade_item extends grade_object {
                 if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
                     $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
                 }
+            // END LSU Manual Grade Raw Grade support.
             }
 
             // Apply other grade_item factors
@@ -948,10 +949,7 @@ class grade_item extends grade_object {
                 }
             }
             // END LSU Manual Grade Raw Grade support.
-
             return $this->bounded_grade($rawgrade);
-            // END LSU Manual Grade Raw Grade support.
-
         } else if ($this->gradetype == GRADE_TYPE_TEXT or $this->gradetype == GRADE_TYPE_NONE) { // no value
             // somebody changed the grading type when grades already existed
             return null;
