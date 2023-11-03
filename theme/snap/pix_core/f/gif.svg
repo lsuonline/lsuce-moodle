@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 100 100"><path d="M96.2 79.1c0 3.3-2.5 5.9-5.6 5.9h-82C5.5 85 3 82.3 3 79.1V20.9C3 17.7 5.5 15 8.6 15h82.1c3.1 0 5.6 2.6 5.6 5.9l-.1 58.2z" fill="none" stroke="#999" stroke-linejoin="round" stroke-linecap="round" stroke-width="3" stroke-miterlimit="10"/><g fill="#999"><path d="M67.7 34.6l10.8 18.8 10.9 18.8H46l10.9-18.8 10.8-18.8z"/><path d="m32.8 44.4l8 13.9 8 13.9h-32l8-13.9 8-13.9"/><circle cx="18.3" cy="33.5" r="7.7"/></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;">
+    <path d="M23.088,18.984C23.088,19.776 22.488,20.4 21.744,20.4L2.064,20.4C1.32,20.4 0.72,19.752 0.72,18.984L0.72,5.016C0.72,4.248 1.32,3.6 2.064,3.6L21.768,3.6C22.512,3.6 23.112,4.224 23.112,5.016L23.088,18.984Z" style="fill:none;fill-rule:nonzero;stroke:white;stroke-width:0.72px;"/>
+    <g>
+        <path d="M16.248,8.304L18.84,12.816L21.456,17.328L11.04,17.328L13.656,12.816L16.248,8.304Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M7.872,10.656L11.712,17.328L4.032,17.328L7.872,10.656" style="fill:white;fill-rule:nonzero;"/>
+        <circle cx="4.392" cy="8.04" r="1.848" style="fill:white;"/>
+    </g>
+</svg>
