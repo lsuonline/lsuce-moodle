@@ -65,43 +65,6 @@ class mod_flashcard_mod_form extends moodleform_mod {
         $mform->addGroup($enddatearray, 'endfrom', get_string('endtime', 'flashcard'), ' ', false);
         $mform->disabledIf('endfrom', 'endtimeenable');
 
-        if (!$questions = $DB->get_records_select('question', "qtype='match'", null, 'id, name')) {
-            $questions = array();
-        } else {
-            // Prepared for 1.9 questionbanck compatibility.
-            if (function_exists('question_has_capability_on')) {
-
-                function drop_questions($a) {
-                    global $DB;
-
-                    /*
-                     * First sanity check the existance of the context.
-                     * There may be deleted contexts and some question wreck inside.
-                     */
-                    $contextid = $DB->get_field('question_categories', 'contextid', array('id' => $a->category));
-                    if (!$DB->record_exists('context', array('id' => $contextid))) {
-                        return false;
-                    }
-
-                    return question_has_capability_on($a->id, 'use');
-                }
-
-                $questions = array_filter($questions, 'drop_questions');
-            }
-        }
-        $qoptions = array();
-        foreach ($questions as $question) {
-            $qoptions[$question->id] = $question->name;
-        }
-
-        $mform->addElement('select', 'questionid', get_string('questionid', 'flashcard'), $qoptions);
-        $mform->setAdvanced('questionid');
-        $mform->addHelpButton('questionid', 'sourcequestion', 'flashcard');
-
-        $mform->addElement('checkbox', 'forcereload', get_string('forcereload', 'flashcard'));
-        $mform->setAdvanced('forcereload');
-        $mform->addHelpButton('forcereload', 'forcereload', 'flashcard');
-
         $modeloptions[FLASHCARD_MODEL_BOTH] = get_string('bothmodels', 'flashcard');
         $modeloptions[FLASHCARD_MODEL_LEITNER] = get_string('leitner', 'flashcard');
         $modeloptions[FLASHCARD_MODEL_FREEUSE] = get_string('freeuse', 'flashcard');
