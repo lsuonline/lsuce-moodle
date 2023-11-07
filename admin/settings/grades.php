@@ -241,9 +241,11 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_configcheckbox('grade_letters_strict',
             new lang_string('lettersstrictletter', 'grades'), new lang_string('lettersstrictletter_help', 'grades'), 0));
 
-        $params = array('courseid' => 0);
+        $sql = 'SELECT id, name FROM {scale} WHERE courseid IN (0,1)';
+        $db_scales = $DB->get_records_sql_menu($sql);
 
-        $db_scales = $DB->get_records_menu('scale', $params, '', 'id, name');
+        // $params = array('courseid' => 1);
+        // $db_scales = $DB->get_records_menu('scale', $params, '', 'id, name');
 
         $scales = array(0 => new lang_string('lettersdefaultletters', 'grades')) + $db_scales;
 
