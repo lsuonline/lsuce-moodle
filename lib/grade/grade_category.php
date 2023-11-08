@@ -2749,11 +2749,10 @@ class grade_category extends grade_object {
             $this->grade_item->set_hidden($hidden, $cascade);
 
             if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
-
                 foreach ($children as $child) {
-                    if ($child->can_control_visibility()) {
-                        $child->set_hidden($hidden, $cascade);
-                    }
+                    // BEGIN LSU Visibility Issues.
+                    $child->set_hidden($hidden, $cascade);
+                    // BEGIN LSU Visibility Issues.
                 }
             }
 

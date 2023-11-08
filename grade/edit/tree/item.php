@@ -206,10 +206,9 @@ if ($mform->is_cancelled()) {
         }
     }
 
-    if ($item->cancontrolvisibility) {
-        // Update hiding flag.
-        $gradeitem->set_hidden($hide, true);
-    }
+    // BEGIN LSU Visibility Issues.
+    $gradeitem->set_hidden($hide, true);
+    // END LSU Visibility Issues.
 
     $gradeitem->set_locktime($locktime); // Locktime first - it might be removed when unlocking.
     $gradeitem->set_locked($locked, false, true);

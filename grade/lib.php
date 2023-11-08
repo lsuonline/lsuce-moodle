@@ -1971,9 +1971,8 @@ class grade_structure {
     public function get_hiding_icon($element, $gpr, $returnactionmenulink = false) {
         global $CFG, $OUTPUT;
 
-        if (!$element['object']->can_control_visibility()) {
-            return $returnactionmenulink ? null : '';
-        }
+        // BEGIN LSU Visibility Issues.
+        // END LSU Visibility Issues.
 
         if (!has_capability('moodle/grade:manage', $this->context) and
             !has_capability('moodle/grade:hide', $this->context)) {
