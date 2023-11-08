@@ -260,10 +260,7 @@ function choicegroup_update_instance($choicegroup) {
     $groupIDs = array_diff( $groupIDs, array( '' ) );
 
     // prepare pre-existing selected groups from database
-    
-    if (!($preExistingGroups = $DB->get_records("choicegroup_options", array("choicegroupid" => $choicegroup->id), "id"))) {
-    	return false;
-    }
+    $preExistingGroups = $DB->get_records("choicegroup_options", array("choicegroupid" => $choicegroup->id), "id");
 
     // walk through form-selected groups
     foreach ($groupIDs as $groupID) {
@@ -845,6 +842,8 @@ function choicegroup_get_choicegroup($choicegroupid) {
 
         $rs = $DB->get_recordset_sql($sql, $params);
 
+        $choicegroup->option = [];
+
         foreach ($rs as $option) {
             $choicegroup->option[$option->id] = $option->groupid;
             $choicegroup->grpmemberid[$option->grpmemberid] = array($option->groupid, $option->userid);
@@ -1036,21 +1035,21 @@ function choicegroup_supports($feature) {
  * @param navigation_node $choicegroupnode The node to add module settings to
  */
 function choicegroup_extend_settings_navigation(settings_navigation $settings, navigation_node $choicegroupnode) {
-    global $PAGE;
+    $cm = $settings->get_page()->cm;
 
-    if (has_capability('mod/choicegroup:readresponses', $PAGE->cm->context)) {
+    if (has_capability('mod/choicegroup:readresponses', $cm->context)) {
 
-        $groupmode = groups_get_activity_groupmode($PAGE->cm);
+        $groupmode = groups_get_activity_groupmode($cm);
         if ($groupmode) {
-            groups_get_activity_group($PAGE->cm, true);
+            groups_get_activity_group($cm, true);
         }
-        if (!$choicegroup = choicegroup_get_choicegroup($PAGE->cm->instance)) {
+        if (!$choicegroup = choicegroup_get_choicegroup($cm->instance)) {
             print_error('invalidcoursemodule');
             return false;
         }
 
         // Big function, approx 6 SQL calls per user.
-        $allresponses = choicegroup_get_response_data($choicegroup, $PAGE->cm, $groupmode, $choicegroup->onlyactive);
+        $allresponses = choicegroup_get_response_data($choicegroup, $cm, $groupmode, $choicegroup->onlyactive);
 
         $responsecount = 0;
         $respondents = array();
@@ -1070,7 +1069,7 @@ function choicegroup_extend_settings_navigation(settings_navigation $settings, n
         if ($choicegroup->multipleenrollmentspossible == 1) {
             $viewallresponsestext .= ' ' . get_string("byparticipants", "choicegroup", count($respondents));
         }
-        $choicegroupnode->add($viewallresponsestext, new moodle_url('/mod/choicegroup/report.php', array('id'=>$PAGE->cm->id)));
+        $choicegroupnode->add($viewallresponsestext, new moodle_url('/mod/choicegroup/report.php', array('id'=>$cm->id)));
     }
 }
 
