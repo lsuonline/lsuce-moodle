@@ -24,7 +24,7 @@
         <FIELD NAME="emailwhat" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="A list of email options in a select menu"/>
         <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The category ID from report_customsql_categories table."/>
         <FIELD NAME="customdir" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="userlimit" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="A comma seperated list of users further limiting who can access the report."/>
+        <FIELD NAME="userlimit" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="A comma seperated list of users further limiting who can access the report."/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
