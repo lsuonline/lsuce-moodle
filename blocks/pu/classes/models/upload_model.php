@@ -81,7 +81,7 @@ class upload_model {
     public function transform($object) {
         global $DB;
 
-        $sql = "SELECT * FROM mdl_files
+        $sql = "SELECT * FROM {files}
             WHERE itemid = ". $object->pu_file."
             AND filename <> '.'
             AND filearea <> 'draft'";

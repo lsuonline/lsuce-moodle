@@ -178,11 +178,11 @@ class block_pu_helpers {
                pc.couponcode AS couponcode,
                pc.used AS used,
                pc.valid AS valid
-        FROM mdl_block_pu_guildmaps pgm
-            INNER JOIN mdl_course c ON c.id = pgm.course
-            INNER JOIN mdl_user u ON u.id = pgm.user
-            INNER JOIN mdl_block_pu_codemaps pcm ON pcm.guild = pgm.id
-            INNER JOIN mdl_block_pu_codes pc ON pcm.code = pc.id
+        FROM {block_pu_guildmaps} pgm
+            INNER JOIN {course} c ON c.id = pgm.course
+            INNER JOIN {user} u ON u.id = pgm.user
+            INNER JOIN {block_pu_codemaps} pcm ON pcm.guild = pgm.id
+            INNER JOIN {block_pu_codes} pc ON pcm.code = pc.id
         WHERE u.deleted = 0
             AND pgm.current = 1
             AND c.id = $cid
@@ -222,11 +222,11 @@ class block_pu_helpers {
         $setter = $func == 'used' ? "SET pc.used=$setval" : "SET pc.valid=$setval";
 
         // The SQL.
-        $usedsql = "UPDATE mdl_block_pu_guildmaps pgm
-            INNER JOIN mdl_course c ON c.id = pgm.course
-            INNER JOIN mdl_user u ON u.id = pgm.user
-            INNER JOIN mdl_block_pu_codemaps pcm ON pcm.guild = pgm.id
-            INNER JOIN mdl_block_pu_codes pc ON pcm.code = pc.id
+        $usedsql = "UPDATE {block_pu_guildmaps} pgm
+            INNER JOIN {course} c ON c.id = pgm.course
+            INNER JOIN {user} u ON u.id = pgm.user
+            INNER JOIN {block_pu_codemaps} pcm ON pcm.guild = pgm.id
+            INNER JOIN {block_pu_codes} pc ON pcm.code = pc.id
             $setter
         WHERE u.deleted = 0
             AND pgm.current = 1
@@ -262,8 +262,8 @@ class block_pu_helpers {
         $gmid = $DB->get_record('block_pu_guildmaps', array('course' => $cid, 'user' => $uid, 'current' => 1));
 
         $randsql = "SELECT pc.id AS id
-            FROM mdl_block_pu_codes pc
-            LEFT JOIN mdl_block_pu_codemaps pcm ON pcm.code = pc.id
+            FROM {block_pu_codes} pc
+            LEFT JOIN {block_pu_codemaps} pcm ON pcm.code = pc.id
             WHERE pcm.id IS NULL
             AND pc.valid = 1
             AND pc.used = 0
@@ -314,9 +314,9 @@ class block_pu_helpers {
         }
 
         $uvsql = "SELECT COUNT(pcm.id) AS pcmcount
-            FROM mdl_block_pu_guildmaps pgm
-                INNER JOIN mdl_block_pu_codemaps pcm ON pcm.guild = pgm.id
-                INNER JOIN mdl_block_pu_codes pc ON pcm.code = pc.id
+            FROM {block_pu_guildmaps} pgm
+                INNER JOIN {block_pu_codemaps} pcm ON pcm.guild = pgm.id
+                INNER JOIN {block_pu_codes} pc ON pcm.code = pc.id
             WHERE pgm.current = 1
                 AND pgm.course = $cid
                 AND pgm.user = $uid

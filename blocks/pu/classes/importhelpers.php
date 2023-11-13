@@ -168,9 +168,9 @@ class pu_import_helper {
                        pc.couponcode AS pccode,
                        pc.used AS pcused,
                        pc.valid AS pcvalid
-                FROM mdl_block_pu_guildmaps pgm
-                    INNER JOIN mdl_block_pu_codemaps pcm ON pgm.id = pcm.guild
-                    INNER JOIN mdl_block_pu_codes pc ON pc.id = pcm.code
+                FROM {block_pu_guildmaps} pgm
+                    INNER JOIN {block_pu_codemaps} pcm ON pgm.id = pcm.guild
+                    INNER JOIN {block_pu_codes} pc ON pc.id = pcm.code
                 WHERE pgm.current = 0
                     AND pc.valid = 1
                     AND pc.used = 0';
@@ -438,7 +438,7 @@ class pu_import_helper {
         if ($CFG->block_pu_profile_field == 'pu_idnumber') {
 
             $usersql = 'SELECT u.id AS userid
-                        FROM mdl_user u
+                        FROM {user} u
                         WHERE u.idnumber = "' . $d['useridnumber'] . '"';
 
         } else {
@@ -446,8 +446,8 @@ class pu_import_helper {
 
         // Build some sql for grabbing users with a custom profile field based identifier.
             $usersql = 'SELECT u.id AS userid
-                            FROM mdl_user u
-                        INNER JOIN mdl_user_info_data ud ON ud.userid = u.id
+                            FROM {user} u
+                        INNER JOIN {user_info_data} ud ON ud.userid = u.id
                             AND ud.fieldid = ' . $field->id .
                           ' AND ud.data <> ""
                         WHERE ud.data = ' . $d['useridnumber'];
@@ -547,8 +547,8 @@ class pu_import_helper {
 
         // Set up the SQL.
         $sql = 'SELECT COUNT(pc.id) AS codesleft
-                FROM mdl_block_pu_codes pc
-                  LEFT JOIN mdl_block_pu_codemaps pcm ON pcm.code = pc.id
+                FROM {block_pu_codes} pc
+                  LEFT JOIN {block_pu_codemaps} pcm ON pcm.code = pc.id
                 WHERE pc.valid = 1
                   AND pc.used = 0
                   AND pcm.id IS NULL';

@@ -27,6 +27,9 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
 
+    $studentroles = array();
+    $teacherroles = array();
+
     // Get all the roles.
     $aroles = $DB->get_records('role', null, $sort='shortname', $fields='*', $limitfrom=0, $limitnum=0);
 
@@ -68,8 +71,12 @@ if ($ADMIN->fulltree) {
         $enrollmethods[$enroll->enrol] = $enroll->enrol;
     }
 
-    // Get the "student" roles.
-    $gbroles = explode(',', $CFG->gradebookroles);
+    if (isset($CFG->gradebookroles)) {
+        // Get the "student" roles.
+        $gbroles = explode(',', $CFG->gradebookroles);
+    } else {
+        $gbroles = array();
+    }
 
     // Loop through those roles and do stuff.
     foreach ($gbroles as $gbrole) {
@@ -81,8 +88,12 @@ if ($ADMIN->fulltree) {
         $studentroles[$gbrname->id] = $gbrname->shortname;
     }
 
-    // Get the "teacher" roles.
-    $proles = explode(',', $CFG->profileroles);
+    if (isset($CFG->profileroles)) {
+        // Get the "teacher" roles.
+        $proles = explode(',', $CFG->profileroles);
+    } else {
+        $proles = array();
+    }
 
     // Loop through those roles and do stuff.
     foreach ($proles as $prole) {

@@ -25,8 +25,15 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
+
+    $studentroles = array();
+
     // Get the "student" roles.
-    $roles = explode(',', $CFG->gradebookroles);
+    if (isset($CFG->gradebookroles)) {
+        $roles = explode(',', $CFG->gradebookroles);
+    } else {
+        $roles = array();
+    }
     // Loop through those roles and do stuff.
     foreach ($roles as $role) {
         // Grab the role names from the DB.
