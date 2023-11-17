@@ -2427,7 +2427,11 @@ HTML;
         if (!empty($coverimage)) {
             $attrs['class'] .= ' mast-breadcrumb';
         }
-        $snapmycourses = html_writer::link(new moodle_url('/my/courses.php'), get_string('menu', 'theme_snap'), $attrs);
+        if (empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
+            $snapmycourses = html_writer::link(new moodle_url('/my/courses.php'), get_string('menu', 'theme_snap'), $attrs);
+        } else {
+            $snapmycourses = html_writer::link(new moodle_url('/my/'), get_string('menu', 'theme_snap'), $attrs);
+        }
         $filteredbreadcrumbs = $this->remove_duplicated_breadcrumbs($this->page->navbar->get_items());
         foreach ($filteredbreadcrumbs as $item) {
             $item->hideicon = true;
