@@ -519,3 +519,15 @@ $string['contains'] = 'Contains';
 $string['endswith'] = 'Ends With';
 $string['regex'] = 'Regular Expression';
 // END LSU Extra Course Tabs.
+
+
+// // BEGIN LSU Extra Course Size.
+$string['enable_course_size'] = 'Enable course size tool.';
+$string['enable_course_size_description'] = 'If enabled, this will show the  course size based on a limit that is set by the admin.';
+$string['course_size_limit'] = 'Course size limit (MB)';
+$string['course_size_limit_description'] = 'Set the limit for the size of the course that instructors will be able to see.';
+
+$string['course_size'] = 'Course Size';
+$string['course_size_help'] = 'Indicates the total size of your course, including all course materials.';
+// END LSU Extra Course Size.
+
