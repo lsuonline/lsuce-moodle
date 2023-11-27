@@ -56,7 +56,11 @@ class lsu_theme_snippets {
         // What is the percentage of it being full.
         // $this->formatPercentage($)
         // $OUTPUT->help_icon('course_size', 'theme_snap').
-        $coursesnippet = 'Course File Size: '.$size. ' <a href="'.$CFG->wwwroot.'/report/coursesize/course.php?id='.$COURSE->id.'" target="_blank"><i class="fa fa-question-circle-o" aria-hidden="true"></i></a>'.
+        $show_course_size_link = "";
+        if (is_siteadmin()) {
+            $show_course_size_link = ' <a href="'.$CFG->wwwroot.'/report/coursesize/course.php?id='.$COURSE->id.'" target="_blank"><i class="fa fa-question-circle-o" aria-hidden="true"></i></a>';
+        }
+        $coursesnippet = 'Course File Size: '.$size. $show_course_size_link.
         '<div class="progress" style="width: 25%" role="progressbar" aria-label="Success example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-bar bg-'.$this->get_bootstrap_barlevel($percentage).'" style="width: '.$percentage.'%">'.$percentage.'%</div>
         </div>';
