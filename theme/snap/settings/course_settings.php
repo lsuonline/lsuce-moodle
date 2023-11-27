@@ -79,14 +79,11 @@ $description = get_string('design_mod_page_description', 'theme_snap');
 $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
 $snapsettings->add($setting);
 
-$settings->add($snapsettings);
-
 // BEGIN LSU - Enable course size tool & size limit.
 $name = 'theme_snap/enable_course_size';
 $title = get_string('enable_course_size', 'theme_snap');
 $description = get_string('enable_course_size_description', 'theme_snap');
-$default = $checked;
-$setting = new admin_setting_configcheckbox($name, $title, $description, $default, $checked, $unchecked);
+$setting = new admin_setting_configcheckbox($name, $title, $description, 0);
 $snapsettings->add($setting);
 
 $name = 'theme_snap/course_size_limit';
@@ -96,3 +93,5 @@ $default = '';
 $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 64);
 $snapsettings->add($setting);
 // END LSU - Enable course size tool & size limit.
+
+$settings->add($snapsettings);
