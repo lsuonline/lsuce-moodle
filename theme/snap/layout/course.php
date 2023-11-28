@@ -73,6 +73,7 @@ echo $OUTPUT->custom_menu_spacer();
     }
     ?>
     </div>
+
     <?php
         // BEGIN LSU - Insert the course file size total.
         $showcs = get_config('theme_snap', 'enable_course_size');
@@ -80,14 +81,17 @@ echo $OUTPUT->custom_menu_spacer();
             include_once($CFG->dirroot. "/theme/lsu.php");
             $showcssnippet = new lsu_theme_snippets();
 
-            // Than later in code:
+            // Then later in code:
             if (!$showcssnippet->are_you_student() || is_siteadmin()) {
                 // User does NOT have a student role in a course.
+                echo '<div id="snap-show-course-size">';
                 echo $showcssnippet->show_course_size();
+                echo '</div>';
             }
         }
         // END LSU - Insert the course file size total.
     ?>
+
 </div>
 <?php
 if ($tocformat && $leftnav) {

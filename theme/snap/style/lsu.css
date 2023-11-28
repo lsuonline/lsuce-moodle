@@ -32,3 +32,17 @@
     /* Standard Property */
 }
 /* END LSU Course Card Quick Links. */
+
+/* BEGIN LSU Course Size. */
+#snap-show-course-size {
+    background-color: white;
+    width: 20em;
+    padding: 0.5em;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: -1em;
+}
+
+#snap-show-course-size .progress {
+    width: 100% !important;
+}
+/* END LSU Course Size. */
