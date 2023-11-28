@@ -77,13 +77,13 @@ echo $OUTPUT->custom_menu_spacer();
     <?php
         // BEGIN LSU - Insert the course file size total.
         $showcs = get_config('theme_snap', 'enable_course_size');
-        if ($showcs) {
-            include_once($CFG->dirroot. "/theme/lsu.php");
-            $showcssnippet = new lsu_theme_snippets();
+        include_once($CFG->dirroot. "/theme/lsu.php");
+        $showcssnippet = new lsu_theme_snippets();
 
-            // Then later in code:
+        if ($showcs && !$showcssnippet->are_you_student()) {
+            // Show the link.
             if (!$showcssnippet->are_you_student() || is_siteadmin()) {
-                // User does NOT have a student role in a course.
+                // User can edit the gradebook.
                 echo '<div id="snap-show-course-size">';
                 echo $showcssnippet->show_course_size();
                 echo '</div>';

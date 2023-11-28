@@ -48,22 +48,36 @@ class lsu_theme_snippets {
         $sizesetting = (int)get_config('theme_snap', 'course_size_limit');
         // $sizesetting *= 1000;
 
-        $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 2);
+        $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 0);
         // number_format( $myNumber, 2, '.', '' );
         // Let's format this number so it's readable.
         $size = $this->formatBytes($coursesize);
         
         // What is the percentage of it being full.
-        // $this->formatPercentage($)
-        // $OUTPUT->help_icon('course_size', 'theme_snap').
+        $displayclass = $this->get_bootstrap_barlevel($percentage);
         $show_course_size_link = "";
         if (is_siteadmin()) {
-            $show_course_size_link = ' <a href="'.$CFG->wwwroot.'/report/coursesize/course.php?id='.$COURSE->id.'" target="_blank"><i class="fa fa-question-circle-o" aria-hidden="true"></i></a>';
+            $show_course_size_link = ' <a href="' . $CFG->wwwroot .
+                '/report/coursesize/course.php?id='
+                . $COURSE->id .
+                '" target="_blank">' .
+                '<i class="fa fa-question-circle-o" aria-hidden="true"></i>' .
+                '</a>';
         }
-        $coursesnippet = 'Course File Size: '.$size. $show_course_size_link.
-        '<div class="progress" style="width: 25%" role="progressbar" aria-label="Success example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-bar bg-'.$this->get_bootstrap_barlevel($percentage).'" style="width: '.$percentage.'%">'.$percentage.'%</div>
-        </div>';
+
+        $coursesnippet = 'Course File Size: '
+            . $size
+            . $show_course_size_link .
+            '<div class="progress" ' .
+            'role="progressbar" ' .
+            'aria-label="Success example" ' .
+            'aria-valuenow="' . $percentage . '" ' .
+            'aria-valuemin="0" ' .
+            'aria-valuemax="100"> ' .
+            '<div class="progress-bar bg-' . $displayclass .
+            '" style="width: ' . $percentage . '%">' .
+            '<span class="fg-' . $displayclass . '">' . $percentage . '%</span>' .
+            '</div></div>';
       
 
         return $coursesnippet;
@@ -179,30 +193,17 @@ class lsu_theme_snippets {
      * @param  string  $role     What role to search for.
      * @return bool              
      */
-    function are_you_student($courseid = 0, $userid = 0, $role = 'student') {
+    function are_you_student() {
+        global $USER, $COURSE;
 
-        global $DB, $USER, $COURSE;
-        if ($courseid == 0) {
-            $courseid = $COURSE->id;
-        }
-        if ($userid == 0) {
-            $userid = $USER->id;
-        }
+        // Get course context.
+        $coursecontext = \context_course::instance($COURSE->id);
 
-        $sql = "SELECT * FROM mdl_role_assignments AS ra 
-            LEFT JOIN mdl_user_enrolments AS ue ON ra.userid = ue.userid 
-            LEFT JOIN mdl_role AS r ON ra.roleid = r.id 
-            LEFT JOIN mdl_context AS c ON c.id = ra.contextid 
-            LEFT JOIN mdl_enrol AS e ON e.courseid = c.instanceid AND ue.enrolid = e.id 
-            WHERE r.shortname = ? AND ue.userid = ? AND e.courseid = ?";
-        
-        $result = $DB->get_records_sql($sql, array($role, $userid, $courseid));
-
-        if ($result) {
-            if (count($result) == 1) {
-                return true;
-            }
+        // Security check - are they allowed to see the grade report for the course?
+        if (has_capability('moodle/grade:edit', $coursecontext, $USER)) {
+            return false;
+        } else {
+            return true;
         }
-        return false;
     }
 }

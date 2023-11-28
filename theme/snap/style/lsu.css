@@ -45,4 +45,23 @@
 #snap-show-course-size .progress {
     width: 100% !important;
 }
+
+#snap-show-course-size .fg-danger,
+#snap-show-course-size .bg-danger {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+#snap-show-course-size .fg-warningi,
+#snap-show-course-size .bg-warning {
+    color: #000000;
+    font-weight: 600;
+    background-color: #fdd023;
+}
+
+#snap-show-course-size .fg-success,
+#snap-show-course-size .bg-success {
+    color: #ffffff;
+    font-weight: 600;
+}
 /* END LSU Course Size. */
