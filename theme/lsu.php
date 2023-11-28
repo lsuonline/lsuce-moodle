@@ -127,7 +127,13 @@ class lsu_theme_snippets {
             ORDER BY rc.filesize DESC";
 
         $csize = $DB->get_record_sql($sql);
-        return $csize->filesize;
+
+        // Make sure we are returning something regardless of data returned.
+        if ($csize == false) {
+            return '0';
+        } else {
+            return $csize->filesize;
+        }
     }
 
     private function formatBytes($bytes, $precision = 2) { 
