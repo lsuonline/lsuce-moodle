@@ -44,6 +44,7 @@
 
 #snap-show-course-size .progress {
     width: 100% !important;
+    border-radius: 1em;
 }
 
 #snap-show-course-size .fg-danger,
@@ -52,11 +53,11 @@
     font-weight: 600;
 }
 
-#snap-show-course-size .fg-warningi,
+#snap-show-course-size .fg-warning,
 #snap-show-course-size .bg-warning {
     color: #000000;
     font-weight: 600;
-    background-color: #fdd023;
+    background-color: #fdd023 !important;
 }
 
 #snap-show-course-size .fg-success,
