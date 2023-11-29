@@ -18,12 +18,13 @@
  * Atto text editor integration lib file.
  *
  * @package    atto_teamsmeeting
- * @copyright  2020 Enovation
+ * @copyright  2020 Enovation Solutions
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__ . '/../../../../../repository/url/locallib.php');
+require_once($CFG->dirroot . '/repository/url/lib.php');
 
 /**
  * Set params for this button.
@@ -38,8 +39,10 @@ function atto_teamsmeeting_params_for_js($elementid, $options, $fpoptions) {
         'clientdomain' => encode_url($CFG->wwwroot),
         'appurl' => get_config('atto_teamsmeeting', 'meetingapplink'),
         'locale' => (empty($SESSION->lang) ? $USER->lang : $SESSION->lang),
-        'msession' => sesskey()
+        'msession' => sesskey(),
+        'editor' => 'atto',
     ];
+
     return $params;
 }
 
@@ -49,11 +52,11 @@ function atto_teamsmeeting_params_for_js($elementid, $options, $fpoptions) {
 function atto_teamsmeeting_strings_for_js() {
     global $PAGE;
 
-    $PAGE->requires->strings_for_js(array(
-                                          'addlink',
-                                          'createteamsmeeting',
-                                          'meetingurl',
-                                          'openinnewwindow'),
-                                    'atto_teamsmeeting');
+    $PAGE->requires->strings_for_js([
+        'addlink',
+        'createteamsmeeting',
+        'meetingurl',
+        'openinnewwindow'],
+        'atto_teamsmeeting');
 }
 
