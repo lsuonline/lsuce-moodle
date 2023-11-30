@@ -51,9 +51,27 @@
 }
 
 #snap-show-course-size .fg-danger,
-#snap-show-course-size .bg-danger {
+#snap-show-course-size .bg-danger,
+#snap-show-course-size .fg-excessive,
+#snap-show-course-size .bg-excessive {
     color: #ffffff;
     font-weight: 600;
+}
+
+#snap-show-course-size .bg-excessive {
+  animation: cycler 5s infinite;
+}
+
+@-webkit-keyframes cycler {
+  0% {
+    background-color: #660000;
+  }
+  50% {
+    background-color: #ff0000;
+  }
+  100% {
+    background-color: #660000;
+  }
 }
 
 #snap-show-course-size .fg-warning,

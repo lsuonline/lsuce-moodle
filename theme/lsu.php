@@ -88,14 +88,16 @@ class lsu_theme_snippets {
      */
     private function get_bootstrap_barlevel($percentage) {
 
-        if ($percentage > 0 && $percentage < 25) {
+        if ($percentage > 0 && $percentage < 50) {
             return "success";
-        } else if ($percentage >= 25 && $percentage < 50) {
-            return "info";
         } else if ($percentage >= 50 && $percentage < 75) {
+            return "info";
+        } else if ($percentage >= 75 && $percentage < 90) {
             return "warning";
-        } else if ($percentage >= 75) {
+        } else if ($percentage >= 90 && $percentage < 100) {
             return "danger";
+        } else if ($percentage >= 100) {
+            return "excessive";
         }
     }
 
@@ -188,30 +190,25 @@ class lsu_theme_snippets {
      * Check to see if this user is a student.
      * @return bool
      */
-    function are_you_student() {
+    function are_you_student($isadmin) {
+        global $DB, $COURSE, $USER;
 
-        global $DB, $COURSE, $USER, $SESSION;
-
-        if (isset($SESSION->lsustudent) && $SESSION->lsustudent == true) {
-            return $SESSION->lsustudent;
-        }
-
-        if ($COURSE->id == 0) {
+        // Don't try and check for invalid courses.
+        if ($COURSE->id == 0 || $COURSE->id == 1) {
             return;
         }
 
+        // Set the context.
         $context = context_course::instance($COURSE->id);
 
         // If user can edit grades then let them see how big it is.
-        $isStudent0 = has_capability('moodle/grade:edit', $context, $USER);
+        $isstudent = has_capability('moodle/grade:edit', $context, $USER);
 
-        if ($isStudent0 == true) {
+        if ($isstudent == true) {
             // They are NOT a student, return false.
-            $SESSION->lsupstudent = false;
             return false;
         } else {
             // They ARE a student, return true.
-            $SESSION->lsustudent = true;
             return true;
         }
     }

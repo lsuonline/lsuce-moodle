@@ -84,7 +84,7 @@ echo $OUTPUT->custom_menu_spacer();
             // Was calling this func twice so call once and send to show_course_size.
             $isadmin = is_siteadmin();
             // Then later in code:
-            if (!$showcssnippet->are_you_student() || $isadmin) {
+            if (!$showcssnippet->are_you_student($isadmin)) {
                 // User does NOT have a student role in a course.
                 echo '<div id="snap-show-course-size">';
                 echo $showcssnippet->show_course_size($isadmin);
