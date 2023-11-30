@@ -49,12 +49,14 @@ class lsu_theme_snippets {
         // $sizesetting *= 1000;
 
         $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 0);
+        $percent = round((($coursesize / 1048576) * 100) / $sizesetting, 0);
+
         // number_format( $myNumber, 2, '.', '' );
         // Let's format this number so it's readable.
         $size = $this->formatBytes($coursesize);
         
         // What is the percentage of it being full.
-        $displayclass = $this->get_bootstrap_barlevel($percentage);
+        $displayclass = $this->get_bootstrap_barlevel($percent);
         $show_course_size_link = "";
         if (is_siteadmin()) {
             $show_course_size_link = ' <a href="' . $CFG->wwwroot .
@@ -71,11 +73,11 @@ class lsu_theme_snippets {
             '<div class="progress" ' .
             'role="progressbar" ' .
             'aria-label="Success example" ' .
-            'aria-valuenow="' . $percentage . '" ' .
+            'aria-valuenow="' . $percent . '" ' .
             'aria-valuemin="0" ' .
             'aria-valuemax="100"> ' .
             '<div class="progress-bar bg-' . $displayclass .
-            '" style="width: ' . $percentage . '%">' .
+            '" style="width: ' . $percent . '%">' .
             '<span class="fg-' . $displayclass . '">' . $percentage . '%</span>' .
             '</div></div>';
       
