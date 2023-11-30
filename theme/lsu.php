@@ -46,21 +46,39 @@ class lsu_theme_snippets {
 
         $sizesetting = (int)get_config('theme_snap', 'course_size_limit');
 
-        $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 2);
+        $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 0);
+        $percent = round((($coursesize / 1048576) * 100) / $sizesetting, 0);
 
+        // number_format( $myNumber, 2, '.', '' );
         // Let's format this number so it's readable.
         $size = $this->formatBytes($coursesize);
         
+        // What is the percentage of it being full.
+        $displayclass = $this->get_bootstrap_barlevel($percent);
         $show_course_size_link = "";
         if ($isadmin) {
-            $show_course_size_link = ' <a href="'.$CFG->wwwroot.'/report/coursesize/course.php?id='.$COURSE->id.'" target="_blank"><i class="fa fa-question-circle-o" aria-hidden="true"></i></a>';
+            $show_course_size_link = ' <a href="' . $CFG->wwwroot .
+                '/report/coursesize/course.php?id='
+                . $COURSE->id .
+                '" target="_blank">' .
+                '<i class="fa fa-question-circle-o" aria-hidden="true"></i>' .
+                '</a>';
         }
 
-        $coursesnippet = 'Course File Size: '.$size. $show_course_size_link.
-        '<div class="progress" style="width: 25%" role="progressbar" aria-label="Success example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-bar bg-'.$this->get_bootstrap_barlevel($percentage).'" style="width: '.$percentage.'%">'.$percentage.'%</div>
-        </div>';
-
+        $coursesnippet = 'Course File Size: '
+            . $size
+            . $show_course_size_link .
+            '<div class="progress" ' .
+            'role="progressbar" ' .
+            'aria-label="Success example" ' .
+            'aria-valuenow="' . $percent . '" ' .
+            'aria-valuemin="0" ' .
+            'aria-valuemax="100"> ' .
+            '<div class="progress-bar bg-' . $displayclass .
+            '" style="width: ' . $percent . '%">' .
+            '<span class="fg-' . $displayclass . '">' . $percentage . '%</span>' .
+            '</div></div>';
+      
         return $coursesnippet;
     }
 
@@ -189,8 +207,9 @@ class lsu_theme_snippets {
      * @return bool              
      */
     function are_you_student() {
-        global $DB, $COURSE, $USER, $SESSION;
 
+        global $DB, $COURSE, $USER, $SESSION;
+        
         if (isset($SESSION->snapstudent)) {
             return $SESSION->snapstudent;
         }
@@ -201,6 +220,12 @@ class lsu_theme_snippets {
         }
 
         // $context = context_course::instance($COURSE->id);
+
+        // Test 0 ----------------------------------------
+        // $time_start = microtime(true);
+        // $isStudent0 = has_capability('moodle/grade:edit', $context, $USER);
+        // $time_end = microtime(true);
+        // $execution_time0 = ($time_end - $time_start);
 
         // Test 1 ----------------------------------------
         // $time_start = microtime(true);
@@ -232,6 +257,7 @@ class lsu_theme_snippets {
             $isStudent3 = $result->roleid == 5 ? true : false;
         }
         
+        // error_log("\n TEST 0 -> Are you the father: ". $isStudent0 ." - Total Execution Time1: ".$execution_time0." Mins\n");
         // error_log("\n TEST 1 -> Are you the father: ". $isStudent1 ." - Total Execution Time1: ".$execution_time1." Mins\n");
         // error_log("\n TEST 2 -> Are you the father: ". $isStudent2 ." - Total Execution Time2: ".$execution_time2." Mins\n");
         // error_log("\n TEST 3 -> Are you the father: ". $isStudent3 ." - Total Execution Time3: ".$execution_time3." Mins\n");

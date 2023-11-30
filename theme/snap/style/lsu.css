@@ -39,10 +39,47 @@
     width: 20em;
     padding: 0.5em;
     border-radius: 10px 10px 0 0;
-    margin-bottom: -1em;
+    margin-bottom: calc(-0.5em - 1px);
+    border-top: 1px solid #3a1867;
+    border-left: 1px solid #3a1867;
+    border-right: 1px solid #3a1867;
 }
 
 #snap-show-course-size .progress {
     width: 100% !important;
+    border-radius: 1em;
+}
+
+#snap-show-course-size .fg-danger,
+#snap-show-course-size .bg-danger {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+#snap-show-course-size .fg-warning,
+#snap-show-course-size .bg-warning {
+    color: #000000;
+    font-weight: 600;
+    background-color: #fdd023 !important;
+}
+
+#snap-show-course-size .fg-success,
+#snap-show-course-size .bg-success {
+    color: #ffffff;
+    font-weight: 600;
 }
 /* END LSU Course Size. */
+
+/* BEGIN LSU Page Mast. */
+#page-header {
+  background-image: linear-gradient(to bottom,#ffffff,rgba(58,24,103,.0625));
+  border-bottom: 1px solid #3a1867;
+}
+
+.theme-snap #snap-coverimagecontrol>label.btn-secondary.btn-sm {
+  background-color: white;
+  border: 1px solid #3a1867;
+  border-radius: 0.5em;
+}
+/* END LSU Page Mast. */
+

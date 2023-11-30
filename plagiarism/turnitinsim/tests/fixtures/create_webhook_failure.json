@@ -1,5 +1,0 @@
-{
-  "status": 400,
-  "message": "The webhook URL http://example/moodle/plagiarism/turnitinsim/callbacks.php is not a valid URL",
-  "httpstatus": 400
-}
