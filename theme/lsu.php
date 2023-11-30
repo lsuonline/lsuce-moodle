@@ -210,20 +210,21 @@ class lsu_theme_snippets {
 
         global $DB, $COURSE, $USER, $SESSION;
         
-        if (isset($SESSION->snapstudent)) {
-            return $SESSION->snapstudent;
+        if (isset($SESSION->lsustudent) && $SESSION->lsustudent == true) {
+            return $SESSION->lsustudent;
         }
         
-        $role = 'student';
+        // $role = 'student';
         if ($COURSE->id == 0) {
             return;
         }
 
-        // $context = context_course::instance($COURSE->id);
+        $context = context_course::instance($COURSE->id);
 
         // Test 0 ----------------------------------------
         // $time_start = microtime(true);
-        // $isStudent0 = has_capability('moodle/grade:edit', $context, $USER);
+        $isStudent0 = has_capability('moodle/grade:edit', $context, $USER);
+
         // $time_end = microtime(true);
         // $execution_time0 = ($time_end - $time_start);
 
@@ -242,29 +243,34 @@ class lsu_theme_snippets {
         // Test 3 ----------------------------------------
         // $time_start = microtime(true);
         
-        $sql = "SELECT * FROM mdl_role_assignments AS ra 
-            LEFT JOIN mdl_user_enrolments AS ue ON ra.userid = ue.userid 
-            LEFT JOIN mdl_role AS r ON ra.roleid = r.id 
-            LEFT JOIN mdl_context AS c ON c.id = ra.contextid 
-            LEFT JOIN mdl_enrol AS e ON e.courseid = c.instanceid AND ue.enrolid = e.id 
-            WHERE r.shortname = ? AND ue.userid = ? AND e.courseid = ?";
+        // $sql = "SELECT * FROM mdl_role_assignments AS ra 
+        //     LEFT JOIN mdl_user_enrolments AS ue ON ra.userid = ue.userid 
+        //     LEFT JOIN mdl_role AS r ON ra.roleid = r.id 
+        //     LEFT JOIN mdl_context AS c ON c.id = ra.contextid 
+        //     LEFT JOIN mdl_enrol AS e ON e.courseid = c.instanceid AND ue.enrolid = e.id 
+        //     WHERE r.shortname = ? AND ue.userid = ? AND e.courseid = ?";
         
-        $result = $DB->get_record_sql($sql, array($role, $USER->id, $COURSE->id));
+        // $result = $DB->get_record_sql($sql, array($role, $USER->id, $COURSE->id));
         // $time_end = microtime(true);
         // $execution_time3 = ($time_end - $time_start);
-        $isStudent3 = false;
-        if (isset($result->roleid)) {
-            $isStudent3 = $result->roleid == 5 ? true : false;
-        }
+        // $isStudent3 = false;
+        // if (isset($result->roleid)) {
+        //     $isStudent3 = $result->roleid == 5 ? true : false;
+        // }
         
-        // error_log("\n TEST 0 -> Are you the father: ". $isStudent0 ." - Total Execution Time1: ".$execution_time0." Mins\n");
+        // error_log("\n TEST 0 -> Are you the father: ". $isStudent0 ." - Total Execution Time0: ".$execution_time0." Mins\n");
         // error_log("\n TEST 1 -> Are you the father: ". $isStudent1 ." - Total Execution Time1: ".$execution_time1." Mins\n");
         // error_log("\n TEST 2 -> Are you the father: ". $isStudent2 ." - Total Execution Time2: ".$execution_time2." Mins\n");
         // error_log("\n TEST 3 -> Are you the father: ". $isStudent3 ." - Total Execution Time3: ".$execution_time3." Mins\n");
-        if ($isStudent3 == true) {
-            $SESSION->snapstudent = true;
+
+        if ($isStudent0 == true) {
+            // They are NOT a student, return false.
+            $SESSION->lsupstudent = false;
+            return false;
         } else {
-            $SESSION->snapstudent = false;
+            // They ARE a student, return true.
+            $SESSION->lsustudent = true;
+            return true;
         }
     }
 }
