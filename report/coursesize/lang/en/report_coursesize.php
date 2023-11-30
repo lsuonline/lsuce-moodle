@@ -54,10 +54,10 @@ $string['calcmethodhelp'] = 'If calculated by scheduled task, the report will up
 $string['numberofusers'] = 'Top number of users';
 $string['numberofusershelp'] = 'How many of the top users the report will show.';
 
-// BEGIN LSU Course Size.
+// BEGIN LSU - Store course size and history.
 $string['keephistory'] = 'Keep size history';
 $string['keephistoryhelp'] = 'Keep the course size history to see growth rate.';
-// END LSU Course Size.
+// END LSU - Store course size and history.
 
 $string['filearea'] = 'File area';
 $string['allcourses'] = 'All courses';

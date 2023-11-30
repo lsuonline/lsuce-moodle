@@ -129,7 +129,7 @@ if ($viewtab == 'userstopnum') {
     if (isset($reportconfig->calcmethod) && ($reportconfig->calcmethod) == 'live') {
         $live = true;
     }
-    // BEGIN LSU In case course size history is enabled.
+    // BEGIN LSU - Store course size and history.
     if ($live) {
         $filesql = report_coursesize_filesize_sql();
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp
@@ -151,7 +151,7 @@ if ($viewtab == 'userstopnum') {
          $extracoursesql
          $bytimestamp
      ORDER BY rc.filesize DESC";
-    // END LSU In case course size history is enabled.
+    // END LSU - Store course size and history.
 
     $courses = $DB->get_records_sql($sql, $courseparams);
 

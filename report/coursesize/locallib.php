@@ -26,7 +26,10 @@
  * Get sql snippet for course filesizes.
  * @return string
  */
+// BEGIN LSU - Store course size and history.
+// Added - $processtime as func param and in return.
 function report_coursesize_filesize_sql($processtime = 0) {
+// END LSU - Store course size and history.
     $sqlunion = "UNION ALL
                     SELECT c.id, f.filesize
                     FROM {block_instances} bi

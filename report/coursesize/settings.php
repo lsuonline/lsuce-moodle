@@ -51,11 +51,12 @@ if ($ADMIN->fulltree) {
         10,
         PARAM_INT
     ));
-
+    // BEGIN LSU - Course size history.
     $settings->add(new admin_setting_configcheckbox(
         'report_coursesize/keephistory',
         get_string('keephistory', 'report_coursesize'),
         get_string('keephistoryhelp', 'report_coursesize'),
         1
     ));
+    // END LSU - Course size history.
 }

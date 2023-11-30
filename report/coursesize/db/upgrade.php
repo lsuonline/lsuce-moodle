@@ -60,7 +60,7 @@ function xmldb_report_coursesize_upgrade($oldversion) {
         // Coursesize savepoint reached.
         upgrade_plugin_savepoint(true, 2021030802, 'report', 'coursesize');
     }
-
+    // BEGIN LSU - Store course size and history.
     if ($oldversion < 2023112801) {
         $rctable = new xmldb_table('report_coursesize');
         
@@ -70,5 +70,6 @@ function xmldb_report_coursesize_upgrade($oldversion) {
         }
 
     }
+    // END LSU - Store course size and history.
     return true;
 }

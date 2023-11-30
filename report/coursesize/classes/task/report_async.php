@@ -46,7 +46,7 @@ class report_async extends \core\task\scheduled_task {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/report/coursesize/locallib.php');
 
-        
+        // BEGIN LSU - Store course size and history.
         // Are we using cron or no?
         if (get_config('report_coursesize', 'calcmethod') == 'cron') {
 
@@ -82,6 +82,8 @@ class report_async extends \core\task\scheduled_task {
                     WHERE bf.course = rc.course
                     $historysql
             )";
+
+            // END LSU - Store course size and history.
             $DB->execute($sql);
 
             $transaction->allow_commit();
