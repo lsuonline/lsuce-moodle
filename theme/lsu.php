@@ -38,33 +38,28 @@ global $CFG;
  *
  */
 class lsu_theme_snippets {
-
     
-    public function show_course_size() {
-        global $OUTPUT, $COURSE, $CFG;
-        // $coursesize = $this->get_file_size() / 1048576;
+    public function show_course_size($isadmin = 0) {
+        global $OUTPUT, $COURSE, $CFG, $USER;
+
         $coursesize = $this->get_file_size();
 
         $sizesetting = (int)get_config('theme_snap', 'course_size_limit');
-        // $sizesetting *= 1000;
 
         $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 2);
-        // number_format( $myNumber, 2, '.', '' );
+
         // Let's format this number so it's readable.
         $size = $this->formatBytes($coursesize);
         
-        // What is the percentage of it being full.
-        // $this->formatPercentage($)
-        // $OUTPUT->help_icon('course_size', 'theme_snap').
         $show_course_size_link = "";
-        if (is_siteadmin()) {
+        if ($isadmin) {
             $show_course_size_link = ' <a href="'.$CFG->wwwroot.'/report/coursesize/course.php?id='.$COURSE->id.'" target="_blank"><i class="fa fa-question-circle-o" aria-hidden="true"></i></a>';
         }
+
         $coursesnippet = 'Course File Size: '.$size. $show_course_size_link.
         '<div class="progress" style="width: 25%" role="progressbar" aria-label="Success example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-bar bg-'.$this->get_bootstrap_barlevel($percentage).'" style="width: '.$percentage.'%">'.$percentage.'%</div>
         </div>';
-      
 
         return $coursesnippet;
     }
@@ -95,6 +90,20 @@ class lsu_theme_snippets {
             $courseid = $COURSE->id;            
         }
 
+        // Search the report_coursesize table first.
+        $found = $DB->get_record_sql(
+            "SELECT filesize, timestamp
+            FROM {report_coursesize}
+            WHERE course = ?
+            AND timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} WHERE course = ?)",
+            array($courseid, $courseid)
+        );
+
+        if ($found) {
+            return $found->filesize;
+        }
+
+        // No records found for this course so let's find the size.
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
             FROM mdl_course c
             JOIN (
@@ -106,14 +115,14 @@ class lsu_theme_snippets {
                         JOIN mdl_files f ON f.contextid = cx.id
 
                         UNION ALL
-                    
+
                         SELECT c.id, f.filesize
                         FROM mdl_block_instances bi
                         JOIN mdl_context cx1 ON cx1.contextlevel = 80 AND cx1.instanceid = bi.id
                         JOIN mdl_context cx2 ON cx2.contextlevel = 50 AND cx2.id = bi.parentcontextid
                         JOIN mdl_course c ON c.id = cx2.instanceid
                         JOIN mdl_files f ON f.contextid = cx1.id
-                    
+
                         UNION ALL
 
                         SELECT c.id, f.filesize
@@ -179,16 +188,35 @@ class lsu_theme_snippets {
      * @param  string  $role     What role to search for.
      * @return bool              
      */
-    function are_you_student($courseid = 0, $userid = 0, $role = 'student') {
+    function are_you_student() {
+        global $DB, $COURSE, $USER, $SESSION;
 
-        global $DB, $USER, $COURSE;
-        if ($courseid == 0) {
-            $courseid = $COURSE->id;
+        if (isset($SESSION->snapstudent)) {
+            return $SESSION->snapstudent;
         }
-        if ($userid == 0) {
-            $userid = $USER->id;
+        
+        $role = 'student';
+        if ($COURSE->id == 0) {
+            return;
         }
 
+        // $context = context_course::instance($COURSE->id);
+
+        // Test 1 ----------------------------------------
+        // $time_start = microtime(true);
+        // $isStudent1 = current(get_user_roles($context, $USER->id))->shortname == 'student' ? true : false; // instead of shortname you can also use roleid
+        // $time_end = microtime(true);
+        // $execution_time1 = ($time_end - $time_start);
+        
+        // Test 2 ----------------------------------------
+        // $time_start = microtime(true);
+        // $isStudent2 = !has_capability ('moodle/course:update', $context) ? true : false;
+        // $time_end = microtime(true);
+        // $execution_time2 = ($time_end - $time_start);
+        
+        // Test 3 ----------------------------------------
+        // $time_start = microtime(true);
+        
         $sql = "SELECT * FROM mdl_role_assignments AS ra 
             LEFT JOIN mdl_user_enrolments AS ue ON ra.userid = ue.userid 
             LEFT JOIN mdl_role AS r ON ra.roleid = r.id 
@@ -196,13 +224,21 @@ class lsu_theme_snippets {
             LEFT JOIN mdl_enrol AS e ON e.courseid = c.instanceid AND ue.enrolid = e.id 
             WHERE r.shortname = ? AND ue.userid = ? AND e.courseid = ?";
         
-        $result = $DB->get_records_sql($sql, array($role, $userid, $courseid));
-
-        if ($result) {
-            if (count($result) == 1) {
-                return true;
-            }
+        $result = $DB->get_record_sql($sql, array($role, $USER->id, $COURSE->id));
+        // $time_end = microtime(true);
+        // $execution_time3 = ($time_end - $time_start);
+        $isStudent3 = false;
+        if (isset($result->roleid)) {
+            $isStudent3 = $result->roleid == 5 ? true : false;
         }
-        return false;
+        
+        // error_log("\n TEST 1 -> Are you the father: ". $isStudent1 ." - Total Execution Time1: ".$execution_time1." Mins\n");
+        // error_log("\n TEST 2 -> Are you the father: ". $isStudent2 ." - Total Execution Time2: ".$execution_time2." Mins\n");
+        // error_log("\n TEST 3 -> Are you the father: ". $isStudent3 ." - Total Execution Time3: ".$execution_time3." Mins\n");
+        if ($isStudent3 == true) {
+            $SESSION->snapstudent = true;
+        } else {
+            $SESSION->snapstudent = false;
+        }
     }
 }

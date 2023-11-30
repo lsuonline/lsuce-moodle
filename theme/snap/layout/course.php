@@ -81,11 +81,13 @@ echo $OUTPUT->custom_menu_spacer();
             include_once($CFG->dirroot. "/theme/lsu.php");
             $showcssnippet = new lsu_theme_snippets();
 
+            // Was calling this func twice so call once and send to show_course_size.
+            $isadmin = is_siteadmin();
             // Then later in code:
-            if (!$showcssnippet->are_you_student() || is_siteadmin()) {
+            if (!$showcssnippet->are_you_student() || $isadmin) {
                 // User does NOT have a student role in a course.
                 echo '<div id="snap-show-course-size">';
-                echo $showcssnippet->show_course_size();
+                echo $showcssnippet->show_course_size($isadmin);
                 echo '</div>';
             }
         }

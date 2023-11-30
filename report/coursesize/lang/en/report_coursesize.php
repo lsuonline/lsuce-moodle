@@ -53,5 +53,11 @@ $string['calcmethodlive'] = 'On page load';
 $string['calcmethodhelp'] = 'If calculated by scheduled task, the report will update at the scheduled time and cache the results for later viewing. This is recommended over instant calculations because this can be an intensive/slow query to run.';
 $string['numberofusers'] = 'Top number of users';
 $string['numberofusershelp'] = 'How many of the top users the report will show.';
+
+// BEGIN LSU Course Size.
+$string['keephistory'] = 'Keep size history';
+$string['keephistoryhelp'] = 'Keep the course size history to see growth rate.';
+// END LSU Course Size.
+
 $string['filearea'] = 'File area';
 $string['allcourses'] = 'All courses';

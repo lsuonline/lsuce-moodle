@@ -60,5 +60,15 @@ function xmldb_report_coursesize_upgrade($oldversion) {
         // Coursesize savepoint reached.
         upgrade_plugin_savepoint(true, 2021030802, 'report', 'coursesize');
     }
+
+    if ($oldversion < 2023112801) {
+        $rctable = new xmldb_table('report_coursesize');
+        
+        if (!$dbman->field_exists('report_coursesize', 'timestamp')) {
+            $rctime = new xmldb_field('timestamp', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, 0);
+            $dbman->add_field($rctable, $rctime);
+        }
+
+    }
     return true;
 }

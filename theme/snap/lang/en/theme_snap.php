@@ -521,7 +521,7 @@ $string['regex'] = 'Regular Expression';
 // END LSU Extra Course Tabs.
 
 
-// // BEGIN LSU Extra Course Size.
+// BEGIN LSU Extra Course Size.
 $string['enable_course_size'] = 'Enable course size tool.';
 $string['enable_course_size_description'] = 'If enabled, this will show the  course size based on a limit that is set by the admin.';
 $string['course_size_limit'] = 'Course size limit (MB)';

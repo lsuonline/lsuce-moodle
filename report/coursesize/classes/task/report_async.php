@@ -46,27 +46,42 @@ class report_async extends \core\task\scheduled_task {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/report/coursesize/locallib.php');
 
+        
+        // Are we using cron or no?
         if (get_config('report_coursesize', 'calcmethod') == 'cron') {
 
-            mtrace("Generating report_coursesize cache...");
+            // If we want to store historical data then don't purge then insert.
+            // Insert with the timestamp as of NOW.
             set_time_limit(0);
-
-            // First we delete the old data, then we re-populate it, wrap in a transaction to help keep it together.
+            
+            $processtime = time();
             $transaction = $DB->start_delegated_transaction();
+            $historysql = " AND rc.timestamp = ".$processtime;
+            // If we want to store historical data then don't purge then insert.
+            // Insert with the timestamp as of NOW.
+            if ((int)get_config('report_coursesize', 'keephistory') != 1) {
+                // First we delete the old data, then we re-populate it,
+                // wrap in a transaction to help keep it together.
+                $DB->delete_records('report_coursesize');
+            }
 
-            // Clean up cache table.
-            $DB->delete_records('report_coursesize');
-
+            mtrace("Generating report_coursesize data...");
+            
             // Generate report_coursesize table.
-            $basesql = report_coursesize_filesize_sql();
-            $sql = "INSERT INTO {report_coursesize} (course, filesize) $basesql ";
-            $DB->execute($sql);
+            $basesql = report_coursesize_filesize_sql($processtime);
+
+            $sql = "INSERT INTO {report_coursesize} (course, filesize, timestamp) $basesql ";
+            $DB->execute($sql, array($processtime));
 
             // Now calculate size of backups.
             $basesql = report_coursesize_backupsize_sql();
 
             $sql = "UPDATE {report_coursesize} rc
-                    SET backupsize = (SELECT bf.filesize FROM ($basesql) bf WHERE bf.course = rc.course)";
+                SET backupsize = (
+                    SELECT bf.filesize FROM ($basesql) bf
+                    WHERE bf.course = rc.course
+                    $historysql
+            )";
             $DB->execute($sql);
 
             $transaction->allow_commit();
@@ -76,7 +91,9 @@ class report_async extends \core\task\scheduled_task {
             set_config('coursesizeupdated', time(), 'report_coursesize');
 
             mtrace("report_coursesize cache updated.");
+            
         }
+
         // Check if the path ends with a "/" otherwise an exception will be thrown.
         $sitedatadir = $CFG->dataroot;
         if (is_dir($sitedatadir)) {

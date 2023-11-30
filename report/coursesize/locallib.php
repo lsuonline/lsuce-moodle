@@ -26,7 +26,7 @@
  * Get sql snippet for course filesizes.
  * @return string
  */
-function report_coursesize_filesize_sql() {
+function report_coursesize_filesize_sql($processtime = 0) {
     $sqlunion = "UNION ALL
                     SELECT c.id, f.filesize
                     FROM {block_instances} bi
@@ -41,7 +41,7 @@ function report_coursesize_filesize_sql() {
                     JOIN {course} c ON c.id = cm.course
                     JOIN {files} f ON f.contextid = cx.id";
 
-    return "SELECT id AS course, SUM(filesize) AS filesize
+    return "SELECT id AS course, SUM(filesize) AS filesize, $processtime
               FROM (SELECT c.id, f.filesize
                       FROM {course} c
                       JOIN {context} cx ON cx.contextlevel = ".CONTEXT_COURSE." AND cx.instanceid = c.id

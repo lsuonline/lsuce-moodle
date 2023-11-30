@@ -129,24 +129,30 @@ if ($viewtab == 'userstopnum') {
     if (isset($reportconfig->calcmethod) && ($reportconfig->calcmethod) == 'live') {
         $live = true;
     }
+    // BEGIN LSU In case course size history is enabled.
     if ($live) {
         $filesql = report_coursesize_filesize_sql();
-        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
+        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp
           FROM {course} c
           JOIN ($filesql) rc on rc.course = c.id ";
 
         // Generate table of backup filesizes too.
         $backupsql = report_coursesize_backupsize_sql();
         $backupsizes = $DB->get_records_sql($backupsql);
+        $bytimestamp = "";
     } else {
-        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.backupsize
+        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp, rc.backupsize
           FROM {course} c
           JOIN {report_coursesize} rc on rc.course = c.id ";
+        $bytimestamp = " WHERE timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} rc2 WHERE rc.course = rc2.course) ";
     }
 
     $sql .= "JOIN {course_categories} ca on c.category = ca.id
          $extracoursesql
+         $bytimestamp
      ORDER BY rc.filesize DESC";
+    // END LSU In case course size history is enabled.
+
     $courses = $DB->get_records_sql($sql, $courseparams);
 
     $coursetable = new html_table();
