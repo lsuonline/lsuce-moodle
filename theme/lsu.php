@@ -64,6 +64,9 @@ class lsu_theme_snippets {
                 '</a>';
         }
 
+        // Do not show percentage if below 10%.
+        $percentsnippet = $percent < 10 ? '' : '<span class="fg-' . $displayclass . '">' . $percentage . '%</span>';
+
         $coursesnippet = 'Course File Size: '
             . $size
             . $show_course_size_link .
@@ -75,7 +78,7 @@ class lsu_theme_snippets {
             'aria-valuemax="100"> ' .
             '<div class="progress-bar bg-' . $displayclass .
             '" style="width: ' . $percent . '%">' .
-            '<span class="fg-' . $displayclass . '">' . $percentage . '%</span>' .
+            $percentsnippet .
             '</div></div>';
 
         return $coursesnippet;
