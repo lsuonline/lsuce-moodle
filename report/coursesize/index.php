@@ -132,7 +132,7 @@ if ($viewtab == 'userstopnum') {
     // BEGIN LSU - Store course size and history.
     if ($live) {
         $filesql = report_coursesize_filesize_sql();
-        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp
+        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
           FROM {course} c
           JOIN ($filesql) rc on rc.course = c.id ";
 

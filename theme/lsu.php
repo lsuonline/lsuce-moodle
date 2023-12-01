@@ -41,7 +41,7 @@ class lsu_theme_snippets {
     public function show_course_size($isadmin = 0) {
         global $OUTPUT, $COURSE, $CFG, $USER;
 
-        $coursesize = $this->get_file_size();
+        $coursesize = $this->get_file_size($COURSE->id);
 
         $sizesetting = (int)get_config('theme_snap', 'course_size_limit');
 
@@ -113,49 +113,57 @@ class lsu_theme_snippets {
             $courseid = $COURSE->id;
         }
 
-        // Search the report_coursesize table first.
-        $found = $DB->get_record_sql(
-            "SELECT filesize, timestamp
-            FROM {report_coursesize}
-            WHERE course = ?
-            AND timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} WHERE course = ?)",
-            array($courseid, $courseid)
-        );
+        // Are we using cron or no?
+        if (get_config('report_coursesize', 'calcmethod') == 'cron') {
 
-        if ($found) {
-            return $found->filesize;
+            // Search the report_coursesize table first.
+            $found = $DB->get_record_sql(
+                "SELECT filesize, timestamp
+                FROM {report_coursesize}
+                WHERE course = ?
+                AND timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} WHERE course = ?)",
+                array($courseid, $courseid)
+            );
+
+            if ($found) {
+                return $found->filesize;
+            }
         }
 
         // No records found for this course so let's find the size.
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
-            FROM mdl_course c
+            FROM {course} c
             JOIN (
                 SELECT id AS course, SUM(filesize) AS filesize
                     FROM (
                         SELECT c.id, f.filesize
-                        FROM mdl_course c
-                        JOIN mdl_context cx ON cx.contextlevel = 50 AND cx.instanceid = c.id
-                        JOIN mdl_files f ON f.contextid = cx.id
+                        FROM {course} c
+                        JOIN {context} cx ON cx.contextlevel = 50 AND cx.instanceid = c.id
+                        JOIN {files} f ON f.contextid = cx.id
+                        WHERE c.id = " . $courseid . "
 
                         UNION ALL
 
                         SELECT c.id, f.filesize
-                        FROM mdl_block_instances bi
-                        JOIN mdl_context cx1 ON cx1.contextlevel = 80 AND cx1.instanceid = bi.id
-                        JOIN mdl_context cx2 ON cx2.contextlevel = 50 AND cx2.id = bi.parentcontextid
-                        JOIN mdl_course c ON c.id = cx2.instanceid
-                        JOIN mdl_files f ON f.contextid = cx1.id
+                        FROM {block_instances} bi
+                        JOIN {context} cx1 ON cx1.contextlevel = 80 AND cx1.instanceid = bi.id
+                        JOIN {context} cx2 ON cx2.contextlevel = 50 AND cx2.id = bi.parentcontextid
+                        JOIN {course} c ON c.id = cx2.instanceid
+                        JOIN {files} f ON f.contextid = cx1.id
+                        WHERE c.id = " . $courseid . "
 
                         UNION ALL
 
                         SELECT c.id, f.filesize
-                        FROM mdl_course_modules cm
-                        JOIN mdl_context cx ON cx.contextlevel = 70 AND cx.instanceid = cm.id
-                        JOIN mdl_course c ON c.id = cm.course
-                        JOIN mdl_files f ON f.contextid = cx.id
+                        FROM {course_modules} cm
+                        JOIN {context} cx ON cx.contextlevel = 70 AND cx.instanceid = cm.id
+                        JOIN {course} c ON c.id = cm.course
+                        JOIN {files} f ON f.contextid = cx.id
+                        WHERE c.id = " . $courseid . "
                     ) x
                     GROUP BY id
-            ) rc on rc.course = c.id JOIN mdl_course_categories ca on c.category = ca.id AND c.id=". $courseid. "
+            ) rc on rc.course = c.id
+            JOIN {course_categories} ca on c.category = ca.id AND c.id=". $courseid. "
             ORDER BY rc.filesize DESC";
 
         $csize = $DB->get_record_sql($sql);

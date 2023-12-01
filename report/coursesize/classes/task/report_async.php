@@ -106,7 +106,12 @@ class report_async extends \core\task\scheduled_task {
         }
 
         // Total files usage either hasn't been stored, or is out of date.
+        mtrace("Getting moodledata size.");
+        $tustime = microtime(true);
         $totalusage = get_directory_size($sitedatadir);
+        $tuetime = microtime(true);
+        $tuelapsed = round($tuetime - $tustime, 1);
+        mtrace("Retreived moodledata size of $totalusage bytes in $tuelapsed seconds.");
         set_config('filessize', $totalusage, 'report_coursesize');
         set_config('filessizeupdated', time(), 'report_coursesize');
 
