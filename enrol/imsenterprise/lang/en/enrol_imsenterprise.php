@@ -83,6 +83,12 @@ $string['truncatecoursecodes'] = 'Truncate course codes to this length';
 $string['truncatecoursecodes_desc'] = 'In some situations you may have course codes which you wish to truncate to a specified length before processing. If so, enter the number of characters in this box. Otherwise, leave the box blank and no truncation will occur.';
 $string['updatecourses'] = 'Update course';
 $string['updatecourses_desc'] = 'If enabled, the IMS Enterprise enrolment plugin can update course full and short names (if the "recstatus" flag is set to 2, which represents an update).';
+
+// BEGIN LSU
+$string['updatecourseslong'] = 'Update course using long course name';
+$string['updatecourses_desclong'] = 'If enabled, this will use the long course name instead of the full course name.';
+// END LSU
+
 $string['updateusers'] = 'Update user accounts when specified in IMS data';
 $string['updateusers_desc'] = 'If enabled, IMS Enterprise enrolment data can specify changes to user accounts (if the "recstatus" flag is set to 2, which represents an update).';
 $string['usecapitafix'] = 'Tick this box if using Capita (as their XML format is slightly different)';

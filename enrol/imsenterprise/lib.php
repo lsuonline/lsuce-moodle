@@ -317,6 +317,10 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         $createnewcourses       = $this->get_config('createnewcourses');
         $updatecourses          = $this->get_config('updatecourses');
 
+        // BEGIN LSU
+        $updatecourseslong      = $this->get_config('updatecourseslong');
+        // END LSU
+
         if ($createnewcourses) {
             require_once("$CFG->dirroot/course/lib.php");
         }
@@ -429,6 +433,18 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                                 $hasupdates = true;
                             }
                         }
+
+                        // BEGIN LSU
+                        if ($updatecourseslong) {
+                            if (!empty($group->long)) {
+                                if ($group->long != $dbcourse->fullname) {
+                                    $dbcourse->fullname = $group->long;
+                                    $hasupdates = true;
+                                }
+                            }
+                        }   
+                        // END LSU
+
                         if (!empty($group->full)) {
                             if ($group->full != $dbcourse->fullname) {
                                 $dbcourse->fullname = $group->full;
