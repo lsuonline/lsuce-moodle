@@ -1403,9 +1403,6 @@ class manager {
             $command = "{$setconfig} {$phpbinary} {$scriptpath} {$taskarg}";
             // END LSU LTG patch for tasks to run now.
 
-            // Build the CLI command.
-            $command = "{$phpbinary} {$scriptpath} {$taskarg}";
-
             // Execute it.
             passthru($command);
         }
