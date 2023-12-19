@@ -184,7 +184,7 @@ class _hx_array_iterator implements Iterator {
 	}
 
 	#[\ReturnTypeWillChange]
-	public function current(){
+	public function current() {
 		if (!$this->hasNext()) return false;
 		return $this->Â»a[$this->Â»i];
 	}
@@ -377,11 +377,16 @@ function _hx_has_field($o, $field) {
 }
 
 function _hx_index_of($s, $value, $startIndex = null) {
+	if ($s == null || $value == null) {
+		return -1;
+	}
+
 	if ($startIndex == null) {
 		$x = strpos($s, $value);
 	} else {
 		$x = strpos($s, $value, $startIndex);
 	}
+
 	if($x === false)
 		return -1;
 	else
@@ -415,12 +420,16 @@ function _hx_is_numeric($v)
 }
 
 function _hx_last_index_of($s, $value, $startIndex = null) {
+	if ($s == null || $value == null) {
+		return -1;
+	}
+
 	if ($startIndex == null) {
 		$x = strrpos($s, $value);	
-	} 
-	else {
+	} else {
 		$x = strrpos($s, $value, strlen($s) - $startIndex);
 	}
+
 	if($x === false)
 		return -1;
 	else
