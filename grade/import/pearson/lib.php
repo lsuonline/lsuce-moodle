@@ -62,7 +62,7 @@ abstract class PearsonFile {
 
     function __construct($file_text, $courseid) {
         $this->file_text = $file_text;
-        $this->lines = explode("\n", $file_text);
+        $this->lines = explode("\n", (string)$file_text);
 
         $this->id_field = $this->discern_id_field();
 
@@ -243,8 +243,9 @@ class PearsonMyLabFile extends PearsonFile {
             $fields = explode(',', $line);
 
             array_pop($fields);
-            $exploded = explode('@', $fields[2]);
-            $pawsid = strtolower(ltrim(reset($exploded), '"'));
+            // $exploded = explode('@', $fields[2]);
+            // $pawsid = strtolower(ltrim(reset($exploded), '"'));
+            $pawsid = strtolower($fields[2]);
 
             $grades = array_slice($fields, 5);
 
