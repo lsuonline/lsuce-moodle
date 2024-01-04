@@ -42,7 +42,7 @@ class snap_personal_menu_controller extends controller_abstract {
      */
     public function get_deadlines_action() {
         return json_encode([
-            'html' => \theme_snap\local::deadlines()
+            'html' => \theme_snap\local::deadlines(),
         ]);
     }
 
@@ -53,7 +53,7 @@ class snap_personal_menu_controller extends controller_abstract {
      */
     public function get_forumposts_action() {
         return json_encode(array(
-            'html' => \theme_snap\local::render_recent_forum_activity()
+            'html' => \theme_snap\local::render_recent_forum_activity(),
         ));
     }
 
@@ -64,7 +64,7 @@ class snap_personal_menu_controller extends controller_abstract {
      */
     public function get_graded_action() {
         return json_encode(array(
-            'html' => \theme_snap\local::graded()
+            'html' => \theme_snap\local::graded(),
         ));
     }
 
@@ -97,7 +97,7 @@ class snap_personal_menu_controller extends controller_abstract {
      */
     public function get_messages_action() {
         return json_encode(array(
-            'html' => \theme_snap\local::messages()
+            'html' => \theme_snap\local::messages(),
         ));
     }
 
@@ -108,7 +108,7 @@ class snap_personal_menu_controller extends controller_abstract {
      */
     public function get_grading_action() {
         return json_encode(array(
-            'html' => \theme_snap\local::grading()
+            'html' => \theme_snap\local::grading(),
         ));
     }
 
@@ -124,7 +124,7 @@ class snap_personal_menu_controller extends controller_abstract {
         }
         $courseinfo = \theme_snap\local::courseinfo($courseids);
         return json_encode(array(
-            'info' => $courseinfo
+            'info' => $courseinfo,
         ));
     }
 
@@ -138,7 +138,7 @@ class snap_personal_menu_controller extends controller_abstract {
         $failedactionmsg = optional_param('failedactionmsg', null, PARAM_TEXT);
         $loggedin = isloggedin();
         $return = [
-            'loggedin' => $loggedin
+            'loggedin' => $loggedin,
         ];
         if (!$loggedin) {
             if (!empty($failedactionmsg)) {

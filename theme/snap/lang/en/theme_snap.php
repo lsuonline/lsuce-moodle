@@ -192,7 +192,7 @@ $string['feedbackavailable'] = 'Feedback available';
 $string['feedbacktoggle'] = 'Feedback and grading';
 $string['feedbacktoggledesc'] = 'Show learners their most recent feedback, and educators the most recent submissions that need grading.';
 $string['footnote'] = 'Site footer';
-$string['footnotedesc'] = 'Your footer is displayed across the entire site. This is the best place to put links to help, support and any other sites your organization has that you want to share with learners and educators. For example, the library or an email address.';
+$string['footnotedesc'] = 'You can add your site information as HTML and include links, images, or event lists.';
 $string['forcepwdwarningpersonalmenu'] = 'You must <a href="{$a}">change your password</a> before using the personal menu.';
 $string['forumauthor'] = 'Author';
 $string['forumlastpost'] = 'Last Post';
@@ -292,9 +292,10 @@ $string['personalmenurefreshdeadlines'] = 'Refresh deadlines using scheduled tas
 $string['personalmenurefreshdeadlinesdesc'] = 'When the task runs, deadline data will be refreshed for faster page load times.';
 $string['personalmenuenablepersonalmenu'] = 'Enable personal menu';
 $string['personalmenuenablepersonalmenuheading'] = 'Personal menu';
+$string['personalmenuenablepersonalmenuheadingdesc'] = 'Note: If the Personal Menu is disabled, you will be able to access your courses from the My Courses page. Please be sure that the Course overview block is enabled, so the courses will be visible in the page.';
 $string['personalmenuenablepersonalmenudesc'] = 'My Courses link will open personal menu. If disabled, it will redirect to My Courses page.';
 $string['mycoursessnapfeedsheading'] = 'Snap feeds';
-$string['mycoursesadvancedsnapfeedsheading'] = 'Advanced feeds';
+$string['mycoursessnapfeedsdesc'] = 'Note: <strong>Advanced Feeds</strong> becomes available only when at least one of the options <strong>Deadlines</strong>, <strong>Feedback and grading</strong>, <strong>Messages</strong> or <strong>Forum posts</strong> is selected.';
 $string['refreshdeadlinestasksettingheading'] = 'Refresh deadlines scheduled task';
 $string['pld'] = 'PLD';
 $string['pluginname'] = 'Snap';
@@ -454,6 +455,14 @@ $string['activityedit'] = 'Edit activity';
 $string['snapfeedsblocktitle'] = 'Snap feeds';
 $string['tiktok'] = 'TikTok';
 $string['tiktokdesc'] = 'The url of your tiktok account.';
+$string['snapfootersettings'] = 'Snap footer';
+$string['snapfootercustomization'] = 'Footer customization';
+$string['snapfootercustomizationdesc'] = 'Snap allows customization to the theme\'s footer, which is displayed throughout the site. Enhance user experience by adding helpful links, support resources, or any other valuable information about your organization that you\'d like to share with learners and educators.';
+$string['snapfootercolors'] = 'Site footer colors';
+$string['snapfootercolorsdesc'] = 'The colors of the footer can be changed: to change the background color and/or the text color, select them in the following color pickers.';
+$string['snapfooterbgcolor'] = 'Footer background color';
+$string['snapfootertxtcolor'] = 'Footer text color';
+$string['enableblockmyoverviewwarning'] = 'The Course overview block is disabled. In order to display the courses, please enable the block.';
 
 // BEGIN LSU Extra Course Tabs.
 $string['coursetabs'] = 'Course Tabs';

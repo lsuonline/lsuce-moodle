@@ -203,6 +203,15 @@ body[class^="format-"].theme-snap {
                 font-size: inherit;
             }
         }
+
+        /* New PLD card with custom background that has "New" word */
+        &.newpldcard {
+            background-image: url([[pix:theme|new]]);
+            background-repeat: no-repeat;
+            background-size: 15%;
+            background-position-x: right;
+            background-position-y: top;
+        }
     }
 }
 
@@ -2987,6 +2996,12 @@ span.editinstructions {
             min-height: 50px;
         }
     }
+}
+
+// Align 'Turn editing on' button below course name.
+.path-grade-report .snap-page-heading-button,
+.path-mod-lightboxgallery .snap-page-heading-button {
+    justify-content: normal;
 }
 
 body.path-course-index {
