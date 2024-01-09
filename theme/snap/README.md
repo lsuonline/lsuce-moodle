@@ -156,17 +156,9 @@ This flag is set as an integer:
    refresh Deadlines cache task can take up to 3 hours to be executed. The task
    stops if this amount of time passes.
 
-### The `theme_snap_my_courses_new_layout` flag
+## Tasks
 
-The purpose of this flag is to enable the new layout for the My courses page
-in Snap. By default, the default layout is selected, which does not include
-the Snap feeds block and the browse all courses button. The new my courses
-layout includes a two column grid with the Snap feeds in the right, the 
-course overview block in the left and the browse all courses button at the top.
-
-This flag is set as a boolean value:
-
-- `$CFG->theme_snap_my_courses_new_layout = true` means that
-  the new layout will be displayed.
-- `$CFG->theme_snap_my_courses_new_layout = false` means that
-  the default layout will be displayed.
+## `refresh_deadline_caches_task`  scheduled  task .
+## `reset_deadlines_query_count_task`  scheduled  task .
+## `refresh_deadline_caches_task`  ad hoc  task .
+## `reset_deadlines_query_count_task`  ad hoc  task .

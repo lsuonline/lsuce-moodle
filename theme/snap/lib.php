@@ -352,6 +352,12 @@ function theme_snap_get_pre_scss($theme) {
     $settings['feature-spot-description-color'] = !empty($theme->settings->feature_spot_description_color) ?
         $theme->settings->feature_spot_description_color : '#565656';
 
+    $settings['snap-footer-bg-color'] = !empty($theme->settings->footerbg) ?
+        $theme->settings->footerbg : '#565656';
+
+    $settings['snap-footer-txt-color'] = !empty($theme->settings->footertxt) ?
+        $theme->settings->footertxt : '#ffffff';
+
     foreach ($settings as $key => $value) {
         $scss .= '$' . $key . ': ' . $value . ";\n";
     }
@@ -454,16 +460,9 @@ function theme_snap_before_footer() {
     }
 
     $paths = [];
-
-    if (core_useragent::is_ie()) {
-        $paths['theme_snap/snapce'] = [
-            $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce-es5'
-        ];
-    } else {
-        $paths['theme_snap/snapce'] = [
-            $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce'
-        ];
-    }
+    $paths['theme_snap/snapce'] = [
+        $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce'
+    ];
 
     $PAGE->requires->js_call_amd('theme_snap/wcloader', 'init', [
         'componentPaths' => json_encode($paths)

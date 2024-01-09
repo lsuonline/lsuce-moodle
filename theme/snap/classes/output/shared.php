@@ -41,6 +41,7 @@ use single_button;
 require_once($CFG->dirroot.'/grade/querylib.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once($CFG->dirroot.'/grade/lib.php');
+require_once($CFG->libdir.'/badgeslib.php');
 
 class shared extends \renderer_base {
 
@@ -470,7 +471,6 @@ EOF;
             $loginvars = [$enabledlogin, null];
         }
         $PAGE->requires->js_call_amd('theme_snap/snap', 'snapInit', $initvars);
-        $PAGE->requires->js_call_amd('theme_snap/accessibility', 'snapAxInit', $initaxvars);
         if (!empty($CFG->calendar_adminseesall) && is_siteadmin()) {
             $PAGE->requires->js_call_amd('theme_snap/adminevents', 'init');
         }
@@ -549,7 +549,14 @@ EOF;
             }
             // Generate linkhtml.
             $attributes = $item->attributes ?? null;
-            $o .= '<li>';
+
+            if (stripos($item->link, "newpld")) {
+                // If the link is the New PLD link, include new class to add custom background
+                // with the "New" word to the card.
+                $o .= '<li class="newpldcard">';
+            } else {
+                $o .= '<li>';
+            }
             $o .= html_writer::link($item->link, $item->title, $attributes);
             $o .= '</li>';
         }
@@ -603,6 +610,19 @@ EOF;
                         break;
                     }
                 }
+            }
+        }
+
+        // Personalised Learning Designer new design.
+        if (!empty($CFG->local_pld_experimental)) {
+            if (array_key_exists('pld', $localplugins) && has_capability('local/pld:editcourserules', $coursecontext)) {
+                $iconurl = $OUTPUT->image_url('pldnew', 'theme');
+                $pldicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                $pldname = get_string('pldexperimental', 'local_pld');
+                $links[] = array(
+                    'link' => 'local/pld/view.php?newpld=1&courseid='.$COURSE->id,
+                    'title' => $pldicon.$pldname
+                );
             }
         }
 
@@ -719,19 +739,6 @@ EOF;
             );
         }
 
-        // Personalised Learning Designer new design.
-        if (!empty($CFG->local_pld_experimental)) {
-            if (array_key_exists('pld', $localplugins) && has_capability('local/pld:editcourserules', $coursecontext)) {
-                $iconurl = $OUTPUT->image_url('pld', 'theme');
-                $pldicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-                $pldname = get_string('pldexperimental', 'local_pld');
-                $links[] = array(
-                    'link' => 'local/pld/view.php?pldexperimental=1&courseid='.$COURSE->id,
-                    'title' => $pldicon.$pldname
-                );
-            }
-        }
-
         // Competencies if enabled.
         if (get_config('core_competency', 'enabled') && has_capability('moodle/competency:competencyview', $coursecontext)) {
             $iconurl = $OUTPUT->image_url('competencies', 'theme');
@@ -809,6 +816,7 @@ EOF;
                     'title' => $badgesicon . $site->get_integration_catalog_title()
                 );
             } else {
+                require_once($CFG->dirroot.'/mod/mediasite/navigation.php');
                 foreach (get_mediasite_sites(true, false) as $site) {
                     $url = new moodle_url('/mod/mediasite/courses7.php', array('id' => $COURSE->id, 'siteid' => $site->id));
                     $links[] = array(

@@ -279,7 +279,7 @@ class course {
                 'filearea' => 'overviewfiles',
                 'itemid' => 0,
                 'filepath' => '/',
-                'filename' => $newfilename);
+                'filename' => $newfilename, );
 
             // Remove any old course summary image files for this context.
             $fs->delete_area_files($context->id, $fileinfo['component'], $fileinfo['filearea']);
@@ -290,7 +290,7 @@ class course {
                 'filearea' => 'poster',
                 'itemid' => 0,
                 'filepath' => '/',
-                'filename' => $newfilename);
+                'filename' => $newfilename, );
 
             // Remove everything from poster area for this context.
             $fs->delete_area_files($context->id, 'theme_snap', 'poster');
@@ -325,12 +325,12 @@ class course {
                 $catcontrast = color_contrast::evaluate_color_contrast($imagemaincolor, $themecolor);
                 if ($catcontrast < 4.5) {
                     return ['success' => true, 'contrast' => get_string('imageinvalidratiocategory',
-                        'theme_snap', number_format((float)$catcontrast, 2))];
+                        'theme_snap', number_format((float)$catcontrast, 2)), ];
                 }
             }
             if ($contrast < 4.5) {
                 return ['success' => true, 'contrast' => get_string('imageinvalidratio',
-                    'theme_snap', number_format((float)$contrast, 2))];
+                    'theme_snap', number_format((float)$contrast, 2)), ];
             }
         }
         return ['success' => $success];
@@ -500,7 +500,7 @@ class course {
                 $html = $formatrenderer->course_section($course, $section, $modinfo);
                 $changedsectionhtml[$sectionnumber] = (object) [
                     'number' => $sectionnumber,
-                    'html'   => $html
+                    'html'   => $html,
                 ];
             }
         }
@@ -519,7 +519,7 @@ class course {
                 $html = $courserenderer->course_section_cm_list_item($course, $completioninfo, $cm, $cm->sectionnum);
                 $changedmodhtml[$modid] = (object) [
                     'id'   => $modid,
-                    'html' => $html
+                    'html' => $html,
                 ];
             }
         }
@@ -541,7 +541,7 @@ class course {
             'unavailablemods' => $unavailablemods,
             'changedmodhtml' => $changedmodhtml,
             'changedsectionhtml' => $changedsectionhtml,
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -595,7 +595,7 @@ class course {
         $toc = new \theme_snap\renderables\course_toc($course);
         return [
             'actionmodel' => $actionmodel->export_for_template($OUTPUT),
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -626,7 +626,7 @@ class course {
 
         return [
             'actionmodel' => $actionmodel->export_for_template($OUTPUT),
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -650,7 +650,7 @@ class course {
         }
         $toc = new \theme_snap\renderables\course_toc($course);
         return [
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -669,7 +669,7 @@ class course {
         $toc = new \theme_snap\renderables\course_toc($course, $nullformat, $loadmodules);
 
         return [
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 

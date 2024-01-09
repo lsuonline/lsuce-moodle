@@ -228,9 +228,12 @@ class behat_theme_snap extends behat_base {
 
         $this->i_am_on_course_page($shortname);
 
+        $this->execute('behat_general::i_change_window_size_to', ['window', '600x1000']);
+        $this->execute('behat_general::i_click_on', ['#toc-mobile-menu-toggle', 'css_element']);
         $this->execute('behat_general::click_link', ['Create a new section']);
         $this->execute('behat_forms::i_set_the_field_to', ['Title', 'New section title']);
         $this->execute('behat_general::i_click_on', ['Create section', 'button']);
+        $this->execute('behat_general::i_change_window_size_to', ['window', 'medium']);
     }
 
     /**
@@ -254,11 +257,13 @@ class behat_theme_snap extends behat_base {
             'filearea' => 'private',
             'itemid' => 0,
             'filepath' => '/',
-            'filename' => 'test.png');
+            'filename' => 'test.png', );
 
         $fs->create_file_from_pathname($fileinfo, $CFG->dirroot . "/theme/snap/tests/fixtures/testpng.png");
 
         $this->i_am_on_course_page($shortname);
+        $this->execute('behat_general::i_change_window_size_to', ['window', '600x1000']);
+        $this->execute('behat_general::i_click_on', ['#toc-mobile-menu-toggle', 'css_element']);
         $this->execute('behat_general::i_click_on', ['.col-lg-3 .toc-footer #snap-new-section', 'css_element']);
         $this->execute('behat_general::i_click_on', ['Insert or edit image', 'button']);
         $this->execute('behat_general::i_click_on', ['Browse repositories...', 'button']);
@@ -267,6 +272,7 @@ class behat_theme_snap extends behat_base {
         $this->execute('behat_general::i_click_on', ['Select this file', 'button']);
         $this->execute('behat_forms::i_set_the_field_to', ['Describe this image', 'File test']);
         $this->execute('behat_general::wait_until_the_page_is_ready');
+        $this->execute('behat_general::i_change_window_size_to', ['window', 'medium']);
         $javascript = "document.querySelector('button.atto_image_urlentrysubmit').click()";
         $this->getSession()->executeScript($javascript);
 
@@ -352,7 +358,7 @@ class behat_theme_snap extends behat_base {
             $user = $DB->get_record('user', ['username' => $row['username']]);
             $grades[$user->id] = (object) [
                 'rawgrade' => $row['grade'],
-                'userid' => $user->id
+                'userid' => $user->id,
             ];
 
             $assignrow->cmidnumber = null;
@@ -363,7 +369,7 @@ class behat_theme_snap extends behat_base {
                     $formdata = (object)[
                         'id' => $cm->id,
                         'assignfeedbackcomments_editor[text]' => $row['feedback'],
-                        'assignfeedbackcomments_editor[format]' => FORMAT_HTML
+                        'assignfeedbackcomments_editor[format]' => FORMAT_HTML,
                     ];
                     if (!$commentsplugin->save_settings($formdata)) {
                         throw new moodle_exception($commentsplugin->get_error());
@@ -1195,7 +1201,7 @@ class behat_theme_snap extends behat_base {
             $sectionnumber = $section - 1;
         }
         $expectedtitle = '<span class="nav_guide" section-number="' . $sectionnumber . '">' . $ttype
-            . ' section</span><br>'.htmlentities($linktitle);
+            . ' section</span><br>'.htmlentities($linktitle, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401);
         if (strtolower($title) !== strtolower($expectedtitle)) {
             $msg = $ttype.' title does not match expected "' . $expectedtitle . '"' . ' V "' . $title .
                     '" - selector = "'.$titleselector.'"';
