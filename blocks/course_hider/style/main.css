@@ -14,14 +14,22 @@
 }
 
 .ch-warning {
-	color: red !important;
-	font-size: large;
+    color: red !important;
+    font-size: large;
 }
 
+.path-blocks-course_hider h2 {
+    margin: 0;
+}
+
+.ch-indent {
+    display: inline-block;
+    padding-left: 0.5em;
+}
 
 @media screen and (max-width: 600px) {
-	.form-group.fitem.ch_hider_form {
-		min-width: 100%;
-		display: block;
-	}
+    .form-group.fitem.ch_hider_form {
+        min-width: 100%;
+        display: block;
+    }
 }

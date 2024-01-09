@@ -83,60 +83,7 @@ if ($ADMIN->fulltree) {
             '(B),(C)' // Default.
         )
     );
-
-    $settings->add(
-        new admin_setting_heading(
-            'formoptionsheader',
-            get_string('formoptionsheader', 'block_course_hider'),
-            ''
-        )
-    );
 }
 
 
-// $ADMIN->add('course', new admin_externalpage('poopoo', 'cackacacka', "$CFG->wwwroot/blocks/course_hider/course_hider.php", 'course/log:view'));
-$ADMIN->add('courses', new admin_externalpage('spanky wanky', get_string('hidecourses', 'block_course_hider'), "$CFG->wwwroot/blocks/course_hider/course_hider.php"));
-
-/*
-
-$ADMIN->add('blockchfolder', $settings);
-
-// Prevent Moodle from adding settings block in standard location.
-$settings = null;
-
-// Set the url for the ProctorU file uploader.
-$chdashboard = new admin_externalpage(
-    'ch_dashboard',
-    new lang_string('ch_dashboard', 'block_course_hider'),
-    "$CFG->wwwroot/blocks/course_hider/dashboard.php"
-);
-
-$chdashboard1 = new admin_externalpage(
-    'ch_dashboard1',
-    new lang_string('ch_dashboard', 'block_course_hider'),
-    "$CFG->wwwroot/blocks/course_hider/dashboard.php"
-);
-
-$chdashboard2 = new admin_externalpage(
-    'ch_dashboard2',
-    new lang_string('ch_dashboard', 'block_course_hider'),
-    "$CFG->wwwroot/blocks/course_hider/dashboard.php"
-);
-
-// Set the url for the ProctorU file viewer.
-$ch_course_hiderer = new admin_externalpage(
-    'ch_hide_courses',
-    new lang_string('hidecourses', 'block_course_hider'),
-    "$CFG->wwwroot/blocks/course_hider/course_hider.php"
-);
-
-$context = \context_system::instance();
-
-// Add the link for those who have access.
-if (has_capability('block/course_hider:admin', $context)) {
-    $ADMIN->add('blockchfolder', $chdashboard);
-    $ADMIN->add('blockchfolder', $chdashboard1);
-    $ADMIN->add('blockchfolder', $chdashboard2);
-    $ADMIN->add('blockchfolder', $ch_course_hiderer);
-}
-*/
+$ADMIN->add('courses', new admin_externalpage('coursehider', get_string('hidecourses', 'block_course_hider'), "$CFG->wwwroot/blocks/course_hider/course_hider.php"));

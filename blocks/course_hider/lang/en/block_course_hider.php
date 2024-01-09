@@ -68,7 +68,8 @@ $string['semesterdesc'] = 'Comma seperated list of the different semesters. Ex: 
 $string['semestersection'] = 'Semester Section.';
 $string['semestersectiondesc'] = 'Comma seperated list of the different types of semester sections. Ex: Spring,Summer,Fall';
 
-$string['hiddenonly'] = 'Show hidden courses.';
+$string['hiddenonly'] = 'Preview hidden';
+$string['lockcourses'] = 'Lock courses';
 
 $string['defaultyear'] = 'Choose a year';
 $string['defaultyear2'] = 'Year';
@@ -80,7 +81,9 @@ $string['defaultsemestersection'] = 'Choose a session';
 $string['defaultsemestersection2'] = 'Session';
 
 $string['raw_input'] = 'Raw Text';
-$string['raw_input_desc'] = 'Leave this blank if you are not going to use it. <br>It is highly recommended'.
-	' that you preview the raw text before you execute!';
+$string['raw_input_desc'] = 'Leave the "Raw Text" area blank if you are not going to use it.';
 $string['previewquery'] = 'Preview';
 $string['executequery'] = 'Execute';
+
+$string['previewsettings'] = 'Search Settings';
+$string['updatesettings'] = 'Update Settings';

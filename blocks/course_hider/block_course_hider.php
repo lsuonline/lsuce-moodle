@@ -85,7 +85,7 @@ class block_course_hider extends block_list {
     }
 
     public function instance_allow_multiple() {
-          return true;
+          return false;
     }
 
     /**

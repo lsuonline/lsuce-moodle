@@ -72,7 +72,6 @@ if (isset($pageparams['vpreview']) && $pageparams['vpreview'] == 1) {
 $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_title($title);
-// $PAGE->set_heading($title);
 
 // Navbar Bread Crumbs.
 $PAGE->navbar->add(get_string('ch_dashboard', 'block_course_hider'), $CFG->wwwroot);
@@ -80,7 +79,6 @@ $PAGE->navbar->add(get_string('pluginname', 'block_course_hider'), new moodle_ur
 $PAGE->navbar->add(get_string('pluginname', 'block_course_hider'), new moodle_url('course_hider.php'));
 
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/blocks/course_hider/style/main.css'));
-// $PAGE->requires->js_call_amd('block_course_hider/main', 'init');
 
 $output = $PAGE->get_renderer('block_course_hider');
 
@@ -89,7 +87,7 @@ $toform = [
 ];
 $mform = new \block_course_hider\form\course_hider_form(null, $toform);
 
-    // Create/Update.
+// Create/Update.
 $fromform = $mform->get_data();
 $results = null;
 
