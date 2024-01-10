@@ -286,9 +286,11 @@ class course_edit_form extends moodleform {
         $mform->setDefault('showreports', $courseconfig->showreports);
 
         // Show activity dates.
-        $mform->addElement('selectyesno', 'showactivitydates', get_string('showactivitydates'));
-        $mform->addHelpButton('showactivitydates', 'showactivitydates');
-        $mform->setDefault('showactivitydates', $courseconfig->showactivitydates);
+        // BEGIN LSU removal of show activity dates.
+        // $mform->addElement('selectyesno', 'showactivitydates', get_string('showactivitydates'));
+        // $mform->addHelpButton('showactivitydates', 'showactivitydates');
+        // $mform->setDefault('showactivitydates', $courseconfig->showactivitydates);
+        // END LSU removal of show activity dates.
 
         // Files and uploads.
         $mform->addElement('header', 'filehdr', get_string('filesanduploads'));
