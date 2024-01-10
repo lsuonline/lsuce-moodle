@@ -1651,7 +1651,8 @@ class kalpanmaps {
         $kalitems = array_merge($kalitems, self::get_kal_database($limit = 0));
 
         // Quiz questions.
-        $kalitems = array_merge($kalitems, self::get_kal_question($limit = 0));
+        // TODO: Deal with this BS.
+        // $kalitems = array_merge($kalitems, self::get_kal_question($limit = 0));
 
         // Grab the panopto server.
         $panoptourl = get_config('block_panopto', 'server_name1');
