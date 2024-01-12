@@ -15,15 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Quiz statistics report version information.
+ * Add event observers for quiz_statistics
  *
  * @package   quiz_statistics
- * @copyright 2008 Jamie Pratt
+ * @copyright 2023 onwards Catalyst IT EU {@link https://catalyst-eu.net}
+ * @author    Mark Johnson <mark.johnson@catalyst-eu.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2022112804;
-$plugin->requires  = 2022111800;
-$plugin->component = 'quiz_statistics';
+$observers = [
+    [
+        'eventname' => '\mod_quiz\event\attempt_submitted',
+        'callback' => '\quiz_statistics\event\observer\attempt_submitted::process',
+    ],
+];

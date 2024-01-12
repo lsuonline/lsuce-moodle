@@ -14,16 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace quiz_statistics\event\observer;
+
+use quiz_statistics\task\recalculate;
+
 /**
- * Quiz statistics report version information.
+ * Event observer for \mod_quiz\event\attempt_submitted
  *
  * @package   quiz_statistics
- * @copyright 2008 Jamie Pratt
+ * @copyright 2023 onwards Catalyst IT EU {@link https://catalyst-eu.net}
+ * @author    Mark Johnson <mark.johnson@catalyst-eu.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version   = 2022112804;
-$plugin->requires  = 2022111800;
-$plugin->component = 'quiz_statistics';
+class attempt_submitted {
+    /**
+     * Queue an ad-hoc task to recalculate statistics for the quiz.
+     *
+     * This will defer running the task for 1 hour, to give other attempts in progress
+     * a chance to submit.
+     *
+     * @param \mod_quiz\event\attempt_submitted $event
+     * @return void
+     */
+    public static function process(\mod_quiz\event\attempt_submitted $event): void {
+        $data = $event->get_data();
+        recalculate::queue_future_run($data['other']['quizid']);
+    }
+}
