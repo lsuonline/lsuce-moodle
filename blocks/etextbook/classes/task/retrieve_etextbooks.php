@@ -55,7 +55,7 @@ class retrieve_etextbooks extends \core\task\scheduled_task {
 
         if ($books == false) {
             $emailmessage .= $brk . " FILE FROM LIBRARY XML WAS NOT ACCEPTED AS XML" . $brk;
-        } else if (!isset($books->book->field_ebook_url)) {
+        } else if (!isset($books->item->field_ebook_url)) {
             $emailmessage .= $brk . " DATA DOES NOT CONTAIN A field_ebook_url NODE " . $brk
             . " likely the XML file is formatted or was recieved incorrectly " .  $brk;
         } else if ($books->count() < 1) {
