@@ -300,6 +300,7 @@ class cps_material extends cps_preferences implements application, undoable {
             $course->shortname = $shortname;
             $course->summary = $shortname;
             $course->category = $category->id;
+            $course->startdate = time();
 
             $settings = cps_setting::get_all(ues::where()
                 ->userid->equal($this->userid)
