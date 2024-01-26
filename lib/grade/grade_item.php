@@ -857,7 +857,6 @@ class grade_item extends grade_object {
 
                 // BEGIN LSU Manual Grade Raw Grade support.
                 if ($this->is_manual_item() and $manualraw) {
-                    $maxscale = ($this->grademax / $grade->rawgrademax);
                     $grade->rawgrademax = $this->grademax;
                     $grade->rawgrademin = $this->grademin;
                     $grade->rawgrade = $this->bounded_grade($grade->rawgrade);
