@@ -252,6 +252,10 @@ class api {
         require_once($CFG->dirroot.'/user/lib.php');
 
         $user = new stdClass();
+        // BEGIN LSU case fixes.
+        $user->username = trim(core_text::strtolower($userinfo['username']));
+        $user->email = trim(core_text::strtolower($userinfo['email']));
+        // END LSU case fixes.
         $user->auth = 'oauth2';
         $user->mnethostid = $CFG->mnet_localhost_id;
         $user->secret = random_string(15);

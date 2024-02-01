@@ -480,7 +480,9 @@ class auth extends \auth_plugin_base {
                 redirect(new moodle_url('/login/index.php'));
             } else if ($mappeduser && ($mappeduser->confirmed || !$issuer->get('requireconfirmation'))) {
                 // Update user fields.
-                $userinfo = $this->update_user($userinfo, $mappeduser);
+                // BEGIN LSU oauth Fixes.
+                $userinfo = self::update_userinfo($userinfo, $mappeduser);
+                // END LSU oauth Fixes.
                 $userwasmapped = true;
             } else {
                 // Trigger login failed event.
@@ -523,8 +525,13 @@ class auth extends \auth_plugin_base {
 
         if (!$userwasmapped) {
             // No defined mapping - we need to see if there is an existing account with the same email.
+            // BEGIN LSU oauth fixes.
+            $moodleuser = \core_user::get_user_by_username($userinfo['username']);
+            if (empty($moodleuser)) {
+                $moodleuser = \core_user::get_user_by_email($userinfo['email']);
+            }
+            // END LSU oauth fixes.
 
-            $moodleuser = \core_user::get_user_by_email($userinfo['email']);
             if (!empty($moodleuser)) {
                 if ($issuer->get('requireconfirmation')) {
                     $PAGE->set_url('/auth/oauth2/confirm-link-login.php');
@@ -541,7 +548,9 @@ class auth extends \auth_plugin_base {
                     // We dont have profile loaded on $moodleuser, so load it.
                     require_once($CFG->dirroot.'/user/profile/lib.php');
                     profile_load_custom_fields($moodleuser);
-                    $userinfo = $this->update_user($userinfo, $moodleuser);
+                    // BEGIN LSU oauth fixes.
+                    $userinfo = self::update_userinfo($userinfo, $moodleuser);
+                    // END LSU oauth fixes.
                     // No redirect, we will complete this login.
                 }
 
@@ -623,6 +632,38 @@ class auth extends \auth_plugin_base {
         $this->update_picture($user);
         redirect($redirecturl);
     }
+
+    // BEGIN LSU oauth fixes.
+    /**
+     * Update user data according to data sent by authorization server.
+     *
+     * @param array $userinfo data from authorization server
+     * @param stdClass $moodleuser Current data of the user to be updated
+     * @return stdClass The updated user record, or the existing one if there's nothing to be updated.
+     */
+    public static function update_userinfo($userinfo, $moodleuser) {
+        global $DB;
+        $table = 'user';
+        $userinfo["id"] = $moodleuser->id;
+        // Unset the user's first name to keep whatever first name they have in Moodle.
+        unset($userinfo['firstname']);
+
+        // Make sure username and email are lowercase.
+        if (isset($userinfo->username)) {
+            $userinfo->username = trim(core_text::strtolower($userinfo->username));
+        }
+        if (isset($userinfo->email)) {
+            $userinfo->email = trim(core_text::strtolower($userinfo->email));
+        }
+
+        // Update the record.
+        $update = $DB->update_record($table, $userinfo, $bulk=null);
+
+        // Get the complete record.
+        $user = $DB->get_record($table, array("id" => $moodleuser->id));
+        return $user;
+    }
+    // END LSU oauth fixes.
 
     /**
      * Returns information on how the specified user can change their password.
