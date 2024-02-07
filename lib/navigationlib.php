@@ -4895,11 +4895,20 @@ class settings_navigation extends navigation_node {
         }
 
         // Restore this activity
+        // BEGIN LSU course restore limits to course ceators.
         $featuresfunc = $this->page->activityname.'_supports';
-        if (function_exists($featuresfunc) && $featuresfunc(FEATURE_BACKUP_MOODLE2) && has_capability('moodle/restore:restoreactivity', $this->page->cm->context)) {
-            $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$this->page->cm->context->id));
-            $modulenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, 'restore', new pix_icon('i/restore', ''));
+        if (function_exists($featuresfunc) 
+            && $featuresfunc(FEATURE_BACKUP_MOODLE2)) {
+            $teachersrestore = isset($CFG->teachersrestore) ? $CFG->teachersrestore : false;
+            if (($teachersrestore
+                && has_capability('moodle/restore:restoreactivity', $this->page->cm->context))
+                || (has_capability('moodle/restore:restoreactivity', $this->page->cm->context)
+                && has_capability('moodle/course:create', $this->context))) {
+                $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$this->page->cm->context->id));
+                $modulenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, 'restore', new pix_icon('i/restore', ''));
+            }
         }
+        // END LSU course restore limits to course ceators.
 
         // Allow the active advanced grading method plugin to append its settings
         $featuresfunc = $this->page->activityname.'_supports';
@@ -5553,10 +5562,22 @@ class settings_navigation extends navigation_node {
         }
 
         // Restore.
-        if (has_capability('moodle/restore:restorecourse', $catcontext)) {
+        // BEGIN LSU course restore limits to course ceators.
+        $teachersrestore = isset($CFG->teachersrestore) ? $CFG->teachersrestore : false;
+        if (($teachersrestore
+            && has_capability('moodle/restore:restorecourse', $catcontext))
+            || (has_capability('moodle/restore:restorecourse', $catcontext)
+            && has_capability('moodle/course:create', $catcontext))) {
             $url = new moodle_url('/backup/restorefile.php', array('contextid' => $catcontext->id));
-            $categorynode->add(get_string('restorecourse', 'admin'), $url, self::TYPE_SETTING, null, 'restorecourse', new pix_icon('i/restore', ''));
+            $categorynode->add(
+                get_string('restorecourse', 'admin'),
+                $url,
+                self::TYPE_SETTING,
+                null,
+                'restorecourse',
+                new pix_icon('i/restore', ''));
         }
+        // END LSU course restore limits to course ceators.
 
         // Let plugins hook into category settings navigation.
         $pluginsfunction = get_plugins_with_function('extend_navigation_category_settings', 'lib.php');
