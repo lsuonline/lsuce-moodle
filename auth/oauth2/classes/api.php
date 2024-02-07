@@ -24,6 +24,7 @@
 namespace auth_oauth2;
 
 use context_user;
+use core_text;
 use stdClass;
 use moodle_exception;
 use moodle_url;
