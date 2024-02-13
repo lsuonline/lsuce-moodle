@@ -33,6 +33,7 @@ $ADMIN->add('reports', new admin_externalpage(
 
 $settings = new admin_settingpage('report_coursesize_settings', new lang_string('pluginname', 'report_coursesize'));
 if ($ADMIN->fulltree) {
+
     $settings->add(new admin_setting_configselect(
         'report_coursesize/calcmethod',
         new lang_string('calcmethod', 'report_coursesize'),
@@ -52,11 +53,44 @@ if ($ADMIN->fulltree) {
         PARAM_INT
     ));
     // BEGIN LSU - Course size history.
-    $settings->add(new admin_setting_configcheckbox(
-        'report_coursesize/keephistory',
-        get_string('keephistory', 'report_coursesize'),
-        get_string('keephistoryhelp', 'report_coursesize'),
-        1
-    ));
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'report_coursesize/keephistory',
+            get_string('keephistory', 'report_coursesize'),
+            get_string('keephistoryhelp', 'report_coursesize'),
+            1
+        )
+    );
+
+    // $settings->add(
+    //     new admin_setting_configmultiselect(
+    //         'report_coursesize/roles',
+    //         get_string('rolepicker', 'report_coursesize'),
+    //         get_string('rolepickerhelp', 'report_coursesize'),
+    //         null,
+    //         $options
+    //     )
+    // );
+    // $settings->add(
+    //     new admin_setting_pickroles(
+    //         'report_coursesize/roles',
+    //         get_string('config_roles', 'block_backadel'),
+    //         get_string('config_roles_desc',
+    //         'block_backadel'),
+    //         array()
+    //     )
+    // );
+    // --------------------------------
+    // Manually added role Settings.
+    $options = ["LXD", "IT", "Teachers", "Managers"];
+    $settings->add(
+        new admin_setting_configtextarea(
+            'report_coursesize_manualroles',
+            get_string('rolepicker', 'report_coursesize'),
+            get_string('rolepickerhelp', 'report_coursesize'),
+            $options, 
+            PARAM_TEXT
+        )
+    );
     // END LSU - Course size history.
 }

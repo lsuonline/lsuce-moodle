@@ -80,14 +80,17 @@ echo $OUTPUT->custom_menu_spacer();
         if ($showcs) {
             include_once($CFG->dirroot. "/theme/lsu.php");
             $showcssnippet = new lsu_theme_snippets();
+            $roles = get_config('report_coursesize', 'report_coursesize/roles');
 
             // Was calling this func twice so call once and send to show_course_size.
             $isadmin = is_siteadmin();
-            // Then later in code:
-            if (!$showcssnippet->are_you_student($isadmin)) {
+            $isspeshul = lsu_snippets::role_check_course_size($COURSE->id);
+            // Checks if they are a student or someone that can edit grades
+            // Also checks if they match a role in the settings that is allowed.
+            if (!$showcssnippet->are_you_student()) {
                 // User does NOT have a student role in a course.
                 echo '<div id="snap-show-course-size">';
-                echo $showcssnippet->show_course_size($isadmin);
+                echo $showcssnippet->show_course_size($isadmin ?: $isspeshul["access"]);
                 echo '</div>';
             }
         }

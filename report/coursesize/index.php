@@ -2,7 +2,7 @@
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+    // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
@@ -96,8 +96,7 @@ if ($viewtab == 'userstopnum') {
         $totaldate = get_string('never');
         $totalusage = 0;
     }
-
-    $totalusagereadable = display_size($totalusage);
+    $totalusagereadable = display_size((int)$totalusage);
     $systemsize = $systembackupsize = 0;
 
     $coursesql = 'SELECT cx.id, c.id as courseid ' .
@@ -189,7 +188,7 @@ if ($viewtab == 'userstopnum') {
         $row[] = '<a href="' . $CFG->wwwroot . '/course/view.php?id=' . $course->id . '">' . $course->shortname . '</a>';
         $row[] = '<a href="' . $CFG->wwwroot . '/course/index.php?categoryid=' . $course->category . '">' . $course->name . '</a>';
 
-        $readablesize = display_size($course->filesize);
+        $readablesize = display_size((int)$course->filesize);
         $a = new stdClass;
         $a->bytes = $course->filesize;
         $a->shortname = $course->shortname;
@@ -199,7 +198,10 @@ if ($viewtab == 'userstopnum') {
         $summarylink = new moodle_url('/report/coursesize/course.php', array('id' => $course->id));
         $summary = html_writer::link($summarylink, ' ' . get_string('coursesummary', 'report_coursesize'));
         $row[] = "<span id=\"coursesize_" . $course->shortname . "\" title=\"$bytesused\">$readablesize</span>" . $summary;
-        $row[] = "<span title=\"$backupbytesused\">" . display_size($course->backupsize) . "</span>";
+        if ($course->backupsize == "" || $course->backupsize == null) {
+            $course->backupsize = 0;
+        }
+        $row[] = "<span title=\"$backupbytesused\">" . display_size((int)$course->backupsize) . "</span>";
         $coursetable->data[] = $row;
         $downloaddata[] = array($course->shortname, $course->name, str_replace(',', '', $readablesize),
             str_replace(',', '', display_size($course->backupsize)));
@@ -231,8 +233,14 @@ if ($viewtab == 'userstopnum') {
     $row[] = display_size($totalsize);
     $row[] = display_size($totalbackupsize);
     $coursetable->data[] = $row;
+
+    
+
     $downloaddata[] = [get_string('total'), '', display_size($totalsize), display_size($totalbackupsize)];
     unset($courses);
+
+    
+    
 
     $systemsizereadable = display_size($systemsize);
     $systembackupreadable = display_size($systembackupsize);
