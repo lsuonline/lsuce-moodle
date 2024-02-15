@@ -321,40 +321,31 @@ class lsu_snippets {
         $found = false;
         $access = false;
 
+        $results = array(
+            "found" => false,
+            "access" => false
+        );
         $context = context_course::instance($cid);
         $roles = get_user_roles($context, $USER->id, true);
 
         if (empty($roles)) {
-            return array(
-                "found" => false,
-                "access" => false
-            );   
+            return $results;
         }
         $role = key($roles);
         $rolename = $roles[$role]->shortname;
-        $customroles = self::config_to_array('report_coursesize_manualroles', "comma", true);
-
-        
-        foreach ($customroles as $k => $v) {
-            if (strtolower($k) == strtolower($rolename)) {
-                $found = true;
-                $access = $v;
+        if ($customroles = self::config_to_array('report_coursesize_manualroles', "comma", true)) {
+            foreach ($customroles as $k => $v) {
+                if (strtolower($k) == strtolower($rolename)) {
+                    $found = true;
+                    $access = $v;
+                }
             }
+        } else {
+            return $results;
         }
         return array(
             "found" => $found,
             "access" => $access
         );
-    }
-
-    public static function testy() {
-
-        global $DB;
-
-        $courseid = 38581;
-        $course = $DB->get_record('course', array('id' => $courseid));
-        $info = get_fast_modinfo($course);
-        
-        print_object($info);
     }
 }
