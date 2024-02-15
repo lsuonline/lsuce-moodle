@@ -1,7 +1,7 @@
 <?php
 // Respondus 4.0 Web Service Extension For Moodle
 // Copyright (c) 2009-2023 Respondus, Inc.  All Rights Reserved.
-// Date: June 08, 2023.
+// Date: December 15, 2023.
 $RWSEDBG = false;
 $RWSDBGL = "respondusws_err.log";
 $RWSIHLOG = false;
@@ -475,6 +475,9 @@ function RWSCMBVer() {
         || $r_bv == 2020021400
         || $r_bv == 2022050900
         || $r_bv == 2023060800
+        || $r_bv == 2023091500
+        || $r_bv == 2023092500
+        || $r_bv == 2023121500
     ) {
         return;
     }
@@ -8387,6 +8390,7 @@ function RWSETFRec($r_qst) {
 }
 function RWSEMARec($r_qst) {
     global $DB;
+    global $CFG;
     if ($r_qst->qtype != RWSMAN) {
         return false;
     }
@@ -9110,6 +9114,7 @@ function RWSEMRec($r_qst) {
 }
 function RWSEDRec($r_qst) {
     global $DB;
+    global $CFG;
     if ($r_qst->qtype != RWSDES) {
         return false;
     }
@@ -9371,6 +9376,7 @@ function RWSMTFldr() {
     }
 }
 function RWSEQCQues($r_qci, &$r_qfl, &$r_drp, $r_w64) {
+    global $CFG;
     global $DB;
     $r_drp   = 0;
     $r_mss   = 0;
@@ -11309,7 +11315,38 @@ function RWSAAQRand() {
     $r_aerr = 0;
     $r_isc = true;
     $r_cqm = true;
-    if (respondusws_floatcompare($CFG->version, 2018051700, 2) >= 0) {
+    if (respondusws_floatcompare($CFG->version, 2023100900, 2) >= 0) {
+        $r_cqm = false;
+        $r_stgs = \mod_quiz\quiz_settings::create($r_qiz->id);
+        $r_stu = \mod_quiz\structure::create_for_quiz($r_stgs);
+        $r_ft = [
+            'category' => [
+                'jointype' => \qbank_managecategories\category_condition::JOINTYPE_DEFAULT,
+                'values' => [$r_qca->id],
+                'filteroptions' => ['includesubcategories' => $r_isc],
+            ],
+        ];
+        $r_ftc['filter'] = $r_ft;
+        $r_stu->add_random_questions(0, $r_qct, $r_ftc);
+        $r_uctx = context_module::instance($r_qzmi);
+        if ($r_uctx !== false) {
+            $r_qsrl = $DB->get_records("question_set_references",
+              array(
+                "component" => "mod_quiz",
+                "questionarea" => "slot",
+                "usingcontextid" => $r_uctx->id,
+                "questionscontextid" => $r_qca->contextid
+              ));
+            foreach ($r_qsrl as $r_qsr) {
+                $r_ft = json_decode($r_qsr->filtercondition);
+                if ($r_ft->questioncategoryid != $r_qca->id) {
+                    continue;
+                }
+                $DB->set_field("quiz_slots", "maxmark", $r_qg, array("id" => $r_qsr->itemid));
+            }
+        }
+    }
+    else if (respondusws_floatcompare($CFG->version, 2018051700, 2) >= 0) {
         $r_cqm = false;
         quiz_add_random_questions($r_qiz, 0, $r_qca->id, $r_qct, $r_isc);
         if (respondusws_floatcompare($CFG->version, 2022041900, 2) >= 0) {
