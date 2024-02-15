@@ -28,9 +28,6 @@ require_once($CFG->dirroot.'/theme/lsu.php');
 
 $courseid = required_param('id', PARAM_INT);
 
-// $isspeshul = lsu_snippets::testy($courseid);
-
-
 $isspeshul = lsu_snippets::role_check_course_size($courseid);
 
 // Check to see if we are allowing special access to this page.
@@ -50,6 +47,7 @@ $course = $DB->get_record('course', array('id' => $courseid));
 $context = context_course::instance($course->id);
 $contextcheck = $context->path . '/%';
 
+// Old query.
 // $sizesql = "SELECT a.component, a.filearea, SUM(a.filesize) as filesize
 //               FROM (SELECT DISTINCT f.contenthash, f.component, f.filesize, f.filearea
 //                     FROM {files} f
@@ -79,33 +77,8 @@ $cxsizes = $DB->get_recordset_sql($sizesql, array($contextcheck, $courseid));
 $coursetable = new html_table();
 $coursetable->attributes['class'] = 'table';
 $coursetable->responsive = true;
-// $coursetable->align = array('right', 'right', 'right');
 
-// $coursetable->head = array(
-//     // 'Section',
-//     'Section Name',
-//     // get_string('plugin'),
-//     'Activity Type',
-//     // get_string('filearea','report_coursesize'),
-//     'File name',
-//     get_string('size')
-// );
-
-// $coursetable->rowclasses[0] = 'fucker';
-// $tableheader = new html_table_cell(
-    
-//             'Section Name',
-//             'Activity Type',
-//             'File name',
-//             get_string('size')
-//         ),
-//         array('id'=>'headerblahblahblah')));
-// $tableheader->colspan = count($coursetable->head);
-// $tableheader->colclasses = array ('centeralign'); 
 $fackisthis = new html_table_cell('Section Name');
-
-error_log("\n\nThe fack is this: ". var_dump($fackisthis). "\n\n");
-error_log("\n\nThe fack is this: ". print_r($fackisthis, true). "\n\n");
 
 $headerlist = array(
     new html_table_cell('Section Name'),
@@ -138,7 +111,7 @@ foreach ($cxsizes as $cxdata) {
         
         $sectionlink = '#section-'.$cxdata->section;
         if ($sectionstart) {
-            // make the rest of the rows for the course section regular.
+            // Make the rest of the rows for the course section regular.
             $header = new html_table_cell(html_writer::tag('span', "Section ".$cxdata->section, array('id'=>'coursesize_header')));
             $header->header = true;
             $header->colspan = count($headerlist);
@@ -152,7 +125,6 @@ foreach ($cxsizes as $cxdata) {
     }
 
     $row = array();
-    // $row[] = $cxdata->section;
     $row[] = $cxdata->name;
     $row[] = $activitytype;
     $row[] = '<a href="'.$CFG->wwwroot.'/course/view.php?id='.$courseid. $sectionlink.'">'.$cxdata->filename.'</a>';
