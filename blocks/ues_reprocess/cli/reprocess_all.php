@@ -42,17 +42,6 @@ require_once('../lib.php');
 // Grab the credentials needed to fetch data from DAS.
 $creds = repall::get_creds();
 
-/*
-$section = new stdClass();
-$section->idnumber = '2024SpringAAAS20007';
-$section->sectionid = '27990';
-$section->campus = 'LSU';
-$section->department = 'AAAS';
-$section->coursenumber = '2000';
-$section->section = '001';
-$section->session = '';
-*/
-
 // Fetch the current sections to be reprocessed.
 $sections = repall::fetch_current_ues_sections();
 
@@ -64,6 +53,8 @@ mtrace("Starting to reprocess $sectioncount sections.");
 
 // Start the section counter.
 $sectioncounter = 0;
+
+// Loop through the sections.
 foreach ($sections as $section) {
     // Get start time.
     $sectionstart = microtime(true);
@@ -89,22 +80,64 @@ foreach ($sections as $section) {
     // Get the elapsed time.
     $sectiontime = round($sectionend - $sectionstart, 2);
 
+    // Get the sections remaining count.
     $sectionsremaining = $sectioncount - $sectioncounter;
 
     // Log it.
     mtrace("  $section->idnumber took $sectiontime seconds to reprocess. $sectionsremaining left to reprocess.");
 }
 
-
+// Set the time end.
 $timeend = microtime(true);
 
+// Derive the total time.
 $totaltime = round($timeend - $timestart, 2);
 
+// Log it.
 mtrace("Total elapsed time is $totaltime seconds to reprocess $sectioncount sections.");
 
+
 class repall {
+    public static function encode_semester($semesteryear, $semestername) {
+        // Helper function for switch below.
+        $partial = function ($year, $name) {
+            return sprintf('%d%s', $year, $name);
+        };
+
+        // Derive and return the mainframe required semester term.
+        switch ($semestername) {
+            case 'Fall':
+                return $partial($semesteryear + 1, '1S');
+            case 'First Fall':
+                return $partial($semesteryear + 1, '1L');
+            case 'Second Fall':
+                return $partial($semesteryear + 1, '1P');
+            case 'WinterInt':
+                return $partial($semesteryear + 1, '1T');
+            case 'Summer':
+                return $partial($semesteryear, '3S');
+            case 'First Summer':
+                return $partial($semesteryear, '3D');
+            case 'Second Summer':
+                return $partial($semesteryear + 1, '1D');
+            case 'Spring':
+                return $partial($semesteryear, '2S');
+            case 'First Spring':
+                return $partial($semesteryear, '2D');
+            case 'Second Spring':
+                return $partial($semesteryear, '2L');
+            case 'SummerInt':
+                return $partial($semesteryear, '3T');
+            case 'SpringInt':
+                return $partial($semesteryear, '2T');
+        }
+    }
+
     public static function ues_enrollment($section, $enrollments) {
         global $DB, $CFG;
+
+        // Grab the required class.
+        require_once("$CFG->dirroot/enrol/ues/lib.php");
 
         $studentrole = get_config('enrol_ues', 'student_role');
         // Grab the role id if one is present, otherwise use the Moodle default.
@@ -124,9 +157,6 @@ class repall {
         // Get the course object.
         $course = $DB->get_record($ctable, $cconditions, $fields = '*');
 
-        // Grab the required class.
-        require_once("$CFG->dirroot/enrol/ues/lib.php");
-
         // Instantiate the enroller.
         $enroller = new enrol_ues_plugin();
     }
@@ -141,6 +171,8 @@ class repall {
                     cou.department AS department,
                     cou.cou_number AS coursenumber,
                     sec.sec_number AS section,
+                    sem.year AS semesteryear,
+                    sem.name AS semestername,
                     sem.session_key AS session
                 FROM {enrol_ues_semesters} sem
                     INNER JOIN {enrol_ues_sections} sec ON sec.semesterid = sem.id
@@ -306,13 +338,16 @@ class repall {
         // Set the base URL.
         $baseurl = 'https://das.lsu.edu/data_access_service/DynamicSqlServlet?';
 
+        // Get the semester term.
+        $semesterterm = self::encode_semester($section->semesteryear, $section->semestername);
+
         // Build the parms.
         $parms = array(
             'widget1' => $creds->username, 
             'widget2' => $creds->password, 
             'serviceId' => $serviceid,
             '1' => $lsuorlaw,
-            '2' => '20242S', // TODO $semestername,
+            '2' => $semesterterm,
             '3' => $section->department,
             '4' => $section->coursenumber,
             '5' => $section->section,
@@ -400,24 +435,6 @@ class repall {
         // Return the credentials.
         return $creds;
     }
-
-    public static function get_ues_semesters() {
-        global $DB;
-//TODO: All the stuff.
-        return $usemesters;
-    }
-
-    public static function get_ues_coursecats($semester) {
-        global $DB;
-//TODO: All the stuff.
-        return $coursecats;
-    }
-
-    public static function get_ues_courses($semester) {
-        global $DB;
-//TODO: All the stuff.
-        return $courses;
-    }
 }
 
 /**
@@ -437,4 +454,3 @@ class enrol_ues extends enrol_plugin {
         return $instance;
     }
 }
-
