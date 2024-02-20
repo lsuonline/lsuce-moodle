@@ -239,6 +239,11 @@ class lsu_theme_snippets {
  */
 class lsu_snippets {
 
+    /**
+     * A simple function to remove double spaces in between words and trim the edges.
+     * @param  string $word The string to clean.
+     * @return string $word The cleaned string.
+     */
     private static function quick_string_clean($word) {
         // Make sure there are not double spaces.
         $word = str_replace("  ", " ", $word);
@@ -315,7 +320,14 @@ class lsu_snippets {
         return $final;
     }
 
-    public static function role_check_course_size($cid = 0) {
+    /**
+     * This grabs the rols from a plugins settings (manual entries) and checks to
+     * see if they have access.
+     * @param  integer $cid course id number.
+     * @param  string $plugin the name of the setting to get.
+     * @return [array] Array showing if it was found and if they have access.
+     */
+    public static function role_check_course_size($cid = 0, $plugin = "") {
         global $OUTPUT, $COURSE, $CFG, $USER;
         
         $found = false;
@@ -333,7 +345,9 @@ class lsu_snippets {
         }
         $role = key($roles);
         $rolename = $roles[$role]->shortname;
-        if ($customroles = self::config_to_array('report_coursesize_manualroles', "comma", true)) {
+
+        // Get the list of roles in course size settings that allows specific roles access to view.
+        if ($customroles = self::config_to_array($plugin, "comma", true)) {
             foreach ($customroles as $k => $v) {
                 if (strtolower($k) == strtolower($rolename)) {
                     $found = true;

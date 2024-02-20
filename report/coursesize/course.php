@@ -28,7 +28,7 @@ require_once($CFG->dirroot.'/theme/lsu.php');
 
 $courseid = required_param('id', PARAM_INT);
 
-$isspeshul = lsu_snippets::role_check_course_size($courseid);
+$isspeshul = lsu_snippets::role_check_course_size($courseid, "report_coursesize_manualroles");
 
 // Check to see if we are allowing special access to this page.
 if (!$isspeshul['found']) {
