@@ -577,10 +577,11 @@ class lsupgd1 {
             }
 
             // Merge the returner into the array with the approriate count.
-            $pgs[$counter] = $returner;
+            $pgs[$eounter] = $returner;
 
             // Increment the couneter.
             $counter++;
+            $counter2++;
         }
 
         // Return the array of postings and statuses.

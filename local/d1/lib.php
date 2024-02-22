@@ -82,6 +82,9 @@ class d1 {
         // Get a token.
         $token = lsupgd1::get_token();
 
+        // Instantiate the token counter and set its count to 0;
+        $tokencounter = 0;
+
         // Get the list of courses to be posted.
         $odlcourses = lsupgd1::get_odl_dgps(true);
 
@@ -109,6 +112,13 @@ class d1 {
 
                     // Increment the counter.
                     $count++;
+                    $tokencounter++;
+
+                    // Get a new token every 100 rows.
+                    if ($tokencounter % 100 == 0) {
+                        $token = self::get_token();
+                        mtrace("Got new token: $token.");
+                    }
 
                     // Set the cs objectId to the PD Grade object.
                     $odlgrade->csobjectid = $csobjectid;
@@ -149,6 +159,8 @@ class d1 {
         // Get a token.
         $token = lsupgd1::get_token();
 
+        $tokencounter = 0;
+
         // Get the list of courses to be posted.
         $pdcourses = lsupgd1::get_pd_dgps(true);
 
@@ -176,6 +188,13 @@ class d1 {
 
                     // Increment the counter.
                     $count++;
+                    $tokencounter++;
+
+                    // Get a new token every 100 rows.
+                    if ($tokencounter % 100 == 0) {
+                        $token = self::get_token();
+                        mtrace("Got new token: $token.");
+                    }
 
                     // Set the cs objectId to the PD Grade object.
                     $pdgrade->csobjectid = $csobjectid;
