@@ -577,7 +577,7 @@ class lsupgd1 {
             }
 
             // Merge the returner into the array with the approriate count.
-            $pgs[$eounter] = $returner;
+            $pgs[$counter] = $returner;
 
             // Increment the couneter.
             $counter++;
