@@ -116,7 +116,7 @@ class d1 {
 
                     // Get a new token every 100 rows.
                     if ($tokencounter % 100 == 0) {
-                        $token = self::get_token();
+                        $token = lsupgd1::get_token();
                         mtrace("Got new token: $token.");
                     }
 
@@ -192,7 +192,7 @@ class d1 {
 
                     // Get a new token every 100 rows.
                     if ($tokencounter % 100 == 0) {
-                        $token = self::get_token();
+                        $token = lsupgd1::get_token();
                         mtrace("Got new token: $token.");
                     }
 
