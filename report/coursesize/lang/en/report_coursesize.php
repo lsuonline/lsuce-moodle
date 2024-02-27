@@ -57,6 +57,11 @@ $string['numberofusershelp'] = 'How many of the top users the report will show.'
 // BEGIN LSU - Store course size and history.
 $string['keephistory'] = 'Keep size history';
 $string['keephistoryhelp'] = 'Keep the course size history to see growth rate.';
+$string['rolepicker'] = 'Additional roles to have access.';
+$string['rolepickerhelp'] = 'List the role followed by true/false to see course size meter and the course breakdown.'.
+	'<br>For example:'.
+	'<br>TA, false'.
+	'<br>Manager, true';
 // END LSU - Store course size and history.
 
 $string['filearea'] = 'File area';

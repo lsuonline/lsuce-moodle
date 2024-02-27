@@ -38,7 +38,7 @@ class lsu_theme_snippets {
      * @param int $isadmin - Is the current user admin or no?
      * @return string - The html to display.
      */
-    public function show_course_size($isadmin = 0) {
+    public function show_course_size($isallowed = 0) {
         global $OUTPUT, $COURSE, $CFG, $USER;
 
         $coursesize = $this->get_file_size($COURSE->id);
@@ -55,7 +55,8 @@ class lsu_theme_snippets {
         // What is the percentage of it being full.
         $displayclass = $this->get_bootstrap_barlevel($percent);
         $show_course_size_link = "";
-        if ($isadmin) {
+
+        if ($isallowed) {
             $show_course_size_link = ' <a href="' . $CFG->wwwroot .
                 '/report/coursesize/course.php?id='
                 . $COURSE->id .
@@ -201,7 +202,7 @@ class lsu_theme_snippets {
      * Check to see if this user is a student.
      * @return bool
      */
-    function are_you_student($isadmin) {
+    public function are_you_student() {
         global $DB, $COURSE, $USER;
 
         // Don't try and check for invalid courses.
@@ -213,14 +214,138 @@ class lsu_theme_snippets {
         $context = context_course::instance($COURSE->id);
 
         // If user can edit grades then let them see how big it is.
-        $isstudent = has_capability('moodle/grade:edit', $context, $USER);
+        $hotforteacher = has_capability('moodle/grade:edit', $context, $USER);
 
-        if ($isstudent == true) {
+        if ($hotforteacher == true) {
             // They are NOT a student, return false.
             return false;
         } else {
             // They ARE a student, return true.
             return true;
         }
+    }
+
+    // private function quick_string_clean($word) {
+    //     // Make sure there are not double spaces.
+    //     $word = str_replace("  ", " ", $word);
+    //     // Remove any spaces or line breaks from start or end.
+    //     $word = trim($word);
+    //     return $word;
+    // }
+}
+
+/**
+ * General LSU Class with various functions.
+ */
+class lsu_snippets {
+
+    private static function quick_string_clean($word) {
+        // Make sure there are not double spaces.
+        $word = str_replace("  ", " ", $word);
+        // Remove any spaces or line breaks from start or end.
+        $word = trim($word);
+        return $word;
+    }
+
+    /**
+     * Config Converter - config settings that have multiple lines with
+     * a key value settings will be broken down and converted into an
+     * associative array.
+     * Example1 : multi
+     * Monthly 720
+     * Weekly 168
+     * Becomes (Monthly => 720, Weekly => 168)
+     *
+     * Example2: comma
+     * LXD, true
+     * IT, false
+     * Becomes (LXD => true, IT => false)
+     
+     * Example3: index
+     * LXD
+     * IT
+     * Becomes (0 => LXD, 1 => IT)
+     *
+     * @param  string $configstring setting
+     * @param  string $arraytype by default multi, comma, use mirror to miror key/value
+     * @param  bool $booly is the second param using bool? (see example2)
+     *
+     * @return array
+     */
+    public static function config_to_array($configstring, $arraytype = "multi", $booly = false) {
+
+        $configname = get_config('moodle', $configstring);
+        if ($configname == false) {
+            return false;
+        }
+
+        $final = array();
+
+        if ($arraytype == "multi") {
+            $breakstripped = preg_replace("/\r|\n/", " ", $configname);
+            
+            self::quick_string_clean($breakstripped);
+            $exploded = explode(" ", $breakstripped);
+            $explodedcount = count($exploded);
+            // Now convert to array and transform to an assoc. array.
+            for ($i = 0; $i < $explodedcount; $i += 2) {
+                $final[$exploded[$i + 1]] = $exploded[$i];
+            }
+        
+        } else if ($arraytype == "comma") {
+            // Replace the line breaks with tilde.
+            $breakstripped = preg_replace("/\r|\n/", "~", $configname);
+            // Clean the string.
+            $breakstripped = self::quick_string_clean($breakstripped);
+            // You might get a double tilde depending on OS
+            $breakstripped = str_replace("~~", "~", $breakstripped);
+            // Now break into chunks
+            $exploded = explode("~", $breakstripped);
+            $explodedcount = count($exploded);
+            // Now convert to array and transform to an assoc. array.
+            for ($i = 0; $i < $explodedcount; $i++) {
+                $temp = explode(",", $exploded[$i]);
+                $temp[1] = $booly ? (bool)$temp[1] : $temp[1]; 
+                $final[$temp[0]] = $temp[1];
+            }
+        } else if ($arraytype == "index") {
+
+            $final = $exploded;
+        }
+        return $final;
+    }
+
+    public static function role_check_course_size($cid = 0) {
+        global $OUTPUT, $COURSE, $CFG, $USER;
+        
+        $found = false;
+        $access = false;
+
+        $results = array(
+            "found" => false,
+            "access" => false
+        );
+        $context = context_course::instance($cid);
+        $roles = get_user_roles($context, $USER->id, true);
+
+        if (empty($roles)) {
+            return $results;
+        }
+        $role = key($roles);
+        $rolename = $roles[$role]->shortname;
+        if ($customroles = self::config_to_array('report_coursesize_manualroles', "comma", true)) {
+            foreach ($customroles as $k => $v) {
+                if (strtolower($k) == strtolower($rolename)) {
+                    $found = true;
+                    $access = $v;
+                }
+            }
+        } else {
+            return $results;
+        }
+        return array(
+            "found" => $found,
+            "access" => $access
+        );
     }
 }
