@@ -76,13 +76,15 @@ if ($data = $mform->get_data()) {
 		'oauth_version' => '1.0'
 	);
 
-
+        // BEGIN LSU helper instantiation fix.
+        $oinstance = new oauth_helper($oauthData);
 
 	$sig_array = array(
 		'POST',
 		preg_replace('/%7E/', '~', rawurlencode($gradeURL)),
-		rawurlencode(oauth_helper::get_signable_parameters($oauthData)),
+		rawurlencode($oinstance->get_signable_parameters($oauthData)),
 	);
+        // END LSU helper instantiation fix.
 
 	$base_string = implode('&', $sig_array);
 	$secret = $CFG->mylabmastering_secret . '&';

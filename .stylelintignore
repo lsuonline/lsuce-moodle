@@ -12,6 +12,7 @@ admin/tool/ally/vendorjs/vuerouter.js
 admin/tool/ally/vendorjs/vuedatatable.js
 admin/tool/ally/vendor/
 admin/tool/componentlibrary/amd/src/lunr.js
+admin/tool/crawler/extlib/simple_html_dom.php
 admin/tool/policy/amd/src/jquery-eu-cookie-law-popup.js
 auth/cas/CAS/
 blocks/configurable_reports/amd/src/codemirror.js
@@ -36,10 +37,10 @@ lib/editor/atto/plugins/html/yui/src/codemirror/
 lib/editor/atto/plugins/html/yui/src/beautify/
 lib/editor/atto/plugins/wiris/core.js
 lib/editor/atto/yui/src/rangy/js/*.*
+lib/editor/tiny/plugins/wiris/js/plugin.min.js
 lib/editor/tiny/js/tinymce/
 lib/editor/tinymce/plugins/pdw/tinymce/
 lib/editor/tinymce/plugins/spellchecker/rpc.php
-lib/editor/tinymce/plugins/tiny_mce_wiris/tinymce/editor_plugin.js
 lib/editor/tinymce/tiny_mce/
 lib/mlbackend/php/phpml/
 lib/adodb/
@@ -94,10 +95,11 @@ lib/php-enum/
 lib/http-message/
 lib/phpxmlrpc/
 local/adminer/lib/
-local/codechecker/phpcs/
-local/codechecker/PHPCompatibility/
-local/codechecker/MoodleCS/
-local/codechecker/moodle/
+local/aws_sdk/vendor/aws/
+local/aws_sdk/vendor/
+local/aws_sdk/vendor/guzzlehttp/
+local/aws_sdk/vendor/mtdowling/
+local/aws_sdk/vendor/psr/
 media/player/videojs/amd/src/video-lazy.js
 media/player/videojs/amd/src/Youtube-lazy.js
 media/player/videojs/videojs/
@@ -117,6 +119,8 @@ mod/lightboxgallery/yui/lightbox/
 mod/lightboxgallery/assets/
 mod/questionnaire/javascript/RGraph/
 question/type/wq/quizzes/
+report/lpmonitoring/amd/src/bootstrap-colorpicker.js
+report/lpmonitoring/amd/src/jquery.dataTables.js
 repository/s3/S3.php
 theme/boost/scss/bootstrap/
 theme/boost/amd/src/bootstrap/alert.js

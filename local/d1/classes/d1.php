@@ -581,6 +581,7 @@ class lsupgd1 {
 
             // Increment the couneter.
             $counter++;
+            $counter2++;
         }
 
         // Return the array of postings and statuses.

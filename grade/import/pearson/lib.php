@@ -294,17 +294,7 @@ class PearsonMasteringFile extends PearsonFile {
     }
 
     function discern_id_field() {
-        $count = 0;
-
-        foreach ($this->lines as $line) {
-            $fields = explode(',', $line);
-
-            if (count($fields) > 2 and preg_match('/^89\d{7}$/', $fields[2])) {
-                $count += 1;
-            }
-        }
-
-        return $count / (count($this->lines) - 6) > 0.5 ? 'idnumber' : 'username';
+        return 'username';
     }
 
     function parse($headers_to_items) {
@@ -331,7 +321,7 @@ class PearsonMasteringFile extends PearsonFile {
                 continue;
             }
             $username = strtolower($fields[2]);
-            $grades = array_slice($fields, 7);
+            $grades = array_slice($fields, 5);
 
             foreach ($grades as $n => $grade) {
                 if (!isset($headers_to_grades[$n])) {

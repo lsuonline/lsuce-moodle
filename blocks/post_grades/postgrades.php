@@ -124,7 +124,7 @@ $postparams = array(
     'DeptCode' => $uescourse->department,
     'CourseNbr' => $uescourse->cou_number,
     'SectionNbr' => $section->sec_number,
-    'MoodleGradeURL' => rawurlencode($exporturl->out(false))
+    'MoodleGradeURL' => rawurlencode(rawurlencode($exporturl->out(false)))
 );
 
 // We can't be sure about the configured url, so we are required to be safe.
@@ -133,7 +133,7 @@ foreach ($postparams as $key => $value) {
     $transformed[] = "$key=$value";
 }
 
-$forward = $domino . implode('&', $transformed);
+$forward = $domino . implode('%26', $transformed);
 
 // Add some debugging stuff in for testing. This will be disbled in prod and can be removed.
 if ($CFG->debug == 32767 && $CFG->debugdisplay > 0) {
