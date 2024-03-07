@@ -25,22 +25,30 @@
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/theme/lsu.php');
+require_once(dirname(__FILE__) . '/locallib.php');
+
+
 
 $courseid = required_param('id', PARAM_INT);
 
-$isspeshul = lsu_snippets::role_check_course_size($courseid, "report_coursesize_manualroles");
+$csv = new csvtool();
+$stamped = time();
+$csv->add_upload_dir($courseid, $stamped);
+
+
+// $isspeshul = lsu_snippets::role_check_course_size($courseid, "report_coursesize_manualroles");
 
 // Check to see if we are allowing special access to this page.
-if (!$isspeshul['found']) {
-    admin_externalpage_setup('reportcoursesize');
-} else {
+// if (!$isspeshul['found']) {
+admin_externalpage_setup('reportcoursesize');
+// } else {
     
     // Getting the following warnings as they are done in admin_externalpage_setup()
 
     // - $PAGE->context was not set. 
     // - You may have forgotten to call require_login() or $PAGE->set_context().
     // - This page did not call $PAGE->set_url(...). Using http://lsu/report/coursesize/course.php?id=38581
-}
+// }
 
 $course = $DB->get_record('course', array('id' => $courseid));
 
@@ -56,13 +64,14 @@ $contextcheck = $context->path . '/%';
 //                        AND f.filename != '.') a
 //              GROUP BY a.component, a.filearea";
 
-$sizesql = "SELECT mcs.section, mcs.name, mm.name as modname, ff.filename,
+$sizesql = "SELECT mcs.section, mcs.name AS sectionname, mm.name as modname, ff.filename,
         ff.filesize, ff.filearea AS filearea, ff.component AS filecomp
     FROM (
         SELECT ctx.id, ctx.instanceid, f.filename, f.filesize, f.filearea, f.component
         FROM {files} f
         JOIN {context} ctx ON f.contextid = ctx.id
         WHERE ".$DB->sql_concat('ctx.path', "'/'")." LIKE ? AND f.filename != '.'
+
     ) AS ff
 
     LEFT JOIN {course_modules} mcm ON mcm.id = ff.instanceid AND mcm.course=?
@@ -70,7 +79,7 @@ $sizesql = "SELECT mcs.section, mcs.name, mm.name as modname, ff.filename,
     LEFT JOIN {course_sections} mcs ON mcs.id = mcm.section
     LEFT JOIN {course} mc ON mc.id = mcm.course
 
-    ORDER BY mcs.section";
+    ORDER BY mcs.section, ff.filesize DESC";
 
 $cxsizes = $DB->get_recordset_sql($sizesql, array($contextcheck, $courseid));
 
@@ -78,14 +87,24 @@ $coursetable = new html_table();
 $coursetable->attributes['class'] = 'table';
 $coursetable->responsive = true;
 
-$fackisthis = new html_table_cell('Section Name');
-
-$headerlist = array(
-    new html_table_cell('Section Name'),
-    new html_table_cell('Activity Type'),
-    new html_table_cell('File name'),
-    new html_table_cell(get_string('size'))
+// TODO: Remove these and add to lang file.
+$headertitles = array(
+    'Section Name',
+    'Activity Type',
+    'File name',
+    get_string('size'),
 );
+
+
+// Headers for the Table.
+$headerlist = array();
+foreach ($headertitles as $title) {
+    $headerlist[] = new html_table_cell($title);
+}
+
+// Add the CSV headers to the file
+$csv->add_csv_row($headertitles);
+
 $tableheader = new html_table_row($headerlist);
 
 $tableheader->header = true;
@@ -112,7 +131,8 @@ foreach ($cxsizes as $cxdata) {
         $sectionlink = '#section-'.$cxdata->section;
         if ($sectionstart) {
             // Make the rest of the rows for the course section regular.
-            $header = new html_table_cell(html_writer::tag('span', "Section ".$cxdata->section, array('id'=>'coursesize_header')));
+            // $header = new html_table_cell(html_writer::tag('span', "Section ".$cxdata->section, array('id'=>'coursesize_header')));
+            $header = new html_table_cell(html_writer::tag('span', $cxdata->sectionname, array('id'=>'coursesize_header')));
             $header->header = true;
             $header->colspan = count($headerlist);
             $header->colclasses = array ('centeralign'); 
@@ -124,12 +144,22 @@ foreach ($cxsizes as $cxdata) {
         }
     }
 
-    $row = array();
-    $row[] = $cxdata->name;
-    $row[] = $activitytype;
-    $row[] = '<a href="'.$CFG->wwwroot.'/course/view.php?id='.$courseid. $sectionlink.'">'.$cxdata->filename.'</a>';
+    $row = $csvrow = array();
+    
+    $row[] = '<a href="'.$CFG->wwwroot.'/course/view.php?id='.$courseid. $sectionlink.'">'.$cxdata->sectionname.'</a>';
+    $csvrow[] = $cxdata->sectionname;
+
+    $row[] = $csvrow[] = $activitytype;
+    // $row[] = '<a href="'.$CFG->wwwroot.'/course/view.php?id='.$courseid. $sectionlink.'">'.$cxdata->filename.'</a>';
+    $row[] = $csvrow[] = $cxdata->filename;
+    
+    $csvrow[] = $cxdata->filesize;
     $row[] = display_size($cxdata->filesize);
 
+    // Add to the csv.
+    $csv->add_csv_row($csvrow);
+
+    // Add to display table.
     $coursetable->data[] = $row;
 
     $sizetotal += $cxdata->filesize;
@@ -148,6 +178,46 @@ $footer->cells[0]->style = 'text-align: right;';
 $footer->attributes['class'] = 'table-primary bold';
 $coursetable->data[] = $footer;
 
+
+// Download a CSV button
+// $csvtitle = new html_table_cell(html_writer::tag('span', "Download CSV: ", array()));
+$downloadurl = $CFG->wwwroot.'/report/coursesize/download.php';
+
+$downbtn = new html_table_cell(
+    html_writer::tag(
+        'a',
+        "Download CSV",
+        array(
+            'href' => new moodle_url(
+                $downloadurl, 
+                array('id' => $courseid, 'timestamp' => $stamped)
+            ),
+            'class' => 'btn btn-success'
+        )
+    )
+);
+
+// html_writer::tag(
+//     'a',
+//     get_string('downloadthisreportascsv', 'report_customsql'),
+//     array('href' => new moodle_url(report_customsql_url('download.php'),
+//                   array('id' => $id, 'timestamp' => $csvtimestamp)))).
+
+// $downbtn = new html_table_cell(html_writer::tag('button', "Download CSV" , array()));
+$downbtn->colspan = count($headerlist);
+$btnrow = new html_table_row(array(
+    $downbtn
+));
+$btnrow->cells[0]->style = 'text-align: right;';
+// $footer->cells[1]->style = 'text-align: right;';
+$btnrow->attributes['class'] = 'table-primary bold';
+$coursetable->data[] = $btnrow;
+
+
+// Close the CSV Tool.
+$csv->close_handle();
+
+// Close the table.
 $cxsizes->close();
 
 // Calculate filesize shared with other courses.

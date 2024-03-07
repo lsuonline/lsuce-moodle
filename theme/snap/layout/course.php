@@ -85,13 +85,14 @@ echo $OUTPUT->custom_menu_spacer();
             $isadmin = is_siteadmin();
 
             // Returns an array 
-            $isspeshul = lsu_snippets::role_check_course_size($COURSE->id, "report_coursesize_manualroles");
+            // $isspeshul = lsu_snippets::role_check_course_size($COURSE->id, "report_coursesize_manualroles");
             // Checks if they are a student or someone that can edit grades
             // Also checks if they match a role in the settings that is allowed.
             if (!$showcssnippet->are_you_student()) {
                 // User does NOT have a student role in a course.
                 echo '<div id="snap-show-course-size">';
-                echo $showcssnippet->show_course_size($isadmin ?: $isspeshul["access"]);
+                echo $showcssnippet->show_course_size($isadmin);
+                // echo $showcssnippet->show_course_size($isadmin ?: $isspeshul["access"]);
                 echo '</div>';
             }
         }
