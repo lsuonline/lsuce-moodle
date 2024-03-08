@@ -1,0 +1,36 @@
+
+/* administration.php -> move the delete btn up */
+
+ul#local_eval_admin_dept_container button.btn.btn-danger.pull-right {
+    position: relative;
+    top: -35px;
+    right: 10px;
+}
+
+
+/* ========================= */
+/* UofL - Course evaluation */
+.course_eval_table .single_course_eval {
+  border-radius: 5px;
+  text-align: center;
+  background-color: #f3f3f3;
+  -moz-box-shadow: 0 0 6px 2px #b0b2ab;
+  -webkit-box-shadow: 0 0 6px 2px #b0b2ab;
+  box-shadow: 0 0 6px 2px #b0b2ab;
+}
+ 
+ .single_course_eval:hover {
+  background-color: #fff;
+  -moz-box-shadow: 0 0 12px 3px #b0b2ab;
+  -webkit-box-shadow: 0 0 12px 3px #b0b2ab;
+  box-shadow: 0 0 12px 3px #b0b2ab;
+}
+ 
+ .single_course_eval {
+  padding: 20px;
+  color: #fff;
+  background-color: #5e5f59;
+  -moz-border-radius: 5px 5px 0 0;
+  -webkit-border-radius: 5px 5px 0 0;
+  border-radius: 5px 5px 0 0;
+}
