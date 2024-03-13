@@ -35,20 +35,8 @@ $csv = new csvtool();
 $stamped = time();
 $csv->add_upload_dir($courseid, $stamped);
 
-
-// $isspeshul = lsu_snippets::role_check_course_size($courseid, "report_coursesize_manualroles");
-
 // Check to see if we are allowing special access to this page.
-// if (!$isspeshul['found']) {
 admin_externalpage_setup('reportcoursesize');
-// } else {
-    
-    // Getting the following warnings as they are done in admin_externalpage_setup()
-
-    // - $PAGE->context was not set. 
-    // - You may have forgotten to call require_login() or $PAGE->set_context().
-    // - This page did not call $PAGE->set_url(...). Using http://lsu/report/coursesize/course.php?id=38581
-// }
 
 $course = $DB->get_record('course', array('id' => $courseid));
 
@@ -131,7 +119,6 @@ foreach ($cxsizes as $cxdata) {
         $sectionlink = '#section-'.$cxdata->section;
         if ($sectionstart) {
             // Make the rest of the rows for the course section regular.
-            // $header = new html_table_cell(html_writer::tag('span', "Section ".$cxdata->section, array('id'=>'coursesize_header')));
             $header = new html_table_cell(html_writer::tag('span', $cxdata->sectionname, array('id'=>'coursesize_header')));
             $header->header = true;
             $header->colspan = count($headerlist);
@@ -150,7 +137,6 @@ foreach ($cxsizes as $cxdata) {
     $csvrow[] = $cxdata->sectionname;
 
     $row[] = $csvrow[] = $activitytype;
-    // $row[] = '<a href="'.$CFG->wwwroot.'/course/view.php?id='.$courseid. $sectionlink.'">'.$cxdata->filename.'</a>';
     $row[] = $csvrow[] = $cxdata->filename;
     
     $csvrow[] = $cxdata->filesize;
@@ -197,19 +183,11 @@ $downbtn = new html_table_cell(
     )
 );
 
-// html_writer::tag(
-//     'a',
-//     get_string('downloadthisreportascsv', 'report_customsql'),
-//     array('href' => new moodle_url(report_customsql_url('download.php'),
-//                   array('id' => $id, 'timestamp' => $csvtimestamp)))).
-
-// $downbtn = new html_table_cell(html_writer::tag('button', "Download CSV" , array()));
 $downbtn->colspan = count($headerlist);
 $btnrow = new html_table_row(array(
     $downbtn
 ));
 $btnrow->cells[0]->style = 'text-align: right;';
-// $footer->cells[1]->style = 'text-align: right;';
 $btnrow->attributes['class'] = 'table-primary bold';
 $coursetable->data[] = $btnrow;
 

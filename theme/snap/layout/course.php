@@ -84,10 +84,6 @@ echo $OUTPUT->custom_menu_spacer();
             // Was calling this func twice so call once and send to show_course_size.
             $isadmin = is_siteadmin();
 
-            // $context = context_module::instance($cm->id);
-            // context_report::instance($instance->id);
-            // context_block::instance($instance->id);
-
             $ccontext = context_course::instance($COURSE->id);
             $speshul = false;
             $seebreakdown = false;
@@ -100,19 +96,10 @@ echo $OUTPUT->custom_menu_spacer();
                 $seebreakdown = true;
             }
 
-            // if (has_capability('report/coursesize:view', $context)) {
-                // Do or display something.
-            
-            // $da_fudge = get_users_by_capability();
-            // Returns an array 
-            // $isspeshul = lsu_snippets::role_check_course_size($COURSE->id, "report_coursesize_manualroles");
-            // Checks if they are a student or someone that can edit grades
-            // Also checks if they match a role in the settings that is allowed.
             if (!$showcssnippet->are_you_student() || $speshul) {
                 // User does NOT have a student role in a course.
                 echo '<div id="snap-show-course-size">';
                 echo $showcssnippet->show_course_size($isadmin ?: $seebreakdown);
-                // echo $showcssnippet->show_course_size($isadmin ?: $isspeshul["access"]);
                 echo '</div>';
             }
         }

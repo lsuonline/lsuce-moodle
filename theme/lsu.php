@@ -224,14 +224,6 @@ class lsu_theme_snippets {
             return true;
         }
     }
-
-    // private function quick_string_clean($word) {
-    //     // Make sure there are not double spaces.
-    //     $word = str_replace("  ", " ", $word);
-    //     // Remove any spaces or line breaks from start or end.
-    //     $word = trim($word);
-    //     return $word;
-    // }
 }
 
 /**
