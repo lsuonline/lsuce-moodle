@@ -1,20 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * ************************************************************************
- * *                              Evaluation                             **
- * ************************************************************************
- * @package     local                                                    **
- * @subpackage  Evaluation                                               **
- * @name        Evaluation                                               **
- * @copyright   oohoo.biz                                                **
- * @link        http://oohoo.biz                                         **
- * @author      Dustin Durrand           				 **
- * @author      (Modified By) James Ward   				 **
- * @author      (Modified By) Andrew McCann				 **
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later **
- * ************************************************************************
- * ********************************************************************** */
+ * Course Evaluations Tool
+ * @package   local
+ * @subpackage  Evaluations
+ * @author      Dustin Durrand http://oohoo.biz
+ * @author      Modified and Updated By David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 /**
  * Displays a preamble for a report.
  */
@@ -51,14 +58,14 @@ if (isset($dept) && $dept != "") {
 }
 echo '<div class="navbar">
         <div class="navbar-inner">
-            <a class="brand" href="#">UofL Course Evaluations'.$this_course.'</a>
+            <a class="brand" href="#">Course Evaluations'.$this_course.'</a>
         </div>
     </div>';
     
 //display preamble
 $eval = $DB->get_record('evaluations', array('id' => $eval_id));
 
-// Pre-pre-amble issued by the UofL
+// Pre-pre-amble issued.
 echo getPreamble();
 
 //Check if the evaluation has a department preamble.

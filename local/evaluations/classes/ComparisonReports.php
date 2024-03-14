@@ -1,17 +1,40 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Course Evaluations Tool
+ * @package   local
+ * @subpackage  Evaluations
+ * @author      Dustin Durrand http://oohoo.biz
+ * @author      Modified and Updated By David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 class ComparisonReports {
         
     private $dept; //The department code of the department that the evaluation's course belongs to.
-    private $page; 
-    private $perpage; 
+    private $page;
+    private $perpage;
     private $notify_user;
-    
+
     /**
      * Description
-     * @param type $dept 
-     * @param type $page 
-     * @param type $perpage 
+     * @param type $dept
+     * @param type $page
+     * @param type $perpage
      * @return type
      */
     function __construct($dept, $page, $perpage){
@@ -42,7 +65,7 @@ class ComparisonReports {
      * Description
      * @return type
      */
-    function anyNotifications(){
+    function anyNotifications() {
         return ($this->notify_user) ? $this->notify_user : '';
     }
 
@@ -50,7 +73,7 @@ class ComparisonReports {
      * Description
      * @return type
      */
-    function purgeNotifications(){
+    function purgeNotifications() {
         $this->notify_user = null;
     }
 
@@ -58,9 +81,9 @@ class ComparisonReports {
      * Description
      * @return type
      */
-    function purgeAllCompareRecords(){
+    function purgeAllCompareRecords() {
         global $DB;
-        
+
         $evaluations = $DB->get_records_select('evaluations','department = \'' . $this->dept . '\'');
         foreach ($evaluations as $evaluation) {
             $DB->delete_records('evaluation_compare',array('evalid' => $evaluation->course));
@@ -69,12 +92,12 @@ class ComparisonReports {
 
     /**
      * Description
-     * @param type $func_to_call 
+     * @param type $func_to_call
      * @return type
      */
-    function processGetRequest($func_to_call, $action_list){
+    function processGetRequest($func_to_call, $action_list) {
 
-        if(method_exists($this, $func_to_call)) {        
+        if(method_exists($this, $func_to_call)) {
             $this->$func_to_call($action_list);
         // } else {
             // error_log("The func to call DOES NOT EXISTING so SUCK IT");
@@ -83,71 +106,71 @@ class ComparisonReports {
 
     /**
      * Description
-     * @param type $dept 
-     * @param type $page 
-     * @param type $perpage 
+     * @param type $dept
+     * @param type $page
+     * @param type $perpage
      * @return type
      */
-    function getCourses($dept, $page, $perpage){
+    function getCourses($dept, $page, $perpage) {
         global $CFG, $DB;
         $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
-            
+
         $url = new moodle_url($CFG->wwwroot . '/local/evaluations/coursecompare.php', array('perpage' => $perpage,'dept' => $dept));
 
         $search_this = array('fullname' => $dept."-");
-        $courses = get_course_eval_search($search_this, "fullname ASC", $page, $perpage, $totalcount);
-        
+        $courses = get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
+
         return $courses;
     }
 
     /**
      * Description
-     * @param type $dept 
-     * @param type $page 
-     * @param type $perpage 
+     * @param type $dept
+     * @param type $page
+     * @param type $perpage
      * @return type
      */
-    function getCoursesIds($dept, $page, $perpage){
+    function getCoursesIds($dept, $page, $perpage) {
         global $CFG, $DB;
         $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
-            
+
         $url = new moodle_url($CFG->wwwroot . '/local/evaluations/coursecompare.php', array('perpage' => $perpage,'dept' => $dept));
-        
+
         $search_this = array('fullname' => $dept."-");
-        $courses = get_course_eval_search($search_this, "fullname ASC", $page, $perpage, $totalcount);
-        
+        $courses = get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
+
         foreach ($courses as $course) {
             $courselist[] = $course->id;
         }
         return $courselist;
     }
 
-    
+
 
     /**
      * Description
      * @return type
      */
-    function submitComparisonForm(){
+    function submitComparisonForm() {
         global $CFG, $DB;
 
-        //If search, page, and perpage are all empty then the page was probably submitted with 
+        //If search, page, and perpage are all empty then the page was probably submitted with
         //a list of evaluations that we want to compare.
         //-----------------------------------------------
         //Delete the old ones.
         // $evaluations = $DB->get_records_select('evaluations', 'department = \'' . $this->dept . '\'');
-        
+
         // foreach ($evaluations as $evaluation) {
         //     $DB->delete_records('evaluation_compare',
         //             array('evalid' => $evaluation->course));
         // }
-        
-        if(!isset($_SESSION['list_of_selected']) || count($_SESSION['list_of_selected']) < 1){
+
+        if(!isset($_SESSION['list_of_selected']) || count($_SESSION['list_of_selected']) < 1) {
             $this->notify_user = '<script>
                 $( document ).ready(function() {
                     UofL_Moodle_System.postNotify({
-                        title: "Oooops", 
-                        text: "Sorry, it appears there are no selected courses.", 
+                        title: "Oooops",
+                        text: "Sorry, it appears there are no selected courses.",
                         type: "error",
                         opacity: 0.9,
                         animation: "show",
@@ -158,12 +181,12 @@ class ComparisonReports {
             return;
         }
 
-        if(count($_SESSION['list_of_selected']) == 1){
+        if(count($_SESSION['list_of_selected']) == 1) {
             $this->notify_user = '<script>
                 $( document ).ready(function() {
                     UofL_Moodle_System.postNotify({
-                        title: "Oooops", 
-                        text: "You need more than 1 course to be selected for comparisons.", 
+                        title: "Oooops",
+                        text: "You need more than 1 course to be selected for comparisons.",
                         type: "error",
                         opacity: 0.9,
                         animation: "show",
@@ -172,14 +195,14 @@ class ComparisonReports {
                 });
             </script>';
             return;
-        }  
+        }
 
-        if(strlen($CFG->local_eval_current_term) < 1){
+        if(strlen($CFG->local_eval_current_term) < 1) {
             $this->notify_user = '<script>
                 $( document ).ready(function() {
                     UofL_Moodle_System.postNotify({
                         title: "Aborted", 
-                        text: "Sorry, please ask the administrator to enter term.", 
+                        text: "Sorry, please ask the administrator to enter term.",
                         type: "error",
                         opacity: 0.9,
                         animation: "show",
@@ -188,14 +211,14 @@ class ComparisonReports {
                 });
             </script>';
             return;
-        }  
+        }
 
         $date = new DateTime();
         $stampy = $date->getTimestamp();
         //Insert the new ones.
-        if(isset($_SESSION['list_of_selected'])){
+        if(isset($_SESSION['list_of_selected'])) {
 
-            foreach($_SESSION['list_of_selected'] as $courseid){
+            foreach($_SESSION['list_of_selected'] as $courseid) {
 
                 $thee_courseid = explode("-",$courseid);
 
@@ -205,16 +228,16 @@ class ComparisonReports {
                 $record->dept = $this->dept;
                 $record->term = $CFG->local_eval_current_term;
                 $record->date = $stampy;
-                
+
                 $DB->insert_record("evaluation_compare", $record);
-                
+
             }
 
             $this->notify_user = '<script>
                 $( document ).ready(function() {
                     UofL_Moodle_System.postNotify({
-                        title: "Sucess", 
-                        text: "Created the course comparison<br><a href=\''.$CFG->wwwroot.'/local/evaluations/reports.php?dept='.$this->dept.'\'>Click here to view</a>", 
+                        title: "Sucess",
+                        text: "Created the course comparison<br><a href=\''.$CFG->wwwroot.'/local/evaluations/reports.php?dept='.$this->dept.'\'>Click here to view</a>",
                         type: "success",
                         opacity: 0.9,
                         animation: "show",
@@ -232,13 +255,13 @@ class ComparisonReports {
      * Description
      * @return type
      */
-    function updateSelectedList($action_list){
+    function updateSelectedList($action_list) {
         global $DB;
 
         $action = $action_list['index'];
 
-        if($action == "allOnePage"){
-            
+        if($action == "allOnePage") {
+
             // $action_list['course_ids']
             // $action_list['change_to']
             $list_of_courses = explode(',', $action_list['course_ids']);
@@ -287,7 +310,7 @@ class ComparisonReports {
 
             $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
             $search_this = array('fullname' => $dept."-");
-            $courses = $this->get_course_eval_search($search_this, "fullname ASC", 0, 1000, $totalcount);
+            $courses = $this->get_course_eval_search($search_this, $totalcount, "fullname ASC", 0, 1000);
             
             foreach ($courses as $course) {
 
@@ -333,14 +356,14 @@ class ComparisonReports {
 
     /**
      * Description
-     * @param type $searchterms 
-     * @param type $sort 
-     * @param type $page 
-     * @param type $recordsperpage 
-     * @param type &$totalcount 
+     * @param type $searchterms
+     * @param type $sort
+     * @param type $page
+     * @param type $recordsperpage
+     * @param type &$totalcount
      * @return type
      */
-    function get_course_eval_search($searchterms, $sort='fullname ASC', $page=0, $recordsperpage=50, &$totalcount) {
+    function get_course_eval_search($searchterms, &$totalcount, $sort='fullname ASC', $page=0, $recordsperpage=50) {
         global $CFG, $DB;
 
         if ($DB->sql_regex_supported()) {
@@ -432,13 +455,13 @@ class ComparisonReports {
                     'evaluations',
                     array('course' => $course->id, 'deleted' => 0)
                 );
-            
+
                 if ($evals == null) {
                     continue;
                     // $new_courses[] = $course;
                 }
-                
-                
+
+
                 if ($c >= $limitfrom && $c < $limitto) {
                     $courses[$course->id] = $course;
                 }
@@ -453,20 +476,20 @@ class ComparisonReports {
         return $courses;
     }
 
-    function isUserEnvigilator($cid){
+    function isUserEnvigilator($cid) {
         global $DB, $USER;
 
         $course_context = context_course::instance($cid);
 
         $is_envigilator = $DB->get_record_select('department_administrators', "userid=:uid AND department=:dept", array('uid'=>$USER->id, 'dept'=>$this->dept), 'userid,department');
-        $am_i_enrolled = is_enrolled($course_context, $USER->id, 'moodle/course:update', true); 
+        $am_i_enrolled = is_enrolled($course_context, $USER->id, 'moodle/course:update', true);
         if (!$is_envigilator || $am_i_enrolled) {
             return false;
         } else {
             return true;
         }
     }
-    function getAllIndividualReportsHTML(){
+    function getAllIndividualReportsHTML() {
         global $DB, $USER, $CFG;
 
         $perpage = 999;
@@ -476,7 +499,7 @@ class ComparisonReports {
         $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$this->dept."%'");
         $url = new moodle_url($CFG->wwwroot . '/local/evaluations/reports.php', array('perpage' => $perpage,'dept' => $this->dept));
         $search_this = array('fullname' => $this->dept."-");
-        $courses = $this->get_course_eval_search($search_this, "fullname ASC", 0, 999, $totalcount);
+        $courses = $this->get_course_eval_search($search_this, $totalcount, "fullname ASC", 0, 999);
         // echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
                 // <ul class="thumbnails">
         $return_output = '
@@ -484,13 +507,13 @@ class ComparisonReports {
                 <table class="table table-striped">';
 
         foreach ($courses as $course) {
-        
+
             // if($this->isUserEnvigilator($course->id)){
             //     return print_error(get_string('restricted', 'local_evaluations'));
             // }
             $course_context = context_course::instance($course->id);
             $is_envigilator = $DB->get_record_select('department_administrators', "userid=:uid AND department=:dept", array('uid'=>$USER->id, 'dept'=>$this->dept), 'userid,department');
-            $am_i_enrolled = is_enrolled($course_context, $USER->id, 'moodle/course:update', true); 
+            $am_i_enrolled = is_enrolled($course_context, $USER->id, 'moodle/course:update', true);
             if (!$is_envigilator || $am_i_enrolled) {
                 continue;
             }
@@ -508,14 +531,13 @@ class ComparisonReports {
             //If evaluations exist display the evaluation name /w a link to view it and a link to download the pdf.
             if ($evals == null) {
                 $return_output .= '<tr><td>
-                        
+
                         <h5>'.$course->fullname.'</h5>
                         <span class="pull-right">
                             No Available Reports
                         </span>
                     </td>
                 </tr>';
-            
             } else {
                 $return_output .= '<tr><td>';
                 $oddeven = 0;
@@ -523,31 +545,29 @@ class ComparisonReports {
 
                     $sql = "
                         SELECT DISTINCT ON (ev.id) ev.id as eval_id, c.id, c.fullname,u.firstname, u.lastname,r.name, ev.name as eval_name
-                                
                         FROM mdl_course c
                         JOIN mdl_context ct ON c.id = ct.instanceid
                         JOIN mdl_role_assignments ra ON ra.contextid = ct.id
                         JOIN mdl_user u ON u.id = ra.userid
                         JOIN mdl_role r ON r.id = ra.roleid
                         JOIN mdl_evaluations ev ON ev.course = c.id
-
                         WHERE  r.id = 3 AND c.id='".$course->id."' AND ev.id='".$eval->id."'
                     ";
 
                     // error_log("\n\n");
                     // error_log("ComparisonReports -> getAllIndividualReportsHTML() -> what is the sql: \n". $sql);
                     // error_log("\n\n");
-                    
+
                     $record = $DB->get_records_sql($sql);
 
                     $href = $CFG->wwwroot . '/local/evaluations/report.php?evalid=' . $eval->id . '&dept=' . $this->dept. '&evcid=' . $eval->id;
-                    
-                    if($oddeven++ >= 1){
+
+                    if ($oddeven++ >= 1) {
                         $return_output .= '<hr>';
                         $oddeven = 0;
                     }
-                    
-                    foreach($record as $rec){
+
+                    foreach ($record as $rec) {
 
                         $return_output .= '
                             <div class="row-fluid">
@@ -562,8 +582,6 @@ class ComparisonReports {
                                 </div>
                             </div>';
                     }
-                    
-
                 }
                 $return_output .= '</td></tr>';
             }
@@ -575,24 +593,24 @@ class ComparisonReports {
         return $return_output;
     }
 
-    function getAllGroupReportsHTML(){
+    function getAllGroupReportsHTML() {
         global $DB, $USER, $CFG;
 
         $counts = $DB->get_records_sql(
             "SELECT date from {evaluation_compare}
             WHERE dept='".$this->dept."'
             GROUP BY date", array('term' => $CFG->local_eval_current_term));
-        
+
                 // <table class="table table-striped">';
-        
+
         $oddeven = 0;
         $return_output = "";
 
         foreach ($counts as $key) {
 
-            if($oddeven % 2){
+            if ($oddeven % 2) {
                 $use_this_css = " eval_comp_grp_row_bck_light";
-            }else{
+            } else {
                 $use_this_css = " eval_comp_grp_row_bck_dark";
             }
 
@@ -600,9 +618,9 @@ class ComparisonReports {
             $return_output .= '<div class="col-md-10">';
             $sql = "
                 SELECT evc.id, c.id as cid, c.fullname,u.firstname, u.lastname, r.name, evc.courseevalid, ev.name as eval_name, ev.id as eval_id
-                        
+
                 FROM mdl_evaluation_compare evc
-                
+
                 JOIN mdl_evaluations ev ON ev.id=evc.courseevalid
                 JOIN mdl_course c ON c.id=evc.evalid
                 JOIN mdl_context ct ON c.id = ct.instanceid
@@ -618,7 +636,7 @@ class ComparisonReports {
             foreach ($records as $record) {
                 $href = $CFG->wwwroot . '/local/evaluations/report.php?evalid=' . $record->eval_id . '&dept=' . $this->dept. '&evcid=' . $record->id;
 
-                $return_output .= 
+                $return_output .=
                     '<div class="row-fluid" id="eval_comp_grp_spacer">
                         <div class="col-md-8">
                             <span class="course_eval_list_title pull-left">'.$record->eval_name.' - '.$record->firstname.' '.$record->lastname.'</span>
@@ -632,7 +650,6 @@ class ComparisonReports {
                             <a href="'.$href.'&force=D" class="btn btn-primary btn-block pull-right"><i class="fa fa-download"></i> PDF</a>
                         </div>
                     </div>';
-
             }
 
             // close the span of 10
@@ -644,10 +661,6 @@ class ComparisonReports {
 
             $oddeven++;
         }
-        
         return $return_output;
-
     }
-
-
 }

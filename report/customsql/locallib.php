@@ -425,7 +425,7 @@ function report_customsql_write_csv_row($handle, $data, $donotescape) {
         }
 
         // For XML and other specific outputs.
-        // Ony bypasses escaping the data if it is output via CLI AND the report itself requests $donotescape.
+        // Ony bypasses escaping the data if it is output via CLI AND the report itself requests $donotescape. 
         if (php_sapi_name() === 'cli' && $donotescape) {
             $escapeddata[] = $value;
         } else {

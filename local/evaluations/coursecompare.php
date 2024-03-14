@@ -1,19 +1,28 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * ************************************************************************
- * *                              Evaluation                             **
- * ************************************************************************
- * @package     local                                                    **
- * @subpackage  Evaluation                                               **
- * @name        Evaluation                                               **
- * @copyright   oohoo.biz                                                **
- * @link        http://oohoo.biz                                         **
- * @author      Dustin Durrand           				 **
- * @author      (Modified By) David Lowe   				 **
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later **
- * ************************************************************************
- * ********************************************************************** */
+ * Course Evaluations Tool
+ * @package   local
+ * @subpackage  Evaluations
+ * @author      Dustin Durrand http://oohoo.biz
+ * @author      Modified and Updated By David Lowe
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 /**
  * This page allows department administrators to decide what reports will be used
  * for comparisons when generating the reports.
@@ -116,7 +125,7 @@ if (isset($searchstring)) {
     $url = new moodle_url($CFG->wwwroot . '/local/evaluations/coursecompare.php', array('perpage' => $perpage,'dept' => $dept));
 
     $search_this = array('fullname' => $dept."-");
-    $courses = $reports->get_course_eval_search($search_this, "fullname ASC", $page, $perpage, $totalcount);
+    $courses = $reports->get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
     
     echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
     if (!isset($_SESSION['list_of_selected'])) {
