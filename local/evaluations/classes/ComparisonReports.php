@@ -544,14 +544,15 @@ class ComparisonReports {
                 foreach ($evals as $eval) {
 
                     $sql = "
-                        SELECT DISTINCT ON (ev.id) ev.id as eval_id, c.id, c.fullname,u.firstname, u.lastname,r.name, ev.name as eval_name
+                        SELECT ev.id as eval_id, c.id, c.fullname,u.firstname, u.lastname,r.name, ev.name as eval_name
                         FROM mdl_course c
                         JOIN mdl_context ct ON c.id = ct.instanceid
                         JOIN mdl_role_assignments ra ON ra.contextid = ct.id
                         JOIN mdl_user u ON u.id = ra.userid
                         JOIN mdl_role r ON r.id = ra.roleid
                         JOIN mdl_evaluations ev ON ev.course = c.id
-                        WHERE  r.id = 3 AND c.id='".$course->id."' AND ev.id='".$eval->id."'
+                        WHERE  r.id = 10 AND c.id='".$course->id."' AND ev.id='".$eval->id."'
+                        GROUP BY eval_id
                     ";
 
                     // error_log("\n\n");

@@ -59,7 +59,7 @@ $mform = new preamble_form($dept);
 //Get the data from the form if it was submitted.
 if ($fromform = $mform->get_data()) {
     $record = new stdClass();
-    $record->preamble = $fromform->preamble[text];
+    $record->preamble = $fromform->preamble['text'];
     $record->department = $fromform->dept;
 //    echo("Here is the change: ".$record->preamble[text]);
 //    die;
