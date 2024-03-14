@@ -30,6 +30,10 @@ $string['results'] = 'Results';
 
 // config words 
 $string['main_title'] = 'Course Evaluation Settings';
+
+$string['school_name'] = 'Name of your school';
+$string['school_name_desc'] = 'This shows in the school name in the default preamble.';
+
 $string['preamble_title'] = 'Default Preamble';
 $string['general_settings'] = 'General Settings';
 $string['current_term'] = 'Current Term';

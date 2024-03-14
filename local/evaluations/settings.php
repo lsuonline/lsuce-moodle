@@ -68,4 +68,13 @@ if ($ADMIN->fulltree) {
         201402,
         PARAM_TEXT
     ));
+
+    // current term
+    $settings->add(new admin_setting_configtext(
+        'local_eval_school_name',
+        get_string('school_name', 'local_evaluations'),
+        get_string('school_name_desc', 'local_evaluations'),
+        'This School',
+        PARAM_TEXT
+    ));
 }

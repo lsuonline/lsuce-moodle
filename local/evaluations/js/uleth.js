@@ -120,7 +120,7 @@ var UofL_Moodle_System = {
     
     showModal : function (data) {
         var template = null;
-        data.title = (typeof data.title !== 'undefined') ? data.title : "University of Lethbridge";
+        data.title = (typeof data.title !== 'undefined') ? data.title : "My School (fix me)";
         data.content = (typeof data.content !== 'undefined') ? data.content : "Oooops, content was not sent.....?";
         data.callbacks = (typeof data.callbacks !== 'undefined') ? data.callbacks : null;
         

@@ -32,6 +32,9 @@ function xmldb_local_evaluations_install() {
 
     global $DB;
     
+    error_log("\n\nCourse Evaluation Install - updating question types for this plugin.");
     update_question_types();
+    error_log("\n\nCourse Evaluation Install - updating roles for this plugin.");
     role_install();
+    error_log("\n\nCourse Evaluation Install - Complete.");
 }

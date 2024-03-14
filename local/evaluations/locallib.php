@@ -31,19 +31,21 @@ define('EVAL_STATUS_INPROGRESS', 2);
 define('EVAL_STATUS_COMPLETE', 3);
 
 
+
 function getPreamble() {
+    $school = get_config('moodle', 'local_eval_school_name');
     return "<div class='row-fluid'>" .
     "<div class='span12'>".
         "<table class='table table-bordered'>".
         "<tr class='warning'><td>".
-        "The University of Lethbridge encourages constructive, ". 
+        $school." encourages constructive, ". 
         "anonymous feedback from students though the course evaluation process. Such ".
         "feedback provides an opportunity for academic staff to reflect on their teaching ".
         "effectiveness in order to benefit future generations of students. When you provide ".
         "your feedback, please ensure that your comments reflect the expectations outlined ".
         "in the Principles of Student Citizenship as found in the Academic Calendar (p.12).  ".
         "These principles communicate the expectation that students respect the health, safety, ".
-        "and welfare of every member of The University of Lethbridge community.  While we ".
+        "and welfare of every member of ".$school." community.  While we ".
         "encourage you to provide open and honest feedback, please do so within the bounds ".
         "of civility.".
     "</tr></td>".
