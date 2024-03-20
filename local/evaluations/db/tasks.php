@@ -25,8 +25,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// $plugin->version = 2013052709;  // The current module version (Date: YYYYMMDDXX)
-// $plugin->version = 2014052301;  // The current module version (Date: YYYYMMDDXX)
-$plugin->version = 2024032003;  // The current module version (Date: YYYYMMDDXX)
-$plugin->cron = 1; // set cron to 5 mins
-$plugin->component = 'local_evaluations';
+$tasks = [
+    [
+        'classname' => 'local_evaluations\tasks\send_emails_task',
+        'blocking' => 0,
+        'month' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'hour' => '*',
+        'minute' => '*/1',
+    ]
+];

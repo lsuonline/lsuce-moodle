@@ -40,9 +40,9 @@ class admin_form extends moodleform {
     function __construct($dept) {
         $this->dept = $dept;
         $this->current_admins = new evaluation_admins_existing_selector($dept);
-        $this->current_admins->set_extra_fields(array('username', 'email'));
+        // $this->current_admins->set_extra_fields(array('username', 'email'));
         $this->potential_admins = new evaluation_admins_potential_selector();
-        $this->potential_admins->set_extra_fields(array('username', 'email'));
+        // $this->potential_admins->set_extra_fields(array('username', 'email'));
         parent::__construct();
     }
   

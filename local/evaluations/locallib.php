@@ -669,6 +669,8 @@ function send_student_reminders($eval, $course) {
 
 function process_mail_que() {
     global $DB, $CFG;
+    error_log("\n\n--------------------------------------------");
+    error_log("\n\nGoing to start processing emails......");
     $limit = time() - (86400 * $CFG->local_eval_message_que_limit); //2 days
     $current_time = time();
 
@@ -714,12 +716,12 @@ function process_mail_que() {
         }
 
         $user = $DB->get_record('user', array('id' => $message->userto));
-
         if (email_to_user($user, $message->from_title, $message->subject,
                         $message->body, $message->body_html, $attachment = '',
                         $attachname = '', $usetrueaddress = false,
                         $replyto = '', $replytoname = '', $wordwrapwidth = 79)) {
 
+            error_log("\nEmail sent to: ". $user->email);
 
 
             $log = new stdClass();
@@ -743,6 +745,7 @@ function process_mail_que() {
             //error sending message
         }
     }
+    error_log("\n\n--------- Sending Emails Complete ---------------------------");
 }
 
 function remove_queued_email($queued_id) {

@@ -77,7 +77,6 @@ if (isset($dept) && $dept != "") {
     $this_course = "";
 }
 
-error_log("\n\nHello World");
 error_log("\n\nWhat is dept: ". $dept);
 
 echo '<nav class="navbar navbar-light bg-faded">

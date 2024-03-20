@@ -41,6 +41,9 @@ $string['current_term_desc'] = 'Term is used to find historical reports, year (2
 
 $string['eventCourseEvaluations'] = 'Course Evaluation Event Handler';
 
+// Tasks.
+$string['send_emails_task'] = 'Send course evaluation email reminders.';
+
 
 $string['denied_viewing'] = 'Only envigilator\'s can view, sorry!';
 $string['already_started'] = 'The evaluation has already started. You cannot make the start time before the current time, since its started.';
