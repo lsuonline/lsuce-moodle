@@ -83,11 +83,23 @@ echo $OUTPUT->custom_menu_spacer();
 
             // Was calling this func twice so call once and send to show_course_size.
             $isadmin = is_siteadmin();
-            // Then later in code:
-            if (!$showcssnippet->are_you_student($isadmin)) {
+
+            $ccontext = context_course::instance($COURSE->id);
+            $speshul = false;
+            $seebreakdown = false;
+            
+            if (has_capability('report/coursesize:view', $ccontext)) {
+                $speshul = true;
+            }
+
+            if (has_capability('report/coursesize:breakdown', $ccontext)) {
+                $seebreakdown = true;
+            }
+
+            if (!$showcssnippet->are_you_student() || $speshul) {
                 // User does NOT have a student role in a course.
                 echo '<div id="snap-show-course-size">';
-                echo $showcssnippet->show_course_size($isadmin);
+                echo $showcssnippet->show_course_size($isadmin ?: $seebreakdown);
                 echo '</div>';
             }
         }

@@ -2,7 +2,7 @@
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
-    // it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
@@ -234,13 +234,8 @@ if ($viewtab == 'userstopnum') {
     $row[] = display_size($totalbackupsize);
     $coursetable->data[] = $row;
 
-    
-
     $downloaddata[] = [get_string('total'), '', display_size($totalsize), display_size($totalbackupsize)];
     unset($courses);
-
-    
-    
 
     $systemsizereadable = display_size($systemsize);
     $systembackupreadable = display_size($systembackupsize);
