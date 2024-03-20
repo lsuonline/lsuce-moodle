@@ -33,7 +33,7 @@ $courseid = required_param('id', PARAM_INT);
 
 $csv = new csvtool();
 $stamped = time();
-$csv->add_upload_dir($courseid, $stamped);
+$dirready = $csv->add_upload_dir($courseid, $stamped);
 
 // Check to see if we are allowing special access to this page.
 admin_externalpage_setup('reportcoursesize');
@@ -91,7 +91,7 @@ foreach ($headertitles as $title) {
 }
 
 // Add the CSV headers to the file
-$csv->add_csv_row($headertitles);
+$dirready ? $csv->add_csv_row($headertitles) : null;
 
 $tableheader = new html_table_row($headerlist);
 
@@ -143,7 +143,7 @@ foreach ($cxsizes as $cxdata) {
     $row[] = display_size($cxdata->filesize);
 
     // Add to the csv.
-    $csv->add_csv_row($csvrow);
+    $dirready ? $csv->add_csv_row($csvrow) : null;
 
     // Add to display table.
     $coursetable->data[] = $row;
@@ -164,37 +164,36 @@ $footer->cells[0]->style = 'text-align: right;';
 $footer->attributes['class'] = 'table-primary bold';
 $coursetable->data[] = $footer;
 
-
-// Download a CSV button
-// $csvtitle = new html_table_cell(html_writer::tag('span', "Download CSV: ", array()));
-$downloadurl = $CFG->wwwroot.'/report/coursesize/download.php';
-
-$downbtn = new html_table_cell(
-    html_writer::tag(
-        'a',
-        "Download CSV",
-        array(
-            'href' => new moodle_url(
-                $downloadurl, 
-                array('id' => $courseid, 'timestamp' => $stamped)
-            ),
-            'class' => 'btn btn-success'
+if ($dirready) {
+    // Download a CSV button
+    // $csvtitle = new html_table_cell(html_writer::tag('span', "Download CSV: ", array()));
+    $downloadurl = $CFG->wwwroot.'/report/coursesize/download.php'; 
+    $downbtn = new html_table_cell(
+        html_writer::tag(
+            'a',
+            "Download CSV",
+            array(
+                'href' => new moodle_url(
+                    $downloadurl, 
+                    array('id' => $courseid, 'timestamp' => $stamped)
+                ),
+                'class' => 'btn btn-success'
+            )
         )
-    )
-);
+    );
 
-$downbtn->colspan = count($headerlist);
-$btnrow = new html_table_row(array(
-    $downbtn
-));
-$btnrow->cells[0]->style = 'text-align: right;';
-$btnrow->attributes['class'] = 'table-primary bold';
-$coursetable->data[] = $btnrow;
+    $downbtn->colspan = count($headerlist);
+    $btnrow = new html_table_row(array(
+        $downbtn
+    ));
+    $btnrow->cells[0]->style = 'text-align: right;';
+    $btnrow->attributes['class'] = 'table-primary bold';
+    $coursetable->data[] = $btnrow;
 
 
-// Close the CSV Tool.
-$csv->close_handle();
-
+    // Close the CSV Tool.
+    $csv->close_handle();
+}
 // Close the table.
 $cxsizes->close();
 

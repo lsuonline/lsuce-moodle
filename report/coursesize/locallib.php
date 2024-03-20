@@ -130,8 +130,19 @@ class csvtool {
         global $CFG;
 
         $path = 'admin_coursesize_report/'.$courseid;
-        // make_upload_directory($path);
-        make_temp_directory($path);
+        $datapath = $CFG->dataroot . '/temp/' . $path . '/';
+
+        $success = check_dir_exists($datapath);
+
+        // If doesexist returns false then let's Moodle's other func.
+        if (!$success) {
+            $success = make_temp_directory($path);
+        }
+
+        if (!$success) {
+            return false;
+        }
+
         $csvfilename = $CFG->dataroot . '/temp/' . $path . '/' . 
             core_date::strftime('%Y%m%d-%H%M%S', $timestamp) . '.csv';
 
@@ -140,6 +151,7 @@ class csvtool {
         } else {
             $this->filehandle = fopen($csvfilename, 'a');
         }
+        return true;
     }
 
     public function close_handle() {
