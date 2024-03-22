@@ -31,9 +31,9 @@ require_once(dirname(dirname(dirname(__FILE__))) . '/locallib.php');
 
 class send_emails_task extends scheduled_task {
 
-    // public function get_name() {
-    //     return local_evaluations_string::get('send_emails_task');
-    // }
+    public function get_name() {
+        return get_string('send_emails_task', 'local_evaluations');
+    }
 
     /*
      * This task migrates historical data from Quickmail v1 schema to v2 schema
@@ -45,6 +45,8 @@ class send_emails_task extends scheduled_task {
      */
     public function execute() {
         error_log("\n\n ---------- Evaluations - Executing Send Emails Task ----------");
+        
+        /*
         try {
             process_mail_que();
         } catch (chunk_size_met_exception $e) {
@@ -53,6 +55,7 @@ class send_emails_task extends scheduled_task {
             // TODO: Localize this string.
             return 'something has gone wrong in the migration process: ' . $e->getMessage();
         }
+        */
     }
 
 }

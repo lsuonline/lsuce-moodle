@@ -33,70 +33,27 @@ class CourseEvalAJAX
     public function runPopulateDeptartments($params)
     {
         global $DB;
-        $deptartment = array(
-            "AGST" => "Agricultural Studies",
-            "ANTH" => "Anthropology",
-            "ARKY" => "Archaeology",
-            "ART" => "Art",
-            "AHMS" => "Art History/Museum Studies",
-            "ASCI" => "Arts and Science",
-            "ASTR" => "Astronomy",
-            "BCHM" => "Biochemistry",
-            "BIOL" => "Biology",
-            "BKFT" => "Blackfoot",
-            "CAAP" => "Campus Alberta",
-            "CDEV" => "Career Development",
-            "CHEM" => "Chemistry",
-            "CPSC" => "Computer Science",
-            "DRAM" => "Drama",
-            "ECON" => "Economics",
-            "EDUC" => "Education",
-            "ENGG" => "Engineering",
-            "ENGL" => "English",
-            "ENVS" => "Environmental Science",
-            "FREN" => "French",
-            "GEOG" => "Geography",
-            "GEOL" => "Geology",
-            "GERM" => "German",
-            "HLSC" => "Health Sciences",
-            "HIST" => "History",
-            "IDST" => "Interdisciplinary Studies",
-            "JPNS" => "Japanese",
-            "KNES" => "Kinesiology",
-            "LATI" => "Latin",
-            "LBED" => "Liberal Education",
-            "LBSC" => "Library Science",
-            "LING" => "Linguistics",
-            "LOGI" => "Logic",
-            "MGT"  => "Management",
-            "MATH" => "Mathematics",
-            "MUSI" => "Music",
-            "MUSE" => "Music Ensemble Activity",
-            "NAS" => "Native American Studies",
-            "NEUR" => "Neuroscience",
-            "NMED" => "New Media",
-            "NURS" => "Nursing",
-            "PHIL" => "Philosophy",
-            "PHAC" => "Physical Activity",
-            "PHYS" => "Physics",
-            "POLI" => "Political Science",
-            "PSYC" => "Psychology",
-            "PUBH" => "Public Health",
-            "RELS" => "Religious Studies",
-            "SSCI" => "Social Sciences",
-            "SOCI" => "Sociology",
-            "SPAN" => "Spanish",
-            "STAT" => "Statistics",
-            "WMST" => "Women's Studies",
-            "WRIT" => "Writing"
-        );
+        
+        $no_ajax = isset($params['local']) ? true : false;
+        $coursecat = $DB->get_records('course_categories');
 
-        // error_log("\n");
-        foreach ($deptartment as $deptcode => $title) {
-            // error_log("\nWhat is deptcode: ". $deptcode. " and title: ". $title);
-            $this->addDepartment(array('dept' => $title, 'code' => $deptcode, 'islocal' => true));
+        foreach ($coursecat as $cc) {
+
+            error_log("\n Going to insert: ". $cc->name. " <<\n\n");
+            $temp = new stdClass();
+            $temp->dept_code = "";
+            $temp->dept_name = $cc->name;
+            $temp->course_cat_id = $cc->id;
+            $DB->insert_record('evaluation_departments', $temp);
         }
-        die (json_encode(array("success" => "true")));
+        error_log("\n\n is no_ajax true: ". $no_ajax. " <<\n\n");
+        if ($no_ajax) {
+            $depts = $DB->get_records('evaluation_departments');
+            return $depts;
+        } else {
+            die (json_encode(array("success" => "true")));
+        }
+
     }
 
      /**
@@ -226,14 +183,18 @@ class CourseEvalAJAX
 
         $depts = $DB->get_records_sql($sql);
 
+        if (count($depts) == 0 || $depts == null) {
+            $depts = $this->runPopulateDeptartments(array('local' => true));
+        }
         // error_log("\n");
         // error_log("\nlocallib.php -> get_departments() -> what is the query: ". print_r($dept, 1));
         // error_log("\n");
 
         // to play nice with the existing code let's make the array of objects into an associative array
+        $depts = array_values($depts);
         $dept = array();
-        foreach ($depts as $code => $this_dept) {
-            $dept[$this_dept->dept_code] = $this_dept->dept_name;
+        foreach ($depts as $this_dept) {
+            $dept[$this_dept->course_cat_id] = $this_dept->dept_name;
         }
         if ($no_ajax) {
             return $dept;

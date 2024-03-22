@@ -113,15 +113,15 @@ if ($courseid !== false) {
 } else {
     //If nothing was specified then we look at all courses in the system.
     //$totalcount = $DB->count_records('course');
-    $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
+    // $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
     
-    $url = new moodle_url($CFG->wwwroot . '/local/evaluations/evaluations.php?dept=' . $dept, array('perpage' => $perpage));
-    echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
+    // $url = new moodle_url($CFG->wwwroot . '/local/evaluations/evaluations.php?dept=' . $dept, array('perpage' => $perpage));
+    // echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
     
-    // $search_this = array('fullname' => $dept."-");
-    $search_this = array('fullname' => $dept);
-    $courses = get_courses_search($search_this, "fullname ASC", $page, $perpage, $totalcount);
-    // $courses = get_courses($dept);
+    // // $search_this = array('fullname' => $dept."-");
+    // $search_this = array('fullname' => $dept);
+    // $courses = get_courses_search($search_this, "fullname ASC", $page, $perpage, $totalcount);
+    $courses = get_courses($dept);
 }
 
 //Start outputing the evaluation list table. (Holds all courses)

@@ -669,13 +669,13 @@ function send_student_reminders($eval, $course) {
 
 function process_mail_que() {
     global $DB, $CFG;
-    error_log("\n\n--------------------------------------------");
-    error_log("\n\nGoing to start processing emails......");
+    mtrace("\n\n--------------------------------------------");
+    mtrace("\n\nGoing to start processing emails......");
     $limit = time() - (86400 * $CFG->local_eval_message_que_limit); //2 days
     $current_time = time();
 
     $message_que = $DB->get_records('evaluations_mail_que');
-
+    mtrace("\n\nThere are ".count($message_que). " emails to process.");
 
     foreach ($message_que as $message) {
 
@@ -721,7 +721,7 @@ function process_mail_que() {
                         $attachname = '', $usetrueaddress = false,
                         $replyto = '', $replytoname = '', $wordwrapwidth = 79)) {
 
-            error_log("\nEmail sent to: ". $user->email);
+            mtrace("\nEmail sent to: ". $user->email);
 
 
             $log = new stdClass();
@@ -745,7 +745,7 @@ function process_mail_que() {
             //error sending message
         }
     }
-    error_log("\n\n--------- Sending Emails Complete ---------------------------");
+    mtrace("\n\n--------- Sending Emails Complete ---------------------------");
 }
 
 function remove_queued_email($queued_id) {
@@ -1410,8 +1410,8 @@ function getAllCurrentEvals() {
  */
 function printHeaderBar($title, $admin = false) {
     global $CFG;
-    // error_log("\n");
-    // error_log("\nmade it to the print header bar");
+    // mtrace("\n");
+    // mtrace("\nmade it to the print header bar");
 
     $nav = '<nav class="navbar navbar-light bg-faded course_eval_main_header_bar">' .
             '<h3>'. $title . '</h3>';
