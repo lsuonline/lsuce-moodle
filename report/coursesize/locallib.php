@@ -22,6 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+define('report_coursesize_MAX_RECORDS', 5000);
+define('report_coursesize_START_OF_WEEK', 6); // Saturday.
+
+
 /**
  * Get sql snippet for course filesizes.
  * @return string
@@ -102,4 +106,56 @@ function report_coursesize_get_usersizes() {
         }
     }
     return $usersizes;
+}
+
+class csvtool {
+    public $filename;
+    public $filehandle;
+    
+    public function add_csv_row($row = null) {
+        if (!$row) {
+            return false;
+        }
+
+        foreach ($row as $value) {
+            $escapeddata[] = $value;
+            // $escapeddata[] = '"' . str_replace('"', '""', $value) . '"';
+        }
+        fwrite($this->filehandle, implode(',', $escapeddata)."\r\n");
+
+    }
+
+
+    public function add_upload_dir($courseid = 0, $timestamp = 0) {
+        global $CFG;
+
+        $path = 'admin_coursesize_report/'.$courseid;
+        $datapath = $CFG->dataroot . '/temp/' . $path . '/';
+
+        $success = check_dir_exists($datapath);
+
+        // If doesexist returns false then let's Moodle's other func.
+        if (!$success) {
+            $success = make_temp_directory($path);
+        }
+
+        if (!$success) {
+            return false;
+        }
+
+        $csvfilename = $CFG->dataroot . '/temp/' . $path . '/' . 
+            core_date::strftime('%Y%m%d-%H%M%S', $timestamp) . '.csv';
+
+        if (!file_exists($csvfilename)) {
+            $this->filehandle = fopen($csvfilename, 'w');
+        } else {
+            $this->filehandle = fopen($csvfilename, 'a');
+        }
+        return true;
+    }
+
+    public function close_handle() {
+
+        fclose($this->filehandle);
+    }
 }

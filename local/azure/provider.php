@@ -69,11 +69,14 @@ class azure_enrollment_provider extends enrollment_provider {
 
         require_once $CFG->libdir . '/filelib.php';
 
-        $curl = new curl(array('cache' => true));
+     // $curl = new curl(array('cache' => true));
 
-        $resp = $curl->post($this->url, array('credentials' => 'get'));
+     // $resp = $curl->post($this->url, array('credentials' => 'get'));
 
-        list($username, $password) = explode("\n", $resp);
+     // list($username, $password) = explode("\n", $resp);
+
+        $username = get_config('enrol_ues', 'username');
+        $password = get_config('enrol_ues', 'password');
 
         if (empty($username) or empty($password)) {
             throw new Exception('bad_resp');
