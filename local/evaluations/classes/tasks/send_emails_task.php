@@ -21,6 +21,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
+/*
 namespace local_evaluations\tasks;
 
 defined('MOODLE_INTERNAL') || die();
@@ -42,20 +44,21 @@ class send_emails_task extends scheduled_task {
      * to transfer data from block_quickmail_log and block_quickmail_drafts until completion
      *
      * Required custom data: none
-     */
+     *
+     *   /
     public function execute() {
         error_log("\n\n ---------- Evaluations - Executing Send Emails Task ----------");
         
-        /*
-        try {
-            process_mail_que();
-        } catch (chunk_size_met_exception $e) {
-            return true;
-        } catch (\Exception $e) {
+        
+        // try {
+            // process_mail_que();
+        // } catch (chunk_size_met_exception $e) {
+            // return true;
+        // } catch (\Exception $e) {
             // TODO: Localize this string.
-            return 'something has gone wrong in the migration process: ' . $e->getMessage();
-        }
-        */
+            // return 'something has gone wrong in the migration process: ' . $e->getMessage();
+        // }
+        
     }
-
 }
+*/
