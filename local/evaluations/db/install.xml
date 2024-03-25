@@ -88,7 +88,7 @@
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="dept_name"/>
                 <FIELD NAME="dept_name" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="id" NEXT="dept_code"/>
                 <FIELD NAME="dept_code" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="dept_name"/>
-                <FIELD NAME="course_cat_id" TYPE="int" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="dept_code"/>
+                <FIELD NAME="course_cat_id" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" PREVIOUS="dept_code"/>
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
