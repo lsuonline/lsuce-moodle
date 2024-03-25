@@ -117,8 +117,9 @@ class ComparisonReports {
 
         $url = new moodle_url($CFG->wwwroot . '/local/evaluations/coursecompare.php', array('perpage' => $perpage,'dept' => $dept));
 
-        $search_this = array('fullname' => $dept."-");
-        $courses = get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
+        // $search_this = array('fullname' => $dept."-");
+        // $courses = get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
+        $courses = get_course_eval_search($dept, $totalcount, "fullname ASC", $page, $perpage);
 
         return $courses;
     }
@@ -309,8 +310,9 @@ class ComparisonReports {
             $dept = $action_list['dept'];
 
             $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
-            $search_this = array('fullname' => $dept."-");
-            $courses = $this->get_course_eval_search($search_this, $totalcount, "fullname ASC", 0, 1000);
+            // $search_this = array('fullname' => $dept."-");
+            // $courses = $this->get_course_eval_search($search_this, $totalcount, "fullname ASC", 0, 1000);
+            $courses = $this->get_course_eval_search($dept, $totalcount, "fullname ASC", 0, 1000);
             
             foreach ($courses as $course) {
 
@@ -363,9 +365,10 @@ class ComparisonReports {
      * @param type &$totalcount
      * @return type
      */
-    function get_course_eval_search($searchterms, &$totalcount, $sort='fullname ASC', $page=0, $recordsperpage=50) {
+    // function get_course_eval_search($searchterms, &$totalcount, $sort='fullname ASC', $page=0, $recordsperpage=50) {
+    function get_course_eval_search($dept, &$totalcount, $sort='fullname ASC', $page=0, $recordsperpage=50) {
         global $CFG, $DB;
-
+        /*
         if ($DB->sql_regex_supported()) {
             $REGEXP    = $DB->sql_regex(true);
             $NOTREGEXP = $DB->sql_regex(false);
@@ -441,8 +444,18 @@ class ComparisonReports {
                $ccjoin
                  WHERE $searchcond AND c.id <> ".SITEID."
               ORDER BY $sort";
+        */
+        // Tiki pagination
+        $limitfrom = $page * $recordsperpage;
+        $limitto   = $limitfrom + $recordsperpage;
 
-        $rs = $DB->get_recordset_sql($sql, $params);
+        $sql = "SELECT *
+            FROM {course}
+            WHERE category=".$dept."
+            ORDER BY $sort";
+
+        $rs = $DB->get_recordset_sql($sql);
+        $c = 0; // counts how many visible courses we've seen
         foreach ($rs as $course) {
 
             context_helper::preload_from_record($course);
@@ -496,14 +509,23 @@ class ComparisonReports {
         $page = 0;
 
 
-        $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$this->dept."%'");
+        // $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$this->dept."%'");
+
+        $courses = $DB->get_records_sql(
+            "SELECT date from {evaluation_compare}
+            WHERE dept='".$this->dept."'
+            GROUP BY date", array('term' => $CFG->local_eval_current_term));
+
+        $totalcount = count($courses);
+
         $url = new moodle_url($CFG->wwwroot . '/local/evaluations/reports.php', array('perpage' => $perpage,'dept' => $this->dept));
-        $search_this = array('fullname' => $this->dept."-");
-        $courses = $this->get_course_eval_search($search_this, $totalcount, "fullname ASC", 0, 999);
+        // $search_this = array('fullname' => $this->dept."-");
+        // $courses = $this->get_course_eval_search($search_this, $totalcount, "fullname ASC", 0, 999);
+        $courses = $this->get_course_eval_search($this->dept, $totalcount, "fullname ASC", 0, 999);
         // echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
                 // <ul class="thumbnails">
         $return_output = '
-            <div class="row-fluid" id="course_eval_table">
+            <div class="row" id="course_eval_table">
                 <table class="table table-striped">';
 
         foreach ($courses as $course) {
@@ -543,18 +565,17 @@ class ComparisonReports {
                 $oddeven = 0;
                 foreach ($evals as $eval) {
 
-                    $sql = "
-                        SELECT ev.id as eval_id, c.id, c.fullname,u.firstname, u.lastname,r.name, ev.name as eval_name
+                    $sql = "SELECT ev.id as eval_id, c.id, c.fullname,u.firstname, u.lastname,r.name, ev.name as eval_name
                         FROM mdl_course c
                         JOIN mdl_context ct ON c.id = ct.instanceid
                         JOIN mdl_role_assignments ra ON ra.contextid = ct.id
                         JOIN mdl_user u ON u.id = ra.userid
                         JOIN mdl_role r ON r.id = ra.roleid
                         JOIN mdl_evaluations ev ON ev.course = c.id
-                        WHERE  r.id = 10 AND c.id='".$course->id."' AND ev.id='".$eval->id."'
-                        GROUP BY eval_id
-                    ";
-
+                        WHERE c.id='".$course->id."' AND ev.id='".$eval->id."'
+                        GROUP BY eval_id";
+                        // WHERE  r.id = 10 AND c.id='".$course->id."' AND ev.id='".$eval->id."'
+                        
                     // error_log("\n\n");
                     // error_log("ComparisonReports -> getAllIndividualReportsHTML() -> what is the sql: \n". $sql);
                     // error_log("\n\n");
@@ -571,14 +592,14 @@ class ComparisonReports {
                     foreach ($record as $rec) {
 
                         $return_output .= '
-                            <div class="row-fluid">
-                                <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-8">
                                     <span class="course_eval_list_title pull-left">'.$rec->eval_name.' - '.$rec->firstname.' '.$rec->lastname.'</span>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-2">
                                     <a href="'.$href.'" class="btn btn-primary btn-block pull-right"><i class="fa fa-eye-open"></i> Preview</a>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-2">
                                     <a href="'.$href.'&force=D" class="btn btn-primary btn-block pull-right"><i class="fa fa-download"> PDF</i></a>
                                 </div>
                             </div>';
@@ -587,7 +608,7 @@ class ComparisonReports {
                 $return_output .= '</td></tr>';
             }
         }
-        if (count($courses) < 1) {
+        if ($courses == null || count($courses) < 1) {
             $return_output .= '<h3>There are no reports to show</h3>';
         }
         $return_output .= '</table> </div>';
@@ -616,7 +637,7 @@ class ComparisonReports {
             }
 
             $return_output .= '<div class="row-fluid'.$use_this_css.'" id="eval_report_id_'.$key->date.'">';
-            $return_output .= '<div class="col-md-10">';
+            $return_output .= '<div class="col-10">';
             $sql = "
                 SELECT evc.id, c.id as cid, c.fullname,u.firstname, u.lastname, r.name, evc.courseevalid, ev.name as eval_name, ev.id as eval_id
 
@@ -638,16 +659,16 @@ class ComparisonReports {
                 $href = $CFG->wwwroot . '/local/evaluations/report.php?evalid=' . $record->eval_id . '&dept=' . $this->dept. '&evcid=' . $record->id;
 
                 $return_output .=
-                    '<div class="row-fluid" id="eval_comp_grp_spacer">
-                        <div class="col-md-8">
+                    '<div class="row" id="eval_comp_grp_spacer">
+                        <div class="col-8">
                             <span class="course_eval_list_title pull-left">'.$record->eval_name.' - '.$record->firstname.' '.$record->lastname.'</span>
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-2">
                             <a href="'.$href.'" class="btn btn-primary btn-block pull-right"><i class="fa fa-eye-open"></i> Preview</a>
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-2">
                             <a href="'.$href.'&force=D" class="btn btn-primary btn-block pull-right"><i class="fa fa-download"></i> PDF</a>
                         </div>
                     </div>';
@@ -655,7 +676,7 @@ class ComparisonReports {
 
             // close the span of 10
             $return_output .= '</div>
-                <div class="col-md-2">
+                <div class="col-2">
                     <button class="btn btn-danger" id="eval_comp_grp_remove_style" onclick="local_evaluation_funcs.remove_eval_compare('.$key->date.')"><i class="fa fa-remove"></i> Remove Group</button>
                 </div>
             </div><hr>';

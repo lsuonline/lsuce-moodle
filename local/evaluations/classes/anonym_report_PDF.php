@@ -329,12 +329,24 @@ class anonym_report_PDF extends TCPDF {
                 //Add response value to table.
                 $tbl .= "<td align=\"center\"> $resp_val </td>";
             }
-            $positive = round($this->get_positive_response_rate($student_responses,
-                            $questions));
-            $negative = round($this->get_negative_response_rate($student_responses,
-                            $questions));
-            $average = round($this->get_response_avg($student_responses,
-                            $questions), 1);
+            $positive = round(
+                $this->get_positive_response_rate(
+                    $student_responses,
+                    $questions
+                )
+            );
+            $negative = round(
+                $this->get_negative_response_rate(
+                    $student_responses,
+                    $questions
+                )
+            );
+            $average = round(
+                $this->get_response_avg(
+                    $student_responses,
+                    $questions
+                ) , 1
+            );
             //Add stats to table.
             $tbl .="<td align = \"center\" style=\"border-left:2px solid black;\"> $average </td>";
             $tbl .="<td align = \"center\" > $positive </td>";
@@ -615,7 +627,11 @@ class anonym_report_PDF extends TCPDF {
         //in the current setup. Therefore if he responded he will have responded
         // to all questions.
         foreach ($students as $key => $student) {
-            $first_question = $this->std_questions[0];
+            if ($this->std_questions) {
+                $first_question = $this->std_questions[0];
+            } else {
+                continue;
+            }
             $response = $DB->get_record('evaluation_response',
                     array('question_id' => $first_question->get_id(), 'user_id' => $student->id));
 

@@ -120,12 +120,15 @@ if (isset($searchstring)) {
     $searchterms = explode(" ", $searchstring);
     $courses = get_courses_search($searchterms, "fullname ASC", $page, $perpage, $totalcount);
 } else {
-    $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
+    // $totalcount = $DB->count_records_select('course', "fullname LIKE '%".$dept."%'");
+    // $totalcount = $DB->count_records_select('course', "category='".$dept."'");
+    $courses = $DB->get_records('course', array('category' => $dept));
+    $totalcount = count($courses);
     
     $url = new moodle_url($CFG->wwwroot . '/local/evaluations/coursecompare.php', array('perpage' => $perpage,'dept' => $dept));
 
-    $search_this = array('fullname' => $dept."-");
-    $courses = $reports->get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
+    // $search_this = array('fullname' => $dept."-");
+    // $courses = $reports->get_course_eval_search($search_this, $totalcount, "fullname ASC", $page, $perpage);
     
     echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
     if (!isset($_SESSION['list_of_selected'])) {

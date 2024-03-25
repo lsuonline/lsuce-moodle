@@ -53,6 +53,7 @@ $sql = "(SELECT DISTINCT q2.evalid
                     AND q2.evalid = $eval_db->id 
                     AND r2.user_id = $USER->id)";
 
+$params = array();
 $default_params = null;
 $count = $DB->get_field_sql($sql, $params);
 

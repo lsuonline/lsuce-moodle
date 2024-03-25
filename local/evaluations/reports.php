@@ -118,7 +118,7 @@ if (!is_dept_admin($dept, $USER)) {
 }
 
 //Display all reports by course.
-/* echo '<div class="row-fluid">
+/* echo '<div class="row">
             <ul class="nav nav-tabs">
                 <li><a href="#course_eval_reports_groups" data-toggle="tab">Group Evaluations</a></li>
                 <li><a href="#course_eval_reports_individual" data-toggle="tab">Individual Evaluations</a></li>
@@ -134,7 +134,8 @@ if (!is_dept_admin($dept, $USER)) {
         </div>';
 */
 
-$html_output = '<div class="row-fluid">
+$html_output = '<div class="container-fluid">
+        
     <div class="accordion" role="tablist" aria-multiselectable="true" id="course_eval_accordion">
         <div class="card">
             <div class="card-header" role="tab" id="heading_group_reports">   
