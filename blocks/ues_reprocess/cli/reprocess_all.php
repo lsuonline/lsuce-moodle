@@ -43,7 +43,7 @@ require_once('../lib.php');
 $creds = repall::get_creds();
 
 // Fetch the current sections to be reprocessed.
-$sections = repall::fetch_current_ues_sections();
+$sections = repall::fetch_current_ues_sections('AAAS', false);
 
 // Count the number of sections.
 $sectioncount = count($sections);
@@ -157,13 +157,115 @@ class repall {
         // Get the course object.
         $course = $DB->get_record($ctable, $cconditions, $fields = '*');
 
+        // If we do not have an existing enrollment instance, add it.
+        if (empty($einstance)) {
+            $enrollid = $enroller->add_instance($course);
+            $einstance = $DB->get_record('enrol', array('id' => $enrollid));
+        }
+
         // Instantiate the enroller.
         $enroller = new enrol_ues_plugin();
+
+        // Determine if we're removing or suspending oa user on unenroll.
+        $unenroll = get_config('enrol_ues', 'suspend_enrollment');
+
+        // If we're unenrolling a student.
+        if ($enrollstatus == 0) {
+            // If we're removing them from the course.
+            if ($unenroll == 1) {
+                // Do the nasty.
+                $enrolluser   = $enroller->unenrol_user(
+                                    $einstance,
+                                    $stu->userid);
+                mtrace("User $stu->userid unenrolled from course: $stu->course.");
+            // Or we're suspending them.
+            } else {
+                // Do the nasty.
+                $enrolluser   = $enroller->update_user_enrol(
+                                    $einstance,
+                                    $stu->userid, ENROL_USER_SUSPENDED);
+                mtrace("    User ID: $stu->userid suspended from course: $stu->course.");
+            }
+        // If we're enrolling a student in the course.
+        } else if ($enrollstatus == "enroll") {
+            // Check to see if a user is enrolled via D1.
+            $check = self::check_d1_enr($stu->course, $stu->userid);
+
+            // Set the start date if it's there.
+            $enrollstart = isset($enrollstart) ? $enrollstart : 0;
+
+            // Set their end date if it's there.
+            $enrollend = isset($enrollend) ? $enrollend : 0;
+
+            if (!isset($check->enrollid)) {
+                // Do the nasty.
+                $enrolluser = $enroller->enrol_user(
+                              $einstance,
+                              $stu->userid,
+                              $roleid,
+                              $enrollstart,
+                              $enrollend,
+                              $status = ENROL_USER_ACTIVE);
+                mtrace("    User ID: $stu->userid enrolled into course: $stu->course.");
+
+                // Require check once.
+                if (!function_exists('grade_recover_history_grades')) {
+                    global $CFG;
+                    require_once($CFG->libdir . '/gradelib.php');
+                }
+                $grade = grade_recover_history_grades($userid, $courseid);
+                if ($grade) {
+                    mtrace("      Grades recovered for userid: $userid in course: $courseid.");
+                }
+            } else if ($check->enrollend <> $enrollend) {
+                $enrolluser = $enroller->enrol_user(
+                              $einstance,
+                              $stu->userid,
+                              $roleid,
+                              $enrollstart,
+                              $enrollend,
+                              $status = ENROL_USER_ACTIVE);
+                mtrace("    User ID: $stu->userid enddate modified in course: $stu->course.");
+            } else {
+                mtrace("    Skipping user: $stu->userid already enrolled in course: $stu->course.");
+            }
+        }
     }
 
-    public static function fetch_current_ues_sections() {
+    public static function check_ues_enr($courseid, $userid, $enrollend = null) {
         global $DB;
 
+        if (is_null($enrollend)) {
+            $where = "";
+        } else {
+            $where = "AND ue.timeend = ' . $enrollend . '";
+        }
+
+        $sql = 'SELECT ue.id AS enrollid,
+                       ue.timeend AS enrollend
+                FROM mdl_course c
+                    INNER JOIN mdl_enrol e ON e.courseid = c.id
+                    INNER JOIN mdl_user_enrolments ue ON ue.enrolid = e.id
+                WHERE e.enrol = "d1"
+                    AND ue.status = 0
+                    AND c.id = ' . $courseid . '
+                    ' . $where . '
+                    AND ue.userid = ' . $userid;
+
+        $d1enrolled = $DB->get_record_sql($sql);
+        return $d1enrolled;
+    }
+
+
+    public static function fetch_current_ues_sections($department, $enrolled = false) {
+        global $DB;
+
+        // Set this up fro inclusion in SQL.
+        $enrolledsql = $enrolled
+                       ? 'INNER JOIN {enrol_ues_students} stu ON stu.sectionid = sec.id'
+                       : '';
+
+        // Build the SQL.
         $sql = 'SELECT c.id AS courseid,
                     c.idnumber AS idnumber,
                     sec.id AS sectionid,
@@ -179,14 +281,14 @@ class repall {
                     INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
                     INNER JOIN {course} c ON c.idnumber = sec.idnumber
                     INNER JOIN {course_categories} cc ON cc.id = c.category AND cc.name = cou.department
-                   #INNER JOIN {enrol_ues_students} stu ON stu.sectionid = sec.id
+                    ' . $enrolledsql . '
                 WHERE sec.idnumber IS NOT NULL
                     AND sec.idnumber != ""
                     AND c.idnumber IS NOT NULL
                     AND c.idnumber != ""
                     AND sem.grades_due > UNIX_TIMESTAMP()
                     AND sem.classes_start < UNIX_TIMESTAMP()
-                    AND c.idnumber LIKE "%AAAS%"
+                    AND cou.department = "' . $department . '"
                 GROUP BY sem.id,
                     cou.department,
                     cou.cou_number,
