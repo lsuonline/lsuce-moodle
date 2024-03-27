@@ -69,14 +69,27 @@ class azure_enrollment_provider extends enrollment_provider {
 
         require_once $CFG->libdir . '/filelib.php';
 
-     // $curl = new curl(array('cache' => true));
+        // Make sure we only grab remote credentials when moodleftp is specified.
+        if (get_config('enrol_ues', 'username') == 'moodleftp') {
+            mtrace("Utilizing remote credentials location.");
 
-     // $resp = $curl->post($this->url, array('credentials' => 'get'));
+            // Instantiate curl.
+            $curl = new curl(array('cache' => true));
 
-     // list($username, $password) = explode("\n", $resp);
+            // Get the credentials.
+            $resp = $curl->post($this->url, array('credentials' => 'get'));
 
-        $username = get_config('enrol_ues', 'username');
-        $password = get_config('enrol_ues', 'password');
+            // Split out the username and password accordingly.
+            list($username, $password) = explode("\n", $resp);
+        } else {
+            mtrace("Utilizing locally stored credentials.");
+
+            // Get the username stored in config.
+            $username = get_config('enrol_ues', 'username');
+
+            // Get the password stored in config.
+            $password = get_config('enrol_ues', 'password');
+        }
 
         if (empty($username) or empty($password)) {
             throw new Exception('bad_resp');
