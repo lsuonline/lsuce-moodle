@@ -34,6 +34,24 @@ stays intact.
 ---------------------------------------
 ---------------- NOTES ----------------
 ---------------------------------------
+
+Sometimes the install fails if other plugins fail, use this to remove the tables.
+
+DROP TABLE mdl_evaluations;
+DROP TABLE mdl_evaluation_compare;
+DROP TABLE mdl_evaluation_questions;
+DROP TABLE mdl_evaluation_response;
+DROP TABLE mdl_evaluation_standard_question;
+DROP TABLE mdl_evaluations_question_types;
+DROP TABLE mdl_evaluation_departments;
+DROP TABLE mdl_evaluations_email_log;
+DROP TABLE mdl_evaluations_mail_que;
+DROP TABLE mdl_evaluations_early_reminder;
+DROP TABLE mdl_evaluations_invigilators;
+DROP TABLE mdl_department_administrators;
+DROP TABLE mdl_department_preambles;
+
+
  * Useful information but not super important. You could skip if you want to but
  * I wouldn't.
 
