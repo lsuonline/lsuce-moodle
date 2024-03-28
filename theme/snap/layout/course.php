@@ -98,9 +98,7 @@ echo $OUTPUT->custom_menu_spacer();
 
             if (!$showcssnippet->are_you_student() || $speshul) {
                 // User does NOT have a student role in a course.
-                echo '<div id="snap-show-course-size">';
                 echo $showcssnippet->show_course_size($isadmin ?: $seebreakdown);
-                echo '</div>';
             }
         }
         // END LSU - Insert the course file size total.

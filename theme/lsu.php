@@ -44,8 +44,12 @@ class lsu_theme_snippets {
         $coursesize = $this->get_file_size($COURSE->id);
 
         $sizesetting = (int)get_config('theme_snap', 'course_size_limit');
-
+        if ($sizesetting == 0) {
+            return '';
+        }
+        $coursesnippet = '<div id="snap-show-course-size">';
         $percentage = number_format(((($coursesize / 1048576) * 100) / $sizesetting), 0);
+
         $percent = round((($coursesize / 1048576) * 100) / $sizesetting, 0);
 
         // number_format( $myNumber, 2, '.', '' );
@@ -68,7 +72,7 @@ class lsu_theme_snippets {
         // Do not show percentage if below 10%.
         $percentsnippet = $percent < 10 ? '' : '<span class="fg-' . $displayclass . '">' . $percentage . '%</span>';
 
-        $coursesnippet = 'Course File Size: '
+        $coursesnippet .= 'Course File Size: '
             . $size
             . $show_course_size_link .
             '<div class="progress" ' .
@@ -80,8 +84,7 @@ class lsu_theme_snippets {
             '<div class="progress-bar bg-' . $displayclass .
             '" style="width: ' . $percent . '%">' .
             $percentsnippet .
-            '</div></div>';
-
+            '</div></div></div>';
         return $coursesnippet;
     }
 
