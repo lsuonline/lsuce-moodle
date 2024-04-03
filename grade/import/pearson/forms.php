@@ -87,6 +87,9 @@ class pearson_mapping_form extends moodleform {
                     get_string('encodingtypepost', 'gradeimport_pearson');
                 \core\notification::warning($encodewarning);
 
+                // The Pearson exporter, somehow, adds a ZERO WIDTH NO-BREAK SPACE
+                // (U+FEFF) char to the beginning of the csv file. Remove it!
+                $result = trim($file_text, "\xEF\xBB\xBF");
                 if ($encodeenabled) {
                     $file_text = helpers::fixMSWord($file_text);
                 }
