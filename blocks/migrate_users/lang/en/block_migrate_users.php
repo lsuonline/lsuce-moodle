@@ -35,17 +35,22 @@ $string['securityviolation'] = 'You do not have access to this plugin.';
 $string['userfrom'] = 'Username From:&nbsp;&nbsp;';
 $string['userto'] = 'Username To:&nbsp;&nbsp;';
 
-// Return strings
-
-$string['found'] = ' were found, they have been migrated.';
+// Handler return strings.
 $string['handle_user_enrollments'] = 'user enrollments';
 $string['handle_role_enrollments'] = 'role based enrollments';
 $string['handle_groups_membership'] = 'group memberships';
 $string['handle_logs'] = 'legacy logs';
 $string['handle_standard_logs'] = 'standard logs';
 $string['handle_events'] = 'events';
-$string['handle_posts'] = 'forum posts';
+$string['handle_forum_posts'] = 'forum posts';
+$string['handle_forum_discussions'] = 'forum discussions';
+$string['handle_forum_digests'] = 'forum digests';
+$string['handle_forum_read'] = 'forums read';
+$string['handle_forum_subscriptions'] = 'forum subscriptions';
+$string['handle_forum_prefs'] = 'forum preferences';
+$string['handle_forum_grades'] = 'forum grades';
 $string['handle_course_modules_completions'] = 'course module completions';
+$string['handle_course_modules_viewed'] = 'course modules viewed';
 $string['handle_course_completions'] = 'course completions';
 $string['handle_course_completion_criteria'] = 'course completion criteria';
 $string['handle_grades'] = 'grades';
@@ -60,6 +65,26 @@ $string['handle_quiz_attempts'] = 'quiz attempts';
 $string['handle_quiz_grades'] = 'quiz grades';
 $string['handle_scorm_scoes'] = 'SCORM submissions';
 $string['handle_choice_answers'] = 'choice responses';
+$string['handle_board_notes'] = 'board notes';
+$string['handle_board_note_owners'] = 'board note owners';
+$string['handle_board_note_ratings'] = 'board note ratings';
+$string['handle_board_comments'] = 'board comments';
+$string['handle_board_user_history'] = 'board user history';
+$string['handle_board_owner_history'] = 'board owner history';
+$string['handle_chat_messages'] = 'chat messages';
+$string['handle_chat_messages_current'] = 'chat messages current';
+$string['handle_custom_certificates'] = 'custom certificates';
+$string['handle_databases'] = 'database entries';
+$string['handle_feedbacks'] = 'feedbacks';
+$string['handle_flashcards'] = 'flashcards';
+$string['handle_flashcard_decks'] = 'flashcard decks';
+$string['handle_journals'] = 'journals';
+$string['handle_courseposts'] = 'course posts';
+$string['handle_lastaccess'] = 'course last access';
+$string['handle_pucodes'] = 'proctor u codes';
+
+// Non-handler return strings.
+$string['found'] = ' were found, they have been migrated.';
 $string['nonefound'] = 'Something went wrong finding ';
 $string['prefix'] = 'If any ';
 $string['exception'] = 'We have experienced a failure: ';
