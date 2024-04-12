@@ -86,12 +86,16 @@ class pearson_mapping_form extends moodleform {
                 $encodewarning = get_string('encodingtypepre', 'gradeimport_pearson'). $encodingtype.
                     get_string('encodingtypepost', 'gradeimport_pearson');
                 \core\notification::warning($encodewarning);
-
                 // The Pearson exporter, somehow, adds a ZERO WIDTH NO-BREAK SPACE
                 // (U+FEFF) char to the beginning of the csv file. Remove it!
                 $result = trim($file_text, "\xEF\xBB\xBF");
                 if ($encodeenabled) {
-                    $file_text = helpers::fixMSWord($file_text);
+                    $key = "";
+                    $this->detectEOL($result, $key);
+                    if ($key == "crlf") {
+                        $result = str_replace("\r\n", "\r\n\n", $result);
+                    }
+                    $file_text = helpers::fixMSWord($result);
                 }
             }
         }
@@ -110,6 +114,33 @@ class pearson_mapping_form extends moodleform {
         }
 
         $this->add_action_buttons(false, $_s('map_grade_items'));
+    }
+
+    /**
+     * Detects the end-of-line character of a string.
+     * @param string $str      The string to check.
+     * @param string $key      [io] Name of the detected eol key.
+     * @return string The detected EOL, or default one.
+     */
+    public function detectEOL($str, &$key) {
+        static $eols = array(
+            'lfcr' => "\n\r",  // 0x0A - 0x0D - acorn BBC
+            'crlf' => "\r\n",  // 0x0D - 0x0A - Windows, DOS OS/2
+            'lf' => "\n",    // 0x0A -      - Unix, OSX
+            'cr' => "\r",    // 0x0D -      - Apple ][, TRS80
+        );
+
+        $key = "";
+        $curCount = 0;
+        $curEol = '';
+        foreach($eols as $k => $eol) {
+            if( ($count = substr_count($str, $eol)) > $curCount) {
+                $curCount = $count;
+                $curEol = $eol;
+                $key = $k;
+            }
+        }
+        return $curEol;
     }
 
     function get_grade_item_options() {

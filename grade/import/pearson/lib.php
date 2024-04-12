@@ -192,6 +192,9 @@ abstract class PearsonFile {
                     }
                 }
 
+//var_dump($grade_item);
+//die();
+
                 $newgrade = (object) new stdClass();
                 $newgrade->itemid = $grade_item->id;
                 $newgrade->userid = $userid;
