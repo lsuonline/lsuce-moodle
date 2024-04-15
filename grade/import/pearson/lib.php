@@ -50,6 +50,7 @@ abstract class PearsonFile {
     public $courseid;
     public $id_field;
     public $file_text;
+    public $percents;
     public $headers = array();
     public $messages = array();
     public $ids_to_grades = array();
@@ -180,6 +181,8 @@ abstract class PearsonFile {
                 continue;
             }
 
+            $grademax = $grade_item->grademax;
+
             foreach ($grades as $userid => $grade) {
                 // Make sure grade_grade isn't locked
                 $grade_params = array('itemid'=>$gi_id, 'userid'=>$userid);
@@ -192,15 +195,22 @@ abstract class PearsonFile {
                     }
                 }
 
-//var_dump($grade_item);
-//die();
-
                 $newgrade = (object) new stdClass();
                 $newgrade->itemid = $grade_item->id;
                 $newgrade->userid = $userid;
                 $newgrade->importcode = $importcode;
                 $newgrade->importer = $USER->id;
-                $newgrade->finalgrade = $grade;
+
+                // We have a normalized percentage grade.
+                if ($this->percents) {
+                    // Normalized percentages converted to a raw moodle grade by multiplying by grademax.
+                    $newgrade->finalgrade = $grade * $grademax;
+
+                // We have a raw percentage grade.
+                } else if (!$this->percents) {
+                    // Normalize the raw percentage grade and multiply it by the grademax.
+                    $newgrade->finalgrade = (($grade / 100) * $grademax);
+                }
 
                 if (!$DB->insert_record('grade_import_values', $newgrade)) {
                     $this->messages[] = $_g('importfailed');
@@ -236,7 +246,10 @@ class PearsonMyLabFile extends PearsonFile {
 
         $headers_to_grades = array();
 
-        $percents = true;
+        $this->percents = true;
+
+        // Build a percent array to see what's what regarding grade values.
+        $pa = array();
 
         foreach ($keepers as $line) {
             if (trim($line) == '') {
@@ -246,8 +259,6 @@ class PearsonMyLabFile extends PearsonFile {
             $fields = explode(',', $line);
 
             array_pop($fields);
-            // $exploded = explode('@', $fields[2]);
-            // $pawsid = strtolower(ltrim(reset($exploded), '"'));
             $pawsid = strtolower($fields[2]);
 
             $grades = array_slice($fields, 5);
@@ -261,9 +272,7 @@ class PearsonMyLabFile extends PearsonFile {
                     $headers_to_grades[$n] = array();
                 }
 
-                if ($grade > 2.00) {
-                    $percents = false;
-                }
+                $pa[] = $grade;
 
                 if (!$grade) {
                     $grade = 0.000;
@@ -273,13 +282,9 @@ class PearsonMyLabFile extends PearsonFile {
             }
         }
 
-        if ($percents) {
-            foreach ($headers_to_grades as $i => $grades) {
-                foreach ($grades as $j => $user) {
-                    $headers_to_grades[$i][$j] *= 100;
-                }
-            }
-        }
+        $arrayval = array_sum($pa) / count($pa);
+
+        $this->percents = $arrayval >= 1 ? false : true;
 
         foreach ($headers_to_items as $i => $gi_id) {
             $this->ids_to_grades[$gi_id] = $headers_to_grades[$i];
@@ -307,7 +312,10 @@ class PearsonMasteringFile extends PearsonFile {
 
         $headers_to_grades = array();
 
-        $percents = true;
+        $this->percents = true;
+
+        // Build a percent array to see what's what regarding grade values.
+        $pa = array();
 
         foreach ($keepers as $n => $line) {
             if (!$line) {
@@ -331,9 +339,7 @@ class PearsonMasteringFile extends PearsonFile {
                     $headers_to_grades[$n] = array();
                 }
 
-                if ($grade > 2.00) {
-                    $percents = false;
-                }
+                $pa[] = $grade;
 
                 if (!$grade || $grade == '--') {
                     $grade = 0.000;
@@ -343,13 +349,9 @@ class PearsonMasteringFile extends PearsonFile {
             }
         }
 
-        if ($percents) {
-            foreach ($headers_to_grades as $i => $grades) {
-                foreach ($grades as $j => $user) {
-                    $headers_to_grades[$i][$j] *= 100;
-                }
-            }
-        }
+        $arrayval = array_sum($pa) / count($pa);
+
+        $this->percents = $arrayval >= 1 ? false : true;
 
         foreach ($headers_to_items as $i => $gi_id) {
             $this->ids_to_grades[$gi_id] = $headers_to_grades[$i];
