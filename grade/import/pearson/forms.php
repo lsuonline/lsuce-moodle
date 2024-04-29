@@ -95,7 +95,9 @@ class pearson_mapping_form extends moodleform {
                     if ($key == "crlf") {
                         $result = str_replace("\r\n", "\r\n\n", $result);
                     }
-                    $file_text = helpers::fixMSWord($result);
+                    if ($file_type < 3)  {
+                        $file_text = helpers::fixMSWord($result);
+                    }
                 }
             }
         }
