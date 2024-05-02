@@ -43,8 +43,8 @@ class workdaystudent {
 
         // TODO: Remove me.
         if (!isset($s->campus)) {
-            $s->username = 'INSERT USERNAME HERE';
-            $s->password = 'INSERT PASSWORD HERE';
+            $s->username = '';
+            $s->password = '';
             $s->wsurl = 'https://wd2-impl-services1.workday.com/ccx/service/customreport2/lsu1/ITS_INT_RPT_ISU';
             $s->units = 'Raas-LSU1103-INTS0052E-LSUAM-Moodle-Academic-Units';
             $s->periods = 'RaaS-LSU1104-INTS0052F-LSUAM-Moodle-Academic-Periods';
@@ -527,9 +527,56 @@ class workdaystudent {
         return $au;
     }
 
+    public static function get_current_sections($s) {
+        global $DB;
+
+        $sql = 'SELECT s.*
+            FROM mdl_enrol_oes_periods p
+                INNER JOIN mdl_enrol_oes_sections s ON p.academic_period_id = s.academic_period_id
+            WHERE p.start_date < UNIX_TIMESTAMP(NOW())
+                AND p.end_date > UNIX_TIMESTAMP(NOW())
+                AND p.enabled = 1';
+
+        $sections = $DB->get_records_sql($sql);
+        return $sections;
+    }
+
+    public static function get_section_enrollments($s, $sectionordept, $fdate = null) {
+        // Set the endpoint.
+        $endpoint = 'registrations';
+
+        // Set up the paramaters array.
+        $parms = array();
+
+        // Set some more parms up.
+        if (!is_null($fdate)) {
+            $parms['Last_Updated'] = $fdate;
+        }
+
+        if (isset($sectionordept->course_section_definition_id)) {
+            $section = $sectionordept;
+            $parms['Course_Section_Definition_ID'] = $section->course_section_definition_id;
+            $parms['Academic_Period!Academic_Period_ID'] = $section->academic_period_id;
+        } else {
+            $course = $sectionordept;
+            $parms['Subject_Code'] = $course->course_subject_abbreviation;
+            $parms['Academic_Period!Academic_Period_ID'] = $course->academic_period_id;
+        }
+
+        $parms['format'] = 'json';
+
+        // Build out the settins based on settings, endpoint, and parms.
+        $s = self::buildout_settings($s, $endpoint, $parms);
+
+        // Get the sections.
+        $enrollments = self::get_data($s);
+
+        return $enrollments;
+    }
+
     public static function get_sections($s, $parms) {
-    // Set the endpoint.
-    $endpoint = 'sections';
+        // Set the endpoint.
+        $endpoint = 'sections';
 
         // Set some more parms up.
         if (isset($s->campus)) {
@@ -1213,11 +1260,11 @@ class workdaystudent {
 
     public static function insert_update_teacher_enrollment($sectionid, $universalid, $role, $status) {
         global $DB;
-        $table = 'enrol_oes_enrollments';
+        $table = 'enrol_oes_teacher_enrollments';
 
 //        if (is_null($universalid) && is_null($role)) {
 
-            $usql = 'SELECT * FROM {enrol_oes_enrollments} e
+            $usql = 'SELECT * FROM {enrol_oes_teacher_enrollments} e
                     WHERE e.section_listing_id = "' . $sectionid . '"
                         AND (e.status = "enroll" OR e.status = "enrolled")
                         AND (e.role = "teacher" OR e.role = "primary")';
@@ -1227,7 +1274,7 @@ class workdaystudent {
             $unenrolls = array();
             if (!empty($uenrs)) {
                 foreach ($uenrs as $uenr) {
-                    $sql = 'UPDATE {enrol_oes_enrollments} e
+                    $sql = 'UPDATE {enrol_oes_teacher_enrollments} e
                                 SET e.status = "unenroll",
                                     e.prevstatus = "' . $uenr->status . '",
                                     e.role = "' . $uenr->role . '",

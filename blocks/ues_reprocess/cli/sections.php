@@ -69,9 +69,10 @@ foreach ($sections as $section) {
     $sec = workdaystudent::insert_update_section($section);
 
     if (!isset($section->Instructor_Info)) {
-        mtrace("---WTF $section->Section_Listing_ID");
+        mtrace(" - No instructors in $section->Section_Listing_ID.");
         $enrollment = workdaystudent::insert_update_teacher_enrollment($section->Section_Listing_ID, $tid = null, $role = null, 'unenroll');
     } else if (count($section->Instructor_Info) > 1) {
+        mtrace(" - More than 1 instructor in $section->Section_Listing_ID.");
         foreach ($section->Instructor_Info as $teacher) {
             $secid = $section->Section_Listing_ID;
             $tid = $teacher->Instructor_ID;
@@ -81,13 +82,9 @@ foreach ($sections as $section) {
             if (!is_null($pmi)) {
                 $role = $tid == $pmi ? 'primary' : 'teacher';
                 $tid = $tid == $pmi ? $pmi : $tid;
-
-mtrace("Primary instructor $pmi found!");
-
+                mtrace("Primary instructor $pmi found!");
             } else {
-
-mtrace("More than one instructor in $secid and $tid is non-primary.");
-
+                mtrace("More than one instructor in $secid and $tid is non-primary.");
                 $role = 'teacher';
             }
 
@@ -95,7 +92,6 @@ mtrace("More than one instructor in $secid and $tid is non-primary.");
 
             $enrollment = workdaystudent::insert_update_teacher_enrollment($secid, $tid, $role, $status);
         }
-
     } else {
         $teacher = $section->Instructor_Info[0];
         $secid = $section->Section_Listing_ID;
@@ -106,13 +102,9 @@ mtrace("More than one instructor in $secid and $tid is non-primary.");
         if (!is_null($pmi)) {
             $role = $tid == $pmi ? 'primary' : 'teacher';
             $tid = $tid == $pmi ? $pmi : $tid;
-
-mtrace("Primary instructor $pmi found!");
-
+            mtrace("Primary instructor $pmi found!");
         } else {
-
-mtrace("Sole instructor in $secid and $tid is non-primary.");
-
+            mtrace("Sole instructor in $secid and $tid is non-primary.");
             $role = 'teacher';
         }
 
@@ -121,6 +113,7 @@ mtrace("Sole instructor in $secid and $tid is non-primary.");
         $enrollment = workdaystudent::insert_update_teacher_enrollment($secid, $tid, $role, $status);
     }
 }
+
 $processend = microtime(true);
 $processtime = round($processend - $processstart, 2);
 mtrace("Processing $numgrabbed sections took $processtime seconds.");
