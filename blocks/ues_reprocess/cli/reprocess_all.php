@@ -42,31 +42,131 @@ require_once('../lib.php');
 // Grab the credentials needed to fetch data from DAS.
 $creds = repall::get_creds();
 
-// Fetch the current sections to be reprocessed.
-$sections = repall::fetch_current_ues_sections('AAAS', false);
+// Log that we're beginning.
+mtrace("Fetching sections.");
+
+// Fetch the current departments to be reprocessed.
+$departments = repall::get_departments();
+
+// Build the array of sections we're going to populate.
+$sections = array();
+$courseshells = array();
+
+// Count the number of departments.
+$departmentcount = count($departments);
+
+// Log that we're starting.
+mtrace("Reprocessing $departmentcount departments.");
+
+// Loop through the departments and add sections to it.
+foreach($departments as $department) {
+    // Fetch the current sections to be reprocessed.
+//    $sections = array_merge($sections, repall::fetch_current_ues_sections($department->department, false));
+    $courseshells = array_merge($courseshells, repall::fetch_current_ues_courseshells($department->department, false));
+}
 
 // Count the number of sections.
 $sectioncount = count($sections);
+$shellcount = count($courseshells);
 
-// Log that we're beginning.
-mtrace("Starting to reprocess $sectioncount sections.");
+// Log that we're starting to process.
+mtrace("Starting to reprocess $sectioncount sections across $shellcount courses.");
 
 // Start the section counter.
 $sectioncounter = 0;
+$shellcounter = 0;
+
+// Build this array for future use.
+$shellenrollments = array();
 
 // Loop through the sections.
+foreach ($courseshells as $courseshell) {
+    // Increment the count.
+    $shellcounter++;
+
+    // Log that we're processing this section.
+    mtrace("  Starting to reprocess $courseshell->idnumber. Shell $shellcounter out of $shellcount.");
+
+    // Get start time.
+    $sectionstart = microtime(true);
+    $shellstart = microtime(true);
+
+    // Get sections for some stuff.
+    $coursesections = repall::fetch_current_ues_sections($courseshell->department, false, $courseshell);
+
+    // Build this array for future use.
+    $dasenrollments = array();
+
+    if (count($coursesections) > 1) {
+        foreach($coursesections as $coursesection) {
+            // Fetch enrollments for each section.
+            $dasenrollments = array_merge($dasenrollments, repall::fetch_das_section_enrollment($creds, $coursesection));
+
+            // Set everyone in that section to be unenrolled.
+            $tempunenrolled = repall::temp_unenroll_ues($coursesection);
+
+            // Repopulate the correct enrollment requests based on DAS data.
+            $populateues = repall::populate_ues($coursesection, $dasenrollments);
+        }
+    } else {
+        $coursesection = $coursesections;
+        // Fetch enrollments for each section.
+        $dasenrollments = repall::fetch_das_section_enrollment($creds, $coursesection);
+
+        // Set everyone in that section to be unenrolled.
+        $tempunenrolled = repall::temp_unenroll_ues($coursesection);
+
+        // Repopulate the correct enrollment requests based on DAS data.
+        $populateues = repall::populate_ues($coursesection, $dasenrollments);
+    }
+
+    // Get the enrollments for this shell.
+    $shellenrollments = array_merge($shellenrollments, repall::fetch_ues_shellstudents($courseshell->idnumber));
+
+    $section = $courseshell;
+
+    // Actually do the enrollments.
+    $enrollinshells = repall::ues_enrollment($section, $shellenrollments);
+
+    // Increment the section counter.
+    $sectioncounter++;
+    $shellcounter++;
+
+    // Get finish time.
+    $shellend = microtime(true);
+    $sectionend = microtime(true);
+
+    // Get the elapsed time.
+    $sectiontime = round($sectionend - $sectionstart, 2);
+    $shelltime = round($shellend - $shellstart, 2);
+
+    // Get the sections remaining count.
+    $sectionsremaining = $sectioncount - $sectioncounter;
+    $shellsremaining = ($shellcount + 1) - $shellcounter;
+
+    // Log it.
+    mtrace("  $section->idnumber took $sectiontime seconds to reprocess $enrollinshells->enrollcount enrollments and $enrollinshells->unenrollcount unenrollments. $shellsremaining left to reprocess.");
+}
+
+/*
 foreach ($sections as $section) {
+    // Log that we're processing this section.
+    mtrace("  Starting to reprocess $section->idnumber - $section->section.");
+
     // Get start time.
     $sectionstart = microtime(true);
 
     // Fetch enrollments for each section.
-    $enrollments = repall::fetch_ues_section_enrollment($creds, $section);
+    $dasenrollments = repall::fetch_das_section_enrollment($creds, $section);
 
     // Set everyone in that section to be unenrolled.
     $tempunenrolled = repall::temp_unenroll_ues($section);
 
     // Repopulate the correct enrollment requests based on DAS data.
-    $populateues = repall::populate_ues($section, $enrollments);
+    $populateues = repall::populate_ues($section, $dasenrollments);
+
+    // Fetch pending enrollments with enroll/unenroll statuses.
+    $enrollments = repall::fetch_ues_enrollments($section);
 
     // Actually do the enrollments.
     $enrollinsections = repall::ues_enrollment($section, $enrollments);
@@ -84,8 +184,9 @@ foreach ($sections as $section) {
     $sectionsremaining = $sectioncount - $sectioncounter;
 
     // Log it.
-    mtrace("  $section->idnumber took $sectiontime seconds to reprocess. $sectionsremaining left to reprocess.");
+    mtrace("  $section->idnumber - $section->section took $sectiontime seconds to reprocess $enrollinsections->enrollcount enrollments and $enrollinsections->unenrollcount unenrollments. $sectionsremaining left to reprocess.");
 }
+*/
 
 // Set the time end.
 $timeend = microtime(true);
@@ -94,10 +195,15 @@ $timeend = microtime(true);
 $totaltime = round($timeend - $timestart, 2);
 
 // Log it.
-mtrace("Total elapsed time is $totaltime seconds to reprocess $sectioncount sections.");
-
+mtrace("Total elapsed time is $totaltime seconds to reprocess $sectioncount sections across $departmentcount departments.");
 
 class repall {
+    public static function get_course_sections($courseshell) {
+        global $DB;
+
+        $table = 'enrol_ues_sections';
+    }
+
     public static function encode_semester($semesteryear, $semestername) {
         // Helper function for switch below.
         $partial = function ($year, $name) {
@@ -133,19 +239,37 @@ class repall {
         }
     }
 
+    public static function fetch_ues_enrollments($section) {
+        global $DB;
+
+        // Define the table.
+        $table = 'enrol_ues_students';
+
+        // Fetch the enrollments.
+        $enrollments = $DB->get_records($table, array('sectionid' => $section->sectionid));
+
+        // Sort these.
+        usort($enrollments, function($a, $b) {return strcmp($a->timestamp, $b->timestamp);});
+
+        return $enrollments;
+    }
+
     public static function ues_enrollment($section, $enrollments) {
         global $DB, $CFG;
+
+        $debug = $CFG->debugdisplay == 1 ? true : false;
 
         // Grab the required class.
         require_once("$CFG->dirroot/enrol/ues/lib.php");
 
         $studentrole = get_config('enrol_ues', 'student_role');
+
         // Grab the role id if one is present, otherwise use the Moodle default.
         $roleid = isset($studentrole) ? $studentrole : 5;
 
         // Set this up for getting the enroll instance.
         $etable = 'enrol';
-        $econditions = array('courseid' => $section->courseid, 'enrol' => 'ues');
+        $econditions = array('courseid' => $section->courseid, 'enrol' => 'ues', 'status' => 0);
 
         // Get the enroll instance.
         $einstance = $DB->get_record($etable, $econditions);
@@ -166,38 +290,68 @@ class repall {
         // Instantiate the enroller.
         $enroller = new enrol_ues_plugin();
 
-        // Determine if we're removing or suspending oa user on unenroll.
-        $unenroll = get_config('enrol_ues', 'suspend_enrollment');
+        $enrollcount = 0;
+        $unenrollcount = 0;
 
-        // If we're unenrolling a student.
-        if ($enrollstatus == 0) {
-            // If we're removing them from the course.
-            if ($unenroll == 1) {
+        foreach ($enrollments as $enrollment) {
+            $stu = $enrollment;
+
+            // See if this user is enrolled.
+//            $check = self::check_ues_enr($section, $stu->userid, $enrollend = null);
+
+            // Fetch the user object for verbose logging only.
+            if ($debug) {
+                $user = $DB->get_record('user', array('id' => $stu->userid), $fields = '*');
+            }
+
+            // Get the enrollment status.
+            $enrollstatus = $enrollment->status;
+ 
+            // If we're unenrolling a student.
+            if (isset($check->enrollid) && $enrollstatus == "unenroll") {
+
+                // Increment the unenroll counter.
+                $unenrollcount++;
+
                 // Do the nasty.
                 $enrolluser   = $enroller->unenrol_user(
-                                    $einstance,
-                                    $stu->userid);
-                mtrace("User $stu->userid unenrolled from course: $stu->course.");
-            // Or we're suspending them.
-            } else {
-                // Do the nasty.
-                $enrolluser   = $enroller->update_user_enrol(
-                                    $einstance,
-                                    $stu->userid, ENROL_USER_SUSPENDED);
-                mtrace("    User ID: $stu->userid suspended from course: $stu->course.");
+                                $einstance,
+                                $stu->userid);
+
+                // Log what we did.
+                if ($debug) {
+                    mtrace("    User $user->username unenrolled from course: $section->idnumber - $section->section.");
+                } else {
+                    mtrace("    User $stu->userid unenrolled from course: $section->idnumber - $section->section.");
+                }
+
+                // Set the status in the ues DB to unenrolled so we don't do this again.
+                $statusset = self::statuset($stu, 'unenrolled');
+
+            } else if (!isset($check->enrollid) && $enrollstatus == "unenroll") {
+                // Log what we did.
+                if ($debug) {
+                    mtrace("    User $user->username was already unenrolled from this section. Skipping.");
+                } else {
+                    mtrace("    User $stu->userid was already unenrolled from this section. Skipping.");
+                }
+
+                // Set the status in the ues DB to unenrolled so we don't do this again.
+                $statusset = self::statuset($stu, 'unenrolled');
             }
-        // If we're enrolling a student in the course.
-        } else if ($enrollstatus == "enroll") {
-            // Check to see if a user is enrolled via D1.
-            $check = self::check_d1_enr($stu->course, $stu->userid);
 
-            // Set the start date if it's there.
-            $enrollstart = isset($enrollstart) ? $enrollstart : 0;
+            // If we're enrolling a new student in the course.
+            if (!isset($check->enrollid) && $enrollstatus == "enroll") {
 
-            // Set their end date if it's there.
-            $enrollend = isset($enrollend) ? $enrollend : 0;
+                // Increment the enroll counter.
+                $enrollcount++;
 
-            if (!isset($check->enrollid)) {
+                // Set the start date if it's there.
+                $enrollstart = isset($enrollstart) ? $enrollstart : 0;
+
+                // Set their end date if it's there.
+                $enrollend = isset($enrollend) ? $enrollend : 0;
+
                 // Do the nasty.
                 $enrolluser = $enroller->enrol_user(
                               $einstance,
@@ -206,34 +360,89 @@ class repall {
                               $enrollstart,
                               $enrollend,
                               $status = ENROL_USER_ACTIVE);
-                mtrace("    User ID: $stu->userid enrolled into course: $stu->course.");
+
+                // Log what we did.
+                if ($debug) {
+                    mtrace("    User $user->username enrolled into course: $section->idnumber.");
+                } else {
+                    mtrace("    User $stu->userid enrolled into course: $section->idnumber.");
+                }
+
+                // Set the status in the ues DB to unenrolled so we don't do this again.
+                $statusset = self::statuset($stu, 'enrolled');
 
                 // Require check once.
                 if (!function_exists('grade_recover_history_grades')) {
                     global $CFG;
                     require_once($CFG->libdir . '/gradelib.php');
                 }
-                $grade = grade_recover_history_grades($userid, $courseid);
+
+                $grade = grade_recover_history_grades($stu->userid, $section->courseid);
                 if ($grade) {
-                    mtrace("      Grades recovered for userid: $userid in course: $courseid.");
+                    mtrace("      Grades recovered for user: $stu->userid in course: $section->courseid.");
                 }
-            } else if ($check->enrollend <> $enrollend) {
-                $enrolluser = $enroller->enrol_user(
-                              $einstance,
-                              $stu->userid,
-                              $roleid,
-                              $enrollstart,
-                              $enrollend,
-                              $status = ENROL_USER_ACTIVE);
-                mtrace("    User ID: $stu->userid enddate modified in course: $stu->course.");
-            } else {
-                mtrace("    Skipping user: $stu->userid already enrolled in course: $stu->course.");
+            } else if (isset($check->enrollid) && $enrollstatus == "enroll") {
+                // Log what we did.
+                if ($debug) {
+                    mtrace("    User $user->username was already enrolled into this section. Skipping.");
+                } else {
+                    mtrace("    User $stu->userid was already enrolled into this section. Skipping.");
+                }
+
+                // Set the status in the ues DB to unenrolled so we don't do this again.
+                $statusset = self::statuset($stu, 'enrolled');
             }
         }
+        $counter = new stdClass();
+        $counter->enrollcount = $enrollcount;
+        $counter->unenrollcount = $unenrollcount;
+
+        return $counter;
     }
 
-    public static function check_ues_enr($courseid, $userid, $enrollend = null) {
+    public static function get_departments() {
         global $DB;
+
+        // Build the SQL to only get current departments.
+        $sql = 'SELECT cou.department
+                FROM mdl_enrol_ues_courses cou
+                  INNER JOIN mdl_enrol_ues_sections sec ON sec.courseid = cou.id
+                  INNER JOIN mdl_enrol_ues_semesters sem ON sec.semesterid = sem.id
+                WHERE sec.idnumber IS NOT NULL
+                  AND sec.idnumber != ""
+                  AND sem.grades_due > UNIX_TIMESTAMP()
+                  AND sem.classes_start < UNIX_TIMESTAMP()
+                GROUP BY cou.department';
+
+        // Actually get the records.
+        $departments = $DB->get_records_sql($sql);
+
+        // Return the departments.
+        return $departments;
+    }
+
+    public static function statuset($stu, $status) {
+        global $DB;
+
+        // Set the status as required.
+        $stu->status = $status;
+
+        // Set teh table.
+        $table = 'enrol_ues_students';
+
+        // Update the record.
+        $statuset = $DB->update_record($table, $stu);
+
+        // Return the status.
+        return $statuset; 
+    }
+
+    public static function check_ues_enr($section, $userid, $enrollend = null) {
+        global $DB;
+
+        $groupname = $section->department . " " . $section->coursenumber . " " . $section->section;
+
+        $courseid = $section->courseid;
 
         if (is_null($enrollend)) {
             $where = "";
@@ -244,9 +453,11 @@ class repall {
         $sql = 'SELECT ue.id AS enrollid,
                        ue.timeend AS enrollend
                 FROM mdl_course c
-                    INNER JOIN mdl_enrol e ON e.courseid = c.id
-                    INNER JOIN mdl_user_enrolments ue ON ue.enrolid = e.id
-                WHERE e.enrol = "d1"
+                    INNER JOIN mdl_groups g ON c.id = g.courseid
+                    INNER JOIN mdl_enrol e ON c.id = e.courseid
+                    INNER JOIN mdl_user_enrolments ue ON e.id = ue.enrolid
+                WHERE e.enrol = "ues"
+                    AND g.name = "' . $groupname . '"
                     AND ue.status = 0
                     AND c.id = ' . $courseid . '
                     ' . $where . '
@@ -256,8 +467,7 @@ class repall {
         return $d1enrolled;
     }
 
-
-    public static function fetch_current_ues_sections($department, $enrolled = false) {
+    public static function fetch_current_ues_courseshells($department, $enrolled = false) {
         global $DB;
 
         // Set this up fro inclusion in SQL.
@@ -266,9 +476,59 @@ class repall {
                        : '';
 
         // Build the SQL.
+
         $sql = 'SELECT c.id AS courseid,
                     c.idnumber AS idnumber,
-                    sec.id AS sectionid,
+                    sem.campus AS campus,
+                    sem.year AS semesteryear,
+                    sem.name AS semestername,
+                    cou.department AS department,
+                    sem.session_key AS session,
+                    cou.cou_number AS coursenumber
+                FROM {enrol_ues_semesters} sem
+                    INNER JOIN {enrol_ues_sections} sec ON sec.semesterid = sem.id
+                    INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+                    INNER JOIN {course} c ON c.idnumber = sec.idnumber
+                    INNER JOIN {course_categories} cc ON cc.id = c.category AND cc.name = cou.department
+                    ' . $enrolledsql . '
+                WHERE sec.idnumber IS NOT NULL
+                    AND sec.idnumber != ""
+                    AND c.idnumber IS NOT NULL
+                    AND c.idnumber != ""
+                    AND sem.grades_due > UNIX_TIMESTAMP()
+                    AND sem.classes_start < UNIX_TIMESTAMP()
+                    AND cou.department = "' . $department . '"
+                GROUP BY sem.id,
+                    cou.department,
+                    cou.cou_number,
+                    c.id
+                ORDER BY cc.name ASC,
+                    cou.department ASC,
+                    cou.cou_number ASC';
+
+        $courseshells = $DB->get_records_sql($sql);
+
+        return $courseshells;
+    }
+
+    public static function fetch_current_ues_sections($department, $enrolled = false, $courseshell = null) {
+        global $DB;
+
+        if (isset($courseshell->idnumber)) {
+            $shell = ' AND sec.idnumber = "' . $courseshell->idnumber . '" ';
+        } else {
+            $shell = '';
+        }
+
+        // Set this up fro inclusion in SQL.
+        $enrolledsql = $enrolled
+                       ? 'INNER JOIN {enrol_ues_students} stu ON stu.sectionid = sec.id'
+                       : '';
+
+        // Build the SQL.
+        $sql = 'SELECT sec.id AS sectionid,
+                    c.id AS courseid,
+                    sec.idnumber AS idnumber,
                     sem.campus AS campus,
                     cou.department AS department,
                     cou.cou_number AS coursenumber,
@@ -289,6 +549,7 @@ class repall {
                     AND sem.grades_due > UNIX_TIMESTAMP()
                     AND sem.classes_start < UNIX_TIMESTAMP()
                     AND cou.department = "' . $department . '"
+                    ' . $shell . '
                 GROUP BY sem.id,
                     cou.department,
                     cou.cou_number,
@@ -322,6 +583,8 @@ class repall {
         $userobj->middlename = $middlename;
         $userobj->email = $uesuser->username;
         $userobj->idnumber = $uesuser->lsuid;
+        $userobj->deleted = 0;
+        $userobj->mnethostid = 1;
 
         // Update the user record in the database
         $DB->update_record('user', $userobj);
@@ -329,20 +592,27 @@ class repall {
         return $userobj;
     }
 
-    public static function populate_ues($section, $enrollments) {
-        global $DB;
+    public static function populate_ues($section, $dasenrollments) {
+        global $CFG, $DB;
+
+        $debug = $CFG->debugdisplay == 1 ? true : false;
 
         // Loop through our enrollments.
-        foreach ($enrollments as $enrollment) {
+        foreach ($dasenrollments as $dasenrollment) {
             $uesuser = new stdClass();
-            $uesuser->lsuid = (int) $enrollment->LSU_ID;
-            $uesuser->username = (string) $enrollment->PRIMARY_ACCESS_ID;
-            $uesuser->fullname = (string) $enrollment->INDIV_NAME;
+            $uesuser->lsuid = (int) $dasenrollment->LSU_ID;
+            $uesuser->username = (string) $dasenrollment->PRIMARY_ACCESS_ID;
+            $uesuser->fullname = (string) $dasenrollment->INDIV_NAME;
+
+            if ($debug) {
+                mtrace("Fetching mdl_user record for $uesuser->username - $uesuser->lsuid.");
+            }
 
             // First thing we do is fetch the user.
             $user = $DB->get_record('user',
                   array(
                         'deleted' => 0,
+                        'mnethostid' => 1,
                         'idnumber' => $uesuser->lsuid,
                         'username' => $uesuser->username
                        ),
@@ -356,28 +626,33 @@ class repall {
 
             // Fetch the student object.
             $student = self::fetch_ues_student($section->sectionid, $user->id);
+
             if (!isset($student->id)) {
                 // Create the student object.
-                $student = self::insert_ues_student($enrollment, $section, $user);
+                $student = self::insert_ues_student($dasenrollment, $section, $user);
             }
 
             // Update the students present in the XML to enroll. 
-            $updated = self::update_ues_students($section->sectionid, $user->id, $student->id, 'enroll');
+            $updated = self::update_ues_student($section->sectionid, $user->id, $student->id, 'enroll');
         }
     }
 
-    public static function insert_ues_student($enrollment, $section, $user) {
+    public static function insert_ues_student($dasenrollment, $section, $user) {
         global $DB;
 
         // Define the table.
         $table = 'enrol_ues_students';
 
+        // Build a timestamp for millionths of a second from epoch.
+        $timestamp = (int) floor(microtime(true) * 1000000);
+
         // Build the student object for insertion.
         $studobj = new stdClass();
         $studobj->userid = (int) $user->id;
         $studobj->sectionid = (int) $section->sectionid;
-        $studobj->credit_hours = (float) $enrollment->CREDIT_HRS;
+        $studobj->credit_hours = (float) $dasenrollment->CREDIT_HRS;
         $studobj->status = 'enroll';
+        $studobj->timestamp = $timestamp;
 
         // Insert the record.
         $studentid = $DB->insert_record($table, $studobj, $returnid = true, $buld = false);
@@ -392,6 +667,25 @@ class repall {
         // Return the student object.
         return $student;
     }
+
+    public static function fetch_ues_shellstudents($idnumber) {
+        global $DB;
+
+        $sql = 'SELECT stu.*
+                  FROM {enrol_ues_sections} sec
+                  INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+                  INNER JOIN {enrol_ues_students} stu ON sec.id = stu.sectionid
+                  WHERE sec.idnumber = "' . $idnumber . '"
+                  AND sec.idnumber IS NOT NULL
+                  AND sec.idnumber != ""
+                  ORDER BY stu.timestamp ASC';
+
+        // Grab the student object.
+        $enrollments = $DB->get_records_sql($sql);
+
+        return $enrollments;
+    }
+
 
     public static function fetch_ues_student($sectionid, $userid) {
         global $DB;
@@ -411,12 +705,15 @@ class repall {
         return $student;
     }
 
-    public static function update_ues_students($sectionid, $userid, $studentid, $status) {
-         global $DB;
+    public static function update_ues_student($sectionid, $userid, $studentid, $status) {
+        global $DB;
+
+        $timestamp = (int) floor(microtime(true) * 1000000);
 
         // Build the SQL to set everyone to their appropriate status.
         $sql = 'UPDATE {enrol_ues_students}
-                  SET status = "' . $status . '"
+                  SET status = "' . $status . '",
+                  timestamp = ' . $timestamp . '
                   WHERE id = ' . $studentid . '
                   AND sectionid = ' . $sectionid . '
                   AND userid = ' . $userid;
@@ -430,9 +727,9 @@ class repall {
 
     }
 
-    public static function fetch_ues_section_enrollment($creds, $section) {
+    public static function fetch_das_section_enrollment($creds, $section) {
         // Get the campus.
-        $lsuorlaw = $section->campus == 'LSU' ? '01' : '08';
+        $lsuorlaw = $section->campus == 'LSU' || $section->campus == 'ONLINE' ? '01' : '08';
 
         // Get the serviceID.
         $serviceid = get_config('local_azure', 'student_source');
@@ -483,10 +780,12 @@ class repall {
         curl_close($curl);
 
         // Decode the response.
-        $enrollments = simplexml_load_string($xml_response);
+        $xmlelements = simplexml_load_string($xml_response);
+        $jsonelements = json_encode($xmlelements);
+        $dasenrollments = json_decode($jsonelements)->ROW;
 
         // Return the decoded data.
-        return $enrollments;
+        return $dasenrollments;
     }
 
     public static function temp_unenroll_ues($section) {
@@ -543,9 +842,7 @@ class repall {
  * LSU UES enrollment plugin.
  *
  */
-
 class enrol_ues extends enrol_plugin {
-
     /**
      * Add new instance of enrol plugin.
      * @param object $course
