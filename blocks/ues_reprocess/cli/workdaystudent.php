@@ -43,8 +43,8 @@ class workdaystudent {
 
         // TODO: Remove me.
         if (!isset($s->campus)) {
-            $s->username = '';
-            $s->password = '';
+            $s->username = 'LSUOnline_MoodleTeam_ISU';
+            $s->password = 'V}!L8jhFqe8.aKChd7FHf';
             $s->wsurl = 'https://wd2-impl-services1.workday.com/ccx/service/customreport2/lsu1/ITS_INT_RPT_ISU';
             $s->units = 'Raas-LSU1103-INTS0052E-LSUAM-Moodle-Academic-Units';
             $s->periods = 'RaaS-LSU1104-INTS0052F-LSUAM-Moodle-Academic-Periods';
@@ -402,6 +402,25 @@ class workdaystudent {
         }
     }
 
+    public static function get_prevdays_date($xdays) {
+        // Build the date.
+        $date = new DateTime();
+
+        // Set the timezone.
+        $date->setTimezone(new DateTimeZone('America/Chicago'));
+
+        // Modify the date.
+        $date->modify('-' . $xdays . ' days');
+
+        // Set the time to midnight.
+        $date->setTime(0, 0);
+
+        // Set the fdate variable for use.
+        $fdate = $date->format('Y-m-d\TH:i:s');
+
+        return $fdate;
+    }
+
     public static function insert_course($course) {
         global $DB;
 
@@ -427,6 +446,184 @@ class workdaystudent {
 
         return $ac;
     }
+
+    public static function insert_update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings) {
+        // Enrollment is missing universal ID. Log and move on.
+        if (!isset($enrollment->Universal_Id)) {
+            $fullname = isset($enrollment->Full_Legal_Name) ? $enrollment->Full_Legal_Name : 'someone';
+            $email = isset($enrollment->LSUAM_Institutional_Email) ? $enrollment->LSUAM_Institutional_Email : $fullname;
+            mtrace("$enrollment->Section_Listing_ID missing universal ID for $email.");
+            // var_dump($enrollment);
+            return false;
+        }
+
+        // Check to see if the enrollment record exists.
+        $as = self::check_student_enrollment($enrollment);
+
+        // It exists and does not match registration status, update it.
+        if (isset($as->id) && $as->registration_status != $enrollment->Registration_Status) {
+            self::dtrace("Found interstitial enrollment record that requires an update with id: $as->id.");
+            $as = self::update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings, $as);
+
+        // It does not exist, create it.
+        } else if (!isset($as->id)) {
+            $as = self::insert_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings);
+            self::dtrace("No enrollment record for: $enrollment->Universal_Id in $enrollment->Section_Listing_ID. Created it with id $as.");
+
+        // It exists and matches, log it.
+        } else {
+            self::dtrace("Found interstitial enrollment record with id: $as->id. No update required.");
+        }
+
+        return $as;
+    }
+
+    public static function dateconv($datestr) {
+        // Build the string into a date.
+        $date = new DateTime($datestr);
+
+        // Convert the date into a timestamp.
+        $timestamp = $date->getTimestamp();
+
+        // Return it.
+        return (string) $timestamp;
+    }
+
+    public static function update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings, $as) {
+        global $DB;
+
+        // Figure out some dates in unix_timestamps.
+        $wdate = isset($enrollment->Withdraw_Date)
+                    ? self::dateconv($enrollment->Withdraw_Date)
+                    : 0;
+        $dropdate = isset($enrollment->Drop_Date) 
+                    ? self::dateconv($enrollment->Drop_Date)
+                    : $wdate;
+        $lastupdate = isset($enrollment->Last_Functionally_Updated)
+                      ? self::dateconv($enrollment->Last_Functionally_Updated)
+                      : 0;
+
+        // Build the cloned object.
+        $as2 = clone($as);
+
+        // Keep the id, section_listing_id, and $universal_id from $as and populate the rest from aenrollment.
+        $as2->credit_hrs = $enrollment->Units;
+        $as2->grading_scheme = $enrollment->Student_Grading_Scheme_ID;
+        $as2->registration_status = $enrollment->Registration_Status;
+        $as2->drop_date = $dropdate;
+        $as2->lastupdate = $lastupdate;
+
+        // Status gets complicated and is based on Registration Status.
+        if (in_array($enrollment->Registration_Status, $unenrolls) && $as->status != 'unenrolled') {
+            $as2->status = 'unenroll';
+
+        } else if (in_array($enrollment->Registration_Status, $unenrolls) && $as->status == 'unenrolled') {
+            $as2->status = 'unenrolled';
+
+        } else if (in_array($enrollment->Registration_Status, $enrolls) && $as->status != 'enrolled') {
+            $as2->status = 'enroll';
+
+        } else if (in_array($enrollment->Registration_Status, $enrolls) && $as->status == 'enrolled') {
+            $as2->status = 'enrolled';
+
+        } else {
+            $as2->status = $enrollment->Registration_Status;
+        }
+
+        $as2->prevstatus = $as->status;
+
+        // Compare the objects.
+        if ($as == $as2) {
+            return $as;
+        } else {
+            // Set the table.
+            $table = 'enrol_oes_student_enrollments';
+
+            if ($as2->lastupdate > $as->lastupdate) {
+                // Update the record.
+                $success = $DB->update_record($table, $as2, true);
+            } else {
+                self::dtrace("Enrollment record for $as->section_listing_id - $as->universal_id is older than the existing record, skipping.");
+            }
+
+            if (isset($success) && $success == true) {
+                self::dtrace("Enrollment for $as2->universal_id in $as2->section_listing_id has been updated to: $as2->registration_status from the endpoint.");
+
+                // Return the updated object.
+                return $as2;
+            } else if (isset($success) && $success == false) {
+                self::dtrace("Enrollment for $as2->universal_id in $as2->section_listing_id failed updating status to: $as2->registration_status from the endpoint.");
+
+                // Return the original object.
+                return $as;
+            } else {
+                return $as;
+            }
+        }
+    }
+
+
+
+    public static function check_student_enrollment($enrollment) {
+        global $DB;
+
+        // Set the table.
+        $table = 'enrol_oes_student_enrollments';
+
+        // Set the parameters.
+        $parms = array('section_listing_id' => $enrollment->Section_Listing_ID, 'universal_id' => $enrollment->Universal_Id);
+
+        // Get the enrollment record.
+        $as = $DB->get_record($table, $parms);
+
+        return $as;
+    }
+
+    public static function insert_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings) {
+        global $DB;
+
+        // Figure out some dates in unix_timestamps.
+        $dropdate = isset($enrollment->Drop_Date)
+                    ? self::dateconv($enrollment->Drop_Date)
+                    : 0;
+        $lastupdate = isset($enrollment->Last_Functionally_Updated)
+                      ? self::dateconv($enrollment->Last_Functionally_Updated)
+                      : 0;
+
+        // Set the table.
+        $table = 'enrol_oes_student_enrollments';
+
+        // Create the object.
+        $tas = new stdClass();
+
+        // Build the object from $enrollment.
+        $tas->section_listing_id = $enrollment->Section_Listing_ID;
+        $tas->universal_id = $enrollment->Universal_Id;
+        $tas->credit_hrs = $enrollment->Units;
+        $tas->grading_scheme = $enrollment->Student_Grading_Scheme_ID;
+        $tas->registration_status = $enrollment->Registration_Status;
+        $tas->drop_date = $dropdate;
+        $tas->lastupdate = $lastupdate;
+
+        // Status gets complicated and is based on Registration Status.
+        if (in_array($enrollment->Registration_Status, $unenrolls)) {
+            $tas->status = 'unenrolled';
+        } else if (in_array($enrollment->Registration_Status, $enrolls)) {
+            $tas->status = 'enroll';
+        } else {
+            $tas->status = $enrollment->Registration_Status;
+        }
+
+        // This is the first status and should be null.
+        $tas->prevstatus = null;
+
+        // Insert the record.
+        $as = $DB->insert_record($table, $tas);
+
+        return $as;
+    }
+
+
 
     public static function insert_update_course($s, $course) {
         $ac = self::check_course($course);
@@ -527,6 +724,32 @@ class workdaystudent {
         return $au;
     }
 
+    public static function get_current_departments($s) {
+        global $DB;
+
+        $sql = 'SELECT c.course_subject_abbreviation, p.academic_period_id 
+            FROM mdl_enrol_oes_periods p
+                INNER JOIN mdl_enrol_oes_sections s ON p.academic_period_id = s.academic_period_id
+                INNER JOIN mdl_enrol_oes_courses c ON s.course_definition_id = c.course_definition_id
+            WHERE p.start_date < UNIX_TIMESTAMP(NOW())
+                AND p.end_date > UNIX_TIMESTAMP(NOW())
+                AND p.enabled = 1
+                GROUP BY c.course_subject_abbreviation';
+
+        // Get the data using the sql above.
+        $departments = $DB->get_records_sql($sql);
+
+/*
+        // Extract the course subject abbreviations.
+        $abbreviations = array_map(function($department) {
+            return $department->course_subject_abbreviation;
+        }, $departments);
+
+        return $abbreviations;
+*/
+        return $departments;
+    }
+
     public static function get_current_sections($s) {
         global $DB;
 
@@ -541,7 +764,7 @@ class workdaystudent {
         return $sections;
     }
 
-    public static function get_section_enrollments($s, $sectionordept, $fdate = null) {
+    public static function get_sectionordept_enrollments($s, $sectionordept, $fdate = null) {
         // Set the endpoint.
         $endpoint = 'registrations';
 

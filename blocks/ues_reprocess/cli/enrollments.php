@@ -32,34 +32,93 @@ require_once('workdaystudent.php');
 $s = workdaystudent::get_settings();
 
 // Get the sections.
-$sections = workdaystudent::get_current_sections($s);
+// $sections = workdaystudent::get_current_sections($s);
 
-$numgrabbed = count($sections);
-mtrace("Fetched $numgrabbed sections.");
+// Get the departments.
+$departments = workdaystudent::get_current_departments($s);
+
+$numgrabbed = count($departments);
+// $numgrabbed = count($sections);
+
+// mtrace("Fetched $numgrabbed sections.");
+mtrace("Fetched $numgrabbed departments.");
+
+        // Build the unenroll array.
+        $unenrolls = array();
+        $unenrolls[] = 'Dropped';
+        $unenrolls[] = 'Enrollment Cancelled';
+        $unenrolls[] = 'Enrollment Rescinded';
+        $unenrolls[] = 'Not Approved';
+        $unenrolls[] = 'Unregistered';
+        $unenrolls[] = 'Withdrawn';
+
+        // Build the enroll array.
+        $enrolls = array();
+        $enrolls[] = 'Enrolled';
+        $enrolls[] = 'Registered';
+
+        // Build the do nothing array.
+        $donothings = array();
+        $donothings[] = 'Auto Drop from Waitlist on Enroll';
+        $donothings[] = 'Completed';
+        $donothings[] = 'Enrolled - Pending Approval';
+        $donothings[] = 'Enrolled - Pending Prerequisites';
+        $donothings[] = 'Promoted';
+        $donothings[] = 'Waitlist - Closed';
+        $donothings[] = 'Waitlisted';
+        $donothings[] = 'Waitlisted - Pending Approval';
 
 // Get the formatted date to grab enrollments for X days prior.
 $xdays = 30;
-// Build the date.
-$date = new DateTime();
-// Set the timezone.
-$date->setTimezone(new DateTimeZone('America/Chicago'));
-// Modify the date.
-$date->modify('-' . $xdays . ' days');
-// Set the time to midnight.
-$date->setTime(0, 0);
-// Set the fdate varuiable for use.
-$fdate = $date->format('Y-m-d\TH:i:s');
+$fdate = workdaystudent::get_prevdays_date($xdays);
+$fdate = null;
 
 // Set up some timing.
 $processstart = microtime(true);
 
+foreach ($departments as $department) {
+    // Log that we're starting.
+    mtrace("\nProcessing enrollments for $department->course_subject_abbreviation.");
+
+    // Set some times.
+    $departmentstart = microtime(true);
+    $enrollmentstart = $departmentstart;
+
+    // Fetch the actual enrollments for the department.
+    $enrollments = workdaystudent::get_sectionordept_enrollments($s, $department, $fdate);
+
+    // Set some times.
+    $enrollmentend = microtime(true);
+    $enrollmentelapsed = round($enrollmentend - $enrollmentstart, 2);
+
+    // Count the number of enrollments.
+    $enrollmentcount = count($enrollments);
+
+    // Log how long it took to fetch enrollments.
+    mtrace("The webservice took $enrollmentelapsed secdonds to fetch $enrollmentcount enrollments.");
+
+    // Loop through the enrollments.
+    foreach ($enrollments as $enrollment) {
+        // Process the enrollment in question.
+        $as = workdaystudent::insert_update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings);
+    }
+
+    // Set some times.
+    $departmentend = microtime(true);
+    $departmentelapsed = round($departmentend - $departmentstart, 2);
+
+    // Log how long it took to process the department and how many enrollments were processed.
+    mtrace("$department->course_subject_abbreviation took $departmentelapsed seconds to process $enrollmentcount enrollments.");
+}
+
+/*
 foreach ($sections as $section) {
-    if ($section->section_listing_id == "LSUAM_Listing_CHEM1201_002-LEC-SP_LSUAM_SPRING_2024") {
-        $enrollments = workdaystudent::get_section_enrollments($s, $section, $fdate);
-        var_dump($enrollments);
-        die();
+    $enrollments = workdaystudent::get_sectionordept_enrollments($s, $section, $fdate);
+    foreach ($enrollments as $enrollment) {
+        $as = workdaystudent::insert_update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings);
     }
 }
+*/
 
 $processend = microtime(true);
 $processtime = round($processend - $processstart, 2);
