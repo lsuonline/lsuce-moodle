@@ -15,18 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package   block_ues_reprocess
- * @copyright 2019 Louisiana State University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ * @package    block_ues_reprocess
+ * @copyright  2014 Louisiana State University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_ues_reprocess';
-$plugin->version = 2019102901;
-$plugin->requires = 2015111600;
-$plugin->release = 'v3.0.0';
-
-$plugin->dependencies = array(
-    'enrol_ues' => 2016040800,
+$tasks = array(
+    array(
+        'classname' => 'block_ues_reprocess\task\reprocess_all',
+        'blocking'  => 0,
+        'minute'    => '*',
+        'hour'      => '*',
+        'day'       => '*',
+        'dayofweek' => '*',
+        'month'     => '*'
+    ),
 );
