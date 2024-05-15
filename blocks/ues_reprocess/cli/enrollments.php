@@ -76,6 +76,9 @@ $fdate = null;
 // Set up some timing.
 $processstart = microtime(true);
 
+// Purge MUC caches JIC.
+purge_caches(array('muc' => true));
+
 foreach ($departments as $department) {
     // Log that we're starting.
     mtrace("\nProcessing enrollments for $department->course_subject_abbreviation.");
@@ -110,15 +113,6 @@ foreach ($departments as $department) {
     // Log how long it took to process the department and how many enrollments were processed.
     mtrace("$department->course_subject_abbreviation took $departmentelapsed seconds to process $enrollmentcount enrollments.");
 }
-
-/*
-foreach ($sections as $section) {
-    $enrollments = workdaystudent::get_sectionordept_enrollments($s, $section, $fdate);
-    foreach ($enrollments as $enrollment) {
-        $as = workdaystudent::insert_update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings);
-    }
-}
-*/
 
 $processend = microtime(true);
 $processtime = round($processend - $processstart, 2);

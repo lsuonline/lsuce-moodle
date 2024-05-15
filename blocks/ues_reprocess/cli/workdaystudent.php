@@ -20,8 +20,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-//defined('MOODLE_INTERNAL') || die();
-
 /**
  *
  */
@@ -44,7 +42,7 @@ class workdaystudent {
         // TODO: Remove me.
         if (!isset($s->campus)) {
             $s->username = 'LSUOnline_MoodleTeam_ISU';
-            $s->password = 'V}!L8jhFqe8.aKChd7FHf';
+            $s->password = '7gu9ZdE8AkSt4^H5iy*';
             $s->wsurl = 'https://wd2-impl-services1.workday.com/ccx/service/customreport2/lsu1/ITS_INT_RPT_ISU';
             $s->units = 'Raas-LSU1103-INTS0052E-LSUAM-Moodle-Academic-Units';
             $s->periods = 'RaaS-LSU1104-INTS0052F-LSUAM-Moodle-Academic-Periods';
@@ -52,6 +50,7 @@ class workdaystudent {
             $s->sections = 'RaaS-LSU1102-INTS0052D-LSUAM-Moodle-Course-Sections';
             $s->students = 'RaaS-LSU1099-INTS0052A-LSUAM-Moodle-Student-Demographic';
             $s->registrations = 'RaaS-LSU1105-INTS0052G-LSUAM-Moodle-Student-Registrations';
+            $s->grading_schemes = 'RaaS-LSU1102-INTS0052J-LSUAM-Moodle-Student_Grading_Schemes';
             $s->campus = 'AU00000079';
             $s->campusname = 'LSUAM';
             $s->metafields = 'Academic_Level, Academic_Unit_ID, Program_of_Study_Code, Classification, Degree_Candidacy, Buckley_Hold';
@@ -450,18 +449,24 @@ class workdaystudent {
     public static function insert_update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings) {
         // Enrollment is missing universal ID. Log and move on.
         if (!isset($enrollment->Universal_Id)) {
-            $fullname = isset($enrollment->Full_Legal_Name) ? $enrollment->Full_Legal_Name : 'someone';
+            $fullname = isset($enrollment->Full_Legal_Name) ? $enrollment->Full_Legal_Name : 'Someone';
             $email = isset($enrollment->LSUAM_Institutional_Email) ? $enrollment->LSUAM_Institutional_Email : $fullname;
             mtrace("$enrollment->Section_Listing_ID missing universal ID for $email.");
-            // var_dump($enrollment);
             return false;
         }
 
         // Check to see if the enrollment record exists.
         $as = self::check_student_enrollment($enrollment);
 
+        $grading_basis = isset($enrollment->Grading_Basis) ? $enrollment->Grading_Basis : 'Graded';
+
         // It exists and does not match registration status, update it.
-        if (isset($as->id) && $as->registration_status != $enrollment->Registration_Status) {
+        if (isset($as->id) && (
+            $as->grading_scheme != $enrollment->Student_Grading_Scheme_ID ||
+            $as->grading_basis != $grading_basis ||
+            $as->credit_hrs != $enrollment->Units ||
+            $as->registration_status != $enrollment->Registration_Status
+        )) {
             self::dtrace("Found interstitial enrollment record that requires an update with id: $as->id.");
             $as = self::update_student_enrollment($enrollment, $unenrolls, $enrolls, $donothings, $as);
 
@@ -506,9 +511,14 @@ class workdaystudent {
         // Build the cloned object.
         $as2 = clone($as);
 
+        if (!isset($enrollment->Grading_Basis)) {
+            mtrace("Grading basis not set for course: $enrollment->Section_Listing_ID and student: $enrollment->Universal_id.");
+        }
+
         // Keep the id, section_listing_id, and $universal_id from $as and populate the rest from aenrollment.
         $as2->credit_hrs = $enrollment->Units;
         $as2->grading_scheme = $enrollment->Student_Grading_Scheme_ID;
+        $as2->grading_basis = isset($enrollment->Grading_Basis) ? $enrollment->Grading_Basis : 'Graded';
         $as2->registration_status = $enrollment->Registration_Status;
         $as2->drop_date = $dropdate;
         $as2->lastupdate = $lastupdate;
@@ -539,7 +549,7 @@ class workdaystudent {
             // Set the table.
             $table = 'enrol_oes_student_enrollments';
 
-            if ($as2->lastupdate > $as->lastupdate) {
+            if ($as2->lastupdate >= $as->lastupdate) {
                 // Update the record.
                 $success = $DB->update_record($table, $as2, true);
             } else {
@@ -547,7 +557,7 @@ class workdaystudent {
             }
 
             if (isset($success) && $success == true) {
-                self::dtrace("Enrollment for $as2->universal_id in $as2->section_listing_id has been updated to: $as2->registration_status from the endpoint.");
+                self::dtrace("Enrollment for $as2->universal_id in $as2->section_listing_id has been updated from the endpoint.");
 
                 // Return the updated object.
                 return $as2;
@@ -601,6 +611,7 @@ class workdaystudent {
         $tas->universal_id = $enrollment->Universal_Id;
         $tas->credit_hrs = $enrollment->Units;
         $tas->grading_scheme = $enrollment->Student_Grading_Scheme_ID;
+        $tas->grading_basis = isset($enrollment->Grading_Basis) ? $enrollment->Grading_Basis : 'Graded';
         $tas->registration_status = $enrollment->Registration_Status;
         $tas->drop_date = $dropdate;
         $tas->lastupdate = $lastupdate;
@@ -777,24 +788,131 @@ class workdaystudent {
         }
 
         if (isset($sectionordept->course_section_definition_id)) {
-            $section = $sectionordept;
-            $parms['Course_Section_Definition_ID'] = $section->course_section_definition_id;
-            $parms['Academic_Period!Academic_Period_ID'] = $section->academic_period_id;
+            $parms['Course_Section_Definition_ID'] = $sectionordept->course_section_definition_id;
+            $parms['Academic_Period!Academic_Period_ID'] = $sectionordept->academic_period_id;
+        } else if (isset($sectionordept->course_subject_abbreviation)) {
+            $parms['Subject_Code'] = $sectionordept->course_subject_abbreviation;
+            $parms['Academic_Period!Academic_Period_ID'] = $sectionordept->academic_period_id;
         } else {
-            $course = $sectionordept;
-            $parms['Subject_Code'] = $course->course_subject_abbreviation;
-            $parms['Academic_Period!Academic_Period_ID'] = $course->academic_period_id;
+            $parms['Academic_Period!Academic_Period_ID'] = $sectionordept->academic_period_id;
         }
 
+        $parms['format'] = 'json';
+
+        // Build out the settins based on settings, endpoint, and parms.
+        $sep = self::buildout_settings($s, $endpoint, $parms);
+
+        // Get the sections.
+        $enrollments = self::get_data($sep);
+
+        return $enrollments;
+    }
+
+    public static function get_grading_schemes($s) {
+        // Set the endpoint.
+        $endpoint = 'grading_schemes';
+
+        // Set some more parms up.
+        $parms['Institution!Academic_Unit_ID'] = $s->campus;
         $parms['format'] = 'json';
 
         // Build out the settins based on settings, endpoint, and parms.
         $s = self::buildout_settings($s, $endpoint, $parms);
 
         // Get the sections.
-        $enrollments = self::get_data($s);
+        $gradingschemes = self::get_data($s);
 
-        return $enrollments;
+        return $gradingschemes;
+    }
+
+    public static function clear_insert_grading_schemes($gradingschemes) {
+        global $DB;
+
+        // Build some sql to truncate the table.
+        $sql = 'TRUNCATE {enrol_oes_grade_schemes}';
+        mtrace("  Truncating enrol_oes_grade_schemes.");
+
+        // Actually do it and store if we're successful or not.
+        $success = $DB->execute($sql);
+
+        // Build the $gs array for future use.
+        $gs = array();
+
+        // If we successfully truncated, insert data.
+        if ($success) {
+            mtrace("  Successfully truncated enrol_oes_grade_schemes.");
+
+            // Get the grading schemas.
+            foreach ($gradingschemes as $gradingschema) {
+                // Get the grading schemes from each Grades_group.
+                foreach ($gradingschema->Grades_group as $gradingscheme) {
+                    // Add the grading scheme id into the child array.
+                    $gradingscheme->Student_Grading_Scheme_ID = $gradingschema->Student_Grading_Scheme_ID;
+                    // Insert each grading scheme and add it to the $gs array.
+                    $gs = array_merge($gs, self::insert_grading_scheme($gradingscheme));
+                }
+            }
+
+        } else {
+            mtrace("  Failed to truncate enrol_oes_grade_schemes.");
+            return $success;
+        }
+
+        return $gs;
+    }
+
+    public static function insert_grading_scheme($gradingscheme) {
+        global $DB;
+
+        // Set the table.
+        $table = 'enrol_oes_grade_schemes';
+
+// TODO: Do we really need to explode and do this crap?
+
+        // Set the singular data object.
+        $dataobj = array(
+            'grading_scheme_id' => $gradingscheme->Student_Grading_Scheme_ID,
+            'grade_id' => $gradingscheme->Student_Grade_ID,
+            'grade_display' => $gradingscheme->Student_Grade_Display,
+            'requires_last_attendance' => $gradingscheme->Requires_Last_Attendance,
+            'grade_note_required' => $gradingscheme->Grade_Note_Required
+        );
+
+        $gs = array();
+        $gsa = array();
+
+        // We do not have multiple grading basis, insert the singular item.
+        if (!strpos($gradingscheme->Grading_Basis, ';')) {
+            $dataobj['grading_basis'] = $gradingscheme->Grading_Basis;
+
+            // Insert the data.
+            $gsid = $DB->insert_record($table, $dataobj, true);
+
+            // We may not need to fetch/send this. Revisit.
+            $gs[] = $DB->get_record($table, array('id' => $gsid));
+
+        // We have multiple grading basis', go nuts.
+        } else {
+
+            // Get the multiple gradeing basis' from the ; separated list.
+            $mgb = array_map('trim', explode(';', $gradingscheme->Grading_Basis));
+
+            // Loop through our grading basis'.
+            foreach ($mgb as $gb) {
+
+                // Set the data object grading basis accordingly.
+                $dataobj['grading_basis'] = $gb;
+
+                // Insert the data.
+                $gsid = $DB->insert_record($table, $dataobj, true);
+
+                // We may not need to fetch/send this. Revisit.
+                $gsa[] = $DB->get_record($table, array('id' => $gsid));
+                $gs = array_merge($gs, $gsa);
+            }
+        }
+
+        return $gs;
     }
 
     public static function get_sections($s, $parms) {
@@ -1210,7 +1328,7 @@ class workdaystudent {
         $lid = isset($student->$lidsuffix) ? $student->$lidsuffix : null;
 
         // Build the two objects to compare.
-        $stu1 = clone $stu;
+        $stu1 = clone($stu);
         $stu2 = new stdClass();
 
         // Un/populate the two objects.
@@ -1404,7 +1522,7 @@ class workdaystudent {
         $email = $teacher->Instructor_Email;
 
         // Build the two objects to compare.
-        $tea1 = clone $tea;
+        $tea1 = clone($tea);
         $tea2 = new stdClass();
 
         // Un/populate the two objects.
