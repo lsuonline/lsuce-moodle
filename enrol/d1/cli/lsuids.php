@@ -99,7 +99,7 @@ foreach ($missings as $missing) {
 }
 
 $telapsedtime = round(microtime(true) - $timestart, 2);
-mtrace("updated $ucounter out of $counter students in $telapsedtime seconds."); 
+mtrace("updated $ucounter out of $mcount students in $telapsedtime seconds."); 
 
 class idnumbers {
     public static function get_missing_lsuids() {
