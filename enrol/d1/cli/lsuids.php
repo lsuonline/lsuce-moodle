@@ -70,6 +70,11 @@ foreach ($missings as $missing) {
     // Get the student record from the webservice.
     $student = idnumbers::get_lsuid($token, $d1id);
 
+    if (!isset($student->getStudentResult)) {
+        mtrace("Could not connect to server, exiting until next run");
+        die();
+    }
+
     // Alias this.
     if (!isset($student->getStudentResult->student->studentNumber)) {
         $xnum = $missing->idnumber;
