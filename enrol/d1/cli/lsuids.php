@@ -59,7 +59,7 @@ foreach ($missings as $missing) {
 
     mtrace(" Fetching LSUID for $missing->firstname $missing->lastname."); 
 
-    $stimestart = microtime(true) - $timestart;
+    $stimestart = microtime(true);
 
     // Increment the counter.
     $tcounter++;
