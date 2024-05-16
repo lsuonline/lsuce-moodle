@@ -41,6 +41,9 @@ $timestart = microtime(true);
 // Get the token.
 $token = lsud1::get_token();
 
+// Get this for future use.
+$tokentime = microtime(true);
+
 // Grab the students with missing LSUIDs.
 $missings = idnumbers::get_missing_lsuids();
 
@@ -66,6 +69,14 @@ foreach ($missings as $missing) {
 
     // Alias this.
     $d1id = $missing->d1id;
+
+    // If our token is older than 300 seconds, get a new one and reset the timer.
+    if (microtime(true) - $tokentime > 300) {
+        mtrace("Expiring token: $token in courses as course foreach.");
+        $token = lsud1::get_token();
+        $tokentime = microtime(true);
+        mtrace("We fetched a new token.");
+    }
 
     // Get the student record from the webservice.
     $student = idnumbers::get_lsuid($token, $d1id);
