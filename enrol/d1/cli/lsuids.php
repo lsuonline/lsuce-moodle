@@ -48,6 +48,7 @@ $missings = idnumbers::get_missing_lsuids();
 $mcount = count($missings);
 
 // Implement some counters.
+$tcounter = 0;
 $mcounter = 0;
 $ucounter = 0;
 
@@ -55,9 +56,13 @@ mtrace("Beginning process to update missing idnumbers for $mcount users.");
 
 // Loop through them.
 foreach ($missings as $missing) {
+
     mtrace(" Fetching LSUID for $missing->firstname $missing->lastname."); 
 
-    $stimestart = microtime(true);
+    $stimestart = microtime(true) - $timestart;
+
+    // Increment the counter.
+    $tcounter++;
 
     // Alias this.
     $d1id = $missing->d1id;
