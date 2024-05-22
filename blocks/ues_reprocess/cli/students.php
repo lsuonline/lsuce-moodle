@@ -39,7 +39,7 @@ $sportfield = $s->sportfield;
 
 // Gete the academic units.
 // $students = workdaystudent::get_students($s, $periodid = 'LSUAM_FALL_2023', $studentid = '00365772');
-$students = workdaystudent::get_students($s, $periodid = 'LSUAM_FALL_2023', $studentid = '');
+$students = workdaystudent::get_students($s, $periodid = 'LSUAM_VETMED_SUMMER_2024', $studentid = '');
 
 // Get and set some counts.
 $studentcounter = 0;

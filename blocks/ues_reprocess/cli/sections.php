@@ -35,8 +35,7 @@ $s = workdaystudent::get_settings();
 // unset($s->campus);
 
 $parms = array();
-$parms['Academic_Period!Academic_Period_ID'] = 'LSUAM_SPRING_2024';
-//$parms['Subject_Code'] = 'LSUAM_AAAS';
+$parms['Academic_Period!Academic_Period_ID'] = 'LSUAM_VETMED_SUMMER_2024';
 
 // Set up some timing.
 $grabstart = microtime(true);

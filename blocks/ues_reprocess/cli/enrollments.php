@@ -78,6 +78,8 @@ $processstart = microtime(true);
 
 // Purge MUC caches JIC.
 purge_caches(array('muc' => true));
+var_dump($departments);
+
 
 foreach ($departments as $department) {
     // Log that we're starting.

@@ -41,8 +41,8 @@ class workdaystudent {
 
         // TODO: Remove me.
         if (!isset($s->campus)) {
-            $s->username = 'LSUOnline_MoodleTeam_ISU';
-            $s->password = '7gu9ZdE8AkSt4^H5iy*';
+            $s->username = 'ENTER USERNAME HERE';
+            $s->password = 'ENTER PASSWORD HERE';
             $s->wsurl = 'https://wd2-impl-services1.workday.com/ccx/service/customreport2/lsu1/ITS_INT_RPT_ISU';
             $s->units = 'Raas-LSU1103-INTS0052E-LSUAM-Moodle-Academic-Units';
             $s->periods = 'RaaS-LSU1104-INTS0052F-LSUAM-Moodle-Academic-Periods';
@@ -51,10 +51,11 @@ class workdaystudent {
             $s->students = 'RaaS-LSU1099-INTS0052A-LSUAM-Moodle-Student-Demographic';
             $s->registrations = 'RaaS-LSU1105-INTS0052G-LSUAM-Moodle-Student-Registrations';
             $s->grading_schemes = 'RaaS-LSU1102-INTS0052J-LSUAM-Moodle-Student_Grading_Schemes';
-            $s->campus = 'AU00000079';
-            $s->campusname = 'LSUAM';
             $s->metafields = 'Academic_Level, Academic_Unit_ID, Program_of_Study_Code, Classification, Degree_Candidacy, Buckley_Hold';
             $s->sportfield = 'Current_Athletic_Teams_group';
+            $s->programs = 'Raas-LSU1352-INTS0052I-LSUAM-Moodle-Programs-of-Study';
+            $s->campus = 'AU00000079';
+            $s->campusname = 'LSUAM';
         }
 
         return $s;
@@ -806,6 +807,75 @@ class workdaystudent {
         $enrollments = self::get_data($sep);
 
         return $enrollments;
+    }
+
+    public static function get_programs($s) {
+        // Set the endpoint.
+        $endpoint = 'programs';
+
+        // Set some more parms up.
+        // TODO: Add me back! $parms['Institution!Academic_Unit_ID'] = $s->campus;
+        $parms['format'] = 'json';
+
+        // Build out the settins based on settings, endpoint, and parms.
+        $s = self::buildout_settings($s, $endpoint, $parms);
+
+        // Get the sections.
+        $programs = self::get_data($s);
+
+        return $programs;
+    }
+
+    public static function clear_insert_programs($programs) {
+        global $DB;
+
+        // Build some sql to truncate the table.
+        $sql = 'TRUNCATE {enrol_oes_programs}';
+        mtrace("  Truncating enrol_oes_programs.");
+
+        // Actually do it and store if we're successful or not.
+        $success = $DB->execute($sql);
+
+        // Build the $pgms array for future use.
+        $pgms = array();
+
+        // If we successfully truncated, insert data.
+        if ($success) {
+            mtrace("  Successfully truncated enrol_oes_programs.");
+
+            // Get the program data.
+            foreach ($programs as $program) {
+                $pgms[] = self::insert_program($program);
+            }
+
+        } else {
+            mtrace("  Failed to truncate enrol_oes_programs.");
+            return $success;
+        }
+
+        return $pgms;
+    }
+
+    public static function insert_program($program) {
+        global $DB;
+
+        // Set the table.
+        $table = 'enrol_oes_programs';
+
+        // Set the singular data object.
+        $dataobj = array(
+            'academic_unit_id' => $program->Academic_Unit_ID,
+            'Program_of_Study_Code' => $program->Program_of_Study_Code,
+            'Program_of_Study' => $program->Program_of_Study
+        );
+
+        // Insert the data.
+        $gsid = $DB->insert_record($table, $dataobj, true);
+
+        // We may not need to fetch/send this. Revisit.
+        $gs = $DB->get_record($table, array('id' => $gsid));
+
+        return $gs;
     }
 
     public static function get_grading_schemes($s) {
