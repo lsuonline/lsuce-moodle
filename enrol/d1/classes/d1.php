@@ -814,12 +814,25 @@ class lsud1 {
             $lconditions = array("lsuid"    => $student->lsuid);
         }
 
+        $numsql = 'SELECT * FROM {enrol_d1_students} stu
+                   WHERE stu.username = "' . $student->username . '"
+                   OR stu.idnumber = "' . $student->idnumber . '"
+                   OR stu.d1id = "' . $student->d1id . '"
+                   OR stu.email = "' . $student->email . '"';
+
+        $numreturn = $DB->get_records_sql($numsql);
+
         // Set up the users array and grab users if they exist.
         $existing = array();
         $existing['d1id']     = $DB->get_record($table, $dconditions, $fields='*', $strictness=IGNORE_MISSING);
         $existing['email']    = $DB->get_record($table, $econditions, $fields='*', $strictness=IGNORE_MISSING);
         $existing['idnumber'] = $DB->get_record($table, $iconditions, $fields='*', $strictness=IGNORE_MISSING);
         $existing['username'] = $DB->get_record($table, $uconditions, $fields='*', $strictness=IGNORE_MISSING);
+
+        if (count($numreturn) > 1) {
+            mtrace("*** Dupe user: $student->d1id, $student->idnumber, $student->username, $student->email in $table, skipping.");
+            return $student;
+        }
 
         // Loop through this funky stuff and update user info as needed.
         foreach ($existing as $key => $u0) {
@@ -841,12 +854,21 @@ class lsud1 {
                     break 1;
                 } else {
                     // Try to update the user object.
-                    if ($DB->update_record($table, $student, $bulk=false)) {
+                    try {
+                        $result = $DB->update_record($table, $student, $bulk=false);
+                        if (!$result) {
+                            throw new Exception('Failed to update record');
+                        }
+                    } catch (Exception $e) {
+                        error_log($e->getMessage());
+                        mtrace("Error updating $table with error: $e->getMessage().");
+                    }
+
+                    if ($result) {
                         $uo = $DB->get_record($table, array("id"=>$student->id), $fields='*', $strictness=IGNORE_MISSING);
-                        // mtrace("      Updated user with username: $uo->username, idnumber: $uo->idnumber, email: $uo->email, and name: $uo->firstname $uo->lastname.");
                         break 1;
                     } else {
-                        // mtrace("      Failed to update user: $user->id with username: $uo->username, idnumber: $uo->idnumber, email: $uo->email, and name: $uo->firstname $uo->lastname due to a DB error.");
+                        mtrace("      Failed to update user: $user->id with username: $uo->username, idnumber: $uo->idnumber, email: $uo->email, and name: $uo->firstname $uo->lastname due to a DB error.");
                         break 1;
                     }
                 }
@@ -915,7 +937,11 @@ class lsud1 {
         $sid       = $DB->get_record($stable, $reqs, $fields = 'id');
 
         // Set it so we're not dealing with an object.
-        $studentid = $sid->id;
+        if (isset($sid->id)) {
+            $studentid = $sid->id;
+        } else {
+            return;
+        }
     } else {
         // Set it so we're not dealing with an object.
         $studentid = $eid->studentsid;
