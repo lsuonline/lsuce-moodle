@@ -22,37 +22,87 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-function run_it_all() {
+require_once('../../config.php');
+require_once($CFG->dirroot . '/blocks/ues_reprocess/classes/repall.php');
 
-    global $DB, $CFG;
+// Authentication.
+require_login();
 
-    require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
-    require_once('lib.php');
-
-    // Let's clock this.
-    $starttime = microtime(true);
-
-    require_login();
-
-    ues::require_daos();
-    $s = ues::gen_str('block_ues_reprocess');
-
-    $blockname = $s('pluginname');
-
-    // Do we only do visible?
-    $courses = $DB->get_records('course', array('visible' => 1));
-
-    foreach($courses as $course) {
-
-        if ($course->id == 1) {
-            continue;
-        }
-
-        ues::reprocess_course($course);
-    }
-
-    $endtime = microtime(true);
-    $elapsed = round($starttime - $endtime, 1);
-
-    mtrace("Total time to run reprocess_all is: ". $elapsed);
+if (!is_siteadmin()) {
+    error_log("\n\n NOT ADMIN!!!!!");
+    $helpers->redirect_to_url($CFG->wwwroot);
 }
+
+$context = \context_system::instance();
+
+$pageparams = [
+    'vform' => optional_param('vform', 0, PARAM_INT),
+    'ues_courses_h' => optional_param('ues_courses_h', 0, PARAM_INT),
+];
+
+// Setup the page.
+$title = get_string('pluginname', 'block_ues_reprocess') . ': ' . get_string('settings', 'block_ues_reprocess');
+$pagetitle = $title;
+$sectiontitle = get_string('reprocessselected', 'block_ues_reprocess');
+$enablewideview = (bool)get_config('moodle', "block_ues_reprocess_enable_wide_view");
+$url = new moodle_url($CFG->wwwroot . '/blocks/ues_reprocess/reprocess_all.php', $pageparams);
+$worky = null;
+
+$repall = new \repall();
+
+// Are we looking at the form to view or run?
+$pageparams['sent_action'] = "update";
+
+$viewform = $pageparams['vform'] == 1 ? false : true;
+
+$PAGE->set_context($context);
+$PAGE->set_url($url);
+$PAGE->set_title($title);
+$PAGE->set_heading($title);
+
+// Navbar Bread Crumbs.
+$PAGE->navbar->add(get_string('reprocess', 'block_ues_reprocess'), new moodle_url('reprocess_all.php'));
+$PAGE->requires->js_call_amd('block_ues_reprocess/repall', 'init');
+// $PAGE->requires->js_call_amd('block_ues_reprocess/main', 'init');
+$output = $PAGE->get_renderer('block_ues_reprocess');
+
+echo $output->header();
+echo "<div class='row'><div class='col-6'>";
+$mform = new \block_ues_reprocess\form\repall_form();
+
+if ($viewform == true) {
+
+    $fromform = $mform->get_data();
+
+    if ($mform->is_cancelled()) {
+        redirect($CFG->wwwroot . '/blocks/ues_reprocess/reprocess_all.php');
+    } else {
+        // This branch is executed if the form is submitted but the data doesn't
+        // validate and the form should be redisplayed or on the first display of the form.
+        $mform->set_data($fromform);
+    }
+    
+    echo $output->heading($sectiontitle);
+    $mform->display();
+    // End the first col.
+
+    echo "</div'>";
+
+} else {
+
+    // View the Mappings.
+    $fromform = $mform->get_data();
+    $repall->run_it_all($fromform);
+    // End the first col.
+    echo "</div'>";
+}
+
+echo '</div>';
+echo '<div class="col-6">';
+echo '<div class="wacka">Approximately <span id="repall_estimator_course">0</span> courses to be reprocessed.';
+echo '<div class="wacka">Potentially this much time to process: <span id="repall_estimator_time">0</span>';
+echo '</div>';
+
+// End the row.
+echo "</div>";
+echo $output->footer();

@@ -31,6 +31,15 @@ class block_ues_reprocess extends block_list {
         $this->title = get_string('pluginname', 'block_ues_reprocess');
     }
 
+    /**
+     * Indicates that this block has its own configuration settings
+     *
+     * @return @bool
+     */
+    public function has_config() {
+        return true;
+    }
+    
     public function applicable_formats() {
         return array('course' => true, 'my' => true, 'site' => false);
     }

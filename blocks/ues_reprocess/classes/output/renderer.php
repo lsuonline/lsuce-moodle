@@ -15,18 +15,27 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package   block_ues_reprocess
- * @copyright 2019 Louisiana State University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ * @package    block_ues_reprocess
+ * @copyright  Louisiana State University
+ * @copyright  The guy who did stuff: David Lowe
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace block_ues_reprocess\output;
 
-$plugin->component = 'block_ues_reprocess';
-$plugin->version = 2019102902;
-$plugin->requires = 2015111600;
-$plugin->release = 'v3.0.0';
+use plugin_renderer_base;
 
-$plugin->dependencies = array(
-    'enrol_ues' => 2016040800,
-);
+class renderer extends plugin_renderer_base {
+    /**
+     * Defer to template.
+     *
+     * @param mappings_create $page
+     *
+     * @return string html for the page
+     */
+    public function render_reprocess_all($page): string {
+        $data = $page->export_for_template($this);
+        return parent::render_from_template('block_ues_reprocess/repall_view', $data);
+    }
+}

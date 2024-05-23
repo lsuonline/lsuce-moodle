@@ -37,14 +37,34 @@ class reprocess_all extends \core\task\scheduled_task {
      * Get task name
      */
     public function get_name() {
-        return get_string('reprocess_all_courses', 'ues_reprocess');
+        return get_string('reprocess_all_courses', 'block_ues_reprocess');
     }
 
     /**
      * Execute task
      */
     public function execute() {
-        require_once(dirname(dirname(__DIR__)). '/reprocess_all.php');
-        run_it_all();
+        global $CFG;
+        mtrace("\nReprocessing Task Starting.....\n");
+
+        require_once(dirname(dirname(__DIR__)). '/classes/repall.php');
+
+        $year = get_config('moodle', "ues_reprocess_task_year");
+        $semester = get_config('moodle', "ues_reprocess_task_semester");
+        $department = get_config('moodle', "ues_reprocess_task_department");
+
+        if ($year == '') {
+            // Get the current year.
+            $year = date("Y");
+        }
+
+        $data = new \stdClass();
+        $data->ues_year = $year;
+        $data->ues_semesters = $semester;
+        $data->ues_departments = $department;
+        $data->scheduled_task = true;
+
+        $repall = new \repall();
+        $repall->run_it_all($data);
     }
 }
