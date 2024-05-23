@@ -23,9 +23,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_ues_reprocess';
-$plugin->version = 2019102902;
+$plugin->version = 2024052300;
 $plugin->requires = 2015111600;
-$plugin->release = 'v3.0.0';
+$plugin->release = 'v4.0.0';
 
 $plugin->dependencies = array(
     'enrol_ues' => 2016040800,
