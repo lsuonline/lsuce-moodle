@@ -155,6 +155,7 @@ class repall {
         require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
         require_once(dirname(__DIR__).'/lib.php');
 
+        ues::require_daos();
         require_login();
 
         // The form data is giving the index and not the year for ues_year.
