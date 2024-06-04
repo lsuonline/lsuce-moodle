@@ -82,7 +82,7 @@ class azure_enrollment_provider extends enrollment_provider {
             // Split out the username and password accordingly.
             list($username, $password) = explode("\n", $resp);
         } else {
-            mtrace("Utilizing locally stored credentials.");
+            // mtrace("Utilizing locally stored credentials.");
 
             // Get the username stored in config.
             $username = get_config('enrol_ues', 'username');
