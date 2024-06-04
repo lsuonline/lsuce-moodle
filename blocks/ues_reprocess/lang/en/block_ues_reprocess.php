@@ -63,6 +63,11 @@ $string['ues_task_semester_title'] = 'Semester to run';
 $string['ues_task_semester'] = 'Ex: 1S (blank will do all)';
 $string['ues_task_department_title'] = 'Department to run';
 $string['ues_task_department'] = 'Ex: ACCT (blank will do all)';
+$string['semesters'] = 'Semester List';
+$string['semesters_help'] = 'Select as many semesters as you\'d like to reprocess';
+$string['categories'] = 'Course Categories';
+$string['categories_help'] = 'Select as many categories as you\'d like to reprocess for the selected semester(s)';
+
 
 $string['ues_reprocess_testing_title'] = 'Testing/Debugging';
 $string['ues_testing_title'] = 'Check this to allow unenrollment option';

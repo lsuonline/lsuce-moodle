@@ -71,6 +71,40 @@ if ($ADMIN->fulltree) {
         )
     );
 
+// We should probably grab semesters this way.
+$sems = $DB->get_records(
+    'enrol_ues_semesters', null, 'year ASC, name ASC', 'id, year, name, session_key');
+
+// Build the kvp array.
+$semarray = [];
+
+// Loop through the array of objects and build the key and value pairs.
+foreach ($sems as $sem) {
+    // Set the key to the id.
+    $key = $sem->id;
+
+    // Depending if we have a session or not, build the value.
+    if ($sem->session_key == '') { 
+        $value = $sem->year . " " . $sem->name;
+    } else {
+        $value = $sem->year . " " . $sem->name . " " . $sem->session_key;
+    }
+
+    // Populate the array.
+    $semarray[$key] = $value;
+}
+
+// Add the setting.
+$settings->add(
+    new admin_setting_configmultiselect(
+        'ues_semesters/sems',
+            get_string('semesters', 'block_ues_reprocess'),
+            null,
+            array(), $semarray
+    )
+);
+
+
     // --------------------------------
     // Scheduled Task Title.
     $settings->add(
@@ -117,6 +151,18 @@ if ($ADMIN->fulltree) {
         )
     );
 
+$coursecats = $DB->get_records_menu(
+    'course_categories', null, 'name ASC', 'id, name');
+
+$settings->add(
+    new admin_setting_configmultiselect(
+        'ues_reprocess/cats', get_string('categories', 'block_ues_reprocess'),
+            get_string('categories_help', 'block_ues_reprocess'),
+            array(), $coursecats
+    )
+);
+
+
     // --------------------------------
     // Test Settings.
     $settings->add(
@@ -126,6 +172,7 @@ if ($ADMIN->fulltree) {
             ''
         )
     );
+
     // --------------------------------
     // This is for testing purposes ONLY.
     $settings->add(
