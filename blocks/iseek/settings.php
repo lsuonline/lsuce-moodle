@@ -24,36 +24,56 @@
 defined('MOODLE_INTERNAL') || die();
 
 $settings->add(
-		new admin_setting_heading(
-		'headerconfig',
-		get_string('settings_header', 'block_iseek'),
-		get_string('settings_desc', 'block_iseek')
-	)
+        new admin_setting_heading(
+        'headerconfig',
+        get_string('settings_header', 'block_iseek'),
+        get_string('settings_desc', 'block_iseek')
+    )
 );
  
-	$settings->add(
-		new admin_setting_configtext(
-		'iseek/LTI_KEY',
-		get_string('lti_key', 'block_iseek'),
-		'',
-		''
-	)
+$settings->add(
+    new admin_setting_configtext(
+        'iseek/LTI_KEY',
+        get_string('lti_key', 'block_iseek'),
+        '',
+        ''
+    )
 );
-	
-	$settings->add(
-		new admin_setting_configtext(
-		'iseek/LTI_SECRET',
-		get_string('lti_secret', 'block_iseek'),
-		'',
-		''
-	)
+    
+$settings->add(
+    new admin_setting_configtext(
+        'iseek/LTI_SECRET',
+        get_string('lti_secret', 'block_iseek'),
+        '',
+        ''
+    )
 );
-	
-	$settings->add(
-		new admin_setting_configtext(
-		'iseek/LTI_URL',
-		get_string('lti_url', 'block_iseek'), 
-		'', 
-		'https://api.iseek.com/lti/launch'
-	)
+    
+$settings->add(
+    new admin_setting_configtext(
+        'iseek/LTI_URL',
+        get_string('lti_url', 'block_iseek'), 
+        '', 
+        'https://api.iseek.com/lti/launch'
+    )
 );
+
+$settings->add(
+    new admin_setting_configcheckbox('iseek/categorylimit',
+        get_string('categorylimit', 'block_iseek'),
+        get_string('categorylimit_help', 'block_iseek'), 0
+    )
+);
+
+$coursecats = $DB->get_records_menu(
+    'course_categories', null, 'name ASC', 'id, name');
+
+$settings->add(
+    new admin_setting_configmultiselect(
+        'iseek/cats', get_string('categories', 'block_iseek'),
+            get_string('categories_help', 'block_iseek'),
+            array(), $coursecats
+    )
+);
+
+
