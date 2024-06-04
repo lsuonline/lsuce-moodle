@@ -154,8 +154,7 @@ class repall {
 
         require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
         require_once(dirname(__DIR__).'/lib.php');
-
-        ues::require_daos();
+	ues::require_daos();
         require_login();
 
         // The form data is giving the index and not the year for ues_year.
@@ -192,7 +191,7 @@ class repall {
             $course = $DB->get_record('course', array('id' => $cid));
             mtrace("Reprocessing course: ". $course->fullname. $breaker);
             if ($purge) {
-                $sections = ues_section::from_course($course, true);
+                $sections = \ues_section::from_course($course, true);
                 ues::unenroll_users($sections, true);
                 mtrace("Unenrolled from course: ". $course->fullname. $breaker);
             } else {
