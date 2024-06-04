@@ -71,7 +71,7 @@ class azure_enrollment_provider extends enrollment_provider {
 
         // Make sure we only grab remote credentials when moodleftp is specified.
         if (get_config('enrol_ues', 'username') == 'moodleftp') {
-            mtrace("Utilizing remote credentials location.");
+            // mtrace("Utilizing remote credentials location.");
 
             // Instantiate curl.
             $curl = new curl(array('cache' => true));
