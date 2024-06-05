@@ -29,158 +29,74 @@ global $CFG;
 // Create the settings block.
 $settings = new admin_settingpage($section, get_string('settings', 'block_ues_reprocess'));
 
-
-$semesters = 'Fall Semester
-Winter Session
-Spring Semester
-Summer Session
-All';
-
-
 // Make sure only admins see this one.
 if ($ADMIN->fulltree) {
-    // --------------------------------
-    // Dashboard Link.
-    $settings->add(
-        new admin_setting_heading(
-            'ues_reprocess_link_back_title',
-            get_string('ues_repall_link_back_title', 'block_ues_reprocess'),
-            ''
-        )
-    );
+    $priorafter = get_config('ues_reprocess', 'priorafter');
+    $pa = $priorafter ? $priorafter : 60;
 
-    // --------------------------------
-    // UES Reprocess Settings Title.
-    $settings->add(
-        new admin_setting_heading(
-            'ues_reprocess_semester_title',
-            get_string('ues_semester_title', 'block_ues_reprocess'),
-            ''
-        )
-    );
+    // We should probably grab semesters this way.
+    $sql = "SELECT * FROM {enrol_ues_semesters}
+            WHERE grades_due > " . time() - ($pa * 86400) . "
+            AND classes_start < " . time() + ($pa * 86400) . "
+            ORDER BY campus DESC, year ASC, id ASC, session_key ASC";
 
-    // --------------------------------
-    // Semester Settings.
-    $settings->add(
-        new admin_setting_configtextarea(
-            'ues_reprocess_semesters',
-            get_string('ues_reprocess_semesters', 'block_ues_reprocess'),
-            'List of Semesters',
-            $semesters,
-            PARAM_TEXT
-        )
-    );
+    // Actually get them.
+    $sems = $DB->get_records_sql($sql);
 
-// We should probably grab semesters this way.
-$sems = $DB->get_records(
-    'enrol_ues_semesters', null, 'year ASC, name ASC', 'id, year, name, session_key');
+    // Build the kvp array.
+    $semarray = [];
 
-// Build the kvp array.
-$semarray = [];
+    // Loop through the array of objects and build the key and value pairs.
+    foreach ($sems as $sem) {
+        // Set the key to the id.
+        $key = $sem->id;
 
-// Loop through the array of objects and build the key and value pairs.
-foreach ($sems as $sem) {
-    // Set the key to the id.
-    $key = $sem->id;
+        // Depending if we have a session or not, build the value.
+        if ($sem->session_key == '') { 
+            $value = $sem->year . " " . $sem->name . " " . $sem->campus;
+        } else {
+            $value = $sem->year . " " . $sem->name . " (" . $sem->session_key . ") " . $sem->campus;
+        }
 
-    // Depending if we have a session or not, build the value.
-    if ($sem->session_key == '') { 
-        $value = $sem->year . " " . $sem->name;
-    } else {
-        $value = $sem->year . " " . $sem->name . " " . $sem->session_key;
+        // Populate the array.
+        $semarray[$key] = $value;
     }
 
-    // Populate the array.
-    $semarray[$key] = $value;
-}
-
-// Add the setting.
-$settings->add(
-    new admin_setting_configmultiselect(
-        'ues_semesters/sems',
-            get_string('semesters', 'block_ues_reprocess'),
-            null,
-            array(), $semarray
-    )
-);
-
-
-    // --------------------------------
-    // Scheduled Task Title.
+    // Add the setting.
     $settings->add(
-        new admin_setting_heading(
-            'ues_reprocess_task_title',
-            get_string('ues_task_title', 'block_ues_reprocess'),
-            ''
+        new admin_setting_configmultiselect(
+            'ues_reprocess/sems',
+                get_string('semesters', 'block_ues_reprocess'),
+                get_string('semesters_help', 'block_ues_reprocess'),
+                array(),
+                $semarray
         )
     );
 
-    // --------------------------------
-    // Scheduled Task Settings.
-    $settings->add(
-        new admin_setting_configtext(
-            'ues_reprocess_task_year',
-            get_string('ues_task_year_title', 'block_ues_reprocess'),
-            get_string('ues_task_year', 'block_ues_reprocess'),
-            date("Y"),
-            PARAM_TEXT
-        )
+
+    $coursecats = $DB->get_records_menu(
+        'course_categories',
+        null,
+        'name ASC',
+        'id, name'
     );
 
-    // --------------------------------
-    // Scheduled Task Settings.
     $settings->add(
-        new admin_setting_configtext(
-            'ues_reprocess_task_semester',
-            get_string('ues_task_semester_title', 'block_ues_reprocess'),
-            get_string('ues_task_semester', 'block_ues_reprocess'),
-            '',
-            PARAM_TEXT
-        )
-    );
-
-    // --------------------------------
-    // Scheduled Task Settings.
-    $settings->add(
-        new admin_setting_configtext(
-            'ues_reprocess_task_department',
-            get_string('ues_task_department_title', 'block_ues_reprocess'),
-            get_string('ues_task_department', 'block_ues_reprocess'),
-            '',
-            PARAM_TEXT
-        )
-    );
-
-$coursecats = $DB->get_records_menu(
-    'course_categories', null, 'name ASC', 'id, name');
-
-$settings->add(
-    new admin_setting_configmultiselect(
-        'ues_reprocess/cats', get_string('categories', 'block_ues_reprocess'),
+        new admin_setting_configmultiselect(
+            'ues_reprocess/cats', get_string('categories', 'block_ues_reprocess'),
             get_string('categories_help', 'block_ues_reprocess'),
-            array(), $coursecats
-    )
-);
-
-
-    // --------------------------------
-    // Test Settings.
-    $settings->add(
-        new admin_setting_heading(
-            'ues_reprocess_testing',
-            get_string('ues_reprocess_testing_title', 'block_ues_reprocess'),
-            ''
+            array(),
+            $coursecats
         )
     );
 
-    // --------------------------------
-    // This is for testing purposes ONLY.
     $settings->add(
-        new admin_setting_configcheckbox(
-            'ues_reprocess_turn_on_testing',
-            get_string('ues_testing_title', 'block_ues_reprocess'),
-            get_string('ues_testing', 'block_ues_reprocess'),
-            0
+        new admin_setting_configtext(
+            'ues_reprocess/priorafter',
+            get_string('priorafter', 'block_ues_reprocess'),
+            get_string('priorafter_help', 'block_ues_reprocess'),
+            60 // Default.
         )
     );
+
 }
