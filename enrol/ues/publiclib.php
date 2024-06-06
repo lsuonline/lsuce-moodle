@@ -204,6 +204,42 @@ abstract class ues {
         return true;
     }
 
+    public static function repall_course($course, $silent = true) {
+        $sections = ues_section::from_course($course, true);
+
+        return self::repall_sections($sections, $silent);
+    }
+
+    public static function repall_sections($sections, $silent = true) {
+        $enrol = enrol_get_plugin('ues');
+
+        if (!$enrol or $enrol->get_errors()) {
+            return false;
+        }
+
+        if (!$enrol->provider()->supports_section_lookups()) {
+            return false;
+        }
+
+        $enrol->is_silent = $silent;
+
+        foreach ($sections as $section) {
+            $enrol->process_enrollment(
+                $section->semester(), $section->course(), $section
+            );
+        }
+
+        $ids = array_keys($sections);
+
+        $pending = ues_section::get_all(self::where('id')->in($ids)->status->equal(self::PENDING));
+        $processed = ues_section::get_all(self::where('id')->in($ids)->status->equal(self::PROCESSED));
+
+        $enrol->handle_pending_sections($pending);
+        $processedsecs = $enrol->handle_processed_sections($processed);
+
+        return $processedsecs;
+    }
+
     public static function reprocess_for($teacher, $silent = true) {
         $uesuser = $teacher->user();
 

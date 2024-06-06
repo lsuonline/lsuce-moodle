@@ -1121,6 +1121,8 @@ class enrol_ues_plugin extends enrol_plugin {
             $this->log('Found ' . count($sections) . ' Sections ready to be manifested.');
         }
 
+        $returndata = [];
+
         foreach ($sections as $section) {
             if ($section->status == ues::PENDING) {
                 continue;
@@ -1132,13 +1134,22 @@ class enrol_ues_plugin extends enrol_plugin {
 
             $success = $this->manifestation($semester, $course, $section);
 
+            $data = new stdClass();
+            $data->id = $section->id;
+
             if ($success) {
                 $section->status = ues::MANIFESTED;
                 $section->save();
+
+                $data->value = $section->status;
+            } else {
+                $data->value = 'failed';
             }
+            $returndata[] = $data;
         }
 
         $this->log('');
+        return $returndata;
     }
 
     public function get_instance($courseid) {

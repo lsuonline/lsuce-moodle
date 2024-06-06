@@ -98,7 +98,7 @@ class repall {
         return $sections;
     }
 
-    public static function set_reprocessed($section) {
+    public static function set_reprocessed($section, $reprocessed) {
         global $DB;
 
         // Set the table.
@@ -113,7 +113,7 @@ class repall {
         $dataobj->value = 1;
 
         // Check it 1st.
-        $exists = $DB->get_record($table,
+        $exists = $DB->record_exists($table,
             array(
                 'sectionid' => $section->id,
                 'name' => "section_reprocessed",
@@ -121,15 +121,32 @@ class repall {
             )
         );
 
-        // If it's not there, add it.
-        if (!isset($exists->id)) {
-            // Insert a record.
-            $reprocessed = $DB->insert_record($table, $dataobj, $returnid = true);
-        } else { 
-            $reprocessed = true;
+        // Set this up for future use.
+        $innit = false;
+
+        // Log some stuff for now and set innit to true if we find it.
+        foreach($reprocessed as $data) {
+            if ($data->id == $section->id) {
+                mtrace("Reprocessed id: $data->id with value $data->value.");
+                $innit = true;
+                break;
+            }
         }
+
+        // If it's not there, add it.
+        if (!$exists && $innit) {
+            // Insert a record.
+            if ($DB->insert_record($table, $dataobj, $returnid = true)) {
+                $treprocessed = true;
+            } else {
+                $treprocessed = false;
+            }
+        } else { 
+            $treprocessed = false;
+        }
+
         // Return it.
-        return $reprocessed;
+        return $treprocessed;
     }
 
     public static function get_reprocessed($course) {
@@ -220,24 +237,28 @@ class repall {
             mtrace("Prestaged interstitial enrollments in: $course->fullname with ID: $course->id.");
 
             // Reprocess enrollment.
-            $reprocessed = ues::reprocess_course($course);
+            $reprocessed = ues::repall_course($course);
 
-            if ($reprocessed) {
+            if (is_array($reprocessed)) {
                 // Add an entry is in the sectionmeta table for each section.
                 foreach ($sections as $section) {
-                    self::set_reprocessed($section);
+                    $success = self::set_reprocessed($section, $reprocessed);
                 }
 
                 $coursefinishtime = microtime(true);
                 $courseelapsedtime = round($coursefinishtime - $coursestarttime, 1);
-
-                // Log what we did.
-                mtrace("Successfully reprocessed course: $course->fullname in $courseelapsedtime seconds.\n\n");
+                if ($success) {
+                    // Log what we did.
+                    mtrace("Successfully reprocessed course: $course->fullname in $courseelapsedtime seconds.\n\n");
+                } else {
+                    // Log what we didn't do.
+                    mtrace("Failed to reprocess course: $course->fullname in $courseelapsedtime seconds.\n\n");
+                }
             } else {
                 $coursefinishtime = microtime(true);
                 $courseelapsedtime = round($coursefinishtime - $coursestarttime, 1);
 
-                // Log what we did.
+                // Log what we didn't do.
                 mtrace("Failed to reprocess course: $course->fullname in $courseelapsedtime seconds.\n\n");
             }
         }
