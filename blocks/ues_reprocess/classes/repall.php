@@ -57,7 +57,7 @@ class repall {
                     AND sec.idnumber != ''
                 WHERE c.category IN (" . $departments . ")
                     AND sec.semesterid IN (" . $semesters . ")
-                GROUP BY c.id ORDER BY c.fullname ASC";
+                GROUP BY c.id ORDER BY RAND()";
         
         // Fetch the data.
         $course_list = $DB->get_records_sql($sql);
