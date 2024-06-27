@@ -62,6 +62,10 @@ if ($ADMIN->fulltree) {
         $semarray[$key] = $value;
     }
 
+    if (count($semarray) == 0) {
+        $semarray[0] = "No semesters found";
+    }
+
     // Add the setting.
     $settings->add(
         new admin_setting_configmultiselect(
@@ -73,13 +77,16 @@ if ($ADMIN->fulltree) {
         )
     );
 
-
     $coursecats = $DB->get_records_menu(
         'course_categories',
         null,
         'name ASC',
         'id, name'
     );
+
+    if (count($coursecats) == 0) {
+        $coursecats[0] = "No categories found";
+    }
 
     $settings->add(
         new admin_setting_configmultiselect(
