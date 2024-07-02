@@ -32,6 +32,16 @@ defined('MOODLE_INTERNAL') || die();
 class lsud1 {
 
     /**
+     * Checks if an email is in a domain.
+     *
+     * @return @object $s
+     */
+    public static function email_in_domain($email, $domain) {
+        $email_domain = explode('@', $email)[1];
+        return $email_domain === $domain;
+    }
+
+    /**
      * Grabs D1 Webseervice settings.
      *
      * @return @object $s
@@ -1328,12 +1338,32 @@ die();
         if (isset($uo->id)) {
             return $uo;
         } else {
+            // Check if we're dealing with an LSU user.
+            $lsuuser = self::email_in_domain($user->email, 'lsu.edu');
+
+            // Just in case.
             $user->username = strtolower($user->username);
-            // We do not have a matching or existing user, please create one.
+
+            // Set this to make sure passwords get generated below.
             $user->password = 'to be generated';
+
+            // Only set passwords for non-LSU users.
+            if ($lsuuser) {
+                // This is how Moodle stores this.
+                $user->password = 'not cached';
+                // Set the auth appropriately.
+                $user->auth = 'oauth2';
+            }
+
+            // Create the user.
             $id = user_create_user($user, false, false);
-            set_user_preference('auth_forcepasswordchange', 1, $id);
-            set_user_preference('create_password', 1, $id);
+
+            // Only set passwords for non-LSU users.
+            if (!$lsuuser) {
+                set_user_preference('auth_forcepasswordchange', 1, $id);
+                set_user_preference('create_password', 1, $id);
+            }
+
             mtrace("Created userid: $id,  username: $user->username, idnumber: $user->idnumber, fn: $user->firstname, ln: $user->lastname.");
 
             // Grab the newly created user object and return it.
