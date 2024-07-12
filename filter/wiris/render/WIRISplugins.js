@@ -6560,9 +6560,11 @@ class Util {
 
   /**
    * Adds the a callback function, for a certain event target, to the following event types:
+   * - dblclick
    * - mousedown
    * - mouseup
    * @param {EventTarget} eventTarget - event target.
+   * @param {Function} doubleClickHandler - function to run when on dblclick event.
    * @param {Function} mousedownHandler - function to run when on mousedown event.
    * @param {Function} mouseupHandler - function to run when on mouseup event.
    * @static
@@ -6574,6 +6576,7 @@ class Util {
         const element = realEvent.srcElement ? realEvent.srcElement : realEvent.target;
         doubleClickHandler(element, realEvent);
       };
+      Util.addEvent(eventTarget, 'dblclick', this.callbackDblclick);
     }
     if (mousedownHandler) {
       this.callbackMousedown = event => {
@@ -6600,12 +6603,14 @@ class Util {
 
   /**
    * Remove all callback function, for a certain event target, to the following event types:
+   * - dblclick
    * - mousedown
    * - mouseup
    * @param {EventTarget} eventTarget - event target.
    * @static
    */
   static removeElementEvents(eventTarget) {
+    Util.removeEvent(eventTarget, 'dblclick', this.callbackDblclick);
     Util.removeEvent(eventTarget, 'mousedown', this.callbackMousedown);
     Util.removeEvent(document, 'mouseup', this.callbackMouseup);
     Util.removeEvent(eventTarget, 'mouseup', this.callbackMouseup);
