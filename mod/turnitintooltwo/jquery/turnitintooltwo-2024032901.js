@@ -1094,8 +1094,14 @@
                     }
                     $("#submission_id").html(submission_id);
                     $('#cboxLoadedContent .mod_turnitintooltwo_unanonymise_form').show();
-                    $('#id_reveal').unbind("click");
-                    $('#id_reveal').click(function () {
+                    $('#id_reveal').prop('disabled', true);
+
+                    $('#id_anonymous_reveal_reason').on('input', function() {
+                        var reason_text = $(this).val();
+                        $('#id_reveal').prop('disabled', reason_text === ''); // Enable/disable button based on textarea content
+                    });
+
+                    $('#id_reveal').on('click', function() {
                         $.ajax({
                             "dataType": 'json',
                             "type": "POST",
