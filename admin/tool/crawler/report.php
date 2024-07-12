@@ -190,7 +190,7 @@ if ($report == 'broken') {
     }
     $table->data = array();
     foreach ($data as $row) {
-        $title = trim($row->title??'');
+        $title = trim($row->title);
         if ($title == "") {
             $title = get_string('notyetknown', 'tool_crawler');
         }
