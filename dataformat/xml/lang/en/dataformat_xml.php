@@ -25,6 +25,6 @@
 defined('MOODLE_INTERNAL') || die;
 
 $string['dataformat'] = 'Extensible Markup Language (.xml)';
-$string['privacy:metadata'] = 'The XML data format plugin does not store any personal data';
 $string['pluginname'] = 'XML data format';
+$string['privacy:metadata'] = 'The XML data format plugin does not store any personal data';
 $string['shortname'] = 'XML';
