@@ -36,7 +36,7 @@ class element extends \mod_customcert\element {
     /**
      * @var array The file manager options.
      */
-    protected $filemanageroptions = array();
+    protected $filemanageroptions = [];
 
     /**
      * Constructor.
@@ -46,11 +46,11 @@ class element extends \mod_customcert\element {
     public function __construct($element) {
         global $COURSE;
 
-        $this->filemanageroptions = array(
+        $this->filemanageroptions = [
             'maxbytes' => $COURSE->maxbytes,
             'subdirs' => 1,
-            'accepted_types' => 'image'
-        );
+            'accepted_types' => 'image',
+        ];
 
         parent::__construct($element);
     }
@@ -78,7 +78,7 @@ class element extends \mod_customcert\element {
             '0.7' => 0.7,
             '0.8' => 0.8,
             '0.9' => 0.9,
-            '1' => 1
+            '1' => 1,
         ];
         $mform->addElement('select', 'alphachannel', get_string('alphachannel', 'customcertelement_image'), $alphachannelvalues);
         $mform->setType('alphachannel', PARAM_FLOAT);
@@ -102,7 +102,7 @@ class element extends \mod_customcert\element {
      */
     public function validate_form_elements($data, $files) {
         // Array to return the errors.
-        $errors = array();
+        $errors = [];
 
         // Validate the width.
         $errors += \mod_customcert\element_helper::validate_form_element_width($data);
@@ -151,7 +151,7 @@ class element extends \mod_customcert\element {
     public function save_unique_data($data) {
         $arrtostore = [
             'width' => !empty($data->width) ? (int) $data->width : 0,
-            'height' => !empty($data->height) ? (int) $data->height : 0
+            'height' => !empty($data->height) ? (int) $data->height : 0,
         ];
 
         if (isset($data->alphachannel)) {
@@ -263,7 +263,7 @@ class element extends \mod_customcert\element {
                 $style .= 'height: ' . $imageinfo->height . 'mm';
             }
 
-            return \html_writer::tag('img', '', array('src' => $url, 'style' => $style));
+            return \html_writer::tag('img', '', ['src' => $url, 'style' => $style]);
         }
     }
 
@@ -337,7 +337,7 @@ class element extends \mod_customcert\element {
         $elementinfo = json_encode($elementinfo);
 
         // Perform the update.
-        $DB->set_field('customcert_elements', 'data', $elementinfo, array('id' => $this->get_id()));
+        $DB->set_field('customcert_elements', 'data', $elementinfo, ['id' => $this->get_id()]);
     }
 
     /**
@@ -366,7 +366,7 @@ class element extends \mod_customcert\element {
         $fs = get_file_storage();
 
         // The array used to store the images.
-        $arrfiles = array();
+        $arrfiles = [];
         // Loop through the files uploaded in the system context.
         if ($files = $fs->get_area_files(\context_system::instance()->id, 'mod_customcert', 'image', false, 'filename', false)) {
             foreach ($files as $hash => $file) {
@@ -382,7 +382,7 @@ class element extends \mod_customcert\element {
         }
 
         \core_collator::asort($arrfiles);
-        $arrfiles = array('0' => get_string('noimage', 'customcert')) + $arrfiles;
+        $arrfiles = ['0' => get_string('noimage', 'customcert')] + $arrfiles;
 
         return $arrfiles;
     }
@@ -430,7 +430,7 @@ class element extends \mod_customcert\element {
 
                 // We want to update the context of the file if it doesn't exist in the course context.
                 $fieldupdates = [
-                    'contextid' => $coursecontext->id
+                    'contextid' => $coursecontext->id,
                 ];
                 $coursefile = $fs->create_file_from_storedfile($fieldupdates, $systemfile);
             }
@@ -440,6 +440,15 @@ class element extends \mod_customcert\element {
             $DB->set_field('customcert_elements', 'data', $this->save_unique_data($imagedata), ['id' => $this->get_id()]);
         }
 
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function has_save_and_continue(): bool {
         return true;
     }
 }

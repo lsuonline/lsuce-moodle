@@ -91,7 +91,7 @@ class element extends \mod_customcert\element {
     public function save_unique_data($data) {
         $arrtostore = [
             'width' => !empty($data->width) ? (int)$data->width : 0,
-            'height' => !empty($data->height) ? (int)$data->height : 0
+            'height' => !empty($data->height) ? (int)$data->height : 0,
         ];
 
         return json_encode($arrtostore);
@@ -139,7 +139,7 @@ class element extends \mod_customcert\element {
             $qrcodeurl = $qrcodeurl->out(false);
         } else {
             // Get the information we need.
-            $sql = "SELECT c.id, ct.contextid, ci.code
+            $sql = "SELECT c.id, c.verifyany, ct.contextid, ci.code
                       FROM {customcert_issues} ci
                       JOIN {customcert} c
                         ON ci.customcertid = c.id
@@ -151,18 +151,29 @@ class element extends \mod_customcert\element {
                        AND cp.id = :pageid";
 
             // Now we can get the issue for this user.
-            $issue = $DB->get_record_sql($sql, array('userid' => $user->id, 'pageid' => $this->get_pageid()),
+            $issue = $DB->get_record_sql($sql, ['userid' => $user->id, 'pageid' => $this->get_pageid()],
                 '*', MUST_EXIST);
             $code = $issue->code;
 
-            // Generate the URL to verify this.
-            $qrcodeurl = new \moodle_url('/mod/customcert/verify_certificate.php',
-                [
-                    'contextid' => $issue->contextid,
-                    'code' => $code,
-                    'qrcode' => 1
-                ]
-            );
+            $context = \context::instance_by_id($issue->contextid);
+
+            $urlparams = [
+                'code' => $code,
+                'qrcode' => 1,
+            ];
+
+            // We only add the 'contextid' to the link if the site setting for verifying all certificates is off,
+            // or if the individual certificate doesn't allow verification. However, if the user has the
+            // mod/customcert:verifyallcertificates then they can verify anything regardless.
+            $verifyallcertificatessitesetting = get_config('customcert', 'verifyallcertificates');
+            $verifycertificateactivitysettings = $issue->verifyany;
+            $canverifyallcertificates = has_capability('mod/customcert:verifyallcertificates', $context);
+            if ((!$verifyallcertificatessitesetting || !$verifycertificateactivitysettings)
+                    && !$canverifyallcertificates) {
+                $urlparams['contextid'] = $issue->contextid;
+            }
+
+            $qrcodeurl = new \moodle_url('/mod/customcert/verify_certificate.php', $urlparams);
             $qrcodeurl = $qrcodeurl->out(false);
         }
 

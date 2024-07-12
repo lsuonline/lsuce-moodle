@@ -54,6 +54,9 @@ $string['customcert:viewallcertificates'] = 'View all certificates';
 $string['customcert:verifyallcertificates'] = 'Verify all certificates on the site';
 $string['customcert:verifycertificate'] = 'Verify a certificate';
 $string['customcertsettings'] = 'Custom certificate settings';
+$string['downloadallissuedcertificates'] = 'Download all issued certificates';
+$string['downloadallsitecertificates'] = 'Download all site certificates';
+$string['downloadallsitecertificatesdesc'] = 'This will download all the certificates on the site in a zip file.';
 $string['deletecertpage'] = 'Delete page';
 $string['deleteconfirm'] = 'Delete confirmation';
 $string['deleteelement'] = 'Delete element';
@@ -184,6 +187,7 @@ $string['requiredtimenotmet'] = 'You must spend at least a minimum of {$a->requi
 $string['rightmargin'] = 'Right margin';
 $string['rightmargin_help'] = 'This is the right margin of the certificate PDF in mm.';
 $string['save'] = 'Save';
+$string['savechanges'] = 'Save changes';
 $string['saveandclose'] = 'Save and close';
 $string['saveandcontinue'] = 'Save and continue';
 $string['savechangespreview'] = 'Save changes and preview';
@@ -195,6 +199,8 @@ $string['showposxy'] = 'Show position X and Y';
 $string['showposxy_desc'] = 'This will show the X and Y position when editing of an element, allowing the user to accurately specify the location.
 
 This isn\'t required if you plan on solely using the drag and drop interface for this purpose.';
+$string['subplugintype_customcertelement'] = 'Element';
+$string['subplugintype_customcertelement_plural'] = 'Elements';
 $string['taskemailcertificate'] = 'Handles emailing certificates.';
 $string['templatename'] = 'Template name';
 $string['templatenameexists'] = 'That template name is currently in use, please choose another.';

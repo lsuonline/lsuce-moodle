@@ -55,7 +55,8 @@ class template_updated extends \core\event\base {
             return "The user with id '$this->userid' updated the certificate template with id '$this->objectid'.";
         } else {
             // Else assume it's a module instance in a course.
-            return "The user with id '$this->userid' updated the certificate for course module '$this->contextinstanceid'.";
+            return "The user with id '$this->userid' updated the certificate template for course module "
+                . "'$this->contextinstanceid'.";
         }
     }
 
@@ -74,11 +75,11 @@ class template_updated extends \core\event\base {
      * @param template $template
      * @return template_updated
      */
-    public static function create_from_template(template $template) : template_updated {
-        $data = array(
+    public static function create_from_template(template $template): template_updated {
+        $data = [
             'context' => $template->get_context(),
             'objectid' => $template->get_id(),
-        );
+        ];
         $event = self::create($data);
         return $event;
     }
@@ -92,7 +93,7 @@ class template_updated extends \core\event\base {
             return new \moodle_url('/mod/customcert/manage_templates.php');
         } else {
             return new \moodle_url('/mod/customcert/view.php',
-                    array('id' => $this->contextinstanceid));
+                    ['id' => $this->contextinstanceid]);
         }
     }
 
@@ -102,7 +103,7 @@ class template_updated extends \core\event\base {
      * @return string[]
      */
     public static function get_objectid_mapping() {
-        return array('db' => 'customcert_templates', 'restore' => 'customcert_templates');
+        return ['db' => 'customcert_templates', 'restore' => 'customcert_templates'];
     }
 
     /**

@@ -47,7 +47,7 @@ class element extends \mod_customcert\element {
         global $COURSE;
 
         // Get the grade items we can display.
-        $gradeitems = array();
+        $gradeitems = [];
         $gradeitems[CUSTOMCERT_GRADE_COURSE] = get_string('coursegrade', 'customcertelement_grade');
         $gradeitems = $gradeitems + \mod_customcert\element_helper::get_grade_items($COURSE);
 
@@ -73,10 +73,10 @@ class element extends \mod_customcert\element {
      */
     public function save_unique_data($data) {
         // Array of data we will be storing in the database.
-        $arrtostore = array(
+        $arrtostore = [
             'gradeitem' => $data->gradeitem,
-            'gradeformat' => $data->gradeformat
-        );
+            'gradeformat' => $data->gradeformat,
+        ];
 
         // Encode these variables before saving into the DB.
         return json_encode($arrtostore);
@@ -194,9 +194,22 @@ class element extends \mod_customcert\element {
         global $DB;
 
         $gradeinfo = json_decode($this->get_data());
-        if ($newitem = \restore_dbops::get_backup_ids_record($restore->get_restoreid(), 'course_module', $gradeinfo->gradeitem)) {
-            $gradeinfo->gradeitem = $newitem->newitemid;
-            $DB->set_field('customcert_elements', 'data', $this->save_unique_data($gradeinfo), array('id' => $this->get_id()));
+
+        $isgradeitem = false;
+        $oldid = $gradeinfo->gradeitem;
+        if (strpos($gradeinfo->gradeitem, 'gradeitem:') === 0) {
+            $isgradeitem = true;
+            $oldid = str_replace('gradeitem:', '', $gradeinfo->gradeitem);
+        }
+
+        $itemname = $isgradeitem ? 'grade_item' : 'course_module';
+        if ($newitem = \restore_dbops::get_backup_ids_record($restore->get_restoreid(), $itemname, $oldid)) {
+            $gradeinfo->gradeitem = '';
+            if ($isgradeitem) {
+                $gradeinfo->gradeitem = 'gradeitem:';
+            }
+            $gradeinfo->gradeitem = $gradeinfo->gradeitem . $newitem->newitemid;
+            $DB->set_field('customcert_elements', 'data', $this->save_unique_data($gradeinfo), ['id' => $this->get_id()]);
         }
     }
 
@@ -206,7 +219,7 @@ class element extends \mod_customcert\element {
      * @return array returns an array of grade formats
      */
     public static function get_grade_format_options() {
-        $gradeformat = array();
+        $gradeformat = [];
         $gradeformat[GRADE_DISPLAY_TYPE_REAL] = get_string('gradepoints', 'customcertelement_grade');
         $gradeformat[GRADE_DISPLAY_TYPE_PERCENTAGE] = get_string('gradepercent', 'customcertelement_grade');
         $gradeformat[GRADE_DISPLAY_TYPE_LETTER] = get_string('gradeletter', 'customcertelement_grade');
