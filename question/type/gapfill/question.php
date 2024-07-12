@@ -38,6 +38,12 @@ class qtype_gapfill_question extends question_graded_automatically_with_countbac
     public $answer;
 
     /**
+     * Display draggables after the body of the question
+     * @var boolean
+     */
+    public $optionsaftertext;
+
+    /**
      * answerdisplay is a string of either gapfill,dropdown or drag drop
      * @var string
      */
@@ -49,6 +55,31 @@ class qtype_gapfill_question extends question_graded_automatically_with_countbac
      * @var array
      */
     public $shuffledanswers;
+
+    /**
+     * Should letterhints be generated in interactive with feedback mode. This takes the form
+     * of adding an additional letter to the hints shown.
+     *
+     * @var boolean
+     */
+    public $letterhints;
+
+    /**
+     * Draggable options will dissapear after the first time they have been used, i.e.
+     * they can only be used once.
+     *
+     * @var boolean
+     */
+    public $singleuse;
+
+    /**
+     * Values from the gapfill_settings table for per gap
+     * feedback.
+     *
+     * @var \stdClass
+     */
+    public $itemsettings;
+
 
     /**
      * Where an answer can be correct in more than one gap, only give a mark for one of them
