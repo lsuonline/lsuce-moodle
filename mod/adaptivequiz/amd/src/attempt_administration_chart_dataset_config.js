@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,19 +14,29 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin basic info.
+ * Defines order and indices for datasets.
  *
- * @package    mod_adaptivequiz
- * @copyright  2013 Remote-Learner {@link http://www.remote-learner.ca/}
- * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
+ * @module     mod_adaptivequiz/attempt_administration_chart_dataset_config
+ * @copyright  2024 Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version = 2024041900;
-$plugin->release = '2.3.6';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->requires = 2022112800;
-$plugin->cron = 0;
-$plugin->component = 'mod_adaptivequiz';
+export default {
+    orderWeights: {
+        ABILITY_MEASURE: 10,
+        ADMINISTERED_DIFFICULTY: 20,
+        TARGET_DIFFICULTY: 30,
+        STANDARD_ERROR_BORDER: 40,
+        STANDARD_ERROR_PERCENT: 50,
+        CORRECT_WRONG_FLAG: 60,
+    },
+    indices: {
+        TARGET_DIFFICULTY: 0,
+        ADMINISTERED_DIFFICULTY: 1,
+        CORRECT_WRONG_FLAG: 2,
+        ABILITY_MEASURE: 3,
+        STANDARD_ERROR_MAX: 4,
+        STANDARD_ERROR_MIN: 5,
+        STANDARD_ERROR_PERCENT: 6,
+    },
+};

@@ -15,6 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Plugin's system and internal functions.
+ *
+ * @package    mod_adaptivequiz
  * @copyright  2013 Remote-Learner {@link http://www.remote-learner.ca/}
  * @copyright  2022 onwards Vitaly Potenko <potenkov@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -122,13 +125,12 @@ function adaptivequiz_add_instance(stdClass $adaptivequiz, mod_adaptivequiz_mod_
 }
 
 /**
- * This functions creates question category association record(s)
+ * This function creates question category association record(s).
  *
- * @param int $instance: activity instance id
- * @param object $adaptivequiz: An object from the form in mod_form.php
- * @return void
+ * @param int $instance Activity instance id.
+ * @param stdClass $adaptivequiz An object from the form in mod_form.php.
  */
-function adaptivequiz_add_questcat_association(stdClass $adaptivequiz, $instance = 0) {
+function adaptivequiz_add_questcat_association(int $instance, stdClass $adaptivequiz): void {
     global $DB;
 
     if (0 != $instance && !empty($adaptivequiz->questionpool)) {
@@ -143,17 +145,17 @@ function adaptivequiz_add_questcat_association(stdClass $adaptivequiz, $instance
 }
 
 /**
- * This function updates the question category association records
- * @param int $instance: activity instance
- * @param object $adaptivequiz: An object from the form in mod_form.php
- * @return void;
+ * This function updates the question category association records.
+ *
+ * @param int $instance Activity instance id.
+ * @param stdClass $adaptivequiz An object from the form in mod_form.php.
  */
-function adaptivequiz_update_questcat_association(stdClass $adaptivequiz, $instance = 0) {
+function adaptivequiz_update_questcat_association(int $instance, stdClass $adaptivequiz): void {
     global $DB;
 
     // Remove old references.
     if (!empty($instance)) {
-        $DB->delete_records('adaptivequiz_question', array('instance' => $instance));
+        $DB->delete_records('adaptivequiz_question', ['instance' => $instance]);
     }
 
     // Insert new references.
@@ -523,20 +525,19 @@ function adaptivequiz_extend_navigation(navigation_node $navref, stdclass $cours
 }
 
 /**
- * @throws coding_exception
- * @throws moodle_exception
+ * A system callback, allows to add custom nodes to the settings navigation.
+ *
+ * @param settings_navigation $settingsnav
+ * @param navigation_node $adaptivequiznode
  */
-function adaptivequiz_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $adaptivequiznode) {
-    global $PAGE;
-
-    if (!has_capability('mod/adaptivequiz:viewreport', $PAGE->cm->context)) {
+function adaptivequiz_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $adaptivequiznode): void {
+    if (!has_capability('mod/adaptivequiz:viewreport', $settingsnav->get_page()->cm->context)) {
         return;
     }
 
     $node = navigation_node::create(get_string('questionanalysisbtn', 'adaptivequiz'),
-        new moodle_url('/mod/adaptivequiz/questionanalysis/overview.php', ['cmid' => $PAGE->cm->id]),
-        navigation_node::TYPE_SETTING, null, 'mod_adaptivequiz_question_analysis',
-        new pix_icon('i/report', ''));
+        new moodle_url('/mod/adaptivequiz/questionanalysis/overview.php', ['cmid' => $settingsnav->get_page()->cm->id]),
+        navigation_node::TYPE_SETTING, null, 'mod_adaptivequiz_question_analysis', new pix_icon('i/report', ''));
     $adaptivequiznode->add_node($node);
 }
 
@@ -759,24 +760,51 @@ function mod_adaptivequiz_question_pluginfile($course, context $context, $compon
 }
 
 /**
- * This callback is used by the core to add any "extra" information to the activity. For example, completion info.
+ * A system callback.
  *
+ * Given a course_module object, this function returns any "extra" information that may be needed when printing this activity
+ * in a course listing. See get_array_of_activities() in course/lib.php.
+ *
+ * @param stdClass $coursemodule the course module object (record).
  * @return false|cached_cm_info
  */
 function adaptivequiz_get_coursemodule_info(stdClass $coursemodule) {
     global $DB;
 
-    $adaptivequiz = $DB->get_record('adaptivequiz', ['id' => $coursemodule->instance], 'id, name, completionattemptcompleted');
-    if (!$adaptivequiz) {
+    if (!$adaptivequiz = $DB->get_record('adaptivequiz', ['id' => $coursemodule->instance])) {
         return false;
     }
 
     $result = new cached_cm_info();
     $result->name = $adaptivequiz->name;
 
+    if ($coursemodule->showdescription) {
+        $result->content = format_module_intro('adaptivequiz', $adaptivequiz, $coursemodule->id, false);
+    }
+
     if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
         $result->customdata['customcompletionrules']['completionattemptcompleted'] = $adaptivequiz->completionattemptcompleted;
     }
 
     return $result;
+}
+
+/**
+ * Definition of user preferences used by the plugin.
+ *
+ * @return array[]
+ */
+function mod_adaptivequiz_user_preferences(): array {
+    return [
+        '/^mod_adaptivequiz_answers_distribution_chart_settings_(\d)+$/' => [
+            'isregex' => true,
+            'type' => PARAM_RAW, // JSON.
+            'default' => null,
+            'permissioncallback' => function($user, $preferencename) {
+                global $USER;
+
+                return $user->id == $USER->id;
+            },
+        ],
+    ];
 }

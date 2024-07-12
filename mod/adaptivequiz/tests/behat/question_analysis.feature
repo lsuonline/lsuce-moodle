@@ -1,8 +1,8 @@
 @mod @mod_adaptivequiz
-Feature: Delete an attempt on adaptive quiz
-  In order to keep the results of adaptive quiz relevant
+Feature: View analysis of questions usage in adaptive quizzes
+  In order to assess how items from the question bank are administered and answered in adaptive quizzes
   As a teacher
-  I need to be able to delete students' attempts
+  I need a report with analysis of questions usage
 
   Background:
     Given the following "users" exist:
@@ -20,13 +20,13 @@ Feature: Delete an attempt on adaptive quiz
       | contextlevel | reference | name                    |
       | Course       | C1        | Adaptive Quiz Questions |
     And the following "questions" exist:
-      | questioncategory        | qtype     | name | questiontext    |
-      | Adaptive Quiz Questions | truefalse | TF1  | First question  |
-      | Adaptive Quiz Questions | truefalse | TF2  | Second question |
+      | questioncategory        | qtype     | name | questiontext    | answer |
+      | Adaptive Quiz Questions | truefalse | TF1  | First question  | True   |
+      | Adaptive Quiz Questions | truefalse | TF2  | Second question | True   |
     And the following "core_question > Tags" exist:
-      | question | tag    |
-      | TF1      | adpq_2 |
-      | TF2      | adpq_3 |
+      | question  | tag    |
+      | TF1       | adpq_2 |
+      | TF2       | adpq_3 |
     And the following "activity" exists:
       | activity          | adaptivequiz            |
       | idnumber          | adaptivequiz1           |
@@ -49,9 +49,9 @@ Feature: Delete an attempt on adaptive quiz
     And I log out
 
   @javascript
-  Scenario: Delete an individual attempt
+  Scenario: Navigate to reviewing of an attempt listed in single question analysis
     When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
-    And I click on "1" "link" in the "Peter The Student" "table_row"
-    And I click on "Delete attempt" "link" in the "Completed" "table_row"
-    And I press "Continue"
-    And I should see "Nothing to display"
+    And I click on "Question Analysis" "link"
+    And I click on "TF1" "link"
+    And I click on "Review attempt" "link" in the "Peter The Student" "table_row"
+    Then I should see "Adaptive Quiz - reviewing attempt by Peter The Student"

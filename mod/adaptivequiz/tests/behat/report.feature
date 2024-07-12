@@ -23,38 +23,24 @@ Feature: View students results in adaptive quiz
       | questioncategory        | qtype     | name | questiontext    | answer |
       | Adaptive Quiz Questions | truefalse | TF1  | First question  | True   |
       | Adaptive Quiz Questions | truefalse | TF2  | Second question | True   |
-    And I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I navigate to "Question bank" in current page administration
-    And I set the field "Select a category" to "Adaptive Quiz Questions (2)"
-    And I choose "Edit question" action for "TF1" in the question bank
-    And I expand all fieldsets
-    And I set the field "Tags" to "adpq_2"
-    And I press "id_submitbutton"
-    And I wait until the page is ready
-    And I choose "Edit question" action for "TF2" in the question bank
-    And I expand all fieldsets
-    And I set the field "Tags" to "adpq_3"
-    And I press "id_submitbutton"
-    And I am on "Course 1" course homepage with editing mode on
-    And I add a "Adaptive Quiz" to section "1"
-    And I set the following fields to these values:
-      | Name                         | Adaptive Quiz               |
-      | Description                  | Adaptive quiz description.  |
-      | Question pool                | Adaptive Quiz Questions (2) |
-      | Starting level of difficulty | 2                           |
-      | Lowest level of difficulty   | 1                           |
-      | Highest level of difficulty  | 10                          |
-      | Minimum number of questions  | 2                           |
-      | Maximum number of questions  | 20                          |
-      | Standard Error to stop       | 5                           |
-      | ID number                    | adaptivequiz1               |
-    And I click on "Save and return to course" "button"
-    And I am on "Course 1" course homepage
-    And I log out
-    And I log in as "student1"
-    And I am on the "adaptivequiz1" "Activity" page
-    And I press "Start attempt"
+    And the following "core_question > Tags" exist:
+      | question  | tag    |
+      | TF1       | adpq_2 |
+      | TF2       | adpq_3 |
+    And the following "activity" exists:
+      | activity          | adaptivequiz            |
+      | idnumber          | adaptivequiz1           |
+      | course            | C1                      |
+      | name              | Adaptive Quiz           |
+      | startinglevel     | 2                       |
+      | lowestlevel       | 1                       |
+      | highestlevel      | 10                      |
+      | minimumquestions  | 2                       |
+      | maximumquestions  | 20                      |
+      | standarderror     | 5                       |
+      | questionpoolnamed | Adaptive Quiz Questions |
+    And I am on the "adaptivequiz1" "Activity" page logged in as "student1"
+    And I click on "Start attempt" "link"
     And I click on "True" "radio" in the "First question" "question"
     And I press "Submit answer"
     And I click on "True" "radio" in the "Second question" "question"
@@ -81,7 +67,7 @@ Feature: View students results in adaptive quiz
       | course       | C1       |
       | role         | student  |
     And I am on the "adaptivequiz1" "Activity" page logged in as "student2"
-    And I press "Start attempt"
+    And I click on "Start attempt" "link"
     And I click on "True" "radio" in the "First question" "question"
     And I press "Submit answer"
     And I click on "True" "radio" in the "Second question" "question"
@@ -114,45 +100,6 @@ Feature: View students results in adaptive quiz
     And I click on "1" "link" in the "Peter The Student" "table_row"
     And I click on "Review attempt" "link" in the "Completed" "table_row"
     Then I should see "Peter The Student (peterthestudent@example.com)" in the "User" "table_row"
-
-  @javascript
-  Scenario: View attempt graph
-    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
-    And I click on "1" "link" in the "Peter The Student" "table_row"
-    And I click on "Review attempt" "link" in the "Completed" "table_row"
-    And I click on "Attempt Graph" "link"
-    Then "img.adaptivequiz-attemptgraph" "css_element" should be visible
-    And I should see "Table View of Attempt Graph"
-    # "Question Level" column
-    And I should see "2" in the ".generaltable tr:nth-of-type(1) td.c1" "css_element"
-    And I should see "3" in the ".generaltable tr:nth-of-type(2) td.c1" "css_element"
-    # "Right/Wrong" column
-    And I should see "r" in the ".generaltable tr:nth-of-type(1) td.c2" "css_element"
-    And I should see "r" in the ".generaltable tr:nth-of-type(2) td.c2" "css_element"
-    # "Ability Measure" column
-    And I should see "2" in the ".generaltable tr:nth-of-type(1) td.c3" "css_element"
-    And I should see "4.26" in the ".generaltable tr:nth-of-type(2) td.c3" "css_element"
-    # "Standard Error (± x%)" column
-    And I should see "38.1%" in the ".generaltable tr:nth-of-type(1) td.c4" "css_element"
-    And I should see "33.7%" in the ".generaltable tr:nth-of-type(2) td.c4" "css_element"
-
-  @javascript
-  Scenario: View attempt answer distribution
-    When I am on the "adaptivequiz1" "Activity" page logged in as "teacher1"
-    And I click on "1" "link" in the "Peter The Student" "table_row"
-    And I click on "Review attempt" "link" in the "Completed" "table_row"
-    And I click on "Answer Distribution" "link"
-    Then "img.adaptivequiz-answerdistributiongraph" "css_element" should be visible
-    And I should see "Table View of Answer Distribution"
-    # Second scoring table with no caption, "Question Level" column
-    And I should see "2" in the ".generaltable tr:nth-of-type(2) td.c0" "css_element"
-    And I should see "3" in the ".generaltable tr:nth-of-type(3) td.c0" "css_element"
-    # Second scoring table with no caption, "Num right" column
-    And I should see "1" in the ".generaltable tr:nth-of-type(2) td.c1" "css_element"
-    And I should see "1" in the ".generaltable tr:nth-of-type(3) td.c1" "css_element"
-    # Second scoring table with no caption, "Num wrong" column
-    And I should see "0" in the ".generaltable tr:nth-of-type(2) td.c2" "css_element"
-    And I should see "0" in the ".generaltable tr:nth-of-type(3) td.c2" "css_element"
 
   @javascript
   Scenario: View attempt questions details
