@@ -20,7 +20,7 @@
  * @package    local_intellidata
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 defined('MOODLE_INTERNAL') || die();
 
@@ -40,9 +40,11 @@ $definitions = [
     'config' => [
         'mode' => cache_store::MODE_APPLICATION,
         'simplekeys' => true,
+        'staticacceleration' => true,
     ],
     'datatypes' => [
         'mode' => cache_store::MODE_APPLICATION,
         'simplekeys' => true,
+        'staticacceleration' => true,
     ],
 ];

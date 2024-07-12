@@ -21,13 +21,21 @@
  * @package    local_intellidata
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata;
 
 use local_intellidata\helpers\SettingsHelper;
 
+/**
+ * Test setup test case helper.
+ *
+ * @package    local_intellidata
+ * @subpackage intellidata
+ * @copyright  2022
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ */
 class setup_helper {
 
     /**
@@ -54,6 +62,14 @@ class setup_helper {
 
         // Enable Data cleaning.
         self::enable_datacleaning();
+    }
+
+    /**
+     * Enable Custom DB Driver.
+     */
+    public static function enable_custom_driver() {
+        SettingsHelper::set_setting('enablecustomdbdriver', 1);
+        SettingsHelper::set_setting('newtracking', 1);
     }
 
     /**

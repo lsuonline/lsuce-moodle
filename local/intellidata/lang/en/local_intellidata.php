@@ -20,7 +20,7 @@
  * it has a settings page that allow you to configure the messages
  * send.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2020
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -196,6 +196,10 @@ $string['lticonsumerkey'] = 'Key';
 $string['ltisharedsecret'] = 'Secret';
 $string['ltititle'] = 'LTI Menu Title';
 $string['custommenuitem'] = 'Display in Custom Menu';
+$string['ibnltirole'] = 'IBN LTI role';
+$string['notselected'] = 'Not selected';
+$string['ltiassigndefaultmethod'] = 'Use Moodle default role assign method';
+$string['ltiassigndefaultmethod_description'] = 'The default method uses events, but is much slower.';
 $string['ltimenutitle'] = 'Analytics';
 $string['ltidebug'] = 'Debug mode';
 $string['debugenabled'] = 'Enable debug for migration and export';
@@ -352,6 +356,7 @@ $string['support_column3_text'] = "Get recommendations on how IntelliBoard can b
 $string['support_text3'] = "To proceed with your setup, please <a href='https://intelliboard.net/scheduledemo' target='_blank'><u>schedule a demo</u></a> with us.";
 $string['support_text4'] = "If you have <b><i>already purchased</i></b> a license and see this screen, please contact your Account Manager for assistance.";
 $string['cachedef_config'] = 'IntelliData Datatypes Configuration';
+$string['cachedef_datatypes'] = 'IntelliData List of enabled Datatypes';
 $string['cacheconfig'] = 'Cache datatypes configuration';
 $string['forcedisablemigration'] = 'Force disable migration';
 $string['migrationdisabled'] = 'Migration Disabled';

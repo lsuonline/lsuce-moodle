@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Course groups migration test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2023
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -23,6 +25,7 @@
 
 namespace local_intellidata\export_tests;
 
+use local_intellidata\custom_db_client_testcase;
 use local_intellidata\helpers\ParamsHelper;
 use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\StorageHelper;
@@ -37,28 +40,21 @@ global $CFG;
 require_once($CFG->dirroot . '/local/intellidata/tests/setup_helper.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/generator.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
+require_once($CFG->dirroot . '/local/intellidata/tests/custom_db_client_testcase.php');
 
 /**
  * Course groups migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2023
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
-class coursegroups_test extends \advanced_testcase {
-
-    private $newexportavailable;
-
-    public function setUp(): void {
-        $this->setAdminUser();
-
-        setup_helper::setup_tests_config();
-
-        $this->newexportavailable = ParamsHelper::get_release() >= 3.8;
-    }
+class coursegroups_test extends custom_db_client_testcase {
 
     /**
+     * Test course group create.
+     *
      * @covers \local_intellidata\entities\groups\group
      * @covers \local_intellidata\entities\groups\migration
      * @covers \local_intellidata\entities\groups\observer::group_created
@@ -78,6 +74,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Test course group member create.
+     *
      * @covers \local_intellidata\entities\groupmembers\groupmember
      * @covers \local_intellidata\entities\groupmembers\migration
      * @covers \local_intellidata\entities\groupmembers\observer::group_member_added
@@ -97,6 +95,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Test course group update.
+     *
      * @covers \local_intellidata\entities\groups\group
      * @covers \local_intellidata\entities\groups\migration
      * @covers \local_intellidata\entities\groups\observer::group_updated
@@ -118,6 +118,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Test course group member delete.
+     *
      * @covers \local_intellidata\entities\groupmembers\groupmember
      * @covers \local_intellidata\entities\groupmembers\migration
      * @covers \local_intellidata\entities\groupmembers\observer::group_member_removed
@@ -139,6 +141,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Test course group delete.
+     *
      * @covers \local_intellidata\entities\groups\group
      * @covers \local_intellidata\entities\groups\migration
      * @covers \local_intellidata\entities\groups\observer::group_deleted
@@ -160,6 +164,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Create course group test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -176,8 +182,8 @@ class coursegroups_test extends \advanced_testcase {
         $group = $DB->get_record('groups', $gdata);
 
         $userdata = [
-            'firstname' => 'ibuser1',
-            'username' => 'ibuser1' . $tracking,
+            'firstname' => 'cgibuser1',
+            'username' => 'cgibuser1' . $tracking,
             'password' => 'Ibuser1!',
         ];
 
@@ -216,6 +222,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Delete course group test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -244,6 +252,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Update course group test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -277,6 +287,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Delete course group member test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -291,8 +303,8 @@ class coursegroups_test extends \advanced_testcase {
         $group = $DB->get_record('groups', $gdata);
 
         $userdata = [
-            'firstname' => 'ibuser1',
-            'username' => 'ibuser1' . $tracking,
+            'firstname' => 'cgibuser1',
+            'username' => 'cgibuser1' . $tracking,
         ];
         $user = $DB->get_record('user', $userdata);
 
@@ -317,6 +329,8 @@ class coursegroups_test extends \advanced_testcase {
     }
 
     /**
+     * Create course group test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -326,7 +340,8 @@ class coursegroups_test extends \advanced_testcase {
     private function create_group_test($tracking) {
         $data = [
             'fullname' => 'ibcourse1' . $tracking,
-            'idnumber' => '1111111' . $tracking,
+            'idnumber' => 'cg1111111' . $tracking,
+            'shortname' => 'ibcourse1' . $tracking,
         ];
 
         // Create course.

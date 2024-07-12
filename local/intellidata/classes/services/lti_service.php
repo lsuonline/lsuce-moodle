@@ -19,16 +19,25 @@
  * @package    local_intellidata
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\services;
 
+use local_intellidata\helpers\DebugHelper;
+use local_intellidata\helpers\ParamsHelper;
 use local_intellidata\lti\OAuthConsumer;
 use local_intellidata\lti\OAuthRequest;
 use local_intellidata\lti\OAuthSignatureMethod_HMAC_SHA1;
 use local_intellidata\helpers\SettingsHelper;
 
+/**
+ *
+ * @package    local_intellidata
+ * @copyright  2021 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class lti_service {
     /** @var mixed LTI endpoint */
     private $endpoint;
@@ -90,6 +99,67 @@ class lti_service {
     }
 
     /**
+     * Set Lti role.
+     *
+     * @param array $ids
+     * @param array $roles
+     *
+     * @return void
+     */
+    public function set_lti_role($ids = [], $roles = []) {
+        global $DB;
+
+        if (!$role = $DB->get_record('role', ['id' => get_config(ParamsHelper::PLUGIN, 'ibnltirole')])) {
+            return;
+        }
+
+        try {
+            // Removing all user assign for lti role.
+            $DB->delete_records('role_assignments', ['roleid' => $role->id]);
+        } catch (\Exception $e) {
+            DebugHelper::error_log($e->getMessage());
+        }
+
+        if (!$ids && !$roles) {
+            return;
+        }
+
+        $context = \context_system::instance();
+
+        $sqlids = $ids ? " SELECT u.id
+                FROM mdl_user u
+               WHERE u.id IN (" . implode(",", $ids) . ") " : '';
+
+        $sqlroles = $roles ? " SELECT DISTINCT u.id
+                FROM {user} u
+                JOIN {role_assignments} ra ON ra.userid = u.id
+               WHERE ra.roleid IN ('" . implode("','", $roles) . "') " : '';
+
+        $sql = " $sqlids " . ($sqlids && $sqlroles ? "UNION DISTINCT" : "") . " $sqlroles ";
+
+        if (get_config(ParamsHelper::PLUGIN, 'ltiassigndefaultmethod')) {
+            // Use standard method for assign user to lti role.
+            if ($records = $DB->get_records_sql($sql)) {
+                foreach ($records as $record) {
+                    role_assign($role->id, $record->id, $context->id);
+                }
+            }
+        } else {
+            $sql = "INSERT INTO {role_assignments} (roleid, contextid, userid, timemodified)
+                         SELECT
+                            '" . $role->id . "' AS roleid,
+                            '" . $context->id . "' AS contextid,
+                            t.id,
+                            '" . time() . "' AS timemodified
+                           FROM ($sql) t ";
+
+            $DB->execute($sql);
+        }
+    }
+
+    /**
+     * Lti sign parameters.
+     *
      * @param $oldparms
      * @return array|null
      */

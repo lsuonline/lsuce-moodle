@@ -16,7 +16,7 @@
 
 /**
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2023
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2024022300;
+$plugin->version  = 2024051602;
 $plugin->requires = 2017111300;
-$plugin->release = '1.166.0';
+$plugin->release = '1.199.0';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'local_intellidata';

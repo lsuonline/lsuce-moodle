@@ -17,7 +17,7 @@
 /**
  * Export_id_repository migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2022
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -40,11 +40,10 @@ require_once($CFG->dirroot . '/local/intellidata/tests/generator.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/setup_helper.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
 
-
 /**
  * Migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2022
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
@@ -53,8 +52,10 @@ require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
  */
 class migration_test extends \advanced_testcase {
 
+    /** @var int */
     private $migrationrecordslimit = 20;
 
+    /** @var array */
     private $recordsnum = [
         'users' => 100,
         'categories' => 10,

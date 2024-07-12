@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Edit config form.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2022
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,24 +27,34 @@ namespace local_intellidata\output\forms;
 
 use local_intellidata\helpers\TrackingHelper;
 use local_intellidata\persistent\datatypeconfig;
-use local_intellidata\services\datatypes_service;
 
 defined('MOODLE_INTERNAL') || die;
 
-
 require_once($CFG->dirroot . '/lib/formslib.php');
+
 
 /**
  * Edit config form.
+ *
+ * @package    local_intellidata
+ * @subpackage intellidata
+ * @copyright  2022
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class local_intellidata_edit_config extends \moodleform {
 
     /**
+     * Form definition.
+     *
+     * @return void
      * @throws \coding_exception
      */
     public function definition() {
         $mform = $this->_form;
         $data = $this->_customdata['data'];
+        $exportlog = $this->_customdata['exportlog'];
+
+        $data->enableexport = (!empty($exportlog)) ? 1 : 0;
 
         if (isset($this->_customdata['is_required']) && $this->_customdata['is_required']) {
             $this->required_form();
@@ -60,8 +72,15 @@ class local_intellidata_edit_config extends \moodleform {
         $this->set_data($data);
     }
 
+    /**
+     * Form for required datatype.
+     *
+     * @return void
+     * @throws \coding_exception
+     */
     protected function required_form() {
         $mform = $this->_form;
+        $config = $this->_customdata['config'];
 
         $options = [
             datatypeconfig::TABLETYPE_REQUIRED => get_string('required', 'local_intellidata'),
@@ -69,15 +88,24 @@ class local_intellidata_edit_config extends \moodleform {
         ];
         $mform->addElement('select', 'tabletype', get_string('tabletype', 'local_intellidata'), $options);
         $mform->setType('tabletype', PARAM_INT);
+
+        if (isset($config->canbedisabled)) {
+            $mform->addElement('advcheckbox', 'enableexport', get_string('enableexport', 'local_intellidata'));
+            $mform->setType('enableexport', PARAM_INT);
+            $mform->disabledIf('enableexport', 'status', 'neq', datatypeconfig::STATUS_ENABLED);
+        }
     }
 
+    /**
+     * Form for optional datatype.
+     *
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
     protected function optional_form() {
         $mform = $this->_form;
-        $data = $this->_customdata['data'];
         $config = $this->_customdata['config'];
-        $exportlog = $this->_customdata['exportlog'];
-
-        $data->enableexport = (!empty($exportlog)) ? 1 : 0;
 
         $options = [
             datatypeconfig::STATUS_ENABLED => get_string('enabled', 'local_intellidata'),
@@ -103,24 +131,23 @@ class local_intellidata_edit_config extends \moodleform {
             $mform->addElement('advcheckbox', 'filterbyid', get_string('filterbyid', 'local_intellidata'));
             $mform->setType('filterbyid', PARAM_INT);
             $mform->disabledIf('filterbyid', 'timemodified_field', 'neq', '');
-
-            $mform->addElement('advcheckbox', 'rewritable', get_string('rewritable', 'local_intellidata'));
-            $mform->setType('rewritable', PARAM_INT);
-            $mform->disabledIf('rewritable', 'timemodified_field', 'neq', '');
-            $mform->disabledIf('rewritable', 'filterbyid', 'checked');
         } else {
             $mform->addElement('hidden', 'filterbyid');
             $mform->setType('filterbyid', PARAM_INT);
 
-            $mform->addElement('hidden', 'rewritable');
-            $mform->setType('rewritable', PARAM_INT);
-
             $mform->addElement('hidden', 'timemodified_field');
             $mform->setType('timemodified_field', PARAM_ALPHANUMEXT);
         }
+
+        $mform->addElement('advcheckbox', 'rewritable', get_string('rewritable', 'local_intellidata'));
+        $mform->setType('rewritable', PARAM_INT);
+        $mform->disabledIf('rewritable', 'timemodified_field', 'neq', '');
+        $mform->disabledIf('rewritable', 'filterbyid', 'checked');
     }
 
     /**
+     * Add action buttons.
+     *
      * @param bool $cancel
      * @param null $submitlabel
      * @throws \coding_exception

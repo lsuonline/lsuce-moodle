@@ -108,7 +108,7 @@ class usergrade extends \local_intellidata\entities\entity {
      * @return null
      * @throws invalid_persistent_exception
      */
-    public static function prepare_export_data($object, $fields = []) {
+    public static function prepare_export_data($object, $fields = [], $table = '') {
         global $CFG;
 
         require_once($CFG->libdir . '/gradelib.php');
@@ -125,7 +125,8 @@ class usergrade extends \local_intellidata\entities\entity {
         $data->gradeitemid = $object->itemid;
         $data->userid = $object->userid;
         $data->usermodified = $object->usermodified;
-        $data->letter = grade_format_gradevalue($object->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER);
+        $displaytype = $gradeitem->gradetype == GRADE_TYPE_SCALE ? GRADE_DISPLAY_TYPE_REAL : GRADE_DISPLAY_TYPE_LETTER;
+        $data->letter = grade_format_gradevalue($object->finalgrade, $gradeitem, true, $displaytype);
         $data->score = str_replace(' %', '', $score);
         $data->point = ($gradeitem->gradetype == GRADE_TYPE_SCALE) ?
             $gradeitem->bounded_grade($object->finalgrade) :

@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Activity Completion migration test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -24,6 +26,7 @@
 namespace local_intellidata\export_tests;
 
 use completion_info;
+use local_intellidata\custom_db_client_testcase;
 use local_intellidata\helpers\ParamsHelper;
 use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\StorageHelper;
@@ -39,28 +42,21 @@ require_once($CFG->dirroot . '/local/intellidata/tests/setup_helper.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/generator.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
 require_once($CFG->dirroot . '/lib/completionlib.php');
+require_once($CFG->dirroot . '/local/intellidata/tests/custom_db_client_testcase.php');
 
 /**
  * Activity Completion migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
-class activitycompletions_test extends \advanced_testcase {
-
-    private $newexportavailable;
-
-    public function setUp(): void {
-        $this->setAdminUser();
-
-        setup_helper::setup_tests_config();
-
-        $this->newexportavailable = ParamsHelper::get_release() >= 3.8;
-    }
+class activitycompletions_test extends custom_db_client_testcase {
 
     /**
+     * Test update activity completion.
+     *
      * @covers \local_intellidata\entities\activitycompletions\activitycompletion
      * @covers \local_intellidata\entities\activitycompletions\migration
      * @covers \local_intellidata\entities\activitycompletions\observer::course_module_completion_updated
@@ -80,6 +76,8 @@ class activitycompletions_test extends \advanced_testcase {
     }
 
     /**
+     * Update activity completion test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -98,7 +96,8 @@ class activitycompletions_test extends \advanced_testcase {
         $user = generator::create_user($userdata);
 
         $coursedata = [
-            'fullname' => 'ibcourseactivity1',
+            'fullname' => 'ibcourseactivity1' . $tracking,
+            'shortname' => 'ibcourseactivity1' . $tracking,
         ];
 
         // Create Course.

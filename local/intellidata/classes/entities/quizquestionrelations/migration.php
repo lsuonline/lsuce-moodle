@@ -23,10 +23,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace local_intellidata\entities\quizquestionrelations;
+
 use local_intellidata\helpers\DBHelper;
 use local_intellidata\helpers\ParamsHelper;
-
-
 
 /**
  * Class for migration Quiz Slots.
@@ -37,19 +36,23 @@ use local_intellidata\helpers\ParamsHelper;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class migration extends \local_intellidata\entities\migration {
-
-    public $entity      = '\local_intellidata\entities\quizquestionrelations\quizquestionrelation';
-    public $table       = 'quiz_slots';
-    public $tablealias  = 't';
+    /** @var string */
+    public $entity = '\local_intellidata\entities\quizquestionrelations\quizquestionrelation';
+    /** @var string */
+    public $table = 'quiz_slots';
+    /** @var string */
+    public $tablealias = 't';
 
     /**
+     * Prepare SQL query to get data from DB.
+     *
      * @param false $count
      * @param null $condition
      * @param array $conditionparams
      * @return array
      */
     public function get_sql($count = false, $condition = null, $conditionparams = []) {
-        $release4 = ParamsHelper::get_release() >= 4.0;
+        $release4 = ParamsHelper::compare_release('4.0');
 
         if ($release4) {
             $select = ($count) ?
@@ -65,7 +68,9 @@ class migration extends \local_intellidata\entities\migration {
                             qs.quizid,
                             MAX(qve.questionid) AS questionid,
                             qs.slot,
-                            'q' AS type
+                            'q' AS type,
+                            MAX(qre.id) as refid,
+                            null as refsid
                         FROM {quiz_slots} qs
                           JOIN {question_references} qre ON qre.itemid = qs.id
                           JOIN {question_versions} qve ON qve.questionbankentryid = qre.questionbankentryid
@@ -78,7 +83,9 @@ class migration extends \local_intellidata\entities\migration {
                             qs.quizid,
                             qc.id AS questionid,
                             qs.slot,
-                            'c' AS type
+                            'c' AS type,
+                            null as refid,
+                            qsr.id as refsid
                         FROM {quiz_slots} qs
                           JOIN {question_set_references} qsr ON qsr.questionarea = 'slot' AND qsr.itemid = qs.id
                           JOIN {question_categories} qc ON qc.contextid = qsr.questionscontextid

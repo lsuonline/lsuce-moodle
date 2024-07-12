@@ -20,28 +20,39 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\services;
 
-use local_intellidata\helpers\SettingsHelper;
+use local_intellidata\persistent\export_logs;
 use local_intellidata\repositories\database_storage_repository;
-use local_intellidata\repositories\export_id_repository;
-use local_intellidata\repositories\export_log_repository;
 use local_intellidata\repositories\file_storage_repository;
-use local_intellidata\services\datatypes_service;
 use local_intellidata\helpers\ParamsHelper;
 
-
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2020 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class export_service {
 
-    public $datatypes       = null;
-    public $showlogs        = false;
+    /** @var array|array[]|null */
+    public $datatypes = null;
+    /** @var bool|mixed */
+    public $showlogs = false;
+    /** @var bool */
     private $migrationmode  = false;
 
     /**
-     * @param false $migrationmode
+     * Export service construct.
+     *
+     * @param bool $migrationmode
+     * @param bool $applyconfig
+     * @param bool $showlogs
      */
     public function __construct($migrationmode = ParamsHelper::MIGRATION_MODE_DISABLED, $applyconfig = true, $showlogs = true) {
         $this->datatypes = $this->get_datatypes($applyconfig);
@@ -51,12 +62,16 @@ class export_service {
 
     /**
      * Set migration mode.
+     *
+     * @return void
      */
     public function set_migration_mode() {
         $this->migrationmode = ParamsHelper::MIGRATION_MODE_ENABLED;
     }
 
     /**
+     * Get datatypes.
+     *
      * @return array|array[]
      */
     public function get_datatypes($applyconfig = true) {
@@ -64,6 +79,8 @@ class export_service {
     }
 
     /**
+     * Save files.
+     *
      * @param array $params
      * @return array
      */
@@ -81,14 +98,19 @@ class export_service {
                 $storageservice = new storage_service($datatype);
                 $starttime = microtime();
 
-                if ($file = $storageservice->save_file()) {
-                    $files[] = $file;
+                if ($filesres = $storageservice->save_file()) {
+                    if (!is_array($filesres)) {
+                        $filesres = [$filesres];
+                    }
+                    foreach ($filesres as $file) {
+                        $files[] = $file;
 
-                    if ($this->showlogs) {
-                        $difftime = microtime_diff($starttime, microtime());
-                        mtrace("File {$key} exported at " . date('r') . ".");
-                        mtrace("Execution took " . $difftime . " seconds.");
-                        mtrace("-------------------------------------------");
+                        if ($this->showlogs) {
+                            $difftime = microtime_diff($starttime, microtime());
+                            mtrace("File {$key} exported at " . date('r') . ".");
+                            mtrace("Execution took " . $difftime . " seconds.");
+                            mtrace("-------------------------------------------");
+                        }
                     }
                 }
             }
@@ -113,10 +135,26 @@ class export_service {
             $datatypes = $this->datatypes;
         }
 
-        return $datatypes;
+        // Filter 'required datatypes' ones that can be disabled.
+        $resdatatypes = [];
+        foreach ($datatypes as $key => $datatype) {
+            if (!export_logs::record_exists_select('datatype=:datatype', ['datatype' => $key])) {
+                continue;
+            }
+
+            if (isset($params['except_rewritable']) && isset($datatype['rewritable']) && $datatype['rewritable']) {
+                continue;
+            }
+
+            $resdatatypes[$key] = $datatype;
+        }
+
+        return $resdatatypes;
     }
 
     /**
+     * Setup migration params.
+     *
      * @param $datatype
      * @return mixed
      */
@@ -136,6 +174,8 @@ class export_service {
     }
 
     /**
+     * Get files.
+     *
      * @param array $params
      * @return array
      */
@@ -162,6 +202,8 @@ class export_service {
     }
 
     /**
+     * Change files after migration.
+     *
      * @param int $timemodified
      * @param array $params
      *
@@ -184,8 +226,7 @@ class export_service {
     /**
      * Clear all records and storage.
      *
-     * @params array $params
-     *
+     * @param array $params
      * @return int
      * @throws \dml_exception
      */
@@ -198,6 +239,8 @@ class export_service {
     }
 
     /**
+     * Delete files.
+     *
      * @param array $params
      * @param array $exclude
      * @return int
@@ -238,6 +281,8 @@ class export_service {
     }
 
     /**
+     * Get datatype.
+     *
      * @param $datatype
      * @return array|mixed
      */
@@ -246,6 +291,8 @@ class export_service {
     }
 
     /**
+     * Store data.
+     *
      * @param $datatype
      * @param $data
      */
@@ -262,6 +309,8 @@ class export_service {
     }
 
     /**
+     * Get migration name.
+     *
      * @param $datatype
      * @return string
      */

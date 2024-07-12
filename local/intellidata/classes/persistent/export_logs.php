@@ -17,14 +17,15 @@
 /**
  * Class storage
  *
+ * @package    local_intellidata
+ * @subpackage intellidata
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\persistent;
 
-use local_intellidata\persistent\base;
 use mod_h5pactivity\event\statement_received_testcase;
 
 /**
@@ -32,7 +33,7 @@ use mod_h5pactivity\event\statement_received_testcase;
  *
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 class export_logs extends base {
 
@@ -41,7 +42,9 @@ class export_logs extends base {
 
     /** Tables types */
     const TABLE_TYPE_UNIFIED = 0;
+    /** Tables types unified */
     const TABLE_TYPE_CUSTOM = 1;
+    /** Tables types custom */
     const TABLE_TYPE_LOGS = 2;
 
     /**

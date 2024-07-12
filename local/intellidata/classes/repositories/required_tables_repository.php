@@ -17,20 +17,29 @@
 /**
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
- *
  * @package    local_intellidata
  * @copyright  2022 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\repositories;
 
-use local_intellidata\services\export_service;
 use local_intellidata\services\datatypes_service;
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2022 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class required_tables_repository extends base_tables_repository {
+
     /**
+     * Exclude tables.
+     *
      * @param $dbtables
      * @return mixed
      */
@@ -47,6 +56,8 @@ class required_tables_repository extends base_tables_repository {
     }
 
     /**
+     * Get excluded tables.
+     *
      * @param $dbtables
      * @return array
      */
@@ -61,6 +72,8 @@ class required_tables_repository extends base_tables_repository {
     }
 
     /**
+     * Validate single table.
+     *
      * @param $dbtables
      * @param $table
      * @param $keystodelete
@@ -72,6 +85,8 @@ class required_tables_repository extends base_tables_repository {
     }
 
     /**
+     * Get defined tables.
+     *
      * @return string[]
      */
     public static function get_defined_tables() {
@@ -90,6 +105,8 @@ class required_tables_repository extends base_tables_repository {
     }
 
     /**
+     * Get tables fields.
+     *
      * @return array
      */
     public static function get_tables_fields() {
@@ -100,6 +117,9 @@ class required_tables_repository extends base_tables_repository {
             $entityclass = datatypes_service::get_datatype_entity_class($datatype['entity']);
             $entityfields = $entityclass::properties_definition();
 
+            $exportlogrepository = new export_log_repository();
+            $exportlog = $exportlogrepository->get_datatype_export_log($datatype['name']);
+
             $entityfields['crud'] = [
                 'type' => PARAM_TEXT,
                 'description' => 'Event crud.',
@@ -109,6 +129,7 @@ class required_tables_repository extends base_tables_repository {
 
             $entities[$datatype['name']] = [
                 'name' => $datatype['name'],
+                'export' => (bool)$exportlog,
                 'fields' => $entityfields,
             ];
         }
@@ -125,8 +146,29 @@ class required_tables_repository extends base_tables_repository {
         return [
             'competency', 'competency_usercomp', 'competency_coursecomp',
             'competency_usercompcourse', 'competency_modulecomp', 'competency_plan',
-            'competency_usercompplan', 'tenant', 'tool_tenant', 'tool_tenant_user',
-            'roleassignments', 'question_categories',
+            'competency_usercompplan', 'competency_framework', 'scale',
+
+            // For 'tenants_' unified tables.
+            'tenant', 'tool_tenant', 'tool_tenant_user',
+
+            // For 'survey' unified table.
+            'questionnaire', 'questionnaire_question',
+            'questionnaire_question_type', 'questionnaire_response', 'questionnaire_response_bool',
+            'questionnaire_response_date', 'questionnaire_response_other', 'questionnaire_response_rank',
+            'questionnaire_response_text', 'questionnaire_resp_single', 'questionnaire_resp_multiple',
+            'questionnaire_quest_choice', 'questionnaire_survey', 'feedback', 'feedback_item',
+            'feedback_value', 'feedback_completed', 'survey', 'survey_questions', 'survey_answers',
+
+            // For 'course_custom_' unified tables.
+            'customfield_field', 'customfield_data', 'customfield_category',
+            'course_info_field', 'course_info_data',
+
+            // For 'fact_job_assignments_as' unified table.
+            'tool_organisation_department', 'tool_organisation_position', 'tool_organisation_job',
+            'job_assignment', 'org_framework', 'org', 'pos',
+
+            'assign_user_flags', 'roleassignments', 'question_categories', 'user_lastaccess',
+            'org_type_info_field', 'org_type_info_data',
         ];
     }
 }

@@ -21,23 +21,58 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\helpers;
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2020 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class ParamsHelper {
+    /**
+     * Plugin name.
+     */
     const PLUGIN = 'local_intellidata';
 
+    /**
+     * Migration mode disabled.
+     */
     const MIGRATION_MODE_DISABLED = false;
+    /**
+     * Migration mode enabled.
+     */
     const MIGRATION_MODE_ENABLED = true;
 
+    /**
+     * Status active.
+     */
     const STATE_ACTIVE = 1;
+    /**
+     * Status in active.
+     */
     const STATE_INACTIVE = 0;
 
+    /**
+     * Status system.
+     */
     const CONTEXT_SYSTEM = 1;
+    /**
+     * Status course.
+     */
     const CONTEXT_COURSE = 2;
+    /**
+     * Status course cat.
+     */
     const CONTEXT_COURSECAT = 3;
+    /**
+     * Context user.
+     */
     const CONTEXT_USER = 5;
 
     /**
@@ -81,6 +116,42 @@ class ParamsHelper {
             'moodleworkplace' => (int)class_exists('\tool_tenant\tenancy'),
             'totaraversion' => !empty($CFG->totara_version) ? $CFG->totara_version : '',
         ];
+    }
+
+    /**
+     * Returns true if the moodle release is greater than the parameter release.
+     *
+     * @param string $comparerelease
+     *
+     * @return bool
+     */
+    public static function compare_release($comparerelease) {
+        global $CFG;
+
+        if (empty($CFG->release)) {
+            return false;
+        }
+
+        $release = explode(" ", $CFG->release)[0];
+
+        $versionparts = explode('.', $release);
+        $requiredversionparts = explode('.', $comparerelease);
+
+        $isgreater = false;
+        for ($i = 0; $i < count($versionparts); $i++) {
+            if (!isset($versionparts[$i]) || !isset($requiredversionparts[$i])) {
+                break;
+            }
+
+            if ((int)$versionparts[$i] > (int)$requiredversionparts[$i]) {
+                $isgreater = true;
+                break;
+            } else if ((int)$versionparts[$i] < (int)$requiredversionparts[$i]) {
+                break;
+            }
+        }
+
+        return $isgreater;
     }
 
     /**

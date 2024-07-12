@@ -21,7 +21,7 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\helpers;
@@ -32,6 +32,14 @@ use local_intellidata\services\database_service;
 use local_intellidata\services\encryption_service;
 use local_intellidata\services\export_service;
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2020 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class ExportHelper {
 
     /**
@@ -83,6 +91,8 @@ class ExportHelper {
 
         if (TrackingHelper::new_tracking_enabled()) {
             (new tracking_repository())->export_records();
+
+            $params['except_rewritable'] = true;
         }
 
         // Export files to Moodledata.
@@ -90,7 +100,7 @@ class ExportHelper {
 
         // Export migration files to Moodledata.
         $exportservice->set_migration_mode();
-        $exportservice->save_files();
+        $exportservice->save_files($params);
 
         // Set last export date.
         SettingsHelper::set_lastexportdate();

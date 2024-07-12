@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Assignment Submissions migration test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2023
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -23,12 +25,12 @@
 
 namespace local_intellidata\export_tests;
 
+use local_intellidata\custom_db_client_testcase;
 use local_intellidata\entities\assignments\submission;
 use local_intellidata\helpers\ParamsHelper;
 use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\StorageHelper;
 use local_intellidata\generator;
-use local_intellidata\setup_helper;
 use local_intellidata\test_helper;
 
 defined('MOODLE_INTERNAL') || die();
@@ -38,28 +40,21 @@ global $CFG;
 require_once($CFG->dirroot . '/local/intellidata/tests/setup_helper.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/generator.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
+require_once($CFG->dirroot . '/local/intellidata/tests/custom_db_client_testcase.php');
 
 /**
  * Assignment Submissions migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2023
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
-class assignmentsubmissions_test extends \advanced_testcase {
-
-    private $newexportavailable;
-
-    public function setUp(): void {
-        $this->setAdminUser();
-
-        setup_helper::setup_tests_config();
-
-        $this->newexportavailable = ParamsHelper::get_release() >= 3.8;
-    }
+class assignmentsubmissions_test extends custom_db_client_testcase {
 
     /**
+     * Test assignment submission create.
+     *
      * @covers \local_intellidata\entities\assignments\submission
      * @covers \local_intellidata\entities\assignments\migration
      * @covers \local_intellidata\entities\assignments\observer::submission_created
@@ -69,18 +64,22 @@ class assignmentsubmissions_test extends \advanced_testcase {
             $this->resetAfterTest(false);
         }
 
-        if (ParamsHelper::get_release() < 3.9) {
+        if (!ParamsHelper::compare_release('3.9')) {
             return;
         }
 
-        SettingsHelper::set_setting('newtracking', 1);
-        $this->create_submission_test(1);
+        if ($this->newexportavailable) {
+            SettingsHelper::set_setting('newtracking', 1);
+            $this->create_submission_test(1);
+            SettingsHelper::set_setting('newtracking', 0);
+        }
 
-        SettingsHelper::set_setting('newtracking', 0);
         $this->create_submission_test(0);
     }
 
     /**
+     * Test assignment submission update.
+     *
      * @covers \local_intellidata\entities\assignments\submission
      * @covers \local_intellidata\entities\assignments\migration
      * @covers \local_intellidata\entities\assignments\observer::submission_updated
@@ -92,18 +91,22 @@ class assignmentsubmissions_test extends \advanced_testcase {
             $this->test_create();
         }
 
-        if (ParamsHelper::get_release() < 3.9) {
+        if (!ParamsHelper::compare_release('3.9')) {
             return;
         }
 
-        SettingsHelper::set_setting('newtracking', 1);
-        $this->update_submission_test(1);
+        if ($this->newexportavailable) {
+            SettingsHelper::set_setting('newtracking', 1);
+            $this->update_submission_test(1);
+            SettingsHelper::set_setting('newtracking', 0);
+        }
 
-        SettingsHelper::set_setting('newtracking', 0);
         $this->update_submission_test(0);
     }
 
     /**
+     * Update assignment submission test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -194,6 +197,8 @@ class assignmentsubmissions_test extends \advanced_testcase {
     }
 
     /**
+     * Create assignment submission test.
+     *
      * @param int $tracking
      *
      * @return void

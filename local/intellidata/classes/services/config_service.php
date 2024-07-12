@@ -20,14 +20,13 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\services;
 
 use local_intellidata\helpers\EventsHelper;
 use local_intellidata\helpers\SettingsHelper;
-use local_intellidata\helpers\DBHelper;
 use local_intellidata\helpers\TrackingHelper;
 use local_intellidata\repositories\config_repository;
 use local_intellidata\persistent\datatypeconfig;
@@ -36,13 +35,30 @@ use local_intellidata\repositories\system_tables_repository;
 use local_intellidata\task\delete_index_adhoc_task;
 use local_intellidata\task\export_adhoc_task;
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2020 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class config_service {
 
+    /** @var config_repository|null */
     protected $repo    = null;
+    /** @var dbschema_service|null */
     protected $dbschema    = null;
+    /** @var array|mixed */
     private $datatypes = [];
+    /** @var \local_intellidata\repositories\config[] */
     private $config = [];
 
+    /**
+     * Config service construct.
+     *
+     * @param $datatypes
+     */
     public function __construct($datatypes = []) {
         $this->repo = new config_repository();
         $this->datatypes = $datatypes;
@@ -130,13 +146,11 @@ class config_service {
         ]);
 
         // Add task to migrate records.
-        if ($record->is_required_by_default()) {
-            $exporttask = new export_adhoc_task();
-            $exporttask->set_custom_data([
-                'datatypes' => [$record->get('datatype')],
-            ]);
-            \core\task\manager::queue_adhoc_task($exporttask);
-        }
+        $exporttask = new export_adhoc_task();
+        $exporttask->set_custom_data([
+            'datatypes' => [$record->get('datatype')],
+        ]);
+        \core\task\manager::queue_adhoc_task($exporttask);
     }
 
     /**
@@ -194,7 +208,7 @@ class config_service {
 
         // Set table rewritable.
         if ($isoptional) {
-            $this->datatypes[$datatypename]['rewritable'] = TrackingHelper::new_tracking_enabled() ? false :
+            $this->datatypes[$datatypename]['rewritable'] = TrackingHelper::new_tracking_enabled() ? $config->rewritable :
                 (!$config->filterbyid && (!empty($config->rewritable) || empty($this->datatypes[$datatypename]['timemodified_field'])));
         }
 
@@ -238,11 +252,15 @@ class config_service {
     }
 
     /**
+     * Save config.
+     *
      * @param \local_intellidata\persistent\datatypeconfig $recordconfig
      * @param \stdClass $dataconfig
+     * @param null|array $datatypeconfig
+     *
      * @return void
      */
-    public function save_config($recordconfig, $dataconfig) {
+    public function save_config($recordconfig, $dataconfig, $datatypeconfig = null) {
         // Delete index for old timemodified_field.
         if (!empty($recordconfig->get('tableindex')) &&
             $dataconfig->timemodified_field != $recordconfig->get('timemodified_field')) {
@@ -269,7 +287,7 @@ class config_service {
             } else if ($dataconfig->rewritable) {
                 $dataconfig->timemodified_field = '';
                 $dataconfig->filterbyid = datatypeconfig::STATUS_DISABLED;
-            } else {
+            } else if (!TrackingHelper::new_tracking_enabled()) {
                 $dataconfig->rewritable = datatypeconfig::STATUS_ENABLED;
             }
 
@@ -289,7 +307,8 @@ class config_service {
         // Cache config after deletion.
         $this->cache_config();
 
-        if (!$recordconfig->is_required_by_default()) {
+        if (!$recordconfig->is_required_by_default() ||
+            isset($datatypeconfig['canbedisabled']) && $datatypeconfig['canbedisabled']) {
             // Process export log.
             $this->export_log($recordconfig, $dataconfig);
         } else if (($recordconfig->get('tabletype') == datatypeconfig::TABLETYPE_REQUIRED) &&
@@ -299,8 +318,9 @@ class config_service {
     }
 
     /**
-     * @param array $datatypes
+     * Create export adhoc task.
      *
+     * @param array $datatypes
      * @return void
      */
     private function create_export_adhoc_task($datatypes) {
@@ -312,6 +332,8 @@ class config_service {
     }
 
     /**
+     * Export log.
+     *
      * @param \local_intellidata\persistent\datatypeconfig $recordconfig
      * @param \stdClass $dataconfig
      * @return void
@@ -330,6 +352,8 @@ class config_service {
     }
 
     /**
+     * Create delete index adhoc task.
+     *
      * @param \local_intellidata\persistent\datatypeconfig $recordconfig
      * @return mixed
      */

@@ -24,7 +24,6 @@
  */
 namespace local_intellidata\entities\logs;
 
-
 use local_intellidata\helpers\RolesHelper;
 use local_intellidata\repositories\export_log_repository;
 use local_intellidata\persistent\datatypeconfig;
@@ -38,13 +37,18 @@ use local_intellidata\persistent\datatypeconfig;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class migration extends \local_intellidata\entities\migration {
-
-    public $entity      = '\local_intellidata\entities\logs\log';
-    public $eventname   = null;
-    public $table       = 'logstore_standard_log';
+    /** @var string */
+    public $entity = '\local_intellidata\entities\logs\log';
+    /** @var string */
+    public $eventname = null;
+    /** @var string */
+    public $table = 'logstore_standard_log';
+    /** @var string */
     public $tablealias  = 'lsl';
 
     /**
+     * Prepare SQL query to get data from DB.
+     *
      * @param false $count
      * @return array
      * @throws \coding_exception
@@ -140,7 +144,7 @@ class migration extends \local_intellidata\entities\migration {
         $this->exportlogrepository->save_last_processed_data(
             $this->datatype['name'],
             $record,
-            (isset($record->recordtimecreated)) ? $record->recordtimecreated : time(),
+            (isset($record->recordtimecreated)) ? (int)$record->recordtimecreated : time(),
             $this
         );
     }

@@ -21,7 +21,7 @@
  * @package    local_intellidata
  * @copyright  2023 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 use local_intellidata\helpers\DebugHelper;
@@ -29,7 +29,7 @@ use local_intellidata\services\new_export_service;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__.'/../../../../../../lib/dml/mysqli_native_moodle_database.php');
+require_once(__DIR__.'/../../../../../../lib/dml/pgsql_native_moodle_database.php');
 
 /**
  * Custom mysqli class representing moodle database interface.
@@ -37,7 +37,7 @@ require_once(__DIR__.'/../../../../../../lib/dml/mysqli_native_moodle_database.p
  * @package    local_intellidata
  * @copyright  2023 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 class pgsql_custom_moodle_database_external extends \pgsql_native_moodle_database {
     /**

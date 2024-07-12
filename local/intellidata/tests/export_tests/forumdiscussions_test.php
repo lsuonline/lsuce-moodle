@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Forum discussion migration test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -38,9 +40,9 @@ require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
 require_once($CFG->dirroot . '/mod/forum/externallib.php');
 
 /**
- * User migration test case.
+ * Forum discussion migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
@@ -54,6 +56,8 @@ class forumdiscussions_test extends \advanced_testcase {
     }
 
     /**
+     * Test forum discussion create.
+     *
      * @covers \local_intellidata\entities\forums\forumdiscussion
      * @covers \local_intellidata\entities\forums\discussionsmigration
      * @covers \local_intellidata\entities\forums\observer::discussion_created
@@ -73,6 +77,7 @@ class forumdiscussions_test extends \advanced_testcase {
         $coursedata = [
             'fullname' => 'ibcourseforumdiscussion1',
             'idnumber' => '44444444',
+            'shortname' => 'ibcourseforumdiscussion1',
         ];
         $course = generator::create_course($coursedata);
 
@@ -118,6 +123,8 @@ class forumdiscussions_test extends \advanced_testcase {
     }
 
     /**
+     * Test forum discussion update.
+     *
      * @covers \local_intellidata\entities\forums\forumdiscussion
      * @covers \local_intellidata\entities\forums\discussionsmigration
      * @covers \local_intellidata\entities\forums\observer::discussion_updated
@@ -184,6 +191,8 @@ class forumdiscussions_test extends \advanced_testcase {
     }
 
     /**
+     * Test forum discussion move.
+     *
      * @covers \local_intellidata\entities\forums\forumdiscussion
      * @covers \local_intellidata\entities\forums\discussionsmigration
      * @covers \local_intellidata\entities\forums\observer::discussion_moved
@@ -213,7 +222,9 @@ class forumdiscussions_test extends \advanced_testcase {
         ];
         $fromforum = $DB->get_record('forum', $fromforumdata);
 
-        $tocourse = generator::create_course();
+        $tocourse = generator::create_course([
+            'shortname' => 'ibcourseforumdiscussionm1',
+        ]);
 
         $toforumdata = [
             'course' => $tocourse->id,
@@ -257,6 +268,8 @@ class forumdiscussions_test extends \advanced_testcase {
     }
 
     /**
+     * Test forum discussion delete.
+     *
      * @covers \local_intellidata\entities\forums\forumdiscussion
      * @covers \local_intellidata\entities\forums\discussionsmigration
      * @covers \local_intellidata\entities\forums\observer::discussion_deleted

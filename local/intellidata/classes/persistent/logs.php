@@ -17,9 +17,11 @@
 /**
  * Class storage
  *
+ * @package    local_intellidata
+ * @subpackage intellidata
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\persistent;
@@ -31,15 +33,16 @@ use local_intellidata\persistent\base;
  *
  * @copyright  2021 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 class logs extends base {
 
     /** The table name. */
     const TABLE = 'local_intellidata_logs';
 
-    // Additional constants.
+    /** Type file export. */
     const TYPE_FILE_EXPORT = 'fileexport';
+    /** The file created. */
     const ACTION_CREATED = 'c';
 
     /**

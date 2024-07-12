@@ -24,6 +24,14 @@
  */
 namespace local_intellidata\entities\participations;
 
+/**
+ * Class for preparing data for Participations.
+ *
+ * @package    local_intellidata
+ * @author     IntelliBoard
+ * @copyright  2021 intelliboard.net
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class participation extends \local_intellidata\entities\entity {
 
     /**
@@ -78,7 +86,7 @@ class participation extends \local_intellidata\entities\entity {
      * @return null
      * @throws invalid_persistent_exception
      */
-    public static function prepare_export_data($object, $fields = []) {
+    public static function prepare_export_data($object, $fields = [], $table = '') {
         $object->userid = $object->userid;
         $object->type = ($object->contextlevel == CONTEXT_MODULE) ? 'activity' : 'course';
         $object->objectid = $object->contextinstanceid;

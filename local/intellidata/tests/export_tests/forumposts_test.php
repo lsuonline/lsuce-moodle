@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Forum posts migration test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -23,6 +25,7 @@
 
 namespace local_intellidata\export_tests;
 
+use local_intellidata\custom_db_client_testcase;
 use local_intellidata\helpers\ParamsHelper;
 use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\StorageHelper;
@@ -38,28 +41,21 @@ require_once($CFG->dirroot . '/local/intellidata/tests/setup_helper.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/generator.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
 require_once($CFG->dirroot . '/mod/forum/externallib.php');
+require_once($CFG->dirroot . '/local/intellidata/tests/custom_db_client_testcase.php');
 
 /**
- * User migration test case.
+ * Forum posts migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
-class forumposts_test extends \advanced_testcase {
-
-    private $newexportavailable;
-
-    public function setUp(): void {
-        $this->setAdminUser();
-
-        setup_helper::setup_tests_config();
-
-        $this->newexportavailable = ParamsHelper::get_release() >= 3.8;
-    }
+class forumposts_test extends custom_db_client_testcase {
 
     /**
+     * Test forum post create.
+     *
      * @covers \local_intellidata\entities\forums\forumpost
      * @covers \local_intellidata\entities\forums\postsmigration
      * @covers \local_intellidata\entities\forums\observer::post_created
@@ -79,6 +75,8 @@ class forumposts_test extends \advanced_testcase {
     }
 
     /**
+     * Test forum post update.
+     *
      * @covers \local_intellidata\entities\forums\forumpost
      * @covers \local_intellidata\entities\forums\postsmigration
      * @covers \local_intellidata\entities\forums\observer::post_updated
@@ -100,6 +98,8 @@ class forumposts_test extends \advanced_testcase {
     }
 
     /**
+     * Test forum post delete.
+     *
      * @covers \local_intellidata\entities\forums\forumpost
      * @covers \local_intellidata\entities\forums\postsmigration
      * @covers \local_intellidata\entities\forums\observer::post_deleted
@@ -121,6 +121,8 @@ class forumposts_test extends \advanced_testcase {
     }
 
     /**
+     * Delete forum post test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -193,6 +195,8 @@ class forumposts_test extends \advanced_testcase {
     }
 
     /**
+     * Update forum post test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -268,6 +272,8 @@ class forumposts_test extends \advanced_testcase {
     }
 
     /**
+     * Create forum post test.
+     *
      * @param int $tracking
      *
      * @return void

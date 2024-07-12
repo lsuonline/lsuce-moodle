@@ -20,29 +20,51 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\services;
 
+use local_intellidata\helpers\DBHelper;
 use local_intellidata\helpers\MigrationHelper;
 use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\ParamsHelper;
-use local_intellidata\services\datatypes_service;
-use local_intellidata\services\export_service;
-use local_intellidata\services\encryption_service;
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2020 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class migration_service {
+    /**
+     * Acceptable format types.
+     */
     const ACCEPTABLE_FORMAT_TYPES = ['json' => 'json', 'csv' => 'csv'];
 
-    protected $recordslimits        = 0;
-    protected $tables               = null;
-    protected $encryptionservice    = null;
-    protected $exportservice        = null;
+    /** @var int */
+    protected $recordslimits = 0;
+    /** @var array|array[]|null */
+    protected $tables = null;
+    /** @var \local_intellidata\services\encryption_service|null */
+    protected $encryptionservice = null;
+    /** @var \local_intellidata\services\export_service|mixed|null */
+    protected $exportservice = null;
+    /** @var bool */
     protected $exportfilesduringmigration = false;
-
+    /** @var string */
     public $exportdataformat;
 
+    /**
+     * Migration service construct.
+     *
+     * @param $exportformatkey
+     * @param $exportservice
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
     public function __construct($exportformatkey = null, $exportservice = null) {
         $this->exportservice = ($exportservice) ?? new export_service(ParamsHelper::MIGRATION_MODE_ENABLED);
         $this->tables = $this->get_tables();
@@ -60,10 +82,13 @@ class migration_service {
     }
 
     /**
+     * Migration process.
+     *
      * @param null $params
      * @param false $cronprocessing
      */
     public function process($params = null, $cronprocessing = false) {
+        global $DB, $CFG;
 
         $alltables = $this->tables;
         $tables = (!empty($params['datatype']) && isset($alltables[$params['datatype']])) ?
@@ -71,7 +96,28 @@ class migration_service {
 
         if (count($tables)) {
             foreach ($tables as $table) {
-                $this->export_table($table, $params, $cronprocessing);
+                $retries = 1;
+                do {
+                    try {
+                        $this->export_table($table, $params, $cronprocessing);
+                        $continue = false;
+                    } catch (\dml_exception $e) {
+                        if (!isset($CFG->intellidata_db_reconnects) || $CFG->intellidata_db_reconnects == 0) {
+                            throw $e;
+                        }
+
+                        sleep($retries);
+                        $DB = DBHelper::get_db_client(DBHelper::PENETRATION_TYPE_EXTERNAL);
+                        $continue = true;
+                        $reconnectsremaining = $CFG->intellidata_db_reconnects - $retries;
+                        mtrace($e->getMessage());
+                        mtrace("Database connection lost: Reconnected: {$reconnectsremaining} reconnection attempts remaining. ");
+
+                        if (++$retries > $CFG->intellidata_db_reconnects) {
+                            throw $e;
+                        }
+                    }
+                } while ($continue);
 
                 // If it is processing by cron, we need to allow only one table processing.
                 if ($cronprocessing) {
@@ -82,6 +128,8 @@ class migration_service {
     }
 
     /**
+     * Get tables.
+     *
      * @return array|array[]
      */
     public function get_tables() {
@@ -89,6 +137,8 @@ class migration_service {
     }
 
     /**
+     * Export table.
+     *
      * @param $datatype
      * @param $params
      * @param $cronprocessing
@@ -167,6 +217,8 @@ class migration_service {
     }
 
     /**
+     * Export data.
+     *
      * @param $migration
      * @param $tablename
      * @param $params

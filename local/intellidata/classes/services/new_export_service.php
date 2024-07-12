@@ -20,7 +20,7 @@
  * @package    local_intellidata
  * @copyright  2023 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\services;
@@ -28,18 +28,26 @@ namespace local_intellidata\services;
 use local_intellidata\helpers\RolesHelper;
 use local_intellidata\helpers\TrackingHelper;
 
+/**
+ *
+ */
 class new_export_service {
 
+    /** @var null|string */
     public $entityclases = null;
 
+    /** @var array */
     public static $selecteventtables = [
         'course_modules',
+        'forum_posts',
+        'questionnaire_question',
     ];
 
     /**
+     * Insert record event.
+     *
      * @param string $table
      * @param array $params
-     *
      * @return void
      */
     public function insert_record_event($table, $params) {
@@ -49,7 +57,7 @@ class new_export_service {
             return;
         }
 
-        $this->get_datatypes_observer($table);
+        $this->get_datatypes_observer($table, true);
         if (!$this->entityclases || !TrackingHelper::enabled()) {
             return;
         }
@@ -63,7 +71,7 @@ class new_export_service {
 
             $record = null;
             if ($requiredatatype) {
-                $record = $entity::prepare_export_data($params);
+                $record = $entity::prepare_export_data($params, [], $table);
             } else if (isset($params->id)) {
                 $record = $DB->get_record($table, ['id' => $params->id]);
             }
@@ -80,6 +88,8 @@ class new_export_service {
     }
 
     /**
+     * Insert records event.
+     *
      * @param string $table
      * @param array $dataobjects
      *
@@ -101,9 +111,17 @@ class new_export_service {
             $requiredatatype = !isset($entity::$datatype);
 
             foreach ($dataobjects as $dataobject) {
-                $record = $DB->get_record($table, $this->prepare_data_for_query($table, (array)$dataobject));
+                if ($requiredatatype && !$this->filter_id($entity::TYPE, (object)$dataobject)) {
+                    $params = $this->prepare_data_for_query($table, (array)$dataobject);
+                    $records = $DB->get_records($table, $params, 'id DESC', '*', 0, 1);
+                    if (!$record = array_shift($records)) {
+                        continue;
+                    }
+                } else {
+                    $record = (object)$dataobject;
+                }
 
-                if ($requiredatatype && !$this->filter($entity::TYPE, $record)) {
+                if (!isset($record) || ($requiredatatype && !$this->filter($entity::TYPE, $record))) {
                     continue;
                 }
 
@@ -120,6 +138,9 @@ class new_export_service {
     }
 
     /**
+     * Prepare data for query.
+     *
+     * @param string $table
      * @param array $data
      *
      * @return array
@@ -139,6 +160,8 @@ class new_export_service {
     }
 
     /**
+     * Set field select event.
+     *
      * @param string $table
      * @param string $select
      * @param array $params
@@ -183,6 +206,8 @@ class new_export_service {
     }
 
     /**
+     * Update record event.
+     *
      * @param string $table
      * @param array $params
      *
@@ -227,6 +252,8 @@ class new_export_service {
     }
 
     /**
+     * Delete record event.
+     *
      * @param string $table
      * @param array $params
      *
@@ -254,6 +281,8 @@ class new_export_service {
     }
 
     /**
+     * Delete records event.
+     *
      * @param string $table
      * @param string $field
      * @param array $values
@@ -298,6 +327,8 @@ class new_export_service {
     }
 
     /**
+     * Delete records select event.
+     *
      * @param string $table
      * @param string $select
      * @param array $params
@@ -333,18 +364,22 @@ class new_export_service {
     }
 
     /**
+     * Get datatypes observer.
+     *
      * @param string $table
-     * @return string
+     * @param bool $useadditional
+     * @return void
      */
-    public function get_datatypes_observer($table) {
+    public function get_datatypes_observer($table, $useadditional = false) {
         $datatypes = datatypes_service::get_datatypes();
         $entities = [];
         foreach ($datatypes as $data) {
-            if (!isset($data['table'])) {
+            $issetatable = isset($data['additional_tables']);
+            if (!isset($data['table']) && !$issetatable) {
                 continue;
             }
 
-            if ($data['table'] == $table) {
+            if (($data['table'] == $table) || ($useadditional && $issetatable && in_array($table, $data['additional_tables']))) {
                 $entities[] = datatypes_service::init_entity($data, []);
             }
         }
@@ -352,6 +387,12 @@ class new_export_service {
         $this->entityclases = !empty($entities) ? $entities : null;
     }
 
+    /**
+     * Get entity by datatype.
+     *
+     * @param $rdatatype
+     * @return string
+     */
     private function get_entity_by_datatype($rdatatype) {
         if (!is_array($rdatatype)) {
             $rdatatype = datatypes_service::get_required_datatypes()[$rdatatype];
@@ -360,6 +401,8 @@ class new_export_service {
     }
 
     /**
+     * Filter data for export.
+     *
      * @param string $table
      * @param \stdClass $data
      * @return bool
@@ -398,6 +441,33 @@ class new_export_service {
     }
 
     /**
+     * Filter id for export.
+     *
+     * @param string $table
+     * @param \stdClass $data
+     * @return bool
+     */
+    private function filter_id($datatype, $data) {
+        $needid = true;
+        switch ($datatype) {
+            case 'participation':
+                if (!in_array($data->crud, ['c', 'u']) || !$data->userid ||
+                    !in_array($data->contextlevel, [CONTEXT_COURSE, CONTEXT_MODULE])) {
+                    $needid = false;
+                }
+                break;
+            case 'userlogins':
+                $needid = isset($data->eventname) && ($data->eventname == '\core\event\user_loggedin') &&
+                            $data->contextid == 1;
+                break;
+        }
+
+        return $needid;
+    }
+
+    /**
+     * Export datatype.
+     *
      * @param string $datatype
      * @param \stdClass $data
      * @return bool

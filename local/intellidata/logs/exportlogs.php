@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Export log report.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2020
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Cohort members migration test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -23,6 +25,7 @@
 
 namespace local_intellidata\export_tests;
 
+use local_intellidata\custom_db_client_testcase;
 use local_intellidata\helpers\ParamsHelper;
 use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\StorageHelper;
@@ -37,29 +40,21 @@ global $CFG;
 require_once($CFG->dirroot . '/local/intellidata/tests/setup_helper.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/generator.php');
 require_once($CFG->dirroot . '/local/intellidata/tests/test_helper.php');
-
+require_once($CFG->dirroot . '/local/intellidata/tests/custom_db_client_testcase.php');
 
 /**
  * Cohort members migration test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
-class cohortmembers_test extends \advanced_testcase {
-
-    private $newexportavailable;
-
-    public function setUp(): void {
-        $this->setAdminUser();
-
-        setup_helper::setup_tests_config();
-
-        $this->newexportavailable = ParamsHelper::get_release() >= 3.8;
-    }
+class cohortmembers_test extends custom_db_client_testcase {
 
     /**
+     * Test cohort member create.
+     *
      * @covers \local_intellidata\entities\cohortmembers\cohortmember
      * @covers \local_intellidata\entities\cohortmembers\migration
      * @covers \local_intellidata\entities\cohortmembers\observer::cohort_member_added
@@ -79,6 +74,8 @@ class cohortmembers_test extends \advanced_testcase {
     }
 
     /**
+     * Test cohort member delete.
+     *
      * @covers \local_intellidata\entities\cohortmembers\cohortmember
      * @covers \local_intellidata\entities\cohortmembers\migration
      * @covers \local_intellidata\entities\cohortmembers\observer::cohort_member_removed
@@ -100,6 +97,8 @@ class cohortmembers_test extends \advanced_testcase {
     }
 
     /**
+     * Delete cohort member test.
+     *
      * @param int $tracking
      *
      * @return void
@@ -145,6 +144,8 @@ class cohortmembers_test extends \advanced_testcase {
     }
 
     /**
+     * Create cohort member test.
+     *
      * @param int $tracking
      *
      * @return void

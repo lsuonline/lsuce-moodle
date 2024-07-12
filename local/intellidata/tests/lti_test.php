@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local
+ * Lti test case.
+ *
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,18 +28,25 @@ namespace local_intellidata;
 use local_intellidata\services\lti_service;
 
 /**
- * User migration test case.
+ * Lti test case.
  *
- * @package    local
+ * @package    local_intellidata
  * @subpackage intellidata
  * @copyright  2021
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
 class lti_test extends \advanced_testcase {
 
+    /** @var string */
     private $endpoint;
+
+    /** @var string */
     private $key;
+
+    /** @var string */
     private $secret;
+
+    /** @var bool */
     private $debug;
 
     public function setUp(): void {
@@ -50,10 +59,11 @@ class lti_test extends \advanced_testcase {
         set_config('ltitoolurl', $this->endpoint, 'local_intellidata');
         set_config('lticonsumerkey', $this->key, 'local_intellidata');
         set_config('ltisharedsecret', $this->secret,  'local_intellidata');
-        set_config('ltidebug', $this->debug, 'local_intellidata');
     }
 
     /**
+     * Test Save last processed data.
+     *
      * @covers \local_intellidata\services\lti_service
      */
     public function test_save_last_processed_data() {
@@ -64,7 +74,6 @@ class lti_test extends \advanced_testcase {
         list($endpoint, $parms, $debug) = $ltiservice->lti_get_launch_data();
 
         $this->assertEquals($endpoint, $this->endpoint);
-        $this->assertEquals($debug, $this->debug);
         $this->assertEquals($parms['oauth_consumer_key'], $this->key);
 
         // Check for required params.

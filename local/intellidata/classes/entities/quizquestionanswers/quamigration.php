@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Class for migration Users.
+ * Class for migration Quiz question attempts migration.
  *
  * @package    local_intellidata
  * @author     IntelliBoard
@@ -24,10 +24,8 @@
  */
 namespace local_intellidata\entities\quizquestionanswers;
 
-
-
 /**
- * Class for migration Users.
+ * Class for migration Quiz question attempts migration.
  *
  * @package    local_intellidata
  * @author     IntelliBoard
@@ -35,12 +33,16 @@ namespace local_intellidata\entities\quizquestionanswers;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class quamigration extends \local_intellidata\entities\migration {
-
-    public $entity      = '\local_intellidata\entities\quizquestionanswers\quizquestionattempts';
-    public $table       = 'question_attempts';
-    public $tablealias  = 'qua';
+    /** @var string */
+    public $entity = '\local_intellidata\entities\quizquestionanswers\quizquestionattempts';
+    /** @var string */
+    public $table = 'question_attempts';
+    /** @var string */
+    public $tablealias = 'qua';
 
     /**
+     * Prepare SQL query to get data from DB.
+     *
      * @param false $count
      * @param null $condition
      * @param array $conditionparams
@@ -49,13 +51,15 @@ class quamigration extends \local_intellidata\entities\migration {
      */
     public function get_sql($count = false, $condition = null, $conditionparams = [], $timestart = null) {
 
+        $alias = $this->tablealias;
         $select = ($count) ?
-            "SELECT COUNT(qua.id) as recordscount" :
-            "SELECT qua.id, qa.id AS attemptid, qua.questionid, qa.uniqueid, qa.timemodified, qua.maxmark, qua.slot";
+            "SELECT COUNT($alias.id) as recordscount" :
+            "SELECT $alias.id, qa.id AS attemptid, $alias.questionid, qa.uniqueid,
+                    qa.timemodified, $alias.maxmark, $alias.slot, $alias.responsesummary";
 
         $sql = "$select
-                FROM {" . $this->table . "} " . $this->tablealias . "
-           LEFT JOIN {quiz_attempts} qa ON qa.uniqueid = " . $this->tablealias . ".questionusageid";
+                FROM {" . $this->table . "} $alias
+           LEFT JOIN {quiz_attempts} qa ON qa.uniqueid = $alias.questionusageid";
 
         return $this->set_condition($condition, $conditionparams, $sql, []);
     }

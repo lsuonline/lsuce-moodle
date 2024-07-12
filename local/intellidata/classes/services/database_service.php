@@ -20,7 +20,7 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 namespace local_intellidata\services;
@@ -30,31 +30,50 @@ use local_intellidata\helpers\SettingsHelper;
 use local_intellidata\helpers\TrackingHelper;
 use local_intellidata\repositories\database_repository;
 use local_intellidata\repositories\tracking\tracking_repository;
-use local_intellidata\services\datatypes_service;
 use local_intellidata\helpers\TasksHelper;
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intellidata
+ * @copyright  2020 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @see    http://intelliboard.net/
+ */
 class database_service {
 
-    protected $repo             = null;
-    protected $trackingrepo     = null;
-    protected $tables           = null;
-    protected $showlogs         = true;
-    protected $adhoctask        = false;
-    protected $services         = false;
+    /** @var database_repository|null */
+    protected $repo = null;
+    /** @var tracking_repository|null */
+    protected $trackingrepo = null;
+    /** @var array|null */
+    protected $tables = null;
+    /** @var bool|mixed */
+    protected $showlogs = true;
+    /** @var bool */
+    protected $adhoctask = false;
+    /** @var bool|mixed|null */
+    protected $services = false;
 
+    /**
+     * Database service construct.
+     *
+     * @param $showlogs
+     * @param $services
+     */
     public function __construct($showlogs = true, $services = null) {
         $this->tables = $this->get_tables();
         $this->trackingrepo = new tracking_repository();
         $this->showlogs = $showlogs;
         $this->repo = new database_repository();
         $this->services = $services;
-
     }
 
     /**
-     * @return array $params
+     * Get tables.
      *
-     * @return array|array[]
+     * @param array $params
+     * @return array
      */
     public function get_tables($params = []) {
         return $this->tables ?? datatypes_service::get_static_datatypes($params);
@@ -62,13 +81,21 @@ class database_service {
 
     /**
      * Set all datatypes list to adhoc tasks.
+     *
+     * @param bool $optional
+     * @return void
      */
-    public function set_all_tables() {
+    public function set_all_tables($optional = false) {
         $this->tables += datatypes_service::get_required_datatypes();
+        if ($optional) {
+            $this->tables += datatypes_service::get_all_optional_datatypes();
+        }
         $this->tables += datatypes_service::get_logs_datatypes();
     }
 
     /**
+     * Export tables.
+     *
      * @param null|array $params
      */
     public function export_tables($params = null) {
@@ -107,6 +134,8 @@ class database_service {
     }
 
     /**
+     * Export datatype.
+     *
      * @param $datatype
      * @param null $params
      * @throws \core\invalid_persistent_exception
@@ -128,7 +157,7 @@ class database_service {
         // Export table records.
         $recordsexported = $this->repo->export($datatype, $params, $this->showlogs, $this->services);
 
-        if (!TrackingHelper::new_tracking_enabled()) {
+        if (!TrackingHelper::new_tracking_enabled() && !in_array($datatype, datatypes_service::get_not_export_ids_datatypes())) {
             // Sync deleted items.
             $this->repo->export_ids($datatype, $this->showlogs);
         }
@@ -143,6 +172,8 @@ class database_service {
     }
 
     /**
+     * Set adhoc task.
+     *
      * @param $value
      */
     public function set_adhoctask($value) {
@@ -150,6 +181,8 @@ class database_service {
     }
 
     /**
+     * Validate datatype.
+     *
      * @param $datatype
      * @return bool
      */
@@ -176,6 +209,14 @@ class database_service {
 
         if (!empty($params['forceexport'])) {
             $tables = datatypes_service::get_static_datatypes([], $params);
+        }
+
+        if (isset($params['rewritable']) && $tables) {
+            foreach ($tables as $datatype => $data) {
+                if (isset($data['rewritable']) && ($data['rewritable'] != $params['rewritable'])) {
+                    unset($tables[$datatype]);
+                }
+            }
         }
 
         return $tables;

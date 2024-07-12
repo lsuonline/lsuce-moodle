@@ -20,7 +20,7 @@
  * @package    local_intellidata
  * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @see    http://intelliboard.net/
  */
 
 use local_intellidata\services\config_service;
@@ -34,6 +34,19 @@ use local_intellidata\helpers\DebugHelper;
 use local_intellidata\helpers\DBHelper;
 use local_intellidata\helpers\DatatypesHelper;
 
+/**
+ * Local IntelliData plugin integration upgrade.
+ *
+ * @param $oldversion
+ * @return true
+ * @throws coding_exception
+ * @throws ddl_change_structure_exception
+ * @throws ddl_exception
+ * @throws ddl_table_missing_exception
+ * @throws dml_exception
+ * @throws downgrade_exception
+ * @throws upgrade_exception
+ */
 function xmldb_local_intellidata_upgrade($oldversion) {
     global $DB;
 
@@ -1327,6 +1340,137 @@ function xmldb_local_intellidata_upgrade($oldversion) {
         \core\task\manager::queue_adhoc_task($exporttask);
 
         upgrade_plugin_savepoint(true, 2024011801, 'local', 'intellidata');
+    }
+
+    // Reset/export "quizquestionattempts" datatype.
+    if ($oldversion < 2024030100) {
+
+        $exportlogrepository = new export_log_repository();
+
+        $datatype = 'quizquestionattempts';
+
+        // Insert or update log record for datatype.
+        $exportlogrepository->insert_datatype($datatype, export_logs::TABLE_TYPE_UNIFIED, true);
+
+        // Add new datatypes to export ad-hoc task.
+        $exporttask = new export_adhoc_task();
+        $exporttask->set_custom_data([
+            'datatypes' => [$datatype],
+        ]);
+        \core\task\manager::queue_adhoc_task($exporttask);
+
+        upgrade_plugin_savepoint(true, 2024030100, 'local', 'intellidata');
+    }
+
+    // Reset/export "quizquestionattempts" datatype.
+    if ($oldversion < 2024030800) {
+
+        $exportlogrepository = new export_log_repository();
+
+        $datatype = 'usergrades';
+
+        // Insert or update log record for datatype.
+        $exportlogrepository->insert_datatype($datatype, export_logs::TABLE_TYPE_UNIFIED, true);
+
+        // Add new datatypes to export ad-hoc task.
+        $exporttask = new export_adhoc_task();
+        $exporttask->set_custom_data([
+            'datatypes' => [$datatype],
+        ]);
+        \core\task\manager::queue_adhoc_task($exporttask);
+
+        upgrade_plugin_savepoint(true, 2024030800, 'local', 'intellidata');
+    }
+
+    // Add new config/reset/export "db_scale" datatype.
+    if ($oldversion < 2024040802) {
+        $datatypename = datatypes_service::generate_optional_datatype('scale');
+        $datatypes = datatypes_service::get_all_datatypes();
+        if (isset($datatypes[$datatypename])) {
+            $dbscale = $datatypes[$datatypename];
+
+            $configservice = new \local_intellidata\services\config_service([$datatypename => $dbscale]);
+            $configservice->setup_config();
+
+            $exportlogrepository = new export_log_repository();
+            // Insert or update log record for datatype.
+            $exportlogrepository->insert_datatype($datatypename);
+
+            // Add new datatypes to export ad-hoc task.
+            $exporttask = new export_adhoc_task();
+            $exporttask->set_custom_data([
+                'datatypes' => [$datatypename],
+            ]);
+            \core\task\manager::queue_adhoc_task($exporttask);
+        }
+
+        upgrade_plugin_savepoint(true, 2024040802, 'local', 'intellidata');
+    }
+
+    // Reset/export "gradeitems" datatype.
+    if ($oldversion < 2024041500) {
+
+        $exportlogrepository = new export_log_repository();
+
+        $datatype = 'gradeitems';
+
+        // Insert or update log record for datatype.
+        $exportlogrepository->insert_datatype($datatype, export_logs::TABLE_TYPE_UNIFIED, true);
+
+        // Add new datatypes to export ad-hoc task.
+        $exporttask = new export_adhoc_task();
+        $exporttask->set_custom_data([
+            'datatypes' => [$datatype],
+        ]);
+        \core\task\manager::queue_adhoc_task($exporttask);
+
+        upgrade_plugin_savepoint(true, 2024041500, 'local', 'intellidata');
+    }
+
+    if ($oldversion < 2024042600) {
+
+        $DB->execute("UPDATE {local_intellidata_export_log} SET tabletype=1 WHERE datatype LIKE 'db_%' AND tabletype=0");
+
+        upgrade_plugin_savepoint(true, 2024042600, 'local', 'intellidata');
+    }
+
+    // Add new config/reset/export "db_user_lastaccess" datatype.
+    if ($oldversion < 2024050300) {
+        $datatypename = datatypes_service::generate_optional_datatype('user_lastaccess');
+        $datatypes = datatypes_service::get_all_datatypes();
+        if (isset($datatypes[$datatypename])) {
+            $dbscale = $datatypes[$datatypename];
+
+            $configservice = new \local_intellidata\services\config_service([$datatypename => $dbscale]);
+            $configservice->setup_config();
+
+            $exportlogrepository = new export_log_repository();
+            // Insert or update log record for datatype.
+            $exportlogrepository->insert_datatype($datatypename);
+
+            // Add new datatypes to export ad-hoc task.
+            $exporttask = new export_adhoc_task();
+            $exporttask->set_custom_data([
+                'datatypes' => [$datatypename],
+            ]);
+            \core\task\manager::queue_adhoc_task($exporttask);
+        }
+
+        upgrade_plugin_savepoint(true, 2024050300, 'local', 'intellidata');
+    }
+
+    // Add new config "db_logstore_standard_log" datatype.
+    if ($oldversion < 2024051601) {
+        $datatypename = datatypes_service::generate_optional_datatype('logstore_standard_log');
+        $datatypes = datatypes_service::get_all_datatypes();
+        if (isset($datatypes[$datatypename])) {
+            $dbscale = $datatypes[$datatypename];
+
+            $configservice = new \local_intellidata\services\config_service([$datatypename => $dbscale]);
+            $configservice->setup_config();
+        }
+
+        upgrade_plugin_savepoint(true, 2024051601, 'local', 'intellidata');
     }
 
     return true;

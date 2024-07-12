@@ -24,13 +24,11 @@
  */
 namespace local_intellidata\entities;
 
-
+use stdClass;
+use lang_string;
 use coding_exception;
 use core\invalid_persistent_exception;
 use local_intellidata\helpers\EventsHelper;
-use lang_string;
-use local_intellidata\helpers\SettingsHelper;
-use stdClass;
 
 /**
  * Abstract class for core objects saved to the DB.
@@ -52,12 +50,18 @@ abstract class entity {
     /** @var array The list of validation errors. */
     private $errors = [];
 
-    /** @var boolean If the data was already validated. */
+    /** @var bool If the data was already validated. */
     private $validated = false;
 
     /** @var array The list of fields. */
     private $fields = [];
 
+    /**
+     * Entity constructor.
+     *
+     * @param $record
+     * @param $returnfields
+     */
     public function __construct($record = null, $returnfields = []) {
         if (count($returnfields)) {
             $this->returnfields = $returnfields;
@@ -111,6 +115,8 @@ abstract class entity {
     }
 
     /**
+     * Get crud.
+     *
      * @return mixed|string|null
      * @throws coding_exception
      */
@@ -243,7 +249,7 @@ abstract class entity {
 
         $def['recordtimecreated'] = [
             'default' => 0,
-            'type' => PARAM_INT,
+            'type' => PARAM_FLOAT,
             'description' => 'Timestamp when record created.',
             'null' => NULL_NOT_ALLOWED,
         ];
@@ -350,7 +356,7 @@ abstract class entity {
         $this->before_export();
 
         // We can safely set those values bypassing the validation because we know what we're doing.
-        $now = time();
+        $now = microtime(true);
         $this->raw_set('recordtimecreated', $now);
         $this->raw_set('recordusermodified', $USER->id);
         $this->raw_set('crud', $this->get_crud());
@@ -373,11 +379,12 @@ abstract class entity {
      *
      * @param \stdClass $object
      * @param array $fields
+     * @param string $table
      *
      * @return \stdClass
      * @throws invalid_persistent_exception
      */
-    public static function prepare_export_data($object, $fields = []) {
+    public static function prepare_export_data($object, $fields = [], $table = '') {
         return $object;
     }
 

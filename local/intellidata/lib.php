@@ -14,7 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Extra library for intellidata plugin.
+ *
+ * @package    local_intellidata
+ * @subpackage intellidata
+ * @copyright  2023
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 use local_intellidata\api\apilib;
 use local_intellidata\helpers\DBHelper;
@@ -124,18 +131,26 @@ function local_intellidata_tracking_init() {
     }
 }
 
+/**
+ * Allow plugins to callback as soon possible after setup.php is loaded.
+ *
+ * @return void
+ * @throws dml_exception
+ */
 function local_intellidata_after_config() {
     global $DB;
 
-    if (TrackingHelper::tracking_enabled()) {
-        if (!empty(SettingsHelper::get_setting('enablecustomdbdriver')) ||
-            defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
-            $DB = DBHelper::get_db_client(DBHelper::PENETRATION_TYPE_EXTERNAL);
-        }
+    if (TrackingHelper::new_tracking_enabled()) {
+        $DB = DBHelper::get_db_client(DBHelper::PENETRATION_TYPE_EXTERNAL);
     }
 }
 
+/**
+ * Allow plugins to callback just before the session is started.
+ *
+ * @return void
+ * @throws dml_exception
+ */
 function local_intellidata_before_session_start() {
     local_intellidata_after_config();
 }
-
