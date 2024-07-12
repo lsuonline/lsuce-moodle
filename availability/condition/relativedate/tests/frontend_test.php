@@ -62,6 +62,15 @@ class frontend_test extends \advanced_testcase {
         $name = '\availability_relativedate\frontend';
         $frontend = new frontend();
         $this->assertCount(5, \phpunit_util::call_internal_method($frontend, 'get_javascript_init_params', [$course], $name));
+        foreach ($modinfo->get_instances() as $cms) {
+            foreach ($cms as $cm) {
+                $this->assertCount(5, \phpunit_util::call_internal_method(
+                    $frontend,
+                    'get_javascript_init_params',
+                    [$course, $cm],
+                    $name));
+            }
+        }
         $this->assertTrue(\phpunit_util::call_internal_method($frontend, 'allow_add', [$course, null, $sections[0]], $name));
         $this->assertTrue(\phpunit_util::call_internal_method($frontend, 'allow_add', [$course, null, $sections[1]], $name));
         $this->assertTrue(\phpunit_util::call_internal_method($frontend, 'allow_add', [$course], $name));
@@ -86,8 +95,8 @@ class frontend_test extends \advanced_testcase {
         $class->selfenrolment_exists_in_course_starting($course->fullname, '##-10 days noon##');
         $class->selfenrolment_exists_in_course_ending($course->fullname, '');
         $class->selfenrolment_exists_in_course_ending($course->fullname, '## today ##');
-        $class->i_make_activity_relative_date_depending_on('page1', 'page2');
         $this->expectExceptionMessage('behat_context_helper');
         $class->i_should_see_relativedate('##-10 days noon##');
+        $class->i_make_activity_relative_date_depending_on('page1', 'page2');
     }
 }

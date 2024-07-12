@@ -33,7 +33,7 @@ class autoupdate {
      * @param \core\event\base $event
      * @return void
      */
-    public static function update_from_event(\core\event\base $event) : void {
+    public static function update_from_event(\core\event\base $event): void {
         $data = $event->get_data();
         $courseid = $data['courseid'];
         if (isset($courseid) && $courseid > 0) {
@@ -41,7 +41,8 @@ class autoupdate {
             if (condition::completion_value_used($courseid, $modid)) {
                 \core_availability\info::update_dependency_id_across_course($courseid, 'course_modules', $modid, -1);
                 // Added to be sure no errors are thrown (issue #22).
-                rebuild_course_cache($courseid);
+                rebuild_course_cache($courseid, true);
+                get_fast_modinfo(0, 0, true);
             }
         }
     }
