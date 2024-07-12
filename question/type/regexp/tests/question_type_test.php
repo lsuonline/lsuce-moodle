@@ -14,14 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Unit tests for the regexp question type class.
- *
- * @package    qtype_regexp
- * @copyright 2021 Joseph Rézeau <joseph@rezeau.org>
- * @copyright based on work by 2007 The Open University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace qtype_regexp;
+
+use qtype_regexp;
+use qtype_regexp_edit_form;
+use question_possible_response;
+use question_bank;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -31,88 +29,79 @@ require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
 require_once($CFG->dirroot . '/question/type/edit_question_form.php');
 require_once($CFG->dirroot . '/question/type/regexp/edit_regexp_form.php');
 
-
 /**
  * Unit tests for the regexp question type class.
  *
- * @copyright 2021 Joseph Rézeau <joseph@rezeau.org>
+ * @package    qtype_regexp
+ * @copyright 2021 Joseph RÃ©zeau <joseph@rezeau.org>
  * @copyright based on work by 2007 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_regexp_test extends advanced_testcase {
-
-    /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
-     */
-    public static $includecoverage = array(
-        'question/type/questiontypebase.php',
-        'question/type/regexp/questiontype.php',
-    );
-
-    /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
-     */
+class question_type_test extends \advanced_testcase {
+    /** @var qtype_regexp instance of the question type class to test. */
     protected $qtype;
 
-    /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
-     */
     protected function setUp(): void {
-        $this->qtype = new qtype_regexp();
+        $this->qtype = question_bank::get_qtype('regexp');
     }
 
-    /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
-     */
     protected function tearDown(): void {
         $this->qtype = null;
     }
 
     /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
+     * template for common example of question instance
+     * @return \stdClass
      */
     protected function get_test_question_data() {
-        return test_question_maker::get_question_data('regexp');
+        return \test_question_maker::get_question_data('regexp');
     }
 
-    /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
-     */
+     /**
+      * Test the valuue returned by name  method.
+      *
+      * @covers ::name()
+      */
     public function test_name() {
         $this->assertEquals($this->qtype->name(), 'regexp');
     }
 
     /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
+     * Test response of can_analyse_responses
+     * Which determines if this question type can perform a frequency analysis of student responses.
+     *
+     *  If it returns true, it must implement the get_possible_responses method, and  question_definition class must
+     *  implement the classify_response method.
+     *
+     * @covers ::can_analyse_responses()
      */
     public function test_can_analyse_responses() {
         $this->assertTrue($this->qtype->can_analyse_responses());
     }
 
     /**
-     *  explained here https://docs.moodle.org/dev/Unit_test_API
-     * @var array
+     * Test the behaviour of get_possible_responses method.
+     *
+     * @covers ::get_possible_responses
      */
     public function test_get_possible_responses() {
-        $q = test_question_maker::get_question_data('regexp');
+        $q = \test_question_maker::get_question_data('regexp');
 
-        $this->assertEquals(array(
-            $q->id => array(
+        $this->assertEquals([
+            $q->id => [
                 13 => new question_possible_response("it's blue, white and red", 1),
                 14 => new question_possible_response("(it('s| is) |they are )?blue, white, red", 0.8),
                 15 => new question_possible_response('--.*blue.*', 0.0),
                 16 => new question_possible_response('.*', 0.0),
-                null => question_possible_response::no_response()),
-        ), $this->qtype->get_possible_responses($q));
+                null => question_possible_response::no_response()],
+        ], $this->qtype->get_possible_responses($q));
     }
 
+    /**
+     * Test the behaviour of save_question method.
+     *
+     * @covers ::save_question
+     */
     public function test_question_saving_frenchflag() {
         $this->resetAfterTest(true);
         $this->setAdminUser();
@@ -121,10 +110,10 @@ class qtype_regexp_test extends advanced_testcase {
         $formdata = test_question_maker::get_question_form_data('regexp');
 
         $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $generator->create_question_category(array());
+        $cat = $generator->create_question_category([]);
 
         $formdata->category = "{$cat->id},{$cat->contextid}";
-        qtype_regexp_edit_form::mock_submit((array)$formdata);
+        qtype_regexp_edit_form::mock_submit(([])$formdata);
 
         $form = qtype_regexp_test_helper::get_question_editing_form($cat, $questiondata);
 
@@ -133,11 +122,11 @@ class qtype_regexp_test extends advanced_testcase {
         $fromform = $form->get_data();
 
         $returnedfromsave = $this->qtype->save_question($questiondata, $fromform);
-        $actualquestionsdata = question_load_questions(array($returnedfromsave->id));
+        $actualquestionsdata = question_load_questions([$returnedfromsave->id]);
         $actualquestiondata = end($actualquestionsdata);
 
         foreach ($questiondata as $property => $value) {
-            if (!in_array($property, array('id', 'version', 'timemodified', 'timecreated', 'options'))) {
+            if (!in_array($property, ['id', 'version', 'timemodified', 'timecreated', 'options'])) {
                 $this->assertEquals($value, $actualquestiondata->$property);
             }
         }
