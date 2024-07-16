@@ -6576,7 +6576,7 @@ class Util {
         const element = realEvent.srcElement ? realEvent.srcElement : realEvent.target;
         doubleClickHandler(element, realEvent);
       };
-      Util.addEvent(eventTarget, 'dblclick', this.callbackDblclick);
+      // Util.addEvent(eventTarget, 'dblclick', this.callbackDblclick);
     }
     if (mousedownHandler) {
       this.callbackMousedown = event => {
@@ -6610,7 +6610,7 @@ class Util {
    * @static
    */
   static removeElementEvents(eventTarget) {
-    Util.removeEvent(eventTarget, 'dblclick', this.callbackDblclick);
+    // Util.removeEvent(eventTarget, 'dblclick', this.callbackDblclick);
     Util.removeEvent(eventTarget, 'mousedown', this.callbackMousedown);
     Util.removeEvent(document, 'mouseup', this.callbackMouseup);
     Util.removeEvent(eventTarget, 'mouseup', this.callbackMouseup);
