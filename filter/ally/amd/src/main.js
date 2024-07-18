@@ -906,12 +906,13 @@ chapterId;
                         }
                     });
 
-                    document.addEventListener('core_filters/contentUpdated', () => {
+                    document.addEventListener('eventTypes.filterContentUpdated', () => {
                         // When Snap lazy loads a section it triggers this event.
                         // We can ensure everything has been processed on lazy load by recalling the second
                         // stage initialization.
                         self.initStageTwo();
                     });
+
                 }
             }
         };
