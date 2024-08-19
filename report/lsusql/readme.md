@@ -61,3 +61,14 @@ the tables and populate any copied data.
 
 Both plugins are able to be used side-by-side or you can feel free to uninstall AHDQ as new features
 and fixes will be rolled in as added.
+
+## Web service access to reports.
+The url is structured as shown below.
+https://<moodle_url>/webservice/pluginfile.php/1/report_lsusql/download/<report_id>?token=<token>&dataformat=<data_format>
+<moodle_url>  = Your home moodle url.
+<report_id>   = The report id in question.
+<token>       = The user who is explicitly defined in the report's moodle access token.
+<data_format> = The data format of your choice. This must be installed in your moodle. Example: csv
+
+"Who can view this query" must be defined as "Anyone who can view this report (report/lsusql:view)".
+Limit to these users mulst be the usernames of anyone whos token you wish to use.
