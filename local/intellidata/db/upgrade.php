@@ -1473,5 +1473,94 @@ function xmldb_local_intellidata_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024051601, 'local', 'intellidata');
     }
 
+    // Add new config "course_completion_criteria" datatype.
+    if ($oldversion < 2024061102) {
+        $datatypename = datatypes_service::generate_optional_datatype('course_completion_criteria');
+        $datatypes = datatypes_service::get_all_datatypes();
+        if (isset($datatypes[$datatypename])) {
+            $dbscale = $datatypes[$datatypename];
+
+            $configservice = new \local_intellidata\services\config_service([$datatypename => $dbscale]);
+            $configservice->setup_config();
+
+            $exportlogrepository = new export_log_repository();
+            // Insert or update log record for datatype.
+            $exportlogrepository->insert_datatype($datatypename);
+
+            // Add new datatypes to export ad-hoc task.
+            $exporttask = new export_adhoc_task();
+            $exporttask->set_custom_data([
+                'datatypes' => [$datatypename],
+            ]);
+            \core\task\manager::queue_adhoc_task($exporttask);
+        }
+
+        upgrade_plugin_savepoint(true, 2024061102, 'local', 'intellidata');
+    }
+
+    // Reset/export "trackinglog" datatype.
+    if ($oldversion < 2024061800) {
+
+        $exportlogrepository = new export_log_repository();
+
+        $datatype = 'trackinglog';
+
+        // Insert or update log record for datatype.
+        $exportlogrepository->insert_datatype($datatype, export_logs::TABLE_TYPE_UNIFIED, true);
+
+        // Add new datatypes to export ad-hoc task.
+        $exporttask = new export_adhoc_task();
+        $exporttask->set_custom_data([
+            'datatypes' => [$datatype],
+        ]);
+        \core\task\manager::queue_adhoc_task($exporttask);
+
+        upgrade_plugin_savepoint(true, 2024061800, 'local', 'intellidata');
+    }
+
+    // Reset/export "users" and "courses" datatypes.
+    if ($oldversion < 2024070500) {
+
+        $exportlogrepository = new export_log_repository();
+
+        $datatypes = ['users', 'courses'];
+
+        foreach ($datatypes as $datatype) {
+            // Insert or update log record for datatype.
+            $exportlogrepository->insert_datatype($datatype, export_logs::TABLE_TYPE_UNIFIED, true);
+
+            // Add new datatypes to export ad-hoc task.
+            $exporttask = new export_adhoc_task();
+            $exporttask->set_custom_data([
+                'datatypes' => [$datatype],
+            ]);
+            \core\task\manager::queue_adhoc_task($exporttask);
+        }
+
+        upgrade_plugin_savepoint(true, 2024070500, 'local', 'intellidata');
+    }
+
+    // Add new config 'messages, message_conversation_members, message_user_actions' datatypes.
+    if ($oldversion < 2024073101) {
+        $reqdatatypes = [
+            'messages', 'message_conversation_members', 'message_user_actions',
+        ];
+        foreach ($reqdatatypes as $reqdatatype) {
+            $datatypename = datatypes_service::generate_optional_datatype($reqdatatype);
+            $datatypes = datatypes_service::get_all_datatypes();
+            if (isset($datatypes[$datatypename])) {
+                $dbscale = $datatypes[$datatypename];
+
+                $configservice = new \local_intellidata\services\config_service([$datatypename => $dbscale]);
+                $configservice->setup_config();
+
+                $exportlogrepository = new export_log_repository();
+                $exportlogrepository->insert_datatype($datatypename);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2024073101, 'local', 'intellidata');
+    }
+
     return true;
 }
