@@ -1,37 +1,38 @@
 Release Notes
 
-Release 4.0.1 (Build - 2023051600)
+Release 4.1.0 (Build - 2023081100)
+
+Initial release for Moodle 4.1 forward.
+
+Release 4.1.1 (Build - 2024082900)
 
 Improvements:
+* Compatible with Moodle 4.3 and 4.4.
+* Compatible with PHP8.2.
+* PR449 - Allow localized answer options to be displayed correctly in conditions.
+* PR506 - Accessibility: improved accessibility for essay box type.
+* PR495 - Accessibility: The slider values should be associated with the labels and the slider should be programmatically associated with the question
+* PR497 - Accessibility: Rate table does not have a programmatically associated caption.
+* PR496 - Accessibility: Numeric instructions not programmatically associated with field.
+* PR505 - Accessibility: Rate form controls within the table are not accessible.
+* PR501 - Accessibility: Check boxes missing group label.
+* PR511 - Accessibility: Radio buttons & Yes/No missing group labels.
+* PR517 - Mobile: Update sectiontext questions to display on mobile.
+* PR520 - Add Slider question type compatibility with Feedback features.
+* PR526 - Have additional info text pass through filters everywhere fixes.
+* PR534 - Fix namespace issues with externallib.php file.
+* PR536 - Support for user identity fields in Download Responses.
+* PR577 - Improved headings in report page.
+* PR581 - Mobile: Adapt mobile code to ionic 7.
+* PR569 - Adopt icon size to 24×24 with a smaller content as other icons.
+* PR586, PR579, PR594 - Various deprecations fixed.
+* PR593 - Ensure "pdf" extension force.
 
-* Moodle 4.2 compatibility:
-** removed event functions fully deprecated in 4.2.
-** added Moodle 4.2 and PHP 8.1 to CI checks.
+Bug Fixes:
+* PR508 - General PHP fixes.
+* PR523 - Behat activity completion fix.
+* PR514 - Section text qtype should not support feedback.
+* PR516 - Course description displays properly.
 
-Release 4.0.0 (Build - 2023030700)
+(see CHANGES.md in release 4.00 for earlier changes.)
 
-Bug fixes:
-
-* HTML allowed in choice display.
-* Fixed delete question error.
-* Feedback links restore correctly.
-* Required questions work with rating scales.
-* Moodle 4 descriptions only displayed once.
-* Feedback section works with empty score calculation.
-* Single activity settings work in Moodle 4.
-* Required checkbox questions with "other" option now work.
-
-Improvements:
-
-* Border added to atto editor for essay questions.
-* Better messaging on "save".
-* Better messaging on date picker question.
-* Buttons substituted for links in many places.
-* PHP8 compatibility.
-* Moodle 4 icons.
-* Improved PDF file name.
-* Non-respondents now only include enrolled users.
-* New slider type question.
-* Better completion tracking options.
-
-(see CHANGES.md in release 3.11 for earlier changes.)

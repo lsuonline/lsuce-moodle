@@ -15,9 +15,9 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_questionnaire/mobile_select_question
+    @template mod_questionnaire/mobile_checkbox_question
 
-    Template which defines a select question display in the mobile app.
+    Template which defines a checkbox question display in the mobile app.
 
     Context variables required for this template:
     * fieldkey - integer: ID of the question.
@@ -25,14 +25,17 @@
 
     Example context (json):
     {
-        "fieldkey": 985,
         "choices": [
             {
+                "fieldkey": 985,
+                "id": 5432,
                 "content": "Red",
                 "completed": 0,
                 "value": 1
             },
             {
+                "fieldkey": 986 ,
+                "id": 5433,
                 "content": "Blue",
                 "completed": 0,
                 "value": 0
@@ -41,8 +44,19 @@
     }
 }}
 {{=<% %>=}}
-<ion-select [(ngModel)]="CONTENT_OTHERDATA.<%fieldkey%>">
+<ion-list>
     <%#choices%>
-    <ion-option<%#completed%> disabled="true"<%/completed%><%#value%> selected="true"<%/value%> value="<%id%>"><%content%></ion-option>
+        <ion-item>
+            <ion-label><core-format-text text="<%content%>"></core-format-text></ion-label>
+            <ion-checkbox <%#value%> checked="true"<%/value%> value="<%id%>"
+            <%#completed%> disabled="true"<%/completed%>
+            [(ngModel)]="CONTENT_OTHERDATA.<%choicefieldkey%>"></ion-checkbox>
+        </ion-item>
+        <%#otherchoicekey%>
+            <ion-item>
+                <ion-input placeholder="Enter: " [(ngModel)]="CONTENT_OTHERDATA.<%otherchoicekey%>"
+                <%#completed%> disabled="true"<%/completed%>></ion-input>
+            </ion-item>
+        <%/otherchoicekey%>
     <%/choices%>
-</ion-select>
+</ion-list>
