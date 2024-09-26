@@ -1148,7 +1148,18 @@ class grade_category extends grade_object {
                     if ($coef == 0) {
                         continue;
                     } else if ($coef < 0) {
-                        $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                        // BEGIN LSU deal with divide by zero errors.
+                        if ($this->grade_item->grademax > 0 && $items[$itemid]->grademax > 0) {
+                            $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                        } else {
+                            if ($CFG->debugdeveloper && $CFG->debugdisplay == 1) {
+                                $gcid = $this->grade_item->courseid;
+                                $giid = !empty($this->grade_item->itemname) ? $this->grade_item->itemname : $this->grade_item->id;
+                                mtrace("Extra credit item with 0 max grade or empty natural extra credit category.<br>This causes divide by zero errors in $giid in course $gcid.<br>");
+                            }
+                            $extrasum += $grade_value;
+                        }
+                        // END LSU deal with divide by zero errors.
                     } else {
                         $weightsum += $coef;
                         $sum       += $coef * $grade_value;
@@ -1196,8 +1207,20 @@ class grade_category extends grade_object {
                     if (!empty($weighted_ec) && $items[$itemid]->aggregationcoef > 0) {
                         continue;
                     } else if (empty($weighted_ec) && $items[$itemid]->aggregationcoef > 0) {
-                        $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
-                        continue;
+                        // BEGIN LSU deal with divide by zero errors.
+                        if ($this->grade_item->grademax > 0 && $items[$itemid]->grademax > 0) {
+                            $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                            continue;
+                        } else {
+                            if ($CFG->debugdeveloper && $CFG->debugdisplay == 1) {
+                                $gcid = $this->grade_item->courseid;
+                                $giid = !empty($this->grade_item->itemname) ? $this->grade_item->itemname : $this->grade_item->id;
+                                mtrace("Extra credit item with 0 max grade or empty natural extra credit category.<br>This causes divide by zero errors in $giid in course $gcid.<br>");
+                            }
+                            $extrasum += $grade_value;
+                            continue;
+                        }
+                        // END LSU deal with divide by zero errors.
                     }
 
                     if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) {
