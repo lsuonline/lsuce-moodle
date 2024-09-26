@@ -87,6 +87,7 @@ class format_weeks extends core_courseformat\base {
      * @return string The default value for the section name.
      */
     public function get_default_section_name($section) {
+        global $CFG;
         if ($section->section == 0) {
             // Return the general section.
             return get_string('section0name', 'format_weeks');
@@ -95,6 +96,21 @@ class format_weeks extends core_courseformat\base {
 
             // We subtract 24 hours for display purposes.
             $dates->end = ($dates->end - 86400);
+
+            // BEGIN LSU daylight savings time fix.
+            $sped = new DateTime(userdate($dates->start), new DateTimeZone($CFG->timezone));
+
+            // Build the boolian based on if the provided date is in DST or not.
+            $dst = (bool) $sped->format('I');
+
+            // If we're NOT in DST, add some time.
+            if (!$dst) {
+
+                // Add 1 hour and 1 second to make sure start and end dates are correct.
+                $dates->start = ($dates->start + 3601);
+                $dates->end = ($dates->end + 3601);
+            }
+            // END LSU daylight savings time fix.
 
             $dateformat = get_string('strftimedateshort');
             $weekday = userdate($dates->start, $dateformat);
