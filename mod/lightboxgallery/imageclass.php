@@ -114,7 +114,9 @@ class lightboxgallery_image {
     }
 
     public function create_thumbnail($offsetx = 0, $offsety = 0) {
-        if ($this->storedfile->get_mimetype() == 'image/svg+xml') {
+        if ($this->storedfile->get_mimetype() == 'image/svg+xml'
+            || $this->width === null || $this->height === null) {
+            // We can't resize SVG or files we don't know the dimensions of.
             return $this->storedfile;
         }
 
@@ -149,7 +151,7 @@ class lightboxgallery_image {
         $base = imagecreatefrompng($CFG->dirroot.'/mod/lightboxgallery/pix/index.png');
         $transparent = imagecolorat($base, 0, 0);
 
-        $shrunk = imagerotate($this->get_image_resized(48, 48, 0, 0), 351, $transparent, 0);
+        $shrunk = imagerotate($this->get_image_resized(48, 48, 0, 0), 351, $transparent);
 
         imagecolortransparent($base, $transparent);
 
