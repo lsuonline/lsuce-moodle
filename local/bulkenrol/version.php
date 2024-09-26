@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * Local plugin "bulkenrol" - Version information
  *
@@ -26,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_bulkenrol';
-$plugin->version = 2023010501;
-$plugin->release = 'v4.1-r2';
+$plugin->version = 2023010502;
+$plugin->release = 'v4.1-r3';
 $plugin->requires = 2022112800;
 $plugin->supported = [401, 401];
 $plugin->maturity = MATURITY_STABLE;

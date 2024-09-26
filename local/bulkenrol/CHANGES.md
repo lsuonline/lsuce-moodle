@@ -4,6 +4,12 @@ moodle-local_bulkenrol
 Changes
 -------
 
+### v4.1-r3
+
+* 2024-08-19 - Fix a behat test which broke recently
+* 2024-08-11 - Add section for scheduled tasks to README
+* 2024-08-11 - Updated Moodle Plugin CI to latest upstream recommendations
+
 ### v4.1-r2
 
 * 2023-10-14 - Add automated release to moodle.org/plugins
