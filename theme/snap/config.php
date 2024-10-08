@@ -237,6 +237,8 @@ $THEME->blockrtlmanipulations = array(
 if ($themeissnap && $notajaxscript) {
     if (empty($CFG->snappageinit) && !empty($PAGE)) {
         $CFG->snappageinit = true;
+        $systemcontext = context_system::instance();
+        $PAGE->set_context($systemcontext);
         $PAGE->initialise_theme_and_output();
 
         // Modify $PAGE to use snap requirements manager.

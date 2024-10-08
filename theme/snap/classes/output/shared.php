@@ -454,15 +454,16 @@ EOF;
         $gradingconstants['graderealletter'] = GRADE_DISPLAY_TYPE_REAL_LETTER;
         $localplugins = core_component::get_plugin_list('local');
         // Check if the plugins are installed to pass them as parameters to accessibility.js AMD module.
-        $localjoulegrader = array_key_exists('joulegrader', $localplugins);
-        $blockreports = array_key_exists('reports', core_component::get_plugin_list('block'));
+        // $localjoulegrader = array_key_exists('joulegrader', $localplugins);
+        // $blockreports = array_key_exists('reports', core_component::get_plugin_list('block'));
         $allyreport = (\core_component::get_component_directory('report_allylti') !== null);
-        $localcatalogue = array_key_exists('catalogue', $localplugins);
+        // $localcatalogue = array_key_exists('catalogue', $localplugins);
 
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
                      $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
                      $gradingconstants];
-        $initaxvars = [$localjoulegrader, $allyreport, $blockreports, $localcatalogue];
+        // $initaxvars = [$localjoulegrader, $allyreport, $blockreports, $localcatalogue];
+        $initaxvars = [$allyreport];
         $alternativelogins = new login_alternative_methods();
         if ($alternativelogins->potentialidps) {
             $loginvars = [get_config('theme_snap', 'enabledlogin'), get_config('theme_snap', 'enabledloginorder')];
@@ -645,6 +646,7 @@ EOF;
         $gradebookicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
 
         // Joule grader if installed.
+        /*
         if (array_key_exists('joulegrader', $localplugins)) {
             if (has_capability('local/joulegrader:grade', $coursecontext)
                 || has_capability('local/joulegrader:view', $coursecontext)
@@ -655,7 +657,7 @@ EOF;
                 );
             }
         }
-
+        */
         // Gradebook.
         if (self::gradebook_accessible($coursecontext)) {
             $iconurl = $OUTPUT->image_url('gradebook', 'theme');

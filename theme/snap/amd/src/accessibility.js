@@ -26,7 +26,8 @@
 define(['jquery', 'core/str', 'core/event'],
     function($, str, Event) {
         return {
-            snapAxInit: function(localJouleGrader, allyReport, blockReports, localCatalogue) {
+            // snapAxInit: function(localJouleGrader, allyReport, blockReports, localCatalogue) {
+            snapAxInit: function(allyReport) {
 
                 /**
                  * Module to get the strings from Snap to add the aria-label attribute to new accessibility features.
@@ -41,16 +42,16 @@ define(['jquery', 'core/str', 'core/event'],
                     {key: 'viewmessaging', component: 'theme_snap'},
                     {key: 'viewforumposts', component: 'theme_snap'},
                     {key: 'editcoursesettings', component: 'theme_snap'},
-                    {key: 'gradebook', component: 'local_joulegrader'},
+                    // {key: 'gradebook', component: 'local_joulegrader'},
                     {key: 'gradebook', component: 'core_grades'},
                     {key: 'numparticipants', component: 'core_message'},
                     {key: 'pld', component: 'theme_snap'},
                     {key: 'competencies', component: 'core_competency'},
-                    {key: 'outcomes', component: 'core_outcome'},
+                    // {key: 'outcomes', component: 'core_outcome'},
                     {key: 'badges', component: 'core_badges'},
                     {key: 'coursereport', component: 'report_allylti'},
-                    {key: 'pluginname', component: 'local_catalogue'},
-                    {key: 'experimental', component: 'block_reports'}
+                    // {key: 'pluginname', component: 'local_catalogue'},
+                    // {key: 'experimental', component: 'block_reports'}
                 ]).done(function(stringsjs) {
                     if ($("#page-mod-forum-discuss")) {
                         $("div[data-content='forum-discussion'] div.singleselect form.form-inline " +
@@ -103,29 +104,29 @@ define(['jquery', 'core/str', 'core/event'],
 
                     // Check if the plugins are installed to pass the strings. These parameters are being passed from
                     // $initaxvars in snap/classes/output/shared.php. More validations can be added if needed.
-                    if (localJouleGrader) {
-                        $('section#coursetools ul#coursetools-list a:contains("' + 'Open Grader' + '")')
-                            .attr("id", "ct-open-grader");
-                        $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[9] + '")')
-                            .attr("id", "ct-course-gradebook");
-                    } else {
+                    // if (localJouleGrader) {
+                    //     $('section#coursetools ul#coursetools-list a:contains("' + 'Open Grader' + '")')
+                    //         .attr("id", "ct-open-grader");
+                    //     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[9] + '")')
+                    //         .attr("id", "ct-course-gradebook");
+                    // } else {
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[10] + '")')
                             .attr("id", "ct-course-gradebook");
-                    }
-                    if (blockReports) {
-                        $('section#coursetools ul#coursetools-list a:contains("' + 'Open Reports' + '")')
-                            .attr("id", "ct-open-reports");
-                        $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[18] + '")')
-                            .attr("id", "ct-open-reports-experimental");
-                    }
+                    // }
+                    // if (blockReports) {
+                    //     $('section#coursetools ul#coursetools-list a:contains("' + 'Open Reports' + '")')
+                    //         .attr("id", "ct-open-reports");
+                    //     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[18] + '")')
+                    //         .attr("id", "ct-open-reports-experimental");
+                    // }
                     if (allyReport) {
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[16] + '")')
                             .attr("id", "ct-ally");
                     }
-                    if (localCatalogue) {
-                        $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[17] + '")')
-                            .attr("id", "ct-open-catalogue");
-                    }
+                    // if (localCatalogue) {
+                    //     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[17] + '")')
+                    //         .attr("id", "ct-open-catalogue");
+                    // }
 
                     // Add ARIA attributes.
                     $('div[role="main"] div.sitetopic ul.section.img-text').attr('role', 'presentation');
