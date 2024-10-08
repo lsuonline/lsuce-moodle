@@ -49,3 +49,7 @@
   color: transparent !important;
 }
 
+
+.restore_template_progress_hider div.backup_progress.clearfix {
+  visibility: hidden;
+}

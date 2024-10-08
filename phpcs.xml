@@ -9,6 +9,7 @@
   <exclude-pattern>admin/tool/ally/vendorjs/vuedatatable.js</exclude-pattern>
   <exclude-pattern>admin/tool/ally/vendor/</exclude-pattern>
   <exclude-pattern>admin/tool/componentlibrary/amd/src/lunr.js</exclude-pattern>
+  <exclude-pattern>admin/tool/crawler/extlib/simple_html_dom.php</exclude-pattern>
   <exclude-pattern>admin/tool/policy/amd/src/jquery-eu-cookie-law-popup.js</exclude-pattern>
   <exclude-pattern>auth/cas/CAS/</exclude-pattern>
   <exclude-pattern>blocks/configurable_reports/amd/src/codemirror.js</exclude-pattern>
@@ -33,10 +34,10 @@
   <exclude-pattern>lib/editor/atto/plugins/html/yui/src/beautify/</exclude-pattern>
   <exclude-pattern>lib/editor/atto/plugins/wiris/core.js</exclude-pattern>
   <exclude-pattern>lib/editor/atto/yui/src/rangy/js/*.*</exclude-pattern>
+  <exclude-pattern>lib/editor/tiny/plugins/wiris/js/plugin.min.js</exclude-pattern>
   <exclude-pattern>lib/editor/tiny/js/tinymce/</exclude-pattern>
   <exclude-pattern>lib/editor/tinymce/plugins/pdw/tinymce/</exclude-pattern>
   <exclude-pattern>lib/editor/tinymce/plugins/spellchecker/rpc.php</exclude-pattern>
-  <exclude-pattern>lib/editor/tinymce/plugins/tiny_mce_wiris/tinymce/editor_plugin.js</exclude-pattern>
   <exclude-pattern>lib/editor/tinymce/tiny_mce/</exclude-pattern>
   <exclude-pattern>lib/mlbackend/php/phpml/</exclude-pattern>
   <exclude-pattern>lib/adodb/</exclude-pattern>
@@ -91,6 +92,11 @@
   <exclude-pattern>lib/http-message/</exclude-pattern>
   <exclude-pattern>lib/phpxmlrpc/</exclude-pattern>
   <exclude-pattern>local/adminer/lib/</exclude-pattern>
+  <exclude-pattern>local/aws_sdk/vendor/aws/</exclude-pattern>
+  <exclude-pattern>local/aws_sdk/vendor/</exclude-pattern>
+  <exclude-pattern>local/aws_sdk/vendor/guzzlehttp/</exclude-pattern>
+  <exclude-pattern>local/aws_sdk/vendor/mtdowling/</exclude-pattern>
+  <exclude-pattern>local/aws_sdk/vendor/psr/</exclude-pattern>
   <exclude-pattern>media/player/videojs/amd/src/video-lazy.js</exclude-pattern>
   <exclude-pattern>media/player/videojs/amd/src/Youtube-lazy.js</exclude-pattern>
   <exclude-pattern>media/player/videojs/videojs/</exclude-pattern>
@@ -109,10 +115,6 @@
   <exclude-pattern>mod/lightboxgallery/yui/lightbox/</exclude-pattern>
   <exclude-pattern>mod/lightboxgallery/assets/</exclude-pattern>
   <exclude-pattern>mod/questionnaire/javascript/RGraph/</exclude-pattern>
-  <exclude-pattern>plagiarism/turnitinsim/vendor/katzgrau/</exclude-pattern>
-  <exclude-pattern>plagiarism/turnitinsim/vendor/psr/</exclude-pattern>
-  <exclude-pattern>plagiarism/turnitinsim/vendor/composer/</exclude-pattern>
-  <exclude-pattern>plagiarism/turnitinsim/vendor/autoload.php</exclude-pattern>
   <exclude-pattern>question/type/wq/quizzes/</exclude-pattern>
   <exclude-pattern>report/lpmonitoring/amd/src/bootstrap-colorpicker.js</exclude-pattern>
   <exclude-pattern>report/lpmonitoring/amd/src/jquery.dataTables.js</exclude-pattern>

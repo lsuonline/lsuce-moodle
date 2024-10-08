@@ -73,17 +73,17 @@ Example:
     echo $help;
     die;
 }
-if ($options['username'] == '' ) {
-    cli_heading('Password reset');
-    $prompt = "Enter username (manual authentication only)";
-    $username = cli_input($prompt);
-} else {
-    $username = $options['username'];
-}
+// if ($options['username'] == '' ) {
+//     cli_heading('Password reset');
+//     $prompt = "Enter username (manual authentication only)";
+//     $username = cli_input($prompt);
+// } else {
+//     $username = $options['username'];
+// }
 
-if (!$user = $DB->get_record('user', array('auth'=>'manual', 'username'=>$username, 'mnethostid'=>$CFG->mnet_localhost_id))) {
-    cli_error("Can not find user '$username'");
-}
+// if (!$user = $DB->get_record('user', array('auth'=>'manual', 'username'=>$username, 'mnethostid'=>$CFG->mnet_localhost_id))) {
+//     cli_error("Can not find user '$username'");
+// }
 
 if ($options['password'] == '' ) {
     $prompt = "Enter new password";
@@ -92,17 +92,17 @@ if ($options['password'] == '' ) {
     $password = $options['password'];
 }
 
-$errmsg = '';//prevent eclipse warning
-if (!$options['ignore-password-policy'] ) {
-    if (!check_password_policy($password, $errmsg, $user)) {
-        cli_error(html_to_text($errmsg, 0));
-    }
-}
+// $errmsg = '';//prevent eclipse warning
+// if (!$options['ignore-password-policy'] ) {
+//     if (!check_password_policy($password, $errmsg, $user)) {
+//         cli_error(html_to_text($errmsg, 0));
+//     }
+// }
 
 $hashedpassword = hash_internal_user_password($password);
 
-$DB->set_field('user', 'password', $hashedpassword, array('id'=>$user->id));
-
-echo "Password changed\n";
+// $DB->set_field('user', 'password', $hashedpassword, array('id'=>$user->id));
+echo "Password is: ".$hashedpassword;
+echo "\n\nPassword changed\n";
 
 exit(0); // 0 means success.

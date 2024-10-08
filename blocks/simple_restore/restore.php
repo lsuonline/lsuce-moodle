@@ -84,11 +84,12 @@ if (!$confirm) {
 if ($confirm and data_submitted()) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading($header);
+    echo '<span class="restore_template_progress_hider">';
     try {
         $restore->execute();
-        echo $OUTPUT->notification(
-            get_string('restoreexecutionsuccess', 'backup'), 'notifysuccess'
-        );
+        // echo $OUTPUT->notification(
+        //     get_string('restoreexecutionsuccess', 'backup'), 'notifysuccess'
+        // );
     } catch (Exception $e) {
         $a = $e->getMessage();
         echo $OUTPUT->notification(simple_restore_utils::_s('no_restore', $a));
@@ -96,8 +97,9 @@ if ($confirm and data_submitted()) {
         // In case of an aborted archive restore, the 'new' course will have been deleted.
         $course->id = $archivemode == 1 ? 1 : $course->id;
     }
-    echo $OUTPUT->continue_button(
-        new moodle_url('/course/view.php', array('id' => $course->id))
-    );
+    // echo $OUTPUT->continue_button(
+    //     new moodle_url('/course/view.php', array('id' => $course->id))
+    // );
+    echo '</span>';
     echo $OUTPUT->footer();
 }
