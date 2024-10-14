@@ -46,6 +46,14 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('no_course', 'block_simple_restore', '', $courseid);
 }
 
+$blockname = get_string('pluginname', 'block_simple_restore');
+$heading = simple_restore_utils::heading($restoreto);
+
+$baseurl = new moodle_url('/blocks/simple_restore/list.php', array(
+    'id' => $courseid, 'restore_to' => $restoreto
+));
+
+
 // Set context and require capabilities depending on archive_mode.
 if ($archivemode) {
     $context = context_system::instance();
@@ -53,6 +61,33 @@ if ($archivemode) {
 } else {
     $context = context_course::instance($courseid);
     require_capability('block/simple_restore:canrestore', $context);
+}
+
+// Return the number of grades.
+$sql = "SELECT COUNT(*) as count
+        FROM mdl_course AS c
+        JOIN mdl_grade_items AS gi ON gi.courseid = c.id
+        JOIN mdl_grade_grades AS gg ON gi.id = gg.itemid 
+        WHERE NOT gg.finalgrade <=> NULL 
+        AND gi.courseid = :courseid";
+$count = $DB->count_records_sql($sql, array("courseid" => $courseid));
+
+if ($count > 0) {
+    $PAGE->set_url($baseurl);
+    $warn = $OUTPUT->notification(simple_restore_utils::_s('have_grades'));
+
+    $PAGE->set_context($context);
+    $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php?id='.$course->id));
+    $PAGE->set_title($blockname.': '.$heading);
+
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading(simple_restore_utils::_s('restore_stopped'));
+    echo $warn;
+    echo $OUTPUT->continue_button(
+        new moodle_url('/course/view.php', array('id' => $course->id))
+    );
+    echo $OUTPUT->footer();
+    die;
 }
 
 // The user has chosen a file.
@@ -87,13 +122,6 @@ if ($file and $action and $name) {
         'restore_to' => $restoreto
     )));
 }
-
-$blockname = get_string('pluginname', 'block_simple_restore');
-$heading = simple_restore_utils::heading($restoreto);
-
-$baseurl = new moodle_url('/blocks/simple_restore/list.php', array(
-    'id' => $courseid, 'restore_to' => $restoreto
-));
 
 $PAGE->set_context($context);
 $PAGE->set_course($course);

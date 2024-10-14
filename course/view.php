@@ -244,6 +244,19 @@
         $PAGE->set_title(get_string('coursetitle' . $editingtitle, 'moodle', array('course' => $course->fullname)));
     }
 
+    // BEGIN LSU Check for async course restore.
+    $sql = 'SELECT * from {backup_controllers}
+        WHERE  itemid = '. $course->id.'
+        ORDER BY timecreated DESC
+        LIMIT 1';
+    
+    $backup_ctrl = $DB->get_record_sql($sql);
+
+    if ($backup_ctrl->status != 1000) {
+        redirect($CFG->wwwroot .'/backup/restorefile.php?contextid='.$context->id);
+    }
+    // END LSU Check for async course restore.
+
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
 

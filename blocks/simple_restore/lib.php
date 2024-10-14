@@ -553,15 +553,28 @@ class simple_restore {
 
         simple_restore_utils::includes();
 
-        // Prepare a progress bar which can display optionally during long-running
-        // operations while setting up the UI.
-        $slowprogress = new \core\progress\display_if_slow(get_string('preparingui', 'backup'));
+        $useasync = (bool)get_config('simple_restore', 'async_toggle');
 
-        // Overall, allow 10 units of progress.
-        $slowprogress->start_progress('', 10);
+        // if (isset($useasync) && $useasync == "1") {
+        if ($useasync) {
+            // Prepare a progress bar which can display optionally during long-running
+            // operations while setting up the UI.
+            $slowprogress = new \core\progress\display_if_slow(get_string('preparingui', 'backup'));
 
-        // This progress section counts for loading the restore controller.
-        $slowprogress->start_progress('', 1, 1);
+            // Overall, allow 10 units of progress.
+            $slowprogress->start_progress('', 10);
+
+            // This progress section counts for loading the restore controller.
+            $slowprogress->start_progress('', 1, 1);
+
+            $backupmode = backup::MODE_ASYNC;
+            // Prefer to use bool.
+            $useasync = true;
+        } else {
+            $backupmode = backup::MODE_GENERAL;
+            // Prefer to use bool.
+            $useasync = false;
+        }
 
         // Archive mode.
         if ($this->restore_to == 2 && get_config('simple_restore', 'is_archive_server')) {
@@ -572,7 +585,6 @@ class simple_restore {
         $confirmed = $this->process_destination($this->process_confirm());
 
         // Setting up controller ... tmp tables.
-        $backupmode = backup::MODE_ASYNC;
         $rc = new restore_controller(
             $confirmed->get_filepath(),
             $confirmed->get_course_id(),
@@ -585,66 +597,69 @@ class simple_restore {
         if ($rc->get_status() == backup::STATUS_REQUIRE_CONV) {
             $rc->convert();
         }
-        
-        // Get the renderer so we can use the backup status template.
-        $renderer = $PAGE->get_renderer('core','backup');
 
-        $restore = new restore_ui($rc, array('contextid'=>$this->context->id));        
-        $restore->set_progress_reporter($slowprogress);
+        if ($useasync) {
 
-        if (!$restore->is_independent()) {
-            // Use a temporary (disappearing) progress bar to show the precheck progress if any.
-            $precheckprogress = new \core\progress\display_if_slow(get_string('preparingdata', 'backup'));
-            $restore->get_controller()->set_progress($precheckprogress);
-           
-            if ($rc->get_status() == backup::STATUS_SETTING_UI) {
-                $rc->finish_ui();
-            }
-            if ($rc->get_status() == backup::STATUS_NEED_PRECHECK) {
-                if (!$rc->precheck_executed()) {
-                    $rc->execute_precheck(true);
+            // Get the renderer so we can use the backup status template.
+            $renderer = $PAGE->get_renderer('core','backup');
+
+            $restore = new restore_ui($rc, array('contextid'=>$this->context->id));
+            $restore->set_progress_reporter($slowprogress);
+
+            if (!$restore->is_independent()) {
+                // Use a temporary (disappearing) progress bar to show the precheck progress if any.
+                $precheckprogress = new \core\progress\display_if_slow(get_string('preparingdata', 'backup'));
+                $restore->get_controller()->set_progress($precheckprogress);
+
+                if ($rc->get_status() == backup::STATUS_SETTING_UI) {
+                    $rc->finish_ui();
                 }
-                $precheckresults = $rc->get_precheck_results();
-                if (!empty($results)) {
-                    echo $renderer->precheck_notices($precheckresults);
-                    echo $OUTPUT->continue_button(new moodle_url('/course/view.php', array('id' => $this->course->id)));
-                    echo $OUTPUT->footer();
-                    die();
+                if ($rc->get_status() == backup::STATUS_NEED_PRECHECK) {
+                    if (!$rc->precheck_executed()) {
+                        $rc->execute_precheck(true);
+                    }
+                    $precheckresults = $rc->get_precheck_results();
+                    if (!empty($results)) {
+                        echo $renderer->precheck_notices($precheckresults);
+                        echo $OUTPUT->continue_button(new moodle_url('/course/view.php', array('id' => $this->course->id)));
+                        echo $OUTPUT->footer();
+                        die();
+                    }
                 }
+                $restore->save_controller();
             }
-            $restore->save_controller();
+
+            echo $renderer->progress_bar($restore->get_progress_bar());
+
+            // Asynchronous restore.
+            // Create adhoc task for restore.
+            $restoreid = $restore->get_restoreid();
+            $asynctask = new \core\task\asynchronous_restore_task();
+            $asynctask->set_blocking(false);
+            $asynctask->set_userid($this->userid);
+            $asynctask->set_custom_data(array('backupid' => $restoreid));
+            \core\task\manager::queue_adhoc_task($asynctask);
+
+            // Add ajax progress bar and initiate ajax via a template.
+            $restoreurl = new moodle_url('/backup/restorefile.php', array('contextid' => $this->context->id));
+            $courseurl = course_get_url($this->course->id);
+            $progresssetup = array(
+                    'backupid' => $restoreid,
+                    'contextid' => $this->context->id,
+                    'courseurl' => $courseurl,
+                    'restoreurl' => $restoreurl->out()
+            );
+            echo $renderer->render_from_template('core/async_backup_status', $progresssetup);
+
+            $restore->destroy();
+            unset($restore);
+        } else {
+            // The old way.
+            $this->process_final($this->process_schema($rc));
         }
-
-        echo $renderer->progress_bar($restore->get_progress_bar());
-
-        // Asynchronous restore.
-        // Create adhoc task for restore.
-        $restoreid = $restore->get_restoreid();
-        $asynctask = new \core\task\asynchronous_restore_task();
-        $asynctask->set_blocking(false);
-        $asynctask->set_userid($this->userid);
-        $asynctask->set_custom_data(array('backupid' => $restoreid));
-        \core\task\manager::queue_adhoc_task($asynctask);
-
-        // Add ajax progress bar and initiate ajax via a template.
-        $restoreurl = new moodle_url('/backup/restorefile.php', array('contextid' => $this->context->id));
-        $courseurl = course_get_url($this->course->id);
-        $progresssetup = array(
-                'backupid' => $restoreid,
-                'contextid' => $this->context->id,
-                'courseurl' => $courseurl,
-                'restoreurl' => $restoreurl->out()
-        );
-        echo $renderer->render_from_template('core/async_backup_status', $progresssetup);
-
-        $restore->destroy();
-        unset($restore);
 
         // Probably good to do this.
         unset($confirmed);
-
-        // The old way.
-        // $this->process_final($this->process_schema($rc));
 
         // Restore blocks.
         if ($this->restore_to == 0) {
