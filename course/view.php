@@ -252,7 +252,7 @@
     
     $backup_ctrl = $DB->get_record_sql($sql);
 
-    if ($backup_ctrl->status != 1000) {
+    if ($backup_ctrl->status && $backup_ctrl->status != 1000) {
         redirect($CFG->wwwroot .'/backup/restorefile.php?contextid='.$context->id);
     }
     // END LSU Check for async course restore.
