@@ -265,7 +265,11 @@ class behat_theme_snap extends behat_base {
         $this->execute('behat_general::i_change_window_size_to', ['window', '600x1000']);
         $this->execute('behat_general::i_click_on', ['#toc-mobile-menu-toggle', 'css_element']);
         $this->execute('behat_general::i_click_on', ['.col-lg-3 .toc-footer #snap-new-section', 'css_element']);
-        $this->execute('behat_general::i_click_on', ['Insert or edit image', 'button']);
+        $this->execute('behat_forms::i_set_the_field_to', ['Title', 'New section with content']);
+        $javascript = "var value = document.getElementById('summary-editor_ifr').contentDocument.querySelectorAll('body');";
+        $javascript .= "document.getElementById('summary-editor_ifr').contentDocument.body.innerHTML = '<p>New section contents</p>';";
+        $this->getSession()->executeScript($javascript);
+        $this->execute('behat_general::i_click_on', ['Image', 'button']);
         $this->execute('behat_general::i_click_on', ['Browse repositories...', 'button']);
         $this->execute('behat_general::i_click_on_in_the', ['Private files', 'link', '.fp-repo-area', 'css_element']);
         $this->execute('behat_general::i_click_on', ['test.png', 'link']);
@@ -273,15 +277,10 @@ class behat_theme_snap extends behat_base {
         $this->execute('behat_forms::i_set_the_field_to', ['Describe this image', 'File test']);
         $this->execute('behat_general::wait_until_the_page_is_ready');
         $this->execute('behat_general::i_change_window_size_to', ['window', 'medium']);
-        $javascript = "document.querySelector('button.atto_image_urlentrysubmit').click()";
+        $javascript = "document.querySelector('button.tiny_image_urlentrysubmit').click()";
         $this->getSession()->executeScript($javascript);
-
-        $this->execute('behat_forms::i_set_the_field_to', ['Title', 'New section with content']);
-        $javascript = "var value = document.getElementById('summary-editor').value;";
-        $javascript .= "document.getElementById('summary-editor').value = value + '<p>New section contents</p>'";
+        $javascript = "document.querySelector('input[type=\"submit\"].btn.btn-primary[name=\"addtopic\"][value=\"Create section\"]').click();";
         $this->getSession()->executeScript($javascript);
-
-        $this->execute('behat_general::i_click_on', ['Create section', 'button']);
         $USER = $origuser;
     }
 
@@ -522,9 +521,10 @@ class behat_theme_snap extends behat_base {
      */
     public function i_restrict_course_section_by_date($section, $date) {
         $datetime = strtotime($date);
+        $helper = behat_context_helper::get('behat_general');
         $this->i_go_to_course_section($section);
         $this->execute('behat_general::i_click_on', ['#section-'.$section.' .edit-summary', 'css_element']);
-        $this->i_wait_until_is_visible('.editor_atto', 'css_element');
+        $helper->wait_until_the_page_is_ready();
         $this->execute('behat_forms::i_set_the_field_to', ['name[customize]', '1']);
         $this->execute('behat_forms::i_set_the_field_to', ['name[value]', 'Topic '.$date.' '.$section]);
         $this->add_date_restriction($datetime, 'Save changes');
@@ -619,7 +619,10 @@ class behat_theme_snap extends behat_base {
     public function i_restrict_asset_by_completion($asset1, $asset2) {
         /** @var behat_general $helper */
         $helper = behat_context_helper::get('behat_general');
-        $helper->i_click_on('i[alt=\'Edit "' . $asset1 . '"\']', 'css_element');
+        $xpathassetmore = "//p[contains(@class, 'instancename')][contains(text(), '$asset1')]/ancestor::div[contains(@class, 'activityinstance')]//button[contains(@class, 'snap-edit-asset-more')]";
+        $helper->i_click_on($xpathassetmore, 'xpath_element');
+        $xpathedit = "//p[contains(@class, 'instancename')][contains(text(), '$asset1')]/ancestor::div[contains(@class, 'activityinstance')]//a[contains(@class, 'snap-edit-asset')]";
+        $helper->i_click_on($xpathedit, 'xpath_element');
         $this->apply_completion_restriction($asset2, 'Save and return to course');
     }
 
@@ -634,7 +637,10 @@ class behat_theme_snap extends behat_base {
     public function i_restrict_asset_by_belong_to_group($asset1, $group1) {
         /** @var behat_general $helper */
         $helper = behat_context_helper::get('behat_general');
-        $helper->i_click_on('i[alt=\'Edit "' . $asset1 . '"\']', 'css_element');
+        $xpathassetmore = "//p[contains(@class, 'instancename')][contains(text(), '$asset1')]/ancestor::div[contains(@class, 'activityinstance')]//button[contains(@class, 'snap-edit-asset-more')]";
+        $helper->i_click_on($xpathassetmore, 'xpath_element');
+        $xpathedit = "//p[contains(@class, 'instancename')][contains(text(), '$asset1')]/ancestor::div[contains(@class, 'activityinstance')]//a[contains(@class, 'snap-edit-asset')]";
+        $helper->i_click_on($xpathedit, 'xpath_element');
         $this->apply_group_restriction($group1, 'Save and return to course');
     }
 
@@ -1182,6 +1188,14 @@ class behat_theme_snap extends behat_base {
     }
 
     /**
+     * Click on an element using javascript.
+     * @When I use js to click on :selector
+     */
+    public function i_use_js_to_click_on($selector) {
+        $this->getSession()->executeScript("document.querySelector(`$selector`).click();");
+    }
+
+    /**
      * Check navigation in section matches link title and href.
      * @param string $type "next" / "previous"
      * @param int $section
@@ -1669,9 +1683,8 @@ class behat_theme_snap extends behat_base {
      * @param int $section
      */
     public function i_highlight_section($section) {
-        $xpath = '//li[@id="section-'.$section.'"]//div[contains(@class, "snap-section-editing")]';
-        $xpath .= '//a[contains(@class, "snap-highlight")][@aria-pressed="false"]';
-        $this->execute('behat_general::i_click_on', [$xpath, 'xpath_element']);
+        $this->execute('behat_general::i_click_on', ['#section-'.$section.' .extra-actions-menu', 'css_element']);
+        $this->execute('behat_general::i_click_on', ['#section-'.$section.' .extra-actions-menu .snap-highlight', 'css_element']);
     }
 
     /**
@@ -1752,8 +1765,8 @@ class behat_theme_snap extends behat_base {
      * @return string
      */
     private function meta_assign_xpath($name) {
-        $xpath = "//p[contains(@class, 'instancename')][contains(text(), '$name')]/parent::a/parent::h3".
-        "/parent::div//div[contains(@class, 'snap-completion-meta')]";
+        $xpath = "//p[contains(@class, 'instancename')][contains(text(), '$name')]/ancestor::".
+            "div[contains(@class, 'activityinstance')]"."//div[contains(@class, 'snap-completion-meta')]";
         return $xpath;
     }
 
@@ -1802,7 +1815,7 @@ class behat_theme_snap extends behat_base {
      */
     public function meta_assign_not_overdue($name) {
         $xpath = $this->meta_assign_xpath($name);
-        $xpath .= "/a[contains(@class, 'snap-due-date')][contains(@class, 'tag-success')]";
+        $xpath .= "/a[contains(@class, 'snap-due-date')][contains(@class, 'tag-warning')]";
         $this->ensure_element_is_visible($xpath, 'xpath_element');
         $xpath = $this->meta_assign_xpath($name);
         $xpath .= "/a[contains(@class, 'snap-due-date')][contains(@class, 'tag-danger')]";
@@ -2046,5 +2059,74 @@ JS;
      */
     public function i_open_the_user_menu() {
         $this->execute('behat_general::i_click_on', ['.usermenu', 'css_element']);
+    }
+
+    /**
+     * Normalise the fixture file path relative to the dirroot.
+     *
+     * @param string $filepath
+     * @return string
+     */
+    protected function normalise_fixture_filepath(string $filepath): string {
+        global $CFG;
+
+        $filepath = str_replace('/', DIRECTORY_SEPARATOR, $filepath);
+        if (!is_readable($filepath)) {
+            $filepath = $CFG->dirroot . DIRECTORY_SEPARATOR . $filepath;
+            if (!is_readable($filepath)) {
+                throw new ExpectationException('The file to be uploaded does not exist.', $this->getSession());
+            }
+        }
+
+        return $filepath;
+    }
+
+    /**
+     * Upload a file in the file picker using the browse repository button.
+     *
+     * @Given /^I upload "(?P<filepath_string>(?:[^"]|\\")*)" to the file picker for Snap/
+     */
+    public function i_upload_a_file_in_the_filepicker(string $filepath): void {
+
+        $filepicker = $this->find('dialogue', get_string('filepicker', 'core_repository'));
+
+        $this->execute('behat_general::i_click_on_in_the', [
+            get_string('pluginname', 'repository_upload'), 'link',
+            $filepicker, 'NodeElement',
+        ]);
+
+        $reporegion = $filepicker->find('css', '.fp-repo-items');
+        $fileinput = $this->find('field', get_string('attachment', 'core_repository'), false, $reporegion);
+
+        $filepath = $this->normalise_fixture_filepath($filepath);
+
+        $fileinput->attachFile($filepath);
+        $this->execute('behat_general::i_click_on_in_the', [
+            get_string('upload', 'repository'), 'button',
+            $reporegion, 'NodeElement',
+        ]);
+    }
+
+    /**
+     * @codingStandardsIgnoreStart
+     * @Given /^I purge all caches in Snap$/
+     * @codingStandardsIgnoreEnd
+     */
+    public function i_purge_all_caches_in_snap() {
+        $generalcontext = behat_context_helper::get('behat_general');
+        $this->execute('behat_general::i_click_on', ['#admin-menu-trigger', 'css_element']);
+        $this->execute("behat_navigation::i_expand_node", 'Site administration');
+        $this->execute("behat_navigation::i_expand_node", 'Development');
+        $this->execute('behat_general::click_link', ['Purge caches']);
+        $this->execute('behat_general::click_link', ['Purge all caches']);
+    }
+
+    /**
+     * Disable completion tracking at site level.
+     *
+     * @Given /^I disable site completion tracking$/
+     */
+    public function disable_site_completion_tracking(): void {
+        set_config('enablecompletion', 0);
     }
 }

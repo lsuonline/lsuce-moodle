@@ -16,7 +16,7 @@
 
 namespace quizaccess_timelimit;
 
-use quiz;
+use mod_quiz\quiz_settings;
 use quizaccess_timelimit;
 
 defined('MOODLE_INTERNAL') || die();
@@ -33,13 +33,13 @@ require_once($CFG->dirroot . '/mod/quiz/accessrule/timelimit/rule.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class rule_test extends \basic_testcase {
-    public function test_time_limit_access_rule() {
+    public function test_time_limit_access_rule(): void {
         $quiz = new \stdClass();
         $quiz->timeclose = 0;
         $quiz->timelimit = 3600;
         $cm = new \stdClass();
         $cm->id = 0;
-        $quizobj = new quiz($quiz, $cm, null);
+        $quizobj = new quiz_settings($quiz, $cm, null);
         $rule = new quizaccess_timelimit($quizobj, 10000);
         $attempt = new \stdClass();
 
@@ -80,7 +80,7 @@ class rule_test extends \basic_testcase {
      * @param int $actuallimit  The actual limit that is being applied
      * @dataProvider time_limit_access_rule_with_time_close_provider
      */
-    public function test_time_limit_access_rule_with_time_close($timetoclose, $timelimit, $displaylimit, $actuallimit) {
+    public function test_time_limit_access_rule_with_time_close($timetoclose, $timelimit, $displaylimit, $actuallimit): void {
         $timenow = 10000;
 
         $quiz = new \stdClass();
@@ -88,7 +88,7 @@ class rule_test extends \basic_testcase {
         $quiz->timelimit = $timelimit;
         $cm = new \stdClass();
         $cm->id = 0;
-        $quizobj = new quiz($quiz, $cm, null);
+        $quizobj = new quiz_settings($quiz, $cm, null);
         $rule = new quizaccess_timelimit($quizobj, $timenow);
         $attempt = new \stdClass();
 

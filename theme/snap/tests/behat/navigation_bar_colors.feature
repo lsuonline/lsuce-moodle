@@ -33,7 +33,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color of th
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Navigation bar"
     And I click on "Navigation bar" "link"
     And I should see "Change My Courses button colors"
@@ -61,7 +61,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color of th
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Navigation bar"
     And I click on "Navigation bar" "link"
     And I should see "Change My Courses button colors"

@@ -26,7 +26,8 @@
 
 namespace local_o365\feature\coursesync;
 
-use Exception;
+use context_course;
+use core\task\manager;
 use local_o365\rest\unified;
 use moodle_exception;
 use stdClass;
@@ -218,7 +219,7 @@ class main {
         try {
             $response = $this->graphclient->create_educationclass_group($displayname, $mailnickname, $description, $externalid,
                 $externalname);
-        } catch (Exception $e) {
+        } catch (moodle_exception $e) {
             $this->mtrace('Could not create educationClass group for course #' . $course->id . '. Reason: ' . $e->getMessage(), 3);
             return false;
         }
@@ -264,7 +265,7 @@ class main {
                 $this->graphclient->update_education_group_with_lms_data($groupobjectid, $lmsattributes);
                 $success = true;
                 break;
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Error setting LMS attributes in group ' . $groupobjectid . '. Reason: ' . $e->getMessage(), 3);
                 $retrycounter++;
             }
@@ -304,7 +305,7 @@ class main {
 
         try {
             $response = $this->graphclient->create_group($displayname, $mailnickname, ['description' => $description]);
-        } catch (Exception $e) {
+        } catch (moodle_exception $e) {
             $this->mtrace('Could not create standard group for course #' . $course->id . '. Reason: ' . $e->getMessage(), 3);
             return false;
         }
@@ -335,8 +336,21 @@ class main {
         }
 
         // Remove existing owners and members.
-        $existingownerids = array_keys($this->get_group_owners($groupobjectid));
-        $existingmemberids = array_keys($this->get_group_members($groupobjectid));
+        try {
+            $existingowners = $this->get_group_owners($groupobjectid);
+        } catch (moodle_exception $e) {
+            $this->mtrace('Could not get existing owners of group with ID ' . $groupobjectid . '. Reason: ' . $e->getMessage(), 3);
+            $existingowners = [];
+        }
+
+        try {
+            $existingmembers = $this->get_group_members($groupobjectid);
+        } catch (moodle_exception $e) {
+            $this->mtrace('Could not get existing members of group with ID ' . $groupobjectid . '. Reason: ' . $e->getMessage(), 3);
+            $existingmembers = [];
+        }
+        $existingownerids = array_keys($existingowners);
+        $existingmemberids = array_keys($existingmembers);
         $owners = array_diff($owners, $existingownerids);
         $members = array_diff($members, $existingmemberids);
 
@@ -365,7 +379,7 @@ class main {
                         $this->mtrace('Invalid bulk group owners/members addition request', 3);
                     }
                     break;
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     $this->mtrace('Error: ' . $e->getMessage(), 3);
                     $retrycounter++;
                 }
@@ -406,7 +420,7 @@ class main {
                 $this->mtrace('Created class team from class group with ID ' . $groupobjectid, 3);
                 $subtype = 'teamfromgroup';
                 break;
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 if (strpos($e->a, 'The group is already provisioned') !== false) {
                     $this->mtrace('Found existing team from class group with ID ' . $groupobjectid, 3);
                     $response = true;
@@ -463,7 +477,7 @@ class main {
             try {
                 $response = $this->graphclient->create_standard_team_from_group($groupobjectid);
                 break;
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Could not create standard team from group. Reason: '. $e->getMessage(), 3);
                 $retrycounter++;
             }
@@ -514,7 +528,7 @@ class main {
                         $moodleappprovisioned = true;
                         break;
                     }
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     $this->mtrace('Could not add app to team with object ID ' . $groupobjectid . '. Reason: ' . $e->getMessage(),
                         4);
                     $retrycounter++;
@@ -526,7 +540,7 @@ class main {
                 try {
                     $generalchanelid = $this->graphclient->get_general_channel_id($groupobjectid);
                     $this->mtrace('Located general channel in the team with object ID ' . $groupobjectid, 4);
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     $this->mtrace('Could not list channels of team with object ID ' . $groupobjectid . '. Reason: ' .
                         $e->getMessage(), 4);
                     $generalchanelid = false;
@@ -537,7 +551,7 @@ class main {
                     try {
                         $this->add_moodle_tab_to_channel($groupobjectid, $generalchanelid, $moodleappid, $courseid);
                         $this->mtrace('Installed Moodle tab in the general channel of team with object ID ' . $groupobjectid, 4);
-                    } catch (Exception $e) {
+                    } catch (moodle_exception $e) {
                         $this->mtrace('Could not add Moodle tab to channel in team with ID ' . $groupobjectid . '. Reason : ' .
                             $e->getMessage(), 4);
                     }
@@ -579,13 +593,25 @@ class main {
 
         $this->mtrace('Processing courses without groups...');
 
-        $sql = 'SELECT crs.*
+        // Process adhoc tasks first to prevent creating duplicate teams for the same course.
+        $courserequestadhoctasks = manager::get_adhoc_tasks('local_o365\task\processcourserequestapproval');
+        foreach ($courserequestadhoctasks as $courserequestadhoctask) {
+            manager::adhoc_task_starting($courserequestadhoctask);
+            $cronlockfactory = \core\lock\lock_config::get_lock_factory('local_o365');
+            if ($lock = $cronlockfactory->get_lock('\\' . get_class($courserequestadhoctask), 10)) {
+                $courserequestadhoctask->set_lock($lock);
+                $courserequestadhoctask->execute();
+                manager::adhoc_task_complete($courserequestadhoctask);
+            }
+        }
+
+        $sql = "SELECT crs.*
                   FROM {course} crs
-             LEFT JOIN {local_o365_objects} obj ON obj.type = ? AND obj.subtype = ? AND obj.moodleid = crs.id
-                 WHERE obj.id IS NULL AND crs.id != ? AND crs.visible != 0';
+             LEFT JOIN {local_o365_objects} obj ON obj.type = 'group' AND obj.subtype = 'course' AND obj.moodleid = crs.id
+                 WHERE obj.id IS NULL AND crs.id != ? AND crs.visible != 0";
         // The "crs.visible != 0" is used to filter out courses in the process of copy or restore, which may contain incorrect or
         // incomplete contents.
-        $params = ['group', 'course', SITEID];
+        $params = [SITEID];
         if (!empty($this->coursesinsql)) {
             $sql .= ' AND crs.id ' . $this->coursesinsql;
             $params = array_merge($params, $this->coursesparams);
@@ -597,6 +623,7 @@ class main {
         $courses = $DB->get_recordset_sql($sql, $params);
 
         $coursesprocessed = 0;
+
         foreach ($courses as $course) {
             if ($coursesprocessed > $courselimit) {
                 $this->mtrace('Course processing limit of ' . $courselimit . ' reached. Exit.');
@@ -669,22 +696,22 @@ class main {
 
         $this->mtrace('Processing courses without teams...');
 
-        $sql = 'SELECT crs.*, obj_group.objectid AS groupobjectid
+        $sql = "SELECT crs.*, obj_group.objectid AS groupobjectid
                   FROM {course} crs
              LEFT JOIN {local_o365_objects} obj_group
-                        ON obj_group.type = ? AND obj_group.subtype = ? AND obj_group.moodleid = crs.id
+                        ON obj_group.type = 'group' AND obj_group.subtype = 'course' AND obj_group.moodleid = crs.id
              LEFT JOIN {local_o365_objects} obj_team1
-                        ON obj_team1.type = ? AND obj_team1.subtype = ? AND obj_team1.moodleid = crs.id
+                        ON obj_team1.type = 'group' AND obj_team1.subtype = 'courseteam' AND obj_team1.moodleid = crs.id
              LEFT JOIN {local_o365_objects} obj_team2
-                        ON obj_team2.type = ? AND obj_team2.subtype = ? AND obj_team2.moodleid = crs.id
+                        ON obj_team2.type = 'group' AND obj_team2.subtype = 'teamfromgroup' AND obj_team2.moodleid = crs.id
              LEFT JOIN {local_o365_objects} obj_sds
-                        ON obj_sds.type = ? AND obj_sds.subtype = ? AND obj_sds.moodleid = crs.id
+                        ON obj_sds.type = 'sdssection' AND obj_sds.subtype = 'course' AND obj_sds.moodleid = crs.id
                  WHERE obj_group.id IS NOT NULL
                    AND obj_team1.id IS NULL
                    AND obj_team2.id IS NULL
                    AND obj_sds.id IS NULL
-                   AND crs.id != ?';
-        $params = ['group', 'course', 'group', 'courseteam', 'group', 'teamfromgroup', 'sdssection', 'course', SITEID];
+                   AND crs.id != " . SITEID;
+        $params = [];
         if (!empty($this->coursesinsql)) {
             $sql .= ' AND crs.id ' . $this->coursesinsql;
             $params = array_merge($params, $this->coursesparams);
@@ -748,19 +775,7 @@ class main {
     private function restore_group(int $objectrecid, string $objectid, array $objectrecmetadata) : bool {
         global $DB;
 
-        $deletedgroupsresults = $this->graphclient->list_deleted_groups();
-        $deletedgroups = $deletedgroupsresults['value'];
-        while (!empty($deletedgroupsresults['@odata.nextLink'])) {
-            $nextlink = parse_url($deletedgroupsresults['@odata.nextLink']);
-            if (isset($nextlink['query'])) {
-                $query = [];
-                parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $deletedgroupsresults = $this->graphclient->list_deleted_groups($query['$skiptoken']);
-                    $deletedgroups = array_merge($deletedgroups, $deletedgroupsresults['value']);
-                }
-            }
-        }
+        $deletedgroups = $this->graphclient->list_deleted_groups();
 
         foreach ($deletedgroups as $deletedgroup) {
             if (!empty($deletedgroup) && isset($deletedgroup['id']) && $deletedgroup['id'] == $objectid) {
@@ -806,28 +821,7 @@ class main {
         }
 
         // Fetch teams from Graph API.
-        $teams = [];
-        $teamspart = $this->graphclient->get_teams();
-        foreach ($teamspart['value'] as $teamitem) {
-            $teams[$teamitem['id']] = $teamitem;
-        }
-        while (!empty($teamspart['@odata.nextLink'])) {
-            $nextlink = parse_url($teamspart['@odata.nextLink']);
-            if (isset($nextlink['query'])) {
-                $query = [];
-                parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $teamspart = $this->graphclient->get_teams($query['$skiptoken']);
-                    foreach ($teamspart['value'] as $teamitem) {
-                        if (!array_key_exists($teamitem['id'], $teams)) {
-                            $teams[$teamitem['id']] = $teamitem;
-                        }
-                    }
-                } else {
-                    $teamspart = [];
-                }
-            }
-        }
+        $teams = $this->graphclient->get_teams();
 
         // Build existing teams records cache.
         $this->mtrace('Building existing teams cache records', 1);
@@ -846,7 +840,7 @@ class main {
                     // Need to update lock status.
                     try {
                         [$rawteam, $teamurl, $lockstatus] = $this->graphclient->get_team($team['id']);
-                    } catch (Exception $e) {
+                    } catch (moodle_exception $e) {
                         continue;
                     }
                 } else {
@@ -863,7 +857,7 @@ class main {
             } else {
                 try {
                     [$rawteam, $teamurl, $lockstatus] = $this->graphclient->get_team($team['id']);
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     // Cannot get Team URL or locked status, most likely an invalid Team.
                     continue;
                 }
@@ -890,6 +884,62 @@ class main {
     }
 
     /**
+     * Cleanup Teams connections records.
+     * This function will delete all Teams connection records with object IDs not found in the Teams cache.
+     * This function should only be called after Teams cache is updated - no cache update will be performed here.
+     *
+     * @return void
+     */
+    public function cleanup_teams_connections() {
+        global $DB;
+
+        $teamobjectids = $DB->get_fieldset_select('local_o365_teams_cache', 'objectid', '');
+
+        $this->mtrace('Cleaning up teams connection records...');
+        if ($teamobjectids) {
+            // If there are records in teams cache, delete teams connection records with object IDs not in the cache.
+            [$teamobjectidsql, $params] = $DB->get_in_or_equal($teamobjectids, SQL_PARAMS_QM, 'param', false);
+            $DB->delete_records_select('local_o365_objects',
+                "type = 'group' AND subtype IN ('classteam', 'teamfromgroup') AND objectid {$teamobjectidsql}", $params);
+        } else {
+            // If there are no records in teams cache, delete all teams connection records.
+            $DB->delete_records_select('local_o365_objects', "type = 'group' AND subtype IN ('classteam', 'teamfromgroup')");
+        }
+    }
+
+    /**
+     * Cleanup course connection records.
+     * This function will delete all course connection records with duplicate subtype values.
+     *
+     * @return void
+     */
+    public function cleanup_course_connection_records() {
+        global $DB;
+
+        $this->mtrace('Cleaning up duplicate course connection records...');
+
+        $sql = "
+            SELECT *
+              FROM {local_o365_objects}
+             WHERE type = 'group'
+               AND subtype IN ('course', 'courseteam', 'teamfromgroup')
+          ORDER BY id ASC";
+        $courseconnectionrecords = $DB->get_records_sql($sql);
+
+        $courseconnectioncache = [];
+        foreach ($courseconnectionrecords as $courseconnectionrecord) {
+            if (!isset($courseconnectioncache[$courseconnectionrecord->moodleid])) {
+                $courseconnectioncache[$courseconnectionrecord->moodleid] = [];
+            }
+            if (!in_array($courseconnectionrecord->subtype, $courseconnectioncache[$courseconnectionrecord->moodleid])) {
+                $courseconnectioncache[$courseconnectionrecord->moodleid][] = $courseconnectionrecord->subtype;
+            } else {
+                $DB->delete_records('local_o365_objects', ['id' => $courseconnectionrecord->id]);
+            }
+        }
+    }
+
+    /**
      * Update team name for the course with the given ID.
      *
      * @param int $courseid
@@ -903,20 +953,32 @@ class main {
             return false;
         }
 
-        if (!$objectrecord = $DB->get_record('local_o365_objects',
-            ['type' => 'group', 'subtype' => 'courseteam', 'moodleid' => $courseid])) {
-            if (!$objectrecord = $DB->get_record('local_o365_objects',
-                ['type' => 'group', 'subtype' => 'teamfromgroup', 'moodleid' => $courseid])) {
-                return false;
-            }
+        $sql = "
+            SELECT *
+              FROM {local_o365_objects}
+             WHERE type = 'group'
+               AND subtype IN ('course', 'courseteam', 'teamfromgroup')
+               AND moodleid = ?";
+
+        $objectrecords = $DB->get_records_sql($sql, [$courseid]);
+
+        if (empty($objectrecords)) {
+            return false;
         }
 
         $teamname = utils::get_team_display_name($course);
-        $this->graphclient->update_team_name($objectrecord->objectid, $teamname);
 
-        $objectrecord->o365name = $teamname;
-        $objectrecord->timemodified = time();
-        $DB->update_record('local_o365_objects', $objectrecord);
+        $remotegroupnameupdated = false;
+        foreach ($objectrecords as $objectrecord) {
+            if (!$remotegroupnameupdated) {
+                $this->graphclient->update_team_name($objectrecord->objectid, $teamname);
+                $remotegroupnameupdated = true;
+            }
+
+            $objectrecord->o365name = $teamname;
+            $objectrecord->timemodified = time();
+            $DB->update_record('local_o365_objects', $objectrecord);
+        }
 
         return true;
     }
@@ -960,7 +1022,7 @@ class main {
                 ];
                 $this->graphclient->update_group($updatedexistinggroup);
             }
-        } catch (Exception $e) {
+        } catch (moodle_exception $e) {
             // Cannot find existing group. Skip rename.
             $this->mtrace('Could not update mailnickname of the existing group with ID ' . $o365object->objectid . ' for course #' .
                 $course->id . '. Reason: ' . $e->getMessage());
@@ -975,7 +1037,7 @@ class main {
                 }
                 $existingteamname = utils::get_team_display_name($course, $resetteamnameprefix);
                 $this->graphclient->update_team_name($o365object->objectid, $existingteamname);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Could not update name of the existing Team for course #' . $course->id . '. Reason: ' .
                     $e->getMessage());
             }
@@ -985,15 +1047,14 @@ class main {
         if ($teamexists) {
             try {
                 $this->graphclient->archive_team($o365object->objectid);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Could not archive Team for course #' . $course->id . '. Reason: ' . $e->getMessage());
             }
         }
 
         // Disconnect the Team from the course.
-        $DB->delete_records('local_o365_objects', ['type' => 'group', 'subtype' => 'course', 'moodleid' => $course->id]);
-        $DB->delete_records('local_o365_objects', ['type' => 'group', 'subtype' => 'courseteam', 'moodleid' => $course->id]);
-        $DB->delete_records('local_o365_objects', ['type' => 'group', 'subtype' => 'teamfromgroup', 'moodleid' => $course->id]);
+        $DB->delete_records_select('local_o365_objects',
+            "type = 'group' AND subtype IN ('course', 'courseteam', 'teamfromgroup') AND moodleid = ?", [$course->id]);
 
         // Create a new group / team and connect it to the course.
         if ($createafterreset) {
@@ -1041,34 +1102,50 @@ class main {
      * @param string $groupobjectid The object ID of the Microsoft 365 group.
      * @return array|false
      */
-    public function resync_group_owners_and_members(int $courseid, string $groupobjectid = '') {
+    public function process_course_team_user_sync_from_moodle_to_microsoft(int $courseid, string $groupobjectid = '') {
         global $DB;
 
-        $this->mtrace('Syncing group owners / members for course #'.$courseid);
+        $this->mtrace('Syncing Microsoft group owners / members for course #' . $courseid);
+
+        $skip = false;
 
         if (!$groupobjectid) {
-            $params = [
-                'type' => 'group',
-                'subtype' => 'course',
-                'moodleid' => $courseid,
-            ];
-            $objectrec = $DB->get_record('local_o365_objects', $params);
-            if (empty($objectrec)) {
-                $errmsg = 'Could not find group object ID in local_o365_objects for course '.$courseid.'. ';
-                $errmsg .= 'Please ensure group exists first.';
-                $this->mtrace($errmsg);
+            $sql = "SELECT distinct objectid
+                      FROM {local_o365_objects}
+                     WHERE type = :type
+                       AND moodleid = :moodleid";
+            $teamobjectids = $DB->get_fieldset_sql($sql, ['type' => 'group', 'moodleid' => $courseid]);
+            if (empty($teamobjectids)) {
+                // Sync is enabled but no Team is connected to the course.
+                $this->mtrace('No Team is connected to the course. Skipping.', 2);
                 return false;
             }
-            $groupobjectid = $objectrec->objectid;
+            $groupobjectid = reset($teamobjectids);
         }
 
-        $this->mtrace('Resync users to group ' . $groupobjectid . ' for course #' . $courseid);
-
         // Get current group membership.
-        $members = $this->get_group_members($groupobjectid);
-        $currentmembers = array_keys($members);
+        $members = [];
+        try {
+            $members = $this->get_group_members($groupobjectid);
+        } catch (moodle_exception $e) {
+            $skip = true;
+            $this->mtrace('Failed to get group members. Details: ' . $e->getMessage(), 2);
+        }
 
-        $owners = $this->get_group_owners($groupobjectid);
+        $owners = [];
+        try {
+            $owners = $this->get_group_owners($groupobjectid);
+        } catch (moodle_exception $e) {
+            $skip = true;
+            $this->mtrace('Failed to get group owners. Details: ' . $e->getMessage(), 2);
+        }
+
+        if ($skip) {
+            $this->mtrace('Skipping syncing group owners / members for course');
+            return false;
+        }
+
+        $currentmembers = array_keys($members);
         $currentowners = array_keys($owners);
 
         // Get intended group members.
@@ -1108,7 +1185,7 @@ class main {
                     $this->mtrace('Failed. Details: ' . \local_o365\utils::tostring($result), 2);
                     $retrycounter++;
                 }
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Failed. Details: ' . $e->getMessage(), 2);
                 $retrycounter++;
             }
@@ -1122,7 +1199,7 @@ class main {
             try {
                 $this->remove_owner_from_group($groupobjectid, $userobjectid);
                 $this->mtrace('Removed ownership.', 3);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Error removing ownership. Details: ' . $e->getMessage(), 3);
             }
         }
@@ -1140,7 +1217,7 @@ class main {
             try {
                 $this->remove_member_from_group($groupobjectid, $userobjectid);
                 $this->mtrace('Removed membership.', 3);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $this->mtrace('Error removing membership. Details: ' . $e->getMessage(), 3);
             }
         }
@@ -1160,29 +1237,14 @@ class main {
      *
      * @param string $groupobjectid
      * @return array
+     * @throws moodle_exception
      */
     public function get_group_members(string $groupobjectid) : array {
         $groupmembers = [];
 
         $memberrecords = $this->graphclient->get_group_members($groupobjectid);
-        foreach ($memberrecords['value'] as $memberrecord) {
+        foreach ($memberrecords as $memberrecord) {
             $groupmembers[$memberrecord['id']] = $memberrecord;
-        }
-
-        while (!empty($memberrecords['@odata.nextLink'])) {
-            $nextlink = parse_url($memberrecords['@odata.nextLink']);
-            if (isset($nextlink['query'])) {
-                $query = [];
-                parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $memberrecords = $this->graphclient->get_group_members($groupobjectid, $query['$skiptoken']);
-                    foreach ($memberrecords['value'] as $memberrecord) {
-                        if (!array_key_exists($memberrecord['id'], $groupmembers)) {
-                            $groupmembers[$memberrecord['id']] = $memberrecord;
-                        }
-                    }
-                }
-            }
         }
 
         return $groupmembers;
@@ -1193,29 +1255,14 @@ class main {
      *
      * @param string $groupobjectid
      * @return array
+     * @throws moodle_exception
      */
     public function get_group_owners(string $groupobjectid) : array {
         $groupowners = [];
 
         $ownerresults = $this->graphclient->get_group_owners($groupobjectid);
-        foreach ($ownerresults['value'] as $ownerresult) {
+        foreach ($ownerresults as $ownerresult) {
             $groupowners[$ownerresult['id']] = $ownerresult;
-        }
-
-        while (!empty($ownerresults['@odata.nextLink'])) {
-            $nextlink = parse_url($ownerresults['@odata.nextLink']);
-            if (isset($nextlink['query'])) {
-                $query = [];
-                parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $ownerresults = $this->graphclient->get_group_owners($groupobjectid, $query['$skiptoken']);
-                    foreach ($ownerresults['value'] as $ownerresult) {
-                        if (!array_key_exists($ownerresult['id'], $groupowners)) {
-                            $groupowners[$ownerresult['id']] = $ownerresult;
-                        }
-                    }
-                }
-            }
         }
 
         return $groupowners;
@@ -1228,28 +1275,12 @@ class main {
      */
     public function get_all_group_ids() : array {
         $groupids = [];
+
         $groups = $this->graphclient->get_groups();
-        foreach ($groups['value'] as $group) {
+        foreach ($groups as $group) {
             $groupids[] = $group['id'];
         }
-        while (!empty($groups['@odata.nextLink'])) {
-            // Extract skiptoken.
-            $nextlink = parse_url($groups['@odata.nextLink']);
-            if (isset($nextlink['query'])) {
-                $query = [];
-                parse_str($nextlink['query'], $query);
-                if (isset($query['$skiptoken'])) {
-                    $groups = $this->graphclient->get_groups($query['$skiptoken']);
-                    foreach ($groups['value'] as $group) {
-                        if (!in_array($group['id'], $groupids)) {
-                            $groupids[] = $group['id'];
-                        }
-                    }
-                } else {
-                    $groups = [];
-                }
-            }
-        }
+
         return $groupids;
     }
 
@@ -1257,7 +1288,7 @@ class main {
      * Check the lock status of the team with the given object ID.
      *
      * @param string $groupobjectid
-     * @return int
+     * @return bool
      */
     public function is_team_locked(string $groupobjectid) {
         global $DB;
@@ -1268,7 +1299,7 @@ class main {
                     try {
                         [$team, $teamurl, $lockstatus] = $this->graphclient->get_team($groupobjectid);
                         $DB->set_field('local_o365_teams_cache', 'locked', $lockstatus, ['objectid' => $groupobjectid]);
-                    } catch (Exception $e) {
+                    } catch (moodle_exception $e) {
                         $lockstatus = TEAM_UNLOCKED;
                     }
 
@@ -1279,7 +1310,7 @@ class main {
                         if ($lockstatus == TEAM_UNLOCKED) {
                             $DB->set_field('local_o365_teams_cache', 'locked', $lockstatus, ['objectid' => $groupobjectid]);
                         }
-                    } catch (Exception $e) {
+                    } catch (moodle_exception $e) {
                         $lockstatus = TEAM_UNLOCKED;
                     }
 
@@ -1293,7 +1324,7 @@ class main {
             // Team cache record doesn't exist, we need to create one.
             try {
                 [$team, $teamurl, $lockstatus] = $this->graphclient->get_team($groupobjectid);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 $lockstatus = TEAM_UNLOCKED;
             }
         }
@@ -1317,7 +1348,7 @@ class main {
             } else {
                 try {
                     $this->graphclient->add_member_to_group_using_teams_api($groupobjectid, $userobjectid);
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     // Fallback to use group API to add members.
                     $this->graphclient->add_member_to_group_using_group_api($groupobjectid, $userobjectid);
                 }
@@ -1333,12 +1364,13 @@ class main {
      *
      * @param string $groupobjectid
      * @param string $userobjectid
+     * @throws moodle_exception
      */
     public function add_owner_to_group(string $groupobjectid, string $userobjectid) {
         if (utils::is_team_created_from_group($groupobjectid)) {
             try {
                 $this->graphclient->add_owner_to_group_using_teams_api($groupobjectid, $userobjectid);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 // Fallback to use group API to add owners.
                 $this->graphclient->add_owner_to_group_using_group_api($groupobjectid, $userobjectid);
                 $this->graphclient->add_member_to_group_using_group_api($groupobjectid, $userobjectid);
@@ -1364,7 +1396,7 @@ class main {
                 try {
                     $aaduserconversationmemberid =
                         $this->graphclient->get_aad_user_conversation_member_id($groupobjectid, $userobjectid);
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     // Do nothing.
                 }
                 if ($aaduserconversationmemberid) {
@@ -1372,7 +1404,7 @@ class main {
                         $this->graphclient->remove_owner_and_member_from_group_using_teams_api($groupobjectid,
                             $aaduserconversationmemberid);
                         $removed = true;
-                    } catch (Exception $e) {
+                    } catch (moodle_exception $e) {
                         // Do nothing.
                     }
                 }
@@ -1397,7 +1429,7 @@ class main {
             try {
                 $aaduserconversationmemberid =
                     $this->graphclient->get_aad_user_conversation_member_id($groupobjectid, $userobjectid);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 // Do nothing.
             }
             if ($aaduserconversationmemberid) {
@@ -1405,7 +1437,7 @@ class main {
                     $this->graphclient->remove_owner_and_member_from_group_using_teams_api($groupobjectid,
                         $aaduserconversationmemberid);
                     $removed = true;
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     // Do nothing.
                 }
             }
@@ -1414,5 +1446,339 @@ class main {
             $this->graphclient->remove_member_from_group_using_group_api($groupobjectid, $userobjectid);
             $this->graphclient->remove_owner_from_group_using_group_api($groupobjectid, $userobjectid);
         }
+    }
+
+    /**
+     * Resync the membership of a Moodle course based on the users enrolled in the associated Microsoft 365 group.
+     *
+     * @param int $courseid The ID of the course.
+     * @param string $groupobjectid The object ID of the Microsoft 365 group.
+     * @param array|null $connectedusers An array of Moodle user IDs as keys and Microsoft 365 user object IDs as values.
+     * @return bool
+     */
+    public function process_course_team_user_sync_from_microsoft_to_moodle(int $courseid, string $groupobjectid = '',
+        array $connectedusers = null) : bool {
+        global $DB;
+
+        $coursecontext = context_course::instance($courseid, IGNORE_MISSING);
+        if (!$coursecontext) {
+            $this->mtrace('Course context not found for course #' . $courseid . '. Skipping.', 1);
+            return false;
+        }
+
+        $this->mtrace('Sync course teachers and students from Teams to Moodle for course #' . $courseid . ' ...', 1);
+
+        if (is_null($connectedusers)) {
+            $moodletomicrosoftusermappings = \local_o365\utils::get_connected_users();
+        } else {
+            $moodletomicrosoftusermappings = $connectedusers;
+        }
+        $microsofttomoodleusermappings = array_flip($moodletomicrosoftusermappings);
+
+        if (!$groupobjectid) {
+            $sql = "SELECT distinct objectid
+                      FROM {local_o365_objects}
+                     WHERE type = :type
+                       AND moodleid = :moodleid";
+            $teamobjectids = $DB->get_fieldset_sql($sql, ['type' => 'group', 'moodleid' => $courseid]);
+            if (empty($teamobjectids)) {
+                // Sync is enabled but no Team is connected to the course.
+                $this->mtrace('No Team is connected to the course. Skipping.', 2);
+                return false;
+            }
+            $groupobjectid = reset($teamobjectids);
+        }
+
+        // Get current group membership.
+        $skip = false;
+        try {
+            $groupmembers = $this->get_group_members($groupobjectid);
+        } catch (moodle_exception $e) {
+            $skip = true;
+            $this->mtrace('Failed to get group members. Details: ' . $e->getMessage(), 2);
+        }
+
+        try {
+            $groupowners = $this->get_group_owners($groupobjectid);
+        } catch (moodle_exception $e) {
+            $skip = true;
+            $this->mtrace('Failed to get group owners. Details: ' . $e->getMessage(), 2);
+        }
+
+        if ($skip) {
+            $this->mtrace('Skipping syncing group owners / members for course');
+            return false;
+        }
+
+        // Get Moodle IDs of connected group members.
+        $connectedgroupmembers = [];
+        foreach ($groupmembers as $objectid => $value) {
+            if (array_key_exists($objectid, $microsofttomoodleusermappings)) {
+                $connectedgroupmembers[$microsofttomoodleusermappings[$objectid]] = $value;
+            }
+        }
+        $connectedintendedcoursestudents = array_keys($connectedgroupmembers);
+
+        // Get Moodle IDs of connected group owners.
+        $connectedgroupowners = [];
+        foreach ($groupowners as $objectid => $value) {
+            if (array_key_exists($objectid, $microsofttomoodleusermappings)) {
+                $connectedgroupowners[$microsofttomoodleusermappings[$objectid]] = $value;
+            }
+        }
+        $connectedintendedcourseteachers = array_keys($connectedgroupowners);
+
+        // Remove owners from members list.
+        $connectedintendedcoursestudents = array_diff($connectedintendedcoursestudents, $connectedintendedcourseteachers);
+
+        // Get role IDs from config.
+        $ownerroleid = get_config('local_o365', 'coursesyncownerrole');
+        $memberroleid = get_config('local_o365', 'coursesyncmemberrole');
+
+        // Get Moodle IDs of connected course teachers.
+        $courseenrolleduserids = array_keys(get_enrolled_users($coursecontext));
+        $courseteacherids = array_keys(get_role_users($ownerroleid, $coursecontext));
+        $connectedcurrentcourseteachers = array_intersect($courseenrolleduserids, $courseteacherids,
+            array_keys($moodletomicrosoftusermappings));
+
+        // Get Moodle IDs of connected course students.
+        $coursestudentids = array_keys(get_role_users($memberroleid, $coursecontext));
+        $connectedcurrentcoursestudents = array_intersect($courseenrolleduserids, $coursestudentids,
+            array_keys($moodletomicrosoftusermappings));
+
+        // Sync teachers.
+        //  - $connectedcurrentcourseteachers contains the current teachers in the course.
+        //  - $connectedintendedcourseteachers contains the teachers that should be in the course.
+        $teacherstoenrol = array_diff($connectedintendedcourseteachers, $connectedcurrentcourseteachers);
+        if ($teacherstoenrol) {
+            $this->mtrace('Adding teacher role to ' . count($teacherstoenrol) . ' users...', 2);
+            foreach ($teacherstoenrol as $userid) {
+                $this->assign_role_by_user_id_role_id_and_course_context($userid, $ownerroleid, $coursecontext);
+            }
+        } else {
+            $this->mtrace('No user to have teacher role added.', 2);
+        }
+
+        $teacherstounenrol = array_diff($connectedcurrentcourseteachers, $connectedintendedcourseteachers);
+        if ($teacherstounenrol) {
+            $this->mtrace('Removing teacher role from ' . count($teacherstounenrol) . ' users...', 2);
+            foreach ($teacherstounenrol as $userid) {
+                $this->unassign_role_by_user_id_role_id_and_course_context($userid, $ownerroleid, $coursecontext,
+                    in_array($userid, $connectedintendedcoursestudents));
+            }
+        } else {
+            $this->mtrace('No user to have teacher role removed.', 2);
+        }
+
+        // Sync students.
+        //  - $connectedcurrentcoursestudents contains the current students in the course.
+        //  - $connectedintendedcoursestudents contains the students that should be in the course.
+        $studentstoenrol = array_diff($connectedintendedcoursestudents, $connectedcurrentcoursestudents);
+        if ($studentstoenrol) {
+            $this->mtrace('Adding student role to ' . count($studentstoenrol) . ' users...', 2);
+            foreach ($studentstoenrol as $userid) {
+                $this->assign_role_by_user_id_role_id_and_course_context($userid, $memberroleid, $coursecontext);
+            }
+        } else {
+            $this->mtrace('No user to have student role added.', 2);
+        }
+
+        $studentstounenrol = array_diff($connectedcurrentcoursestudents, $connectedintendedcoursestudents);
+        if ($studentstounenrol) {
+            $this->mtrace('Removing student role from ' . count($studentstounenrol) . ' users...', 2);
+            foreach ($studentstounenrol as $userid) {
+                $this->unassign_role_by_user_id_role_id_and_course_context($userid, $memberroleid, $coursecontext,
+                    in_array($userid, $connectedintendedcourseteachers));
+            }
+        } else {
+            $this->mtrace('No user to have student role removed.', 2);
+        }
+
+        return true;
+    }
+
+    /**
+     * Assign the role with the given ID to the user with the given ID in the course with the given context.
+     *
+     * @param int $userid The Moodle ID of the user.
+     * @param int $roleid The ID of the role.
+     * @param context_course $context The context of the course.
+     */
+    private function assign_role_by_user_id_role_id_and_course_context(int $userid, int $roleid, context_course $context) : void {
+        enrol_try_internal_enrol($context->instanceid, $userid, $roleid);
+        $this->mtrace('Assigned role #' . $roleid . ' to user #' . $userid . '.', 3);
+    }
+
+    /**
+     * Unassign the role with the given ID from the user with the given ID in the course with the given context.
+     * If the user doesn't have any other role assignment in the course, attempt to unenrol the user too.
+     *
+     * @param int $userid The Moodle ID of the user.
+     * @param int $roleid The ID of the role.
+     * @param context_course $context The context of the course.
+     * @param bool $hasotherrole Whether the user has other role.
+     */
+    private function unassign_role_by_user_id_role_id_and_course_context(int $userid, int $roleid, context_course $context,
+        bool $hasotherrole) : void {
+        role_unassign($roleid, $userid, $context->id);
+        $this->mtrace('Removed role #' . $roleid . ' from user #' . $userid . '.', 3);
+
+        // Check if the user has any other roles in the course.
+        $userroles = get_user_roles($context, $userid, false);
+        if (!$hasotherrole && empty($userroles)) {
+            $this->unenrol_user_by_user_id_and_course_id($userid, $context->instanceid);
+        }
+    }
+
+    /**
+     * Unenrol the user with the given ID from the course with the given ID.
+     *
+     * @param int $userid The Moodle ID of the user.
+     * @param int $courseid The ID of the course.
+     * @return bool
+     */
+    private function unenrol_user_by_user_id_and_course_id(int $userid, int $courseid) : bool {
+        global $DB;
+
+        $sql = "SELECT *
+                  FROM {user_enrolments} ue
+            INNER JOIN {enrol} e ON ue.enrolid = e.id
+                 WHERE ue.userid = :userid
+                   AND e.courseid = :courseid";
+        $userenrolments = $DB->get_records_sql($sql, ['userid' => $userid, 'courseid' => $courseid]);
+
+        if (empty($userenrolments)) {
+            return false;
+        }
+
+        $unenrolled = false;
+        foreach ($userenrolments as $userenrolment) {
+            $enrolinstance = $DB->get_record('enrol', ['id' => $userenrolment->enrolid]);
+            $plugin = enrol_get_plugin($enrolinstance->enrol);
+
+            if ($plugin->allow_unenrol($enrolinstance)) {
+                $plugin->unenrol_user($enrolinstance, $userid);
+                $unenrolled = true;
+            }
+        }
+
+        if ($unenrolled) {
+            $this->mtrace('Unenroled user #' . $userid . ' from course #' . $courseid . '.', 4);
+        }
+
+        return true;
+    }
+
+    /**
+     * Perform initial dual way Moodle course and Microsoft Teams user sync between course and Teams.
+     * In this mode:
+     *  - Moodle users with configured teacher role will be added as Team owners;
+     *  - Moodle users with configured student role will be added as Team members;
+     *  - Team owners will be added as Moodle users with configured teacher role;
+     *  - Team members will be added as Moodle users with configured student role.
+     * No role unassignment or Team owner/member removal will be performed.
+     *
+     * @param int $courseid The ID of the course.
+     * @param string $groupobjectid The object ID of the Microsoft 365 group.
+     */
+    public function process_initial_course_team_user_sync(int $courseid, string $groupobjectid) : void {
+        $coursecontext = context_course::instance($courseid);
+
+        $this->mtrace('Perform initial Moodle course and Microsoft Teams user sync between course #' . $courseid .
+            ' and Teams ' . $groupobjectid  . ' ...', 1);
+
+        $moodletomicrosoftusermappings = \local_o365\utils::get_connected_users();
+        $microsofttomoodleusermappings = array_flip($moodletomicrosoftusermappings);
+
+        try {
+            $groupowners = $this->get_group_owners($groupobjectid);
+            $groupmembers = $this->get_group_members($groupobjectid);
+        } catch (moodle_exception $e) {
+            $this->mtrace('Error getting owners and members from Teams ' . $groupobjectid  . '. Exit...', 1);
+            return;
+        }
+
+        // Get Moodle IDs of connected group owners.
+        $connectedgroupowners = [];
+        foreach ($groupowners as $objectid => $value) {
+            if (array_key_exists($objectid, $microsofttomoodleusermappings)) {
+                $connectedgroupowners[$microsofttomoodleusermappings[$objectid]] = $value;
+            }
+        }
+        $connectedintendedcourseteachers = array_keys($connectedgroupowners);
+
+        // Get Moodle IDs of connected group members.
+        $connectedgroupmembers = [];
+        foreach ($groupmembers as $objectid => $value) {
+            if (array_key_exists($objectid, $microsofttomoodleusermappings)) {
+                $connectedgroupmembers[$microsofttomoodleusermappings[$objectid]] = $value;
+            }
+        }
+        $connectedintendedcoursestudents = array_keys($connectedgroupmembers);
+
+        // Remove owners from members list.
+        $connectedintendedcoursestudents = array_diff($connectedintendedcoursestudents, $connectedintendedcourseteachers);
+
+        // Get role IDs from config.
+        $ownerroleid = get_config('local_o365', 'coursesyncownerrole');
+        $memberroleid = get_config('local_o365', 'coursesyncmemberrole');
+
+        // Get Moodle IDs of connected course teachers.
+        $courseteachers = get_role_users($ownerroleid, $coursecontext, true);
+        $connectedcurrentcourseteachers = [];
+        foreach ($courseteachers as $courseteacher) {
+            if (array_key_exists($courseteacher->id, $moodletomicrosoftusermappings)) {
+                $connectedcurrentcourseteachers[] = (int) $courseteacher->id;
+            }
+        }
+
+        // Get Moodle IDs of connected course students.
+        $coursestudents = get_role_users($memberroleid, $coursecontext, true);
+        $connectedcurrentcoursestudents = [];
+        foreach ($coursestudents as $coursestudent) {
+            if (array_key_exists($coursestudent->id, $moodletomicrosoftusermappings)) {
+                $connectedcurrentcoursestudents[] = (int) $coursestudent->id;
+            }
+        }
+
+        // Sync teachers from Microsoft Teams to Moodle course.
+        //  - $connectedcurrentcourseteachers contains the current teachers in the course.
+        //  - $connectedintendedcourseteachers contains the teachers that should be in the course.
+        $teacherstoenrol = array_diff($connectedintendedcourseteachers, $connectedcurrentcourseteachers);
+        if ($teacherstoenrol) {
+            $this->mtrace('Adding teacher role to ' . count($teacherstoenrol) . ' users...', 2);
+            foreach ($teacherstoenrol as $userid) {
+                $this->assign_role_by_user_id_role_id_and_course_context($userid, $ownerroleid, $coursecontext);
+            }
+        } else {
+            $this->mtrace('No user to have teacher role added.', 2);
+        }
+
+        // Sync students from Microsoft Teams to Moodle course.
+        //  - $connectedcurrentcoursestudents contains the current students in the course.
+        //  - $connectedintendedcoursestudents contains the students that should be in the course.
+        $studentstoenrol = array_diff($connectedintendedcoursestudents, $connectedcurrentcoursestudents);
+        if ($studentstoenrol) {
+            $this->mtrace('Adding student role to ' . count($studentstoenrol) . ' users...', 2);
+            foreach ($studentstoenrol as $userid) {
+                $this->assign_role_by_user_id_role_id_and_course_context($userid, $memberroleid, $coursecontext);
+            }
+        } else {
+            $this->mtrace('No user to have student role added.', 2);
+        }
+
+        // Sync owners and members from Moodle course to Microsoft Teams.
+        $ownerstoadd = array_diff($connectedcurrentcourseteachers, $connectedintendedcourseteachers);
+        $memberstoadd = array_diff($connectedcurrentcoursestudents, $connectedintendedcoursestudents);
+        $owneroids = [];
+        foreach ($ownerstoadd as $owneruid) {
+            $owneroids[] = $moodletomicrosoftusermappings[$owneruid];
+        }
+        $memberoids = [];
+        foreach ($memberstoadd as $memberuid) {
+            $memberoids[] = $moodletomicrosoftusermappings[$memberuid];
+        }
+        $this->mtrace('Add ' . count($owneroids) . ' owners and ' . count($memberoids) . ' members in bulk', 2);
+        $this->add_group_owners_and_members_to_group($groupobjectid, $owneroids, $memberoids);
     }
 }

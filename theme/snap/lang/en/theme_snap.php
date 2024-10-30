@@ -140,6 +140,7 @@ $string['error:failedtoduplicateasset'] = 'Failed to duplicate';
 $string['error:failedtodeleteasset'] = 'Failed to delete asset';
 $string['error:failedtotoc'] = 'Failed to get TOC.';
 $string['extension'] = 'Extension {$a}';
+$string['extra_section_menu'] = 'Extra section menu';
 $string['facebook'] = 'Facebook';
 $string['facebookdesc'] = 'The url of your facebook page.';
 $string['favicon'] = 'Favicon';
@@ -148,27 +149,43 @@ $string['favorite'] = 'Favorite {$a}';
 $string['favorited'] = 'Favorited {$a}';
 $string['featurespots'] = 'Feature spots';
 $string['featurespotsedit'] = 'Edit feature spots';
-$string['featurespotshelp'] = '<p>Add up to 3 feature spots to your site&#8217;s front page to highlight the main benefits to current and potential users.</p>
-<p>You can add an image, a title, and a content description to each feature. In order to see the feature in the front page, you must enter a title. The image and the content description sections are optional.</p>
+$string['featurespotshelp'] = '<p>Add up to 6 feature spots to your site&#8217;s front page to highlight the main benefits to current and potential users.</p>
+<p>You can add an image, a title, and a content description to each feature. <strong>In order to see the feature in the front page, you must enter a title.</strong> The image and the content description sections are optional.</p>
 <p>Recommended image size is a square and no larger than 200px by 200px.</p>';
 $string['featurespotsheading'] = 'Feature spots heading';
 $string['featureonetitle'] = 'Feature 1 title';
 $string['featuretwotitle'] = 'Feature 2 title';
 $string['featurethreetitle'] = 'Feature 3 title';
+$string['featurefourtitle'] = 'Feature 4 title';
+$string['featurefivetitle'] = 'Feature 5 title';
+$string['featuresixtitle'] = 'Feature 6 title';
 $string['featureonetitlelink'] = 'Feature 1 title link';
 $string['featuretwotitlelink'] = 'Feature 2 title link';
 $string['featurethreetitlelink'] = 'Feature 3 title link';
+$string['featurefourtitlelink'] = 'Feature 4 title link';
+$string['featurefivetitlelink'] = 'Feature 5 title link';
+$string['featuresixtitlelink'] = 'Feature 6 title link';
 $string['featuretitlelinkdesc'] = 'Type the URL you want to link this feature spot to. You can add external or internal links inside your site. For adding an internal link, please copy it from the site URL including /. For example, to have a link to a course, it would be "/course/view.php?id=160". To add an external link start the link with https://';
 $string['featureonetitlecb'] = 'Feature 1 open in a new window';
 $string['featuretwotitlecb'] = 'Feature 2 open in a new window';
 $string['featurethreetitlecb'] = 'Feature 3 open in a new window';
+$string['featurefourtitlecb'] = 'Feature 4 open in a new window';
+$string['featurefivetitlecb'] = 'Feature 5 open in a new window';
+$string['featuresixtitlecb'] = 'Feature 6 open in a new window';
 $string['featuretitlecbdesc'] = 'If enabled, the link added to the featured spot will be opened in a new window';
 $string['featureonetext'] = 'Feature 1 content';
 $string['featuretwotext'] = 'Feature 2 content';
 $string['featurethreetext'] = 'Feature 3 content';
+$string['featurefourtext'] = 'Feature 4 content';
+$string['featurefivetext'] = 'Feature 5 content';
+$string['featuresixtext'] = 'Feature 6 content';
 $string['featureoneimage'] = 'Feature 1 image';
 $string['featuretwoimage'] = 'Feature 2 image';
 $string['featurethreeimage'] = 'Feature 3 image';
+$string['featurefourimage'] = 'Feature 4 image';
+$string['featurefiveimage'] = 'Feature 5 image';
+$string['featuresiximage'] = 'Feature 6 image';
+$string['featuredcategoriesandcourses'] = 'Featured categories and courses';
 $string['featuredcourses'] = 'Featured courses';
 $string['featuredcourseshelp'] = 'Highlight up to 8 featured courses to your site&#8217;s front page. Type the Course ID to feature a course.';
 $string['featuredcoursesheading'] = 'Featured courses heading';
@@ -183,6 +200,20 @@ $string['featuredcourseeight'] = 'Featured course 8';
 $string['featuredcoursesedit'] = 'Edit featured courses';
 $string['featuredcoursesbrowseall'] = 'Browse all courses';
 $string['featuredcoursesbrowsealldesc'] = 'Add a browse all courses link';
+$string['featuredcategories'] = 'Featured categories';
+$string['featuredcategorieshelp'] = 'Highlight up to 8 featured categories to your site&#8217;s front page. Type the category ID to feature a category.';
+$string['featuredcategoriesheading'] = 'Featured categories heading';
+$string['featuredcategoryone'] = 'Featured category 1';
+$string['featuredcategorytwo'] = 'Featured category 2';
+$string['featuredcategorythree'] = 'Featured category 3';
+$string['featuredcategoryfour'] = 'Featured category 4';
+$string['featuredcategoryfive'] = 'Featured category 5';
+$string['featuredcategoriesix'] = 'Featured category 6';
+$string['featuredcategorieseven'] = 'Featured category 7';
+$string['featuredcategoryeight'] = 'Featured category 8';
+$string['featuredcategoriesedit'] = 'Edit featured categories';
+$string['featuredcategoriesbrowseall'] = 'Browse all categories';
+$string['featuredcategoriesbrowsealldesc'] = 'Add a browse all categories link';
 $string['feature_spot_background_color'] = 'Background color';
 $string['feature_spot_title_color'] = 'Title text color';
 $string['feature_spot_description_color'] = 'Description text color';
@@ -204,6 +235,7 @@ $string['forumpoststoggle'] = 'Forum posts';
 $string['forumpoststoggledesc'] = 'Show users the 10 most recent forum posts from their courses';
 $string['fullname'] = 'Site name';
 $string['fullnamedesc'] = 'The name of your site.';
+$string['gotoactivity'] = 'Go to activity {$a}';
 $string['graderadviseuserreport'] = 'The "grader report" does not work well on mobile devices. The "user report" is recommended instead';
 $string['grading'] = 'Grading';
 $string['help'] = 'Help';
@@ -212,6 +244,7 @@ $string['headingfont'] = 'Heading font';
 $string['headingfont_desc'] = 'This sans-serif font is used in the headings (h1 - h6 elements) across your site. If you are including a custom webfont remember to add it to the Moodle additional HTML. If you want to modify fonts of other elements, please make use of the Custom CSS option, for examples on how to do this, please take a look at this <a href="https://help.openlms.net/en/administrator/manage-a-site/snap-font-family-with-custom-css/" target="_blank">documentation</a>.';
 $string['helpwithlogin'] = 'Help with login';
 $string['helpwithloginandguest'] = 'Help with login / guest access';
+$string['loginrequiredmessage'] = '* indicates a required field';
 $string['hiddencoursestoggle'] = 'Hidden courses';
 $string['highlightedsection'] = 'highlighted';
 $string['home'] = 'home';
@@ -248,7 +281,7 @@ $string['menu'] = 'My Courses';
 $string['messageread'] = 'Message Read';
 $string['messages'] = 'Messages';
 $string['messagestoggle'] = 'Messages';
-$string['messagestoggledesc'] = 'Show users their most recent messages received over the last 12 weeks.';
+$string['messagestoggledesc'] = 'Show users their most recent messages received over the last 12 weeks. To enable this option, ensure that the messaging feature on the Advanced features page is activated.';
 $string['more'] = 'More';
 $string['morenews'] = 'More news';
 $string['moreoptionslabel'] = 'More Options';
@@ -329,12 +362,6 @@ $string['displaydescriptionhelp'] = 'Select to show a description of resource ac
 $string['search'] = 'Search contents';
 $string['showcoursegradepersonalmenu'] = 'Grades';
 $string['showcoursegradepersonalmenudesc'] = 'Show users their grade in course cards in the personal menu';
-
-// BEGIN LSU Course Card Quick Links.
-$string['showcoursecardquicklinks'] = 'Course Card Quick Links';
-$string['showcoursecardquicklinksdesc'] = 'Add quick links to the course cards for quick access to sections of the course';
-// END LSU Course Card Quick Links.
-
 $string['socialmedia'] = 'Social media';
 $string['submitted'] = 'Submitted';
 $string['sitedescription'] = 'Site description';
@@ -411,6 +438,7 @@ $string['spotinvalidratio'] = 'The background color doesn\'t comply with the
 Current value against {$a->name}: {$a->value}.';
 $string['imageinvalidratiocategory'] = 'This image could have contrast problems with the theme color due not compliance with the WCAG 2.0 minimum ratio value 4.5:1. Average pixel value: "{$a}"';
 $string['browseallcourses'] = 'Browse all courses';
+$string['browseallcategories'] = 'Browse all categories';
 $string['lazyload_mod_page'] = 'Enable default lazy loading for page resources';
 $string['lazyload_mod_page_description'] = 'If enabled, this setting significantly decreases course page load times for courses with many pages.';
 $string['pmadvancedfeed_viewmore'] = 'View more';
@@ -427,8 +455,6 @@ $string['moodleloginfirst'] = 'Display Moodle login first';
 $string['alternativeloginfirst'] = 'Display alternative login options first';
 $string['alternativeloginoptions'] = 'Alternative login options';
 $string['openmessagedrawer'] = 'Open messaging drawer. ';
-$string['design_mod_page'] = 'Enable previous design for page resources';
-$string['design_mod_page_description'] = 'If enabled, page resource content will be displayed inside the same page, course or front page. If the page content includes videos, this setting significantly decreases course page load times.';
 $string['refreshdeadlinestask'] = 'Refresh deadlines cached data. This should be run before all users login.';
 $string['resetdeadlinesquerycounttask'] = 'Reset deadlines query count';
 $string['refreshdeadlinestaskoff'] = 'Didn\'t look for data to populate. Please turn on the setting "Refresh deadlines using scheduled task" in Snap\'s Personal menu settings to allow this task to populate deadlines cached data.';
@@ -463,80 +489,19 @@ $string['snapfootercolorsdesc'] = 'The colors of the footer can be changed: to c
 $string['snapfooterbgcolor'] = 'Footer background color';
 $string['snapfootertxtcolor'] = 'Footer text color';
 $string['enableblockmyoverviewwarning'] = 'The Course overview block is disabled. In order to display the courses, please enable the block.';
-
-// BEGIN LSU Extra Course Tabs.
-$string['coursetabs'] = 'Course Tabs';
-$string['remotecourses'] = 'Remote Courses';
-$string['remotecoursestoggle'] = 'Use this tab?';
-$string['remotecoursesoptin'] = 'Require users to opt in?';
-$string['remotecoursesoptin_help'] = 'If checked, administrators will need to create a snap_remotecourses checkbox user profile field, and users will have to select that checkbox in their profile.';
-$string['remotesite'] = 'Remote Site';
-$string['remotesite_help'] = 'FQDN of remote site including https:// and any suffix.';
-$string['wstoken'] = 'Web Services Token';
-$string['wstoken_help'] = 'Token from the remote site.';
-$string['localproxy'] = 'Local Proxy Course';
-$string['localproxy_help'] = 'The course id of the local proxy course to be used for local lookups.';
-$string['cachetimeout'] = 'Cache timeout (days)';
-$string['cachetimeout_help'] = 'How long, in days, you want the local cache of remote course information to be valid.';
-
-$string['extratab1head'] = 'Extra Tab 1';
-$string['extratab1toggle'] = 'Use this tab?';
-$string['extratab1enrolled'] = 'Require Enrollment?';
-$string['extratab1datelimits'] = 'Date Limited?';
-$string['extratab1datelimits_help'] = 'The course end-date must be set and the current date must occur within the timeframe of the course.';
-$string['extratab1name'] = 'Tab Name';
-$string['extratab1name_help'] = 'The name of the tab. This should be something short.';
-$string['extratab1coursefield'] = 'Course Field';
-$string['extratab1coursefield_help'] = 'The course field you which to search in.';
-$string['extratab1searchopts'] = 'Search Option';
-$string['extratab1searchopts_help'] = 'How you want the search to be carried out.';
-$string['extratab1searchterm'] = 'Search Term';
-$string['extratab1searchterm_help'] = 'The term you wish to search for.';
-
-$string['extratab2head'] = 'Extra Tab 2';
-$string['extratab2toggle'] = 'Use this tab?';
-$string['extratab2enrolled'] = 'Require Enrollment?';
-$string['extratab2datelimits'] = 'Date Limited?';
-$string['extratab2datelimits_help'] = 'The course end-date must be set and the current date must occur within the timeframe of the course.';
-$string['extratab2name'] = 'Tab Name';
-$string['extratab2name_help'] = 'The name of the tab. This should be something short.';
-$string['extratab2coursefield'] = 'Course Field';
-$string['extratab2coursefield_help'] = 'The course field you which to search in.';
-$string['extratab2searchopts'] = 'Search Option';
-$string['extratab2searchopts_help'] = 'How you want the search to be carried out.';
-$string['extratab2searchterm'] = 'Search Term';
-$string['extratab2searchterm_help'] = 'The term you wish to search for.';
-
-$string['extratab3head'] = 'Extra Tab 3';
-$string['extratab3toggle'] = 'Use this tab?';
-$string['extratab3enrolled'] = 'Require Enrollment?';
-$string['extratab3datelimits'] = 'Date Limited?';
-$string['extratab3datelimits_help'] = 'The course end-date must be set and the current date must occur within the timeframe of the course.';
-$string['extratab3name'] = 'Tab Name';
-$string['extratab3name_help'] = 'The name of the tab. This should be something short.';
-$string['extratab3coursefield'] = 'Course Field';
-$string['extratab3coursefield_help'] = 'The course field you which to search in.';
-$string['extratab3searchopts'] = 'Search Option';
-$string['extratab3searchopts_help'] = 'How you want the search to be carried out.';
-$string['extratab3searchterm'] = 'Search Term';
-$string['extratab3searchterm_help'] = 'The term you wish to search for.';
-$string['extratab3repop'] = 'Repopulate empty course tab?';
-$string['extratab3repop_help'] = 'Repopulate the main course tab from tab 3 if tab 3 is populated and coure tab is empty.';
-
-$string['beginswith'] = 'Begins With';
-$string['contains'] = 'Contains';
-$string['endswith'] = 'Ends With';
-$string['regex'] = 'Regular Expression';
-// END LSU Extra Course Tabs.
-
-
-// BEGIN LSU Extra Course Size.
-$string['enable_course_size'] = 'Enable course size tool.';
-$string['enable_course_size_description'] = 'If enabled, this will show the  course size based on a limit that is set by the admin.';
-$string['course_size_limit'] = 'Course size limit (MB)';
-$string['course_size_limit_description'] = 'Set the limit for the size of the course that instructors will be able to see.';
-
-$string['course_size'] = 'Course Size';
-$string['course_size_help'] = 'Indicates the total size of your course, including all course materials.';
-// END LSU Extra Course Size.
-
+$string['collapseicon'] = 'Collapse the content of';
+$string['expandicon'] = 'Expand the content of';
+$string['imageproperties'] = 'Image properties';
+$string['coverimagedesc'] = 'Select the image to feature on the cover, ensuring it is in either .jpeg, .png, or .gif format. It should not exceed the site level maximum allowed file size ({$a}). For optimal display, aim for an aspect ratio of 4:3 (1024x768 pixels). Additionally, consider color combinations that adhere to WCAG 2.0 guidelines, especially in relation to the white title of the course, for an enhanced user experience.';
+$string['coverimagecropperdesc'] = 'Using the crop box, select the area of the image that will be displayed.';
+$string['browserepositories'] = 'Upload a new image';
+$string['saveimage'] = 'Save image';
+$string['selectimage'] = 'Select image';
+$string['deleteimage'] = 'Delete cover image';
+$string['confirmdeletefile'] = 'This action will delete the cover image. Are you sure you want to delete the saved file?';
+$string['coverimagesettingswarning'] = 'If you update the cover image directly from the course settings page, the cropped cover image will reset. Please remember to reselect the desired crop afterward.';
+$string['opens'] = 'Opens {$a}';
+$string['opened'] = 'Opened {$a}';
+$string['year'] = 'Year';
+$string['homepage'] = 'Homepage';
+$string['allyears'] = 'All years';

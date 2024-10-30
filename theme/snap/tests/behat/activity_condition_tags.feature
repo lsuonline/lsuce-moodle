@@ -54,7 +54,8 @@ Feature: When the moodle theme is set to Snap, activity restriction tags are sho
     Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
-    And I click on "//a[i[contains(@title, 'Test assignment1')]]" "xpath_element"
+    And I click on ".snap-activity.modtype_assign .snap-edit-asset-more[title='More Options \"Test assignment1\"']" "css_element"
+    And I click on ".snap-activity.modtype_assign .snap-edit-asset[aria-label='Edit activity Test assignment1']" "css_element"
     And I wait until the page is ready
     And I click on "//fieldset[@id=\"id_availabilityconditionsheader\"]" "xpath_element"
     And I click on "//button[text()=\"Add restriction...\"]" "xpath_element"
@@ -78,7 +79,8 @@ Feature: When the moodle theme is set to Snap, activity restriction tags are sho
     Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
-    And I click on "//a[i[contains(@title, 'Test assignment1')]]" "xpath_element"
+    And I click on ".snap-activity.modtype_assign .snap-edit-asset-more[title='More Options \"Test assignment1\"']" "css_element"
+    And I click on ".snap-activity.modtype_assign .snap-edit-asset[aria-label='Edit activity Test assignment1']" "css_element"
     And I wait until the page is ready
     And I click on "//fieldset[@id=\"id_availabilityconditionsheader\"]" "xpath_element"
     And I click on "//button[text()=\"Add restriction...\"]" "xpath_element"
@@ -107,7 +109,8 @@ Feature: When the moodle theme is set to Snap, activity restriction tags are sho
     Given I log in as "teacher1"
     And I am on the course main page for "C1"
     And I follow "Topic 1"
-    And I click on "//a[i[contains(@title, 'Test assignment1')]]" "xpath_element"
+    And I click on ".snap-activity.modtype_assign .snap-edit-asset-more[title='More Options \"Test assignment1\"']" "css_element"
+    And I click on ".snap-activity.modtype_assign .snap-edit-asset[aria-label='Edit activity Test assignment1']" "css_element"
     And I wait until the page is ready
     And I click on "//fieldset[@id=\"id_availabilityconditionsheader\"]" "xpath_element"
     And I click on "//button[text()=\"Add restriction...\"]" "xpath_element"

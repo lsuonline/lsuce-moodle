@@ -1193,7 +1193,7 @@ class manager {
      * @throws \moodle_exception
      * @return bool Whether there was any updated document or not.
      */
-    public function index($fullindex = false, $timelimit = 0, \progress_trace $progress = null) {
+    public function index($fullindex = false, $timelimit = 0, ?\progress_trace $progress = null) {
         global $DB;
 
         // Cannot combine time limit with reindex.
@@ -1289,15 +1289,8 @@ class manager {
                 if ($batches !== $numdocs + $numdocsignored) {
                     $batchinfo = ' (' . $batches . ' batch' . ($batches === 1 ? '' : 'es') . ')';
                 }
-            } else if (count($result) === 5) {
-                // Backward compatibility for engines that don't return a batch count.
-                [$numrecords, $numdocs, $numdocsignored, $lastindexeddoc, $partial] = $result;
-                // Deprecated since Moodle 3.10 MDL-68690.
-                // TODO: MDL-68776 This will be deleted in Moodle 4.2.
-                debugging('engine::add_documents() should return $batches (5-value return is deprecated)',
-                        DEBUG_DEVELOPER);
             } else {
-                throw new coding_exception('engine::add_documents() should return $partial (4-value return is deprecated)');
+                throw new \coding_exception('engine::add_documents() should return 6 values');
             }
 
             if ($numdocs > 0) {
@@ -1372,7 +1365,7 @@ class manager {
      * @return \stdClass Object indicating success
      */
     public function index_context($context, $singleareaid = '', $timelimit = 0,
-            \progress_trace $progress = null, $startfromarea = '', $startfromtime = 0) {
+            ?\progress_trace $progress = null, $startfromarea = '', $startfromtime = 0) {
         if (!$progress) {
             $progress = new \null_progress_trace();
         }
@@ -1454,19 +1447,8 @@ class manager {
                 if ($batches !== $numdocs + $numdocsignored) {
                     $batchinfo = ' (' . $batches . ' batch' . ($batches === 1 ? '' : 'es') . ')';
                 }
-            } else if (count($result) === 5) {
-                // Backward compatibility for engines that don't return a batch count.
-                [$numrecords, $numdocs, $numdocsignored, $lastindexeddoc, $partial] = $result;
-                // Deprecated since Moodle 3.10 MDL-68690.
-                // TODO: MDL-68776 This will be deleted in Moodle 4.2 (as should the below bit).
-                debugging('engine::add_documents() should return $batches (5-value return is deprecated)',
-                        DEBUG_DEVELOPER);
             } else {
-                // Backward compatibility for engines that don't support partial adding.
-                list($numrecords, $numdocs, $numdocsignored, $lastindexeddoc) = $result;
-                debugging('engine::add_documents() should return $partial (4-value return is deprecated)',
-                        DEBUG_DEVELOPER);
-                $partial = false;
+                throw new \coding_exception('engine::add_documents() should return 6 values');
             }
 
             if ($numdocs > 0) {
@@ -1707,7 +1689,7 @@ class manager {
      * @param float $timelimit Time limit (0 = none)
      * @param \progress_trace|null $progress Optional progress indicator
      */
-    public function process_index_requests($timelimit = 0.0, \progress_trace $progress = null) {
+    public function process_index_requests($timelimit = 0.0, ?\progress_trace $progress = null) {
         global $DB;
 
         if (!$progress) {

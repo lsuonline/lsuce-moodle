@@ -55,7 +55,6 @@ Feature: Correct visualization of the general view for My Account plugin only fo
     And I should see "Open LMS Release Schedule"
     And I should see "Open LMS Community"
     And I should see "Open LMS Latest Releases"
-    And I should see "Open bot"
 
   @javascript
   Scenario: As an Admin in Snap, I'm redirected to specific pages to change Site logo or Site full name in Snap.
@@ -73,26 +72,3 @@ Feature: Correct visualization of the general view for My Account plugin only fo
     And I press "Save changes"
     And I am on my account default page
     And I should see "Site full name test"
-
-  @javascript
-  Scenario: As an Admin in Snap, I change drift subscription and the Open bot icon should change.
-    Given I am using Open LMS
-    Given I log in as "admin"
-    And I go to my profile page
-    And I should see "Drift subscription"
-    And I follow "Drift subscription"
-    And the field "Drift subscription" matches value "1"
-    And I set the field "Drift subscription" to "0"
-    And I press "Save changes"
-    And the field "Drift subscription" matches value "0"
-    And I am on site homepage
-    And I am on my account default page
-    And I should see "Enable Open bot"
-    And I click on "a#myaccount-openbot-sub" "css_element"
-    And I should see "Drift Integration Plugin"
-    And the field "Drift subscription" matches value "0"
-    And I set the field "Drift subscription" to "1"
-    And I press "Save changes"
-    And I am on my account default page
-    # This is to rectify that the drift subscription is turned on, a different icon will appear in My Account general view.
-    And I should see "Open bot"

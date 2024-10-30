@@ -25,11 +25,9 @@
 .news-article-message *[style],
 .snap-image-summary *[style],
 .summary-text *[style]:not(.MathJax *[style]),
-.summary p[style],
 .summary div[style]:not(.media-responsive-pad):not(.oembed-responsive-pad),
 .sitetopic p[style],
 .sitetopic div[style]:not(.media-responsive-pad):not(.oembed-responsive-pad):not(.sc-indent-0),
-.snap-activity .contentafterlink *[style],
 .signuppanel *[style],
 .signuppanel .text_to_html *[style],
 .snap-lightbox-description *[style] {
@@ -60,7 +58,9 @@ legend,
 .mform legend a:hover,
 .coursebox .info .coursename,
 .collapsibleregioncaption,
+.snap-featured-category-title,
 .snap-featured-course-title,
+.snap-home-course-title,
 #coursetools-list a {
     font-family: $font-family-feature;
 }

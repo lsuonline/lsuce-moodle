@@ -19,9 +19,9 @@ declare(strict_types=1);
 namespace core_reportbuilder\external\columns;
 
 use core_reportbuilder_generator;
-use external_api;
+use core_external\external_api;
 use externallib_advanced_testcase;
-use core_reportbuilder\report_access_exception;
+use core_reportbuilder\exception\report_access_exception;
 use core_reportbuilder\local\models\column;
 use core_user\reportbuilder\datasource\users;
 

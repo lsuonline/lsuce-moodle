@@ -33,7 +33,7 @@ require_once($CFG->dirroot . '/contentbank/tests/fixtures/testable_contenttype.p
 require_once($CFG->dirroot . '/contentbank/tests/fixtures/testable_content.php');
 require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 
-use external_api;
+use core_external\external_api;
 
 /**
  * Core content bank external functions tests.
@@ -74,7 +74,7 @@ class rename_content_test extends \externallib_advanced_testcase {
      *
      * @covers ::execute
      */
-    public function test_rename_content_with_permission(string $newname, string $expectedname, bool $expectedresult) {
+    public function test_rename_content_with_permission(string $newname, string $expectedname, bool $expectedresult): void {
         global $DB;
         $this->resetAfterTest();
 
@@ -111,7 +111,7 @@ class rename_content_test extends \externallib_advanced_testcase {
      *
      * @covers ::execute
      */
-    public function test_rename_content_without_permission() {
+    public function test_rename_content_without_permission(): void {
         global $DB;
         $this->resetAfterTest();
 

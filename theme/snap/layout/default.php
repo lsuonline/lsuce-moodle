@@ -58,13 +58,13 @@ if ($PAGE->pagetype == "mod-lightboxgallery-view" && $PAGE->user_allowed_editing
 <!--
 ////////////////////////// MAIN  ///////////////////////////////
 -->
-<main id="moodle-page" class="clearfix">
+<div id="moodle-page" class="clearfix">
 <?php
 echo $OUTPUT->custom_menu_spacer();
 ?>
 <div id="page-header" class="clearfix <?php echo $mastimage; ?>">
     <?php if ($PAGE->pagetype !== 'site-index') { ?>
-        <div class="breadcrumb-nav" aria-label="breadcrumb"><?php echo $OUTPUT->snapnavbar($mastimage); ?></div>
+        <nav class="breadcrumb-nav" aria-label="breadcrumbs"><?php echo $OUTPUT->snapnavbar($mastimage); ?></nav>
     <?php }
         if ($carousel) {
             // Front page carousel.
@@ -179,8 +179,11 @@ if (stripos($PAGE->bodyclasses, 'format-singleactivity') !== false ) {
 </section>
 </div>
 
-<?php require(__DIR__.'/moodle-blocks.php'); ?>
-</main>
+<?php
+require(__DIR__.'/moodle-blocks.php');
+echo $OUTPUT->snap_feeds_side_menu();
+?>
+</div>
 
 </div>
 </div>

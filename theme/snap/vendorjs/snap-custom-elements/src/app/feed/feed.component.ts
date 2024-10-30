@@ -17,7 +17,7 @@ import {MoodleRes} from "../moodle.res";
           <div class="snap-media-object feeditem {{feedItem.extraClasses}}" *ngFor="let feedItem of feedItems" [attr.data-from-cache]="feedItem.fromCache">
               <img *ngIf="feedItem.iconUrl !== ''" src="{{feedItem.iconUrl}}" alt="{{feedItem.iconDesc}}" [className]="feedItem.iconClass">
               <div class="snap-media-body">
-                  <a href="{{feedItem.actionUrl}}">
+                  <a [attr.href]="feedItem.urlParameter ? feedItem.actionUrl + '&snapfeedsclicked=on' : feedItem.actionUrl">
                       <h3>
                           {{feedItem.title}}
                           <small [attr.data-from-cache]="feedItem.fromCache">
@@ -44,12 +44,14 @@ import {MoodleRes} from "../moodle.res";
         </a>
       </div>
       <a *ngIf="viewMoreEnabled && nextPage >= 0" href="javascript: void(0);" class="snap-personal-menu-more"
-         (click)="getFeed($event)">
+         (click)="getFeed($event)" title="{{ viewMoreMessage }} {{ title.toLowerCase() }}">
           <small>{{viewMoreMessage}}</small>
+          <i class="snap-feeds-more-icon fa fa-caret-down"></i>
       </a>
       <a *ngIf="nextPage === -1 && showReload" href="javascript: void(0);" class="snap-personal-menu-more"
-         (click)="purgeDataAndResetFeed()">
+         (click)="purgeDataAndResetFeed()" title="{{ reloadMessage }} {{ title.toLowerCase() }}">
           <small>{{reloadMessage}}</small>
+          <i class="snap-feeds-refresh-icon fa fa-refresh"></i>
       </a>
       <span *ngIf="fetchingData" class="snap-personal-menu-more snap-personal-menu-feed-loading">
         <a class="small text-muted">{{loadingFeed}} </a>
@@ -152,7 +154,7 @@ export class FeedComponent implements OnInit {
       }
     } else {
       if (!this.waitForPersonalMenu || document.querySelectorAll('body.snap-pm-open').length > 0
-        || document.querySelectorAll('.page-mycourses .snap-feeds').length > 0) {
+        || document.querySelectorAll('#snap_feeds_side_menu .snap-feeds').length > 0) {
         this.resetFeed();
       }
     }

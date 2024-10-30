@@ -24,8 +24,8 @@ Feature: When the moodle theme is set to Snap, teachers edit assets without ente
 
   Background:
     Given the following "courses" exist:
-      | fullname | shortname | category | format |
-      | Course 1 | C1        | 0        | topics |
+      | fullname | shortname | category | format | showcompletionconditions | enablecompletion |
+      | Course 1 | C1        | 0        | topics | 1                        | 1                |
     And the following "users" exist:
       | username | firstname | lastname | email                |
       | teacher1 | Teacher   | 1        | teacher1@example.com |
@@ -93,10 +93,12 @@ Feature: When the moodle theme is set to Snap, teachers edit assets without ente
     Then "#section-1" "css_element" should exist
     And ".snap-activity[data-type='Assignment']" "css_element" should exist
     And I click on ".snap-activity[data-type='Assignment'] button.snap-edit-asset-more" "css_element"
-    And I click on ".snap-activity[data-type='Assignment'] a.js_snap_hide" "css_element"
+    And I click on ".dropdown .availability-dropdown" "css_element"
+    And I click on ".snap-activity[data-type='Assignment'] a[data-action='cmHide']" "css_element"
     Then I wait until ".snap-activity[data-type='Assignment'].draft" "css_element" exists
-    And I click on ".snap-activity[data-type='Assignment'] button.snap-edit-asset-more" "css_element"
-    And I click on ".snap-activity[data-type='Assignment'] a.js_snap_show" "css_element"
+    And I click on ".snap-activity.assign .snap-asset-actions" "css_element"
+    And I click on ".dropdown .availability-dropdown" "css_element"
+    And I click on ".snap-activity[data-type='Assignment'] a[data-action='cmShow']" "css_element"
     Then I wait until ".snap-activity[data-type='Assignment'].draft" "css_element" does not exist
     Examples:
       | Option     |
@@ -118,13 +120,15 @@ Feature: When the moodle theme is set to Snap, teachers edit assets without ente
     Then ".snap-resource[data-type='txt']" "css_element" should exist
     And ".snap-resource[data-type='txt'].draft" "css_element" should not exist
     And I click on ".snap-resource[data-type='txt'] button.snap-edit-asset-more" "css_element"
-    And I click on ".snap-resource[data-type='txt'] a.js_snap_hide" "css_element"
+    And I click on ".dropdown .availability-dropdown" "css_element"
+    And I click on ".snap-resource[data-type='txt'] a[data-action='cmHide']" "css_element"
     Then I wait until ".snap-resource[data-type='txt'].draft" "css_element" exists
     # This is to test that the change persists.
     And I reload the page
     And ".snap-resource[data-type='txt'].draft" "css_element" should exist
     And I click on ".snap-resource[data-type='txt'] button.snap-edit-asset-more" "css_element"
-    And I click on ".snap-resource[data-type='txt'] a.js_snap_show" "css_element"
+    And I click on ".dropdown .availability-dropdown" "css_element"
+    And I click on ".snap-resource[data-type='txt'] a[data-action='cmShow']" "css_element"
     Then I wait until ".snap-resource[data-type='txt'].draft" "css_element" does not exist
     # This is to test that the change persists.
     And I reload the page
@@ -191,14 +195,9 @@ Feature: When the moodle theme is set to Snap, teachers edit assets without ente
     Given the following "activities" exist:
       | activity | course | idnumber | name            | intro           | section | assignsubmission_onlinetext_enabled |
       | assign   | C1     | assign1  | Test assignment | Test assignment | 1       | 1|
-    And I log in as "admin"
-    And I am on "Course 1" course homepage
-    Then I follow "Course Dashboard"
-    And I follow "Edit blocks"
-    And I set the field with xpath "//select[@class = 'custom-select singleselect']" to "Sharing Cart"
-    And I wait until the page is ready
-    And I should see "Sharing Cart"
-    And I log out
+    And the following "blocks" exist:
+      | blockname         | contextlevel | reference | pagetypepattern | defaultregion |
+      | sharing_cart      | Course       | C1        | course-view-*   | side-pre      |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Topic 1"
@@ -206,3 +205,42 @@ Feature: When the moodle theme is set to Snap, teachers edit assets without ente
     Then I should see "Copy to Sharing Cart"
     And I click on ".snap-activity[data-type='Assignment'] a.editing_backup" "css_element"
     Then I should see "Are you sure you want to copy this"
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Topic 1"
+    And ".snap-activity[data-type='Assignment'] button.snap-edit-asset-more" "css_element" should not exist
+    Then I should not see "Copy to Sharing Cart"
+
+  @javascript
+  Scenario: In the frontpage, an admin duplicates an activity.
+    Given the following "activities" exist:
+      | activity | course               | section | name        | intro                  | idnumber |
+      | assign   | Acceptance test site | 1       | Assignment1 | Assignment description | assign1  |
+    Then I log in as "admin"
+    And I am on site homepage
+
+    When I click on ".snap-activity[data-type='Assignment'] button.snap-edit-asset-more" "css_element"
+    And I click on ".snap-activity[data-type='Assignment'] a.js_snap_duplicate" "css_element"
+    Then I wait until ".snap-activity[data-type='Assignment'] + .snap-activity[data-type='Assignment']" "css_element" exists
+
+  @javascript
+  Scenario: In the frontpage, an admin can edit completions conditions
+    Given the following "activities" exist:
+      | activity | name              | course | idnumber | gradepass | completion | completionusegrade |
+      | quiz     | Activity sample 1 | C1     | quiz1    | 5.00      | 2          | 1                  |
+    When I am on the "C1" "Course" page logged in as "admin"
+    And I click on "More Options" "button"
+    Then I click on "Edit conditions Activity sample 1" "button"
+    And ".snap-form-required > fieldset" "css_element" should not be visible
+    But ".snap-form-advanced > fieldset#id_activitycompletionheader" "css_element" should be visible
+
+  @javascript
+  Scenario: In the frontpage, an admin should not see the Edit conditions option if Enable completion is disabled in the site
+    Given I disable site completion tracking
+    And the following "activities" exist:
+      | activity | name              | course | idnumber | gradepass | completion | completionusegrade |
+      | quiz     | Activity sample 1 | C1     | quiz1    | 5.00      | 2          | 1                  |
+    When I am on the "C1" "Course" page logged in as "admin"
+    And I click on "More Options" "button"
+    Then I should not see "Edit conditions" in the "#snap-asset-menu" "css_element"

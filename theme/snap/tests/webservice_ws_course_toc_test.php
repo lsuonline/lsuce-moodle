@@ -21,6 +21,8 @@ use theme_snap\webservice\ws_course_sections;
  * @author    Sebastian Gracia
  * @copyright Copyright (c) 2020 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * 
+ * @runTestsInSeparateProcesses
  */
 class webservice_ws_course_toc_test extends \advanced_testcase {
 
@@ -30,7 +32,6 @@ class webservice_ws_course_toc_test extends \advanced_testcase {
     }
 
     public function test_service_returns() {
-        $this->markTestSkipped('To be reviewed INT-19441');
         $returns = \theme_snap\webservice\ws_course_sections::service_returns();
         $this->assertTrue($returns instanceof \external_single_structure);
     }

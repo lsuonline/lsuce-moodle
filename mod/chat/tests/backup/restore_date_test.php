@@ -16,6 +16,8 @@
 
 namespace mod_chat\backup;
 
+use core_external\external_api;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -30,16 +32,16 @@ require_once($CFG->libdir . "/phpunit/classes/restore_date_testcase.php");
  */
 class restore_date_test extends \restore_date_testcase {
 
-    public function test_restore_dates() {
+    public function test_restore_dates(): void {
         global $DB;
 
         list($course, $chat) = $this->create_course_and_module('chat');
         $result = \mod_chat_external::login_user($chat->id);
-        $result = \external_api::clean_returnvalue(\mod_chat_external::login_user_returns(), $result);
+        $result = external_api::clean_returnvalue(\mod_chat_external::login_user_returns(), $result);
         $chatsid = $result['chatsid'];
 
         $result = \mod_chat_external::send_chat_message($chatsid, 'hello!');
-        $result = \external_api::clean_returnvalue(\mod_chat_external::send_chat_message_returns(), $result);
+        $result = external_api::clean_returnvalue(\mod_chat_external::send_chat_message_returns(), $result);
         $message = $DB->get_record('chat_messages', ['id' => $result['messageid']]);
         $timestamp = 1000;
         $DB->set_field('chat_messages', 'timestamp', $timestamp);

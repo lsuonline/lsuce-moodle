@@ -59,7 +59,7 @@ class qbank_helper_test extends \advanced_testcase {
      *
      * @covers ::get_version_options
      */
-    public function test_reference_records() {
+    public function test_reference_records(): void {
         $this->resetAfterTest();
 
         $quiz = $this->create_test_quiz($this->course);
@@ -79,7 +79,7 @@ class qbank_helper_test extends \advanced_testcase {
         quiz_add_quiz_question($numq->id, $quiz);
 
         // Create the quiz object.
-        $quizobj = \quiz::create($quiz->id);
+        $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
         $quizobj->preload_questions();
         $quizobj->load_questions();
         $questions = $quizobj->get_questions();
@@ -110,7 +110,7 @@ class qbank_helper_test extends \advanced_testcase {
      * @covers ::get_question_structure
      * @covers ::get_always_latest_version_question_ids
      */
-    public function test_get_question_structure() {
+    public function test_get_question_structure(): void {
         $this->resetAfterTest();
 
         // Create a quiz.
@@ -132,7 +132,7 @@ class qbank_helper_test extends \advanced_testcase {
         quiz_add_quiz_question($q->id, $quiz);
 
         // Load the quiz object and check.
-        $quizobj = \quiz::create($quiz->id);
+        $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
         $quizobj->preload_questions();
         $quizobj->load_questions();
         $questions = $quizobj->get_questions();
@@ -183,7 +183,7 @@ class qbank_helper_test extends \advanced_testcase {
         quiz_add_quiz_question($q3->id, $quiz);
 
         // Load the quiz object and check.
-        $quizobj = \quiz::create($quiz->id);
+        $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
         $quizobj->preload_questions();
         $quizobj->load_questions();
         $questions = $quizobj->get_questions();

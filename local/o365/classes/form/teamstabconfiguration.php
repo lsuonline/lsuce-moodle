@@ -25,6 +25,8 @@
 
 namespace local_o365\form;
 
+use moodleform;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -38,13 +40,10 @@ require_once($CFG->dirroot . '/lib/formslib.php');
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @copyright (C) 2018 onwards Microsoft, Inc. (http://microsoft.com/)
  */
-class teamstabconfiguration extends \moodleform {
+class teamstabconfiguration extends moodleform {
 
     /**
      * Definition of the form.
-     *
-     * @throws \coding_exception
-     * @throws \dml_exception
      */
     public function definition() {
         $mform = $this->_form;
@@ -55,7 +54,11 @@ class teamstabconfiguration extends \moodleform {
             $mform->addElement('text', 'local_o365_teams_tab_name', get_string('tab_name', 'local_o365'),
                     array('onchange' => 'onTabNameChange()'));
             $mform->setType('local_o365_teams_tab_name', PARAM_TEXT);
-            $mform->setDefault('local_o365_teams_tab_name', get_string('tab_moodle', 'local_o365'));
+            $tabname = get_config('local_o365', 'teams_moodle_tab_name');
+            if (!$tabname) {
+                $tabname = 'Moodle';
+            }
+            $mform->setDefault('local_o365_teams_tab_name', $tabname);
 
             $courseselector = $mform->createElement('select', 'local_o365_teams_course',
                 get_string('course_selector_label', 'local_o365'),
@@ -77,7 +80,6 @@ class teamstabconfiguration extends \moodleform {
      * Return a list of courses that the user has access to, to be used as options in the drop down list.
      *
      * @return array
-     * @throws \dml_exception
      */
     private function get_course_options() {
         global $DB, $USER;

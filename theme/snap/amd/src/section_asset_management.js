@@ -19,10 +19,34 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/notification',
-    'theme_snap/util', 'theme_snap/ajax_notification', 'theme_snap/footer_alert',
-    'core_filters/events', 'core/fragment'],
-    function($, log, ajax, str, templates, notification, util, ajaxNotify, footerAlert, Event, fragment) {
+define(
+    [
+        'jquery',
+        'core/log',
+        'core/ajax',
+        'core/str',
+        'core/templates',
+        'core/notification',
+        'theme_snap/util',
+        'theme_snap/ajax_notification',
+        'theme_snap/footer_alert',
+        'core_filters/events',
+        'core/fragment',
+        'core/modal_copy_to_clipboard'
+    ],
+    function(
+        $,
+        log,
+        ajax,
+        str,
+        templates,
+        notification,
+        util, ajaxNotify,
+        footerAlert,
+        Event,
+        fragment,
+        ModalCopyToClipboard
+    ) {
 
         var self = this;
 
@@ -211,10 +235,7 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
             });
             var tempnode = $('<div></div>');
             templates.replaceNodeContents(tempnode, html, '');
-            // Append resource card fadeout to content resource card.
-            tempnode.find('.snap-resource-long .contentafterlink .snap-resource-card-fadeout').each(function() {
-                $(this).appendTo($(this).prevAll('.snap-resource-long .contentafterlink .no-overflow'));
-            });
+
             // Remove from Dom the completion tracking when it is disabled for an activity.
             tempnode.find('.snap-header-card .snap-header-card-icons .disabled-snap-asset-completion-tracking').remove();
             if (existingSections.length > 0) {
@@ -421,6 +442,8 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                 $('.snap-asset a').removeAttr('tabindex');
                 $('.snap-asset button').removeAttr('disabled');
                 $('.js-snap-asset-move').removeAttr('checked');
+                $('.snap-asset-move-input').prop('checked', false);
+                $('.readmore-container').removeAttr('hidden');
                 movingObjects = [];
                 if (self.courseConfig.partialrender) {
                     $('.snap-drop.section-drop').addClass('partial-render');
@@ -499,7 +522,8 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                                 if (params.class === 'resource') {
                                     // Only stop moving for resources, sections handle this later once the TOC is reloaded.
                                     stopMoving();
-                                    $(movingObject).find('label.snap-asset-move > input.js-snap-asset-move').focus();
+                                    $('.snap-asset-move-wrapper').attr('hidden', 'hidden');
+                                    $(movingObject).find('label.snap-asset-move-label > input.js-snap-asset-move').focus();
                                 }
                             }
                         }
@@ -1062,6 +1086,186 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
             };
 
             /**
+             * Listen for availability actions, hide, show, stealth.
+             */
+            var availabilityListeners = function() {
+                $(document).on('click', '#availability-menu .choicelist div[data-optionnumber]',
+                    function(e) {
+                        e.preventDefault();
+                        const cmIds = [];
+                        let courseId = self.courseConfig.id;
+                        let dataId = $(this).find('.option-name a').attr('data-id');
+                        let dataAction = $(this).find('.option-name a').attr('data-action');
+                        let url = $(this).find('.option-name a').attr('href');
+
+                        if (dataAction === 'cmShow') {
+                            dataAction = 'cm_show';
+                        } else if (dataAction === 'cmHide') {
+                            dataAction = 'cm_hide';
+                        } else if (dataAction === 'cmStealth') {
+                            dataAction = 'cm_stealth';
+                        }
+                        cmIds.push(dataId);
+
+                        ajax.call([
+                            {
+                                methodname: 'core_courseformat_update_course',
+                                args: {action: dataAction, courseid: courseId, ids: cmIds},
+                                done: function(res) {
+                                    res = JSON.parse(res);
+                                    let cmid = res[0].fields.id;
+                                    let module = $('#module-' + cmid);
+                                    module.find('#availability-menu .selected .option-select-indicator [data-for="checkedIcon"]')
+                                        .addClass('d-none');
+                                    module.find('#availability-menu .selected .option-select-indicator [data-for="uncheckedIcon"]')
+                                        .removeClass('d-none');
+                                    module.find('#availability-menu .selected').removeClass('border bg-primary-light selected');
+                                    if (res[0].fields.visible) {
+                                        if (res[0].fields.stealth) {
+                                            module.addClass('stealth');
+                                            module.removeClass('draft');
+                                            var selected = module.find('#availability-menu a[data-action="cmStealth"]');
+                                        } else {
+                                            module.removeClass('stealth');
+                                            module.removeClass('draft');
+                                            var selected = module.find('#availability-menu a[data-action="cmShow"]');
+                                        }
+                                    } else {
+                                        module.addClass('draft');
+                                        module.removeClass('stealth');
+                                        var selected = module.find('#availability-menu a[data-action="cmHide"]');
+                                    }
+                                    selected.parents('div[data-optionnumber][data-selected]')
+                                        .addClass('border bg-primary-light selected');
+                                    let indicator = selected.parent().siblings('.option-select-indicator');
+                                    indicator.find('span[data-for="checkedIcon"]').removeClass('d-none');
+                                    indicator.find('span[data-for="uncheckedIcon"]').addClass('d-none');
+                                },
+                                fail: function(reason) {
+                                    if (reason.errorcode === 'nopermissions') {
+                                        // Open the availability URL like Boost does for non Admin users.
+                                        window.open(url, "_self");
+                                    } else {
+                                        ajaxNotify.ifErrorShowBestMsg(reason);
+                                    }
+                                },
+                            }
+                        ]);
+                    }
+                );
+            };
+
+            /**
+             * Listen for group mode actions.
+             */
+            var groupModeListeners = function() {
+                $(document).on('click',
+                    '#snap-groups-menu .dropdown-item-outline, .groups-dropdown-menu .dropdown-item-outline',
+                        function(e) {
+                        e.preventDefault();
+                        const cmIds = [];
+                        let courseId = self.courseConfig.id;
+                        let dataId = $(this).find('.option-name a').attr('data-id');
+                        let dataAction = $(this).find('.option-name a').attr('data-action');
+                        let dataOptionNumber = $(this).attr('data-optionnumber');
+                        let actionText = '';
+                        if (dataAction === 'cmNoGroups') {
+                            dataAction = 'cm_nogroups';
+                            actionText = M.util.get_string('groupsnone', 'moodle');
+                        } else if (dataAction === 'cmSeparateGroups') {
+                            dataAction = 'cm_separategroups';
+                            actionText = M.util.get_string('groupsseparate', 'moodle');
+                        } else if (dataAction === 'cmVisibleGroups') {
+                            dataAction = 'cm_visiblegroups';
+                            actionText = M.util.get_string('groupsvisible', 'moodle');
+                        }
+                        cmIds.push(dataId);
+                        ajax.call([
+                            {
+                                methodname: 'core_courseformat_update_course',
+                                args: {action: dataAction, courseid: courseId, ids: cmIds},
+                                done: function() {
+                                    let activityCard = $('#module-'+dataId);
+
+                                    let selectedIconUrl = $(activityCard).find(
+                                        '[data-optionnumber='+dataOptionNumber+'] .option-icon img'
+                                    ).attr('src');
+
+                                    $(activityCard).find(
+                                        '.snap-activity-groups-dropdown .snap-groups-more img'
+                                    ).attr('src', selectedIconUrl);
+
+                                    $(activityCard).find(
+                                        '.snap-activity-groups-dropdown .snap-groups-more img'
+                                    ).attr('alt', actionText);
+
+                                    $(activityCard).find(
+                                        '#snap-groups-menu .border.bg-primary-light.selected,' +
+                                        '.groups-dropdown-menu .border.bg-primary-light.selected'
+                                    ).removeClass('border bg-primary-light selected');
+                                    $(activityCard).find(
+                                        '#snap-groups-menu a.selected,' +
+                                        '.groups-dropdown-menu a.selected'
+                                    ).removeClass('selected');
+                                    $(activityCard).find(
+                                        '.option-select-indicator [data-for="checkedIcon"]'
+                                    ).addClass('d-none');
+                                    $(activityCard).find(
+                                        '.option-select-indicator [data-for="uncheckedIcon"]'
+                                    ).removeClass('d-none');
+
+                                    $(activityCard).find(
+                                        '[data-optionnumber='+dataOptionNumber+']'
+                                    ).addClass('border bg-primary-light selected');
+                                    $(activityCard).find(
+                                        '.groups-dropdown-menu a[data-id='+dataId+'], ' +
+                                        '#snap-groups-menu a.selected'
+                                    ).addClass('selected');
+                                    $(activityCard).find(
+                                        '[data-optionnumber='+dataOptionNumber+'] ' +
+                                        '.option-select-indicator [data-for="checkedIcon"]'
+                                    ).removeClass('d-none');
+                                    $(activityCard).find(
+                                        '[data-optionnumber='+dataOptionNumber+'] ' +
+                                        '.option-select-indicator  [data-for="uncheckedIcon"]'
+                                    ).addClass('d-none');
+                                },
+                            }
+                        ]);
+                    });
+            };
+
+            /**
+             * Listen for sub dropdowns changes.
+             */
+            var subPanelListeners = function() {
+                $(document).on('click', '.dropdown-subpanel', function(e) {
+                    e.stopPropagation();
+                    $('.dropdown-subpanel').not(this).find('.dropdown-subpanel-content').hide();
+                    $('.dropdown-subpanel').not(this).find('.dropdown-toggle').removeClass('active');
+                    if ($(this).find('.dropdown-toggle').hasClass('active')) {
+                        // Closing the parent dropdown.
+                        $(this).parent().parent().click();
+                        $(this).parent().parent().blur();
+                        $(this).find('.dropdown-subpanel-content').hide();
+                        $(this).find('.dropdown-toggle').removeClass('active');
+                    } else {
+                        $(this).find('.dropdown-subpanel-content').show();
+                        $(this).find('.dropdown-toggle').addClass('active');
+                    }
+                });
+
+                // If we click outside the subpanel element.
+                $(document).on('click', function(event) {
+                    var subPanelElement = $('.dropdown-subpanel');
+                    if (!subPanelElement.is(event.target) && !subPanelElement.has(event.target).length) {
+                        $('#snap-asset-menu .dropdown-subpanel-content').hide();
+                        $('#snap-asset-menu .dropdown-toggle').removeClass('active');
+                    }
+                });
+            };
+
+            /**
              * Generic section action handler.
              *
              * @param {string} action visibility, highlight
@@ -1069,8 +1273,15 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
              */
             var sectionActionListener = function(action, onComplete) {
 
-                $('#region-main').on('click', '.snap-section-editing.actions .snap-' + action, function(e) {
-
+                let selector = '.snap-section-editing.actions .snap-' + action;
+                if ($('.snap-section-editing.actions .snap-' + action).parents('.dropdown-item').length > 0) {
+                    selector = '.snap-section-editing.actions .dropdown-item:has(.snap-' + action + ')';
+                }
+                $('#region-main').on('click', selector, function(e) {
+                    const activeDropdownSel = '#extra-actions-dropdown-' + parentSectionNumber(this);
+                    if($(activeDropdownSel).dropdown().parent().hasClass('show')) {
+                        $(activeDropdownSel).dropdown('toggle');
+                    }
                     e.stopPropagation();
                     e.preventDefault();
 
@@ -1145,10 +1356,19 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                         $(trigger).removeClass('ajaxing');
                     }).done(function(response) {
                         // Update section action and then reload TOC.
+                        // Checking if action is inside the menu.
+                        if ($(actionSelector).parents('.dropdown-item').length > 0) {
+                            response.actionmodel.isinmenu = true;
+                        }
                         return templates.render('theme_snap/course_action_section', response.actionmodel)
                         .then(function(result) {
-                            $(actionSelector).replaceWith(result);
-                            $(actionSelector).focus();
+                            // Checking if action is inside the menu.
+                            if ($(actionSelector).parents('.dropdown-item').length > 0) {
+                                $(actionSelector).parent().parent('li').replaceWith(result);
+                            } else {
+                                $(actionSelector).parent('li').replaceWith(result);
+                                $(actionSelector).focus();
+                            }
                             // Update TOC.
                             if (!loadModules) {
                                 if (moduleCache && moduleCache.length > 0 && response.toc.modules.length === 0) {
@@ -1224,8 +1444,18 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                     $notCurrent.each(function() {
                         var highlighter = $(this).find('.snap-highlight');
                         var sectionNumber = parentSectionNumber(highlighter);
-                        var newLink = $(highlighter).attr('href').replace(/(marker=)[0-9]+/ig, '$1' + sectionNumber);
-                        $(highlighter).attr('href', newLink).attr('aria-pressed', 'false');
+                        let highlighterref = '';
+                        if ($(highlighter).parents('.dropdown-item').length > 0) {
+                            highlighterref = $(highlighter).parent()
+                                .attr('href')
+                                .replace(/(marker=)[0-9]+/ig, '$1' + sectionNumber);
+                            $(highlighter).parent().attr('href', highlighterref).attr('aria-pressed', 'false');
+                        } else {
+                            highlighterref = $(highlighter)
+                                .attr('href')
+                                .replace(/(marker=)[0-9]+/ig, '$1' + sectionNumber);
+                            $(highlighter).attr('href', highlighterref).attr('aria-pressed', 'false');
+                        }
                     });
                 });
             };
@@ -1236,6 +1466,19 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
             var deleteSectionListener = function() {
                 $(document).on('click', '.snap-section-editing.actions .snap-delete', function(e) {
                     sectionDelete(e, this);
+                });
+            };
+
+            /**
+             * Show section permalink on click.
+             */
+            var permalinkSectionListener = function() {
+                $(document).on('click', '.snap-section-editing.actions .snap-permalink', function(e) {
+                    e.preventDefault();
+                    ModalCopyToClipboard.create({
+                            text: this.parentNode.getAttribute('href'),
+                        }, str.get_string('sectionlink', 'course')
+                    );
                 });
             };
 
@@ -1278,6 +1521,7 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                 footerAlert.show(function(e) {
                     e.preventDefault();
                     stopMoving();
+                    $('.snap-asset-move-wrapper').attr('hidden', 'hidden');
                     if (focusEl !== null) {
                         focusEl.focus();
                     }
@@ -1360,6 +1604,9 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                     if (movingObjects.length === 0) {
                         // Moving asset - activity or resource.
                         // Initiate move.
+                        $('.snap-asset-move-wrapper').removeAttr('hidden');
+                        $('.readmore-container').attr('hidden', 'hidden');
+
                         var assetname = $(asset).find('.snap-asset-link .instancename').html();
 
                         log.debug('Moving this asset', assetname);
@@ -1376,6 +1623,7 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                         $('.snap-asset button').attr('disabled','disabled');
                         $(asset).find('button').removeAttr('disabled');
                         $('.snap-asset .snap-asset-content a').attr('tabindex','-1');
+                        $('.snap-asset .mod-link').attr('tabindex','-1');
                         $(asset).find('a').removeAttr('tabindex');
 
                         $(asset).find('.js-snap-asset-move').prop('checked', 'checked');
@@ -1448,9 +1696,13 @@ define(['jquery', 'core/log', 'core/ajax', 'core/str', 'core/templates', 'core/n
                 toggleSectionListener();
                 highlightSectionListener();
                 deleteSectionListener();
+                permalinkSectionListener();
                 assetMoveListener();
                 movePlaceListener();
                 assetEditListeners();
+                availabilityListeners();
+                groupModeListeners();
+                subPanelListeners();
                 addAfterDrops();
                 if (courseLib.courseConfig.partialrender) {
                     setCourseSectionObervers();

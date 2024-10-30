@@ -17,6 +17,7 @@
 namespace theme_snap\webservice;
 
 use theme_snap\services\course;
+use theme_snap\local;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -35,10 +36,13 @@ class ws_cover_image extends \external_api {
     public static function service_parameters() {
         $parameters = [
             'params' => new \external_single_structure([
-                'imagedata' => new \external_value(PARAM_TEXT, 'Image data', VALUE_REQUIRED),
-                'imagefilename' => new \external_value(PARAM_TEXT, 'Image filename', VALUE_REQUIRED),
+                'imagefilename' => new \external_value(PARAM_TEXT, 'Image filename', VALUE_OPTIONAL),
+                'fileid' => new \external_value(PARAM_INT, 'File ID', VALUE_OPTIONAL),
                 'categoryid' => new \external_value(PARAM_INT, 'Category Id', VALUE_OPTIONAL),
                 'courseshortname' => new \external_value(PARAM_TEXT, 'Course shortname', VALUE_OPTIONAL),
+                'croppedimagedata' => new \external_value(PARAM_TEXT, 'Cropped image data', VALUE_OPTIONAL),
+                'originalimageurl' => new \external_value(PARAM_TEXT, 'Original image URL', VALUE_OPTIONAL),
+                'deleteimage' => new \external_value(PARAM_BOOL, 'Delete image', VALUE_OPTIONAL),
             ], 'Params wrapper - just here to accommodate optional values', VALUE_REQUIRED),
         ];
         return new \external_function_parameters($parameters);
@@ -50,6 +54,7 @@ class ws_cover_image extends \external_api {
     public static function service_returns() {
         $keys = [
             'success' => new \external_value(PARAM_BOOL, 'Was the cover image successfully changed', VALUE_REQUIRED),
+            'imageurl' => new \external_value(PARAM_TEXT, 'URL of the new cover image', VALUE_OPTIONAL),
             'contrast' => new \external_value(PARAM_TEXT, 'The color contrast has a warning', VALUE_OPTIONAL),
         ];
 
@@ -68,6 +73,14 @@ class ws_cover_image extends \external_api {
 
         $params = self::validate_parameters(self::service_parameters(), ['params' => $params])['params'];
 
+        if (!empty($params['deleteimage']) && $params['deleteimage']) {
+            return self::deletecoverimage($params);
+        }
+
+        if (empty($params['imagefilename']) && empty($params['fileid']) && !empty($params['croppedimagedata'])) {
+            return self::savecroppedimage($params);
+        }
+
         if (!empty($params['courseshortname'])) {
             $course = $service->coursebyshortname($params['courseshortname'], 'id');
             if ($course->id === SITEID) {
@@ -82,7 +95,81 @@ class ws_cover_image extends \external_api {
         }
         self::validate_context($context);
 
-        $coverimage = $service->setcoverimage($context, $params['imagedata'], $params['imagefilename']);
+        $coverimage = $service->setcoverimage($context, $params['imagefilename'], $params['fileid'], $params['croppedimagedata']);
+
         return $coverimage;
+    }
+
+    /**
+     * @return array
+     */
+    public static function savecroppedimage($params) {
+
+        $service = course::service();
+        $fs = get_file_storage();
+        if (!empty($params['courseshortname'])) {
+            $course = $service->coursebyshortname($params['courseshortname'], 'id');
+            if ($course->id === SITEID) {
+                $context = \context_system::instance();
+                $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
+                $service->savecroppedimage($context, $params['croppedimagedata'], null, $params['originalimageurl']);
+                $coverimageurl = local::site_coverimage_url();
+                $coverimageurl = "url($coverimageurl);";
+            } else {
+                $context = \context_course::instance($course->id);
+                $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
+                $service->savecroppedimage($context, $params['croppedimagedata'], null, $params['originalimageurl']);
+                $coverimageurl = local::course_coverimage_url($context->instanceid);
+                $coverimageurl = "url($coverimageurl);";
+            }
+        } else if (!empty($params['categoryid'])) {
+            $context = get_category_or_system_context($params['categoryid']);
+            $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
+            $service->savecroppedimage($context, $params['croppedimagedata'], null, $params['originalimageurl']);
+            $coverimageurl = local::course_cat_coverimage_url($context->instanceid);
+            $coverimageurl = "url($coverimageurl);";
+        } else {
+            throw new \coding_exception('Error - courseshortname OR categoryid must be provided');
+        }
+
+        return ['success' => true, 'imageurl'=> $coverimageurl];
+    }
+
+
+    /**
+     * @return array
+     */
+    public static function deletecoverimage($params) {
+
+        $service = course::service();
+        $fs = get_file_storage();
+        if (!empty($params['courseshortname'])) {
+            $course = $service->coursebyshortname($params['courseshortname'], 'id');
+            if ($course->id === SITEID) {
+                $context = \context_system::instance();
+                $fs->delete_area_files($context->id, 'theme_snap', 'coverimage');
+                $fs->delete_area_files($context->id, 'theme_snap', 'poster');
+                $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
+                // Purge course image cache in case if course image has been updated.
+                \cache::make('core', 'course_image')->delete($context->instanceid);
+            } else {
+                $context = \context_course::instance($course->id);
+                // Remove any old course summary image files for this context.
+                $fs->delete_area_files($context->id, 'theme_snap', 'coverimage');
+                $fs->delete_area_files($context->id, 'course', 'overviewfiles');
+                $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
+                \cache::make('core', 'course_image')->delete($context->instanceid);
+            }
+        } else if (!empty($params['categoryid'])) {
+            $context = get_category_or_system_context($params['categoryid']);
+            $fs->delete_area_files($context->id, 'theme_snap', 'coverimage');
+            $fs->delete_area_files($context->id, 'theme_snap', 'poster');
+            $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
+            \cache::make('core', 'course_image')->delete($context->instanceid);
+        } else {
+            throw new \coding_exception('Error - courseshortname OR categoryid must be provided');
+        }
+
+        return ['success' => true];
     }
 }

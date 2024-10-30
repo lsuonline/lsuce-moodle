@@ -33,7 +33,7 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/contentbank/tests/fixtures/testable_content.php');
 
 use dml_missing_record_exception;
-use external_api;
+use core_external\external_api;
 use externallib_advanced_testcase;
 
 /**
@@ -48,7 +48,7 @@ class delete_content_test extends externallib_advanced_testcase {
     /**
      * Test the behaviour of delete_content().
      */
-    public function test_delete_content() {
+    public function test_delete_content(): void {
         global $DB;
         $this->resetAfterTest();
         $records = [];

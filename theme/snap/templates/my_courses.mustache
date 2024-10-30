@@ -25,12 +25,12 @@
 <div id="page">
 
     <div id="page-content">
-        <main id="moodle-page" class="clearfix">
+        <div id="moodle-page" class="clearfix">
             {{{custommenuspacer}}}
             <div id="page-header" class="clearfix">
-                <div class="breadcrumb-nav" aria-label="breadcrumb">
+                <nav class="breadcrumb-nav" aria-label="breadcrumbs">
                     {{{snapnavbar}}}
-                 </div>
+                 </nav>
                  <div id="page-mast">
                     {{{pageheading}}}
                     {{{courseheader}}}
@@ -57,11 +57,7 @@
              </div>
              {{{standaraftermainregion}}}
              {{{snapblocks}}}
-        </main>
+             {{{snapfeedssidemenu}}}
+        </div>
     </div>
 </div>
-{{#js}}
-    require(['theme_snap/my_courses'], function(my_courses) {
-    my_courses.init({{sitepolicyacceptreqdmycourses}});
-    });
-{{/js}}

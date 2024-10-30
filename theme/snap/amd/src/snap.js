@@ -26,9 +26,9 @@
  * Main snap initialising function.
  */
 define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_snap/personal_menu',
-        'theme_snap/cover_image', 'theme_snap/progressbar', 'core/templates', 'core/str', 'theme_snap/accessibility',
+        'theme_snap/cover_image', 'theme_snap/progressbar', 'core/templates', 'core/str', 'core/ajax', 'theme_snap/accessibility',
         'theme_snap/messages', 'theme_snap/scroll'],
-    function($, log, Headroom, util, personalMenu, coverImage, ProgressBar, templates, str, accessibility, messages, Scroll) {
+    function($, log, Headroom, util, personalMenu, coverImage, ProgressBar, templates, str, ajax, accessibility, messages, Scroll) {
 
         'use strict';
 
@@ -233,6 +233,11 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                 ) {
                     $(this).attr('action', $(this).attr('action') + '#coursetools');
                 }
+            });
+
+            // Additional coursetools manipulations.
+            document.querySelectorAll('#coursetools li div.snap-participant-icons span.userinitials').forEach(function(el) {
+                el.setAttribute('aria-hidden', 'true');
             });
         };
 
@@ -545,6 +550,25 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
 
             // Onclick for toggle of state-visible of admin block and mobile menu.
             $(document).on("click", "#admin-menu-trigger, #toc-mobile-menu-toggle", function(e) {
+
+                // Close the Snap feeds side menu in case it is open.
+                var snapFeedsTrigger = document.getElementById('snap_feeds_side_menu_trigger');
+                if ($(snapFeedsTrigger).length != 0) {
+                    var hrefSnapFeeds = snapFeedsTrigger.getAttribute('href');
+                    if ($(snapFeedsTrigger).hasClass('active') && $(hrefSnapFeeds).hasClass('state-visible')) {
+                        var showFeedsString = M.util.get_string('show', 'moodle')
+                            + ' ' +  M.util.get_string('snapfeedsblocktitle', 'theme_snap');
+                        $(snapFeedsTrigger).attr('title', showFeedsString);
+                        $(snapFeedsTrigger).attr('aria-label', showFeedsString);
+                        $(snapFeedsTrigger).attr('aria-expanded', false);
+                        $(snapFeedsTrigger).removeClass('active');
+                        $(hrefSnapFeeds).removeClass('state-visible');
+                        $('#page').toggleClass('offcanvas');
+                        if ($('#sticky-footer').length != 0) {
+                            $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
+                        }
+                    }
+                }
                 var href = this.getAttribute('href');
                 // Make this only happen for settings button.
                 if (this.getAttribute('id') === 'admin-menu-trigger') {
@@ -557,6 +581,54 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
 
                 if ($('.message-app.main').length === 0) {
                     document.dispatchEvent(new Event("messages-drawer:toggle"));
+                }
+
+                // Code for mod_data sticky footer.
+                if ($('#sticky-footer').length != 0) {
+                    $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
+                }
+            });
+
+            // Onclick for toggle of state-visible of snap feeds side menu.
+            $(document).on("click", "#snap_feeds_side_menu_trigger", function(e) {
+                // Close the Admin settings block in case it is open.
+                var adminSettingsTrigger = document.getElementById('admin-menu-trigger');
+                if ($(adminSettingsTrigger).length != 0) {
+                    var hrefAdminSettings = adminSettingsTrigger.getAttribute('href');
+                    if ($(adminSettingsTrigger).hasClass('active') && $(hrefAdminSettings).hasClass('state-visible')) {
+                        $(adminSettingsTrigger).removeClass('active');
+                        $(hrefAdminSettings).removeClass('state-visible');
+                        $('#page').toggleClass('offcanvas');
+                        if ($('#sticky-footer').length != 0) {
+                            $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
+                        }
+                    }
+                }
+
+                var href = this.getAttribute('href');
+                if (this.getAttribute('id') === 'snap_feeds_side_menu_trigger') {
+                    var showFeedsString = M.util.get_string('show', 'moodle')
+                        + ' ' +  M.util.get_string('snapfeedsblocktitle', 'theme_snap');
+                    var hideFeedsString = M.util.get_string('hide', 'moodle')
+                        + ' ' +  M.util.get_string('snapfeedsblocktitle', 'theme_snap');
+                    if (this.getAttribute('title') === showFeedsString) {
+                        $(this).attr('title', hideFeedsString);
+                        $(this).attr('aria-label', hideFeedsString);
+                        $(this).attr('aria-expanded', true);
+                    } else {
+                        $(this).attr('title', showFeedsString);
+                        $(this).attr('aria-label', showFeedsString);
+                        $(this).attr('aria-expanded', false);
+                    }
+                    $(this).toggleClass('active');
+                    $('#page').toggleClass('offcanvas');
+                }
+                $(href).toggleClass('state-visible').focus();
+                e.preventDefault();
+
+                // Code for mod_data sticky footer.
+                if ($('#sticky-footer').length != 0) {
+                    $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
                 }
             });
 
@@ -587,29 +659,34 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
             $(document).on('click', '.news-article .toggle', function(e) {
                 var $news = $(this).closest('.news-article');
                 var $newstoggle = $(this);
-                var $newsclose = $news.find('.news-article-message > div > a[role="button"]');
                 util.scrollToElement($news);
                 $('.news-article').not($news).removeClass('state-expanded');
-                $('.news-article .toggle').not($newstoggle).attr('aria-expanded', 'false');
-                $('.news-article-message > div > a[role="button"]').not($newsclose).attr('aria-expanded', 'false');
+                $('.news-article a.toggle:not(.snap-icon-close), .news-article h3.toggle a')
+                    .not($newstoggle).attr('aria-expanded', 'false');
                 $('.news-article-message').css('display', 'none');
 
                 $news.toggleClass('state-expanded');
                 if (!$news.attr('state-expanded')) {
                     $news.focus();
-                    $newstoggle.attr('aria-expanded', 'false');
-                    $newsclose.attr('aria-expanded', 'false');
+                    if (!$newstoggle.hasClass( "news-article-image")
+                        && !$newstoggle.hasClass( "snap-icon-close")) {
+                        $newstoggle.find( "a" ).attr('aria-expanded', 'false');
+                    }
                 }
                 $('.state-expanded').find('.news-article-message').slideDown("fast", function() {
                     // Animation complete.
                     if ($news.is('.state-expanded')) {
                         $news.find('.news-article-message').focus();
-                        $newstoggle.attr('aria-expanded', 'true');
-                        $newsclose.attr('aria-expanded', 'true');
+                        if (!$newstoggle.hasClass( "news-article-image")
+                            && !$newstoggle.hasClass( "snap-icon-close")) {
+                            $newstoggle.find( "a" ).attr('aria-expanded', 'true');
+                        }
                     } else {
                         $news.focus();
-                        $newstoggle.attr('aria-expanded', 'false');
-                        $newsclose.attr('aria-expanded', 'false');
+                        if (!$newstoggle.hasClass( "news-article-image")
+                            && !$newstoggle.hasClass( "snap-icon-close")) {
+                            $newstoggle.find( "a" ).attr('aria-expanded', 'false');
+                        }
                     }
                     $(document).trigger('snapContentRevealed');
                 });
@@ -742,11 +819,6 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     // Make sure that the blocks are always within page-content for assig view page.
                     $('#page-mod-assign-view #page-content').append($('#moodle-blocks'));
 
-                    // Append resource card fadeout to content resource card.
-                    $('.snap-resource-long .contentafterlink .snap-resource-card-fadeout').each(function() {
-                        $(this).appendTo($(this).prevAll('.snap-resource-long .contentafterlink .no-overflow'));
-                    });
-
                     // Remove from Dom the completion tracking when it is disabled for an activity.
                     $('.snap-header-card .snap-header-card-icons .disabled-snap-asset-completion-tracking').remove();
 
@@ -764,19 +836,21 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
 
                     // Add a class to the body to show js is loaded.
                     $('body').addClass('snap-js-loaded');
-                    // Apply progressbar.js for circluar progress display.
+
+                    // Apply progressbar.js for circular progress display.
                     progressbarcircle();
                     // Course footer recent updates dom fixes.
                     recentUpdatesFix();
 
-                    if ($('body').hasClass('pagelayout-course') || $('body').hasClass('pagelayout-frontpage')) {
-                        coverImage.courseImage(courseConfig.shortname, siteMaxBytes);
-                    } else if ($('body').hasClass('pagelayout-coursecategory')) {
-                        if (courseConfig.categoryid) {
-                            coverImage.categoryImage(courseConfig.categoryid, siteMaxBytes);
+                    if (!$('.notloggedin').length) {
+                        if ($('body').hasClass('pagelayout-course') || $('body').hasClass('pagelayout-frontpage')) {
+                            coverImage.courseImage(courseConfig.shortname, siteMaxBytes);
+                        } else if ($('body').hasClass('pagelayout-coursecategory')) {
+                            if (courseConfig.categoryid) {
+                                coverImage.categoryImage(courseConfig.categoryid, siteMaxBytes);
+                            }
                         }
                     }
-
                     // Allow deeplinking to bs tabs on snap settings page.
                     if ($('#page-admin-setting-themesettingsnap').length) {
                         var tabHash = location.hash;
@@ -896,6 +970,25 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
 
                         // Add expand all to advanced column.
                         $(".snap-form-advanced").append($(".collapsible-actions"));
+
+                        // Adding additional events to handle collapse/expanse same as lib/form/amd/src/collapsesections.js
+                        const formContainers = $('.snap-form-advanced > fieldset > .fcontainer');
+                        const collapsemenu = $(".collapsible-actions > .collapsemenu")[0];
+                        $('.snap-form-advanced > fieldset > .fcontainer').on('hidden.bs.collapse', () => {
+                            const allCollapsed = [...formContainers].every(container => !container.classList.contains('show'));
+                            if (allCollapsed) {
+                                collapsemenu.classList.add('collapsed');
+                                collapsemenu.setAttribute('aria-expanded', false);
+                            }
+                        });
+                        $('.snap-form-advanced > fieldset > .fcontainer').on('shown.bs.collapse', () => {
+                            const allExpanded = [...formContainers].every(container => container.classList.contains('show'));
+                            if (allExpanded) {
+                                collapsemenu.classList.remove('collapsed');
+                                collapsemenu.setAttribute('aria-expanded', true);
+                            }
+                        });
+
                         // Add collapsed to all fieldsets in advanced, except on course edit page.
                         if (!$('#page-course-edit').length) {
                             $(".snap-form-advanced fieldset").addClass('collapsed');
@@ -1165,8 +1258,8 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         }
                     });
 
-                    // Unpin headroom when url has #course-detail-title.
-                    if (window.location.hash === '#course-detail-title') {
+                    // Unpin headroom when url has #course-detail-title or #mod_book-chapter.
+                    if (window.location.hash === '#course-detail-title' || window.location.hash === '#mod_book-chapter') {
                         $('#mr-nav').removeClass('headroom--pinned').addClass('headroom--unpinned');
                     }
 
@@ -1188,16 +1281,24 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         }
                     }
 
+                    // Checking if the snap form required fieldset is not being displayed.
+                    const snapFormFsRequired = $('.snap-form-required > fieldset');
+                    if(snapFormFsRequired && snapFormFsRequired.hasClass('d-none')){
+                        // Now its safe to remove  the columns class from the form so the visible fieldset takes the full space.
+                        const visibleFieldset = $('.snap-form-advanced > fieldset').not('.d-none');
+                        $(visibleFieldset).parent().removeClass('col-md-4');
+
+                        // Making sure that the save buttons are displayed.
+                        const notificationCheck = document.getElementById('id_coursecontentnotification')
+                            .closest(".form-group.fitem");
+                        $('.snap-form-advanced').append(notificationCheck);
+                        $('.snap-form-advanced').append(savebuttonsformrequired);
+                    }
+
                     // Hide Blocks editing on button from the Intelliboard Dashboard page in Snap.
                     if ( $('#page-home.theme-snap .intelliboard-page').length && $('.snap-page-heading-button').length) {
                         const blocksEditingOnButton = document.getElementsByClassName('snap-page-heading-button')[0];
                         blocksEditingOnButton.classList.add("hidden");
-                    }
-
-                    // Hide edit button for main page in Grade report single view.
-                    const editingButton = $('#page-grade-report-singleview-index .grade_report_edit_button');
-                    if (editingButton.length && !$('.search-widget.dropdown').length) {
-                        editingButton.addClass("hidden");
                     }
 
                     // Code for Tiles particular loading, needed before other scripts but after the document is ready.
@@ -1210,7 +1311,56 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         observerTilesSect.observe(targetTilesSect, configTilesSect);
                     }
 
+                    // Snapify format site on the front page if needed.
+                    // TODO: Maybe remove this whole piece if MDL-82188 ever gets resolved in our favor.
+                    if ($('body#page-site-index.format-site').length) {
+                        var frontPageActivities = document.querySelector('div[role="main"] ul.section');
+                        var frontPageActObserver = new MutationObserver(function() {
+                            $('div[role="main"] ul.section > li[id^="module"]').each(function() {
+                                if (!$(this).hasClass('snap-activity') && !$(this).hasClass('snap-asset')) {
+                                    let id = $(this).attr('id');
+                                    let moduleid = id.match(/\d+$/)[0];
+                                    $(this).hide(); // Hide it while we finish.
+
+                                    ajax.call([
+                                        {
+                                            methodname: 'theme_snap_course_module',
+                                            args: {cmid: moduleid},
+                                            done: function(response) {
+                                                let html = $.parseHTML(response.html);
+                                                $('#' + id).replaceWith(html[0]);
+                                            }
+                                        }
+                                    ]);
+                                }
+                            });
+                        });
+                        var frontPageActConfig = {childList: true};
+                        frontPageActObserver.observe(frontPageActivities, frontPageActConfig);
+                    }
+
+                    // Move My courses button to be centered in the home page.
+                    if ($('body#page-site-index.theme-snap .frontpage-course-list-enrolled .paging-morelink').length) {
+                        var moreCoursesButton = document.querySelector('.frontpage-course-list-enrolled .paging-morelink');
+                        const newParentElement = moreCoursesButton.parentNode.parentNode;
+                        newParentElement.appendChild(moreCoursesButton);
+                    }
+                    // Move All courses button to be centered in the home page.
+                    if ($('body#page-site-index.theme-snap .frontpage-course-list-all .paging-morelink').length) {
+                        var moreCoursesButton = document.querySelector('.frontpage-course-list-all .paging-morelink');
+                        const newParentElement = moreCoursesButton.parentNode.parentNode;
+                        newParentElement.appendChild(moreCoursesButton);
+                    }
+
                     waitForFullScreenButton();
+
+                    // Reassess the competency report user table.
+                    if ($('body#page-report-competency-index').length > 0) {
+                        const userCompetency = $('.user-competency-course-navigation');
+                        if (userCompetency.length > 0) {
+                            userCompetency.parent().addClass('ml-4');
+                        }
+                    }
                 });
                 accessibility.snapAxInit();
                 messages.init();
@@ -1232,28 +1382,6 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         $(noneditingblocks[block]).removeClass('editing');
                     }
                 }
-
-                // Check Toggle Completion to force redirect to URL.
-                const toggleCompletion = '.togglecompletion';
-                const delay = 1500;
-                $(toggleCompletion).on('submit', function() {
-                    var shouldReload = $(toggleCompletion).hasClass('forcereload');
-                    if (shouldReload === true) {
-                        setTimeout(function() {
-                            location.reload(true);
-                        }, delay);
-                    }
-                });
-
-                // Inherit transparent background color for divs containing non-default mod_url icons.
-                if (!document.body.classList.contains('snap-resource-card')) { // Only for Snap Resource display List.
-                    document.querySelectorAll('.activityiconcontainer.url').forEach(urlDiv => {
-                        if (urlDiv.querySelector('img[src*="/theme/image.php/snap/core/"][src*="/f/"]')) {
-                            urlDiv.style.backgroundColor = 'inherit';
-                        }
-                    });
-                }
-
             }
         };
     }

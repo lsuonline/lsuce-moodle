@@ -273,9 +273,7 @@ abstract class simple_restore_utils {
         }
 
         $filename = restore_controller::get_tempdir_name($courseid, $USER->id);
-        $tempdir = isset($CFG->backuptempdir) ? $CFG->backuptempdir : $CFG->tempdir;
-        $tempdir = substr($tempdir, -1) === '/' ? $tempdir : $tempdir . '/';
-        $pathname = $tempdir . $filename;
+        $pathname = $CFG->tempdir . '/backup/' . $filename;
 
         $data = new stdClass;
         $data->userid = $USER->id;
@@ -626,11 +624,9 @@ class simple_restore {
         $plugin->enrol_user($instance, $USER->id, $roleid);
 
         // Setup tempdir for the restore process.
-        $tempdir = isset($CFG->backuptempdir) ? $CFG->backuptempdir : $CFG->tempdir;
-        $tempdir = substr($tempdir, -1) === '/' ? $tempdir : $tempdir . '/';
         $extractname = restore_controller::get_tempdir_name($this->course->id, $USER->id);
-        $extractpath = $tempdir . $extractname;
-        $filepath    = $tempdir . $this->filename;
+        $extractpath = $CFG->tempdir . '/backup/' . $extractname;
+        $filepath    = $CFG->tempdir.'/backup/'.$this->filename;
 
         if (!has_capability('moodle/restore:userinfo', $this->context, $USER->id)) {
             // Delete, abort, etc.
@@ -649,7 +645,7 @@ class simple_restore {
         // Zip file needs to be unzipped.
         if (!file_exists($filepath. "/moodle_backup.xml")) {
             $fb = get_file_packer('application/vnd.moodle.backup');
-            $fb->extract_to_pathname("$tempdir" . $this->filename, $extractpath);
+            $fb->extract_to_pathname("$CFG->tempdir/backup/".$this->filename, $extractpath);
         }
 
         $rc = new restore_controller($extractname, $this->course->id,

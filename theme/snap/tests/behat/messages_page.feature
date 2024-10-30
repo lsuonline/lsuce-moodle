@@ -41,8 +41,8 @@ Feature: When the Moodle theme is set to Snap, message page should be accessible
   Scenario: In messages page, it must be possible to click the items.
     Given I log in as "admin"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And ".message-app.main" "css_element" should be visible
     # A message drawer floating div gets renderer but outside of the window
     Then ".drawer .message-app" "css_element" should not be visible
@@ -92,7 +92,7 @@ Feature: When the Moodle theme is set to Snap, message page should be accessible
     Given I log in as "admin"
     And I am on the course main page for "C1"
     And I wait until the page is ready
-    And I click on "//a[contains(text(),\"Teacher 1\")]/following-sibling::small/a" "xpath_element"
+    And I click on "//a[h3[contains(text(),\"Teacher 1\")]]/following-sibling::small/a" "xpath_element"
     And ".message-app.main" "css_element" should be visible
     # A message drawer floating div gets renderer but outside of the window
     Then ".drawer .message-app" "css_element" should not be visible
@@ -116,7 +116,7 @@ Feature: When the Moodle theme is set to Snap, message page should be accessible
     And I follow "Gradebook"
     And I click on "#admin-menu-trigger" "css_element"
     And I navigate to "User report" in current page administration
-    And I click on "div.search-widget" "css_element"
-    And I click on "div.searchresultscontainer a[role='menuitem']" "css_element"
+    And I set the field with xpath "//*[@data-region='input']" to "Student"
+    And I follow "Student 1"
     And I click on "#message-user-button" "css_element"
     Then "body#page-message-index" "css_element" should exist

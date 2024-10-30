@@ -39,7 +39,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color for a
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Category color"
     And I click on "Category color" "link"
     And I should see "JSON Text"
@@ -60,7 +60,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color for a
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Category color"
     And I click on "Category color" "link"
     And I should see "JSON Text"
@@ -82,7 +82,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color for a
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Category color"
     And I click on "Category color" "link"
     And I should see "JSON Text"
@@ -103,7 +103,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color for a
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Category color"
     And I click on "Category color" "link"
     And I should see "JSON Text"
@@ -124,7 +124,7 @@ Feature: When the moodle theme is set to Snap, admins can change the color for a
     And I expand "Site administration" node
     And I expand "Appearance" node
     And I expand "Themes" node
-    And I follow "Snap"
+    And I click on "#themesettingsnap_tree_item > a" "css_element"
     And I should see "Category color"
     And I click on "Category color" "link"
     And I should see "JSON Text"

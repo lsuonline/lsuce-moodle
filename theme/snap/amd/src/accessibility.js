@@ -15,6 +15,7 @@
  * along with Moodle. If not, see <http://www.gnu.org/licenses/>.
  *
  * @package
+ * @module    theme_snap/accessibility
  * @author    Oscar Nadjar oscar.nadjar@openlms.net
  * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -23,8 +24,8 @@
 /**
  * JS code to assign attributes and expected behavior for elements in the Dom regarding accessibility.
  */
-define(['jquery', 'core/str', 'core/event'],
-    function($, str, Event) {
+define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitizer', 'theme_boost/popover'],
+    function($, str, Event, { DefaultWhitelist }) {
         return {
             snapAxInit: function(localJouleGrader, allyReport, blockReports, localCatalogue) {
 
@@ -92,8 +93,6 @@ define(['jquery', 'core/str', 'core/event'],
                         .attr("id", "ct-course-settings");
                     $('section#coursetools ul#coursetools-list a:contains("' + ctparticipantsnumber[1] + '")')
                         .attr("id", "ct-participants-number");
-                    $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[12] + '")')
-                        .attr("id", "ct-pld");
                     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[13] + '")')
                         .attr("id", "ct-competencies");
                     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[14] + '")')
@@ -373,6 +372,35 @@ define(['jquery', 'core/str', 'core/event'],
                             feedback.hide();
                         }
                     }
+                });
+            },
+
+            /**
+             * Override the options from theme_boost/loader::enablePopovers to enhance accesibility (VPAT).
+             */
+            setManualPopovers: function() {
+                const btnSelector = '.iconhelp.btn';
+                $('body').popover({
+                    selector: '[data-toggle="popover"]',
+                    trigger: 'click',
+                    whitelist: Object.assign(DefaultWhitelist, {
+                        table: [],
+                        thead: [],
+                        tbody: [],
+                        tr: [],
+                        th: [],
+                        td: [],
+                    }),
+                });
+                $(btnSelector).on('shown.bs.popover', function () {
+                    const popover = $(this).data('bs.popover').tip;
+                    $(this).attr('aria-controls', popover.id);
+                    $(this).attr('aria-expanded', true);
+                    $(popover).insertAfter($(this));
+                    $(popover).popover('update');
+                });
+                $(btnSelector).on('hidden.bs.popover', function () {
+                    $(this).attr('aria-expanded', false);
                 });
             }
         };

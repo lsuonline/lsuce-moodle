@@ -69,6 +69,15 @@ $functions = [
         'loginrequired'   => true,
         'readonlysession' => true, // We don't modify the session.
     ],
+    'theme_snap_course_module'            => [
+        'classname'       => 'theme_snap\\webservice\\ws_course_module',
+        'methodname'      => 'service',
+        'description'     => 'Specific course module HTML',
+        'type'            => 'read',
+        'ajax'            => true,
+        'loginrequired'   => true,
+        'readonlysession' => true, // We don't modify the session.
+    ],
     'theme_snap_course_module_completion' => [
         'classname'       => 'theme_snap\\webservice\\ws_course_module_completion',
         'methodname'      => 'service',
@@ -105,5 +114,22 @@ $functions = [
         'loginrequired'   => true,
         'readonlysession' => true, // We don't modify the session.
     ],
+    'theme_snap_file_manager_options'     => [
+        'classname'       => 'theme_snap\\webservice\\ws_file_manager_options',
+        'methodname'      => 'service',
+        'description'     => 'File manager options data',
+        'type'            => 'read',
+        'ajax'            => true,
+        'loginrequired'   => true,
+        'readonlysession' => true, // We don't modify the session.
+    ],
+    'theme_snap_block_myoverview_filters'              => [
+        'classname'       => 'theme_snap\\webservice\\ws_block_myoverview',
+        'methodname'      => 'service',
+        'description'     => 'Returns the list of courses from the filters applied in the course overview block',
+        'type'            => 'read',
+        'ajax'            => true,
+        'loginrequired'   => true,
+        'readonlysession' => true, // We don't modify the session.
+    ],
 ];
-

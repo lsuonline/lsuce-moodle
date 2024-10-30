@@ -27,6 +27,7 @@ namespace local_o365\task;
 
 use local_o365\feature\coursesync\main;
 use local_o365\utils;
+use moodle_exception;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -60,13 +61,16 @@ class coursesync extends \core\task\scheduled_task {
 
         try {
             $graphclient = utils::get_api();
-        } catch (\Exception $e) {
+        } catch (moodle_exception $e) {
             utils::debug('Exception: ' . $e->getMessage(), __METHOD__, $e);
             return false;
         }
 
         $coursesync = new main($graphclient, true);
         $coursesync->sync_courses();
-        $coursesync->update_teams_cache();
+        if ($coursesync->update_teams_cache()) {
+            $coursesync->cleanup_teams_connections();
+        }
+        $coursesync->cleanup_course_connection_records();
     }
 }

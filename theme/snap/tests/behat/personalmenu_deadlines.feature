@@ -55,10 +55,10 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And the following config values are set as admin:
       | personalmenuadvancedfeedsenable | <enadvfeeds> | theme_snap |
     And I log in as "student1"
-    And I <waitclause>
     And I open the personal menu
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
+    And I <waitclause>
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-2" "css_element"
     And I am on "Course 1" course homepage
     And I follow "Topic 1"
     And I wait until "#section-1" "css_element" is visible
@@ -70,17 +70,18 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And I press "Save changes"
     And I click on "//*[contains(text(),'Submit assignment')]" "xpath_element"
     And I press "Continue"
-    And I <waitclause>
+    And I wait until the page is ready
     And I open the personal menu
-    And I should see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
+    And I <waitclause>
+    And I should see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-2" "css_element"
     And Activity "assign" "Test assignment1" is deleted
     And Activity "assign" "Test assignment2" is deleted
     Examples:
       | enadvfeeds | selectorstr     | waitclause                                          |
       | 0          | deadlines       | wait until the page is ready                        |
-      | 1          | feed-deadlines  | wait until "snap-feed" custom element is registered |
+      | 1          | feed-deadlines  | click on ".snap-personal-menu-more" "css_element"   |
 
   @javascript
   Scenario Outline: Student sees correct submission status against deadlines when 2 assignments are from different courses.
@@ -91,10 +92,11 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And the following config values are set as admin:
       | personalmenuadvancedfeedsenable | <enadvfeeds> | theme_snap |
     And I log in as "student1"
-    And I <waitclause>
+    And I wait until the page is ready
     And I open the personal menu
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
+    And I wait until the page is ready
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-2" "css_element"
     And I am on "Course 1" course homepage
     And I follow "Topic 1"
     And I wait until "#section-1" "css_element" is visible
@@ -106,17 +108,18 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And I press "Save changes"
     And I click on "//*[contains(text(),'Submit assignment')]" "xpath_element"
     And I press "Continue"
-    And I <waitclause>
+    And I wait until the page is ready
     And I open the personal menu
-    And I should see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
+    And I <waitclause>
+    And I should see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-2" "css_element"
     And Activity "assign" "Test assignment1" is deleted
     And Activity "assign" "Test assignment2" is deleted
     Examples:
       | enadvfeeds | selectorstr     | waitclause                                          |
       | 0          | deadlines       | wait until the page is ready                        |
-      | 1          | feed-deadlines  | wait until "snap-feed" custom element is registered |
+      | 1          | feed-deadlines  | click on ".snap-personal-menu-more" "css_element"   |
 
   @javascript
   Scenario Outline: Teacher sees no submission status data against deadlines.
@@ -129,10 +132,8 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And I log in as "teacher1"
     And I <waitclause>
     And I open the personal menu
-    And I should not see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should not see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
-    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
+    And "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element" should not exist
+    And "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-2" "css_element" should not exist
     And Activity "assign" "Test assignment1" is deleted
     And Activity "assign" "Test assignment2" is deleted
     Examples:
@@ -164,9 +165,9 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And I press "Continue"
     And I <waitclause>
     And I open the personal menu
-    And I should see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element"
-    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object:nth-of-type(2)" "css_element"
+    And I should see "Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should not see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element"
+    And I should see "Not Submitted" in the "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-2" "css_element"
     And Activity "assign" "Test assignment1" is deleted
     And Activity "assign" "Test assignment2" is deleted
     Examples:
@@ -218,35 +219,33 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And I log in as "teacher1"
     And I am on "Course 2" course homepage
     # Set completion for Assignment 1.
-    Then I follow "Edit \"Assignment 1\""
+    And I click on ".modtype_assign .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_assign .snap-edit-asset" "css_element"
     And I expand all fieldsets
-    And I set the following fields to these values:
-      | Completion tracking | Show activity as complete when conditions are met |
-      | id_completionview   | 1                                                 |
-      | id_completionexpected_enabled | 1 |
+    And I set the field "Add requirements" to "1"
+    And I set the field "View the activity" to "1"
+    And I set the field "Add requirements" to "1"
+    And I set the field "View the activity" to "1"
     And I press "Save and return to course"
     # Set completion for Forum 1.
-    And I follow "Edit \"Forum 1\""
+    And I click on ".modtype_forum .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_forum .snap-edit-asset" "css_element"
     And I expand all fieldsets
-    And I set the following fields to these values:
-      | Completion tracking | Show activity as complete when conditions are met |
-      | completionpostsenabled    | 1 |
-      | id_completionexpected_enabled | 1 |
+    And I set the field "Add requirements" to "1"
+    And I set the field "View the activity" to "1"
     And I press "Save and return to course"
     # Set completion for Quiz 1.
-    Then I follow "Edit \"Quiz 1\""
+    And I click on ".modtype_quiz .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_quiz .snap-edit-asset" "css_element"
     And I expand all fieldsets
-    And I set the following fields to these values:
-      | Completion tracking | Show activity as complete when conditions are met |
-      | id_completionview   | 1                                                 |
-      | id_completionexpected_enabled | 1 |
+    And I set the field "Add requirements" to "1"
+    And I set the field "View the activity" to "1"
     And I press "Save and return to course"
     # Set completion for Quiz 1.
-    Then I follow "Edit \"Label 1\""
+    And I click on ".modtype_label .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_label .snap-edit-asset" "css_element"
     And I expand all fieldsets
-    And I set the following fields to these values:
-      | Completion tracking | Students can manually mark the activity as completed |
-      | id_completionexpected_enabled | 1 |
+    And I set the field "Students must manually mark the activity as done" to "1"
     And I press "Save and return to course"
     And I log out
     Given I log in as "student2"
@@ -289,7 +288,7 @@ Feature: When the moodle theme is set to Snap, students and teachers can find in
     And I log in as "student1"
     And I <waitclause>
     And I open the personal menu
-    And "#snap-personal-menu-<selectorstr> div.snap-media-object:first-of-type" "css_element" should not exist
+    And "#snap-personal-menu-<selectorstr> div.snap-media-object .snap-completion-meta.event-1" "css_element" should not exist
     Examples:
       | enadvfeeds | selectorstr     | waitclause                                          |
       | 0          | deadlines       | wait until the page is ready                        |

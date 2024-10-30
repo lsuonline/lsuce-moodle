@@ -23,6 +23,7 @@ use core_reportbuilder_generator;
 use core_reportbuilder\manager;
 use core_reportbuilder\local\report\column;
 use core_user\reportbuilder\datasource\users;
+use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -53,25 +54,21 @@ class avg_test extends core_reportbuilder_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
         $report = $generator->create_report(['name' => 'Users', 'source' => users::class, 'default' => 0]);
 
-        // First column, sorted.
-        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:firstname', 'sortenabled' => 1]);
-
-        // This is the column we'll aggregate.
-        $generator->create_column(
-            ['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:suspended', 'aggregation' => avg::get_class_name()]
-        );
+        // Report columns, aggregated/sorted by user suspended.
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:firstname']);
+        $generator->create_column([
+            'reportid' => $report->get('id'),
+            'uniqueidentifier' => 'user:suspended',
+            'aggregation' => avg::get_class_name(),
+            'sortenabled' => 1,
+            'sortdirection' => SORT_DESC,
+        ]);
 
         $content = $this->get_custom_report_content($report->get('id'));
         $this->assertEquals([
-            [
-                'c0_firstname' => 'Admin',
-                'c1_suspended' => '0.0',
-            ],
-            [
-                'c0_firstname' => 'Bob',
-                'c1_suspended' => '0.5',
-            ],
-        ], $content);
+            ['Bob', '0.5'],
+            ['Admin', '0.0'],
+        ], array_map('array_values', $content));
     }
 
     /**
@@ -100,19 +97,20 @@ class avg_test extends core_reportbuilder_testcase {
         $instance = manager::get_report_from_persistent($report);
         $instance->get_column('user:suspended')
             ->set_type(column::TYPE_FLOAT)
-            ->set_callback(static function(float $value): string {
-                return number_format($value, 1) . ' suspended';
+            ->set_callback(static function(float $value, stdClass $row, $arguments, ?string $aggregation): string {
+                // Simple callback to return the given value, and append aggregation type.
+                return number_format($value, 1) . " ({$aggregation})";
             });
 
         $content = $this->get_custom_report_content($report->get('id'));
         $this->assertEquals([
             [
                 'c0_firstname' => 'Admin',
-                'c1_suspended' => '0.0 suspended',
+                'c1_suspended' => '0.0 (avg)',
             ],
             [
                 'c0_firstname' => 'Bob',
-                'c1_suspended' => '0.5 suspended',
+                'c1_suspended' => '0.5 (avg)',
             ],
         ], $content);
     }

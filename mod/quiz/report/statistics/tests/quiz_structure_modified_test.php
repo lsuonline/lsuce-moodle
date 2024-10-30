@@ -58,7 +58,7 @@ class quiz_structure_modified_test extends \advanced_testcase {
         $question = $questiongenerator->create_question('match', null, ['category' => $category->id]);
         $questiongenerator->update_question($question);
         quiz_add_quiz_question($question->id, $quiz);
-        $this->attempt_quiz($quiz, $user);
+        [, , $attempt] = $this->attempt_quiz($quiz, $user);
 
         // Run the statistics calculation to prime the cache.
         $report = new \quiz_statistics_report();
@@ -79,7 +79,7 @@ class quiz_structure_modified_test extends \advanced_testcase {
         $this->assertTrue($DB->record_exists('question_response_analysis', ['hashcode' => $hashcode]));
 
         // Recompute sumgrades, which triggers the quiz_structure_modified callback.
-        quiz_update_sumgrades($quiz);
+        grade_calculator::create($attempt->get_quizobj())->recompute_quiz_sumgrades();
 
         $this->assertFalse($DB->record_exists('quiz_statistics', ['hashcode' => $hashcode]));
         $this->assertFalse($DB->record_exists('question_statistics', ['hashcode' => $hashcode]));

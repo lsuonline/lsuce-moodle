@@ -120,7 +120,7 @@ define(
          * Page mod toggle content.
          */
         var listenPageModuleReadMore = function() {
-            var pageToggleSelector = ".modtype_page .instancename,.pagemod-readmore,.pagemod-content .snap-action-icon";
+            var pageToggleSelector = ".pagemod-readmore,.pagemod-content .snap-action-icon";
             $(document).on("click", pageToggleSelector, function(e) {
                 var pageMod = $(this).closest('.modtype_page');
                 util.scrollToElement(pageMod);
@@ -212,7 +212,7 @@ define(
                 if (lbox.length === 0) {
                     $(appendto).append('<div id="snap-light-box" tabindex="-1">' +
                         '<div id="snap-light-box-content"></div>' +
-                        '<a id="snap-light-box-close" class="pull-right snap-action-icon snap-icon-close" href="#">' +
+                        '<a id="snap-light-box-close" class="float-right snap-action-icon snap-icon-close" href="#">' +
                         '<small>Close</small>' +
                         '</a>' +
                         '</div>');
@@ -287,12 +287,10 @@ define(
 
         return {
 
-            init: function(courseConfig) {
+            init: function() {
 
                 // Listeners.
-                if (courseConfig.loadPageInCourse) {
-                    listenPageModuleReadMore();
-                }
+                listenPageModuleReadMore();
                 listenManualCompletion();
 
                 // Add toggle class for hide/show activities/resources - additional to moodle adding dim.
@@ -313,38 +311,6 @@ define(
                 $(document).on('click', '.js-snap-media .snap-asset-link [href*="/mod/resource/view.php?id="]', function(e) {
                     lightboxMedia($(this).closest('.snap-resource, .snap-extended-resource'));
                     e.preventDefault();
-                });
-
-                // Make resource cards clickable.
-                $(document).on('click', '.snap-resource-card .snap-resource, .snap-extended-resource', function(e) {
-                    var trigger = $(e.target),
-                        hreftarget = '_self',
-                        link = $(trigger).closest('.snap-resource').find('.snap-asset-link a'),
-                        href = '';
-                    if (link.length > 0) {
-                        href = $(link).attr('href');
-                    }
-
-                    // Excludes any clicks in the actions menu, on links or forms.
-                    var selector = '.snap-asset-completion-tracking, ' +
-                        '.snap-asset-actions, .contentafterlink a, .ally-actions, ' +
-                        '.snap-header-card, .contentafterlink, .snap-asset-meta';
-                    var withintarget = $(trigger).closest(selector).length;
-                    if (!withintarget) {
-                        if ($(this).hasClass('js-snap-media')) {
-                            lightboxMedia(this);
-                        } else {
-                            if (href === '') {
-                                return;
-                            }
-                            if ($(link).attr('target') === '_blank') {
-                                hreftarget = '_blank';
-                            }
-                            sessionStorage.setItem('lastMod', $(this).attr('id'));
-                            window.open(href, hreftarget);
-                        }
-                        e.preventDefault();
-                    }
                 });
             }
         };

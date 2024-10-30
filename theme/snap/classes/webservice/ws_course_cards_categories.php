@@ -37,9 +37,6 @@ use external_value;
 use external_function_parameters;
 use theme_snap\renderables\course_card;
 use theme_snap\services\course;
-// BEGIN LSU Extra Course Tabs.
-use theme_snap\renderables\remote_card;
-// END LSU Extra Course Tabs.
 
 /**
  * Feed service.

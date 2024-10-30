@@ -41,6 +41,11 @@ M.core_comment = {
                 this.courseid = args.courseid;
                 this.contextid = args.contextid;
                 this.autostart = (args.autostart);
+                // Fail fast if the comments element cannot be found, such as in embedded-type views where blocks may be loaded
+                // then discarded.
+                if (!Y.one('#comment-ctrl-'+this.client_id)) {
+                    return;
+                }
                 // expand comments?
                 if (this.autostart) {
                     this.view(args.page);
@@ -95,9 +100,9 @@ M.core_comment = {
                             var newcomment = Y.Node.create(result.html);
                             container.appendChild(newcomment);
                             var ids = result.ids;
-                            var linkText = Y.one('#comment-link-text-' + cid);
-                            if (linkText) {
-                                linkText.set('innerHTML', M.util.get_string('commentscount', 'moodle', obj.count));
+                            var linkTextCount = Y.one('#comment-link-text-' + cid + ' .comment-link-count');
+                            if (linkTextCount) {
+                                linkTextCount.set('innerHTML', obj.count);
                             }
                             for(var i in ids) {
                                 var attributes = {
@@ -244,9 +249,9 @@ M.core_comment = {
                     scope: scope,
                     params: params,
                     callback: async function(id, ret, args) {
-                        var linkText = Y.one('#comment-link-text-' + scope.client_id);
-                        if (ret.count && linkText) {
-                            linkText.set('innerHTML', M.util.get_string('commentscount', 'moodle', ret.count));
+                        var linkTextCount = Y.one('#comment-link-text-' + scope.client_id + ' .comment-link-count');
+                        if (linkTextCount) {
+                            linkTextCount.set('innerHTML', ret.count);
                         }
                         var container = Y.one('#comment-list-'+scope.client_id);
                         var pagination = Y.one('#comment-pagination-'+scope.client_id);
@@ -279,10 +284,10 @@ M.core_comment = {
                     params = {'commentid': id};
                 function remove_dom(type, anim, cmt) {
                     cmt.remove();
-                    var linkText = Y.one('#comment-link-text-' + cid),
+                    var linkTextCount = Y.one('#comment-link-text-' + cid + ' .comment-link-count'),
                         comments = Y.all('#comment-list-' + cid + ' li');
-                    if (linkText && comments) {
-                        linkText.set('innerHTML', M.util.get_string('commentscount', 'moodle', comments.size()));
+                    if (linkTextCount) {
+                        linkTextCount.set('innerHTML', comments.size());
                     }
                 }
                 this.request({
@@ -451,74 +456,5 @@ M.core_comment = {
         });
 
         new CommentHelper(options);
-    },
-    init_admin: function(Y) {
-        var select_all = Y.one('#comment_select_all');
-        if (select_all) {
-            select_all.on('click', function(e) {
-                var comments = document.getElementsByName('comments');
-                var checked = false;
-                for (var i in comments) {
-                    if (comments[i].checked) {
-                        checked=true;
-                    }
-                }
-                for (i in comments) {
-                    comments[i].checked = !checked;
-                }
-                this.set('checked', !checked);
-            });
-        }
-
-        var comments_delete = Y.one('#comments_delete');
-        if (comments_delete) {
-            comments_delete.on('click', function(e) {
-                e.preventDefault();
-                var list = '';
-                var comments = document.getElementsByName('comments');
-                for (var i in comments) {
-                    if (typeof comments[i] == 'object' && comments[i].checked) {
-                        list += (comments[i].value + '-');
-                    }
-                }
-                if (!list) {
-                    return;
-                }
-                var args = {};
-                args.message = M.util.get_string('confirmdeletecomments', 'admin');
-                args.callback = function() {
-                    var url = M.cfg.wwwroot + '/comment/index.php';
-
-                    var data = {
-                        'commentids': list,
-                        'sesskey': M.cfg.sesskey,
-                        'action': 'delete'
-                    };
-                    var cfg = {
-                        method: 'POST',
-                        on: {
-                            complete: function(id,o,p) {
-                                if (!o) {
-                                    alert('IO FATAL');
-                                    return;
-                                }
-                                if (o.responseText == 'yes') {
-                                    location.reload();
-                                }
-                            }
-                        },
-                        arguments: {
-                            scope: this
-                        },
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                        },
-                        data: build_querystring(data)
-                    };
-                    Y.io(url, cfg);
-                };
-                M.util.show_confirm_dialog(e, args);
-            });
-        }
     }
 };

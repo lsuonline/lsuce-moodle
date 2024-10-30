@@ -44,20 +44,19 @@ if ($homepage === 1) {
 }
 $sitefullname = format_string($SITE->fullname);
 $attrs = array(
-    'aria-label' => get_string('home', 'theme_snap'),
     'id' => 'snap-home',
     'title' => $sitefullname,
 );
 
 if (!empty($PAGE->theme->settings->logo)) {
-    $sitefullname = '<span class="sr-only">'.format_string($SITE->fullname).'</span>';
+    $sitefullname = '<span class="sr-only">'.format_string($SITE->fullname). ' ' .get_string('homepage', 'theme_snap').'</span>';
     $attrs['class'] = 'logo';
 }
 
 echo html_writer::link($defaulthomeurl, $sitefullname, $attrs);
 ?>
 
-<div class="pull-right js-only row">
+<div class="float-right js-only row">
     <?php
     if (class_exists('local_geniusws\navigation')) {
         $bblink = new genius_dashboard_link();
@@ -74,6 +73,10 @@ echo html_writer::link($defaulthomeurl, $sitefullname, $attrs);
     echo '<span class="hidden-md-down">';
     echo core_renderer::search_box();
     echo '</span>';
+    echo $OUTPUT->snap_feeds_side_menu_trigger();
+    if ($settingslink->output) {
+        echo '<div class="snap_line_separator"></div>';
+    }
     echo $OUTPUT->render($settingslink);
     ?>
 </div>

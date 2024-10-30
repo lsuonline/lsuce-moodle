@@ -221,22 +221,16 @@ class local {
             }
         }
 
-        $deviceinuse = \core_useragent::get_device_type();
-        $devicetheme = \core_useragent::get_device_type_theme($deviceinuse);
-
-        // The user is using another device than default, and we have a theme for that, we should use it.
-        $hascustomdevicetheme = \core_useragent::DEVICETYPE_DEFAULT != $deviceinuse && !empty($devicetheme);
-
         foreach ($themeorder as $themetype) {
             switch ($themetype) {
                 case 'course':
-                    if (!empty($CFG->allowcoursethemes) && !empty($COURSE->theme) && !$hascustomdevicetheme) {
+                    if (!empty($CFG->allowcoursethemes) && !empty($COURSE->theme)) {
                         return $COURSE->theme;
                     }
                     break;
 
                 case 'category':
-                    if (!empty($CFG->allowcategorythemes) && !$hascustomdevicetheme) {
+                    if (!empty($CFG->allowcategorythemes)) {
                         $categories = self::get_course_categories($COURSE);
                         foreach ($categories as $category) {
                             if (!empty($category->theme)) {
@@ -253,7 +247,7 @@ class local {
                     break;
 
                 case 'user':
-                    if (!empty($CFG->allowuserthemes) && !empty($USER->theme) && !$hascustomdevicetheme) {
+                    if (!empty($CFG->allowuserthemes) && !empty($USER->theme)) {
                         if ($mnetpeertheme) {
                             return $mnetpeertheme;
                         } else {
@@ -266,16 +260,13 @@ class local {
                     if ($mnetpeertheme) {
                         return $mnetpeertheme;
                     }
-                    // First try for the device the user is using.
-                    if (!empty($devicetheme)) {
-                        return $devicetheme;
+
+                    // Use theme if it is set in config.
+                    if (!empty($CFG->theme)) {
+                        return $CFG->theme;
                     }
-                    // Next try for the default device (as a fallback).
-                    $devicetheme = \core_useragent::get_device_type_theme(\core_useragent::DEVICETYPE_DEFAULT);
-                    if (!empty($devicetheme)) {
-                        return $devicetheme;
-                    }
-                    // The default device theme isn't set up - use the overall default theme.
+
+                    // Use the overall default theme.
                     return \theme_config::DEFAULT_THEME;
             }
         }
@@ -454,10 +445,7 @@ class local {
      * @return bool | array
      */
     public static function courseinfo($courseids) {
-        // BEGIN LSU Course Card Quick Links.
-        global $CFG, $PAGE;
-        $quicklinks = array();
-        // END LSU Course Card Quick Links.
+        global $CFG;
 
         $courseinfo = array();
 
@@ -478,14 +466,6 @@ class local {
         $starttime = time();
         $showgrades = get_config('theme_snap', 'showcoursegradepersonalmenu');
 
-        // BEGIN LSU Course Card Quick Links.
-        // Get renderer so we can call the quick links func to get the quick links.
-        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
-        foreach ($courses as $course) {
-            $quicklinks[$course->id] = $renderer->get_quick_links($course);
-        }
-        // END LSU Course Card Quick Links.
-
         foreach ($courseids as $courseid) {
             if (!isset($courses[$courseid])) {
                 // Don't throw an error, just carry on.
@@ -497,12 +477,6 @@ class local {
                 'course' => $courseid,
                 'completion' => self::course_completion_progress($course),
             );
-
-            // BEGIN LSU Course Card Quick Links.
-            // Adding quicklinks to the course card.
-            $courseinfo[$courseid]->quicklinks = $quicklinks[$courseid]['quicklinks'];
-            $courseinfo[$courseid]->ccqlrender = $quicklinks[$courseid]['ccqlrender'];
-            // END LSU Course Card Quick Links.
 
             if (!empty($showgrades)) {
                 $feedback = self::course_grade($course);
@@ -747,7 +721,7 @@ class local {
     }
 
     public static function messages_data($renderhtml = false, $limitfrom = 0, $limitnum = 5, $maxid = -1) {
-        global $USER, $PAGE;
+        global $USER, $PAGE, $CFG;
 
         $messages = self::get_user_messages($USER->id, null, $limitfrom, $limitnum, $maxid);
         if (empty($messages)) {
@@ -796,6 +770,8 @@ class local {
                 $info = '<p>'.$info.'</p>';
             }
 
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
             $res[] = [
                 'iconUrl'      => $frompicture,
                 'iconDesc'     => '',
@@ -807,6 +783,7 @@ class local {
                 'extraClasses' => $unreadclass,
                 'fromCache'    => 0,
                 'itemId'    => $message->uniqueid,
+                'urlParameter'    => $snapfeedsurlparam,
             ];
         }
         return $res;
@@ -855,7 +832,7 @@ class local {
      * @throws \coding_exception
      */
     public static function graded_data($onlyactive = true, $renderhtml = false) {
-        global $USER, $PAGE;
+        global $USER, $PAGE, $CFG;
 
         /** @var \theme_snap\output\core_renderer $output */
         $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
@@ -906,6 +883,9 @@ class local {
             $meta = get_string('released', 'theme_snap', $output->friendly_datetime($releasedon));
 
             $grade = new \grade_grade(array('itemid' => $grade->itemid, 'userid' => $USER->id));
+
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
             if (!$grade->is_hidden() || $canviewhiddengrade) {
                 $res[] = [
                     'iconUrl'      => $modimage,
@@ -917,6 +897,7 @@ class local {
                     'description'  => $meta,
                     'extraClasses' => '',
                     'fromCache'    => 0,
+                    'urlParameter'    => $snapfeedsurlparam,
                 ];
             }
         }
@@ -955,7 +936,7 @@ class local {
     }
 
     public static function grading_data($renderhtml = false) {
-        global $USER, $PAGE;
+        global $USER, $PAGE, $CFG;
 
         $grading = self::all_ungraded($USER->id);
 
@@ -1006,6 +987,8 @@ class local {
                 $url = $url->out();
             }
 
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
             $res[] = [
                 'iconUrl'      => $modimage,
                 'iconDesc'     => $modname,
@@ -1016,6 +999,7 @@ class local {
                 'description'  => $meta,
                 'extraClasses' => '',
                 'fromCache'    => 0,
+                'urlParameter'    => $snapfeedsurlparam,
             ];
         }
 
@@ -1097,7 +1081,7 @@ class local {
             }
         }
 
-        usort($grading, array('self', 'sort_graded'));
+        usort($grading, [self::class, 'sort_graded']);
 
         return $grading;
     }
@@ -1176,6 +1160,9 @@ class local {
     public static function extract_first_image($html) {
         $doc = new \DOMDocument();
         libxml_use_internal_errors(true); // Required for HTML5.
+
+        // An empty string here means that the string was filtered for safety reasons.
+        $html = $html ?: '<p></p>';
         $doc->loadHTML($html);
         libxml_clear_errors(); // Required for HTML5.
         $imagetags = $doc->getElementsByTagName('img');
@@ -1346,7 +1333,8 @@ class local {
      * @return bool|stored_file
      * @throws \coding_exception
      */
-    public static function coverimage($context) {
+    public static function coverimage($context, $featuredcards = false) {
+        global $DB;
         $contextid = $context->id;
         $fs = get_file_storage();
 
@@ -1355,17 +1343,30 @@ class local {
                 return false;
             }
         }
-
-        $files = $fs->get_area_files($contextid, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+        if ($featuredcards) {
+            $files = $fs->get_area_files($contextid, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+        } else {
+            $files = $fs->get_area_files($contextid, 'theme_snap', 'croppedimage', 0, "itemid, filepath, filename", false);
+            if (!$files) {
+                $files = $fs->get_area_files($contextid, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+            }
+        }
         if (!$files) {
             return false;
         }
+        $coverimagefile = end($files);
         if (count($files) > 1) {
-            // Note this is a coding exception and not a moodle exception because there should never be more than one
-            // file in this area, where as the course summary files area can in some circumstances have more than on file.
-            throw new \coding_exception('Multiple files found in course coverimage area (context '.$contextid.')');
+            //There should never be more than one file in this area. We are deleting all but the first.
+            array_pop($files);
+            foreach ($files as $file) {
+                $fileid = $file->get_id();
+                $filerecord = $DB->get_record('files', array('id' => $fileid));
+                if ($filerecord) {
+                    $fs->get_file_instance($filerecord)->delete();
+                }
+            }
         }
-        return (end($files));
+        return ($coverimagefile);
     }
 
     /**
@@ -1384,9 +1385,9 @@ class local {
      * @param $courseid
      * @return stored_file|bool
      */
-    public static function course_coverimage($courseid) {
+    public static function course_coverimage($courseid, $featuredcards = false) {
         $context = \context_course::instance($courseid);
-        return (self::coverimage($context));
+        return (self::coverimage($context, $featuredcards));
     }
 
     /**
@@ -1409,12 +1410,37 @@ class local {
      *
      * @return bool|moodle_url
      */
-    public static function course_coverimage_url($courseid) {
-        $file = self::course_coverimage($courseid);
+    public static function course_coverimage_url($courseid, $featuredcards = false) {
+        $file = self::course_coverimage($courseid, $featuredcards);
         if (!$file) {
             $file = self::process_coverimage(\context_course::instance($courseid));
         }
         return self::snap_pluginfile_url($file);
+    }
+
+    /**
+     * Get cover image url for category.
+     * @param int $categoryid
+     *
+     * @return bool|moodle_url
+     */
+    public static function category_coverimage_url($categoryid, $featuredcards = false) {
+        $file = self::category_coverimage($categoryid, $featuredcards);
+        if (!$file) {
+            $file = self::process_coverimage(\context_coursecat::instance($categoryid));
+        }
+        return self::snap_pluginfile_url($file);
+    }
+
+    /**
+     * Get processed category cover image.
+     *
+     * @param $categoryid
+     * @return stored_file|bool
+     */
+    public static function category_coverimage($categoryid, $featuredcards) {
+        $context = \context_coursecat::instance($categoryid);
+        return (self::coverimage($context, $featuredcards));
     }
 
     /**
@@ -1552,6 +1578,7 @@ class local {
 
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, 'theme_snap', 'coverimage');
+        $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
 
         if (!$originalfile) {
             return false;
@@ -1758,15 +1785,8 @@ class local {
         $userforums = new user_forums($user, $limit);
         $forumids = $userforums->forumids();
         $forumidsallgroups = $userforums->forumidsallgroups();
-        // BEGIN LSU Removal of HSU Forum Post code.
-        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
-            $hsuforumids = $userforums->hsuforumids();
-            $hsuforumidsallgroups = $userforums->hsuforumidsallgroups();
-        } else {
-            $hsuforumids = array();
-            $hsuforumidsallgroups = array();
-        }
-        // END LSU Removal of HSU Forum Post code.
+        $hsuforumids = $userforums->hsuforumids();
+        $hsuforumidsallgroups = $userforums->hsuforumidsallgroups();
 
         if (empty($forumids) && empty($hsuforumids)) {
             return [];
@@ -1812,7 +1832,7 @@ class local {
                                0 AS forumanonymous, f1.course, f1.name AS forumname,
                                u1.firstnamephonetic, u1.lastnamephonetic, u1.middlename, u1.alternatename, u1.firstname,
                                u1.lastname, u1.picture, u1.imagealt, u1.email,
-                               c.shortname AS courseshortname, c.fullname AS coursefullname
+                               c.shortname AS courseshortname, c.fullname AS coursefullname, fd1.timestart, fd1.timeend
 	                      FROM {forum_posts} fp1
 	                      JOIN {user} u1 ON u1.id = fp1.userid
                           JOIN {forum_discussions} fd1 ON fd1.id = fp1.discussion
@@ -1834,13 +1854,7 @@ class local {
             // TODO - when moodle gets private reply (anonymous) forums, we need to handle this here.
         }
 
-        // BEGIN LSU Removal of HSU Forum Post code.
-        if (!file_exists($CFG->dirroot.'/mod/hsuforum')) {
-            unset($hsuforumids);
-        }
-
-        if (isset($hsuforumids) && !empty($hsuforumids)) {
-        // END LSU Removal of HSU Forum Post code.
+        if (!empty($hsuforumids)) {
             list($afinsql, $afinparams) = $DB->get_in_or_equal($hsuforumids, SQL_PARAMS_NAMED, 'finb');
             $params = array_merge($params, $afinparams);
             $params = array_merge($params,
@@ -1870,7 +1884,7 @@ class local {
                                f2.anonymous AS forumanonymous, f2.course, f2.name AS forumname,
                                u2.firstnamephonetic, u2.lastnamephonetic, u2.middlename, u2.alternatename, u2.firstname,
                                u2.lastname, u2.picture, u2.imagealt, u2.email,
-                               c.shortname AS courseshortname, c.fullname AS coursefullname
+                               c.shortname AS courseshortname, c.fullname AS coursefullname, fd2.timestart, fd2.timeend
                           FROM {hsuforum_posts} fp2
                           JOIN {user} u2 ON u2.id = fp2.userid
                           JOIN {hsuforum_discussions} fd2 ON fd2.id = fp2.discussion
@@ -1924,23 +1938,28 @@ class local {
                     ), $post);
                 }
 
-                $activities[] = (object)[
-                    'type' => $post->type,
-                    'cmid' => $post->cmid,
-                    'name' => $post->subject,
-                    'courseshortname' => $post->courseshortname,
-                    'coursefullname' => format_string($post->coursefullname),
-                    'forumname' => $post->forumname,
-                    'sectionnum' => null,
-                    'timestamp' => $post->modified,
-                    'content' => (object)[
-                        'id' => $post->postid,
-                        'discussion' => $post->discussion,
-                        'subject' => $post->subject,
-                        'parent' => $post->parent,
-                    ],
-                    'user' => $postuser,
-                ];
+                $hasstarted = $post->timestart < time();
+                $hasended = $post->timeend < time();
+                // Checking if the post is visible
+                if($hasstarted && (!$hasended || empty($post->timeend))) {
+                    $activities[] = (object)[
+                        'type' => $post->type,
+                        'cmid' => $post->cmid,
+                        'name' => $post->subject,
+                        'courseshortname' => $post->courseshortname,
+                        'coursefullname' => format_string($post->coursefullname),
+                        'forumname' => $post->forumname,
+                        'sectionnum' => null,
+                        'timestamp' => $post->modified,
+                        'content' => (object)[
+                            'id' => $post->postid,
+                            'discussion' => $post->discussion,
+                            'subject' => $post->subject,
+                            'parent' => $post->parent,
+                        ],
+                        'user' => $postuser,
+                    ];
+                }
             }
         }
 
@@ -1997,20 +2016,16 @@ class local {
         // We save both types of forums in the array $groupsid.
         $groupsid['forum'] = $DB->get_records_sql($sqlforum, $params);
 
-        // BEGIN LSU Removal of HSU Forum Post code.
-        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
-            if (!get_config('hsuforum')) {
-                $groupsid['hsuforum'] = [];
-            } else {
-                // SQL for hsuforums.
-                $sqlhsuforum = "SELECT id, groupid
+        if (!get_config('hsuforum')) {
+            $groupsid['hsuforum'] = [];
+        } else {
+            // SQL for hsuforums.
+            $sqlhsuforum = "SELECT id, groupid
                               FROM {hsuforum_discussions}
                              WHERE id $insql";
 
-                $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
-            }
+            $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
         }
-        // END LSU Removal of HSU Forum Post code.
         return $groupsid;
     }
 
@@ -2021,7 +2036,7 @@ class local {
      * @throws \moodle_exception
      */
     public static function recent_forum_activity_data($renderhtml = false) {
-        global $PAGE, $OUTPUT;
+        global $PAGE, $OUTPUT, $CFG;
         $activities = self::recent_forum_activity();
         if (empty($activities)) {
             return [];
@@ -2072,6 +2087,8 @@ class local {
             $description = self::relative_time($activity->timestamp)
                 . '<br>' . format_text($forumpath, FORMAT_HTML, $formatoptions);
 
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
             $res[] = [
                 'iconUrl'      => $iconurl,
                 'iconDesc'     => '',
@@ -2082,6 +2099,7 @@ class local {
                 'description'  => $description,
                 'extraClasses' => '',
                 'fromCache'    => 0,
+                'urlParameter'    => $snapfeedsurlparam,
             ];
         }
         return $res;
@@ -2355,7 +2373,7 @@ SQL;
     }
 
     public static function deadlines_data($eventsobj, $renderhtml = false) {
-        global $PAGE;
+        global $PAGE, $CFG;
 
         $events = $eventsobj->events;
         $fromcache = $eventsobj->fromcache ? 1 : 0;
@@ -2364,6 +2382,7 @@ SQL;
         $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
 
         $res = [];
+        $id= 1;
         foreach ($events as $event) {
             if (!empty($event->modulename)) {
                 list ($course, $cm) = get_course_and_cm_from_instance(
@@ -2415,7 +2434,7 @@ SQL;
                     $metalink = $activitymeta == new activity_meta() ? '' :
                         \theme_snap\output\core\course_renderer::submission_cta($cm, $activitymeta);
 
-                    $meta .= '<div class="snap-completion-meta">' . $metalink .
+                    $meta .= '<div class="snap-completion-meta event-'.$id.'">' . $metalink .
                         '</div>';
                 }
                 $url = !empty($event->actionurl) && ($event->actionurl instanceof \moodle_url) ?
@@ -2429,6 +2448,8 @@ SQL;
                     $url = $url->out();
                 }
 
+                $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
                 $res[] = [
                     'iconUrl'      => $modimage,
                     'iconDesc'     => $modname,
@@ -2439,8 +2460,10 @@ SQL;
                     'description'  => $meta,
                     'extraClasses' => '',
                     'fromCache'    => $fromcache,
+                    'urlParameter'    => $snapfeedsurlparam,
                 ];
             }
+            $id++;
         }
         return $res;
     }

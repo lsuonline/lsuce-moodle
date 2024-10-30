@@ -74,12 +74,16 @@ Feature: When the moodle theme is set to Snap, switching between roles should be
     And I click on "#admin-menu-trigger" "css_element"
     And I navigate to "Switch role to... > Guest" in current page administration
     And I wait until the page is ready
+     #The admin gear is visible when we login as guest using the "Switch role to" option.
+    Then "#admin-menu-trigger" "css_element" should be visible
     And I open the user menu
     Then I should see "Return to my normal role"
-    Then "#admin-menu-trigger" "css_element" should not be visible
-    And I click on "#returntonormalrole" "css_element"
+    And I follow "Return to my normal role"
     And I wait until the page is ready
     And I should not see "Return to my normal role"
     Then "#admin-menu-trigger" "css_element" should be visible
     And I click on "#admin-menu-trigger" "css_element"
     Then I should see "Course administration"
+    And I log in as "guest"
+     # The admin gear should not be visible for the guest user when login normally from the login page.
+    Then "#admin-menu-trigger" "css_element" should not be visible

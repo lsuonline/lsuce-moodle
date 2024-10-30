@@ -27,9 +27,6 @@ namespace theme_snap\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
-// BEGIN LSU Enhancement add Kaltura my media.
-use context_system;
-// END LSU Enhancement add Kaltura my media.
 use core_component;
 use html_writer;
 use moodle_url;
@@ -42,6 +39,7 @@ require_once($CFG->dirroot.'/grade/querylib.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once($CFG->dirroot.'/grade/lib.php');
 require_once($CFG->libdir.'/badgeslib.php');
+require_once($CFG->dirroot.'/repository/lib.php');
 
 class shared extends \renderer_base {
 
@@ -222,7 +220,6 @@ EOF;
         $PAGE->requires->strings_for_js([
             'afterresource',
             'aftersection',
-            'clicktochangeinbrackets',
             'confirmdeletesection',
             'deletechecktype',
             'deletechecktypename',
@@ -233,8 +230,8 @@ EOF;
             'groupsvisible',
             'groupsseparate',
             'hide',
-            'markthistopic',
-            'markedthistopic',
+            //'markthistopic',TODO: Review how to address this string deprecation.
+            //'markedthistopic', TODO: Review how to address this string deprecation.
             'moveleft',
             'movesection',
             'movecoursemodule',
@@ -317,7 +314,16 @@ EOF;
             'movingdropsectionhelp',
             'movingstartedhelp',
             'notpublished',
-            'visibility'
+            'visibility',
+            'snapfeedsblocktitle',
+            'imageproperties',
+            'coverimagedesc',
+            'coverimagecropperdesc',
+            'browserepositories',
+            'selectimage',
+            'deleteimage',
+            'confirmdeletefile',
+            'coverimagesettingswarning',
         ), 'theme_snap');
 
         $PAGE->requires->strings_for_js([
@@ -330,7 +336,12 @@ EOF;
             'modshow',
             'hiddenoncoursepage',
             'showoncoursepage',
-            'switchrolereturn'
+            'switchrolereturn',
+            'show',
+            'hide',
+            'groupsseparate',
+            'groupsvisible',
+            'groupsnone'
         ], 'moodle');
 
         $PAGE->requires->strings_for_js([
@@ -386,8 +397,6 @@ EOF;
             'format' => $COURSE->format,
             'partialrender' => !empty(get_config('theme_snap', 'coursepartialrender')),
             'toctype' => get_config('theme_snap', 'leftnav'),
-            // Tiles format always loads the page into the course (INT-18117).
-            'loadPageInCourse' => !empty(get_config('theme_snap', 'design_mod_page')) && ($COURSE->format != 'tiles'),
         ];
 
         $forcepwdchange = (bool) get_user_preferences('auth_forcepasswordchange', false);
@@ -458,6 +467,16 @@ EOF;
         $blockreports = array_key_exists('reports', core_component::get_plugin_list('block'));
         $allyreport = (\core_component::get_component_directory('report_allylti') !== null);
         $localcatalogue = array_key_exists('catalogue', $localplugins);
+
+        // Loading Filepicker for the "Change cover image" feature.
+        if (($PAGE->pagelayout == 'coursecategory' || $PAGE->pagelayout == 'course' || $PAGE->pagelayout == 'frontpage') &&
+            (has_capability('moodle/course:changesummary', context_course::instance($COURSE->id)) ||
+            has_capability('moodle/category:manage', context_course::instance($COURSE->id)))) {
+            $args = new stdClass();
+            $args->accepted_types = array('.jpeg', '.png', '.gif');
+            $args->return_types = 2;
+            initialise_filepicker($args);
+        }
 
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
                      $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
@@ -549,14 +568,7 @@ EOF;
             }
             // Generate linkhtml.
             $attributes = $item->attributes ?? null;
-
-            if (stripos($item->link, "newpld")) {
-                // If the link is the New PLD link, include new class to add custom background
-                // with the "New" word to the card.
-                $o .= '<li class="newpldcard">';
-            } else {
-                $o .= '<li>';
-            }
+            $o .= '<li>';
             $o .= html_writer::link($item->link, $item->title, $attributes);
             $o .= '</li>';
         }
@@ -610,19 +622,6 @@ EOF;
                         break;
                     }
                 }
-            }
-        }
-
-        // Personalised Learning Designer new design.
-        if (!empty($CFG->local_pld_experimental)) {
-            if (array_key_exists('pld', $localplugins) && has_capability('local/pld:editcourserules', $coursecontext)) {
-                $iconurl = $OUTPUT->image_url('pldnew', 'theme');
-                $pldicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-                $pldname = get_string('pldexperimental', 'local_pld');
-                $links[] = array(
-                    'link' => 'local/pld/view.php?newpld=1&courseid='.$COURSE->id,
-                    'title' => $pldicon.$pldname
-                );
             }
         }
 
@@ -730,13 +729,28 @@ EOF;
 
         // Personalised Learning Designer.
         if (array_key_exists('pld', $localplugins) && has_capability('local/pld:editcourserules', $coursecontext)) {
-            $iconurl = $OUTPUT->image_url('pld', 'theme');
+            $iconurl = $OUTPUT->image_url('pldnew', 'theme');
             $pldicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-            $pldname = get_string('pld', 'theme_snap');
+            $pldname = get_string('pldinitials', 'local_pld');
             $links[] = array(
-                'link' => 'local/pld/view.php?courseid='.$COURSE->id,
-                'title' => $pldicon.$pldname
+                'link' => 'local/pld/view.php?newpld=1&courseid='.$COURSE->id,
+                'title' => $pldicon.$pldname,
+                'attributes' => ['id' => 'ct-pld']
             );
+        }
+
+        // Personalised Learning Designer (Legacy).
+        if ((!isset($CFG->local_pld_legacy) || $CFG->local_pld_legacy)) {
+            if (array_key_exists('pld', $localplugins) && has_capability('local/pld:editcourserules', $coursecontext)) {
+                $iconurl = $OUTPUT->image_url('pld', 'theme');
+                $pldicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
+                $pldname = get_string('pldlegacy', 'local_pld');
+                $links[] = array(
+                    'link' => 'local/pld/view.php?courseid='.$COURSE->id,
+                    'title' => $pldicon.$pldname,
+                    'attributes' => ['id' => 'ct-pld-legacy']
+                );
+            }
         }
 
         // Competencies if enabled.
@@ -826,44 +840,6 @@ EOF;
                 }
             }
         }
-
-        // Begin LSU Enhancement fix quickmail icon not showing up for students in course.
-        if ( \core_component::get_component_directory('block_quickmail') !== null) {
-
-            // Check course config
-            $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $COURSE->id], '', 'name,value');
-
-            // Get the master block config for Quickmail.
-            $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
-
-            // Determine Quickmail allowstudents for this course.
-            if ((int) $blockconfig < 0) {
-                $courseallowstudents = 0;
-            } else {
-                $courseallowstudents = array_key_exists('allowstudents', $courseconfig) ?
-                    $courseconfig['allowstudents'] :
-                    $blockconfig;
-            }
-
-            // Show QM icon and link for those who cansend OR students.
-            if (has_capability('block/quickmail:cansend', $coursecontext) OR $courseallowstudents == 1) {
-                // Set the icon appropriate for the version.
-                if ($CFG->version > 2017051500.00) {
-                    $iconurl = $OUTPUT->image_url('t/email', 'core');
-                } else {
-                    $iconurl = $OUTPUT->pix_url('t/email', 'core');
-                }
-
-                // Build the HTML for the icon.
-                $quickmailicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
-                // Build the link and add it to the array of links.
-                $links[] = array(
-                    'link' => 'blocks/quickmail/qm.php?courseid='.$COURSE->id,
-                    'title' => $quickmailicon.get_string('pluginname', 'block_quickmail'),
-                 );
-            }
-        }
-        // End LSU Enhancement fix quickmail icon no showing up for students in course.
 
         $config = get_config('tool_ally');
         $configured = !empty($config) && !empty($config->key) && !empty($config->adminurl) && !empty($config->secret);

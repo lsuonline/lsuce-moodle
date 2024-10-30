@@ -39,11 +39,6 @@ trait general_section_trait {
         $sectionavailability = $section->availability === null ? '' : $section->availability;
         if (!empty($section->availableinfo)
             || !empty(json_decode($sectionavailability)->c)) {
-
-	    // BEGIN LSU Warning fix.
-	    // SNAP people added line 41 above to address this warning (haven't tested)
-            // || !empty(json_decode(isset($section->availability))->c)) {
-	    // END LSU Warning fix.
             return true;
         }
         // OK - this isn't conditional.

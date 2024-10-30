@@ -36,6 +36,8 @@ use coursecat;
 use stdClass;
 use theme_snap\activity;
 use theme_snap\activity_meta;
+use core\output\local\dropdown\dialog as dropdown_dialog;
+use core_completion\cm_completion_details;
 
 require_once($CFG->dirroot . "/mod/book/locallib.php");
 require_once($CFG->libdir . "/gradelib.php");
@@ -82,7 +84,7 @@ class course_renderer extends \core_course_renderer {
             // If the section name is set we show it.
             if (trim($section->name ?? '') !== '') {
                 $output .= $this->heading(
-                    format_string($section->name, true, array('context' => $context)),
+                    format_string($section->name, true, ['context' => $context]),
                     2,
                     'sectionname'
                 );
@@ -108,7 +110,7 @@ class course_renderer extends \core_course_renderer {
                     "<br /><br />";
             }
 
-            $output .= $this->course_section_cm_list($SITE, $section);
+            $output .= $this->course_section_cm_list_snap($SITE, $section);
 
             $output .= $this->course_section_add_cm_control($SITE, $section->section);
             $output .= $this->box_end();
@@ -128,27 +130,27 @@ class course_renderer extends \core_course_renderer {
      * @param array $displayoptions
      * @return String
      */
-    public function course_section_cm_list_item($course,
+    public function course_section_cm_list_item_snap($course,
     &$completioninfo,
     cm_info $mod,
     $sectionreturn,
-    $displayoptions = array()
+    $displayoptions = []
     ) {
         $output = '';
         if ($modulehtml = $this->course_section_cm($course, $completioninfo, $mod, $sectionreturn, $displayoptions)) {
             list($snapmodtype, $mimetype) = $this->get_mod_type($mod);
 
             if ($mod->modname === 'resource') {
-                // Default for resources/attatchments e.g. pdf, doc, etc.
-                $modclasses = array('snap-resource', 'snap-mime-'.$mimetype, 'snap-resource-long');
+                // Default for resources/attachments e.g. pdf, doc, etc.
+                $modclasses = ['snap-resource', 'snap-mime-'.$mimetype, 'snap-resource-long'];
                 $resourcedisplayincourse = true;
-                $modresourceneoptions = array(
+                $modresourceneoptions = [
                     RESOURCELIB_DISPLAY_EMBED,
                     RESOURCELIB_DISPLAY_FRAME,
                     RESOURCELIB_DISPLAY_NEW,
                     RESOURCELIB_DISPLAY_DOWNLOAD,
                     RESOURCELIB_DISPLAY_POPUP,
-                );
+                ];
                 if (!empty($mod->customdata['display'])) {
                     if (in_array($mod->customdata['display'], $modresourceneoptions)) {
                         $resourcedisplayincourse = false;
@@ -159,31 +161,26 @@ class course_renderer extends \core_course_renderer {
                 }
                 // For images we overwrite with the native class.
                 if ($this->is_image_mod($mod)) {
-                    $modclasses = array('snap-native-image', 'snap-image', 'snap-mime-'.$mimetype);
+                    $modclasses = ['snap-native-image', 'snap-image', 'snap-mime-'.$mimetype];
                 }
             } else if ($mod->modname === 'folder' && !$mod->url) {
                 // Folder mod set to display on page.
-                $modclasses = array('snap-activity');
+                $modclasses = ['snap-activity'];
             } else if (plugin_supports('mod', $mod->modname, FEATURE_MOD_ARCHETYPE) === MOD_ARCHETYPE_RESOURCE) {
-                $modclasses = array('snap-resource');
+                $modclasses = ['snap-resource'];
                 if ($mod->modname !== 'label') {
-                    $modclasses = array('snap-resource', 'snap-resource-long');
+                    $modclasses = ['snap-resource', 'snap-resource-long'];
                 }
             } else if ($mod->modname === 'scorm') {
-                $modclasses = array('snap-resource', 'snap-resource-long');
+                $modclasses = ['snap-resource', 'snap-resource-long'];
             } else if ($mod->modname !== 'label') {
-                $modclasses = array('snap-activity');
+                $modclasses = ['snap-activity'];
             }
 
             // Special classes for native html elements.
-            // BEGIN LSU Book native to activity module.
-            if (in_array($mod->modname, ['page'])) {
-                $modclasses = array('snap-native', 'snap-mime-'.$mod->modname);
+            if (in_array($mod->modname, ['page', 'book'])) {
+                $modclasses = ['snap-native', 'snap-mime-'.$mod->modname];
                 $attr['aria-expanded'] = "false";
-            } else if (in_array($mod->modname, ['book'])) {
-                $modclasses = array('snap-activity', 'snap-mime-'.$mod->modname);
-                $attr['aria-expanded'] = "false";
-            // END LSU Book native to activity module.
             } else if ($modurl = $mod->url) {
                 // For snap cards, js uses this to make the whole card clickable.
                 if ($mod->uservisible) {
@@ -259,7 +256,7 @@ class course_renderer extends \core_course_renderer {
      * @param array $displayoptions
      * @return string
      */
-    public function course_section_cm_availability(cm_info $mod, $displayoptions = array()) {
+    public function course_section_cm_availability(cm_info $mod, $displayoptions = []) {
         // If we have available info, always spit it out.
         if (!$mod->uservisible && !empty($mod->availableinfo)) {
             $availinfo = $mod->availableinfo;
@@ -293,7 +290,7 @@ class course_renderer extends \core_course_renderer {
      * @return string
      * @throws \dml_exception
      */
-    public function course_section_cm_completion($course, &$completioninfo, cm_info $mod, $displayoptions = array()) {
+    public function course_section_cm_completion($course, &$completioninfo, cm_info $mod, $displayoptions = []) {
         global $CFG, $USER, $DB;
 
         $output = '';
@@ -370,9 +367,9 @@ class course_renderer extends \core_course_renderer {
             if ($isediting || !$istrackeduser || !has_capability('moodle/course:togglecompletion', $mod->context)) {
                 // When editing, the icon is just an image.
                 $completionpixicon = new \pix_icon('i/completion-'.$completionicon, $imgalt, '',
-                    array('title' => $imgalt, 'class' => 'iconsmall'));
+                    ['class' => 'iconsmall', 'id' => 'completion-button-' . $mod->id]);
                 $output .= html_writer::tag('span', $this->output->render($completionpixicon),
-                    array('class' => 'autocompletion'));
+                    ['class' => 'autocompletion']);
             } else if ($completion == COMPLETION_TRACKING_MANUAL) {
                 $newstate =
                     $completiondata->completionstate == COMPLETION_COMPLETE
@@ -389,40 +386,53 @@ class course_renderer extends \core_course_renderer {
                     $extraclass = ' preventjs';
 
                 }
-                // Check if we should force reload current page to trigger PLD events.
-                $conditions = ['plugin' => 'local_pld', 'name' => 'version'];
-                $pld = $DB->record_exists('config_plugins', $conditions);
-                if (!empty($pld)) {
-                    require_once($CFG->dirroot.'/local/pld/model/action.php');
-                    $actionpld = \local_pld_action::course_should_reload($course->id);
-                    if (is_array($actionpld) && !empty($actionpld['forcereload'])) {
-                        $extraclass .= ' forcereload';
-                    }
-                }
 
-                $output .= html_writer::start_tag('form', array('method' => 'post',
+                $output .= html_writer::start_tag('form', ['method' => 'post',
                     'action' => new moodle_url('/course/togglecompletion.php'),
-                    'class' => 'togglecompletion'. $extraclass, ));
+                    'class' => 'togglecompletion', ]);
                 $output .= html_writer::start_tag('div');
-                $output .= html_writer::empty_tag('input', array(
-                    'type' => 'hidden', 'name' => 'id', 'value' => $mod->id, ));
-                $output .= html_writer::empty_tag('input', array(
-                    'type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey(), ));
-                $output .= html_writer::empty_tag('input', array(
-                    'type' => 'hidden', 'name' => 'modulename', 'value' => $formattedname, ));
-                $output .= html_writer::empty_tag('input', array(
-                    'type' => 'hidden', 'name' => 'completionstate', 'value' => $newstate, ));
+                $output .= html_writer::empty_tag('input', [
+                    'type' => 'hidden', 'name' => 'id', 'value' => $mod->id, ]);
+                $output .= html_writer::empty_tag('input', [
+                    'type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey(), ]);
+                $output .= html_writer::empty_tag('input', [
+                    'type' => 'hidden', 'name' => 'modulename', 'value' => $formattedname, ]);
+                $output .= html_writer::empty_tag('input', [
+                    'type' => 'hidden', 'name' => 'completionstate', 'value' => $newstate, ]);
                 $output .= html_writer::tag('button',
-                    $this->output->pix_icon('i/completion-' . $completionicon, $imgalt),
-                    array('class' => 'btn btn-link', 'aria-live' => 'assertive'));
+                    $this->output->pix_icon('i/completion-' . $completionicon, $imgalt,'', ['title' => '']),
+                    ['class' => 'btn btn-link', 'id' => 'completion-button-' . $mod->id]);
                 $output .= html_writer::end_tag('div');
                 $output .= html_writer::end_tag('form');
             } else {
                 // In auto mode, the icon is just an image.
-                $completionpixicon = new \pix_icon('i/completion-'.$completionicon, $imgalt, '',
-                    array('title' => $imgalt));
-                $output .= html_writer::tag('span', $this->output->render($completionpixicon),
-                    array('class' => 'autocompletion'));
+                $showcompletionconditions = $course->showcompletionconditions == COMPLETION_SHOW_CONDITIONS;
+                $completiondetails = cm_completion_details::get_instance($mod, $USER->id, $showcompletionconditions);
+                $showcompletioninfo = $completiondetails->has_completion() &&
+                ($showcompletionconditions || $completiondetails->show_manual_completion());
+                if (!$showcompletioninfo) {
+                    return $output;
+                }
+                $completionpixicon = new \pix_icon('i/completion-'.$completionicon, $imgalt, '', ['id' => 'completion-button-' . $mod->id]);
+                $span = html_writer::tag('span', $this->output->render($completionpixicon),
+                    ['class' => 'autocompletion']);
+                $data = (object) [
+                    'istrackeduser' => true,
+                    'hasconditions' => true,
+                    'completiondetails' => $completiondetails
+                ];
+                $dialogcontent = $this->output->render_from_template('core_courseformat/local/content/cm/completion_dialog', $data);
+                $dialog = new dropdown_dialog(
+                    $this->output->render($completionpixicon),
+                    $this->get_completion_dialog_content($mod),
+                    [
+                        'classes' => 'completion-dropdown',
+                        'buttonclasses' => 'btn btn-icon',
+                        'dropdownposition' => dropdown_dialog::POSITION['end'],
+                    ]
+                );
+                $dialog = $this->output->render($dialog);
+                $output .= $dialog;
             }
         }
         return $output;
@@ -450,7 +460,7 @@ class course_renderer extends \core_course_renderer {
      * @param array $displayoptions
      * @return string
      */
-    public function course_section_cm($course, &$completioninfo, cm_info $mod, $sectionreturn, $displayoptions = array()) {
+    public function course_section_cm($course, &$completioninfo, cm_info $mod, $sectionreturn, $displayoptions = []) {
         global $COURSE, $CFG;
 
         $output = '';
@@ -481,18 +491,9 @@ class course_renderer extends \core_course_renderer {
         // Display the link to the module (or do nothing if module has no url).
         $cmname = $this->course_section_cm_name($mod, $displayoptions);
         $assetlink = '';
-        $assettype = '';
 
         if (!empty($cmname)) {
             // Activity/resource type.
-            $snapmodtype = $this->get_mod_type($mod)[0];
-            $pagecurrentstr = get_string('modulename', 'mod_page');
-            $bookcurrentstr = get_string('modulename', 'mod_book');
-            if (strcmp($snapmodtype, $pagecurrentstr) == 0 || strcmp($snapmodtype, $bookcurrentstr) == 0) {
-                $snapmodtype = '';
-            }
-            $assettype = '<div class="snap-assettype">'.$snapmodtype.'</div>';
-            // Asset link.
             $assetlink .= '<h3 class="snap-asset-link">'.$cmname.'</h3>';
         }
 
@@ -533,15 +534,6 @@ class course_renderer extends \core_course_renderer {
         // Resources cannot have groups/groupings.
         if ($mod->modname !== 'resource') {
             $canmanagegroups = has_capability('moodle/course:managegroups', context_course::instance($mod->course));
-            if ($canmanagegroups && $mod->effectivegroupmode != NOGROUPS) {
-                if ($mod->effectivegroupmode == VISIBLEGROUPS) {
-                    $groupinfo = get_string('groupsvisible');
-                } else if ($mod->effectivegroupmode == SEPARATEGROUPS) {
-                    $groupinfo = get_string('groupsseparate');
-                }
-                $groupmeta .= '<div class="snap-group-tag">'.$groupinfo.'</div>';
-            }
-
             // This will show a grouping (group of groups) name against a module if one has been assigned to the module instance.
             if ($canmanagegroups && !empty($mod->groupingid)) {
                 // Grouping label.
@@ -586,11 +578,23 @@ class course_renderer extends \core_course_renderer {
         // Add draft, conditional.
         $assetmeta = $stealthtag.$drafttag;
 
+        // Add edit menu to Snap.
+        $snapmenu = '';
+        $snapmenu .= $this->course_section_menu_actions($mod);
+
+        // Group modes.
+        $groupsmenu = '';
+        $courseformat = course_get_format($mod->get_course());
+        $canmanagegroups = has_capability('moodle/course:managegroups', context_course::instance($mod->course));
+        if ($canmanagegroups && $courseformat->show_groupmode($mod)) {
+            $groupsmenu .= $this->activity_groups_menu_actions($mod);
+        }
         // Build output.
-        $postcontent = '<div class="snap-asset-meta" data-cmid="'.$mod->id.'">'.$assetmeta.$mod->afterlink.'</div>';
-        $content = '<div class="snap-asset-content">'.$assetlink.$postcontent.$contentpart.$snapcompletionmeta.$groupmeta.'</div>';
-        $cardicons = '<div class="snap-header-card-icons">'.$completiontracking.$coursetoolsicon.'</div>';
-        $output .= '<div class="snap-header-card">'.$assettype.$cardicons.'</div>'.$content;
+        $forumposts = '<div class="badge badge-secondary">'.$this->get_forum_unread_posts($mod).'</div>';
+        $postcontent = '<div class="snap-asset-meta" data-cmid="'.$mod->id.'">'.$assetmeta.$mod->afterlink.$forumposts.'</div>';
+        $content = '<div class="snap-asset-content">'.$postcontent.$contentpart.$snapcompletionmeta.$groupmeta.'</div>';
+        $cardicons = '<div class="snap-header-card-icons">'.$completiontracking.$coursetoolsicon.$groupsmenu.$snapmenu.'</div>';
+        $output .= '<div class="snap-header-card">'.$assetlink.$cardicons.'</div>'.$content;
 
         // Bail at this point if we aren't using a supported format. (Folder view is only partially supported).
         $supported = ['topics', 'weeks', 'site'];
@@ -598,131 +602,18 @@ class course_renderer extends \core_course_renderer {
             return parent::course_section_cm($course, $completioninfo, $mod, $sectionreturn, $displayoptions).$assetmeta;
         }
 
-        // Build up edit actions.
-        $actions = '';
-        $actionsadvanced = array();
-        $coursecontext = context_course::instance($mod->course);
-        $modcontext = context_module::instance($mod->id);
-        $baseurl = new moodle_url('/course/mod.php', array('sesskey' => sesskey()));
-
-        $str = get_strings(array('delete', 'move', 'duplicate', 'hide', 'show', 'roles',
-            'makeavailable', 'makeunavailable', ), 'moodle');
-        // TODO - add snap strings here.
-
-        // Move, Edit, Delete.
-        if (has_capability('moodle/course:manageactivities', $modcontext)) {
+        // Allow moving and rearranging multiple activities at once.
+        if (has_capability('moodle/course:manageactivities', context_module::instance($mod->id))) {
             $movealt = s(get_string('move', 'theme_snap', $mod->get_formatted_name()));
-            $moveicon = '<i aria-hidden="true" title="'.$movealt.'" alt="'.$movealt.'" class="icon fa fa-arrow-right fa-fw"></i>';
-            $editalt = s(get_string('edit', 'theme_snap', $mod->get_formatted_name()));
-            $editicon = '<i aria-hidden="true" title="'.$editalt.'" alt="'.$editalt.'" class="icon fa fa-pencil fa-fw"></i>';
-            $actions .= '<label role="button" class="snap-asset-move" for="snap-move-mod-'.$mod->id.'">';
-            $actions .= '<input id="snap-move-mod-'.$mod->id.'" aria-label="'.$movealt.'"
-             class="js-snap-asset-move sr-only" role="button" type="checkbox">';
-            $actions .= '<span class="sr-only">'.$movealt.'</span>'.$moveicon.'</label>';
-            $actions .= '<a class="snap-edit-asset" role="button" href="' .
-                new moodle_url($baseurl, array('update' => $mod->id)) . '"
-                aria-label="' . get_string('activityedit', 'theme_snap') . '">';
-            $actions .= $editicon.'</a>';
-            $actionsadvanced[] = '<li><a href="'.new moodle_url($baseurl, array('delete' => $mod->id)).
-                '" data-action="delete" role="button" class="js_snap_delete dropdown-item">'.$str->delete.'</a></li>';
+            $moveactivity = '<label class="snap-asset-move-label" aria-label="' . $movealt . '" for="snap-move-mod-' . $mod->id . 'role="button"">';
+            $moveactivity .= '<input class="snap-asset-move-input js-snap-asset-move" id="snap-move-mod-' . $mod->id . '"
+                                role="button" type="checkbox">';
+            $moveactivity .= '<span class="sr-only">' . $movealt . '</span></label>';
+            $output .= "<div hidden class='snap-asset-move-wrapper js-only' role='region' aria-label='" .
+                            get_string('courseactionslabel', 'theme_snap') . "'>" . $moveactivity . "</div>";
         }
 
-        // Hide/Show.
-        if (has_capability('moodle/course:activityvisibility', $modcontext)) {
-            $ariacbaction = get_string('hideandshowactioncb', 'theme_snap');
-            $actions .= '<input class="sr-only" type="checkbox" aria-label="'.$ariacbaction.'">';
-            $hideaction = '<li><a href="'.new moodle_url($baseurl, array('hide' => $mod->id));
-            $hideaction .= '" data-action="hide" role="button" class="dropdown-item editing_hide js_snap_hide">'
-                .$str->hide.'</a></li>';
-            $actionsadvanced[] = $hideaction;
-            $showaction = '<li><a href="'.new moodle_url($baseurl, array('show' => $mod->id));
-            $showaction .= '" data-action="show" role="button" class="dropdown-item editing_show js_snap_show">'
-                .$str->show.'</a></li>';
-            $actionsadvanced[] = $showaction;
-
-            // Stealth action.
-            $courseformat = course_get_format($mod->get_course());
-
-            $makeunavailable = '<li><a href="'.new moodle_url($baseurl, array('hide' => $mod->id));
-            $makeunavailable .= '" data-action="hide" role="button" class="dropdown-item editing_makeunavailable js_snap_hide">' .
-                $str->makeunavailable . '</a></li>';
-            $actionsadvanced[] = $makeunavailable;
-
-            if (!empty($CFG->allowstealth) && $mod->has_view()) {
-                $action = 'stealth';
-                $actionstealth = '<li><a href="'.new moodle_url($baseurl, array($action => $mod->id));
-                $actionstealth .= '" data-action="' . $action . '"
-                    role="button" class="dropdown-item editing_makeavailable js_snap_stealth">' .
-                    $str->makeavailable.'</a></li>';
-                $actionsadvanced[] = $actionstealth;
-
-                $action = 'show';
-                $actionstealthshow = '<li><a href="'.new moodle_url($baseurl, array($action => $mod->id));
-                $actionstealthshow .= '" data-action="' . $action .
-                    '" role="button" class="dropdown-item editing_makeavailable js_snap_stealthshow">' .
-                    $str->makeavailable.'</a></li>';
-                $actionsadvanced[] = $actionstealthshow;
-            }
-        }
-
-        // Duplicate.
-        $dupecaps = array('moodle/backup:backuptargetimport', 'moodle/restore:restoretargetimport');
-        if (has_all_capabilities($dupecaps, $coursecontext) &&
-            plugin_supports('mod', $mod->modname, FEATURE_BACKUP_MOODLE2) &&
-            plugin_supports('mod', $mod->modname, 'duplicate', true)) {
-            $actionsadvanced[] = "<li><a href='".new moodle_url($baseurl, array('duplicate' => $mod->id)).
-                "' data-action='duplicate' role='button' class='dropdown-item js_snap_duplicate'>$str->duplicate</a></li>";
-        }
-
-        // Asign roles.
-        if (has_capability('moodle/role:assign', $modcontext)) {
-            $actionsadvanced[] = "<li><a role='button' class='dropdown-item' href='".
-                new moodle_url('/admin/roles/assign.php', array('contextid' => $modcontext->id)).
-                "'>$str->roles</a></li>";
-        }
-
-        // Give local plugins a chance to add icons.
-        $localplugins = array();
-        foreach (get_plugin_list_with_function('local', 'extend_module_editing_buttons') as $function) {
-            $localplugins = array_merge($localplugins, $function($mod));
-        }
-
-        foreach (get_plugin_list_with_function('block', 'extend_module_editing_buttons') as $function) {
-            $localplugins = array_merge($localplugins, $function($mod));
-        }
-
-        // TODO - pld string is far too long....
-        $locallinks = '';
-        foreach ($localplugins as $localplugin) {
-            $url = $localplugin->url;
-            $text = $localplugin->text;
-            $class = 'dropdown-item ' . $localplugin->attributes['class'];
-            $actionsadvanced[] = "<a href='$url' class='$class'>$text</a>";
-        }
-
-        $advancedactions = '';
-        if (!empty($actionsadvanced)) {
-            $moreicon = '<i aria-hidden="true" class="icon fa fa-ellipsis-v fa-fw"></i>';
-            $advancedactions = '<div class="dropdown snap-edit-more-dropdown">';
-            $advancedactions .= '<button class="snap-edit-asset-more" ';
-            $advancedactions .= 'data-toggle="dropdown" data-boundary="window" data-offset="-10,12"';
-            $advancedactions .= 'aria-label="' . get_string('moreoptionslabel', 'theme_snap') . '" aria-expanded="false"';
-            $advancedactions .= 'aria-controls="#snap-asset-menu">'.$moreicon.'</button>';
-            $advancedactions .= '<ul id="snap-asset-menu" class="dropdown-menu asset-edit-menu">';
-            foreach ($actionsadvanced as $action) {
-                $advancedactions .= "$action";
-            }
-            $advancedactions .= "</ul></div>";
-        }
         $output .= "</div>"; // Close .activityinstance.
-
-        // Add actions menu.
-        if ($actions) {
-            $output .= "<div class='js-only snap-asset-actions' role='region' aria-label='" .
-                get_string('courseactionslabel', 'theme_snap') . "'>";
-            $output .= $actions.$advancedactions;
-            $output .= "</div>";
-        }
         $output .= "</div>"; // Close .asset-wrapper.
         return $output;
     }
@@ -734,7 +625,7 @@ class course_renderer extends \core_course_renderer {
      * @param array $displayoptions
      * @return string
      */
-    public function course_section_cm_text(cm_info $mod, $displayoptions = array()) {
+    public function course_section_cm_text(cm_info $mod, $displayoptions = []) {
         $output = '';
         if (!$mod->uservisible && empty($mod->availableinfo)) {
             // Nothing to be displayed to the user.
@@ -746,9 +637,9 @@ class course_renderer extends \core_course_renderer {
         if ($this->is_image_mod($mod)) {
             $content = $this->mod_image_html($mod);
         } else if (method_exists($this,  $modmethod )) {
-            $content = call_user_func(array($this, $modmethod), $mod);
+            $content = call_user_func([$this, $modmethod], $mod);
         } else {
-            $content = $mod->get_formatted_content(array('overflowdiv' => false, 'noclean' => true));
+            $content = $mod->get_formatted_content(['overflowdiv' => false, 'noclean' => true]);
         }
 
         $accesstext = '';
@@ -768,14 +659,12 @@ class course_renderer extends \core_course_renderer {
         }
         if ($mod->url) {
             if ($content) {
-                // Add extra content to create fadeout to resource cards activities and SCORM package.
-                if ((plugin_supports('mod', $mod->modname, FEATURE_MOD_ARCHETYPE) === MOD_ARCHETYPE_RESOURCE) ||
-                    $mod->modname === 'scorm') {
-                        $fadeoutcard = "<p class='snap-resource-card-fadeout'>&nbsp;</p>";
-                        $content .= $fadeoutcard;
-                }
                 // If specified, display extra content after link.
-                $output = html_writer::tag('div', $content, array('class' => trim('contentafterlink ' . $textclasses)));
+                $output = html_writer::tag('div', $content, ['class' => trim('contentafterlink ' . $textclasses)]);
+                // Add chevron icon to content.
+                $output .= '<div class="mt-3">
+                            <a href="'.$mod->url.'&forceview=1" aria-label="'. get_string('gotoactivity', 'theme_snap', $mod->name) .'"><i class="fa fa-chevron-down" aria-hidden="true"></i></a>
+                </div>';
             }
         } else {
             $snapmodtype = $this->get_mod_type($mod)[0];
@@ -788,7 +677,7 @@ class course_renderer extends \core_course_renderer {
 
             // No link, so display only content.
             $output = html_writer::tag('div', $assettype . $accesstext . $content,
-                array('class' => 'contentwithoutlink ' . $textclasses));
+                ['class' => 'contentwithoutlink text-break' . $textclasses]);
         }
         return $output;
     }
@@ -907,15 +796,15 @@ class course_renderer extends \core_course_renderer {
 
         if ($meta->isteacher) {
             // Teacher - useful teacher meta data.
-            $engagementmeta = array();
+            $engagementmeta = [];
 
             // Below, !== false means we get 0 out of x submissions.
             if (!$meta->submissionnotrequired && $meta->numsubmissions !== false) {
                 $engagementmeta[] = get_string('xofy'.$meta->submitstrkey, 'theme_snap',
-                    (object) array(
+                    (object) [
                         'completed' => $meta->numsubmissions,
                         'participants' => \theme_snap\local::course_participant_count($COURSE->id, $mod->modname),
-                    )
+                    ]
                 );
             }
 
@@ -925,15 +814,16 @@ class course_renderer extends \core_course_renderer {
             if (!empty($engagementmeta)) {
                 $engagementstr = implode(', ', $engagementmeta);
 
-                $params = array(
+                $params = [
                     'action' => 'grading',
                     'id' => $mod->id,
                     'tsort' => 'timesubmitted',
                     'filter' => 'require_grading',
-                );
+                ];
                 $url = new moodle_url("/mod/{$mod->modname}/view.php", $params);
 
-                $content .= html_writer::link($url, $engagementstr);
+                $link = html_writer::link($url, $engagementstr);
+                $content .= html_writer::tag('p', $link);
             }
             $suspended = \theme_snap\local::suspended_participant_count($COURSE->id, $mod->id);
             if ($suspended) {
@@ -955,14 +845,26 @@ class course_renderer extends \core_course_renderer {
                 }
             }
 
-            // If submissions are not allowed, return the content.
-            if (!empty($meta->timeopen) && $meta->timeopen > time()) {
-                // TODO - spit out a 'submissions allowed from' tag.
-                return $content;
-            }
             // @codingStandardsIgnoreLine
             /* @var cm_info $mod */
             $content .= self::submission_cta($mod, $meta);
+        }
+
+        $modstoshowactivityopendate = ['data', 'quiz', 'scorm', 'workshop', 'assign'];
+
+        // Activity open date.
+         if (!empty($meta->timeopen) && in_array($mod->modname, $modstoshowactivityopendate)) {
+            $dateformat = get_string('strftimedate', 'langconfig');
+            $url = new moodle_url("/mod/{$mod->modname}/view.php", ['id' => $mod->id]);
+            $pastopen = $meta->timeopen < time();
+            $labeltext = $pastopen ? get_string('opened', 'theme_snap', userdate($meta->timeopen, $dateformat)) :
+                get_string('opens', 'theme_snap', userdate($meta->timeopen, $dateformat));
+            $dateclass = $pastopen ? 'snap-opened-date' : 'snap-open-date';
+            $content .= html_writer::link($url, $labeltext,
+                [
+                    'class' => 'tag tag-success ' . $dateclass,
+                    'data-from-cache' => $meta->timesfromcache ? 1 : 0,
+                ]);
         }
 
         // Activity due date.
@@ -976,7 +878,7 @@ class course_renderer extends \core_course_renderer {
             $labeltext = get_string('due', 'theme_snap', userdate($meta->$field, $dateformat));
             $pastdue = $meta->$field < time();
             $url = new \moodle_url("/mod/{$mod->modname}/view.php", ['id' => $mod->id]);
-            $dateclass = $pastdue ? 'tag-danger' : 'tag-success';
+            $dateclass = $pastdue ? 'tag-danger' : 'tag-warning';
             $content .= html_writer::link($url, $labeltext,
                     [
                         'class' => 'snap-due-date tag '.$dateclass,
@@ -1017,7 +919,7 @@ class course_renderer extends \core_course_renderer {
         }
 
         $summary = '';
-        $summary = $mod->get_formatted_content(array('overflowdiv' => false, 'noclean' => true));
+        $summary = $mod->get_formatted_content(['overflowdiv' => false, 'noclean' => true]);
         $modname = format_string($mod->name);
         $img = format_text('<img src="' .$imgsrc. '" alt="' .$modname. '"/>');
         $icon = '<img title="' .get_string('vieworiginalimage', 'theme_snap'). '"
@@ -1047,25 +949,15 @@ class course_renderer extends \core_course_renderer {
 
         $page = \theme_snap\local::get_page_mod($mod);
 
-        $imgarr = \theme_snap\local::extract_first_image($page->content);
-
-        $thumbnail = '';
-
         $preview = $page->summary;
 
-        if ($imgarr) {
-            // Check that the image is not a tex equation.
-            if (strpos($imgarr['src'], "filter/tex/pix.php") == false) {
-                $img = html_writer::img($imgarr['src'], $imgarr['alt']);
-                $thumbnail = "<div class=summary-figure>$img</div>";
-            } else {
-                $preview = $page->content;
-                $preview = shorten_text($preview, 200);
-            }
+        if (!$page->intro) {
+            $preview = shorten_text($page->content, 200);
         }
 
         $readmore = get_string('readmore', 'theme_snap');
-        $close = get_string('closebuttontitle', 'moodle');
+        $close = get_string('collapseicon', 'theme_snap');
+        $expand = get_string('expandicon', 'theme_snap');
 
         $content = '';
         $contentloaded = 0;
@@ -1083,37 +975,41 @@ class course_renderer extends \core_course_renderer {
             $contentloaded = !$lazyload ? 1 : 0;
         }
         // With previous design, we allow displaying videos.
-        if (!empty(get_config('theme_snap', 'design_mod_page')) && $content == '') {
+        if ($content == '') {
             if (stripos($page->content, '<video') !== false) {
                 $content = $page->content;
                 $contentloaded = 1;
             }
         }
 
-        $pagenewwindow = get_config('theme_snap', 'design_mod_page');
-        // Check for mod page design setting to open the content inline on the same page or in another window.
-        if ($pagenewwindow) {
-            $pslinkclass = 'btn btn-secondary pagemod-readmore';
-        } else {
-            $pslinkclass = 'btn btn-secondary';
-        }
         $pmcontextattribute = 'data-pagemodcontext="'.$mod->context->id.'"';
-
+        $expandpagebutton = "
+            <button 
+                class='btn collapsed pagemod-readmore readmore-button snap-action-icon btn-outline-primary p-2'
+                {$pmcontextattribute}
+                aria-expanded='false'>
+                <i aria-hidden='true' class='icon fa fa-chevron-down fa-fw' title='{$expand} {$page->name}'></i>
+            </button>
+        ";
         $o = "
-        {$thumbnail}
-        <div class='summary-text'>
-            {$preview}
-            <p><a class='$pslinkclass' title='{$mod->name}' href='{$mod->url}' $pmcontextattribute>{$readmore}</a></p>
+        <div class='summary-container'>
+            <div class='summary-text'>
+                {$preview}
+            </div>
         </div>
-
+        <div class='readmore-container d-flex justify-content-center'>
+            {$expandpagebutton}
+        </div>
         <div class=pagemod-content tabindex='-1' data-content-loaded={$contentloaded}>
             <div id='pagemod-content-container'>
                 {$content}
             </div>
-            <div class='d-block'><hr><a  class='snap-action-icon snap-icon-close' href='#' role='button'>
-            <small>$close</small></a></div>
+            <div class='d-flex justify-content-center w-100 pt-3'>
+                <button class='snap-action-icon btn btn-outline-primary p-2 d-inline-flex' aria-expanded='true' title='{$close} {$page->name}'>
+                    <i aria-hidden='true' class='icon fa fa-chevron-up fa-fw m-0' title='{$expand} {$page->name}'></i>
+                </button>
+            </div>
         </div>";
-
         return $o;
     }
 
@@ -1124,7 +1020,7 @@ class course_renderer extends \core_course_renderer {
         global $DB;
 
         $cm = get_coursemodule_from_id('book', $mod->id, 0, false, MUST_EXIST);
-        $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
+        $book = $DB->get_record('book', ['id' => $cm->instance], '*', MUST_EXIST);
         $chapters = book_preload_chapters($book);
 
         if ($book->intro) {
@@ -1136,8 +1032,8 @@ class course_renderer extends \core_course_renderer {
             $formatoptions->context = $context;
             $content = format_text($content, $book->introformat, $formatoptions);
             $o = '<div class="summary-text row">';
-            $o .= '<div class="col-sm-6">' .$content. '</div>';
-            $o .= '<div class="col-sm-6">' .$this->book_get_toc($chapters, $book, $cm) . '</div>';
+            $o .= '<div class="content-row col-sm-6">' .$content. '</div>';
+            $o .= '<div class="chapters-row col-sm-6">' .$this->book_get_toc($chapters, $book, $cm) . '</div>';
             $o .= '</div>';
             return $o;
         }
@@ -1174,7 +1070,7 @@ class course_renderer extends \core_course_renderer {
         $closemeflag = false; // Control for indented lists.
         $chapterlist = '';
         foreach ($chapters as $ch) {
-            $title = trim(format_string($ch->title, true, array('context' => $context)));
+            $title = trim(format_string($ch->title, true, ['context' => $context]));
             if (!$ch->hidden) {
                 if ($closemeflag && !$ch->parent) {
                     $chapterlist .= "</ul></li>";
@@ -1182,7 +1078,7 @@ class course_renderer extends \core_course_renderer {
                 }
                 $chapterlist .= "<li>";
                 $chapterlist .= html_writer::link(new moodle_url('/mod/book/view.php',
-                    array('id' => $cm->id, 'chapterid' => $ch->id)), $title, array());
+                    ['id' => $cm->id, 'chapterid' => $ch->id]), $title, []);
                 if ($ch->subchapters) {
                     $chapterlist .= "<ul>";
                     $closemeflag = true;
@@ -1216,7 +1112,7 @@ class course_renderer extends \core_course_renderer {
      * @param array $displayoptions
      * @return string
      */
-    public function course_section_cm_name(cm_info $mod, $displayoptions = array()) {
+    public function course_section_cm_name(cm_info $mod, $displayoptions = []) {
         global $DB, $CFG;
         $output = '';
 
@@ -1238,6 +1134,39 @@ class course_renderer extends \core_course_renderer {
         $target = '';
         $cmname = $mod->modname;
         $iconurl = $mod->get_icon_url();
+
+        // Resources icon and colors depending on File Extension.
+        if (strpos($cmname, 'resource') !== false) {
+            list(, $resourcetype) = $this->get_mod_type($mod);
+
+            $standardicons = [
+                'mp3' => 'audio',
+                'wav' => 'audio',
+                'writer' => 'document',
+                'oth' => 'document',
+                'flash' => 'pdf',
+                'eps' => 'pdf',
+                'impress' => 'powerpoint',
+                'chart' => 'spreadsheet',
+                'database' => 'spreadsheet',
+                'calc' => 'spreadsheet',
+                'sourcecode' => 'text',
+                'html' => 'text',
+                'markup' => 'text',
+                'mpeg' => 'video',
+                'wmv' => 'video',
+                'avi' => 'video',
+                'quicktime' => 'video',
+            ];
+            $resourcetype = $standardicons[$resourcetype] ?? $resourcetype;
+
+            $icons = ['audio', 'document', 'pdf', 'powerpoint', 'spreadsheet', 'text', 'video'];
+            if ((in_array($resourcetype, $icons))) {
+                $resourceiconurl = $this->output->image_url('resource/'.$resourcetype, 'theme');
+                $iconurl = $resourceiconurl ?? $iconurl;
+            }
+        }
+
         $activityimg = "<div class='activityiconcontainer ".$cmname."'>";
         if (strpos($iconurl, $CFG->wwwroot) !== 0) { // For LTI activities with custom icon URLs.
             $activityimg = "<div class='activityiconcontainer ".$cmname."' style='background-color:transparent;'>";
@@ -1275,7 +1204,7 @@ class course_renderer extends \core_course_renderer {
         $onclicklti = $this->theme_snap_lti_get_launch_container($mod);
 
         if ($mod->modname === 'url') {
-            $urlmod = $DB->get_record('url', array('id' => $mod->instance), '*', MUST_EXIST);
+            $urlmod = $DB->get_record('url', ['id' => $mod->instance], '*', MUST_EXIST);
             $cm = get_coursemodule_from_instance('url', $urlmod->id);
             $fullurl = new moodle_url('/mod/url/view.php', ['id' => $cm->id]);
 
@@ -1301,17 +1230,26 @@ class course_renderer extends \core_course_renderer {
                 $url = $fullurl;
             }
         }
+        // Activity/resource type.
+        $snapmodtype = $this->get_mod_type($mod)[0];
+        $assettype = '<div class="snap-assettype">'.$snapmodtype.'</div>';
 
+        $output .= $activityimg;
         if ($mod->uservisible) {
-            $output .= "<a $target $onclicklti $resourceonclick class='mod-link' href='$url'>"
-                            .$activityimg.
-                            "<p class='instancename'>$instancename</p>
-                        </a>";
+            $output .= "<div class='snap-header-container'>"
+                             .$assettype.
+                            "<a $target $onclicklti $resourceonclick class='mod-link' href='$url' title='$instancename'>".
+                                "<p class='instancename'>$instancename</p>
+                            </a>
+                        </div>";
             $output .= $groupinglabel;
         } else {
             // We may be displaying this just in order to show information
             // about visibility, without the actual link ($mod->uservisible).
-            $output .= "<div>$activityimg $instancename</div> $groupinglabel";
+            $output .= "<div class='snap-header-container'>".
+                            $assettype.
+                            "<p class='instancename'>$instancename</p>".
+                        "</div> $groupinglabel";
         }
 
         return $output;
@@ -1455,13 +1393,17 @@ class course_renderer extends \core_course_renderer {
             }
         }
         $output .= '<div class="row">';
-        $output .= '<div class="col-sm-4">';
+        $output .= '<div class="d-flex flex-wrap row-gap-1">';
+        // Add cat select box if available.
+        if(!empty($categoryselector)){
+            $output .= '<div class="px-3">';
+            $output .= $categoryselector;
+            $output .= '</div>';
+        }
+        $output .= '<div class="px-3">';
         // Add course search form.
         $output .= $this->course_search_form();
         $output .= '</div>';
-        // Add cat select box if available.
-        $output .= '<div class="col-sm-8 text-right">';
-        $output .= $categoryselector;
         $output .= '</div>';
 
         $chelper = new \coursecat_helper();
@@ -1469,8 +1411,8 @@ class course_renderer extends \core_course_renderer {
         $atts = ['class' => 'category-browse category-browse-'.$coursecat->id];
         $chelper->set_show_courses(self::COURSECAT_SHOW_COURSES_AUTO)->set_attributes($atts);
 
-        $coursedisplayoptions = array();
-        $catdisplayoptions = array();
+        $coursedisplayoptions = [];
+        $catdisplayoptions = [];
         $browse = optional_param('browse', null, PARAM_ALPHA);
         $perpage = optional_param('perpage', $CFG->coursesperpage, PARAM_INT);
         $page = optional_param('page', 0, PARAM_INT);
@@ -1485,20 +1427,20 @@ class course_renderer extends \core_course_renderer {
         $catdisplayoptions['limit'] = $perpage;
         if ($browse === 'courses' || !$coursecat->has_children()) {
             $coursedisplayoptions['offset'] = $page * $perpage;
-            $coursedisplayoptions['paginationurl'] = new moodle_url($baseurl, array('browse' => 'courses'));
+            $coursedisplayoptions['paginationurl'] = new moodle_url($baseurl, ['browse' => 'courses']);
             $catdisplayoptions['nodisplay'] = true;
-            $catdisplayoptions['viewmoreurl'] = new moodle_url($baseurl, array('browse' => 'categories'));
+            $catdisplayoptions['viewmoreurl'] = new moodle_url($baseurl, ['browse' => 'categories']);
             $catdisplayoptions['viewmoretext'] = new \lang_string('viewallsubcategories');
         } else if ($browse === 'categories' || !$coursecat->has_courses()) {
             $coursedisplayoptions['nodisplay'] = true;
             $catdisplayoptions['offset'] = $page * $perpage;
-            $catdisplayoptions['paginationurl'] = new moodle_url($baseurl, array('browse' => 'categories'));
-            $coursedisplayoptions['viewmoreurl'] = new moodle_url($baseurl, array('browse' => 'courses'));
+            $catdisplayoptions['paginationurl'] = new moodle_url($baseurl, ['browse' => 'categories']);
+            $coursedisplayoptions['viewmoreurl'] = new moodle_url($baseurl, ['browse' => 'courses']);
             $coursedisplayoptions['viewmoretext'] = new \lang_string('viewallcourses');
         } else {
             // We have a category that has both subcategories and courses, display pagination separately.
-            $coursedisplayoptions['viewmoreurl'] = new moodle_url($baseurl, array('browse' => 'courses', 'page' => 1));
-            $catdisplayoptions['viewmoreurl'] = new moodle_url($baseurl, array('browse' => 'categories', 'page' => 1));
+            $coursedisplayoptions['viewmoreurl'] = new moodle_url($baseurl, ['browse' => 'courses', 'page' => 1]);
+            $catdisplayoptions['viewmoreurl'] = new moodle_url($baseurl, ['browse' => 'categories', 'page' => 1]);
         }
         $chelper->set_courses_display_options($coursedisplayoptions)->set_categories_display_options($catdisplayoptions);
 
@@ -1507,27 +1449,6 @@ class course_renderer extends \core_course_renderer {
 
         // Add action buttons.
         $context = get_category_or_system_context($coursecat->id);
-        if (has_capability('moodle/course:create', $context)) {
-            // Print link to create a new course, for the 1st available category.
-            if ($coursecat->id) {
-                $url = new moodle_url('/course/edit.php', ['category' => $coursecat->id, 'returnto' => 'category']);
-            } else {
-                $url = new moodle_url('/course/edit.php', ['category' => $CFG->defaultrequestcategory, 'returnto' => 'topcat']);
-            }
-            $output .= '<div class="add-course-btn-container"><a class="btn btn-secondary" href="'.$url.'">'.
-                get_string('addnewcourse', 'moodle').'</a></div>';
-        }
-
-        $output .= $this->container_start('buttons');
-        ob_start();
-        if (\core_course_category::is_simple_site() == 1) {
-            snap_print_course_request_buttons(\context_system::instance());
-        } else {
-            snap_print_course_request_buttons($context);
-        }
-        $output .= ob_get_contents();
-        ob_end_clean();
-        $output .= $this->container_end();
 
         return $output;
     }
@@ -1555,14 +1476,14 @@ class course_renderer extends \core_course_renderer {
 
         if (!empty($teachers)) {
             // Get all teacher user records in one go.
-            $teacherids = array();
+            $teacherids = [];
             foreach ($teachers as $teacher) {
                 $teacherids[] = $teacher['user']->id;
             }
             $teacherusers = $DB->get_records_list('user', 'id', $teacherids);
 
             // Course contacts.
-            $courseteachers .= '<h5>'.get_string('coursecontacts', 'theme_snap').'</h5>';
+            $courseteachers .= '<h4 class="h5">'.get_string('coursecontacts', 'theme_snap').'</h4>';
             foreach ($teachers as $teacher) {
                 if (!isset($teacherusers[$teacher['user']->id])) {
                     continue;
@@ -1574,7 +1495,7 @@ class course_renderer extends \core_course_renderer {
         // If user can edit add link to manage users.
         if (has_capability('moodle/course:enrolreview', $context)) {
             if (empty($courseteachers)) {
-                $courseteachers = "<h5>".get_string('coursecontacts', 'theme_snap')."</h5>";
+                $courseteachers = "<h4 class='h5'>".get_string('coursecontacts', 'theme_snap')."</h4>";
             }
             $courseteachers .= '<br><a id="enrolled-users" class="btn btn-outline-secondary btn-sm"
                 href="'.$CFG->wwwroot.'/user/index.php?id='.$COURSE->id.'">'.get_string('enrolledusers', 'enrol').'</a>';
@@ -1582,7 +1503,7 @@ class course_renderer extends \core_course_renderer {
 
         // Course cummary.
         if (!empty($COURSE->summary)) {
-            $coursesummary = '<h5>'.get_string('aboutcourse', 'theme_snap').'</h5>';
+            $coursesummary = '<h4 class="h5">'.get_string('aboutcourse', 'theme_snap').'</h4>';
             $formatoptions = new stdClass;
             $formatoptions->noclean = true;
             $formatoptions->overflowdiv = true;
@@ -1596,17 +1517,17 @@ class course_renderer extends \core_course_renderer {
         // If able to edit add link to edit summary.
         if (has_capability('moodle/course:update', $context)) {
             if (empty($coursesummary)) {
-                $coursesummary = '<h5>'.get_string('aboutcourse', 'theme_snap').'</h5>';
+                $coursesummary = '<h4 class="h5">'.get_string('aboutcourse', 'theme_snap').'</h4>';
             }
             $coursesummary .= '<br><a id="edit-summary" class="btn btn-outline-secondary btn-sm"
-            href="'.$CFG->wwwroot.'/course/edit.php?id='.$COURSE->id.'#id_descriptionhdr">'.get_string('editsummary').'</a>';
+            href="'.$CFG->wwwroot.'/course/edit.php?id='.$COURSE->id.'#id_descriptionhdr">'.get_string('edit').'</a>';
         }
 
         // Get recent activities on mods in the course.
         $courserecentactivities = $this->get_mod_recent_activity($context);
         $courserecentactivity = '';
         if ($courserecentactivities) {
-            $courserecentactivity = '<h5>'.get_string('recentactivity').'</h5>';
+            $courserecentactivity = '<h4 class="h5">'.get_string('recentactivity').'</h4>';
             if (!empty($courserecentactivities)) {
                 $courserecentactivity .= $courserecentactivities;
             }
@@ -1614,7 +1535,7 @@ class course_renderer extends \core_course_renderer {
         // If user can edit add link to moodle recent activity stuff.
         if (has_capability('moodle/course:update', $context)) {
             if (empty($courserecentactivities)) {
-                $courserecentactivity = '<h5>'.get_string('recentactivity').'</h5>';
+                $courserecentactivity = '<h4 class="h5">'.get_string('recentactivity').'</h4>';
                 $courserecentactivity .= get_string('norecentactivity');
             }
             $courserecentactivity .= '<div class="col-xs-12 clearfix"><a href="'.$CFG->wwwroot.'/course/recent.php?id='
@@ -1636,12 +1557,67 @@ class course_renderer extends \core_course_renderer {
             return $output;
         } else {
             $output .= '<div class="row">';
-            $output .= '<div class="col-lg-3 col-md-4"><div id="snap-course-footer-contacts">'.$courseteachers.'</div></div>';
+            $output .= '<div class="col-lg-3 col-md-4"><ul id="snap-course-footer-contacts">'.$courseteachers.'</ul></div>';
             $output .= '<div class="col-lg-9 col-md-8"><div id="snap-course-footer-about">'.$coursesummary.'</div></div>';
             $output .= '<div class="col-sm-12"><div id="snap-course-footer-recent-activity">'.$courserecentactivity.'</div></div>';
             $output .= '</div>';
         }
+
+        $data = [
+            'output' => $this,
+        ];
+
+        $output .= $this->render_from_template('theme_boost/footer', $data);
+
         return $output;
+    }
+
+    /**
+     * Helper function to decide whether to show the communication link or not.
+     *
+     * @return bool
+     */
+    public function has_communication_links(): bool {
+        if (during_initial_install() || !\core_communication\api::is_available()) {
+            return false;
+        }
+        return !empty($this->communication_link());
+    }
+
+    /**
+     * Returns the communication link, complete with html.
+     *
+     * @return string
+     */
+    public function communication_link(): string {
+        $link = $this->communication_url() ?? '';
+        $commicon = $this->pix_icon('t/messages-o', '', 'moodle', ['class' => 'fa fa-comments']);
+        $newwindowicon = $this->pix_icon('i/externallink', get_string('opensinnewwindow'), 'moodle', ['class' => 'ml-1']);
+        $content = $commicon . get_string('communicationroomlink', 'course') . $newwindowicon;
+        $html = html_writer::tag('a', $content, ['target' => '_blank', 'href' => $link]);
+
+        return !empty($link) ? $html : '';
+    }
+
+    /**
+     * Returns the communication url for a given instance if it exists.
+     *
+     * @return string
+     */
+    public function communication_url(): string {
+        global $COURSE;
+        $url = '';
+        if ($COURSE->id !== SITEID) {
+            $comm = \core_communication\api::load_by_instance(
+                context: \core\context\course::instance($COURSE->id),
+                component: 'core_course',
+                instancetype: 'coursecommunication',
+                instanceid: $COURSE->id,
+            );
+            $url = $comm->get_communication_room_url();
+        }
+
+        return !empty($url) ? $url : '';
     }
 
     /**
@@ -1656,11 +1632,14 @@ class course_renderer extends \core_course_renderer {
 
         $userpicture = new \user_picture($user);
         $userpicture->link = false;
-        $userpicture->alttext = false;
+        $userpicture->alttext = true;
+        if (empty($userpicture->user->imagealt)) {
+            $userpicture->user->imagealt = format_string(fullname($user));
+        }
         $userpicture->size = 100;
         $picture = $this->render($userpicture);
 
-        $fullname = '<a href="' .$CFG->wwwroot. '/user/profile.php?id=' .$user->id. '">'.format_string(fullname($user)).'</a>';
+        $fullname = '<a href="' .$CFG->wwwroot. '/user/profile.php?id=' .$user->id. '"><h3 class="title" >'.format_string(fullname($user)).'</h3></a>';
         $data = (object) [
             'image' => $picture,
             'content' => $fullname,
@@ -1685,7 +1664,7 @@ class course_renderer extends \core_course_renderer {
     public function get_mod_recent_activity($context) {
         global $COURSE;
         $viewfullnames = has_capability('moodle/site:viewfullnames', $context);
-        $recentactivity = array();
+        $recentactivity = [];
         $timestart = time() - (86400 * 7); // Only show last 7 days activity.
         if (optional_param('testing', false, PARAM_BOOL)) {
             $timestart = time() - (86400 * 3000); // 3000 days ago for testing.
@@ -1702,7 +1681,7 @@ class course_renderer extends \core_course_renderer {
             // Each module gets it's own logs and prints them.
             ob_start();
             $hascontent = component_callback('mod_'. $modname, 'print_recent_activity',
-                    array($COURSE, $viewfullnames, $timestart), false);
+                    [$COURSE, $viewfullnames, $timestart], false);
             if ($hascontent) {
                 $content = ob_get_contents();
                 if (!empty($content)) {
@@ -1716,10 +1695,10 @@ class course_renderer extends \core_course_renderer {
         if (!empty($recentactivity)) {
             foreach ($recentactivity as $modname => $moduleactivity) {
                 // Get mod icon, empty alt as title already there.
-                $img = html_writer::tag('img', '', array(
+                $img = html_writer::tag('img', '', [
                     'src' => $this->output->image_url('icon', $modname),
                     'alt' => '',
-                ));
+                ]);
 
                 // Create media object for module activity.
                 $data = (object) [
@@ -1749,7 +1728,7 @@ class course_renderer extends \core_course_renderer {
      * @return void
      */
 
-    public function course_section_cm_list($course, $section, $sectionreturn = null, $displayoptions = []) {
+    public function course_section_cm_list_snap($course, $section, $sectionreturn = null, $displayoptions = []) {
         global $USER;
         $output = '';
 
@@ -1781,7 +1760,7 @@ class course_renderer extends \core_course_renderer {
                     continue;
                 }
 
-                if ($modulehtml = $this->course_section_cm_list_item($course,
+                if ($modulehtml = $this->course_section_cm_list_item_snap($course,
                     $completioninfo, $mod, $sectionreturn, $displayoptions)) {
                     $moduleshtml[$modnumber] = $modulehtml;
                 }
@@ -1792,25 +1771,25 @@ class course_renderer extends \core_course_renderer {
         if (!empty($moduleshtml) || $ismoving) {
             foreach ($moduleshtml as $modnumber => $modulehtml) {
                 if ($ismoving) {
-                    $movingurl = new \moodle_url('/course/mod.php', array('moveto' => $modnumber, 'sesskey' => sesskey()));
+                    $movingurl = new \moodle_url('/course/mod.php', ['moveto' => $modnumber, 'sesskey' => sesskey()]);
                     $sectionoutput .= html_writer::tag('li',
-                        html_writer::link($movingurl, '', array('title' => $strmovefull, 'class' => 'movehere')),
-                        array('class' => 'movehere'));
+                        html_writer::link($movingurl, '', ['title' => $strmovefull, 'class' => 'movehere']),
+                        ['class' => 'movehere']);
                 }
 
                 $sectionoutput .= $modulehtml;
             }
 
             if ($ismoving) {
-                $movingurl = new \moodle_url('/course/mod.php', array('movetosection' => $section->id, 'sesskey' => sesskey()));
+                $movingurl = new \moodle_url('/course/mod.php', ['movetosection' => $section->id, 'sesskey' => sesskey()]);
                 $sectionoutput .= html_writer::tag('li',
-                    html_writer::link($movingurl, '', array('title' => $strmovefull, 'class' => 'movehere')),
-                    array('class' => 'movehere'));
+                    html_writer::link($movingurl, '', ['title' => $strmovefull, 'class' => 'movehere']),
+                    ['class' => 'movehere']);
             }
         }
 
         // Always output the section module list.
-        $output .= html_writer::tag('ul', $sectionoutput, array('class' => 'section img-text'));
+        $output .= html_writer::tag('ul', $sectionoutput, ['class' => 'section img-text']);
 
         return $output;
     }
@@ -1846,7 +1825,7 @@ class course_renderer extends \core_course_renderer {
         require_once($CFG->dirroot.'/mod/lti/locallib.php');
 
         // LTI launch container for Snap.
-        if (!$lti = $DB->get_record('lti', array('id' => $mod->instance),
+        if (!$lti = $DB->get_record('lti', ['id' => $mod->instance],
             'icon, secureicon, intro, introformat, name, typeid, toolurl, launchcontainer')) {
             return null;
         }
@@ -1863,7 +1842,7 @@ class course_renderer extends \core_course_renderer {
         } else if ($tool = lti_get_tool_by_url_match($lti->toolurl)) {
             $toolconfig = lti_get_type_config($tool->id);
         } else {
-            $toolconfig = array();
+            $toolconfig = [];
         }
 
         // We want to use the right icon based on whether the
@@ -1887,7 +1866,7 @@ class course_renderer extends \core_course_renderer {
         $onclicklti = '';
         if (($launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW) && ($mod->modname === 'lti')) {
             if ($mod->onclick) {
-                $launchurl = new moodle_url('/mod/lti/launch.php', array('id' => $mod->id));
+                $launchurl = new moodle_url('/mod/lti/launch.php', ['id' => $mod->id]);
                 $onclickltiurl = 'window.open("' . $launchurl->out(false) . '", "lti-'.$mod->id.'"); return false;';
                 $onclicklti = "onclick='$onclickltiurl'";
             }
@@ -1895,4 +1874,364 @@ class course_renderer extends \core_course_renderer {
 
         return $onclicklti;
     }
+
+    /**
+     * Renders HTML for displaying the sequence of course module editing buttons
+     *
+     * @param cm_info $mod The module we are displaying actions for.
+     * @return string
+     *
+     * @see course_get_cm_edit_actions()
+     *
+     */
+    public function course_section_menu_actions(cm_info $mod = null) {
+        global $CFG, $COURSE;
+        // Build up edit actions.
+        $actions = '';
+        $actionsadvanced = [];
+        $coursecontext = context_course::instance($mod->course);
+        $modcontext = context_module::instance($mod->id);
+        $baseurl = new moodle_url('/course/mod.php', ['sesskey' => sesskey()]);
+
+        $str = get_strings(['editsettings', 'delete', 'move', 'duplicate', 'hide', 'show', 'roles',
+            'makeavailable', 'makeunavailable', ], 'moodle');
+
+        // Move, Edit, Delete.
+        if (has_capability('moodle/course:manageactivities', $modcontext)) {
+            // Update button.
+            $editalt = get_string('activityedit', 'theme_snap');
+            $actionsadvanced[] = '<li><a href="'.new moodle_url($baseurl, ['update' => $mod->id]).'" aria-label="'
+                .$editalt.' '.$mod->get_formatted_name().'" data-action="update" role="button" '.
+                'class="snap-edit-asset dropdown-item" role="button"><i class="icon fa fa-pencil fa-fw "></i>'
+                .$str->editsettings.'</a></li>';
+            // Edit conditions button.
+            if($COURSE->enablecompletion && $CFG->enablecompletion) {
+                $editconditionsalt = get_string('editconditions', 'completion');
+                $actionsadvanced[] = '<li><a href="' . new moodle_url(
+                    '/course/modedit.php',
+                    ['update' => $mod->id, 'showonly' => 'activitycompletionheader']
+                ) . '" aria-label="'
+                . $editconditionsalt . ' ' . $mod->get_formatted_name() . '" data-action="update" role="button" ' .
+                'class="snap-edit-conditions-asset dropdown-item" role="button"><i class="icon fa fa-pencil fa-fw "></i>'
+                . $editconditionsalt . '</a></li>';
+            }
+            // Move button.
+            $movealt = s(get_string('move', 'theme_snap', $mod->get_formatted_name()));
+            $actionsadvanced[] = '<li><a><label role="button" class="snap-asset-move dropdown-item" aria-label="'
+                .$movealt.'" for="snap-move-mod-'.$mod->id.'"><input id="snap-move-mod-'.$mod->id.'" 
+                class="js-snap-asset-move sr-only" role="button" type="checkbox">'.
+                '<i class="icon fa fa-arrows fa-fw "></i>'.$str->move.'</label></a></li>';
+            // Delete button.
+            $actionsadvanced[] = '<li><a href="'.new moodle_url($baseurl, ['delete' => $mod->id]).
+                '" data-action="delete" role="button" class="js_snap_delete dropdown-item">'.
+                '<i class="icon fa fa-trash fa-fw "></i>'.$str->delete.'</a></li>';
+        }
+
+        // Hide/Show.
+        if (has_capability('moodle/course:activityvisibility', $modcontext)) {
+            $courseformat = course_get_format($mod->get_course());
+            $sectioninfo = $mod->get_section_info();
+            $availabilityclass = $courseformat->get_output_classname('content\\cm\\visibility');
+            /** @var core_courseformat\output\local\content\cm\visibility */
+            $availability = new $availabilityclass($courseformat, $sectioninfo, $mod);
+            $availabilitychoice = $availability->get_choice_list();
+            $availabilityrender = $this->output->render($availabilitychoice);
+
+            $data = (object) [
+                'toggleclass' => 'availability-dropdown',
+                'toggleariacontrols' => 'availability-menu',
+                'spanicon' => 'fa-eye',
+                'spancontent' => get_string('availability'),
+                'dropdownmenuid' => 'availability-menu',
+                'dropdownmenuclasses' => 'availability-dropdown-menu',
+                'dropdownoptions' => $availabilityrender,
+            ];
+
+            $actionsadvanced[] = $this->render_from_template('theme_snap/activity_sub_panel', $data);
+        }
+
+        // Duplicate.
+        $dupecaps = ['moodle/backup:backuptargetimport', 'moodle/restore:restoretargetimport'];
+        if (has_all_capabilities($dupecaps, $coursecontext) &&
+            plugin_supports('mod', $mod->modname, FEATURE_BACKUP_MOODLE2) &&
+            plugin_supports('mod', $mod->modname, 'duplicate', true)) {
+            $actionsadvanced[] = "<li><a href='".new moodle_url($baseurl, ['duplicate' => $mod->id]).
+                "' data-action='duplicate' role='button' class='dropdown-item js_snap_duplicate'>".
+                "<i class='icon fa fa-copy fa-fw'></i>$str->duplicate</a></li>";
+        }
+
+        // Assign roles.
+        if (has_capability('moodle/role:assign', $modcontext)) {
+            $actionsadvanced[] = "<li><a role='button' class='dropdown-item' href='".
+                new moodle_url('/admin/roles/assign.php', ['contextid' => $modcontext->id]).
+                "'><i class='icon fa fa-user-circle fa-fw'></i>$str->roles</a></li>";
+        }
+
+        // Group modes.
+        $canmanagegroups = has_capability('moodle/course:managegroups', context_course::instance($mod->course));
+        $courseformat = course_get_format($mod->get_course());
+        if ($canmanagegroups && $courseformat->show_groupmode($mod)) {
+            $sectioninfo = $mod->get_section_info();
+            $groupmodeclass = $courseformat->get_output_classname('content\\cm\\groupmode');
+            $groupmode = new $groupmodeclass($courseformat, $sectioninfo, $mod);
+            $groupoptions = $groupmode->get_choice_list();
+            $grouprender = $this->output->render($groupoptions);
+
+            $data = (object) [
+                'toggleclass' => 'groups-dropdown',
+                'toggleariacontrols' => 'groups-menu',
+                'spancontent' => get_string('groups'),
+                'spanicon' => 'fa-user-circle',
+                'dropdownmenuid' => 'groups-menu',
+                'dropdownmenuclasses' => 'groups-dropdown-menu',
+                'dropdownoptions' => $grouprender,
+            ];
+
+            $actionsadvanced[] = $this->render_from_template('theme_snap/activity_sub_panel', $data);
+        }
+
+        // Give local plugins a chance to add icons.
+        $localplugins = [];
+        foreach (get_plugin_list_with_function('local', 'extend_module_editing_buttons') as $function) {
+            $localplugins = array_merge($localplugins, $function($mod));
+        }
+
+        foreach (get_plugin_list_with_function('block', 'extend_module_editing_buttons') as $function) {
+            // The Sharing Cart block should only be available for user with capability to manage activities.
+            if ($function === 'block_sharing_cart_extend_module_editing_buttons') {
+                if (has_capability('moodle/course:manageactivities', $modcontext)) {
+                    $localplugins = array_merge($localplugins, $function($mod));
+                }
+            } else {
+                $localplugins = array_merge($localplugins, $function($mod));
+            }
+        }
+
+        // TODO - pld string is far too long....
+        $locallinks = '';
+        foreach ($localplugins as $localplugin) {
+            $url = $localplugin->url;
+            $text = $localplugin->text;
+            $icon = $localplugin->icon;
+            $iconhtml = $this->pix_icon($icon->pix, $text, $icon->component);
+            $class = 'dropdown-item ' . $localplugin->attributes['class'];
+            $actionsadvanced[] = "<a href='$url' class='$class'>$iconhtml $text</a>";
+        }
+
+        $advancedactions = '';
+        if (!empty($actionsadvanced)) {
+            $moreicons = '<i aria-hidden="true" class="icon fa fa-chevron-down fa-fw"></i>'.
+                '<i aria-hidden="true" class="icon fa fa-chevron-up fa-fw"></i>';
+            $advancedactions = '<div class="dropdown snap-edit-more-dropdown">';
+            $advancedactions .= '<button class="snap-edit-asset-more" ';
+            $advancedactions .= 'data-toggle="dropdown" data-boundary="window" data-offset="-10,12"';
+            $advancedactions .= 'title=\''.get_string('moreoptionslabel', 'theme_snap').' "'.$mod->get_formatted_name().'"\'';
+            $advancedactions .= 'aria-label="' . get_string('moreoptionslabel', 'theme_snap') . '" aria-expanded="false"';
+            $advancedactions .= 'aria-controls="#snap-asset-menu">'.$moreicons.'</button>';
+            $advancedactions .= '<ul id="snap-asset-menu" class="dropdown-menu asset-edit-menu">';
+            foreach ($actionsadvanced as $action) {
+                $advancedactions .= "$action";
+            }
+            $advancedactions .= "</ul></div>";
+        }
+        // Add actions menu.
+        $output = '';
+        if ($advancedactions) {
+            $output .= "<div class='js-only snap-asset-actions' role='region' aria-label='" .
+                get_string('courseactionslabel', 'theme_snap') . "'>";
+            $output .= $advancedactions;
+            $output .= "</div>";
+        }
+        return $output;
+    }
+
+    /**
+     * Renders HTML for displaying the group modes for each activity.
+     *
+     * @param cm_info $mod The module we are displaying groups for.
+     * @return string
+     *
+     */
+    public function activity_groups_menu_actions($mod) {
+
+        global $OUTPUT;
+
+        if ($mod->effectivegroupmode == VISIBLEGROUPS) {
+            $groupiconurl = $OUTPUT->image_url('i/groupv');
+            $groupalt = get_string('groupsvisible', 'group');
+            $groupicon = \html_writer::img($groupiconurl, $groupalt);
+        } else if ($mod->effectivegroupmode == SEPARATEGROUPS) {
+            $groupiconurl = $OUTPUT->image_url('i/groups');
+            $groupalt = get_string('groupsseparate', 'group');
+            $groupicon = \html_writer::img($groupiconurl, $groupalt);
+        } else {
+            $groupiconurl = $OUTPUT->image_url('i/groupn');
+            $groupalt = get_string('groupsnone', 'group');
+            $groupicon = \html_writer::img($groupiconurl, $groupalt);
+        }
+
+        $courseformat = course_get_format($mod->get_course());
+        $sectioninfo = $mod->get_section_info();
+        $groupmodeclass = $courseformat->get_output_classname('content\\cm\\groupmode');
+        $groupmode = new $groupmodeclass($courseformat, $sectioninfo, $mod);
+        $groupoptions = $groupmode->get_choice_list();
+        $resourcedisplay = get_config('theme_snap', 'resourcedisplay');
+        $render = $this->output->render($groupoptions);
+
+        $groupsdropdownebutton = \html_writer::tag('button', $groupicon,
+            array(
+                'class' => 'snap-groups-more',
+                'data-toggle' => 'dropdown',
+                'data-boundary' => 'window',
+                'aria-expanded' => 'false',
+                'aria-controls' => '#snap-groups-menu',
+                ));
+        $groupsdropdownlist = \html_writer::tag('ul', $render,
+            array(
+                'class' => 'dropdown-menu groups-edit-menu',
+                'id' => 'snap-groups-menu',
+            ));
+        $groupsdropdownelement = \html_writer::tag('div',
+            $groupsdropdownebutton.$groupsdropdownlist ,
+            array('class' => 'dropdown snap-activity-groups-dropdown'));
+
+        $output = '';
+        if ($groupoptions && !($resourcedisplay == 'card' && $this->is_resource($mod))) {
+            $output .= \html_writer::tag('div',
+                $groupsdropdownelement,
+                array(
+                    'class' => 'js-only snap-groups-mode-actions',
+                    'role' => 'region'
+                ));
+        }
+        return $output;
+    }
+
+    private function get_completion_dialog_content($mod) {
+        global $COURSE;
+
+        $courseformat = course_get_format($mod->get_course());
+        $section = $mod->get_section_info();
+        $completionclass = $courseformat->get_output_classname('content\\cm\\completion');
+        $completion = new $completionclass($courseformat, $section, $mod);
+        $templatedata = $completion->export_for_template($this->output);
+
+        return $templatedata->completiondialog['dialogcontent'];
+    }
+
+    private function get_forum_unread_posts($mod) {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/forum/lib.php');
+
+        $forumposts = '';
+        if (forum_tp_can_track_forums()) {
+            if ($unread = forum_tp_count_forum_unread_posts($mod, $mod->get_course())) {
+                if ($unread == 1) {
+                    $forumposts = get_string('unreadpostsone', 'forum');
+                } else {
+                    $forumposts = get_string('unreadpostsnumber', 'forum', $unread);
+                }
+            }
+        }
+        return $forumposts;
+    }
+
+    private function is_resource(\cm_info $cm): bool {
+        return in_array($cm->modname, ['resource', 'scorm']) || plugin_supports('mod', $cm->modname, FEATURE_MOD_ARCHETYPE) === MOD_ARCHETYPE_RESOURCE;
+    }
+
+    /**
+     * Override course render for course and category box in home page.
+     *
+     * This is an internal function, to display an information about just one course
+     * please use {@link core_course_renderer::course_info_box()}
+     *
+     * @param coursecat_helper $chelper various display options
+     * @param core_course_list_element|stdClass $course
+     * @param string $additionalclasses additional classes to add to the main <div> tag (usually
+     *    depend on the course position in list - first/last/even/odd)
+     * @return string
+     */
+    protected function coursecat_coursebox(\coursecat_helper $chelper, $course, $additionalclasses = '') {
+        global $CFG, $PAGE, $OUTPUT;;
+        if ($PAGE->pagetype !== 'site-index') {
+            return \core_course_renderer::coursecat_coursebox($chelper, $course, $additionalclasses);
+        }
+        if (!isset($this->strings->summary)) {
+            $this->strings->summary = get_string('summary');
+        }
+        if ($chelper->get_show_courses() <= self::COURSECAT_SHOW_COURSES_COUNT) {
+            return '';
+        }
+        if ($course instanceof stdClass) {
+            $course = new \core_course_list_element($course);
+        }
+        $content = '';
+        $cardcontent = '';
+        if ($chelper->get_show_courses() < self::COURSECAT_SHOW_COURSES_EXPANDED) {
+            $classes = trim('coursebox clearfix '. $additionalclasses);
+
+            $cardcontent .= html_writer::start_tag('div', array('class' => 'info'));
+            $cardcontent .= $this->course_name($chelper, $course);
+            $cardcontent .= $this->course_enrolment_icons($course);
+            $cardcontent .= html_writer::end_tag('div');
+            $cardcontent .= html_writer::start_tag('div', array('class' => 'content'));
+            $cardcontent .= $this->coursecat_coursebox_content($chelper, $course);
+            $cardcontent .= html_writer::end_tag('div');
+        } else {
+            $contentimages = '';
+            $url = $OUTPUT->get_generated_image_for_id($course->id);
+            foreach ($course->get_course_overviewfiles() as $file) {
+                $isimage = $file->is_valid_image();
+                $url = moodle_url::make_file_url("$CFG->wwwroot/pluginfile.php",
+                    '/' . $file->get_contextid() . '/' . $file->get_component() . '/' .
+                    $file->get_filearea() . $file->get_filepath() . $file->get_filename(), !$isimage);
+            }
+            $isvisible = $course->visible;
+            $hiddeninfobadge = '';
+            $imageclasses = 'snap-home-courses-image';
+            if (!$isvisible) {
+                $hiddeninfobadge = html_writer::tag('span',get_string('hiddenfromstudents'),
+                    [
+                        'class' => 'badge badge-info hiddenbadge'
+                    ]);
+                $imageclasses .= ' hiddencourse';
+            }
+            $contentimages .= $hiddeninfobadge;
+            $contentimages .= html_writer::tag('div','',
+                [
+                    'class' => $imageclasses,
+                    'style' => 'background-image: url('.$url.');'
+                ]);
+
+            $classes = trim('col-sm-3 coursebox clearfix '. $additionalclasses);
+
+            $cardcontent .= html_writer::start_tag('a',
+                [
+                    'href' => new moodle_url('/course/view.php', ['id' => $course->id]),
+                    'class' => 'snap-home-course',
+                    'title' => $chelper->get_course_formatted_name($course)
+                ]);
+            $cardcontent .= $contentimages;
+            $cardcontent .= html_writer::tag('span', $chelper->get_course_formatted_name($course), [
+                'class' => 'snap-home-course-title overflow-hidden'
+            ]);
+            $cardcontent .= html_writer::end_tag('a');
+        }
+
+        if ($chelper->get_show_courses() < self::COURSECAT_SHOW_COURSES_EXPANDED) {
+            $classes .= ' collapsed';
+        }
+
+        $content .= html_writer::start_tag('div', array(
+            'class' => $classes,
+            'data-courseid' => $course->id,
+            'data-type' => self::COURSECAT_TYPE_COURSE,
+        ));
+        $content .= $cardcontent;
+        $content .= html_writer::end_tag('div');
+
+        return $content;
+    }
+
 }

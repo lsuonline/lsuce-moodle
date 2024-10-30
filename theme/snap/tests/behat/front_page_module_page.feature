@@ -34,7 +34,6 @@ Feature: Open page (front page) module inline
     And debugging is turned off
     And the following config values are set as admin:
       | lazyload_mod_page | 0 | theme_snap |
-      | design_mod_page   | 1 | theme_snap |
 
   @javascript
   Scenario: Page mod is created and opened inline at the front page.
@@ -44,9 +43,9 @@ Feature: Open page (front page) module inline
     And I log in as "admin"
     And I am on site homepage
     And I should not see "page content1"
-    And I click on ".contentafterlink .summary-text a" "css_element"
+    And I click on "li .contentafterlink .pagemod-readmore" "css_element"
     And I should not see an error dialog
-    And I wait until ".pagemod-content[data-content-loaded=\"1\"]" "css_element" is visible
+    And I wait until "#pagemod-content-container" "css_element" is visible
     # The above step basically waits for the page content to load up.
     And I should see "page content1"
 
@@ -59,7 +58,8 @@ Feature: Open page (front page) module inline
     And the following config values are set as admin:
       | resourcedisplay | <Option> | theme_snap |
     And I am on site homepage
-    And I follow "Edit \"Page\""
+    And I click on ".modtype_page .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_page .snap-edit-asset" "css_element"
     And I expand all fieldsets
     And I click on "Add restriction..." "button"
     And I click on "User profile" "button"
@@ -76,9 +76,9 @@ Feature: Open page (front page) module inline
     And I log out
     And I log in as "student2"
     And I am on site homepage
-    And I click on ".contentafterlink .summary-text a" "css_element"
+    And I click on "li .contentafterlink .pagemod-readmore" "css_element"
     And I should not see an error dialog
-    And I wait until ".pagemod-content[data-content-loaded=\"1\"]" "css_element" is visible
+    And I wait until "#pagemod-content-container" "css_element" is visible
     Then I should see "Page content"
     Examples:
       | Option     |
@@ -97,7 +97,6 @@ Feature: Open page (front page) module inline
     And I log out
     And I am on site homepage
     And I should not see "page content1"
-    Then I click on ".pagemod-readmore" "css_element"
+    And I click on ".readmore-container button" "css_element"
     And I should not see an error dialog
-    And I wait until ".pagemod-content[data-content-loaded=\"1\"]" "css_element" is visible
     And I should see "page content1"

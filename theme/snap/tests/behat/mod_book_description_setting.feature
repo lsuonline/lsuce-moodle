@@ -52,7 +52,7 @@ Feature: Setting for mod_book should not appear on Snap.
       | activity   | name         | intro                       | course | idnumber  | section |
       | book       | Book 1       | Test book description       | C1     | book1     | 0       |
     And I am on "Course 1" course homepage
-    And I click on "//h3/a/p[contains(text(),'Book 1')]" "xpath_element"
+    And I click on ".modtype_book .mod-link" "css_element"
     And I set the following fields to these values:
       | Chapter title | Dummy first chapter |
       | Content       | Dummy content       |

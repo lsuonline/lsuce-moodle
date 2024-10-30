@@ -19,9 +19,6 @@ namespace theme_snap\services;
 defined('MOODLE_INTERNAL') || die();
 
 use theme_snap\renderables\course_card;
-// BEGIN LSU Extra Course Tabs.
-use theme_snap\renderables\remote_card;
-// END LSU Extra Course Tabs.
 use theme_snap\local;
 use theme_snap\renderables\course_toc;
 use theme_snap\color_contrast;
@@ -51,152 +48,6 @@ class course {
         }
         return $instance;
     }
-
-    // BEGIN LSU Extra Course Tabs.
-    public static function get_remote_courses($user, $debugging) {
-        // Get the current time.
-        $timer1 = microtime(true);
-
-        // Set the curl up.
-        $curl = curl_init();
-
-        // Set some URL vars.
-        $baseurl    = get_config('theme_snap', 'remotesite');
-        $wsurl      = '/webservice/rest/server.php';
-        $wstoken    = '?wstoken=' . get_config("theme_snap", "wstoken");
-        $wsfunction = '&wsfunction=local_remote_courses_get_courses_by_username';
-        $wsformat   = '&moodlewsrestformat=json';
-        $wsusername = '&username=' . $user->username;
-
-        // Build the URL.
-        $url = $baseurl . $wsurl . $wstoken . $wsfunction . $wsformat . $wsusername;
-
-        // Set the curl opts.
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => $url,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'GET',
-        ));
-
-        // Execute the curel.
-        $json_response = curl_exec($curl);
-
-        // Decode the json response.
-        $response = json_decode($json_response);
-
-        // Close the curl.
-        curl_close($curl);
-
-        // Gett the new current time.
-        $timer2 = microtime(true);
-
-        // Calculate the elapsed time.
-        $elapsed = round($timer2 - $timer1, 2);
-
-        if ($debugging) {
-            echo("Remote course lookup took $elapsed seconds for $user->username.<br>");
-        }
-
-        // Return the response.
-        return $response;
-    }
-
-    public static function update_remote_courses($json, $userid, $id) {
-        global $DB;
-
-        // Build the remote course object.
-        $rcobj = new \stdClass();
-
-        // Set the id, userid, JSON, and time.
-        $rcobj->id          = $id;
-        $rcobj->userid      = $userid;
-        $rcobj->rcjson      = $json;
-        $rcobj->lastupdated = time();
-
-        // Set the table.
-        $table = 'theme_snap_remotes';
-
-        // Insert the data and set the id.
-        $updated = $DB->update_record($table, $rcobj, true);
-
-        // Return the id of the updated record.
-        return $updated;
-    }
-
-    public static function insert_remote_courses($json, $userid) {
-        global $DB;
-
-        // Build the remote course object.
-        $rcobj = new \stdClass();
-
-        // Set the userid, JSON, and time.
-        $rcobj->userid      = $userid;
-        $rcobj->rcjson      = $json;
-        $rcobj->lastupdated = time();
-
-        // Set the table.
-        $table = 'theme_snap_remotes';
-
-        // Insert the data and set the id.
-        $inserted = $DB->insert_record($table, $rcobj, true);
-
-        // Return the id of the new record.
-        return $inserted;
-    }
-
-    public static function get_et_courses($tab, $enrolled, $datelimit) {
-        global $DB, $USER;
-        $etsearchterm  = get_config('theme_snap', $tab . 'searchterm');
-        $etsearchopts  = get_config('theme_snap', $tab . 'searchopts');
-        $etsearchfield = get_config('theme_snap', $tab . 'coursefield');
-        $userid        = $USER->id;
-        if ($etsearchopts == 0) {
-            $term = "LIKE";
-            $searcher = $etsearchterm . '%';
-        } else if ($etsearchopts == 1) {
-            $term = "LIKE";
-            $searcher = '%' . $etsearchterm . '%';
-        } else if ($etsearchopts == 2) {
-            $term = "LIKE";
-            $searcher = '%' . $etsearchterm;
-        } else {
-            $term = "REGEXP";
-            $searcher = $etsearchterm;
-        }
-        if ($datelimit) {
-            $limiter = "AND c.startdate < UNIX_TIMESTAMP()
-                  AND c.enddate > UNIX_TIMESTAMP()";
-        } else {
-            $limiter = "";
-        }
-
-        $all = "SELECT * FROM mdl_course c
-                WHERE c.$etsearchfield $term '$searcher'"
-                  . $limiter;
-
-        $current = "SELECT c.* FROM mdl_user u
-                      INNER JOIN mdl_user_enrolments ue ON ue.userid = u.id
-                      INNER JOIN mdl_enrol e ON e.id = ue.enrolid
-                      INNER JOIN mdl_course c ON e.courseid = c.id
-                    WHERE u.id = $userid
-                      AND c.$etsearchfield $term '$searcher'
-                      AND ue.status = 0
-                      AND (ue.timeend > UNIX_TIMESTAMP() OR ue.timeend = 0) "
-                      . $limiter .
-                      "GROUP BY c.id";
-
-        $sql = $enrolled ? $current : $all;
-
-        $courses = $DB->get_records_sql($sql);
-
-        return $courses;
-    }
-    // END LSU Extra Course Tabs.
 
     /**
      * Return false if the summary files are is not suitable for course cover images.
@@ -239,6 +90,60 @@ class course {
     }
 
     /**
+     * @param string $croppedimagedata
+     */
+    public function savecroppedimage($context, $croppedimagedata, $ext = null, $originalimageurl = null) {
+
+        $image_parts = explode(";base64,", $croppedimagedata);
+        $image_base64 = base64_decode($image_parts[1]);
+        if (empty($ext)) {
+            $fs = get_file_storage();
+            $originalfile = $fs->get_area_files($context->id, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+            if ($originalfile) {
+                $originalfilename = reset($originalfile)->get_filename();
+                $ext = strtolower(pathinfo($originalfilename, PATHINFO_EXTENSION));
+            } else if ($originalimageurl !== null) {
+                $ext = strtolower(pathinfo($originalimageurl, PATHINFO_EXTENSION));
+            }
+        }
+
+        if ($context->contextlevel === CONTEXT_COURSE) {
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'theme_snap',
+                'filearea'  => 'croppedimage',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => 'course-image-cropped.'.$ext,
+            ];
+        } else if ($context->contextlevel === CONTEXT_COURSECAT) {
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'theme_snap',
+                'filearea'  => 'croppedimage',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => 'category-image-cropped.'.$ext,
+            ];
+        } else if ($context->contextlevel === CONTEXT_SYSTEM) {
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'theme_snap',
+                'filearea'  => 'croppedimage',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => 'site-image-cropped.'.$ext,
+            ];
+        }
+
+        // Copy file to temp directory.
+        $tmpimage = tempnam(sys_get_temp_dir(), 'tmpimg');
+        file_put_contents($tmpimage, $image_base64);
+        $fs = get_file_storage();
+        $fs->create_file_from_pathname($filerecord, $tmpimage);
+    }
+
+    /**
      * @param \context $context
      * @param string $data
      * @param string $filename
@@ -246,9 +151,9 @@ class course {
      * @throws \file_exception
      * @throws \stored_file_creation_exception
      */
-    public function setcoverimage(\context $context, $data, $filename) {
+    public function setcoverimage(\context $context, $filename, $fileid, $croppedimagedata) {
 
-        global $CFG;
+        global $CFG, $USER;
 
         require_capability('moodle/course:changesummary', $context);
 
@@ -261,8 +166,10 @@ class course {
 
         $newfilename = 'rawcoverimage.'.$ext;
 
-        $binary = base64_decode($data);
-        if (strlen($binary) > get_max_upload_file_size($CFG->maxbytes)) {
+        $usercontext = \context_user::instance($USER->id);
+
+        $filefromdraft = $fs->get_file($usercontext->id, 'user', 'draft', $fileid, '/', $filename);
+        if ($filefromdraft->get_filesize() > get_max_upload_file_size($CFG->maxbytes)) {
             throw new \moodle_exception('error:coverimageexceedsmaxbytes', 'theme_snap');
         }
 
@@ -283,6 +190,8 @@ class course {
 
             // Remove any old course summary image files for this context.
             $fs->delete_area_files($context->id, $fileinfo['component'], $fileinfo['filearea']);
+            // Purge course image cache in case image has been updated.
+            \cache::make('core', 'course_image')->delete($context->instanceid);
         } else if ($context->contextlevel === CONTEXT_SYSTEM || $context->contextlevel === CONTEXT_COURSECAT) {
             $fileinfo = array(
                 'contextid' => $context->id,
@@ -294,18 +203,32 @@ class course {
 
             // Remove everything from poster area for this context.
             $fs->delete_area_files($context->id, 'theme_snap', 'poster');
+            // Purge course image cache in case image has been updated.
+            \cache::make('core', 'course_image')->delete($context->instanceid);
         } else {
             throw new coding_exception('Unsupported context level '.$context->contextlevel);
         }
 
         // Create new cover image file and process it.
-        $storedfile = $fs->create_file_from_string($fileinfo, $binary);
+        $storedfile = $fs->create_file_from_storedfile($fileinfo, $filefromdraft);
         $success = $storedfile instanceof \stored_file;
         if ($context->contextlevel === CONTEXT_SYSTEM) {
             set_config('poster', $newfilename, 'theme_snap');
             local::process_coverimage($context);
+            $this->savecroppedimage($context, $croppedimagedata, $ext);
+            $coverimageurl = local::site_coverimage_url();
+            $coverimageurl = "url($coverimageurl);";
         } else if ($context->contextlevel === CONTEXT_COURSE || $context->contextlevel === CONTEXT_COURSECAT) {
             local::process_coverimage($context, $storedfile);
+            $this->savecroppedimage($context, $croppedimagedata, $ext);
+            if ($context->contextlevel === CONTEXT_COURSE) {
+                $coverimageurl = local::course_coverimage_url($context->instanceid);
+                $coverimageurl = "url($coverimageurl);";
+            } else {
+                $coverimageurl = local::course_cat_coverimage_url($context->instanceid);
+                $coverimageurl = "url($coverimageurl);";
+            }
+
 
             $finfo = $storedfile->get_imageinfo();
             $imagemaincolor = color_contrast::calculate_image_main_color($storedfile, $finfo);
@@ -324,16 +247,16 @@ class course {
                 }
                 $catcontrast = color_contrast::evaluate_color_contrast($imagemaincolor, $themecolor);
                 if ($catcontrast < 4.5) {
-                    return ['success' => true, 'contrast' => get_string('imageinvalidratiocategory',
-                        'theme_snap', number_format((float)$catcontrast, 2)), ];
+                    return ['success' => true,'imageurl'=> $coverimageurl, 'contrast' => get_string('imageinvalidratiocategory',
+                        'theme_snap', number_format((float)$catcontrast, 2))];
                 }
             }
             if ($contrast < 4.5) {
-                return ['success' => true, 'contrast' => get_string('imageinvalidratio',
-                    'theme_snap', number_format((float)$contrast, 2)), ];
+                return ['success' => true,'imageurl'=> $coverimageurl, 'contrast' => get_string('imageinvalidratio',
+                    'theme_snap', number_format((float)$contrast, 2)),];
             }
         }
-        return ['success' => $success];
+        return ['success' => $success, 'imageurl'=> $coverimageurl];
     }
 
     /**

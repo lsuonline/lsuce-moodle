@@ -34,15 +34,10 @@
         }
     }
     // Shortname on small screen.
-    @include media-breakpoint-down(sm) {
+    @include media-breakpoint-down(lg) {
         .form-shortname {
             display: none;
         }
-    }
-
-    // Fix position for panels in the page.
-    #adminsettings div.row {
-        flex-wrap: nowrap;
     }
 }
 
@@ -120,6 +115,7 @@
         // Size is set with a style tag so need to !important to override.
         height: 35px !important;
         width: 35px !important;
+        position: static;
         border-radius: 100%;
         border: thin solid #eee;
         margin-left: 0;
@@ -217,18 +213,33 @@
     #admin-fs_one_title,
     #admin-fs_two_title,
     #admin-fs_three_title,
+    #admin-fs_four_title,
+    #admin-fs_five_title,
+    #admin-fs_six_title,
     #admin-fs_one_title_link,
     #admin-fs_two_title_link,
     #admin-fs_three_title_link,
+    #admin-fs_four_title_link,
+    #admin-fs_five_title_link,
+    #admin-fs_six_title_link,
     #admin-fs_one_title_link_cb,
     #admin-fs_two_title_link_cb,
     #admin-fs_three_title_link_cb,
+    #admin-fs_four_title_link_cb,
+    #admin-fs_five_title_link_cb,
+    #admin-fs_six_title_link_cb,
     #admin-fs_one_image,
     #admin-fs_two_image,
     #admin-fs_three_image,
+    #admin-fs_four_image,
+    #admin-fs_five_image,
+    #admin-fs_six_image,
     #admin-fs_one_text,
     #admin-fs_two_text,
-    #admin-fs_three_text {
+    #admin-fs_three_text,
+    #admin-fs_four_text,
+    #admin-fs_five_text,
+    #admin-fs_six_text {
         float: left;
         width: 33.3%;
         margin: 0;
@@ -268,15 +279,18 @@
 
     #admin-fs_one_image,
     #admin-fs_one_title,
-    #admin-fs_one_text {
+    #admin-fs_one_text,
+    #admin-fs_four_image,
+    #admin-fs_four_title,
+    #admin-fs_four_text {
         clear: left;
     }
 }
 
 // -------------------------
-// Tab - Featured courses.
+// Tab - Featured categories and courses.
 // -------------------------
-#themesnapfeaturedcourses.active {
+#themesnapfeaturedcategoriesandcourses.active {
 
     .formsettingheading {
         font-family: $font-family-sans-serif;
@@ -285,12 +299,6 @@
     .form-defaultinfo,
     .form-shortname {
         display: none;
-    }
-
-    #admin-fc_heading {
-        input {
-            font-size: $h4-font-size;
-        }
     }
 
     #admin-fc_one,
@@ -306,7 +314,21 @@
         padding: 1em;
     }
 
-    #admin-fc_browse_all {
+    #admin-fcat_one,
+    #admin-fcat_two,
+    #admin-fcat_three,
+    #admin-fcat_four,
+    #admin-fcat_five,
+    #admin-fcat_six,
+    #admin-fcat_seven,
+    #admin-fcat_eight {
+        width: 25%;
+        float: left;
+        padding: 1em;
+    }
+
+    #admin-fc_browse_all,
+    #admin-fcat_browse_all {
         clear: both;
     }
 }
@@ -328,6 +350,7 @@
     #s_theme_snap_resourcedisplay_card {
         @include make-col(6);
         text-align: center;
+        margin-right: 1em;
 
         + br {
             display: none;

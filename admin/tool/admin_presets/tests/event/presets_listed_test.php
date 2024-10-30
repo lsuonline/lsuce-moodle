@@ -30,7 +30,7 @@ class presets_listed_test extends \advanced_testcase {
     /**
      * Test presets_listed event.
      */
-    public function test_presets_listed_event() {
+    public function test_presets_listed_event(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
 
@@ -55,7 +55,5 @@ class presets_listed_test extends \advanced_testcase {
         $this->assertInstanceOf('\tool_admin_presets\event\presets_listed', $event);
         $this->assertEquals(\context_system::instance(), $event->get_context());
         $this->assertEquals($presetid, $event->objectid);
-        $expected = [0, 'tool_admin_presets', 'base', '', $presetid, 0];
-        $this->assertEventLegacyLogData($expected, $event);
     }
 }

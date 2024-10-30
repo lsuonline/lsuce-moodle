@@ -141,6 +141,48 @@ table.boxwidthwide {
         justify-content: center;
     }
 
+    /**
+      floating labels in login form
+    */
+    .floating-label {
+        position: relative;
+    }
+
+    .floating-label input {
+        position: relative;
+        z-index: 2;
+    }
+
+    .floating-label input:focus ~ label {
+        left: 5px;
+        top: -14px;
+        opacity: 1;
+        height: auto;
+        width: auto;
+        clip: auto;
+        z-index: 2;
+        padding: 0 5px 0 5px;
+        background-color: #ffffff;
+        border-radius: 5px;
+    }
+
+    input:focus::placeholder {
+        color: transparent;
+    }
+
+    .floating-label label {
+        position: absolute;
+        left: 5px;
+        top: 10px;
+        z-index: 1;
+        font-size: 0.7em;
+        font-weight: bold;
+        transition: top .2s ease-in-out;
+    }
+    /**
+      end floating labels in login form
+    */
+
     // The site name.
     .snap-logo-sitename {
         text-indent: 100%;
@@ -173,6 +215,9 @@ table.boxwidthwide {
         }
         button#loginbtn {
             width: auto;
+            font-size: 0.8em;
+        }
+        .snap-indication {
             font-size: 0.8em;
         }
     }
@@ -614,8 +659,9 @@ li.modtype_page {
             }
         }
         div.d-block {
-            padding-left: 25%;
-            padding-right: 25%;
+            padding-top: 1em;
+            padding-left: 0.2em;
+            padding-right: 0.2em;
             width: 100%;
         }
 
@@ -623,6 +669,11 @@ li.modtype_page {
         .d-block {
             float: left;
             width: 100%;
+        }
+        #pagemod-content-container {
+            background-color: #f8f9fa;
+            border-radius: 0.5em;
+            padding: 1em;
         }
     }
 }
@@ -902,6 +953,15 @@ a.yui3-button,
     }
 }
 
+#page-grade-report-overview-index #page-mast {
+    .page-header-headings {
+        margin-right: 1em;
+    }
+    .btn-group.header-button-group a {
+        border-radius: 0.5em;
+    }
+}
+
 #page-site-index .section-modchooser-link {
     clear: both;
     margin: 0;
@@ -926,9 +986,33 @@ a.yui3-button,
     }
 }
 
+// Styles for #page-report-competency-index.
 #page-report-competency-index .header-button-group {
     padding-top: 10px;
     padding-left: 5px;
+}
+
+#page-report-competency-index .table-bordered {
+    td.alert.alert-info,
+    td.alert.alert-success,
+    td.alert.alert-danger,
+    td.alert.alert-warning, {
+        border-left: none;
+        padding-left: 4em;
+    }
+    td.alert.alert-info::before,
+    td.alert.alert-success::before,
+    td.alert.alert-danger::before,
+    td.alert.alert-warning::before, {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        border-left: 3em solid;
+        padding-left: 4em;
+    }
 }
 
 #page-badges-award .recipienttable tr td.actions .actionbutton {
@@ -1107,7 +1191,7 @@ body
 nav #mr-nav
 #page (for mdl js)
 	#page-content (for mdl js)
-		main #moodle-page
+		div #moodle-page
 		header #page-header
 		section #region-main
 footer #moodle-footer
@@ -1140,14 +1224,29 @@ footer #moodle-footer
     #snap-header {
         padding: .5em 4%;
         padding-bottom: 0;
-        .pull-right.js-only {
+        .pull-right.js-only, .float-right.js-only {
             .nav-link {
                 padding: .5rem .5rem;
             }
+
+            a:focus, div[tabindex]:focus {
+                border-radius: .5rem !important; // !important to override a possible .rounded-0 like in the search btn.
+                outline-style: solid;
+                box-shadow: none;
+            }
+
         }
     }
     position: fixed;
     width: 100vw;
+
+    @media (max-width: 991px) {
+        width: 100%;
+        .float-right.js-only.row {
+            margin-right: 0.2rem;
+        }
+    }
+
     z-index: 23;
     background-color: $nav-bg;
     top: 0;
@@ -1272,18 +1371,30 @@ footer #moodle-footer
 // Styles for Snap user menu.
 #snap-header {
 
-    .pull-right.js-only.row {
+    .pull-right.js-only.row, .float-right.js-only.row {
         margin-top: 1em;
+
+        @media (max-width: 768px) {
+            margin-top: 0.6em;
+        }
+
+        @include media-breakpoint-down(xs) {
+            gap: 0.3em;
+        }
     }
 
     #snap-home:not(.logo) {
         margin-top: 1em;
         margin-bottom: 1em;
+        @include media-breakpoint-down(md) {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
     }
 
     .snap-my-courses-link {
         padding-bottom: 0.5rem;
-        align-self: center;
+        align-content: center;
         font-weight: bold;
         span {
             position: relative;
@@ -1291,9 +1402,26 @@ footer #moodle-footer
         }
     }
 
+    #user-action-menu a[href*="my/courses.php"] {
+        display: none;
+    }
+
+    @include media-breakpoint-down(xs) {
+        .snap-my-courses-link span {
+            display: none;
+        }
+
+        #user-action-menu a[href*="my/courses.php"] {
+            display: block;
+        }
+    }
+
     .usermenu {
         #user-menu-toggle {
             padding-top: 0.15em;
+            @include media-breakpoint-down(md) {
+                padding: 0;
+            }
         }
 
         .userpicture,
@@ -1327,8 +1455,8 @@ footer #moodle-footer
         }
 
         .dropdown-item.carousel-navigation-link::after {
-            font-family: FontAwesome;
-            content: "\f0da";
+            @extend .fa-solid;
+            content: fa-content($fa-var-caret-right);
             font-size: 1rem;
             right: 0.75rem;
             position: absolute;
@@ -1352,6 +1480,7 @@ footer #moodle-footer
     // we want to maintain the position along the Intellicart or notification icons when
     // these icons don't exists in the Snap header.
     a.snap-message-count {
+        border-radius: .5rem;
         padding: .5rem .5rem;
         display: block;
     }
@@ -1363,6 +1492,14 @@ footer #moodle-footer
 
         &:before {
             content: "\f0e5";
+        }
+
+        &:hover {
+            @extend .fa-beat;
+            --fa-animation-duration: 0.5s;
+            --fa-animation-iteration-count: 1;
+
+            font-weight: bolder;
         }
     }
     .conversation_badge_count {
@@ -1411,6 +1548,10 @@ footer #moodle-footer
         background-repeat: no-repeat;
         background-size: contain;
         background-position: left center;
+
+        @include media-breakpoint-down(md) {
+            height: 45px;
+        }
     }
 }
 
@@ -1450,7 +1591,9 @@ footer #moodle-footer
 // md: 768px.
 @include media-breakpoint-down(md) {
     #snap-header {
-        .pull-right.js-only.row {
+        .pull-right.js-only.row, .float-right.js-only.row {
+            padding-top: 0;
+            margin-top: 0;
             #snap-pm-trigger.js-snap-pm-trigger {
                 span.hidden-xs-down {
                     display: none;
@@ -1465,6 +1608,10 @@ footer #moodle-footer
                     padding-right: 0;
                     i.fa-search {
                         font-size: 1.6rem;
+                        
+                        &:hover {
+                            @extend .fa-beat;
+                        }
                     }
                 }
             }
@@ -1543,6 +1690,10 @@ body.contains-snap-custom_menu-spacer {
     padding-top: 1em;
     float: none;
     border: none;
+}
+
+#page-course-view-topics #region-main, #page-course-view-weeks #region-main {
+    padding: 1em 0;
 }
 
 // Pages that need as much width as they can get as they
@@ -1664,6 +1815,15 @@ header#page-header
     }
 }
 
+[id*="page-grade"].theme-snap.path-grade #page-header.mast-image #page-mast .page-context-header .page-header-headings > {
+    h1,
+    h1 a,
+    h1 a:hover {
+        color: white;
+        text-shadow: 2px 2px 5px rgba(0, 0, 0, 1);
+    }
+}
+
 .path-course-view .mast-image {
     min-height: 250px;
 }
@@ -1699,9 +1859,7 @@ header#page-header
 // Admin block link.
 #admin-menu-trigger {
     width: 30px;
-    height: 30px;
-    margin-top: .3em;
-    margin-left: .4em;
+    padding-top: .3em;
 }
 
 #page-report-outline-user .section {
@@ -1840,15 +1998,20 @@ header#page-header
         margin: 0 auto;
         bottom: -10px;
         z-index: auto;
+        position: absolute;
+        bottom: 2em;
         button {
-            background-color: $snap-carousel-buttons;
+            background-color: $brand-primary;
             width: 35px;
             height: 5px;
             margin-right: 0.5em;
             border: none;
+            opacity: 65%;
+            border: 1px solid $brand-primary;
         }
         .active {
-            background-color: $brand-primary;
+            opacity: 100%;
+            border: none;
         }
     }
 
@@ -1866,7 +2029,7 @@ header#page-header
     .anim-play-resume-buttons {
         margin-left: 100px;
         position: absolute;
-        bottom: 2em;
+        bottom: 3em;
         z-index: 1;
         #play-button,
         #pause-button,
@@ -1889,6 +2052,19 @@ header#page-header
 
     .carouselhidecontrols {
         display: none;
+    }
+
+    .carousel-control-prev,
+    .carousel-control-next {
+        opacity: 1;
+    }
+
+    .carousel-control-prev-icon {
+        background-image: none;
+    }
+
+    .carousel-control-next-icon {
+        background-image: none;
     }
 }
 
@@ -1949,7 +2125,7 @@ header#page-header
 #page-site-index #site-news-forum {
     margin: 0 auto;
     padding: 0 4% 4em;
-    background-color: #f1f0ee;
+    background-color: #eef0f6;
     @include clearfix;
     .text-center {
         .btn-secondary {
@@ -2022,6 +2198,24 @@ header#page-header
     outline: 0;
 }
 
+@include media-breakpoint-down(xl) {
+    .news-article:not(.state-expanded) {
+        .news-article-image {
+            width: 100%;
+            object-fit: cover;
+            object-position: top;
+            padding: 0;
+            height: 150px;
+        }
+        .snap-animated-image {
+            width: 100%;
+            img {
+                border-radius: 0;
+            }
+        }
+    }
+}
+
 @include media-breakpoint-up(md) {
     .news-article {
         margin-bottom: 0;
@@ -2074,6 +2268,21 @@ header#page-header
             .news-article-image,
             .news-article-inner {
                 float: right;
+            }
+        }
+    }
+    .news-article:not(.state-expanded) {
+        height: 300px;
+        .news-article-image {
+            height: 100%;
+            width: 50%;
+            object-fit: cover;
+            object-position: top;
+        }
+        .snap-animated-image {
+            width: 50%;
+            img {
+                border-radius: 0;
             }
         }
     }
@@ -2406,18 +2615,6 @@ ul.events-new + ul.events-underway {
 }
 
 // -------------------------
-// Assignments
-// -------------------------
-
-.path-mod-assignment {
-    .userpicture,
-    .picture.user,
-    .picture.teacher {
-        height: auto;
-    }
-}
-
-// -------------------------
 // Comments - this could be a block, but is in mods too?
 // -------------------------
 
@@ -2481,7 +2678,6 @@ ul.events-new + ul.events-underway {
 // -------------------------
 
 #quiz-timer {
-    position: fixed;
     bottom: 0;
     left: 1%;
     background-color: #000;
@@ -3263,6 +3459,15 @@ table#user-grades tr.avg td.cell {
     .search-widget .user-info.d-block {
         padding: 6px;
     }
+    .dropdown-menu.show {
+        z-index: 1;
+    }
+    .table-responsive {
+        white-space: break-spaces; // Needed for dropdowns to take up space without scrolling.
+        tr {
+            white-space: normal;
+        }
+    }
 }
 #page-local-joulegrader-view {
     #local-joulegrader-navigation {
@@ -3377,7 +3582,8 @@ table#user-grades tr.avg td.cell {
                 border-color: $table-border-color #f5f5f5;
             }
 
-            tr.odd td.cell {
+            tr.odd td.cell,
+            tr.even td.cell {
                 background-color: $table-bg-accent;
 
                 &.overridden,
@@ -3615,7 +3821,7 @@ body.hascontinuecancel.path-site #page {
     &.chooserdialogue,
     &.filepicker {
         min-width: 90%;
-        height: 100%;
+        height: calc(100% - 10px);
     }
     video#player {
         max-height: 50vh;
@@ -4018,6 +4224,13 @@ table th img.iconhelp {
     text-align: center;
     .snap-feature {
         background-color: $feature-spot-background-color;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        justify-content: center;
+        @media screen and (max-width: 576px) {
+            margin-top: 1em;
+        }
     }
     .snap-feature-text {
         color: $feature-spot-description-color;
@@ -4026,11 +4239,19 @@ table th img.iconhelp {
         padding-top: 0;
         margin-top: 0;
     }
+    @media screen and (max-width: 768px) {
+        [id^="snap-feature-"] {
+            margin-top: 1em;
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
 
     .snap-feature-image {
         object-fit: contain;
         margin-left: auto;
         margin-right: auto;
+        border-radius: 10px;
     }
 
     a.snap-feature-link {
@@ -4068,43 +4289,75 @@ table th img.iconhelp {
     }
 }
 
-/* Featured courses section. */
-@include media-breakpoint-up(md) {
-    #snap-featured-courses .row div {
-        /* Center and restrict width for when only one course */
-        max-width: 50%;
-        margin: 0 auto;
+/* Featured categories and courses section. */
+@media screen and (max-width: 768px) {
+    #snap-featured-categories .row div.col-sm-3 ,
+    #snap-featured-courses .row div.col-sm-3,
+    .frontpage-course-list-all div.col-sm-3,
+    .frontpage-course-list-enrolled div.col-sm-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
     }
 }
 
-/* Featured course container. */
-#snap-featured-courses {
+/* Featured categories and courses container. */
+#snap-featured-categories,
+#snap-featured-courses,
+#frontpage-course-list {
     width: 100%;
     padding: 1em 4%;
+    background-color: $snap-featured-cards-bg;
+    margin-bottom: 1em;
 }
+.snap-featured-categories-heading,
 .snap-featured-courses-heading {
     padding: 1em 0;
 }
-
-#snap-featured-courses {
-    background-color: $snap-featured-courses;
+#snap-featured-categories a.snap-featured-category,
+#snap-featured-courses a.snap-featured-course,
+.frontpage-course-list-all a.snap-home-course,
+.frontpage-course-list-enrolled a.snap-home-course {
+    border-radius: 0.5rem;
 }
-#snap-featured-courses a.snap-featured-course {
-    border-radius: 4px;
-}
-#snap-featured-courses .snap-featured-course-title {
+#snap-featured-categories .snap-featured-category-title,
+#snap-featured-courses .snap-featured-course-title,
+.frontpage-course-list-all .snap-home-course-title,
+.frontpage-course-list-enrolled .snap-home-course-title {
     border-radius: 0 0 4px 4px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.4em;
+}
+.frontpage-course-list-enrolled,
+.frontpage-course-list-all {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+    text-align: center;
+    .coursebox {
+        padding-right: 15.3px;
+        padding-left: 15.3px;
+        border-bottom: unset;
+    }
 }
 
-/* Featured course link. */
-.snap-featured-course {
+/* Featured category and course link. */
+.snap-featured-category,
+.snap-featured-course,
+.snap-home-course {
     display: block;
     height: 300px;
     position: relative;
-    background-color: #ccc;
     margin-bottom: 1em;
-    @include bg-cover;
     @include alakazam;
+
+    @media screen and (max-width: 768px) {
+        height: 210px;
+    }
 
     &:hover {
         transform: scale(1.03);
@@ -4113,19 +4366,58 @@ table th img.iconhelp {
             0 3px 1px -2px rgba(0, 0, 0, 0.2),
             0 1px 5px 0 rgba(0, 0, 0, 0.12);
 
-        .snap-featured-course-title {
+        .snap-featured-category-title,
+        .snap-featured-course-title,
+        .snap-home-course-title {
             text-decoration: underline;
         }
     }
+    .hiddenbadge {
+        position: relative;
+        z-index: 1;
+        float: left;
+        margin-top: 9.5em;
+        margin-left: 5%;
+        padding: 0.25em 0.1em;
+        font-size: 90%;
+        @media screen and (max-width: 940px) {
+            margin-top: 12em;
+            font-size: 75%;
+            margin-left: 2%;
+        }
+        @media screen and (max-width: 768px) {
+            margin-top: 9.5em;
+            font-size: 90%;
+            margin-left: 5%;
+        }
+    }
+}
+/* Featured category and course cover image. */
+.snap-featured-category-image,
+.snap-featured-course-image,
+.snap-home-courses-image {
+    background-color: $brand-primary;
+    @include bg-cover;
+    background-position: center;
+    margin: unset;
+    padding: unset;
+    min-width: 100%;
+    min-height: 75%;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    &.hiddencourse {
+        opacity: 0.4;
+    }
 }
 
-/* Featured course title. */
-.snap-featured-course-title {
+/* Featured category and course title. */
+.snap-featured-category-title,
+.snap-featured-course-title,
+.snap-home-course-title {
     display: block;
     min-height: 25%;
     width: 100%;
     background-color: white;
-    position: absolute;
     bottom: 0;
     padding: 0.5em 4%;
     max-height: 15.2em;
@@ -4498,7 +4790,9 @@ section#region-main {
 
 .activity-navigation {
     .pull-right,
-    .pull-left {
+    .pull-left,
+    .float-right,
+    .float-left {
         a {
             white-space: inherit;
         }
@@ -4652,12 +4946,6 @@ section#region-main {
     margin-left: 0.313em;
 }
 
-// This z-index value allows the moodle dialogue (Image and file repository window) be usable
-// for both Atto and TinyMCE html editors.
-#page-local-pld-view .moodle-dialogue-base .moodle-dialogue {
-    z-index: 300005 !important;
-}
-
 #page-local-pld-view .mform .form-inline .form-control,
 .mform .form-inline .custom-select #id_config_text {
     width: 56em !important;
@@ -4669,10 +4957,6 @@ section#region-main {
 }
 
 #page-local-pld-view #id_config_text {
-    height: 15em !important;
-}
-
-#page-local-pld-view #id_config_text_ifr {
     height: 15em !important;
 }
 
@@ -4849,6 +5133,11 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
 
     .snap-page-heading-button div {
         float: right;
+    }
+    .discussion-list {
+        .hasunread .lead a {
+            color: #fff;
+        }
     }
 }
 
@@ -5303,8 +5592,41 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
     margin-right: 1.5em;
 }
 
+// Remove margin so element is clickable.
+#page-mod-book-view #region-main #mod_book-chaptersnavigation .tertiary-navigation .row .navitem {
+    margin-right: unset;
+}
+
 #page-mod-assign-view #region-main .tertiary-navigation .row {
     margin-bottom: 0.5em;
+}
+
+body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
+    width: 100%;
+    border-bottom: 1px solid $gray-300;
+    border-top: 1px solid $gray-300;
+    margin-bottom: 1.3em;
+    padding-top: 1em;
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        column-gap: 1.5em;
+
+        .navitem {
+            display: flex;
+            margin-bottom: 1em;
+
+            .btn.dropdown-toggle {
+                padding: 0;
+                font-size: 1.1rem;
+                font-weight: 700;
+            }
+        }
+    }
 }
 
 #page-admin-tool-usertours-configure {
@@ -5445,11 +5767,11 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
     width: fit-content;
     padding: 0;
     background-color: $brand-primary;
-    border-radius: 5px;
+    border-radius: 0.6em;
 
     img {
         margin: 0;
-        border-radius: 5px;
+        border-radius: 0.5em;
     }
 
     .anim-play-resume-buttons {
@@ -5497,6 +5819,11 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
             margin-top: 1rem;
         }
     }
+
+    #region-main {
+        padding-inline: 4%;
+    }
+
     .breadcrumb-nav {
         @include media-breakpoint-up(md) {
             margin-top: -.75em;
@@ -5519,51 +5846,6 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
             margin: 0;
         }
 
-        .snap-feeds {
-            padding-top: 1rem;
-
-            hr {
-                margin-top: 1rem!important;
-            }
-
-            h5 {
-                font-weight: bold;
-            }
-
-            h2 {
-                clear: both;
-                font-size: 1rem;
-                font-weight: bold;
-                line-height: 1;
-                padding: 0.5em 0;
-                margin: 0.5em 0;
-            }
-
-            #snap-my-courses-updates {
-                section {
-                    border: 1px solid $gray-light;
-                    margin-bottom: 1rem;
-                    border-radius: 0.5rem;
-                    padding: 0.5rem;
-
-                    #snap-my-courses-messages,
-                    #snap-my-courses-forumposts {
-                        .userinitials {
-                            float: left;
-                            width: 40px;
-                            height: 40px;
-                            font-size: unset;
-                            margin: 0.3em 1em 0 0.3em;
-                        }
-                    }
-                }
-                .snap-my-courses-more {
-                    display: block;
-                    text-align: right;
-                }
-            }
-        }
-
         .snap-page-my-courses-options {
             margin-top: 1rem;
         }
@@ -5580,8 +5862,16 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
                 float: right;
             }
             .block_myoverview {
-
                 border: 0 !important;
+
+                input[name="search"]{
+                    border-color: $brand-primary;
+                    border-radius: 0.25rem !important;
+
+                    &::placeholder {
+                        color: $brand-primary;
+                    }
+                }
 
                 .card-title {
                     font-weight: bold;
@@ -5622,8 +5912,40 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
         h1 {
             float: left;
         }
-        .snap-my-courses-more {
-            float: right;
+    }
+
+    // My courses - Mobile view.
+    @media screen and (max-width: 576px) {
+        #page-header {
+            #page-mast {
+                margin-left: -10px;
+                margin-right: -10px;
+            }
+        }
+
+        #region-main {
+            padding: 0 1.1rem 0 0;
+            margin: 0 !important;
+
+            .block_myoverview {
+                width: 100%;
+
+                .card-body.p-3 {
+                    padding: 0.5rem !important;
+                }
+            }
+
+            .block_myoverview_column {
+                padding-right: 0;
+                margin: 0;
+
+                .snap-page-my-courses-options {
+                    position: absolute;
+                    z-index: 1;
+                    right: 12px;
+                    top: -8px;
+                }
+            }
         }
     }
 }
@@ -5631,4 +5953,20 @@ body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navit
 // Styles for global search bar.
 .simplesearchform #searchform-navbar.show {
     height: 93px;
+}
+
+.row-gap-1 {
+    row-gap: 1rem;
+}
+
+.singleselect {
+    border-radius: 0.25rem;
+}
+
+.input-group {
+    input {
+        // !important because we need to be sure that the border radius is set.
+        border-bottom-left-radius: 0.25rem !important;
+        border-top-left-radius: 0.25rem !important;
+    }
 }

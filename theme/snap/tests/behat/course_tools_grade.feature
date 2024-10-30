@@ -298,20 +298,20 @@ Feature: When the moodle theme is set to Snap, a course tools section is availab
     And I click on ".tertiary-navigation-selector" "css_element"
     # Check editing button works with Grade report single view.
     And I navigate to "Single view" in current page administration
-    And I should not see "Turn editing on"
+    And I should see "Turn editing on"
     # Check grade items view.
     And I click on "Grade items" "link"
     Then I should see "Turn editing on"
-    And "Save" "button" should not exist
+    And "input[value='Save']" "css_element" should not exist
     # Select an activity to grade.
-    And I click on ".search-widget" "css_element"
-    And I click on "div.searchresultscontainer a[role='menuitem']" "css_element"
+    And I click on ".grade-search" "css_element"
+    And I click on "#list-result-listbox > li" "css_element"
     When I click on "Turn editing on" "button"
     And I should see "Turn editing off"
-    And "Save" "button" should exist
+    And "input[value='Save']" "css_element" should exist
     When I click on "Turn editing off" "button"
     And I should see "Turn editing on"
-    Then the "Save" "button" should be disabled
+    Then the "input[value='Save']" "css_element" should be disabled
     And I click on "Turn editing on" "button"
     And I am on "Course 1" course homepage
     # Edit mode goes to default value when changing to other view.
@@ -327,7 +327,8 @@ Feature: When the moodle theme is set to Snap, a course tools section is availab
     And I click on ".tertiary-navigation-selector" "css_element"
     # Check editing button works with Grade report single view.
     And I navigate to "Grader report" in current page administration
-    And I click on "[aria-label='Single view for Student 1']" "css_element"
+    And I click on "tr.userrow .moodle-actionmenu.grader" "css_element"
+    And I use js to click on "[aria-label='Single view for this user']"
     # Check student grades view.
     Then I should see "Turn editing on"
     And I should see "Student 1"

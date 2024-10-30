@@ -219,6 +219,9 @@ function theme_snap_pluginfile($course, $cm, $context, $filearea, $args, $forced
         'fs_one_image',
         'fs_two_image',
         'fs_three_image',
+        'fs_four_image',
+        'fs_five_image',
+        'fs_six_image',
         'slide_one_image',
         'slide_two_image',
         'slide_three_image',
@@ -229,7 +232,7 @@ function theme_snap_pluginfile($course, $cm, $context, $filearea, $args, $forced
         $theme = theme_config::load('snap');
         return $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
     } else if (in_array($context->contextlevel, $coverimagecontexts)
-            && $filearea == 'coverimage' || $filearea == 'coursecard') {
+            && $filearea == 'coverimage' || $filearea == 'coursecard'|| $filearea == 'croppedimage') {
         theme_snap_send_file($context, $filearea, $args, $forcedownload, $options);
     } else if ($filearea === 'vendorjs') {
         $pluginpath = __DIR__.'/';
@@ -353,7 +356,7 @@ function theme_snap_get_pre_scss($theme) {
         $theme->settings->feature_spot_description_color : '#565656';
 
     $settings['snap-footer-bg-color'] = !empty($theme->settings->footerbg) ?
-        $theme->settings->footerbg : '#565656';
+        $theme->settings->footerbg : '#474747';
 
     $settings['snap-footer-txt-color'] = !empty($theme->settings->footertxt) ?
         $theme->settings->footertxt : '#ffffff';
@@ -452,22 +455,22 @@ function theme_snap_course_module_background_deletion_recommended() {
 /**
  * Hook for adding things before footer.
  */
-function theme_snap_before_footer() {
-    global $CFG, $PAGE;
-
-    if (empty(get_config('theme_snap', 'personalmenuadvancedfeedsenable'))) {
-        return;
-    }
-
-    $paths = [];
-    $paths['theme_snap/snapce'] = [
-        $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce'
-    ];
-
-    $PAGE->requires->js_call_amd('theme_snap/wcloader', 'init', [
-        'componentPaths' => json_encode($paths)
-    ]);
-}
+//function theme_snap_before_footer() { To be reviewed in INT-20323.
+//    global $CFG, $PAGE;
+//
+//    if (empty(get_config('theme_snap', 'personalmenuadvancedfeedsenable'))) {
+//        return;
+//    }
+//
+//    $paths = [];
+//    $paths['theme_snap/snapce'] = [
+//        $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce'
+//    ];
+//
+//    $PAGE->requires->js_call_amd('theme_snap/wcloader', 'init', [
+//        'componentPaths' => json_encode($paths)
+//    ]);
+//}
 
 /**
  * Serves the H5P Custom CSS.

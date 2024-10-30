@@ -203,15 +203,6 @@ body[class^="format-"].theme-snap {
                 font-size: inherit;
             }
         }
-
-        /* New PLD card with custom background that has "New" word */
-        &.newpldcard {
-            background-image: url([[pix:theme|new]]);
-            background-repeat: no-repeat;
-            background-size: 15%;
-            background-position-x: right;
-            background-position-y: top;
-        }
     }
 }
 
@@ -314,9 +305,25 @@ li.section:focus {
     padding: 0;
     margin: 0 auto;
     float: none;
-    display: block;
+    display: inline-flex;
+    gap: 0.3em;
     text-align: left;
     margin-top: -1em;
+
+    ul {
+        margin: unset;
+        padding: unset;
+        li {
+            list-style: none;
+        }
+    }
+    .dropdown-menu.show ul {
+        margin: unset;
+    }
+
+    > ul {
+        display: flex;
+    }
 
     a {
         display: inline-block;
@@ -343,33 +350,60 @@ li.section:focus {
         background-size: 70%;
     }
 
-    .snap-move:after {
-        background-image: url([[pix:theme|move]]);
-        background-size: 100%;
+    .snap-move {
+        &:after, &:before {
+            background-image: url([[pix:theme|move]]);
+            background-size: 100%;
+        }
     }
 
-    .snap-visibility.snap-show:after {
-        background-image: url([[pix:core|i/show]]);
+    .snap-visibility.snap-show {
+        &:after, &:before {
+            background-image: url([[pix:core|i/show]]);
+        }
     }
 
-    .snap-visibility.snap-hide:after {
-        background-image: url([[pix:core|i/hide]]);
+    .snap-visibility.snap-hide {
+        &:after, &:before {
+            background-image: url([[pix:core|i/hide]]);
+        }
     }
 
-    .snap-delete:after {
-        background-image: url([[pix:core|t/delete]]);
+    .snap-delete {
+        &:after, &:before {
+            background-image: url([[pix:core|t/delete]]);
+        }
     }
 
-    .snap-highlight[aria-pressed="false"]:after {
-        background-image: url([[pix:core|i/marker]]);
+    .snap-highlight {
+        &[aria-pressed="false"]:after, &[aria-pressed="false"]:before {
+            background-image: url([[pix:core|i/marker]]);
+        }
     }
 
-    .snap-highlight[aria-pressed="true"]:after {
-        background-image: url([[pix:core|i/marked]]);
+    .snap-highlight {
+        &[aria-pressed="true"]:after, &[aria-pressed="true"]:before {
+            background-image: url([[pix:core|i/marked]]);
+        }
     }
 
-    .snap-sharing-cart:after {
-        background-image: url([[pix:core|t/backup]]);
+    .snap-sharing-cart {
+        &:after, &:before {
+            background-image: url([[pix:core|t/backup]]);
+        }
+    }
+
+    .snap-duplicate {
+        &:after, &:before {
+            background-image: url([[pix:core|t/copy]]);
+        }
+    }
+
+    .snap-permalink {
+      &:after, &:before {
+        background-image: url([[pix:core|i/link]]);
+        filter: opacity(0.5);
+      }
     }
 
     a.ajaxing:after {
@@ -383,6 +417,56 @@ li.section:focus {
         margin-left: 1em;
     }
 
+    .extra-actions-menu {
+
+        padding-top: .1em;
+
+        .dropdown-menu {
+            z-index: 20;
+            min-width: 11rem;
+            border: 0;
+            box-shadow: 0 2px 5px 0 rgba(0, 0, 0, .26);
+            border-radius: 0.5rem;
+        }
+        .dropdown-item {
+            display: block;
+            border-radius: initial;
+            width: auto;
+            height: auto;
+            padding: 0.5em;
+
+            &.snap-show,
+            &[aria-pressed="true"] {
+                background-color: initial;
+            }
+
+            &:hover,
+            &:focus {
+                color: white;
+
+                .menu-icon { // Making the pix icon white.
+                    filter: brightness(0) invert(1);
+                }
+            }
+        }
+    }
+
+    .menu-icon {
+        width: 1em;
+        height: 1em;
+        &:before {
+            content: ' ';
+            width: 100%;
+            display: inline-block;
+            min-height: 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100%;
+            vertical-align: -0.15em;
+            margin-right: 0.5em;
+            margin-left: 0.2em;
+        }
+    }
 }
 
 #snap-modchooser-modal {
@@ -489,6 +573,10 @@ li.section:focus {
 // Mod chooser for Snap - Icon colors.
 // ---------------------------------------
 .modchoosercontainer .activityiconcontainer {
+    &.smaller {
+        height: 45px;
+        width: 45px;
+    }
     &.administration {
         background-color: transparent; }
     &.administration .activityicon,
@@ -556,7 +644,6 @@ li.section:focus {
     }
 
     div[data-internal="assign"] .modicon_assign,
-    div[data-internal="assignment"] .modicon_assignment,
     div[data-internal="workshop"] .modicon_workshop,
     div[data-internal="journal"] .modicon_journal,
     div[data-internal="hvp"] .modicon_hvp,
@@ -850,6 +937,7 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
         border: 1px solid $gray-lighter;
         border-top-width: 0.3em;
         transition: all 0.4s ease-in-out;
+        border-radius: 0.5rem;
 
         // For editors add space for editong tools.
         &.snap-can-edit {
@@ -866,6 +954,10 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
             overflow-y: auto;
             position: static;
             padding: 0.5em 1em;
+
+            &:has(.completion-dropdown) {
+                overflow: visible;
+            }
         }
 
         .snap-assettype {
@@ -884,24 +976,35 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
                 height: auto;
                 margin-right: 0.5em;
                 @include alakazam;
+                &[src*="snap/core"] {
+                    filter: brightness(0) invert(1);
+                }
+            }
+
+            .snap-resource-card-fadeout {
+                display: none;
             }
 
             // Link to the mod (headings in snap).
             .snap-asset-link {
+                display: flex;
                 font-size: 1em;
                 margin: 0;
+                width: fit-content;
+                overflow: hidden;
                 @include alakazam;
+
+                img.activityicon {
+                    &:hover,
+                    &:focus {
+                        transform: scale(1.25);
+                    }
+                }
 
                 // The link itself.
                 a {
                     color: $body-color;
-
-                    &:hover,
-                    &:focus {
-                        .activityicon {
-                            transform: scale(1.25);
-                        }
-                    }
+                    display: inline-block;
                 }
             }
             .contentafterlink p a {
@@ -909,9 +1012,13 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
             }
             // Size of the icons container.
             .activityiconcontainer {
-                width: 45px;
-                height: 45px;
+                min-width: 50px;
+                min-height: 50px;
                 padding: 0.3rem;
+            }
+            .snap-header-card {
+                display: flex;
+                justify-content: space-between;
             }
         }
     }
@@ -945,19 +1052,10 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
 .section .activity.modtype_label.label {
     background-image: none;
     height: auto;
-    width: 100%;
     text-align: left;
     font-weight: 400;
-    padding: 0.5em 0;
-    margin: 0.5em 0;
     box-shadow: none;
-    border: none !important;
     @include clearfix;
-
-    .asset-wrapper,
-    .activityinstance {
-        padding: 0.5em 0;
-    }
 }
 
 // -------------------------
@@ -965,18 +1063,8 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
 // -------------------------
 
 .section li.snap-native {
-    border: none;
     height: auto;
     margin: 0.5em auto;
-
-    .asset-wrapper {
-        padding: 0;
-    }
-
-    .activityicon,
-    .snap-assettype {
-        display: none;
-    }
 
     .contentafterlink {
         font-size: 1em;
@@ -1003,17 +1091,10 @@ body.theme-snap .modchoosercontainer div[data-internal="goone"] .modicon_goone i
     }
 
     &.state-expanded {
-        .summary-text,
-        .summary-figure {
+        .summary-container,
+        .readmore-button {
             display: none;
         }
-    }
-    
-    // We need to hide the container of the book and page activities, since this isn't a resource, this isn't
-    // being took by the proper styles from line 936.
-    &.modtype_book .activityiconcontainer.book,
-    &.modtype_page .activityiconcontainer.page, {
-        display: none;
     }
 }
 
@@ -1103,16 +1184,19 @@ body.snap-resource-list .section li.snap-resource {
 // -------------------------
 // Snap resources as cards.
 // -------------------------
-body.snap-resource-card li.snap-resource {
+body.snap-resource-card li.snap-resource:not(.label) {
     height: 200px;
     width: 31%;
     margin: 1%;
     float: left;
     clear: none;
-    background-image: url([[pix:theme|file]]);
     background-repeat: no-repeat;
     background-position: 50% 70%;
     background-size: 33px auto;
+
+    @media screen and (max-width: 768px) {
+        width: 100%;
+    }
 
     &:hover {
         background-size: 50px auto;
@@ -1121,12 +1205,6 @@ body.snap-resource-card li.snap-resource {
     // Resource cards are clickable with data-href, so add cursor pointer.
     .asset-wrapper {
         @include clearfix;
-        .snap-header-card {
-            padding-bottom: 1.5em;
-        }
-        .snap-asset-actions {
-            display: flex;
-        }
     }
     // Ajust size of moodle putting filetype on screen
     .resourcelinkdetails {
@@ -1136,122 +1214,13 @@ body.snap-resource-card li.snap-resource {
         line-height: .6em;
     }
 
-    .activityicon {
-        display: none;
-    }
-
     .contentafterlink {
         font-size: small;
         padding-top: 0.5em;
     }
 
-    &.modtype_resource {
-        .activityiconcontainer {
-            display: none !important;
-        }
-    }
-
-    .activityiconcontainer {
-        display: none;
-    }
-
-    &.snap-mime-document,
-    &.snap-mime-writer,
-    &.snap-mime-oth,
-    &.snap-mime-text {
-        border-top-color: $color-word;
-        background-image: url([[pix:core|/f/document]]);
-    }
-
-    &.snap-mime-powerpoint,
-    &.snap-mime-impress {
-        border-top-color: $color-powerpoint;
-        background-image: url([[pix:core|/f/powerpoint]]);
-    }
-
-    &.snap-mime-spreadsheet,
-    &.snap-mime-chart,
-    &.snap-mime-database,
-    &.snap-mime-calc {
-        border-top-color: $color-excel;
-        background-image: url([[pix:core|/f/spreadsheet]]);
-    }
-
-    // ADOBE //
-    &.snap-mime-pdf,
-    &.snap-mime-eps,
-    &.snap-mime-flash {
-        border-top-color: $color-pdf;
-        background-image: url([[pix:core|/f/pdf]]);
-    }
-
-    &.snap-mime-flash {
-        background-image: url([[pix:core|/f/flash]]);
-    }
-
-    // MULTIMEDIA //
-    &.snap-mime-mp3,
-    &.snap-mime-wav,
-    &.snap-mime-audio {
-        border-top-color: $color-audio;
-        background-image: url([[pix:core|/f/audio]]);
-    }
-
-    &.snap-mime-mov,
-    &.snap-mime-wmv,
-    &.snap-mime-video,
-    &.snap-mime-quicktime,
-    &.snap-mime-mpeg,
-    &.snap-mime-avi {
-        border-top-color: $color-video;
-        background-image: url([[pix:core|/f/video]]);
-    }
-
-    &.modtype_lightboxgallery,
-    &.snap-mime-bmp {
-        border-top-color: $color-lightbox;
-        background-image: url([[pix:core|/f/image]]);
-    }
-
-    // MOODLE MODS //
-    &.modtype_url {
-        border-top-color: $color-url;
-        background-image: url([[pix:core|/f/url]]);
-    }
-
-    &.modtype_imscp,
-    &.modtype_scorm {
-        border-top-color: $color-questionnaire;
-    }
-
-    &.modtype_scorm {
-        background-image: url([[pix:core|/f/scorm]]);
-    }
-
-    &.modtype_imscp {
-        background-image: url([[pix:core|/f/imscp]]);
-    }
-
-    &.modtype_folder {
-        border-top-color: $color-folder;
-        background-image: url([[pix:core|/f/folder]]);
-    }
-
-    // CODE & SYSTEM //
-    &.snap-mime-archive {
-        border-top-color: #fed859;
-        background-image: url([[pix:core|/f/archive]]);
-    }
-
-    &.snap-mime-markup,
-    &.snap-mime-html,
-    &.snap-mime-sourcecode {
-        border-top-color: #f0652a;
-        background-image: url([[pix:core|/f/sourcecode]]);
-    }
-
-    &.snap-mime-text {
-        border-top-color: #f1bf26;
+    .snap-asset-move-label {
+        left: 20px;
     }
 }
 
@@ -1260,26 +1229,74 @@ body.snap-resource-card li.snap-resource {
 // -----------------------------------------------------------
 body.snap-resource-list,
 body.snap-resource-card {
-    // Establish 60% for title and 40% for icons in the activity header.
     .asset-wrapper {
         .snap-assettype {
             display: inline-block;
-            width: 60%;
+            width: 100%;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .snap-header-card-icons {
+        // Fix local bfaltformat icon in Snap course.
+        .local_bfaltformat-button_span {
+            z-index: unset;
             display: inline-block;
-            width: 40%;
+        }
+        .local-bfaltformat-access-icon {
+            display: flex;
+            height: 19px;
+            width: 19px;
+        }
+        .snap-header-card .local-bfaltformat-access-button {
+            display: contents;
+        }
+        .mod-link {
+            display: inline-flex;
+        }
+        .snap-header-card-icons {
+            display: inline-flex;
+            width: auto;
             height: 100%;
             max-height: 1.4em;
+            align-items: center;
+            justify-content: flex-end;
+            > * {
+                margin-left: 6px;
+            }
+            i,
+            img,
+            button {
+                width: 20px;
+                height: 20px;
+                margin: unset;
+                padding: unset;
+            }
+            .snap-edit-asset-more {
+                display: flex;
+            }
+            #snap-asset-menu {
+                i.icon,
+                img.icon, {
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 6px;
+                }
+                #groups-menu img.icon {
+                    opacity: (0.5);
+                }
+            }
         }
     }
     // Modify restriction icon size and position for course cards.
     .snap-header-card {
-        padding-bottom: 1em;
+        padding-top: 1em;
+        .snap-header-container {
+            padding: 0.3rem;
+        }
         .snap-header-card-icons {
+            a {
+                min-width: fit-content;
+            }
             a[id^="snap-restriction-"] {
                 padding: 0;
                 float: right;
@@ -1292,6 +1309,7 @@ body.snap-resource-card {
                 img {
                     width: 20px;
                     height: 20px;
+                    max-width: none;
                     float: right;
                 }
                 &:active {
@@ -1307,8 +1325,73 @@ body.snap-resource-card {
                 display: inline-block;
                 float: right;
             }
+            .snap-asset-completion-tracking {
+                .autocompletion {
+                    display: flex;
+                }
+                div:not(.completion-dropdown div) {
+                    display: flex;
+                }
+
+                .completion-dropdown {
+                    .dropdown-menu {
+                        min-width: 15em;
+                        border-radius: 0.5rem;
+                        // Copying font styles from .popover
+                        font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        font-style: normal;
+                        font-weight: 400;
+                        font-size: .75rem;
+                    }
+
+                    .completion-dialog .icon { // Copying the sizes from Boost.
+                        font-size: 0.8203125rem;
+                        width: 0.8203125rem;
+                        height: 0.8203125rem;
+                        margin-right: 0.25rem;
+                        max-width: unset;
+                    }
+                }
+            }
         }
     }
+    .snap-asset-content {
+        .no-overflow {
+            background-color: $color-bk-resource;
+            border-radius: 0.5em;
+            padding: 1em;
+            margin: 1em 0;
+            img {
+                border-radius: 0.5em;
+            }
+        }
+        .snap-action-icon {
+            padding: 0;
+            font-size: 1.2em;
+        }
+        .fa-chevron-down {
+            display: none;
+            text-align: center;
+        }
+        .fa-chevron-up {
+            text-align: center;
+        }
+    }
+
+
+
+    li.modtype_label {
+        .snap-asset-content {
+            .no-overflow {
+                background-color: transparent;
+                margin: unset;
+            }
+            .snap-assettype {
+                display: none;
+            }
+        }
+    }
+
     // Modify the resource activity icon and card width.
     li.modtype_resource {
         .activityiconcontainer {
@@ -1317,7 +1400,6 @@ body.snap-resource-card {
         .activityiconcontainer,
         .instancename {
             display: inline-block;
-            margin-right: 1rem;
         }
 
         .activityicon {
@@ -1334,18 +1416,10 @@ body.snap-resource-card {
 // We need to establish to 100% the width for the icons for these activities, because the asset type will not appear in the card.
 // This will happen in list and card views.
 body.snap-resource-list {
-    li.modtype_label,
-    li.modtype_resource,
-    li.modtype_url,
-    li.modtype_imscp,
-    li.modtype_lightboxgallery,
-    li.modtype_scorm {
+    li.modtype_label {
         .snap-header-card-icons {
             width: 100%;
         }
-    }
-    li.snap-resource-long.modtype_folder .snap-header-card-icons {
-        width: 100%;
     }
 }
 
@@ -1360,16 +1434,20 @@ body.snap-resource-card {
     }
 }
 
+body.snap-resource-list,
+body.snap-resource-card {
+    li.modtype_folder .container-fluid {
+        margin-top: 1em;
+    }
+}
+
+
 // -----------------------------------------------------------
 // Cards view - Ellipsis title and gradient content.
 // -----------------------------------------------------------
 body.snap-resource-card {
     li.snap-resource.snap-resource-long {
-        height: 21em;
-        .snap-asset-actions {
-            bottom: 0
-        }
-
+        height: 14em;
     }
     // Hide multimedia content on resource cards description.
     li.snap-resource.snap-resource-long.modtype_url,
@@ -1411,24 +1489,77 @@ body.snap-resource-card {
             }
         }
 
+        .snap-header-card-icons {
+            min-width: fit-content;
+        }
+
         .snap-asset-link {
+            .snap-header-container {
+                overflow: hidden;
+            }
+            .snap-assettype {
+                text-overflow: ellipsis;
+                overflow: hidden;
+                width: 100%;
+            }
+            .activityiconcontainer {
+                margin-right: 0.5em;
+                max-width: 45px;
+                max-height: 45px;
+                min-height: 45px;
+                min-width: 45px;
+                .activityicon {
+                    width: 35px;
+                }
+            }
             a.mod-link {
+                display: flex;
+                align-items: baseline;
                 cursor: pointer;
+
                 p.instancename {
                     max-height: 2.5em;
-                    @include multiLineEllipsis($lineHeight: 1.25em, $lineCount: 2, $bgColor: white);
+                    display: block;
+                    font-size: 0.8em;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    margin-right: unset;
+                }
+            }
+        }
+
+        .snap-asset-content {
+            .no-overflow {
+                background-color: transparent;
+                padding: unset;
+                margin: unset;
+            }
+            a {
+                &:hover {
+                    text-decoration: unset;
+                }
+                i.fa-chevron-down {
+                    display: block;
                 }
             }
         }
 
         div.contentafterlink {
+            padding: 1em;
+            margin-top: 0.5em;
+            background-color: $color-bk-resource;
+            border-radius: 0.5em;
             .no-overflow {
-                word-wrap: break-word;
-                max-height: 4.2em;
+                -webkit-line-clamp: 3;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
                 overflow: hidden;
-                position: relative;
+                line-height: 1.4em;
+                height: 4.2em;
             }
             p.snap-resource-card-fadeout {
+                display: inline-block;
                 position: absolute;
                 bottom: 0;
                 left: 0;
@@ -1466,17 +1597,6 @@ body.snap-resource-card {
         .activityinstance .activityicon {
             display: inline;
         }
-
-        .snap-asset-actions {
-            width: 250px;
-            .snap-asset-move,
-            .snap-edit-more-dropdown,
-            > a {
-                width: 25%;
-                text-align: left;
-                padding: 0;
-            }
-        }
     }
 }
 
@@ -1484,16 +1604,7 @@ body.snap-resource-card {
 // Snap resources as list.
 // -------------------------
 .snap-resource-list li.snap-resource {
-    border: none;
     margin: 0 1%;
-
-    .snap-assettype {
-        display: none;
-    }
-
-    .snap-asset-actions {
-        width: 250px;
-    }
 
     .activityiconcontainer,
     .instancename {
@@ -1514,6 +1625,7 @@ body.snap-resource-card {
     &.launch-tiles-standard,
     &.launch-tiles-module-modal,
     &.launch-tiles-resource-modal,
+    &.launch-tiles-url-modal,
     &.activity-wrapper,
     &.snap-asset {
         margin: 1em 1%;
@@ -1556,7 +1668,6 @@ body.snap-resource-card {
         }
 
         &.modtype_assign,
-        &.modtype_assignment,
         &.modtype_workshop,
         &.modtype_journal,
         &.modtype_attendance,
@@ -1591,6 +1702,13 @@ body.snap-resource-card {
             border-top-color: $color-questionnaire;
             .activityiconcontainer {
                 background-color: $color-questionnaire;
+            }
+        }
+
+        &.modtype_lightboxgallery {
+            border-top-color: $color-lightbox;
+            .activityiconcontainer {
+                background-color: $color-lightbox;
             }
         }
 
@@ -1644,7 +1762,7 @@ body.snap-resource-card {
         }
 
         &.modtype_resource {
-            border-top-color: $color-livepoll;
+            border-top-color: $color-resource;
             .activityiconcontainer {
                 background-color: $color-resource; // For tiles format.
             }
@@ -1657,22 +1775,62 @@ body.snap-resource-card {
             }
         }
 
+        &.modtype_label {
+            border: 1px solid $gray-lighter;
+        }
+
         &.modtype_book {
+            border-top-color: $color-book;
             .activityiconcontainer {
                 background-color: $color-book;
+            }
+            .summary-text.row {
+                justify-content: space-around;
+                padding: 0 1em;
+                .content-row,
+                .chapters-row {
+                    padding: 1em;
+                }
+                .content-row {
+                    background-color: $color-bk-resource;
+                    border-radius: 0.5em;
+                }
             }
         }
 
         &.modtype_page {
+            border-top-color: $color-page;
             .asset-wrapper .snap-asset-content {
                 .contentafterlink {
                     .summary-figure {
-                        margin-bottom: 1em;
+                        padding: 1em;
                         margin-left: .5em;
                     }
                     .summary-text {
+                        margin: 1em;
                         img {
                             margin-left: .5em;
+                            border-radius: 0.5em;
+                        }
+                    }
+                    .summary-container {
+                        background-color: $color-bk-resource;
+                        border-radius: 0.5em;
+                        overflow: hidden;
+                        margin-bottom: 1em;
+                        margin-top: 0.5em;
+                        img {
+                            border-radius: 0.5em;
+                        }
+                    }
+                    .readmore-container {
+                        text-align: center;
+                    
+                        .btn {
+                            i.icon {
+                                display: block;
+                                margin: 0;
+                            }
                         }
                     }
                 }
@@ -1682,7 +1840,23 @@ body.snap-resource-card {
             }
         }
 
+        &.modtype_resource {
+            .snap-resource-figure {
+                width: 100%;
+                img {
+                    border-radius: 0.5em;
+                }
+            }
+            .snap-resource-figure-caption {
+                background-color: $color-bk-resource;
+                border-radius: 0.5em;
+                margin-top: 1em;
+                padding: 1em 1em;
+            }
+        }
+
         &.modtype_zoom {
+            border-top-color: $color-zoom;
             .activityiconcontainer {
                 background-color: $color-zoom;
             }
@@ -1690,30 +1864,28 @@ body.snap-resource-card {
 
         &.modtype_quizgame,
         &.modtype_adaptivequiz {
+            border-top-color: $color-quizlms;
             .activityiconcontainer {
                 background-color: $color-quizlms;
             }
         }
 
-        &.modtype_lightboxgallery {
-            .activityiconcontainer {
-                background-color: $color-lightbox;
-            }
-        }
-
         &.modtype_goone {
+            border-top-color: $color-go1;
             .activityiconcontainer {
                 background-color: $color-go1;
             }
         }
 
         &.modtype_customquiz {
+            border-top-color: $color-customquiz;
             .activityiconcontainer {
                 background-color: $color-customquiz;
             }
         }
 
         &.modtype_coursecertificate {
+            border-top-color: $color-certificate;
             .activityiconcontainer {
                 background-color: $color-certificate;
             }
@@ -1721,27 +1893,364 @@ body.snap-resource-card {
     }
 }
 
-.format-tiles .section li {
+// -------------------------
+// Snap resources colors.
+// -------------------------
+body.snap-resource-list,
+body.snap-resource-card {
+    li.snap-resource {
 
-    &.launch-tiles-standard,
-    &.launch-tiles-module-modal,
-    &.activity-wrapper,{
+        &.snap-mime-spreadsheet,
+        &.snap-mime-chart,
+        &.snap-mime-database,
+        &.snap-mime-calc {
+            border-top-color: $color-excel;
+            .activityiconcontainer {
+                background-color: $color-excel;
+            }
+        }
 
-        .activityiconcontainer,
-        .instancename {
-            margin-right: 1rem;
-            padding: 0.3rem;
-            display: inline-flex !important;
-            .activityicon {
-                margin-top: -2px !important;
-                margin-right: 0 !important;
-                height: fit-content;
-                width: 34px;
-                filter: none;
+        // ADOBE //
+        &.snap-mime-pdf,
+        &.snap-mime-eps,
+        &.snap-mime-flash {
+            border-top-color: $color-pdf;
+            .activityiconcontainer {
+                background-color: $color-pdf;
+            }
+        }
+
+        &.snap-mime-markup,
+        &.snap-mime-html,
+        &.snap-mime-xhtml,
+        &.snap-mime-sourcecode,
+        &.snap-mime-text {
+            border-top-color: $color-code;
+            .activityiconcontainer {
+                background-color: $color-code;
+            }
+        }
+
+        // Resources colors
+        &.snap-mime-document,
+        &.snap-mime-writer,
+        &.snap-mime-oth {
+            border-top-color: $color-word;
+            .activityiconcontainer {
+                background-color: $color-word;
+            }
+        }
+
+        &.snap-mime-wmv,
+        &.snap-mime-video,
+        &.snap-mime-quicktime,
+        &.snap-mime-mpeg,
+        &.snap-mime-avi {
+            border-top-color: $color-video;
+            .activityiconcontainer {
+                background-color: $color-video;
+            }
+        }
+
+        // MULTIMEDIA //
+        &.snap-mime-mp3,
+        &.snap-mime-wav,
+        &.snap-mime-audio {
+            border-top-color: $color-audio;
+            .activityiconcontainer {
+                background-color: $color-audio;
+            }
+        }
+
+        &.snap-mime-powerpoint,
+        &.snap-mime-impress {
+            border-top-color: $color-powerpoint;
+            .activityiconcontainer {
+                background-color: $color-powerpoint;
+            }
+        }
+
+        &.modtype_folder {
+            border-top-color: $color-folder;
+            .activityiconcontainer {
+                background-color: $color-folder;
+            }
+        }
+
+        &.modtype_url {
+            border-top-color: $color-url;
+            .activityiconcontainer {
+                background-color: $color-url;
+            }
+        }
+
+        &.snap-mime-archive {
+            border-top-color: #fed859;
+        }
+
+        &.modtype_imscp,
+        &.modtype_scorm {
+            border-top-color: $color-questionnaire;
+            .activityiconcontainer {
+                background-color: $color-questionnaire;
+            }
+        }
+
+        &.modtype_lightboxgallery,
+        &.snap-mime-bmp {
+            border-top-color: $color-lightbox;
+            .activityiconcontainer {
+                background-color: $color-lightbox;
             }
         }
     }
+}
 
+// -------------------------
+// Tiles Course format.
+// -------------------------
+
+// Hide Boost actions dropdown icon.
+#page-course-view-tiles .action-menu .dropdown-toggle:after {
+    display: none;
+    border: none;
+    content: none;
+}
+
+// Hide New add module button in Tiles.
+#page-course-view-tiles.editing .activitychooser-button {
+    display: none!important;
+}
+
+#page-course-view-tiles #abovetiles {
+    width: 100%;
+}
+
+// Tiles course format styles.
+.format-tiles {
+    .section {
+        li {
+            &:hover {
+                background-color: #f9f9f9;
+                .cm_action_menu.actions {
+                    background-color: #f9f9f9;
+                }
+            }
+            list-style: none;
+            .activityiconcontainer.smaller {
+                width: 50px;
+                height: 50px;
+            }
+             //Tiles grid based on Boost.
+            .activity-actions {
+                grid-area: actions;
+            }
+            .activity-icon {
+                grid-area: icon;
+            }
+            .activity-dates {
+                grid-area: dates;
+            }
+            .activity-name-area {
+                grid-area: name;
+            }
+            .activity-completion {
+                grid-area: completion;
+            }
+            .activity-groupmode-info {
+                grid-area: groupmode;
+            }
+            .activity-badges {
+                grid-area: visibility;
+            }
+            .activity-altcontent {
+                grid-area: altcontent;
+            }
+            .activity-availability {
+                grid-area: availability;
+            }
+            .activity-afterlink {
+                grid-area: afterlink;
+            }
+            .activity-item .activity-grid {
+                display: grid;
+                align-items: center;
+                grid-template-columns: min-content 1fr min-content min-content min-content;
+                grid-template-rows: 1fr repeat(5, min-content);
+                grid-template-areas: "icon          name          groupmode      completion    actions" "icon          visibility    groupmode      completion    actions" "icon          dates         groupmode      completion    actions" "altcontent    altcontent    altcontent     altcontent    altcontent" "afterlink     afterlink     afterlink      afterlink     afterlink" "availability  availability  availability   availability  availability";
+            }
+            @media (max-width: 575.98px) {
+                .activity-item .activity-grid {
+                    grid-template-columns: min-content 1fr min-content min-content min-content;
+                    grid-template-rows: 1fr repeat(4, min-content);
+                    grid-template-areas: "icon          name          actions" "icon          visibility    actions" "dates         dates         dates" "groupmode     groupmode     groupmode" "completion    completion    completion" "altcontent    altcontent    altcontent" "afterlink     afterlink     afterlink" "availability  availability  availability";
+                }
+            }
+            .activity-item .activity-grid.noname-grid {
+                grid-template-columns: min-content 1fr min-content min-content;
+                grid-template-areas: "visibility    groupmode        completion    actions" "altcontent    altcontent       altcontent    altcontent" "afterlink     afterlink        afterlink     afterlink" "availability  availability     availability  availability";
+            }
+            @media (max-width: 575.98px) {
+                .activity-item .activity-grid.noname-grid {
+                    grid-template-columns: 1fr min-content;
+                    grid-template-areas: "visibility    actions" "altcontent    altcontent" "groupmode     groupmode" "afterlink     afterlink" "completion    completion" "availability  availability";
+                }
+            }
+
+            &.launch-tiles-standard,
+            &.launch-tiles-module-modal,
+            &.activity-wrapper,
+            &.launch-tiles-resource-modal,
+            &.launch-tiles-url-modal {
+
+                &.modtype_label {
+                    padding-left: 1em;
+                    border: none;
+                }
+
+                .activityiconcontainer,
+                .instancename {
+                    margin-right: 1rem;
+                    padding: 0.3rem;
+                    display: inline-flex !important;
+                    .activityicon {
+                        margin-top: -2px !important;
+                        margin-right: 0 !important;
+                        height: fit-content;
+                        width: 34px;
+                        filter: none;
+                    }
+                    img[src*="snap/core"] {
+                        filter: brightness(0) invert(1);
+                    }
+                }
+            }
+            .activity.subtile.tileiconcontainer.activityiconcontainer {
+                margin: 25px 0 0 0;
+                img.icon {
+                    padding: unset;
+                }
+            }
+        }
+    }
+    #region-main {
+        max-width: 95%;
+    }
+    #headerabovetiles {
+        min-height: 42px;
+    }
+    .tileiconcontainer.activityiconcontainer .tile-icon img.icon {
+        filter: unset;
+        padding: unset;
+    }
+    span.badge.badge-info {
+        border-radius: 10px;
+    }
+    .section.main .summary {
+        padding: unset;
+    }
+    // For new subtiles display.
+    #region-main .course-content .activity.subtile {
+        .tileiconcontainer.activityiconcontainer {
+            margin: 25px 0 0 0;
+            img.icon {
+                padding: unset;
+            }
+        }
+        // Tiles completion.
+        .completioncheckbox {
+            border: 3px solid #ababab;
+        }
+    }
+    // General Tiles activities styles.
+    .section li.activity.activity-wrapper {
+        border: 2px solid lightgray;
+        border-radius: 1rem;
+        padding: 1rem;
+        .activitytitle {
+            border: none;
+        }
+        .activity-altcontent {
+            margin-top: 1rem;
+        }
+        .activity-badges{
+            margin-left: unset;
+        }
+        .cm_action_menu {
+            display: flex;
+            align-items: center;
+        }
+        .dropdown-menu.show {
+            border-radius: 1rem;
+        }
+        .groupmode-information.btn {
+            img.icon {
+                filter: none;
+            }
+            span.groupmode-icon-info {
+                display: none;
+            }
+        }
+    }
+    .course-section-header {
+        .dropdown-menu.show {
+            border-radius: 1rem;
+        }
+    }
+    // Fix navigation.
+    .single-section {
+        margin-top: 2em !important;
+    }
+    .navigationtitle {
+        width: 100%;
+        position: absolute;
+        margin-top: -2em;
+    }
+    // Fix Filters.
+    #filterbuttons {
+        clear: both;
+        width: fit-content;
+    }
+
+    .action-menu .menu .dropdown-subpanel {
+        &.dropleft .dropdown-toggle {
+            padding-left: 3%;
+        }
+        .dropdown-subpanel-content {
+            &.show {
+                display: block !important;
+            }
+            .option-icon {
+                margin-right: .5em;
+                .icon {
+                    max-width: unset;
+                    width: 16px;
+                    height: 16px;
+                    opacity: .5;
+                }
+            }
+
+        }
+    }
+    .activity-groupmode-info {
+        .option-icon {
+            margin-right: .5em;
+            .icon {
+                max-width: unset;
+                width: 16px;
+                height: 16px;
+                opacity: .5;
+            }
+        }
+        div.groupmode-information {
+            .icon {
+                margin-right: 1em;
+            }
+            .groupmode-icon-info {
+                display: none;
+            }
+        }
+    }
 }
 
 // --------------------------------------------------------------------
@@ -1823,83 +2332,6 @@ body.snap-resource-card {
     .contentafterlink {
         font-size: small;
     }
-
-    &.snap-mime-document,
-    &.snap-mime-writer,
-    &.snap-mime-oth,
-    &.snap-mime-text {
-        border-top-color: $color-word;
-    }
-
-    &.snap-mime-powerpoint,
-    &.snap-mime-impress {
-        border-top-color: $color-powerpoint;
-    }
-
-    &.snap-mime-spreadsheet,
-    &.snap-mime-chart,
-    &.snap-mime-database,
-    &.snap-mime-calc {
-        border-top-color: $color-excel;
-    }
-
-    // ADOBE //
-    &.snap-mime-pdf,
-    &.snap-mime-eps,
-    &.snap-mime-flash {
-        border-top-color: $color-pdf;
-    }
-
-    // MULTIMEDIA //
-    &.snap-mime-mp3,
-    &.snap-mime-wav,
-    &.snap-mime-audio {
-        border-top-color: $color-audio;
-    }
-
-    &.snap-mime-mov,
-    &.snap-mime-wmv,
-    &.snap-mime-video,
-    &.snap-mime-quicktime,
-    &.snap-mime-mpeg,
-    &.snap-mime-avi {
-        border-top-color: $color-video;
-    }
-
-    &.modtype_lightboxgallery,
-    &.snap-mime-bmp {
-        border-top-color: $color-lightbox;
-    }
-
-    // MOODLE MODS //
-    &.modtype_url {
-        border-top-color: $color-url;
-    }
-
-    &.modtype_imscp,
-    &.modtype_scorm {
-        border-top-color: $color-questionnaire;
-        background-image: url([[pix:core|/f/book]]);
-    }
-
-    &.modtype_folder {
-        border-top-color: $color-folder;
-    }
-
-    // CODE & SYSTEM //
-    &.snap-mime-archive {
-        border-top-color: #fed859;
-    }
-
-    &.snap-mime-markup,
-    &.snap-mime-html,
-    &.snap-mime-sourcecode {
-        border-top-color: #f0652a;
-    }
-
-    &.snap-mime-text {
-        border-top-color: #f1bf26;
-    }
 }
 
 // -------------------------
@@ -1955,7 +2387,6 @@ body.snap-resource-card {
 .snap-grouping-tag {
     text-align: right;
     font-size: $font-size-sm;
-    margin-bottom: 0.5em;
 
     a {
         padding: 0.5em;
@@ -1972,10 +2403,12 @@ body.snap-resource-card {
 }
 
 // Activity dues date.
-.snap-due-date {
+.snap-due-date, .snap-open-date, .snap-opened-date {
     font-size: inherit;
     font-weight: normal;
     border-radius: 1em;
+    margin-left: 1em;
+    margin-bottom: 1em;
 }
 
 
@@ -1984,11 +2417,12 @@ body.snap-resource-card {
 .snap-stealth-tag,
 .snap-draft-tag,
 .snap-current-tag {
-    font-size: small;
     font-family: $font-family-system;
     background-color: #eee;
     margin: 0.5em 0;
-    padding: 0.5em;
+    border-radius: 0.5rem;
+    padding: 0.5em 1em;
+    font-weight: 500;
 
     .availabilityinfo {
         display: inline;
@@ -2020,14 +2454,10 @@ body.snap-resource-card {
 
 // Hide draft tag, unless asset has class draft (can be added by js).
 .snap-draft-tag,
-.snap-current-tag {
+.snap-current-tag,
+.snap-stealth-tag {
     display: none !important; // SHAME - overcome bad overspecificity...
     font-size: $font-size-sm;
-}
-
-// Hide stealth tag, unless asset has class stealth (can be added by js).
-.snap-stealth-tag {
-    display: none !important;
 }
 
 // Hide draft and stealth tag if the sections has hidden class.
@@ -2196,13 +2626,7 @@ form.togglecompletion {
     }
 }
 
-/* Indent text associated with activity/resource. */
-.section li.snap-activity {
-    .contentafterlink,
-    .hsuforum-recent {
-        margin-left: (33px + 32px); // icon size (33px + margin);
-    }
-}
+
 
 // -------------------------
 // Snap actions
@@ -2210,25 +2634,24 @@ form.togglecompletion {
 
 // All the editing options in one region.
 .snap-asset-actions {
-    position: absolute;
-    bottom: auto;
-    left: 0;
-    width: 250px;
-
     & > a,
-    .snap-edit-more-dropdown,
-    .snap-asset-move {
-        display: inline-block !important;
-        padding: 0 7%;
-        text-align: center;
-        width: 33%;
-        cursor: pointer;
-
+    .snap-edit-more-dropdown {
         &:hover,
         &:focus {
             .icon {
                 transform: scale(1.1);
                 border-color: $gray-light;
+            }
+        }
+        .snap-edit-asset-more i.icon.fa-chevron-up {
+            display: none;
+        }
+        &.show .snap-edit-asset-more {
+            i.icon.fa-chevron-down {
+                display: none;
+            }
+            i.icon.fa-chevron-up {
+                display: inline-block;
             }
         }
     }
@@ -2253,22 +2676,23 @@ form.togglecompletion {
         background-color: white;
     }
 
-    // When checkbox for moving is checked
-    input[type=checkbox]:checked + .icon {
-        background-color: $brand-success !important;
-    }
-
     .dropdown-menu {
         box-shadow: 0 2px 5px 0 rgba(0, 0, 0, .26);
         border: 0;
-        padding: 0;
-    }
-
-    .dropdown-menu a {
-        font-weight: inherit;
-        font-size: 0.8em;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        padding: 10px 0;
+        border-radius: 0.5rem;
+        min-width: 16.1rem;
+        a {
+            font-weight: inherit;
+            font-size: 0.8em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pld-dropdown a,
+        .editing_backup {
+            display: inline-flex;
+            align-items: baseline;
+        }
     }
 
     input.sr-only[type="checkbox"],
@@ -2277,51 +2701,27 @@ form.togglecompletion {
     }
 
     .snap-asset-move {
+        margin: 0;
         input.sr-only[type="checkbox"] {
             display: inherit;
         }
     }
-
-    label.snap-asset-move .icon,
-    a.snap-edit-asset .icon,
-    .dropdown-toggle .icon {
-        font-size: 1.3em;
-        color: $icons-color;
-    }
 }
 
-.modtype_page,
-.modtype_label,
-.modtype_book {
-    .snap-asset-actions {
-        bottom: 0;
+.snap-asset-move-wrapper .snap-asset-move-label {
+    position: absolute;
+    left: 0;
+    text-align: center;
+    width: 8%;
+    cursor: pointer;
+    .snap-asset-move-input {
+        accent-color: $brand-primary;
     }
 }
 
 // Modify H3 size so the chapter title inside a book activity has a correct size between the other words.
 .modtype_book .asset-wrapper .snap-asset-content .summary-text.row h4 {
     font-size: 1em;
-}
-
-.snap-resource {
-    .snap-asset-actions {
-        width: 100%;
-
-        & > a,
-        .snap-edit-more-dropdown,
-        label {
-            padding: 0.3em 7%;
-            text-align: center;
-            width: 33%;
-        }
-    }
-}
-
-/* reset some moodle shame */
-.moodle-actionmenu,
-.moodle-actionmenu > ul,
-.moodle-actionmenu > ul > li {
-    display: block;
 }
 
 .moodle-actionmenu > ul > li {
@@ -3005,12 +3405,6 @@ span.editinstructions {
 }
 
 body.path-course-index {
-    .add-course-btn-container {
-        margin-top: 1em;
-        width: 100%;
-        padding-top: 1em;
-        padding-left: 15px;
-    }
     .course_category_tree {
         margin: 15px;
     }
@@ -3074,5 +3468,126 @@ body[id^='page-mod-data'] {
 
     .tertiary-navigation {
         margin-bottom: 1em;
+    }
+}
+
+.cover-image-change {
+    .moodle-dialogue-base .moodle-dialogue-lightbox {
+        pointer-events: none;
+    }
+}
+
+.snap_cover_image_dialogue,
+.snap_cover_image_delete_dialogue {
+    padding: 1em;
+    .snap_cover_image_save,
+    .snap_cover_image_delete_confirmation {
+        margin-top: 2em;
+        text-align: right;
+    }
+    .snap_cover_image_preview_box {
+        margin-top: 1em;
+        .snap_cover_image_preview {
+            width: 450px;
+        }
+    }
+    .snap_cover_image_options {
+        margin-top: 2em;
+        margin-bottom: 2em;
+        text-align: center;
+        display: block;
+        button {
+            margin: 0.5rem;
+        }
+    }
+    .snap_cover_image_preview {
+        border-radius: 0.5rem;
+    }
+    .snap_cover_image_delete_confirmation button {
+        margin-right: 0.5rem;
+    }
+
+}
+.snap-header-card-icons {
+    .snap-groups-mode-actions {
+        .snap-groups-more {
+            background-color: transparent;
+            border: none;
+            display: flex;
+            img {
+                opacity:(0.5);
+            }
+        }
+        #snap-groups-menu {
+            box-shadow: 0 2px 5px 0 rgba(0, 0, 0, .26);
+            border: 0;
+            padding: 10px 0;
+            border-radius: 0.5em;
+            min-width: 16.1rem;
+            margin-right: 3em;
+            margin-top: 0.2em;
+            .dropdown-item-outline {
+                .option-select-indicator,
+                .option-icon {
+                    margin-right: 0.5em;
+                }
+                .option-name {
+                    a {
+                        font-size: .8em;
+                    }
+                }
+            }
+        }
+    }
+    #snap-asset-menu {
+        #groups-menu, #availability-menu {
+            position: absolute;
+            top: 1.8em;
+            right: auto;
+            left: auto;
+            margin-top: 0;
+            margin-right: .125rem;
+            min-width: 22rem;
+            @include media-breakpoint-up(md) {
+                top: 0;
+                right: 16em;
+            }
+            .dropdown-item-outline {
+                .option-select-indicator,
+                .option-icon {
+                    margin-right: 0.5em;
+                }
+                .option-name {
+                    a {
+                        font-size: .8em;
+                    }
+                }
+            }
+        }
+        .dropdown-toggle.availability-dropdown::after, .dropdown-toggle.groups-dropdown::after {
+            @include media-breakpoint-up(md) {
+                content: "";
+            }
+        }
+        a.availability-dropdown, a.groups-dropdown {
+            &:hover ::before {
+                opacity: unset;
+            }
+            @include media-breakpoint-down(md) {
+                &::after {
+                    @extend .fa-solid;
+                    content: fa-content($fa-var-chevron-down);
+                }
+            }
+            @include media-breakpoint-up(md) {
+                &::before {
+                    @extend .fa-solid;
+                    content: fa-content($fa-var-chevron-left);
+                    position: absolute;
+                    top: 50%;
+                    transform: translate(-150%, -50%);
+                }
+            }
+        }
     }
 }

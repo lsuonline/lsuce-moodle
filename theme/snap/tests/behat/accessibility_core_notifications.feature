@@ -41,7 +41,7 @@ Feature: When the Moodle theme is set to Snap, core notifications messages shoul
       | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    |
     And I log in as "admin"
     And I am on "Course 1" course homepage
-    And I add a "Open Forum" to section "1" and I fill the form with:
+    And I add a "Forum" to section "1" and I fill the form with:
       | Forum name | Test forum name |
       | Forum type | Standard forum for general use |
       | Description | Test forum description |
@@ -52,10 +52,10 @@ Feature: When the Moodle theme is set to Snap, core notifications messages shoul
     When I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Topic 1"
-    And I click on "li.modtype_hsuforum a.mod-link" "css_element"
+    And I click on "li.modtype_forum a.mod-link" "css_element"
     And I wait until the page is ready
-    And I create the following inline discussions:
-      | subject            | message                       |
-      | Test discussion 1  | Test discussion 1 description |
+    When I add a new discussion to "Test forum name" forum with:
+      | Subject | Test discussion 1 |
+      | Message | Test discussion 1 description |
     And I should see "Your post was successfully added."
     And the "aria-label" attribute of "div.alert-success button.close" "css_element" should contain "Close"

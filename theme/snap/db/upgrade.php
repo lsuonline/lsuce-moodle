@@ -122,38 +122,24 @@ function xmldb_theme_snap_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2019051501, 'theme', 'snap');
     }
-    // BEGIN LSU Extra Course Tabs.
-    if ($oldversion < 2023041100 && $oldversion > 2020061109) {
-
-        // Define table theme_snap_remotes to be created.
-        $table = new xmldb_table('theme_snap_remotes');
-
-        // Adding fields to table theme_snap_remotes.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('rcjson', XMLDB_TYPE_TEXT, null, null, null, null, null);
-        $table->add_field('lastupdated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-
-        // Adding keys to table theme_snap_remotes.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-
-        // Adding indexes to table theme_snap_remotes.
-        $table->add_index('userid', XMLDB_INDEX_UNIQUE, ['userid']);
-        $table->add_index('lastupdated', XMLDB_INDEX_NOTUNIQUE, ['lastupdated']);
-
-        // Conditionally launch create table for theme_snap_remotes.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        // Snap savepoint reached.
-        upgrade_plugin_savepoint(true, 2020061109, 'theme', 'snap');
-    }
-    // END LSU Extra Course Tabs.
 
     if ($oldversion < 2022042800) {
         unset_config('design_activity_chooser', 'theme_snap');
         upgrade_plugin_savepoint(true, 2022042800, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2024020100) {
+        if (!is_null(get_config('theme_snap', 'design_mod_page'))) {
+            $previous = get_config('theme_snap', 'design_mod_page');
+            set_config('behavior_mod_page', $previous, 'theme_snap');
+            unset_config('design_mod_page', 'theme_snap');
+        }
+        upgrade_plugin_savepoint(true, 2024020100, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2024030700) {
+        unset_config('behavior_mod_page', 'theme_snap');
+        upgrade_plugin_savepoint(true, 2024030700, 'theme', 'snap');
     }
 
     return true;

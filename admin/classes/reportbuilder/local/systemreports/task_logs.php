@@ -142,7 +142,7 @@ class task_logs extends system_report {
         $this->add_action((new action(
             new moodle_url('/admin/tasklogs.php', ['logid' => ':id']),
             new pix_icon('e/search', ''),
-            ['target' => '_blank'],
+            [],
             false,
             new lang_string('view'),
         )));

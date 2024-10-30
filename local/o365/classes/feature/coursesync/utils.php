@@ -27,10 +27,10 @@
 namespace local_o365\feature\coursesync;
 
 use context_course;
-use Exception;
 use local_o365\httpclient;
 use local_o365\oauth2\clientdata;
 use local_o365\rest\unified;
+use moodle_exception;
 use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -54,19 +54,39 @@ class utils {
     /**
      * Get an array of enabled courses.
      *
+     * @param bool $returnallids Whether to return all course IDs. If set to false and sync is on all courses, TRUE is returned.
      * @return bool|array Array of course IDs, or TRUE if all courses enabled.
      */
-    public static function get_enabled_courses() {
+    public static function get_enabled_courses(bool $returnallids = false) {
+        global $DB;
+
         $coursesyncsetting = get_config('local_o365', 'coursesync');
         if ($coursesyncsetting === 'onall') {
-            return true;
+            if ($returnallids) {
+                $courseids = $DB->get_fieldset_select('course', 'id', 'id != ?', [SITEID]);
+                return $courseids;
+            } else {
+                return true;
+            }
         } else if ($coursesyncsetting === 'oncustom') {
             $coursesenabled = get_config('local_o365', 'coursesynccustom');
             $coursesenabled = @json_decode($coursesenabled, true);
             if (!empty($coursesenabled) && is_array($coursesenabled)) {
+                $changed = false;
+                $courseids = array_keys($coursesenabled);
+                foreach ($courseids as $courseid => $value) {
+                    if (!$DB->record_exists('course', ['id' => $courseid])) {
+                        unset($coursesenabled[$courseid]);
+                        $changed = true;
+                    }
+                }
+                if ($changed) {
+                    set_config('coursesynccustom', json_encode($coursesenabled), 'local_o365');
+                }
                 return array_keys($coursesenabled);
             }
         }
+
         return [];
     }
 
@@ -106,7 +126,7 @@ class utils {
         $httpclient = new httpclient();
         $clientdata = clientdata::instance_from_oidc();
         $tokenresource = unified::get_tokenresource();
-        $unifiedtoken = \local_o365\utils::get_app_or_system_token($tokenresource, $clientdata, $httpclient);
+        $unifiedtoken = \local_o365\utils::get_application_token($tokenresource, $clientdata, $httpclient);
 
         if (empty($unifiedtoken)) {
             return false;
@@ -156,7 +176,7 @@ class utils {
             } else {
                 return null;
             }
-        } catch (Exception $e) {
+        } catch (moodle_exception $e) {
             \local_o365\utils::debug('Exception while retrieving group urls: groupid ' . $object->objectid . ' ' .
                 $e->getMessage(), __METHOD__);
             return null;
@@ -176,6 +196,10 @@ class utils {
         if (!empty($objectrec)) {
             $graphclient = unified::instance_for_user();
             $result = $graphclient->delete_group($objectrec->objectid);
+
+            // Delete course and team connection records.
+            $DB->delete_records_select('local_o365_objects',
+                "type = 'group' AND subtype IN ('courseteam', 'teamfromgroup') AND moodleid = ?", [$courseid]);
 
             if ($result === true) {
                 $metadata = (!empty($objectrec->metadata)) ? @json_decode($objectrec->metadata, true) : [];
@@ -384,7 +408,7 @@ class utils {
      */
     public static function clean_up_group_mail_alias(string $mailalias) {
         $notallowedbasicchars = ['@', '(', ')', "\\", '[', ']', '"', ';', ':', '.', '<', '>', ' '];
-        $chars = preg_split( '//u', $mailalias, null, PREG_SPLIT_NO_EMPTY);
+        $chars = preg_split( '//u', $mailalias, -1, PREG_SPLIT_NO_EMPTY);
         foreach($chars as $key => $char){
             $charorder = ord($char);
             if ($charorder < 0 || $charorder > 127 || in_array($char, $notallowedbasicchars)) {
@@ -599,11 +623,11 @@ class utils {
         $clientdata = clientdata::instance_from_oidc();
         $httpclient = new httpclient();
         $tokenresource = unified::get_tokenresource();
-        $token = \local_o365\utils::get_app_or_system_token($tokenresource, $clientdata, $httpclient);
+        $token = \local_o365\utils::get_application_token($tokenresource, $clientdata, $httpclient);
         if (!empty($token)) {
             return new unified($token, $httpclient);
         } else {
-            $msg = 'Couldn\'t construct Microsoft Graph API client because we didn\'t have a system API user token.';
+            $msg = 'Couldn\'t construct Microsoft Graph API client because we don\'t have an application token.';
             \local_o365\utils::debug($msg, $caller);
             return false;
         }
@@ -623,7 +647,7 @@ class utils {
                 $coursesync = new main($graphclient);
                 if ($coursesync) {
                     if ($coursesync->has_education_license()) {
-                        $syncedcourses = static::get_enabled_courses();
+                        $syncedcourses = static::get_enabled_courses(true);
                         // Exclude SDS synced courses.
                         $sdscourseids = $DB->get_fieldset_select('local_o365_objects', 'moodleid',
                             'type = ? AND subtype = ?', ['sdssection', 'course']);
@@ -641,7 +665,7 @@ class utils {
                     }
                 }
             }
-        } catch (Exception $e) {
+        } catch (moodle_exception $e) {
             // Cannot get graph client, nothing to do.
         }
     }
@@ -743,7 +767,7 @@ class utils {
                 // Remove owner and member from the Microsoft 365 group.
                 $coursesync->remove_member_from_group($groupobjectid, $userobjectid);
                 $coursesync->remove_owner_from_group($groupobjectid, $userobjectid);
-            } catch (Exception $e) {
+            } catch (moodle_exception $e) {
                 \local_o365\utils::debug('Exception: ' . $e->getMessage(), __METHOD__, $e);
                 return false;
             }
@@ -755,7 +779,7 @@ class utils {
                     // Remove user as owner and member from the Microsoft 365 group.
                     $coursesync->remove_member_from_group($groupobjectid, $userobjectid);
                     $coursesync->remove_owner_from_group($groupobjectid, $userobjectid);
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     \local_o365\utils::debug('Exception: ' . $e->getMessage(), __METHOD__, $e);
                     return false;
                 }
@@ -769,11 +793,14 @@ class utils {
                             break;
                         case MICROSOFT365_GROUP_ROLE_MEMBER:
                             // Add user to the Microsoft 365 group as member.
-                            $coursesync->remove_owner_from_group($groupobjectid, $userobjectid);
+                            $groupowneroids = $coursesync->get_group_owners($groupobjectid);
+                            if (in_array($userobjectid, $groupowneroids)) {
+                                $coursesync->remove_owner_from_group($groupobjectid, $userobjectid);
+                            }
                             $coursesync->add_member_to_group($groupobjectid, $userobjectid);
                             break;
                     }
-                } catch (Exception $e) {
+                } catch (moodle_exception $e) {
                     \local_o365\utils::debug('Exception: ' . $e->getMessage(), __METHOD__, $e);
                     return false;
                 }

@@ -56,8 +56,8 @@ Feature: Snap message send messages
   Scenario: Send a message to a group conversation in snap
     Given I log in as "student1"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "//span[contains(text(),\"Group\")]" "xpath_element"
     And I click on ".rounded-circle[alt='Group 1']" "css_element"
     When I send "Hi!" message in the message area
@@ -65,21 +65,21 @@ Feature: Snap message send messages
     And I log out
     And I log in as "student2"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I should see "1" in the ".section[data-region='view-overview-group-messages'] small[data-region='section-total-count-container'] span[data-region='section-total-count']" "css_element"
-    And I should see "1" in the ".badge-primary[data-region='section-unread-count'][aria-label='There are 1 unread conversations']" "css_element"
+    And I should see "There are 1 unread conversations" in the "#view-overview-group-messages-unread-count-label" "css_element"
     And I should see "1" in the ".badge-primary[data-region='unread-count']" "css_element"
     And I click on ".rounded-circle[alt='Group 1']" "css_element"
     Then I should see "Hi!" in the ".message.clickable[data-region='message']" "css_element"
     Then ".badge-primary.hidden[data-region='unread-count']" "css_element" should exist
-    Then ".badge-primary.hidden[data-region='section-unread-count'][aria-label='There are 1 unread conversations']" "css_element" should exist
+    Then "span#view-overview-group-messages-unread-count-label:contains('There are 1 unread conversations')" "css_element" should exist
 
   Scenario: Send a message to a starred conversation in snap
     Given I log in as "student1"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "//span[contains(text(),\"Group\")]" "xpath_element"
     And I click on ".rounded-circle[alt='Group 1']" "css_element"
     And I click on "conversation-actions-menu-button" "button"
@@ -94,15 +94,15 @@ Feature: Snap message send messages
     And I log out
     And I log in as "student2"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I should see "1" in the ".section[data-region='view-overview-favourites'] span[data-region='section-total-count']" "css_element"
-    And I should see "1" in the ".badge-primary[data-region='section-unread-count'][aria-label='There are 1 unread conversations']" "css_element"
+    And I should see "There are 1 unread conversations" in the "#view-overview-group-messages-unread-count-label" "css_element"
     And I should see "1" in the ".badge-primary[data-region='unread-count'] span" "css_element"
     And I click on ".rounded-circle[alt='Group 1']" "css_element"
     Then I should see "Hi!" in the ".message.clickable[data-region='message']" "css_element"
     Then "//*[@data-region='unread-count']/span[contains(text(),'There are  unread messages')]" "xpath_element" should exist
-    Then "//*[@data-region='section-unread-count']/span[contains(text(),'There are  unread conversations')]" "xpath_element" should exist
+    Then "span#view-overview-group-messages-unread-count-label:contains('There are 1 unread conversations')" "css_element" should exist
 
   Scenario: Send a message to a private conversation via contacts and check unread messages is updated in snap.
     Given the following "message contacts" exist:
@@ -111,8 +111,8 @@ Feature: Snap message send messages
       | student3 | student2 |
     And I log in as "student1"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "Contacts" "link"
     And I click on "Student 2" "link" in the "//*[@data-section='contacts']" "xpath_element"
     When I send "Hi!" message in the message area
@@ -120,8 +120,8 @@ Feature: Snap message send messages
     And I log out
     And I log in as "student3"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "Contacts" "link"
     And I click on "Student 2" "link" in the "//*[@data-section='contacts']" "xpath_element"
     When I send "Hello!" message in the message area
@@ -131,10 +131,10 @@ Feature: Snap message send messages
     And I log out
     And I log in as "student2"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I should see "2" in the ".section[data-region='view-overview-messages'] span[data-region='section-total-count']" "css_element"
-    And I should see "2" in the ".badge-primary[data-region='section-unread-count'][aria-label='There are 2 unread conversations']" "css_element"
+    And I should see "There are 2 unread conversations" in the "#view-overview-messages-unread-count-label" "css_element"
     And I should see "1" in the "Student 1" "core_message > Message"
     And I should see "2" in the "Student 3" "core_message > Message"
     And I click on ".rounded-circle[alt='Student 3']" "css_element"
@@ -146,13 +146,13 @@ Feature: Snap message send messages
     And I click on ".rounded-circle[alt='Student 1']" "css_element"
     Then I should see "Hi!" in the ".d-flex[data-region='day-messages-container']" "css_element"
     Then ".badge-primary.hidden[data-region='unread-count']" "css_element" should exist
-    Then ".badge-primary.hidden[data-region='section-unread-count'][aria-label='There are 2 unread conversations']" "css_element" should exist
+    Then "span#view-overview-messages-unread-count-label:contains('There are 2 unread conversations')" "css_element" should exist
 
   Scenario: Message bubble should have a specific color instead of site color.
     Given I log in as "student1"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "//span[contains(text(),\"Group\")]" "xpath_element"
     And I click on ".rounded-circle[alt='Group 1']" "css_element"
     And I click on "conversation-actions-menu-button" "button"
@@ -165,7 +165,6 @@ Feature: Snap message send messages
     And I check element ".message-app .message.send" with property "background-color" = "#E6E6E6"
     And I check element ".message-app .message.send .tail" with property "border-bottom-color" = "#E6E6E6"
 
-  @javascript
   Scenario: When a user has unread conversations, a notification should appear in the message icon on the navigation bar
   and should redirect to the message page.
     Given the following "message contacts" exist:
@@ -174,8 +173,8 @@ Feature: Snap message send messages
       | student3 | student2 |
     And I log in as "student1"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "Contacts" "link"
     And I click on "Student 2" "link" in the "//*[@data-section='contacts']" "xpath_element"
     When I send "Hi!" message in the message area
@@ -183,8 +182,8 @@ Feature: Snap message send messages
     And I log out
     And I log in as "student3"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "Contacts" "link"
     And I click on "Student 2" "link" in the "//*[@data-section='contacts']" "xpath_element"
     When I send "Hello!" message in the message area
@@ -199,7 +198,7 @@ Feature: Snap message send messages
     And the "title" attribute of "#mr-nav .badge-count-container a.snap-message-count" "css_element" should contain "Open messaging drawer. There are 2 unread conversations"
     And I click on "#mr-nav .badge-count-container .snap-message-count" "css_element"
     And I should see "2" in the ".section[data-region='view-overview-messages'] span[data-region='section-total-count']" "css_element"
-    And I should see "2" in the ".badge-primary[data-region='section-unread-count'][aria-label='There are 2 unread conversations']" "css_element"
+    And I should see "There are 2 unread conversations" in the "#view-overview-messages-unread-count-label" "css_element"
     # Now we need to see that the unread message notification disappears after the message are read.
     And I select "Student 3" conversation in messaging
     Then I should see "Hello!" in the ".d-flex[data-region='day-messages-container']" "css_element"
@@ -209,7 +208,6 @@ Feature: Snap message send messages
     And the "title" attribute of "#mr-nav .badge-count-container a.snap-message-count" "css_element" should contain "Open messaging drawer. There are 0 unread conversations"
     And the "aria-label" attribute of "#mr-nav .badge-count-container a.snap-message-count" "css_element" should contain "Open messaging drawer. There are 0 unread conversations"
 
-  @javascript
   Scenario: Message icon should change its color when the category color changes.
     Given the following config values are set as admin:
       | category_color | {"5":"#510038"} | theme_snap |
@@ -226,7 +224,6 @@ Feature: Snap message send messages
     And I follow "Cat 5"
     And I check element ".badge-count-container .icon.fa-comment" with color "#510038"
 
-  @javascript
   Scenario: Send a message from course participants.
     Given I log in as "student1"
     And I am on "Course 1" course homepage
@@ -238,7 +235,6 @@ Feature: Snap message send messages
     And I click on "#message-user-button" "css_element"
     Then "//div[contains(@class, 'header-container')]//strong[contains(text(), 'Student 2')]" "xpath_element" should be visible
 
-  @javascript
   Scenario: Opening a direct message through the personal menu should open the message directly in the message page.
     Given the following "message contacts" exist:
       | user     | contact |
@@ -246,8 +242,8 @@ Feature: Snap message send messages
       | student3 | student2 |
     And I log in as "student1"
     And I am on site homepage
-    And I follow "My Courses"
-    And I follow "View my messages"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "//a[@title='View my messages']/*[local-name()='svg']" "xpath_element"
     And I click on "Contacts" "link"
     And I click on "Student 2" "link" in the "//*[@data-section='contacts']" "xpath_element"
     When I send "Hi!" message in the message area
@@ -255,7 +251,7 @@ Feature: Snap message send messages
     And I log out
     And I log in as "student2"
     And I am on site homepage
-    And I follow "My Courses"
-    And I click on "#snap-my-courses-feed-messages > div > div > a" "css_element"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
+    And I click on "#snap-personal-menu-feed-messages > div > div > a" "css_element"
     # To check that the message is opened directly.
     And I should see "Hi!" in the "//div[@class='body-container position-relative']//div[@data-region='view-conversation']//div[@data-region='content-message-container']//div[@data-region='message']//div[@data-region='text-container']//p" "xpath_element"

@@ -97,16 +97,20 @@ Feature: When the moodle theme is set to Snap, teachers can upload files as reso
     And I am on "Course 1" course homepage
     And I add a "File" to section "1"
     And I expand all fieldsets
+    And I set the field "Students must manually mark the activity as done" to "1"
     And I click on "id_completionexpected_enabled" "checkbox"
     And I set the following fields to these values:
-      | Name                      | Myfile                                               |
-      | Expect completed on       | ##tomorrow##                                         |
+      | Name                          | Myfile                  |
+      | id_completionexpected_enabled | 1                       |
+      | id_completionexpected_day     | ##tomorrow##%d##        |
+      | id_completionexpected_month   | ##tomorrow##%B##        |
+      | id_completionexpected_year    | ##tomorrow##%Y##        |
     And I upload "theme/snap/tests/fixtures/400KB_file.txt" file to "Select files" filemanager
     And I press "Save and return to course"
     And I log out
     Given I log in as "student1"
     And I wait until the page is ready
-    And I follow "My Courses"
+    And I click on "#snap_feeds_side_menu_trigger" "css_element"
     And I follow "Myfile should be completed"
     Then I <visible> "Mark as done"
     And I log out
@@ -120,7 +124,7 @@ Feature: When the moodle theme is set to Snap, teachers can upload files as reso
       | 5       | should not see |
       | 6       | should see     |
 
-  @javascript
+  @javascript @_switch_window @theme_snap_file_upload
   Scenario Outline: A user should see the display format when viewing file depending on display options.
     Given I log in as "admin"
     And the following config values are set as admin:
@@ -141,10 +145,34 @@ Feature: When the moodle theme is set to Snap, teachers can upload files as reso
     And I switch to the <window> window
     Then "Myfile" "text" <exist>
     And I log out
-
     Examples:
       | display | exist            | window         |
       | 1       | should exist     | main           |
       | 2       | should exist     | main           |
       | 3       | should exist     | main           |
-      | 6       | should not exist | new            |
+
+
+  @javascript @_switch_window @theme_snap_file_upload
+  Scenario Outline: A file with display pop-up should open a new window with the file
+    Given I am logged in as "admin"
+    And the following config values are set as admin:
+      | displayoptions     | <display> | resource   |
+      | displaydescription | 0         | theme_snap |
+    And I am on "Course 1" course homepage
+    And I add a "File" to section "1"
+    And I expand all fieldsets
+    And I set the following fields to these values:
+      | Name | Myfile |
+    And I upload "theme/snap/tests/fixtures/test_text_file.txt" file to "Select files" filemanager
+    And I press "Save and return to course"
+    And I log out
+    Given I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Topic 1"
+    And I click on ".mod-link" "css_element"
+    And I switch to a second window
+    Then "This is just some test text" "text" <exist>
+    And I log out
+    Examples:
+      | display | exist            |
+      | 6       | should exist |

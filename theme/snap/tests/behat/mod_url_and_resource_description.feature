@@ -40,8 +40,8 @@ Feature: When the moodle theme is set to Snap, the users see an intermediate pag
       | user      | course  | role            |
       | teacher1  | C1      | editingteacher  |
     And the following "activities" exist:
-      | activity   | name         | intro                       | course | idnumber  | section | showdescription |
-      | resource   | Resource 1   | Test resource description   | C1     | resource1 | 0       | 1               |
+      | activity   | name         | intro                       | course | idnumber  | section | showdescription | printintro |
+      | resource   | Resource 1   | Test resource description   | C1     | resource1 | 0       | 1               | 1          |
 
   Scenario: As a teacher I should see an intermediate page with the description in mod_resource.
     Given I log in as "teacher1"
@@ -58,7 +58,7 @@ Feature: When the moodle theme is set to Snap, the users see an intermediate pag
     And I should not see "Test resource description"
     And "resource1.txt" "link" should not exist
 
-  @javascript
+  @javascript @_switch_window
   Scenario Outline: Add a URL and ensure it is displayed correctly.
     Given the following "activity" exists:
       | activity       | url                 |

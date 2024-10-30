@@ -51,7 +51,7 @@ class featured_courses implements \renderable, \templatable {
     public $editurl = null;
 
     public function __construct() {
-        global $PAGE, $DB;
+        global $PAGE, $DB, $OUTPUT;
 
         $config = get_config('theme_snap');
 
@@ -61,12 +61,12 @@ class featured_courses implements \renderable, \templatable {
         }
 
         if (!empty($config->fc_browse_all)) {
-            $url = new moodle_url('/course/');
+            $url = new moodle_url('/my/courses.php');
             $this->browseallurl = $url;
         }
 
         if ($PAGE->user_is_editing()) {
-            $url = new moodle_url('/admin/settings.php?section=themesettingsnap#themesnapfeaturedcourses');
+            $url = new moodle_url('/admin/settings.php?section=themesettingsnap#themesnapfeaturedcategoriesandcourses');
             $this->editurl = $url;
         }
 
@@ -97,28 +97,17 @@ class featured_courses implements \renderable, \templatable {
             }
         }
 
-        // Calculate boostrap column class.
-        $count = count($orderedcourses);
-        $colclass = '';
-        if ($count >= 4) {
-            $colclass = 'col-sm-3'; // Four cards = 25%.
-        }
-        if ($count === 1 || $count === 2) {
-            $colclass = 'col-sm-6'; // One or two cards = 50%.
-        }
-        if ($count === 3 || $count === 6) {
-            $colclass = 'col-sm-4'; // Three cards = 33.3%.
-        }
-        $this->colclass = $colclass;
-
         // Build featured course card renderables.
         $i = 0;
         foreach ($orderedcourses as $course) {
             $i ++;
             $url = new moodle_url('/course/view.php?id=' .$course->id);
-            $coverimageurl = local::course_coverimage_url($course->id);
+            $coverimageurl = local::course_coverimage_url($course->id, true);
+            if (!$coverimageurl) {
+                $coverimageurl = $OUTPUT->get_generated_image_for_id($course->id);
+            }
             $coverimageurl = $coverimageurl ?: null;
-            $this->cards[] = new featured_course($url, $coverimageurl, $course->fullname, $i, $this->colclass);
+            $this->cards[] = new featured_course($url, $coverimageurl, $course->fullname, $i);
         }
     }
 }

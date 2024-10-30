@@ -19,6 +19,22 @@
  @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net)
  @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 }}
-{{#url}}
-<a title="{{{title}}}" class="{{class}}" href="{{{url}}}" role="button" {{{ariapressed}}} {{{arialabel}}}></a>
-{{/url}}
+{{#isinmenu}}
+    {{#url}}
+        <li>
+            <a class="dropdown-item" href="{{{url}}}" role="button" {{{ariapressed}}} {{{arialabel}}}>
+                <div class="d-inline-block menu-icon {{{class}}}" {{{ariapressed}}}>
+                    {{{title}}}
+                </div>
+            </a>
+        </li>
+    {{/url}}
+{{/isinmenu}}
+
+{{^isinmenu}}
+    {{#url}}
+        <li>
+            <a title="{{{title}}}" class="{{class}}" href="{{{url}}}" role="button" {{{ariapressed}}} {{{arialabel}}}></a>
+        </li>
+    {{/url}}
+{{/isinmenu}}

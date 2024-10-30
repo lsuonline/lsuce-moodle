@@ -103,7 +103,7 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     And I log out
     And I log in as "teacher1"
     And I open the personal menu
-    And I wait until "#snap-personal-menu-<dataloadselectorstr>" "css_element" is visible
+    And I <waitclause>
     # The above waits until the snap personal menu column is loaded.
     Then I should see "1 of 1 Submitted, 1 Ungraded"
     And I grade the assignment "Test assignment1" in course "C1" as follows:
@@ -112,7 +112,7 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     And I close the personal menu
     And I reload the page
     And I open the personal menu
-    And I wait until "#snap-personal-menu-<dataloadselectorstr>" "css_element" is visible
+    And I <waitclause>
     # The above waits until the snap personal menu column is loaded.
     Then I should see "You have no submissions to grade."
     And I click on "#snap-pm-logout" "css_element"
@@ -123,9 +123,9 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     And Activity "assign" "Test assignment1" is deleted
     And Activity "assign" "Test assignment2" is deleted
     Examples:
-      | enadvfeeds | selectorstr  | dataloadselectorstr                |
-      | 0          | graded       | grading[data-content-loaded=\"1\"] |
-      | 1          | feed-graded  | feed-grading                       |
+      | enadvfeeds| selectorstr  | waitclause                                                                                    |
+      | 0         | graded       | wait until the page is ready                                                                  |
+      | 1         | feed-graded  | click on "[elem-id='snap-personal-menu-feed-grading'] .snap-personal-menu-more" "css_element" |
 
   @javascript
   Scenario: Show grading in the personal menu only to the teachers with the proper access to the courses or the groups.
@@ -165,7 +165,8 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
       | Online text         | 1  |
       | Group mode          | 1  |
     And I should see "A1"
-    And I follow "Edit \"A1\""
+    And I click on ".modtype_assign:nth-of-type(1) .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_assign:nth-of-type(1) .snap-edit-asset" "css_element"
     And I expand all fieldsets
     And I click on "Add restriction..." "button"
     And I click on "Group" "button" in the "Add restriction..." "dialogue"
@@ -182,7 +183,8 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
       | Online text         | 1  |
       | Group mode          | 1  |
     And I should see "A2"
-    And I follow "Edit \"A2\""
+    And I click on ".modtype_assign:nth-of-type(2) .snap-edit-asset-more" "css_element"
+    And I click on ".modtype_assign:nth-of-type(2) .snap-edit-asset" "css_element"
     And I expand all fieldsets
     And I click on "Add restriction..." "button"
     And I click on "Group" "button" in the "Add restriction..." "dialogue"

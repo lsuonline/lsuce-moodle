@@ -19,6 +19,7 @@ footer,
 header,
 hgroup,
 main,
+div#moodle-page,
 menu,
 nav,
 section,
@@ -748,7 +749,7 @@ blockquote .small:before {
 }
 
 .blockquote-reverse,
-blockquote.pull-right {
+blockquote.pull-right, blockquote.float-right {
     padding-right: 15px;
     padding-left: 0;
     border-right: 5px solid #dadada;
@@ -758,19 +759,25 @@ blockquote.pull-right {
 
 .blockquote-reverse footer:before,
 blockquote.pull-right footer:before,
+blockquote.float-right footer:before,
 .blockquote-reverse small:before,
 blockquote.pull-right small:before,
+blockquote.float-right small:before,
 .blockquote-reverse .small:before,
-blockquote.pull-right .small:before {
+blockquote.pull-right .small:before,
+blockquote.float-right .small:before {
     content: '';
 }
 
 .blockquote-reverse footer:after,
 blockquote.pull-right footer:after,
+blockquote.float-right footer:after,
 .blockquote-reverse small:after,
 blockquote.pull-right small:after,
+blockquote.float-right small:after,
 .blockquote-reverse .small:after,
-blockquote.pull-right .small:after {
+blockquote.pull-right .small:after,
+blockquote.float-right .small:after {
     content: '\00A0 \2014';
 }
 
@@ -2813,11 +2820,11 @@ a.thumbnail.active {
     margin-right: auto;
 }
 
-.pull-right {
+.pull-right, .float-right {
     float: right !important;
 }
 
-.pull-left {
+.pull-left, .float-left {
     float: left !important;
 }
 
@@ -6162,7 +6169,7 @@ body
 nav #mr-nav
 #page (for mdl js)
 	#page-content (for mdl js)
-		main #moodle-page
+		div #moodle-page
 		header #page-header
 		section #region-main
 footer #moodle-footer
@@ -6469,10 +6476,6 @@ header#page-header
 .form-item .form-defaultinfo,
 .form-item .form-description pre {
     font-size: 13px;
-}
-
-#fitem_id_coursedisplay {
-    display: none;
 }
 
 .moodle-dialogue.filepicker .form-group {
@@ -9404,7 +9407,7 @@ div.editor_atto_toolbar div.atto_group {
     position: relative;
     background-color: #ccc;
     margin-bottom: 1em;
-    background-position: center top;
+    background-position: center;
     background-size: cover;
     transition: all 0.4s ease-in-out;
 }
@@ -10040,6 +10043,10 @@ li.section:focus {
 
 .snap-section-editing .snap-highlight.snap-marked:after {
     background-image: url([[pix:core|i/marked]]);
+}
+
+.snap-section-editing .snap-duplicate:after {
+    background-image: url([[pix:core|t/copy]]);
 }
 
 .snap-section-editing .loadingstat {

@@ -33,15 +33,19 @@ use html_writer;
 use moodle_url;
 use stdClass;
 use theme_snap\output\core\course_renderer;
+use theme_snap\renderables\course_action_section_duplicate;
 use theme_snap\renderables\course_action_section_move;
 use theme_snap\renderables\course_action_section_visibility;
 use theme_snap\renderables\course_action_section_delete;
 use theme_snap\renderables\course_action_section_highlight;
+use theme_snap\renderables\course_action_section_permalink;
 use theme_snap\renderables\course_section_navigation;
 
 trait format_section_trait {
 
     use general_section_trait;
+
+     static $SECTION_ACTIONS_BEFORE_MENU = 2;
 
     /**
      * Renders HTML to display one course module for display within a section.
@@ -68,8 +72,18 @@ trait format_section_trait {
         $course = $format->get_course();
         $completioninfo = new \completion_info($course);
         $render = new course_renderer($PAGE, null);
-        return $render->course_section_cm_list_item($course, $completioninfo, $cm, $format->get_section_number(),
+        return $render->course_section_cm_list_item_snap($course, $completioninfo, $cm, $format->get_sectionnum(),
             $displayoptions);
+    }
+
+    /**
+     * Render the enable bulk editing button.
+     * @param course_format $format the course format
+     * @return string|null the enable bulk button HTML (or null if no bulk available).
+     */
+    public function bulk_editing_button(course_format $format): ?string {
+        // Snap modifications to course formats do not support this feature.
+        return '';
     }
 
     /**
@@ -199,18 +213,49 @@ trait format_section_trait {
         $controls = array();
 
         $moveaction = new course_action_section_move($course, $section, $onsectionpage);
-        $controls[] = $this->render($moveaction);
-
         $visibilityaction = new course_action_section_visibility($course, $section, $onsectionpage);
-        $controls[] = $this->render($visibilityaction);
-
         $deleteaction = new course_action_section_delete($course, $section, $onsectionpage);
-        $controls[] = $this->render($deleteaction);
-
         $highlightaction = new course_action_section_highlight($course, $section, $onsectionpage);
-        $controls[] = $this->render($highlightaction);
+        $duplicateaction = new course_action_section_duplicate($course, $section, $onsectionpage);
+        $permalinkaction = new course_action_section_permalink($course, $section, $onsectionpage);
+
+        $actions = array(
+            $moveaction,
+            $visibilityaction,
+            $deleteaction,
+            $highlightaction,
+            $duplicateaction,
+            $permalinkaction,
+        );
+
+        foreach($actions as $action) {
+            $controls[] = $this->render($action);
+        }
+
+        if(count($controls) > self::$SECTION_ACTIONS_BEFORE_MENU) {
+            $newcontrols = array_slice($controls, 0, self::$SECTION_ACTIONS_BEFORE_MENU);
+            $actionstomenu = array_slice($actions, self::$SECTION_ACTIONS_BEFORE_MENU);
+            foreach ($actionstomenu as $action) {
+                $action->isinmenu = true;
+            }
+            $menu = $this->section_edit_control_items_menued($actionstomenu, $section);
+            $newcontrols[] = $menu;
+            $controls = $newcontrols;
+        }
 
         return $controls;
+    }
+
+    /**
+     * Generate the dropdown to display the extra options.
+     * @param $items
+     */
+    protected function section_edit_control_items_menued($actions, $section) {
+        $data = [
+            'actions' => $actions,
+            'sectionid' => $section->section
+        ];
+        return $this->render_from_template('theme_snap/course_action_section_menu', $data);
     }
 
     /**
@@ -261,9 +306,12 @@ trait format_section_trait {
 
         // SHAME - the tabindex is intefering with moodle js.
         // SHAME - Remove tabindex when editing menu is shown.
-        $sectionarrayvars = array('id' => 'section-'.$section->section,
-        'class' => 'section main clearfix'.$sectionstyle,
-        'aria-label' => get_section_name($course, $section), );
+        $sectionarrayvars = array(
+            'id' => 'section-'.$section->section,
+            'class' => 'section main clearfix'.$sectionstyle,
+            'aria-label' => get_section_name($course, $section),
+            'data-id' => $section->id,
+            );
         if (!$PAGE->user_is_editing()) {
             $sectionarrayvars['tabindex'] = '-1';
         }
@@ -295,9 +343,10 @@ trait format_section_trait {
         $testemptytitle = get_string('topic').' '.$section->section;
         $leftnav = get_config('theme_snap', 'leftnav');
         $leftnavtop = $leftnav === 'top';
+        $sectionid = "sectionid-{$section->id}-title";
         if ($sectiontitle == $testemptytitle && has_capability('moodle/course:update', $context)) {
             $url = new moodle_url('/course/editsection.php', array('id' => $section->id, 'sr' => $sectionreturn));
-            $o .= "<h2 class='sectionname'>";
+            $o .= "<h2 id='{$sectionid}' class='sectionname' data-id='{$section->id}'>";
             if ($section->section != 0 && $leftnavtop != 0 ) {
                 $o .= "<span class='sectionnumber'></span>";
             }
@@ -307,7 +356,15 @@ trait format_section_trait {
             if ($section->section != 0 && $leftnavtop != 0 ) {
                 $sectiontitle = '<span class=\'sectionnumber\'></span>' . $sectiontitle;
             }
-            $o .= "<div>" . $output->heading($sectiontitle, 2, 'sectionname' . $classes) . "</div>";
+            $htmlheading = html_writer::tag(
+                'h' . 2,
+                $sectiontitle,
+                array(
+                    'id' => $sectionid,
+                    'class' => 'sectionname',
+                    'data-id' => $section->id
+                ));
+            $o .= "<div>" . $htmlheading . "</div>";
         }
 
         // Section drop zone.
@@ -320,8 +377,13 @@ trait format_section_trait {
 
         // Section editing commands.
         $sectiontoolsarray = $this->section_edit_control_items($course, $section, $sectionreturn);
+        if (!empty($sectiontoolsarray)) {
+            // Wrap into a list
+            $sectiontoolsarray[0] = '<ul>' . $sectiontoolsarray[0];
+            $sectiontoolsarray[count($sectiontoolsarray) - 1] .= '</ul>';
+        }
 
-        if (has_capability('moodle/course:update', $context)) {
+        if (has_capability('moodle/course:update', $context) || has_capability('moodle/course:activityvisibility', $context)) {
             if (!empty($sectiontoolsarray)) {
                 $sectiontools = implode(' ', $sectiontoolsarray);
                 $o .= html_writer::tag('div', $sectiontools, array(
@@ -392,7 +454,7 @@ trait format_section_trait {
         $o .= $summarytext;
         if ($canupdatecourse) {
             $url = new moodle_url('/course/editsection.php', array('id' => $section->id, 'sr' => $sectionreturn));
-            $icon = '<img aria-hidden="true" role="presentation" class="svg-icon" src="';
+            $icon = '<img aria-hidden="true" role="presentation" class="svg-icon" alt="" src="';
             $icon .= $this->output->image_url('pencil', 'theme').'" /><br/>';
             $o .= '<a href="'.$url.'" class="edit-summary">'.$icon.get_string('editcoursetopic', 'theme_snap'). '</a>';
         }
@@ -420,16 +482,17 @@ trait format_section_trait {
         global $PAGE;
 
         $output = $this->section_header($section, $course, false, 0);
-
+        $renderer = new course_renderer($PAGE, null);
         // GThomas 21st Dec 2015 - Only output assets inside section if the section is user visible.
         // Otherwise you can see them, click on them and it takes you to an error page complaining that they
         // are restricted!
         if ($section->uservisible) {
-            $output .= $this->courserenderer->course_section_cm_list($course, $section, 0);
+            $output .= $renderer->course_section_cm_list_snap($course, $section, 0);
             // SLamour Aug 2015 - make add asset visible without turning editing on
             // N.B. this function handles the can edit permissions.
-            $output .= $this->course_section_add_cm_control($course, $section->section, 0);
+            $output .= $this->course_section_add_cm_control_snap($course, $section->section, 0);
         }
+        // TODO: Test editing mode.
         if (!$PAGE->user_is_editing()) {
             $output .= $this->render(new course_section_navigation($course, $modinfo->get_section_info_all(), $section->section));
         }
@@ -517,9 +580,61 @@ trait format_section_trait {
                     // This is not stealth section or it is empty.
                     continue;
                 }
-                echo $this->stealth_section_header($section);
+//                echo $this->stealth_section_header($section); Call to deprecated function.
+                $o = '';
+                $o .= html_writer::start_tag('li', [
+                    'id' => 'section-' . $section,
+                    'class' => 'section main clearfix orphaned hidden',
+                    'data-sectionid' => $section
+                ]);
+                $o .= html_writer::tag('div', '', array('class' => 'left side'));
+                $course = course_get_format($this->page->course)->get_course();
+                $section = course_get_format($this->page->course)->get_section($section);
+//                $rightcontent = $this->section_right_content($section, $course, false); call to deprecated function.
+                $rightcontent = $this->output->spacer();
+                $controls = $this->section_edit_control_items($course, $section, false);
+
+                if (!empty($controls)) {
+                    $menu = new \action_menu();
+                    $menu->set_menu_trigger(get_string('edit'));
+                    $menu->attributes['class'] .= ' section-actions';
+                    foreach ($controls as $value) {
+                        $url = empty($value['url']) ? '' : $value['url'];
+                        $icon = empty($value['icon']) ? '' : $value['icon'];
+                        $name = empty($value['name']) ? '' : $value['name'];
+                        $attr = empty($value['attr']) ? array() : $value['attr'];
+                        $class = empty($value['pixattr']['class']) ? '' : $value['pixattr']['class'];
+                        $al = new \action_menu_link_secondary(
+                            new moodle_url($url),
+                            new \pix_icon($icon, '', null, array('class' => "smallicon " . $class)),
+                            $name,
+                            $attr
+                        );
+                        $menu->add($al);
+                    }
+
+                    $o .= html_writer::div(
+                        $this->render($menu),
+                        'section_action_menu',
+                        array('data-sectionid' => $section->id)
+                    );
+                }
+
+                $o .= html_writer::tag('div', $rightcontent, array('class' => 'right side'));
+                $o .= html_writer::start_tag('div', array('class' => 'content'));
+                $o .= $this->output->heading(
+                    get_string('orphanedactivitiesinsectionno', '', $section),
+                    3,
+                    'sectionname'
+                );
+                echo $o;
+
                 // Don't print add resources/activities of 'stealth' sections.
-                echo $this->stealth_section_footer();
+                //echo $this->stealth_section_footer();
+                $o = html_writer::end_tag('div');
+                $o .= html_writer::end_tag('li');
+                echo $o;
+
             }
         }
         echo $this->end_section_list();
@@ -708,7 +823,7 @@ trait format_section_trait {
      *     option 'inblock' => true, suggesting to display controls vertically
      * @return string
      */
-    public function course_section_add_cm_control($course, $section, $sectionreturn = null, $displayoptions = array()) {
+    public function course_section_add_cm_control_snap($course, $section, $sectionreturn = null, $displayoptions = array()) {
         global $OUTPUT;
         // Check to see if user can add menus and there are modules to add.
         if (!has_capability('moodle/course:manageactivities', context_course::instance($course->id))
@@ -808,6 +923,36 @@ trait format_section_trait {
      * @throws \moodle_exception
      */
     public function render_course_action_section_delete(course_action_section_delete $action) {
+        $data = $action->export_for_template($this);
+        return $this->render_from_template('theme_snap/course_action_section', $data);
+    }
+
+    /**
+     * @param course_action_section_duplicate $action
+     * @return mixed
+     * @throws \moodle_exception
+     */
+    public function render_course_action_section_duplicate(course_action_section_duplicate $action) {
+        $data = $action->export_for_template($this);
+        return $this->render_from_template('theme_snap/course_action_section', $data);
+    }
+
+    /**
+     * @param course_action_section_extra_menu $action
+     * @return mixed
+     * @throws \moodle_exception
+     */
+    public function render_course_action_section_extra_menu(course_action_section_extra_menu $action) {
+        $data = $action->export_for_template($this);
+        return $this->render_from_template('theme_snap/course_action_section', $data);
+    }
+
+    /**
+     * @param course_action_section_permalink $action
+     * @return mixed
+     * @throws \moodle_exception
+     */
+    public function render_course_action_section_permalink(course_action_section_permalink $action) {
         $data = $action->export_for_template($this);
         return $this->render_from_template('theme_snap/course_action_section', $data);
     }

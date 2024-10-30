@@ -89,7 +89,7 @@ class activity {
         if (get_string_manager()->string_exists($mod->modname.'draft', 'theme_snap')) {
             $meta->draftstr = get_string($mod->modname.'draft', 'theme_snap');
         } else {
-            $meta->drafstr = get_string('draft', 'theme_snap');
+            $meta->draftstr = get_string('draft', 'theme_snap');
         }
 
         if (get_string_manager()->string_exists($mod->modname.'reopened', 'theme_snap')) {
@@ -307,6 +307,38 @@ class activity {
         $meta = new activity_meta();
         $courseid = $modinst->course;
         $activitydates = self::instance_activity_dates($courseid, $modinst, 'timemodified', 'duedate');
+        $meta->timeopen = $activitydates->timeopen;
+        $meta->timeclose = $activitydates->timeclose;
+        $meta->timesfromcache = !empty($activitydates->fromcache);
+        return $meta;
+    }
+
+    /**
+     * Get scorm module meta data
+     *
+     * @param cm_info $modinst - module instance
+     * @return string
+     */
+    public static function scorm_meta(\cm_info $modinst) {
+        $meta = new activity_meta();
+        $courseid = $modinst->course;
+        $activitydates = self::instance_activity_dates($courseid, $modinst, 'timeopen', 'timeclose');
+        $meta->timeopen = $activitydates->timeopen;
+        $meta->timeclose = $activitydates->timeclose;
+        $meta->timesfromcache = !empty($activitydates->fromcache);
+        return $meta;
+    }
+
+    /**
+     * Get workshop module meta data
+     *
+     * @param cm_info $modinst - module instance
+     * @return string
+     */
+    public static function workshop_meta(\cm_info $modinst) {
+        $meta = new activity_meta();
+        $courseid = $modinst->course;
+        $activitydates = self::instance_activity_dates($courseid, $modinst, 'submissionstart', 'submissionend');
         $meta->timeopen = $activitydates->timeopen;
         $meta->timeclose = $activitydates->timeclose;
         $meta->timesfromcache = !empty($activitydates->fromcache);
