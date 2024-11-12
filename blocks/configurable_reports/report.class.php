@@ -346,11 +346,11 @@ abstract class report_base {
                     foreach ($val as $k => $v) {
                         $k = s(clean_param($k, PARAM_CLEANHTML));
                         $v = s(clean_param($v, PARAM_CLEANHTML));
-                        $wwwpath .= "&amp;{$key}[$k]=" . $v;
+                        $wwwpath .= "&{$key}[$k]=" . $v;
                     }
                 } else {
                     $val = clean_param($val, PARAM_CLEANHTML);
-                    $wwwpath .= "&amp;$key=" . s($val);
+                    $wwwpath .= "&$key=" . s($val);
                 }
             }
         }
@@ -369,7 +369,7 @@ abstract class report_base {
                 }
 
                 // TODO Use moodle_url.
-                $output .= '<a href="' . s($wwwpath) . '&amp;download=1&amp;format=' . s($e) . '">
+                $output .= '<a href="' . s($wwwpath) . '&download=1&format=' . s($e) . '">
                                     <img src="' . $CFG->wwwroot . '/blocks/configurable_reports/export/' . s($e) . '/pix.gif"
                                      alt="' . s($e) . '">
                                     &nbsp;' . (s(strtoupper($e))) .
@@ -725,6 +725,7 @@ abstract class report_base {
         if (!$this->finalreport) {
             $this->finalreport = new stdClass;
         }
+        $this->finalreport->name = $this->config->name;
         $this->finalreport->table = $table;
         $this->finalreport->calcs = $calcs;
 
@@ -860,9 +861,11 @@ abstract class report_base {
             echo format_text($pagecontents['header'], FORMAT_HTML);
         }
 
-        $a = new stdClass();
-        $a->totalrecords = $this->totalrecords;
-        echo html_writer::tag('div', get_string('totalrecords', 'block_configurable_reports', $a), ['id' => 'totalrecords']);
+        if ($this->config->displaytotalrecords) {
+            $a = new \stdClass();
+            $a->totalrecords = $this->totalrecords;
+            echo \html_writer::tag('div', get_string('totalrecords', 'block_configurable_reports', $a), array('id' => 'totalrecords'));
+        }
 
         if ($recordtpl) {
             if ($this->config->pagination) {
@@ -894,11 +897,12 @@ abstract class report_base {
         }
 
         echo "</div>\n";
-        echo '<div class="centerpara"><br />';
-        echo $OUTPUT->pix_icon('print', get_string('printreport', 'block_configurable_reports'), 'block_configurable_reports');
-        echo "&nbsp;<a href=\"javascript: printDiv('printablediv')\">" . get_string('printreport', 'block_configurable_reports') .
-            "</a>";
-        echo "</div>\n";
+        if ($this->config->displayprintbutton) {
+            echo '<div class="centerpara"><br />';
+            echo $OUTPUT->pix_icon('print', get_string('printreport', 'block_configurable_reports'), 'block_configurable_reports');
+            echo "&nbsp;<a href=\"javascript: printDiv('printablediv')\">".get_string('printreport', 'block_configurable_reports')."</a>";
+            echo "</div>\n";
+        }
     }
 
     /**
@@ -910,7 +914,9 @@ abstract class report_base {
     public function print_report_page(moodle_page $moodlepage) {
         global $OUTPUT;
 
-        cr_print_js_function();
+        if ($this->config->displayprintbutton) {
+            cr_print_js_function();
+        }
         $components = cr_unserialize($this->config->components);
 
         $template = (isset($components['template']['config']) && $components['template']['config']->enabled &&
@@ -1008,11 +1014,12 @@ abstract class report_base {
             echo '<div class="centerpara">' . get_string('norecordsfound', 'block_configurable_reports') . '</div>';
         }
 
-        echo '<div class="centerpara"><br />';
-        echo $OUTPUT->pix_icon('print', get_string('printreport', 'block_configurable_reports'), 'block_configurable_reports');
-        echo "&nbsp;<a href=\"javascript: printDiv('printablediv')\">" . get_string('printreport', 'block_configurable_reports') .
-            "</a>";
-        echo "</div>\n";
+        if ($this->config->displayprintbutton) {
+            echo '<div class="centerpara"><br />';
+            echo $OUTPUT->pix_icon('print', get_string('printreport', 'block_configurable_reports'), 'block_configurable_reports');
+            echo "&nbsp;<a href=\"javascript: printDiv('printablediv')\">".get_string('printreport', 'block_configurable_reports')."</a>";
+            echo "</div>\n";
+        }
     }
 
     /**
@@ -1028,5 +1035,3 @@ abstract class report_base {
     }
 
 }
-
-

@@ -35,18 +35,19 @@ function export_report($report) {
 
     $table = $report->table;
     $matrix = [];
-    $filename = 'report_' . (time()) . '.ods';
+    $reportname = format_string($report->name) ?? 'report';
+    $filename = $reportname . (time()) . '.ods';
 
     if (!empty($table->head)) {
         foreach ($table->head as $key => $heading) {
-            $matrix[0][$key] = str_replace("\n", ' ', htmlspecialchars_decode(strip_tags(nl2br($heading))));
+            $matrix[0][$key] = str_replace("\n", ' ', htmlspecialchars_decode(strip_tags(nl2br(format_string($heading)))));
         }
     }
 
     if (!empty($table->data)) {
         foreach ($table->data as $rkey => $row) {
             foreach ($row as $key => $item) {
-                $matrix[$rkey + 1][$key] = str_replace("\n", ' ', htmlspecialchars_decode(strip_tags(nl2br($item))));
+                $matrix[$rkey + 1][$key] = str_replace("\n", ' ', htmlspecialchars_decode(strip_tags(nl2br(format_string($item)))));
             }
         }
     }

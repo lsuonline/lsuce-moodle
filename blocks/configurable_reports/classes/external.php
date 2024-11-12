@@ -65,7 +65,7 @@ class external extends external_api {
      * @return array An array with a 'data' JSON string and a 'warnings' string
      */
     public static function get_report_data($reportid, int $courseid = 1): array {
-        global $CFG, $DB;
+        global $CFG, $DB, $USER;
 
         $params = self::validate_parameters(
             self::get_report_data_parameters(),

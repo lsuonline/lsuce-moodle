@@ -31,13 +31,15 @@
  */
 function export_report($report) {
     $table = $report->table;
-    $filename = 'report_' . (time()) . '.json';
+
+    $reportname = format_string($report->name) ?? 'report';
+    $filename = $reportname . '_' . (time()) . '.json';
     $json = [];
     $headers = $table->head;
     foreach ($table->data as $data) {
         $jsonobject = [];
         foreach ($data as $index => $value) {
-            $jsonobject[$headers[$index]] = $value;
+            $jsonobject[$headers[$index]] = format_string($value);
         }
         $json[] = $jsonobject;
     }

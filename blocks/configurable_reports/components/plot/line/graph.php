@@ -29,17 +29,20 @@ require_once($CFG->dirroot . "/blocks/configurable_reports/locallib.php");
 
 require_login();
 
-error_reporting(0);
-ini_set('display_erros', false);
+// error_reporting(E_ALL);
+// ini_set('display_erros', true);
 
 $id = required_param('id', PARAM_ALPHANUM);
 $reportid = required_param('reportid', PARAM_INT);
+$courseid = optional_param('courseid', null, PARAM_INT);
 
 if (!$report = $DB->get_record('block_configurable_reports', ['id' => $reportid])) {
     throw new moodle_exception('reportdoesnotexists');
 }
 
-$courseid = $report->courseid;
+if (!$courseid || !$report->global) {
+    $courseid = $report->courseid;
+}
 
 if (!$course = $DB->get_record('course', ['id' => $courseid])) {
     throw new moodle_exception('No such course id');
@@ -66,7 +69,6 @@ if (!$reportclass->check_permissions($USER->id, $context)) {
 
 $components = cr_unserialize($report->components);
 $graphs = $components['plot']['elements'];
-
 if (!empty($graphs)) {
     $series = [];
     foreach ($graphs as $g) {
@@ -80,7 +82,6 @@ if (!empty($graphs)) {
     }
 
     if ($g['id'] == $id) {
-
         $min = optional_param('min', 0, PARAM_INT);
         $max = optional_param('max', 0, PARAM_INT);
         $abcise = optional_param('abcise', -1, PARAM_INT);
@@ -98,10 +99,16 @@ if (!empty($graphs)) {
         // Dataset definition.
         $dataset = new pData;
         $lastid = 0;
+
         foreach ($series as $key => $val) {
-            $dataset->AddPoint($val['serie'], "Serie$key");
-            $dataset->AddAllSeries("Serie$key");
-            $lastid = $key;
+
+            try {
+                $dataset->AddPoint($val['serie'], "Serie$key");
+                $dataset->AddAllSeries();
+                $lastid = $key;
+            } catch (Throwable $e) {
+                continue;
+            }
         }
 
         if (!empty($abciselabel)) {
@@ -114,6 +121,11 @@ if (!empty($graphs)) {
 
         foreach ($series as $key => $val) {
             $value = $val['name'];
+
+            if (!is_countable($value)) {
+                continue;
+            }
+
             $ishebrew = preg_match("/[\xE0-\xFA]/", iconv("UTF-8", "ISO-8859-8", $value));
             $fixedvalue = ($ishebrew == 1) ? $reportclass->utf8_strrev($value) : $value;
             $dataset->SetSerieName($fixedvalue, "Serie$key");

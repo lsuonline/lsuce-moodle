@@ -30,6 +30,7 @@ $id = required_param('id', PARAM_INT);
 $download = optional_param('download', false, PARAM_BOOL);
 $format = optional_param('format', '', PARAM_ALPHA);
 $courseid = optional_param('courseid', null, PARAM_INT);
+$embed = optional_param('embed', false, PARAM_BOOL);
 
 if (!$report = $DB->get_record('block_configurable_reports', ['id' => $id])) {
     throw new moodle_exception('reportdoesnotexists', 'block_configurable_reports');
@@ -90,19 +91,23 @@ if (!$download) {
     if ($hasmanageallcap || ($hasmanageowncap && $report->ownerid == $USER->id)) {
         $managereporturl = new moodle_url('/blocks/configurable_reports/managereport.php', ['courseid' => $report->courseid]);
         $PAGE->navbar->add(get_string('managereports', 'block_configurable_reports'), $managereporturl);
-        $PAGE->navbar->add($report->name);
+        $PAGE->navbar->add($reportname);
     } else {
         // These users don't have the capability to manage reports but we still want them to see some breadcrumbs.
         $PAGE->navbar->add(get_string('viewreport', 'block_configurable_reports'));
-        $PAGE->navbar->add($report->name);
+        $PAGE->navbar->add($reportname);
     }
 
     $PAGE->set_title($reportname);
     $PAGE->set_heading($reportname);
     $PAGE->set_cacheable(true);
+    if ($embed) {
+        $PAGE->set_pagelayout('embedded');
+    }
     echo $OUTPUT->header();
 
-    if ($hasmanageallcap || ($hasmanageowncap && $report->ownerid == $USER->id)) {
+    $canmanage = ($hasmanageallcap || ($hasmanageowncap && $report->ownerid == $USER->id));
+    if (!$embed && $canmanage) {
         $currenttab = 'viewreport';
         include('tabs.php');
     }

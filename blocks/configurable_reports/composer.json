@@ -6,7 +6,8 @@
   "license": "GPL-3.0+",
   "require": {
     "composer/installers": "*",
-    "ext-json": "*"
+    "ext-json": "*",
+    "ext-iconv": "*"
   },
   "extra": {
     "installer-name": "configurable_reports"
