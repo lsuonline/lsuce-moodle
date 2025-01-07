@@ -78,9 +78,15 @@ define(
         this.setTOCVisibleSection = function() {
             var sectionIdSel = '.section.main.state-visible, #coursetools.state-visible, #snap-add-new-section.state-visible';
             var currentSectionId = $(sectionIdSel).attr('id');
+
+            // Remove snap-visible-section class and reset aria-current to false for all chapters
             $('#chapters li').removeClass('snap-visible-section');
-            $('#chapters a[href$="' + currentSectionId + '"]').parent('li').addClass('snap-visible-section');
-            $(document).trigger('snapContentRevealed');
+            $('#chapters li a').attr('aria-current', 'false');
+
+            // Find the correct chapter link and update class and aria-current
+            var visibleSectionLink = $('#chapters a[href$="' + currentSectionId + '"]');
+            visibleSectionLink.parent('li').addClass('snap-visible-section');
+            visibleSectionLink.attr('aria-current', 'true');
         };
 
         /**
@@ -228,7 +234,9 @@ define(
                 '#snap-add-new-section.state-visible'
             );
             if (!visibleChapters.length) {
-                if ($('.section.main.current').length) {
+                if (section !== '') {
+                    $(section).addClass('state-visible').focus();
+                } else if ($('.section.main.current').length) {
                     $('.section.main.current').addClass('state-visible').focus();
                 } else {
                     $('#section-0').addClass('state-visible').focus();
@@ -362,7 +370,9 @@ define(
                     var sections = $('.course-content li[id^="section-"]');
                     var urlParams = location.hash.split("&"),
                         sectionParam = urlParams[0];
-                    if (sections.length == 1 && sectionParam != '#coursetools') {
+                    if (sections.length == 1 &&
+                        sectionParam != '#coursetools' &&
+                        sectionParam != '#snap-add-new-section') {
                         sections.addClass('state-visible');
                         var section = sections.attr('id').split('section-')[1];
                         if (self.courseConfig.toctype == 'top' && self.courseConfig.format == 'topics' && section > 0) {

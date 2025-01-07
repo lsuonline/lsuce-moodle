@@ -74,9 +74,7 @@
 #page-my-index #moodle-blocks,
 #page-calendar-view #moodle-blocks,
 #page-mod-assign-editsubmission #moodle-blocks,
-#moodle-blocks.state-visible,
-.format-weeks.path-course-view.editing #moodle-blocks,
-.format-topics.path-course-view.editing #moodle-blocks {
+#moodle-blocks.state-visible {
     visibility: visible;
     height: auto;
     overflow: visible;
@@ -200,6 +198,9 @@ body.path-site .block.block_settings {
         h5, hr {
             display: none;
         }
+        li {
+            list-style-type: none;
+        }
         section {
             background-color: #fff;
             margin: 1rem;
@@ -308,11 +309,10 @@ body.path-site .block.block_settings {
             height: 100vh;
             background: #eef0f6;
 
-            .snap-feeds-header {
-                background-color: $brand-primary;
-                padding: 0.5rem 1rem;
+            li {
+                list-style-type: none;
             }
-
+        
             .nav {
                 position: fixed;
                 bottom: 0;
@@ -326,7 +326,6 @@ body.path-site .block.block_settings {
                     padding-top: 4px;
 
                     .nav-link {
-                        background: $brand-primary;
                         mask-repeat: no-repeat !important;
                         mask-position: center !important;
                         mask-size: 50px !important;
@@ -351,12 +350,10 @@ body.path-site .block.block_settings {
                     &.active {
                         opacity: 1;
                         padding-top: 0;
-                        border-top: 4px solid $brand-primary;
 
                         small {
                             visibility: visible;
                             font-weight: bold;
-                            color: $brand-primary;
                         }
                     }
                 }
@@ -404,20 +401,13 @@ body.path-site .block.block_settings {
     }
 }
 
-.snap-personal-menu-more, .snap-feeds-menu-more {
-    svg path{
-        fill: $brand-primary !important; // !important needed to override svg fills.
-    }
-}
-
 .snap-personal-menu-more svg {
     width: 16px;
     margin-left: 4px;
 }
 
 .snap-feeds-menu-more svg, .snap-feeds-mobile-sections svg {
-    width: 20px;
-    margin-left: 8px;
+    width: 1.8em;
     margin-right: -8px;
 }
 
@@ -445,6 +435,35 @@ body.path-site .block.block_settings {
 
         path {
             stroke: currentColor;
+        }
+    }
+}
+
+// Edit mode toggle.
+.editmode-switch-form {
+    .input-group {
+        padding-bottom: 0.4em;
+        @include media-breakpoint-down(md) {
+            padding-bottom: 0;
+        }
+        label {
+            color: $brand-primary !important;
+            margin-top: .1rem;
+        }
+    }
+    .custom-control-input {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        opacity: 0;
+    }
+    .custom-control-input:checked~.custom-control-label::before {
+        background-color: $brand-primary;
+        border-color: $brand-primary;
+    }
+    @include media-breakpoint-down(sm) {
+        .input-group label {
+            display: none;
         }
     }
 }
@@ -602,6 +621,21 @@ body.path-site .block.block_settings {
             margin-top: 4rem;
         }
     }
+    // Hide the Turn editing on button from the block settings.
+    a[href*="edit=on"],
+    a[href*="edit=off"],
+    a[href*="edit=1"],
+    a[href*="edit=0"] {
+        display: none;
+    }
+}
+
+.block_settings #frontpagesettings_group {
+    display: grid;
+
+    .type_custom:has(.conduit-frontpage) {
+        order: 99;
+    }
 }
 
 #page-content .block_settings.state-visible,
@@ -662,15 +696,6 @@ body.path-site .block.block_settings {
     position: fixed;
     right: 4%;
     top: 46%;
-}
-
-/* My overview block */
-.block-myoverview {
-    @media (min-width: 1100px) {
-        .dashboard-card-deck:not(.fixed-width-cards) .theme-card {
-            width: calc(33.33% - #{$card-gutter});
-        }
-    }
 }
 
 body:not(#page-my-index) .block.block_calendar_month .maincalendar .calendartable.calendarmonth td.hasevent [data-region="day-content"] {

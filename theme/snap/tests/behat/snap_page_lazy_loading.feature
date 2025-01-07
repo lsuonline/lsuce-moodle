@@ -24,8 +24,8 @@ Feature: When the moodle theme is set to Snap course pages can be rendered using
   Background:
     Given I skip because "to debug Behat test failure in GL Pipeline in INT-19721"
     Given the following "courses" exist:
-      | fullname | shortname |
-      | Course 1 | C1 |
+      | fullname | shortname | initsections |
+      | Course 1 |     C1    |      1       |
     Given the following "users" exist:
       | username  | firstname  | lastname  | email                 |
       | teacher1  | Teacher    | 1         | teacher1@example.com  |
@@ -37,7 +37,7 @@ Feature: When the moodle theme is set to Snap course pages can be rendered using
       | admin     | C1      | editingteacher  |
     And I log in as "admin"
     And I am on "Course 1" course homepage
-    And I add a "Page" to section "1" and I fill the form with:
+    And I add a page activity to course "C1" section "1" and I fill the form with:
       | Name         | Test Page        |
       | Description  | Test description |
       | Page content | <p>Test Content</p><img src="https://download.moodle.org/unittest/test.jpg" alt="test image" width="200" height="150" class="img-responsive atto_image_button_text-bottom"> |
@@ -49,7 +49,7 @@ Feature: When the moodle theme is set to Snap course pages can be rendered using
       | lazyload_mod_page | <lazyload>        | theme_snap |
     And I log in as "teacher1"
     And I am on the course "C1"
-    And I follow "Topic 1"
+    And I follow "Section 1"
     And I should see "Test Page"
     And ".pagemod-content" "css_element" should exist
     And ".pagemod-readmore" "css_element" <exist>
@@ -70,7 +70,7 @@ Feature: When the moodle theme is set to Snap course pages can be rendered using
     And I log in as "teacher1"
     And I am on the course "C1"
     Then ".modtype_folder table" "css_element" should exist
-    And I follow "Topic 1"
+    And I follow "Section 1"
     Then ".modtype_folder table" "css_element" should exist
     And I follow "Introduction"
     Then ".modtype_folder table" "css_element" should exist

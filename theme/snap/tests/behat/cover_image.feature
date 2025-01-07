@@ -84,9 +84,10 @@ Feature: When the moodle theme is set to Snap, cover image can be set for site a
     And I wait until ".btn.ok" "css_element" is visible
     And I click on ".btn.ok" "css_element"
     Then I should see cover image in page header
-    And I check element ".mast-image .breadcrumb a" with color "#FFFFFF"
+    # Breadcrumb has now white background and site font-color.
+    And I check element ".mast-image .breadcrumb a" with color "#82009E"
     And I reload the page
-    And I check element ".mast-image .breadcrumb a" with color "#FFFFFF"
+    And I check element ".mast-image .breadcrumb a" with color "#82009E"
     Then I should see cover image in page header
     And I open the personal menu
     And I should see course card image in personal menu
@@ -160,7 +161,7 @@ Feature: When the moodle theme is set to Snap, cover image can be set for site a
     And I am on site homepage
     Then I should not see "Change cover image"
     And I click on "#admin-menu-trigger" "css_element"
-    And I navigate to "Turn editing on" in current page administration
+    And I switch edit mode in Snap
     Then I should see "Change cover image"
     And I should not see cover image in page header
     And I click on "#snap-coverimagecontrol label" "css_element"
@@ -256,10 +257,10 @@ Feature: When the moodle theme is set to Snap, cover image can be set for site a
     And I click on "#snap-coverimagecontrol label" "css_element"
     And I click on "Upload a new image" "button" in the "Image properties" "dialogue"
     And I upload "/theme/snap/tests/fixtures/testpng_small.png" to the file picker for Snap
+    Then I should see "This image could have contrast problems due not compliance with the WCAG 2.0 minimum ratio value 4.5:1."
     And I click on "#id_snap_cover_image_save_button" "css_element"
     And I wait until ".btn.ok" "css_element" is visible
     And I click on ".btn.ok" "css_element"
-    Then I should see "This image could have contrast problems due not compliance with the WCAG 2.0 minimum ratio value 4.5:1."
     And I click on "#snap-coverimagecontrol label" "css_element"
     And I click on "Upload a new image" "button" in the "Image properties" "dialogue"
     And I upload "/theme/snap/tests/fixtures/black_cover.jpg" to the file picker for Snap
@@ -286,10 +287,10 @@ Feature: When the moodle theme is set to Snap, cover image can be set for site a
     And I click on "#snap-coverimagecontrol label" "css_element"
     And I click on "Upload a new image" "button" in the "Image properties" "dialogue"
     And I upload "/theme/snap/tests/fixtures/testpng_small.png" to the file picker for Snap
+    Then I should see "This image could have contrast problems due not compliance with the WCAG 2.0 minimum ratio value 4.5:1"
     And I click on "#id_snap_cover_image_save_button" "css_element"
     And I wait until ".btn.ok" "css_element" is visible
     And I click on ".btn.ok" "css_element"
-    Then I should see "This image could have contrast problems due not compliance with the WCAG 2.0 minimum ratio value 4.5:1"
     And I click on "#snap-coverimagecontrol label" "css_element"
     And I click on "Upload a new image" "button" in the "Image properties" "dialogue"
     And I upload "/theme/snap/tests/fixtures/black_cover.jpg" to the file picker for Snap

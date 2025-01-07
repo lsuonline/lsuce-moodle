@@ -2,6 +2,7 @@
 Feature: Testing core_communication in theme_snap
 
     Background:
+
         Given the following "courses" exist:
             | fullname    | shortname | category | selectedcommunication |
             | Test course | C1        | 0        | none                  |

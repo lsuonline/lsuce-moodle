@@ -39,16 +39,6 @@ if ($COURSE->id != SITEID && !empty($coverimagecss)) {
 if ($PAGE->pagetype == 'admin-search') {
     $PAGE->set_secondary_navigation(false);
 }
-if (($PAGE->pagetype == "grade-report-grader-index" || $PAGE->pagetype == "grade-report-singleview-index") && $PAGE->user_allowed_editing()) {
-    // Show grade report edit button.
-    $button = shared::get_grade_report_edit_button();
-    $PAGE->set_button($button);
-}
-if ($PAGE->pagetype == "mod-lightboxgallery-view" && $PAGE->user_allowed_editing()) {
-    // Show grade report edit button.
-    $editbutton = shared::snap_edit_button();
-    $PAGE->set_button($editbutton);
-}
 ?>
 
 <!-- Moodle js hooks -->
@@ -95,6 +85,9 @@ echo $OUTPUT->custom_menu_spacer();
 <div id="region-main-box">
 <section id="region-main">
 <?php
+if ($OUTPUT->snap_page_is_activity_view()) {
+    echo $OUTPUT->context_header();
+}
 echo $OUTPUT->course_content_header();
 
 // Ensure edit blocks button is only shown for appropriate pages.

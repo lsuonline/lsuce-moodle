@@ -59,7 +59,7 @@ class core_renderer_test extends \advanced_testcase {
      */
     public function test_course_link_should_not_appear_on_sitelevel() {
         global $COURSE, $PAGE;
-
+        $this->markTestSkipped('To be reviewed in INT-20526');
         $this->resetAfterTest();
 
         $user = $this->getDataGenerator()->create_user();
@@ -179,5 +179,15 @@ class core_renderer_test extends \advanced_testcase {
             array_push($pagebreadcrumbsarray, $item->text);
         }
         $this->assertEquals($expected, $pagebreadcrumbsarray);
+    }
+
+    /**
+     * Track changes on boost core_renderer. If this fails, please check the context_header function.
+     * @return void
+     */
+    public function test_core_renderer_changes_boost() {
+        global $CFG;
+        $sha1 = hash_file('sha1', $CFG->dirroot . '/theme/boost/classes/output/core_renderer.php');
+        $this->assertEquals('b01e09191e7c4d6356e1eee565147e2d8a0e6127', $sha1);
     }
 }

@@ -340,7 +340,7 @@ trait format_section_trait {
         }
 
         // Untitled topic title.
-        $testemptytitle = get_string('topic').' '.$section->section;
+        $testemptytitle = get_string('section').' '.$section->section;
         $leftnav = get_config('theme_snap', 'leftnav');
         $leftnavtop = $leftnav === 'top';
         $sectionid = "sectionid-{$section->id}-title";
@@ -351,7 +351,7 @@ trait format_section_trait {
                 $o .= "<span class='sectionnumber'></span>";
             }
             $o .= "<a href='$url' title='".s(get_string('editcoursetopic', 'theme_snap'))."'>";
-            $o .= get_string('defaulttopictitle', 'theme_snap')."</a></h2>";
+            $o .= get_string('defaultsectiontitle', 'theme_snap')."</a></h2>";
         } else {
             if ($section->section != 0 && $leftnavtop != 0 ) {
                 $sectiontitle = '<span class=\'sectionnumber\'></span>' . $sectiontitle;
@@ -428,15 +428,7 @@ trait format_section_trait {
         $summarylabel = get_string('summarylabel', 'theme_snap');
         $o .= "<div class='summary' role='group' aria-label='$summarylabel'>";
 
-        // SHAME: Inhibiting section html under certain circumstances.
-        // H5P fix, sometimes instructors will try to embed iframes pointing to other courses,
-        // this can damage the current course editing state, so let's not render section summaries.
-        // Anyways, no course content appears when editing is on when using Snap.
-        $notifyeditingon = optional_param('notifyeditingon', 0, PARAM_INT);
-        $editingflag = optional_param('edit', '', PARAM_ALPHA);
-        if (empty($USER->editing) && empty($notifyeditingon) && empty($editingflag)) {
-            $summarytext = $this->format_summary_text($section);
-        }
+        $summarytext = $this->format_summary_text($section);
 
         $canupdatecourse = has_capability('moodle/course:update', $context);
 
@@ -481,7 +473,7 @@ trait format_section_trait {
     public function course_section($course, $section, $modinfo) {
         global $PAGE;
 
-        $output = $this->section_header($section, $course, false, 0);
+        $output = $this->section_header($section, $course, false, $section->sectionnum);
         $renderer = new course_renderer($PAGE, null);
         // GThomas 21st Dec 2015 - Only output assets inside section if the section is user visible.
         // Otherwise you can see them, click on them and it takes you to an error page complaining that they
@@ -492,10 +484,7 @@ trait format_section_trait {
             // N.B. this function handles the can edit permissions.
             $output .= $this->course_section_add_cm_control_snap($course, $section->section, 0);
         }
-        // TODO: Test editing mode.
-        if (!$PAGE->user_is_editing()) {
-            $output .= $this->render(new course_section_navigation($course, $modinfo->get_section_info_all(), $section->section));
-        }
+        $output .= $this->render(new course_section_navigation($course, $modinfo->get_section_info_all(), $section->section));
         $output .= html_writer::end_tag('div');
         $output .= html_writer::end_tag('li');
         return $output;
@@ -505,10 +494,15 @@ trait format_section_trait {
 
     // Basically unchanged from the core version adds some navigation with course_section_navigation renderable.
     public function print_multiple_section_page($course, $sections, $mods, $modnames, $modnamesused) {
-        global $PAGE;
+        global $DB, $PAGE;
 
         $modinfo = get_fast_modinfo($course);
         $course = course_get_format($course)->get_course();
+
+        if ($PAGE->url->get_path() === '/course/section.php' && ($sectionid = optional_param('id', -1, PARAM_INT)) !== -1) {
+            $section = $DB->get_record('course_sections', ['id' => $sectionid], 'section', MUST_EXIST);
+            $course->marker = $section->section ?? 0;
+        }
 
         $context = context_course::instance($course->id);
 
@@ -701,7 +695,7 @@ trait format_section_trait {
             'action' => $url->out_omit_querystring(),
         ));
         $output .= html_writer::input_hidden_params($url);
-        $output .= '<div class="form-group">';
+        $output .= '<div class="mb-3">';
         $output .= "<label for='newsection' class='sr-only'>".get_string('title', 'theme_snap')."</label>";
         if ($course->format === 'topics') {
             $output .= '<input id="newsection" type="text" maxlength="250" name="newsection" '.$required;
@@ -710,7 +704,7 @@ trait format_section_trait {
             $output .= '<h3>'.$defaulttitle.': '.$datesection.'</h3>';
         }
         $output .= '</div>';
-        $output .= '<div class="form-group">';
+        $output .= '<div class="mb-3">';
         $output .= '<label for="summary">'.get_string('contents', 'theme_snap').'</label>';
 
         $options = array(

@@ -281,9 +281,13 @@ class core_renderer extends \theme_boost\output\core_renderer {
     }
 
     public function activity_header() {
+        global $COURSE;
         $renderer = $this->page->get_renderer('core');
         $header = $this->page->activityheader;
         $headercontext = $header->export_for_template($renderer);
+        if ($COURSE->format !== 'singleactivity') {
+            unset($headercontext['title']);
+        }
         if (!empty($headercontext)) {
             return $this->render_from_template('core/activity_header', $headercontext);
         }
@@ -450,26 +454,12 @@ class core_renderer extends \theme_boost\output\core_renderer {
         // Core renderer has not $output attribute, but code checker requires it.
         global $COURSE, $OUTPUT;
 
-        $editblocks = '';
         $output = '';
 
         $oncoursepage = strpos($this->page->pagetype, 'course-view') === 0;
         $coursecontext = \context_course::instance($COURSE->id);
         if ($COURSE->format !== 'tiles') {
-            if ($oncoursepage && has_capability('moodle/course:update', $coursecontext)) {
-                $url = new \moodle_url('/course/view.php', ['id' => $COURSE->id, 'sesskey' => sesskey()]);
-                if ($this->page->user_is_editing()) {
-                    $url->param('edit', 'off');
-                    $editstring = get_string('turneditingoff');
-                } else {
-                    $url->param('edit', 'on');
-                    $editstring = get_string('editcoursecontent', 'theme_snap');
-                }
-                $editblocks = '<div class="text-center"><a href="' . $url . '" class="btn btn-primary">' . $editstring . '</a></div><br>';
-            }
-
             $output .= '<div id="moodle-blocks" class="clearfix">';
-            $output .= $editblocks;
             $output .= $OUTPUT->blocks('side-pre');
             $output .= '</div>';
         } else {
@@ -1227,6 +1217,60 @@ class core_renderer extends \theme_boost\output\core_renderer {
         return ''; // Empty return to avoid errors.
     }
 
+    /**
+     * Renders the context header for the page.
+     *
+     * @param array $headerinfo Heading information.
+     * @param int $headinglevel What 'h' level to make the heading.
+     * @return string A rendered context header.
+     */
+    public function context_header($headerinfo = null, $headinglevel = 1): string {
+        global $USER, $CFG;
+        require_once($CFG->dirroot . '/user/lib.php');
+        $context = $this->page->context;
+        $imagedata = null;
+        $userbuttons = null;
+        // Make sure to use the heading if it has been set.
+        if (isset($headerinfo['heading'])) {
+            $heading = $headerinfo['heading'];
+        } else {
+            $heading = $this->page->heading;
+        }
+
+        $prefix = null;
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            if ($this->page->course->format === 'singleactivity') {
+                $heading = format_string($this->page->course->fullname, true, ['context' => $context]);
+            } else {
+                $heading = $this->page->cm->get_formatted_name();
+                $iconurl = $this->page->cm->get_icon_url();
+                $iconclass = $iconurl->get_param('filtericon') ? '' : 'nofilter';
+                $iconattrs = [
+                    'class' => "icon activityicon $iconclass",
+                    'aria-hidden' => 'true'
+                ];
+                $imagedata = html_writer::img($iconurl->out(false), '', $iconattrs);
+                $purposeclass = plugin_supports('mod', $this->page->activityname, FEATURE_MOD_PURPOSE);
+                $purposeclass .= ' activityiconcontainer icon-size-6';
+                $purposeclass .= ' modicon_' . $this->page->activityname;
+                $isbranded = component_callback('mod_' . $this->page->activityname, 'is_branded', [], false);
+                $imagedata = html_writer::tag('div', $imagedata, ['class' => $purposeclass . ($isbranded ? ' isbranded' : '')]);
+                if (!empty($USER->editing)) {
+                    $prefix = get_string('modulename', $this->page->activityname);
+                }
+            }
+            // Return the heading wrapped in an sr-only element so it is only visible to screen-readers.
+            if (!empty($this->page->layout_options['nocontextheader'])) {
+                return html_writer::div($heading, 'sr-only');
+            }
+
+            $contextheader = new \context_header($heading, $headinglevel, $imagedata, $userbuttons, $prefix);
+            return $this->render($contextheader); // Only context header for course modules.
+        } else if ($context->contextlevel == CONTEXT_COURSE) {
+          return parent::context_header($headerinfo, $headinglevel);
+        }
+        return ''; // Any other case we fall back to the Snap header.
+    }
 
     /**
      * Get page heading.
@@ -1243,12 +1287,17 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($this->page->pagelayout == 'mypublic' && $COURSE->id == SITEID) {
             // For the user profile page message button we need to call 2.9 content_header.
             $heading = parent::context_header();
-        } else if ($COURSE->id != SITEID && stripos($heading, format_string($COURSE->fullname)) === 0) {
+        } else if (($COURSE->id != SITEID
+            && (stripos($heading, format_string($COURSE->fullname)) === 0)
+            || $pagetype === 'course-view-section-topics')) {
             // If we are on a course page which is not the site level course page.
             $courseurl = new moodle_url('/course/view.php', ['id' => $COURSE->id]);
             $heading = format_string($COURSE->fullname);
             $heading = html_writer::link($courseurl, $heading);
             $heading = html_writer::tag($tag, $heading);
+            if (!$this->snap_page_is_activity_view() && !$this->snap_page_is_edit_section() && !$this->snap_page_is_activity_mod() && !$this->snap_page_is_user_view()) {
+                $heading = $this->context_header(['heading' => $heading]);
+            }
         } else {
             // Default heading.
             $heading = html_writer::tag($tag, $heading);
@@ -1303,13 +1352,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
 
         // We need to create this part of HTML here or multiple nav tags will exist for each item.
         $content = '<nav class="navbar navbar-expand-lg navbar-light">';
+        $content .= '<div class="container-fluid">';
         $content .= '<ul class="navbar-collapse clearfix snap-navbar-content">';
         foreach ($menu->get_children() as $item) {
             $context = $item->export_for_template($this);
             $content .= $this->render_from_template('theme_snap/custom_menu_item', $context);
         }
 
-        return $content.'</nav>'.'</ul>';
+        return $content.'</ul>'.'</div>'.'</nav>';
     }
 
     /**
@@ -2752,5 +2802,45 @@ HTML;
         $namelink = html_writer::link($courseurl, $coursename);
         $replacedname = str_replace($coursename, $namelink, $element);
         return $replacedname;
+    }
+
+    /**
+     * Checks if the current page is an activity view.
+     *
+     * @return bool
+     */
+    protected function snap_page_is_activity_view() {
+        return $this->page->context->contextlevel === CONTEXT_MODULE
+               && strpos($this->page->pagetype, 'mod-') === 0
+               && substr($this->page->pagetype, -5) === '-view';
+    }
+
+    /**
+     * Checks if the current page is an activity mod.
+     *
+     * @return bool
+     */
+    protected function snap_page_is_activity_mod() {
+        return $this->page->context->contextlevel === CONTEXT_MODULE
+               && strpos($this->page->pagetype, 'mod-') === 0
+               && substr($this->page->pagetype, -4) === '-mod';
+    }
+
+    /**
+     * Checks if the current page is an edit section page.
+     *
+     * @return bool
+     */
+    protected function snap_page_is_edit_section() {
+        return $this->page->pagetype === 'course-editsection';
+    }
+
+    /**
+     * Checks if the current page is a user view.
+     *
+     * @return bool
+     */
+    protected function snap_page_is_user_view() {
+        return $this->page->pagetype === 'user-view';
     }
 }

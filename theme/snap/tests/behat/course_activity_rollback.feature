@@ -23,15 +23,13 @@
 Feature: Course scrollback navigation in Snap theme
 
   Background:
-    Given the following config values are set as admin:
-      | theme        | snap |
     Given the following "users" exist:
       | username  | firstname  | lastname  | email                 |
       | teacher1  | Teacher    | 1         | teacher1@example.com  |
       | student1  | Student    | 1         | student1@example.com  |
     And the following "courses" exist:
-      | fullname | shortname | format |
-      | Course 1 | C1        | topics |
+      | fullname | shortname | format | initsecitons |
+      | Course 1 | C1        | topics |      1       |
     And the following "course enrolments" exist:
       | user      | course  | role            |
       | student1  | C1      | student         |
@@ -52,12 +50,10 @@ Feature: Course scrollback navigation in Snap theme
     And I follow "Introduction"
     And I wait until the page is ready
     And I am on "Course 1" course homepage
-    And I follow "Topic 1"
+    And I click on "#chapters a[section-number='1']" "css_element"
     And The id for element "//*[@data-type='Assignment']" "xpath_element" is saved for scrollback
     And I click on ".modtype_assign .mod-link" "css_element"
     And The stored element scroll id matches the session storage id
-    And I follow "Topic 1"
-    And I wait until the page is ready
 
   @javascript
   Scenario: Scrollback with a student clicking the resource card.

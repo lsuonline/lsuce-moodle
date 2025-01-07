@@ -637,6 +637,14 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                 $('#course-toc').removeClass('state-visible');
             });
 
+            // Check compatibility Mode in Snap.
+            var isQuirksMode = document.compatMode !== 'CSS1Compat';
+            if (isQuirksMode) {
+                log.error('The document is rendering in "quirks mode". This may cause issues with the site\'s' +
+                    ' functionality. Please ensure that the DOCTYPE declaration is present and correctly placed ' +
+                    'at the very start of the HTML document.');
+            }
+
             // Reset videos, when changing section (INT-18208).
             $(document).on("click", ".section_footer a, .chapter-title, .toc-footer a", function() {
                 const videos = $('[title="watch"], .video-js, iframe:not([id])');
@@ -722,6 +730,102 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         tooltipNode.tooltip();
                     }
                 }
+            });
+        };
+
+        /**
+         * Edit url for edit toggle in course page.
+         * @param {string} courseFormat
+         */
+        var editToggleURL = function(courseFormat) {
+
+            // We use this MutationObserver because modifying the URL with a hash for navigation does not trigger a page
+            // reload. Specifically, the `window.location` statement in `lib/amd/src/edit_switch.js` does not cause a
+            // reload. To work around this, we need to manually reload the page, but only after confirming that the
+            // edit mode was successfully enabled. To do this, we observe the `aria-checked` attribute, which is added
+            // by the `toggleEditSwitch` function in `lib/amd/src/edit_switch.js` when the edit mode was changed.
+            const editModeToggleObserver = function(mutationsList, observer) {
+                for (const mutation of mutationsList) {
+                    if (mutation.type === 'attributes') {
+                        const editToggle = document.querySelector('.editmode-switch-form .custom-control-input');
+                        if (editToggle.hasAttribute('aria-checked')) {
+                            observer.disconnect();
+                            location.reload();
+                        }
+                    }
+                }
+            };
+            var courseEditSwitch = document.querySelector(
+                '#page-course-view-' + courseFormat + ' .editmode-switch-form .custom-control-input');
+            if (courseEditSwitch) {
+                var urlHash = window.location.hash;
+                var originalUrl = courseEditSwitch.getAttribute('data-pageurl');
+                var modifiedURL = originalUrl+urlHash;
+                courseEditSwitch.setAttribute('data-pageurl', modifiedURL);
+                window.onhashchange = function() {
+                    urlHash = window.location.hash;
+                    courseEditSwitch.setAttribute('data-pageurl', originalUrl+urlHash);
+                };
+                const observer = new MutationObserver(editModeToggleObserver);
+                observer.observe(document.body, {attributes: true});
+            }
+        };
+
+        /**
+         * Set a course as favourite from the enrolled courses in the home page.
+         * @param {string} selector
+         */
+        var setHomeCourseFavourite = function(selector) {
+            // Buttons to unset the course as favourite.
+            const favouriteButtons = document.querySelectorAll('.snap-home-course .favouriteicon .' + selector);
+            favouriteButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const course = button.dataset.courseid;
+                    var favouriteValue;
+                    if (selector === 'unset-favourite') {
+                        favouriteValue = false;
+                    } else {
+                        favouriteValue = true;
+                    }
+                    const args = {
+                        courses: [
+                            {
+                                'id': course,
+                                'favourite': favouriteValue
+                            }
+                        ]
+                    };
+                    const request = {
+                        methodname: 'core_course_set_favourite_courses',
+                        args: args,
+                        done: function(response) {
+                            if (!response.warnings.length) {
+                                // We need to hide the current button and show the opposite one.
+                                const relatedUnsetButton = document.querySelectorAll(
+                                    '.favouriteicon .' + selector + '[data-courseid="' + course + '"]');
+                                relatedUnsetButton.forEach(function(relatedButton) {
+                                    relatedButton.classList.add('d-none');
+                                });
+                                if (selector === 'unset-favourite') {
+                                    const relatedSetButton = document.querySelectorAll(
+                                        '.favouriteicon .set-favourite[data-courseid="' + course + '"]');
+                                    relatedSetButton.forEach(function(setButton) {
+                                        setButton.classList.remove('d-none');
+                                    });
+                                } else {
+                                    const relatedUnsetButton = document.querySelectorAll(
+                                        '.favouriteicon .unset-favourite[data-courseid="' + course + '"]');
+                                    relatedUnsetButton.forEach(function(setButton) {
+                                        setButton.classList.remove('d-none');
+                                    });
+                                }
+
+                            }
+                        }
+                    };
+
+                    return ajax.call([request])[0];
+                });
             });
         };
 
@@ -902,15 +1006,11 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     }
 
                     // SHAME - make section name creation mandatory
+                    const sname = document.getElementById('id_name');
                     if ($('#page-course-editsection.format-topics').length) {
-                        var usedefaultname = document.getElementById('id_name_customize'),
-                            sname = document.getElementById('id_name_value');
-                        usedefaultname.value = '1';
-                        usedefaultname.checked = true;
                         sname.required = "required";
                         // Make sure that section does have at least one character.
                         $(sname).attr("pattern", ".*\\S+.*");
-                        $(usedefaultname).parent().css('display', 'none');
 
                         // Enable the cancel button.
                         $('#id_cancel').on('click', function() {
@@ -1311,6 +1411,13 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                         observerTilesSect.observe(targetTilesSect, configTilesSect);
                     }
 
+                    // Listener to set the favourite courses from the homepage enrolled courses.
+                    const snapHomeCourses = document.querySelector('#page-site-index #frontpage-course-list .snap-home-course');
+                    if (snapHomeCourses) {
+                        setHomeCourseFavourite('unset-favourite');
+                        setHomeCourseFavourite('set-favourite');
+                    }
+
                     // Snapify format site on the front page if needed.
                     // TODO: Maybe remove this whole piece if MDL-82188 ever gets resolved in our favor.
                     if ($('body#page-site-index.format-site').length) {
@@ -1361,6 +1468,26 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                             userCompetency.parent().addClass('ml-4');
                         }
                     }
+
+                    // To update the edit toggle URL in course page.
+                    editToggleURL('topics');
+                    editToggleURL('weeks');
+
+                    // Modify Hide / Show / Delete actions for blocks in coursetools section to be redirected to the
+                    // course dashboard instead of course main page.
+                    const snapEditingCourse = document.querySelector('body.theme-snap.pagelayout-course.editing');
+                    if (snapEditingCourse) {
+                        require(
+                            [
+                                'theme_snap/coursetools_blocks_management'
+                            ], function(CoursetoolsBlocksManagementAmd) {
+                                CoursetoolsBlocksManagementAmd.init(courseConfig);
+                            }
+                        );
+                    }
+
+                    // Add the correct section return to the modchooser.
+                    util.modchooserSectionReturn();
                 });
                 accessibility.snapAxInit();
                 messages.init();

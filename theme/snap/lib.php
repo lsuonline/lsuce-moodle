@@ -111,7 +111,8 @@ function theme_snap_set_category_colors($css, $theme) {
                 'nav-login-bg' => $colors[$category->id],
                 'nav-login-color' => '#FFFFFF',
                 'custom-menu-text-color' => $dbcustommenutextcoloractive ? $dbcustommenutextcolor : '#FFFFFF',
-                'gray-light' => '#6a737b'
+                'gray-light' => '#6a737b',
+                'resource-filter' => 'invert(40%) sepia(7%) saturate(6564%) hue-rotate(168deg) brightness(99%) contrast(75%)',
             ]);
 
             try {
@@ -451,26 +452,6 @@ function theme_snap_course_module_background_deletion_recommended() {
     }
     return false;
 }
-
-/**
- * Hook for adding things before footer.
- */
-//function theme_snap_before_footer() { To be reviewed in INT-20323.
-//    global $CFG, $PAGE;
-//
-//    if (empty(get_config('theme_snap', 'personalmenuadvancedfeedsenable'))) {
-//        return;
-//    }
-//
-//    $paths = [];
-//    $paths['theme_snap/snapce'] = [
-//        $CFG->wwwroot . '/pluginfile.php/' . $PAGE->context->id . '/theme_snap/vendorjs/snap-custom-elements/snap-ce'
-//    ];
-//
-//    $PAGE->requires->js_call_amd('theme_snap/wcloader', 'init', [
-//        'componentPaths' => json_encode($paths)
-//    ]);
-//}
 
 /**
  * Serves the H5P Custom CSS.

@@ -40,9 +40,10 @@ Feature: Check that the correct attributes exists for URL field in a database ac
     And I am on "Course 1" course homepage
     # Create database activity and allow editing of
     # approved entries.
-    And I add a "Database" to section "1" and I fill the form with:
+    And I add a "data" activity to course "C1" section "1" and I fill the form with:
       | Name              | Test database name |
       | Description       | Test               |
+    And I click on "#course-toc .chapters h3:nth-of-type(2)" "css_element"
     And I click on "li.modtype_data a.mod-link" "css_element"
     # To generate the default templates.
     And I click on ".action-menu-trigger" "css_element"

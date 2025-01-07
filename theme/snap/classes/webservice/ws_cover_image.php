@@ -16,12 +16,15 @@
 
 namespace theme_snap\webservice;
 
+use theme_snap\color_contrast;
 use theme_snap\services\course;
 use theme_snap\local;
+use core_external\external_api;
+use core_external\external_value;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
 
 defined('MOODLE_INTERNAL') || die();
-
-require_once(__DIR__ . '/../../../../lib/externallib.php');
 
 /**
  * Cover image web service
@@ -29,36 +32,37 @@ require_once(__DIR__ . '/../../../../lib/externallib.php');
  * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class ws_cover_image extends \external_api {
+class ws_cover_image extends external_api {
     /**
-     * @return \external_function_parameters
+     * @return external_function_parameters
      */
     public static function service_parameters() {
         $parameters = [
-            'params' => new \external_single_structure([
-                'imagefilename' => new \external_value(PARAM_TEXT, 'Image filename', VALUE_OPTIONAL),
-                'fileid' => new \external_value(PARAM_INT, 'File ID', VALUE_OPTIONAL),
-                'categoryid' => new \external_value(PARAM_INT, 'Category Id', VALUE_OPTIONAL),
-                'courseshortname' => new \external_value(PARAM_TEXT, 'Course shortname', VALUE_OPTIONAL),
-                'croppedimagedata' => new \external_value(PARAM_TEXT, 'Cropped image data', VALUE_OPTIONAL),
-                'originalimageurl' => new \external_value(PARAM_TEXT, 'Original image URL', VALUE_OPTIONAL),
-                'deleteimage' => new \external_value(PARAM_BOOL, 'Delete image', VALUE_OPTIONAL),
+            'params' => new external_single_structure([
+                'imagefilename' => new external_value(PARAM_TEXT, 'Image filename', VALUE_OPTIONAL),
+                'fileid' => new external_value(PARAM_INT, 'File ID', VALUE_OPTIONAL),
+                'categoryid' => new external_value(PARAM_INT, 'Category Id', VALUE_OPTIONAL),
+                'courseshortname' => new external_value(PARAM_TEXT, 'Course shortname', VALUE_OPTIONAL),
+                'croppedimagedata' => new external_value(PARAM_TEXT, 'Cropped image data', VALUE_OPTIONAL),
+                'originalimageurl' => new external_value(PARAM_TEXT, 'Original image URL', VALUE_OPTIONAL),
+                'deleteimage' => new external_value(PARAM_BOOL, 'Delete image', VALUE_OPTIONAL),
+                'contrastvalidation' => new external_value(PARAM_BOOL, 'Contrast validation option', VALUE_OPTIONAL),
             ], 'Params wrapper - just here to accommodate optional values', VALUE_REQUIRED),
         ];
-        return new \external_function_parameters($parameters);
+        return new external_function_parameters($parameters);
     }
 
     /**
-     * @return \external_single_structure
+     * @return external_single_structure
      */
     public static function service_returns() {
         $keys = [
-            'success' => new \external_value(PARAM_BOOL, 'Was the cover image successfully changed', VALUE_REQUIRED),
-            'imageurl' => new \external_value(PARAM_TEXT, 'URL of the new cover image', VALUE_OPTIONAL),
-            'contrast' => new \external_value(PARAM_TEXT, 'The color contrast has a warning', VALUE_OPTIONAL),
+            'success' => new external_value(PARAM_BOOL, 'Was the cover image successfully changed', VALUE_REQUIRED),
+            'imageurl' => new external_value(PARAM_TEXT, 'URL of the new cover image', VALUE_OPTIONAL),
+            'contrast' => new external_value(PARAM_TEXT, 'The color contrast has a warning', VALUE_OPTIONAL),
         ];
 
-        return new \external_single_structure($keys, 'coverimage');
+        return new external_single_structure($keys, 'coverimage');
     }
 
     /**
@@ -69,17 +73,10 @@ class ws_cover_image extends \external_api {
      * @return array
      */
     public static function service($params) {
+        global $USER;
+
         $service = course::service();
-
         $params = self::validate_parameters(self::service_parameters(), ['params' => $params])['params'];
-
-        if (!empty($params['deleteimage']) && $params['deleteimage']) {
-            return self::deletecoverimage($params);
-        }
-
-        if (empty($params['imagefilename']) && empty($params['fileid']) && !empty($params['croppedimagedata'])) {
-            return self::savecroppedimage($params);
-        }
 
         if (!empty($params['courseshortname'])) {
             $course = $service->coursebyshortname($params['courseshortname'], 'id');
@@ -94,6 +91,46 @@ class ws_cover_image extends \external_api {
             throw new \coding_exception('Error - courseshortname OR categoryid must be provided');
         }
         self::validate_context($context);
+
+        if (!empty($params['contrastvalidation']) && !empty($params['fileid']) && !empty($params['imagefilename'])) {
+            // Validate the image contrast before saving.
+            $fs = get_file_storage();
+            $usercontext = \context_user::instance($USER->id);
+            $filefromdraft = $fs->get_file($usercontext->id, 'user', 'draft', $params['fileid'], '/', $params['imagefilename']);
+            $finfo = $filefromdraft->get_imageinfo();
+            $imagemaincolor = color_contrast::calculate_image_main_color($filefromdraft, $finfo);
+            $contrast = color_contrast::evaluate_color_contrast($imagemaincolor, "#FFFFFF");
+            if ($context->contextlevel === CONTEXT_COURSECAT) {
+                $themecolor = get_config('theme_snap', 'themecolor');
+                $catconfig = get_config('theme_snap', 'category_color');
+                $catscolor = [];
+                $catid = $context->instanceid;
+                if (!empty($catconfig)) {
+                    $catscolor = json_decode($catconfig);
+                }
+                if (!empty($catscolor) && property_exists($catscolor, $catid)) {
+                    $themecolor = $catscolor->$catid;
+                }
+                $catcontrast = color_contrast::evaluate_color_contrast($imagemaincolor, $themecolor);
+                if ($catcontrast < 4.5) {
+                    return ['success' => true, 'contrast' => get_string('imageinvalidratiocategory',
+                        'theme_snap', number_format((float)$catcontrast, 2))];
+                }
+            }
+            if ($contrast < 4.5) {
+                return ['success' => true, 'contrast' => get_string('imageinvalidratio',
+                    'theme_snap', number_format((float)$contrast, 2)),];
+            }
+            return ['success' => true];
+        }
+
+        if (!empty($params['deleteimage']) && $params['deleteimage']) {
+            return self::deletecoverimage($params);
+        }
+
+        if (empty($params['imagefilename']) && empty($params['fileid']) && !empty($params['croppedimagedata'])) {
+            return self::savecroppedimage($params);
+        }
 
         $coverimage = $service->setcoverimage($context, $params['imagefilename'], $params['fileid'], $params['croppedimagedata']);
 

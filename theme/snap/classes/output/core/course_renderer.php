@@ -103,7 +103,7 @@ class course_renderer extends \core_course_renderer {
             $output .= format_text($summarytext, $section->summaryformat, $summaryformatoptions);
 
             if ($editing && has_capability('moodle/course:update', $context)) {
-                $streditsummary = get_string('editsummary');
+                $streditsummary = get_string('edit');
                 $editsectionurl = new moodle_url('/course/editsection.php', ['id' => $section->id]);
                 $attributes = ['title' => $streditsummary, 'aria-label' => $streditsummary];
                 $output .= html_writer::link($editsectionurl, $this->pix_icon('t/edit', ''), $attributes) .
@@ -1135,38 +1135,6 @@ class course_renderer extends \core_course_renderer {
         $cmname = $mod->modname;
         $iconurl = $mod->get_icon_url();
 
-        // Resources icon and colors depending on File Extension.
-        if (strpos($cmname, 'resource') !== false) {
-            list(, $resourcetype) = $this->get_mod_type($mod);
-
-            $standardicons = [
-                'mp3' => 'audio',
-                'wav' => 'audio',
-                'writer' => 'document',
-                'oth' => 'document',
-                'flash' => 'pdf',
-                'eps' => 'pdf',
-                'impress' => 'powerpoint',
-                'chart' => 'spreadsheet',
-                'database' => 'spreadsheet',
-                'calc' => 'spreadsheet',
-                'sourcecode' => 'text',
-                'html' => 'text',
-                'markup' => 'text',
-                'mpeg' => 'video',
-                'wmv' => 'video',
-                'avi' => 'video',
-                'quicktime' => 'video',
-            ];
-            $resourcetype = $standardicons[$resourcetype] ?? $resourcetype;
-
-            $icons = ['audio', 'document', 'pdf', 'powerpoint', 'spreadsheet', 'text', 'video'];
-            if ((in_array($resourcetype, $icons))) {
-                $resourceiconurl = $this->output->image_url('resource/'.$resourcetype, 'theme');
-                $iconurl = $resourceiconurl ?? $iconurl;
-            }
-        }
-
         $activityimg = "<div class='activityiconcontainer ".$cmname."'>";
         if (strpos($iconurl, $CFG->wwwroot) !== 0) { // For LTI activities with custom icon URLs.
             $activityimg = "<div class='activityiconcontainer ".$cmname."' style='background-color:transparent;'>";
@@ -1935,19 +1903,35 @@ class course_renderer extends \core_course_renderer {
             /** @var core_courseformat\output\local\content\cm\visibility */
             $availability = new $availabilityclass($courseformat, $sectioninfo, $mod);
             $availabilitychoice = $availability->get_choice_list();
-            $availabilityrender = $this->output->render($availabilitychoice);
 
-            $data = (object) [
-                'toggleclass' => 'availability-dropdown',
-                'toggleariacontrols' => 'availability-menu',
-                'spanicon' => 'fa-eye',
-                'spancontent' => get_string('availability'),
-                'dropdownmenuid' => 'availability-menu',
-                'dropdownmenuclasses' => 'availability-dropdown-menu',
-                'dropdownoptions' => $availabilityrender,
-            ];
+            // Get selectable options.
+            $selectableoptions = $availabilitychoice->get_selectable_options();
 
-            $actionsadvanced[] = $this->render_from_template('theme_snap/activity_sub_panel', $data);
+            if ($sectioninfo->visible && count($selectableoptions) === 1) {
+                $hideaction = '<li><a href="'.new moodle_url($baseurl, ['hide' => $mod->id]);
+                $hideaction .= '" data-action="hide" role="button" class="dropdown-item editing_hide js_snap_hide">'.
+                    '<i class="icon fa fa-eye fa-fw "></i>'.$str->hide.'</a></li>';
+                $actionsadvanced[] = $hideaction;
+                $showaction = '<li><a href="'.new moodle_url($baseurl, ['show' => $mod->id]);
+                $showaction .= '" data-action="show" role="button" class="dropdown-item editing_show js_snap_show">'.
+                    '<i class="icon fa fa-eye-slash fa-fw "></i>'.$str->show.'</a></li>';
+                $actionsadvanced[] = $showaction;
+            } else {
+                // Multiple options available, display as a submenu.
+                $availabilityrender = $this->output->render($availabilitychoice);
+
+                $data = (object) [
+                    'toggleclass' => 'availability-dropdown',
+                    'toggleariacontrols' => 'availability-menu',
+                    'spanicon' => 'fa-eye',
+                    'spancontent' => get_string('availability'),
+                    'dropdownmenuid' => 'availability-menu',
+                    'dropdownmenuclasses' => 'availability-dropdown-menu',
+                    'dropdownoptions' => $availabilityrender,
+                ];
+
+                $actionsadvanced[] = $this->render_from_template('theme_snap/activity_sub_panel', $data);
+            }
         }
 
         // Duplicate.
@@ -2027,7 +2011,7 @@ class course_renderer extends \core_course_renderer {
             $advancedactions .= 'data-toggle="dropdown" data-boundary="window" data-offset="-10,12"';
             $advancedactions .= 'title=\''.get_string('moreoptionslabel', 'theme_snap').' "'.$mod->get_formatted_name().'"\'';
             $advancedactions .= 'aria-label="' . get_string('moreoptionslabel', 'theme_snap') . '" aria-expanded="false"';
-            $advancedactions .= 'aria-controls="#snap-asset-menu">'.$moreicons.'</button>';
+            $advancedactions .= 'aria-controls="snap-asset-menu">'.$moreicons.'</button>';
             $advancedactions .= '<ul id="snap-asset-menu" class="dropdown-menu asset-edit-menu">';
             foreach ($actionsadvanced as $action) {
                 $advancedactions .= "$action";
@@ -2084,7 +2068,7 @@ class course_renderer extends \core_course_renderer {
                 'data-toggle' => 'dropdown',
                 'data-boundary' => 'window',
                 'aria-expanded' => 'false',
-                'aria-controls' => '#snap-groups-menu',
+                'aria-controls' => 'snap-groups-menu',
                 ));
         $groupsdropdownlist = \html_writer::tag('ul', $render,
             array(
@@ -2140,6 +2124,16 @@ class course_renderer extends \core_course_renderer {
         return in_array($cm->modname, ['resource', 'scorm']) || plugin_supports('mod', $cm->modname, FEATURE_MOD_ARCHETYPE) === MOD_ARCHETYPE_RESOURCE;
     }
 
+    // Callback to filter students from enrolled users.
+    private function is_student($enrolledUsers) {
+        $filteredStudents = array_filter($enrolledUsers, function($user) {
+            if (isset($user[5])) {
+                return true;
+            }
+        });
+        return $filteredStudents;
+    }
+
     /**
      * Override course render for course and category box in home page.
      *
@@ -2153,7 +2147,7 @@ class course_renderer extends \core_course_renderer {
      * @return string
      */
     protected function coursecat_coursebox(\coursecat_helper $chelper, $course, $additionalclasses = '') {
-        global $CFG, $PAGE, $OUTPUT;;
+        global $CFG, $PAGE, $OUTPUT, $USER;
         if ($PAGE->pagetype !== 'site-index') {
             return \core_course_renderer::coursecat_coursebox($chelper, $course, $additionalclasses);
         }
@@ -2179,7 +2173,8 @@ class course_renderer extends \core_course_renderer {
             $cardcontent .= $this->coursecat_coursebox_content($chelper, $course);
             $cardcontent .= html_writer::end_tag('div');
         } else {
-            $contentimages = '';
+            //These are the course cards for Enrolled Courses and Available courses in the homepage.
+            // Course image.
             $url = $OUTPUT->get_generated_image_for_id($course->id);
             foreach ($course->get_course_overviewfiles() as $file) {
                 $isimage = $file->is_valid_image();
@@ -2187,36 +2182,66 @@ class course_renderer extends \core_course_renderer {
                     '/' . $file->get_contextid() . '/' . $file->get_component() . '/' .
                     $file->get_filearea() . $file->get_filepath() . $file->get_filename(), !$isimage);
             }
+            // Course visibility.
             $isvisible = $course->visible;
             $hiddeninfobadge = '';
             $imageclasses = 'snap-home-courses-image';
             if (!$isvisible) {
                 $hiddeninfobadge = html_writer::tag('span',get_string('hiddenfromstudents'),
                     [
-                        'class' => 'badge badge-info hiddenbadge'
+                        'class' => 'badge bg-info text-white hiddenbadge'
                     ]);
                 $imageclasses .= ' hiddencourse';
             }
-            $contentimages .= $hiddeninfobadge;
-            $contentimages .= html_writer::tag('div','',
-                [
-                    'class' => $imageclasses,
-                    'style' => 'background-image: url('.$url.');'
-                ]);
-
             $classes = trim('col-sm-3 coursebox clearfix '. $additionalclasses);
+            // Course category information.
+            $coursecategoryname = '';
+            $category = \core_course_category::get($course->category, IGNORE_MISSING);
+            if (isset($category)) {
+                $category = $category->name;
+                $coursecategoryname = html_writer::tag('span', '<b>'.get_string('category').": ".
+                    '</b>'.$category, ['class' => 'coursecategory']);
+            }
 
-            $cardcontent .= html_writer::start_tag('a',
-                [
-                    'href' => new moodle_url('/course/view.php', ['id' => $course->id]),
-                    'class' => 'snap-home-course',
-                    'title' => $chelper->get_course_formatted_name($course)
-                ]);
-            $cardcontent .= $contentimages;
-            $cardcontent .= html_writer::tag('span', $chelper->get_course_formatted_name($course), [
-                'class' => 'snap-home-course-title overflow-hidden'
-            ]);
-            $cardcontent .= html_writer::end_tag('a');
+            if (isloggedin()) {
+                // Enrolled students information.
+                $enrolledstudents = $this->is_student(enrol_get_course_users_roles($course->id));
+                $studentscount = count($enrolledstudents);
+                $studentsstring = strtolower(get_string('students'));
+                if ($studentscount == 1 ) {
+                    $studentsstring = strtolower(get_string('student','theme_snap'));
+                }
+                $enrolledstudentsinfo = $studentscount.' '.$studentsstring;
+
+                // Starred courses information.
+                $usercontext = \context_user::instance($USER->id);
+                $service = \core_favourites\service_factory::get_service_for_user_context($usercontext);
+                $isfavourite = $service->favourite_exists('core_course', 'courses', $course->id,
+                    \context_course::instance($course->id));
+            }
+
+            $data  = array(
+                'classes' => $classes,
+                'courseid' => $course->id,
+                'isloggedin' => isloggedin(),
+                'isfavourite' => $isfavourite ?? '',
+                'imageclasses' => $imageclasses,
+                'courseimage' => $url ? $url : '',
+                'hiddeninfobadge' => $hiddeninfobadge,
+                'enrolledstudents' => $enrolledstudentsinfo ?? '',
+                'data-type' => self::COURSECAT_TYPE_COURSE,
+                'coursecategoryname' => $coursecategoryname,
+                'imagestyle' => 'background-image: url('.$url.');',
+                'coursecontacts' => $this->course_contacts($course),
+                'coursename' => $chelper->get_course_formatted_name($course),
+                'coursesummary' => $this->course_summary($chelper, $course),
+                'coursecustomfields' => $this->course_custom_fields($course),
+                'hassummary' => $this->course_summary($chelper, $course) ? true : false,
+                'courselink' => new moodle_url('/course/view.php', ['id' => $course->id]),
+            );
+
+            $content = $this->output->render_from_template('theme_snap/home_page_coursebox', $data);
+            return $content;
         }
 
         if ($chelper->get_show_courses() < self::COURSECAT_SHOW_COURSES_EXPANDED) {

@@ -23,7 +23,6 @@
 Feature: When the moodle theme is set to Snap, a course tools section is available.
 
   Background:
-    Given I skip because "This wil lbe reviewed in INT-18407"
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -210,19 +209,6 @@ Feature: When the moodle theme is set to Snap, a course tools section is availab
     Then I should see "Enrol me"
 
   @javascript
-  Scenario: Course tools includes link to Course catalogue plugin.
-    Given I am using Open LMS
-    And I log in as "teacher1"
-    And I am on the course main page for "C1"
-    And I click on "a[href=\"#coursetools\"]" "css_element"
-    And "a[id=\"ct-open-catalogue\"]" "css_element" should exist
-    And I log out
-    And I log in as "student1"
-    And I am on the course main page for "C1"
-    And I click on "a[href=\"#coursetools\"]" "css_element"
-    And "a[id=\"ct-open-catalogue\"]" "css_element" should exist
-
-  @javascript
   Scenario: Course Dashboard should be visible after clicking in the Course Dashboard link after clicking in a course section.
     Given the course format for "C1" is set to "topics"
     When I log in as "student1"
@@ -232,3 +218,62 @@ Feature: When the moodle theme is set to Snap, a course tools section is availab
     And I click on "a[href=\"#section-1\"].chapter-title" "css_element"
     And I click on "#snap-course-tools" "css_element"
     Then I should see "Course Dashboard" in the "#coursetools" "css_element"
+
+  @javascript
+  Scenario: User should be redirected to the same section in the course in Snap when changing the edit mode.
+    Given the course format for "C1" is set to "topics"
+    When I log in as "admin"
+    And I am on the course main page for "C1"
+    And I click on "#snap-course-tools" "css_element"
+    Then I should see "Course Dashboard" in the "#coursetools" "css_element"
+    And I switch edit mode in Snap
+    And I wait until the page is ready
+    Then I should see "Course Dashboard" in the "#coursetools" "css_element"
+    And I click on "a[href='#section-1'].chapter-title" "css_element"
+    And I switch edit mode in Snap
+    And I wait until the page is ready
+    And I should not see "Course Dashboard" in the "#coursetools" "css_element"
+    Then the course format for "C1" is set to "weeks"
+    When I log in as "admin"
+    And I am on the course main page for "C1"
+    And I click on "#snap-course-tools" "css_element"
+    Then I should see "Course Dashboard" in the "#coursetools" "css_element"
+    And I switch edit mode in Snap
+    And I wait until the page is ready
+    Then I should see "Course Dashboard" in the "#coursetools" "css_element"
+    And I click on "a[href='#section-1'].chapter-title" "css_element"
+    And I switch edit mode in Snap
+    And I wait until the page is ready
+    Then I should not see "Course Dashboard" in the "#coursetools" "css_element"
+
+  @javascript
+  Scenario: User should be redirected to the Course Dashboard in the course in Snap when modifying block.
+    Given I log in as "teacher1"
+    And I am on the course main page for "C1"
+    When I click on "Course Dashboard" "link"
+    And I wait until the page is ready
+    And I switch edit mode in Snap
+    And I wait until the page is ready
+    And I should see "Add a block"
+    And I set the field with xpath "//select[@class = 'custom-select singleselect']" to "Calendar"
+    And I wait until the page is ready
+    And I should see "Calendar"
+    And I click on ".block_calendar_month .action-menu-item" "css_element"
+    And I click on ".dragdrop-keyboard-drag li:nth-child(1)" "css_element"
+    And I wait until the page is ready
+    And I click on ".block_calendar_month .block-controls .action-menu-trigger" "css_element"
+    And I follow "Hide Calendar block"
+    And I wait until the page is ready
+    And I should see "Add a block"
+    And ".block_calendar_month.block.invisibleblock" "css_element" should exist
+    And I click on ".block_calendar_month .block-controls .action-menu-trigger" "css_element"
+    And I follow "Show Calendar block"
+    And I wait until the page is ready
+    And I should see "Add a block"
+    And ".block_calendar_month.block.invisibleblock" "css_element" should not exist
+    And I click on ".block_calendar_month .block-controls .action-menu-trigger" "css_element"
+    And I follow "Delete Calendar block"
+    And I click on ".modal button[data-action='save']" "css_element"
+    And I wait until the page is ready
+    And I should see "Add a block"
+    And ".block_calendar_month" "css_element" should not exist

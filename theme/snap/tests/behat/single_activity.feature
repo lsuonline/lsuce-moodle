@@ -42,7 +42,7 @@ Feature: Use the Single Activity format in Snap
       | Course short name | TSAIS |
       | Course ID number | TC101 |
       | Course summary | This course has been created by automated tests. |
-      | Format  | Single activity format |
+      | Format  | Single activity|
     And I wait "3" seconds
     And I expand all fieldsets
     And I wait until "#id_activitytype" "css_element" is visible

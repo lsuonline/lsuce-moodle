@@ -220,6 +220,35 @@ table.boxwidthwide {
         .snap-indication {
             font-size: 0.8em;
         }
+        .toggle-sensitive-wrapper {
+            margin-bottom: 0 !important;
+            label[for="password"] {
+                margin-top: 1em;
+            }
+            &.input-group:not(.small-screens-only) input#password {
+                border-end-end-radius: 0;
+                border-start-end-radius: 0;
+            }
+            &.input-group.small-screens-only input#password {
+                @media (max-width: 576px) {
+                    border-end-end-radius: 0;
+                    border-start-end-radius: 0;
+                }
+            }
+            .input-group-append {
+                height: 2em;
+                margin-top: 0.8em;
+                @media (max-width: 767px) {
+                    height: 2.1em;
+                }
+                .toggle-sensitive-btn {
+                    border-end-end-radius: 5px;
+                    border-start-end-radius: 5px;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                }
+            }
+        }
     }
     #snap-alt-login {
         h2 {
@@ -926,6 +955,10 @@ a.yui3-button,
     }
 }
 
+.path-grade-report-grader .gradeparent table.gradereport-grader-table {
+    height: auto;
+}
+
 .path-grade-report-grader #region-main div[role="main"] {
     overflow: auto;
 }
@@ -951,6 +984,10 @@ a.yui3-button,
     .user-grade th.oddd3 {
         background-color: #fff;
     }
+}
+
+.path-grade-report-grader .tertiary-navigation .initials-selector {
+    z-index: 1;
 }
 
 #page-grade-report-overview-index #page-mast {
@@ -1235,6 +1272,10 @@ footer #moodle-footer
                 box-shadow: none;
             }
 
+        }
+        .divider {
+            margin-right: 0 !important;
+            margin-left: 0 !important;
         }
     }
     position: fixed;
@@ -1749,8 +1790,13 @@ header#page-header
 // -------------------------
 
 .breadcrumb-nav {
-    padding: .5em 0;
     float: none;
+    margin-top: 1.75em;
+    background-color: white;
+    width: fit-content;
+    padding: 0 1em;
+    border-radius: 0.5rem;
+    font-weight: 700;
     @include media-breakpoint-up(md) {
         margin-top: 1.75em;
     }
@@ -1791,17 +1837,7 @@ header#page-header
 
 // If the page has an image - courses & categories.
 .mast-image {
-    .breadcrumb {
-        li,
-        li:before,
-        > li + li:before,
-        a {
-            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.6);
-            color: white;
-        }
-    }
-
-    #page-mast > {
+    #page-mast {
         h1,
         h1 a,
         h1 a:hover {
@@ -2983,6 +3019,25 @@ ul.events-new + ul.events-underway {
     font-size: 1.3em;
 }
 
+// Add styles for questions preview.
+.path-question-bank-previewquestion {
+    #page-content {
+        padding: 15px;
+    }
+    .fcontainer {
+        padding-left: 2.5rem;
+    }
+    .que {
+        padding: unset;
+        h3.no {
+            margin: unset;
+        }
+    }
+    #techinfo_caption a {
+        margin: 3px;
+    }
+}
+
 // Add margin to quiz submit/check button.
 .que .im-controls {
     margin: 0.5em 0;
@@ -3817,15 +3872,22 @@ body.hascontinuecancel.path-site #page {
 .moodle-dialogue-base .moodle-dialogue {
     min-width: 32%;
     padding: 0;
-    /* large size */
-    &.chooserdialogue,
-    &.filepicker {
+
+    &.chooserdialogue {
         min-width: 90%;
-        height: calc(100% - 10px);
+        height: max-content; // Changing this to a unit value causes a flickering effect on resize.
+        &.moodle-dialogue-fullscreen {
+            height: auto;
+        }
     }
+
     video#player {
         max-height: 50vh;
     }
+}
+
+.moodle-dialogue-base .filepicker .alert-warning {
+    margin: 0 1px 18px;
 }
 
 /* Prevent modal dialog to be seen behind the text and tool card content right fit */
@@ -4326,11 +4388,20 @@ table th img.iconhelp {
     border-radius: 0 0 4px 4px;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-height: 2.4em;
+    max-height: 2.3em;
+    min-height: unset;
 }
+
+#snap-featured-categories .row.text-center,
+#snap-featured-courses .row.text-center,
+.frontpage-course-list-all,
+.frontpage-course-list-enrolled {
+    justify-content: space-evenly;
+}
+
 .frontpage-course-list-enrolled,
 .frontpage-course-list-all {
     display: flex;
@@ -4345,21 +4416,30 @@ table th img.iconhelp {
     }
 }
 
+.snap-home-course {
+    &:hover {
+        z-index: 1;
+        margin-bottom: 3em;
+    }
+}
+
 /* Featured category and course link. */
 .snap-featured-category,
 .snap-featured-course,
 .snap-home-course {
     display: block;
-    height: 300px;
+    height: 220px;
     position: relative;
     margin-bottom: 1em;
     @include alakazam;
+    border-radius: .5rem;
 
     @media screen and (max-width: 768px) {
         height: 210px;
     }
 
     &:hover {
+        background: white;
         transform: scale(1.03);
         box-shadow:
             0 2px 2px 0 rgba(0, 0, 0, 0.14),
@@ -4371,24 +4451,217 @@ table th img.iconhelp {
         .snap-home-course-title {
             text-decoration: underline;
         }
+        .card-header {
+            .snap-home-course-title {
+                margin-left: 2%;
+                text-align: left;
+                overflow: hidden;
+                background: transparent;
+                transition: transform 1s ease;
+                transform: translateX(-2%);
+            }
+            @keyframes snap-info-blink {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+
+            .more-info {
+                padding: 0;
+                display: block;
+                font-size: larger;
+                color: $brand-primary;
+                animation: snap-info-blink 0.5s ease-in-out;
+                opacity: .8;
+                &::before {
+                    pointer-events: all;
+                }
+                &:hover {
+                    opacity: 1;
+                }
+            }
+            .additional-options {
+                margin-top: .5em;
+            }
+            .additional-options,
+            .coursestudents {
+                width: 100%;
+                span {
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 1;
+                    overflow: hidden;
+                    text-align: left;
+                    font-size: medium;
+                }
+                @media screen and (max-width: 768px) {
+                    margin-left: -2%;
+                }
+            }
+        }
+        .favouriteicon .fa-regular {
+            display: inline;
+            -webkit-text-stroke: 1px $brand-primary;
+        }
+    }
+    &:not(:hover) {
+        .card-header {
+            .snap-home-course-title {
+                flex: unset;
+            }
+        }
+    }
+    .card-header {
+        min-height: 25%;
+        background-color: #fff;
+        bottom: 0;
+        padding: .5em 4%;
+        width: 100%;
+        margin-left: 0;
+        border-bottom-left-radius: .5rem;
+        border-bottom-right-radius: .5rem;
+        .snap-home-course-title {
+            padding: 0;
+            -webkit-line-clamp: 1;
+            max-height: 1.4em;
+            min-height: unset;
+            max-width: unset;
+        }
+        .more-info {
+            display: none;
+        }
+        .additional-options,
+        .coursestudents {
+            width: 100%;
+            span {
+                display: none;
+            }
+        }
+    }
+    .set-favourite,
+    .unset-favourite {
+        padding: 0;
+    }
+    .favouriteicon {
+        position: absolute;
+        width: 100%;
+        text-align: end;
+        padding-right: 20px;
+        padding-top: 0.1em;
+        margin-top: 0.5em;
+        margin-right: 5%;
+        z-index: 1;
+        @media screen and (max-width: 768px) {
+            font-size: larger;
+        }
+    }
+    .favouriteicon .fa-solid {
+        text-shadow: 1px 1px 3px black;
+        -webkit-text-stroke: 1px white;
+        color: $brand-primary;
+    }
+    .favouriteicon .fa-regular {
+        display: none;
     }
     .hiddenbadge {
         position: relative;
         z-index: 1;
         float: left;
-        margin-top: 9.5em;
+        margin-top: 7.5em;
         margin-left: 5%;
         padding: 0.25em 0.1em;
         font-size: 90%;
-        @media screen and (max-width: 940px) {
-            margin-top: 12em;
-            font-size: 75%;
+        @media screen and (max-width: 1080px) {
+            margin-top: 10em;
             margin-left: 2%;
+            font-size: 65%;
         }
         @media screen and (max-width: 768px) {
             margin-top: 9.5em;
             font-size: 90%;
             margin-left: 5%;
+        }
+    }
+}
+.snap-home-course-card {
+    .modal-content {
+        border-radius: .5em;
+    }
+    .modal-body {
+        .hiddeninfo {
+            text-align: left;
+            margin-left: 2em;
+        }
+        .hiddenbadge {
+            margin-top: 1em;
+        }
+        padding: 0;
+        .close {
+            margin-right: 1em;
+            margin-top: 1rem;
+            background-color: $brand-primary;
+            color: white;
+            padding: .2em .4em .2em .4em;
+            opacity: 1;
+            border-radius: 1em;
+        }
+        .snap-home-courses-image {
+            border-top-left-radius: .5em;
+            border-top-right-radius: .5em;
+            height: 15em;
+            position: relative;
+            .bottom-image-options {
+                position: absolute;
+                bottom: 0;
+                width: 100%;
+                text-align: left;
+                background-color: rgba(0, 0, 0, 0.5);
+                height: 60px;
+                padding-top: .5rem;
+            }
+            .courselink {
+                margin-left: 2em;
+            }
+            .studentsinfo {
+                color: white;
+                margin-left: 1.5em;
+                font-size: medium;
+            }
+        }
+        .card-title {
+            font-weight: bold;
+            display: block;
+            text-align: start;
+            padding: 1em 2em 0 2em;
+            color: $brand-primary;
+        }
+        .coursecategory {
+            display: block;
+            text-align: start;
+            padding: 0 2em 1em 2em;
+        }
+        .course-info {
+            padding: 1em 2em 1em 2em;
+            font-size: $h6-font-size;
+            max-height: 400px;
+            overflow-y: auto;
+            .summary-info {
+                text-align: justify;
+            }
+            .additional-info {
+                text-align: justify;
+                .teachers {
+                    padding: 0;
+                    li {
+                        margin-bottom: .5em;
+                    }
+                }
+                .customfield {
+                    .customfieldname {
+                        font-weight: bold;
+                    }
+                }
+            }
         }
     }
 }
@@ -4425,6 +4698,9 @@ table th img.iconhelp {
     &:hover {
         overflow-y: auto;
     }
+    @media (max-width: 768px) {
+        font-size: larger;
+    }
 }
 
 // Scrolling gradebook fixes
@@ -4459,6 +4735,26 @@ table th img.iconhelp {
 
     // Without this, IE totally screws up the header and column cell sizes.
     box-sizing: content-box !important;
+}
+
+.path-grade-report-grader .gradeparent .dropdown-item {
+    // Fix dropdown elements focus.
+    box-sizing: border-box !important;
+}
+
+// Adjust Collapsed columns
+.path-grade-report-grader .collapsecolumndropdown {
+    font-size: 0.9rem;
+    &.show {
+        width: 320px;
+    }
+    .path-grade-report-grader .collapsecolumndropdown .flex-row.ml-auto {
+        display: flex;
+        .btn {
+            font-size: 0.9rem;
+            padding: .3rem .6rem;
+        }
+    }
 }
 
 .path-grade-report-grader .gradeparent .heading .cell,
@@ -4842,12 +5138,12 @@ section#region-main {
 // Fixes for course cards in the user dashboard.
 #page-my-index {
 
-    .card-footer.dashboard-card-footer.border-0.bg-white {
-        background-color: transparent !important;
+    // Hide the Customize this page button because we already have the edition toggle here.
+    &:not(.editing) .snap-page-heading-button .singlebutton:nth-of-type(1) {
+        display: none;
     }
-
-    .dashboard-card-deck .dashboard-card a {
-        margin: 0 0.1em;
+    &.editing .snap-page-heading-button .singlebutton:nth-of-type(2) {
+        display: none;
     }
 
     #moodle-blocks {
@@ -4872,19 +5168,6 @@ section#region-main {
                 border-right: 1px solid rgba(0, 0, 0, .125);
                 border-left: 1px solid rgba(0, 0, 0, .125);
             }
-        }
-    }
-}
-
-.dashboard-card-deck {
-    @media (min-width: 576px) {
-        .dashboard-card {
-            width: calc(50% - #{$card-gutter});
-        }
-    }
-    @media (min-width: 840px) {
-        .dashboard-card {
-            width: calc(33.33% - #{$card-gutter});
         }
     }
 }
@@ -5154,6 +5437,9 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
     padding: 0;
     visibility: visible;
     opacity: 1;
+    &.hidden {
+        visibility: hidden;
+    }
 }
 
 #page-mod-forum-view.theme-snap [data-region=right-hand-drawer].drawer {
@@ -5206,9 +5492,11 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
             flex-wrap: wrap;
         }
         .cb-heading,
+        .cb-uses,
         .cb-date,
         .cb-size,
-        .cb-type {
+        .cb-type,
+        .cb-author {
             display: none;
         }
         .cb-listitem {
@@ -5231,7 +5519,7 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
                 }
 
                 span.cb-name {
-                    word-break: break-all;
+                    word-break: break-word;
                     text-align: center;
                     font-size: .9375rem;
                 }
@@ -5241,8 +5529,13 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
 
     // List view.
     .content-bank-container.view-list {
+
+        .cb-column {
+            border-right: 1px solid #dee2e6;
+        }
+
         .cb-content-wrapper {
-            padding: 0 .5rem;
+            padding: 0 0.5rem;
             flex-direction: column;
             flex-wrap: nowrap;
         }
@@ -5260,6 +5553,9 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
             .cb-btnsort span {
                 display: none;
             }
+            .cb-btnsort .title {
+                display: inline;
+            }
         }
 
         .cb-heading,
@@ -5274,32 +5570,29 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
             }
         }
 
-        .cb-file.cb-column,
-        .cb-date.cb-column,
-        .cb-size.cb-column {
-            border-right: 1px solid #dee2e6;
-        }
-
         // Content bank table responsive.
-        @media (min-width: 576px) {
-            .cb-file,
-            .cb-date {
-                flex: 0 0 35%;
-                max-width: 35%;
-            }
-            .cb-size,
-            .cb-type {
-                flex: 0 0 15%;
-                max-width: 15%;
-            }
-            .cb-column.last {
-                border-right: 0;
-            }
-        }
         @media (max-width: 767.98px) {
             .cb-column {
                 flex: 0 0 50%;
                 max-width: 50%;
+            }
+        }
+
+        @media (min-width: 576px) {
+            .cb-file {
+                flex: 0 0 40%;
+                max-width: 40%;
+            }
+            .cb-uses,
+            .cb-date,
+            .cb-size,
+            .cb-type,
+            .cb-author {
+                flex: 0 0 12%;
+                max-width: 12%;
+            }
+            .cb-column.last {
+                border-right: 0;
             }
         }
 
@@ -5829,6 +6122,17 @@ body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
             margin-top: -.75em;
         }
     }
+    #moodle-blocks {
+        visibility: visible;
+        height: auto;
+        overflow: visible;
+        margin-top: 5em;
+        padding: 0;
+        max-width: 65em;
+        section.block {
+            border-radius: .5rem;
+        }
+    }
 }
 
 // Styles for My courses page in Snap.
@@ -5875,17 +6179,6 @@ body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
 
                 .card-title {
                     font-weight: bold;
-                }
-
-                .card.dashboard-card {
-                    border-radius: 0.5rem;
-                    a:first-child[tabindex='-1']{
-                        margin: 0;
-                    }
-                    .dashboard-card-img {
-                        border-top-left-radius: 0.5rem;
-                        border-top-right-radius: 0.5rem;
-                    }
                 }
 
                 .page-item {
@@ -5969,4 +6262,13 @@ body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
         border-bottom-left-radius: 0.25rem !important;
         border-top-left-radius: 0.25rem !important;
     }
+}
+
+.reportbuilder-wrapper .filters-dropdown {
+    padding-bottom: 5rem !important; // !important to override the boost padding-bottom.
+}
+
+// Override Bootstrap .text-dark class.
+.badge.bg-secondary.text-dark {
+    color: #fff !important;
 }

@@ -352,10 +352,10 @@ EOF;
             'progresstotal'
         ], 'completion');
 
-        // Are we viewing /course/view.php - note, this is different from just checking the page type.
+        // Are we viewing /course/view.php or /course/section.php - note, this is different from just checking the page type.
         // We only ever want to load course.js when on site page or view.php - no point in loading it when on
         // course settings page, etc.
-        $courseviewpage = local::current_url_path() === '/course/view.php';
+        $courseviewpage = in_array(local::current_url_path(), ['/course/view.php', '/course/section.php']);
         $pagehascoursecontent = ($PAGE->pagetype === 'site-index' || $courseviewpage);
 
         $cancomplete = isloggedin() && !isguestuser();
@@ -497,8 +497,8 @@ EOF;
         // Does the page have editable course content?
         if ($pagehascoursecontent && $PAGE->user_allowed_editing()) {
             $canmanageacts = has_capability('moodle/course:manageactivities', context_course::instance($COURSE->id));
-            if ($canmanageacts && (empty($USER->editing) || $COURSE->id === SITEID) && $COURSE->format !== 'tiles' ||
-                $canmanageacts && !empty($USER->editing) && $COURSE->format == 'tiles') {
+            if ($canmanageacts && $COURSE->format !== 'tiles' ||
+                ($canmanageacts && !empty($USER->editing) && $COURSE->format == 'tiles')) {
                 $modinfo = get_fast_modinfo($COURSE);
                 $modnamesused = $modinfo->get_used_module_names();
 
@@ -1023,47 +1023,6 @@ EOF;
     }
 
     /**
-     * @param $courseid
-     * @param $courseformat
-     * @param $pagetype
-     * @return false|string
-     * @throws \coding_exception
-     * @throws \moodle_exception
-     */
-    public static function render_edit_mode($courseid, $courseformat, $pagetype) {
-        global $USER;
-        if (empty($courseid) || empty($courseformat) || empty($pagetype)) {
-            return false;
-        }
-
-        $acceptedformats = ['tiles'];
-        $renderer = '';
-        if (in_array($courseformat, $acceptedformats)) {
-            $oncoursepage = strpos($pagetype, 'course-view') === 0;
-            $coursecontext = \context_course::instance($courseid);
-            if ($oncoursepage && has_capability('moodle/course:update', $coursecontext)) {
-                $url = new \moodle_url('/course/view.php', ['id' => $courseid, 'sesskey' => sesskey()]);
-                if (!empty($USER->editing)) {
-                    $url->param('edit', 'off');
-                    $editstring = get_string('turneditingoff');
-                } else {
-                    $url->param('edit', 'on');
-                    $editstring = get_string('editmodetiles', 'theme_snap');
-                }
-
-                $btneditmode = '<a href="'.$url.'" class="btn btn-primary btn-editing
-                    edit-course-content mr-4">'.$editstring.'</a>';
-                $renderer = '<div id="snap-editmode" class="snap-editmode">';
-                $renderer .= '<div id="edit-course-content-footer">';
-                $renderer .= $btneditmode;
-                $renderer .= '</div><br></div>';
-            }
-        }
-
-        return $renderer;
-    }
-
-    /**
      * @param array $link
      * @return array
      */
@@ -1082,57 +1041,5 @@ EOF;
             ];
         }
         return $link;
-    }
-
-    /**
-     * Grade reports edit button.
-     */
-    public static function get_grade_report_edit_button() {
-        global $COURSE, $USER, $OUTPUT;
-        if ($COURSE->id === null || $USER->editing === null) {
-            return "";
-        }
-
-        $options['id'] = $COURSE->id;
-        $options['item'] = optional_param('item', '', PARAM_TEXT);
-        if ($options['item'] === 'user') {
-            $userid = optional_param('userid', '', PARAM_INT);
-            $itemid = optional_param('itemid', '', PARAM_INT);
-            $options['itemid'] = $userid ?: $itemid;
-        } else if ($options['item'] === 'grade') {
-            $options['itemid'] = optional_param('itemid', '', PARAM_INT);
-        }
-
-        if ($USER->editing == 1) {
-            $options['edit'] = 0;
-            $string = get_string('turneditingoff');
-        } else {
-            $options['edit'] = 1;
-            $string = get_string('turneditingon');
-        }
-        $url = new moodle_url('index.php', $options);
-        return $OUTPUT->single_button($url, $string, 'get', ['class' => 'grade_report_edit_button']);
-    }
-
-    /**
-     * Create a button for toggling editing mode.
-     *
-     * @return string Html containing the edit button
-     */
-    public static function snap_edit_button() {
-        global $PAGE, $OUTPUT;
-        if ($PAGE->user_allowed_editing()) {
-
-            $temp = (object) [
-                'legacyseturl' => (new moodle_url('/editmode.php'))->out(false),
-                'pagecontextid' => $PAGE->context->id,
-                'pageurl' => $PAGE->url,
-                'sesskey' => sesskey(),
-            ];
-            if ($PAGE->user_is_editing()) {
-                $temp->checked = true;
-            }
-            return $OUTPUT->render_from_template('theme_snap/editbutton', $temp);
-        }
     }
 }

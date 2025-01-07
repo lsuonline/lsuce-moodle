@@ -41,7 +41,7 @@ Feature: Setting for mod_book should not appear on Snap.
   Scenario: As a teacher I should not see the setting Display description on course page.
     Given I log in as "teacher1"
     And I am on the course main page for "C1"
-    And I add a "Book" to section "0"
+    And I add a book activity to course "C1" section "0"
     And "#id_general .fcontainer .checkbox" "css_element" should exist
     And I should not see "Display description on course page"
 
@@ -57,7 +57,7 @@ Feature: Setting for mod_book should not appear on Snap.
       | Chapter title | Dummy first chapter |
       | Content       | Dummy content       |
     And I press "Save changes"
-    And I press "Turn editing on"
+    And I switch edit mode in Snap
     And I follow "Add new chapter"
     Then ".checkbox #id_subchapter" "css_element" should exist
     And the "Subchapter" "checkbox" should be enabled

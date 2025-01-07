@@ -36,8 +36,8 @@ Feature: When the moodle theme is set to Snap, the custom snap login form should
     And I click on "#admin-menu-trigger" "css_element"
     And I expand "Site administration" node
     And I expand "Appearance" node
-    And I expand "Themes" node
-    And I click on "#themesettingsnap_tree_item > a" "css_element"
+    And I follow "Themes"
+    And I follow "Edit theme settings 'Snap'"
     And I click on "Login page" "link"
     And I should see "Stylish template"
     And I set the field with xpath "//select[@id='id_s_theme_snap_loginpagetemplate']" to "Stylish"
@@ -45,3 +45,34 @@ Feature: When the moodle theme is set to Snap, the custom snap login form should
     And I log out
     And I am on login page
     Then ".page-stylish-login" "css_element" should exist
+
+  @javascript
+  Scenario: The login password toggle must be displayed in Snap login page.
+    Given the following config values are set as admin:
+      | loginpasswordtoggle | 0 |
+    And I am on login page
+    And ".toggle-sensitive-btn" "css_element" should not exist
+    Then the following config values are set as admin:
+      | loginpasswordtoggle | 1 |
+    And I am on login page
+    And ".toggle-sensitive-btn" "css_element" should exist
+    And I set the field "password" to "This is a password"
+    And ".toggle-sensitive-wrapper input[type='text'] " "css_element" should not exist
+    And I click on ".toggle-sensitive-btn" "css_element"
+    And ".toggle-sensitive-wrapper input[type='text'] " "css_element" should exist
+    And I click on ".toggle-sensitive-btn" "css_element"
+    And ".toggle-sensitive-wrapper input[type='text'] " "css_element" should not exist
+    Then the following config values are set as admin:
+      | loginpasswordtoggle | 2 |
+    And I am on login page
+    And ".toggle-sensitive-btn" "css_element" should not be visible
+    And I change window size to "320x480"
+    And ".toggle-sensitive-btn" "css_element" should be visible
+
+  @javascript
+  Scenario: A guest user can login using the Snap login page.
+    Given I am on login page
+    And "#page-site-index #page-mast" "css_element" should not be visible
+    And I press "Access as a guest"
+    And "#page-site-index #page-mast" "css_element" should be visible
+    And I should not see "Invalid login, please try again"
