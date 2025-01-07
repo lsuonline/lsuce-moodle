@@ -23,4 +23,4 @@
  * and administration at http://docs.moodle.org/en/Git .
  */
 
-$githash = '4bd3217';
+$githash = 'c58bc49';

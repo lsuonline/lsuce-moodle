@@ -119,7 +119,7 @@ class report_helper {
         $course = get_course($courseid);
         $groupmode = groups_get_course_groupmode($course);
         $groupid = $filterparams->groupid ?? 0;
-            $context = context_course::instance($courseid);
+        $context = context_course::instance($courseid);
         if ($groupid || ($groupmode == SEPARATEGROUPS && !has_capability('moodle/site:accessallgroups', $context))) {
             if ($groupid) {
                 $cgroups = [(int) $groupid];

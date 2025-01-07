@@ -442,7 +442,6 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) {
         ['value' => 1, 'locked' => 0])
     );
 
-
     $temp->add(new admin_setting_configcheckbox_with_lock('backup/backup_general_legacyfiles',
         new lang_string('generallegacyfiles', 'backup'),
         new lang_string('configlegacyfiles', 'backup'), array('value' => 1, 'locked' => 0)));
