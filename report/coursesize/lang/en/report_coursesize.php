@@ -31,8 +31,8 @@ $string['coursebytes'] = '{$a->bytes} bytes used by course {$a->shortname}';
 $string['coursebackupbytes'] = '{$a->backupbytes} bytes used for backup by course {$a->shortname}';
 $string['coursereport'] = 'Summary of plugin types - NOTE this may be different than the main course listing and is probably more accurate.';
 $string['coursesize:view'] = 'View course size report';
-$string['coursesize:breakdown'] = 'View the course file size breakdown';
 $string['diskusage'] = 'Total';
+$string['error_unsupported_branch'] = 'Cannot upgrade this old coursereport plugin - you should check/delete the old table before upgrading to this release.';
 $string['nouserfiles'] = 'No user files listed.';
 $string['pluginname'] = 'Course size';
 $string['sizepermitted'] = '(Permitted usage {$a}MB)';
@@ -54,16 +54,5 @@ $string['calcmethodlive'] = 'On page load';
 $string['calcmethodhelp'] = 'If calculated by scheduled task, the report will update at the scheduled time and cache the results for later viewing. This is recommended over instant calculations because this can be an intensive/slow query to run.';
 $string['numberofusers'] = 'Top number of users';
 $string['numberofusershelp'] = 'How many of the top users the report will show.';
-
-// BEGIN LSU - Store course size and history.
-$string['keephistory'] = 'Keep size history';
-$string['keephistoryhelp'] = 'Keep the course size history to see growth rate.';
-$string['rolepicker'] = 'Additional roles to have access.';
-$string['rolepickerhelp'] = 'List the role followed by true/false to see course size meter and the course breakdown.'.
-	'<br>For example:'.
-	'<br>TA, false'.
-	'<br>Manager, true';
-// END LSU - Store course size and history.
-
 $string['filearea'] = 'File area';
 $string['allcourses'] = 'All courses';

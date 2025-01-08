@@ -24,16 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$ADMIN->add('reports', new admin_externalpage(
-    'reportcoursesize',
-    get_string('pluginname', 'report_coursesize'),
-    "$CFG->wwwroot/report/coursesize/index.php",
-    'report/coursesize:view'
-));
+$ADMIN->add('reports', new admin_externalpage('reportcoursesize', get_string('pluginname', 'report_coursesize'),
+                                              "$CFG->wwwroot/report/coursesize/index.php", 'report/coursesize:view'));
 
 $settings = new admin_settingpage('report_coursesize_settings', new lang_string('pluginname', 'report_coursesize'));
 if ($ADMIN->fulltree) {
-
     $settings->add(new admin_setting_configselect(
         'report_coursesize/calcmethod',
         new lang_string('calcmethod', 'report_coursesize'),
@@ -52,13 +47,4 @@ if ($ADMIN->fulltree) {
         10,
         PARAM_INT
     ));
-    // BEGIN LSU - Course size history.
-    $settings->add(
-        new admin_setting_configcheckbox(
-            'report_coursesize/keephistory',
-            get_string('keephistory', 'report_coursesize'),
-            get_string('keephistoryhelp', 'report_coursesize'),
-            1
-        )
-    );
 }

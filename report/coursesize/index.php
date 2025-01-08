@@ -96,7 +96,8 @@ if ($viewtab == 'userstopnum') {
         $totaldate = get_string('never');
         $totalusage = 0;
     }
-    $totalusagereadable = display_size((int)$totalusage);
+
+    $totalusagereadable = display_size($totalusage);
     $systemsize = $systembackupsize = 0;
 
     $coursesql = 'SELECT cx.id, c.id as courseid ' .
@@ -128,7 +129,6 @@ if ($viewtab == 'userstopnum') {
     if (isset($reportconfig->calcmethod) && ($reportconfig->calcmethod) == 'live') {
         $live = true;
     }
-    // BEGIN LSU - Store course size and history.
     if ($live) {
         $filesql = report_coursesize_filesize_sql();
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
@@ -138,20 +138,15 @@ if ($viewtab == 'userstopnum') {
         // Generate table of backup filesizes too.
         $backupsql = report_coursesize_backupsize_sql();
         $backupsizes = $DB->get_records_sql($backupsql);
-        $bytimestamp = "";
     } else {
-        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp, rc.backupsize
+        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.backupsize
           FROM {course} c
           JOIN {report_coursesize} rc on rc.course = c.id ";
-        $bytimestamp = " WHERE timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} rc2 WHERE rc.course = rc2.course) ";
     }
 
     $sql .= "JOIN {course_categories} ca on c.category = ca.id
          $extracoursesql
-         $bytimestamp
      ORDER BY rc.filesize DESC";
-    // END LSU - Store course size and history.
-
     $courses = $DB->get_records_sql($sql, $courseparams);
 
     $coursetable = new html_table();
@@ -188,7 +183,7 @@ if ($viewtab == 'userstopnum') {
         $row[] = '<a href="' . $CFG->wwwroot . '/course/view.php?id=' . $course->id . '">' . $course->shortname . '</a>';
         $row[] = '<a href="' . $CFG->wwwroot . '/course/index.php?categoryid=' . $course->category . '">' . $course->name . '</a>';
 
-        $readablesize = display_size((int)$course->filesize);
+        $readablesize = display_size($course->filesize);
         $a = new stdClass;
         $a->bytes = $course->filesize;
         $a->shortname = $course->shortname;
@@ -198,10 +193,7 @@ if ($viewtab == 'userstopnum') {
         $summarylink = new moodle_url('/report/coursesize/course.php', array('id' => $course->id));
         $summary = html_writer::link($summarylink, ' ' . get_string('coursesummary', 'report_coursesize'));
         $row[] = "<span id=\"coursesize_" . $course->shortname . "\" title=\"$bytesused\">$readablesize</span>" . $summary;
-        if ($course->backupsize == "" || $course->backupsize == null) {
-            $course->backupsize = 0;
-        }
-        $row[] = "<span title=\"$backupbytesused\">" . display_size((int)$course->backupsize) . "</span>";
+        $row[] = "<span title=\"$backupbytesused\">" . display_size($course->backupsize) . "</span>";
         $coursetable->data[] = $row;
         $downloaddata[] = array($course->shortname, $course->name, str_replace(',', '', $readablesize),
             str_replace(',', '', display_size($course->backupsize)));
@@ -233,7 +225,6 @@ if ($viewtab == 'userstopnum') {
     $row[] = display_size($totalsize);
     $row[] = display_size($totalbackupsize);
     $coursetable->data[] = $row;
-
     $downloaddata[] = [get_string('total'), '', display_size($totalsize), display_size($totalbackupsize)];
     unset($courses);
 
@@ -247,7 +238,8 @@ if ($viewtab == 'userstopnum') {
     $catlookup = $DB->get_records_sql('select id,name from {course_categories}');
     $options = ['0' => get_string('allcourses', 'report_coursesize')];
     foreach ($catlookup as $cat) {
-        $options[$cat->id] = format_string($cat->name, true, context_system::instance());
+        $context = context_system::instance();
+        $options[$cat->id] = format_string($cat->name, true, ['context' => $context]);
     }
 
     // Add in download option. Exports CSV.

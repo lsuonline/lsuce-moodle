@@ -54,22 +54,11 @@ function xmldb_report_coursesize_upgrade($oldversion) {
         } else {
             // Throw warning - some old unsupported branches use a similar table that is not compatible with this version,
             // these must be cleaned up manually.
-            print_error("Cannot upgrade this old coursereport plugin - you should check/delete the old table before upgrading to this release.");
+            throw new \moodle_exception('error_unsupported_branch', 'report_coursesize');
         }
 
         // Coursesize savepoint reached.
         upgrade_plugin_savepoint(true, 2021030802, 'report', 'coursesize');
     }
-    // BEGIN LSU - Store course size and history.
-    if ($oldversion < 2023112801) {
-        $rctable = new xmldb_table('report_coursesize');
-        
-        if (!$dbman->field_exists('report_coursesize', 'timestamp')) {
-            $rctime = new xmldb_field('timestamp', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, 0);
-            $dbman->add_field($rctable, $rctime);
-        }
-
-    }
-    // END LSU - Store course size and history.
     return true;
 }
