@@ -20,7 +20,6 @@ use ZipStream\Exception\StreamNotSeekableException;
  */
 class File
 {
-    private const CHUNKED_READ_BLOCK_SIZE = 0x1000000;
 
     private Version $version;
 
@@ -28,6 +27,8 @@ class File
 
     // BEGIN LSU Fix for S3 sucking fat ass.
     private const CHUNKED_READ_BLOCK_SIZE = 1024;
+    // Current 4.5 suggestion:
+    // private const CHUNKED_READ_BLOCK_SIZE = 0x1000000;
     // END LSU Fix for S3 sucking fat ass.
 
     private int $uncompressedSize = 0;
