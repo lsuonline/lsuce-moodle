@@ -35,7 +35,7 @@ $string['no_filter'] = 'Enter a valid course shortname.';
 $string['no_arguments'] = $string['pluginname'] . ' error: Invalid arguments were passed to prep restore.';
 $string['no_restore'] = 'The restore was unable to complete due to the following error: {$a}';
 $string['empty_backups'] = 'No course backups found.';
-$string['have_grades'] = 'The course cannot be restored or content merged once there are grades in the gradebook.';
+$string['have_grades'] = 'This course cannot use Simple Restore now that there are grades in the gradebook. Selective Import is available.';
 
 $string['backup_name'] = 'Backup name / ';
 $string['restore_stopped'] = 'Restore Stopped!';
