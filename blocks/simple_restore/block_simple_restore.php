@@ -35,7 +35,6 @@ require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
  */
 class block_simple_restore extends block_list {
     public $archivemode;
-    public $archive_mode;
 
     /**
      * Setsthe pluginname and archive mode boolean.

@@ -132,4 +132,24 @@ if ($ADMIN->fulltree) {
             new admin_setting_configcheckbox($srk($name), $str, $str, $default)
         );
     }
+
+    // ----------------------------------------------------------------
+    // Async Settings Title.
+    $settings->add(
+        new admin_setting_heading(
+            'block_simple_restore_async_title',
+            get_string('async_title', 'block_simple_restore'),
+            ''
+        )
+    );
+
+    // Remote student role id.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'simple_restore/async_toggle',
+            get_string('async_toggle_title', 'block_simple_restore'),
+            get_string('async_toggle_desc', 'block_simple_restore'),
+            0 // Default.
+        )
+    );
 }

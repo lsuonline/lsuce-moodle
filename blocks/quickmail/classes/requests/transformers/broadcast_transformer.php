@@ -40,7 +40,6 @@ class broadcast_transformer extends transformer {
         $this->transformed_data->alternate_email_id = 0; // Assuming that alternate emails are not allowed for broadcast messages.
         $this->transformed_data->to_send_at = $this->get_transformed_to_send_at();
         $this->transformed_data->attachments_draftitem_id = $this->get_transformed_attachments_draftitem_id();
-        // $this->transformed_data->message_draftitem_id = $this->get_transformed_message_draftitem_id();
         $this->transformed_data->no_reply = $this->get_transformed_no_reply();
     }
 
@@ -75,17 +74,6 @@ class broadcast_transformer extends transformer {
             ? 0
             : (int) $this->form_data->signature_id;
     }
-
-    // /**
-    //  * Returns a sanitized message draftitem id from the form post data
-    //  *
-    //  * @return int
-    //  */
-    // public function get_transformed_message_draftitem_id() {
-    //     return ! $this->form_data->message_draftitem_id
-    //         ? 0
-    //         : (int) $this->form_data->message_draftitem_id;
-    // }
 
     /**
      * Returns a sanitized message type from the form post data
