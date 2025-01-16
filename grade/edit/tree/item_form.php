@@ -414,10 +414,10 @@ class edit_item_form extends moodleform {
             if ($parentcategory->aggregation != GRADE_AGGREGATE_SUM) {
                 $mform->hideIf('aggregationcoef', 'weightoverride', 'notchecked');
             }
-            // END LSU Gradebook Enhancement.
             $mform->disabledIf('aggregationcoef', 'gradetype', 'eq', GRADE_TYPE_NONE);
             $mform->disabledIf('aggregationcoef', 'gradetype', 'eq', GRADE_TYPE_TEXT);
             //$mform->disabledIf('aggregationcoef', 'parentcategory', 'eq', $parentcategory->id);
+            // END LSU Gradebook Enhancement.
         }
 
         // Remove fields used by natural weighting if the parent category is not using natural weighting.
