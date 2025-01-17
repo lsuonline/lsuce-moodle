@@ -33,6 +33,7 @@ $string['coursereport'] = 'Summary of plugin types - NOTE this may be different 
 $string['coursesize:view'] = 'View course size report';
 $string['coursesize:breakdown'] = 'View the course file size breakdown';
 $string['diskusage'] = 'Total';
+$string['error_unsupported_branch'] = 'Cannot upgrade this old coursereport plugin - you should check/delete the old table before upgrading to this release.';
 $string['nouserfiles'] = 'No user files listed.';
 $string['pluginname'] = 'Course size';
 $string['sizepermitted'] = '(Permitted usage {$a}MB)';
