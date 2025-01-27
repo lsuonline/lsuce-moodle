@@ -143,7 +143,7 @@ if ($viewtab == 'userstopnum') {
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp, rc.backupsize
           FROM {course} c
           JOIN {report_coursesize} rc on rc.course = c.id ";
-        $bytimestamp = " WHERE timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} rc2 WHERE rc.course = rc2.course) ";
+        $bytimestamp = " AND timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} rc2 WHERE rc.course = rc2.course) ";
     }
 
     $sql .= "JOIN {course_categories} ca on c.category = ca.id
