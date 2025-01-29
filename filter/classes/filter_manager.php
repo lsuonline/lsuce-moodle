@@ -139,6 +139,8 @@ class filter_manager {
 
         $filterclassname = 'filter_' . $filtername;
         if (class_exists($filterclassname)) {
+            // LSU REMOVE THIS SHIT.
+            /*
             debugging(
                 "Inclusion of filters from 'filter/{$filtername}/filter.php' " .
                     "using the '{$filterclassname}' class naming has been deprecated. " .
@@ -146,6 +148,7 @@ class filter_manager {
                     "See MDL-82427 for more information.",
                 DEBUG_DEVELOPER,
             );
+            */
             return new $filterclassname($context, $localconfig);
         }
 
