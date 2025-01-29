@@ -26,9 +26,11 @@ class File
     private int $compressedSize = 0;
 
     // BEGIN LSU Fix for S3 sucking fat ass.
-    private const CHUNKED_READ_BLOCK_SIZE = 1024;
-    // Current 4.5 suggestion:
-    // private const CHUNKED_READ_BLOCK_SIZE = 0x1000000;
+    // This is what we had in our 4.1 version.
+    // private const CHUNKED_READ_BLOCK_SIZE = 1024;
+
+    // Moodle 4.5 has this and so we'll try this out.
+    private const CHUNKED_READ_BLOCK_SIZE = 0x1000000;
     // END LSU Fix for S3 sucking fat ass.
 
     private int $uncompressedSize = 0;

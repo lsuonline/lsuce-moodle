@@ -387,12 +387,13 @@ class manager {
             'httponly' => $CFG->cookiehttponly,
         ];
 
-            // BEGIN LSU Samesite Cookie Setting.
-            if (self::force_samesite_none() || self::should_use_samesite_none()) {
-                // If $samesite is empty, we don't want there to be any SameSite attribute.
-                $sessionoptions['samesite'] = 'None';
-            }
-            // END LSU Samesite Cookie Setting.
+        // BEGIN LSU Samesite Cookie Setting.
+        // if (self::should_use_samesite_none()) {
+        if (self::force_samesite_none() || self::should_use_samesite_none()) {
+            // If $samesite is empty, we don't want there to be any SameSite attribute.
+            $sessionoptions['samesite'] = 'None';
+        }
+        // END LSU Samesite Cookie Setting.
 
         session_set_cookie_params($sessionoptions);
 
