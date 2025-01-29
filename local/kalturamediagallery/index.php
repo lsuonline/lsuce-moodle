@@ -41,7 +41,6 @@ $header = format_string($course->fullname) . ": " . get_string('heading_mediagal
 
 $PAGE->set_url('/local/kalturamediagallery/index.php', array('courseid' => $courseid));
 $PAGE->set_pagetype('kalturamediagallery-index');
-$PAGE->set_pagelayout('standard');
 $PAGE->set_title($header);
 $PAGE->set_heading($header);
 
@@ -57,7 +56,7 @@ $attr = array(
     'width' => '100%',
     'allowfullscreen' => 'true',
     'src' => 'lti_launch.php?courseid='.$courseid,
-    'allow' => 'autoplay *; fullscreen *; encrypted-media *; camera *; microphone *;',
+    'allow' => 'autoplay *; fullscreen *; encrypted-media *; camera *; microphone *; display-capture *;',
 );
 echo html_writer::tag('iframe', '', $attr);
 
