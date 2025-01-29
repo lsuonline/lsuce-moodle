@@ -283,8 +283,8 @@ class user_picture implements renderable {
         }
 
         $cc = $page->course->id == SITEID ?
-            context_system::instance() :
-            context_course::instance($page->course->id);
+            \context_system::instance() :
+            \context_course::instance($page->course->id);
 
         $can_view_details = has_capability('moodle/user:viewalldetails', $cc);
         $is_teacher = has_capability('moodle/course:update', $cc, $USER->id);
