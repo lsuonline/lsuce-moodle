@@ -49,8 +49,6 @@ $string['ch_heading_id'] = 'Course Id';
 $string['ch_heading_fullname'] = 'Fullname';
 $string['ch_heading_shortname'] = 'Shortname';
 $string['ch_heading_visible'] = 'Visible';
-$string['ch_heading_locked'] = 'Locked';
-$string['ch_heading_check'] = 'All/None';
 $string['ch_no_courses'] = 'No courses to display';
 
 // Notifications.
@@ -70,9 +68,8 @@ $string['semesterdesc'] = 'Comma seperated list of the different semesters. Ex: 
 $string['semestersection'] = 'Semester Section.';
 $string['semestersectiondesc'] = 'Comma seperated list of the different types of semester sections. Ex: Spring,Summer,Fall';
 
-$string['hiddenonly'] = 'Preview hidden';
-$string['lockedonly'] = 'Preview locked';
-$string['lockcourses'] = 'Lock courses';
+$string['hiddenonly'] = 'Preview Hidden';
+$string['lockcourses'] = 'Lock Courses';
 
 $string['defaultyear'] = 'Choose a year';
 $string['defaultyear2'] = 'Year';

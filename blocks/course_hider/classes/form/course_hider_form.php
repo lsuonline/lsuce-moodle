@@ -129,16 +129,6 @@ class course_hider_form extends \moodleform {
         );
         $mform->setDefault('hiddenonly', 2);
 
-        // Preview locked.
-        $mform->addElement(
-            'select',
-            'lockedonly',
-            get_string('lockedonly', 'block_course_hider'),
-            array(2 => 'Locked + Unlocked', 0 => 'Unlocked Only', 1 => 'Locked Only'),
-            array('class' => 'ch_hider_form')
-        );
-        $mform->setDefault('lockedonly', 2);
-
         // Manually search.
         $mform->addElement(
             'text',
@@ -197,13 +187,13 @@ class course_hider_form extends \moodleform {
         // The button can either be Save or Update for the submit action.
         $buttons = [
             $mform->createElement('submit', 'preview', get_string('previewquery', 'block_course_hider')),
-            // $mform->createElement('submit', 'execute', get_string('executequery', 'block_course_hider'))
+            $mform->createElement('submit', 'execute', get_string('executequery', 'block_course_hider'))
             // $mform->createElement('submit', 'execute', get_string('executequery', 'block_course_hider'), array('class' => 'btn btn-danger')),
         ];
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
         
         // Disable execute until it has been previewed.
-        // $mform->disabledIf('execute', 'vpreview', 'eq', 0);
+        $mform->disabledIf('execute', 'vpreview', 'eq', 0);
 
         $mform->addElement('html', '</span>');
     }

@@ -38,14 +38,6 @@ class form_controller {
     public function process_form($params = false) {
         global $DB;
 
-        $showhidden = (isset($params->hiddenonly) && $params->hiddenonly == 2)
-            ? ''
-            : ' c.visible = ' . $params->hiddenonly . ' AND ';
-            
-        $showlocked = (isset($params->lockedonly) && $params->lockedonly == 2)
-            ? ''
-            : ' ctx.locked = ' . $params->lockedonly . ' AND ';
-
         // Check raw input field and use if there's stuff.
         if ($params->raw_input != "") {
             // Cleanse it.
@@ -55,14 +47,15 @@ class form_controller {
 
             // Store the partial for later use.
             $this->partial = $stripped;
-            $snippet = "SELECT c.*, ctx.locked
-                FROM {course} c
-                INNER JOIN {context} ctx ON c.id = ctx.instanceid 
-                    AND" . $showlocked . $showhidden. " ctx.contextlevel = '50'
-                WHERE c.shortname LIKE '%" . $stripped . "%'
-                OR c.fullname LIKE '%" . $stripped . "%'";
-
+            $snippet = "SELECT * FROM {course}
+                           WHERE shortname LIKE '%" . $stripped . "%'
+                           OR fullname LIKE '%" . $stripped . "%'
+                           OR id = '" . $stripped . "'";
         } else {
+
+            $showhidden = (isset($params->hiddenonly) && $params->hiddenonly == 2)
+                          ? ''
+                          : ' visible = ' . $params->hiddenonly . ' AND ';
 
             $years = \course_hider_helpers::getYears()[$params->ch_years] . " ";
             $semester = \course_hider_helpers::getSemester()[$params->ch_semester];
@@ -74,16 +67,13 @@ class form_controller {
                 $semtype .= " ";
             }
             if ($params->ch_semester_section != "0") {
-                $section = " ". \course_hider_helpers::getSemesterSection()[$params->ch_semester_section];
+                $section = " AND shortname LIKE '%". \course_hider_helpers::getSemesterSection()[$params->ch_semester_section]. "%'";
             }
 
             // Store the partial for later use.
-            $this->partial = $years.$semtype.$semester.$section;
-            $snippet = "SELECT c.*, ctx.locked
-                FROM {course} c
-                INNER JOIN {context} ctx ON c.id = ctx.instanceid 
-                    AND" . $showlocked . $showhidden. " ctx.contextlevel = '50'
-                WHERE shortname LIKE '" . $this->partial . " %'";
+            $this->partial = $years.$semtype.$semester;
+            $snippet = "SELECT * FROM {course} WHERE $showhidden " .
+                "shortname LIKE '" . $this->partial . " %'".$section;
         }
 
         $courses = $DB->get_records_sql($snippet);
@@ -99,43 +89,47 @@ class form_controller {
      * @param  array - the form data.
      * @return null
      */
-    public function execute_hider($fdata = array(), $formdata = array()) {
+    public function execute_hider($courses = array(), $fdata = array()) {
         global $DB, $CFG;
         $updatecount = 0;
         $time_start = microtime(true);
 
-        // Show/Hide Courses
-        // 2 - leave
-        // 0 - hide
-        // 1 - show
+        if (isset($courses->hideme) && $courses->hideme == 1) {
+            // Execute on the hidden courses and make them visible.
+            $showhidden = '1';
+            $hiddentext = "visible";
+        } else {
+            // Execute on the visible courses and make them hidden.
+            $showhidden = '0';
+            $hiddentext = "hidden";
+        }
+        $lockme = $courses["lockme"];
+        unset($courses["lockme"]);
+        $hideme = $courses["hideme"];
+        unset($courses["hideme"]);
 
-        // Lock/Unlock Courses
-        // 2 - leave
-        // 0 - unlock
-        // 1 - lock
-        
-        $lockme = $fdata->lock;
-        $hideme = $fdata->hide;
+        $lockcourses = (isset($lockme) && $lockme == 2)
+                           ? ''
+                           : ' ctx.locked = ' . $lockme;
 
-        $courses = explode(",", $fdata->courses);
         foreach($courses as $course) {
+            $dataobject = [
+                'id' => $course->id,
+                'visible' => $hideme,
+            ];
             // Update the course to be hidden.
-            $dis_one = $DB->get_record('course', array('id' => $course));
             if (isset($hideme) && $hideme < 2) {
-                $hideobject = [
-                    'id' => $course,
-                    'visible' => $hideme,
-                ];
-                $result = $DB->update_record('course', $hideobject, $bulk = false);
+                $result = $DB->update_record('course', $dataobject, $bulk = false);
                 $hidetask = $hideme == 0 ? 'to be hidden' :  'to be visible';
             } else {
                 $hidetask = '';
             }
 
             if (isset($lockme) && $lockme < 2) {
-                $sql =  'UPDATE {context} 
-                        SET locked = '.$lockme.'
-                        WHERE instanceid = '.$course.' AND contextlevel = "50"';
+                $sql =  'UPDATE {course} c
+                        INNER JOIN {context} ctx ON c.id = ctx.instanceid AND ctx.contextlevel = "50"
+                        SET ' . $lockcourses . '
+                        WHERE c.id = ' . $course->id;
 
                 $locked = $DB->execute($sql);
                 $locktask = $lockme == 1 ? ' and was locked' : ' and was unlocked';
@@ -145,12 +139,12 @@ class form_controller {
 
             if ((isset($hideme) && $hideme < 2) || (isset($lockme) && $lockme < 2)) {
                 $updatecount++;
-                mtrace("Course (" . $course . "):
-                    <a href='" . $CFG->wwwroot . "/course/view.php?id=" . $course . "' target='_blank'>" . $dis_one->shortname . "</a>
+                mtrace("Course (" . $course->id . "):
+                    <a href='" . $CFG->wwwroot . "/course/view.php?id=" . $course->id . "' target='_blank'>" . $course->shortname . "</a>
                     was updated " . $hidetask . $locktask . ".<br>");
             } else {
-                mtrace("Course (" . $course . "):
-                    <a href='" . $CFG->wwwroot . "/course/view.php?id=" . $course . "' target='_blank'>" . $dis_one->shortname . "</a>
+                mtrace("Course (" . $course->id . "):
+                    <a href='" . $CFG->wwwroot . "/course/view.php?id=" . $course->id . "' target='_blank'>" . $course->shortname . "</a>
                     has been left alone.<br>");
 
             }
