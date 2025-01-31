@@ -129,12 +129,6 @@ $isseparategroups = (
     !has_capability('moodle/site:accessallgroups', $context)
 );
 
-$event = \block_ues_people\event\all_ues_logs_viewed::create(array(
-    'context' => $PAGE->context,
-));
-$event->add_record_snapshot('course', $PAGE->course);
-$event->trigger();
-
 $metanames = ues_people::outputs($course);
 
 $usingmetasort = $usinguessort = false;
@@ -168,7 +162,11 @@ if ($currentgroup) {
     $group = groups_get_group($currentgroup);
 }
 
-$upicfields = user_picture::fields('u');
+use core_user\fields;
+
+$upicfields = fields::for_userpic()->get_sql('u', false, '', '', false)->selects;
+
+//$upicfields = user_picture::fields('u');
 
 $select = sprintf('SELECT DISTINCT(IFnull(ues.userid, u.id)) AS ui, %s, ues.sn AS sec_number, u.deleted,
                   u.username, u.email, u.idnumber, u.lang, u.timezone, ues.credit_hours, ues.student_audit', $upicfields);
@@ -520,7 +518,7 @@ $torow = function ($user) use ($OUTPUT, $metanames, $id) {
             html_writer::link($userurl, $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname)
         );
     } else {
-        $cell = new html_table_cell(html_writer::link($userurl, fullname($user)));
+        $cell = new html_table_cell(html_writer::link($userurl, $user->firstname . " " . $user->lastname));
     }
     $cell->attributes['class'] = 'fullname';
 
