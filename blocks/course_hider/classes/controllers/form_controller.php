@@ -67,13 +67,13 @@ class form_controller {
                 $semtype .= " ";
             }
             if ($params->ch_semester_section != "0") {
-                $section = " ". \course_hider_helpers::getSemesterSection()[$params->ch_semester_section];
+                $section = " AND shortname LIKE '%". \course_hider_helpers::getSemesterSection()[$params->ch_semester_section]. "%'";
             }
 
             // Store the partial for later use.
-            $this->partial = $years.$semtype.$semester.$section;
+            $this->partial = $years.$semtype.$semester;
             $snippet = "SELECT * FROM {course} WHERE $showhidden " .
-                "shortname LIKE '" . $this->partial . " %'";
+                "shortname LIKE '" . $this->partial . " %'".$section;
         }
 
         $courses = $DB->get_records_sql($snippet);

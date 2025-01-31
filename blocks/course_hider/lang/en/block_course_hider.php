@@ -68,8 +68,8 @@ $string['semesterdesc'] = 'Comma seperated list of the different semesters. Ex: 
 $string['semestersection'] = 'Semester Section.';
 $string['semestersectiondesc'] = 'Comma seperated list of the different types of semester sections. Ex: Spring,Summer,Fall';
 
-$string['hiddenonly'] = 'Preview hidden';
-$string['lockcourses'] = 'Lock courses';
+$string['hiddenonly'] = 'Preview Hidden';
+$string['lockcourses'] = 'Lock Courses';
 
 $string['defaultyear'] = 'Choose a year';
 $string['defaultyear2'] = 'Year';
