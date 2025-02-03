@@ -249,6 +249,7 @@
     $sql = 'SELECT * from {backup_controllers}
         WHERE type = "course"
             AND operation = "restore"
+            AND purpose = 70
             AND itemid = '. $course->id.'
         ORDER BY timecreated DESC
         LIMIT 1';
