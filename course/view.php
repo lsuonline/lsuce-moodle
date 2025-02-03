@@ -247,7 +247,8 @@
     // BEGIN LSU Check for async course restore.
     // Build the SQL to get restoring courses.
     $sql = 'SELECT * from {backup_controllers}
-        WHERE operation = "restore"
+        WHERE type = "course"
+            AND operation = "restore"
             AND itemid = '. $course->id.'
         ORDER BY timecreated DESC
         LIMIT 1';
@@ -266,7 +267,7 @@
     } else if (!has_capability('moodle/course:update', $context) &&
         $backup_ctrl->status && $backup_ctrl->status != 1000) {
         redirect($CFG->wwwroot,
-            "That course is currently being restored.",
+            "That course is currently being restored, please check back later.",
             null,
             \core\output\notification::NOTIFY_WARNING);
     }
