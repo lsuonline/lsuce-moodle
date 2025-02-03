@@ -245,15 +245,30 @@
     }
 
     // BEGIN LSU Check for async course restore.
+    // Build the SQL to get restoring courses.
     $sql = 'SELECT * from {backup_controllers}
-        WHERE  itemid = '. $course->id.'
+        WHERE operation = "restore"
+            AND itemid = '. $course->id.'
         ORDER BY timecreated DESC
         LIMIT 1';
-    
+
+    // Get the record.
     $backup_ctrl = $DB->get_record_sql($sql);
 
-    if ($backup_ctrl->status && $backup_ctrl->status != 1000) {
-        redirect($CFG->wwwroot .'/backup/restorefile.php?contextid='.$context->id);
+    // Make sure we're a teacher and the course is not done restoring.
+    if (has_capability('moodle/course:update', $context) &&
+        $backup_ctrl->status && $backup_ctrl->status != 1000) {
+        redirect($CFG->wwwroot .'/backup/restorefile.php?contextid='.$context->id,
+            "This course is currently being restored.",
+            null,
+            \core\output\notification::NOTIFY_WARNING);
+    // If we're a student and the course is restoring redirect home and let them know why.
+    } else if (!has_capability('moodle/course:update', $context) &&
+        $backup_ctrl->status && $backup_ctrl->status != 1000) {
+        redirect($CFG->wwwroot,
+            "That course is currently being restored.",
+            null,
+            \core\output\notification::NOTIFY_WARNING);
     }
     // END LSU Check for async course restore.
 
