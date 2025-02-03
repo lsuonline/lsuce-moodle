@@ -2498,7 +2498,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
      * @return bool result
      */
     public function event_handler($eventdata) {
-        global $DB;
+        global $CFG, $DB;
 
         $result = true;
 
@@ -2576,9 +2576,15 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
             }
         }
 
+        // BEGIN LSU TII updates.
+        // Required for Turnitin becuase we're using a newer quiz version.
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+
         // Queue every question submitted in a quiz attempt.
         if ($eventdata['eventtype'] == 'quiz_submitted') {
             $attempt = quiz_attempt::create($eventdata['objectid']);
+        // END LSU TII updates.
+
             foreach ($attempt->get_slots() as $slot) {
                 $qa = $attempt->get_question_attempt($slot);
                 if ($qa->get_question()->get_type_name() != 'essay') {
@@ -3153,7 +3159,9 @@ function plagiarism_turnitin_send_queued_submissions() {
 
                 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
                 try {
+                    // BEGIN LSU TII updates.
                     $attempt = quiz_attempt::create($queueditem->itemid);
+                    // END LSU TII updates.
                 } catch (Exception $e) {
                     plagiarism_turnitin_activitylog(get_string('errorcode14', 'plagiarism_turnitin'), "PP_NO_ATTEMPT");
                     $errorcode = 14;
