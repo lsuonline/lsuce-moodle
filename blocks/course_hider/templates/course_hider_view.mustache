@@ -24,7 +24,8 @@
  */
 -->
 
-<div class="'block_course_hider_container'">
+<div class="block_course_hider_container">
+    <form method="POST" id="course_hider_courses_selected">
     <table class="table table-hover table-striped sample_table">
         {{# show_count}}
         <caption>Number Of Courses: {{course_count}}</caption>
@@ -33,19 +34,25 @@
             <tr>
                 <th>{{# str }} ch_heading_id, block_course_hider {{/ str }}</th>
                 <th>{{# str }} ch_heading_fullname, block_course_hider {{/ str }}</th>
-                <th>{{# str }} ch_heading_shortname, block_course_hider {{/ str }}</th>
+                <!-- <th>{{# str }} ch_heading_shortname, block_course_hider {{/ str }}</th> -->
                 <th>{{# str }} ch_heading_visible, block_course_hider {{/ str }}</th>
+                <th>{{# str }} ch_heading_locked, block_course_hider {{/ str }}</th>
+                <th>{{# str }} ch_heading_check, block_course_hider {{/ str }}
+                    <input type="checkbox" id="course_hider_all" checked>
+                </th>
             </tr>
         </thead>
+        
         <tbody>
             {{# courses}}
             <tr data-rowid='{{id}}'>
-                <input type="hidden" value="{{id}}" name="sentdata"/>
-                <input type="hidden" value="{{some_other_id}}" name="some_other_id"/>
                 <td>{{id}}</td>
                 <td><a href="{{ch_url}}/course/view.php?id={{id}}" target="_blank">{{fullname}}</a></td>
-                <td><a href="{{ch_url}}/course/view.php?id={{id}}" target="_blank">{{shortname}}</a></td>
                 <td>{{visible}}</td>
+                <td>{{locked}}</td>
+                <td>
+                    <input class="course_hider_toggle" data-action="block_course_hider/course_selector" type="checkbox" name="course_{{id}}" value='{{id}}' checked>
+                </td>
             </tr>
             {{/ courses }}
 
@@ -54,7 +61,8 @@
                     <td colspan="7" align="center">{{# str }} ch_no_courses, block_course_hider {{/ str }}</td>
                 </tr>
             {{/ courses }}
-
         </tbody>
     </table>
+    <button type="submit" id="course_hider_execute" class="btn btn-danger">Execute</button>
+    </form>
 </div>
