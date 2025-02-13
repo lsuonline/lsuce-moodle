@@ -24,11 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$ADMIN->add('reports', new admin_externalpage('reportcoursesize', get_string('pluginname', 'report_coursesize'),
-                                              "$CFG->wwwroot/report/coursesize/index.php", 'report/coursesize:view'));
+$ADMIN->add('reports', new admin_externalpage(
+    'reportcoursesize',
+    get_string('pluginname', 'report_coursesize'),
+    "$CFG->wwwroot/report/coursesize/index.php",
+    'report/coursesize:view'
+));
 
 $settings = new admin_settingpage('report_coursesize_settings', new lang_string('pluginname', 'report_coursesize'));
 if ($ADMIN->fulltree) {
+
     $settings->add(new admin_setting_configselect(
         'report_coursesize/calcmethod',
         new lang_string('calcmethod', 'report_coursesize'),
@@ -44,6 +49,30 @@ if ($ADMIN->fulltree) {
         'report_coursesize/numberofusers',
         new lang_string('numberofusers', 'report_coursesize'),
         new lang_string('numberofusershelp', 'report_coursesize'),
+        10,
+        PARAM_INT
+    ));
+    // BEGIN LSU - Course size history.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'report_coursesize/keephistory',
+            get_string('keephistory', 'report_coursesize'),
+            get_string('keephistoryhelp', 'report_coursesize'),
+            1
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'report_coursesize/paginateresults',
+            get_string('paginateresults', 'report_coursesize'),
+            get_string('paginateresultshelp', 'report_coursesize'),
+            1
+        )
+    );
+    $settings->add(new admin_setting_configtext(
+        'report_coursesize/perpage',
+        new lang_string('perpage', 'report_coursesize'),
+        new lang_string('perpagehelp', 'report_coursesize'),
         10,
         PARAM_INT
     ));

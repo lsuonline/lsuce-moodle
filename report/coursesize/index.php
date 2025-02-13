@@ -33,7 +33,16 @@ $coursecategory = optional_param('category', 0, PARAM_INT);
 $download = optional_param('download', '', PARAM_INT);
 $viewtab = optional_param('view', 'coursesize', PARAM_ALPHA);
 $reportconfig = get_config('report_coursesize');
+// BEGIN LSU - Store course size and history.
+$usepagination = (int)get_config('report_coursesize', 'paginateresults');
 
+$page = optional_param('page', '0', PARAM_INT);
+$perpage = (int)get_config('report_coursesize', 'perpage');
+
+if ($perpage == '' || $perpage == 0) {
+    $perpage = 10;
+}
+// END LSU - Store course size and history.
 // If we should show or hide empty courses.
 if (!defined('REPORT_COURSESIZE_SHOWEMPTYCOURSES')) {
     define('REPORT_COURSESIZE_SHOWEMPTYCOURSES', false);
@@ -96,8 +105,7 @@ if ($viewtab == 'userstopnum') {
         $totaldate = get_string('never');
         $totalusage = 0;
     }
-
-    $totalusagereadable = display_size($totalusage);
+    $totalusagereadable = display_size((int)$totalusage);
     $systemsize = $systembackupsize = 0;
 
     $coursesql = 'SELECT cx.id, c.id as courseid ' .
@@ -113,7 +121,8 @@ if ($viewtab == 'userstopnum') {
 
         if (!empty($courses)) {
             list($insql, $courseparams) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED);
-            $extracoursesql = ' WHERE c.id ' . $insql;
+            // $extracoursesql = ' WHERE c.id ' . $insql;
+            $extracoursesql = ' WHERE c.category = ' . $coursecategory;
         } else {
             // Don't show any courses if category is selected but category has no courses.
             // This stuff really needs a rewrite!
@@ -129,25 +138,50 @@ if ($viewtab == 'userstopnum') {
     if (isset($reportconfig->calcmethod) && ($reportconfig->calcmethod) == 'live') {
         $live = true;
     }
+
+    // BEGIN LSU - Store course size and history.
     if ($live) {
         $filesql = report_coursesize_filesize_sql();
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
-          FROM {course} c
-          JOIN ($filesql) rc on rc.course = c.id ";
+            FROM {course} c
+            JOIN ($filesql) rc on rc.course = c.id ";
 
         // Generate table of backup filesizes too.
         $backupsql = report_coursesize_backupsize_sql();
         $backupsizes = $DB->get_records_sql($backupsql);
+        $bytimestamp = "";
     } else {
-        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.backupsize
-          FROM {course} c
-          JOIN {report_coursesize} rc on rc.course = c.id ";
+        $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp, rc.backupsize
+          FROM {course} c ";
+        $bytimestamp = " JOIN (
+            SELECT course, filesize, timestamp, backupsize,
+            ROW_NUMBER() OVER (PARTITION BY course ORDER BY timestamp DESC) as rn
+            FROM {report_coursesize}
+        ) rc ON rc.rn = 1 AND rc.course = c.id ";
     }
 
+    $offset = $page * 10;
+
     $sql .= "JOIN {course_categories} ca on c.category = ca.id
-         $extracoursesql
-     ORDER BY rc.filesize DESC";
-    $courses = $DB->get_records_sql($sql, $courseparams);
+        $bytimestamp
+        $extracoursesql
+        ORDER BY rc.filesize DESC";
+
+
+    if ($usepagination) {
+        $size = "SELECT COUNT(the_list.id)
+            FROM (
+                ".$sql."
+            ) AS the_list";
+        $coursessizecount = $DB->count_records_sql($size);
+        $sql .= " LIMIT $perpage OFFSET $offset";
+        $courses = $DB->get_records_sql($sql, $courseparams);
+    } else {
+        $courses = $DB->get_records_sql($sql, $courseparams);
+        $coursessizecount = count($courses);
+    }
+
+    // END LSU - Store course size and history.
 
     $coursetable = new html_table();
     $coursetable->align = array('right', 'right', 'left');
@@ -183,7 +217,7 @@ if ($viewtab == 'userstopnum') {
         $row[] = '<a href="' . $CFG->wwwroot . '/course/view.php?id=' . $course->id . '">' . $course->shortname . '</a>';
         $row[] = '<a href="' . $CFG->wwwroot . '/course/index.php?categoryid=' . $course->category . '">' . $course->name . '</a>';
 
-        $readablesize = display_size($course->filesize);
+        $readablesize = display_size((int)$course->filesize);
         $a = new stdClass;
         $a->bytes = $course->filesize;
         $a->shortname = $course->shortname;
@@ -193,7 +227,10 @@ if ($viewtab == 'userstopnum') {
         $summarylink = new moodle_url('/report/coursesize/course.php', array('id' => $course->id));
         $summary = html_writer::link($summarylink, ' ' . get_string('coursesummary', 'report_coursesize'));
         $row[] = "<span id=\"coursesize_" . $course->shortname . "\" title=\"$bytesused\">$readablesize</span>" . $summary;
-        $row[] = "<span title=\"$backupbytesused\">" . display_size($course->backupsize) . "</span>";
+        if ($course->backupsize == "" || $course->backupsize == null) {
+            $course->backupsize = 0;
+        }
+        $row[] = "<span title=\"$backupbytesused\">" . display_size((int)$course->backupsize) . "</span>";
         $coursetable->data[] = $row;
         $downloaddata[] = array($course->shortname, $course->name, str_replace(',', '', $readablesize),
             str_replace(',', '', display_size($course->backupsize)));
@@ -225,6 +262,7 @@ if ($viewtab == 'userstopnum') {
     $row[] = display_size($totalsize);
     $row[] = display_size($totalbackupsize);
     $coursetable->data[] = $row;
+
     $downloaddata[] = [get_string('total'), '', display_size($totalsize), display_size($totalbackupsize)];
     unset($courses);
 
@@ -295,5 +333,15 @@ if ($viewtab == 'userstopnum') {
     print $OUTPUT->box($filter) . "<br/>";
 
     print html_writer::table($coursetable);
+
+    // BEGIN LSU - Store course size and history.
+    if ($usepagination) {
+        $perpage = $perpage;
+        $results = $coursessizecount;
+        $baseurl = new moodle_url('/report/coursesize/index.php', array('dir' => 'ASC'));
+        echo $OUTPUT->paging_bar($results, $page, $perpage, $baseurl);
+    }
+    // END LSU - Store course size and history.
+
 }
 print $OUTPUT->footer();
