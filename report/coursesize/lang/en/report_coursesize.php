@@ -64,6 +64,10 @@ $string['rolepickerhelp'] = 'List the role followed by true/false to see course 
 	'<br>For example:'.
 	'<br>TA, false'.
 	'<br>Manager, true';
+$string['paginateresults'] = 'Paginate the results.';
+$string['paginateresultshelp'] = 'Some result sets might be too big to display. Turning this feature on will chunk it into a smaller display size.';
+$string['perpage'] = 'Per page limit.';
+$string['perpagehelp'] = 'When using pagination, how many results to show per page.';
 // END LSU - Store course size and history.
 
 $string['filearea'] = 'File area';
