@@ -56,8 +56,6 @@ class course_hider_view implements renderable, templatable {
         unset($this->courses["lockme"]);
         unset($this->courses["hideme"]);
 
-        error_log("\n\n------------------------------------\n\n");
-        error_log("\nExporting for TEMPLATE\n\n");
         $courses = array();
         if (isset($this->courses)) {
             // Convert to array objects for the template.
