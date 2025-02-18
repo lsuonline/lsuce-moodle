@@ -118,7 +118,7 @@ class form_controller {
         
         $lockme = $fdata->lock;
         $hideme = $fdata->hide;
-
+        echo('<div class="block_course_hider_container">');
         $courses = explode(",", $fdata->courses);
         foreach($courses as $course) {
             // Update the course to be hidden.
@@ -166,5 +166,6 @@ class form_controller {
         }
         
         mtrace("<br>--- Process Complete ---<br>");
+        echo('</div>');
     }    
 }

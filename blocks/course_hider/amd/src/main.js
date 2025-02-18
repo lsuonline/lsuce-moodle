@@ -92,11 +92,12 @@ export const init = () => {
             // Resubmit the form
             const xhr = new XMLHttpRequest();
             xhr.open("POST", form.action, true);
+            xhr.responseType = "document";
             xhr.send(formData);
 
             xhr.onload = function() {
-                document.body.innerHTML = xhr.responseText;
-                window.console.log(xhr.responseText);
+                document.body.getElementsByClassName('block_course_hider_container')[0].innerHTML =
+                    xhr.responseXML.body.getElementsByClassName('block_course_hider_container')[0].innerHTML;
             };
         });
     }
