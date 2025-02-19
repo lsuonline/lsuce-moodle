@@ -36,7 +36,7 @@ $displayemail = optional_param('displayemail', 1, PARAM_INT);
 $format = optional_param('format', '', PARAM_ALPHA);
 $courseid = required_param('id', PARAM_INT); // Course id.
 
-if (!$course = $DB->get_record('course', array('id' => $courseid))) {
+if (!$course = get_course($courseid)) {
     throw new moodle_exception(get_string('invalidcourseid', 'gradereport_rubrics'));
 }
 
@@ -88,18 +88,23 @@ if (!$csv) {
 
 $gpr = new grade_plugin_return(array('type' => 'report', 'plugin' => 'grader',
     'courseid' => $courseid)); // Return tracking object.
-$report = new report($courseid, $gpr, $context); // Initialise the grader report object.
-$report->activityid = $activityid;
-$report->format = $format;
-$report->excel = $format == 'excelcsv';
-$report->csv = $format == 'csv' || $report->excel;
-$report->displaylevel = ($displaylevel == 1);
-$report->displayremark = ($displayremark == 1);
-$report->displaysummary = ($displaysummary == 1);
-$report->displayidnumber = ($displayidnumber == 1);
-$report->displayemail = ($displayemail == 1);
-$report->activityname = $activityname;
-$report->displayfeedback = $displayfeedback ?? false;
+$report = new report(
+    $courseid,
+    $gpr,
+    $context,
+    $activityid,
+    $format,
+    $format == 'excelcsv',
+    $format == 'csv' || $excel,
+    ($displaylevel == 1),
+    ($displayremark == 1),
+    ($displaysummary == 1),
+    ($displayidnumber == 1),
+    ($displayemail == 1),
+    $activityname,
+    $displayfeedback ?? false,
+    null
+); // Initialise the grader report object.
 
 $table = $report->show();
 echo $table;
