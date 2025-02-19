@@ -1118,7 +1118,9 @@ function grade_recover_history_grades($userid, $courseid) {
              WHERE gi.courseid = :courseid AND gg.userid = :userid";
     $params = array('userid' => $userid, 'courseid' => $courseid);
     if ($DB->record_exists_sql($sql, $params)) {
-        debugging('Attempting to recover the grades of a user who already has grades. Skipping recover.');
+        // BEGIN LSU Remove annoying debug notices on blind enrollments of existing students.
+        mtrace('Attempting to recover the grades of a user who already has grades. Skipping recover.');
+        // END LSU Remove annoying debug notices on blind enrollments of existing students.
         return false;
     } else {
         //Retrieve the user's old grades
