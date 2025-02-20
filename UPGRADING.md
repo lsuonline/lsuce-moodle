@@ -6,7 +6,7 @@ More detailed information on key changes can be found in the [Developer update n
 
 The format of this change log follows the advice given at [Keep a CHANGELOG](https://keepachangelog.com).
 
-## 4.5.1+
+## 4.5.2
 
 ### core
 
@@ -41,6 +41,24 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - The method `count_modules_completed` now delegate the logic to count the completed modules to the DBMS improving the performance of the method.
 
   For more information see [MDL-83917](https://tracker.moodle.org/browse/MDL-83917)
+
+### core_courseformat
+
+#### Fixed
+
+- HTML IDs relating to section collapse/expand have been changed in the course format templates.
+  - core_courseformat/local/content/section/header #collapssesection{{num}} has been changed to #collapsesectionid{{id}}
+  - core_courseformat/local/content/section/content #coursecontentcollapse{{num}} had been changed to #coursecontentcollapseid{{id}}
+
+  For more information see [MDL-82679](https://tracker.moodle.org/browse/MDL-82679)
+
+### core_question
+
+#### Added
+
+- The `get_bulk_actions()` method on the base `plugin_features_base` class has been changed to allow a qbank view object to be passed through. This is nullable and therefore optional for qbank plugins which don't need to do so.
+
+  For more information see [MDL-79281](https://tracker.moodle.org/browse/MDL-79281)
 
 ### core_reportbuilder
 
@@ -79,6 +97,15 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - The `quiz_question_tostring` method now includes a new boolean parameter, `displaytaglink`. This parameter specifies whether the tag name in the question bank should be displayed as a clickable hyperlink (`true`) or as plain text (`false`).
 
   For more information see [MDL-75075](https://tracker.moodle.org/browse/MDL-75075)
+
+### tool_behat
+
+#### Added
+
+- New Behat step `\behat_general::the_url_should_match()` has been added to allow checking the current URL. You can use it to check whether a user has been redirected to the expected location.
+  e.g. `And the url should match "/mod/forum/view\.php\?id=[0-9]+"`
+
+  For more information see [MDL-83617](https://tracker.moodle.org/browse/MDL-83617)
 
 ## 4.5.1
 
