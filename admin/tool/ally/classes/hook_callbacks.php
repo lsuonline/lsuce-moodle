@@ -14,23 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace tool_ally;
+
+use core_files\hook\after_file_created;
+
 /**
- * Plugin version.
+ * Hook callbacks for tool_ally.
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
+ * @copyright 2024 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @author    Ivan Lam (lkcivan@gmail.com)
+ * @author    Leon Stringer (leon.stringer@ucl.ac.uk)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-/** @var stdClass $plugin */
-$plugin->component = 'tool_ally';
-$plugin->release   = '4.4.3';
-$plugin->version   = 2025021900;
-$plugin->requires  = 2024042203;
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->dependencies = [
-    'filter_ally'    => 2024112200,
-    'report_allylti' => 2024112200,
-];
+class hook_callbacks {
+    /**
+     * Callback for after file created.
+     * @param \core_files\hook\after_file_created $hook
+     */
+    public static function after_file_created(after_file_created $hook): void {
+        file_processor::push_file_update($hook->storedfile);
+        cache::instance()->invalidate_file_keys($hook->storedfile);
+    }
+}

@@ -15,22 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version.
+ * Hook callbacks for ally tool
  *
  * @package   tool_ally
- * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
+ * @copyright 2024 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @author    Ivan Lam (lkcivan@gmail.com)
+ * @author    Leon Stringer (leon.stringer@ucl.ac.uk)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-/** @var stdClass $plugin */
-$plugin->component = 'tool_ally';
-$plugin->release   = '4.4.3';
-$plugin->version   = 2025021900;
-$plugin->requires  = 2024042203;
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->dependencies = [
-    'filter_ally'    => 2024112200,
-    'report_allylti' => 2024112200,
+$callbacks = [
+    [
+        'hook' => core_files\hook\after_file_created::class,
+        'callback' => [\tool_ally\hook_callbacks::class, 'after_file_created'],
+        'priority' => 0,
+    ],
 ];
