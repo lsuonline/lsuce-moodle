@@ -61,6 +61,7 @@ $string['configurable_reports:managesqlreports'] = "Manage SQL reports";
 $string['configurable_reports:viewreports'] = "View reports";
 
 $string['exportoptions'] = "Export options";
+$string['embedoptions'] = "Embed options";
 $string['field'] = "Field";
 
 // Report form.
@@ -69,6 +70,7 @@ $string['enablejsordering'] = "Enable JavaScript ordering";
 $string['enablejspagination'] = "Enable JavaScript Pagination";
 $string['export_csv'] = "Export in CSV format";
 $string['export_ods'] = "Export in ODS format";
+$string['export_slk'] = "Export in SYLK format";
 $string['export_xls'] = "Export in XLS format";
 $string['export_json'] = "Export in JSON format";
 $string['viewreport'] = "View report";
@@ -76,6 +78,12 @@ $string['norecordsfound'] = "No records found";
 $string['jsordering'] = 'JavaScript Ordering';
 $string['cron'] = 'Auto run daily';
 $string['crondescription'] = 'Schedule this query to run each day (At night)';
+$string['displaytotalrecords'] = 'Total Records';
+$string['displaytotalrecordsdescription'] = 'Displays the total number of results in the report';
+$string['displayprintbutton'] = 'Print Button';
+$string['displayprintbuttondescription'] = 'Displays the print button at the bottom of the report';
+$string['embedlink'] = 'Embed Link';
+$string['embedlinkdescription'] = 'You can copy this link to embed the report in an HTML block';
 $string['cron_help'] = 'Schedule this query to run each day (At night)';
 $string['remote'] = 'Run on remote db';
 $string['remotedescription'] = 'Do you want to run this query on the remote db';
@@ -568,8 +576,12 @@ by new lines in the order you wish them to be used in the pie chart.';
 
 $string['checksql_execution'] = 'Block Configurable Reports SQL execution';
 $string['checksql_execution_ok'] = 'SQL execution is disabled.';
+
 $string['checksql_execution_warning'] = 'It is recommended to disable SQL execution to avoid execution of arbitrary SQL code in
 your server.';
 $string['checksql_execution_details'] = 'By allowing SQL code execution there is a potential security issue with users adding
 arbitrary code. SQL code execution should be disable to only allow SQL queries for reading/retreaving data. SQL execution can
 be disabled in your config.php file by setting $CFG->block_configurable_reports_enable_sql_execution to 0';
+$string['csvdelimiter'] = 'CSV delimiter';
+$string['csvdelimiterinfo'] = 'CSV delimiter: "colon" for ":", "comma" for ",", semicolon for ";",  "tab" for "\t" and "cfg" for character configured in "CFG->CSV_DELIMITER" of the config.php file.';
+
