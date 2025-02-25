@@ -26,8 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'qbehaviour_regexpadaptivewithhelp';
-$plugin->version  = 2024050200;
+$plugin->version  = 2024100800;
 $plugin->requires = 2016052300; // Moodle version.
-$plugin->release = '4.4';
+$plugin->release = '4.5';
 $plugin->maturity  = MATURITY_STABLE;
 
