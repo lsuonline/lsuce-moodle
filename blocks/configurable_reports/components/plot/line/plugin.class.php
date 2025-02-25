@@ -93,7 +93,7 @@ class plugin_line extends plugin_base {
         }
 
         return $CFG->wwwroot . '/blocks/configurable_reports/components/plot/line/graph.php?reportid=' . $this->report->id .
-            '&id=' . $id . $params . '&amp;min=' . $minvalue . '&amp;max=' . $maxvalue;
+            '&id=' . $id . $params . '&amp;min=' . $minvalue . '&amp;max=' . $maxvalue  . '&courseid='.$this->report->courseid;
     }
 
     /**

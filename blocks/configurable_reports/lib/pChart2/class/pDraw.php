@@ -1201,7 +1201,7 @@ class pDraw
 	}
 
 	/* Allocate a color with transparency */
-	private function allocateColor(array $ColorA) # FAST
+	public function allocateColor(array $ColorA) # FAST
 	{
 		($ColorA[3] < 0)   AND $ColorA[3] = 0;
 		($ColorA[3] > 100) AND $ColorA[3] = 100;

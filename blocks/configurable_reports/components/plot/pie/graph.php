@@ -33,12 +33,15 @@ ini_set('display_errors', false);
 
 $id = required_param('id', PARAM_ALPHANUM);
 $reportid = required_param('reportid', PARAM_INT);
+$courseid = optional_param('courseid', null, PARAM_INT);
 
 if (!$report = $DB->get_record('block_configurable_reports', ['id' => $reportid])) {
     throw new moodle_exception('reportdoesnotexists');
 }
 
-$courseid = $report->courseid;
+if (!$courseid || !$report->global) {
+    $courseid = $report->courseid;
+}
 
 if (!$course = $DB->get_record('course', ['id' => $courseid])) {
     throw new moodle_exception("No such course id");

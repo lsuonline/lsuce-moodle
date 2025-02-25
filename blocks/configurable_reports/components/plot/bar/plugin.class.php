@@ -108,7 +108,7 @@ class plugin_bar extends plugin_base {
         $graphdata = urlencode(json_encode($series));
 
         return $CFG->wwwroot . '/blocks/configurable_reports/components/plot/bar/graph.php?reportid=' . $this->report->id . '&id=' .
-            $id . '&graphdata=' . $graphdata;
+            $id . '&graphdata=' . $graphdata . '&courseid='.$this->report->courseid;
     }
 
     /**

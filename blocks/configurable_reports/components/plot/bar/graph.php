@@ -31,12 +31,15 @@ require_login();
 // TODO check if this is correct should be int only?
 $id = required_param('id', PARAM_ALPHANUM);
 $reportid = required_param('reportid', PARAM_INT);
+$courseid = optional_param('courseid', null, PARAM_INT);
 
 if (!$report = $DB->get_record('block_configurable_reports', ['id' => $reportid])) {
     throw new moodle_exception('reportdoesnotexists');
 }
 
-$courseid = $report->courseid;
+if (!$courseid || !$report->global) {
+    $courseid = $report->courseid;
+}
 
 if (!$course = $DB->get_record('course', ['id' => $courseid])) {
     throw new moodle_exception('No such course id');
@@ -76,12 +79,15 @@ if (!empty($graphs)) {
     }
 
     if ($g['id'] == $id) {
-        include($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pDraw.class.php");
-        include($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pData.class.php");
-        include($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pImage.class.php");
+        require_once($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pDraw.php");
+        require_once($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pData.php");
+        require_once($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pColor.php");
+        require_once($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pException.php");
+        require_once($CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/class/pCharts.php");
 
         // Dataset definition.
-        $dataset = new pData();
+
+        $dataset = new \pChart\pData();
         $labels = array_shift($series);
 
         // Invert/Reverse Hebrew labels so it can be rendered using PHP imagettftext()
@@ -94,6 +100,7 @@ if (!empty($graphs)) {
                 (preg_match("/[\xE0-\xFA]/", iconv("UTF-8", "ISO-8859-8", $value))) ? $reportclass->utf8_strrev($value) : $value
             );
         }
+
         $dataset->addPoints($invertedlabels, "Labels");
         $dataset->setAbscissa("Labels");
 
@@ -106,9 +113,11 @@ if (!empty($graphs)) {
 
         $width = property_exists($g['formdata'], "width") ? $g['formdata']->width : 900;
         $height = property_exists($g['formdata'], "height") ? $g['formdata']->height : 500;
+
         $colorr = property_exists($g['formdata'], "color_r") ? $g['formdata']->color_r : 170;
         $colorg = property_exists($g['formdata'], "color_g") ? $g['formdata']->color_g : 183;
         $colorb = property_exists($g['formdata'], "color_b") ? $g['formdata']->color_b : 87;
+
         $padding = 30;
         $fontsize = 8;
         $fontpath = $CFG->dirroot . "/blocks/configurable_reports/lib/pChart2/fonts";
@@ -126,8 +135,15 @@ if (!empty($graphs)) {
             $legendoffset = $maxlegendoffset;
         }
 
-        $mypicture = new pImage($width, $height, $dataset);
-        $mypicture->setFontProperties(["FontName" => "$fontpath/calibri.ttf", "FontSize" => $fontsize]);
+        $mypicture = new \pChart\pDraw($width, $height);
+        $mypicture->myData = $dataset;
+
+        $mypicture->setFontProperties([
+            "FontName" => "$fontpath/Cairo-Regular.ttf",
+            "FontSize" => $fontsize,
+            "Color" => new \pChart\pColor(0, 0, 0),
+        ]);
+
         [$legendwidth, $legendheight] = array_values($mypicture->getLegendSize());
         $legendx = $width - $legendwidth - $padding;
         $legendy = $padding;
@@ -137,9 +153,6 @@ if (!empty($graphs)) {
         $graphy = $padding;
         $graphwidth = $legendx - $padding;
         $graphheight = $height - $labeloffset;
-
-        $bgsettings = ['R' => 225, 'G' => 225, 'B' => 225];
-        $mypicture->drawFilledRectangle(0, 0, $width + 2, $height + 2, $bgsettings);
         $mypicture->setGraphArea($graphx, $graphy, $graphwidth, $graphheight);
 
         $scalesettings = [
@@ -150,7 +163,14 @@ if (!empty($graphs)) {
             "DrawSubTicks" => true,
         ];
         $mypicture->drawScale($scalesettings);
-        $mypicture->setShadow(true, ["X" => 1, "Y" => 1, "R" => 0, "G" => 0, "B" => 0, "Alpha" => 10]);
+        $mypicture->setShadow(true, [
+            "X" => 1,
+            "Y" => 1,
+            "R" => 0,
+            "G" => 0,
+            "B" => 0,
+            "Alpha" => 10,
+        ]);
 
         $chartsettings = [
             "DisplayValues" => true,
@@ -160,13 +180,16 @@ if (!empty($graphs)) {
             "DisplayG" => 0,
             "DisplayB" => 0,
             "DisplayOffset" => 5,
+            "DrawSubTicks" => true,
         ];
-        $mypicture->drawBarChart($chartsettings);
+
+        $pcharts = new \pChart\pCharts($mypicture);
+        $pcharts->drawBarChart($chartsettings);
+
         $mypicture->setShadow(false);
         $mypicture->drawLegend($legendx, $legendy);
         $mypicture->stroke();
 
-        // Hack to clear output and send only IMAGE data to browser.
-        ob_clean();
+        $mypicture->autoOutput();
     }
 }
