@@ -58,6 +58,7 @@ if (isset($pageparams['vpreview']) && $pageparams['vpreview'] == 1) {
 $results = null;
 
 if ( isset($_REQUEST['btnexecute'])) {
+    error_log("\n Yup, going through here");
     $pageparams['btnexecute'] = true;
     $results = (object) array(
         "courses" => $_REQUEST['courses'],
