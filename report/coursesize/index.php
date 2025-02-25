@@ -33,7 +33,16 @@ $coursecategory = optional_param('category', 0, PARAM_INT);
 $download = optional_param('download', '', PARAM_INT);
 $viewtab = optional_param('view', 'coursesize', PARAM_ALPHA);
 $reportconfig = get_config('report_coursesize');
+// BEGIN LSU - Store course size and history.
+$usepagination = (int)get_config('report_coursesize', 'paginateresults');
 
+$page = optional_param('page', '0', PARAM_INT);
+$perpage = (int)get_config('report_coursesize', 'perpage');
+
+if ($perpage == '' || $perpage == 0) {
+    $perpage = 10;
+}
+// END LSU - Store course size and history.
 // If we should show or hide empty courses.
 if (!defined('REPORT_COURSESIZE_SHOWEMPTYCOURSES')) {
     define('REPORT_COURSESIZE_SHOWEMPTYCOURSES', false);
@@ -112,7 +121,8 @@ if ($viewtab == 'userstopnum') {
 
         if (!empty($courses)) {
             list($insql, $courseparams) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED);
-            $extracoursesql = ' WHERE c.id ' . $insql;
+            // $extracoursesql = ' WHERE c.id ' . $insql;
+            $extracoursesql = ' WHERE c.category = ' . $coursecategory;
         } else {
             // Don't show any courses if category is selected but category has no courses.
             // This stuff really needs a rewrite!
@@ -128,12 +138,13 @@ if ($viewtab == 'userstopnum') {
     if (isset($reportconfig->calcmethod) && ($reportconfig->calcmethod) == 'live') {
         $live = true;
     }
+
     // BEGIN LSU - Store course size and history.
     if ($live) {
         $filesql = report_coursesize_filesize_sql();
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize
-          FROM {course} c
-          JOIN ($filesql) rc on rc.course = c.id ";
+            FROM {course} c
+            JOIN ($filesql) rc on rc.course = c.id ";
 
         // Generate table of backup filesizes too.
         $backupsql = report_coursesize_backupsize_sql();
@@ -141,18 +152,36 @@ if ($viewtab == 'userstopnum') {
         $bytimestamp = "";
     } else {
         $sql = "SELECT c.id, c.shortname, c.category, ca.name, rc.filesize, rc.timestamp, rc.backupsize
-          FROM {course} c
-          JOIN {report_coursesize} rc on rc.course = c.id ";
-        $bytimestamp = " WHERE timestamp = (SELECT MAX(timestamp) FROM {report_coursesize} rc2 WHERE rc.course = rc2.course) ";
+          FROM {course} c ";
+        $bytimestamp = " JOIN (
+            SELECT course, filesize, timestamp, backupsize,
+            ROW_NUMBER() OVER (PARTITION BY course ORDER BY timestamp DESC) as rn
+            FROM {report_coursesize}
+        ) rc ON rc.rn = 1 AND rc.course = c.id ";
     }
 
-    $sql .= "JOIN {course_categories} ca on c.category = ca.id
-         $extracoursesql
-         $bytimestamp
-     ORDER BY rc.filesize DESC";
-    // END LSU - Store course size and history.
+    $offset = $page * 10;
 
-    $courses = $DB->get_records_sql($sql, $courseparams);
+    $sql .= "JOIN {course_categories} ca on c.category = ca.id
+        $bytimestamp
+        $extracoursesql
+        ORDER BY rc.filesize DESC";
+
+
+    if ($usepagination) {
+        $size = "SELECT COUNT(the_list.id)
+            FROM (
+                ".$sql."
+            ) AS the_list";
+        $coursessizecount = $DB->count_records_sql($size);
+        $sql .= " LIMIT $perpage OFFSET $offset";
+        $courses = $DB->get_records_sql($sql, $courseparams);
+    } else {
+        $courses = $DB->get_records_sql($sql, $courseparams);
+        $coursessizecount = count($courses);
+    }
+
+    // END LSU - Store course size and history.
 
     $coursetable = new html_table();
     $coursetable->align = array('right', 'right', 'left');
@@ -247,7 +276,8 @@ if ($viewtab == 'userstopnum') {
     $catlookup = $DB->get_records_sql('select id,name from {course_categories}');
     $options = ['0' => get_string('allcourses', 'report_coursesize')];
     foreach ($catlookup as $cat) {
-        $options[$cat->id] = format_string($cat->name, true, context_system::instance());
+        $context = context_system::instance();
+        $options[$cat->id] = format_string($cat->name, true, ['context' => $context]);
     }
 
     // Add in download option. Exports CSV.
@@ -303,5 +333,15 @@ if ($viewtab == 'userstopnum') {
     print $OUTPUT->box($filter) . "<br/>";
 
     print html_writer::table($coursetable);
+
+    // BEGIN LSU - Store course size and history.
+    if ($usepagination) {
+        $perpage = $perpage;
+        $results = $coursessizecount;
+        $baseurl = new moodle_url('/report/coursesize/index.php', array('dir' => 'ASC'));
+        echo $OUTPUT->paging_bar($results, $page, $perpage, $baseurl);
+    }
+    // END LSU - Store course size and history.
+
 }
 print $OUTPUT->footer();

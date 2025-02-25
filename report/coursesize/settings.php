@@ -61,4 +61,19 @@ if ($ADMIN->fulltree) {
             1
         )
     );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'report_coursesize/paginateresults',
+            get_string('paginateresults', 'report_coursesize'),
+            get_string('paginateresultshelp', 'report_coursesize'),
+            1
+        )
+    );
+    $settings->add(new admin_setting_configtext(
+        'report_coursesize/perpage',
+        new lang_string('perpage', 'report_coursesize'),
+        new lang_string('perpagehelp', 'report_coursesize'),
+        10,
+        PARAM_INT
+    ));
 }

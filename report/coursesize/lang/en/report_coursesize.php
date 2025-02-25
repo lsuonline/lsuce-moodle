@@ -33,6 +33,7 @@ $string['coursereport'] = 'Summary of plugin types - NOTE this may be different 
 $string['coursesize:view'] = 'View course size report';
 $string['coursesize:breakdown'] = 'View the course file size breakdown';
 $string['diskusage'] = 'Total';
+$string['error_unsupported_branch'] = 'Cannot upgrade this old coursereport plugin - you should check/delete the old table before upgrading to this release.';
 $string['nouserfiles'] = 'No user files listed.';
 $string['pluginname'] = 'Course size';
 $string['sizepermitted'] = '(Permitted usage {$a}MB)';
@@ -63,6 +64,10 @@ $string['rolepickerhelp'] = 'List the role followed by true/false to see course 
 	'<br>For example:'.
 	'<br>TA, false'.
 	'<br>Manager, true';
+$string['paginateresults'] = 'Paginate the results.';
+$string['paginateresultshelp'] = 'Some result sets might be too big to display. Turning this feature on will chunk it into a smaller display size.';
+$string['perpage'] = 'Per page limit.';
+$string['perpagehelp'] = 'When using pagination, how many results to show per page.';
 // END LSU - Store course size and history.
 
 $string['filearea'] = 'File area';
