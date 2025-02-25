@@ -44,6 +44,7 @@ require_login();
 $context = context_system::instance();
 
 if (!is_readable($csvfilename)) {
+    error_log("\n\nFAIL FAIL FAIL");
     print_error('unknowndownloadfile', 'report_coursesize', $downloadurl);
 }
 
