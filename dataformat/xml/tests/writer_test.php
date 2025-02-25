@@ -36,6 +36,8 @@ final class writer_test extends advanced_testcase {
     public static function setUpBeforeClass(): void {
         global $CFG;
 
+        parent::setUpBeforeClass();
+
         require_once("{$CFG->libdir}/xmlize.php");
     }
 
