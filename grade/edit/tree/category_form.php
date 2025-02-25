@@ -446,7 +446,11 @@ class edit_category_form extends moodleform {
 
             // BEGIN LSU Weighted mean Extra Credit.
             $element = $mform->createElement('checkbox', 'grade_item_extracred', get_string('aggregationcoefextrasum', 'grades'));
-            $mform->insertElementBefore($element, 'parentcategory');
+            if ($mform->elementExists('parentcategory')) {
+                $mform->insertElementBefore($element, 'parentcategory');
+            } else {
+                $mform->insertElementBefore($element, 'grade_item_weightoverride');
+            }
             $mform->hideIf('grade_item_extracred', 'grade_item_weightoverride', 'checked');
             $mform->hideIf('grade_item_weightoverride', 'grade_item_extracred', 'checked');
             $mform->hideIf('grade_item_aggregationcoef', 'grade_item_extracred', 'checked');
