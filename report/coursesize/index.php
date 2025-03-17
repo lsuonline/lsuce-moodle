@@ -29,7 +29,7 @@ require_once($CFG->libdir.'/csvlib.class.php');
 
 admin_externalpage_setup('reportcoursesize');
 
-$coursecategory = optional_param('category', 0, PARAM_INT);
+$coursecategory = optional_param('category', '', PARAM_INT);
 $download = optional_param('download', '', PARAM_INT);
 $viewtab = optional_param('view', 'coursesize', PARAM_ALPHA);
 $reportconfig = get_config('report_coursesize');
@@ -105,7 +105,9 @@ if ($viewtab == 'userstopnum') {
         $totaldate = get_string('never');
         $totalusage = 0;
     }
+    // BEGIN LSU - Make sure it's an int.
     $totalusagereadable = display_size((int)$totalusage);
+    // END LSU - Make sure it's an int.
     $systemsize = $systembackupsize = 0;
 
     $coursesql = 'SELECT cx.id, c.id as courseid ' .
@@ -114,6 +116,12 @@ if ($viewtab == 'userstopnum') {
     $params = array();
     $courseparams = array();
     $extracoursesql = '';
+
+    // $coursecategory will be '' by default and if so let's show the first category rather than all.
+    if ($coursecategory == '') {
+        $coursecategory = 1;
+    }
+    
     if (!empty($coursecategory)) {
         $context = context_coursecat::instance($coursecategory);
         $coursecat = core_course_category::get($coursecategory);
@@ -121,8 +129,10 @@ if ($viewtab == 'userstopnum') {
 
         if (!empty($courses)) {
             list($insql, $courseparams) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED);
+            // BEGIN LSU - use category, much easier.
             // $extracoursesql = ' WHERE c.id ' . $insql;
             $extracoursesql = ' WHERE c.category = ' . $coursecategory;
+            // END LSU - use category, much easier.
         } else {
             // Don't show any courses if category is selected but category has no courses.
             // This stuff really needs a rewrite!
@@ -185,19 +195,23 @@ if ($viewtab == 'userstopnum') {
 
     $coursetable = new html_table();
     $coursetable->align = array('right', 'right', 'left');
-    $coursetable->head = array(get_string('course'),
+    $coursetable->head = array(
+        get_string('course'),
         get_string('category'),
-        get_string('diskusage', 'report_coursesize'),
-        get_string('backupsize', 'report_coursesize'));
+        get_string('backupsize', 'report_coursesize'),
+        get_string('diskusage', 'report_coursesize')
+    );
     $coursetable->data = array();
 
     $totalsize = 0;
     $totalbackupsize = 0;
     $downloaddata = array();
-    $downloaddata[] = array(get_string('course'),
+    $downloaddata[] = array(
+        get_string('course'),
         get_string('category'),
-        get_string('diskusage', 'report_coursesize'),
-        get_string('backupsize', 'report_coursesize'));;
+        get_string('backupsize', 'report_coursesize'),
+        get_string('diskusage', 'report_coursesize')
+    );
 
     $coursesizes = $DB->get_records('report_coursesize');
     foreach ($courses as $courseid => $course) {
@@ -217,6 +231,7 @@ if ($viewtab == 'userstopnum') {
         $row[] = '<a href="' . $CFG->wwwroot . '/course/view.php?id=' . $course->id . '">' . $course->shortname . '</a>';
         $row[] = '<a href="' . $CFG->wwwroot . '/course/index.php?categoryid=' . $course->category . '">' . $course->name . '</a>';
 
+        // BEGIN LSU - backupsize to be zero and typecast.
         $readablesize = display_size((int)$course->filesize);
         $a = new stdClass;
         $a->bytes = $course->filesize;
@@ -226,11 +241,12 @@ if ($viewtab == 'userstopnum') {
         $backupbytesused = get_string('coursebackupbytes', 'report_coursesize', $a);
         $summarylink = new moodle_url('/report/coursesize/course.php', array('id' => $course->id));
         $summary = html_writer::link($summarylink, ' ' . get_string('coursesummary', 'report_coursesize'));
-        $row[] = "<span id=\"coursesize_" . $course->shortname . "\" title=\"$bytesused\">$readablesize</span>" . $summary;
         if ($course->backupsize == "" || $course->backupsize == null) {
             $course->backupsize = 0;
         }
         $row[] = "<span title=\"$backupbytesused\">" . display_size((int)$course->backupsize) . "</span>";
+        $row[] = "<span id=\"coursesize_" . $course->shortname . "\" title=\"$bytesused\">$readablesize</span>" . $summary;
+        // END LSU - backupsize to be zero and typecast.
         $coursetable->data[] = $row;
         $downloaddata[] = array($course->shortname, $course->name, str_replace(',', '', $readablesize),
             str_replace(',', '', display_size($course->backupsize)));

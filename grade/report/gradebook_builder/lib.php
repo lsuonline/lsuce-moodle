@@ -213,7 +213,7 @@ class grade_report_gradebook_builder extends grade_report {
             global $CFG;
             $lib_file = $CFG->dirroot . '/mod/' . $item->itemmodule . '/lib.php';
             if (!file_exists($lib_file)) {
-                print_error('no_lib_file', 'gradereport_gradebook_builder',
+                moodle_exception('no_lib_file', 'gradereport_gradebook_builder',
                     '', $item->itemmodule);
             }
             require_once $lib_file;
@@ -515,7 +515,7 @@ class grade_report_gradebook_builder extends grade_report {
             case CONTEXT_COURSECAT: return $this->course->category;
             case CONTEXT_SYSTEM: return 0;
         }
-        print_error('undefined_context', 'gradereport_gradebook_builder');
+        moodle_exception('undefined_context', 'gradereport_gradebook_builder');
     }
 
     function determine_label($contextlevel) {
