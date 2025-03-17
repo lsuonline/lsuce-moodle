@@ -139,7 +139,7 @@ class filter_manager {
 
         $filterclassname = 'filter_' . $filtername;
         if (class_exists($filterclassname)) {
-            // LSU REMOVE THIS SHIT.
+            // BEGIN LSU REMOVE THIS SHIT.
             /*
             debugging(
                 "Inclusion of filters from 'filter/{$filtername}/filter.php' " .
@@ -149,6 +149,7 @@ class filter_manager {
                 DEBUG_DEVELOPER,
             );
             */
+	    // END LSU SHIT REMOVED.
             return new $filterclassname($context, $localconfig);
         }
 
