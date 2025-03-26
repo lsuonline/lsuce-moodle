@@ -29,24 +29,6 @@ require_once(__DIR__ . '/../../../../config.php');
 
 // Include the Workday Student helper class.
 require_once(__DIR__ . '/../workdaystudent.php');
-$reconciles = workdaystudent::reconcile_interstitial_users('teacher', 'email');
-var_dump($reconciles);
-die();
 
-$mupdates = workdaystudent::get_potential_muser_updates();
-var_dump(count($mupdates));
+wdscronhelper::cronmusers();
 
-if (count($mupdates) > 0) {
-    $updated = workdaystudent::mass_muser_updates();
-}
-
-$nusers = workdaystudent::get_potential_new_musers();
-var_dump(count($nusers));
-die();
-
-
-if (is_array($musers)) {
-    foreach ($musers as $muser) {
-var_dump($muser);
-    }
-}

@@ -24,14 +24,21 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($ADMIN->fulltree) {
+// Set the string for use later.
+$fn = 'WDS Config';//new lang_string('foldername', 'block_pu');
 
-    // Include the custom CSS for the settings page
-//    $PAGE->requires->css(new moodle_url('/enrol/workdaystudent/css/settings.css'));
+// Create the folder / submenu.
+$ADMIN->add('enrolments', new admin_category('enrollwdsfolder', $fn));
+
+// Create the settings block.
+$settings = new admin_settingpage($section, 'WDS Config');//get_string('settings'));
+
+if ($ADMIN->fulltree) {
 
     $studentroles = array();
 
     if (isset($CFG->gradebookroles)) {
+
         // Get the "student" roles.
         $roles = explode(',', $CFG->gradebookroles);
     } else {
@@ -40,17 +47,43 @@ if ($ADMIN->fulltree) {
 
     // Loop through those roles and do stuff.
     foreach ($roles as $role) {
+
         // Grab the role names from the DB.
-        $rname = $DB->get_record('role', array("id" => $role), "shortname");
+        $rname = $DB->get_record('role', array("id" => $role));
+
         // Set the studentroles array for the dropdown.
-        $studentroles[$role] = $rname->shortname;
+        $studentroles[$role] = $rname->name === "" ? $rname->shortname : $rname->name;
+    }
+
+    $facultyroles = array();
+
+    if (isset($CFG->coursecontact)) {
+
+        // Get the "teacher" roles.
+        $froles = explode(',', $CFG->coursecontact);
+    } else {
+        $froles = array();
+    }
+
+    // Loop through those roles and do stuff.
+    foreach ($froles as $frole) {
+
+        // Grab the role names from the DB.
+        $frname = $DB->get_record('role', array("id" => $frole));
+
+        // Set the studentroles array for the dropdown.
+        $facultyroles[$frole] = $frname->name === "" ? $frname->shortname : $frname->name;
     }
 
     // Grab the course categories.
     $ccategories = $DB->get_records('course_categories', null, 'name', 'id,name');
 
+    // Force this in.
+    $categories[0] = 'Top';
+
     // Loop through those roles and do stuff.
     foreach ($ccategories as $category) {
+
         // Set the studentroles array for the dropdown.
         $categories[$category->id] = $category->name;
     }
@@ -68,8 +101,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/username',
-            get_string('workdaystudent_username', 'enrol_workdaystudent'),
-            get_string('workdaystudent_username_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:username', 'enrol_workdaystudent'),
+            get_string('workdaystudent:username_desc', 'enrol_workdaystudent'),
             'Moodle_ISU', PARAM_TEXT
         )
     );
@@ -78,8 +111,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configpasswordunmask(
             'enrol_workdaystudent/password',
-            get_string('workdaystudent_password', 'enrol_workdaystudent'),
-            get_string('workdaystudent_password_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:password', 'enrol_workdaystudent'),
+            get_string('workdaystudent:password_desc', 'enrol_workdaystudent'),
             '', PARAM_RAW
         )
     );
@@ -88,8 +121,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/apiversion',
-            get_string('workdaystudent_apiversion', 'enrol_workdaystudent'),
-            get_string('workdaystudent_apiversion_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:apiversion', 'enrol_workdaystudent'),
+            get_string('workdaystudent:apiversion_desc', 'enrol_workdaystudent'),
             '43.0', PARAM_TEXT
         )
     );
@@ -98,8 +131,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/campus',
-            get_string('workdaystudent_campus', 'enrol_workdaystudent'),
-            get_string('workdaystudent_campus_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:campus', 'enrol_workdaystudent'),
+            get_string('workdaystudent:campus_desc', 'enrol_workdaystudent'),
             'AU00000079', PARAM_TEXT
         )
     );
@@ -108,8 +141,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/campusname',
-            get_string('workdaystudent_campusname', 'enrol_workdaystudent'),
-            get_string('workdaystudent_campusname_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:campusname', 'enrol_workdaystudent'),
+            get_string('workdaystudent:campusname_desc', 'enrol_workdaystudent'),
             'LSUAM', PARAM_TEXT
         )
     );
@@ -117,19 +150,29 @@ if ($ADMIN->fulltree) {
     // Workday semester range.
     $settings->add(
         new admin_setting_configtext(
-            'enrol_workdaystudent/semrange',
-            get_string('workdaystudent_semrange', 'enrol_workdaystudent'),
-            get_string('workdaystudent_semrange_help', 'enrol_workdaystudent'),
-            '60', PARAM_TEXT
+            'enrol_workdaystudent/brange',
+            get_string('workdaystudent:brange', 'enrol_workdaystudent'),
+            get_string('workdaystudent:brange_desc', 'enrol_workdaystudent'),
+            '60', PARAM_INT
         )
     );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_workdaystudent/erange',
+            get_string('workdaystudent:erange', 'enrol_workdaystudent'),
+            get_string('workdaystudent:erange_desc', 'enrol_workdaystudent'),
+            '6', PARAM_INT
+        )
+    );
+
 
     // Workday student metadata fields.
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/metafields',
-            get_string('workdaystudent_metafields', 'enrol_workdaystudent'),
-            get_string('workdaystudent_semrange_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:metafields', 'enrol_workdaystudent'),
+            get_string('workdaystudent:metafields_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -138,9 +181,53 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/sportfield',
-            get_string('workdaystudent_sportfield', 'enrol_workdaystudent'),
-            get_string('workdaystudent_sportfield_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:sportfield', 'enrol_workdaystudent'),
+            get_string('workdaystudent:sportfield_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'enrol_workdaystudent/autoparent',
+            get_string('workdaystudent:autoparent', 'enrol_workdaystudent'),
+            get_string('workdaystudent:autoparent_desc', 'enrol_workdaystudent'),
+            0
+        )
+    );
+
+    // Parent category.
+    $settings->add(
+        new admin_setting_configselect(
+            'enrol_workdaystudent/parentcat',
+            get_string('workdaystudent:parentcat', 'enrol_workdaystudent'),
+            get_string('workdaystudent:parentcat_desc', 'enrol_workdaystudent'),
+            'Top',  // Default.
+            $categories
+        )
+    );
+
+    $settings->hide_if('enrol_workdaystudent/parentcat', 'enrol_workdaystudent/autoparent', 'eq', '1');
+
+    // Primary role.
+    $settings->add(
+        new admin_setting_configselect(
+            'enrol_workdaystudent/primaryrole',
+            get_string('workdaystudent:primaryrole', 'enrol_workdaystudent'),
+            get_string('workdaystudent:primaryrole_desc', 'enrol_workdaystudent'),
+            'None',  // Default.
+            $facultyroles
+        )
+    );
+
+    // Non-Primary role.
+    $settings->add(
+        new admin_setting_configselect(
+            'enrol_workdaystudent/nonprimaryrole',
+            get_string('workdaystudent:nonprimaryrole', 'enrol_workdaystudent'),
+            get_string('workdaystudent:nonprimaryrole_desc', 'enrol_workdaystudent'),
+            'None',  // Default.
+            $facultyroles
         )
     );
 
@@ -148,8 +235,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configselect(
             'enrol_workdaystudent/studentrole',
-            get_string('workdaystudent_studentrole', 'enrol_workdaystudent'),
-            get_string('workdaystudent_studentrole_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:studentrole', 'enrol_workdaystudent'),
+            get_string('workdaystudent:studentrole_desc', 'enrol_workdaystudent'),
             'Student',  // Default.
             $studentroles
         )
@@ -159,10 +246,51 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configselect(
             'enrol_workdaystudent/unenroll',
-            get_string('workdaystudent_suspend_unenroll', 'enrol_workdaystudent'),
-            get_string('workdaystudent_suspend_unenroll_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:suspend_unenroll', 'enrol_workdaystudent'),
+            get_string('workdaystudent:suspend_unenroll_desc', 'enrol_workdaystudent'),
             0,  // Default.
             array(0 => 'suspend', 1 => 'unenroll')
+        )
+    );
+
+    // Add the course number creation threshold.
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_workdaystudent/numberthreshold',
+            get_string('workdaystudent:numberthreshold', 'enrol_workdaystudent'),
+            get_string('workdaystudent:numberthreshold_desc', 'enrol_workdaystudent'),
+            9000,
+            PARAM_INT
+        )
+    );
+
+    // Course visibility defaults.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'enrol_workdaystudent/visible',
+            get_string('workdaystudent:visible', 'enrol_workdaystudent'),
+            get_string('workdaystudent:visible_desc', 'enrol_workdaystudent'),
+            0
+        )
+    );
+
+    // Course grouping defaults.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'enrol_workdaystudent/course_grouping',
+            get_string('workdaystudent:course_grouping', 'enrol_workdaystudent'),
+            get_string('workdaystudent:course_grouping_desc', 'enrol_workdaystudent'),
+            1
+        )
+    );
+
+    // Course unenrollment/suspension defaults.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'enrol_workdaystudent/suspend',
+            get_string('workdaystudent:suspend', 'enrol_workdaystudent'),
+            get_string('workdaystudent:suspend_desc', 'enrol_workdaystudent'),
+            0
         )
     );
 
@@ -179,8 +307,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/wsurl',
-            get_string('workdaystudent_wsurl', 'enrol_workdaystudent'),
-            get_string('workdaystudent_wsurl_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:wsurl', 'enrol_workdaystudent'),
+            get_string('workdaystudent:wsurl_desc', 'enrol_workdaystudent'),
             'https://someurl.net', PARAM_URL
         )
     );
@@ -189,8 +317,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/units',
-            get_string('workdaystudent_units', 'enrol_workdaystudent'),
-            get_string('workdaystudent_units_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:units', 'enrol_workdaystudent'),
+            get_string('workdaystudent:units_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -199,8 +327,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/periods',
-            get_string('workdaystudent_periods', 'enrol_workdaystudent'),
-            get_string('workdaystudent_periods_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:periods', 'enrol_workdaystudent'),
+            get_string('workdaystudent:periods_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -209,8 +337,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/programs',
-            get_string('workdaystudent_programs', 'enrol_workdaystudent'),
-            get_string('workdaystudent_programs_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:programs', 'enrol_workdaystudent'),
+            get_string('workdaystudent:programs_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -219,8 +347,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/grading_schemes',
-            get_string('workdaystudent_grading_schemes', 'enrol_workdaystudent'),
-            get_string('workdaystudent_grading_schemes_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:grading_schemes', 'enrol_workdaystudent'),
+            get_string('workdaystudent:grading_schemes_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -229,8 +357,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/courses',
-            get_string('workdaystudent_courses', 'enrol_workdaystudent'),
-            get_string('workdaystudent_courses_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:courses', 'enrol_workdaystudent'),
+            get_string('workdaystudent:courses_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -239,8 +367,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/sections',
-            get_string('workdaystudent_sections', 'enrol_workdaystudent'),
-            get_string('workdaystudent_sections_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:sections', 'enrol_workdaystudent'),
+            get_string('workdaystudent:sections_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -249,8 +377,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/dates',
-            get_string('workdaystudent_dates', 'enrol_workdaystudent'),
-            get_string('workdaystudent_dates_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:dates', 'enrol_workdaystudent'),
+            get_string('workdaystudent:dates_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -259,8 +387,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/students',
-            get_string('workdaystudent_students', 'enrol_workdaystudent'),
-            get_string('workdaystudent_students_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:students', 'enrol_workdaystudent'),
+            get_string('workdaystudent:students_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -269,8 +397,8 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/registrations',
-            get_string('workdaystudent_registrations', 'enrol_workdaystudent'),
-            get_string('workdaystudent_registrations_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:registrations', 'enrol_workdaystudent'),
+            get_string('workdaystudent:registrations_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
         )
     );
@@ -279,9 +407,29 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/guild',
-            get_string('workdaystudent_guild', 'enrol_workdaystudent'),
-            get_string('workdaystudent_guild_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:guild', 'enrol_workdaystudent'),
+            get_string('workdaystudent:guild_desc', 'enrol_workdaystudent'),
             '', PARAM_TEXT
+        )
+    );
+
+    // Add a heading.
+    $settings->add(
+        new admin_setting_heading(
+            'enrol_workdaystudent/coursedefs',
+            '',
+            get_string('workdaystudent:coursedefs', 'enrol_workdaystudent')
+        )
+    );
+
+    // Add the course name seting.
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_workdaystudent/namingformat',
+            get_string('workdaystudent:coursenamingformat', 'enrol_workdaystudent'),
+            get_string('workdaystudent:coursenamingformat_desc', 'enrol_workdaystudent'),
+            '{period_year} {period_type} {course_subject_abbreviation} {course_number} for {firstname} {lastname} {delivery_mode}',
+            PARAM_TEXT
         )
     );
 
@@ -298,10 +446,37 @@ if ($ADMIN->fulltree) {
     $settings->add(
         new admin_setting_configtext(
             'enrol_workdaystudent/contacts',
-            get_string('workdaystudent_contacts', 'enrol_workdaystudent'),
-            get_string('workdaystudent_contacts_help', 'enrol_workdaystudent'),
+            get_string('workdaystudent:contacts', 'enrol_workdaystudent'),
+            get_string('workdaystudent:contacts_desc', 'enrol_workdaystudent'),
             'admin,student', PARAM_TEXT
         )
     );
+}
 
+// Add the folder.
+$ADMIN->add('enrollwdsfolder', $settings);
+
+// Prevent Moodle from adding settings block in standard location.
+$settings = null;
+
+// Set the url for the period config page.
+$wdsperiods = new admin_externalpage(
+    'period_config',
+    new lang_string('workdaystudent:periodconfig', 'enrol_workdaystudent'),
+    new moodle_url('/enrol/workdaystudent/periodconfig.php')
+);
+
+// Set the url for the update students page.
+$wdsstupdates = new admin_externalpage(
+    'update_students',
+    new lang_string('wds:updatestudents', 'enrol_workdaystudent'),
+    new moodle_url('/enrol/workdaystudent/updatestudents.php')
+);
+
+$context = \context_system::instance();
+
+// Add the link for those who have access.
+if (has_capability('moodle/site:config', $context)) {
+    $ADMIN->add('enrollwdsfolder', $wdsperiods);
+    $ADMIN->add('enrollwdsfolder', $wdsstupdates);
 }

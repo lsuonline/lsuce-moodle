@@ -24,13 +24,15 @@
 // Make sure this can only run via CLI.
 define('CLI_SCRIPT', true);
 
-$timestart = microtime(true);
-
 // Include the main Moodle config.
 require_once(__DIR__ . '/../../../../config.php');
 
 // Include the Workday Student helper class.
 require_once(__DIR__ . '/../workdaystudent.php');
 
-wdscronhelper::cronstudents();
-
+$materials1 = workdaystudent::wds_course_has_materials(65926);
+$materials2 = workdaystudent::wds_course_has_materials(65927);
+mtrace("65926");
+var_dump($materials1);
+mtrace("\n65927");
+var_dump($materials2);

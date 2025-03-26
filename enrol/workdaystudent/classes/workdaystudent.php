@@ -80,7 +80,7 @@ class workdaystudent {
         $students = self::get_data($s);
 
         if (!is_array($students) || empty($students)) {
-            mtrace("$periodid contains no students, this is probably a sub-semester.");
+            self::dtrace("$periodid contains no students, this is probably a sub-semester.");
             return false;
         }
 
@@ -297,16 +297,16 @@ class workdaystudent {
         } elseif (isset($period->Academic_Period_ID) && !isset($period->academic_period_id)) {
             $period->academic_period_id = $period->Academic_Period_ID;
         } else {
-            mtrace("No academic period in the period, look into this");
+            mtrace("Error! No academic period in the period, look into this");
             var_dump($period);
             return false;
         }
 
         // Find the year.
-        preg_match('/.+?(\d\d\d\d).*/', $period->Academic_Period, $pyear);
+        preg_match('/\d{4}/', $period->Academic_Period, $pyear);
 
         // Make sure we found the year.
-        $periodyear = isset($pyear[1]) ? $pyear[1] : 0;
+        $periodyear = isset($pyear[0]) ? $pyear[0] : 0;
 
         //Return the year.
         return $periodyear;
@@ -356,7 +356,7 @@ class workdaystudent {
                 // Return the updated object.
                 return $ap2;
             } else {
-                mtrace("   - Updating $ap->academic_period_id failed and has not been updated.");
+                mtrace("   - Error! Updating $ap->academic_period_id failed and has not been updated.");
 
                 // Return the original object.
                 return $ap;
@@ -387,7 +387,9 @@ class workdaystudent {
             $academicyear = workdaystudent::get_academic_year($period);
 
             // Populate the temporary period table.
-            $tap->academic_period_id = isset($period->Academic_Period_ID) ? $period->Academic_Period_ID : $period->academic_period_id;
+            $tap->academic_period_id = isset($period->Academic_Period_ID)
+                ? $period->Academic_Period_ID
+                : $period->academic_period_id;
             $tap->academic_period = $period->Academic_Period;
             $tap->period_type = $period->Period_Type;
             $tap->period_year = $periodyear;
@@ -524,7 +526,7 @@ class workdaystudent {
                 // Return the updated object.
                 return $as2;
             } else {
-                mtrace("Updating $as->section_listing_id failed and has not been updated.");
+                mtrace("Error! Updating $as->section_listing_id failed and has not been updated.");
 
                 // Return the original object.
                 return $as;
@@ -597,7 +599,7 @@ class workdaystudent {
                 // Return the updated object.
                 return $ac2;
             } else {
-                mtrace("    Updating $ac->course_listing_id failed and has not been updated.");
+                mtrace("    Error! Updating $ac->course_listing_id failed and has not been updated.");
 
                 // Return the original object.
                 return $ac;
@@ -655,7 +657,7 @@ class workdaystudent {
         if (!isset($enrollment->Universal_Id)) {
             $fullname = isset($enrollment->Full_Legal_Name) ? $enrollment->Full_Legal_Name : 'Someone';
             $email = isset($enrollment->LSUAM_Institutional_Email) ? $enrollment->LSUAM_Institutional_Email : $fullname;
-            mtrace("$enrollment->Section_Listing_ID missing universal ID for $email.");
+            mtrace("Error! $enrollment->Section_Listing_ID missing universal ID for $email.");
             return false;
         }
 
@@ -733,7 +735,7 @@ class workdaystudent {
         $as2 = clone($as);
 
         if (!isset($enrollment->Grading_Basis)) {
-            mtrace("Grading basis not set for course: $enrollment->Section_Listing_ID and student: $enrollment->Universal_Id.");
+            mtrace("Error! Grading basis not set for course: $enrollment->Section_Listing_ID and student: $enrollment->Universal_Id.");
         }
 
         // Keep the id, section_listing_id, and $universal_id from $as and populate the rest from aenrollment.
@@ -903,7 +905,7 @@ class workdaystudent {
         string $timezone = 'America/Chicago'): array {
 
         // Grab the schedule.
-        $schedule = $section->Section_Components;
+        $schedule = $section->Meeting_Patterns;
 
         // Split the string into days and time.
         [$dayspart, $timepart] = explode('|', $schedule);
@@ -953,7 +955,7 @@ class workdaystudent {
             // If there are fewer times than days, we should repeat the times or handle the mismatch.
             if (empty($starttime) || empty($endtime)) {
                 // Skip days with invalid time or log an error.
-                mtrace("Invalid time for day: $day");
+                mtrace("Error! Invalid time for day: $day");
                 continue;
             }
 
@@ -964,7 +966,7 @@ class workdaystudent {
             // Check if the DateTime creation was successful.
             if ($startdatetime === false || $enddatetime === false) {
                 // Handle the error (skip and log it).
-                mtrace("Failed to parse time: Start time - $starttime, End time - $endtime");
+                mtrace("Error! Failed to parse time: Start time - $starttime, End time - $endtime");
                 continue;
             }
 
@@ -1164,7 +1166,7 @@ class workdaystudent {
                 // Return the updated object.
                 return $au2;
             } else {
-                mtrace(" - Updating $au->academic_unit_id failed and has not been updated.");
+                mtrace(" - Error! Updating $au->academic_unit_id failed and has not been updated.");
 
                 // Return the original object.
                 return $au;
@@ -1525,10 +1527,12 @@ class workdaystudent {
     public static function get_current_departments($s) {
         global $DB;
 
-        $sql = 'SELECT CONCAT(p.id, "_",  c.id, "_", s.id) AS uniqueid, c.course_subject_abbreviation, p.academic_period_id 
+        $sql = 'SELECT CONCAT(p.id, "_",  c.id, "_", s.id) AS uniqueid,
+                c.course_subject_abbreviation,
+                p.academic_period_id 
             FROM {enrol_wds_periods} p
                 INNER JOIN {enrol_wds_sections} s ON p.academic_period_id = s.academic_period_id
-                INNER JOIN {enrol_wds_courses} c ON s.course_definition_id = c.course_definition_id
+                INNER JOIN {enrol_wds_courses} c ON s.course_listing_id = c.course_listing_id
             WHERE p.start_date < UNIX_TIMESTAMP(NOW())
                 AND p.end_date > UNIX_TIMESTAMP(NOW())
                 AND p.enabled = 1
@@ -1537,45 +1541,34 @@ class workdaystudent {
         // Get the data using the sql above.
         $departments = $DB->get_records_sql($sql);
 
-/*
-        // Extract the course subject abbreviations.
-        $abbreviations = array_map(function($department) {
-            return $department->course_subject_abbreviation;
-        }, $departments);
-
-        return $abbreviations;
-*/
         return $departments;
     }
 
     public static function get_current_periods($s) {
         global $DB;
 
+        $allcurrentperiods = isset($s->allperiods) && $s->allperiods ? '' : 'AND p.enabled = 1';
+
         // Set the semester range for getting future and recent semesters.
-        $fsemrange = isset($s->semrange) ? ($s->semrange * 86400) : 0;
-        $psemrange = isset($s->semrange) ? (($s->semrange / 6) * 86400) : 0;
+        $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
+        $psemrange = isset($s->erange) ? ($s->erange * 86400) : 0;
 
         // Build the SQL.
         $sql = "SELECT p.academic_period_id
                   FROM {enrol_wds_periods} p
-                WHERE p.enabled = 1
-                  AND ((p.start_date < UNIX_TIMESTAMP() + $fsemrange
-                  AND p.end_date > UNIX_TIMESTAMP())
-                  OR (p.start_date < UNIX_TIMESTAMP()
-                  AND p.end_date > UNIX_TIMESTAMP() - $psemrange))";
+                WHERE p.start_date < UNIX_TIMESTAMP() + $fsemrange
+                  AND p.end_date > UNIX_TIMESTAMP() - $psemrange
+                  $allcurrentperiods";
 
         // Get the actual data.
-        $semesters = $DB->get_records_sql($sql);
+        $periods = $DB->get_records_sql($sql);
 
-        // TODO: REMOVE THE HARD CODED SEMESTER.
-        // Create the object.
-        $forcedperiod = new stdClass();
-        // Set the data.
-        $forcedperiod->academic_period_id = "LSUAM_SPRING_2024";
-        // Add the object to the array using array_push.
-        array_push($semesters, $forcedperiod);
+        // TODO: Remove this shit.
+        $forced = new stdClass();
+        $forced->academic_period_id = "LSUAM_SPRING_2024";
+        $periods["LSUAM_SPRING_2024"] = $forced;
 
-        return $semesters;
+        return $periods;
     }
 
     public static function get_current_sections($s) {
@@ -1592,7 +1585,7 @@ class workdaystudent {
         return $sections;
     }
 
-    public static function get_psd_enrollments($s, $psd = null, $fdate = null) {
+    public static function get_period_enrollments($s, $period = null, $fdate = null) {
         // Set the endpoint.
         $endpoint = 'registrations';
 
@@ -1604,14 +1597,14 @@ class workdaystudent {
             $parms['Last_Updated'] = $fdate;
         }
 
-        if (isset($psd->course_section_definition_id)) {
-            $parms['Course_Section_Definition_ID'] = $psd->course_section_definition_id;
-            $parms['Academic_Period!Academic_Period_ID'] = $psd->academic_period_id;
-        } else if (isset($psd->course_subject_abbreviation)) {
-            $parms['Subject_Code'] = $psd->course_subject_abbreviation;
-            $parms['Academic_Period!Academic_Period_ID'] = $psd->academic_period_id;
+        if (isset($period->course_section_definition_id)) {
+            $parms['Course_Section_Definition_ID'] = $period->course_section_definition_id;
+            $parms['Academic_Period!Academic_Period_ID'] = $period->academic_period_id;
+        } else if (isset($period->course_subject_abbreviation)) {
+            $parms['Subject_Code'] = $period->course_subject_abbreviation;
+            $parms['Academic_Period!Academic_Period_ID'] = $period->academic_period_id;
         } else {
-            $parms['Academic_Period!Academic_Period_ID'] = $psd->academic_period_id;
+            $parms['Academic_Period!Academic_Period_ID'] = $period->academic_period_id;
         }
 
         $parms['format'] = 'json';
@@ -1647,7 +1640,7 @@ class workdaystudent {
 
         // Build some sql to truncate the table.
         $sql = 'TRUNCATE {enrol_wds_programs}';
-        mtrace("  Truncating enrol_wds_programs.");
+        self::dtrace("  Truncating enrol_wds_programs.");
 
         // Actually do it and store if we're successful or not.
         $success = $DB->execute($sql);
@@ -1657,7 +1650,7 @@ class workdaystudent {
 
         // If we successfully truncated, insert data.
         if ($success) {
-            mtrace("  Successfully truncated enrol_wds_programs.");
+            self::dtrace("  Successfully truncated enrol_wds_programs.");
 
             // Get the program data.
             foreach ($programs as $program) {
@@ -1665,7 +1658,7 @@ class workdaystudent {
             }
 
         } else {
-            mtrace("  Failed to truncate enrol_wds_programs.");
+            mtrace("  Error! Failed to truncate enrol_wds_programs.");
             return $success;
         }
 
@@ -1790,17 +1783,20 @@ class workdaystudent {
 
         // Build some sql to truncate the table.
         $sql = 'TRUNCATE {enrol_wds_grade_schemes}';
-        mtrace("  Truncating enrol_wds_grade_schemes.");
+        self::dtrace("  Truncating enrol_wds_grade_schemes.");
 
         // Actually do it and store if we're successful or not.
         $success = $DB->execute($sql);
 
         // Build the $gs array for future use.
         $gs = array();
-$counter = 0;
+
+        // Set the counter.
+        $counter = 0;
+
         // If we successfully truncated, insert data.
         if ($success) {
-            mtrace("  Successfully truncated enrol_wds_grade_schemes.");
+            self::dtrace("  Successfully truncated enrol_wds_grade_schemes.");
 
             // Get the grading schemas.
             foreach ($gradingschemes as $gradingschema) {
@@ -1822,7 +1818,9 @@ $counter = 0;
 
                     // Add the grading scheme id into the child array.
                     $gradingscheme->Student_Grading_Scheme_ID = $gsid;
-$counter++;
+
+                    // Increment the counter.
+                    $counter++;
                     self::dtrace("      -($counter) Processing $gradingscheme->Grading_Basis - $gradingscheme->Student_Grade_Display.");
 
                     // Insert each grading scheme and add it to the $gs array.
@@ -1831,7 +1829,7 @@ $counter++;
             }
 
         } else {
-            mtrace("  Failed to truncate enrol_wds_grade_schemes.");
+            mtrace("  Error! Failed to truncate enrol_wds_grade_schemes.");
             return $success;
         }
 
@@ -1848,8 +1846,6 @@ $counter++;
 
         // Set the table.
         $table = 'enrol_wds_grade_schemes';
-
-// TODO: Do we really need to explode and do this crap?
 
         // Set the singular data object.
         $dataobj = array(
@@ -1920,7 +1916,7 @@ $counter++;
                         cou.course_listing_id = sec.course_listing_id
                     INNER JOIN {enrol_wds_periods} p ON
                         p.academic_period_id = sec.academic_period_id
-                    INNER JOIN {enrol_wds_teachers} t ON
+                   INNER JOIN {enrol_wds_teachers} t ON
                         t.universal_id = te.universal_id
                 WHERE sec.idnumber IS NULL
                     AND sec.academic_period_id = :periodid
@@ -2242,7 +2238,7 @@ $counter++;
             }
             self::dtrace("Finished processing of student metadata for $stu->universal_id.");
         } else {
-            mtrace("Could not delete student metadata for $student->Universal_ID.");
+            mtrace("Error! Could not update student metadata for $student->Universal_ID.");
         }
     }
 
@@ -2361,7 +2357,7 @@ $counter++;
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
 
         // Debug this connection.
-        if ($CFG->debugdisplay == 1) {
+        if ($CFG->debugdisplay === 1) {
 // TODO: readd            curl_setopt($ch, CURLOPT_VERBOSE, true);
         }
 
@@ -2493,7 +2489,8 @@ $counter++;
         $sql = 'SELECT *
                 FROM {enrol_wds_students} stu
                 WHERE stu.universal_id = "' . $student->Universal_Id . '"
-                OR stu.email = "' . $email . '"';
+                OR stu.username = "' . \core_text::strtolower($email) . '"
+                OR stu.email = "' . \core_text::strtolower($email) . '"';
 
         $stus = $DB->get_records_sql($sql);
         if (count($stus) > 1) {
@@ -2501,7 +2498,7 @@ $counter++;
                 $schoolid = !is_null($stu->school_id) ?
                     ' ' . $stu->school_id . ',' :
                     "";
-                mtrace('DB ID: ' . $stu->id . ', ' .
+                mtrace('Error! IDB student ID: ' . $stu->id . ', ' .
                     $stu->universal_id . ', ' .
                     $stu->email . ',' .
                     $stu->school_id . ' - ' .
@@ -2519,11 +2516,13 @@ $counter++;
 
         } else if (count($stus) == 1) {
             // Grab the student from the array. 
-            self::dtrace("  Student found with universal_id: $student->Universal_Id, email: $email, school_id: $lid.");
+            self::dtrace("  Student found with universal_id: " .
+                "$student->Universal_Id, email: $email, school_id: $lid.");
             $stu = reset($stus);
 
         } else {
-            self::dtrace("  No student with universal_id: $student->Universal_Id, email: $email, school_id: $lid.");
+            self::dtrace("  No student with universal_id: " .
+                "$student->Universal_Id, email: $email, school_id: $lid.");
             $stu = null;
         }
 
@@ -2567,10 +2566,13 @@ $counter++;
         $stu2->email = $email;
         $stu2->school_id = $lid;
         $stu2->firstname = $student->First_Name;
-        $stu2->preferred_firstname = isset($student->Preferred_First_Name) ? $student->Preferred_First_Name : null;
+        $stu2->preferred_firstname = isset($student->Preferred_First_Name) ?
+            $student->Preferred_First_Name : null;
         $stu2->lastname = $student->Last_Name;
-        $stu2->preferred_lastname = isset($student->Preferred_Last_Name) ? $student->Preferred_Last_Name : null;
-        $stu2->middlename = isset($student->Middle_Name) ? $student->Middle_Name : null;
+        $stu2->preferred_lastname = isset($student->Preferred_Last_Name) ?
+            $student->Preferred_Last_Name : null;
+        $stu2->middlename = isset($student->Middle_Name) ?
+            $student->Middle_Name : null;
 
         // If the objects match.
         if (get_object_vars($stu1) === get_object_vars($stu2)) {
@@ -2588,7 +2590,9 @@ $counter++;
             // Update the record.
             $istudent = $DB->update_record($table, $stu2, false);
 
-            self::dtrace("  - Updated student with universal_id: $stu->universal_id - $student->Universal_Id, email: $stu->email - $email, school_id: $stu->school_id - $lid.");
+            self::dtrace("  - Updated student with universal_id: " .
+                "$stu->universal_id - $student->Universal_Id, email: " .
+                "$stu->email - $email, school_id: $stu->school_id - $lid.");
 
             return $istudent;
         }
@@ -2616,20 +2620,24 @@ $counter++;
         $data->school_id = $lid;
         $data->userid = null;
         $data->firstname = $student->First_Name;
-        $data->preferred_firstname = isset($student->Preferred_First_Name) ? $student->Preferred_First_Name : null;
+        $data->preferred_firstname = isset($student->Preferred_First_Name) ?
+            $student->Preferred_First_Name : null;
         $data->lastname = $student->Last_Name;
-        $data->preferred_lastname = isset($student->Preferred_Last_Name) ? $student->Preferred_Last_Name : null;
-        $data->middlename = isset($student->Middle_Name) ? $student->Middle_Name : null;
+        $data->preferred_lastname = isset($student->Preferred_Last_Name) ?
+            $student->Preferred_Last_Name : null;
+        $data->middlename = isset($student->Middle_Name) ?
+            $student->Middle_Name : null;
         $data->lastupdate = time();
 
         $success = $DB->insert_record($table, $data, true);
 
         if (is_int($success)) {
             $stu = $DB->get_record($table, array('id' => $success));
-            self::dtrace("  - Created student with universal_id: $stu->universal_id, email: $stu->email, school_id: $stu->school_id.");
+            self::dtrace("  - Created student with universal_id: " .
+                "$stu->universal_id, email: $stu->email, school_id: $stu->school_id.");
             return $stu;
         } else {
-            mtrace("  - Failed to create interstitial student.");
+            mtrace("  - Error! Failed to create interstitial student.");
             var_dump($student);
             return false;
         }
@@ -2647,7 +2655,8 @@ $counter++;
 
             $endtime = microtime(true);
             $elapsedtime = round($endtime - $starttime, 4);
-            self::dtrace("  Student: $stu->universal_id took $elapsedtime seconds to process.");
+            self::dtrace("  Student: $stu->universal_id took " .
+                "$elapsedtime seconds to process.");
 
             return $stu;
 
@@ -2657,7 +2666,8 @@ $counter++;
 
             $endtime = microtime(true);
             $elapsedtime = round($endtime - $starttime, 4);
-            self::dtrace("  Student: $stu->universal_id took $elapsedtime seconds to process.");
+            self::dtrace("  Student: $stu->universal_id took " .
+                "$elapsedtime seconds to process.");
 
             return $stu;
         }
@@ -2675,7 +2685,8 @@ $counter++;
 
             $endtime = microtime(true);
             $elapsedtime = round($endtime - $starttime, 4);
-            self::dtrace(" User: $tea->universal_id took $elapsedtime seconds to process.");
+            self::dtrace(" User: $tea->universal_id took " .
+                "$elapsedtime seconds to process.");
 
             return $tea;
 
@@ -2689,7 +2700,8 @@ $counter++;
 
             $endtime = microtime(true);
             $elapsedtime = round($endtime - $starttime, 4);
-            self::dtrace(" User: $tea->universal_id took $elapsedtime seconds to process.");
+            self::dtrace(" User: $tea->universal_id took " .
+                "$elapsedtime seconds to process.");
 
             return $tea;
         }
@@ -2712,7 +2724,7 @@ $counter++;
         $teas = $DB->get_records_sql($sql);
         if (count($teas) > 1) {
             foreach ($teas as $tea) {
-                mtrace('DB ID: ' . $tea->id . ', ' .
+                mtrace('Error! IDB teacher ID: ' . $tea->id . ', ' .
                     $tea->universal_id . ', ' .
                     $tea->email . ',' .
                     $tea->firstname . ' ' .
@@ -2728,11 +2740,15 @@ $counter++;
 
         } else if (count($teas) == 1) {
             // Grab the teacher from the array.
-            self::dtrace(" User found with universal_id: $teacher->Instructor_ID, email: $teacher->Instructor_Email.");
+            self::dtrace(" User found with universal_id: " .
+                "$teacher->Instructor_ID, email: " .
+                "$teacher->Instructor_Email.");
             $tea = reset($teas);
 
         } else {
-            self::dtrace(" No user with universal_id: $teacher->Instructor_ID, email: $teacher->Instructor_Email.");
+            self::dtrace(" No user with universal_id: " .
+                "$teacher->Instructor_ID, email: " .
+                "$teacher->Instructor_Email.");
             $tea = null;
         }
 
@@ -2782,7 +2798,9 @@ $counter++;
             // Update the record.
             $iteacher = $DB->update_record($table, $tea2, false);
 
-            self::dtrace(" Updated user with universal_id: $tea->universal_id - $teacher->Instructor_ID, email: $tea->email - $email.");
+            self::dtrace(" Updated user with universal_id: " .
+                "$tea->universal_id - $teacher->Instructor_ID, email: " .
+                "$tea->email - $email.");
 
             return $iteacher;
         }
@@ -2795,7 +2813,7 @@ $counter++;
         if (isset($teacher->Instructor_Email)) {
             $email = $teacher->Instructor_Email;
         } else {
-            mtrace(" Failed to create interstitial user. No email provided.");
+            mtrace(" Error! Failed to create interstitial user. No email provided.");
             mtrace($teacher->Instructor_ID);
             return false;
         }
@@ -2817,10 +2835,11 @@ $counter++;
 
         if (is_int($success)) {
             $tea = $DB->get_record($table, array('id' => $success));
-            self::dtrace(" Created user with universal_id: $tea->universal_id, email: $tea->email.");
+            self::dtrace(" Created user with universal_id: " .
+                "$tea->universal_id, email: $tea->email.");
             return $tea;
         } else {
-            mtrace(" Failed to create interstitial user.");
+            mtrace(" Error! Failed to create interstitial user.");
             var_dump($teacher);
             return false;
         }
@@ -2874,7 +2893,6 @@ $counter++;
                 self::dtrace(" All enrolled teachers in $sectionid set to unenroll.");
             }
 
-            // TODO: ???? Return whatever unenrolls we did.
             return $unenrolls;
         }
 
@@ -2898,10 +2916,10 @@ $counter++;
                 $data->status = $status;
 
                 // Insert the record.
-                $enroll = $DB->insert_record($table, $data, false);
-                self::dtrace(" - Inserted $universalid in $sectionid with role: $data->role and status: $data->status");
+                $enroll = $DB->insert_record($table, $data, $returnid = true);
+                self::dtrace(" - Inserted $universalid in $sectionid with role: " .
+                    "$data->role and status: $data->status");
 
-                // TODO: ????
                 return $enroll;
 
             // We returned a matching enrollment.
@@ -2916,30 +2934,36 @@ $counter++;
                 $data->status = $status;
 
                 // Deal with previous statuses.
-                if ($enr->status == 'unenroll' && ($enr->prevstatus == 'enroll' || $enr->prevstatus == 'enrolled')) {
+                if ($enr->status == 'unenroll' && (
+                    $enr->prevstatus == 'enroll' || $enr->prevstatus == 'enrolled')) {
                     $data->prevstatus = $data->prevstatus;
+                } else if ($enr->status == 'enrolled' && $status == 'enroll') {
+                    $data->status = $enr->status;
+                    $data->prevstatus = $enr->status;
                 } else {
                     $data->prevstatus = $enr->status;
                 }
 
                 // Compare the objects.
                 if (get_object_vars($data) === get_object_vars($enr)) {
-                    self::dtrace(" - Enrollment entry: $data->id matches exactly, skipping.");
+                    self::dtrace(" - Enrollment entry: " .
+                        "$data->id matches exactly, skipping.");
 
                     return $enr;
                 } else {
                     // Update the record and log.
-                    $enroll = $DB->update_record($table, $data, false);
-                    self::dtrace(" - Updated: $data->id - $universalid in $sectionid with role: $data->role and status: $data->status");
+                    $enroll = $DB->update_record($table, $data, $returnid = true);
+                    self::dtrace(" - Updated: $data->id - $universalid in " .
+                        "$sectionid with role: $data->role " .
+                        "and status: $data->status");
 
-                    // TODO: ????
                     return $enroll;
                 }
             }
         }
     }
 
-    public static function get_potential_new_musers() {
+    public static function get_potential_new_mstudents() {
         global $DB;
 
         // Users that don't have a Moodle equivalent created or mapped.
@@ -2951,8 +2975,112 @@ $counter++;
         return $nusers;
     }
 
-    public static function mass_muser_updates() {
+    public static function get_potential_new_mteachers() {
         global $DB;
+
+        // Users that don't have a Moodle equivalent created or mapped.
+        $sql = "SELECT * FROM {enrol_wds_teachers} tea
+                WHERE tea.userid IS NULL";
+
+        $nusers = $DB->get_records_sql($sql);
+
+        return $nusers;
+    }
+
+    public static function mass_mteacher_updates() {
+        global $CFG, $DB;
+
+        // Build the auth methods and choose the top one or manual if none are set.
+        if (!empty($CFG->auth)) {
+            $auth = explode(',', $CFG->auth);
+            $auth = reset($auth);
+        } else {
+            $auth = 'manual';
+        }
+
+        $sql = "UPDATE {enrol_wds_teachers} tea
+            INNER JOIN {user} u on u.id = tea.userid
+            SET u.idnumber = tea.universal_id,
+                u.email = tea.email,
+                u.username = tea.username,
+                u.firstname = COALESCE(tea.preferred_firstname, tea.firstname),
+                u.lastname = COALESCE(tea.preferred_lastname, tea.lastname),
+                u.middlename = tea.middlename,
+                u.timemodified = tea.lastupdate,
+                u.auth = '$auth'
+            WHERE tea.userid IS NOT NULL
+                AND u.deleted = 0
+                AND u.suspended = 0
+                AND (tea.universal_id != u.idnumber
+                    OR tea.email != u.email
+                    OR tea.username != u.username
+                    OR COALESCE(tea.preferred_firstname, tea.firstname) != u.firstname
+                    OR COALESCE(tea.preferred_lastname, tea.lastname) != u.lastname
+                    OR tea.middlename != u.middlename
+                    OR u.auth != '$auth')";
+
+        try {
+            // Update them.
+            $mupdates = $DB->execute($sql);
+        } catch (Exception $e) {
+            $mupdates = false;
+            $error = $e->getMessage();
+            $cleanerror = trim(strtok($error, '\n'));
+            $cleanerror = preg_replace('/\n/', ' ', $error);
+            $cleanerror = preg_replace('/UPDATE.*/', '', $cleanerror);
+            $cleanerror = trim($cleanerror) . ')';
+            mtrace("Error! " . $cleanerror);
+        }
+
+        if (!$mupdates) {
+            // Build out a list of potential duplicates by email.
+            $dupes = self::get_faculty_dupes();
+
+            // Loop through the dupes.
+            foreach ($dupes as $dupe) {
+                // Log the dupes.
+                mtrace("Error! DUPE! $dupe->userids; " .
+                    "$dupe->email; $dupe->fullnames");
+            }
+        }
+
+        return $mupdates;
+    }
+
+    public static function get_faculty_dupes() {
+        global $DB;
+
+        // Build out a list of potential duplicates by email.
+        $dupesql = "SELECT
+            u.email,
+            COUNT(u.id) AS usercount,
+            GROUP_CONCAT(u.id ORDER BY u.id ASC SEPARATOR ', ') AS userids,
+            GROUP_CONCAT(u.username ORDER BY u.id ASC SEPARATOR ', ') AS usernames,
+            GROUP_CONCAT(
+                CONCAT(u.firstname, ' ', u.lastname)
+                ORDER BY u.id ASC SEPARATOR ', '
+            ) AS fullnames
+            FROM {user} u
+            WHERE u.deleted = 0
+            GROUP BY u.email HAVING usercount > 1";
+
+        // Get the dupes.
+        $dupes = $DB->get_records_sql($dupesql);
+
+        return $dupes;
+    }
+
+    public static function mass_mstudent_updates() {
+        global $CFG, $DB;
+
+        // Build the auth methods and choose the top one or manual if none are set.
+        if (!empty($CFG->auth)) {
+            $auth = explode(',', $CFG->auth);
+            $auth = reset($auth);
+        } else {
+            $auth = 'manual';
+        }
+
         $sql = "UPDATE {enrol_wds_students} stu
             INNER JOIN {user} u on u.id = stu.userid
             SET u.idnumber = stu.universal_id,
@@ -2961,61 +3089,88 @@ $counter++;
                 u.firstname = stu.preferred_firstname,
                 u.lastname = stu.preferred_lastname,
                 u.middlename = stu.middlename,
-                u.timemodified = stu.lastupdate
+                u.timemodified = stu.lastupdate,
+                u.auth = '$auth'
             WHERE stu.userid IS NOT NULL
                 AND u.deleted = 0
                 AND u.suspended = 0
-                AND (stu.universal_id <> u.idnumber
-                    OR stu.email <> u.email
-                    OR stu.username <> u.username
-                    OR stu.preferred_firstname <> u.firstname
-                    OR stu.preferred_lastname <> u.lastname
-                    OR stu.middlename <> u.middlename)";
+                AND (stu.universal_id != u.idnumber
+                    OR stu.email != u.email
+                    OR stu.username != u.username
+                    OR stu.preferred_firstname != u.firstname
+                    OR stu.preferred_lastname != u.lastname
+                    OR stu.middlename != u.middlename
+                    OR u.auth != '$auth')";
 
         $mupdates = $DB->execute($sql);
 
         return $mupdates;
     }
 
-    public static function get_potential_muser_updates() {
-        global $DB;
+    public static function get_potential_mteacher_updates() {
+        global $CFG, $DB;
 
-        $daysprior = 1;
+        // Build the auth methods and choose the top one or manual if none are set.
+        if (!empty($CFG->auth)) {
+            $auth = explode(',', $CFG->auth);
+            $auth = reset($auth);
+        } else {
+            $auth = 'manual';
+        }
 
-        $date = time() - ($daysprior * 86400);
+        // Build the sql to get a count of users that need to be updated.
+        $sql = "SELECT COUNT(u.id) AS usercount
+               FROM {enrol_wds_teachers} tea
+                   INNER JOIN {user} u ON u.id = tea.userid
+               WHERE tea.userid IS NOT NULL
+                   AND u.deleted = 0
+                   AND u.suspended = 0
+                   AND (tea.universal_id != u.idnumber
+                       OR tea.email != u.email
+                       OR tea.username != u.username
+                       OR COALESCE(tea.preferred_firstname, tea.firstname) != u.firstname
+                       OR COALESCE(tea.preferred_lastname, tea.lastname) != u.lastname
+                       OR tea.middlename != u.middlename
+                       OR u.auth != '$auth')";
 
-        $sql = "SELECT stu.userid AS storedmoodleid,
-                   u.id AS moodleid,
-                   stu.school_id AS lsuid,
-                   stu.universal_id AS universalid,
-                   u.idnumber AS moodleidnumber,
-                   stu.email AS storedemail,
-                   u.email AS moodleemail,
-                   stu.username AS storedusername,
-                   u.username AS moodleusername,
-                   stu.preferred_firstname AS preferredfirstname,
-                   u.firstname AS moodlefisrtname,
-                   stu.preferred_lastname AS preferredlastname,
-                   u.lastname AS moodlelastname,
-                   stu.middlename AS storedmiddlename,
-                   u.middlename AS moodlemiddlename,
-                   u.department AS moodledepartment
+        // Get the count.
+        $mupdates = $DB->get_record_sql($sql);
+
+        // Return the count as an integer for comparison later.
+        return (int) $mupdates->usercount;
+    }
+
+    public static function get_potential_mstudent_updates() {
+        global $CFG, $DB;
+
+        // Build the auth methods and choose the top one or manual if none are set.
+        if (!empty($CFG->auth)) {
+            $auth = explode(',', $CFG->auth);
+            $auth = reset($auth);
+        } else {
+            $auth = 'manual';
+        }
+
+        // Build the sql to get a count of users that need to be updated.
+        $sql = "SELECT COUNT(u.id) AS usercount
                FROM {enrol_wds_students} stu
                    INNER JOIN {user} u ON u.id = stu.userid
                WHERE stu.userid IS NOT NULL
                    AND u.deleted = 0
                    AND u.suspended = 0
-                   AND stu.lastupdate > $date
-                   AND (stu.universal_id <> u.idnumber
-                       OR stu.email <> u.email
-                       OR stu.username <> u.username
-                       OR stu.preferred_firstname <> u.firstname
-                       OR stu.preferred_lastname <> u.lastname
-                       OR stu.middlename <> u.middlename)";
+                   AND (stu.universal_id != u.idnumber
+                       OR stu.email != u.email
+                       OR stu.username != u.username
+                       OR stu.preferred_firstname != u.firstname
+                       OR stu.preferred_lastname != u.lastname
+                       OR stu.middlename != u.middlename
+                       OR u.auth != '$auth')";
 
-        $mupdates = $DB->get_records_sql($sql);
+        // Get the count.
+        $mupdates = $DB->get_record_sql($sql);
 
-        return $mupdates;
+        // Return the count as an integer for comparison later.
+        return (int) $mupdates->usercount;
     }
 
     public static function reconcile_interstitial_users($type = 'student', $keyword = 'username') {
@@ -3043,15 +3198,15 @@ $counter++;
         }
 
         // Build the SQL.
-        $sql = "UPDATE mdl_enrol_wds_$tablesuffix $prefix
-                   INNER JOIN mdl_user u ON $prefix.$kw1 = u.$kw2
+        $sql = "UPDATE {enrol_wds_$tablesuffix} $prefix
+                   INNER JOIN {user} u ON $prefix.$kw1 = u.$kw2
                SET $prefix.userid = u.id
                WHERE $prefix.userid IS NULL
                    AND u.deleted = 0
                    AND u.suspended = 0
                    AND ($prefix.universal_id = u.idnumber
-                       OR $prefix.email = u.email
-                       OR $prefix.username = u.username)";
+                       OR LOWER($prefix.email) = LOWER(u.email)
+                       OR LOWER($prefix.username) = LOWER(u.username))";
 
          // Do the nasty.
          $updates = $DB->execute($sql);
@@ -3060,45 +3215,705 @@ $counter++;
          return $updates;
     }
 
-    public static function create_update_muser($student, $courseid=null) {
-        global $CFG, $DB;
-        require_once($CFG->dirroot . '/user/profile/lib.php');
-        require_once($CFG->dirroot . '/user/lib.php');
-        require_once($CFG->libdir . '/moodlelib.php');
+    public static function build_user_object($student) {
+        global $CFG;
 
-        // Grab the table for future use.
-        $table = 'user';
-
-        // Build the auth methods and choose the default one.
-        $auth = explode(',', $CFG->auth);
-        $auth = reset($auth);
-
-var_dump($auth);
-
-        // TODO: deal with this somehow.
-        $auth = 'manual';
+        // Build the , 2)auth methods and choose the top one or manual if none are set.
+        if (!empty($CFG->auth)) {
+            $auth = explode(',', $CFG->auth);
+            $auth = reset($auth);
+        } else {
+            $auth = 'manual';
+        }
 
         // Set up the user object.
-        $user               = new stdClass();
-        $user->username     = $student->username;
-        $user->idnumber     = $student->universal_id;
-        $user->email        = $student->email;
-        $user->firstname    = $student->firstname === $student->preferred_firstname ?
-            $student->firstname :
-            $student->preferred_firstname;
-        $user->middlename   = isset($student->middlename) ? $student->middlename : null;
-        $user->lastname     = $student->lastname === $student->preferred_lastname ?
-            $student->lastname :
-            $student->preferred_lastname;
-        $user->lang         = $CFG->lang;
-        $user->auth         = $auth;
-        $user->confirmed    = 1;
-        $user->timemodified = $student->lastupdate;
-        $user->mnethostid   = $CFG->mnet_localhost_id;
+        $user = new stdClass();
 
-var_dump($user);
+        // Use the auth from above.
+        $user->auth = $auth;
+
+
+        // Make sure we care only setting usernames and emails in lowecase.
+        $user->username = \core_text::strtolower($student->username);
+        $user->email = \core_text::strtolower($student->email);
+
+        // Idnumber is universal ID. TODO: Deal with school ID as well.
+        $user->idnumber = $student->universal_id;
+
+        // Make sure we're using their preferred names.
+        if (is_null($student->preferred_firstname)
+            || $student->firstname == $student->preferred_firstname) { 
+            $user->firstname = $student->firstname;
+        } else {
+            $user->firstname = $student->preferred_firstname;
+        }
+
+        // Make sure we're using their preferred names.
+        if (is_null($student->preferred_lastname)
+            || $student->lastname == $student->preferred_lastname) { 
+            $user->lasttname = $student->lastname;
+        } else {
+            $user->lastname = $student->preferred_lastname;
+        }
+
+        // If they have a middle name, use it.
+        $user->middlename = isset($student->middlename) ?
+            $student->middlename : null;
+
+        // Use the default language when building the object.
+        $user->lang = $CFG->lang;
+
+        // Let's check and set the school_id to the wds school_id if we have it.
+        $user->school_id = $student->school_id;
+
+        // Required BS.
+        $user->confirmed = "1";
+        $user->deleted = "0";
+        $user->suspended = "0";
+        $user->policyagreed = "1";
+        $user->mnethostid = $CFG->mnet_localhost_id;
+
+        // Set this to what is in Workday.
+        $user->timemodified = (int) $student->lastupdate;
+
+        return $user;
+    }
+
+    /**
+     * Retrieve a user by a specific field and value.
+     *
+     * @param @string $field. The field to search by ('username', 'email', 'idnumber').
+     * @param @string $value. The value to match.
+     * @return @object $users[0] | @bool false. If we find a single user match, return them.
+     */
+    static function get_user_by_field($field, $value) {
+        global $DB;
+
+        // Set the table.
+        $table = 'user';
+
+        // Validate the field to prevent SQL injection.
+        $allowedfields = ['username', 'email', 'idnumber'];
+        if (!in_array($field, $allowedfields)) {
+            throw new coding_exception('Invalid field name');
+        }
+
+        // Perform the database query.
+        $users = $DB->get_records($table, [$field => $value]);
+
+        // No match! Return false.
+        if (!is_array($users) || count($users) == 0) {
+            return false;
+        }
+
+        $usercount = count($users);
+        // We have at least one match. Return the first one.
+        if ($usercount == 1) {
+          $user = reset($users);
+          return $user;
+        } else {
+            mtrace("ERROR! $usercount matches for $field->$value, " .
+                "skipping update.");
+            return false;
+        }
+    }
+
+    public static function find_moodle_user($student) {
+        global $CFG;
+
+        require_once($CFG->dirroot . '/user/lib.php');
+
+        // Set up the parms in priority order.
+        $parms = [
+            'idnumber' => $student->universal_id,
+            'username' => $student->username,
+            'email' => $student->email
+        ];
+
+        foreach ($parms as $field => $value) {
+            // Only check fields that have values.
+            if (!empty($value)) {
+
+                // Get the user.
+                $user = self::get_user_by_field($field, $value);
+
+                // Return the user if we have one.
+                if ($user) {
+                    self::dtrace("Found $field->$value as " .
+                        "$user->id: $field->" . $user->$field . ".");
+                    return $user;
+                }
+            }
+        }
+
+        // No matching user found!
+        return false;
+    }
+
+    static function update_user_if_needed($user, $muser) {
+        // Compare each field and track any changes.
+        $changes = false;
+
+        // TODO: Deal with 'school_id' somehow.
+        // List the fields to compare.
+        $fields_to_check = [
+            'username',
+            'email',
+            'idnumber',
+            'firstname',
+            'lastname',
+            'middlename'
+        ];
+
+        // Loop through fields and check for differences.
+        foreach ($fields_to_check as $field) {
+            $userfield = \core_text::strtolower($user->$field);
+            $muserfield = \core_text::strtolower($muser->$field);
+
+            // Check if the provided value exists and differs from the existing value.
+            if (isset($user->$field)
+                && strcasecmp($muserfield, $userfield) != 0) {
+
+                // If there's a difference, update the field.
+                $muser->$field = $user->$field;
+                $changes = true;
+            }
+        }
+
+        // If changes were made, update the user.
+        if ($changes) {
+
+            // Ensure password field is not updated or cleared.
+            if (isset($muser->password)) {
+
+                // Don't include the password field in the update.
+                unset($muser->password);
+            }
+
+            // Ensure we're not doing anything stupid here either.
+            if (isset($muser->lang)) {
+
+                // Don't include language preferences here.
+                unset($muser->lang);
+            }
+
+            try {
+                // Update them.
+                $updated = user_update_user($muser);
+            } catch (Exception $e) {
+                $updated = false;
+                mtrace("Error! " . $e->getMessage());
+            }
+
+            // If the update was successful, log it and return true.
+            if ($updated) {
+                self::dtrace("User $muser->id updated successfully.");
+                return $updated;
+            } else {
+                return $updated;
+            }
+        } else {
+            self::dtrace("No changes were found in the " .
+                "above user objects (case insensitive).");
+        }
+
+        return false;
+    }
+
+
+    public static function create_update_msuser($student, $courseid=null) {
+        global $CFG, $DB;
+
+        // Get the required moodle libraries for users.
+        require_once($CFG->dirroot . '/user/profile/lib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
+
+        // Check if there's a Moodle user and fetch them.
+        $muser = self::find_moodle_user($student);
+
+        // Build a user object for comparison.
+        $user = self::build_user_object($student);
+
+        // We have a user.
+        if (isset($muser->id)) {
+
+            // Only do this for potential new users.
+            if (is_null($student->userid)) {
+                // Set the interstitial userid to the returned moodle user id.
+                $student->userid = $muser->id;
+
+                // Update the interstitial DB so we don't mess with this user again.
+                $useridmap = $DB->update_record('enrol_wds_students', $student);
+
+                // Compare and update as needed.
+                $moodleuser = self::update_user_if_needed($user, $muser);
+
+            // Update old user. We shound never get here.
+            } else {
+
+                // Compare and update as needed.
+                $moodleuser = self::update_user_if_needed($user, $muser);
+            }
+
+        // We don't have an existing user.
+        } else {
+
+            // Create them.
+            try {
+
+                // Create a new user.
+                $moodleuser = user_create_user($user);
+            } catch (Exception $e) {
+                $moodleuser = false;
+                mtrace("Error! " . $e->getMessage());
+            }
+
+            if ($moodleuser) {
+
+                // Set the interstitial userid to the returned moodle user id.
+                $student->userid = $moodleuser;
+
+                // Update the interstitial DB so we don't mess with this user again.
+                $useridmap = $DB->update_record('enrol_wds_students', $student);
+            }
+        }
+    }
+
+    // Delete all test courses!
+    public static function delete_wds_test_courses() {
+        global $CFG, $DB;
+
+        require_once($CFG->libdir . '/moodlelib.php');
+
+        define('SKIP_BACKUP_ON_DELETE', true);
+
+        // Purge caches because we're not doing this when deleting.
+        purge_all_caches();
+
+        // Get the WDS test courses.
+        $csql = "SELECT * FROM {course} WHERE fullname LIKE 'WDS - %'";
+        $courses = $DB->get_records_sql($csql);
+
+        // Set this to not back them up.
+        $options = ['skipbackup' => true];
+
+        // Loop through these.
+        foreach ($courses as $course) {
+            // Delete the course using Moodle's course deletion API NOT purging caches or backing up.
+            delete_course($course, false, $options);
+        }
+
+        // Purge caches because we're not doing this when deleting.
+        purge_all_caches();
+    }
+
+    public static function get_potential_new_mshells($s, $period) {
+        global $CFG, $DB;
+
+        // Do we want our shells built with common sections merged per teacher?
+        if ($s->course_grouping == 1) {
+            $uniquer = "GROUP_CONCAT(CONCAT(sec.course_listing_id,'_',tea.universal_id) ORDER BY sec.section_listing_id ASC) AS coursesections";
+            $grouper = "GROUP BY per.id, cou.course_listing_id, tenr.universal_id";
+        } else {
+            $uniquer = "GROUP_CONCAT(sec.section_listing_id ORDER BY sec.section_listing_id ASC) AS coursesections";
+            $grouper = "GROUP BY per.id, sec.section_listing_id";
+        }
+
+        // Build the SQL to retreive the required data to build shells for primary instructors.
+        $sql = "SELECT
+            $uniquer,
+            per.period_year, 
+            per.period_type,
+            per.start_date,
+            per.end_date,
+            cou.course_subject_abbreviation,
+            cou.course_subject,
+            cou.course_abbreviated_title,
+            cou.course_number,
+            cou.academic_level,
+            sec.class_type,
+            tea.universal_id,
+            tea.username,
+            tea.email,
+            tea.preferred_firstname,
+            tea.firstname,
+            tea.preferred_lastname,
+            tea.lastname,
+            sec.delivery_mode,
+            GROUP_CONCAT(
+                sec.id ORDER BY sec.section_listing_id ASC
+            ) AS sectionids,
+            GROUP_CONCAT(
+                sec.section_number ORDER BY sec.section_listing_id ASC
+            ) AS sections,
+            GROUP_CONCAT(
+                tenr.role ORDER BY tenr.section_listing_id ASC
+            ) AS roles
+            FROM {enrol_wds_periods} per
+                INNER JOIN {enrol_wds_sections} sec
+                    ON sec.academic_period_id = per.academic_period_id
+                INNER JOIN {enrol_wds_courses} cou
+                    ON sec.course_listing_id = cou.course_listing_id
+                INNER JOIN {enrol_wds_teacher_enroll} tenr
+                    ON sec.section_listing_id = tenr.section_listing_id
+                INNER JOIN {enrol_wds_teachers} tea
+                    ON tenr.universal_id = tea.universal_id
+            WHERE sec.controls_grading = 1
+                AND tenr.role = 'primary'
+                AND sec.academic_period_id = '$period->academic_period_id'
+                AND (sec.idnumber IS NULL OR sec.moodle_status = 'Pending')
+                $grouper
+            ORDER BY cou.course_listing_id ASC";
+
+        // Get the data.
+        $mshells = $DB->get_records_sql($sql);
+
+        return $mshells;
+    }
+
+    public static function process_shell_name($s, $mshell) {
+        // Fetch admin-configured naming format.
+        $format = $s->namingformat;
+
+        // Define available placeholders and their corresponding values.
+        $placeholders = [
+            '{period_year}' => $mshell->period_year,
+            '{period_type}' => $mshell->period_type,
+            '{course_subject_abbreviation}' => $mshell->course_subject_abbreviation,
+            '{course_number}' => $mshell->course_number,
+            '{course_type}' => $mshell->class_type,
+            '{firstname}' => isset($mshell->preferred_firstname)
+                ? $mshell->preferred_firstname
+                : $mshell->firstname,
+            '{lastname}' => isset($mshell->preferred_lastname)
+                ? $mshell->preferred_lastname
+                : $mshell->lastname,
+            '{delivery_mode}' => $mshell->delivery_mode == 'On Campus'
+                ? ''
+                : '(' . $mshell->delivery_mode . ')'
+        ];
+
+        // Modify the placeholders based on the settings.
+        foreach ($placeholders as $placeholder => $value) {
+            // Check if the placeholder is specified in the settings.
+            if (isset($settings[$placeholder])) {
+                // If specified, use the value from settings.
+                $placeholders[$placeholder] = $settings[$placeholder] ?: '';
+            }
+        }
+
+        // Replace only the placeholders that are part of the format string.
+        $shellname = $format;
+        foreach ($placeholders as $placeholder => $value) {
+            // Only replace placeholders that are actually in the format.
+            if (strpos($format, $placeholder) !== false) {
+                $shellname = str_replace($placeholder, $value, $shellname);
+            }
+        }
+
+        // Return the formatted shell name.
+        return trim($shellname);
+    }
+
+    public static function wds_create_moodle_groups($course, $mshell) {
+        global $CFG, $DB;
+
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        // Get the sections.
+        $sections = explode(",", $mshell->sections);
+
+        foreach ($sections as $section) {
+            // Build out the groupname.
+            $groupname = "$mshell->course_subject_abbreviation $mshell->course_number $section";
+
+
+            // Build out an array of groupids.
+            $groupids = array();
+
+            // Check if the group already exists in the course.
+            $existinggroup = $DB->get_record('groups',
+                ['courseid' => $course->id, 'name' => $groupname], 'id');
+
+            if (isset($existinggroup->id)) {
+                self::dtrace("  Group '$groupname' already exists in $course->fullname. Skipping.");
+
+                // Add the existing groupid to the array.
+                $groupids[] = $existinggroup->id;
+
+                continue;
+            } else {
+                // Create the group and return the groupid.
+                $groupid = self::wds_create_course_group($course->id, $groupname);
+
+                // Add the new groupid to the array of groupids.
+                $groupids[] = $groupid;
+            }
+        }
+        return $groupids;
+    }
+
+    public static function get_numeric_course_value($mshell) {
+
+        // Extract the numeric portion from the start of the string.
+        preg_match('/^\d+/', $mshell->course_number, $matches);
+
+        // If we have a match, set it in the $mshell object..
+        if (!empty($matches)) {
+            $numerical_value = (int)$matches[0];
+
+            // Return the numerical value.
+            return $numerical_value;
+        }
+
+        // Return nothing.
+        return null;
+    }
+
+
+    public static function create_moodle_shell($mshell) {
+        global $CFG, $DB;
+
+/*
+// Delete all test courses!
+require_once($CFG->libdir . '/moodlelib.php');
+$csql = "SELECT * FROM {course} WHERE fullname LIKE 'WDS - %'";
+$courses = $DB->get_records_sql($csql);
+foreach ($courses as $course) {
+    // Delete the course using Moodle's course deletion API
+    delete_course($course);
+}
 die();
+*/
 
+        // Get some moodle files as needed.
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        // Get or create the course category in the specified parent.
+        $cat = self::get_create_course_category_id($mshell);
+
+        $s = self::get_settings();
+
+        // Get the Moodle course defaults.
+        $coursedefaults = get_config('moodlecourse');
+
+        // Define course settings.
+        $course = new stdClass();
+        $course->fullname = $mshell->fullname;
+        $course->shortname = $mshell->fullname;
+        $course->idnumber = self::build_mshell_idnumber($mshell);
+        $course->category = $cat->id;
+        $course->visible = $s->visible ?? 0;
+        // TODO: Make this a default and user preference.
+        $course->format = $s->format ?? 'topics';
+        $course->groupmode = $coursedefaults->groupmode;
+        $course->groupmodeforce = $coursedefaults->groupmodeforce;
+        $course->summary = $mshell->course_abbreviated_title;
+        $course->summaryformat = FORMAT_PLAIN;
+        $course->startdate = $mshell->start_date;
+        $course->enddate = $mshell->end_date;
+        $course->enablecompletion = $coursedefaults->enablecompletion;
+        $course->maxsections = $coursedefaults->maxsections;
+        $course->newsitems = $coursedefaults->newsitems;
+        $course->showreports = $coursedefaults->showreports;
+        $course->numsections = $coursedefaults->numsections;
+        $course->showgrades = 1;
+        $course->lang = $CFG->lang;
+
+        $exists = $DB->get_record('course', ['shortname' => $course->shortname]);
+
+        // If it exists create some groups.
+        if (isset($exists->id)) {
+            self::dtrace("  $course->fullname already exists. Updating idb idnumber.");
+
+            // Create all the groups in the course.
+            $groups = self::wds_create_moodle_groups($exists, $mshell);
+        }
+
+        // If it exists and the idnumbers match, update the interstitial record.
+        if (isset($exists->id) && $exists->idnumber == $course->idnumber) {
+            $sectiontable = 'enrol_wds_sections';
+            $sectionids = explode(",", $mshell->sectionids);
+            // Loop through the section ids.
+            foreach ($sectionids as $sectionid) {
+                // Build the parms.
+                $parms = [
+                    'id' => $sectionid,
+                    'idnumber' => $course->idnumber,
+                    'moodle_status' => $exists->id
+                ];
+
+                // Update the record.
+                $updated = $DB->update_record($sectiontable, $parms);
+                self::dtrace("   Course idumber / moodle_status updated in $sectiontable for id: $sectionid.");
+            }
+
+            return $exists;
+
+        // This is not right!
+        } else if (isset($exists->id) && $exists->idnumber != $course->idnumber) {
+            mtrace(" Error! We should never have a matching " .
+                "shortname with a mismatched idnumber!");
+            mtrace(" - Error! Course Shell: $exists->idnumber, " .
+                "Interstitial record: $course->idnumber.");
+            return false;
+        }
+
+        // Use the standard Moodle function to create the course.
+        $moodlecourse = create_course($course);
+
+        // If the above worked, update idnumber.
+        if ($moodlecourse) {
+
+            // Build out the course groups.
+            $groups = self::wds_create_moodle_groups($moodlecourse, $mshell);
+
+            self::dtrace("  Created $course->fullname. " .
+                "Updating idb idnumber.");
+
+            // Set the table.
+            $sectiontable = 'enrol_wds_sections';
+
+            // We've returned a csv of sections, make them into an array.
+            $sectionids = explode(",", $mshell->sectionids);
+
+            // Loop through these sections and update the corresponding idnumbers.
+            foreach ($sectionids as $sectionid) {
+                $parms = [
+                    'id' => $sectionid,
+                    'idnumber' => $course->idnumber,
+                    'moodle_status' => $moodlecourse->id
+                ];
+
+                // Do the nasty.
+                $updated = $DB->update_record($sectiontable, $parms);
+            }
+        }
+
+        return $moodlecourse;
+    }
+
+    public static function build_mshell_idnumber($mshell) {
+        // Build out the idnumber.
+        $idnumber = $mshell->period_year .
+            $mshell->period_type .
+            $mshell->course_subject_abbreviation .
+            $mshell->course_number . '-' .
+            $mshell->universal_id;
+
+        return $idnumber;
+    }
+
+    public static function get_create_course_category_id($mshell) {
+        global $DB;
+
+        // Get settings.
+        $s = self::get_settings();
+
+        // Set the table.
+        $table = 'course_categories';
+
+        // We might be trying to find or create a parent category.
+        if ($s->autoparent === 1) {
+            $parentcat = 0;
+
+            $parentname = "$mshell->period_type $mshell->period_year";
+            $parentpathsql = "AND cc.path = CONCAT('/$parentname/', cc.id)";
+            $catnamesql = "AND cc.name = '$parentname'";
+
+        } else {
+
+            // Set this relative to the configured parent.
+            $parentcat = $s->parentcat;
+            $parentpathsql = "AND cc.path = CONCAT('/$parentcat/', cc.id)";
+            $catnamesql = "AND cc.name = '$mshell->course_subject_abbreviation'";
+        }
+
+        $catname = isset($parentname) ? $parentname : $mshell->course_subject_abbreviation;
+        $catdesc = isset($parentname) ? $parentname : $mshell->course_subject;
+
+        // This sql is annoying.
+        $ccsql = "SELECT *
+            FROM {course_categories} cc
+            WHERE cc.parent = $parentcat
+                $parentpathsql
+                $catnamesql
+            ORDER BY cc.name ASC";
+
+        // Set the category object.
+        $category = $DB->get_records_sql($ccsql);
+
+        if (is_array($category) && !empty($category) && count($category) > 1) {
+            mtrace("  ERROR! Multiple categories for $catname. Deal with it.");
+        } else if (is_array($category) && !empty($category)) {
+            $category = reset($category);
+
+            // We have a match, let's see if the subject needs updating.
+            if ($category->description != $catdesc) {
+
+                // Mismatch! Update to the course subject.
+                $category->description = $catdesc;
+
+                // Actually do it.
+                $updated = $DB->update_record($table, $category);
+
+                // Something went wrong!
+                if (!$updated) {
+                    mtrace("  ERROR! Failed to updated course category: " .
+                        "$cagtegory->id.");
+                }
+            }
+        } else {
+            self::dtrace("We do not have a matching $catname " .
+                "category. Create it.");
+
+            // Moodle wants an array for the new category.
+            $categorydata = [
+                'name' => $catname,
+                // TODO: Use the settings value for parent category.
+                'parent' => $parentcat,
+                'description' => $catdesc,
+                'descriptionformat' => FORMAT_HTML,
+                'visible' => 1
+            ];
+
+            // Create it!
+            $category = \core_course_category::create($categorydata);
+        }
+
+        return $category;
+    }
+
+    public static function update_interstitial_enrollment_status(
+        $enrollment,
+        $teacher = false,
+        $status = null
+    ) {
+        global $DB;
+
+        // If we've sent the teacher flag, use the teacher table.
+        $table = $teacher ? 'enrol_wds_teacher_enroll' : 'enrol_wds_student_enroll'; 
+
+        // Build out the object.
+        $enrrecord = new stdClass();
+
+        // Get the insterstitial enrollment record from the $enrollment object.
+        $enrrecord->id = $enrollment->enrollment_id;
+
+        // Set the statuses appropriately.
+        $enrrecord->prevstatus = $enrollment->moodle_enrollment_status;
+        $enrrecord->status = is_null($status) ?
+            $enrollment->moodle_enrollment_status . 'ed' :
+            $status;
+
+        // Do the nasty.
+        $completed = $DB->update_record(
+            $table,
+            $enrrecord,
+            $returnid = true
+        );
+
+        return $completed;
     }
 
     /**
@@ -3137,8 +3952,12 @@ die();
 
     public static function dtrace($message, $indent = null) {
         global $CFG;
+
+        // Set the indenter.
         $indent = !is_null($indent) ? '' : $indent;
-        if ($CFG->debugdisplay == 1) {
+
+        // If debugdisplay is on.
+        if ($CFG->debugdisplay === "1") {
             $mtrace = mtrace($message);
             return $mtrace;
         } else {
@@ -3198,6 +4017,275 @@ die();
                 $emailcontent);
         }
     }
+
+    // TODO: I do not know if I will need this.
+    public static function wds_get_missing_students($period) {
+        global $DB;
+
+        // SQL to get all the students without demographic data in a given period.
+        $sql = "SELECT stuenr.universal_id
+            FROM {enrol_wds_student_enroll} stuenr
+                INNER JOIN {enrol_wds_sections} sec
+                    ON sec.section_listing_id = stuenr.section_listing_id
+                LEFT JOIN {enrol_wds_students} stu
+                    ON stu.universal_id = stuenr.universal_id
+            WHERE sec.academic_period_id = '$period->academic_period_id'
+                AND stuenr.status = 'enroll'
+                AND stu.id IS NULL
+            GROUP BY stuenr.universal_id";
+
+        // Fetch the data.
+        $missing = $DB->get_records_sql($sql);
+
+        // Return the data.
+        return $missing;
+    }
+
+    public static function wds_get_faculty_enrollments($period) {
+        global $DB;
+
+	$sql = "SELECT tenr.id AS enrollment_id,
+            sec.id AS sectionid,
+            sec.academic_period_id AS periodid,
+            c.id AS courseid,
+            u.id AS userid,
+            tenr.universal_id,
+            cou.course_subject_abbreviation AS department,
+            cou.course_number,
+            sec.section_number,
+            CONCAT(
+                cou.course_subject_abbreviation, ' ',
+                cou.course_number, ' ',
+                sec.section_number
+            ) AS groupname,
+            tenr.role,
+            tenr.prevrole,
+            tenr.status AS moodle_enrollment_status,
+            tenr.prevstatus AS moodle_prev_status 
+            FROM {course} c
+                INNER JOIN {enrol_wds_sections} sec
+                    ON sec.idnumber = c.idnumber
+                    AND sec.moodle_status = c.id
+                INNER JOIN {enrol_wds_courses} cou
+                    ON cou.course_listing_id = sec.course_listing_id
+                INNER JOIN {enrol_wds_teacher_enroll} tenr
+                    ON sec.section_listing_id = tenr.section_listing_id
+                INNER JOIN {enrol_wds_teachers} tea
+                    ON tea.universal_id = tenr.universal_id
+                INNER JOIN {user} u
+                    ON u.id = tea.userid
+                    AND u.idnumber = tea.universal_id
+            WHERE sec.controls_grading = 1
+                AND tenr.status IN ('enroll', 'unenroll')
+                AND sec.academic_period_id = '$period->academic_period_id'
+            ORDER BY c.id ASC, tenr.id ASC";
+
+        $enrollments = $DB->get_records_sql($sql);
+
+        return $enrollments;
+    }
+
+    public static function wds_get_student_enrollments($period, $coursesection = null) {
+        global $DB;
+
+        $reprocesssection = is_null($coursesection) ?
+            '' :
+            " AND sec.idnumber = '$coursesection'";
+
+        $sql = "SELECT stuenr.id AS enrollment_id,
+                stu.userid AS userid,
+                stuenr.universal_id AS student_id,
+                c.id AS courseid,
+                cou.course_subject_abbreviation AS department,
+                cou.course_subject AS department_desc,
+                cou.course_number,
+                sec.section_number,
+                sec.idnumber AS section_idnumber,
+                stuenr.status AS moodle_enrollment_status,
+                stuenr.prevstatus AS moodle_prev_status,
+                stuenr.registered_date AS wds_regdate,
+                tenr.universal_id AS primary_id
+            FROM {enrol_wds_sections} sec
+                INNER JOIN {enrol_wds_courses} cou
+                    ON cou.course_listing_id = sec.course_listing_id
+                INNER JOIN {course} c
+                    ON c.idnumber = sec.idnumber
+                    AND sec.idnumber IS NOT NULL
+                INNER JOIN {enrol_wds_student_enroll} stuenr
+                    ON sec.section_listing_id = stuenr.section_listing_id
+                INNER JOIN {enrol_wds_teacher_enroll} tenr
+                    ON tenr.section_listing_id = sec.section_listing_id
+                    AND tenr.role = 'primary'
+                LEFT JOIN {enrol_wds_students} stu
+                    ON stu.universal_id = stuenr.universal_id
+            WHERE sec.academic_period_id = '$period->academic_period_id'
+                AND sec.idnumber IS NOT NULL
+                AND sec.controls_grading = 1
+#// TODO: REMOVE Completed.
+                AND stuenr.status IN ('Completed', 'enroll', 'unenroll')
+                $reprocesssection
+            ORDER BY sec.section_listing_id ASC";
+
+            $enrollments = $DB->get_records_sql($sql);
+
+            return $enrollments;
+    }
+
+    public static function get_wds_groups($courseid, $userid, $periodid) {
+        global $DB;
+
+        $sql = "SELECT g.id AS groupid,
+                g.name AS groupname
+            FROM mdl_course c
+                INNER JOIN mdl_enrol_wds_sections sec
+                    ON sec.idnumber = c.idnumber
+                    AND sec.moodle_status = c.id
+                INNER JOIN mdl_enrol_wds_courses cou
+                    ON cou.course_listing_id = sec.course_listing_id
+                INNER JOIN mdl_enrol_wds_teacher_enroll tenr
+                    ON sec.section_listing_id = tenr.section_listing_id
+                INNER JOIN mdl_enrol_wds_teachers tea
+                    ON tea.universal_id = tenr.universal_id
+                INNER JOIN mdl_groups g
+                    ON g.courseid = c.id
+                    AND g.name = CONCAT(
+                        cou.course_subject_abbreviation, ' ',
+                        cou.course_number, ' ',
+                        sec.section_number
+                    )
+                INNER JOIN mdl_user u
+                    ON u.id = tea.userid
+                    AND u.idnumber = tea.universal_id
+                INNER JOIN mdl_groups_members gm
+                    ON g.id = gm.groupid
+                    AND gm.userid = u.id
+            WHERE sec.controls_grading = 1
+                AND c.id = $courseid
+                AND u.id = $userid
+                AND sec.academic_period_id = '$periodid'
+            GROUP BY g.id
+            ORDER BY c.id ASC, tenr.id ASC";
+
+        $fgroups = $DB->get_records_sql($sql);
+
+        return $fgroups;
+    }
+
+    public static function wds_create_course_group($courseid, $groupname) {
+        global $CFG;
+
+        // We need this to mess with groups.
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        // We should always have a group, but if we don't, create it.
+        self::dtrace("Group: $groupname not found in course: $courseid, creating it,");
+
+        // Build out the group object.
+        $group = new stdClass();
+
+        // ID of the course where the group will be created.
+        $group->courseid = $courseid;
+
+        // Set the group name.
+        $group->name = $groupname;
+        $group->description = $groupname;
+        $group->timecreated = time();
+        $group->timemodified = time();
+
+        // Create the group.
+        $groupid = groups_create_group($group);
+        self::dtrace(" Course group $groupname with id: $groupid added to course id: $courseid.");
+
+        return $groupid;
+    }
+
+    public static function wds_create_enrollment_instance($courseid) {
+        global $DB;
+
+        self::dtrace("No enrollment instance for course: " .
+            "$courseid. Creating it.");
+
+        // Build out the enrollment instance object.
+        $enrol = new stdClass();
+        $enrol->enrol = 'workdaystudent';
+        $enrol->courseid = $courseid;
+        $enrol->status = 0;
+        $enrol->sortorder = 0;
+        $enrol->timecreated = time();
+        $enrol->timemodified = time();
+
+        // Insert new instance into DB.
+        $instanceid = $DB->insert_record('enrol', $enrol, true);
+
+        // Fetch the newly created instance.
+        $instance = $DB->get_record('enrol', ['id' => $instanceid]);
+        self::dtrace("Enrollment instance created for course: $courseid.");
+
+        // Return the instance.
+        return $instance;
+    }
+
+    public static function wds_course_has_materials($courseid) {
+        global $DB;
+
+        // Get the default News Forum / Announcements. We may have more than one!!!
+        $newsforums = $DB->get_records('forum', ['course' => $courseid, 'type' => 'news']);
+    
+        // Get all course modules, excluding the default forum, if it exists.
+        $sql = "SELECT cm.id 
+            FROM {course_modules} cm
+            JOIN {modules} m ON cm.module = m.id
+                AND cm.deletioninprogress = 0
+            WHERE cm.course = :courseid";
+
+        // Set the parms.
+        $params = ['courseid' => $courseid];
+
+        // Make sure we have a at least one News Forum in the course.
+        if (!empty($newsforums)) {
+
+            // Break out the data into sql and corresponding parms.
+            list($forumidsql, $forumparams) = $DB->get_in_or_equal(
+                array_keys($newsforums),
+                SQL_PARAMS_NAMED
+            );
+
+            // This gets weird if we have one or more than one.
+            if (count($newsforums) > 1) {
+                // Add this to the SQL to ignore the News Forums from above.
+                $sql .= " AND (cm.instance NOT $forumidsql)";
+            } else {
+                // Add this to the SQL to ignore the News Forum from above.
+                $sql .= " AND (cm.instance !$forumidsql)";
+            }
+
+            // Augment the parms with the stuff generated above.
+            $params = array_merge($params, $forumparams);
+        }
+
+        // Check to see if we have anything.
+        $extramaterials = $DB->record_exists_sql($sql, $params);
+
+        $gsql = "SELECT COUNT(gg.id)
+            FROM {grade_grades} gg
+            INNER JOIN {grade_items} gi ON gg.itemid = gi.id
+            WHERE gi.courseid = :courseid";
+
+        $gradecount = $DB->count_records_sql($gsql, ['courseid' => $courseid]);
+
+        $ghsql = "SELECT COUNT(gh.id)
+            FROM {grade_grades_history} gh
+            INNER JOIN {grade_items} gi ON gh.itemid = gi.id
+            WHERE gi.courseid = :courseid";
+
+        $historycount = $DB->count_records_sql($ghsql, ['courseid' => $courseid]);
+
+        $hasgrades = $gradecount > 0 || $historycount > 0;
+
+        $emorgrades = $hasgrades ? $hasgrades : $extramaterials;
+
+        return $emorgrades;
+    }
 }
 
 class wdscronhelper {
@@ -3226,7 +4314,8 @@ class wdscronhelper {
         // Calculate the units fetch time.
         $unitselapsed = round($unitsend - $unitstart, 2);
 
-        mtrace(" Fetched $numunits units from webserice in $unitselapsed seconds.");
+        mtrace(" Fetched $numunits units from webserice " .
+            "in $unitselapsed seconds.");
 
         mtrace(" Processing $numunits units from webserice.");
 
@@ -3243,7 +4332,7 @@ class wdscronhelper {
         // Set the end time for the units processing.
         $unitspend = microtime(true);
 
-        if ($CFG->debugdisplay == 1) {
+        if ($CFG->debugdisplay === 1) {
             mtrace(" Processed $numunits units in $unitselapsed seconds.");
         } else {
             mtrace("\n Processed $numunits units in $unitselapsed seconds.");
@@ -3299,8 +4388,10 @@ class wdscronhelper {
 
                 foreach ($periods as $period) {
                     $indent = "   ";
-                    workdaystudent::dtrace("$indent" . "Processing $period->Academic_Period_ID: " .
-                        "$period->Name for $unit->academic_unit_id: $unit->academic_unit.", $indent);
+                    workdaystudent::dtrace("$indent" .
+                        "Processing $period->Academic_Period_ID: " .
+                        "$period->Name for $unit->academic_unit_id: " .
+                        "$unit->academic_unit.", $indent);
 
                     // Get ancillary dates for census and post grades.
                     $pdates = workdaystudent::get_period_dates($s, $period);
@@ -3315,12 +4406,14 @@ class wdscronhelper {
                         // Check to see if we have a matching period date entry.
                         $date = workdaystudent::insert_update_period_date($s, $pdate);
                     }
-                    workdaystudent::dtrace("$indent" . "Finished processing $period->Academic_Period_ID: " .
-                        "$period->Name for $unit->academic_unit_id: $unit->academic_unit.", $indent);
+                    workdaystudent::dtrace("$indent" .
+                        "Finished processing $period->Academic_Period_ID: " .
+                        "$period->Name for $unit->academic_unit_id: " .
+                        "$unit->academic_unit.", $indent);
                 }
             }
 
-            if ($CFG->debugdisplay == 1) {
+            if ($CFG->debugdisplay === 1) {
                 mtrace("  Finished processing $numperiods periods for " .
                     "$unit->academic_unit_id: $unit->academic_unit.");
             } else {
@@ -3355,7 +4448,8 @@ class wdscronhelper {
 
         // Gett the time it took to fetch them and log it.
         $gstime = round(microtime(true) - $timestarted, 3);
-        mtrace("    Took $gstime seconds to fetch $numgrabbed remote programs of study.");
+        mtrace("    Took $gstime seconds to fetch $numgrabbed " .
+            "remote programs of study.");
 
         // Set the update start time.
         $timeustarted = microtime(true);
@@ -3373,12 +4467,15 @@ class wdscronhelper {
             // Get a program count.
             $pgmcount = count($pgms);
 
-            mtrace("    Took $ugstime seconds to insert or update $pgmcount programs of study.");
+            mtrace("\n    Took $ugstime seconds to insert or " .
+                "update $pgmcount programs of study.");
         } else {
-            mtrace("    Updating $numgrabbed programs of study failed.");
+            mtrace("\n    Updating $numgrabbed programs " .
+                "of study failed.");
         }
 
-        mtrace("  Took $uttime seconds to complete the fetch and update $pgmcount programs.");
+        mtrace("  Took $uttime seconds to complete the fetch " .
+            "and update $pgmcount programs.");
 
         return true;
     }
@@ -3413,7 +4510,8 @@ class wdscronhelper {
         // Get the time it took to fetch them and log it.
         $gstime = round(microtime(true) - $timestarted, 3);
 
-        mtrace("    Took $gstime seconds to fetch $numgrabbed remote courses.");
+        mtrace("    Took $gstime seconds to fetch " .
+            "$numgrabbed remote courses.");
 
         // Set the update start time.
         $timeustarted = microtime(true);
@@ -3445,8 +4543,10 @@ class wdscronhelper {
         // Set the time it took to run the entire process.
         $uttime = round(microtime(true) - $timestarted, 3);
 
-        mtrace("    Took $ugstime seconds to insert or update $numgrabbed courses.");
-        mtrace("  Took $uttime seconds to complete the fetch and update $numgrabbed courses.");
+        mtrace("\n    Took $ugstime seconds to insert " .
+            "or update $numgrabbed courses.");
+        mtrace("  Took $uttime seconds to complete the " .
+            "fetch and update $numgrabbed courses.");
 
         return $icourses;
     }
@@ -3495,7 +4595,7 @@ class wdscronhelper {
                 $sec = workdaystudent::insert_update_section($section);
 
                 // If we have section components, add / update the schedule data.
-                if (isset($section->Section_Components)) {
+                if (isset($section->Meeting_Patterns)) {
                     $schedule = workdaystudent::process_section_schedule($section);
                     $sectionschedule = workdaystudent::insert_update_section_schedule($schedule);
                 }
@@ -3582,7 +4682,8 @@ class wdscronhelper {
 
                     // We don't have a primary.
                     } else {
-                        workdaystudent::dtrace("    Sole instructor in $secid and $tid is non-primary.");
+                        workdaystudent::dtrace("    Sole instructor in $secid and " .
+                            "$tid is non-primary.");
 
                         // Set the role to non-primary.
                         $role = 'teacher';
@@ -3592,7 +4693,12 @@ class wdscronhelper {
                     $iteacher = workdaystudent::create_update_iteacher($s, $teacher);
 
                     // Update the teacher enrollment db.
-                    $enrollment = workdaystudent::insert_update_teacher_enrollment($secid, $tid, $role, $status);
+                    $enrollment = workdaystudent::insert_update_teacher_enrollment(
+                        $secid,
+                        $tid,
+                        $role,
+                        $status
+                    );
                 }
             }
         }
@@ -3602,21 +4708,6 @@ class wdscronhelper {
         // Calculate how long this crap took and log it.
         $processtime = round($processend - $processstart, 2);
         mtrace("\n  Processing $numgrabbed sections took $processtime seconds.");
-    }
-
-    public static function cronshells() {
-        // Get settings.
-        $s = workdaystudent::get_settings();
-
-        // Get the current periods.
-        $periods = workdaystudent::get_current_periods($s);
-
-        // Set this for later.
-        $numgrabbed = 0;
-
-        // Loop through the current periods.
-        foreach($periods as $period) {
-        }
     }
 
     public static function crongradeschemes() {
@@ -3640,7 +4731,8 @@ class wdscronhelper {
         $gstime = round(microtime(true) - $timestarted, 3);
 
         // Log it.
-        mtrace("    It took $gstime seconds to fetch $numgrabbed remote grading schemes.");
+        mtrace("    It took $gstime seconds to fetch " .
+            "$numgrabbed remote grading schemes.");
 
         // Set the update time start.
         $timeustarted = microtime(true);
@@ -3653,7 +4745,8 @@ class wdscronhelper {
 
         if (!$gs) {
             // Log it.
-            mtrace("    ERROR: Something went wrong with the updating of grading schemes.");
+            mtrace("    ERROR: Something went wrong with " .
+                "the updating of grading schemes.");
             mtrace("  Processing of grading schems is complete.");
 
             return false;
@@ -3661,7 +4754,7 @@ class wdscronhelper {
             $gscount = count($gs);
 
             // Log it.
-            mtrace("    It took $ugstime seconds to fetch and insert $gscount " .
+            mtrace("\n    It took $ugstime seconds to fetch and insert $gscount " .
                 "records in $numgrabbed updated grading schemes.");
             mtrace("  Processing of grading schems is complete.");
 
@@ -3748,7 +4841,9 @@ class wdscronhelper {
                             $student->Last_Name . '.');
 
                         // We do not have a default suffix, build one out based on institution.
-                        $esuffix = workdaystudent::get_suffix_from_institution($student) . '_Email';
+                        $esuffix = workdaystudent::get_suffix_from_institution(
+                            $student
+                        ) . '_Email';
 
                         // Set email accordingly.
                         $email = isset($student->$esuffix) ? $student->$esuffix : null;
@@ -3767,7 +4862,7 @@ class wdscronhelper {
                             "Missing Email";
 
                         // Log that something vital was missing.
-                        mtrace("\nMissing either UID: $uid or email: " . 
+                        mtrace("\nERROR: Missing either UID: $uid or email: " . 
                             "$email - $student->First_Name $student->Last_Name.");
 
                         continue;
@@ -3841,8 +4936,8 @@ class wdscronhelper {
 
         // Build the do nothing array.
         $donothings = array();
-        $donothings[] = 'Auto Drop from Waitlist on Enroll';
         $donothings[] = 'Completed';
+        $donothings[] = 'Auto Drop from Waitlist on Enroll';
         $donothings[] = 'Enrolled - Pending Approval';
         $donothings[] = 'Enrolled - Pending Prerequisites';
         $donothings[] = 'Promoted';
@@ -3859,7 +4954,7 @@ class wdscronhelper {
             $enrollmentstart = $periodstart;
 
             // Fetch the actual enrollments for the period.
-            $enrollments = workdaystudent::get_psd_enrollments($s, $period, null);
+	    $enrollments = workdaystudent::get_period_enrollments($s, $period, null);
 
             // Set some times.
             $enrollmentend = microtime(true);
@@ -3898,10 +4993,225 @@ class wdscronhelper {
         // TODO: DEAL WITH TIMES.
         mtrace("Processing $numgrabbed periods took $processtime seconds.");
     }
+
+    public static function cronmusers() {
+        // Set the start time for monitoring how long each step takes.
+        $starttime = microtime(true);
+
+        // Build this to loop through matchers later.
+        $matchers = array();
+        $matchers = ['email', 'idnumber', 'username'];
+
+        mtrace("Beginning user reconciliation.");
+
+        // Loop through the above and insert userids for unmatched Moodle users.        
+        foreach($matchers as $matcher) {
+            // Fetch userids from matching teachers.
+            $reconciles = workdaystudent::reconcile_interstitial_users('teacher', $matcher);
+
+            // Fetch userids from matching students.
+            $reconciles = workdaystudent::reconcile_interstitial_users('student', $matcher);
+        }
+
+        // Get the time it took to complete user reconciliation.
+        $urectime = round(microtime(true) - $starttime, 2);
+        mtrace("User reconciliation took $urectime seconds to complete.");
+
+        // Set the time for mass update timing.
+        $mupdatestart = microtime(true);
+
+        // Get the count of students we need to update.
+        $msupdates = workdaystudent::get_potential_mstudent_updates();
+
+        // Get the count of students we need to update.
+        $mtupdates = workdaystudent::get_potential_mteacher_updates();
+
+        // If we have updates, do them.
+        if ($msupdates > 0) {
+
+            // Update everybody. It's faster this way.
+            $updated = workdaystudent::mass_mstudent_updates();
+
+            // How long did the mass user updates take?
+            $mupdatetime = round(microtime(true) - $mupdatestart, 2);
+
+            mtrace("Mass student updates took $mupdatetime " .
+                "seconds to update $msupdates users.");
+        } else {
+            mtrace("No mass student updates to do.");
+        }
+
+        // If we have updates, do them.
+        if ($mtupdates > 0) {
+
+            // Update everybody. It's faster this way.
+            $updated = workdaystudent::mass_mteacher_updates();
+
+            // How long did the mass user updates take?
+            $mupdatetime = round(microtime(true) - $mupdatestart, 2);
+
+            if ($updated) {
+                mtrace("Mass teacher updates took $mupdatetime " .
+                    "seconds to update $mtupdates users.");
+            } else {
+                mtrace("Mass teacher updates failed due to the reasons above.");
+            }
+        } else {
+            mtrace("No mass teacher updates to do.");
+        }
+
+        // Set the time for new users and unmapped updates.
+        $nusertime = microtime(true);
+
+        // Get all the workday students who do not have user idnumbers.
+        $nsusers = workdaystudent::get_potential_new_mstudents();
+
+        // If we have data, do the nasty.
+        if (is_array($nsusers) && count($nsusers) > 0) {
+
+            // Here we loop through our interstitial users.
+            foreach ($nsusers as $nsuser) {
+
+                // Create and / or update users and set the userid to thier matching Moodle user id.
+                $msuser = workdaystudent::create_update_msuser($nsuser, null);
+            }
+
+            // Set the time this took to run.
+            $nuelapsed = ROUND(microtime(true) - $nusertime, 2);
+
+            // Give me a count.
+            $nusercount = count($nsusers);
+
+            mtrace("New user evaluation took $nuelapsed seconds " .
+                "for $nusercount users.");
+        } else {
+            mtrace("No new users to create or update.");
+        }
+
+        // Get all the workday students who do not have user idnumbers.
+        $ntusers = workdaystudent::get_potential_new_mteachers();
+
+        // If we have data, do the nasty.
+        if (is_array($ntusers) && count($ntusers) > 0) {
+
+            // Here we loop through our interstitial users.
+            foreach ($ntusers as $ntuser) {
+
+                // Create and / or update users and set the userid to thier matching Moodle user id.
+                $mtuser = workdaystudent::create_update_msuser($ntuser, null);
+            }
+
+            // Set the time this took to run.
+            $nuelapsed = ROUND(microtime(true) - $nusertime, 2);
+
+            // Give me a count.
+            $nusercount = count($ntusers);
+
+            mtrace("New user evaluation took $nuelapsed seconds for $nusercount users.");
+        } else {
+            mtrace("No new users to create or update.");
+        }
+        $endtime = ROUND(microtime(true) - $starttime, 2);
+        mtrace("User updates took $endtime seconds.");
+
+    }
+
+    public static function cronmcourses() {
+
+        // Get settings.
+        $s = workdaystudent::get_settings();
+
+        $starttime = microtime(true);
+
+        // Get the current periods.
+        $periods = workdaystudent::get_current_periods($s);
+        $periodcount = count($periods);
+        mtrace("Creating courses for $periodcount periods.");
+
+        $threshold = $s->numberthreshold;
+         
+        // Loop through them.
+        foreach ($periods as $period) {
+
+            // Get the list of potential Moodle shells, and their sections.
+            $mshells = workdaystudent::get_potential_new_mshells($s, $period);
+            $mshellcount = count($mshells);
+            mtrace(" Creating $mshellcount courses for $period->academic_period_id.");
+
+            // Get some counts.
+            $createdcount = 0;
+            $skippedcount = 0;
+
+            if (!empty($mshells)) {
+                foreach ($mshells as $mshell) {
+
+                    // Generate the course name. 
+                    $mshell->fullname = workdaystudent::process_shell_name($s, $mshell);
+                    $mshell->numerical_value = workdaystudent::get_numeric_course_value($mshell);
+
+                    // TODO: Short circuit this for now, get user prefs or CFG based on teacher universal id.
+                    if ($mshell->numerical_value >= $threshold) {
+                            $skippedcount++;
+			    workdaystudent::dtrace("$mshell->fullname" .
+                                " not created due to $mshell->numerical_value > $threshold.");
+                        continue;
+                    } else {
+                            $createdcount++;
+			    workdaystudent::dtrace("  Creating $mshell->fullname.");
+
+                            // Create the shell.
+                            $courseshell = workdaystudent::create_moodle_shell($mshell);
+                    }
+                }
+            }
+
+            $endtime = ROUND(microtime(true) - $starttime, 2);
+            mtrace(" Created $createdcount / $mshellcount courses for " .
+                "$period->academic_period_id in $endtime seconds.");
+        }
+    }
+
+    public static function cronmenrolls() {
+        $s = workdaystudent::get_settings();
+
+        // Get the current periods.
+        $periods = workdaystudent::get_current_periods($s);
+
+        // Get the period count.
+        $periodcount = count($periods);
+        mtrace("Enrolling students for $periodcount periods.");
+        foreach ($periods as $period) {
+
+            // Get all the enrollment for this period.
+            $enrollments = workdaystudent::wds_get_student_enrollments($period);
+
+            // Bulk enrollment.
+            $wdsbulk = enrol_workdaystudent::wds_bulk_student_enrollments($enrollments);
+        }
+    }
+
+    public static function cronmfenrolls() {
+        $s = workdaystudent::get_settings();
+
+        // Get the current periods.
+        $periods = workdaystudent::get_current_periods($s);
+
+        // Get the period count.
+        $periodcount = count($periods);
+        mtrace("Enrolling students for $periodcount periods.");
+        foreach ($periods as $period) {
+
+            // Get all the enrollment for this period.
+            $enrollments = workdaystudent::wds_get_faculty_enrollments($period);
+
+            // Bulk enrollment.
+            $wdsbulk = enrol_workdaystudent::wds_bulk_faculty_enrollments($enrollments);
+        }
+    }
+
 // Class end.
 }
 
-/*
 class enrol_workdaystudent extends enrol_plugin {
 
     /**
@@ -3910,9 +5220,599 @@ class enrol_workdaystudent extends enrol_plugin {
      * @param array $fields instance fields
      * @return int id of new instance, null if can not be created
      */
-/*
+
     public static function add_enroll_instance($course) {
         return $instance;
     }
+
+    public static function wds_unenroll_group_members($groupid, $enrollment) {
+        global $DB;
+
+        // Get the group details.
+        $group = $DB->get_record('groups', ['id' => $groupid], '*', MUST_EXIST);
+        $courseid = $group->courseid;
+
+        // Set this for later.
+        $stunenrollmentcounts = array();
+        $stunenrollmentcounts[$courseid] = 0;
+
+        // Get all members of the WDS group.
+        $groupmembers = $DB->get_records('groups_members', ['groupid' => $groupid]);
+
+        // There are no students in the WDS group/section left.
+        if (!$groupmembers) {
+            mtrace("No students found in $group->name.");
+            return $stunenrollmentcounts;
+        }
+
+        // Get enrolment instance for the course.
+        $enrollmethod = $DB->get_record('enrol',
+            ['courseid' => $courseid, 'enrol' => 'workdaystudent']);
+
+        $wds = enrol_get_plugin($enrollmethod->enrol);
+
+        // Something failed. Log and move on.
+        if (!$wds) {
+            mtrace("ERROR: No WDS enrollment instance for course ID: $courseid.");
+            return $stunenrollmentcounts;
+        }
+
+        foreach ($groupmembers as $groupmember) {
+            // Unenroll user from the course.
+            $wds->unenrol_user($enrollmethod, $groupmember->userid);
+            $stunenrollmentcounts[$courseid]++;
+
+            $seupdated = workdaystudent::update_interstitial_enrollment_status(
+                $enrollment,
+                false,
+                'unenrolled'
+            );
+
+            workdaystudent::dtrace("Unenrolled user ID: $groupmember->userid from course ID: $courseid.");
+        }
+
+        return $stunenrollmentcounts;
+    }
+
+    public static function wds_bulk_faculty_enrollments($enrollments) {
+        global $CFG, $DB;
+
+        // We need this to mess with groups.
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        // Set this up for timing.
+        $starttime = microtime(true);
+
+        mtrace("Faculty enrollment into Moodle courses starting.");
+
+        // Array to store instances already checked per course.
+        $checkedcourses = [];
+
+        // Instantiate the enrollment plugin.
+        $enrollplugin = enrol_get_plugin('workdaystudent');
+
+        // Set up our array counts.
+        $enrollmentcounts = [];
+        $unenrollmentcounts = [];
+        $skippedcounts = [];
+
+        // Get settings.
+        $s = workdaystudent::get_settings();
+
+        // Grab the student role specified in settings.
+        $pr = $s->primaryrole;
+        $npr = $s->nonprimaryrole;
+
+        // Loop through the enrollments.
+        foreach ($enrollments as $enrollment) {
+
+            // Set these for later.
+            $periodid = $enrollment->periodid;
+            $courseid = $enrollment->courseid;
+            $userid = $enrollment->userid;
+            $roleid = $enrollment->role === 'primary' ? $pr : $npr;
+            $prevrole = $enrollment->prevrole;
+            $status = $enrollment->moodle_enrollment_status;
+            $prevstatus = $enrollment->moodle_prev_status;
+
+            // Check if we've already retrieved/created the instance for this course.
+            if (!isset($checkedcourses[$courseid])) {
+
+                // Try to get existing instance.
+                $instance = $DB->get_record('enrol',
+                    ['courseid' => $courseid, 'enrol' => 'workdaystudent']);
+
+                // If no instance exists, create a new one.
+                if (!$instance) {
+                    $instance = workdaystudent::wds_create_enrollment_instance($courseid);
+                }
+
+                // Store instance in array to avoid checking again.
+                $checkedcourses[$courseid] = $instance;
+            } else {
+                // Re-use previously retrieved instance.
+                $instance = $checkedcourses[$courseid];
+            }
+
+            // Build out the expected groupname for this course enrollment.
+            $groupname = $enrollment->groupname;
+
+            // Find the group by name in the course.
+            $group = $DB->get_record('groups', ['courseid' => $courseid, 'name' => $groupname]);
+
+            // We found a matching group.
+            if (isset($group->id)) {
+                $groupid = $group->id;
+
+            // We do not have a matching group in the course.
+            } else {
+
+                // We should always have a group, but if we don't, create it.
+                $groupid = workdaystudent::wds_create_course_group($courseid, $groupname);
+            }
+
+            // Enrollment follows.
+            if ($status == 'enroll') {
+
+                // If we don't have any enrollments for this course, set it to 0.
+                if (!isset($enrollmentcounts[$courseid])) {
+                    $enrollmentcounts[$courseid] = 0;
+                }
+
+                // We're trying to enroll a skipped user.
+                if (is_null($enrollment->userid)) {
+                    // If we have no skipped for this course, set it to 0;
+                    if (!isset($skippedcounts[$courseid])) {
+                        $skippedcounts[$courseid] = 0;
+                    }
+
+                    // We have a skipped enrollment.
+                    $skippedcounts[$courseid]++;
+
+                    mtrace("\n" . 'Error! ' .
+                        $enrollment->universal_id .
+                        ' is missing their email, they were not enrolled in ' .
+                        $enrollment->department . ' ' .
+                        $enrollment->course_number . ' ' .
+                        $enrollment->section_number .
+                        ' - courseid: ' .
+                        $enrollment->courseid . '.');
+
+                    continue;
+                }
+
+                // Increment enrollments for this courseid.
+                $enrollmentcounts[$courseid]++;
+
+                // Check if the user is already enrolled.
+                $enrolled = $DB->get_record('user_enrolments',
+                    ['enrolid' => $instance->id, 'userid' => $userid]);
+
+                // If they are enrolled, we should have had that stored in the idb.
+                if ($enrolled) {
+
+                    // Update the interstitial enrollment record.
+                    $updated = workdaystudent::update_interstitial_enrollment_status($enrollment, true);
+
+                    // Add the user to the group in case they're not in the group.
+                    groups_add_member($groupid, $userid);
+
+                    workdaystudent::dtrace(" User id: $userid added to group id: $groupid.");
+
+                    // Always log if a failure happens.
+                    if ($updated) {
+                        continue;
+                    } else {
+                        mtrace(' Interstitial update failed for user: ' .
+                            $userid . ' in course: ' . $courseid .
+                            ' with role: ' .  $roleid . '.');
+                        continue;
+                    }
+                }
+
+                // Do the nasty.
+                $enrollplugin->enrol_user($instance, $userid, $roleid);
+                workdaystudent::dtrace(" User id: $userid enrolled into course id: $instance->courseid.");
+
+                // Add the user to the group.
+                groups_add_member($groupid, $userid);
+
+                workdaystudent::dtrace(" User id: $userid added to group id: $groupid.");
+
+                // Update the insterstitial status.
+                $updated = workdaystudent::update_interstitial_enrollment_status($enrollment, true);
+
+                // If something goes wrong, always log it.
+                if (!$updated) {
+                    mtrace(' Interstitial update failed for user: ' .
+                        $userid . ' in course: ' . $courseid .
+                        ' with role: ' . $roleid . '.');
+                }
+
+            // Let's deal with unenrollments.
+            } else if ($status == 'unenroll') {
+
+                // Set the section to not link to the course shell.
+                $section = new stdClass();
+                $section->id =  $enrollment->sectionid;
+                $section->idnumber = null;
+                $section->moodle_status = 'pending';
+
+                // If we don't have any unenrollments for this course, set it to 0.
+                if (!isset($unenrollmentcounts[$courseid])) {
+                    $unenrollmentcounts[$courseid] = 0;
+                }
+
+                // We're trying to unenroll a skipped user, which should never happen.
+                if (is_null($enrollment->userid)) {
+                    // If we have no skipped for this course, set it to 0;
+                    if (!isset($skippedcounts[$courseid])) {
+                        $skippedcounts[$courseid] = 0;
+                    }
+
+                    // We have a skipped unenrollment.
+                    $skippedcounts[$courseid]++;
+
+                    mtrace("\n" . 'Error! ' .
+                        $enrollment->student_id .
+                        ' is missing their email, they were not unenrolled from ' .
+                        $enrollment->department . ' ' .
+                        $enrollment->course_number . ' ' .
+                        $enrollment->section_number .
+                        ' - courseid: ' .
+                        $enrollment->courseid . '.');
+
+                    continue;
+                }
+
+                // Increment unenrollments for this courseid.
+                $unenrollmentcounts[$courseid]++;
+
+                // Get the group this instructor enrollment belongs to.
+                $fgroup = $DB->get_record('groups', ['courseid' => $enrollment->courseid,
+                    'name' => $enrollment->groupname], 'id');
+
+                // Get the all groups for the instructor for this course.
+                $fgroups = workdaystudent::get_wds_groups($courseid, $userid, $periodid);
+
+                // Move them into a single dimensional array.
+                $flatgroups = array_map(
+                    fn($fgroup) => property_exists($fgroup, 'groupid') ?
+                    (int) $fgroup->groupid :
+                    null, $fgroups
+                );
+
+                // Filter out any nulls.
+                $flatgroups = array_filter($flatgroups);
+
+                // We have more than one WDS group that the instructor is a member of.
+                if (count($flatgroups) > 1 &&
+                    in_array((int) $fgroup->id, $flatgroups, true)) {
+
+                    // Remove the instructor from the WDS group.
+                    groups_remove_member($groupid, $userid);
+
+                    // Unenroll the students from this WDS group.
+                    $unenrollstucount = self::wds_unenroll_group_members($groupid, $enrollment);
+
+                    // Delete the now empty group.
+                    groups_delete_group($groupid);
+
+                // We are about to unenroll them from the last group.
+                } else if (count($flatgroups) == 1 &&
+                    in_array((int) $fgroup->id, $flatgroups, true)) {
+
+                    // Check to see if the course has any non-default materials or grades.
+                    $mgcheck = workdaystudent::wds_course_has_materials($courseid);
+
+                    // The course has materials!
+                    if ($mgcheck) {
+                        // We're not unenrolling them, log it.
+                        mtrace(" User id: $userid NOT unenrolled " .
+                            "from course id: $courseid " .
+                            "due to having course materials or grades history.");
+                    } else {
+
+                        // Unenroll the students from this WDS group.
+                        $unenrollstucount = self::wds_unenroll_group_members($groupid, $enrollment);
+
+                        // Unenroll the instructor from the course.
+                        $enrollplugin->unenrol_user($instance, $userid);
+
+                        // Last empty WDS groupshould be deleted. 
+                        groups_delete_group($groupid);
+
+                        // Delete the abandoned course.
+                        delete_course($courseid, true);
+                    }
+                }
+
+                // Update the insterstitial status.
+                $feupdated = workdaystudent::update_interstitial_enrollment_status($enrollment, true);
+                $supdated = $DB->update_record('enrol_wds_sections', $section);
+
+                // If something goes wrong, log it.
+                if (!$feupdated || !$supdated) {
+                    workdaystudent::dtrace(' Interstitial update failed for user: ' .
+                        $userid . ' in course: ' . $courseid .
+                        ' with role: ' . $roleid . '.');
+                }
+            }
+        }
+
+        // Combine enrollments and unenrollments into a single output loop.
+        if (isset($unenrollstucount)) {
+            $allcourses = array_unique(array_merge(
+                array_keys($enrollmentcounts),
+                array_keys($unenrollmentcounts),
+                array_keys($unenrollstucount),
+                array_keys($skippedcounts)
+            ));
+        } else {
+            $allcourses = array_unique(array_merge(
+                array_keys($enrollmentcounts),
+                array_keys($unenrollmentcounts),
+                array_keys($skippedcounts)
+            ));
+        }
+
+        mtrace("\nEnrollment Summary Begins");
+        // Let us know how it went.
+        foreach ($allcourses as $coursed) {
+            $enrolls = $enrollmentcounts[$coursed] ?? 0;
+
+            if (isset($unenrollstucount)) {
+                $unenrolls = $unenrollmentcounts[$coursed] + $unenrollstucount[$courseid] ?? 0;
+            } else {
+                $unenrolls = $unenrollmentcounts[$coursed] ?? 0;
+            }
+
+            $skipped = $skippedcounts[$coursed] ?? 0;
+            mtrace(" Course $coursed had $enrolls enrollments," .
+               " $unenrolls unenrollments," .
+               " $skipped skipped due to missing emails.");
+        }
+        mtrace("Enrollment Summary Complete");
+
+        // Get the elapsed time.
+        $elapsedtime = round(microtime(true) - $starttime, 2);
+
+        mtrace("Enrollment into Moodle courses took $elapsedtime seconds.");
+
+        return true;
+    }
+
+    public static function wds_bulk_student_enrollments($enrollments) {
+        global $CFG, $DB;
+
+        // Set this up for timing.
+        $starttime = microtime(true);
+
+        // We need this to mess with groups.
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        mtrace("Enrollment into Moodle courses starting.");
+
+        // Array to store instances already checked per course.
+        $checkedcourses = [];
+
+        // Instantiate the enrollment plugin.
+        $enrollplugin = enrol_get_plugin('workdaystudent');
+
+        // Set up our array counts.
+        $enrollmentcounts = [];
+        $unenrollmentcounts = [];
+        $skippedcounts = [];
+
+        // Get settings.
+        $s = workdaystudent::get_settings();
+
+        // Grab the student role specified in settings.
+        $studentrole = $s->studentrole;
+
+        // Loop through the enrollments.
+        foreach ($enrollments as $enrollment) {
+
+            // Set these for later.
+            $userid = $enrollment->userid;
+            $courseid = $enrollment->courseid;
+            $roleid = $studentrole;
+            $status = $enrollment->moodle_enrollment_status;
+
+            // Check if we've already retrieved/created the instance for this course.
+            if (!isset($checkedcourses[$courseid])) {
+
+                // Try to get existing instance.
+                $instance = $DB->get_record('enrol',
+                    ['courseid' => $courseid, 'enrol' => 'workdaystudent']);
+
+                // If no instance exists, create a new one.
+                if (!$instance) {
+                    $instance = workdaystudent::wds_create_enrollment_instance($courseid);
+                }
+
+                // Store instance in array to avoid checking again.
+                $checkedcourses[$courseid] = $instance;
+            } else {
+                // Re-use previously retrieved instance.
+                $instance = $checkedcourses[$courseid];
+            }
+
+            // Build out the expected groupname for this course enrollment.
+            $groupname = $enrollment->department . " " .
+                $enrollment->course_number . " " . $enrollment->section_number;
+
+            // Find the group by name in the course.
+            $group = $DB->get_record('groups', ['courseid' => $courseid, 'name' => $groupname]);
+
+            // We do not have a matching group in the course.
+            if (!$group) {
+
+                // We don't have a group, create it.
+                $groupid = workdaystudent::wds_create_course_group($courseid, $groupname);
+            }
+
+            $groupid = isset($group->id) ? $group->id : $newgroupid;
+
+            // Enrollment follows.
+            // TODO: Go back to just enroll.
+            // if ($enrollment->moodle_enrollment_status == 'enroll') {
+            if ($enrollment->moodle_enrollment_status == 'enroll' ||
+                $enrollment->moodle_enrollment_status == 'completed') {
+
+                // If we don't have any enrollments for this course, set it to 0.
+                if (!isset($enrollmentcounts[$courseid])) {
+                    $enrollmentcounts[$courseid] = 0;
+                }
+
+                // We're trying to enroll a skipped user.
+                if (is_null($enrollment->userid)) {
+                    // If we have no skipped for this course, set it to 0;
+                    if (!isset($skippedcounts[$courseid])) {
+                        $skippedcounts[$courseid] = 0;
+                    }
+
+                    // We have a skipped enrollment.
+                    $skippedcounts[$courseid]++;
+
+                    mtrace("\n" . 'Error! ' .
+                        $enrollment->student_id .
+                        ' is missing their email, they were not enrolled in ' .
+                        $enrollment->department . ' ' .
+                        $enrollment->course_number . ' ' .
+                        $enrollment->section_number .
+                        ' - courseid: ' .
+                        $enrollment->courseid . '.');
+
+                    continue;
+                }
+
+                // Increment enrollments for this courseid.
+                $enrollmentcounts[$courseid]++;
+
+                // Check if the user is already enrolled.
+                $enrolled = $DB->get_record('user_enrolments',
+                    ['enrolid' => $instance->id, 'userid' => $userid]);
+
+                // If they are enrolled, we should have had that stored in the idb.
+                if ($enrolled) {
+
+                    // Update the interstitial enrollment record.
+                    $updated = workdaystudent::update_interstitial_enrollment_status($enrollment, false);
+
+                    // Add the user to the group in case they're not in the group.
+                    groups_add_member($groupid, $userid);
+                    workdaystudent::dtrace(" User id: $userid added to group id: $groupid.");
+
+                    // Always log if a failure happens.
+                    if ($updated) {
+                        continue;
+                    } else {
+                        mtrace(' Interstitial update failed for user: ' .
+                            $userid . ' in course: ' . $courseid .
+                            ' with role: ' .  $roleid . '.');
+                        continue;
+                    }
+                }
+
+                // Do the nasty.
+                $enrollplugin->enrol_user($instance, $userid, $roleid, $enrollment->wds_regdate);
+                workdaystudent::dtrace(" User id: $userid enrolled into course id: $instance->courseid.");
+
+                // Update the insterstitial status.
+                $updated = workdaystudent::update_interstitial_enrollment_status($enrollment, false);
+
+                // If something goes wrong, always log it.
+                if (!$updated) {
+                    mtrace(' Interstitial update failed for user: ' .
+                        $userid . ' in course: ' . $courseid .
+                        ' with role: ' . $roleid . '.');
+                }
+
+                // Add the user to the group.
+                groups_add_member($groupid, $userid);
+                workdaystudent::dtrace(" User id: $userid added to group id: $groupid.");
+
+            // Let's deal with unenrollments.
+            } else if ($enrollment->moodle_enrollment_status == 'unenroll') {
+
+                // If we don't have any unenrollments for this course, set it to 0.
+                if (!isset($unenrollmentcounts[$courseid])) {
+                    $unenrollmentcounts[$courseid] = 0;
+                }
+
+                // We're trying to unenroll a skipped user.
+                if (is_null($enrollment->userid)) {
+                    // If we have no skipped for this course, set it to 0;
+                    if (!isset($skippedcounts[$courseid])) {
+                        $skippedcounts[$courseid] = 0;
+                    }
+
+                    // We have a skipped unenrollment.
+                    $skippedcounts[$courseid]++;
+
+                    mtrace("\n" . 'Error! ' .
+                        $enrollment->student_id .
+                        ' is missing their email, they were not unenrolled from ' .
+                        $enrollment->department . ' ' .
+                        $enrollment->course_number . ' ' .
+                        $enrollment->section_number . 
+                        ' - courseid: ' .
+                        $enrollment->courseid . '.');
+
+                    continue;
+                }
+
+                // Increment unenrollments for this courseid.
+                $unenrollmentcounts[$courseid]++;
+
+                if (!isset($s->suspend) || $s->suspend == 0) {
+                    // Do the nasty.
+                    $enrollplugin->unenrol_user($instance, $userid);
+                    workdaystudent::dtrace(" User id: $userid unenrolled from course id: $instance->courseid.");
+                } else {
+                    $enrollplugin->update_user_enrol($instance->id, $userid, ENROL_USER_SUSPENDED);
+                    workdaystudent::dtrace(" User id: $userid suspended from course id: $instance->courseid.");
+                }
+
+                // Update the insterstitial status.
+                $updated = workdaystudent::update_interstitial_enrollment_status($enrollment, false);
+
+                // If something goes wrong, log it.
+                if (!$updated) {
+                    workdaystudent::dtrace(' Interstitial update failed for user: ' .
+                        $userid . ' in course: ' . $courseid .
+                        ' with role: ' . $roleid . '.');
+                }
+
+            }
+        }
+
+        // Combine enrollments and unenrollments into a single output loop.
+        $allcourses = array_unique(array_merge(
+            array_keys($enrollmentcounts),
+            array_keys($unenrollmentcounts),
+            array_keys($skippedcounts)
+        ));
+
+        mtrace("\nEnrollment Summary Begins");
+        // Let us know how it went.
+        foreach ($allcourses as $coursed) {
+            $enrolls = $enrollmentcounts[$coursed] ?? 0;
+            $unenrolls = $unenrollmentcounts[$coursed] ?? 0;
+            $skipped = $skippedcounts[$coursed] ?? 0;
+            mtrace(" Course $coursed had $enrolls enrollments," .
+               " $unenrolls unenrollments," .
+               " $skipped skipped due to missing emails.");
+        }
+        mtrace("Enrollment Summary Complete");
+
+        // Get the elapsed time.
+        $elapsedtime = round(microtime(true) - $starttime, 2);
+
+        mtrace("Enrollment into Moodle courses took $elapsedtime seconds.");
+
+        return true;
+    }
+// Class End
 }
-*/
