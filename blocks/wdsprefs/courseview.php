@@ -64,6 +64,7 @@ if ($mform->is_cancelled()) {
     // Set the preferences as needed.
     set_user_preference('wdspref_createprior', $data->wdspref_createprior, $userid);
     set_user_preference('wdspref_enrollprior', $data->wdspref_enrollprior, $userid);
+    set_user_preference('wdspref_courselimit', $data->wdspref_courselimit, $userid);
 
     // Redirect on submit.
     redirect(

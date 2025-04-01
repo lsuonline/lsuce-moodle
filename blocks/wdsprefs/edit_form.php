@@ -60,6 +60,22 @@ class wdsprefs_cps_edit_form extends moodleform {
             get_string('wdsprefs:edaysprior_desc', 'block_wdsprefs')
         );
 
+        // Add the enroll days prior item.
+        $mform->addElement('text',
+            'wdspref_courselimit',
+            get_string('wdsprefs:courselimit', 'block_wdsprefs')
+        );
+        $mform->setType('wdspref_courselimit', PARAM_INT);
+        $mform->addRule('wdspref_courselimit', null, 'required', null, 'client');
+
+
+        // Add the days prior description.
+        $mform->addElement('static',
+            'wdspref_courselimit_desc',
+            '',
+            get_string('wdsprefs:courselimit_desc', 'block_wdsprefs')
+        );
+
         // Add the action buttons.
         $this->add_action_buttons(true);
     }
@@ -70,9 +86,37 @@ class wdsprefs_cps_edit_form extends moodleform {
         // Build out the object.
         $data = new stdClass();
 
-        // Build out the daysprior item with TODO: get default from enrol_workdaystudent.
-        $data->wdspref_createprior = get_user_preferences('wdspref_createprior', '14', $userid);
-        $data->wdspref_enrollprior = get_user_preferences('wdspref_enrollprior', '7', $userid);
+        // Get the workdaystudents default settings.
+        $s = get_config('enrol_workdaystudent');
+
+        // Build a defaults object for future use.
+        $defaults = new stdClass();
+
+        // Get the defaults form config if they're there.
+        $defaults->createprior = isset($s->createprior) ? (int) $s->createprior : 14;
+        $defaults->enrollprior = isset($s->enrollprior) ? (int) $s->enrollprior : 7;
+        $defaults->courselimit = isset($s->numberthreshold) ? (int) $s->numberthreshold : 7;
+
+        // Build out the createprior item with default from wds.
+        $data->wdspref_createprior = get_user_preferences(
+            'wdspref_createprior',
+            $defaults->createprior,
+            $userid
+        );
+
+        // Build out the enrollprior item with default from wds.
+        $data->wdspref_enrollprior = get_user_preferences(
+            'wdspref_enrollprior',
+            $s->enrollprior,
+            $userid
+        );
+
+        // Build out the courselimit item with default from wds.
+        $data->wdspref_courselimit = get_user_preferences(
+            'wdspref_courselimit',
+            $s->numberthreshold,
+            $userid
+        );
 
         // Set the data.
         $this->set_data($data);

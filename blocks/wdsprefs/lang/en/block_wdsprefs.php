@@ -36,7 +36,7 @@ $string['wdsprefs:crosslist'] = 'Cross listing';
 $string['wdsprefs:split'] = 'Split courses';
 $string['wdsprefs:schedule'] = 'Course schedule';
 $string['wdsprefs:teamteach'] = 'Team teaching';
-$string['wdsprefs:unwant'] = 'Unwanted courses';
+$string['wdsprefs:unwant'] = 'Unwanted sections';
 $string['wdsprefs:user'] = 'User preferences';
 
 // Page strings.
@@ -44,3 +44,5 @@ $string['wdsprefs:cdaysprior'] = 'Create Days Prior';
 $string['wdsprefs:cdaysprior_desc'] = 'Number of days prior to the semester starting to <strong>create courses</strong>.';
 $string['wdsprefs:edaysprior'] = 'Enroll Days Prior';
 $string['wdsprefs:edaysprior_desc'] = 'Number of days prior to the semester starting to <strong>enroll students</strong>.';
+$string['wdsprefs:courselimit'] = 'Course Limit';
+$string['wdsprefs:courselimit_desc'] = 'Only create courses below this threshold.';
