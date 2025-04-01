@@ -29,20 +29,35 @@ class wdsprefs_cps_edit_form extends moodleform {
     public function definition() {
         $mform = $this->_form;
 
-//TODO: ADD MORE SHIT.
         // Add the days prior item.
         $mform->addElement('text',
-            'wdspref_daysprior',
-            get_string('wdsprefs:daysprior', 'block_wdsprefs')
+            'wdspref_createprior',
+            get_string('wdsprefs:cdaysprior', 'block_wdsprefs')
         );
-        $mform->setType('wdspref_daysprior', PARAM_INT);
-        $mform->addRule('wdspref_daysprior', null, 'required', null, 'client');
+        $mform->setType('wdspref_createprior', PARAM_INT);
+        $mform->addRule('wdspref_createprior', null, 'required', null, 'client');
+
+        // Add the create days prior description.
+        $mform->addElement('static',
+            'wdspref_cdaysprior_desc',
+            '',
+            get_string('wdsprefs:cdaysprior_desc', 'block_wdsprefs')
+        );
+
+        // Add the enroll days prior item.
+        $mform->addElement('text',
+            'wdspref_enrollprior',
+            get_string('wdsprefs:edaysprior', 'block_wdsprefs')
+        );
+        $mform->setType('wdspref_enrollprior', PARAM_INT);
+        $mform->addRule('wdspref_enrollprior', null, 'required', null, 'client');
+
 
         // Add the days prior description.
         $mform->addElement('static',
-            'wdspref_daysprior_desc',
+            'wdspref_edaysprior_desc',
             '',
-            get_string('wdsprefs:daysprior_desc', 'block_wdsprefs')
+            get_string('wdsprefs:edaysprior_desc', 'block_wdsprefs')
         );
 
         // Add the action buttons.
@@ -56,7 +71,8 @@ class wdsprefs_cps_edit_form extends moodleform {
         $data = new stdClass();
 
         // Build out the daysprior item with TODO: get default from enrol_workdaystudent.
-        $data->wdspref_daysprior = get_user_preferences('wdspref_daysprior', '0', $userid);
+        $data->wdspref_createprior = get_user_preferences('wdspref_createprior', '14', $userid);
+        $data->wdspref_enrollprior = get_user_preferences('wdspref_enrollprior', '7', $userid);
 
         // Set the data.
         $this->set_data($data);

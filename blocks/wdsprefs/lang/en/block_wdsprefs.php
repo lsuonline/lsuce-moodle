@@ -40,5 +40,7 @@ $string['wdsprefs:unwant'] = 'Unwanted courses';
 $string['wdsprefs:user'] = 'User preferences';
 
 // Page strings.
-$string['wdsprefs:daysprior'] = 'Days Prior';
-$string['wdsprefs:daysprior_desc'] = 'Number of days prior to the semester starting to enroll students.';
+$string['wdsprefs:cdaysprior'] = 'Create Days Prior';
+$string['wdsprefs:cdaysprior_desc'] = 'Number of days prior to the semester starting to <strong>create courses</strong>.';
+$string['wdsprefs:edaysprior'] = 'Enroll Days Prior';
+$string['wdsprefs:edaysprior_desc'] = 'Number of days prior to the semester starting to <strong>enroll students</strong>.';

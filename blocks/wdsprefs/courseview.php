@@ -61,12 +61,13 @@ if ($mform->is_cancelled()) {
 // If form is submitted and validated.
 } elseif ($data = $mform->get_data()) {
 
-    // Set the preferences as needed. TODO: add more shit.
-    set_user_preference('wdspref_daysprior', $data->wdspref_daysprior, $userid);
+    // Set the preferences as needed.
+    set_user_preference('wdspref_createprior', $data->wdspref_createprior, $userid);
+    set_user_preference('wdspref_enrollprior', $data->wdspref_enrollprior, $userid);
 
     // Redirect on submit.
     redirect(
-        new moodle_url('/blocks/wdsprefs/view.php'),
+        new moodle_url('/blocks/wdsprefs/courseview.php'),
         get_string('wdsprefs:success', 'block_wdsprefs'),
         null,
         \core\output\notification::NOTIFY_SUCCESS
