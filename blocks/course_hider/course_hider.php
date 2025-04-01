@@ -61,7 +61,6 @@ if ( isset($_REQUEST['btnexecute'])) {
     $pageparams['btnexecute'] = true;
     $results = (object) array(
         "courses" => $_REQUEST['courses'],
-        "lock" => (int)$_REQUEST['lock'],
         "hide" => (int)$_REQUEST['hide']
     );
 }

@@ -47,6 +47,9 @@ class grade_edit_tree {
     public $table;
 
     public $categories = array();
+    // BEGIN LSU Weighted Mean Extra Credit
+    public $uses_extra_credit;
+    // END LSU Weighted Mean Extra Credit
 
     /**
      * Constructor
