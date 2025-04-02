@@ -622,7 +622,8 @@ class grade_report_gradebook_builder extends grade_report {
         $list = get_config('grade_builder', 'acceptable_mods');
         $acceptable_mods = explode(',', $list);
 
-        $mods = get_plugin_list('mod');
+        $mods = core_component::get_plugin_list('mod');
+        // $mods = get_plugin_list('mod');
 
         $options = array(
             'manual' => get_string('manual_item', 'gradereport_gradebook_builder')

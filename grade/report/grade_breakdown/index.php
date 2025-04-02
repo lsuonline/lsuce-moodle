@@ -101,8 +101,7 @@ print_grade_page_head(
     $headerhelpidentifier = null,
     $headerhelpcomponent = null,
     $user = null,
-    $actionbar = null,
-    $showtitle = true
+    $actionbar = null,    
 );
 
 

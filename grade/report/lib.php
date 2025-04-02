@@ -180,6 +180,10 @@ abstract class grade_report {
      */
     protected int $userid = -1;
 
+    // BEGIN LSU To avoid "creation of dynamic property" warning
+    protected $lang_strings = array();
+    // END LSU To avoid "creation of dynamic property" warning
+
     /**
      * Constructor. Sets local copies of user preferences and initialises grade_tree.
      * @param int $courseid
