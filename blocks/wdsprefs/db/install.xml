@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/wdsprefs/db" VERSION="20250404" COMMENT="XMLDB file for Moodle blocks/wdsprefs"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="block_wdspref_unwants" COMMENT="block_wdspref_unwants table retrofitted from MySQL">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="19" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="sectionid" TYPE="int" LENGTH="19" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="unwanted" TYPE="int" LENGTH="2" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="lastupdated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="wds_uid_ix" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="wds_sid_ix" UNIQUE="false" FIELDS="sectionid"/>
+        <INDEX NAME="wds_uw_ix" UNIQUE="false" FIELDS="unwanted"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
