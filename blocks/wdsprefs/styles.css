@@ -14,10 +14,6 @@
     text-decoration: underline;
 }
 
-.wds .fa {
-    color: #3a1867;
-}
-
 .wds i.fa {
     text-align: center;
     width: 1.75em;
@@ -27,3 +23,17 @@
     text-align: center;
     width: 1.75em;
 }
+
+.wds-text-input {
+  margin-top: 2rem;
+  margin-bottom: -.5rem !important;
+}
+
+.wds-text-input.wds-first {
+  margin-top: 0;
+}
+
+#page-blocks-wdsprefs-unwantview .form-group.fitem {
+  padding-bottom: 0 !important;
+}
+

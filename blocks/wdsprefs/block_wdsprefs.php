@@ -40,9 +40,10 @@ class block_wdsprefs extends block_base {
         // Is the user a student?
         $student = wdsprefs::get_student($USER);
 
-        // TODO: take this out! For testing only!
-        $student = true;
-        $instructor = true;
+        if (is_siteadmin($USER->id)) {
+            $student = true;
+            $instructor = true;
+        }
 
         // If we have nothing, do not show the block.
         if ($this->content !== null) {
@@ -71,7 +72,8 @@ class block_wdsprefs extends block_base {
                 'text' => get_string('wdsprefs:schedule', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/scheduleview.php'),
                 'icontype' => 'fontawesome',
-                'icon' => 'fa-calendar-check-o'
+                // 'icon' => 'fa-calendar-check-o'
+                'icon' => 'fa-clock'
             ],
         ];
 
@@ -82,21 +84,19 @@ class block_wdsprefs extends block_base {
                 'text' => get_string('wdsprefs:course', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/courseview.php'),
                 'icontype' => 'fontawesome',
-                'icon' => 'fa-graduation-cap'
+                'icon' => 'fa-landmark'
             ],
             [
                 'text' => get_string('wdsprefs:unwant', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/unwantview.php'),
                 'icontype' => 'fontawesome',
-                'icon' => 'fa-crosshairs'
+                'icon' => 'fa-ban'
             ],
             [
                 'text' => get_string('wdsprefs:split', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/splitview.php'),
-                'icontype' => 'svg',
-                'icon' => '<img class="wds icon fa" src="' .
-                    $OUTPUT->image_url('split', 'block_wdsprefs') .
-                    '" alt="crosslist">'
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-folder-tree'
             ],
             [
                 'text' => get_string('wdsprefs:crosslist', 'block_wdsprefs'),
@@ -108,7 +108,7 @@ class block_wdsprefs extends block_base {
                 'text' => get_string('wdsprefs:teamteach', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/teamteachview.php'),
                 'icontype' => 'fontawesome',
-                'icon' => 'fa-group'
+                'icon' => 'fa-user-plus'
             ],
         ];
 
@@ -127,8 +127,17 @@ class block_wdsprefs extends block_base {
                     $icon=$item['icon'];
                 }
 
+                // Add help icon string.
+                $helpstringkey = 'help_' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $item['text']));
+
+                // Add help icon.
+                $helpicon = $OUTPUT->help_icon($helpstringkey, 'block_wdsprefs');
+
+                // Create the link with the help icon.
                 $link = html_writer::link($item['url'], $icon . $item['text'], ['class' => 'wds menu-link']);
-                $listitems .= html_writer::tag('li', $link, ['class' => 'wds menu-item']);
+    
+                // Append the help icon after the link.
+                $listitems .= html_writer::tag('li', $link . ' ' . $helpicon, ['class' => 'wds menu-item']);
             }
         }
 

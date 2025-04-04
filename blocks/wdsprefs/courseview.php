@@ -23,7 +23,7 @@
 
 // Required stuffs.
 require_once('../../config.php');
-require_once('edit_form.php');
+require_once('cv_edit_form.php');
 
 // Require login to use this.
 require_login();
@@ -39,7 +39,19 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/blocks/wdsprefs/courseview.php'));
 $PAGE->set_title(get_string('wdsprefs:course', 'block_wdsprefs'));
 $PAGE->set_heading(get_string('wdsprefs:course', 'block_wdsprefs'));
-$PAGE->set_pagelayout('standard');
+
+// Add breadcrumbs.
+$PAGE->navbar->add(
+    get_string('home'),
+    new moodle_url('/')
+);
+$PAGE->navbar->add(
+    get_string('wdsprefs:course', 'block_wdsprefs'),
+    new moodle_url('/blocks/wdsprefs/courseview.php')
+);
+
+// Set page layout.
+$PAGE->set_pagelayout('base');
 
 // Get the userid from the USER object.
 $userid = $USER->id;
