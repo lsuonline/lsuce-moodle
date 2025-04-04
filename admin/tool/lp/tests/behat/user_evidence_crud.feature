@@ -24,8 +24,8 @@ Feature: Manage evidence of prior learning
     And I should see "Evidence-1"
 
   Scenario: Read an evidence of prior learning
-    Given the following lp "userevidence" exist:
-      | name | description | user |
+    Given the following "core_competency > user_evidence" exist:
+      | name       | description            | user  |
       | Evidence-2 | Evidence-2 description | user1 |
     And I follow "Evidence of prior learning"
     And I should see "List of evidence"
@@ -34,8 +34,8 @@ Feature: Manage evidence of prior learning
     Then I should see "Evidence-2"
 
   Scenario: Edit an evidence of prior learning
-    Given the following lp "userevidence" exist:
-      | name | description | user |
+    Given the following "core_competency > user_evidence" exist:
+      | name       | description            | user  |
       | Evidence-3 | Evidence-3 description | user1 |
     And I follow "Evidence of prior learning"
     And I should see "List of evidence"
@@ -47,24 +47,25 @@ Feature: Manage evidence of prior learning
     And I should see "Evidence-3 Edited"
 
   Scenario: Delete an evidence of prior learning
-    Given the following lp "userevidence" exist:
-      | name | description | user |
+    Given the following "core_competency > user_evidence" exist:
+      | name       | description            | user  |
       | Evidence-4 | Evidence-4 description | user1 |
     And I follow "Evidence of prior learning"
     And I should see "List of evidence"
     And I click on "Delete" of edit menu in the "Evidence-4" row
-    And I click on "Cancel" "button"
+    And I click on "Cancel" "button" in the "Confirm" "dialogue"
     And I click on "Delete" of edit menu in the "Evidence-4" row
     And "Confirm" "dialogue" should be visible
-    When I click on "Delete" "button"
+    When I click on "Delete" "button" in the "Confirm" "dialogue"
+    And I wait until the page is ready
     Then I should not see "Evidence-4"
 
   Scenario: List evidences of prior learning
     Given the following "users" exist:
-      | username | firstname | lastname | email |
-      |user2 | User | 2 | user2@example.com |
-    And the following lp "userevidence" exist:
-      | name | description | user |
+      | username | firstname | lastname | email             |
+      | user2    | User      | 2        | user2@example.com |
+    And the following "core_competency > user_evidence" exist:
+      | name       | description            | user  |
       | Evidence-5 | Evidence-5 description | user1 |
       | Evidence-6 | Evidence-6 description | user2 |
     And I follow "Evidence of prior learning"
@@ -78,4 +79,3 @@ Feature: Manage evidence of prior learning
     Then I should see "List of evidence"
     And I should see "Evidence-6"
     And I should not see "Evidence-5"
-

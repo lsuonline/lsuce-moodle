@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -24,51 +23,48 @@
 
 namespace block_quickmail\messenger\message\data_mapper;
 
+defined('MOODLE_INTERNAL') || die();
+
 use block_quickmail_string;
 
 trait maps_course_data {
 
-    public function get_data_coursefullname()
-    {
+    public function get_data_coursefullname() {
         return $this->get_course_prop('fullname');
     }
 
-    public function get_data_courseshortname()
-    {
+    public function get_data_courseshortname() {
         return $this->get_course_prop('shortname');
     }
 
-    public function get_data_courseidnumber()
-    {
+    public function get_data_courseidnumber() {
         return $this->get_course_prop('idnumber');
     }
 
-    public function get_data_coursesummary()
-    {
+    public function get_data_coursesummary() {
         return $this->get_course_prop('summary');
     }
 
-    public function get_data_coursestartdate()
-    {
+    public function get_data_coursestartdate() {
         return $this->format_mapped_date($this->get_course_prop('startdate'));
     }
 
-    public function get_data_courseenddate()
-    {
+    public function get_data_courseenddate() {
         return $this->format_mapped_date($this->get_course_prop('enddate'));
     }
 
-    public function get_data_courselink()
-    {
+    public function get_data_courselink() {
         return new \moodle_url('/course/view.php', ['id' => $this->course->id]);
     }
 
-    public function get_data_courselastaccess()
-    {
+    public function get_data_courselastaccess() {
         global $DB;
 
-        if ( ! $lastaccesstime = $DB->get_field('user_lastaccess', 'timeaccess', ['userid' => $this->user->id, 'courseid' => $this->course->id], IGNORE_MISSING)) {
-            return block_quickmail_string::get('courseneveraccessed');
+        if (!$lastaccesstime = $DB->get_field('user_lastaccess',
+                                              'timeaccess',
+                                              ['userid' => $this->user->id, 'courseid' => $this->course->id],
+                                              IGNORE_MISSING)) {
+                                                  return block_quickmail_string::get('courseneveraccessed');
         }
 
         return $this->format_mapped_date($lastaccesstime);
@@ -79,24 +75,23 @@ trait maps_course_data {
      *
      * Thanks to Ben H.
      */
-    public function get_data_studentstartdate()
-    {
+    public function get_data_studentstartdate() {
         global $DB;
 
         $sql = "SELECT ue.timestart
-                FROM mdl_course AS c
-                JOIN mdl_enrol AS en ON en.courseid = c.id
-                JOIN mdl_user_enrolments AS ue ON ue.enrolid = en.id
-                JOIN mdl_user AS u ON ue.userid = u.id
-                JOIN mdl_context AS ct ON c.id = ct.instanceid
-                JOIN mdl_role_assignments AS ra ON ra.contextid = ct.id
+                FROM {course} AS c
+                JOIN {enrol} AS en ON en.courseid = c.id
+                JOIN {user_enrolments} AS ue ON ue.enrolid = en.id
+                JOIN {user} AS u ON ue.userid = u.id
+                JOIN {context} AS ct ON c.id = ct.instanceid
+                JOIN {role_assignments} AS ra ON ra.contextid = ct.id
                 WHERE u.id = ?
                 AND c.id = ?
                 AND ra.roleid = 5
                 AND ra.userid = u.id
                 AND ra.userid = ue.userid";
 
-        if ( ! $studentstartdate = $DB->get_field_sql($sql, [$this->user->id, $this->course->id])) {
+        if (!$studentstartdate = $DB->get_field_sql($sql, [$this->user->id, $this->course->id])) {
             return '--';
         }
 
@@ -108,32 +103,30 @@ trait maps_course_data {
      *
      * Thanks to Ben H.
      */
-    public function get_data_studentenddate()
-    {
+    public function get_data_studentenddate() {
         global $DB;
 
         $sql = "SELECT ue.timeend
-                FROM mdl_course AS c
-                JOIN mdl_enrol AS en ON en.courseid = c.id
-                JOIN mdl_user_enrolments AS ue ON ue.enrolid = en.id
-                JOIN mdl_user AS u ON ue.userid = u.id
-                JOIN mdl_context AS ct ON c.id = ct.instanceid
-                JOIN mdl_role_assignments AS ra ON ra.contextid = ct.id
+                FROM {course} AS c
+                JOIN {enrol} AS en ON en.courseid = c.id
+                JOIN {user_enrolments} AS ue ON ue.enrolid = en.id
+                JOIN {user} AS u ON ue.userid = u.id
+                JOIN {context} AS ct ON c.id = ct.instanceid
+                JOIN {role_assignments} AS ra ON ra.contextid = ct.id
                 WHERE u.id = ?
                 AND c.id = ?
                 AND ra.roleid = 5
                 AND ra.userid = u.id
                 AND ra.userid = ue.userid";
 
-        if ( ! $studentenddate = $DB->get_field_sql($sql, [$this->user->id, $this->course->id])) {
+        if (!$studentenddate = $DB->get_field_sql($sql, [$this->user->id, $this->course->id])) {
             return '--';
         }
 
         return $this->format_mapped_date($studentenddate);
     }
 
-    private function get_course_prop($prop)
-    {
+    private function get_course_prop($prop) {
         return $this->course->$prop;
     }
 

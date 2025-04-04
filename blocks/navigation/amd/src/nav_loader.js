@@ -17,7 +17,6 @@
  * Load the nav tree items via ajax and render the response.
  *
  * @module     block_navigation/nav_loader
- * @package    core
  * @copyright  2015 John Okely <john@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -29,8 +28,8 @@ define(['jquery', 'core/ajax', 'core/config', 'block_navigation/ajax_response_re
          * Get the block instance id.
          *
          * @function getBlockInstanceId
-         * @param element
-         * @returns {*}
+         * @param {Element} element
+         * @returns {String} the instance id
          */
         function getBlockInstanceId(element) {
             return element.closest('[data-block]').attr('data-instanceid');

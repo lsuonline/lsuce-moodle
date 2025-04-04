@@ -18,7 +18,9 @@
  * Strings for component 'atto_vidgridbutton', language 'en'.
  *
  * @package    atto_vidgridbutton
- * @copyright  VidGrid 2018
+ * @copyright  Panopto 2009 - 2016
+ * @copyright  ilos 2017
+ * @copyright  VidGrid 2018 - 2020
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,5 +30,5 @@ $string['settings'] = 'VidGrid';
 $string['browse'] = 'Browse';
 $string['visible'] = 'Visible';
 $string['dialogtitle'] = 'Embed from VidGrid';
-$string['orgApiKey'] = 'Cunsumer key (public key)';
+$string['orgApiKey'] = 'Consumer key (public key)';
 $string['vidgridbutton:visible'] = 'Visible';

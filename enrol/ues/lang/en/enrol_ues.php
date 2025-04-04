@@ -1,4 +1,28 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ *
+ * @package    enrol_ues
+ * @copyright  2008 onwards Louisiana State University
+ * @copyright  2008 onwards Philip Cali, Adam Zapletal, Chad Mazilly, Robert Russo, Dave Elliott
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'UES Enrollment';
 $string['pluginname_desc'] = 'The UES (Universal Enrollment Service) module is a pluggable enrollment system that adheres to common university criterion including Semesters, Courses, Sections tied to coures, and teacher and student enrollment tied to Sections.<br><br>UES will load any enrollment provider that handles the `ues_list_provider`. A fully defined provider will show up in the dropdown below.<br><br>UES is a scheduled task within Moodle and can be managed by going to: Site Administration > Server > Scheduled Tasks';
@@ -95,8 +119,14 @@ $string['email_report_desc'] = 'Email UES execution log to all admins.
 __Note__: Any errors will be reported regardless.';
 
 $string['user_settings'] = 'User Creation Settings';
+$string['un'] = 'Username';
+$string['em'] = 'E-mail';
+$string['use_username_email'] = 'Use Username or email?';
+$string['use_username_email_desc'] = 'When fetching user information, use username and generate an email based on the suffix provided below OR use the email address from the webservice and cleanse string provided below to generate a username.';
 $string['user_email'] = 'E-mail suffix';
 $string['user_email_desc'] = 'The created user will have this email domain appended to their username.';
+$string['user_email_cleanse'] = 'E-mail cleanse string';
+$string['user_email_cleanse_desc'] = 'The above string will be removed from the email domain.';
 $string['user_confirm'] = 'Confirmed';
 $string['user_confirm_desc'] = 'The user will be _confirmed_ upon creation.';
 $string['user_city'] = 'City/town';
@@ -147,7 +177,7 @@ __Problem__: {$a->problem}
 This will cause the enrollment plugin to abort in cron. Please address
 these errors.
 
-__Note to Developers__: Consider using the `adv_settings` for server side
+__Note to Developers__: Consider using the "adv_settings" for server side
 validation of settings.';
 
 $string['no_provider'] = 'No Enrollment Provider selected.';
@@ -179,3 +209,9 @@ $string['session_key'] = 'Session';
 $string['sections'] = 'Sections';
 $string['in_session'] = 'In Session?';
 $string['clear_reprocess_task'] = 'Clear UES reprocess data';
+
+// Username / Password settings strings.
+$string['uesusername'] = 'UES Username';
+$string['uesusername_desc'] = 'UES Username for the webservice from which UES grabs enrollment data.';
+$string['uespassword'] = 'UES Password';
+$string['uespassword_desc'] = 'UES Password that matches the above username.';

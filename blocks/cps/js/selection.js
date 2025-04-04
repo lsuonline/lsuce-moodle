@@ -25,9 +25,9 @@
     selected = function() {
       return $("input:checked[name='selected_shell']").attr("value");
     };
-    available = $("select[name^='before']");
+    available = $("select[name='before[]']");
     bucket = function() {
-      return $("select[name^='shell_" + selected() + "']");
+      return $("select[name='shell_" + selected() + "[]']");
     };
     changed = function() {
       var compressed, id, toValue, values;

@@ -19,15 +19,13 @@
  *
  * @package   theme_snap
  * @category  phpunit
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace theme_snap;
+use theme_snap\output\shared;
 
-defined('MOODLE_INTERNAL') || die();
-
-use \theme_snap\output\shared;
-
-class theme_snap_gradebookaccess_testcase extends advanced_testcase {
+class gradebookaccess_test extends \advanced_testcase {
 
     public function test_gradebookaccess_gradesavailableforstuds() {
         global $DB, $PAGE;
@@ -53,7 +51,7 @@ class theme_snap_gradebookaccess_testcase extends advanced_testcase {
         $this->setUser($teacher); // Set the teacher as active user.
 
         // Check functionality of gradebook_accessible.
-        $coursecontext = context_course::instance($course1->id);
+        $coursecontext = \context_course::instance($course1->id);
         $isavailable = shared::gradebook_accessible($coursecontext);
         $this->assertTrue($isavailable);
 
@@ -86,7 +84,7 @@ class theme_snap_gradebookaccess_testcase extends advanced_testcase {
         $this->setUser($teacher); // Set the teacher as active user.
 
         // Check functionality of gradebook_accessible.
-        $coursecontext = context_course::instance($course2->id);
+        $coursecontext = \context_course::instance($course2->id);
         $isavailable = shared::gradebook_accessible($coursecontext);
         $this->assertTrue($isavailable);
 

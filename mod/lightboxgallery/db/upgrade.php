@@ -266,5 +266,37 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
         upgrade_mod_savepoint(true, 2013051300, 'lightboxgallery');
     }
 
+    if ($oldversion < 2017070700) {
+        $table = new xmldb_table('lightboxgallery');
+        $field = new xmldb_field('folder');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2017070700, 'lightboxgallery');
+    }
+
+    if ($oldversion < 2022062401) {
+        $table = new xmldb_table('lightboxgallery_comments');
+
+        $field = new xmldb_field('commenttext', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null, 'userid');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_notnull($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2022062401, 'lightboxgallery');
+    }
+
+    if ($oldversion < 2024012301) {
+        $table = new xmldb_table('lightboxgallery');
+
+        $field = new xmldb_field('sortby', XMLDB_TYPE_INTEGER, '4', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'introformat');
+        if (! $dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field, 'introformat');
+        }
+
+        upgrade_mod_savepoint(true, 2024012301, 'lightboxgallery');
+    }
+
     return true;
 }

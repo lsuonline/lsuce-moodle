@@ -1,4 +1,4 @@
-# Mentor Assignment
+# Mentor Assignment (Student Gradeviewer)
 
 Mentor Assignment is a Moodle block that provides an administrative
 interface for users to assign mentors to students, sport categories, or

@@ -25,7 +25,7 @@ require_once($CFG->libdir . '/completionlib.php');
  * Handles page module requests.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class pagemod_controller extends controller_abstract {
@@ -66,7 +66,7 @@ class pagemod_controller extends controller_abstract {
         // Trigger module instance viewed event.
         $event = \mod_page\event\course_module_viewed::create(array(
             'objectid' => $page->id,
-            'context' => $context
+            'context' => $context,
         ));
         $event->add_record_snapshot('course_modules', $cm);
         $event->add_record_snapshot('course', $COURSE);
@@ -77,7 +77,7 @@ class pagemod_controller extends controller_abstract {
         $completion = new \completion_info($COURSE);
         $completion->set_module_viewed($cm);
         $renderer = $PAGE->get_renderer('core', 'course');
-        $page->completionhtml = $renderer->course_section_cm_completion($COURSE, $completion, $cm);
+        $page->completionhtml = $renderer->snap_course_section_cm_completion($COURSE, $completion, $cm);
 
         return $page;
     }
@@ -93,7 +93,7 @@ class pagemod_controller extends controller_abstract {
         return json_encode(array(
             'html' => $page->content,
             'cmid' => $page->cmid,
-            'completionhtml' => $page->completionhtml
+            'completionhtml' => $page->completionhtml,
         ));
     }
 
@@ -108,7 +108,7 @@ class pagemod_controller extends controller_abstract {
         return json_encode(array(
             'id' => $page->id,
             'cmid' => $page->cmid,
-            'completionhtml' => $page->completionhtml
+            'completionhtml' => $page->completionhtml,
         ));
     }
 

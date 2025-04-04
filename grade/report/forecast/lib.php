@@ -195,6 +195,10 @@ class grade_report_forecast extends grade_report {
      */
     protected $aggregationhints = array();
 
+    // BEGIN LSU To avoid "creation of dynamic property" warning
+    public $enabledforstudents;
+    // END LSU To avoid "creation of dynamic property" warning
+
     /**
      * Constructor. Sets local copies of user preferences and initialises grade_tree.
      * @param int $courseid
@@ -397,6 +401,13 @@ class grade_report_forecast extends grade_report {
                     // TODO: cache this result and check for in the following processes
                     $categoryItem = $this->getGradeItemFromCategory($category);
 
+                    if ($category->aggregateonlygraded == 1) {
+                        $removeUngradedItems = true;
+                    } else {
+                        $removeUngradedItems = false;
+                    }
+
+
                     // if this item has already been aggregated, move on
                     if ($this->itemIdAlreadyAggregated($categoryItem->id)) // <--- add "or needs to be updated" here???
                         return;
@@ -405,7 +416,7 @@ class grade_report_forecast extends grade_report {
                     $categoryGradeItems = $this->getElementChildren($element, ['item', 'category'], true);
 
                     // get all grade values belonging to the given grade items, removing ungraded/uninput items from calculation
-                    $categoryGradeValues = $this->getCategoryGradeItemValuesArray($category, $categoryGradeItems, true);
+                    $categoryGradeValues = $this->getCategoryGradeItemValuesArray($category, $categoryGradeItems, $removeUngradedItems);
 
                     // get the aggregate of this category using the given grade items and values
                     $aggregate = $this->getCategoryGradeAggregate($category, $categoryGradeItems, $categoryGradeValues, true);
@@ -452,6 +463,12 @@ class grade_report_forecast extends grade_report {
     private function getTransformedCourseGrade($transform = true, $transformOnly = '') {
         $courseGrade = [];
 
+        if ($this->courseGradeData['category']->aggregateonlygraded == 1) {
+            $removeUngradedItems = true;
+        } else {
+            $removeUngradedItems = false;
+        }
+
         // get the course's grade item
         $courseItem = $this->getGradeItemFromCategory($this->courseGradeData['category'], 'course');
 
@@ -459,7 +476,7 @@ class grade_report_forecast extends grade_report {
         $courseGradeItems = $this->getElementChildren($this->courseGradeData['element'], ['item', 'category'], true);
 
         // get all grade values belonging to the given grade items, setting ungraded/uninput items to zero
-        $courseGradeValues = $this->getCategoryGradeItemValuesArray($this->courseGradeData['category'], $courseGradeItems);
+        $courseGradeValues = $this->getCategoryGradeItemValuesArray($this->courseGradeData['category'], $courseGradeItems, $removeUngradedItems);
 
         // get the aggregate of this course using the given grade items and values
         $aggregate = $this->getCategoryGradeAggregate($this->courseGradeData['category'], $courseGradeItems, $courseGradeValues, true);
@@ -819,7 +836,7 @@ class grade_report_forecast extends grade_report {
      * @param  bool  $removeUngradedItems  whether or not to remove an ungraded, uninput grade item from the given list of grade_items
      * @return array  (as: grade_item id => grade value)
      */
-    private function getCategoryGradeItemValuesArray($gradeCategory, &$gradeItems, $removeUngradedItems = false) {
+    private function getCategoryGradeItemValuesArray($gradeCategory, &$gradeItems, $removeUngradedItems) {
         $values = [];
 
         foreach ($gradeItems as $gradeItemId => $gradeItem) {
@@ -1204,8 +1221,10 @@ class grade_report_forecast extends grade_report {
         ];
         
         $this->tableheaders = [
-            $this->get_lang_string('gradeitem', 'grades'), 
-            $this->get_lang_string('grade', 'grades')
+            // $this->get_lang_string('gradeitem', 'grades'), 
+            // $this->get_lang_string('grade', 'grades')
+            get_string('gradeitem', 'gradereport_forecast'), 
+            get_string('grade', 'gradereport_forecast')
         ];
     }
 
@@ -1231,7 +1250,9 @@ class grade_report_forecast extends grade_report {
         $grade_object = $element['object'];
         $eid = $grade_object->id;
         $element['userid'] = $this->user->id;
-        $fullname = $this->gtree->get_element_header($element, true, true, true, true, true);
+
+        // $fullname = $this->gtree->get_element_header($element, true, true, true, true, true);
+        $fullname = grade_helper::get_element_header($element, true, true, true, true, true);
         $data = array();
         $hidden = '';
         $excluded = '';
@@ -1461,7 +1482,7 @@ class grade_report_forecast extends grade_report {
             <input type='hidden' name='userid' value='" . $this->user->id . "'>
             <table cellspacing='0'
                    cellpadding='0'
-                   summary='" . s($this->get_lang_string('tablesummary', 'gradereport_forecast')) . "'
+                   summary='" . s(get_string('tablesummary', 'gradereport_forecast')) . "'
                    class='boxaligncenter generaltable user-grade'>
             <thead>
                 <tr>

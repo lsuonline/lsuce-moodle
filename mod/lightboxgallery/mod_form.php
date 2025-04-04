@@ -48,11 +48,7 @@ class mod_lightboxgallery_mod_form extends moodleform_mod {
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
-        if ($CFG->branch < 29) {
-            $this->add_intro_editor(true, get_string('description'));
-        } else {
-            $this->standard_intro_elements();
-        }
+        $this->standard_intro_elements();
 
         // Advanced options.
 
@@ -71,6 +67,15 @@ class mod_lightboxgallery_mod_form extends moodleform_mod {
             '2' => get_string('hide'),
         );
         $mform->addElement('select', 'captionpos', get_string('captionpos', 'lightboxgallery'), $captionposopts);
+
+        $options = [
+            \mod_lightboxgallery\gallery_page::SORTBY_FILENAME => get_string('sortbyfilename', 'lightboxgallery'),
+            \mod_lightboxgallery\gallery_page::SORTBY_FILENAME_NATURAL => get_string('sortbyfilenamenatural', 'lightboxgallery'),
+            \mod_lightboxgallery\gallery_page::SORTBY_CAPTION => get_string('sortbycaption', 'lightboxgallery'),
+        ];
+
+        $mform->addElement('select', 'sortby', get_string('sortby', 'lightboxgallery'), $options);
+        $mform->addHelpButton('sortby', 'sortby', 'lightboxgallery');
 
         $autoresize = $mform->createElement('select', 'autoresize', get_string('autoresize', 'lightboxgallery'),
                                 $this->get_autoresize_options());
@@ -94,6 +99,7 @@ class mod_lightboxgallery_mod_form extends moodleform_mod {
 
         $mform->addElement('select', 'ispublic', get_string('makepublic', 'lightboxgallery'), $yesno);
         $mform->setType('ispublic', PARAM_INT);
+        $mform->addHelpButton('ispublic', 'makepublic', 'lightboxgallery');
 
         if (lightboxgallery_rss_enabled()) {
             $mform->addElement('select', 'rss', get_string('allowrss', 'lightboxgallery'), $yesno);

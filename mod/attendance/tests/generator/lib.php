@@ -23,19 +23,25 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-
+/**
+ * mod_attendance data generator
+ *
+ * @package    mod_attendance
+ * @category   test
+ * @copyright  2013 Davo Smith, Synergy Learning
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class mod_attendance_generator extends testing_module_generator {
 
     /**
      * Create new attendance module instance
+     *
      * @param array|stdClass $record
      * @param array $options
-     * @return stdClass activity record with extra cmid field
+     * @return stdClass mod_attendance_structure
      */
     public function create_instance($record = null, array $options = null) {
-        global $CFG;
+        global $CFG, $DB;
         require_once($CFG->dirroot.'/mod/attendance/lib.php');
 
         $this->instancecount++;
@@ -54,8 +60,6 @@ class mod_attendance_generator extends testing_module_generator {
             $record->grade = 100;
         }
 
-        $record->coursemodule = $this->precreate_course_module($record->course, $options);
-        $id = attendance_add_instance($record, null);
-        return $this->post_add_instance($id, $record->coursemodule);
+        return parent::create_instance($record, (array)$options);
     }
 }

@@ -33,31 +33,49 @@ if (isguestuser()) {
     throw new require_login_exception('Guests are not allowed here.');
 }
 
-$ip   = optional_param('ip', getremoteaddr(), PARAM_HOST);
+$ip = optional_param('ip', getremoteaddr(), PARAM_RAW);
 $user = optional_param('user', 0, PARAM_INT);
+$width = optional_param('width', 0, PARAM_INT);
+$height = optional_param('height', 0, PARAM_INT);
+$ispopup = optional_param('popup', 0, PARAM_INT);
 
 if (isset($CFG->iplookup)) {
     // Clean up of old settings.
     set_config('iplookup', NULL);
 }
 
-$PAGE->set_url('/iplookup/index.php', array('id'=>$ip, 'user'=>$user));
-$PAGE->set_pagelayout('popup');
+$urlparams = [
+    'id' => $ip,
+    'user' => $user,
+];
+
+// Params width and height are set, we assume to have a popup.
+if ($width > 0 && $height > 0) {
+    $urlparams['width'] = $width;
+    $urlparams['height'] = $height;
+    $ispopup = 1;
+} else if ($ispopup === 1) {  // Param popup was set, then we know that we want a popup.
+    $urlparams['ispopup'] = 1;
+}
+// Set the page layout accordingly.
+if ($ispopup) {
+    $PAGE->set_pagelayout('popup');
+} else {
+    $PAGE->set_pagelayout('standard');
+}
+
+$PAGE->set_url('/iplookup/index.php', $urlparams);
 $PAGE->set_context(context_system::instance());
 
 $info = array($ip);
 $note = array();
 
-if (!preg_match('/(^\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/', $ip, $match)) {
-    print_error('invalidipformat', 'error');
+if (cleanremoteaddr($ip) === false) {
+    throw new \moodle_exception('invalidipformat', 'error');
 }
 
-if ($match[1] > 255 or $match[2] > 255 or $match[3] > 255 or $match[4] > 255) {
-    print_error('invalidipformat', 'error');
-}
-
-if ($match[1] == '127' or $match[1] == '10' or ($match[1] == '172' and $match[2] >= '16' and $match[2] <= '31') or ($match[1] == '192' and $match[2] == '168')) {
-    print_error('iplookupprivate', 'error');
+if (!ip_is_public($ip)) {
+    throw new \moodle_exception('iplookupprivate', 'error');
 }
 
 $info = iplookup_find_location($ip);
@@ -75,38 +93,57 @@ if ($user) {
         }
     }
 }
-array_unshift($info['title'], $ip);
 
-$title = implode(' - ', $info['title']);
+$title = $ip;
+foreach ($info['title'] as $component) {
+    if (!empty(trim($component))) {
+        $title .= ' - ' . $component;
+    }
+}
 $PAGE->set_title(get_string('iplookup', 'admin').': '.$title);
 $PAGE->set_heading($title);
 echo $OUTPUT->header();
 
-if (empty($CFG->googlemapkey3)) {
-    $imgwidth  = 620;
-    $imgheight = 310;
-    $dotwidth  = 18;
-    $dotheight = 30;
-
-    $dx = round((($info['longitude'] + 180) * ($imgwidth / 360)) - $imgwidth - $dotwidth/2);
-    $dy = round((($info['latitude'] + 90) * ($imgheight / 180)));
-
-    echo '<div id="map" style="width:'.($imgwidth+$dotwidth).'px; height:'.$imgheight.'px;">';
-    echo '<img src="earth.jpeg" style="width:'.$imgwidth.'px; height:'.$imgheight.'px" alt="" />';
-    echo '<img src="marker.gif" style="width:'.$dotwidth.'px; height:'.$dotheight.'px; margin-left:'.$dx.'px; margin-bottom:'.$dy.'px;" alt="" />';
-    echo '</div>';
-    echo '<div id="note">'.$info['note'].'</div>';
-
+// The map dimension is here as big as the popup/page is, so max with and at least 360px height.
+if ($ispopup) {
+    echo '<h1 class="iplookup h2">' . htmlspecialchars($title, ENT_QUOTES | ENT_HTML401 | ENT_SUBSTITUTE) . '</h1>';
+    $mapdim = 'width: '
+        . (($width > 0) ? $width . 'px' : '100%')
+        . '; height: '
+        . (($height > 0) ? $height . 'px;' : '100%; min-height:360px;');
 } else {
-    if (is_https()) {
-        $PAGE->requires->js(new moodle_url('https://maps.googleapis.com/maps/api/js', array('key'=>$CFG->googlemapkey3, 'sensor'=>'false')));
-    } else {
-        $PAGE->requires->js(new moodle_url('http://maps.googleapis.com/maps/api/js', array('key'=>$CFG->googlemapkey3, 'sensor'=>'false')));
-    }
-    $module = array('name'=>'core_iplookup', 'fullpath'=>'/iplookup/module.js');
-    $PAGE->requires->js_init_call('M.core_iplookup.init3', array($info['latitude'], $info['longitude'], $ip), true, $module);
+    $mapdim = 'width:100%; height:100%;min-height:360px';
+}
 
-    echo '<div id="map" style="width: 650px; height: 360px"></div>';
+if (empty($CFG->googlemapkey3)) { // No Google API key is set, we use OSM.
+
+    // Have a fixed zoom factor to calculate corners of the map.
+    $fkt = 4;
+    $bboxleft = $info['longitude'] - $fkt;
+    $bboxbottom = $info['latitude'] - $fkt;
+    $bboxright = $info['longitude'] + $fkt;
+    $bboxtop = $info['latitude'] + $fkt;
+
+    echo '<div id="map" style="' . $mapdim . '">'
+        . '<object data="https://www.openstreetmap.org/export/embed.html?bbox='
+        . $bboxleft . '%2C' . $bboxbottom . '%2C' . $bboxright . '%2C' . $bboxtop
+        . '&layer=mapnik&marker=' . $info['latitude']  . '%2C' . $info['longitude'] . '" style="' . $mapdim . '"></object>'
+        . '</div>'
+        . '<div id="note">' . $info['note'] . '</div>';
+
+
+} else { // Google API key is set, then use Google Maps.
+    $PAGE->requires->js(new moodle_url(
+        'https://maps.googleapis.com/maps/api/js',
+        [
+            'key' => $CFG->googlemapkey3,
+            'sensor' => 'false'
+        ]
+    ));
+    $module = array('name'=>'core_iplookup', 'fullpath'=>'/iplookup/module.js');
+    $PAGE->requires->js_init_call('M.core_iplookup.init3', [$info['latitude'], $info['longitude'], $ip], true, $module);
+
+    echo '<div id="map" style="' . $mapdim . '"></div>';
     echo '<div id="note">'.$info['note'].'</div>';
 }
 

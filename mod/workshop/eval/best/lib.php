@@ -27,16 +27,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(dirname(dirname(__FILE__)) . '/lib.php');  // interface definition
+require_once(__DIR__ . '/../lib.php');  // interface definition
 require_once($CFG->libdir . '/gradelib.php');
 
 /**
  * Defines the computation login of the grading evaluation subplugin
  */
 class workshop_best_evaluation extends workshop_evaluation {
-
-    /** @var workshop the parent workshop instance */
-    protected $workshop;
 
     /** @var the recently used settings in this workshop */
     protected $settings;
@@ -113,7 +110,7 @@ class workshop_best_evaluation extends workshop_evaluation {
      *
      * @return workshop_best_evaluation_settings_form
      */
-    public function get_settings_form(moodle_url $actionurl=null) {
+    public function get_settings_form(?moodle_url $actionurl=null) {
 
         $customdata['workshop'] = $this->workshop;
         $customdata['current'] = $this->settings;
@@ -186,7 +183,7 @@ class workshop_best_evaluation extends workshop_evaluation {
         }
 
         // identify the best assessments - that is those with the shortest distance from the best assessment
-        $bestids = array_keys($distances, min($distances));
+        $bestids = moodle_array_keys_filter($distances, min($distances));
 
         // for every assessment, calculate its distance from the nearest best assessment
         $distances = array();

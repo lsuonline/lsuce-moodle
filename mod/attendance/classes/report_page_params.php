@@ -29,13 +29,31 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_attendance_report_page_params extends mod_attendance_page_with_filter_controls {
+    /** @var int */
     public $group;
+    /** @var int */
     public $sort;
+    /** @var int */
+    public $showextrauserdetails;
+    /** @var int */
+    public $showsessiondetails;
+    /** @var int */
+    public $sessiondetailspos;
+    /** @var int */
+    public $page;
 
+    /**
+     * mod_attendance_report_page_params constructor.
+     */
     public function  __construct() {
         $this->selectortype = self::SELECTOR_GROUP;
     }
 
+    /**
+     * Initialise params.
+     *
+     * @param stdClass $cm
+     */
     public function init($cm) {
         parent::init($cm);
 
@@ -47,11 +65,27 @@ class mod_attendance_report_page_params extends mod_attendance_page_with_filter_
         }
     }
 
+    /**
+     * Get params for this page.
+     * @return array
+     */
     public function get_significant_params() {
         $params = array();
 
         if ($this->sort != ATT_SORT_DEFAULT) {
             $params['sort'] = $this->sort;
+        }
+
+        if (empty($this->showextrauserdetails)) {
+            $params['showextrauserdetails'] = 0;
+        }
+
+        if (empty($this->showsessiondetails)) {
+            $params['showsessiondetails'] = 0;
+        }
+
+        if ($this->sessiondetailspos != 'left') {
+            $params['sessiondetailspos'] = $this->sessiondetailspos;
         }
 
         return $params;

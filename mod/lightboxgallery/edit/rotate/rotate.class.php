@@ -34,12 +34,7 @@ class edit_rotate extends edit_base {
 
     public function process_form() {
         $angle = required_param('angle', PARAM_INT);
-
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
-
-        $this->image = $image->rotate_image($angle);
+        $this->image = $this->lbgimage->rotate_image($angle);
     }
 
 }

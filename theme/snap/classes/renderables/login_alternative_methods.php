@@ -17,13 +17,11 @@
 /**
  * Alternative login methods renderable.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
-
-defined('MOODLE_INTERNAL') || die();
 
 class login_alternative_methods implements \renderable {
 
@@ -49,10 +47,23 @@ class login_alternative_methods implements \renderable {
 
         if (!empty($potentialidps)) {
             foreach ($potentialidps as $idp) {
+
+                $icon = $OUTPUT->image_url('i/permissions');
+
+                if (!empty($idp['iconurl'])) {
+                    $icon = $idp['iconurl'];
+                } else if (!empty($idp['icon'])) {
+                    if (gettype($idp) == 'object') {
+                        $icon = $OUTPUT->image_url($idp['icon']->pix, $idp['icon']->component);
+                    } else if (gettype($idp) == 'string') {
+                        $icon = $idp['icon'];
+                    }
+                }
+
                 $this->potentialidps[] = (object) [
                     'url' => $idp['url']->out(),
                     'name' => $idp['name'],
-                    'icon' => $OUTPUT->pix_url($idp['icon']->pix)
+                    'icon' => $icon,
                 ];
             }
         }

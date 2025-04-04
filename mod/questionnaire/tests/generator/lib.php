@@ -14,26 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
+use mod_questionnaire\generator\question_response,
+    mod_questionnaire\generator\question_response_rank,
+    mod_questionnaire\question\question;
+
+global $CFG;
+require_once($CFG->dirroot.'/mod/questionnaire/locallib.php');
+require_once($CFG->dirroot . '/mod/questionnaire/classes/question/question.php');
+
 /**
- * mod_questionnaire data generator
+ * The mod_questionnaire data generator.
  *
  * @package    mod_questionnaire
  * @copyright  2015 Mike Churchward (mike@churchward.ca)
  * @author     Mike Churchward
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-
-defined('MOODLE_INTERNAL') || die();
-
-use mod_questionnaire\generator\question_response,
-    mod_questionnaire\generator\question_response_rank,
-    mod_questionnaire\question\base;
-
-global $CFG;
-require_once($CFG->dirroot.'/mod/questionnaire/locallib.php');
-
 class mod_questionnaire_generator extends testing_module_generator {
+
+    /**
+     * @var int Current position of assigned options.
+     */
+    protected $curpos = 0;
 
     /**
      * @var int keep track of how many questions have been created.
@@ -51,23 +55,18 @@ class mod_questionnaire_generator extends testing_module_generator {
     protected $questionnaires = [];
 
     /**
-     * To be called from data reset code only,
-     * do not use in tests.
+     * To be called from data reset code only, do not use in tests.
      * @return void
      */
     public function reset() {
         $this->questioncount = 0;
-
         $this->responsecount = 0;
-
         $this->questionnaires = [];
-
         parent::reset();
     }
 
     /**
      * Acessor for questionnaires.
-     *
      * @return array
      */
     public function questionnaires() {
@@ -80,28 +79,24 @@ class mod_questionnaire_generator extends testing_module_generator {
      * @param array $options
      * @return questionnaire
      */
-    public function create_instance($record = array(), array $options = array()) {
-        if (is_array($record)) {
-            $record = (object)$record;
-        }
+    public function create_instance($record = null, array $options = null) {
+        $record = (object)(array)$record;
 
         $defaultquestionnairesettings = array(
-            'qtype'                 => 0,
-            'respondenttype'        => 'fullname',
-            'resp_eligible'         => 'all',
-            'resp_view'             => 0,
-            'useopendate'           => true, // Used in form only to indicate opendate can be used.
-            'opendate'              => 0,
-            'useclosedate'          => true, // Used in form only to indicate closedate can be used.
-            'closedate'             => 0,
-            'resume'                => 0,
-            'navigate'              => 0,
-            'grade'                 => 0,
-            'sid'                   => 0,
-            'timemodified'          => time(),
-            'completionsubmit'      => 0,
-            'autonum'               => 3,
-            'create'                => 'new-0', // Used in form only to indicate a new, empty instance.
+            'qtype' => 0,
+            'respondenttype' => 'fullname',
+            'resp_eligible' => 'all',
+            'resp_view' => 0,
+            'opendate' => 0,
+            'closedate' => 0,
+            'resume' => 0,
+            'navigate' => 0,
+            'grade' => 0,
+            'sid' => 0,
+            'timemodified' => time(),
+            'completionsubmit' => 0,
+            'autonum' => 3,
+            'create' => 'new-0', // Used in form only to indicate a new, empty instance.
         );
 
         foreach ($defaultquestionnairesettings as $name => $value) {
@@ -110,10 +105,10 @@ class mod_questionnaire_generator extends testing_module_generator {
             }
         }
 
-        $instance = parent::create_instance($record, $options);
+        $instance = parent::create_instance($record, (array)$options);
         $cm = get_coursemodule_from_instance('questionnaire', $instance->id);
         $course = get_course($cm->course);
-        $questionnaire = new questionnaire(0, $instance, $course, $cm, false);
+        $questionnaire = new \questionnaire($course, $cm, 0, $instance, false);
 
         $this->questionnaires[$instance->id] = $questionnaire;
 
@@ -122,9 +117,9 @@ class mod_questionnaire_generator extends testing_module_generator {
 
     /**
      * Create a survey instance with data from an existing questionnaire object.
-     * @param object $questionnaire
-     * @param array $options
-     * @return int
+     * @param questionnaire $questionnaire
+     * @param array $record
+     * @return bool|int
      */
     public function create_content($questionnaire, $record = array()) {
         global $DB;
@@ -142,7 +137,7 @@ class mod_questionnaire_generator extends testing_module_generator {
      * @param questionnaire $questionnaire
      * @param array|stdClass $record
      * @param array|stdClass $data - accompanying data for question - e.g. choices
-     * @return \mod_questionnaire\question\base the question object
+     * @return \mod_questionnaire\question\question the question object
      */
     public function create_question(questionnaire $questionnaire, $record = null, $data = null) {
         global $DB;
@@ -154,8 +149,8 @@ class mod_questionnaire_generator extends testing_module_generator {
 
         $record['position'] = count($questionnaire->questions);
 
-        if (!isset($record['survey_id'])) {
-            throw new coding_exception('survey_id must be present in phpunit_util::create_question() $record');
+        if (!isset($record['surveyid'])) {
+            throw new coding_exception('surveyid must be present in phpunit_util::create_question() $record');
         }
 
         if (!isset($record['name'])) {
@@ -191,8 +186,7 @@ class mod_questionnaire_generator extends testing_module_generator {
         // Add the question.
         $record->id = $DB->insert_record('questionnaire_question', $record);
 
-        $typename = \mod_questionnaire\question\base::qtypename($record->type_id);
-        $question = questionnaire::question_factory($typename, $record->id, $record);
+        $question = \mod_questionnaire\question\question::question_builder($record->type_id, $record->id, $record);
 
         // Add the question choices if required.
         if ($typeid !== QUESPAGEBREAK && $typeid !== QUESSECTIONTEXT) {
@@ -210,40 +204,53 @@ class mod_questionnaire_generator extends testing_module_generator {
 
     /**
      * Create a questionnaire with questions and response data for use in other tests.
+     * @param stdClass $course
+     * @param null|int $qtype
+     * @param array $questiondata
+     * @param null|array|stdClass $choicedata
+     * @return questionnaire
      */
     public function create_test_questionnaire($course, $qtype = null, $questiondata = array(), $choicedata = null) {
         $questionnaire = $this->create_instance(array('course' => $course->id));
         $cm = get_coursemodule_from_instance('questionnaire', $questionnaire->id);
         if ($qtype !== null) {
             $questiondata['type_id'] = $qtype;
-            $questiondata['survey_id'] = $questionnaire->sid;
+            $questiondata['surveyid'] = $questionnaire->sid;
             $questiondata['name'] = isset($questiondata['name']) ? $questiondata['name'] : 'Q1';
             $questiondata['content'] = isset($questiondata['content']) ? $questiondata['content'] : 'Test content';
             $this->create_question($questionnaire, $questiondata, $choicedata);
         }
-        $questionnaire = new questionnaire($questionnaire->id, null, $course, $cm, true);
+        $questionnaire = new \questionnaire($course, $cm, $questionnaire->id, null, true);
         return $questionnaire;
     }
 
     /**
      * Create a reponse to the supplied question.
+     * @param questionnaire $questionnaire
+     * @param question $question
+     * @param int|array $respval
+     * @param int $userid
+     * @param int $section
+     * @return false|mixed|stdClass
      */
     public function create_question_response($questionnaire, $question, $respval, $userid = 1, $section = 1) {
         global $DB;
         $currentrid = 0;
-        $_POST['q'.$question->id] = $respval;
-        $responseid = $questionnaire->response_insert($question->survey_id, $section, $currentrid, $userid);
+        if (!is_array($respval)) {
+            $respval = ['q'.$question->id => $respval];
+        }
+        $respdata = (object)(array_merge(['sec' => $section, 'rid' => $currentrid, 'a' => $questionnaire->id], $respval));
+        $responseid = $questionnaire->response_insert($respdata, $userid);
         $this->response_commit($questionnaire, $responseid);
-        questionnaire_record_submission($questionnaire, $userid, $responseid);
         return $DB->get_record('questionnaire_response', array('id' => $responseid));
-        // TO DO - look at the implementing Guy's code below.
-        /* $responses[] = new question_response($question->id, 'Test answer');
-        return $this->create_response(['survey_id' => $questionnaire->sid, 'username' => $userid], $responses); */
     }
 
     /**
      * Need to create a method to access a private questionnaire method.
      * TO DO - may not need this with above "TO DO".
+     * @param questionnaire $questionnaire
+     * @param int $responseid
+     * @return mixed
      */
     private function response_commit($questionnaire, $responseid) {
         $method = new ReflectionMethod('questionnaire', 'response_commit');
@@ -253,7 +260,7 @@ class mod_questionnaire_generator extends testing_module_generator {
 
     /**
      * Validate choice question type
-     * @param $data
+     * @param array $data
      * @throws coding_exception
      */
     protected function validate_question_choice($data) {
@@ -264,7 +271,7 @@ class mod_questionnaire_generator extends testing_module_generator {
 
     /**
      * Validate radio question type
-     * @param $data
+     * @param array $data
      * @throws coding_exception
      */
     protected function validate_question_radio($data) {
@@ -275,7 +282,7 @@ class mod_questionnaire_generator extends testing_module_generator {
 
     /**
      * Validate checkbox question type
-     * @param $data
+     * @param array $data
      * @throws coding_exception
      */
     protected function validate_question_check($data) {
@@ -286,7 +293,7 @@ class mod_questionnaire_generator extends testing_module_generator {
 
     /**
      * Validate rating question type
-     * @param $data
+     * @param array $data
      * @throws coding_exception
      */
     protected function validate_question_rate($data) {
@@ -298,8 +305,7 @@ class mod_questionnaire_generator extends testing_module_generator {
     /**
      * Thrown an error if the question isn't receiving the data it should receive.
      * @param string $typeid
-     * @param $data
-     * @throws coding_exception
+     * @param array $data
      */
     protected function validate_question($typeid, $data) {
         if ($typeid == QUESCHOOSE) {
@@ -316,8 +322,8 @@ class mod_questionnaire_generator extends testing_module_generator {
     /**
      * Add choices to question.
      *
-     * @param \mod_questionnaire\question\base $question
-     * @param stdClass $data
+     * @param \mod_questionnaire\question\question $question
+     * @param array $data
      */
     protected function add_question_choices($question, $data) {
         foreach ($data as $content) {
@@ -337,9 +343,9 @@ class mod_questionnaire_generator extends testing_module_generator {
     }
 
     /**
-     * TODO - use question object
      * Does this question have choices.
-     * @param $typeid
+     * TODO - use question object
+     * @param int $typeid
      * @return bool
      */
     public function question_has_choices($typeid) {
@@ -347,6 +353,11 @@ class mod_questionnaire_generator extends testing_module_generator {
         return in_array($typeid, $choicequestions);
     }
 
+    /**
+     * Return a string value for the int id.
+     * @param int $qtypeid
+     * @return string
+     */
     public function type_str($qtypeid) {
         switch ($qtypeid) {
             case QUESYESNO:
@@ -381,10 +392,19 @@ class mod_questionnaire_generator extends testing_module_generator {
                 break;
             case QUESPAGEBREAK:
                 $qtype = 'sectionbreak';
+                break;
+            case QUESSLIDER:
+                $qtype = 'Slider';
+                break;
         }
         return $qtype;
     }
 
+    /**
+     * Return a display string for the int id.
+     * @param int $qtypeid
+     * @return string
+     */
     public function type_name($qtypeid) {
         switch ($qtypeid) {
             case QUESYESNO:
@@ -419,10 +439,19 @@ class mod_questionnaire_generator extends testing_module_generator {
                 break;
             case QUESPAGEBREAK:
                 $qtype = 'Section Break';
+                break;
+            case QUESSLIDER:
+                $qtype = 'Slider';
+                break;
         }
         return $qtype;
     }
 
+    /**
+     * Add the response choice.
+     * @param \mod_questionnaire\responsetype\response\response $questionresponse
+     * @param int $responseid
+     */
     protected function add_response_choice($questionresponse, $responseid) {
         global $DB;
 
@@ -478,7 +507,7 @@ class mod_questionnaire_generator extends testing_module_generator {
                         'response_id' => $responseid,
                         'question_id' => $questionresponse->questionid,
                         'choice_id' => $choiceid,
-                        'rank' => $questionresponse->response->rank
+                        'rankvalue' => $questionresponse->response->rankvalue
                     ]
                 );
             } else {
@@ -507,11 +536,12 @@ class mod_questionnaire_generator extends testing_module_generator {
     /**
      * Create response to questionnaire.
      *
-     * @param array|stdClass $record
      * @param array $questionresponses
+     * @param array|stdClass $record
+     * @param boolean $complete Whether the response is complete or not.
      * @return stdClass the discussion object
      */
-    public function create_response($record = null, $questionresponses) {
+    public function create_response($questionresponses, $record = null, $complete = true) {
         global $DB;
 
         // Increment the response count.
@@ -519,13 +549,12 @@ class mod_questionnaire_generator extends testing_module_generator {
 
         $record = (array)$record;
 
-        if (!isset($record['survey_id'])) {
-            throw new coding_exception('survey_id must be present in phpunit_util::create_response() $record');
+        if (!isset($record['questionnaireid'])) {
+            throw new coding_exception('questionnaireid must be present in phpunit_util::create_response() $record');
         }
 
-        if (!isset($record['username'])) {
-            throw new coding_exception('username (actually the user id) must be present in '.
-                'phpunit_util::create_response() $record');
+        if (!isset($record['userid'])) {
+            throw new coding_exception('userid must be present in phpunit_util::create_response() $record');
         }
 
         $record['submitted'] = time() + $this->responsecount;
@@ -543,26 +572,18 @@ class mod_questionnaire_generator extends testing_module_generator {
         }
 
         // Mark response as complete.
-        $record['complete'] = 'y';
+        $record['complete'] = ($complete) ? 'y' : 'n';
         $DB->update_record('questionnaire_response', $record);
-
-        // Create attempt record.
-        $attempt = ['qid' => $record['survey_id'], 'userid' => $record['username'], 'rid' => $record['id'],
-            'timemodified' => time()];
-        $DB->insert_record('questionnaire_attempts', $attempt);
 
         return $record;
     }
 
 
     /**
-     * @param int $number
-     *
      * Generate an array of assigned options;
+     * @param int $number
      */
     public function assign_opts($number = 5) {
-        static $curpos = 0;
-
         $opts = 'blue, red, yellow, orange, green, purple, white, black, earth, wind, fire, space, car, truck, train' .
             ', van, tram, one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen' .
             ', fourteen, fifteen, sixteen, seventeen, eighteen, nineteen, twenty, happy, sad, jealous, angry';
@@ -570,15 +591,15 @@ class mod_questionnaire_generator extends testing_module_generator {
         $numopts = count($opts);
 
         if ($number > (count($opts) / 2)) {
-            throw new coding_exception('Maxiumum number of options is '.($opts / 2));
+            throw new coding_exception('Maxiumum number of options is '.(count($opts) / 2));
         }
 
         $retopts = [];
         while (count($retopts) < $number) {
-            $retopts[] = $opts[$curpos];
+            $retopts[] = $opts[$this->curpos];
             $retopts = array_unique($retopts);
-            if (++$curpos == $numopts) {
-                $curpos = 0;
+            if (++$this->curpos == $numopts) {
+                $this->curpos = 0;
             }
         }
         // Return re-indexed version of array (otherwise you can get a weird index of 1,2,5,9, etc).
@@ -586,13 +607,14 @@ class mod_questionnaire_generator extends testing_module_generator {
     }
 
     /**
+     * Generate a response.
      * @param questionnaire $questionnaire
-     * @param \mod_questionnaire\question\base[] $questions
-     * @param $userid
+     * @param \mod_questionnaire\question\question[] $questions
+     * @param int $userid
+     * @param bool $complete
      * @return stdClass
-     * @throws coding_exception
      */
-    public function generate_response($questionnaire, $questions, $userid) {
+    public function generate_response($questionnaire, $questions, $userid, $complete = true) {
         $responses = [];
         foreach ($questions as $question) {
 
@@ -637,30 +659,58 @@ class mod_questionnaire_generator extends testing_module_generator {
                 case QUESRATE :
                     $answers = [];
                     for ($a = 0; $a < count($choices) - 1; $a++) {
-                        $answers[] = new question_response_rank($choices[$a], ($a % 5));
+                        $answers[] = new question_response_rank($choices[$a], (($a % 5) + 1));
                     }
                     $responses[] = new question_response($question->id, $answers);
+                    break;
+                case QUESSLIDER :
+                    $responses[] = new question_response($question->id, 5);
                     break;
             }
 
         }
-        return $this->create_response(['survey_id' => $questionnaire->sid, 'username' => $userid], $responses);
+        return $this->create_response($responses, ['questionnaireid' => $questionnaire->id, 'userid' => $userid], $complete);
     }
 
+    /**
+     * Create fully defined questionnaires into the test database.
+     * @param int $coursecount
+     * @param int $studentcount
+     * @param int $questionnairecount
+     * @param int $questionspertype
+     * @param array $profilefields in format ['<shortname>' => '<name>']
+     */
     public function create_and_fully_populate($coursecount = 4, $studentcount = 20, $questionnairecount = 2,
-            $questionspertype = 5) {
+                                              $questionspertype = 5, $profilefields = []) {
         global $DB;
 
         $dg = $this->datagenerator;
         $qdg = $this;
 
-        $questiontypes = [QUESTEXT, QUESESSAY, QUESNUMERIC, QUESDATE, QUESRADIO, QUESDROP, QUESCHECK, QUESRATE];
+        $this->curpos = 0;
+        $questiontypes = [QUESTEXT, QUESESSAY, QUESNUMERIC, QUESDATE, QUESRADIO, QUESDROP, QUESCHECK, QUESRATE, QUESSLIDER];
         $students = [];
         $courses = [];
         $questionnaires = [];
 
+        if (!empty($profilefields)) {
+            // Create profile fields and set them to show for user identity.
+            $fields = [];
+            foreach ($profilefields as $field => $name) {
+                $dg->create_custom_profile_field(['datatype' => 'text',
+                    'shortname' => $field, 'name' => $name]);
+                $fields[] = "profile_field_{$field}";
+            }
+            set_config('showuseridentity', implode(',', $fields));
+        }
+
         for ($u = 0; $u < $studentcount; $u++) {
-            $students[] = $dg->create_user(['firstname' => 'Testy']);
+            $user = ['firstname' => 'Testy'];
+            // Set values for the profile fields.
+            foreach ($profilefields as $field => $name) {
+                $user["profile_field_{$field}"] = "{$field}{$u}";
+            }
+            $students[] = $dg->create_user($user);
         }
 
         $manplugin = enrol_get_plugin('manual');
@@ -690,9 +740,9 @@ class mod_questionnaire_generator extends testing_module_generator {
                     $qdg->create_question(
                         $questionnaire,
                         [
-                            'survey_id' => $questionnaire->sid,
-                            'name'      => $qdg->type_name($questiontype),
-                            'type_id'   => QUESSECTIONTEXT
+                            'surveyid' => $questionnaire->sid,
+                            'name' => $qdg->type_name($questiontype),
+                            'type_id' => QUESSECTIONTEXT
                         ]
                     );
                     // Create questions.
@@ -704,9 +754,9 @@ class mod_questionnaire_generator extends testing_module_generator {
                         $questions[] = $qdg->create_question(
                             $questionnaire,
                             [
-                                'survey_id' => $questionnaire->sid,
-                                'name'      => $qdg->type_name($questiontype).' '.$qname++,
-                                'type_id'   => $questiontype
+                                'surveyid' => $questionnaire->sid,
+                                'name' => $qdg->type_name($questiontype).' '.$qname++,
+                                'type_id' => $questiontype
                             ],
                             $opts
                         );
@@ -715,7 +765,7 @@ class mod_questionnaire_generator extends testing_module_generator {
                     $qdg->create_question(
                         $questionnaire,
                         [
-                            'survey_id' => $questionnaire->sid,
+                            'surveyid' => $questionnaire->sid,
                             'name' => 'pagebreak '.$qname++,
                             'type_id' => QUESPAGEBREAK
                         ]
@@ -723,11 +773,17 @@ class mod_questionnaire_generator extends testing_module_generator {
                 }
 
                 // Create responses.
+                $count = 1;
                 foreach ($students as $student) {
-                    $qdg->generate_response($questionnaire, $questions, $student->id);
+                    // Make the last response an "incomplete" response.
+                    if ($count < $studentcount) {
+                        $qdg->generate_response($questionnaire, $questions, $student->id);
+                    } else {
+                        $qdg->generate_response($questionnaire, $questions, $student->id, false);
+                    }
+                    $count++;
                 }
             }
         }
-
     }
 }

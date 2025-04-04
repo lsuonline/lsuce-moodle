@@ -16,7 +16,7 @@
 /**
  * Module to refresh a user competency summary in a page.
  *
- * @package    tool_lp
+ * @module     tool_lp/user_competency_info
  * @copyright  2015 Damyon Wiese
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,12 +26,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
     /**
      * Info
      *
-     * @param {JQuery} Selector to replace when the information needs updating.
-     * @param {Number} The id of the competency.
-     * @param {Number} The id of the user.
-     * @param {Number} The id of the plan.
-     * @param {Number} The id of the course.
-     * @param {Boolean} If we should display the user info.
+     * @param {JQuery} rootElement Selector to replace when the information needs updating.
+     * @param {Number} competencyId The id of the competency.
+     * @param {Number} userId The id of the user.
+     * @param {Number} planId The id of the plan.
+     * @param {Number} courseId The id of the course.
+     * @param {Boolean} displayuser If we should display the user info.
      */
     var Info = function(rootElement, competencyId, userId, planId, courseId, displayuser) {
         this._rootElement = rootElement;
@@ -44,15 +44,15 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
 
         if (this._planId) {
             this._methodName = 'tool_lp_data_for_user_competency_summary_in_plan';
-            this._args = { competencyid: this._competencyId, planid: this._planId };
+            this._args = {competencyid: this._competencyId, planid: this._planId};
             this._templateName = 'tool_lp/user_competency_summary_in_plan';
         } else if (this._courseId) {
             this._methodName = 'tool_lp_data_for_user_competency_summary_in_course';
-            this._args = { userid: this._userId, competencyid: this._competencyId, courseid: this._courseId };
+            this._args = {userid: this._userId, competencyid: this._competencyId, courseid: this._courseId};
             this._templateName = 'tool_lp/user_competency_summary_in_course';
         } else {
             this._methodName = 'tool_lp_data_for_user_competency_summary';
-            this._args = { userid: this._userId, competencyid: this._competencyId };
+            this._args = {userid: this._userId, competencyid: this._competencyId};
             this._templateName = 'tool_lp/user_competency_summary';
         }
     };
@@ -86,25 +86,25 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
         }).fail(notification.exception);
     };
 
-    /** @type {JQuery} The root element to replace in the DOM. */
+    /** @property {JQuery} The root element to replace in the DOM. */
     Info.prototype._rootElement = null;
-    /** @type {Number} The id of the course. */
+    /** @property {Number} The id of the course. */
     Info.prototype._courseId = null;
-    /** @type {Boolean} Is this module valid? */
+    /** @property {Boolean} Is this module valid? */
     Info.prototype._valid = null;
-    /** @type {Number} The id of the plan. */
+    /** @property {Number} The id of the plan. */
     Info.prototype._planId = null;
-    /** @type {Number} The id of the competency. */
+    /** @property {Number} The id of the competency. */
     Info.prototype._competencyId = null;
-    /** @type {Number} The id of the user. */
+    /** @property {Number} The id of the user. */
     Info.prototype._userId = null;
-    /** @type {String} The method name to load the data. */
+    /** @property {String} The method name to load the data. */
     Info.prototype._methodName = null;
-    /** @type {Object} The arguments to load the data. */
+    /** @property {Object} The arguments to load the data. */
     Info.prototype._args = null;
-    /** @type {String} The template to reload the fragment. */
+    /** @property {String} The template to reload the fragment. */
     Info.prototype._templateName = null;
-    /** @type {Boolean} If we should display the user info? */
+    /** @property {Boolean} If we should display the user info? */
     Info.prototype._displayuser = false;
 
     return /** @alias module:tool_lp/user_competency_info */ Info;

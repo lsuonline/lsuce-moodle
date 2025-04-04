@@ -23,9 +23,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace mod_customcert;
 
-global $CFG;
+use grade_item;
+use grade_grade;
+use context_module;
+use context_system;
+use advanced_testcase;
 
 /**
  * Unit tests for the element helper class.
@@ -35,30 +39,32 @@ global $CFG;
  * @copyright  2017 Mark Nelson <markn@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mod_customcert_element_helper_testcase extends advanced_testcase {
+final class element_helper_test extends advanced_testcase {
 
     /**
      * Test set up.
      */
-    public function setUp() {
+    public function setUp(): void {
         $this->resetAfterTest();
     }
 
     /**
      * Tests we are returning the correct course id for an element in a course customcert activity.
+     *
+     * @covers \element_helper::get_courseid
      */
-    public function test_get_courseid_element_in_course_certificate() {
+    public function test_get_courseid_element_in_course_certificate(): void {
         global $DB;
 
         // Create a course.
         $course = $this->getDataGenerator()->create_course();
 
         // Create a custom certificate in the course.
-        $customcert = $this->getDataGenerator()->create_module('customcert', array('course' => $course->id));
+        $customcert = $this->getDataGenerator()->create_module('customcert', ['course' => $course->id]);
 
         // Get the template to add elements to.
-        $template = $DB->get_record('customcert_templates', array('contextid' => context_module::instance($customcert->cmid)->id));
-        $template = new \mod_customcert\template($template);
+        $template = $DB->get_record('customcert_templates', ['contextid' => context_module::instance($customcert->cmid)->id]);
+        $template = new template($template);
 
         // Add a page to the template.
         $pageid = $template->add_page();
@@ -68,22 +74,24 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $element->name = 'Test element';
         $element->element = 'testelement';
         $element->pageid = $pageid;
-        $element->sequence = \mod_customcert\element_helper::get_element_sequence($element->pageid);
+        $element->sequence = element_helper::get_element_sequence($element->pageid);
         $element->timecreated = time();
         $element->id = $DB->insert_record('customcert_elements', $element);
 
         // Confirm the correct course id is returned.
-        $this->assertEquals($course->id, \mod_customcert\element_helper::get_courseid($element->id));
+        $this->assertEquals($course->id, element_helper::get_courseid($element->id));
     }
 
     /**
      * Tests we are returning the correct course id for an element in a site template.
+     *
+     * @covers \element_helper::get_courseid
      */
-    public function test_get_courseid_element_in_site_template() {
+    public function test_get_courseid_element_in_site_template(): void {
         global $DB, $SITE;
 
         // Add a template to the site.
-        $template = \mod_customcert\template::create('Site template', context_system::instance()->id);
+        $template = template::create('Site template', context_system::instance()->id);
 
         // Add a page to the template.
         $pageid = $template->add_page();
@@ -93,27 +101,91 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $element->name = 'Test element';
         $element->element = 'testelement';
         $element->pageid = $pageid;
-        $element->sequence = \mod_customcert\element_helper::get_element_sequence($element->pageid);
+        $element->sequence = element_helper::get_element_sequence($element->pageid);
         $element->timecreated = time();
         $element->id = $DB->insert_record('customcert_elements', $element);
 
         // Confirm the correct course id is returned.
-        $this->assertEquals($SITE->id, \mod_customcert\element_helper::get_courseid($element->id));
+        $this->assertEquals($SITE->id, element_helper::get_courseid($element->id));
+    }
+
+    /**
+     * Tests we are returning the correct course module id for an element in a course customcert activity.
+     *
+     * @covers \element_helper::get_context
+     */
+    public function test_get_context_element_in_course_certificate(): void {
+        global $DB;
+
+        // Create a course.
+        $course = $this->getDataGenerator()->create_course();
+
+        // Create a custom certificate in the course.
+        $customcert = $this->getDataGenerator()->create_module('customcert', ['course' => $course->id]);
+
+        // Get the template to add elements to.
+        $template = $DB->get_record('customcert_templates', ['contextid' => context_module::instance($customcert->cmid)->id]);
+        $template = new template($template);
+
+        // Add a page to the template.
+        $pageid = $template->add_page();
+
+        // Add an element to this page.
+        $element = new \stdClass();
+        $element->name = 'Test element';
+        $element->element = 'testelement';
+        $element->pageid = $pageid;
+        $element->sequence = element_helper::get_element_sequence($element->pageid);
+        $element->timecreated = time();
+        $element->id = $DB->insert_record('customcert_elements', $element);
+
+        // Confirm the correct course module id is returned.
+        $this->assertEquals(context_module::instance($customcert->cmid),
+            element_helper::get_context($element->id));
+    }
+
+    /**
+     * Tests we are returning the correct course module id for an element in a site template.
+     *
+     * @covers \element_helper::get_context
+     */
+    public function test_get_context_element_in_site_template(): void {
+        global $DB;
+
+        // Add a template to the site.
+        $template = template::create('Site template', context_system::instance()->id);
+
+        // Add a page to the template.
+        $pageid = $template->add_page();
+
+        // Add an element to this page.
+        $element = new \stdClass();
+        $element->name = 'Test element';
+        $element->element = 'testelement';
+        $element->pageid = $pageid;
+        $element->sequence = element_helper::get_element_sequence($element->pageid);
+        $element->timecreated = time();
+        $element->id = $DB->insert_record('customcert_elements', $element);
+
+        // Confirm the correct course module id is returned.
+        $this->assertEquals(context_system::instance(), element_helper::get_context($element->id));
     }
 
     /**
      * Test we return the correct grade items in a course.
+     *
+     * @covers \element_helper::get_grade_items
      */
-    public function test_get_grade_items() {
+    public function test_get_grade_items(): void {
         global $DB;
 
         // Create a course.
         $course = $this->getDataGenerator()->create_course();
 
         // Create a few gradeable items.
-        $assign1 = $this->getDataGenerator()->create_module('assign', array('course' => $course->id));
-        $assign2 = $this->getDataGenerator()->create_module('assign', array('course' => $course->id));
-        $assign3 = $this->getDataGenerator()->create_module('assign', array('course' => $course->id));
+        $assign1 = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $assign2 = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $assign3 = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
 
         // Create a manual grade item.
         $gi = $this->getDataGenerator()->create_grade_item(['courseid' => $course->id]);
@@ -122,22 +194,37 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $gc = $this->getDataGenerator()->create_grade_category(['courseid' => $course->id]);
         $gc = $DB->get_record('grade_items', ['itemtype' => 'category', 'iteminstance' => $gc->id]);
 
+        // Create an item attached to an outcome.
+        $outcome = $this->getDataGenerator()->create_grade_outcome(['courseid' => $course->id, 'shortname' => 'outcome']);
+        $go = $this->getDataGenerator()->create_grade_item(
+            [
+                'courseid' => $course->id,
+                'outcomeid' => $outcome->id,
+            ]
+        );
+
         // Confirm the function returns the correct number of grade items.
-        $gradeitems = \mod_customcert\element_helper::get_grade_items($course);
-        $this->assertCount(5, $gradeitems);
+        $gradeitems = element_helper::get_grade_items($course);
+        $this->assertCount(6, $gradeitems);
         $this->assertArrayHasKey($assign1->cmid, $gradeitems);
         $this->assertArrayHasKey($assign2->cmid, $gradeitems);
         $this->assertArrayHasKey($assign3->cmid, $gradeitems);
         $this->assertArrayHasKey('gradeitem:' . $gi->id, $gradeitems);
         $this->assertArrayHasKey('gradeitem:' . $gc->id, $gradeitems);
+        $this->assertArrayHasKey('gradeitem:' . $go->id, $gradeitems);
     }
 
     /**
      * Test we return the correct grade information for an activity.
+     *
+     * @covers \element_helper::get_mod_grade_info
      */
-    public function test_get_mod_grade_info() {
+    public function test_get_mod_grade_info(): void {
         // Create a course.
         $course = $this->getDataGenerator()->create_course();
+
+        // Set that we want 3 decimals to display.
+        grade_set_setting($course->id, 'decimalpoints', 3);
 
         // Create two users.
         $student1 = $this->getDataGenerator()->create_user();
@@ -148,7 +235,7 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $this->getDataGenerator()->enrol_user($student2->id, $course->id);
 
         // Create a gradeable item.
-        $assign = $this->getDataGenerator()->create_module('assign', array('course' => $course->id));
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
 
         // Give a grade to the student.
         $gi = grade_item::fetch(
@@ -156,7 +243,7 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
                 'itemtype' => 'mod',
                 'itemmodule' => 'assign',
                 'iteminstance' => $assign->id,
-                'courseid' => $course->id
+                'courseid' => $course->id,
             ]
         );
         $datagrade = 50;
@@ -173,7 +260,7 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $grade->insert();
 
         // Check that the user received the grade.
-        $grade = \mod_customcert\element_helper::get_mod_grade_info(
+        $grade = element_helper::get_mod_grade_info(
             $assign->cmid,
             GRADE_DISPLAY_TYPE_PERCENTAGE,
             $student1->id
@@ -181,11 +268,11 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
 
         $this->assertEquals($assign->name, $grade->get_name());
         $this->assertEquals('50.00000', $grade->get_grade());
-        $this->assertEquals('50 %', $grade->get_displaygrade());
+        $this->assertEquals('50.000 %', $grade->get_displaygrade());
         $this->assertEquals($time, $grade->get_dategraded());
 
         // Check that the user we did not grade has no grade.
-        $grade = \mod_customcert\element_helper::get_mod_grade_info(
+        $grade = element_helper::get_mod_grade_info(
             $assign->cmid,
             GRADE_DISPLAY_TYPE_PERCENTAGE,
             $student2->id
@@ -194,19 +281,21 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $this->assertEquals(null, $grade->get_grade());
         $this->assertEquals('-', $grade->get_displaygrade());
         $this->assertEquals(null, $grade->get_dategraded());
+
+        grade_get_setting($course->id, null, null, true);
     }
 
     /**
      * Test we return the correct grade information for a course.
+     *
+     * @covers \element_helper::get_course_grade_info
      */
-    public function test_get_course_grade_info() {
-        global $CFG;
-
-        // Including to use constant.
-        require_once($CFG->dirroot . '/mod/customcert/element/grade/classes/element.php');
-
+    public function test_get_course_grade_info(): void {
         // Create a course.
         $course = $this->getDataGenerator()->create_course();
+
+        // Set that we want 3 decimals to display.
+        grade_set_setting($course->id, 'decimalpoints', 3);
 
         // Create two users.
         $student1 = $this->getDataGenerator()->create_user();
@@ -233,7 +322,7 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $grade->insert();
 
         // Check that the user received the grade.
-        $grade = \mod_customcert\element_helper::get_course_grade_info(
+        $grade = element_helper::get_course_grade_info(
             $course->id,
             GRADE_DISPLAY_TYPE_PERCENTAGE,
             $student1->id
@@ -241,11 +330,11 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
 
         $this->assertEquals(get_string('coursetotal', 'grades'), $grade->get_name());
         $this->assertEquals('50.00000', $grade->get_grade());
-        $this->assertEquals('50 %', $grade->get_displaygrade());
+        $this->assertEquals('50.000 %', $grade->get_displaygrade());
         $this->assertEquals($time, $grade->get_dategraded());
 
         // Check that the user we did not grade has no grade.
-        $grade = \mod_customcert\element_helper::get_course_grade_info(
+        $grade = element_helper::get_course_grade_info(
             $course->id,
             GRADE_DISPLAY_TYPE_PERCENTAGE,
             $student2->id
@@ -254,14 +343,21 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $this->assertEquals(null, $grade->get_grade());
         $this->assertEquals('-', $grade->get_displaygrade());
         $this->assertEquals(null, $grade->get_dategraded());
+
+        grade_get_setting($course->id, null, null, true);
     }
 
     /**
      * Test we return the correct grade information for a grade item.
+     *
+     * @covers \element_helper::get_grade_item_info
      */
-    public function test_get_grade_item_info() {
+    public function test_get_grade_item_info(): void {
         // Create a course.
         $course = $this->getDataGenerator()->create_course();
+
+        // Set that we want 3 decimals to display.
+        grade_set_setting($course->id, 'decimalpoints', 3);
 
         // Create two users.
         $student1 = $this->getDataGenerator()->create_user();
@@ -290,7 +386,7 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $grade->insert();
 
         // Check that the user received the grade.
-        $grade = \mod_customcert\element_helper::get_grade_item_info(
+        $grade = element_helper::get_grade_item_info(
             $gi->id,
             GRADE_DISPLAY_TYPE_PERCENTAGE,
             $student1->id
@@ -298,11 +394,11 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
 
         $this->assertEquals('Grade item yo', $grade->get_name());
         $this->assertEquals('50.00000', $grade->get_grade());
-        $this->assertEquals('50 %', $grade->get_displaygrade());
+        $this->assertEquals('50.000 %', $grade->get_displaygrade());
         $this->assertEquals($time, $grade->get_dategraded());
 
         // Check that the user we did not grade has no grade.
-        $grade = \mod_customcert\element_helper::get_grade_item_info(
+        $grade = element_helper::get_grade_item_info(
             $gi->id,
             GRADE_DISPLAY_TYPE_PERCENTAGE,
             $student2->id
@@ -311,5 +407,7 @@ class mod_customcert_element_helper_testcase extends advanced_testcase {
         $this->assertEquals(null, $grade->get_grade());
         $this->assertEquals('-', $grade->get_displaygrade());
         $this->assertEquals(null, $grade->get_dategraded());
+
+        grade_get_setting($course->id, null, null, true);
     }
 }

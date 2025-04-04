@@ -15,16 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace theme_snap;
-
-use \theme_snap\traits\null_object;
-
-defined('MOODLE_INTERNAL') || die();
+use theme_snap\traits\null_object;
 
 /**
  * Activity meta data.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class activity_meta {
@@ -52,24 +49,28 @@ class activity_meta {
      * @var string $reopenedstr - string for reopened status
      */
     public $reopenedstr;
-    /**
-     * @var string $duestr - string for due date
-     */
-    public $duestr;
-    /**
-     * @var string $overduestr - string for overdue status
-     */
-    public $overduestr;
 
     // General meta data.
     /**
      * @var int $timeopen - unix time stamp for time open
      */
     public $timeopen;
+
     /**
      * @var int $timeclose - unix time stamp for time closes
      */
     public $timeclose;
+
+    /**
+     * @var bool - did we use the muc to get the timeopen / timeclose data?
+     */
+    public $timesfromcache;
+
+    /**
+     * @var int $extension - unix time stamp for extended due dates.
+     */
+    public $extension;
+
     /**
      * @var bool $isteacher - true if meta data is intended for teacher
      */
@@ -114,10 +115,4 @@ class activity_meta {
      * @var int $numrequiregrading - number of submissions requiring grading
      */
     public $numrequiregrading = 0;
-
-    public function __construct() {
-        // Set default strings.
-        $this->set_default('overduestr', get_string('overdue', 'theme_snap'));
-        $this->set_default('duestr', get_string('due', 'theme_snap'));
-    }
 }

@@ -21,10 +21,13 @@
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->libdir . '/formslib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/formslib.php');
 
 class reprocess_form extends moodleform {
-    function definition() {
+    public function definition() {
         global $USER, $COURSE;
 
         $m =& $this->_form;
@@ -32,14 +35,14 @@ class reprocess_form extends moodleform {
         $stocked = array();
 
         foreach ($this->_customdata['sections'] as $section) {
-            $user_params = array(
+            $userparams = array(
                 'userid' => $USER->id,
                 'sectionid' => $section->id,
                 'primary_flag' => 1,
                 'status' => ues::ENROLLED
             );
 
-            $primary = ues_teacher::get($user_params);
+            $primary = ues_teacher::get($userparams);
 
             if ($primary and $primary->userid != $USER->id) {
                 continue;
@@ -62,13 +65,13 @@ class reprocess_form extends moodleform {
         foreach ($stocked as $semesterid => $courses) {
             $semester = ues_semester::get(array('id' => $semesterid));
 
-            $sem_name = "$semester->year $semester->name $semester->session_key";
-            $m->addElement('header', 'sem_header_' . $semesterid, $sem_name);
+            $semname = "$semester->year $semester->name $semester->session_key";
+            $m->addElement('header', 'sem_header_' . $semesterid, $semname);
 
             foreach ($courses as $courseid => $sections) {
                 $course = ues_course::get(array('id' => $courseid));
 
-                $name = "<strong>$sem_name $course->department $course->cou_number</strong>";
+                $name = "<strong>$semname $course->department $course->cou_number</strong>";
                 $m->addElement('checkbox', 'course_'.$semesterid.'_' . $courseid, $name, '');
 
                 foreach ($sections as $sectionid => $section) {
@@ -86,10 +89,10 @@ class reprocess_form extends moodleform {
         }
 
         $m->addElement('hidden', 'id', $this->_customdata['id']);
-        $m->setType('id',PARAM_INT);
-        
+        $m->setType('id', PARAM_INT);
+
         $m->addElement('hidden', 'type', $this->_customdata['type']);
-        $m->setType('type',PARAM_TEXT);
+        $m->setType('type', PARAM_TEXT);
 
         $buttons = array(
             $m->createElement('submit', 'reprocess', get_string('reprocess', 'block_ues_reprocess')),

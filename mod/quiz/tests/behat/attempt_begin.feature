@@ -29,11 +29,10 @@ Feature: The various checks that may happen when an attept is started
     And quiz "Quiz 1" contains the following questions:
       | question | page |
       | TF1      | 1    |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
-    And I press "Attempt quiz now"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I press "Attempt quiz"
     Then I should see "Text of the first question"
+    And I should not see "v1" in the "Question 1" "question"
 
   @javascript
   Scenario: Start a quiz with time limit and password
@@ -43,12 +42,10 @@ Feature: The various checks that may happen when an attept is started
     And quiz "Quiz 1" contains the following questions:
       | question | page |
       | TF1      | 1    |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
-    And I press "Attempt quiz now"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I press "Attempt quiz"
     Then I should see "To attempt this quiz you need to know the quiz password" in the "Start attempt" "dialogue"
-    And I should see "The quiz has a time limit of 1 hour. Time will " in the "Start attempt" "dialogue"
+    And I should see "Your attempt will have a time limit of 1 hour. When you " in the "Start attempt" "dialogue"
     And I set the field "Quiz password" to "Frog"
     And I click on "Start attempt" "button" in the "Start attempt" "dialogue"
     And I should see "Text of the first question"
@@ -61,13 +58,11 @@ Feature: The various checks that may happen when an attept is started
     And quiz "Quiz 1" contains the following questions:
       | question | page |
       | TF1      | 1    |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
-    And I press "Attempt quiz now"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I press "Attempt quiz"
     And I click on "Cancel" "button" in the "Start attempt" "dialogue"
     Then I should see "Quiz 1 description"
-    And "Attempt quiz now" "button" should be visible
+    And "Attempt quiz" "button" should be visible
 
   @javascript
   Scenario: Start a quiz with time limit and password, get the password wrong first time
@@ -77,19 +72,15 @@ Feature: The various checks that may happen when an attept is started
     And quiz "Quiz 1" contains the following questions:
       | question | page |
       | TF1      | 1    |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
-    And I press "Attempt quiz now"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I press "Attempt quiz"
     And I set the field "Quiz password" to "Toad"
     And I click on "Start attempt" "button" in the "Start attempt" "dialogue"
     Then I should see "Quiz 1 description"
     And I should see "To attempt this quiz you need to know the quiz password"
-    And I should see "The quiz has a time limit of 1 hour. Time will "
+    And I should see "Your attempt will have a time limit of 1 hour. When you "
     And I should see "The password entered was incorrect"
     And I set the field "Quiz password" to "Frog"
-    # On Mac/FF tab key is needed as text field in dialogue and page have same id.
-    And I press tab key in "Quiz password" "field"
     And I press "Start attempt"
     And I should see "Text of the first question"
 
@@ -101,19 +92,32 @@ Feature: The various checks that may happen when an attept is started
     And quiz "Quiz 1" contains the following questions:
       | question | page |
       | TF1      | 1    |
-    When I log in as "student"
-    And I follow "Course 1"
-    And I follow "Quiz 1"
-    And I press "Attempt quiz now"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I press "Attempt quiz"
     And I set the field "Quiz password" to "Toad"
     And I click on "Start attempt" "button" in the "Start attempt" "dialogue"
     And I should see "Quiz 1 description"
     And I should see "To attempt this quiz you need to know the quiz password"
-    And I should see "The quiz has a time limit of 1 hour. Time will "
+    And I should see "Your attempt will have a time limit of 1 hour. When you "
     And I should see "The password entered was incorrect"
     And I set the field "Quiz password" to "Frog"
-    # On Mac/FF tab key is needed as text field in dialogue and page have same id.
-    And I press tab key in "Quiz password" "field"
     And I press "Cancel"
     Then I should see "Quiz 1 description"
-    And "Attempt quiz now" "button" should be visible
+    And "Attempt quiz" "button" should be visible
+
+  @javascript
+  Scenario: Quiz attempt page reloads upon navigating back using the browser's back button
+    Given the following "activities" exist:
+      | activity   | name   | intro              | course | idnumber | timelimit |
+      | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    | 3600      |
+    And quiz "Quiz 1" contains the following questions:
+      | question | page |
+      | TF1      | 1    |
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
+    And I press "Attempt quiz"
+    And I should see "Your attempt will have a time limit of 1 hour. When you " in the "Start attempt" "dialogue"
+    And I start watching to see if a new page loads
+    And I click on "Start attempt" "button" in the "Start attempt" "dialogue"
+    And I press the "back" button in the browser
+    Then a new page should have loaded since I started watching
+    And I should see "Continue your attempt"

@@ -14,33 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Wrapper that loads the adminer code and its plugins.
+ *
+ * @package    local_adminer
+ * @author Andreas Grabs <moodle@grabs-edv.de>
+ * @copyright  Andreas Grabs
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once('../../../config.php');
 require_login();
-require_capability('moodle/site:config', context_system::instance());
+require_capability('local/adminer:useadminer', context_system::instance());
 
+/**
+ * Creates an AdminerPlugin object.
+ * This object is used by the adminer.php code and defines some configurations and features.
+ *
+ * @return AdminerPlugin
+ */
 function adminer_object() {
     // required to run any plugin
     require_once("plugins/plugin.php");
-
-    class Adminer_Custom extends AdminerPlugin {
-
-        public function credentials() {
-            global $CFG;
-
-            if(!empty($CFG->dboptions['dbport'])) {
-                return array($CFG->dbhost.':'.$CFG->dboptions['dbport'],
-                             $CFG->dbuser,
-                             $CFG->dbpass);
-            } else {
-                return array($CFG->dbhost, $CFG->dbuser, $CFG->dbpass);
-            }
-        }
-
-        public function loginForm() {
-            echo '';
-        }
-
-    }
 
     // autoloader
     foreach (glob("plugins/*.php") as $filename) {
@@ -49,10 +44,32 @@ function adminer_object() {
 
     $plugins = array(
         // specify enabled plugins here
-        new AdminerFrames(true)
+        new AdminerFrames(true),
+        new AdminerMdlLogin(),
+        new AdminerMdlDesigns(),
     );
 
-    return new Adminer_Custom($plugins);
+    return new AdminerPlugin($plugins);
 }
 // include original Adminer or Adminer Editor
-require_once("adminer.php");
+if (\local_adminer\util::check_adminer_secret()) {
+    static $adminerlang;
+    $currentlang = current_language();
+    if (empty($adminerlang) || $adminerlang!= $currentlang) {
+        $adminerlang = $currentlang;
+        unset($_SESSION['translations']);
+        $_SERVER['HTTP_ACCEPT_LANGUAGE'] = $adminerlang;
+    };
+
+    // Prevent loading adminer while running tests.
+    if (defined('BEHAT_SITE_RUNNING') || PHPUNIT_TEST) {
+        if (optional_param('db', null, PARAM_TEXT)) {
+            echo 'Adminer started with database';
+        } else {
+            echo 'Adminer started without database';
+        }
+        exit;
+    }
+
+    require_once("adminer.php");
+}

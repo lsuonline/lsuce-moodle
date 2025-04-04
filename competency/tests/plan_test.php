@@ -14,19 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Plan persistent class tests.
- *
- * @package    core_competency
- * @copyright  2015 Frédéric Massart - FMCorz.net
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-defined('MOODLE_INTERNAL') || die();
-global $CFG;
-
-use core_competency\api;
-use core_competency\plan;
+namespace core_competency;
 
 /**
  * Plan persistent testcase.
@@ -35,9 +23,9 @@ use core_competency\plan;
  * @copyright  2015 Frédéric Massart - FMCorz.net
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_competency_plan_testcase extends advanced_testcase {
+final class plan_test extends \advanced_testcase {
 
-    public function test_can_manage_user() {
+    public function test_can_manage_user(): void {
         $this->resetAfterTest(true);
 
         $manage = create_role('Manage', 'manage', 'Plan manager');
@@ -47,10 +35,10 @@ class core_competency_plan_testcase extends advanced_testcase {
         $u2 = $this->getDataGenerator()->create_user();
         $u3 = $this->getDataGenerator()->create_user();
 
-        $syscontext = context_system::instance();
-        $u1context = context_user::instance($u1->id);
-        $u2context = context_user::instance($u2->id);
-        $u3context = context_user::instance($u3->id);
+        $syscontext = \context_system::instance();
+        $u1context = \context_user::instance($u1->id);
+        $u2context = \context_user::instance($u2->id);
+        $u3context = \context_user::instance($u3->id);
 
         assign_capability('moodle/competency:planmanage', CAP_ALLOW, $manage, $syscontext->id);
         assign_capability('moodle/competency:planmanageown', CAP_ALLOW, $manageown, $u2context->id);
@@ -76,7 +64,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $this->assertFalse(plan::can_manage_user($u3->id));
     }
 
-    public function test_can_manage_user_draft() {
+    public function test_can_manage_user_draft(): void {
         $this->resetAfterTest(true);
 
         $manage = create_role('Manage', 'manage', 'Plan manager');
@@ -90,12 +78,12 @@ class core_competency_plan_testcase extends advanced_testcase {
         $u4 = $this->getDataGenerator()->create_user();
         $u5 = $this->getDataGenerator()->create_user();
 
-        $syscontext = context_system::instance();
-        $u1context = context_user::instance($u1->id);
-        $u2context = context_user::instance($u2->id);
-        $u3context = context_user::instance($u3->id);
-        $u4context = context_user::instance($u4->id);
-        $u5context = context_user::instance($u5->id);
+        $syscontext = \context_system::instance();
+        $u1context = \context_user::instance($u1->id);
+        $u2context = \context_user::instance($u2->id);
+        $u3context = \context_user::instance($u3->id);
+        $u4context = \context_user::instance($u4->id);
+        $u5context = \context_user::instance($u5->id);
 
         assign_capability('moodle/competency:planmanage', CAP_ALLOW, $manage, $syscontext->id);
         assign_capability('moodle/competency:planmanageown', CAP_ALLOW, $manageown, $syscontext->id);
@@ -145,7 +133,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $this->assertTrue(plan::can_manage_user_draft($u5->id));
     }
 
-    public function test_can_read_user() {
+    public function test_can_read_user(): void {
         $this->resetAfterTest(true);
 
         $read = create_role('Read', 'read', 'Plan reader');
@@ -155,10 +143,10 @@ class core_competency_plan_testcase extends advanced_testcase {
         $u2 = $this->getDataGenerator()->create_user();
         $u3 = $this->getDataGenerator()->create_user();
 
-        $syscontext = context_system::instance();
-        $u1context = context_user::instance($u1->id);
-        $u2context = context_user::instance($u2->id);
-        $u3context = context_user::instance($u3->id);
+        $syscontext = \context_system::instance();
+        $u1context = \context_user::instance($u1->id);
+        $u2context = \context_user::instance($u2->id);
+        $u3context = \context_user::instance($u3->id);
 
         assign_capability('moodle/competency:planview', CAP_ALLOW, $read, $syscontext->id);
         assign_capability('moodle/competency:planviewown', CAP_ALLOW, $readown, $u2context->id);
@@ -184,7 +172,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $this->assertTrue(plan::can_read_user($u3->id));    // Due to the default capability.
     }
 
-    public function test_can_read_user_draft() {
+    public function test_can_read_user_draft(): void {
         $this->resetAfterTest(true);
 
         $read = create_role('Read', 'read', 'Plan readr');
@@ -198,12 +186,12 @@ class core_competency_plan_testcase extends advanced_testcase {
         $u4 = $this->getDataGenerator()->create_user();
         $u5 = $this->getDataGenerator()->create_user();
 
-        $syscontext = context_system::instance();
-        $u1context = context_user::instance($u1->id);
-        $u2context = context_user::instance($u2->id);
-        $u3context = context_user::instance($u3->id);
-        $u4context = context_user::instance($u4->id);
-        $u5context = context_user::instance($u5->id);
+        $syscontext = \context_system::instance();
+        $u1context = \context_user::instance($u1->id);
+        $u2context = \context_user::instance($u2->id);
+        $u3context = \context_user::instance($u3->id);
+        $u4context = \context_user::instance($u4->id);
+        $u5context = \context_user::instance($u5->id);
 
         assign_capability('moodle/competency:planview', CAP_ALLOW, $read, $syscontext->id);
         assign_capability('moodle/competency:planviewown', CAP_ALLOW, $readown, $syscontext->id);
@@ -254,7 +242,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $this->assertTrue(plan::can_read_user_draft($u5->id));
     }
 
-    public function test_validate_duedate() {
+    public function test_validate_duedate(): void {
         global $DB;
         $this->resetAfterTest(true);
         $this->setAdminUser();
@@ -268,37 +256,37 @@ class core_competency_plan_testcase extends advanced_testcase {
 
         // Ignore duedate validation on create/update draft plan.
         $plan = $lpg->create_plan($record);
-        $this->assertInstanceOf('core_competency\plan', $plan);
+        $this->assertInstanceOf(plan::class, $plan);
 
         // Passing from draft to active.
-        $plan->set_status(plan::STATUS_ACTIVE);
+        $plan->set('status', plan::STATUS_ACTIVE);
 
         // Draft to active with duedate in the past.
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedateinthepast', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedateinthepast', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Draft to active: past date => past date(fail).
-        $plan->set_duedate(time() - 100);
+        $plan->set('duedate', time() - 100);
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedateinthepast', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedateinthepast', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Draft to active: past date => too soon (fail).
-        $plan->set_duedate(time() + 100);
+        $plan->set('duedate', time() + 100);
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedatetoosoon', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedatetoosoon', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Draft to active: past date => future date (pass).
-        $plan->set_duedate(time() + plan::DUEDATE_THRESHOLD + 10);
+        $plan->set('duedate', time() + plan::DUEDATE_THRESHOLD + 10);
         $this->assertEquals(true, $plan->validate());
 
         // Draft to active: past date => unset date (pass).
-        $plan->set_duedate(0);
+        $plan->set('duedate', 0);
         $this->assertEquals(true, $plan->validate());
 
         // Updating active plan.
@@ -309,63 +297,63 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = 1;
         $DB->update_record(plan::TABLE, $record);
         $plan->read();
-        $plan->set_description(uniqid()); // Force revalidation.
+        $plan->set('description', uniqid()); // Force revalidation.
         $this->assertTrue($plan->is_valid());
 
         // Active to active: past => unset (pass).
-        $plan->set_duedate(0);
+        $plan->set('duedate', 0);
         $this->assertTrue($plan->is_valid());
         $plan->update();
 
         // Active to active: unset => unset (pass).
-        $plan->set_description(uniqid()); // Force revalidation.
+        $plan->set('description', uniqid()); // Force revalidation.
         $this->assertTrue($plan->is_valid());
 
         // Active to active: unset date => past date(fail).
-        $plan->set_duedate(time() - 100);
+        $plan->set('duedate', time() - 100);
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedateinthepast', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedateinthepast', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Active to active: unset date => too soon (fail).
-        $plan->set_duedate(time() + 100);
+        $plan->set('duedate', time() + 100);
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedatetoosoon', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedatetoosoon', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Active to active: unset date => future date (pass).
-        $plan->set_duedate(time() + plan::DUEDATE_THRESHOLD + 10);
+        $plan->set('duedate', time() + plan::DUEDATE_THRESHOLD + 10);
         $this->assertEquals(true, $plan->validate());
 
         // Updating active plan with future date.
         $plan->update();
 
         // Active to active: future => same future (pass).
-        $plan->set_description(uniqid()); // Force revalidation.
+        $plan->set('description', uniqid()); // Force revalidation.
         $this->assertTrue($plan->is_valid());
 
         // Active to active: future date => unset date (pass).
-        $plan->set_duedate(0);
+        $plan->set('duedate', 0);
         $this->assertEquals(true, $plan->validate());
 
         // Active to active: future date => past date(fail).
-        $plan->set_duedate(time() - 100);
+        $plan->set('duedate', time() - 100);
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedateinthepast', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedateinthepast', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Active to active: future date => too soon (fail).
-        $plan->set_duedate(time() + 100);
+        $plan->set('duedate', time() + 100);
         $expected = array(
-            'duedate' => new lang_string('errorcannotsetduedatetoosoon', 'core_competency'),
+            'duedate' => new \lang_string('errorcannotsetduedatetoosoon', 'core_competency'),
         );
         $this->assertEquals($expected, $plan->validate());
 
         // Active to active: future date => future date (pass).
-        $plan->set_duedate(time() + plan::DUEDATE_THRESHOLD + 10);
+        $plan->set('duedate', time() + plan::DUEDATE_THRESHOLD + 10);
         $this->assertEquals(true, $plan->validate());
 
         // Completing plan: with due date in the past.
@@ -374,7 +362,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = time() - 200;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::complete_plan($plan->get_id());
+        $success = api::complete_plan($plan->get('id'));
         $this->assertTrue($success);
 
         // Completing plan: with due date too soon (pass).
@@ -383,7 +371,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = time() + 200;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::complete_plan($plan->get_id());
+        $success = api::complete_plan($plan->get('id'));
         $this->assertTrue($success);
 
         // Completing plan: with due date in the future (pass).
@@ -392,7 +380,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = time() + plan::DUEDATE_THRESHOLD + 10;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::complete_plan($plan->get_id());
+        $success = api::complete_plan($plan->get('id'));
         $this->assertTrue($success);
 
         // Completing plan: with due date unset (pass).
@@ -401,7 +389,7 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = 0;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::complete_plan($plan->get_id());
+        $success = api::complete_plan($plan->get('id'));
         $this->assertTrue($success);
 
         // Reopening plan: with due date in the past => duedate unset.
@@ -410,10 +398,10 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = time() - 200;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::reopen_plan($plan->get_id());
+        $success = api::reopen_plan($plan->get('id'));
         $this->assertTrue($success);
         $plan->read();
-        $this->assertEquals(0, $plan->get_duedate());
+        $this->assertEquals(0, $plan->get('duedate'));
 
         // Reopening plan: with due date too soon => duedate unset.
         $record = $plan->to_record();
@@ -421,10 +409,10 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = time() + 100;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::reopen_plan($plan->get_id());
+        $success = api::reopen_plan($plan->get('id'));
         $this->assertTrue($success);
         $plan->read();
-        $this->assertEquals(0, $plan->get_duedate());
+        $this->assertEquals(0, $plan->get('duedate'));
 
         // Reopening plan: with due date in the future => duedate unchanged.
         $record = $plan->to_record();
@@ -433,16 +421,16 @@ class core_competency_plan_testcase extends advanced_testcase {
         $record->duedate = $duedate;
         $DB->update_record(plan::TABLE, $record);
 
-        $success = core_competency\api::reopen_plan($plan->get_id());
+        $success = api::reopen_plan($plan->get('id'));
         $this->assertTrue($success);
         $plan->read();
 
         // Check that the due date has not changed.
-        $this->assertNotEquals(0, $plan->get_duedate());
-        $this->assertEquals($duedate, $plan->get_duedate());
+        $this->assertNotEquals(0, $plan->get('duedate'));
+        $this->assertEquals($duedate, $plan->get('duedate'));
     }
 
-    public function test_get_by_user_and_competency() {
+    public function test_get_by_user_and_competency(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
 
@@ -455,78 +443,78 @@ class core_competency_plan_testcase extends advanced_testcase {
         $u4 = $dg->create_user();
 
         $f1 = $lpg->create_framework();
-        $c1 = $lpg->create_competency(array('competencyframeworkid' => $f1->get_id()));
-        $c2 = $lpg->create_competency(array('competencyframeworkid' => $f1->get_id()));
+        $c1 = $lpg->create_competency(array('competencyframeworkid' => $f1->get('id')));
+        $c2 = $lpg->create_competency(array('competencyframeworkid' => $f1->get('id')));
 
         $tpl1 = $lpg->create_template();
-        $lpg->create_template_competency(array('competencyid' => $c1->get_id(), 'templateid' => $tpl1->get_id()));
+        $lpg->create_template_competency(array('competencyid' => $c1->get('id'), 'templateid' => $tpl1->get('id')));
 
         $p1 = $lpg->create_plan(array('userid' => $u1->id));
-        $lpg->create_plan_competency(array('planid' => $p1->get_id(), 'competencyid' => $c1->get_id()));
+        $lpg->create_plan_competency(array('planid' => $p1->get('id'), 'competencyid' => $c1->get('id')));
         $p2 = $lpg->create_plan(array('userid' => $u2->id));
-        $lpg->create_plan_competency(array('planid' => $p2->get_id(), 'competencyid' => $c1->get_id()));
-        $p3 = $lpg->create_plan(array('userid' => $u3->id, 'templateid' => $tpl1->get_id()));
-        $p4 = $lpg->create_plan(array('userid' => $u4->id, 'templateid' => $tpl1->get_id()));
+        $lpg->create_plan_competency(array('planid' => $p2->get('id'), 'competencyid' => $c1->get('id')));
+        $p3 = $lpg->create_plan(array('userid' => $u3->id, 'templateid' => $tpl1->get('id')));
+        $p4 = $lpg->create_plan(array('userid' => $u4->id, 'templateid' => $tpl1->get('id')));
         api::complete_plan($p2);
         api::complete_plan($p4);
 
         // Finding a plan, not completed.
-        $plans = plan::get_by_user_and_competency($u1->id, $c1->get_id());
+        $plans = plan::get_by_user_and_competency($u1->id, $c1->get('id'));
         $this->assertCount(1, $plans);
         $plan = array_shift($plans);
-        $this->assertEquals($p1->get_id(), $plan->get_id());
-        $this->assertNotEquals(plan::STATUS_COMPLETE, $plan->get_status());
+        $this->assertEquals($p1->get('id'), $plan->get('id'));
+        $this->assertNotEquals(plan::STATUS_COMPLETE, $plan->get('status'));
 
         // Finding a completed plan.
-        $plans = plan::get_by_user_and_competency($u2->id, $c1->get_id());
+        $plans = plan::get_by_user_and_competency($u2->id, $c1->get('id'));
         $this->assertCount(1, $plans);
         $plan = array_shift($plans);
-        $this->assertEquals($p2->get_id(), $plan->get_id());
-        $this->assertEquals(plan::STATUS_COMPLETE, $plan->get_status());
+        $this->assertEquals($p2->get('id'), $plan->get('id'));
+        $this->assertEquals(plan::STATUS_COMPLETE, $plan->get('status'));
 
         // Finding a plan based on a template, not completed.
-        $plans = plan::get_by_user_and_competency($u3->id, $c1->get_id());
+        $plans = plan::get_by_user_and_competency($u3->id, $c1->get('id'));
         $this->assertCount(1, $plans);
         $plan = array_shift($plans);
-        $this->assertEquals($p3->get_id(), $plan->get_id());
+        $this->assertEquals($p3->get('id'), $plan->get('id'));
         $this->assertTrue($plan->is_based_on_template());
-        $this->assertNotEquals(plan::STATUS_COMPLETE, $plan->get_status());
+        $this->assertNotEquals(plan::STATUS_COMPLETE, $plan->get('status'));
 
         // Finding a plan based on a template.
-        $plans = plan::get_by_user_and_competency($u4->id, $c1->get_id());
+        $plans = plan::get_by_user_and_competency($u4->id, $c1->get('id'));
         $this->assertCount(1, $plans);
         $plan = array_shift($plans);
-        $this->assertEquals($p4->get_id(), $plan->get_id());
+        $this->assertEquals($p4->get('id'), $plan->get('id'));
         $this->assertTrue($plan->is_based_on_template());
-        $this->assertEquals(plan::STATUS_COMPLETE, $plan->get_status());
+        $this->assertEquals(plan::STATUS_COMPLETE, $plan->get('status'));
 
         // Finding more than one plan, no template.
         $p5 = $lpg->create_plan(array('userid' => $u1->id));
-        $lpg->create_plan_competency(array('planid' => $p5->get_id(), 'competencyid' => $c1->get_id()));
-        $plans = plan::get_by_user_and_competency($u1->id, $c1->get_id());
+        $lpg->create_plan_competency(array('planid' => $p5->get('id'), 'competencyid' => $c1->get('id')));
+        $plans = plan::get_by_user_and_competency($u1->id, $c1->get('id'));
         $this->assertCount(2, $plans);
         $plan = array_shift($plans);
-        $this->assertEquals($p1->get_id(), $plan->get_id());
+        $this->assertEquals($p1->get('id'), $plan->get('id'));
         $plan = array_shift($plans);
-        $this->assertEquals($p5->get_id(), $plan->get_id());
+        $this->assertEquals($p5->get('id'), $plan->get('id'));
 
         // Finding more than one plan, with template.
-        $p6 = $lpg->create_plan(array('userid' => $u1->id, 'templateid' => $tpl1->get_id()));
-        $plans = plan::get_by_user_and_competency($u1->id, $c1->get_id());
+        $p6 = $lpg->create_plan(array('userid' => $u1->id, 'templateid' => $tpl1->get('id')));
+        $plans = plan::get_by_user_and_competency($u1->id, $c1->get('id'));
         $this->assertCount(3, $plans);
         $plan = array_shift($plans);
-        $this->assertEquals($p1->get_id(), $plan->get_id());
+        $this->assertEquals($p1->get('id'), $plan->get('id'));
         $plan = array_shift($plans);
-        $this->assertEquals($p5->get_id(), $plan->get_id());
+        $this->assertEquals($p5->get('id'), $plan->get('id'));
         $plan = array_shift($plans);
-        $this->assertEquals($p6->get_id(), $plan->get_id());
+        $this->assertEquals($p6->get('id'), $plan->get('id'));
 
         // Finding no plans.
-        $plans = plan::get_by_user_and_competency($u1->id, $c2->get_id());
+        $plans = plan::get_by_user_and_competency($u1->id, $c2->get('id'));
         $this->assertCount(0, $plans);
     }
 
-    public function test_get_competency() {
+    public function test_get_competency(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
 
@@ -539,35 +527,36 @@ class core_competency_plan_testcase extends advanced_testcase {
         $u4 = $dg->create_user();
 
         $f1 = $lpg->create_framework();
-        $c1 = $lpg->create_competency(array('competencyframeworkid' => $f1->get_id()));
-        $c2 = $lpg->create_competency(array('competencyframeworkid' => $f1->get_id()));
-        $c3 = $lpg->create_competency(array('competencyframeworkid' => $f1->get_id()));
-        $c4 = $lpg->create_competency(array('competencyframeworkid' => $f1->get_id()));
+        $c1 = $lpg->create_competency(array('competencyframeworkid' => $f1->get('id')));
+        $c2 = $lpg->create_competency(array('competencyframeworkid' => $f1->get('id')));
+        $c3 = $lpg->create_competency(array('competencyframeworkid' => $f1->get('id')));
+        $c4 = $lpg->create_competency(array('competencyframeworkid' => $f1->get('id')));
 
         $tpl1 = $lpg->create_template();
         $p1 = $lpg->create_plan(array('userid' => $u1->id));
         $p2 = $lpg->create_plan(array('userid' => $u2->id));
-        $p3 = $lpg->create_plan(array('userid' => $u3->id, 'templateid' => $tpl1->get_id()));
-        $p4 = $lpg->create_plan(array('userid' => $u4->id, 'templateid' => $tpl1->get_id()));
+        $p3 = $lpg->create_plan(array('userid' => $u3->id, 'templateid' => $tpl1->get('id')));
+        $p4 = $lpg->create_plan(array('userid' => $u4->id, 'templateid' => $tpl1->get('id')));
 
-        $lpg->create_plan_competency(array('planid' => $p1->get_id(), 'competencyid' => $c1->get_id()));
-        $lpg->create_plan_competency(array('planid' => $p2->get_id(), 'competencyid' => $c2->get_id()));
-        $lpg->create_template_competency(array('templateid' => $tpl1->get_id(), 'competencyid' => $c3->get_id()));
-        $lpg->create_template_competency(array('templateid' => $tpl1->get_id(), 'competencyid' => $c4->get_id()));
+        $lpg->create_plan_competency(array('planid' => $p1->get('id'), 'competencyid' => $c1->get('id')));
+        $lpg->create_plan_competency(array('planid' => $p2->get('id'), 'competencyid' => $c2->get('id')));
+        $lpg->create_template_competency(array('templateid' => $tpl1->get('id'), 'competencyid' => $c3->get('id')));
+        $lpg->create_template_competency(array('templateid' => $tpl1->get('id'), 'competencyid' => $c4->get('id')));
 
         // Completing the plans and removing a competency from the template.
         api::complete_plan($p2);
         api::complete_plan($p4);
-        api::remove_competency_from_template($tpl1->get_id(), $c4->get_id());
+        api::remove_competency_from_template($tpl1->get('id'), $c4->get('id'));
 
         // We can find all competencies.
-        $this->assertEquals($c1->to_record(), $p1->get_competency($c1->get_id())->to_record());
-        $this->assertEquals($c2->to_record(), $p2->get_competency($c2->get_id())->to_record());
-        $this->assertEquals($c3->to_record(), $p3->get_competency($c3->get_id())->to_record());
-        $this->assertEquals($c4->to_record(), $p4->get_competency($c4->get_id())->to_record());
+        $this->assertEquals($c1->to_record(), $p1->get_competency($c1->get('id'))->to_record());
+        $this->assertEquals($c2->to_record(), $p2->get_competency($c2->get('id'))->to_record());
+        $this->assertEquals($c3->to_record(), $p3->get_competency($c3->get('id'))->to_record());
+        $this->assertEquals($c4->to_record(), $p4->get_competency($c4->get('id'))->to_record());
 
         // Getting the competency 4 from the non-completed plan based on a template p4, will throw an exception.
-        $this->setExpectedException('coding_exception', 'The competency does not belong to this template: ');
-        $p3->get_competency($c4->get_id());
+        $this->expectException('coding_exception');
+        $this->expectExceptionMessage('The competency does not belong to this template:');
+        $p3->get_competency($c4->get('id'));
     }
 }

@@ -24,8 +24,6 @@
 
 namespace customcertelement_border;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The customcert element border's core interaction API.
  *
@@ -38,13 +36,11 @@ class element extends \mod_customcert\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
         // We want to define the width of the border.
-        $mform->addElement('text', 'width', get_string('width', 'customcertelement_border'), array('size' => 10));
-        $mform->setType('width', PARAM_INT);
-        $mform->addHelpButton('width', 'width', 'customcertelement_border');
+        \mod_customcert\element_helper::render_form_element_width($mform);
 
         // The only other thing to define is the colour we want the border to be.
         \mod_customcert\element_helper::render_form_element_colour($mform);
@@ -59,7 +55,7 @@ class element extends \mod_customcert\element {
      */
     public function render($pdf, $preview, $user) {
         $colour = \TCPDF_COLORS::convertHTMLColorToDec($this->get_colour(), $colour);
-        $pdf->SetLineStyle(array('width' => $this->get_data(), 'color' => $colour));
+        $pdf->SetLineStyle(['width' => $this->get_data(), 'color' => $colour]);
         $pdf->Line(0, 0, $pdf->getPageWidth(), 0);
         $pdf->Line($pdf->getPageWidth(), 0, $pdf->getPageWidth(), $pdf->getPageHeight());
         $pdf->Line(0, $pdf->getPageHeight(), $pdf->getPageWidth(), $pdf->getPageHeight());
@@ -87,12 +83,10 @@ class element extends \mod_customcert\element {
      */
     public function validate_form_elements($data, $files) {
         // Array to return the errors.
-        $errors = array();
+        $errors = [];
 
-        // Check if width is not set, or not numeric or less than 0.
-        if ((!isset($data['width'])) || (!is_numeric($data['width'])) || ($data['width'] <= 0)) {
-            $errors['width'] = get_string('invalidwidth', 'customcertelement_border');
-        }
+        // Validate the width.
+        $errors += \mod_customcert\element_helper::validate_form_element_width($data, false);
 
         // Validate the colour.
         $errors += \mod_customcert\element_helper::validate_form_element_colour($data);
@@ -103,13 +97,12 @@ class element extends \mod_customcert\element {
     /**
      * Sets the data on the form when editing an element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function definition_after_data($mform) {
-        $data = $this->get_data();
-        if (!empty($data)) {
+        if (!empty($this->get_data())) {
             $element = $mform->getElement('width');
-            $element->setValue($data);
+            $element->setValue($this->get_data());
         }
         parent::definition_after_data($mform);
     }

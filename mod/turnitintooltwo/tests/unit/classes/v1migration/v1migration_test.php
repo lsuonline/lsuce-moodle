@@ -28,6 +28,20 @@ require_once($CFG->libdir . "/gradelib.php");
  */
 class mod_turnitintooltwo_v1migration_testcase extends test_lib {
 
+    /** Workaround for new php.7.2 warning
+     * see http://php.net/manual/en/migration72.incompatible.php#migration72.incompatible.warn-on-non-countable-types
+     */
+    protected function countvar($count) {
+        if (is_array($count) || ($count instanceof Countable)) {
+            $count = count($count);
+        } else if (is_int($count)) {
+            $count = 1;
+        } else if (!isset($count)) {
+            $count = 0;
+        }
+        return $count;
+    }
+
     /**
      * Test that users get migrated from the v1 to the v2 user table.
      */
@@ -196,32 +210,6 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
     }
 
     /**
-     * Test the migrate modal.
-     */
-    public function test_migrate_modal() {
-        global $DB;
-
-        if (!$this->v1installed()) {
-            return false;
-        }
-
-        $v1assignment = new stdClass();
-        $v1assignment->id = 1;
-
-        $v1migration = new v1migration(1, $v1assignment);
-
-        $this->resetAfterTest();
-
-        // Test migration modal.
-        $courseid = 1;
-        $turnitintoolid = 1;
-        $test = $v1migration->migrate_modal($courseid, $turnitintoolid);
-
-        $this->assertContains('data-courseid="'.$courseid.'"', $test);
-        $this->assertContains('data-turnitintoolid="'.$turnitintoolid.'"', $test);
-    }
-
-    /**
      * Test that all values which can't be null get initialised.
      */
     public function test_set_default_values() {
@@ -280,7 +268,7 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
 
         // Test that assignment has been renamed.
         $updatedassignment = $DB->get_record('turnitintool', array('id' => $v1assignment->id));
-        $this->assertContains("(Migration in progress...)", $updatedassignment->name);
+        $this->assertStringContainsString("(Migration in progress...)", $updatedassignment->name);
 
         // Test that assignment has been hidden.
         $cm = get_coursemodule_from_instance('turnitintool', $v1assignment->id);
@@ -301,14 +289,22 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         $course = $this->getDataGenerator()->create_course();
 
         // Create Assignment.
+        $v1assignmenttitle = "Test ".uniqid();
+        $v1assignment = $this->make_test_assignment($course->id, 'turnitintool', $v1assignmenttitle);
+        $v1migration = new v1migration($course->id, $v1assignment);
+
+        // Get the section for the V1 assignment.
+        $v1cm = get_coursemodule_from_instance('turnitintool', $v1assignment->id);
+
+        // Create V2 Assignment.
         $v2assignment = $this->make_test_assignment($course->id, 'turnitintooltwo');
-        $v1migration = new v1migration($course->id, $v2assignment);
 
         $v1migration->setup_v2_module($course->id, $v2assignment->id);
 
         // Test that assignment has been assigned a course section.
-        $cm = get_coursemodule_from_instance('turnitintooltwo', $v2assignment->id);
-        $this->assertNotEquals(0, $cm->section);
+        $v2cm = get_coursemodule_from_instance('turnitintooltwo', $v2assignment->id);
+
+        $this->assertEquals($v1cm->section, $v2cm->section);
     }
 
     /**
@@ -553,14 +549,14 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         $response = $v1migration->migrate_course($v1course);
         $v2courses = $DB->get_records('turnitintooltwo_courses', array('turnitin_cid' => $v1tiicourse, 'course_type' => "V1"));
         $this->assertEquals(1, count($v2courses));
-        $this->assertEquals(1, count($v1migration->v1assignment->legacy));
+        $this->assertEquals(1, $this->countvar($v1migration->v1assignment->legacy));
         $this->assertEquals($course->courseid, $response->courseid);
         $this->assertEquals("V1", $response->course_type);
 
         // We expect 0 results here since we inserted a course type of TT.
         $v2courses = $DB->get_records('turnitintooltwo_courses', array('turnitin_cid' => $v1tiicourse, 'course_type' => "TT"));
         $this->assertEquals(0, count($v2courses));
-        $this->assertEquals(1, count($v1migration->v1assignment->legacy));
+        $this->assertEquals(1, $this->countvar($v1migration->v1assignment->legacy));
         $this->assertEquals($course->courseid, $response->courseid);
         $this->assertEquals("V1", $response->course_type);
 
@@ -568,14 +564,14 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         $response = $v1migration->migrate_course($v1course);
         $v2courses = $DB->get_records('turnitintooltwo_courses', array('turnitin_cid' => $v1tiicourse, 'course_type' => "V1"));
         $this->assertEquals(1, count($v2courses));
-        $this->assertEquals(1, count($v1migration->v1assignment->legacy));
+        $this->assertEquals(1, $this->countvar($v1migration->v1assignment->legacy));
         $this->assertEquals($course->courseid, $response->courseid);
         $this->assertEquals("V1", $response->course_type);
 
         // And still 0 results for this one.
         $v2courses = $DB->get_records('turnitintooltwo_courses', array('turnitin_cid' => $v1tiicourse, 'course_type' => "TT"));
         $this->assertEquals(0, count($v2courses));
-        $this->assertEquals(1, count($v1migration->v1assignment->legacy));
+        $this->assertEquals(1, $this->countvar($v1migration->v1assignment->legacy));
         $this->assertEquals($course->courseid, $response->courseid);
         $this->assertEquals("V1", $response->course_type);
     }
@@ -701,6 +697,18 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
 
         $course = $this->getDataGenerator()->create_course();
 
+        // Link course to Turnitin.
+        $courselink = new stdClass();
+        $courselink->courseid = $course->id;
+        $courselink->ownerid = 0;
+        $courselink->turnitin_ctl = "Test Course";
+        $courselink->turnitin_cid = 0;
+        $DB->insert_record('turnitintool_courses', $courselink);
+
+        $v1assignmenttitle = "Test ".uniqid();
+        $v1assignment = $this->make_test_assignment($course->id, 'turnitintool', $v1assignmenttitle);
+        $v1migration = new v1migration($course->id, $v1assignment);
+
         // create a user and enrol them on the course.
         $student = $this->getDataGenerator()->create_user();
         $studentrole = $DB->get_record('role', array('shortname' => 'student'));
@@ -710,7 +718,6 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         $v2assignmenttitle = "Test Assignment";
         $v2assignment = $this->make_test_assignment($course->id, 'turnitintooltwo', $v2assignmenttitle, 10);
 
-        $v1migration = new v1migration($course->id, $v2assignment);
         $v1migration->setup_v2_module($course->id, $v2assignment->id);
 
         // Set and get the grades for this assignment.
@@ -744,12 +751,12 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         // Create V1 Assignment.
         $v1assignmenttitle = "Test Assignment";
         $v1assignment = $this->make_test_assignment($course->id, 'turnitintool', $v1assignmenttitle);
+        $v1migration = new v1migration($course->id, $v1assignment);
 
         // Create V2 Assignment.
         $v2assignmenttitle = "Test Assignment";
         $v2assignment = $this->make_test_assignment($course->id, 'turnitintooltwo', $v2assignmenttitle, 10);
 
-        $v1migration = new v1migration($course->id, $v2assignment);
         $v1migration->setup_v2_module($course->id, $v2assignment->id);
 
         $this->make_test_grade("turnitintooltwo", $v2assignment->id, $course->id, 1, 10);
@@ -837,7 +844,7 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
             }
         }
         // Create our output array.
-        $assignments = $DB->get_records('turnitintool', NULL, "name ASC", "id, name, migrated", $_POST["iDisplayStart"], $_POST["iDisplayLength"]);
+        $assignments = $DB->get_records('turnitintool', NULL, NULL, "id, name, migrated");
         $outputrows = array();
         foreach ($assignments as $key => $value) {
             if ($value->migrated == 1) {
@@ -858,44 +865,8 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         }
         $expectedoutput = array("aaData"               => $outputrows,
                                 "sEcho"                => $_POST["sEcho"],
-                                "iTotalRecords"        => $_POST["iDisplayLength"],
+                                "iTotalRecords"        => $numAssignments,
                                 "iTotalDisplayRecords" => $numAssignments);
-        $this->assertEquals($_POST["iDisplayLength"], count($assignments));
-        $response = v1migration::turnitintooltwo_getassignments();
-
-        $this->assertEquals($expectedoutput, $response);
-        // Do a second test for the search box.
-        $_POST["sSearch"] = "coursework";
-        $query = "SELECT id, name, migrated FROM {turnitintool}
-                  WHERE LOWER(name) LIKE LOWER(:search_term_2)
-                  ORDER BY name asc";
-        $queryparams = array("search_term_2" => "%".$_POST["sSearch"]."%");
-        $assignments = $DB->get_records_sql($query, $queryparams, $_POST["iDisplayStart"], $_POST["iDisplayLength"]);
-        $totalassignments = count($DB->get_records_sql($query, $queryparams));
-
-        $outputrows = array();
-        foreach ($assignments as $key => $value) {
-            if ($value->migrated == 1) {
-                $checkbox = '<input class="browser_checkbox" type="checkbox" value="'.$value->id.'" name="assignmentids[]" />';
-                $sronly = html_writer::tag('span', get_string('yes', 'turnitintooltwo'), array('class' => 'sr-only'));
-                $migrationValue = html_writer::tag('span', $sronly, array('class' => 'fa fa-check'));
-
-                $assignmenttitle = format_string($value->name);
-            } else {
-                $checkbox = "";
-                $sronly = html_writer::tag('span', get_string('no', 'turnitintooltwo'), array('class' => 'sr-only'));
-                $migrationValue = html_writer::tag('span', $sronly, array('class' => 'fa fa-times'));
-
-                $assignmentlink = new moodle_url('/mod/turnitintool/view.php', array('a' => $value->id, 'id' => '0'));
-                $assignmenttitle = html_writer::link($assignmentlink, format_string($value->name), array('target' => '_blank' ));
-            }
-            $outputrows[] = array($checkbox, $value->id, $assignmenttitle, $migrationValue);
-        }
-        $expectedoutput = array("aaData"               => $outputrows,
-                                "sEcho"                => $_POST["sEcho"],
-                                "iTotalRecords"        => $_POST["iDisplayLength"],
-                                "iTotalDisplayRecords" => $totalassignments);
-        $this->assertEquals($_POST["iDisplayLength"], count($assignments));
         $response = v1migration::turnitintooltwo_getassignments();
 
         $this->assertEquals($expectedoutput, $response);
@@ -955,17 +926,7 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         set_config('turnitin_account_id', 1234);
 
         // Set Account Id for v2.
-        $updatev2 = $DB->get_record('config_plugins', array('plugin' => 'turnitintooltwo', 'name' => 'accountid'));
-        if (!$updatev2) {
-            $updatev2 = new stdClass();
-            $updatev2->plugin = "turnitintooltwo";
-            $updatev2->name = "accountid";
-            $updatev2->value = 1234;
-            $DB->insert_record('config_plugins', $updatev2);
-        } else {
-            $updatev2->value = 1234;
-            $DB->update_record('config_plugins', $updatev2);
-        }
+        set_config('accountid', '1234', 'turnitintooltwo');
 
         // Account IDs should be the same.
         $enabled = v1migration::check_account_ids();
@@ -988,6 +949,6 @@ class mod_turnitintooltwo_v1migration_testcase extends test_lib {
         // Test that warning message is shown to user if they aren't allowed to edit migration tool status.
         $form = v1migration::output_settings_form(false);
 
-        $this->assertContains(get_string('migrationtoolaccounterror', 'turnitintooltwo'), $form);
+        $this->assertStringContainsString(get_string('migrationtoolaccounterror', 'turnitintooltwo'), $form);
     }
 }

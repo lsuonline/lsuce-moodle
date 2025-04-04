@@ -110,7 +110,7 @@ class restore_qtype_multianswer_plugin extends restore_qtype_plugin {
             foreach ($sequencearr as $key => $question) {
                 $sequencearr[$key] = $this->get_mappingid('question', $question);
             }
-            $sequence = implode(',', $sequencearr);
+            $sequence = implode(',', array_filter($sequencearr));
             $DB->set_field('question_multianswer', 'sequence', $sequence,
                     array('id' => $rec->id));
             if (!empty($sequence)) {
@@ -199,4 +199,19 @@ class restore_qtype_multianswer_plugin extends restore_qtype_plugin {
         return implode(',', $resultarr);
     }
 
+    #[\Override]
+    public function define_excluded_identity_hash_fields(): array {
+        return [
+            '/options/sequence',
+            '/options/question',
+        ];
+    }
+
+    #[\Override]
+    public static function remove_excluded_question_data(stdClass $questiondata, array $excludefields = []): stdClass {
+        if (isset($questiondata->options->questions)) {
+            unset($questiondata->options->questions);
+        }
+        return parent::remove_excluded_question_data($questiondata, $excludefields);
+    }
 }

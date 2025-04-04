@@ -37,7 +37,7 @@ if ($action) {
 }
 
 if ($tid) {
-    $template = $DB->get_record('customcert_templates', array('id' => $tid), '*', MUST_EXIST);
+    $template = $DB->get_record('customcert_templates', ['id' => $tid], '*', MUST_EXIST);
     $template = new \mod_customcert\template($template);
 }
 
@@ -46,35 +46,39 @@ $context = context::instance_by_id($contextid);
 require_login();
 require_capability('mod/customcert:manage', $context);
 
+$title = $SITE->fullname;
+
 // Set up the page.
 $pageurl = new moodle_url('/mod/customcert/manage_templates.php');
-\mod_customcert\page_helper::page_setup($pageurl, $context, get_string('managetemplates', 'customcert'));
+\mod_customcert\page_helper::page_setup($pageurl, $context, $title);
 
 // Additional page setup.
-$PAGE->navbar->add(get_string('managetemplates', 'customcert'));
+if ($tid && $action && confirm_sesskey()) {
+    $PAGE->navbar->add(get_string('managetemplates', 'customcert'),
+        new moodle_url('/mod/customcert/manage_templates.php'));
+} else {
+    $PAGE->navbar->add(get_string('managetemplates', 'customcert'));
+}
 
 if ($tid) {
     if ($action && confirm_sesskey()) {
         $nourl = new moodle_url('/mod/customcert/manage_templates.php');
         $yesurl = new moodle_url('/mod/customcert/manage_templates.php',
-            array(
+            [
                 'tid' => $tid,
                 'action' => $action,
                 'confirm' => 1,
-                'sesskey' => sesskey()
-            )
+                'sesskey' => sesskey(),
+            ]
         );
 
         // Check if we are deleting a template.
         if ($action == 'delete') {
             if (!$confirm) {
                 // Show a confirmation page.
-                $strheading = get_string('deleteconfirm', 'customcert');
-                $PAGE->navbar->add($strheading);
-                $PAGE->set_title($strheading);
+                $PAGE->navbar->add(get_string('deleteconfirm', 'customcert'));
                 $message = get_string('deletetemplateconfirm', 'customcert');
                 echo $OUTPUT->header();
-                echo $OUTPUT->heading($strheading);
                 echo $OUTPUT->confirm($message, $yesurl, $nourl);
                 echo $OUTPUT->footer();
                 exit();
@@ -88,27 +92,20 @@ if ($tid) {
         } else if ($action == 'duplicate') {
             if (!$confirm) {
                 // Show a confirmation page.
-                $strheading = get_string('duplicateconfirm', 'customcert');
-                $PAGE->navbar->add($strheading);
-                $PAGE->set_title($strheading);
+                $PAGE->navbar->add(get_string('duplicateconfirm', 'customcert'));
                 $message = get_string('duplicatetemplateconfirm', 'customcert');
                 echo $OUTPUT->header();
-                echo $OUTPUT->heading($strheading);
                 echo $OUTPUT->confirm($message, $yesurl, $nourl);
                 echo $OUTPUT->footer();
                 exit();
             }
 
             // Create another template to copy the data to.
-            $newtemplate = new \stdClass();
-            $newtemplate->name = $template->get_name() . ' (' . strtolower(get_string('duplicate', 'customcert')) . ')';
-            $newtemplate->contextid = $template->get_contextid();
-            $newtemplate->timecreated = time();
-            $newtemplate->timemodified = $newtemplate->timecreated;
-            $newtemplateid = $DB->insert_record('customcert_templates', $newtemplate);
+            $name = $template->get_name() . ' (' . strtolower(get_string('duplicate', 'customcert')) . ')';
+            $newtemplate = \mod_customcert\template::create($name, $template->get_contextid());
 
             // Copy the data to the new template.
-            $template->copy_to_template($newtemplateid);
+            $template->copy_to_template($newtemplate);
 
             // Redirect back to the manage templates page.
             redirect(new moodle_url('/mod/customcert/manage_templates.php'));

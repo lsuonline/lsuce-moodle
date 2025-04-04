@@ -34,7 +34,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->dirroot . '/my/lib.php');
 
 redirect_if_major_upgrade_required();
@@ -52,9 +52,16 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 
 $strmymoodle = get_string('myhome');
 
-// Requires non priveleged users to use site_home instead of dashboard.
-if (!has_capability('moodle/course:create', context_system::instance()) && $CFG->defaulthomepage == 0) {
-    redirect(new moodle_url('/', array('redirect' => 0)));
+if (empty($CFG->enabledashboard)) {
+    // Dashboard is disabled, so the /my page shouldn't be displayed.
+    $defaultpage = get_default_home_page();
+    if ($defaultpage == HOMEPAGE_MYCOURSES) {
+        // If default page is set to "My courses", redirect to it.
+        redirect(new moodle_url('/my/courses.php'));
+    } else {
+        // Otherwise, raise an exception to inform the dashboard is disabled.
+        throw new moodle_exception('error:dashboardisdisabled', 'my');
+    }
 }
 
 if (isguestuser()) {  // Force them to see system default, no editing allowed
@@ -67,20 +74,19 @@ if (isguestuser()) {  // Force them to see system default, no editing allowed
     $USER->editing = $edit = 0;  // Just in case
     $context = context_system::instance();
     $PAGE->set_blocks_editing_capability('moodle/my:configsyspages');  // unlikely :)
-    $header = "$SITE->shortname: $strmymoodle (GUEST)";
-    $pagetitle = $header;
+    $strguest = get_string('guest');
+    $pagetitle = "$strmymoodle ($strguest)";
 
 } else {        // We are trying to view or edit our own My Moodle page
     $userid = $USER->id;  // Owner of the page
     $context = context_user::instance($USER->id);
     $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
-    $header = fullname($USER);
     $pagetitle = $strmymoodle;
 }
 
 // Get the My Moodle page info.  Should always return something unless the database is broken.
 if (!$currentpage = my_get_page($userid, MY_PAGE_PRIVATE)) {
-    print_error('mymoodlesetup');
+    throw new \moodle_exception('mymoodlesetup');
 }
 
 // Start setting up the page
@@ -88,12 +94,12 @@ $params = array();
 $PAGE->set_context($context);
 $PAGE->set_url('/my/index.php', $params);
 $PAGE->set_pagelayout('mydashboard');
+$PAGE->add_body_class('limitedwidth');
 $PAGE->set_pagetype('my-index');
 $PAGE->blocks->add_region('content');
 $PAGE->set_subpage($currentpage->id);
 $PAGE->set_title($pagetitle);
-$PAGE->set_heading($header);
-$PAGE->add_body_class('eupopup eupopup-bottom');
+$PAGE->set_heading($pagetitle);
 
 if (!isguestuser()) {   // Skip default home page for guests
     if (get_home_page() != HOMEPAGE_MY) {
@@ -114,7 +120,7 @@ if (empty($CFG->forcedefaultmymoodle) && $PAGE->user_allowed_editing()) {
         if (!is_null($userid)) {
             require_sesskey();
             if (!$currentpage = my_reset_page($userid, MY_PAGE_PRIVATE)) {
-                print_error('reseterror', 'my');
+                throw new \moodle_exception('reseterror', 'my');
             }
             redirect(new moodle_url('/my'));
         }
@@ -131,7 +137,7 @@ if (empty($CFG->forcedefaultmymoodle) && $PAGE->user_allowed_editing()) {
             // For the page to display properly with the user context header the page blocks need to
             // be copied over to the user context.
             if (!$currentpage = my_copy_page($USER->id, MY_PAGE_PRIVATE)) {
-                print_error('mymoodlesetup');
+                throw new \moodle_exception('mymoodlesetup');
             }
             $context = context_user::instance($USER->id);
             $PAGE->set_context($context);
@@ -160,7 +166,10 @@ if (empty($CFG->forcedefaultmymoodle) && $PAGE->user_allowed_editing()) {
     }
 
     $url = new moodle_url("$CFG->wwwroot/my/index.php", $params);
-    $button = $OUTPUT->single_button($url, $editstring);
+    $button = '';
+    if (!$PAGE->theme->haseditswitch) {
+        $button = $OUTPUT->single_button($url, $editstring);
+    }
     $PAGE->set_button($resetbutton . $button);
 
 } else {
@@ -169,6 +178,17 @@ if (empty($CFG->forcedefaultmymoodle) && $PAGE->user_allowed_editing()) {
 
 echo $OUTPUT->header();
 
+if (core_userfeedback::should_display_reminder()) {
+    core_userfeedback::print_reminder_block();
+}
+
+echo $OUTPUT->addblockbutton('content');
+
 echo $OUTPUT->custom_block_region('content');
 
 echo $OUTPUT->footer();
+
+// Trigger dashboard has been viewed event.
+$eventparams = array('context' => $context);
+$event = \core\event\dashboard_viewed::create($eventparams);
+$event->trigger();

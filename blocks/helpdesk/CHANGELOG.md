@@ -1,3 +1,12 @@
+# v3.0.1
+- Changed style to conform to Moodle 3.1 standard
+- Added `helpdesk_course` event using Event 2 standard
+
+# v3.0.0
+
+- Removed firing `helpdesk_course` and `helpdesk_user` in favor of internal process
+- Moodle 3.1 compatibility
+
 # v1.1.3
 
 - update deprecated fn calls

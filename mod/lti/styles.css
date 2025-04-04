@@ -1,29 +1,58 @@
-.path-mod-lti .ltiframe {position: relative;width: 100%;height: 100%;}
+.path-mod-lti .ltiframe {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
 
 /** General Styles **/
 .path-mod-lti .userpicture,
 .path-mod-lti .picture.user,
-.path-mod-lti .picture.teacher {width:35px;height: 35px;vertical-align:top;}
+.path-mod-lti .picture.teacher {
+    width: 35px;
+    height: 35px;
+    vertical-align: top;
+}
+
 .path-mod-lti .feedback .files,
 .path-mod-lti .feedback .grade,
 .path-mod-lti .feedback .outcome,
-.path-mod-lti .feedback .finalgrade {float: right;}
-.path-mod-lti .feedback .disabledfeedback {width: 500px;height: 250px;}
-.path-mod-lti .feedback .from {float: left;}
-.path-mod-lti .files img {margin-right: 4px;}
-.path-mod-lti .files a {white-space:nowrap;}
-.path-mod-lti .late {color: red;}
-.path-mod-lti .message {text-align: center;}
+.path-mod-lti .feedback .finalgrade {
+    float: right;
+}
+
+.path-mod-lti .feedback .disabledfeedback {
+    width: 500px;
+    height: 250px;
+}
+
+.path-mod-lti .feedback .from {
+    float: left;
+}
+
+.path-mod-lti .files img {
+    margin-right: 4px;
+}
+
+.path-mod-lti .files a {
+    white-space: nowrap;
+}
+
+.path-mod-lti .late {
+    color: red;
+}
 
 /* Styles for admin */
-.path-admin-mod-lti .mform .fitem .fitemtitle { min-width:18em;padding-right:1em } /* Prevent setting titles from wrapping */
+.path-admin-mod-lti .mform .fitem .fitemtitle {
+    min-width: 18em;
+    padding-right: 1em;
+} /* Prevent setting titles from wrapping */
 
 /* Styles for instructor editing an external tool */
 
-.path-mod-lti .mform .fitem .fitemtitle { min-width:14em;padding-right:1em } /* Prevent setting titles from wrapping */
-
-/* Styles for instructor_edit_tool_type.php */
-#page-mod-lti-instructor_edit_tool_type .mform .fitem .fitemtitle { min-width:18em;padding-right:1em } /* Prevent setting titles from wrapping */
+.path-mod-lti .mform .fitem .fitemtitle {
+    min-width: 14em;
+    padding-right: 1em;
+} /* Prevent setting titles from wrapping */
 
 /* Styling for tool_configure page */
 #registration-choice-container .buffer-text {
@@ -74,7 +103,7 @@
     min-height: 260px;
 }
 
-#registration-form-container .well {
+#registration-form-container .card {
     margin-bottom: 0;
 }
 
@@ -82,7 +111,7 @@
     margin-bottom: 0;
 }
 
-#registration-choice-container .well {
+#registration-choice-container .card {
     text-align: center;
 }
 
@@ -148,6 +177,7 @@
 #tool-list-loader-container .loader {
     display: none;
 }
+
 #tool-list-loader-container .loader img {
     height: 2em;
 }
@@ -174,12 +204,12 @@
 
 .tool-card:hover,
 .tool-card:focus {
-    border-color: #0088cc;
+    border-color: #08c;
     box-shadow: 0 1px 4px rgba(0, 105, 214, 0.25);
     -webkit-transition: border linear 0.2s, box-shadow linear 0.2s;
-       -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
-         -o-transition: border linear 0.2s, box-shadow linear 0.2s;
-            transition: border linear 0.2s, box-shadow linear 0.2s;
+    -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
+    -o-transition: border linear 0.2s, box-shadow linear 0.2s;
+    transition: border linear 0.2s, box-shadow linear 0.2s;
 }
 
 .tool-card .overlay-container {
@@ -276,10 +306,6 @@
     text-align: left;
 }
 
-.dir-rtl .tool-card-subheader {
-    text-align: right;
-}
-
 .tool-card-header .tool-card-icon {
     width: 35px;
     height: 35px;
@@ -294,19 +320,10 @@
     float: right;
 }
 
-.dir-rtl .tool-card-header .tool-card-actions {
-    float: left;
-}
-
 .tool-card-header .tool-card-actions img {
     width: 15px;
     height: 15px;
     margin-left: 7px;
-}
-
-.dir-rtl .tool-card-header .tool-card-actions img {
-    margin-left: 0px;
-    margin-right: 7px;
 }
 
 .tool-card-body {
@@ -346,9 +363,9 @@
     background-color: #fff;
     border: 1px solid #e3e3e3;
     -webkit-transition: border linear 0.2s, box-shadow linear 0.2s;
-       -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
-         -o-transition: border linear 0.2s, box-shadow linear 0.2s;
-            transition: border linear 0.2s, box-shadow linear 0.2s;
+    -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
+    -o-transition: border linear 0.2s, box-shadow linear 0.2s;
+    transition: border linear 0.2s, box-shadow linear 0.2s;
     cursor: text;
 }
 
@@ -359,9 +376,9 @@
     background-color: #fff;
     border: 1px solid rgba(82, 168, 236, 0.8);
     -webkit-transition: border linear 0.2s, box-shadow linear 0.2s;
-       -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
-         -o-transition: border linear 0.2s, box-shadow linear 0.2s;
-            transition: border linear 0.2s, box-shadow linear 0.2s;
+    -moz-transition: border linear 0.2s, box-shadow linear 0.2s;
+    -o-transition: border linear 0.2s, box-shadow linear 0.2s;
+    transition: border linear 0.2s, box-shadow linear 0.2s;
     cursor: text;
 }
 
@@ -375,8 +392,71 @@
     vertical-align: middle;
 }
 
+#accordion.modltitree {
+    border-radius: 4px;
+    padding-left: 8px;
+}
+
+#accordion.modltitree .accordion-inner {
+    padding-left: 20px;
+}
+
+#accordion.modltitree .accordion-inner .accordion p {
+    margin-bottom: 0;
+    padding-left: 15px;
+}
+
+#accordion.modltitree .accordion-group {
+    padding-left: 15px;
+    padding-bottom: 4px;
+    position: relative;
+}
+
+#accordion.modltitree .accordion-group span {
+    padding: 0 4px 0;
+}
+
+#accordion.modltitree .accordion-group .accordion-heading .accordion-toggle::before {
+    content: url([[pix:t/expanded]]);
+    position: absolute;
+    left: -5px;
+}
+
+#accordion.modltitree .accordion-group .accordion-heading .accordion-toggle.collapsed::before {
+    content: url([[pix:t/collapsed]]);
+}
+
 /* Styling for LTI view */
 #contentframe {
     border: 1px solid #ddd;
     border-radius: 4px;
+}
+
+/* Strip the caret from the action menu toggle, as the ... ellipsis icon is used. */
+#page-mod-lti-coursetools a.dropdown-toggle::after {
+    display: none;
+}
+
+/* Icons in the 'actions' column of the course tools table need to be aligned with action menus which have a 36x36 trigger. */
+#page-mod-lti-coursetools table div.tool-action-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+#page-mod-lti-coursetools table div.tool-action-icon-container i {
+    margin: 0;
+}
+
+/* The following removes the striping that lives in table_sql, which we can't change from within reportbuilder */
+#page-mod-lti-coursetools table.generaltable tbody tr:nth-of-type(2n+1),
+#page-mod-lti-coursetools table.table-striped tbody tr:nth-of-type(2n+1) {
+    background: inherit;
+}
+
+#page-mod-lti-coursetools table.generaltable tbody tr:hover,
+#page-mod-lti-coursetools table.table-striped tbody tr:hover {
+    background: #fff;
 }

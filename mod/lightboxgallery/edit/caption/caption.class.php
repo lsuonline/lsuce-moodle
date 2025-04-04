@@ -30,12 +30,7 @@ class edit_caption extends edit_base {
 
     public function process_form() {
         $caption = required_param('caption', PARAM_NOTAGS);
-
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
-
-        $image->set_caption($caption);
+        $this->lbgimage->set_caption($caption);
     }
 
 }

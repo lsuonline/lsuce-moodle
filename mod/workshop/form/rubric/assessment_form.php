@@ -28,7 +28,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(dirname(dirname(__FILE__)).'/assessment_form.php');    // parent class definition
+require_once(__DIR__ . '/../assessment_form.php');    // parent class definition
 
 /**
  * Base class representing a form for assessing submissions by rubric grading strategy
@@ -91,8 +91,15 @@ class workshop_rubric_list_assessment_form extends workshop_rubric_assessment_fo
                 $levelid = $fields->{'levelid__idx_'.$i.'__idy_'.$j};
                 $definition = $fields->{'definition__idx_'.$i.'__idy_'.$j};
                 $definitionformat = $fields->{'definition__idx_'.$i.'__idy_'.$j.'format'};
-                $levelgrp[] = $mform->createElement('radio', 'chosenlevelid__idx_'.$i, '',
-                        format_text($definition, $definitionformat, null, $workshop->course->id), $levelid);
+                $levelgrp[] = $mform->createElement(
+                    'radio',
+                    "chosenlevelid__idx_{$i}",
+                    '',
+                    format_text($definition, $definitionformat, [
+                        'context' => \core\context\course::instance($workshop->course->id),
+                    ]),
+                    $levelid,
+                );
             }
             $mform->addGroup($levelgrp, 'levelgrp__idx_'.$i, '', "<br />\n", false);
         }

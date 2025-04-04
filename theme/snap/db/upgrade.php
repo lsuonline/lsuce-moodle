@@ -16,13 +16,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-include_once($CFG->dirroot.'/theme/snap/lib.php');
+require_once($CFG->dirroot.'/theme/snap/lib.php');
 
 /**
  * Theme upgrade
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -91,6 +91,55 @@ function xmldb_theme_snap_upgrade($oldversion) {
             set_config('showcoursegradepersonalmenu', 0, 'theme_snap');
         }
         upgrade_plugin_savepoint(true, 2016121309, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2017122801) {
+        if (!is_null(get_config('theme_snap', 'hidenavblock'))) {
+            unset_config('hidenavblock', 'theme_snap');
+        }
+        upgrade_plugin_savepoint(true, 2017122801, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2019051501) {
+        $favourites = $DB->get_records('theme_snap_course_favorites');
+        foreach ($favourites as $key => $favourite) {
+            $userid = $favourite->userid;
+            $usercontext = \context_user::instance($userid, IGNORE_MISSING);
+            $courseid = $favourite->courseid;
+            $coursecontext = \context_course::instance($courseid, IGNORE_MISSING);
+            if ($usercontext !== false && $coursecontext !== false) {
+                $conditions = ['component' => 'core_course',
+                    'itemtype' => 'courses',
+                    'itemid' => $courseid,
+                    'userid' => $userid,
+                ];
+                // Checks if the user already has marked as favourite that course via dashboard.
+                if (!$DB->record_exists('favourite', $conditions)) {
+                    $ufservice = \core_favourites\service_factory::get_service_for_user_context($usercontext);
+                    $ufservice->create_favourite('core_course', 'courses', $courseid, $coursecontext);
+                }
+            }
+        }
+        upgrade_plugin_savepoint(true, 2019051501, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2022042800) {
+        unset_config('design_activity_chooser', 'theme_snap');
+        upgrade_plugin_savepoint(true, 2022042800, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2024020100) {
+        if (!is_null(get_config('theme_snap', 'design_mod_page'))) {
+            $previous = get_config('theme_snap', 'design_mod_page');
+            set_config('behavior_mod_page', $previous, 'theme_snap');
+            unset_config('design_mod_page', 'theme_snap');
+        }
+        upgrade_plugin_savepoint(true, 2024020100, 'theme', 'snap');
+    }
+
+    if ($oldversion < 2024030700) {
+        unset_config('behavior_mod_page', 'theme_snap');
+        upgrade_plugin_savepoint(true, 2024030700, 'theme', 'snap');
     }
 
     return true;

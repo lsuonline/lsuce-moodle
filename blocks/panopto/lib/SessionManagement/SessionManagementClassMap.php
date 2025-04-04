@@ -1,15 +1,29 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
  * File for the class which returns the class map definition
  * @package SessionManagement
- * @author WsdlToPhp Team <contact@wsdltophp.com>
+ * @author Panopto
  * @version 20150429-01
  * @date 2017-01-19
  */
 /**
  * Class which returns the class map definition by the static method SessionManagementClassMap::classMap()
  * @package SessionManagement
- * @author WsdlToPhp Team <contact@wsdltophp.com>
+ * @author Panopto
  * @version 20150429-01
  * @date 2017-01-19
  */
@@ -32,6 +46,7 @@ class SessionManagementClassMap
   'AreUsersNotesPublicResponse' => 'SessionManagementStructAreUsersNotesPublicResponse',
   'ArrayOfAccessRole' => 'SessionManagementStructArrayOfAccessRole',
   'ArrayOfFolder' => 'SessionManagementStructArrayOfFolder',
+  'ArrayOfExtendedFolder' => 'SessionManagementStructArrayOfExtendedFolder',
   'ArrayOfFolderAvailabilitySettings' => 'SessionManagementStructArrayOfFolderAvailabilitySettings',
   'ArrayOfFolderWithExternalContext' => 'SessionManagementStructArrayOfFolderWithExternalContext',
   'ArrayOfNote' => 'SessionManagementStructArrayOfNote',
@@ -59,6 +74,7 @@ class SessionManagementClassMap
   'EditNote' => 'SessionManagementStructEditNote',
   'EditNoteResponse' => 'SessionManagementStructEditNoteResponse',
   'Folder' => 'SessionManagementStructFolder',
+  'ExtendedFolder' => 'SessionManagementStructExtendedFolder',
   'FolderAvailabilitySettings' => 'SessionManagementStructFolderAvailabilitySettings',
   'FolderBase' => 'SessionManagementStructFolderBase',
   'FolderEndSettingType' => 'SessionManagementEnumFolderEndSettingType',
@@ -71,7 +87,9 @@ class SessionManagementClassMap
   'GetAllFoldersWithExternalContextByExternalId' => 'SessionManagementStructGetAllFoldersWithExternalContextByExternalId',
   'GetAllFoldersWithExternalContextByExternalIdResponse' => 'SessionManagementStructGetAllFoldersWithExternalContextByExternalIdResponse',
   'GetCreatorFoldersList' => 'SessionManagementStructGetCreatorFoldersList',
+  'GetExtendedCreatorFoldersList' => 'SessionManagementStructGetExtendedCreatorFoldersList',
   'GetCreatorFoldersListResponse' => 'SessionManagementStructGetCreatorFoldersListResponse',
+  'GetExtendedCreatorFoldersListResponse' => 'SessionManagementStructGetExtendedCreatorFoldersListResponse',
   'GetCreatorFoldersWithExternalContextList' => 'SessionManagementStructGetCreatorFoldersWithExternalContextList',
   'GetCreatorFoldersWithExternalContextListResponse' => 'SessionManagementStructGetCreatorFoldersWithExternalContextListResponse',
   'GetFoldersAvailabilitySettings' => 'SessionManagementStructGetFoldersAvailabilitySettings',
@@ -106,6 +124,7 @@ class SessionManagementClassMap
   'IsDropboxResponse' => 'SessionManagementStructIsDropboxResponse',
   'ListFoldersRequest' => 'SessionManagementStructListFoldersRequest',
   'ListFoldersResponse' => 'SessionManagementStructListFoldersResponse',
+  'ListExtendedFoldersResponse' => 'SessionManagementStructListExtendedFoldersResponse',
   'ListFoldersResponseWithExternalContext' => 'SessionManagementStructListFoldersResponseWithExternalContext',
   'ListNotes' => 'SessionManagementStructListNotes',
   'ListNotesResponse' => 'SessionManagementStructListNotesResponse',
@@ -119,6 +138,8 @@ class SessionManagementClassMap
   'ProvisionExternalCourseResponse' => 'SessionManagementStructProvisionExternalCourseResponse',
   'ProvisionExternalCourseWithRoles' => 'SessionManagementStructProvisionExternalCourseWithRoles',
   'ProvisionExternalCourseWithRolesResponse' => 'SessionManagementStructProvisionExternalCourseWithRolesResponse',
+  'UnprovisionExternalCourse' => 'SessionManagementStructUnprovisionExternalCourse',
+  'UnprovisionExternalCourseResponse' => 'SessionManagementStructUnprovisionExternalCourseResponse',
   'RecorderDownloadUrlResponse' => 'SessionManagementStructRecorderDownloadUrlResponse',
   'Session' => 'SessionManagementStructSession',
   'SessionAvailabilitySettings' => 'SessionManagementStructSessionAvailabilitySettings',

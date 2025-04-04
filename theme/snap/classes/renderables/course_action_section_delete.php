@@ -17,15 +17,13 @@
 /**
  * Course action for affecting section visibility.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
 use moodle_url;
 use section_info;
-
-defined('MOODLE_INTERNAL') || die();
 
 class course_action_section_delete extends course_action_section_base {
 
@@ -39,11 +37,13 @@ class course_action_section_delete extends course_action_section_base {
         if (course_can_delete_section($course, $section)) {
             if (get_string_manager()->string_exists('deletesection', 'format_'.$course->format)) {
                 $this->title = get_string('deletesection', 'format_'.$course->format);
+                $this->arialabel = "aria-label='".get_string('deletesection', 'format_'.$course->format)."'";
             } else {
                 $this->title = get_string('deletesection');
+                $this->arialabel = "aria-label='".get_string('deletesection')."'";
             }
             $this->url = new moodle_url('/course/editsection.php', array('id' => $section->id,
-                'sr' => $onsectionpage ? $section->section : 0, 'delete' => 1));
+                'sr' => $onsectionpage ? $section->section : 0, 'delete' => 1, ));
         }
     }
 }

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/lib/formslib.php');
-require_once(dirname(__FILE__).'/rubriceditor.php');
+require_once(__DIR__.'/rubriceditor.php');
 MoodleQuickForm::registerElementType('rubriceditor', $CFG->dirroot.'/grade/grading/form/rubric/rubriceditor.php', 'MoodleQuickForm_rubriceditor');
 
 /**
@@ -66,7 +66,7 @@ class gradingform_rubric_editrubric extends moodleform {
         $form->addElement('select', 'status', get_string('rubricstatus', 'gradingform_rubric'), $choices)->freeze();
 
         // rubric editor
-        $element = $form->addElement('rubriceditor', 'rubric', get_string('rubric', 'gradingform_rubric'));
+        $form->addElement('rubriceditor', 'rubric', get_string('rubric', 'gradingform_rubric'));
         $form->setType('rubric', PARAM_RAW);
 
         $buttonarray = array();

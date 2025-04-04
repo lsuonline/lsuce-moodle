@@ -159,58 +159,18 @@ class block_mhaairs_utilservice_testcase extends block_mhaairs_testcase {
      * @return void
      */
     public function test_get_user_info_valid_user() {
-        global $DB;
-
         $callback = 'block_mhaairs_utilservice_external::get_user_info';
         $this->set_user('admin');
 
+        $users = $this->add_users_and_enrolments('/fixtures/tc_get_user_info_users.csv');
+
+        // Configure secret.
         $secret = 'DF4#R66';
-        $fakeuserid = 278939;
-        $fakeusername = 'johndoe';
-        $realuserid = $this->student1->id;
-        $realusername = $this->student1->username;
+        set_config('block_mhaairs_shared_secret', $secret);
 
-        // Users dataset.
-        // Username, course (idnumber), editingteacher, teacher, student.
-        $fixture = __DIR__. '/fixtures/tc_get_user_info_users.csv';
-        $dataset = $this->createCsvDataSet(array('cases' => $fixture));
-        $rows = $dataset->getTable('cases');
-        $columns = $dataset->getTableMetaData('cases')->getColumns();
-
-        $cases = array();
-        for ($r = 0; $r < $rows->getRowCount(); $r++) {
-            $cases[] = (object) array_combine($columns, $rows->getRow($r));
-        }
-
-        // Add users and enrollments.
-        $users = array();
-        $courses = array();
-
-        $roles = $DB->get_records_menu('role', array(), '', 'shortname,id');
-        foreach ($cases as $case) {
-            // Add the user if needed.
-            if (!array_key_exists($case->username, $users)) {
-                $userparams = array('username' => $case->username);
-                $user = $this->getDataGenerator()->create_user($userparams);
-                $users[$user->username] = $user;
-            }
-            $userid = $users[$case->username]->id;
-
-            // Add the course if needed.
-            if (!array_key_exists($case->course, $courses)) {
-                $record = array('idnumber' => $case->course);
-                $course = $this->getDataGenerator()->create_course($record);
-                $courses[$course->idnumber] = $course;
-            }
-            $courseid = $courses[$case->course]->id;
-
-            // Add enrollments.
-            foreach ($roles as $shortname => $roleid) {
-                if (!empty($case->$shortname)) {
-                    $this->getDataGenerator()->enrol_user($userid, $courseid, $roleid);
-                }
-            }
-        }
+        // Make sure we use the empty default.
+        set_config('block_mhaairs_student_roles', '');
+        set_config('block_mhaairs_instructor_roles', '');
 
         // Tese cases dataset.
         // User id, identity type.
@@ -224,8 +184,47 @@ class block_mhaairs_utilservice_testcase extends block_mhaairs_testcase {
             $cases[] = (object) array_combine($columns, $rows->getRow($r));
         }
 
+        foreach ($cases as $case) {
+            $this->assert_user_found($case, $users, $secret);
+        }
+
+    }
+
+    /**
+     * Get user info should return user record and roles by course for the target user.
+     * User can be requested by internal userid (identitytype = internal),
+     * or by username (identitytype != internal).
+     *
+     * @return void
+     */
+    public function test_get_user_info_designated_roles() {
+        global $DB;
+
+        $this->set_user('admin');
+
         // Configure secret.
+        $secret = 'DF4#R66';
         set_config('block_mhaairs_shared_secret', $secret);
+
+        // Make sure we use specify role short names.
+        set_config('block_mhaairs_student_roles', 'student');
+        set_config('block_mhaairs_instructor_roles', 'teacher,editingteacher');
+
+        $callback = 'block_mhaairs_utilservice_external::get_user_info';
+
+        $users = $this->add_users_and_enrolments('/fixtures/tc_get_user_info_users.csv');
+
+        // Tese cases dataset.
+        // User id, identity type.
+        $fixture = __DIR__. '/fixtures/tc_get_user_info_user_found.csv';
+        $dataset = $this->createCsvDataSet(array('cases' => $fixture));
+        $rows = $dataset->getTable('cases');
+        $columns = $dataset->getTableMetaData('cases')->getColumns();
+
+        $cases = array();
+        for ($r = 0; $r < $rows->getRowCount(); $r++) {
+            $cases[] = (object) array_combine($columns, $rows->getRow($r));
+        }
 
         foreach ($cases as $case) {
             $this->assert_user_found($case, $users, $secret);
@@ -367,6 +366,60 @@ class block_mhaairs_utilservice_testcase extends block_mhaairs_testcase {
             }
         }
         $this->assertEquals($coursecount, count($result->courses));
+    }
+
+    /**
+     * Adds users and enrolments from csv file and returns the list of users by username.
+     *
+     * @param string $filename
+     * @return array
+     */
+    protected function add_users_and_enrolments($filename) {
+        global $DB;
+
+        // Users dataset.
+        // Username, course (idnumber), editingteacher, teacher, student.
+        $fixture = __DIR__. $filename;
+        $dataset = $this->createCsvDataSet(array('cases' => $fixture));
+        $rows = $dataset->getTable('cases');
+        $columns = $dataset->getTableMetaData('cases')->getColumns();
+
+        $cases = array();
+        for ($r = 0; $r < $rows->getRowCount(); $r++) {
+            $cases[] = (object) array_combine($columns, $rows->getRow($r));
+        }
+
+        // Add users and enrollments.
+        $users = array();
+        $courses = array();
+
+        $roles = $DB->get_records_menu('role', array(), '', 'shortname,id');
+        foreach ($cases as $case) {
+            // Add the user if needed.
+            if (!array_key_exists($case->username, $users)) {
+                $userparams = array('username' => $case->username);
+                $user = $this->getDataGenerator()->create_user($userparams);
+                $users[$user->username] = $user;
+            }
+            $userid = $users[$case->username]->id;
+
+            // Add the course if needed.
+            if (!array_key_exists($case->course, $courses)) {
+                $record = array('idnumber' => $case->course);
+                $course = $this->getDataGenerator()->create_course($record);
+                $courses[$course->idnumber] = $course;
+            }
+            $courseid = $courses[$case->course]->id;
+
+            // Add enrollments.
+            foreach ($roles as $shortname => $roleid) {
+                if (!empty($case->$shortname)) {
+                    $this->getDataGenerator()->enrol_user($userid, $courseid, $roleid);
+                }
+            }
+        }
+
+        return $users;
     }
 
 }

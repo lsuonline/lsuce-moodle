@@ -26,7 +26,10 @@ Feature: Web service - get environment info
     Scenario: Get environment info.
         And I log in as "admin"
 
-        And I navigate to "Web service test client" node in "Site administration > Plugins > Blocks > McGraw-Hill AAIRS"
+        And I follow "Site administration"
+        And I follow "Plugins"
+        And I follow "McGraw-Hill AAIRS"
+        And I follow "Web service test client"
         And I set the field with xpath "//form[@id='function-selector']//select" to "block_mhaairs_get_environment_info"
         And I set the token field to "admin" token for "mhaairs_util" service
 

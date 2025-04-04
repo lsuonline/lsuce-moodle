@@ -17,15 +17,13 @@
 /**
  * Base class for section actions.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
 use moodle_url;
 use section_info;
-
-defined('MOODLE_INTERNAL') || die();
 
 abstract class course_action_section_base implements \renderable, \templatable {
 
@@ -45,6 +43,22 @@ abstract class course_action_section_base implements \renderable, \templatable {
      * @var string
      */
     public $class;
+
+    /**
+     * @var string
+     */
+    public $ariapressed;
+
+    /**
+     * @var string
+     */
+    public $arialabel;
+
+    /**
+     * Variable to know if the action is inside a dropdown menu.
+     * @var string
+     */
+    public $isinmenu;
 
     abstract public function __construct($course, section_info $section, $onsectionpage = false);
 

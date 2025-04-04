@@ -34,9 +34,11 @@ defined('MOODLE_INTERNAL') || die();
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class block_mhaairs_testcase extends advanced_testcase {
+    protected $page;
     protected $course;
     protected $roles;
     protected $bi;
+    protected $block;
     protected $guest;
     protected $teacher;
     protected $assistant;
@@ -49,7 +51,7 @@ abstract class block_mhaairs_testcase extends advanced_testcase {
      * This is executed before running any test in this file.
      */
     public function setUp() {
-        global $DB, $PAGE;
+        global $DB; //, $PAGE;
 
         $this->resetAfterTest(true);
 
@@ -59,15 +61,6 @@ abstract class block_mhaairs_testcase extends advanced_testcase {
         $record = array('idnumber' => 'tc1');
         $this->course = $this->getDataGenerator()->create_course($record);
         $courseid = $this->course->id;
-
-        // Set the page.
-        $PAGE->set_course($this->course);
-        $contextid = $PAGE->context->id;
-
-        // Create an instance of the block in the course.
-        $generator = $this->getDataGenerator()->get_plugin_generator('block_mhaairs');
-        $record = array('parentcontextid' => $contextid, 'pagetypepattern' => '*');
-        $this->bi = $generator->create_instance($record);
 
         // Create users and enroll them in the course.
         $roles = $DB->get_records_menu('role', array(), '', 'shortname,id');
@@ -96,6 +89,68 @@ abstract class block_mhaairs_testcase extends advanced_testcase {
         // Guest.
         $user = $DB->get_record('user', array('username' => 'guest'));
         $this->guest = $user;
+
+        // Add an mhaairs block.
+        $this->bi = $this->add_mhaairs_block_in_context(context_course::instance($courseid));
+
+    }
+
+    protected function add_mhaairs_block_in_context(context $context) {
+        global $DB, $PAGE;
+
+        $course = null;
+
+        $page = new \moodle_page();
+        $page->set_context($context);
+
+        switch ($context->contextlevel) {
+            case CONTEXT_SYSTEM:
+                $page->set_pagelayout('frontpage');
+                $page->set_pagetype('site-index');
+                break;
+            case CONTEXT_COURSE:
+                $page->set_pagelayout('standard');
+                $page->set_pagetype('course-view');
+                $course = $DB->get_record('course', ['id' => $context->instanceid]);
+                $page->set_course($course);
+                break;
+            case CONTEXT_MODULE:
+                $page->set_pagelayout('standard');
+                $mod = $DB->get_field_sql("SELECT m.name
+                                             FROM {modules} m
+                                             JOIN {course_modules} cm on cm.module = m.id
+                                            WHERE cm.id = ?", [$context->instanceid]);
+                $page->set_pagetype("mod-$mod-view");
+                break;
+            case CONTEXT_USER:
+                $page->set_pagelayout('mydashboard');
+                $page->set_pagetype('my-index');
+                break;
+            default:
+                throw new coding_exception('Unsupported context for test');
+        }
+
+        $page->blocks->load_blocks();
+
+        $page->blocks->add_block_at_end_of_default_region('mhaairs');
+
+        // We need to use another page object as load_blocks() only loads the blocks once.
+        $page2 = new \moodle_page();
+        $page2->set_context($page->context);
+        $page2->set_pagelayout($page->pagelayout);
+        $page2->set_pagetype($page->pagetype);
+        if ($course) {
+            $page2->set_course($course);
+        }
+
+        $page2->blocks->load_blocks();
+        $blocks = $page2->blocks->get_blocks_for_region($page2->blocks->get_default_region());
+        $block = end($blocks);
+
+        // Set the PAGE so that it recognizes the block.
+        $PAGE = $page2;
+
+        return $block->instance;
     }
 
     /**

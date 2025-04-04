@@ -23,33 +23,35 @@ $show       = optional_param('show', '', PARAM_ALPHA);           // [ concept | 
 
 if (!empty($id)) {
     if (! $cm = get_coursemodule_from_id('glossary', $id)) {
-        print_error('invalidcoursemodule');
+        throw new \moodle_exception('invalidcoursemodule');
     }
     if (! $course = $DB->get_record("course", array("id"=>$cm->course))) {
-        print_error('coursemisconf');
+        throw new \moodle_exception('coursemisconf');
     }
     if (! $glossary = $DB->get_record("glossary", array("id"=>$cm->instance))) {
-        print_error('invalidid', 'glossary');
+        throw new \moodle_exception('invalidid', 'glossary');
     }
 
 } else if (!empty($g)) {
     if (! $glossary = $DB->get_record("glossary", array("id"=>$g))) {
-        print_error('invalidid', 'glossary');
+        throw new \moodle_exception('invalidid', 'glossary');
     }
     if (! $course = $DB->get_record("course", array("id"=>$glossary->course))) {
-        print_error('invalidcourseid');
+        throw new \moodle_exception('invalidcourseid');
     }
     if (!$cm = get_coursemodule_from_instance("glossary", $glossary->id, $course->id)) {
-        print_error('invalidcoursemodule');
+        throw new \moodle_exception('invalidcoursemodule');
     }
     $id = $cm->id;
 } else {
-    print_error('invalidid', 'glossary');
+    throw new \moodle_exception('invalidid', 'glossary');
 }
+$cm = cm_info::create($cm);
 
 require_course_login($course->id, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/glossary:view', $context);
+$hassecondary = $PAGE->has_secondary_navigation();
 
 // Prepare format_string/text options
 $fmtoptions = array(
@@ -68,9 +70,13 @@ if ( !$entriesbypage = $glossary->entbypage ) {
     $entriesbypage = $CFG->glossary_entbypage;
 }
 
-/// If we have received a page, recalculate offset
-if ($page != 0 && $offset == 0) {
+// If we have received a page, recalculate offset and page size.
+$pagelimit = $entriesbypage;
+if ($page > 0 && $offset == 0) {
     $offset = $page * $entriesbypage;
+} else if ($page < 0) {
+    $offset = 0;
+    $pagelimit = 0;
 }
 
 /// setting the default values for the display mode of the current glossary
@@ -265,16 +271,21 @@ $straddentry = get_string("addentry", "glossary");
 $strnoentries = get_string("noentries", "glossary");
 $strsearchindefinition = get_string("searchindefinition", "glossary");
 $strsearch = get_string("search");
-$strwaitingapproval = get_string('waitingapproval', 'glossary');
+$strwaitingapproval = get_string('pendingapproval', 'glossary');
 
 /// If we are in approval mode, prit special header
 $PAGE->set_title($glossary->name);
 $PAGE->set_heading($course->fullname);
 $url = new moodle_url('/mod/glossary/view.php', array('id'=>$cm->id));
-if (isset($mode)) {
+if (isset($mode) && $mode) {
     $url->param('mode', $mode);
 }
 $PAGE->set_url($url);
+
+$renderer = $PAGE->get_renderer('mod_glossary');
+$actionbar = new \mod_glossary\output\standard_action_bar($cm, $glossary, $dp, $mode, $hook,
+    $sortkey, $sortorder, $offset, $pagelimit, $fullsearch, $tab, $defaulttab);
+$PAGE->force_settings_menu();
 
 if (!empty($CFG->enablerssfeeds) && !empty($CFG->glossary_enablerssfeeds)
     && $glossary->rsstype && $glossary->rssarticles) {
@@ -282,16 +293,26 @@ if (!empty($CFG->enablerssfeeds) && !empty($CFG->glossary_enablerssfeeds)
     $rsstitle = format_string($course->shortname, true, array('context' => context_course::instance($course->id))) . ': '. format_string($glossary->name);
     rss_add_http_header($context, 'mod_glossary', $glossary, $rsstitle);
 }
-
 if ($tab == GLOSSARY_APPROVAL_VIEW) {
     require_capability('mod/glossary:approve', $context);
-    $PAGE->navbar->add($strwaitingapproval);
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading($strwaitingapproval);
-} else { /// Print standard header
-    echo $OUTPUT->header();
 }
-echo $OUTPUT->heading(format_string($glossary->name), 2);
+
+$hassecondary = $PAGE->has_secondary_navigation();
+if ($tab == GLOSSARY_APPROVAL_VIEW && !$hassecondary &&  $PAGE->activityheader->is_title_allowed()) {
+    $PAGE->activityheader->set_title(
+        $OUTPUT->heading($strwaitingapproval) .
+        $OUTPUT->heading(format_string($glossary->name))
+    );
+}
+
+if ($tab == GLOSSARY_APPROVAL_VIEW || !($glossary->intro && $showcommonelements)) {
+    $PAGE->activityheader->set_description('');
+}
+
+echo $OUTPUT->header();
+if ($showcommonelements) {
+    echo $renderer->main_action_bar($actionbar);
+}
 
 /// All this depends if whe have $showcommonelements
 if ($showcommonelements) {
@@ -320,7 +341,7 @@ if ($showcommonelements) {
     }*/
 
 /// Decide about to print the approval link
-    if (has_capability('mod/glossary:approve', $context)) {
+    if (has_capability('mod/glossary:approve', $context) && !$hassecondary) {
     /// Check we have pending entries
         if ($hiddenentries = $DB->count_records('glossary_entries', array('glossaryid'=>$glossary->id, 'approved'=>0))) {
             if ($availableoptions) {
@@ -329,8 +350,8 @@ if ($showcommonelements) {
             $availableoptions .='<span class="helplink">' .
                                 '<a href="' . $CFG->wwwroot . '/mod/glossary/view.php?id=' . $cm->id .
                                 '&amp;mode=approval' . '"' .
-                                '  title="' . s(get_string('waitingapproval', 'glossary')) . '">' .
-                                get_string('waitingapproval', 'glossary') . ' ('.$hiddenentries.')</a>' .
+                                '  title="' . s($strwaitingapproval) . '">' .
+                                $strwaitingapproval . ' ('.$hiddenentries.')</a>' .
                                 '</span>';
         }
     }
@@ -340,66 +361,12 @@ if ($showcommonelements) {
     echo '<div class="glossarycontrol" style="text-align: right">';
     echo $availableoptions;
 
-/// The print icon
-    if ( $showcommonelements and $mode != 'search') {
-        if (has_capability('mod/glossary:manageentries', $context) or $glossary->allowprintview) {
-            echo " <a class='printicon' title =\"". get_string("printerfriendly","glossary") ."\" href=\"print.php?id=$cm->id&amp;mode=$mode&amp;hook=".urlencode($hook)."&amp;sortkey=$sortkey&amp;sortorder=$sortorder&amp;offset=$offset\">" . get_string("printerfriendly","glossary")."</a>";
-        }
-    }
 /// End glossary controls
 //        print_box_end(); /// glossarycontrol
     echo '</div><br />';
 
 //        print_box('&nbsp;', 'clearer');
 }
-
-/// Info box
-if ($glossary->intro && $showcommonelements) {
-    echo $OUTPUT->box(format_module_intro('glossary', $glossary, $cm->id), 'generalbox', 'intro');
-}
-
-/// Search box
-if ($showcommonelements ) {
-    echo '<form method="post" action="view.php">';
-
-    echo '<table class="boxaligncenter" width="70%" border="0">';
-    echo '<tr><td align="center" class="glossarysearchbox">';
-
-    echo '<input type="submit" value="'.$strsearch.'" name="searchbutton" /> ';
-    if ($mode == 'search') {
-        echo '<input type="text" name="hook" size="20" value="'.s($hook).'" alt="'.$strsearch.'" /> ';
-    } else {
-        echo '<input type="text" name="hook" size="20" value="" alt="'.$strsearch.'" /> ';
-    }
-    if ($fullsearch || $mode != 'search') {
-        $fullsearchchecked = 'checked="checked"';
-    } else {
-        $fullsearchchecked = '';
-    }
-    echo '<input type="checkbox" name="fullsearch" id="fullsearch" value="1" '.$fullsearchchecked.' />';
-    echo '<input type="hidden" name="mode" value="search" />';
-    echo '<input type="hidden" name="id" value="'.$cm->id.'" />';
-    echo '<label for="fullsearch">'.$strsearchindefinition.'</label>';
-    echo '</td></tr></table>';
-
-    echo '</form>';
-
-    echo '<br />';
-}
-
-/// Show the add entry button if allowed
-if (has_capability('mod/glossary:write', $context) && $showcommonelements ) {
-    echo '<div class="singlebutton glossaryaddentry">';
-    echo "<form id=\"newentryform\" method=\"get\" action=\"$CFG->wwwroot/mod/glossary/edit.php\">";
-    echo '<div>';
-    echo "<input type=\"hidden\" name=\"cmid\" value=\"$cm->id\" />";
-    echo '<input type="submit" value="'.get_string('addentry', 'glossary').'" />';
-    echo '</div>';
-    echo '</form>';
-    echo "</div>\n";
-}
-
-echo '<br />';
 
 require("tabs.php");
 
@@ -419,7 +386,10 @@ if ($allentries) {
     }
 
     //Build paging bar
-    $paging = glossary_get_paging_bar($count, $page, $entriesbypage, "view.php?id=$id&amp;mode=$mode&amp;hook=".urlencode($hook)."&amp;sortkey=$sortkey&amp;sortorder=$sortorder&amp;fullsearch=$fullsearch&amp;",9999,10,'&nbsp;&nbsp;', $specialtext, -1);
+    $baseurl = new moodle_url('/mod/glossary/view.php', ['id' => $id, 'mode' => $mode, 'hook' => $hook,
+        'sortkey' => $sortkey, 'sortorder' => $sortorder, 'fullsearch' => $fullsearch]);
+    $paging = glossary_get_paging_bar($count, $page, $entriesbypage, $baseurl->out() . '&amp;',
+        9999, 10, '&nbsp;&nbsp;', $specialtext, -1);
 
     echo '<div class="paging">';
     echo $paging;
@@ -507,6 +477,10 @@ if ($allentries) {
         glossary_print_entry($course, $cm, $glossary, $entry, $mode, $hook,1,$displayformat);
         $entriesshown++;
     }
+    // The all entries value may be a recordset or an array.
+    if ($allentries instanceof moodle_recordset) {
+        $allentries->close();
+    }
 }
 if ( !$entriesshown ) {
     echo $OUTPUT->box(get_string("noentries","glossary"), "generalbox boxaligncenter boxwidthwide");
@@ -525,7 +499,6 @@ if ( $paging ) {
     echo '</div>';
 }
 echo '<br />';
-glossary_print_tabbed_table_end();
 
 /// Finish the page
 echo $OUTPUT->footer();

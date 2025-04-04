@@ -16,20 +16,17 @@
 # Tests course edting mode.
 #
 # @package    theme_snap
-# @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright  Copyright (c) 2015 Open LMS. (https://www.openlms.net)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-
-@theme @theme_snap
+@theme @theme_snap @theme_snap_course
 Feature: When the moodle theme is set to Snap, teachers only see block edit controls when in edit mode.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
-      | fullname | shortname | category | format |
-      | Course 1 | C1        | 0        | topics |
-      | Course 2 | C2        | 0        | weeks  |
+    Given the following "courses" exist:
+      | fullname | shortname | category | format | initsections |
+      | Course 1 | C1        | 0        | topics |      1       |
+      | Course 2 | C2        | 0        | weeks  |      0       |
     And the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher   | 1        | teacher1@example.com |
@@ -40,63 +37,56 @@ Feature: When the moodle theme is set to Snap, teachers only see block edit cont
       | teacher1 | C2     | editingteacher |
 
   @javascript
-  Scenario: In read mode on a topics course, teacher clicks edit blocks and can edit blocks.
+  Scenario: In read mode on a topics course, teacher clicks edit mode and can edit blocks.
     Given the following "activities" exist:
       | activity | course | idnumber | name             | intro                         | section |
       | assign   | C1     | assign1  | Test assignment1 | Test assignment description 1 | 1       |
-    And I log in as "teacher1" (theme_snap)
+    And I log in as "teacher1"
     And I am on the course main page for "C1"
-    And I follow "Topic 1"
+    And I follow "Section 1"
     Then "#section-1" "css_element" should exist
     And ".block_news_items a.toggle-display" "css_element" should not exist
     And I should see "Test assignment1" in the "#section-1" "css_element"
-    And I follow "Course Tools"
-    And I follow "Edit blocks"
+    And I switch edit mode in Snap
+    And I follow "Course Dashboard"
     Then course page should be in edit mode
 
-    # edit mode persists if course accessed directly via menu
-    # (this is basically to check it works without the &notifyeditingon parameter
+    # Edit mode should persist even if there are iframes in a section summary.
+    # First add a section with an iframe which points to the host root.
+    And I follow "Section 1"
+    And I click on "#section-1 .edit-summary" "css_element"
+    And I set the section summary to "<iframe src=\"/\"></iframe>"
+    And I press "Save changes"
+    And I am on the course main page for "C1"
+    And I follow "Course Dashboard"
+    Then course page should be in edit mode
+    # Reload the course page. We should still be in editing mode.
     Given I am on the course main page for "C1"
     Then course page should be in edit mode
-
-    # edit mode does not persist between courses
+    # Edit mode does persist between courses.
     Given I am on the course main page for "C2"
-    And I follow "Course Tools"
-    Then I should see "Edit blocks"
+    And I follow "Course Dashboard"
+    Then course page should be in edit mode
 
   @javascript
-  Scenario: If edit mode is on for a course, it should not carry over to site homepage
-    Given I log in as "admin" (theme_snap)
+  Scenario: If edit mode is on for a course, it should carry over to site homepage
+    Given I log in as "admin"
     And I am on the course main page for "C1"
-    And I follow "Course Tools"
-    And I follow "Edit blocks"
+    And I follow "Course Dashboard"
+    And I switch edit mode in Snap
+    And course page should be in edit mode
     When I am on site homepage
-    Then I should not see "Change site name"
-    Then I should not see "Add a block"
+    Then I should see "Change site name"
+    And I click on "button[data-original-title='Open block drawer']" "css_element"
+    And I scroll to the bottom
+    Then I should see "Add a block"
 
   @javascript
-  Scenario: If edit mode is on for site homepage, it should not carry over to courses
-    Given I log in as "admin" (theme_snap)
+  Scenario: If edit mode is on for site homepage, it should carry over to courses
+    Given I log in as "admin"
     And I am on site homepage
     And I click on "#admin-menu-trigger" "css_element"
-    And I follow "Turn editing on"
+    And I switch edit mode in Snap
     When I am on the course main page for "C1"
-    And I follow "Course Tools"
-    Then I should see "Edit blocks"
-
-  @javascript
-  Scenario: In edit mode on a folderview course, teacher can see sections whilst editing on.
-    Given I am using Joule
-    And the following "courses" exist:
-      | fullname | shortname | category | format     |
-      | Course 3 | C3        | 0        | folderview |
-    And the following "course enrolments" exist:
-      | user     | course | role           |
-      | teacher1 | C3     | editingteacher |
-    Given I log in as "teacher1" (theme_snap)
-    And I am on the course main page for "C3"
-    And I click on "#page-mast .singlebutton input[type=\"submit\"]" "css_element"
-    And I should see "Add Topic"
-    And I should see "Add Resource"
-    And I should see "Topic Settings"
-    Then I should see "Topic 1" in the "#section-1 .content" "css_element"
+    And I follow "Course Dashboard"
+    Then course page should be in edit mode

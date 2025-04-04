@@ -161,6 +161,12 @@ class grade_category extends grade_object {
     protected $canapplylimitrules;
 
     /**
+     * e.g. 'category', 'course' and 'mod', 'blocks', 'import', etc...
+     * @var string $itemtype
+     */
+    public $itemtype;
+
+    /**
      * Builds this category's path string based on its parents (if any) and its own id number.
      * This is typically done just before inserting this object in the DB for the first time,
      * or when a new parent is added or changed. It is a recursive function: once the calling
@@ -227,9 +233,10 @@ class grade_category extends grade_object {
      * In addition to update() as defined in grade_object, call force_regrading of parent categories, if applicable.
      *
      * @param string $source from where was the object updated (mod/forum, manual, etc.)
+     * @param bool $isbulkupdate If bulk grade update is happening.
      * @return bool success
      */
-    public function update($source=null) {
+    public function update($source = null, $isbulkupdate = false) {
         // load the grade item or create a new one
         $this->load_grade_item();
 
@@ -285,56 +292,66 @@ class grade_category extends grade_object {
      * @return bool success
      */
     public function delete($source=null) {
-        $grade_item = $this->load_grade_item();
+        global $DB;
 
-        if ($this->is_course_category()) {
+        try {
+            $transaction = $DB->start_delegated_transaction();
+            $grade_item = $this->load_grade_item();
 
-            if ($categories = grade_category::fetch_all(array('courseid'=>$this->courseid))) {
+            if ($this->is_course_category()) {
 
-                foreach ($categories as $category) {
+                if ($categories = self::fetch_all(['courseid' => $this->courseid])) {
 
-                    if ($category->id == $this->id) {
-                        continue; // do not delete course category yet
+                    foreach ($categories as $category) {
+
+                        if ($category->id == $this->id) {
+                            continue; // Do not delete course category yet.
+                        }
+                        $category->delete($source);
                     }
-                    $category->delete($source);
                 }
-            }
 
-            if ($items = grade_item::fetch_all(array('courseid'=>$this->courseid))) {
+                if ($items = grade_item::fetch_all(['courseid' => $this->courseid])) {
 
-                foreach ($items as $item) {
+                    foreach ($items as $item) {
 
-                    if ($item->id == $grade_item->id) {
-                        continue; // do not delete course item yet
+                        if ($item->id == $grade_item->id) {
+                            continue; // Do not delete course item yet.
+                        }
+                        $item->delete($source);
                     }
-                    $item->delete($source);
+                }
+
+            } else {
+                $this->force_regrading();
+
+                $parent = $this->load_parent_category();
+
+                // Update children's categoryid/parent field first.
+                if ($children = grade_item::fetch_all(['categoryid' => $this->id])) {
+                    foreach ($children as $child) {
+                        $child->set_parent($parent->id);
+                    }
+                }
+
+                if ($children = self::fetch_all(['parent' => $this->id])) {
+                    foreach ($children as $child) {
+                        $child->set_parent($parent->id);
+                    }
                 }
             }
 
-        } else {
-            $this->force_regrading();
+            // First delete the attached grade item and grades.
+            $grade_item->delete($source);
 
-            $parent = $this->load_parent_category();
+            // Delete category itself.
+            $success = parent::delete($source);
 
-            // Update children's categoryid/parent field first
-            if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
-                foreach ($children as $child) {
-                    $child->set_parent($parent->id);
-                }
-            }
-
-            if ($children = grade_category::fetch_all(array('parent'=>$this->id))) {
-                foreach ($children as $child) {
-                    $child->set_parent($parent->id);
-                }
-            }
+            $transaction->allow_commit();
+        } catch (Exception $e) {
+            $transaction->rollback($e);
         }
-
-        // first delete the attached grade item and grades
-        $grade_item->delete($source);
-
-        // delete category itself
-        return parent::delete($source);
+        return $success;
     }
 
     /**
@@ -346,12 +363,13 @@ class grade_category extends grade_object {
      * This method also creates an associated grade_item if this wasn't done during construction.
      *
      * @param string $source from where was the object inserted (mod/forum, manual, etc.)
+     * @param bool $isbulkupdate If bulk grade update is happening.
      * @return int PK ID if successful, false otherwise
      */
-    public function insert($source=null) {
+    public function insert($source = null, $isbulkupdate = false) {
 
         if (empty($this->courseid)) {
-            print_error('cannotinsertgrade');
+            throw new \moodle_exception('cannotinsertgrade');
         }
 
         if (empty($this->parent)) {
@@ -427,6 +445,7 @@ class grade_category extends grade_object {
         $aggonlygrddiff  = $db_item->aggregateonlygraded != $this->aggregateonlygraded;
         $aggoutcomesdiff = $db_item->aggregateoutcomes   != $this->aggregateoutcomes;
 
+        // BEGIN LSU Weighted Mean Extra Credit
         $oldweighted = $db_item->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
         $newweighted = $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
 
@@ -451,6 +470,7 @@ class grade_category extends grade_object {
                 $child->update();
             }
         }
+        // END LSU Weighted Mean Extra Credit
 
         return ($aggregationdiff || $keephighdiff || $droplowdiff || $aggonlygrddiff || $aggoutcomesdiff);
     }
@@ -489,9 +509,10 @@ class grade_category extends grade_object {
      *  4. Save them in final grades of associated category grade item
      *
      * @param int $userid The user ID if final grade generation should be limited to a single user
+     * @param \core\progress\base|null $progress Optional progress indicator
      * @return bool
      */
-    public function generate_grades($userid=null) {
+    public function generate_grades($userid=null, ?\core\progress\base $progress = null) {
         global $CFG, $DB;
 
         $this->load_grade_item();
@@ -517,28 +538,23 @@ class grade_category extends grade_object {
             }
         }
 
-        $grade_inst = new grade_grade();
-        $fields = 'g.'.implode(',g.', $grade_inst->required_fields);
+        $gradeinst = new grade_grade();
+        $fields = implode(',', $gradeinst->required_fields);
 
         // where to look for final grades - include grade of this item too, we will store the results there
         $gis = array_merge($depends_on, array($this->grade_item->id));
         list($usql, $params) = $DB->get_in_or_equal($gis);
 
         if ($userid) {
-            $usersql = "AND g.userid=?";
+            $usersql = "AND userid=?";
             $params[] = $userid;
 
         } else {
             $usersql = "";
         }
 
-        $sql = "SELECT $fields
-                  FROM {grade_grades} g, {grade_items} gi
-                 WHERE gi.id = g.itemid AND gi.id $usql $usersql
-              ORDER BY g.userid";
-
         // group the results by userid and aggregate the grades for this user
-        $rs = $DB->get_recordset_sql($sql, $params);
+        $rs = $DB->get_recordset_select('grade_grades', "itemid $usql $usersql", $params, 'userid', $fields);
         if ($rs->valid()) {
             $prevuser = 0;
             $grade_values = array();
@@ -581,6 +597,12 @@ class grade_category extends grade_object {
 
                 if ($this->grade_item->id == $grade->itemid) {
                     $oldgrade = $grade;
+                }
+
+                if ($progress) {
+                    // Incrementing the progress by nothing causes it to send an update (once per second)
+                    // to the web browser so as to prevent the connection timing out.
+                    $progress->increment_progress(0);
                 }
             }
             $this->aggregate_grades($prevuser,
@@ -683,7 +705,7 @@ class grade_category extends grade_object {
 
                 // If successful trigger a user_graded event.
                 if ($success) {
-                    \core\event\user_graded::create_from_grade($grade)->trigger();
+                    \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
                 }
             }
             $dropped = $grade_values;
@@ -724,6 +746,16 @@ class grade_category extends grade_object {
                 $grade_values[$itemid] = grade_grade::standardise_score($v, $usergrademin, $usergrademax, 0, 1);
             }
 
+        }
+
+        // First, check if all grades are null, because the final grade will be null
+        // even when aggreateonlygraded is true.
+        $allnull = true;
+        foreach ($grade_values as $v) {
+            if (!is_null($v)) {
+                $allnull = false;
+                break;
+            }
         }
 
         // For items with no value, and not excluded - either set their grade to 0 or exclude them.
@@ -768,7 +800,7 @@ class grade_category extends grade_object {
 
                 // If successful trigger a user_graded event.
                 if ($success) {
-                    \core\event\user_graded::create_from_grade($grade)->trigger();
+                    \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
                 }
             }
             $this->set_usedinaggregation($userid, $usedweights, $novalue, $dropped, $extracredit);
@@ -793,9 +825,13 @@ class grade_category extends grade_object {
             $result['grademin'] = 0;
         }
 
-        // Recalculate the grade back to requested range.
-        $finalgrade = grade_grade::standardise_score($agg_grade, 0, 1, $result['grademin'], $result['grademax']);
-        $grade->finalgrade = $this->grade_item->bounded_grade($finalgrade);
+        if ($allnull) {
+            $grade->finalgrade = null;
+        } else {
+            // Recalculate the grade back to requested range.
+            $finalgrade = grade_grade::standardise_score($agg_grade, 0, 1, $result['grademin'], $result['grademax']);
+            $grade->finalgrade = $this->grade_item->bounded_grade($finalgrade);
+        }
 
         $oldrawgrademin = $grade->rawgrademin;
         $oldrawgrademax = $grade->rawgrademax;
@@ -811,7 +847,7 @@ class grade_category extends grade_object {
 
             // If successful trigger a user_graded event.
             if ($success) {
-                \core\event\user_graded::create_from_grade($grade)->trigger();
+                \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
             }
         }
 
@@ -1021,6 +1057,8 @@ class grade_category extends grade_object {
                                                        & $weights = null,
                                                        $grademinoverrides = array(),
                                                        $grademaxoverrides = array()) {
+        global $CFG;
+
         $category_item = $this->load_grade_item();
         $grademin = $category_item->grademin;
         $grademax = $category_item->grademax;
@@ -1099,7 +1137,7 @@ class grade_category extends grade_object {
                 $freq = array_count_values($converted_grade_values);
                 arsort($freq);                      // sort by frequency keeping keys
                 $top = reset($freq);               // highest frequency count
-                $modes = array_keys($freq, $top);  // search for all modes (have the same highest count)
+                $modes = moodle_array_keys_filter($freq, $top);  // Search for all modes (have the same highest count).
                 rsort($modes, SORT_NUMERIC);       // get highest mode
                 $agg_grade = reset($modes);
                 // Record the weights as used.
@@ -1115,21 +1153,38 @@ class grade_category extends grade_object {
             case GRADE_AGGREGATE_WEIGHTED_MEAN: // Weighted average of all existing final grades, weight specified in coef
                 $weightsum = 0;
                 $sum       = 0;
+                // BEGIN LSU Weighted Mean Extra Credit
                 $extrasum  = 0;
+                // END LSU Weighted Mean Extra Credit
 
                 foreach ($grade_values as $itemid=>$grade_value) {
                     if ($weights !== null) {
                         $weights[$itemid] = $items[$itemid]->aggregationcoef;
                     }
+
+                    // BEGIN LSU Weighted Mean Extra Credit
                     $coef = $items[$itemid]->aggregationcoef;
                     if ($coef == 0) {
                         continue;
                     } else if ($coef < 0) {
-                        $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                        // BEGIN LSU deal with divide by zero errors.
+                        if ($this->grade_item->grademax > 0 && $items[$itemid]->grademax > 0) {
+                            $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                        } else {
+                            if ($CFG->debugdeveloper && $CFG->debugdisplay == 1) {
+                                $gcid = $this->grade_item->courseid;
+                                $giid = !empty($this->grade_item->itemname) ? $this->grade_item->itemname : $this->grade_item->id;
+                                mtrace("Extra credit item with 0 max grade or empty natural extra credit category.<br>This causes divide by zero errors in $giid in course $gcid.<br>");
+                            }
+                            $extrasum += $grade_value;
+                        }
+                        // END LSU deal with divide by zero errors.
                     } else {
                         $weightsum += $coef;
                         $sum       += $coef * $grade_value;
                     }
+                    // END LSU Weighted Mean Extra Credit
+
                 }
                 if ($weightsum == 0) {
                     $agg_grade = null;
@@ -1142,8 +1197,13 @@ class grade_category extends grade_object {
                             $weights[$itemid] = $weight / $weightsum;
                         }
                     }
+
                 }
+
+                // BEGIN LSU Weighted Mean Extra Credit
                 $agg_grade += $extrasum;
+                // END LSU Weighted Mean Extra Credit
+
                 break;
 
             case GRADE_AGGREGATE_WEIGHTED_MEAN2:
@@ -1152,12 +1212,12 @@ class grade_category extends grade_object {
                 $this->load_grade_item();
                 $weightsum = 0;
                 $sum       = null;
-                $extrasum  = 0;
 
+                // BEGIN LSU SWM unweighted extra credit option
+                $extrasum  = 0;
                 $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
 
                 foreach ($grade_values as $itemid=>$grade_value) {
-
                     $weight = $items[$itemid]->grademax - $items[$itemid]->grademin;
                     if ($weight <= 0) {
                         continue;
@@ -1166,16 +1226,28 @@ class grade_category extends grade_object {
                     if (!empty($weighted_ec) && $items[$itemid]->aggregationcoef > 0) {
                         continue;
                     } else if (empty($weighted_ec) && $items[$itemid]->aggregationcoef > 0) {
-                        $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
-                        continue;
+                        // BEGIN LSU deal with divide by zero errors.
+                        if ($this->grade_item->grademax > 0 && $items[$itemid]->grademax > 0) {
+                            $extrasum += ($grade_value / ($this->grade_item->grademax / $items[$itemid]->grademax));
+                            continue;
+                        } else {
+                            if ($CFG->debugdeveloper && $CFG->debugdisplay == 1) {
+                                $gcid = $this->grade_item->courseid;
+                                $giid = !empty($this->grade_item->itemname) ? $this->grade_item->itemname : $this->grade_item->id;
+                                mtrace("Extra credit item with 0 max grade or empty natural extra credit category.<br>This causes divide by zero errors in $giid in course $gcid.<br>");
+                            }
+                            $extrasum += $grade_value;
+                            continue;
+                        }
+                        // END LSU deal with divide by zero errors.
                     }
 
                     if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) {
                         $weightsum += $weight;
                     }
-
                     $sum += $weight * $grade_value;
                 }
+                // END LSU SWM unweighted extra credit option
 
                 // Handle the extra credit items separately to calculate their weight accurately.
                 foreach ($grade_values as $itemid => $grade_value) {
@@ -1191,9 +1263,12 @@ class grade_category extends grade_object {
 
                     $oldsum = $sum;
                     $weightedgrade = $weight * $grade_value;
+
+                    // BEGIN LSU SWM unweighted extra credit option
                     if ($items[$itemid]->aggregationcoef <= 0 || !empty($weighted_ec)) {
                         $sum += $weightedgrade;
                     }
+                    // END LSU SWM unweighted extra credit option
 
                     if ($weights !== null) {
                         if ($weightsum <= 0) {
@@ -1245,7 +1320,9 @@ class grade_category extends grade_object {
                         }
                     }
                 }
+                // BEGIN LSU SWM unweighted extra credit option
                 $agg_grade += $extrasum;
+                // END LSU SWM unweighted extra credit option
                 break;
 
             case GRADE_AGGREGATE_EXTRACREDIT_MEAN: // special average
@@ -1323,14 +1400,17 @@ class grade_category extends grade_object {
                 $this->load_grade_item();
                 $num = count($grade_values);
                 $sum = 0;
-                $extrasum  = 0;
 
+                // BEGIN LSU Natural Grades consistency
+                $extrasum  = 0;
                 $weighted_ec = get_config('moodle', 'grade_w_extra_credit');
+                // END LSU Natural Grades consistency
 
                 // This setting indicates if we should use algorithm prior to MDL-49257 fix for calculating extra credit weights.
                 // Even though old algorith has bugs in it, we need to preserve existing grades.
-                $gradebookcalculationfreeze = (int)get_config('core', 'gradebook_calculations_freeze_' . $this->courseid);
-                $oldextracreditcalculation = $gradebookcalculationfreeze && ($gradebookcalculationfreeze <= 20150619);
+                $gradebookcalculationfreeze = 'gradebook_calculations_freeze_' . $this->courseid;
+                $oldextracreditcalculation = isset($CFG->$gradebookcalculationfreeze)
+                        && ($CFG->$gradebookcalculationfreeze <= 20150619);
 
                 $sumweights = 0;
                 $grademin = 0;
@@ -1366,7 +1446,9 @@ class grade_category extends grade_object {
                 // percentage of weights missing from the category.
                 foreach ($grade_values as $itemid => $gradevalue) {
                     if ($items[$itemid]->weightoverride) {
+                        // BEGIN LSU Natural Grades consistency
                         if ($items[$itemid]->aggregationcoef2 <= 0 || ($items[$itemid]->weightoverride && $items[$itemid]->aggregationcoef > 0)) {
+                        // END LSU Natural Grades consistency
                             // Records the weight of 0 and continue.
                             $userweights[$itemid] = 0;
                             continue;
@@ -1438,16 +1520,16 @@ class grade_category extends grade_object {
                 $oldgrademax = $this->grade_item->grademax;
                 $oldgrademin = $this->grade_item->grademin;
                 foreach ($grade_values as $itemid => $gradevalue) {
-
                     if (!isset($extracredititems[$itemid])) {
                         continue;
                     }
                     $oldsum = $sum;
                     $weightedgrade = $gradevalue * $userweights[$itemid] * $grademax;
                     $sum += $weightedgrade;
-                    if (empty($ec_test)) {
-                       $extrasum += $gradevalue * $extracredititems[$itemid]->grademax;
-                    }
+
+                    // BEGIN LSU Natural Grades consistency
+                    $extrasum += $gradevalue * $extracredititems[$itemid]->grademax;
+                    // BEGIN LSU Natural Grades consistency
 
                     // Only go through this when we need to record the weights.
                     if ($weights !== null) {
@@ -1484,11 +1566,15 @@ class grade_category extends grade_object {
                     $agg_grade = $sum;
                     $grademax = $sum;
                 }
+
+                // BEGIN LSU Natural Grades consistency
                 $nextrasum = 0;
                 if ((isset($extrasum) > 0) && ($grademax > 0)) {
                     $nextrasum = $extrasum / $grademax;
                 }
                 $agg_grade = $agg_grade + $nextrasum;
+                // END LSU Natural Grades consistency
+
                 break;
 
             case GRADE_AGGREGATE_MEAN:    // Arithmetic average of all grade items (if ungraded aggregated, NULL counted as minimum)
@@ -1533,7 +1619,7 @@ class grade_category extends grade_object {
      * @return void
      */
     private function auto_update_max() {
-        global $DB;
+        global $CFG, $DB;
         if ($this->aggregation != GRADE_AGGREGATE_SUM) {
             // not needed at all
             return;
@@ -1545,11 +1631,10 @@ class grade_category extends grade_object {
 
         // Check to see if the gradebook is frozen. This allows grades to not be altered at all until a user verifies that they
         // wish to update the grades.
-        $gradebookcalculationsfreeze = get_config('core', 'gradebook_calculations_freeze_' . $this->courseid);
+        $gradebookcalculationfreeze = 'gradebook_calculations_freeze_' . $this->courseid;
+        $oldextracreditcalculation = isset($CFG->$gradebookcalculationfreeze) && ($CFG->$gradebookcalculationfreeze <= 20150627);
         // Only run if the gradebook isn't frozen.
-        if ($gradebookcalculationsfreeze && (int)$gradebookcalculationsfreeze <= 20150627) {
-            // Do nothing.
-        } else{
+        if (!$oldextracreditcalculation) {
             // Don't automatically update the max for calculated items.
             if ($this->grade_item->is_calculated()) {
                 return;
@@ -1579,11 +1664,13 @@ class grade_category extends grade_object {
         //find max grade possible
         $maxes = array();
 
+        // BEGIN LSU Weighted Mean Extra Credit
         $notweightedmean = $this->aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN;
+        // END LSU Weighted Mean Extra Credit
 
         foreach ($items as $item) {
 
-            if (($notweightedmean and $item->aggregationcoef > 0) or $item->aggregationcoef < 0) {
+            if ($item->aggregationcoef > 0) {
                 // extra credit from this activity - does not affect total
                 continue;
             } else if ($item->aggregationcoef2 <= 0) {
@@ -1683,7 +1770,7 @@ class grade_category extends grade_object {
                 // An extra credit grade item doesn't contribute to $totaloverriddengrademax.
                 continue;
             } else if ($gradeitem->weightoverride > 0 && $gradeitem->aggregationcoef2 <= 0) {
-                // An overriden item that defines a weight of 0 does not contribute to $totaloverriddengrademax.
+                // An overridden item that defines a weight of 0 does not contribute to $totaloverriddengrademax.
                 continue;
             }
 
@@ -1699,8 +1786,6 @@ class grade_category extends grade_object {
         // Keep a record of how much the override total is to see if it is above 100. It it is then we need to set the
         // other weights to zero and normalise the others.
         $overriddentotal = 0;
-        // If the overridden weight total is higher than 1 then set the other untouched weights to zero.
-        $setotherweightstozero = false;
         // Total up all of the weights.
         foreach ($overridearray as $gradeitemdetail) {
             // If the grade item has extra credit, then don't add it to the normalisetotal.
@@ -1803,15 +1888,18 @@ class grade_category extends grade_object {
     public function apply_limit_rules(&$grade_values, $items) {
         $extraused = $this->is_extracredit_used();
 
-        // Added for the sake of simplicity
+        // BEGIN LSU Weighted Mean Extra Credit
         $isweightedmean = $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN;
+        // END LSU Weighted Mean Extra Credit
 
         if (!empty($this->droplow)) {
+            // BEGIN LSU Drop Lowest Limiting.
             $limit = (bool)get_config('moodle', 'grade_droplow_limit');
 
             if ($limit and count($grade_values) <= $this->droplow) {
                 return;
             }
+            // END LSU Drop Lowest Limiting.
 
             asort($grade_values, SORT_NUMERIC);
             $dropped = 0;
@@ -1835,8 +1923,12 @@ class grade_category extends grade_object {
 
                 // Find the first remaining grade item that is available to be dropped
                 foreach ($grade_keys as $gradekeyindex=>$gradekey) {
-                   // Modified to make sure extra credit items are not dropped regardless of aggregation method.
-                   if (!$extraused || ($isweightedmean && $items[$gradekey]->aggregationcoef > 0) || (!$isweightedmean && $items[$gradekey]->aggregationcoef <= 0)) {
+
+                    // BEGIN LSU Weighted Mean Extra Credit
+                    // Modified to make sure extra credit items are not dropped regardless of aggregation method.
+                    if (!$extraused || ($isweightedmean && $items[$gradekey]->aggregationcoef > 0) || (!$isweightedmean && $items[$gradekey]->aggregationcoef <= 0)) {
+                    // END LSU Weighted Mean Extra Credit
+
                         // Found a non-extra credit grade item that is eligible to be dropped
                         $originalindex = $gradekeyindex;
                         $founditemid = $grade_keys[$originalindex];
@@ -1863,8 +1955,11 @@ class grade_category extends grade_object {
                         break;
                     }
 
+                    // BEGIN LSU Weighted Mean Extra Credit
                     // Modified to make sure extra credit items are not dropped regardless of aggregation method.
                     if (($extraused && ($isweightedmean && $items[$gradekey]->aggregationcoef <= 0)) || (($extraused && (!$isweightedmean && $items[$gradekey]->aggregationcoef > 0)))) {
+                    // END LSU Weighted Mean Extra Credit
+
                         // Don't drop extra credit grade items. Continue the search.
                         continue;
                     }
@@ -1888,8 +1983,10 @@ class grade_category extends grade_object {
             $kept = 0;
 
             foreach ($grade_values as $itemid=>$value) {
-
+                // BEGIN LSU Weighted Mean Extra Credit
                 if ($this->is_item_extra_credit($items[$itemid])) {
+                // if ($extraused and $items[$itemid]->aggregationcoef > 0) {
+                // END LSU Weighted Mean Extra Credit
                     // we keep all extra credits
 
                 } else if ($kept < $this->keephigh) {
@@ -1902,12 +1999,13 @@ class grade_category extends grade_object {
         }
     }
 
-    /**
+    // BEGIN LSU Weighted Mean Extra Credit
+     /**
      * Returns whether or not the item is extra credit.
      *
      * @return bool
      */
-    function is_item_extra_credit($item) {
+    public function is_item_extra_credit($item) {
         $extraused = $this->is_extracredit_used();
 
         if (!$extraused)
@@ -1922,6 +2020,7 @@ class grade_category extends grade_object {
 
         return ($extraused && $validextra);
     }
+    // END LSU Weighted Mean Extra Credit
 
     /**
      * Returns whether or not we can apply the limit rules.
@@ -2005,7 +2104,9 @@ class grade_category extends grade_object {
     public static function aggregation_uses_extracredit($aggregation) {
         return ($aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
              or $aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
+             // BEGIN LSU Weighted Mean Extra Credit
              or $aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN
+             // END LSU Weighted Mean Extra Credit
              or $aggregation == GRADE_AGGREGATE_SUM);
     }
 
@@ -2111,7 +2212,7 @@ class grade_category extends grade_object {
      * @param int   $sortorder The current sortorder
      * @return array An array containing 'object', 'type', 'depth' and optionally 'children'
      */
-    static private function _fetch_course_tree_recursion($category_array, &$sortorder) {
+    private static function _fetch_course_tree_recursion($category_array, &$sortorder) {
         if (isset($category_array['object']->gradetype) && $category_array['object']->gradetype==GRADE_TYPE_NONE) {
             return null;
         }
@@ -2279,7 +2380,7 @@ class grade_category extends grade_object {
         $children_array = array();
         foreach ($category->children as $sortorder=>$child) {
 
-            if (array_key_exists('itemtype', $child)) {
+            if (property_exists($child, 'itemtype')) {
                 $grade_item = new grade_item($child, false);
 
                 if (in_array($grade_item->itemtype, array('course', 'category'))) {
@@ -2390,16 +2491,21 @@ class grade_category extends grade_object {
      * Returns the most descriptive field for this grade category
      *
      * @return string name
+     * @param bool $escape Whether the returned category name is to be HTML escaped or not.
      */
-    public function get_name() {
+    public function get_name($escape = true) {
         global $DB;
         // For a course category, we return the course name if the fullname is set to '?' in the DB (empty in the category edit form)
         if (empty($this->parent) && $this->fullname == '?') {
             $course = $DB->get_record('course', array('id'=> $this->courseid));
-            return format_string($course->fullname);
+            return format_string($course->fullname, false, ['context' => context_course::instance($this->courseid),
+                'escape' => $escape]);
 
         } else {
-            return $this->fullname;
+            // Grade categories can't be set up at system context (unlike scales and outcomes)
+            // We therefore must have a courseid, and don't need to handle system contexts when filtering.
+            return format_string($this->fullname, false, ['context' => context_course::instance($this->courseid),
+                'escape' => $escape]);
         }
     }
 
@@ -2443,11 +2549,11 @@ class grade_category extends grade_object {
         }
 
         if ($parentid == $this->id) {
-            print_error('cannotassignselfasparent');
+            throw new \moodle_exception('cannotassignselfasparent');
         }
 
         if (empty($this->parent) and $this->is_course_category()) {
-            print_error('cannothaveparentcate');
+            throw new \moodle_exception('cannothaveparentcate');
         }
 
         // find parent and check course id
@@ -2597,25 +2703,21 @@ class grade_category extends grade_object {
 
         $result = $this->grade_item->set_locked($lockedstate, $cascade, true);
 
-        if ($cascade) {
-            //process all children - items and categories
-            if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
+        // Process all children - items and categories.
+        if ($children = grade_item::fetch_all(['categoryid' => $this->id])) {
+            foreach ($children as $child) {
+                $child->set_locked($lockedstate, $cascade, false);
 
-                foreach ($children as $child) {
-                    $child->set_locked($lockedstate, true, false);
-
-                    if (empty($lockedstate) and $refresh) {
-                        //refresh when unlocking
-                        $child->refresh_grades();
-                    }
+                if (empty($lockedstate) && $refresh) {
+                    // Refresh when unlocking.
+                    $child->refresh_grades();
                 }
             }
+        }
 
-            if ($children = grade_category::fetch_all(array('parent'=>$this->id))) {
-
-                foreach ($children as $child) {
-                    $child->set_locked($lockedstate, true, true);
-                }
+        if ($children = static::fetch_all(['parent' => $this->id])) {
+            foreach ($children as $child) {
+                $child->set_locked($lockedstate, $cascade, true);
             }
         }
 
@@ -2625,7 +2727,7 @@ class grade_category extends grade_object {
     /**
      * Overrides grade_object::set_properties() to add special handling for changes to category aggregation types
      *
-     * @param stdClass $instance the object to set the properties on
+     * @param grade_category $instance the object to set the properties on
      * @param array|stdClass $params Either an associative array or an object containing property name, property value pairs
      */
     public static function set_properties(&$instance, $params) {
@@ -2674,19 +2776,19 @@ class grade_category extends grade_object {
      */
     public function set_hidden($hidden, $cascade=false) {
         $this->load_grade_item();
-        //this hides the associated grade item (the course total)
-        $this->grade_item->set_hidden($hidden, $cascade);
         //this hides the category itself and everything it contains
         parent::set_hidden($hidden, $cascade);
 
         if ($cascade) {
 
-            if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
+            // This hides the associated grade item (the course/category total).
+            $this->grade_item->set_hidden($hidden, $cascade);
 
+            if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
                 foreach ($children as $child) {
-                    if ($child->can_control_visibility()) {
-                        $child->set_hidden($hidden, $cascade);
-                    }
+                    // BEGIN LSU Visibility Issues.
+                    $child->set_hidden($hidden, $cascade);
+                    // BEGIN LSU Visibility Issues.
                 }
             }
 
@@ -2704,9 +2806,7 @@ class grade_category extends grade_object {
             if ($category_array && array_key_exists($this->parent, $category_array)) {
                 $category = $category_array[$this->parent];
                 //call set_hidden on the category regardless of whether it is hidden as its parent might be hidden
-                //if($category->is_hidden()) {
-                    $category->set_hidden($hidden, false);
-                //}
+                $category->set_hidden($hidden, false);
             }
         }
     }

@@ -51,6 +51,14 @@ class block_mhaairs_generator extends testing_block_generator {
 
         $record = $this->prepare_record($record);
 
+        if (empty($record->timecreated)) {
+            $record->timecreated = time();
+        }
+
+        if (empty($record->timemodified)) {
+            $record->timemodified = time();
+        }
+
         $id = $DB->insert_record('block_instances', $record);
         context_block::instance($id);
 

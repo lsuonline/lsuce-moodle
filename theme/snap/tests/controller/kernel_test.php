@@ -18,54 +18,46 @@
  * Kernel Tests
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-namespace theme_snap\tests\controller;
-
+namespace theme_snap\controller;
 use theme_snap\controller\kernel;
 use theme_snap\controller\router;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class kernel_test extends \basic_testcase {
 
-    public function _return_string_callback() {
+    public function return_string_callback() {
         return 'return phpunit';
     }
 
-    public function _echo_string_callback() {
+    public function echo_string_callback() {
         echo 'echo phpunit';
     }
 
-    public function _both_string_callback() {
+    public function both_string_callback() {
         echo 'echo phpunit';
         return 'return phpunit';
     }
 
     public function test_resolve_controller_callback() {
-        $controller = $this->getMock('\theme_snap\controller\controller_abstract', array(
+        $controller = $this->createPartialMock('\theme_snap\controller\controller_abstract', array(
             'init',
             'test_action',
             'require_capability',
         ));
 
-        $router = $this->getMock('\theme_snap\controller\router', array('route_action'));
-        $router->expects($this->once())
-            ->method('route_action')
-            ->will($this->returnValue(array($controller, 'test_action')));
+        $router = $this->createPartialMock('\theme_snap\controller\router', array('route_action'));
+        $router->expects($this->once())->method('route_action')->will($this->returnValue([$controller, 'test_action']));
 
         $kernel = new kernel($router);
 
-        $controller->expects($this->once())
-            ->method('init')
-            ->with('test');
+        $controller->expects($this->once())->method('init')->with('test');
 
         list($routedcontroller, $method) = $kernel->resolve_controller_callback('test');
 
@@ -76,20 +68,18 @@ class kernel_test extends \basic_testcase {
     public function test_execute_callback_with_return() {
         $this->expectOutputString('return phpunit');
         $kernel = new kernel(new router());
-        $kernel->execute_callback(array($this, '_return_string_callback'));
+        $kernel->execute_callback(array($this, 'return_string_callback'));
     }
 
     public function test_execute_callback_with_echo() {
         $this->expectOutputString('echo phpunit');
         $kernel = new kernel(new router());
-        $kernel->execute_callback(array($this, '_echo_string_callback'));
+        $kernel->execute_callback(array($this, 'echo_string_callback'));
     }
 
-    /**
-     * @expectedException \coding_exception
-     */
     public function test_execute_callback_with_both() {
         $kernel = new kernel(new router());
-        $kernel->execute_callback(array($this, '_both_string_callback'));
+        $this->expectException(\coding_exception::class);
+        $kernel->execute_callback(array($this, 'both_string_callback'));
     }
 }

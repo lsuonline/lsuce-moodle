@@ -19,15 +19,15 @@
  *
  * @package    mod_customcert
  * @copyright  2013 Mark Nelson <markn@moodle.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die('Direct access to this script is forbidden.');
 
-$plugin->version   = 2016052321; // The current module version (Date: YYYYMMDDXX).
-$plugin->requires  = 2016052300; // Requires this Moodle version (3.1).
+$plugin->version   = 2024042208; // The current module version (Date: YYYYMMDDXX).
+$plugin->requires  = 2024042200; // Requires this Moodle version (4.4).
 $plugin->cron      = 0; // Period for cron to check this module (secs).
 $plugin->component = 'mod_customcert';
 
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = "3.1 release (Build: 2016052321)"; // User-friendly version number.
+$plugin->release   = "4.4.4"; // User-friendly version number.

@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @package   theme_snap
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @package
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,9 +28,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'theme_sna
         // Main function.
         var init = function(courseConfig) {
             var currentlyUnavailableSections = courseConfig.unavailablesections.map(Number),
-            currentlyUnavailableMods =  courseConfig.unavailablemods.map(Number);
+            currentlyUnavailableMods = courseConfig.unavailablemods.map(Number);
 
-            $(document).on( "snapModuleCompletionChange",
+            $(document).on("snapModuleCompletionChange",
                 function() {
                     ajax.call([
                         {
@@ -45,7 +45,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'theme_sna
                                  * Update elements with newly available / unavailable html.
                                  * Elements can either be sections or modules.
                                  *
-                                 * @param {object} availableHTML - response json
+                                 * @param {object} changedHTML - response json
                                  * @param {string} typeKey - string (either 'section' or 'module')
                                  */
                                 var updateModOrSectionHTML = function(changedHTML, typeKey) {

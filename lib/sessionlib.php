@@ -82,15 +82,30 @@ function confirm_sesskey($sesskey=NULL) {
  */
 function require_sesskey() {
     if (!confirm_sesskey()) {
-        print_error('invalidsesskey');
+        throw new \moodle_exception('invalidsesskey');
     }
 }
 
 /**
- * Sets a moodle cookie with a weakly encrypted username
+ * Determine wether the secure flag should be set on cookies
+ * @return bool
+ */
+function is_moodle_cookie_secure() {
+    global $CFG;
+
+    if (!isset($CFG->cookiesecure)) {
+        return false;
+    }
+    if (!is_https() and empty($CFG->sslproxy)) {
+        return false;
+    }
+    return !empty($CFG->cookiesecure);
+}
+
+/**
+ * Sets a Moodle cookie with an encrypted username
  *
  * @param string $username to encrypt and place in a cookie, '' means delete current cookie
- * @return void
  */
 function set_moodle_cookie($username) {
     global $CFG;
@@ -111,17 +126,20 @@ function set_moodle_cookie($username) {
 
     $cookiename = 'MOODLEID1_'.$CFG->sessioncookie;
 
-    // delete old cookie
-    setcookie($cookiename, '', time() - HOURSECS, $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $CFG->cookiesecure, $CFG->cookiehttponly);
+    $cookiesecure = is_moodle_cookie_secure();
+
+    // Delete old cookie.
+    setcookie($cookiename, '', time() - HOURSECS, $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $cookiesecure, $CFG->cookiehttponly);
 
     if ($username !== '') {
-        // set username cookie for 60 days
-        setcookie($cookiename, rc4encrypt($username), time()+(DAYSECS*60), $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $CFG->cookiesecure, $CFG->cookiehttponly);
+        // Set username cookie for 60 days.
+        setcookie($cookiename, \core\encryption::encrypt($username), time() + (DAYSECS * 60), $CFG->sessioncookiepath,
+            $CFG->sessioncookiedomain, $cookiesecure, $CFG->cookiehttponly);
     }
 }
 
 /**
- * Gets a moodle cookie with a weakly encrypted username
+ * Gets a Moodle cookie with an encrypted username
  *
  * @return string username
  */
@@ -138,78 +156,14 @@ function get_moodle_cookie() {
 
     $cookiename = 'MOODLEID1_'.$CFG->sessioncookie;
 
-    if (empty($_COOKIE[$cookiename])) {
-        return '';
-    } else {
-        $username = rc4decrypt($_COOKIE[$cookiename]);
-        if ($username === 'guest' or $username === 'nobody') {
+    try {
+        $username = \core\encryption::decrypt($_COOKIE[$cookiename] ?? '');
+        if ($username === 'guest' || $username === 'nobody') {
             // backwards compatibility - we do not set these cookies any more
             $username = '';
         }
         return $username;
+    } catch (\moodle_exception $ex) {
+        return '';
     }
-}
-
-/**
- * Sets up current user and course environment (lang, etc.) in cron.
- * Do not use outside of cron script!
- *
- * @param stdClass $user full user object, null means default cron user (admin),
- *                 value 'reset' means reset internal static caches.
- * @param stdClass $course full course record, null means $SITE
- * @return void
- */
-function cron_setup_user($user = NULL, $course = NULL) {
-    global $CFG, $SITE, $PAGE;
-
-    if (!CLI_SCRIPT) {
-        throw new coding_exception('Function cron_setup_user() cannot be used in normal requests!');
-    }
-
-    static $cronuser    = NULL;
-    static $cronsession = NULL;
-
-    if ($user === 'reset') {
-        $cronuser = null;
-        $cronsession = null;
-        \core\session\manager::init_empty_session();
-        return;
-    }
-
-    if (empty($cronuser)) {
-        /// ignore admins timezone, language and locale - use site default instead!
-        $cronuser = get_admin();
-        $cronuser->timezone = $CFG->timezone;
-        $cronuser->lang     = '';
-        $cronuser->theme    = '';
-        unset($cronuser->description);
-
-        $cronsession = new stdClass();
-    }
-
-    if (!$user) {
-        // Cached default cron user (==modified admin for now).
-        \core\session\manager::init_empty_session();
-        \core\session\manager::set_user($cronuser);
-        $GLOBALS['SESSION'] = $cronsession;
-
-    } else {
-        // Emulate real user session - needed for caps in cron.
-        if ($GLOBALS['USER']->id != $user->id) {
-            \core\session\manager::init_empty_session();
-            \core\session\manager::set_user($user);
-        }
-    }
-
-    // TODO MDL-19774 relying on global $PAGE in cron is a bad idea.
-    // Temporary hack so that cron does not give fatal errors.
-    $PAGE = new moodle_page();
-    if ($course) {
-        $PAGE->set_course($course);
-    } else {
-        $PAGE->set_course($SITE);
-    }
-
-    // TODO: it should be possible to improve perf by caching some limited number of users here ;-)
-
 }

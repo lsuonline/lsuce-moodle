@@ -1,0 +1,39 @@
+.wds.menu-list {
+    list-style: none;
+    padding: 0;
+}
+
+.wds .menu-item {
+}
+
+.wds .menu-link {
+    text-decoration: none;
+}
+
+.wds .menu-link:hover {
+    text-decoration: underline;
+}
+
+.wds i.fa {
+    text-align: center;
+    width: 1.75em;
+}
+
+.wds a img.fa {
+    text-align: center;
+    width: 1.75em;
+}
+
+.wds-text-input {
+  margin-top: 2rem;
+  margin-bottom: -.5rem !important;
+}
+
+.wds-text-input.wds-first {
+  margin-top: 0;
+}
+
+#page-blocks-wdsprefs-unwantview .form-group.fitem {
+  padding-bottom: 0 !important;
+}
+

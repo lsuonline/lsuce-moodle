@@ -45,6 +45,14 @@ use Behat\Gherkin\Node\TableNode;
 class behat_transformations extends behat_base {
 
     /**
+     * @deprecated since Moodle 3.2
+     */
+    public function prefixed_tablenode_transformations() {
+        throw new coding_exception('prefixed_tablenode_transformations() can not be used anymore. ' .
+            'Please use tablenode_transformations() instead.');
+    }
+
+    /**
      * Removes escaped argument delimiters.
      *
      * We use double quotes as arguments delimiters and
@@ -77,17 +85,15 @@ class behat_transformations extends behat_base {
     }
 
     /**
-     * Transformations for TableNode arguments.
+     * Convert string time to timestamp.
+     * Use ::time::STRING_TIME_TO_CONVERT::DATE_FORMAT::
      *
-     * Transformations applicable to TableNode arguments should also
-     * be applied, adding them in a different method for Behat API restrictions.
-     *
-     * @Transform table:Surname,My Surname $NASTYSTRING2
-     * @param TableNode $tablenode
-     * @return TableNode The transformed table
+     * @Transform /^##(.*)##$/
+     * @param string $time
+     * @return int timestamp.
      */
-    public function prefixed_tablenode_transformations(TableNode $tablenode) {
-        return $this->tablenode_transformations($tablenode);
+    public function arg_time_to_string($time) {
+        return $this->get_transformed_timestamp($time);
     }
 
     /**
@@ -96,11 +102,12 @@ class behat_transformations extends behat_base {
      * Transformations applicable to TableNode arguments should also
      * be applied, adding them in a different method for Behat API restrictions.
      *
-     * @Transform table:Surname,$NASTYSTRING1
+     * @Transform table:*
      * @param TableNode $tablenode
      * @return TableNode The transformed table
      */
     public function tablenode_transformations(TableNode $tablenode) {
+        global $CFG;
         // Walk through all values including the optional headers.
         $rows = $tablenode->getRows();
         foreach ($rows as $rowkey => $row) {
@@ -110,6 +117,18 @@ class behat_transformations extends behat_base {
                 if (preg_match('/\$NASTYSTRING(\d)/', $rows[$rowkey][$colkey])) {
                     $rows[$rowkey][$colkey] = $this->replace_nasty_strings($rows[$rowkey][$colkey]);
                 }
+
+                // Transform time.
+                if (preg_match('/^##(.*)##$/', $rows[$rowkey][$colkey], $match)) {
+                    if (isset($match[1])) {
+                        $rows[$rowkey][$colkey] = $this->get_transformed_timestamp($match[1]);
+                    }
+                }
+
+                // Transform wwwroot.
+                if (preg_match('/#wwwroot#/', $rows[$rowkey][$colkey])) {
+                    $rows[$rowkey][$colkey] = $this->replace_wwwroot($rows[$rowkey][$colkey]);
+                }
             }
         }
 
@@ -118,6 +137,30 @@ class behat_transformations extends behat_base {
         $tablenode = new TableNode($rows);
 
         return $tablenode;
+    }
+
+    /**
+     * Convert #wwwroot# to the wwwroot config value, so it is
+     * possible to reference fully qualified URLs within the site.
+     *
+     * @Transform /^((.*)#wwwroot#(.*))$/
+     * @param string $string
+     * @return string
+     */
+    public function arg_insert_wwwroot(string $string): string {
+        return $this->replace_wwwroot($string);
+    }
+
+    /**
+     * Convert #dirroot# to the dirroot config value, so it is
+     * possible to reference files (e.g. fixtures) with an absolute path.
+     *
+     * @Transform /^((.*)#dirroot#(.*))$/
+     * @param string $string
+     * @return string
+     */
+    public function arg_insert_dirroot(string $string): string {
+        return $this->replace_dirroot($string);
     }
 
     /**
@@ -138,4 +181,51 @@ class behat_transformations extends behat_base {
         );
     }
 
+    /**
+     * Return timestamp for the time passed.
+     *
+     * @param string $time time to convert
+     * @return string
+     */
+    protected function get_transformed_timestamp($time) {
+        $timepassed = explode('##', $time);
+
+        // If not a valid time string, then just return what was passed.
+        if ((($timestamp = strtotime($timepassed[0])) === false)) {
+            return $time;
+        }
+
+        $count = count($timepassed);
+        if ($count === 2) {
+            // If timestamp with specified strftime format, then return formatted date string.
+            return userdate($timestamp, $timepassed[1]);
+        } else if ($count === 1) {
+            return $timestamp;
+        } else {
+            // If not a valid time string, then just return what was passed.
+            return $time;
+        }
+    }
+
+    /**
+     * Replace #wwwroot# with the actual wwwroot config value.
+     *
+     * @param string $string String to attempt the replacement in.
+     * @return string
+     */
+    protected function replace_wwwroot(string $string): string {
+        global $CFG;
+        return str_replace('#wwwroot#', $CFG->wwwroot, $string);
+    }
+
+    /**
+     * Replace #dirroot# with the actual dirroot config value.
+     *
+     * @param string $string String to attempt the replacement in.
+     * @return string
+     */
+    protected function replace_dirroot(string $string): string {
+        global $CFG;
+        return str_replace('#dirroot#', $CFG->dirroot, $string);
+    }
 }

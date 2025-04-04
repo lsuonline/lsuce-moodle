@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Steps definitions related with the database activity.
+ * Steps definitions related with the questionnaire activity.
  *
- * @package    mod_questuionnaire
+ * @package    mod_questionnaire
  * @category   test
- * @copyright  2016 Mike Churchward - The POET Group
+ * @copyright  2016 Mike Churchward - Poet Open Source
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -32,16 +32,72 @@ use Behat\Behat\Context\Step\Given as Given,
     Behat\Gherkin\Node\TableNode as TableNode,
     Behat\Gherkin\Node\PyStringNode as PyStringNode,
     Behat\Mink\Exception\ExpectationException as ExpectationException;
-;
+
+#[\AllowDynamicProperties]
 /**
- * Database-related steps definitions.
+ * Questionnaire-related steps definitions.
  *
  * @package    mod_questionnaire
  * @category   test
- * @copyright  2016 Mike Churchward - The POET Group
+ * @copyright  2016 Mike Churchward - Poet Open Source
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class behat_mod_questionnaire extends behat_base {
+
+    /**
+     * Convert page names to URLs for steps like 'When I am on the "[page name]" page'.
+     *
+     * Recognised page names are:
+     * | None so far!      |                                                              |
+     *
+     * @param string $page name of the page, with the component name removed e.g. 'Admin notification'.
+     * @return moodle_url the corresponding URL.
+     * @throws Exception with a meaningful error message if the specified page cannot be found.
+     */
+    protected function resolve_page_url(string $page): moodle_url {
+        switch (strtolower($page)) {
+            default:
+                throw new Exception('Unrecognised quiz page type "' . $page . '."');
+        }
+    }
+
+    /**
+     * Convert page names to URLs for steps like 'When I am on the "[identifier]" "[page type]" page'.
+     *
+     * Recognised page names are:
+     * | pagetype          | name meaning                                | description                                           |
+     * | view              | Questionnaire name                          | The questionnaire info page (view.php)                |
+     * | preview           | Questionnaire name                          | The questionnaire preview page (preview.php)          |
+     * | questions         | Questionnaire name                          | The questionnaire questions page (questions.php)      |
+     * | advsettings       | Questionnaire name                          | The advanced settings page (questions.php)            |
+     *
+     * @param string $type identifies which type of page this is, e.g. 'preview'.
+     * @param string $identifier identifies the particular page, e.g. 'Test questionnaire > preview > Attempt 1'.
+     * @return moodle_url the corresponding URL.
+     * @throws Exception with a meaningful error message if the specified page cannot be found.
+     */
+    protected function resolve_page_instance_url(string $type, string $identifier): moodle_url {
+        switch (strtolower($type)) {
+            case 'view':
+                return new moodle_url('/mod/questionnaire/view.php',
+                    ['id' => $this->get_cm_by_questionnaire_name($identifier)->id]);
+
+            case 'preview':
+                return new moodle_url('/mod/questionnaire/preview.php',
+                    ['id' => $this->get_cm_by_questionnaire_name($identifier)->id]);
+
+            case 'questions':
+                return new moodle_url('/mod/questionnaire/questions.php',
+                    ['id' => $this->get_cm_by_questionnaire_name($identifier)->id]);
+
+            case 'advsettings':
+                return new moodle_url('/mod/questionnaire/qsettings.php',
+                    ['id' => $this->get_cm_by_questionnaire_name($identifier)->id]);
+
+            default:
+                throw new Exception('Unrecognised questionnaire page type "' . $type . '."');
+        }
+    }
 
     /**
      * Adds a question to the questionnaire with the provided data.
@@ -63,7 +119,8 @@ class behat_mod_questionnaire extends behat_base {
             'Radio Buttons',
             'Rate (scale 1..5)',
             'Text Box',
-            'Yes/No');
+            'Yes/No',
+            'Slider');
 
         if (!in_array($questiontype, $validtypes)) {
             throw new ExpectationException('Invalid question type specified.', $this->getSession());
@@ -73,10 +130,7 @@ class behat_mod_questionnaire extends behat_base {
         // multiline data.
         $rows = $fielddata->getRows();
         $hashrows = $fielddata->getRowsHash();
-        $options = array();
         if (isset($hashrows['Possible answers'])) {
-            $options = explode(',', $hashrows['Possible answers']);
-            $rownum = -1;
             // Find the row that contained multiline data and add line breaks. Rows are two item arrays where the
             // first is an identifier and the second is the value.
             foreach ($rows as $key => $row) {
@@ -88,11 +142,43 @@ class behat_mod_questionnaire extends behat_base {
             }
             $fielddata = new TableNode($rows);
         }
+        if (isset($hashrows['Named degrees'])) {
+            // Find the row that contained multiline data and add line breaks. Rows are two item arrays where the
+            // first is an identifier and the second is the value.
+            foreach ($rows as $key => $row) {
+                if ($row[0] == 'Named degrees') {
+                    $row[1] = str_replace(',', "\n", $row[1]);
+                    $rows[$key] = $row;
+                    break;
+                }
+            }
+            $fielddata = new TableNode($rows);
+        }
 
         $this->execute('behat_forms::i_set_the_field_to', array('id_type_id', $questiontype));
         $this->execute('behat_forms::press_button', 'Add selected question type');
+        if (isset($hashrows['id_dependquestions_and_1'])) {
+            $this->execute('behat_forms::press_button', 'id_adddependencies_and');
+        }
+        if (isset($hashrows['id_dependquestions_or_1'])) {
+            $this->execute('behat_forms::press_button', 'id_adddependencies_or');
+        }
         $this->execute('behat_forms::i_set_the_following_fields_to_these_values', $fielddata);
         $this->execute('behat_forms::press_button', 'Save changes');
+    }
+
+    /**
+     * Selects a radio button option in the named radio button group.
+     *
+     * @Given /^I click the "([^"]*)" radio button$/
+     *
+     * @param int $radioid
+     */
+    public function i_click_the_radio_button($radioid) {
+        $session = $this->getSession();
+        $page = $session->getPage();
+        $radios = $page->findAll('xpath', '//input[@type="radio" and @id="'.$radioid.'"]');
+        $radios[0]->click();
     }
 
     /**
@@ -125,7 +211,7 @@ class behat_mod_questionnaire extends behat_base {
      */
     private function add_question_data($sid) {
         $questiondata = array(
-            array("id", "survey_id", "name", "type_id", "result_id", "length", "precise", "position", "content", "required",
+            array("id", "surveyid", "name", "type_id", "result_id", "length", "precise", "position", "content", "required",
                   "deleted", "dependquestion", "dependchoice"),
             array("1", $sid, "own car", "1", null, "0", "0", "1", "<p>Do you own a car?</p>", "y", "n", "0", "0"),
             array("2", $sid, "optional", "2", null, "20", "25", "3", "<p>What is the colour of your car?</p>", "y", "n", "121",
@@ -186,31 +272,21 @@ class behat_mod_questionnaire extends behat_base {
      * @return null
      */
     private function add_response_data($qid, $sid) {
-        $responses = array(
-            array("id", "survey_id", "submitted", "complete", "grade", "username"),
-            array("1", $sid, "1419011935", "y", "0", "2"),
-            array("2", $sid, "1449064371", "y", "0", "2"),
-            array("3", $sid, "1449258520", "y", "0", "2"),
-            array("4", $sid, "1452020444", "y", "0", "2"),
-            array("5", $sid, "1452804783", "y", "0", "2"),
-            array("6", $sid, "1452806547", "y", "0", "2"),
-            array("7", $sid, "1465415731", "n", "0", "2")
-        );
+        global $DB;
 
+        $responses = array(
+            array("id", "questionnaireid", "submitted", "complete", "grade", "userid"),
+            array("1", $qid, "1419011935", "y", "0", "2"),
+            array("2", $qid, "1449064371", "y", "0", "2"),
+            array("3", $qid, "1449258520", "y", "0", "2"),
+            array("4", $qid, "1452020444", "y", "0", "2"),
+            array("5", $qid, "1452804783", "y", "0", "2"),
+            array("6", $qid, "1452806547", "y", "0", "2"),
+            array("7", $qid, "1465415731", "n", "0", "2")
+        );
         $this->add_data($responses, 'questionnaire_response', 'responsemap');
 
-        $attempts = array(
-            array("id", "qid", "userid", "rid", "timemodified"),
-            array("",$qid, "2", "1", "1419011935"),
-            array("",$qid, "2", "2", "1449064371"),
-            array("",$qid, "2", "3", "1449258520"),
-            array("",$qid, "2", "4", "1452020444"),
-            array("",$qid, "2", "5", "1452804783"),
-            array("",$qid, "2", "6", "1452806547")
-        );
-        $this->add_data($attempts, 'questionnaire_attempts', '', array('responsemap' => 'rid'));
-
-        $response_bool = array(
+        $responsebool = array(
             array("id", "response_id", "question_id", "choice_id"),
             array("", "1", "1", "y"),
             array("", "1", "4", "n"),
@@ -227,10 +303,10 @@ class behat_mod_questionnaire extends behat_base {
             array("", "7", "1", "y"),
             array("", "7", "4", "y")
         );
-        $this->add_data($response_bool, 'questionnaire_response_bool', '',
+        $this->add_data($responsebool, 'questionnaire_response_bool', '',
             array('responsemap' => 'response_id', 'questionmap' => 'question_id'));
 
-        $response_date = array(
+        $responsedate = array(
             array("id", "response_id", "question_id", "response"),
             array("", "1", "8", "2014-12-19"),
             array("", "2", "8", "2015-12-02"),
@@ -239,20 +315,20 @@ class behat_mod_questionnaire extends behat_base {
             array("", "5", "8", "2016-01-13"),
             array("", "6", "8", "2016-01-13")
         );
-        $this->add_data($response_date, 'questionnaire_response_date', '',
+        $this->add_data($responsedate, 'questionnaire_response_date', '',
             array('responsemap' => 'response_id', 'questionmap' => 'question_id'));
 
-        $response_other = array(
+        $responseother = array(
             array("id", "response_id", "question_id", "choice_id", "response"),
             array("", "5", "7", "21", "Forty-four"),
             array("", "6", "12", "22", "Green"),
             array("", "7", "7", "21", "5")
         );
-        $this->add_data($response_other, 'questionnaire_response_other', '',
+        $this->add_data($responseother, 'questionnaire_response_other', '',
             array('responsemap' => 'response_id', 'questionmap' => 'question_id', 'choicemap' => 'choice_id'));
 
-        $response_rank = array(
-            array("id", "response_id", "question_id", "choice_id", "rank"),
+        $responserank = array(
+            array("id", "response_id", "question_id", "choice_id", "rankvalue"),
             array("", "1", "13", "16", "0"),
             array("", "1", "13", "17", "1"),
             array("", "1", "13", "18", "2"),
@@ -289,10 +365,10 @@ class behat_mod_questionnaire extends behat_base {
             array("", "7", "13", "19", "-999"),
             array("", "7", "13", "20", "-999")
         );
-        $this->add_data($response_rank, 'questionnaire_response_rank', '',
+        $this->add_data($responserank, 'questionnaire_response_rank', '',
             array('responsemap' => 'response_id', 'questionmap' => 'question_id', 'choicemap' => 'choice_id'));
 
-        $resp_multiple = array(
+        $respmultiple = array(
             array("id", "response_id", "question_id", "choice_id"),
             array("", "1", "7", "1"),
             array("", "1", "7", "3"),
@@ -310,10 +386,10 @@ class behat_mod_questionnaire extends behat_base {
             array("", "6", "7", "5"),
             array("", "7", "7", "21")
         );
-        $this->add_data($resp_multiple, 'questionnaire_resp_multiple', '',
+        $this->add_data($respmultiple, 'questionnaire_resp_multiple', '',
             array('responsemap' => 'response_id', 'questionmap' => 'question_id', 'choicemap' => 'choice_id'));
 
-        $resp_single = array(
+        $respsingle = array(
             array("id", "response_id", "question_id", "choice_id"),
             array("", "1", "9", "7"),
             array("", "1", "12", "15"),
@@ -328,7 +404,7 @@ class behat_mod_questionnaire extends behat_base {
             array("", "6", "9", "7"),
             array("", "6", "12", "22")
         );
-        $this->add_data($resp_single, 'questionnaire_resp_single', '',
+        $this->add_data($respsingle, 'questionnaire_resp_single', '',
             array('responsemap' => 'response_id', 'questionmap' => 'question_id', 'choicemap' => 'choice_id'));
     }
 
@@ -338,7 +414,7 @@ class behat_mod_questionnaire extends behat_base {
      * @param array $data Array of data record row arrays. The first row contains the field names.
      * @param string $datatable The name of the data table to insert records into.
      * @param string $mapvar The name of the object variable to store oldid / newid mappings (optional).
-     * @param string $replvars Array of key/value pairs where key is the mapvar and value is the record field
+     * @param array|null $replvars Array of key/value pairs where key is the mapvar and value is the record field
      *                         to replace with mapped values.
      * @return null
      */
@@ -367,6 +443,26 @@ class behat_mod_questionnaire extends behat_base {
                 $this->{$mapvar}[$oldid] = $newid;
             }
         }
+    }
+    /**
+     * Get a questionnaire by name.
+     *
+     * @param string $name questionnaire name.
+     * @return stdClass the corresponding DB row.
+     */
+    protected function get_questionnaire_by_name(string $name): stdClass {
+        global $DB;
+        return $DB->get_record('questionnaire', ['name' => $name], '*', MUST_EXIST);
+    }
 
+    /**
+     * Get a questionnaire cmid from the quiz name.
+     *
+     * @param string $name questionnaire name.
+     * @return stdClass cm from get_coursemodule_from_instance.
+     */
+    protected function get_cm_by_questionnaire_name(string $name): stdClass {
+        $questionnaire = $this->get_questionnaire_by_name($name);
+        return get_coursemodule_from_instance('questionnaire', $questionnaire->id, $questionnaire->course);
     }
 }

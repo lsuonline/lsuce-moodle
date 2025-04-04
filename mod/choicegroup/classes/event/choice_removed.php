@@ -24,8 +24,6 @@
 
 namespace mod_choicegroup\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The mod_choicegroup post created event class.
  *
@@ -81,21 +79,7 @@ class choice_removed extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/choicegroup/view.php', array('id' => $this->contextinstanceid));
+        return new \moodle_url('/mod/choicegroup/view.php', ['id' => $this->contextinstanceid]);
     }
-
-    /**
-     * Return the legacy event log data.
-     *
-     * @return array|null
-     */
-    protected function get_legacy_logdata() {
-        // The legacy log table expects a relative path to /mod/choicegroup/.
-        $logurl = substr($this->get_url()->out_as_local_url(), strlen('/mod/choicegroup/'));
-
-        return array($this->courseid, 'choicegroup', 'choice removed', $logurl, $this->objectid, $this->contextinstanceid);
-    }
-
-
 }
 

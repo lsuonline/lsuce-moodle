@@ -25,35 +25,26 @@
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir.'/formslib.php');
 
-// ===============
-//
-//	Create the Moodle Form
-//
-// ===============
+// Create the Moodle Form.
 class simplehtml_form extends moodleform {
 
-    function definition() {
-
+    public function definition() {
         $mform = $this->_form; // Don't forget the underscore!
         $filemanageropts = $this->_customdata['filemanageropts'];
 
-        // FILE MANAGER
+        // FILE MANAGER.
         $mform->addElement('filemanager', 'attachments', get_string('selectlogo', 'block_rollsheet'), null, $filemanageropts);
 
-        // Buttons
+        // Buttons.
         $this->add_action_buttons();
     }
 }
 
-
-
-// ===============
 //
-//	Plugin File
+// Plugin File
 //
-// ===============
 // I M P O R T A N T
-// 
+//
 // This is the most confusing part. For each plugin using a file manager will automatically
 // look for this function. It always ends with _pluginfile. Depending on where you build
 // your plugin, the name will change. In case, it is a local plugin called file manager.
@@ -62,23 +53,19 @@ function block_rollsheet_pluginfile($course, $cm, $context, $filearea, $args, $f
     global $DB;
 
     if ($context->contextlevel != CONTEXT_SYSTEM) {
-    //    return false;
     }
 
     require_login();
 
     if ($filearea != 'attachment') {
-      //  return false;
     }
 
     $itemid = (int)array_shift($args);
 
     if ($itemid != 0) {
-     //   return false;
     }
 
     $fs = get_file_storage();
-
     $filename = array_pop($args);
     if (empty($args)) {
         $filepath = '/';
@@ -91,6 +78,6 @@ function block_rollsheet_pluginfile($course, $cm, $context, $filearea, $args, $f
         return false;
     }
 
-    // finally send the file
-    send_stored_file($file, 0, 0, true, $options); // download MUST be forced - security!
+    // Finally send the file.
+    send_stored_file($file, 0, 0, true, $options); // Download MUST be forced - security!
 }

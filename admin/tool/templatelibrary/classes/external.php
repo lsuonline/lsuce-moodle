@@ -14,24 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * This is the external API for this tool.
- *
- * @package    tool_templatelibrary
- * @copyright  2015 Damyon Wiese
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace tool_templatelibrary;
 
-require_once("$CFG->libdir/externallib.php");
-
-use external_api;
-use external_function_parameters;
-use external_value;
-use external_format_value;
-use external_single_structure;
-use external_multiple_structure;
-use invalid_parameter_exception;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_value;
 
 /**
  * This is the external API for this tool.
@@ -59,7 +47,13 @@ class external extends external_api {
             VALUE_DEFAULT,
             ''
         );
-        $params = array('component' => $component, 'search' => $search);
+        $themename = new external_value(
+            PARAM_COMPONENT,
+            'The current theme',
+            VALUE_DEFAULT,
+            ''
+        );
+        $params = array('component' => $component, 'search' => $search, 'themename' => $themename);
         return new external_function_parameters($params);
     }
 
@@ -67,22 +61,24 @@ class external extends external_api {
      * Loads the list of templates.
      * @param string $component Limit the search to a component.
      * @param string $search The search string.
+     * @param string $themename The name of theme
      * @return array[string]
      */
-    public static function list_templates($component, $search) {
+    public static function list_templates($component, $search, $themename = '') {
         $params = self::validate_parameters(self::list_templates_parameters(),
                                             array(
                                                 'component' => $component,
                                                 'search' => $search,
+                                                'themename' => $themename,
                                             ));
 
-        return api::list_templates($component, $search);
+        return api::list_templates($component, $search, $themename);
     }
 
     /**
      * Returns description of list_templates() result value.
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function list_templates_returns() {
         return new external_multiple_structure(new external_value(PARAM_RAW, 'The template name (format is component/templatename)'));
@@ -96,7 +92,7 @@ class external extends external_api {
     public static function load_canonical_template_parameters() {
         return new external_function_parameters(
                 array('component' => new external_value(PARAM_COMPONENT, 'component containing the template'),
-                      'template' => new external_value(PARAM_ALPHANUMEXT, 'name of the template'))
+                      'template' => new external_value(PARAM_SAFEPATH, 'name of the template'))
             );
     }
 
@@ -107,7 +103,7 @@ class external extends external_api {
      *
      * @param string $component The component that holds the template.
      * @param string $template The name of the template.
-     * @return string the template
+     * @return string the template, false if template doesn't exist.
      */
     public static function load_canonical_template($component, $template) {
         $params = self::validate_parameters(self::load_canonical_template_parameters(),
@@ -123,7 +119,7 @@ class external extends external_api {
     /**
      * Returns description of load_canonical_template() result value.
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function load_canonical_template_returns() {
         return new external_value(PARAM_RAW, 'template');

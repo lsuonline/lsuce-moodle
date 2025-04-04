@@ -24,8 +24,6 @@
 
 namespace dataformat_csv;
 
-require_once("$CFG->libdir/spout/src/Spout/Autoloader/autoload.php");
-
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -43,8 +41,6 @@ class writer extends \core\dataformat\spout_base {
     /** @var $extension */
     protected $extension = ".csv";
 
-    /** @var $spouttype */
-    protected $spouttype = \Box\Spout\Common\Type::CSV;
 
 }
 

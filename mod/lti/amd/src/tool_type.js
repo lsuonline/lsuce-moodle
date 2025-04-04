@@ -17,14 +17,12 @@
  * Provides an interface for a tool type in the Moodle server.
  *
  * @module     mod_lti/tool_type
- * @class      tool_type
- * @package    mod_lti
  * @copyright  2015 Ryan Wyllie <ryan@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
 define(['core/ajax', 'core/notification'], function(ajax, notification) {
-    return /** @alias module:mod_lti/tool_type */ {
+    return {
         /**
          * Get a list of tool types from Moodle for the given
          * search args.
@@ -34,8 +32,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method query
          * @public
-         * @param object Search parameters
-         * @return object jQuery deferred object
+         * @param {Object} args Search parameters
+         * @return {Promise} jQuery Deferred object
          */
         query: function(args) {
             var request = {
@@ -60,8 +58,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method create
          * @public
-         * @param object Tool type properties
-         * @return object jQuery deferred object
+         * @param {Object} args Tool type properties
+         * @return {Promise} jQuery Deferred object
          */
         create: function(args) {
             var request = {
@@ -82,8 +80,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method update
          * @public
-         * @param object Tool type properties
-         * @return object jQuery deferred object
+         * @param {Object} args Tool type properties
+         * @return {Promise} jQuery Deferred object
          */
         update: function(args) {
             var request = {
@@ -103,10 +101,10 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method delete
          * @public
-         * @param int Tool type ID
-         * @return object jQuery deferred object
+         * @param {Integer} id Tool type ID
+         * @return {Promise} jQuery Deferred object
          */
-        delete: function(id) {
+        'delete': function(id) {
             var request = {
                 methodname: 'mod_lti_delete_tool_type',
                 args: {
@@ -127,8 +125,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method query
          * @public
-         * @param int Tool proxty id
-         * @return object jQuery deferred object
+         * @param {Integer} id Tool type ID
+         * @return {Promise} jQuery Deferred object
          */
         getFromToolProxyId: function(id) {
             return this.query({toolproxyid: id});
@@ -141,8 +139,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method isCartridge
          * @public
-         * @param string URL
-         * @return object jQuery deferred object
+         * @param {String} url
+         * @return {Promise} jQuery Deferred object
          */
         isCartridge: function(url) {
             var request = {

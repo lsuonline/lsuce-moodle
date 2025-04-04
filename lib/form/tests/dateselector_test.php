@@ -15,15 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for dateselector form element
+ * Unit tests for MoodleQuickForm_date_selector
  *
- * This file contains unit test related to dateselector form element
+ * Contains test cases for testing MoodleQuickForm_date_selector
  *
  * @package    core_form
- * @category   phpunit
+ * @category   test
  * @copyright  2012 Rajesh Taneja
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace core_form;
+
+use moodleform;
+use MoodleQuickForm_date_selector;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -37,12 +42,12 @@ require_once($CFG->libdir.'/formslib.php');
  * Contains test cases for testing MoodleQuickForm_date_selector
  *
  * @package    core_form
- * @category   phpunit
+ * @category   test
  * @copyright  2012 Rajesh Taneja
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_form_dateselector_testcase extends advanced_testcase {
-    /** @var MoodleQuickForm Keeps reference of dummy form object */
+final class dateselector_test extends \advanced_testcase {
+    /** @var \MoodleQuickForm Keeps reference of dummy form object */
     private $mform;
     /** @var array test fixtures */
     private $testvals;
@@ -50,7 +55,7 @@ class core_form_dateselector_testcase extends advanced_testcase {
     /**
      * Initalize test wide variable, it is called in start of the testcase
      */
-    protected function setUp() {
+    protected function setUp(): void {
         global $CFG;
         parent::setUp();
 
@@ -119,7 +124,7 @@ class core_form_dateselector_testcase extends advanced_testcase {
     /**
      * Testcase to check exportvalue
      */
-    public function test_exportvalue() {
+    public function test_exportvalue(): void {
         global $USER;
         $testvals = $this->testvals;
 
@@ -129,11 +134,11 @@ class core_form_dateselector_testcase extends advanced_testcase {
 
             // Create dateselector element with different timezones.
             $elparams = array('optional'=>false, 'timezone' => $vals['timezone']);
-            $el = new MoodleQuickForm_date_selector('dateselector', null, $elparams);
-            $el->_createElements();
+            $el = $this->mform->addElement('date_selector', 'dateselector', null, $elparams);
+            $this->assertTrue($el instanceof MoodleQuickForm_date_selector);
             $submitvalues = array('dateselector' => $vals);
 
-            $this->assertSame(array('dateselector' => $vals['timestamp']), $el->exportValue($submitvalues),
+            $this->assertSame(array('dateselector' => $vals['timestamp']), $el->exportValue($submitvalues, true),
                     "Please check if timezones are updated (Site adminstration -> location -> update timezone)");
         }
     }
@@ -141,7 +146,7 @@ class core_form_dateselector_testcase extends advanced_testcase {
     /**
      * Testcase to check onQuickformEvent
      */
-    public function test_onquickformevent() {
+    public function test_onquickformevent(): void {
         global $USER;
         $testvals = $this->testvals;
         // Get dummy form for data.
@@ -153,8 +158,8 @@ class core_form_dateselector_testcase extends advanced_testcase {
 
             // Create dateselector element with different timezones.
             $elparams = array('optional'=>false, 'timezone' => $vals['timezone']);
-            $el = new MoodleQuickForm_date_selector('dateselector', null, $elparams);
-            $el->_createElements();
+            $el = $this->mform->addElement('date_selector', 'dateselector', null, $elparams);
+            $this->assertTrue($el instanceof MoodleQuickForm_date_selector);
             $expectedvalues = array(
                 'day' => array($vals['day']),
                 'month' => array($vals['month']),
@@ -179,7 +184,7 @@ class temp_form_date extends moodleform {
     }
     /**
      * Returns form reference
-     * @return MoodleQuickForm
+     * @return \MoodleQuickForm
      */
     public function getform() {
         $mform = $this->_form;

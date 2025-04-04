@@ -24,18 +24,19 @@
  * @author     Yuliya Bozhko <yuliya.bozhko@totaralms.com>
  */
 
-require_once(dirname(dirname(__FILE__)) . '/config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir . '/badgeslib.php');
 require_once($CFG->dirroot . '/badges/lib/awardlib.php');
 
 $badgeid = required_param('id', PARAM_INT);
 $role = optional_param('role', 0, PARAM_INT);
 $award = optional_param('award', false, PARAM_BOOL);
+$revoke = optional_param('revoke', false, PARAM_BOOL);
 
 require_login();
 
 if (empty($CFG->enablebadges)) {
-    print_error('badgesdisabled', 'badges');
+    throw new \moodle_exception('badgesdisabled', 'badges');
 }
 
 $badge = new badge($badgeid);
@@ -46,14 +47,17 @@ $navurl = new moodle_url('/badges/index.php', array('type' => $badge->type));
 
 if ($badge->type == BADGE_TYPE_COURSE) {
     if (empty($CFG->badges_allowcoursebadges)) {
-        print_error('coursebadgesdisabled', 'badges');
+        throw new \moodle_exception('coursebadgesdisabled', 'badges');
     }
     require_login($badge->courseid);
+    $course = get_course($badge->courseid);
+    $heading = format_string($course->fullname, true, ['context' => $context]);
     $navurl = new moodle_url('/badges/index.php', array('type' => $badge->type, 'id' => $badge->courseid));
     $PAGE->set_pagelayout('standard');
     navigation_node::override_active_url($navurl);
 } else {
     $PAGE->set_pagelayout('admin');
+    $heading = get_string('administrationsite');
     navigation_node::override_active_url($navurl, true);
 }
 
@@ -65,9 +69,11 @@ $PAGE->set_context($context);
 
 // Set up navigation and breadcrumbs.
 $strrecipients = get_string('recipients', 'badges');
-$PAGE->navbar->add($badge->name, new moodle_url('overview.php', array('id' => $badge->id)))->add($strrecipients);
+$PAGE->navbar->add($badge->name, new moodle_url('overview.php', array('id' => $badge->id)))
+    ->add($strrecipients, new moodle_url('recipients.php', array('id' => $badge->id)))
+    ->add(get_string('award', 'badges'));
 $PAGE->set_title($strrecipients);
-$PAGE->set_heading($badge->name);
+$PAGE->set_heading($heading);
 
 if (!$badge->is_active()) {
     echo $OUTPUT->header();
@@ -76,15 +82,36 @@ if (!$badge->is_active()) {
     die();
 }
 
+$returnurl = new moodle_url('recipients.php', array('id' => $badge->id));
+$returnlink = html_writer::link($returnurl, $strrecipients);
+$actionbar = new \core_badges\output\standard_action_bar(
+    page: $PAGE,
+    type: $badge->type,
+    showaddbadge: false,
+    backurl: $returnurl
+);
 $output = $PAGE->get_renderer('core', 'badges');
+$tertiarynav = $output->render_tertiary_navigation($actionbar);
 
 // Roles that can award this badge.
 $acceptedroles = array_keys($badge->criteria[BADGE_CRITERIA_TYPE_MANUAL]->params);
 
 if (empty($acceptedroles)) {
     echo $OUTPUT->header();
-    $return = html_writer::link(new moodle_url('recipients.php', array('id' => $badge->id)), $strrecipients);
-    echo $OUTPUT->notification(get_string('notacceptedrole', 'badges', $return));
+    echo $OUTPUT->notification(get_string('notacceptedrole', 'badges', $returnlink));
+    echo $OUTPUT->footer();
+    die();
+}
+
+// Get groupmode and currentgroup before going further.
+$groupmode = groups_get_course_groupmode($COURSE);  // Groups are being used.
+$currentgroup = groups_get_course_group($COURSE, true); // Get active group.
+
+// Check groupmode (SEPARATEGROUPS), currentgroup and capability (or admin).
+if ($groupmode == SEPARATEGROUPS && empty($currentgroup) &&
+    !has_capability('moodle/site:accessallgroups', $context) && !is_siteadmin() ) {
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading(get_string("notingroup"));
     echo $OUTPUT->footer();
     die();
 }
@@ -97,7 +124,9 @@ if (count($acceptedroles) > 1) {
     } else {
         // Get all the roles that user has and use the ones required by this badge.
         $roles = get_user_roles($context, $USER->id);
-        $roleids = array_map(create_function('$o', 'return $o->roleid;'), $roles);
+        $roleids = array_map(function($o) {
+            return $o->roleid;
+        }, $roles);
         $selection = array_intersect($acceptedroles, $roleids);
     }
 
@@ -110,6 +139,7 @@ if (count($acceptedroles) > 1) {
         if (!$role) {
             $pageurl = new moodle_url('/badges/award.php', array('id' => $badgeid));
             echo $OUTPUT->header();
+            echo $tertiarynav;
             echo $OUTPUT->box($OUTPUT->single_select(new moodle_url($pageurl), 'role', $select, '', array('' => 'choosedots'),
                 null, array('label' => get_string('selectaward', 'badges'))));
             echo $OUTPUT->footer();
@@ -123,8 +153,7 @@ if (count($acceptedroles) > 1) {
         }
     } else {
         echo $OUTPUT->header();
-        $return = html_writer::link(new moodle_url('recipients.php', array('id' => $badge->id)), $strrecipients);
-        echo $OUTPUT->notification(get_string('notacceptedrole', 'badges', $return));
+        echo $OUTPUT->notification(get_string('notacceptedrole', 'badges', $returnlink));
         echo $OUTPUT->footer();
         die();
     }
@@ -134,8 +163,7 @@ if (count($acceptedroles) > 1) {
     $usersids = array_keys($users);
     if (!$isadmin && !in_array($USER->id, $usersids)) {
         echo $OUTPUT->header();
-        $return = html_writer::link(new moodle_url('recipients.php', array('id' => $badge->id)), $strrecipients);
-        echo $OUTPUT->notification(get_string('notacceptedrole', 'badges', $return));
+        echo $OUTPUT->notification(get_string('notacceptedrole', 'badges', $returnlink));
         echo $OUTPUT->footer();
         die();
     } else {
@@ -148,8 +176,10 @@ $options = array(
         'badgeid' => $badge->id,
         'context' => $context,
         'issuerid' => $USER->id,
-        'issuerrole' => $issuerrole->roleid
-        );
+        'issuerrole' => $issuerrole->roleid,
+        'currentgroup' => $currentgroup,
+        'url' => $url,
+    );
 $existingselector = new badge_existing_users_selector('existingrecipients', $options);
 $recipientselector = new badge_potential_users_selector('potentialrecipients', $options);
 $recipientselector->set_existing_recipients($existingselector->find_users(''));
@@ -172,10 +202,27 @@ if ($award && data_submitted() && has_capability('moodle/badges:awardbadge', $co
     $recipientselector->invalidate_selected_users();
     $existingselector->invalidate_selected_users();
     $recipientselector->set_existing_recipients($existingselector->find_users(''));
+} else if ($revoke && data_submitted() && has_capability('moodle/badges:revokebadge', $context)) {
+    require_sesskey();
+    $users = $existingselector->get_selected_users();
+
+    foreach ($users as $user) {
+        if (!process_manual_revoke($user->id, $USER->id, $issuerrole->roleid, $badgeid)) {
+            echo $OUTPUT->error_text(get_string('error:cannotrevokebadge', 'badges'));
+        }
+    }
+
+    $recipientselector->invalidate_selected_users();
+    $existingselector->invalidate_selected_users();
+    $recipientselector->set_existing_recipients($existingselector->find_users(''));
 }
 
 echo $OUTPUT->header();
+echo $tertiarynav;
 echo $OUTPUT->heading($strrecipients);
+
+// Print group selector/dropdown menu (find out current groups mode).
+groups_print_course_menu($COURSE, $url);
 
 if (count($acceptedroles) > 1) {
     echo $OUTPUT->box($roleselect);

@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * This main view page for a questionnaire.
+ *
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author     Mike Churchward
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/questionnaire/locallib.php');
 require_once($CFG->libdir . '/completionlib.php');
@@ -47,22 +56,16 @@ if (isset($sid)) {
 
 $PAGE->set_url($url);
 $PAGE->set_context($context);
-$questionnaire = new questionnaire(0, $questionnaire, $course, $cm);
+$questionnaire = new questionnaire($course, $cm, 0, $questionnaire);
+// Add renderer and page objects to the questionnaire object for display use.
+$questionnaire->add_renderer($PAGE->get_renderer('mod_questionnaire'));
+$questionnaire->add_page(new \mod_questionnaire\output\viewpage());
 
 $PAGE->set_title(format_string($questionnaire->name));
-
 $PAGE->set_heading(format_string($course->fullname));
 
-echo $OUTPUT->header();
-
-echo $OUTPUT->heading(format_text($questionnaire->name));
-
-// Print the main part of the page.
-if ($questionnaire->intro) {
-    echo $OUTPUT->box(format_module_intro('questionnaire', $questionnaire, $cm->id), 'generalbox', 'intro');
-}
-
-echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
+echo $questionnaire->renderer->header();
+// No need to print out intro or name in Moodle 4 and above.
 
 $cm = $questionnaire->cm;
 $currentgroupid = groups_get_activity_group($cm);
@@ -70,77 +73,40 @@ if (!groups_is_member($currentgroupid, $USER->id)) {
     $currentgroupid = 0;
 }
 
-if (!$questionnaire->is_active()) {
-    if ($questionnaire->capabilities->manage) {
-        $msg = 'removenotinuse';
-    } else {
-        $msg = 'notavail';
-    }
-    echo '<div class="message">'
-    .get_string($msg, 'questionnaire')
-    .'</div>';
-
-} else if (!$questionnaire->is_open()) {
-    echo '<div class="message">'
-    .get_string('notopen', 'questionnaire', userdate($questionnaire->opendate))
-    .'</div>';
-} else if ($questionnaire->is_closed()) {
-    echo '<div class="message">'
-    .get_string('closed', 'questionnaire', userdate($questionnaire->closedate))
-    .'</div>';
-} else if ($questionnaire->survey->realm == 'template') {
-    print_string('templatenotviewable', 'questionnaire');
-    echo $OUTPUT->box_end();
-    echo $OUTPUT->footer($questionnaire->course);
-    exit();
-} else if (!$questionnaire->user_is_eligible($USER->id)) {
-    if ($questionnaire->questions) {
-        echo '<div class="message">'.get_string('noteligible', 'questionnaire').'</div>';
-    }
-} else if (!$questionnaire->user_can_take($USER->id)) {
-    switch ($questionnaire->qtype) {
-        case QUESTIONNAIREDAILY:
-            $msgstring = ' '.get_string('today', 'questionnaire');
-            break;
-        case QUESTIONNAIREWEEKLY:
-            $msgstring = ' '.get_string('thisweek', 'questionnaire');
-            break;
-        case QUESTIONNAIREMONTHLY:
-            $msgstring = ' '.get_string('thismonth', 'questionnaire');
-            break;
-        default:
-            $msgstring = '';
-            break;
-    }
-    echo ('<div class="message">'.get_string("alreadyfilled", "questionnaire", $msgstring).'</div>');
+$message = $questionnaire->user_access_messages($USER->id);
+if ($message !== false) {
+    $questionnaire->page->add_to_page('message', $message);
 } else if ($questionnaire->user_can_take($USER->id)) {
-    $select = 'survey_id = '.$questionnaire->survey->id.' AND username = \''.$USER->id.'\' AND complete = \'n\'';
-    $resume = $DB->get_record_select('questionnaire_response', $select, null) !== false;
-    if (!$resume) {
-        $complete = get_string('answerquestions', 'questionnaire');
-    } else {
-        $complete = get_string('resumesurvey', 'questionnaire');
-    }
     if ($questionnaire->questions) { // Sanity check.
-        echo '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/complete.php?'.
-        'id='.$questionnaire->cm->id.'&resume='.$resume).'">'.$complete.'</a>';
+        if (!$questionnaire->user_has_saved_response($USER->id)) {
+            $questionnaire->page->add_to_page('complete',
+                '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/complete.php?' .
+                'id=' . $questionnaire->cm->id) . '" class="btn btn-primary">' .
+                get_string('answerquestions', 'questionnaire') . '</a>');
+        } else {
+            $resumesurvey = get_string('resumesurvey', 'questionnaire');
+            $questionnaire->page->add_to_page('complete',
+                '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/complete.php?' .
+                'id='.$questionnaire->cm->id.'&resume=1').'" title="'.$resumesurvey.
+                '" class="btn btn-primary">'.$resumesurvey.'</a>');
+        }
+    } else {
+        $questionnaire->page->add_to_page('message', get_string('noneinuse', 'questionnaire'));
     }
 }
-if ($questionnaire->is_active() && !$questionnaire->questions) {
-    echo '<p>'.get_string('noneinuse', 'questionnaire').'</p>';
+
+if ($questionnaire->capabilities->editquestions && !$questionnaire->questions && $questionnaire->is_active()) {
+    $questionnaire->page->add_to_page('complete',
+        '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/questions.php?'.
+        'id=' . $questionnaire->cm->id) . '" class="btn btn-primary">' .
+        get_string('addquestions', 'questionnaire') . '</a>');
 }
-if ($questionnaire->is_active() && $questionnaire->capabilities->editquestions && !$questionnaire->questions) { // Sanity check.
-    echo '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/questions.php?'.
-                'id='.$questionnaire->cm->id).'">'.'<strong>'.get_string('addquestions', 'questionnaire').'</strong></a>';
-}
-echo $OUTPUT->box_end();
+
 if (isguestuser()) {
-    $output = '';
     $guestno = html_writer::tag('p', get_string('noteligible', 'questionnaire'));
     $liketologin = html_writer::tag('p', get_string('liketologin'));
-    $output .= $OUTPUT->confirm($guestno."\n\n".$liketologin."\n", get_login_url(),
-            get_local_referer(false));
-    echo $output;
+    $questionnaire->page->add_to_page('guestuser',
+        $questionnaire->renderer->confirm($guestno."\n\n".$liketologin."\n", get_login_url(), get_local_referer(false)));
 }
 
 // Log this course module view.
@@ -158,7 +124,6 @@ $event->trigger();
 $usernumresp = $questionnaire->count_submissions($USER->id);
 
 if ($questionnaire->capabilities->readownresponses && ($usernumresp > 0)) {
-    echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
     $argstr = 'instance='.$questionnaire->id.'&user='.$USER->id;
     if ($usernumresp > 1) {
         $titletext = get_string('viewyourresponses', 'questionnaire', $usernumresp);
@@ -166,18 +131,17 @@ if ($questionnaire->capabilities->readownresponses && ($usernumresp > 0)) {
         $titletext = get_string('yourresponse', 'questionnaire');
         $argstr .= '&byresponse=1&action=vresp';
     }
-
-    echo '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/myreport.php?'.
-        $argstr).'">'.$titletext.'</a>';
-    echo $OUTPUT->box_end();
+    $questionnaire->page->add_to_page('yourresponse',
+        '<a href="' .$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/myreport.php?' . $argstr).
+        '" class="btn btn-primary">' . $titletext . '</a>');
 }
 
 if ($questionnaire->can_view_all_responses($usernumresp)) {
-    echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
     $argstr = 'instance='.$questionnaire->id.'&group='.$currentgroupid;
-    echo '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/report.php?'.
-            $argstr).'">'.get_string('viewallresponses', 'questionnaire').'</a>';
-    echo $OUTPUT->box_end();
+    $questionnaire->page->add_to_page('allresponses',
+        '<a href="'.$CFG->wwwroot.htmlspecialchars('/mod/questionnaire/report.php?'.$argstr).'" class="btn btn-primary">'.
+        get_string('viewallresponses', 'questionnaire').'</a>');
 }
 
-echo $OUTPUT->footer();
+echo $questionnaire->renderer->render($questionnaire->page);
+echo $questionnaire->renderer->footer();

@@ -22,10 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');
-}
-
+defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
 
 /**
@@ -42,6 +39,10 @@ class mod_attendance_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition() {
+        $attendanceconfig = get_config('attendance');
+        if (!isset($attendanceconfig->subnet)) {
+            $attendanceconfig->subnet = '';
+        }
         $mform    =& $this->_form;
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
@@ -51,10 +52,25 @@ class mod_attendance_mod_form extends moodleform_mod {
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->setDefault('name', get_string('modulename', 'attendance'));
 
+        $this->standard_intro_elements();
+
         // Grade settings.
         $this->standard_grading_coursemodule_elements();
 
         $this->standard_coursemodule_elements(true);
+
+        // IP address.
+        if (get_config('attendance', 'subnetactivitylevel')) {
+            $mform->addElement('header', 'security', get_string('extrarestrictions', 'attendance'));
+            $mform->addElement('text', 'subnet', get_string('defaultsubnet', 'attendance'), array('size' => '164'));
+            $mform->setType('subnet', PARAM_TEXT);
+            $mform->addHelpButton('subnet', 'defaultsubnet', 'attendance');
+            $mform->setDefault('subnet', $attendanceconfig->subnet);
+        } else {
+            $mform->addElement('hidden', 'subnet', '');
+            $mform->setType('subnet', PARAM_TEXT);
+        }
+
         $this->add_action_buttons();
     }
 }

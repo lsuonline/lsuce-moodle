@@ -25,8 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(dirname(dirname(__FILE__)) . '/lib.php');  // interface definition
-require_once($CFG->libdir . '/gradelib.php');           // to handle float vs decimal issues
+require_once(__DIR__ . '/../lib.php');        // Interface definition.
+require_once($CFG->libdir . '/gradelib.php'); // To handle float vs decimal issues.
 
 /**
  * Server workshop files
@@ -81,10 +81,10 @@ function workshopform_rubric_pluginfile($course, $cm, $context, $filearea, array
  */
 class workshop_rubric_strategy implements workshop_strategy {
 
-    /** @const default number of dimensions to show */
+    /** @var default number of dimensions to show */
     const MINDIMS = 3;
 
-    /** @const number of dimensions to add */
+    /** @var number of dimensions to add */
     const ADDDIMS = 2;
 
     /** @var workshop the parent workshop instance */
@@ -125,7 +125,7 @@ class workshop_rubric_strategy implements workshop_strategy {
     public function get_edit_strategy_form($actionurl=null) {
         global $CFG;    // needed because the included files use it
 
-        require_once(dirname(__FILE__) . '/edit_form.php');
+        require_once(__DIR__ . '/edit_form.php');
 
         $fields             = $this->prepare_form_fields($this->dimensions);
         $fields->config_layout = $this->config->layout;
@@ -245,10 +245,10 @@ class workshop_rubric_strategy implements workshop_strategy {
      * @param bool $editable
      * @param array $options
      */
-    public function get_assessment_form(moodle_url $actionurl=null, $mode='preview', stdclass $assessment=null, $editable=true, $options=array()) {
+    public function get_assessment_form(?moodle_url $actionurl=null, $mode='preview', ?stdclass $assessment=null, $editable=true, $options=array()) {
         global $CFG;    // needed because the included files use it
         global $DB;
-        require_once(dirname(__FILE__) . '/assessment_form.php');
+        require_once(__DIR__ . '/assessment_form.php');
 
         $fields         = $this->prepare_form_fields($this->dimensions);
         $nodimensions   = count($this->dimensions);

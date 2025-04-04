@@ -1,14 +1,28 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
  * File to load generated classes once at once time
  * @package SessionManagement
- * @author WsdlToPhp Team <contact@wsdltophp.com>
+ * @author Panopto
  * @version 20150429-01
  * @date 2017-01-19
  */
 /**
  * Includes for all generated classes files
- * @author WsdlToPhp Team <contact@wsdltophp.com>
+ * @author Panopto
  * @version 20150429-01
  * @date 2017-01-19
  */
@@ -27,6 +41,9 @@ require_once dirname(__FILE__) . '/Delete/Folders/SessionManagementStructDeleteF
 require_once dirname(__FILE__) . '/Delete/Sessions/SessionManagementStructDeleteSessions.php';
 require_once dirname(__FILE__) . '/Delete/Response/SessionManagementStructDeleteSessionsResponse.php';
 require_once dirname(__FILE__) . '/Provision/Response/SessionManagementStructProvisionExternalCourseWithRolesResponse.php';
+require_once dirname(__FILE__) . '/Unprovision/Course/SessionManagementStructUnprovisionExternalCourse.php';
+require_once dirname(__FILE__) . '/Unprovision/Response/SessionManagementStructUnprovisionExternalCourseResponse.php';
+require_once dirname(__FILE__) . '/Unprovision/SessionManagementServiceUnprovision.php';
 require_once dirname(__FILE__) . '/Set/Access/SessionManagementStructSetExternalCourseAccess.php';
 require_once dirname(__FILE__) . '/Set/Roles/SessionManagementStructSetCopiedExternalCourseAccessForRoles.php';
 require_once dirname(__FILE__) . '/Set/Response/SessionManagementStructSetCopiedExternalCourseAccessForRolesResponse.php';
@@ -97,9 +114,12 @@ require_once dirname(__FILE__) . '/Are/Response/SessionManagementStructAreUsersN
 require_once dirname(__FILE__) . '/Update/Response/SessionManagementStructUpdateSessionOwnerResponse.php';
 require_once dirname(__FILE__) . '/Update/Owner/SessionManagementStructUpdateSessionOwner.php';
 require_once dirname(__FILE__) . '/Array/Folder/SessionManagementStructArrayOfFolder.php';
+require_once dirname(__FILE__) . '/Array/Folder/SessionManagementStructArrayOfExtendedFolder.php';
 require_once dirname(__FILE__) . '/List/Response/SessionManagementStructListSessionsResponse.php';
 require_once dirname(__FILE__) . '/List/Response/SessionManagementStructListFoldersResponse.php';
+require_once dirname(__FILE__) . '/List/Response/SessionManagementStructListExtendedFoldersResponse.php';
 require_once dirname(__FILE__) . '/Folder/SessionManagementStructFolder.php';
+require_once dirname(__FILE__) . '/Folder/SessionManagementStructExtendedFolder.php';
 require_once dirname(__FILE__) . '/Date/Offset/SessionManagementStructDateTimeOffset.php';
 require_once dirname(__FILE__) . '/Array/Session/SessionManagementStructArrayOfSession.php';
 require_once dirname(__FILE__) . '/Array/Context/SessionManagementStructArrayOfFolderWithExternalContext.php';
@@ -135,12 +155,14 @@ require_once dirname(__FILE__) . '/Session/Type/SessionManagementEnumSessionStar
 require_once dirname(__FILE__) . '/Get/List/SessionManagementStructGetFoldersWithExternalContextList.php';
 require_once dirname(__FILE__) . '/Get/Response/SessionManagementStructGetFoldersWithExternalContextListResponse.php';
 require_once dirname(__FILE__) . '/Get/List/SessionManagementStructGetCreatorFoldersList.php';
+require_once dirname(__FILE__) . '/Get/List/SessionManagementStructGetExtendedCreatorFoldersList.php';
 require_once dirname(__FILE__) . '/Get/Response/SessionManagementStructGetFoldersListResponse.php';
 require_once dirname(__FILE__) . '/Get/List/SessionManagementStructGetFoldersList.php';
 require_once dirname(__FILE__) . '/Get/Response/SessionManagementStructGetSessionsByExternalIdResponse.php';
 require_once dirname(__FILE__) . '/Get/List/SessionManagementStructGetSessionsList.php';
 require_once dirname(__FILE__) . '/Get/Response/SessionManagementStructGetSessionsListResponse.php';
 require_once dirname(__FILE__) . '/Get/Response/SessionManagementStructGetCreatorFoldersListResponse.php';
+require_once dirname(__FILE__) . '/Get/Response/SessionManagementStructGetExtendedCreatorFoldersListResponse.php';
 require_once dirname(__FILE__) . '/Get/List/SessionManagementStructGetCreatorFoldersWithExternalContextList.php';
 require_once dirname(__FILE__) . '/Update/Response/SessionManagementStructUpdateSessionDescriptionResponse.php';
 require_once dirname(__FILE__) . '/Update/Broadcast/SessionManagementStructUpdateSessionIsBroadcast.php';

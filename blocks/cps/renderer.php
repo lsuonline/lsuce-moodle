@@ -25,10 +25,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
 
 class block_cps_renderer extends plugin_renderer_base {
 
-    public function users_search_result_table($users, $base_url){
+    public function users_search_result_table($users, $baseurl) {
         $table = new html_table();
         $table->head = array(
             get_string('firstname'), get_string('lastname'),
@@ -37,10 +38,10 @@ class block_cps_renderer extends plugin_renderer_base {
             get_string('action')
         );
 
-        $edit_str = get_string('edit');
+        $editstr = get_string('edit');
         foreach ($users as $user) {
-            $url = new moodle_url($base_url, array('id' => $user->id));
-            $resetlink = html_writer::link(new moodle_url($base_url, array('id' => $user->id, 'reset'=>1)), 'reset');
+            $url = new moodle_url($baseurl, array('id' => $user->id));
+            $resetlink = html_writer::link(new moodle_url($baseurl, array('id' => $user->id, 'reset' => 1)), 'reset');
             $altname = $user->alternatename ? $user->alternatename." | ".$resetlink : '';
             $line = array(
                 $user->firstname,
@@ -48,7 +49,7 @@ class block_cps_renderer extends plugin_renderer_base {
                 $user->username,
                 $user->idnumber,
                 $altname,
-                html_writer::link($url, $edit_str)
+                html_writer::link($url, $editstr)
             );
 
             $table->data[] = new html_table_row($line);

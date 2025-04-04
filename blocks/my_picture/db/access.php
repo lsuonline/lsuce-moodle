@@ -24,25 +24,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = array(
-    'block/my_picture:addinstance' => array(
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => array(
-            'manager' => CAP_ALLOW
-        ),
-
-        'clonepermissionsfrom' => 'moodle/site:manageblocks'
-    ),
-    
-    'block/my_picture:myaddinstance' => array(
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => array(
-            'manager' => CAP_ALLOW
-        ),
- 
-        'clonepermissionsfrom' => 'moodle/my:manageblocks'
-    ),
+    'block/my_picture:addinstance' => array('captype' => 'write'
+                                            , 'contextlevel' => CONTEXT_SYSTEM
+                                            , 'archetypes' => array('manager' => CAP_ALLOW)
+                                            , 'clonepermissionsfrom' => 'moodle/site:manageblocks')
+    , 'block/my_picture:myaddinstance' => array('captype' => 'write'
+                                            , 'contextlevel' => CONTEXT_SYSTEM
+                                            , 'archetypes' => array('manager' => CAP_ALLOW)
+    , 'clonepermissionsfrom' => 'moodle/my:manageblocks'),
 );
 
 

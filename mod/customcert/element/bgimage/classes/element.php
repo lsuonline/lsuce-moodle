@@ -24,8 +24,6 @@
 
 namespace customcertelement_bgimage;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The customcert element background image's core interaction API.
  *
@@ -38,7 +36,7 @@ class element extends \customcertelement_image\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
         $mform->addElement('select', 'fileid', get_string('image', 'customcertelement_image'), self::get_images());
@@ -55,7 +53,7 @@ class element extends \customcertelement_image\element {
      */
     public function validate_form_elements($data, $files) {
         // Array to return the errors.
-        return array();
+        return [];
     }
 
     /**
@@ -67,12 +65,11 @@ class element extends \customcertelement_image\element {
      */
     public function render($pdf, $preview, $user) {
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
+        if (empty($this->get_data())) {
             return;
         }
 
-        $imageinfo = json_decode($data);
+        $imageinfo = json_decode($this->get_data());
 
         // If there is no file, we have nothing to display.
         if (empty($imageinfo->filename)) {
@@ -105,12 +102,11 @@ class element extends \customcertelement_image\element {
         global $DB;
 
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
+        if (empty($this->get_data())) {
             return '';
         }
 
-        $imageinfo = json_decode($data);
+        $imageinfo = json_decode($this->get_data());
 
         // If there is no file, we have nothing to display.
         if (empty($imageinfo->filename)) {
@@ -121,12 +117,20 @@ class element extends \customcertelement_image\element {
             $url = \moodle_url::make_pluginfile_url($file->get_contextid(), 'mod_customcert', 'image', $file->get_itemid(),
                 $file->get_filepath(), $file->get_filename());
             // Get the page we are rendering this on.
-            $page = $DB->get_record('customcert_pages', array('id' => $this->get_pageid()), '*', MUST_EXIST);
+            $page = $DB->get_record('customcert_pages', ['id' => $this->get_pageid()], '*', MUST_EXIST);
 
             // Set the image to the size of the page.
             $style = 'width: ' . $page->width . 'mm; height: ' . $page->height . 'mm';
-            return \html_writer::tag('img', '', array('src' => $url, 'style' => $style));
+            return \html_writer::tag('img', '', ['src' => $url, 'style' => $style]);
         }
     }
-}
 
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function has_save_and_continue(): bool {
+        return true;
+    }
+}

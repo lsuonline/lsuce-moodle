@@ -58,6 +58,11 @@ if ($slashargument = min_get_slash_argument()) {
     $usesvg    = (bool)min_optional_param('svg', '1', 'INT');
 }
 
+if (!min_is_revision_valid_and_current($rev)) {
+    // If the rev is invalid, normalise it to -1 to disable all caching.
+    $rev = -1;
+}
+
 if (empty($component) or $component === 'moodle' or $component === 'core') {
     $component = 'core';
 }
@@ -105,9 +110,10 @@ if ($rev > 0) {
     }
     if ($cacheimage) {
         if (!empty($_SERVER['HTTP_IF_NONE_MATCH']) || !empty($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-            // we do not actually need to verify the etag value because our files
-            // never change in cache because we increment the rev parameter
-            $lifetime = 60*60*24*60; // 60 days only - the revision may get incremented quite often
+            // We do not actually need to verify the etag value because our files
+            // never change in cache because we increment the rev parameter.
+            // 90 days only - based on Moodle point release cadence being every 3 months.
+            $lifetime = 60 * 60 * 24 * 90;
             $mimetype = get_contenttype_from_ext($ext);
             header('HTTP/1.1 304 Not Modified');
             header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
@@ -219,7 +225,8 @@ function send_cached_image($imagepath, $etag) {
     global $CFG;
     require("$CFG->dirroot/lib/xsendfilelib.php");
 
-    $lifetime = 60*60*24*60; // 60 days only - the revision may get incremented quite often
+    // 90 days only - based on Moodle point release cadence being every 3 months.
+    $lifetime = 60 * 60 * 24 * 90;
     $pathinfo = pathinfo($imagepath);
     $imagename = $pathinfo['filename'].'.'.$pathinfo['extension'];
 
@@ -230,16 +237,23 @@ function send_cached_image($imagepath, $etag) {
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', filemtime($imagepath)) .' GMT');
     header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
     header('Pragma: ');
-    header('Cache-Control: public, max-age='.$lifetime.', no-transform');
+    header('Cache-Control: public, max-age='.$lifetime.', no-transform, immutable');
     header('Accept-Ranges: none');
     header('Content-Type: '.$mimetype);
-    header('Content-Length: '.filesize($imagepath));
 
     if (xsendfile($imagepath)) {
         die;
     }
 
-    // no need to gzip already compressed images ;-)
+    if ($mimetype === 'image/svg+xml') {
+        // SVG format is a text file. So we can compress SVG files.
+        if (!min_enable_zlib_compression()) {
+            header('Content-Length: '.filesize($imagepath));
+        }
+    } else {
+        // No need to compress other image formats.
+        header('Content-Length: '.filesize($imagepath));
+    }
 
     readfile($imagepath);
     die;

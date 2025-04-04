@@ -17,7 +17,6 @@
  * Drag and drop reorder via HTML5.
  *
  * @module     tool_lp/dragdrop-reorder
- * @package    tool_lp
  * @copyright  2015 Damyon Wiese <damyon@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,7 +26,7 @@ define(['core/str', 'core/yui'], function(str, Y) {
     /**
      * Store the current instance of the core drag drop.
      *
-     * @property dragDropInstance M.tool_lp.dragdrop_reorder
+     * @property {object} dragDropInstance M.tool_lp.dragdrop_reorder
      */
     var dragDropInstance = null;
 
@@ -67,11 +66,11 @@ define(['core/str', 'core/yui'], function(str, Y) {
             // Here we are wrapping YUI. This allows us to start transitioning, but
             // wait for a good alternative without having inconsistent UIs.
             str.get_strings([
-                { key: 'emptydragdropregion', component: 'moodle' },
-                { key: 'movecontent', component: 'moodle' },
-                { key: 'tocontent', component: 'moodle' },
-            ]).done( function () {
-                Y.use('moodle-tool_lp-dragdrop-reorder', function () {
+                {key: 'emptydragdropregion', component: 'moodle'},
+                {key: 'movecontent', component: 'moodle'},
+                {key: 'tocontent', component: 'moodle'},
+            ]).done(function() {
+                Y.use('moodle-tool_lp-dragdrop-reorder', function() {
 
                     var context = {
                         callback: callback

@@ -13,23 +13,33 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
+ * Web Services for Attendance plugin.
  *
- * @package    local_attendance
+ * @package    mod_attendance
  * @copyright  2015 Caio Bressan Doneda
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__).'/../../../config.php');
+defined('MOODLE_INTERNAL') || die();
+
 require_once(dirname(__FILE__).'/../locallib.php');
 require_once(dirname(__FILE__).'/structure.php');
 require_once(dirname(__FILE__).'/../../../lib/sessionlib.php');
 require_once(dirname(__FILE__).'/../../../lib/datalib.php');
 
+/**
+ * Class attendance_handler
+ * @copyright  2015 Caio Bressan Doneda
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class attendance_handler {
     /**
      * For this user, this method searches in all the courses that this user has permission to take attendance,
      * looking for today sessions and returns the courses with the sessions.
+     * @param int $userid
+     * @return array
      */
     public static function get_courses_with_today_sessions($userid) {
         $usercourses = enrol_get_users_courses($userid);
@@ -41,7 +51,9 @@ class attendance_handler {
             $context = context_course::instance($attendance->course);
             if (has_capability('mod/attendance:takeattendances', $context, $userid)) {
                 $course = $usercourses[$attendance->course];
-                $course->attendance_instance = array();
+                if (!isset($course->attendance_instance)) {
+                    $course->attendance_instance = array();
+                }
 
                 $att = new stdClass();
                 $att->id = $attendance->id;
@@ -53,11 +65,11 @@ class attendance_handler {
                 $cm->id = $attendance->coursemodule;
 
                 $att = new mod_attendance_structure($att, $cm, $course, $context);
-                $course->attendance_instance[$att->id] = array();
-                $course->attendance_instance[$att->id]['name'] = $att->name;
                 $todaysessions = $att->get_today_sessions();
 
                 if (!empty($todaysessions)) {
+                    $course->attendance_instance[$att->id] = array();
+                    $course->attendance_instance[$att->id]['name'] = $att->name;
                     $course->attendance_instance[$att->id]['today_sessions'] = $todaysessions;
                     $coursessessions[$course->id] = $course;
                 }
@@ -67,6 +79,12 @@ class attendance_handler {
         return self::prepare_data($coursessessions);
     }
 
+    /**
+     * Prepare data.
+     *
+     * @param array $coursessessions
+     * @return array
+     */
     private static function prepare_data($coursessessions) {
         $courses = array();
 
@@ -80,8 +98,11 @@ class attendance_handler {
         return $courses;
     }
 
-    /*
-     ** For this session, returns all the necessary data to take an attendance
+    /**
+     * For this session, returns all the necessary data to take an attendance.
+     *
+     * @param int $sessionid
+     * @return mixed
      */
     public static function get_session($sessionid) {
         global $DB;
@@ -90,7 +111,8 @@ class attendance_handler {
         $session->courseid = $DB->get_field('attendance', 'course', array('id' => $session->attendanceid));
         $session->statuses = attendance_get_statuses($session->attendanceid, true, $session->statusset);
         $coursecontext = context_course::instance($session->courseid);
-        $session->users = get_enrolled_users($coursecontext, 'mod/attendance:canbelisted', 0, 'u.id, u.firstname, u.lastname');
+        $session->users = get_enrolled_users($coursecontext, 'mod/attendance:canbelisted',
+                                             $session->groupid, 'u.id, u.firstname, u.lastname');
         $session->attendance_log = array();
 
         if ($attendancelog = $DB->get_records('attendance_log', array('sessionid' => $sessionid),
@@ -101,6 +123,15 @@ class attendance_handler {
         return $session;
     }
 
+    /**
+     * Update user status
+     *
+     * @param int $sessionid
+     * @param int $studentid
+     * @param int $takenbyid
+     * @param int $statusid
+     * @param int $statusset
+     */
     public static function update_user_status($sessionid, $studentid, $takenbyid, $statusid, $statusset) {
         global $DB;
 
@@ -126,5 +157,25 @@ class attendance_handler {
 
             $DB->update_record('attendance_sessions', $attendancesession);
         }
+    }
+
+    /**
+     * For this attendance instance, returns all sessions.
+     *
+     * @param int $attendanceid
+     * @return mixed
+     */
+    public static function get_sessions($attendanceid) {
+        global $DB;
+
+        $sessions = $DB->get_records('attendance_sessions', array('attendanceid' => $attendanceid), 'id ASC');
+
+        $sessionsinfo = array();
+
+        foreach ($sessions as $session) {
+            $sessionsinfo[$session->id] = self::get_session($session->id);
+        }
+
+        return $sessionsinfo;
     }
 }

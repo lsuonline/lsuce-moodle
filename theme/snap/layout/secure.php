@@ -20,7 +20,7 @@
  * way.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -39,31 +39,36 @@ echo $OUTPUT->doctype() ?>
 <?php echo $OUTPUT->standard_top_of_body_html() ?>
 
 <nav role="navigation" class="navbar navbar-default">
-    <div class="navbar-header">
-        <span class="navbar-brand"><?php echo $SITE->shortname; ?></span>
-    </div>
-
-    <div id="moodle-navbar" class="navbar-collapse collapse">
-        <ul class="nav pull-right">
-            <li><?php echo $OUTPUT->page_heading_menu(); ?></li>
-            <li class="navbar-text"><?php echo $OUTPUT->login_info(false) ?></li>
-        </ul>
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <span class="navbar-brand"><?php echo $SITE->shortname; ?></span>
+        </div>
+        <div id="moodle-navbar">
+            <div class="nav-link float-md-right">
+                <?php echo $OUTPUT->secure_layout_login_info() ?>
+            </div>
+        </div>
     </div>
 </nav>
-
+<div class="container-langmenu">
+    <?php echo $OUTPUT->secure_layout_language_menu() ?>
+</div>
 <div id="page" class="container">
 
 <div id="page">
 <div id="page-content">
 
-<main id="moodle-page" class="clearfix">
+<div id="moodle-page" class="clearfix">
     <section id="region-main">
         <?php echo $OUTPUT->main_content(); ?>
     </section>
+    <div id="moodle-blocks" class="clearfix">
     <?php echo $OUTPUT->blocks('side-pre'); ?>
+    </div>
     <?php echo $OUTPUT->standard_end_of_body_html() ?>
-</main>
+</div>
 
+</div>
 </div>
 </div>
 </body>

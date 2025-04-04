@@ -39,13 +39,7 @@ $id = optional_param('id', 0, PARAM_INT);
 
 // Get course and module data that we've linked to here from and set context accordingly.
 if ($id != 0) {
-    // Pre 2.8 does not have the function get_course_and_cm_from_cmid.
-    if ($CFG->branch >= 28) {
-        list($course, $cm) = get_course_and_cm_from_cmid($id, 'turnitintooltwo');
-    } else {
-        $cm = get_coursemodule_from_id('turnitintooltwo', $id, 0, false, MUST_EXIST);
-        $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-    }
+    list($course, $cm) = get_course_and_cm_from_cmid($id, 'turnitintooltwo');
 
     if (!$cm) {
         turnitintooltwo_print_error('coursemodidincorrect', 'turnitintooltwo');
@@ -91,8 +85,8 @@ switch ($cmd) {
                                                                     'name' => 'search_course_title'));
 
         $coursesearchform .= html_writer::label(get_string('integration', 'turnitintooltwo').': ', 'search_course_integration');
-        $coursesearchform .= html_writer::select($tiiintegrationids, 'search_course_integration', '', array('' => 'choosedots'),
-                                                array('id' => 'search_course_integration'));
+        $coursesearchform .= html_writer::select(turnitintooltwo_get_integration_ids(), 'search_course_integration',
+            '', array('' => 'choosedots'), array('id' => 'search_course_integration'));
 
         $coursesearchform .= html_writer::label(get_string('ced', 'turnitintooltwo').': ', 'search_course_end_date');
         $coursesearchform .= html_writer::empty_tag('input', array('type' => 'text', 'id' => 'search_course_end_date',
@@ -103,15 +97,7 @@ switch ($cmd) {
 
         $output .= $OUTPUT->box($coursesearchform, 'generalbox', 'course_search_options');
 
-        $displaylist = array();
-        $parentlist = array();
-        require_once($CFG->dirroot."/course/lib.php");
-        if (file_exists($CFG->libdir.'/coursecatlib.php')) {
-            require_once($CFG->libdir.'/coursecatlib.php');
-            $displaylist = coursecat::make_categories_list('');
-        } else {
-            make_categories_list($displaylist, $parentlist, '');
-        }
+        $displaylist = core_course_category::make_categories_list('');
 
         $categoryselectlabel = html_writer::label(get_string('selectcoursecategory', 'turnitintooltwo'), 'create_course_category');
         $categoryselect = html_writer::select($displaylist, 'create_course_category', '', array(),
@@ -127,12 +113,12 @@ switch ($cmd) {
         $output .= $OUTPUT->box($categoryselectlabel." ".$categoryselect.$createassign.$createbutton, 'create_checkboxes navbar');
 
         $table = new html_table();
-        $table->id = "courseBrowserTable";
+        $table->id = "mod_turnitintooltwo_course_browser_table";
         $rows = array();
 
         // Make up json array for drop down in table.
         $integrationidsjson = array();
-        foreach ($tiiintegrationids as $k => $v) {
+        foreach (turnitintooltwo_get_integration_ids() as $k => $v) {
             $integrationidsjson[] = array('value' => $k, 'label' => $v);
         }
         $output .= html_writer::script('var integration_ids = '.json_encode($integrationidsjson));

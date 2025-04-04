@@ -22,28 +22,35 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('CLI_SCRIPT', 1);
+// Do not require MOODLE_INTERNAL definition since this is a CLI file.
+
+define('CLI_SCRIPT', true);
+
+// @codingStandardsIgnoreLine
 global $CFG;
 if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
     require_once(dirname(__FILE__) . '/../../../../config.php');
 }
-
+require_once(dirname(__FILE__) . '/../panopto_data.php');
 require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->libdir . '/formslib.php');
-require_once(dirname(__FILE__) . '/../panopto_data.php');
 
 $admin = get_admin();
 if (!$admin) {
-    mtrace("Error: No admin account was found");
+    mtrace(get_string('error_no_admin_account_found', 'block_panopto'));
     die;
 }
 \core\session\manager::set_user(get_admin());
-cli_heading('Removing all queued Panopto adhoc tasks');
+cli_heading(get_string('bulk_remove_all_adhoc_task', 'block_panopto'));
 
+/**
+ * Remove Panopto adhoc tasks.
+ */
 function remove_panopto_adhoc_tasks() {
-    panopto_data::remove_all_panopto_adhoc_tasks();
+    \panopto_data::remove_all_panopto_adhoc_tasks();
 
-    cli_writeln(get_string('removed_panopto_adhoc_tasks', 'block_panopto'));
+    mtrace(get_string('removed_panopto_adhoc_tasks', 'block_panopto'));
 }
 
 

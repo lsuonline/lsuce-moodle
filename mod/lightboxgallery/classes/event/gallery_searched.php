@@ -18,7 +18,7 @@
  * The mod_lightboxgallery course searched event.
  *
  * @package    mod_lightboxgallery
- * @copyright  2014 NetSpot Pty Ltd
+ * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -38,7 +38,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @package    mod_lightboxgallery
  * @since      Moodle 2.7
- * @copyright  2014 NetSpot Pty Ltd
+ * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class gallery_searched extends \core\event\base {
@@ -84,18 +84,6 @@ class gallery_searched extends \core\event\base {
     }
 
     /**
-     * Return the legacy event log data.
-     *
-     * @return array|null
-     */
-    protected function get_legacy_logdata() {
-        // The legacy log table expects a relative path to /mod/lightboxgallery/.
-        $logurl = substr($this->get_url()->out_as_local_url(), strlen('/mod/lightboxgallery/'));
-
-        return array($this->courseid, 'lightboxgallery', 'search', $logurl, $this->other['searchterm']);
-    }
-
-    /**
      * Custom validation.
      *
      * @throws \coding_exception
@@ -110,6 +98,10 @@ class gallery_searched extends \core\event\base {
         if ($this->contextlevel != CONTEXT_MODULE) {
             throw new \coding_exception('Context level must be CONTEXT_MODULE.');
         }
+    }
+
+    public static function get_other_mapping() {
+        return [];
     }
 
 }

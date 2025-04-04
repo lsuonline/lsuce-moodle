@@ -16,18 +16,19 @@
 
 namespace theme_snap\services;
 
+defined('MOODLE_INTERNAL') || die();
+
 use theme_snap\renderables\course_card;
 use theme_snap\local;
 use theme_snap\renderables\course_toc;
+use theme_snap\color_contrast;
 
 require_once($CFG->dirroot.'/course/lib.php');
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Course service class.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course {
@@ -56,7 +57,7 @@ class course {
     protected function check_summary_files_for_image_suitability($context) {
 
         $fs = get_file_storage();
-        $files = $fs->get_area_files($context->id, 'course', 'overviewfiles',0);
+        $files = $fs->get_area_files($context->id, 'course', 'overviewfiles', 0);
         $tmparr = [];
         // Remove '.' file from files array.
         foreach ($files as $file) {
@@ -76,6 +77,7 @@ class course {
             return false;
         }
 
+        // @codingStandardsIgnoreLine
         /* @var \stored_file $file*/
         $file = end($files);
         $ext = strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION));
@@ -88,46 +90,91 @@ class course {
     }
 
     /**
-     * @param string $courseshortname
+     * @param string $croppedimagedata
+     */
+    public function savecroppedimage($context, $croppedimagedata, $ext = null, $originalimageurl = null) {
+
+        $image_parts = explode(";base64,", $croppedimagedata);
+        $image_base64 = base64_decode($image_parts[1]);
+        if (empty($ext)) {
+            $fs = get_file_storage();
+            $originalfile = $fs->get_area_files($context->id, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+            if ($originalfile) {
+                $originalfilename = reset($originalfile)->get_filename();
+                $ext = strtolower(pathinfo($originalfilename, PATHINFO_EXTENSION));
+            } else if ($originalimageurl !== null) {
+                $ext = strtolower(pathinfo($originalimageurl, PATHINFO_EXTENSION));
+            }
+        }
+
+        if ($context->contextlevel === CONTEXT_COURSE) {
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'theme_snap',
+                'filearea'  => 'croppedimage',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => 'course-image-cropped.'.$ext,
+            ];
+        } else if ($context->contextlevel === CONTEXT_COURSECAT) {
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'theme_snap',
+                'filearea'  => 'croppedimage',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => 'category-image-cropped.'.$ext,
+            ];
+        } else if ($context->contextlevel === CONTEXT_SYSTEM) {
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'theme_snap',
+                'filearea'  => 'croppedimage',
+                'itemid'    => 0,
+                'filepath'  => '/',
+                'filename'  => 'site-image-cropped.'.$ext,
+            ];
+        }
+
+        // Copy file to temp directory.
+        $tmpimage = tempnam(sys_get_temp_dir(), 'tmpimg');
+        file_put_contents($tmpimage, $image_base64);
+        $fs = get_file_storage();
+        $fs->create_file_from_pathname($filerecord, $tmpimage);
+    }
+
+    /**
+     * @param \context $context
      * @param string $data
      * @param string $filename
      * @return array
      * @throws \file_exception
      * @throws \stored_file_creation_exception
      */
-    public function setcoverimage($courseshortname, $data, $filename) {
+    public function setcoverimage(\context $context, $filename, $fileid, $croppedimagedata) {
 
-        global $CFG;
-
-        $course = $this->coursebyshortname($courseshortname);
-        if ($course->id != SITEID) {
-            // Course cover images.
-            $context = \context_course::instance($course->id);
-        } else {
-            // Site cover images.
-            $context = \context_system::instance();
-        }
+        global $CFG, $USER;
 
         require_capability('moodle/course:changesummary', $context);
 
         $fs = get_file_storage();
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         $ext = $ext === 'jpeg' ? 'jpg' : $ext;
-
-        if (!in_array($ext, local::supported_coverimage_types())) {
+        if (!file_extension_in_typegroup($filename, 'web_image')) {
             return ['success' => false, 'warning' => get_string('unsupportedcoverimagetype', 'theme_snap', $ext)];
         }
 
         $newfilename = 'rawcoverimage.'.$ext;
 
-        $binary =  base64_decode($data);
-        if (strlen($binary) > get_max_upload_file_size($CFG->maxbytes)) {
+        $usercontext = \context_user::instance($USER->id);
+
+        $filefromdraft = $fs->get_file($usercontext->id, 'user', 'draft', $fileid, '/', $filename);
+        if ($filefromdraft->get_filesize() > get_max_upload_file_size($CFG->maxbytes)) {
             throw new \moodle_exception('error:coverimageexceedsmaxbytes', 'theme_snap');
         }
 
-        if ($course->id != SITEID) {
+        if ($context->contextlevel === CONTEXT_COURSE) {
             // Course cover images.
-            $context = \context_course::instance($course->id);
             // Check suitability of course summary files area for use with cover images.
             if (!$this->check_summary_files_for_image_suitability($context)) {
                 return ['success' => false, 'warning' => get_string('coursesummaryfilesunsuitable', 'theme_snap')];
@@ -139,35 +186,50 @@ class course {
                 'filearea' => 'overviewfiles',
                 'itemid' => 0,
                 'filepath' => '/',
-                'filename' => $newfilename);
+                'filename' => $newfilename, );
 
-            // Remove any old course summary image files.
+            // Remove any old course summary image files for this context.
             $fs->delete_area_files($context->id, $fileinfo['component'], $fileinfo['filearea']);
-        } else {
-            // Site cover images.
-            $context = \context_system::instance();
+            // Purge course image cache in case image has been updated.
+            \cache::make('core', 'course_image')->delete($context->instanceid);
+        } else if ($context->contextlevel === CONTEXT_SYSTEM || $context->contextlevel === CONTEXT_COURSECAT) {
             $fileinfo = array(
                 'contextid' => $context->id,
                 'component' => 'theme_snap',
                 'filearea' => 'poster',
                 'itemid' => 0,
                 'filepath' => '/',
-                'filename' => $newfilename);
+                'filename' => $newfilename, );
 
-            // Remove everything from poster area.
+            // Remove everything from poster area for this context.
             $fs->delete_area_files($context->id, 'theme_snap', 'poster');
+            // Purge course image cache in case image has been updated.
+            \cache::make('core', 'course_image')->delete($context->instanceid);
+        } else {
+            throw new coding_exception('Unsupported context level '.$context->contextlevel);
         }
 
         // Create new cover image file and process it.
-        $storedfile = $fs->create_file_from_string($fileinfo, $binary);
+        $storedfile = $fs->create_file_from_storedfile($fileinfo, $filefromdraft);
         $success = $storedfile instanceof \stored_file;
-        if ($course->id != SITEID) {
-            local::process_coverimage($context, $storedfile);
-        } else {
+        if ($context->contextlevel === CONTEXT_SYSTEM) {
             set_config('poster', $newfilename, 'theme_snap');
             local::process_coverimage($context);
+            $this->savecroppedimage($context, $croppedimagedata, $ext);
+            $coverimageurl = local::site_coverimage_url();
+            $coverimageurl = "url($coverimageurl);";
+        } else if ($context->contextlevel === CONTEXT_COURSE || $context->contextlevel === CONTEXT_COURSECAT) {
+            local::process_coverimage($context, $storedfile);
+            $this->savecroppedimage($context, $croppedimagedata, $ext);
+            if ($context->contextlevel === CONTEXT_COURSE) {
+                $coverimageurl = local::course_coverimage_url($context->instanceid);
+                $coverimageurl = "url($coverimageurl);";
+            } else {
+                $coverimageurl = local::course_cat_coverimage_url($context->instanceid);
+                $coverimageurl = "url($coverimageurl);";
+            }
         }
-        return ['success' => $success];
+        return ['success' => $success, 'imageurl'=> $coverimageurl];
     }
 
     /**
@@ -183,7 +245,7 @@ class course {
 
         $userid = $userid !== null ? $userid : $USER->id;
 
-        $favorites = $this->favorites($userid, false, $fromcache);
+        $favorites = $this->favorites($userid, $fromcache);
         return !empty($favorites) && !empty($favorites[$courseid]);
     }
 
@@ -205,10 +267,10 @@ class course {
         }
 
         if (!isset($favorites[$userid])) {
-            $favorites[$userid] = $DB->get_records('theme_snap_course_favorites',
-                ['userid' => $userid],
-                'courseid ASC',
-                'courseid'
+            $favorites[$userid] = $DB->get_records('favourite',
+                ['userid' => $userid, 'itemtype' => 'courses'],
+                'itemid ASC',
+                'itemid'
             );
         }
 
@@ -222,18 +284,24 @@ class course {
      * @throws \coding_exception
      */
     public function my_courses_split_by_favorites() {
-        $courses = enrol_get_my_courses(null, 'fullname ASC, id DESC');
+        $courses = enrol_get_my_courses('enddate', 'fullname ASC, id DESC');
         $favorites = $this->favorites();
         $favorited = [];
         $notfavorited = [];
+        $past = [];
         foreach ($courses as $course) {
-            if (isset($favorites[$course->id])) {
+            $today = time();
+            if (!empty($course->enddate) && $course->enddate < $today) {
+                $course->endyear = userdate($course->enddate, '%Y');
+                $past[$course->endyear][$course->id] = $course;
+            } else if (isset($favorites[$course->id])) {
                 $favorited[$course->id] = $course;
             } else {
                 $notfavorited[$course->id] = $course;
             }
         }
-        return [$favorited, $notfavorited];
+        krsort($past); // Reorder list by year.
+        return [$past, $favorited, $notfavorited];
     }
 
     /**
@@ -248,25 +316,19 @@ class course {
         global $USER, $DB;
 
         $course = $this->coursebyshortname($courseshortname);
+        $coursecontext = \context_course::instance($course->id);
         $userid = $userid !== null ? $userid : $USER->id;
+        $usercontext = \context_user::instance($userid);
 
-        $favorited = $this->favorited($course->id, $userid);
+        $favorited = $this->favorited($course->id, $userid, false);
+        $ufservice = \core_favourites\service_factory::get_service_for_user_context($usercontext);
         if ($on) {
             if (!$favorited) {
-                $data = (object) [
-                    'courseid' => $course->id,
-                    'userid' => $userid,
-                    'timefavorited' => time()
-                ];
-                $DB->insert_record('theme_snap_course_favorites', $data);
+                $ufservice->create_favourite('core_course', 'courses', $course->id, $coursecontext);
             }
         } else {
             if ($favorited) {
-                $select = [
-                    'courseid' => $course->id,
-                    'userid' => $userid
-                ];
-                $DB->delete_records('theme_snap_course_favorites', $select);
+                $ufservice->delete_favourite('core_course', 'courses', $course->id, $coursecontext);
             }
         }
         // Kill favorited cache and return if favorited.
@@ -290,8 +352,8 @@ class course {
      * @return course_card (renderable)
      */
     public function cardbyshortname($shortname) {
-        $course = $this->coursebyshortname($shortname, 'id');
-        return new course_card($course->id);
+        $course = $this->coursebyshortname($shortname);
+        return new course_card($course);
     }
 
     /**
@@ -309,12 +371,11 @@ class course {
             $PAGE->set_context(\context_course::instance($course->id));
         }
 
-        list ($unavailablesections, $unavailablemods) = local::conditionally_unavailable_elements($course);
+        [$unavailablesections, $unavailablemods] = local::conditionally_unavailable_elements($course);
 
         $newlyavailablesections = array_diff($previouslyunavailablesections, $unavailablesections);
         $intersectunavailable = array_intersect($previouslyunavailablesections, $unavailablesections);
         $newlyunavailablesections = array_diff($unavailablesections, $intersectunavailable);
-
 
         $newlyavailablemods = array_diff($previouslyunavailablemods, $unavailablemods);
         $intersectunavailable = array_intersect($previouslyunavailablemods, $unavailablemods);
@@ -326,15 +387,16 @@ class course {
 
         $changedsectionhtml = [];
         $changedsections = array_merge($newlyavailablesections, $newlyunavailablesections);
+        $format = course_get_format($course);
+        $course = $format->get_course();
         if (!empty($changedsections)) {
-            $format = course_get_format($course);
             $formatrenderer = $format->get_renderer($PAGE);
             foreach ($changedsections as $sectionnumber) {
                 $section = $modinfo->get_section_info($sectionnumber);
                 $html = $formatrenderer->course_section($course, $section, $modinfo);
                 $changedsectionhtml[$sectionnumber] = (object) [
                     'number' => $sectionnumber,
-                    'html'   => $html
+                    'html'   => $html,
                 ];
             }
         }
@@ -350,10 +412,10 @@ class course {
                     // This module's html has already been included in a changed section html.
                     continue;
                 }
-                $html = $courserenderer->course_section_cm_list_item($course, $completioninfo, $cm, $cm->sectionnum);
+                $html = $courserenderer->course_section_cm_list_item_snap($course, $completioninfo, $cm, $cm->sectionnum);
                 $changedmodhtml[$modid] = (object) [
                     'id'   => $modid,
-                    'html' => $html
+                    'html' => $html,
                 ];
             }
         }
@@ -361,7 +423,7 @@ class course {
         $unavailablesections = implode(',', $unavailablesections);
         $unavailablemods = implode(',', $unavailablemods);
 
-        $toc = new course_toc($course);
+        $toc = new course_toc($course, $format);
 
         // If the course format is different from topics or weeks then the $toc would have some empty values.
         $validformats = ['weeks', 'topics'];
@@ -375,7 +437,7 @@ class course {
             'unavailablemods' => $unavailablemods,
             'changedmodhtml' => $changedmodhtml,
             'changedsectionhtml' => $changedsectionhtml,
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -429,7 +491,7 @@ class course {
         $toc = new \theme_snap\renderables\course_toc($course);
         return [
             'actionmodel' => $actionmodel->export_for_template($OUTPUT),
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -438,11 +500,12 @@ class course {
      * @param string $shortname
      * @param int $sectionnumber
      * @param boolean $visible
+     * @param bool $loadmodules Should modules be loaded.
      * @return array
      * @throws \moodle_exception
      * @throws \required_capability_exception
      */
-    public function set_section_visibility($shortname, $sectionnumber, $visible) {
+    public function set_section_visibility($shortname, $sectionnumber, $visible, $loadmodules = true) {
         global $OUTPUT;
         $course = $this->coursebyshortname($shortname);
         $context = \context_course::instance($course->id);
@@ -453,11 +516,13 @@ class course {
         $modinfo = get_fast_modinfo($course);
         $section = $modinfo->get_section_info($sectionnumber);
         $actionmodel = new \theme_snap\renderables\course_action_section_visibility($course, $section);
-        $toc = new \theme_snap\renderables\course_toc($course);
+
+        $nullformat = null;
+        $toc = new \theme_snap\renderables\course_toc($course, $nullformat, $loadmodules);
 
         return [
             'actionmodel' => $actionmodel->export_for_template($OUTPUT),
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
 
@@ -477,15 +542,33 @@ class course {
         $sectioninfo = $modinfo->get_section_info($sectionnumber);
 
         if (course_can_delete_section($course, $sectioninfo)) {
-            course_delete_section($course, $sectioninfo, true);
+            course_delete_section($course, $sectioninfo, true, true);
         }
-
         $toc = new \theme_snap\renderables\course_toc($course);
-
         return [
-            'toc' => $toc->export_for_template($OUTPUT)
+            'toc' => $toc->export_for_template($OUTPUT),
         ];
     }
+
+    /**
+     * Get course TOC.
+     * @param string $shortname Course short name
+     * @return array
+     * @throws \coding_exception
+     */
+    public function toc($shortname) {
+        global $OUTPUT;
+        $course = $this->coursebyshortname($shortname);
+
+        $nullformat = null;
+        $loadmodules = true;
+        $toc = new \theme_snap\renderables\course_toc($course, $nullformat, $loadmodules);
+
+        return [
+            'toc' => $toc->export_for_template($OUTPUT),
+        ];
+    }
+
 
     /**
      * Toggle module completion state.
@@ -500,7 +583,7 @@ class course {
         global $DB, $PAGE;
 
         // Get course-modules entry.
-        list ($course, $cminfo) = get_course_and_cm_from_cmid($id);
+        [$course, $cminfo] = get_course_and_cm_from_cmid($id);
 
         // Get renderer for completion HTML.
         $context = \context_module::instance($id);
@@ -520,6 +603,6 @@ class course {
 
         $completion->update_state($cminfo, $completionstate);
 
-        return $renderer->course_section_cm_completion($course, $completion, $cminfo);
+        return $renderer->snap_course_section_cm_completion($course, $completion, $cminfo);
     }
 }

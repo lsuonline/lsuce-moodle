@@ -24,8 +24,6 @@
 
 namespace customcertelement_digitalsignature;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The customcert element digital signature's core interaction API.
  *
@@ -38,7 +36,7 @@ class element extends \customcertelement_image\element {
     /**
      * @var array The file manager options for the certificate.
      */
-    protected $signaturefilemanageroptions = array();
+    protected $signaturefilemanageroptions = [];
 
     /**
      * Constructor.
@@ -51,7 +49,7 @@ class element extends \customcertelement_image\element {
         $this->signaturefilemanageroptions = [
             'maxbytes' => $COURSE->maxbytes,
             'subdirs' => 1,
-            'accepted_types' => ['.crt']
+            'accepted_types' => ['.crt'],
         ];
 
         parent::__construct($element);
@@ -60,7 +58,7 @@ class element extends \customcertelement_image\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
         $mform->addElement('select', 'fileid', get_string('image', 'customcertelement_image'), self::get_images());
@@ -90,15 +88,9 @@ class element extends \customcertelement_image\element {
         $mform->setType('signaturecontactinfo', PARAM_TEXT);
         $mform->setDefault('signaturecontactinfo', '');
 
-        $mform->addElement('text', 'width', get_string('width', 'customcertelement_image'), array('size' => 10));
-        $mform->setType('width', PARAM_INT);
-        $mform->setDefault('width', 0);
-        $mform->addHelpButton('width', 'width', 'customcertelement_image');
+        \mod_customcert\element_helper::render_form_element_width($mform);
 
-        $mform->addElement('text', 'height', get_string('height', 'customcertelement_image'), array('size' => 10));
-        $mform->setType('height', PARAM_INT);
-        $mform->setDefault('height', 0);
-        $mform->addHelpButton('height', 'height', 'customcertelement_image');
+        \mod_customcert\element_helper::render_form_element_height($mform);
 
         if (get_config('customcert', 'showposxy')) {
             \mod_customcert\element_helper::render_form_element_position($mform);
@@ -153,7 +145,7 @@ class element extends \customcertelement_image\element {
             'signaturereason' => $data->signaturereason,
             'signaturecontactinfo' => $data->signaturecontactinfo,
             'width' => !empty($data->width) ? (int) $data->width : 0,
-            'height' => !empty($data->height) ? (int) $data->height : 0
+            'height' => !empty($data->height) ? (int) $data->height : 0,
         ];
 
         // Array of data we will be storing in the database.
@@ -178,7 +170,7 @@ class element extends \customcertelement_image\element {
                     'signaturefilearea' => $signaturefile->get_filearea(),
                     'signatureitemid' => $signaturefile->get_itemid(),
                     'signaturefilepath' => $signaturefile->get_filepath(),
-                    'signaturefilename' => $signaturefile->get_filename()
+                    'signaturefilename' => $signaturefile->get_filename(),
                 ];
             }
         }
@@ -195,12 +187,11 @@ class element extends \customcertelement_image\element {
      */
     public function render($pdf, $preview, $user) {
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
+        if (empty($this->get_data())) {
             return;
         }
 
-        $imageinfo = json_decode($data);
+        $imageinfo = json_decode($this->get_data());
 
         // If there is no file, we have nothing to display.
         if (empty($imageinfo->filename)) {
@@ -231,7 +222,7 @@ class element extends \customcertelement_image\element {
                 'Name' => $imageinfo->signaturename,
                 'Location' => $imageinfo->signaturelocation,
                 'Reason' => $imageinfo->signaturereason,
-                'ContactInfo' => $imageinfo->signaturecontactinfo
+                'ContactInfo' => $imageinfo->signaturecontactinfo,
             ];
             $pdf->setSignature('file://' . $location, '', $imageinfo->signaturepassword, '', 2, $info);
             $pdf->setSignatureAppearance($this->get_posx(), $this->get_posy(), $imageinfo->width, $imageinfo->height);
@@ -241,7 +232,7 @@ class element extends \customcertelement_image\element {
     /**
      * Sets the data on the form when editing an element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function definition_after_data($mform) {
         global $COURSE, $SITE;
@@ -253,9 +244,8 @@ class element extends \customcertelement_image\element {
             $context = \context_course::instance($COURSE->id);
         }
 
-        $data = $this->get_data();
-        if (!empty($data)) {
-            $imageinfo = json_decode($data);
+        if (!empty($this->get_data())) {
+            $imageinfo = json_decode($this->get_data());
 
             $element = $mform->getElement('signaturename');
             $element->setValue($imageinfo->signaturename);
@@ -302,7 +292,7 @@ class element extends \customcertelement_image\element {
         $fs = get_file_storage();
 
         // The array used to store the digital signatures.
-        $arrfiles = array();
+        $arrfiles = [];
         // Loop through the files uploaded in the system context.
         if ($files = $fs->get_area_files(\context_system::instance()->id, 'mod_customcert', 'signature', false,
                 'filename', false)) {
@@ -319,7 +309,7 @@ class element extends \customcertelement_image\element {
         }
 
         \core_collator::asort($arrfiles);
-        $arrfiles = array('0' => get_string('nosignature', 'customcertelement_digitalsignature')) + $arrfiles;
+        $arrfiles = ['0' => get_string('nosignature', 'customcertelement_digitalsignature')] + $arrfiles;
 
         return $arrfiles;
     }
@@ -336,5 +326,14 @@ class element extends \customcertelement_image\element {
 
         return $fs->get_file($imageinfo->signaturecontextid, 'mod_customcert', $imageinfo->signaturefilearea,
             $imageinfo->signatureitemid, $imageinfo->signaturefilepath, $imageinfo->signaturefilename);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function has_save_and_continue(): bool {
+        return true;
     }
 }

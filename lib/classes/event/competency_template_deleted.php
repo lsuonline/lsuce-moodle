@@ -49,13 +49,13 @@ class competency_template_deleted extends base {
      * @param template $template The template.
      * @return self
      */
-    public static final function create_from_template(template $template) {
-        if (!$template->get_id()) {
+    final public static function create_from_template(template $template) {
+        if (!$template->get('id')) {
             throw new \coding_exception('The template ID must be set.');
         }
         $event = static::create(array(
-            'contextid'  => $template->get_contextid(),
-            'objectid' => $template->get_id()
+            'contextid'  => $template->get('contextid'),
+            'objectid' => $template->get('id')
         ));
         $event->add_record_snapshot(template::TABLE, $template->to_record());
         return $event;

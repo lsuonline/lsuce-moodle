@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -26,36 +25,36 @@
 require_once("../../config.php");
 require_once(dirname(__FILE__).'/lib.php');
 
-$id = optional_param('id',0,PARAM_INT);    // Course Module ID, or
-$l = optional_param('l',0,PARAM_INT);     // Label ID
+$id = optional_param('id', 0, PARAM_INT); // Course Module ID, or
+$l = optional_param('l', 0, PARAM_INT); // Label ID.
 global $OUTPUT;
+
 if ($id) {
-    $PAGE->set_url('/mod/library/index.php', array('id'=>$id));
+    $PAGE->set_url('/mod/library/index.php', array('id' => $id));
     if (! $cm = get_coursemodule_from_id('library', $id)) {
-        print_error('invalidcoursemodule');
+        moodle_exception('invalidcoursemodule');
     }
 
-    if (! $course = $DB->get_record("course", array("id"=>$cm->course))) {
-        print_error('coursemisconf');
+    if (! $course = $DB->get_record("course", array("id" => $cm->course))) {
+        moodle_exception('coursemisconf');
     }
 
-    if (! $library = $DB->get_record("library", array("id"=>$cm->instance))) {
-        print_error('invalidcoursemodule');
+    if (! $library = $DB->get_record("library", array("id" => $cm->instance))) {
+        moodle_exception('invalidcoursemodule');
     }
 } else {
     echo 'asdfasdf';
     echo $OUTPUT->box_start('generalbox', 'gradeinfobox');
-    $PAGE->set_url('/mod/library/index.php', array('l'=>$l));
-    if (! $library = $DB->get_record("library", array("id"=>$l))) {
-        print_error('invalidcoursemodule');
+    $PAGE->set_url('/mod/library/index.php', array('l' => $l));
+    if (! $library = $DB->get_record("library", array("id" => $l))) {
+        moodle_exception('invalidcoursemodule');
     }
-    if (! $course = $DB->get_record("course", array("id"=>$library->course)) ){
-        print_error('coursemisconf');
+    if (! $course = $DB->get_record("course", array("id" => $library->course)) ) {
+        moodle_exception('coursemisconf');
     }
     if (! $cm = get_coursemodule_from_instance("library", $library->id, $course->id)) {
-        print_error('invalidcoursemodule');
+        moodle_exception('invalidcoursemodule');
     }
 }
 
 require_login($course, true, $cm);
-

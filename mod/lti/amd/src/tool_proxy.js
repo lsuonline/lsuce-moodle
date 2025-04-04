@@ -17,14 +17,12 @@
  * Provides an interface for a tool proxy in the Moodle server.
  *
  * @module     mod_lti/tool_proxy
- * @class      tool_proxy
- * @package    mod_lti
  * @copyright  2015 Ryan Wyllie <ryan@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
 define(['core/ajax', 'core/notification'], function(ajax, notification) {
-    return /** @alias module:mod_lti/tool_proxy */ {
+    return {
         /**
          * Get a list of tool types from Moodle for the given
          * search args.
@@ -34,8 +32,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method query
          * @public
-         * @param object Search parameters
-         * @return object jQuery deferred object
+         * @param {Object} args Search parameters
+         * @return {Promise} jQuery Deferred object
          */
         query: function(args) {
             var request = {
@@ -54,10 +52,10 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method delete
          * @public
-         * @param int Tool proxy ID
-         * @return object jQuery deferred object
+         * @param {Integer} id Tool proxy ID
+         * @return {Promise} jQuery Deferred object
          */
-        delete: function(id) {
+        'delete': function(id) {
             var request = {
                 methodname: 'mod_lti_delete_tool_proxy',
                 args: {
@@ -81,8 +79,8 @@ define(['core/ajax', 'core/notification'], function(ajax, notification) {
          *
          * @method create
          * @public
-         * @param object Tool proxy properties
-         * @return object jQuery deferred object
+         * @param {Object} args Tool proxy properties
+         * @return {Promise} jQuery Deferred object
          */
         create: function(args) {
             var request = {

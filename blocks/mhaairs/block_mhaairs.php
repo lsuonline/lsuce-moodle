@@ -159,12 +159,12 @@ class block_mhaairs extends block_base {
 
         // FOOTER
         // Add help links to footer if applicable.
-        if ($helplinks = $this->get_help_links()) {
-            foreach ($helplinks as $hlink) {
-                $hlink = html_writer::tag('div', $hlink, array('class' => 'helplink'));
-                $this->content->footer .= $hlink;
-            }
-        }
+        //if ($helplinks = $this->get_help_links()) {
+        //    foreach ($helplinks as $hlink) {
+        //        $hlink = html_writer::tag('div', $hlink, array('class' => 'helplink'));
+        //        $this->content->footer .= $hlink;
+        //    }
+        //}
         return $this->content;
     }
 

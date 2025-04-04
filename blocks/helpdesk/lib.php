@@ -14,42 +14,45 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_helpdesk
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 function hdesk_get_results_sql($data, $criterion) {
+
     global $DB;
 
     $keys = array_keys($criterion);
-    $use_only = array_filter($keys, function($value) use($data) {
+    $useonly = array_filter($keys, function($value) use($data) {
         return !empty($data->{$value . '_terms'});
     });
 
-    // Generate sql from key submission
+    // Generate sql from key submission.
     $sql = implode(" AND ", array_map(function($k) use ($data) {
         $term = $data->{$k . '_terms'};
         $equality = $data->{$k . '_equality'};
         return $k . ' '. hdesk_translate_equality($equality, $term);
-    }, $use_only)); 
+    }, $useonly));
 
     return $sql;
 }
 
 function hdesk_translate_equality($equality, $term) {
-    $safe_term = addslashes($term);
+    $safeterm = addslashes($term);
     switch ($equality) {
         case 'contains':
-            return "LIKE '%{$safe_term}%'";
+            return "LIKE '%{$safeterm}%'";
         case 'equal':
-            return "= '{$safe_term}'";
+            return "= '{$safeterm}'";
         case 'starts':
-            return "LIKE '{$safe_term}%'";
+            return "LIKE '{$safeterm}%'";
         case 'ends':
-            return "LIKE '%{$safe_term}'";
+            return "LIKE '%{$safeterm}'";
     }
 }
 

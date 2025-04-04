@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * file containing config and permissions for different roles
+ * File containing config and permissions for different roles.
  *
  * @package block_panopto
  * @copyright  Panopto 2009 - 2016 with contributions from Spenser Jones (sjones@ambrose.edu)
@@ -24,50 +24,50 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = array(
-    'block/panopto:provision_course' => array(
+$capabilities = [
+    'block/panopto:provision_course' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array(
+        'archetypes' => [
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
-        )
-    ),
-    'block/panopto:provision_multiple' => array(
+        ],
+    ],
+    'block/panopto:provision_multiple' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array(
-            'manager' => CAP_ALLOW
-        )
-    ),
-    'block/panopto:provision_asteacher' => array(
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'block/panopto:provision_asteacher' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array()
-    ),
-    'block/panopto:provision_aspublisher' => array(
+        'archetypes' => [],
+    ],
+    'block/panopto:provision_aspublisher' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array()
-    ),
-    'block/panopto:addinstance' => array(
+        'archetypes' => [],
+    ],
+    'block/panopto:addinstance' => [
         'riskbitmask' => RISK_SPAM | RISK_XSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array(
+        'archetypes' => [
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        ),
-        'clonepermissionsfrom' => 'moodle/site:manageblocks'
-    ),
-    'block/panopto:myaddinstance' => array('captype' => 'write',
+            'manager' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'moodle/site:manageblocks',
+    ],
+    'block/panopto:myaddinstance' => ['captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => array(
+        'archetypes' => [
             'user' => CAP_ALLOW,
-        ),
-        'clonepermissionsfrom' => 'moodle/my:manageblocks'
-    )
-);
+        ],
+        'clonepermissionsfrom' => 'moodle/my:manageblocks',
+    ],
+];
 
 /* End of file access.php */

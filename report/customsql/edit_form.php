@@ -83,7 +83,7 @@ class report_customsql_edit_form extends moodleform {
         // Add the form fields for further limiting report access per individual report.
         $mform->addElement('text', 'userlimit', get_string('userlimit', 'report_customsql'));
         $mform->setType('userlimit', PARAM_NOTAGS);
-        $mform->setDefault('userlimit', NULL);
+        $mform->setDefault('userlimit', null);
         $mform->disabledIf('userlimit', 'capability', 'neq', 'report/customsql:view');
         $mform->addHelpButton('userlimit', 'userlimit', 'report_customsql');
 
@@ -108,7 +108,11 @@ class report_customsql_edit_form extends moodleform {
         $mform->addElement('checkbox', 'singlerow', get_string('typeofresult', 'report_customsql'),
                            get_string('onerow', 'report_customsql'));
 
-        $mform->addElement('advcheckbox', 'donotescape', get_string('donotescapemore', 'report_customsql'), get_string('donotescape', 'report_customsql'), array(0,1));
+        $mform->addElement('advcheckbox'
+                            , 'donotescape'
+                            , get_string('donotescapemore', 'report_customsql')
+                            , get_string('donotescape', 'report_customsql')
+                            , array(0, 1));
         $mform->disabledIf('donotescape', 'runable', 'ne', 'daily');
 
         $mform->addElement('text', 'customdir', get_string('customdir', 'report_customsql'), 'size = 70');
@@ -183,7 +187,7 @@ class report_customsql_edit_form extends moodleform {
 
             if (!isset($errors['params'])) {
                 try {
-                    $rs = report_customsql_execute_query($sql, $queryparams, 2);
+                    $rs = report_customsql_execute_query($sql, 2, $queryparams);
 
                     if (!empty($data['singlerow'])) {
                         // Count rows for Moodle 2 as all Moodle 1.9 useful and more performant

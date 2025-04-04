@@ -59,9 +59,9 @@ abstract class file_packer {
      * @param file_progress $progress Progress indicator callback or null if not required
      * @return stored_file|bool false if error stored_file instance if ok
      */
-    public abstract function archive_to_storage(array $files, $contextid,
+    abstract public function archive_to_storage(array $files, $contextid,
             $component, $filearea, $itemid, $filepath, $filename,
-            $userid = NULL, $ignoreinvalidfiles=true, file_progress $progress = null);
+            $userid = NULL, $ignoreinvalidfiles=true, ?file_progress $progress = null);
 
     /**
      * Archive files and store the result in os file.
@@ -84,8 +84,8 @@ abstract class file_packer {
      * @param file_progress $progress Progress indicator callback or null if not required
      * @return bool true if file created, false if not
      */
-    public abstract function archive_to_pathname(array $files, $archivefile,
-            $ignoreinvalidfiles=true, file_progress $progress = null);
+    abstract public function archive_to_pathname(array $files, $archivefile,
+            $ignoreinvalidfiles=true, ?file_progress $progress = null);
 
     /**
      * Extract file to given file path (real OS filesystem), existing files are overwritten.
@@ -94,10 +94,12 @@ abstract class file_packer {
      * @param string $pathname target directory
      * @param array $onlyfiles only extract files present in the array
      * @param file_progress $progress Progress indicator callback or null if not required
+     * @param bool $returnbool Whether to return a basic true/false indicating error state, or full per-file error
+     * details.
      * @return array|bool list of processed files; false if error
      */
-    public abstract function extract_to_pathname($archivefile, $pathname,
-            array $onlyfiles = NULL, file_progress $progress = null);
+    abstract public function extract_to_pathname($archivefile, $pathname,
+            ?array $onlyfiles = NULL, ?file_progress $progress = null, $returnbool = false);
 
     /**
      * Extract file to given file path (real OS filesystem), existing files are overwritten.
@@ -112,9 +114,9 @@ abstract class file_packer {
      * @param file_progress $progress Progress indicator callback or null if not required
      * @return array|bool list of processed files; false if error
      */
-    public abstract function extract_to_storage($archivefile, $contextid,
+    abstract public function extract_to_storage($archivefile, $contextid,
             $component, $filearea, $itemid, $pathbase, $userid = NULL,
-            file_progress $progress = null);
+            ?file_progress $progress = null);
 
     /**
      * Returns array of info about all files in archive.
@@ -122,5 +124,5 @@ abstract class file_packer {
      * @param string|file_archive $archivefile
      * @return array of file infos
      */
-    public abstract function list_files($archivefile);
+    abstract public function list_files($archivefile);
 }

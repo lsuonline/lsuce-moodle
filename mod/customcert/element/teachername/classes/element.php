@@ -24,8 +24,6 @@
 
 namespace customcertelement_teachername;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The customcert element teachername's core interaction API.
  *
@@ -38,7 +36,7 @@ class element extends \mod_customcert\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
         $mform->addElement('select', 'teacher', get_string('teacher', 'customcertelement_teachername'),
@@ -71,7 +69,7 @@ class element extends \mod_customcert\element {
     public function render($pdf, $preview, $user) {
         global $DB;
 
-        $teacher = $DB->get_record('user', array('id' => $this->get_data()));
+        $teacher = $DB->get_record('user', ['id' => $this->get_data()]);
         $teachername = fullname($teacher);
 
         \mod_customcert\element_helper::render_content($pdf, $this, $teachername);
@@ -88,7 +86,7 @@ class element extends \mod_customcert\element {
     public function render_html() {
         global $DB;
 
-        $teacher = $DB->get_record('user', array('id' => $this->get_data()));
+        $teacher = $DB->get_record('user', ['id' => $this->get_data()]);
         $teachername = fullname($teacher);
 
         return \mod_customcert\element_helper::render_html_content($this, $teachername);
@@ -102,11 +100,16 @@ class element extends \mod_customcert\element {
     protected function get_list_of_teachers() {
         global $PAGE;
 
+        // Return early if we are in a site template.
+        if ($PAGE->context->id == \context_system::instance()->id) {
+            return [];
+        }
+
         // The list of teachers to return.
-        $teachers = array();
+        $teachers = [];
 
         // Now return all users who can manage the customcert in this context.
-        if ($users = get_users_by_capability($PAGE->context, 'mod/customcert:manage')) {
+        if ($users = get_enrolled_users($PAGE->context, 'mod/customcert:manage')) {
             foreach ($users as $user) {
                 $teachers[$user->id] = fullname($user);
             }
@@ -118,13 +121,12 @@ class element extends \mod_customcert\element {
     /**
      * Sets the data on the form when editing an element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function definition_after_data($mform) {
-        $data = $this->get_data();
-        if (!empty($data)) {
+        if (!empty($this->get_data())) {
             $element = $mform->getElement('teacher');
-            $element->setValue($data);
+            $element->setValue($this->get_data());
         }
         parent::definition_after_data($mform);
     }

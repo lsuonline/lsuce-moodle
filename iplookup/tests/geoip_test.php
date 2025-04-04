@@ -14,73 +14,72 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * GeoIP tests
- *
- * @package    core_iplookup
- * @category   phpunit
- * @copyright  2012 Petr Skoda {@link http://skodak.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-defined('MOODLE_INTERNAL') || die();
-
+namespace core;
 
 /**
  * GeoIp data file parsing test.
+ *
+ * @package    core
+ * @category   test
+ * @copyright  2012 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_iplookup_geoip_testcase extends advanced_testcase {
-
-    public function test_geoip() {
+final class geoip_test extends \advanced_testcase {
+    #[\Override]
+    public static function setUpBeforeClass(): void {
         global $CFG;
-        require_once("$CFG->libdir/filelib.php");
-        require_once("$CFG->dirroot/iplookup/lib.php");
 
-        if (!PHPUNIT_LONGTEST) {
-            // this may take a long time
-            return;
-        }
+        parent::setUpBeforeClass();
 
+        require_once("{$CFG->libdir}/filelib.php");
+        require_once("{$CFG->dirroot}/iplookup/lib.php");
+    }
+
+    /**
+     * Setup the GeoIP2File system.
+     */
+    public function setup_geoip2file(): void {
+        global $CFG;
+        $CFG->geoip2file = "$CFG->dirroot/iplookup/tests/fixtures/GeoIP2-City-Test.mmdb";
+    }
+
+    /**
+     * Test the format of data returned in the iplookup_find_location function.
+     *
+     * @dataProvider ip_provider
+     * @param   string  $ip The IP to test
+     */
+    public function test_ip($ip): void {
         $this->resetAfterTest();
 
-        // let's store the file somewhere
-        $gzfile = "$CFG->dataroot/phpunit/geoip/GeoLiteCity.dat.gz";
-        check_dir_exists(dirname($gzfile));
-        if (file_exists($gzfile) and (filemtime($gzfile) < time() - 60*60*24*30)) {
-            // delete file if older than 1 month
-            unlink($gzfile);
-        }
+        $this->setup_geoip2file();
 
-        if (!file_exists($gzfile)) {
-            download_file_content('http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz', null, null, false, 300, 20, false, $gzfile);
-        }
+        // Note: The results we get from the iplookup tests are beyond our control.
+        // We used to check a specific IP to a known location, but these have become less reliable and change too
+        // frequently to be used for testing.
 
-        $this->assertTrue(file_exists($gzfile));
+        $result = iplookup_find_location($ip);
 
-        $zd = gzopen($gzfile, "r");
-        $contents = gzread($zd, 50000000);
-        gzclose($zd);
-
-        $geoipfile = "$CFG->dataroot/geoip/GeoLiteCity.dat";
-        check_dir_exists(dirname($geoipfile));
-        $fp = fopen($geoipfile, 'w');
-        fwrite($fp, $contents);
-        fclose($fp);
-
-        $this->assertTrue(file_exists($geoipfile));
-
-        $CFG->geoipfile = $geoipfile;
-
-        $result = iplookup_find_location('147.230.16.1');
-
-        $this->assertEquals('array', gettype($result));
-        $this->assertEquals('Liberec', $result['city']);
-        $this->assertEquals(15.0653, $result['longitude'], '', 0.001);
-        $this->assertEquals(50.7639, $result['latitude'], '', 0.001);
+        $this->assertIsArray($result);
+        $this->assertIsFloat($result['latitude']);
+        $this->assertIsFloat($result['longitude']);
+        $this->assertIsString($result['city']);
+        $this->assertIsString($result['country']);
+        $this->assertIsArray($result['title']);
+        $this->assertIsString($result['title'][0]);
+        $this->assertIsString($result['title'][1]);
         $this->assertNull($result['error']);
-        $this->assertEquals('array', gettype($result['title']));
-        $this->assertEquals('Liberec', $result['title'][0]);
-        $this->assertEquals('Czech Republic', $result['title'][1]);
+    }
+
+    /**
+     * Data provider for IP lookup test.
+     *
+     * @return array
+     */
+    public static function ip_provider(): array {
+        return [
+            'IPv4: IPV4 test' => ['81.2.69.142'],
+            'IPv6: IPV6 test' => ['2001:252:1::1:1:1'],
+        ];
     }
 }
-

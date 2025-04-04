@@ -76,14 +76,14 @@ class generate_all_documentation extends XMLDBAction {
         $c .= '</p>';
         $this->output.=$c;
 
-        $this->docs = '';
+        $docs = '';
 
         if(class_exists('XSLTProcessor')) {
 
             $doc = new DOMDocument();
             $xsl = new XSLTProcessor();
 
-            $doc->load(dirname(__FILE__).'/../generate_documentation/xmldb.xsl');
+            $doc->load(__DIR__.'/../generate_documentation/xmldb.xsl');
             $xsl->importStyleSheet($doc);
 
             $dbdirs = get_db_directories();
@@ -97,16 +97,16 @@ class generate_all_documentation extends XMLDBAction {
 
                 $dir = trim(dirname(str_replace($CFG->dirroot, '', $path)), '/');
                 $index .= '<a href="#file_' . str_replace('/', '_', $dir) . '">' . $dir . '</a>, ';
-                $this->docs .= '<div class="file" id="file_' . str_replace('/', '_', $dir) . '">';
-                $this->docs .= '<h2>' . $dir . '</h2>';
+                $docs .= '<div class="file" id="file_' . str_replace('/', '_', $dir) . '">';
+                $docs .= '<h2>' . $dir . '</h2>';
 
                 $doc->load($path . '/install.xml');
-                $this->docs.=$xsl->transformToXML($doc);
+                $docs .= $xsl->transformToXML($doc);
 
-                $this->docs .= '</div>';
+                $docs .= '</div>';
             }
 
-            $this->output .= '<div id="file_idex">' . trim($index, ' ,') . '</div>' . $this->docs;
+            $this->output .= '<div id="file_idex">' . trim($index, ' ,') . '</div>' . $docs;
 
             $this->output.=$b;
         } else {

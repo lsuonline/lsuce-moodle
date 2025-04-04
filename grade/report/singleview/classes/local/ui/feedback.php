@@ -24,6 +24,8 @@
 
 namespace gradereport_singleview\local\ui;
 
+use context_course;
+
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -33,9 +35,12 @@ defined('MOODLE_INTERNAL') || die;
  * @copyright 2014 Moodle Pty Ltd (http://moodle.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class feedback extends grade_attribute_format implements unique_value, be_disabled {
+class feedback extends grade_attribute_format implements unique_value, be_disabled, be_readonly {
 
-    /** @var string $name Name of this input */
+    /**
+     * Name of this input
+     * @var string $name
+     */
     public $name = 'feedback';
 
     /**
@@ -43,7 +48,7 @@ class feedback extends grade_attribute_format implements unique_value, be_disabl
      *
      * @return string The value
      */
-    public function get_value() {
+    public function get_value(): ?string {
         return $this->grade->feedback ? $this->grade->feedback : '';
     }
 
@@ -52,7 +57,7 @@ class feedback extends grade_attribute_format implements unique_value, be_disabl
      *
      * @return string The label text
      */
-    public function get_label() {
+    public function get_label(): string {
         if (!isset($this->grade->label)) {
             $this->grade->label = '';
         }
@@ -64,7 +69,7 @@ class feedback extends grade_attribute_format implements unique_value, be_disabl
      *
      * @return boolean Should this input be disabled when the page loads.
      */
-    public function is_disabled() {
+    public function is_disabled(): bool {
         $locked = 0;
         $gradeitemlocked = 0;
         $overridden = 0;
@@ -86,16 +91,31 @@ class feedback extends grade_attribute_format implements unique_value, be_disabl
     }
 
     /**
+     * Return true if this is read-only.
+     *
+     * @return bool
+     */
+    public function is_readonly(): bool {
+        global $USER;
+        return empty($USER->editing);
+    }
+
+    /**
      * Create a text_attribute for this ui element.
      *
-     * @return text_attribute
+     * @return element
      */
-    public function determine_format() {
+    public function determine_format(): element {
+        if (($this->grade->is_hidden() || $this->grade->grade_item->is_hidden()) &&
+            !has_capability('moodle/grade:viewhidden', context_course::instance($this->grade->grade_item->courseid))) {
+            return new empty_element();
+        }
         return new text_attribute(
             $this->get_name(),
             $this->get_value(),
             $this->get_label(),
-            $this->is_disabled()
+            $this->is_disabled(),
+            $this->is_readonly()
         );
     }
 
@@ -103,7 +123,7 @@ class feedback extends grade_attribute_format implements unique_value, be_disabl
      * Update the value for this input.
      *
      * @param string $value The new feedback value.
-     * @return string Any error message
+     * @return null|string Any error message
      */
     public function set($value) {
         $finalgrade = false;

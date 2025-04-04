@@ -49,6 +49,11 @@ abstract class backup implements checksumable {
     const INTERACTIVE_YES = true;
     const INTERACTIVE_NO  = false;
 
+    /** Release the session during backup/restore */
+    const RELEASESESSION_YES = true;
+    /** Don't release the session during backup/restore */
+    const RELEASESESSION_NO  = false;
+
     // Predefined modes (purposes) of the backup
     const MODE_GENERAL   = 10;
 
@@ -73,6 +78,21 @@ abstract class backup implements checksumable {
     const MODE_SAMESITE  = 40;
     const MODE_AUTOMATED = 50;
     const MODE_CONVERTED = 60;
+
+    /**
+     * This mode is for asynchronous backups.
+     * These backups will run via adhoc scheduled tasks.
+     */
+    const MODE_ASYNC = 70;
+
+    /**
+     * This mode is for course copies.
+     * It is similar to async, but identifies back up and restore tasks
+     * as course copies.
+     *
+     * These copies will run via adhoc scheduled tasks.
+     */
+    const MODE_COPY = 80;
 
     // Target (new/existing/current/adding/deleting)
     const TARGET_CURRENT_DELETING = 0;
@@ -125,17 +145,31 @@ abstract class backup implements checksumable {
     const OPERATION_BACKUP  ='backup'; // We are performing one backup
     const OPERATION_RESTORE ='restore';// We are performing one restore
 
+    // Options for "Include enrolment methods" restore setting.
+    const ENROL_NEVER     = 0;
+    const ENROL_WITHUSERS = 1;
+    const ENROL_ALWAYS    = 2;
+
     // Version and release (to keep CFG->backup_version (and release) updated automatically).
     /**
      * Usually same than major release version, this is used to mark important
      * point is backup when some behavior/approach channged, in order to allow
      * conditional coding based on it.
      */
-    const VERSION = 2016052300;
+    const VERSION = 2024100700;
     /**
      * Usually same than major release zero version, mainly for informative/historic purposes.
      */
-    const RELEASE = '3.1';
+    const RELEASE = '4.5';
+
+    /**
+     * Cipher to be used in backup and restore operations.
+     */
+    const CIPHER = 'aes-256-cbc';
+    /**
+     * Bytes enforced for key, using the cypher above. Restrictive? Yes, but better than unsafe lengths
+     */
+    const CIPHERKEYLEN = 32;
 }
 
 /*

@@ -38,10 +38,10 @@ use tool_lp\external\user_competency_summary_in_plan_exporter;
  */
 class user_competency_summary_in_plan implements renderable, templatable {
 
-    /** @var competencyid */
+    /** @var int competencyid */
     protected $competencyid;
 
-    /** @var planid */
+    /** @var int planid */
     protected $planid;
 
     /**
@@ -58,8 +58,8 @@ class user_competency_summary_in_plan implements renderable, templatable {
     /**
      * Export the data.
      *
-     * @param renderer_base $output
-     * @return stdClass
+     * @param \renderer_base $output
+     * @return \stdClass
      */
     public function export_for_template(\renderer_base $output) {
         global $DB;
@@ -74,10 +74,10 @@ class user_competency_summary_in_plan implements renderable, templatable {
             throw new \invalid_parameter_exception('Invalid params. The competency does not belong to the plan.');
         }
 
-        $relatedcompetencies = api::list_related_competencies($competency->get_id());
-        $userid = $plan->get_userid();
+        $relatedcompetencies = api::list_related_competencies($competency->get('id'));
+        $userid = $plan->get('userid');
         $user = $DB->get_record('user', array('id' => $userid));
-        $evidence = api::list_evidence($userid, $this->competencyid, $plan->get_id());
+        $evidence = api::list_evidence($userid, $this->competencyid, $plan->get('id'));
 
         $params = array(
             'competency' => $competency,

@@ -17,7 +17,6 @@
  * This module adds ajax display functions to the template library page.
  *
  * @module     tool_templatelibrary/display
- * @package    tool_templatelibrary
  * @copyright  2015 Damyon Wiese <damyon@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -33,6 +32,9 @@ define(['jquery', 'core/ajax', 'core/log', 'core/notification', 'core/templates'
      */
     var findDocsSection = function(templateSource, templateName) {
 
+        if (!templateSource) {
+            return false;
+        }
         // Find the comment section marked with @template component/template.
         var marker = "@template " + templateName,
             i = 0,
@@ -116,18 +118,19 @@ define(['jquery', 'core/ajax', 'core/log', 'core/notification', 'core/templates'
     var loadTemplate = function(templateName) {
         var parts = templateName.split('/');
         var component = parts.shift();
-        var name = parts.shift();
+        var name = parts.join('/');
 
         var promises = ajax.call([{
             methodname: 'core_output_load_template',
-            args:{
+            args: {
                     component: component,
                     template: name,
-                    themename: config.theme
+                    themename: config.theme,
+                    includecomments: true
             }
         }, {
             methodname: 'tool_templatelibrary_load_canonical_template',
-            args:{
+            args: {
                     component: component,
                     template: name
             }
@@ -136,7 +139,9 @@ define(['jquery', 'core/ajax', 'core/log', 'core/notification', 'core/templates'
         // When returns a new promise that is resolved when all the passed in promises are resolved.
         // The arguments to the done become the values of each resolved promise.
         $.when.apply($, promises)
-            .done( function(source, originalSource) { templateLoaded(templateName, source, originalSource); })
+            .done(function(source, originalSource) {
+              templateLoaded(templateName, source, originalSource);
+            })
             .fail(notification.exception);
     };
 

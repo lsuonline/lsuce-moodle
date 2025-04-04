@@ -24,7 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-
 /**
  * Initialize this plugin
  */
@@ -47,16 +46,16 @@ function atto_panoptobutton_strings_for_js() {
  * @return array of additional params to pass to javascript init function for this module.
  */
 function atto_panoptobutton_params_for_js($elementid, $options, $fpoptions) {
-
     global $USER, $COURSE, $DB;
 
     $coursecontext = context_course::instance($COURSE->id);
 
     // Gets Panopto folder ID and for course from database on the server to which the course was provisioned.
     // If the course has not been provisioned, this will not return a value and the user will be able to select
-    // Folders and videos from the server specified as default during the plugin setup.
+    //  folders and videos from the server specified as default during the plugin setup.
     $panoptoid = $DB->get_field('block_panopto_foldermap', 'panopto_id', array('moodleid' => $coursecontext->instanceid));
     $servername = $DB->get_field('block_panopto_foldermap', 'panopto_server', array('moodleid' => $coursecontext->instanceid));
+    $instancename = get_config('block_panopto', 'instance_name');
 
     $usercontextid = context_user::instance($USER->id)->id;
     $disabled = false;
@@ -66,6 +65,8 @@ function atto_panoptobutton_params_for_js($elementid, $options, $fpoptions) {
     $params['usercontextid'] = $usercontextid;
     $params['coursecontext'] = $panoptoid;
     $params['servename'] = $servername;
+
+    $params['instancename'] = $instancename;
 
     // If they don't have permission don't show it.
     if (!has_capability('atto/panoptobutton:visible', $coursecontext) ) {

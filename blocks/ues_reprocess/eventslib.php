@@ -14,13 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_reprocess
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 abstract class ues_event_handler {
     public static function helpdesk_course($help) {
 
@@ -53,7 +55,7 @@ abstract class ues_event_handler {
         $pluginname = get_string('reprocess', 'block_ues_reprocess');
         $params = array('id' => $instance->courseid, 'type' => 'course');
 
-        $reprocess_link = new navigation_node(array(
+        $reprocesslink = new navigation_node(array(
             'text' => $pluginname,
             'shorttext' => $pluginname,
             'icon' => new pix_icon('i/users', $pluginname),
@@ -61,7 +63,7 @@ abstract class ues_event_handler {
             'action' => new moodle_url('/blocks/ues_reprocess/reprocess.php', $params)
         ));
 
-        $nodes->parent->add_node($reprocess_link, 'manageinstances');
+        $nodes->parent->add_node($reprocesslink, 'manageinstances');
         return true;
     }
 }

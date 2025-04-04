@@ -303,7 +303,7 @@ class core_tag_collection {
     public static function change_sortorder($tagcoll, $direction) {
         global $DB;
         if ($direction != -1 && $direction != 1) {
-            throw coding_exception('Second argument in tag_coll_change_sortorder() can be only 1 or -1');
+            throw new coding_exception('Second argument in tag_coll_change_sortorder() can be only 1 or -1');
         }
         $tagcolls = self::get_collections();
         $keys = array_keys($tagcolls);
@@ -359,9 +359,15 @@ class core_tag_collection {
 
         $fromclause = 'FROM {tag_instance} ti JOIN {tag} tg ON tg.id = ti.tagid';
         $whereclause = 'WHERE ti.itemtype <> \'tag\'';
-        list($sql, $params) = $DB->get_in_or_equal($tagcollid ? array($tagcollid) :
-            array_keys(self::get_collections(true)));
+
+        // Get tags from all searchable tag collections, if $tagcollid is specifid, limit only to this collection.
+        $tagcollids = array_keys(self::get_collections(true));
+        if ($tagcollid) {
+            $tagcollids = array_intersect($tagcollids, [$tagcollid]);
+        }
+        list($sql, $params) = $DB->get_in_or_equal($tagcollids, SQL_PARAMS_QM, 'param', true, -1);
         $whereclause .= ' AND tg.tagcollid ' . $sql;
+
         if ($isstandard) {
             $whereclause .= ' AND tg.isstandard = 1';
         }
@@ -392,7 +398,7 @@ class core_tag_collection {
         }
 
         self::$cloudsortfield = $sort;
-        usort($tagsincloud, "self::cloud_sort");
+        usort($tagsincloud, self::class . "::cloud_sort");
 
         return new core_tag\output\tagcloud($tagsincloud, $tagscount, $fromctx, $ctx, $rec);
     }
@@ -408,7 +414,7 @@ class core_tag_collection {
         $tagsort = self::$cloudsortfield ?: 'name';
 
         if (is_numeric($a->$tagsort)) {
-            return ($a->$tagsort == $b->$tagsort) ? 0 : ($a->$tagsort > $b->$tagsort) ? 1 : -1;
+            return (($a->$tagsort == $b->$tagsort) ? 0 : ($a->$tagsort > $b->$tagsort)) ? 1 : -1;
         } else if (is_string($a->$tagsort)) {
             return strcmp($a->$tagsort, $b->$tagsort);
         } else {

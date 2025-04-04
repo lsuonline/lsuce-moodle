@@ -21,6 +21,9 @@
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 $capabilities = array(
     'block/ues_reprocess:canreprocess' => array(
         'captype' => 'write',

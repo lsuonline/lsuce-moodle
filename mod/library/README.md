@@ -1,8 +1,8 @@
-library
-=======
+Library Activity (Mod)
+================
 
-library module resource (activity)
+Library module resource (activity)
 
-allows instructors to create a lil collection of links to library resources in their topics / weeks boxes.
+Allows instructors to create a little collection of links to library resources in their topics / weeks boxes.\
 
-
+Install in MOD folder!

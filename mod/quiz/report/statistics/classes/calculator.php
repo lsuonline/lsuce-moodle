@@ -36,7 +36,7 @@ class calculator {
      */
     protected $progress;
 
-    public function __construct(\core\progress\base $progress = null) {
+    public function __construct(?\core\progress\base $progress = null) {
         if ($progress === null) {
             $progress = new \core\progress\none();
         }
@@ -51,18 +51,18 @@ class calculator {
      *                                   $quiz->grademethod ie.
      *                                   QUIZ_GRADEAVERAGE, QUIZ_GRADEHIGHEST, QUIZ_ATTEMPTLAST or QUIZ_ATTEMPTFIRST
      *                                   we calculate stats based on which attempts would affect the grade for each student.
-     * @param array $groupstudents     students in this group.
+     * @param \core\dml\sql_join $groupstudentsjoins Contains joins, wheres, params for students in this group.
      * @param int   $p                 number of positions (slots).
      * @param float $sumofmarkvariance sum of mark variance, calculated as part of question statistics
      * @return calculated $quizstats The statistics for overall attempt scores.
      */
-    public function calculate($quizid, $whichattempts, $groupstudents, $p, $sumofmarkvariance) {
+    public function calculate($quizid, $whichattempts, \core\dml\sql_join $groupstudentsjoins, $p, $sumofmarkvariance) {
 
         $this->progress->start_progress('', 3);
 
         $quizstats = new calculated($whichattempts);
 
-        $countsandaverages = $this->attempt_counts_and_averages($quizid, $groupstudents);
+        $countsandaverages = $this->attempt_counts_and_averages($quizid, $groupstudentsjoins);
         $this->progress->progress(1);
 
         foreach ($countsandaverages as $propertyname => $value) {
@@ -74,7 +74,7 @@ class calculator {
 
             // Recalculate sql again this time possibly including test for first attempt.
             list($fromqa, $whereqa, $qaparams) =
-                quiz_statistics_attempts_sql($quizid, $groupstudents, $whichattempts);
+                quiz_statistics_attempts_sql($quizid, $groupstudentsjoins, $whichattempts);
 
             $quizstats->median = $this->median($s, $fromqa, $whereqa, $qaparams);
             $this->progress->progress(2);
@@ -115,27 +115,34 @@ class calculator {
                 }
             }
 
-            $quizstats->cache(quiz_statistics_qubaids_condition($quizid, $groupstudents, $whichattempts));
+            $quizstats->cache(quiz_statistics_qubaids_condition($quizid, $groupstudentsjoins, $whichattempts));
         }
         $this->progress->end_progress();
         return $quizstats;
     }
 
-    /** @var integer Time after which statistics are automatically recomputed. */
+    /**
+     * @var int previously, the time after which statistics are automatically recomputed.
+     * @deprecated since Moodle 4.3. Use of pre-computed stats is no longer time-limited.
+     * @todo MDL-78091 Final deprecation in Moodle 4.7
+     */
     const TIME_TO_CACHE = 900; // 15 minutes.
 
     /**
      * Load cached statistics from the database.
      *
-     * @param $qubaids \qubaid_condition
-     * @return calculated The statistics for overall attempt scores or false if not cached.
+     * @param \qubaid_condition $qubaids
+     * @return calculated|false The statistics for overall attempt scores or false if not cached.
      */
     public function get_cached($qubaids) {
         global $DB;
 
-        $timemodified = time() - self::TIME_TO_CACHE;
-        $fromdb = $DB->get_record_select('quiz_statistics', 'hashcode = ? AND timemodified > ?',
-                                         array($qubaids->get_hash_code(), $timemodified));
+        $lastcalculatedtime = $this->get_last_calculated_time($qubaids);
+        if (!$lastcalculatedtime) {
+            return false;
+        }
+        $fromdb = $DB->get_record('quiz_statistics', ['hashcode' => $qubaids->get_hash_code(),
+                'timemodified' => $lastcalculatedtime]);
         $stats = new calculated();
         $stats->populate_from_record($fromdb);
         return $stats;
@@ -145,14 +152,17 @@ class calculator {
      * Find time of non-expired statistics in the database.
      *
      * @param $qubaids \qubaid_condition
-     * @return integer|boolean Time of cached record that matches this qubaid_condition or false is non found.
+     * @return int|bool Time of cached record that matches this qubaid_condition or false is non found.
      */
     public function get_last_calculated_time($qubaids) {
         global $DB;
-
-        $timemodified = time() - self::TIME_TO_CACHE;
-        return $DB->get_field_select('quiz_statistics', 'timemodified', 'hashcode = ? AND timemodified > ?',
-                                         array($qubaids->get_hash_code(), $timemodified));
+        $lastcalculatedtime = $DB->get_field('quiz_statistics', 'COALESCE(MAX(timemodified), 0)',
+                ['hashcode' => $qubaids->get_hash_code()]);
+        if ($lastcalculatedtime) {
+            return $lastcalculatedtime;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -203,16 +213,16 @@ class calculator {
      * See : http://docs.moodle.org/dev/Quiz_item_analysis_calculations_in_practise
      *                                      #Calculating_MEAN_of_grades_for_all_attempts_by_students
      * @param int $quizid
-     * @param array $groupstudents
+     * @param \core\dml\sql_join $groupstudentsjoins Contains joins, wheres, params for students in this group.
      * @return \stdClass with properties with count and avg with prefixes firstattempts, highestattempts, etc.
      */
-    protected function attempt_counts_and_averages($quizid, $groupstudents) {
+    protected function attempt_counts_and_averages($quizid, \core\dml\sql_join $groupstudentsjoins) {
         global $DB;
 
         $attempttotals = new \stdClass();
         foreach (array_keys(quiz_get_grading_options()) as $which) {
 
-            list($fromqa, $whereqa, $qaparams) = quiz_statistics_attempts_sql($quizid, $groupstudents, $which);
+            list($fromqa, $whereqa, $qaparams) = quiz_statistics_attempts_sql($quizid, $groupstudentsjoins, $which);
 
             $fromdb = $DB->get_record_sql("SELECT COUNT(*) AS rcount, AVG(sumgrades) AS average FROM $fromqa WHERE $whereqa",
                                             $qaparams);
@@ -245,10 +255,10 @@ class calculator {
             $limitoffset = floor($s / 2);
             $limit = 1;
         }
-        $sql = "SELECT id, sumgrades
-                FROM $fromqa
-                WHERE $whereqa
-                ORDER BY sumgrades";
+        $sql = "SELECT quiza.id, quiza.sumgrades
+                  FROM $fromqa
+                 WHERE $whereqa
+              ORDER BY sumgrades";
 
         $medianmarks = $DB->get_records_sql_menu($sql, $qaparams, $limitoffset, $limit);
 
@@ -265,7 +275,7 @@ class calculator {
      * @param $fromqa
      * @param $whereqa
      * @param $qaparams
-     * @return object with properties power2, power3, power4
+     * @return stdClass with properties power2, power3, power4
      */
     protected function sum_of_powers_of_difference_to_mean($mean, $fromqa, $whereqa, $qaparams) {
         global $DB;
@@ -274,9 +284,9 @@ class calculator {
                     SUM(POWER((quiza.sumgrades - $mean), 2)) AS power2,
                     SUM(POWER((quiza.sumgrades - $mean), 3)) AS power3,
                     SUM(POWER((quiza.sumgrades - $mean), 4)) AS power4
-                    FROM $fromqa
-                    WHERE $whereqa";
-        $params = array('mean1' => $mean, 'mean2' => $mean, 'mean3' => $mean) + $qaparams;
+                  FROM $fromqa
+                 WHERE $whereqa";
+        $params = ['mean1' => $mean, 'mean2' => $mean, 'mean3' => $mean] + $qaparams;
 
         return $DB->get_record_sql($sql, $params, MUST_EXIST);
     }

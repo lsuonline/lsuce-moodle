@@ -36,7 +36,7 @@ class blog_edit_external_form extends moodleform {
 
         $mform =& $this->_form;
 
-        $mform->addElement('url', 'url', get_string('url', 'blog'), array('size' => 50));
+        $mform->addElement('url', 'url', get_string('url', 'blog'), array('size' => 60), array('usefilepicker' => false));
         $mform->setType('url', PARAM_URL);
         $mform->addRule('url', get_string('emptyurl', 'blog'), 'required', null, 'client');
         $mform->addHelpButton('url', 'url', 'blog');
@@ -64,7 +64,7 @@ class blog_edit_external_form extends moodleform {
         $mform->setDefault('id', 0);
 
         $mform->addElement('hidden', 'returnurl');
-        $mform->setType('returnurl', PARAM_URL);
+        $mform->setType('returnurl', PARAM_LOCALURL);
         $mform->setDefault('returnurl', 0);
     }
 
@@ -98,8 +98,8 @@ class blog_edit_external_form extends moodleform {
         global $CFG, $COURSE;
         $mform =& $this->_form;
 
-        $name = trim($mform->getElementValue('name'));
-        $description = trim($mform->getElementValue('description'));
+        $name = trim($mform->getElementValue('name') ?? '');
+        $description = trim($mform->getElementValue('description') ?? '');
         $url = $mform->getElementValue('url');
 
         if (empty($name) || empty($description)) {

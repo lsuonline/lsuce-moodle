@@ -27,16 +27,18 @@ require_once('lib.php');
 
 require_login();
 
-$_s = function($key) { return get_string($key, 'block_my_picture'); };
+$s = function($key) {
+    return get_string($key, 'block_my_picture');
+};
 
-ini_set('max_execution_time','36000');
+ini_set('max_execution_time', '36000');
 
 if (!is_siteadmin($USER->id)) {
     error('need_permission', 'block_my_picture');
 }
 
-$header = $_s('reprocess_all_title');
-$pluginname = $_s('pluginname');
+$header = $s('reprocess_all_title');
+$pluginname = $s('pluginname');
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/blocks/my_picture/reprocess_all.php');
@@ -51,12 +53,10 @@ $params = array('deleted' => '0');
 $users = $DB->get_records('user', $params, '', 'id, idnumber');
 
 echo '<div>';
+echo $s('all_start') . '<br />';
 
-echo $_s('all_start') . '<br />';
-
-$force_update = true;
-mypic_batch_update($users, $force_update, '<br />');
+$forceupdate = true;
+mypic_batch_update($users, $forceupdate, '<br />');
 
 echo '</div>';
-
 echo $OUTPUT->footer();

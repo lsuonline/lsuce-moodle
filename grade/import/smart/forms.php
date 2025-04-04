@@ -1,38 +1,58 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir.'/formslib.php');
 
 require_once('lib.php');
 
 class smart_file_form extends moodleform {
-    function definition() {
+    public function definition() {
         global $COURSE;
 
-        $_s = function($key) { return get_string($key, 'gradeimport_smart'); };
+        $s = function($key) {
+            return get_string($key, 'gradeimport_smart');
+        };
 
         $mform =& $this->_form;
 
-        $mform->addElement('header', 'general', $_s('upload_file'));
+        $mform->addElement('header', 'general', $s('upload_file'));
 
         $mform->addElement('hidden', 'id', $COURSE->id);
         $mform->setType('id', PARAM_INT);
 
-        $mform->addElement('filepicker', 'userfile', $_s('file'));
+        $mform->addElement('filepicker', 'userfile', $s('file'));
         $mform->addRule('userfile', null, 'required');
 
         $options = $this->get_grade_item_options();
 
-        $mform->addElement('select', 'grade_item_id', $_s('grade_item'), $options);
+        $mform->addElement('select', 'grade_item_id', $s('grade_item'), $options);
 
-        $this->add_action_buttons(false, $_s('upload_file'));
+        $this->add_action_buttons(false, $s('upload_file'));
     }
 
-    function get_grade_item_options() {
+    public function get_grade_item_options() {
         global $COURSE, $DB;
 
-        $_s = function($key) { return get_string($key, 'gradeimport_smart'); };
+        $s = function($key) {
+            return get_string($key, 'gradeimport_smart');
+        };
 
-        $params = array('courseid' => $COURSE->id, 'locked' => False);
+        $params = array('courseid' => $COURSE->id, 'locked' => false);
 
         $items = $DB->get_records('grade_items', $params, 'itemname asc',
             'id, gradetype, itemname, itemtype');
@@ -50,14 +70,16 @@ class smart_file_form extends moodleform {
 }
 
 class smart_results_form extends moodleform {
-    function definition() {
+    public function definition() {
         global $COURSE;
 
-        $_s = function($key) { return get_string($key, 'gradeimport_smart'); };
+        $s = function($key) {
+            return get_string($key, 'gradeimport_smart');
+        };
 
         $mform =& $this->_form;
 
-        $mform->addElement('header', 'general', $_s('import_notices'));
+        $mform->addElement('header', 'general', $s('import_notices'));
 
         $data = $this->_customdata;
 

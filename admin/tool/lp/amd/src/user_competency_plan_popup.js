@@ -16,7 +16,7 @@
 /**
  * Module to open user competency plan in popup
  *
- * @package    report_competency
+ * @module     tool_lp/user_competency_plan_popup
  * @copyright  2016 Issam Taboubi <issam.taboubi@umontreal.ca>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,9 +27,9 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/templates'
     /**
      * UserCompetencyPopup
      *
-     * @param {String} The regionSelector
-     * @param {String} The userCompetencySelector
-     * @param {Number} The plan ID
+     * @param {String} regionSelector The regionSelector
+     * @param {String} userCompetencySelector The userCompetencySelector
+     * @param {Number} planId The plan ID
      */
     var UserCompetencyPopup = function(regionSelector, userCompetencySelector, planId) {
         this._regionSelector = regionSelector;
@@ -53,25 +53,23 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/templates'
         var planId = this._planId;
 
         var requests = ajax.call([{
-            methodname : 'tool_lp_data_for_user_competency_summary_in_plan',
-            args: { competencyid: competencyId, planid: planId },
+            methodname: 'tool_lp_data_for_user_competency_summary_in_plan',
+            args: {competencyid: competencyId, planid: planId},
             done: this._contextLoaded.bind(this),
             fail: notification.exception
         }]);
-
         // Log the user competency viewed in plan event.
-        requests[0].then(function (result) {
+        requests[0].then(function(result) {
             var eventMethodName = 'core_competency_user_competency_viewed_in_plan';
             // Trigger core_competency_user_competency_plan_viewed event instead if plan is already completed.
             if (result.plan.iscompleted) {
                 eventMethodName = 'core_competency_user_competency_plan_viewed';
             }
-            ajax.call([{
+            return ajax.call([{
                 methodname: eventMethodName,
-                args: {competencyid: competencyId, userid: userId, planid: planId},
-                fail: notification.exception
-            }]);
-        });
+                args: {competencyid: competencyId, userid: userId, planid: planId}
+            }])[0];
+        }).catch(notification.exception);
     };
 
     /**
@@ -98,8 +96,8 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/templates'
         var planId = this._planId;
 
         ajax.call([{
-            methodname : 'tool_lp_data_for_plan_page',
-            args: { planid: planId},
+            methodname: 'tool_lp_data_for_plan_page',
+            args: {planid: planId},
             done: this._pageContextLoaded.bind(this),
             fail: notification.exception
         }]);
@@ -118,11 +116,11 @@ define(['jquery', 'core/notification', 'core/str', 'core/ajax', 'core/templates'
         }).fail(notification.exception);
     };
 
-    /** @type {String} The selector for the region with the user competencies */
+    /** @property {String} The selector for the region with the user competencies */
     UserCompetencyPopup.prototype._regionSelector = null;
-    /** @type {String} The selector for the region with a single user competencies */
+    /** @property {String} The selector for the region with a single user competencies */
     UserCompetencyPopup.prototype._userCompetencySelector = null;
-    /** @type {Number} The plan Id */
+    /** @property {Number} The plan Id */
     UserCompetencyPopup.prototype._planId = null;
 
     return /** @alias module:tool_lp/user_competency_plan_popup */ UserCompetencyPopup;

@@ -1,8 +1,22 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
  * File for UserManagementWsdlClass to communicate with SOAP service
  * @package UserManagement
- * @author WsdlToPhp Team <contact@wsdltophp.com>
+ * @author Panopto
  * @version 20150429-01
  * @date 2017-01-19
  */
@@ -10,12 +24,14 @@
  * UserManagementWsdlClass to communicate with SOAP service
  *
  * @package UserManagement
- * @author WsdlToPhp Team <contact@wsdltophp.com>
+ * @author Panopto
  * @version 20150429-01
  * @date 2017-01-19
  */
 
 defined('MOODLE_INTERNAL') || die();
+
+require_once(dirname(__FILE__) . '/../panopto_timeout_soap_client.php');
 
 class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,Countable
 {
@@ -149,7 +165,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
     const WSDL_SSL_METHOD = 'wsdl_ssl_method';
     /**
      * Soapclient called to communicate with the actual SOAP Service
-     * @var SoapClient
+     * @var PanoptoTimeoutSoapClient
      */
     private static $soapClient;
     /**
@@ -208,6 +224,22 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
             foreach($_arrayOfValues as $name=>$value)
                 $this->_set($name,$value);
         }
+
+        if(array_key_exists('panopto_socket_timeout', $_arrayOfValues)) {
+            self::$soapClient->__setSocketTimeout($_arrayOfValues['panopto_socket_timeout']);
+        }
+
+        if(array_key_exists('panopto_connection_timeout', $_arrayOfValues)) {
+            self::$soapClient->__setConnectionTimeout($_arrayOfValues['panopto_connection_timeout']);
+        }
+
+        if(array_key_exists('wsdl_proxy_host', $_arrayOfValues)) {
+            self::$soapClient->__setProxyHost($_arrayOfValues['wsdl_proxy_host']);
+        }
+
+        if(array_key_exists('wsdl_proxy_port', $_arrayOfValues)) {
+            self::$soapClient->__setProxyPort($_arrayOfValues['wsdl_proxy_port']);
+        }
     }
     /**
      * Generic method called when an object has been exported with var_export() functions
@@ -217,8 +249,9 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param string $_className optional (used by inherited classes in order to always call this method)
      * @return UserManagementWsdlClass|null
      */
-    public static function __set_state(array $_array,$_className = __CLASS__)
+    public static function __set_state(array $_array)
     {
+        $_className = __CLASS__;
         if(class_exists($_className))
         {
             $object = @new $_className();
@@ -292,10 +325,10 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      */
     public static function getSoapClientClassName()
     {
-        if(class_exists('UserManagementSoapClient') && is_subclass_of('UserManagementSoapClient','SoapClient'))
+        if(class_exists('UserManagementSoapClient') && is_subclass_of('UserManagementSoapClient','PanoptoTimeoutSoapClient'))
             return 'UserManagementSoapClient';
         else
-            return 'SoapClient';
+            return 'PanoptoTimeoutSoapClient';
     }
     /**
      * Method returning all default options values
@@ -592,7 +625,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses UserManagementWsdlClass::getInternArrayToIterateIsArray()
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return $this->getInternArrayToIterateIsArray()?count($this->getInternArrayToIterate()):-1;
     }
@@ -601,6 +634,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses UserManagementWsdlClass::offsetGet()
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->offsetGet($this->internArrayToIterateOffset);
@@ -609,20 +643,20 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method moving the current position to the next element
      * @uses UserManagementWsdlClass::getInternArrayToIterateOffset()
      * @uses UserManagementWsdlClass::setInternArrayToIterateOffset()
-     * @return int
+     * @return void
      */
-    public function next()
+    public function next(): void
     {
-        return $this->setInternArrayToIterateOffset($this->getInternArrayToIterateOffset() + 1);
+        $this->setInternArrayToIterateOffset($this->getInternArrayToIterateOffset() + 1);
     }
     /**
      * Method resetting itemOffset
      * @uses UserManagementWsdlClass::setInternArrayToIterateOffset()
-     * @return int
+     * @return void
      */
-    public function rewind()
+    public function rewind(): void
     {
-        return $this->setInternArrayToIterateOffset(0);
+        $this->setInternArrayToIterateOffset(0);
     }
     /**
      * Method checking if current itemOffset points to an existing item
@@ -630,7 +664,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses UserManagementWsdlClass::offsetExists()
      * @return bool true|false
      */
-    public function valid()
+    public function valid(): bool
     {
         return $this->offsetExists($this->getInternArrayToIterateOffset());
     }
@@ -639,7 +673,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @uses UserManagementWsdlClass::getInternArrayToIterateOffset()
      * @return int
      */
-    public function key()
+    public function key(): int
     {
         return $this->getInternArrayToIterateOffset();
     }
@@ -728,7 +762,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param int $_offset
      * @return bool true|false
      */
-    public function offsetExists($_offset)
+    public function offsetExists($_offset): bool
     {
         return ($this->getInternArrayToIterateIsArray() && array_key_exists($_offset,$this->getInternArrayToIterate()));
     }
@@ -738,6 +772,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * @param int $_offset
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($_offset)
     {
         return $this->offsetExists($_offset)?$this->internArrayToIterate[$_offset]:null;
@@ -746,21 +781,17 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
      * Method useless but necessarly overridden, can't set
      * @param mixed $_offset
      * @param mixed $_value
-     * @return null
+     * @return void
      */
-    public function offsetSet($_offset,$_value)
-    {
-        return null;
-    }
+    public function offsetSet($_offset,$_value): void
+    {}
     /**
      * Method useless but necessarly overridden, can't unset
      * @param mixed $_offset
-     * @return null
+     * @return void
      */
-    public function offsetUnset($_offset)
-    {
-        return null;
-    }
+    public function offsetUnset($_offset): void
+    {}
     /**
      * Method returning current result from Soap call
      * @return mixed
@@ -951,7 +982,7 @@ class UserManagementWsdlClass extends stdClass implements ArrayAccess,Iterator,C
 /**
 * Class UserManagementSoapClient
 */
-class UserManagementSoapClient extends SoapClient {
+class UserManagementSoapClient extends PanoptoTimeoutSoapClient {
 
     /**
      * Constructor wrapper
@@ -961,7 +992,7 @@ class UserManagementSoapClient extends SoapClient {
     }
 
     /**
-     * wrapper around dorequest so we can enforce https on all calls
+     * Wrapper around dorequest so we can enforce https on all calls
      *
      * @param object $request - the request being made
      * @param string $location - the location the request will be made to
@@ -969,7 +1000,7 @@ class UserManagementSoapClient extends SoapClient {
      * @param string $version
      * @param int $one_way
      */
-    public function __doRequest ($request, $location, $action, $version, $one_way = 0) {
+    public function __doRequest($request, $location, $action, $version, $one_way = 0): ?string {
         if (get_config('block_panopto', 'enforce_https_on_wsdl')) {
             $location = str_replace('http://', 'https://', $location);
         }

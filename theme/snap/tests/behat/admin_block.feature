@@ -16,18 +16,14 @@
 # Tests for visibility of admin block by user type and page.
 #
 # @package    theme_snap
-# @copyright  2015 Guy Thomas <gthomas@moodlerooms.com>
+# @copyright Copyright (c) 2015 Open LMS
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-
 
 @theme @theme_snap
 Feature: When the moodle theme is set to Snap, the admin block will only be shown when appropriate.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-      | defaulthomepage | 1 |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
     And the following "users" exist:
@@ -35,16 +31,26 @@ Feature: When the moodle theme is set to Snap, the admin block will only be show
       | teacher1 | Teacher   | 1        | teacher1@example.com |
       | teacher2 | Teacher   | 2        | teacher2@example.com |
       | student1 | Student   | 1        | student1@example.com |
+      | advuser  | Advanced  | 1        | advuser@example.com  |
     And the following "course enrolments" exist:
       | user     | course | role           |
       | admin    | C1     | editingteacher |
       | teacher1 | C1     | editingteacher |
       | teacher2 | C1     | teacher        |
       | student1 | C1     | student        |
+    And the following "roles" exist:
+      | shortname    | name          | archetype |
+      | configviewer | Config Viewer |           |
+    And the following "permission overrides" exist:
+      | capability                    | permission | role           | contextlevel | reference |
+      | moodle/site:configview        | Allow      | configviewer   | System       |           |
+    And the following "system role assigns" exist:
+      | user    | course               | role         |
+      | advuser | Acceptance test site | configviewer |
 
   @javascript
   Scenario Outline: User only sees admin block on relevant pages.
-    Given I log in as "<user>" (theme_snap)
+    Given I log in as "<user>"
     # Check site page.
     And I am on site homepage
     Then "#admin-menu-trigger" "css_element" <existssite> exist
@@ -55,12 +61,56 @@ Feature: When the moodle theme is set to Snap, the admin block will only be show
     When I am on the course main page for "C1"
     Then "#admin-menu-trigger" "css_element" <existscourse> exist
     # Check profile page.
-    When I open the personal menu
-    And I follow "View your profile"
+    When I open the user menu
+    And I follow "Profile"
     Then "#admin-menu-trigger" "css_element" <existsprofile> exist
     Examples:
-    | user     | existssite | existsdashboard | existscourse | existsprofile |
-    | student1 | should not | should not      | should not   | should not    |
-    | teacher1 | should not | should not      | should       | should not    |
-    | teacher2 | should not | should not      | should       | should not    |
-    | admin    | should     | should          | should       | should not    |
+      | user     | existssite | existsdashboard | existscourse | existsprofile |
+      | student1 | should not | should not      | should not   | should not    |
+      | teacher1 | should not | should not      | should       | should not    |
+      | teacher2 | should not | should not      | should       | should not    |
+      | admin    | should     | should          | should       | should not    |
+
+  @javascript
+  Scenario: User with the moodle/site:configview capability should be able to see the snap gear icon.
+    Given I log in as "advuser"
+    And I am on site homepage
+    Then "#admin-menu-trigger" "css_element" should exist
+    Then I log out
+    And I log in as "admin"
+    And the following "permission overrides" exist:
+      | capability                     | permission | role           | contextlevel | reference |
+      | moodle/user:update             | Allow      | configviewer   | System       |           |
+      | moodle/site:uploadusers        | Allow      | configviewer   | System       |           |
+      | moodle/site:viewparticipants   | Allow      | configviewer   | System       |           |
+      | moodle/user:create             | Allow      | configviewer   | System       |           |
+      | moodle/user:delete             | Allow      | configviewer   | System       |           |
+      | moodle/user:editmessageprofile | Allow      | configviewer   | System       |           |
+      | moodle/user:editprofile        | Allow      | configviewer   | System       |           |
+      | moodle/user:viewalldetails     | Allow      | configviewer   | System       |           |
+    And I log out
+    When I log in as "advuser"
+    And I am on site homepage
+    And I click on "#admin-menu-trigger" "css_element"
+    And I expand "Site administration" node
+    And I should see "Users"
+    And I expand "Users" node
+    And I should see "Accounts"
+    Then I log out
+    And I log in as "admin"
+    And the following "permission overrides" exist:
+      | capability                    | permission    | role           | contextlevel | reference |
+      | moodle/site:configview        | Prohibit      | configviewer   | System       |           |
+    Then I log out
+    And I log in as "advuser"
+    And I am on site homepage
+    Then "#admin-menu-trigger" "css_element" should not exist
+
+  @javascript
+  Scenario: Gear icon and admin menu should appear on Category and My account page.
+    Given I log in as "admin"
+    And I am on site homepage
+    And I am on my account default page
+    And "#admin-menu-trigger" "css_element" should exist
+    And I am on course index
+    And "#admin-menu-trigger" "css_element" should exist

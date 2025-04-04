@@ -23,7 +23,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
  */
 
-require_once dirname(dirname(dirname(__FILE__))) . '/config.php';
+require_once __DIR__ . '/../../config.php';
 require_once $CFG->dirroot . '/mnet/xmlrpc/client.php';
 
 // grab the GET params
@@ -40,7 +40,7 @@ $PAGE->set_context(context_system::instance());
 $site = get_site();
 
 if (!is_enabled_auth('mnet')) {
-    print_error('mnetdisable');
+    throw new \moodle_exception('mnetdisable');
 }
 
 // confirm the MNET session

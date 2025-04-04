@@ -47,7 +47,7 @@ class oci_native_moodle_database extends moodle_database {
     /** @var Default value initialised in connect method, we need the driver to be present.*/
     private $commit_status = null;
 
-    /** @var To handle oci driver default verbosity.*/
+    /** @var null|int To handle oci driver default verbosity.*/
     private $last_error_reporting;
     /** @var To store unique_session_id. Needed for temp tables unique naming.*/
     private $unique_session_id;
@@ -131,15 +131,10 @@ class oci_native_moodle_database extends moodle_database {
      * @return bool true
      * @throws dml_connection_exception if error
      */
-    public function connect($dbhost, $dbuser, $dbpass, $dbname, $prefix, array $dboptions=null) {
+    public function connect($dbhost, $dbuser, $dbpass, $dbname, $prefix, ?array $dboptions=null) {
         if ($prefix == '' and !$this->external) {
             //Enforce prefixes for everybody but mysql
             throw new dml_exception('prefixcannotbeempty', $this->get_dbfamily());
-        }
-        if (!$this->external and strlen($prefix) > 2) {
-            //Max prefix length for Oracle is 2cc
-            $a = (object)array('dbfamily'=>'oracle', 'maxlength'=>2);
-            throw new dml_exception('prefixtoolong', $a);
         }
 
         $driverstatus = $this->driver_installed();
@@ -189,6 +184,9 @@ class oci_native_moodle_database extends moodle_database {
             throw new dml_connection_exception($dberr);
         }
 
+        // Disable logging until we are fully setup.
+        $this->query_log_prevent();
+
         // Make sure moodle package is installed - now required.
         if (!$this->oci_package_installed()) {
             try {
@@ -216,6 +214,9 @@ class oci_native_moodle_database extends moodle_database {
         //note: do not send "ALTER SESSION SET NLS_NUMERIC_CHARACTERS='.,'" !
         //      instead fix our PHP code to convert "," to "." properly!
 
+        // We can enable logging now.
+        $this->query_log_allow();
+
         // Connection stabilised and configured, going to instantiate the temptables controller
         $this->temptables = new oci_native_moodle_temptables($this, $this->unique_session_id);
 
@@ -239,12 +240,12 @@ class oci_native_moodle_database extends moodle_database {
     /**
      * Called before each db query.
      * @param string $sql
-     * @param array array of parameters
+     * @param array|null $params An array of parameters.
      * @param int $type type of query
      * @param mixed $extrainfo driver specific extra information
      * @return void
      */
-    protected function query_start($sql, array $params=null, $type, $extrainfo=null) {
+    protected function query_start($sql, ?array $params, $type, $extrainfo=null) {
         parent::query_start($sql, $params, $type, $extrainfo);
         // oci driver tents to send debug to output, we do not need that ;-)
         $this->last_error_reporting = error_reporting(0);
@@ -339,14 +340,16 @@ class oci_native_moodle_database extends moodle_database {
 
     /**
      * Prepare the statement for execution
-     * @throws dml_connection_exception
+     *
      * @param string $sql
      * @return resource
+     *
+     * @throws dml_exception
      */
     protected function parse_query($sql) {
         $stmt = oci_parse($this->oci, $sql);
         if ($stmt == false) {
-            throw new dml_connection_exception('Can not parse sql query'); //TODO: maybe add better info
+            throw new dml_exception('dmlparseexception', null, $this->get_last_error());
         }
         return $stmt;
     }
@@ -358,6 +361,10 @@ class oci_native_moodle_database extends moodle_database {
      * @return array ($sql, $params) updated query and parameters
      */
     protected function tweak_param_names($sql, array $params) {
+        global $CFG;
+
+        require_once($CFG->libdir . '/ddllib.php');
+
         if (empty($params)) {
             return array($sql, $params);
         }
@@ -365,8 +372,8 @@ class oci_native_moodle_database extends moodle_database {
         $newparams = array();
         $searcharr = array(); // search => replace pairs
         foreach ($params as $name => $value) {
-            // Keep the name within the 30 chars limit always (prefixing/replacing)
-            if (strlen($name) <= 28) {
+            // Keep the name within the  xmldb_field::NAME_MAX_LENGTH chars limit always (prefixing/replacing).
+            if (strlen($name) <= (xmldb_field::NAME_MAX_LENGTH - 2)) {
                 $newname = 'o_' . $name;
             } else {
                 $newname = 'o_' . substr($name, 2);
@@ -430,9 +437,10 @@ class oci_native_moodle_database extends moodle_database {
         $indexes = array();
         $tablename = strtoupper($this->prefix.$table);
 
-        $sql = "SELECT i.INDEX_NAME, i.UNIQUENESS, c.COLUMN_POSITION, c.COLUMN_NAME, ac.CONSTRAINT_TYPE
+        $sql = "SELECT i.INDEX_NAME, i.INDEX_TYPE, i.UNIQUENESS, c.COLUMN_POSITION, c.COLUMN_NAME, e.COLUMN_EXPRESSION, ac.CONSTRAINT_TYPE
                   FROM ALL_INDEXES i
                   JOIN ALL_IND_COLUMNS c ON c.INDEX_NAME=i.INDEX_NAME
+             LEFT JOIN ALL_IND_EXPRESSIONS e ON (e.INDEX_NAME = c.INDEX_NAME AND e.COLUMN_POSITION = c.COLUMN_POSITION)
              LEFT JOIN ALL_CONSTRAINTS ac ON (ac.TABLE_NAME=i.TABLE_NAME AND ac.CONSTRAINT_NAME=i.INDEX_NAME AND ac.CONSTRAINT_TYPE='P')
                  WHERE i.TABLE_NAME = '$tablename'
               ORDER BY i.INDEX_NAME, c.COLUMN_POSITION";
@@ -455,6 +463,20 @@ class oci_native_moodle_database extends moodle_database {
                                              'unique'  => ($record['UNIQUENESS'] === 'UNIQUE'),
                                              'columns' => array());
             }
+
+            // If this is an unique, function-based, index, then we have to look to the expression
+            // and calculate the column name by parsing it.
+            if ($record['UNIQUENESS'] === 'UNIQUE' && $record['INDEX_TYPE'] === 'FUNCTION-BASED NORMAL') {
+                // Only if there is an expression to look.
+                if (!empty($record['COLUMN_EXPRESSION'])) {
+                    // Let's parse the usual code used for these unique indexes.
+                    $regex = '/^CASE *WHEN .* THEN "(?<column_name>[^"]+)" ELSE NULL END *$/';
+                    if (preg_match($regex, $record['COLUMN_EXPRESSION'], $matches)) {
+                        $record['COLUMN_NAME'] = $matches['column_name'] ?? $record['COLUMN_NAME'];
+                    }
+                }
+            }
+
             $indexes[$indexname]['columns'][] = strtolower($record['COLUMN_NAME']);
         }
 
@@ -462,29 +484,12 @@ class oci_native_moodle_database extends moodle_database {
     }
 
     /**
-     * Returns detailed information about columns in table. This information is cached internally.
+     * Fetches detailed information about columns in table.
+     *
      * @param string $table name
-     * @param bool $usecache
      * @return array array of database_column_info objects indexed with column names
      */
-    public function get_columns($table, $usecache=true) {
-
-        if ($usecache) {
-            if ($this->temptables->is_temptable($table)) {
-                if ($data = $this->get_temp_tables_cache()->get($table)) {
-                    return $data;
-                }
-            } else {
-                if ($data = $this->get_metacache()->get($table)) {
-                    return $data;
-                }
-            }
-        }
-
-        if (!$table) { // table not specified, return empty array directly
-            return array();
-        }
-
+    protected function fetch_columns(string $table): array {
         $structure = array();
 
         // We give precedence to CHAR_LENGTH for VARCHAR2 columns over WIDTH because the former is always
@@ -667,14 +672,6 @@ class oci_native_moodle_database extends moodle_database {
             $structure[$info->name] = new database_column_info($info);
         }
 
-        if ($usecache) {
-            if ($this->temptables->is_temptable($table)) {
-                $this->get_temp_tables_cache()->set($table, $structure);
-            } else {
-                $this->get_metacache()->set($table, $structure);
-            }
-        }
-
         return $structure;
     }
 
@@ -691,15 +688,13 @@ class oci_native_moodle_database extends moodle_database {
         if (is_bool($value)) { // Always, convert boolean to int
             $value = (int)$value;
 
-        } else if ($column->meta_type == 'B') { // BLOB detected, we return 'blob' array instead of raw value to allow
-            if (!is_null($value)) {             // binding/executing code later to know about its nature
-                $value = array('blob' => $value);
-            }
+        } else if ($column->meta_type == 'B' && !is_null($value)) {
+            // Not null BLOB detected, we return 'blob' array instead for later handing on binding.
+            $value = array('blob' => $value);
 
-        } else if ($column->meta_type == 'X' && strlen($value) > 4000) { // CLOB detected (>4000 optimisation), we return 'clob'
-            if (!is_null($value)) {                                      // array instead of raw value to allow binding/
-                $value = array('clob' => (string)$value);                // executing code later to know about its nature
-            }
+        } else if ($column->meta_type == 'X' && !is_null($value) && strlen($value) > 4000) {
+            // Not null CLOB detected (>4000 optimisation), we return 'clob' array instead for later handing on binding.
+            $value = array('clob' => (string)$value);
 
         } else if ($value === '') {
             if ($column->meta_type == 'I' or $column->meta_type == 'F' or $column->meta_type == 'N') {
@@ -707,48 +702,6 @@ class oci_native_moodle_database extends moodle_database {
             }
         }
         return $value;
-    }
-
-    /**
-     * Transforms the sql and params in order to emulate the LIMIT clause available in other DBs
-     *
-     * @param string $sql the SQL select query to execute.
-     * @param array $params array of sql parameters
-     * @param int $limitfrom return a subset of records, starting at this point (optional, required if $limitnum is set).
-     * @param int $limitnum return a subset comprising this many records (optional, required if $limitfrom is set).
-     * @return array with the transformed sql and params updated
-     */
-    private function get_limit_sql($sql, array $params = null, $limitfrom=0, $limitnum=0) {
-
-        list($limitfrom, $limitnum) = $this->normalise_limit_from_num($limitfrom, $limitnum);
-        // TODO: Add the /*+ FIRST_ROWS */ hint if there isn't another hint
-
-        if ($limitfrom and $limitnum) {
-            $sql = "SELECT oracle_o.*
-                      FROM (SELECT oracle_i.*, rownum AS oracle_rownum
-                              FROM ($sql) oracle_i
-                             WHERE rownum <= :oracle_num_rows
-                            ) oracle_o
-                     WHERE oracle_rownum > :oracle_skip_rows";
-            $params['oracle_num_rows'] = $limitfrom + $limitnum;
-            $params['oracle_skip_rows'] = $limitfrom;
-
-        } else if ($limitfrom and !$limitnum) {
-            $sql = "SELECT oracle_o.*
-                      FROM (SELECT oracle_i.*, rownum AS oracle_rownum
-                              FROM ($sql) oracle_i
-                            ) oracle_o
-                     WHERE oracle_rownum > :oracle_skip_rows";
-            $params['oracle_skip_rows'] = $limitfrom;
-
-        } else if (!$limitfrom and $limitnum) {
-            $sql = "SELECT *
-                      FROM ($sql)
-                     WHERE rownum <= :oracle_num_rows";
-            $params['oracle_num_rows'] = $limitnum;
-        }
-
-        return array($sql, $params);
     }
 
     /**
@@ -766,7 +719,7 @@ class oci_native_moodle_database extends moodle_database {
      * @param $field string the field where the record is going to be inserted/updated
      * @param $value mixed the value to be inserted/updated
      */
-    private function oracle_dirty_hack ($table, $field, $value) {
+    private function oracle_dirty_hack($table, $field, $value) {
 
         // General bound parameter, just hack the spaces and pray it will work.
         if (!$table) {
@@ -922,8 +875,7 @@ class oci_native_moodle_database extends moodle_database {
         return true;
     }
 
-    protected function bind_params($stmt, array $params=null, $tablename=null) {
-        $descriptors = array();
+    protected function bind_params($stmt, ?array &$params=null, $tablename=null, ?array &$descriptors = null) {
         if ($params) {
             $columns = array();
             if ($tablename) {
@@ -943,15 +895,21 @@ class oci_native_moodle_database extends moodle_database {
                 if (is_array($value)) { // Let's go to bind special cases (lob descriptors)
                     if (isset($value['clob'])) {
                         $lob = oci_new_descriptor($this->oci, OCI_DTYPE_LOB);
+                        if ($descriptors === null) {
+                            throw new coding_exception('moodle_database::bind_params() $descriptors not specified for clob');
+                        }
+                        $descriptors[] = $lob;
                         oci_bind_by_name($stmt, $key, $lob, -1, SQLT_CLOB);
                         $lob->writeTemporary($this->oracle_dirty_hack($tablename, $columnname, $params[$key]['clob']), OCI_TEMP_CLOB);
-                        $descriptors[] = $lob;
                         continue; // Column binding finished, go to next one
                     } else if (isset($value['blob'])) {
                         $lob = oci_new_descriptor($this->oci, OCI_DTYPE_LOB);
+                        if ($descriptors === null) {
+                            throw new coding_exception('moodle_database::bind_params() $descriptors not specified for clob');
+                        }
+                        $descriptors[] = $lob;
                         oci_bind_by_name($stmt, $key, $lob, -1, SQLT_BLOB);
                         $lob->writeTemporary($params[$key]['blob'], OCI_TEMP_BLOB);
-                        $descriptors[] = $lob;
                         continue; // Column binding finished, go to next one
                     }
                 } else {
@@ -959,11 +917,14 @@ class oci_native_moodle_database extends moodle_database {
                     // passed in an arbitrary sql (not processed by normalise_value() ever,
                     // and let's handle it as such. This will provide proper binding of CLOBs in
                     // conditions and other raw SQLs not covered by the above function.
-                    if (strlen($value) > 4000) {
+                    if (!is_null($value) && strlen($value) > 4000) {
                         $lob = oci_new_descriptor($this->oci, OCI_DTYPE_LOB);
+                        if ($descriptors === null) {
+                            throw new coding_exception('moodle_database::bind_params() $descriptors not specified for clob');
+                        }
+                        $descriptors[] = $lob;
                         oci_bind_by_name($stmt, $key, $lob, -1, SQLT_CLOB);
                         $lob->writeTemporary($this->oracle_dirty_hack($tablename, $columnname, $params[$key]), OCI_TEMP_CLOB);
-                        $descriptors[] = $lob;
                         continue; // Param binding finished, go to next one.
                     }
                 }
@@ -1000,6 +961,12 @@ class oci_native_moodle_database extends moodle_database {
                     default: // Bind as CHAR (applying dirty hack)
                         // TODO: Optimise
                         $params[$key] = $this->oracle_dirty_hack($tablename, $columnname, $params[$key]);
+                        // Because of PHP7 bug (https://bugs.php.net/bug.php?id=72524) it seems that it's
+                        // impossible to bind NULL values in a reliable way, let's use empty string
+                        // instead in the mean time.
+                        if ($params[$key] === null && version_compare(PHP_VERSION, '7.0.0', '>=')) {
+                            $params[$key] = '';
+                        }
                         oci_bind_by_name($stmt, $key, $params[$key]);
                 }
             }
@@ -1009,6 +976,10 @@ class oci_native_moodle_database extends moodle_database {
 
     protected function free_descriptors($descriptors) {
         foreach ($descriptors as $descriptor) {
+            // Because all descriptors used in the driver come from LOB::writeTemporary() calls
+            // we can safely close them here unconditionally.
+            $descriptor->close();
+            // Free resources.
             oci_free_descriptor($descriptor);
         }
     }
@@ -1035,7 +1006,7 @@ class oci_native_moodle_database extends moodle_database {
      * @return bool true
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function execute($sql, array $params=null) {
+    public function execute($sql, ?array $params=null) {
         list($sql, $params, $type) = $this->fix_sql_params($sql, $params);
 
         if (strpos($sql, ';') !== false) {
@@ -1045,8 +1016,10 @@ class oci_native_moodle_database extends moodle_database {
         list($sql, $params) = $this->tweak_param_names($sql, $params);
         $this->query_start($sql, $params, SQL_QUERY_UPDATE);
         $stmt = $this->parse_query($sql);
-        $this->bind_params($stmt, $params);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, null, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
+        $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
         oci_free_statement($stmt);
 
@@ -1067,7 +1040,7 @@ class oci_native_moodle_database extends moodle_database {
      * @return mixed a fieldset object containing the first matching record, false or exception if error not found depending on mode
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function get_record_sql($sql, array $params=null, $strictness=IGNORE_MISSING) {
+    public function get_record_sql($sql, ?array $params=null, $strictness=IGNORE_MISSING) {
         $strictness = (int)$strictness;
         if ($strictness == IGNORE_MULTIPLE) {
             // do not limit here - ORA does not like that
@@ -1100,17 +1073,26 @@ class oci_native_moodle_database extends moodle_database {
      * @return moodle_recordset instance
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function get_recordset_sql($sql, array $params=null, $limitfrom=0, $limitnum=0) {
+    public function get_recordset_sql($sql, ?array $params=null, $limitfrom=0, $limitnum=0) {
 
-        list($sql, $params, $type) = $this->fix_sql_params($sql, $params);
+        list($limitfrom, $limitnum) = $this->normalise_limit_from_num($limitfrom, $limitnum);
 
-        list($rawsql, $params) = $this->get_limit_sql($sql, $params, $limitfrom, $limitnum);
+        if ($limitfrom) {
+            $sql .= " OFFSET $limitfrom ROWS";
+        }
+        if ($limitnum) {
+            $sql .= " FETCH NEXT $limitnum ROWS ONLY";
+        }
+
+        list($rawsql, $params, $type) = $this->fix_sql_params($sql, $params);
 
         list($rawsql, $params) = $this->tweak_param_names($rawsql, $params);
         $this->query_start($rawsql, $params, SQL_QUERY_SELECT);
         $stmt = $this->parse_query($rawsql);
-        $this->bind_params($stmt, $params);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, null, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
+        $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
 
         return $this->create_recordset($stmt);
@@ -1135,17 +1117,26 @@ class oci_native_moodle_database extends moodle_database {
      * @return array of objects, or empty array if no records were found
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function get_records_sql($sql, array $params=null, $limitfrom=0, $limitnum=0) {
+    public function get_records_sql($sql, ?array $params=null, $limitfrom=0, $limitnum=0) {
 
-        list($sql, $params, $type) = $this->fix_sql_params($sql, $params);
+        list($limitfrom, $limitnum) = $this->normalise_limit_from_num($limitfrom, $limitnum);
 
-        list($rawsql, $params) = $this->get_limit_sql($sql, $params, $limitfrom, $limitnum);
+        if ($limitfrom) {
+            $sql .= " OFFSET $limitfrom ROWS";
+        }
+        if ($limitnum) {
+            $sql .= " FETCH NEXT $limitnum ROWS ONLY";
+        }
+
+        list($rawsql, $params, $type) = $this->fix_sql_params($sql, $params);
 
         list($rawsql, $params) = $this->tweak_param_names($rawsql, $params);
         $this->query_start($rawsql, $params, SQL_QUERY_SELECT);
         $stmt = $this->parse_query($rawsql);
-        $this->bind_params($stmt, $params);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, null, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
+        $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
 
         $records = null;
@@ -1177,14 +1168,16 @@ class oci_native_moodle_database extends moodle_database {
      * @return array of values
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function get_fieldset_sql($sql, array $params=null) {
+    public function get_fieldset_sql($sql, ?array $params=null) {
         list($sql, $params, $type) = $this->fix_sql_params($sql, $params);
 
         list($sql, $params) = $this->tweak_param_names($sql, $params);
         $this->query_start($sql, $params, SQL_QUERY_SELECT);
         $stmt = $this->parse_query($sql);
-        $this->bind_params($stmt, $params);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, null, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
+        $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
 
         $records = null;
@@ -1241,16 +1234,17 @@ class oci_native_moodle_database extends moodle_database {
         list($sql, $params, $type) = $this->fix_sql_params($sql, $params);
         $sql .= $returning;
 
-        $id = null;
+        $id = 0;
 
         // note we don't need tweak_param_names() here. Placeholders are safe column names. MDL-28080
         // list($sql, $params) = $this->tweak_param_names($sql, $params);
         $this->query_start($sql, $params, SQL_QUERY_INSERT);
         $stmt = $this->parse_query($sql);
-        $descriptors = $this->bind_params($stmt, $params, $table);
         if ($returning) {
             oci_bind_by_name($stmt, ":oracle_id", $id, 10, SQLT_INT);
         }
+        $descriptors = array();
+        $this->bind_params($stmt, $params, $table, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
         $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
@@ -1274,7 +1268,7 @@ class oci_native_moodle_database extends moodle_database {
      * If the return ID isn't required, then this just reports success as true/false.
      * $data is an object containing needed data
      * @param string $table The database table to be inserted into
-     * @param object $data A data object with values for one or more fields in the record
+     * @param object|array $dataobject A data object with values for one or more fields in the record
      * @param bool $returnid Should the id of the newly created record entry be returned? If this option is not requested then true/false is returned.
      * @return bool|int true or new id
      * @throws dml_exception A DML specific exception is thrown for any errors.
@@ -1332,7 +1326,7 @@ class oci_native_moodle_database extends moodle_database {
     /**
      * Update record in database, as fast as possible, no safety checks, lobs not supported.
      * @param string $table name
-     * @param mixed $params data record as object or array
+     * @param stdClass|array $params data record as object or array
      * @param bool true means repeated updates expected
      * @return bool true
      * @throws dml_exception A DML specific exception is thrown for any errors.
@@ -1364,7 +1358,8 @@ class oci_native_moodle_database extends moodle_database {
         // list($sql, $params) = $this->tweak_param_names($sql, $params);
         $this->query_start($sql, $params, SQL_QUERY_UPDATE);
         $stmt = $this->parse_query($sql);
-        $descriptors = $this->bind_params($stmt, $params, $table);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, $table, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
         $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
@@ -1381,7 +1376,8 @@ class oci_native_moodle_database extends moodle_database {
      * specify the record to update
      *
      * @param string $table The database table to be checked against.
-     * @param object $dataobject An object with contents equal to fieldname=>fieldvalue. Must have an entry for 'id' to map to the table specified.
+     * @param stdClass|array $dataobject An object with contents equal to fieldname=>fieldvalue.
+     *        Must have an entry for 'id' to map to the table specified.
      * @param bool true means repeated updates expected
      * @return bool true
      * @throws dml_exception A DML specific exception is thrown for any errors.
@@ -1416,7 +1412,7 @@ class oci_native_moodle_database extends moodle_database {
      * @return bool true
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function set_field_select($table, $newfield, $newvalue, $select, array $params=null) {
+    public function set_field_select($table, $newfield, $newvalue, $select, ?array $params=null) {
 
         if ($select) {
             $select = "WHERE $select";
@@ -1454,7 +1450,8 @@ class oci_native_moodle_database extends moodle_database {
         list($sql, $params) = $this->tweak_param_names($sql, $params);
         $this->query_start($sql, $params, SQL_QUERY_UPDATE);
         $stmt = $this->parse_query($sql);
-        $descriptors = $this->bind_params($stmt, $params, $table);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, $table, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
         $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
@@ -1472,7 +1469,7 @@ class oci_native_moodle_database extends moodle_database {
      * @return bool true
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
-    public function delete_records_select($table, $select, array $params=null) {
+    public function delete_records_select($table, $select, ?array $params=null) {
 
         if ($select) {
             $select = "WHERE $select";
@@ -1485,8 +1482,10 @@ class oci_native_moodle_database extends moodle_database {
         list($sql, $params) = $this->tweak_param_names($sql, $params);
         $this->query_start($sql, $params, SQL_QUERY_UPDATE);
         $stmt = $this->parse_query($sql);
-        $this->bind_params($stmt, $params);
+        $descriptors = array();
+        $this->bind_params($stmt, $params, null, $descriptors);
         $result = oci_execute($stmt, $this->commit_status);
+        $this->free_descriptors($descriptors);
         $this->query_end($result, $stmt);
         oci_free_statement($stmt);
 
@@ -1523,6 +1522,16 @@ class oci_native_moodle_database extends moodle_database {
      */
     public function sql_modulo($int1, $int2) {
         return 'MOD(' . $int1 . ', ' . $int2 . ')';
+    }
+
+    /**
+     * Return SQL for casting to char of given field/expression
+     *
+     * @param string $field Table field or SQL expression to be cast
+     * @return string
+     */
+    public function sql_cast_to_char(string $field): string {
+        return "TO_CHAR({$field})";
     }
 
     public function sql_cast_char2int($fieldname, $text=false) {
@@ -1568,8 +1577,7 @@ class oci_native_moodle_database extends moodle_database {
         }
     }
 
-    public function sql_concat() {
-        $arr = func_get_args();
+    public function sql_concat(...$arr) {
         if (empty($arr)) {
             return " ' ' ";
         }
@@ -1599,6 +1607,32 @@ class oci_native_moodle_database extends moodle_database {
         }
         $s = $this->recursive_concat($elements);
         return " MOODLELIB.UNDO_MEGA_HACK($s) ";
+    }
+
+    /**
+     * Return SQL for performing group concatenation on given field/expression
+     *
+     * @param string $field
+     * @param string $separator
+     * @param string $sort
+     * @return string
+     */
+    public function sql_group_concat(string $field, string $separator = ', ', string $sort = ''): string {
+        $fieldsort = $sort ?: '1';
+        return "LISTAGG({$field}, '{$separator}') WITHIN GROUP (ORDER BY {$fieldsort})";
+    }
+
+    /**
+     * Returns the SQL text to be used to order by columns, standardising the return
+     * pattern of null values across database types to sort nulls first when ascending
+     * and last when descending.
+     *
+     * @param string $fieldname The name of the field we need to sort by.
+     * @param int $sort An order to sort the results in.
+     * @return string The piece of SQL code to be used in your statement.
+     */
+    public function sql_order_by_null(string $fieldname, int $sort = SORT_ASC): string {
+        return parent::sql_order_by_null($fieldname, $sort) . ' NULLS ' . ($sort == SORT_ASC ? 'FIRST' : 'LAST');
     }
 
     /**
@@ -1839,5 +1873,14 @@ class oci_native_moodle_database extends moodle_database {
         $result = oci_rollback($this->oci);
         $this->commit_status = OCI_COMMIT_ON_SUCCESS;
         $this->query_end($result);
+    }
+
+    /**
+     * Oracle supports the COUNT() window function and provides a performance improvement.
+     *
+     * @return bool
+     */
+    public function is_count_window_function_supported(): bool {
+        return true;
     }
 }

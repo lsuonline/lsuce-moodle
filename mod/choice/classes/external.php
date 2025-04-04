@@ -24,8 +24,16 @@
  * @since      Moodle 3.0
  */
 
+use core_course\external\helper_for_get_mods_by_courses;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
+use core_external\external_warnings;
+use core_external\util;
+
 defined('MOODLE_INTERNAL') || die;
-require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/choice/lib.php');
 
 /**
@@ -42,7 +50,7 @@ class mod_choice_external extends external_api {
     /**
      * Describes the parameters for get_choices_by_courses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function get_choice_results_parameters() {
@@ -113,7 +121,7 @@ class mod_choice_external extends external_api {
             }
 
             $options[] = array('id'               => $optionid,
-                               'text'             => external_format_string($option->text, $context->id),
+                               'text'             => \core_external\util::format_string($option->text, $context->id),
                                'maxanswer'        => $option->maxanswer,
                                'userresponses'    => $userresponses,
                                'numberofuser'     => $numberofuser,
@@ -167,7 +175,7 @@ class mod_choice_external extends external_api {
     /**
      * Describes the parameters for mod_choice_get_choice_options.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function get_choice_options_parameters() {
@@ -204,20 +212,19 @@ class mod_choice_external extends external_api {
         $choiceopen = true;
         $showpreview = false;
 
-        if ($choice->timeclose != 0) {
-            if ($choice->timeopen > $timenow) {
-                $choiceopen = false;
-                $warnings[1] = get_string("notopenyet", "choice", userdate($choice->timeopen));
-                if ($choice->showpreview) {
-                    $warnings[2] = get_string('previewonly', 'choice', userdate($choice->timeopen));
-                    $showpreview = true;
-                }
-            }
-            if ($timenow > $choice->timeclose) {
-                $choiceopen = false;
-                $warnings[3] = get_string("expired", "choice", userdate($choice->timeclose));
+        if (!empty($choice->timeopen) && ($choice->timeopen > $timenow)) {
+            $choiceopen = false;
+            $warnings[1] = get_string("notopenyet", "choice", userdate($choice->timeopen));
+            if ($choice->showpreview) {
+                $warnings[2] = get_string('previewonly', 'choice', userdate($choice->timeopen));
+                $showpreview = true;
             }
         }
+        if (!empty($choice->timeclose) && ($timenow > $choice->timeclose)) {
+            $choiceopen = false;
+            $warnings[3] = get_string("expired", "choice", userdate($choice->timeclose));
+        }
+
         $optionsarray = array();
 
         if ($choiceopen or $showpreview) {
@@ -227,7 +234,7 @@ class mod_choice_external extends external_api {
             foreach ($options['options'] as $option) {
                 $optionarr = array();
                 $optionarr['id']            = $option->attributes->value;
-                $optionarr['text']          = external_format_string($option->text, $context->id);
+                $optionarr['text']          = \core_external\util::format_string($option->text, $context->id);
                 $optionarr['maxanswers']    = $option->maxanswers;
                 $optionarr['displaylayout'] = $option->displaylayout;
                 $optionarr['countanswers']  = $option->countanswers;
@@ -289,7 +296,7 @@ class mod_choice_external extends external_api {
     /**
      * Describes the parameters for submit_choice_response.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function submit_choice_response_parameters() {
@@ -333,13 +340,12 @@ class mod_choice_external extends external_api {
         require_capability('mod/choice:choose', $context);
 
         $timenow = time();
-        if ($choice->timeclose != 0) {
-            if ($choice->timeopen > $timenow) {
-                throw new moodle_exception("notopenyet", "choice", '', userdate($choice->timeopen));
-            } else if ($timenow > $choice->timeclose) {
-                throw new moodle_exception("expired", "choice", '', userdate($choice->timeclose));
-            }
+        if (!empty($choice->timeopen) && ($choice->timeopen > $timenow)) {
+            throw new moodle_exception("notopenyet", "choice", '', userdate($choice->timeopen));
+        } else if (!empty($choice->timeclose) && ($timenow > $choice->timeclose)) {
+            throw new moodle_exception("expired", "choice", '', userdate($choice->timeclose));
         }
+
         if (!choice_get_my_response($choice) or $choice->allowupdate) {
             // When a single response is given, we convert the array to a simple variable
             // in order to avoid choice_user_submit_response to check with allowmultiple even
@@ -436,7 +442,7 @@ class mod_choice_external extends external_api {
     /**
      * Returns description of method result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      * @since Moodle 3.0
      */
     public static function view_choice_returns() {
@@ -451,7 +457,7 @@ class mod_choice_external extends external_api {
     /**
      * Describes the parameters for get_choices_by_courses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function get_choices_by_courses_parameters() {
@@ -473,8 +479,6 @@ class mod_choice_external extends external_api {
      * @since Moodle 3.0
      */
     public static function get_choices_by_courses($courseids = array()) {
-        global $CFG;
-
         $returnedchoices = array();
         $warnings = array();
 
@@ -489,24 +493,15 @@ class mod_choice_external extends external_api {
         // Ensure there are courseids to loop through.
         if (!empty($params['courseids'])) {
 
-            list($courses, $warnings) = external_util::validate_courses($params['courseids'], $courses);
+            list($courses, $warnings) = util::validate_courses($params['courseids'], $courses);
 
             // Get the choices in this course, this function checks users visibility permissions.
             // We can avoid then additional validate_context calls.
             $choices = get_all_instances_in_courses("choice", $courses);
             foreach ($choices as $choice) {
                 $context = context_module::instance($choice->coursemodule);
-                // Entry to return.
-                $choicedetails = array();
-                // First, we return information that any user can see in the web interface.
-                $choicedetails['id'] = $choice->id;
-                $choicedetails['coursemodule'] = $choice->coursemodule;
-                $choicedetails['course'] = $choice->course;
-                $choicedetails['name']  = external_format_string($choice->name, $context->id);
-                // Format intro.
-                list($choicedetails['intro'], $choicedetails['introformat']) =
-                    external_format_text($choice->intro, $choice->introformat,
-                                            $context->id, 'mod_choice', 'intro', null);
+
+                $choicedetails = helper_for_get_mods_by_courses::standard_coursemodule_element_values($choice, 'mod_choice');
 
                 if (has_capability('mod/choice:choose', $context)) {
                     $choicedetails['publish']  = $choice->publish;
@@ -520,15 +515,12 @@ class mod_choice_external extends external_api {
                     $choicedetails['limitanswers']  = $choice->limitanswers;
                     $choicedetails['showunanswered']  = $choice->showunanswered;
                     $choicedetails['includeinactive']  = $choice->includeinactive;
+                    $choicedetails['showavailable']  = $choice->showavailable;
                 }
 
                 if (has_capability('moodle/course:manageactivities', $context)) {
                     $choicedetails['timemodified']  = $choice->timemodified;
                     $choicedetails['completionsubmit']  = $choice->completionsubmit;
-                    $choicedetails['section']  = $choice->section;
-                    $choicedetails['visible']  = $choice->visible;
-                    $choicedetails['groupmode']  = $choice->groupmode;
-                    $choicedetails['groupingid']  = $choice->groupingid;
                 }
                 $returnedchoices[] = $choicedetails;
             }
@@ -549,14 +541,9 @@ class mod_choice_external extends external_api {
         return new external_single_structure(
             array(
                 'choices' => new external_multiple_structure(
-                    new external_single_structure(
-                        array(
-                            'id' => new external_value(PARAM_INT, 'Choice instance id'),
-                            'coursemodule' => new external_value(PARAM_INT, 'Course module id'),
-                            'course' => new external_value(PARAM_INT, 'Course id'),
-                            'name' => new external_value(PARAM_RAW, 'Choice name'),
-                            'intro' => new external_value(PARAM_RAW, 'The choice intro'),
-                            'introformat' => new external_format_value('intro'),
+                    new external_single_structure(array_merge(
+                        helper_for_get_mods_by_courses::standard_coursemodule_elements_returns(),
+                        [
                             'publish' => new external_value(PARAM_BOOL, 'If choice is published', VALUE_OPTIONAL),
                             'showresults' => new external_value(PARAM_INT, '0 never, 1 after answer, 2 after close, 3 always',
                                                                 VALUE_OPTIONAL),
@@ -571,12 +558,9 @@ class mod_choice_external extends external_api {
                             'showpreview' => new external_value(PARAM_BOOL, 'Show preview before timeopen', VALUE_OPTIONAL),
                             'timemodified' => new external_value(PARAM_INT, 'Time of last modification', VALUE_OPTIONAL),
                             'completionsubmit' => new external_value(PARAM_BOOL, 'Completion on user submission', VALUE_OPTIONAL),
-                            'section' => new external_value(PARAM_INT, 'Course section id', VALUE_OPTIONAL),
-                            'visible' => new external_value(PARAM_BOOL, 'Visible', VALUE_OPTIONAL),
-                            'groupmode' => new external_value(PARAM_INT, 'Group mode', VALUE_OPTIONAL),
-                            'groupingid' => new external_value(PARAM_INT, 'Group id', VALUE_OPTIONAL),
-                        ), 'Choices'
-                    )
+                            'showavailable' => new external_value(PARAM_BOOL, 'Show available spaces', VALUE_OPTIONAL),
+                        ]
+                    ), 'Choices')
                 ),
                 'warnings' => new external_warnings(),
             )
@@ -586,7 +570,7 @@ class mod_choice_external extends external_api {
     /**
      * Describes the parameters for delete_choice_responses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function delete_choice_responses_parameters() {
@@ -595,7 +579,7 @@ class mod_choice_external extends external_api {
                 'choiceid' => new external_value(PARAM_INT, 'choice instance id'),
                 'responses' => new external_multiple_structure(
                     new external_value(PARAM_INT, 'response id'),
-                    'Array of response ids, empty for deleting all the user responses',
+                    'Array of response ids, empty for deleting all the current user responses.',
                     VALUE_DEFAULT,
                     array()
                 ),
@@ -607,7 +591,7 @@ class mod_choice_external extends external_api {
      * Delete the given submitted responses in a choice
      *
      * @param int $choiceid the choice instance id
-     * @param array $responses the response ids,  empty for deleting all the user responses
+     * @param array $responses the response ids,  empty for deleting all the current user responses
      * @return array status information and warnings
      * @throws moodle_exception
      * @since Moodle 3.0
@@ -632,35 +616,38 @@ class mod_choice_external extends external_api {
 
         require_capability('mod/choice:choose', $context);
 
-        // If we have the capability, delete all the passed responses.
-        if (has_capability('mod/choice:deleteresponses', $context)) {
-            if (empty($params['responses'])) {
-                // Get all the responses for the choice.
-                $params['responses'] = array_keys(choice_get_all_responses($choice));
-            }
-            $status = choice_delete_responses($params['responses'], $choice, $cm, $course);
-        } else if ($choice->allowupdate) {
-            // Check if we can delate our own responses.
-            $timenow = time();
-            if ($choice->timeclose != 0) {
-                if ($timenow > $choice->timeclose) {
+        $candeleteall = has_capability('mod/choice:deleteresponses', $context);
+        if ($candeleteall || $choice->allowupdate) {
+
+            // Check if we can delete our own responses.
+            if (!$candeleteall) {
+                $timenow = time();
+                if (!empty($choice->timeclose) && ($timenow > $choice->timeclose)) {
                     throw new moodle_exception("expired", "choice", '', userdate($choice->timeclose));
                 }
             }
-            // Delete only our responses.
-            $myresponses = array_keys(choice_get_my_response($choice));
 
             if (empty($params['responses'])) {
-                $todelete = $myresponses;
+                // No responses indicated so delete only my responses.
+                $todelete = array_keys(choice_get_my_response($choice));
             } else {
+                // Fill an array with the responses that can be deleted for this choice.
+                if ($candeleteall) {
+                    // Teacher/managers can delete any.
+                    $allowedresponses = array_keys(choice_get_all_responses($choice));
+                } else {
+                    // Students can delete only their own responses.
+                    $allowedresponses = array_keys(choice_get_my_response($choice));
+                }
+
                 $todelete = array();
                 foreach ($params['responses'] as $response) {
-                    if (!in_array($response, $myresponses)) {
+                    if (!in_array($response, $allowedresponses)) {
                         $warnings[] = array(
                             'item' => 'response',
                             'itemid' => $response,
                             'warningcode' => 'nopermissions',
-                            'message' => 'No permission to delete this response'
+                            'message' => 'Invalid response id, the response does not exist or you are not allowed to delete it.'
                         );
                     } else {
                         $todelete[] = $response;

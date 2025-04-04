@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * adds category tasks to the Panopto plugin
+ * Adds category tasks to the Panopto plugin
  *
  * @package block_panopto
  * @copyright Panopto 2009 - 2018
@@ -23,8 +23,10 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+
 global $CFG;
 if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
     require_once(dirname(__FILE__) . '/../../../config.php');
 }
 require_once(dirname(__FILE__) . '/../lib/panopto_data.php');
@@ -38,13 +40,14 @@ require_once(dirname(__FILE__) . '/../lib/panopto_data.php');
  * When a category is moved or updated: course_category_updated is called
  */
 class block_panopto_categorytasks {
+
     /**
      * Called when a category has been created
      *
-     * @param \core\event\course_category_updated $event
+     * @param \core\event\course_category_created $event
      */
     public static function coursecategorycreated(\core\event\course_category_created $event) {
-        
+
         if (!\panopto_data::is_main_block_configured() ||
             !\panopto_data::has_minimum_version()) {
             return;
@@ -53,9 +56,9 @@ class block_panopto_categorytasks {
         if (get_config('block_panopto', 'enforce_category_structure')) {
 
             $task = new \block_panopto\task\ensure_category();
-            $task->set_custom_data(array(
-                'categoryid' => $event->contextinstanceid
-            ));
+            $task->set_custom_data([
+                'categoryid' => $event->contextinstanceid,
+            ]);
 
             if (get_config('block_panopto', 'async_tasks')) {
                 \core\task\manager::queue_adhoc_task($task);
@@ -79,9 +82,9 @@ class block_panopto_categorytasks {
         if (get_config('block_panopto', 'enforce_category_structure')) {
 
             $task = new \block_panopto\task\ensure_category();
-            $task->set_custom_data(array(
-                'categoryid' => $event->contextinstanceid
-            ));
+            $task->set_custom_data([
+                'categoryid' => $event->contextinstanceid,
+            ]);
 
             if (get_config('block_panopto', 'async_tasks')) {
                 \core\task\manager::queue_adhoc_task($task);

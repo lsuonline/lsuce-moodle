@@ -14,7 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-global $SESSION, $CFG;
+/**
+ * The main report page for a questionnaire.
+ *
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author     Mike Churchward
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/questionnaire/questionnaire.class.php');
 
@@ -27,14 +35,16 @@ $byresponse = optional_param('byresponse', false, PARAM_INT);
 $individualresponse = optional_param('individualresponse', false, PARAM_INT);
 $currentgroupid = optional_param('group', 0, PARAM_INT); // Groupid.
 $user = optional_param('user', '', PARAM_INT);
+$outputtarget = optional_param('target', 'html', PARAM_ALPHA); // Default 'html'. Could be 'pdf'.
+
 $userid = $USER->id;
 switch ($action) {
     case 'vallasort':
         $sort = 'ascending';
-       break;
+        break;
     case 'vallarsort':
         $sort = 'descending';
-       break;
+        break;
     default:
         $sort = 'default';
 }
@@ -43,32 +53,43 @@ if ($instance === false) {
     if (!empty($SESSION->instance)) {
         $instance = $SESSION->instance;
     } else {
-        print_error('requiredparameter', 'questionnaire');
+        throw new \moodle_exception('requiredparameter', 'mod_questionnaire');
     }
 }
 $SESSION->instance = $instance;
 $usergraph = get_config('questionnaire', 'usergraph');
 
 if (! $questionnaire = $DB->get_record("questionnaire", array("id" => $instance))) {
-    print_error('incorrectquestionnaire', 'questionnaire');
+    throw new \moodle_exception('incorrectquestionnaire', 'mod_questionnaire');
 }
 if (! $course = $DB->get_record("course", array("id" => $questionnaire->course))) {
-    print_error('coursemisconf');
+    throw new \moodle_exception('coursemisconf', 'mod_questionnaire');
 }
 if (! $cm = get_coursemodule_from_instance("questionnaire", $questionnaire->id, $course->id)) {
-    print_error('invalidcoursemodule');
+    throw new \moodle_exception('invalidcoursemodule', 'mod_questionnaire');
 }
 
 require_course_login($course, true, $cm);
 
-$questionnaire = new questionnaire(0, $questionnaire, $course, $cm);
+$questionnaire = new questionnaire($course, $cm, 0, $questionnaire);
+
+// Add renderer and page objects to the questionnaire object for display use.
+$questionnaire->add_renderer($PAGE->get_renderer('mod_questionnaire'));
+if ($outputtarget == 'pdf') {
+    if ($action == 'vresp') {
+        $questionnaire->add_page(new \mod_questionnaire\output\responsepagepdf());
+    } else {
+        $questionnaire->add_page(new \mod_questionnaire\output\reportpagepdf());
+    }
+} else { // Default to HTML.
+    $questionnaire->add_page(new \mod_questionnaire\output\reportpage());
+}
 
 // If you can't view the questionnaire, or can't view a specified response, error out.
 $context = context_module::instance($cm->id);
-if (!has_capability('mod/questionnaire:readallresponseanytime', $context) &&
-  !($questionnaire->capabilities->view && $questionnaire->can_view_response($rid))) {
+if (!$questionnaire->can_view_all_responses() && !$individualresponse) {
     // Should never happen, unless called directly by a snoop...
-    print_error('nopermissions', 'moodle', $CFG->wwwroot.'/mod/questionnaire/view.php?id='.$cm->id);
+    throw new \moodle_exception('nopermissions', 'mod_questionnaire');
 }
 
 $questionnaire->canviewallgroups = has_capability('moodle/site:accessallgroups', $context);
@@ -102,6 +123,9 @@ if ($currentgroupid !== null) {
 
 $PAGE->set_url($url);
 $PAGE->set_context($context);
+if ($outputtarget == 'print') {
+    $PAGE->set_pagelayout('popup');
+}
 
 // Tab setup.
 if (!isset($SESSION->questionnaire)) {
@@ -111,18 +135,16 @@ $SESSION->questionnaire->current_tab = 'allreport';
 
 // Get all responses for further use in viewbyresp and deleteall etc.
 // All participants.
-$params = array('survey_id' => $sid, 'complete' => 'y');
-$respsallparticipants = $DB->get_records('questionnaire_response', $params, 'id', 'id,survey_id,submitted,username');
+$respsallparticipants = $questionnaire->get_responses();
 $SESSION->questionnaire->numrespsallparticipants = count ($respsallparticipants);
 $SESSION->questionnaire->numselectedresps = $SESSION->questionnaire->numrespsallparticipants;
-$castsql = $DB->sql_cast_char2int('r.username');
 
 // Available group modes (0 = no groups; 1 = separate groups; 2 = visible groups).
 $groupmode = groups_get_activity_groupmode($cm, $course);
 $questionnairegroups = '';
 $groupscount = 0;
 $SESSION->questionnaire->respscount = 0;
-$SESSION->questionnaire_survey_id = $sid;
+$SESSION->questionnaire_surveyid = $sid;
 
 if ($groupmode > 0) {
     if ($groupmode == 1) {
@@ -186,36 +208,35 @@ if ($usergraph) {
 switch ($action) {
 
     case 'dresp':  // Delete individual response? Ask for confirmation.
-
         require_capability('mod/questionnaire:deleteresponses', $context);
 
         if (empty($questionnaire->survey)) {
             $id = $questionnaire->survey;
             notify ("questionnaire->survey = /$id/");
-            print_error('surveynotexists', 'questionnaire');
-        } else if ($questionnaire->survey->owner != $course->id) {
-            print_error('surveyowner', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
+        } else if ($questionnaire->survey->courseid != $course->id) {
+            throw new \moodle_exception('surveyowner', 'mod_questionnaire');
         } else if (!$rid || !is_numeric($rid)) {
-            print_error('invalidresponse', 'questionnaire');
+            throw new \moodle_exception('invalidresponse', 'mod_questionnaire');
         } else if (!($resp = $DB->get_record('questionnaire_response', array('id' => $rid)))) {
-            print_error('invalidresponserecord', 'questionnaire');
+            throw new \moodle_exception('invalidresponserecord', 'mod_questionnaire');
         }
 
         $ruser = false;
-        if (is_numeric($resp->username)) {
-            if ($user = $DB->get_record('user', array('id' => $resp->username))) {
+        if (!empty($resp->userid)) {
+            if ($user = $DB->get_record('user', ['id' => $resp->userid])) {
                 $ruser = fullname($user);
             } else {
                 $ruser = '- '.get_string('unknown', 'questionnaire').' -';
             }
         } else {
-            $ruser = $resp->username;
+            $ruser = $resp->userid;
         }
 
         // Print the page header.
         $PAGE->set_title(get_string('deletingresp', 'questionnaire'));
         $PAGE->set_heading(format_string($course->fullname));
-        echo $OUTPUT->header();
+        echo $questionnaire->renderer->header();
 
         // Print the tabs.
         $SESSION->questionnaire->current_tab = 'deleteresp';
@@ -223,43 +244,41 @@ switch ($action) {
 
         $timesubmitted = '<br />'.get_string('submitted', 'questionnaire').'&nbsp;'.userdate($resp->submitted);
         if ($questionnaire->respondenttype == 'anonymous') {
-                $ruser = '- '.get_string('anonymous', 'questionnaire').' -';
-                $timesubmitted = '';
+            $ruser = '- '.get_string('anonymous', 'questionnaire').' -';
+            $timesubmitted = '';
         }
 
         // Print the confirmation.
-        echo '<p>&nbsp;</p>';
         $msg = '<div class="warning centerpara">';
         $msg .= get_string('confirmdelresp', 'questionnaire', $ruser.$timesubmitted);
         $msg .= '</div>';
         $urlyes = new moodle_url('report.php', array('action' => 'dvresp',
-                'rid' => $rid, 'individualresponse' => 1, 'instance' => $instance, 'group' => $currentgroupid));
+            'rid' => $rid, 'individualresponse' => 1, 'instance' => $instance, 'group' => $currentgroupid));
         $urlno = new moodle_url('report.php', array('action' => 'vresp', 'instance' => $instance,
-                'rid' => $rid, 'individualresponse' => 1, 'group' => $currentgroupid));
-        $buttonyes = new single_button($urlyes, get_string('yes'), 'post');
-        $buttonno = new single_button($urlno, get_string('no'), 'get');
-        echo $OUTPUT->confirm($msg, $buttonyes, $buttonno);
-
+            'rid' => $rid, 'individualresponse' => 1, 'group' => $currentgroupid));
+        $buttonyes = new single_button($urlyes, get_string('delete'), 'post');
+        $buttonno = new single_button($urlno, get_string('cancel'), 'get');
+        $questionnaire->page->add_to_page('notifications', $questionnaire->renderer->confirm($msg, $buttonyes, $buttonno));
+        echo $questionnaire->renderer->render($questionnaire->page);
         // Finish the page.
-        echo $OUTPUT->footer($course);
+        echo $questionnaire->renderer->footer($course);
         break;
 
     case 'delallresp': // Delete all responses? Ask for confirmation.
         require_capability('mod/questionnaire:deleteresponses', $context);
 
-        if ($DB->count_records('questionnaire_response', array('survey_id' => $sid, 'complete' => 'y'))) {
+        if (!empty($respsallparticipants)) {
 
             // Print the page header.
             $PAGE->set_title(get_string('deletingresp', 'questionnaire'));
             $PAGE->set_heading(format_string($course->fullname));
-            echo $OUTPUT->header();
+            echo $questionnaire->renderer->header();
 
             // Print the tabs.
             $SESSION->questionnaire->current_tab = 'deleteall';
             include('tabs.php');
 
             // Print the confirmation.
-            echo '<p>&nbsp;</p>';
             $msg = '<div class="warning centerpara">';
             if ($groupmode == 0) {   // No groups or visible groups.
                 $msg .= get_string('confirmdelallresp', 'questionnaire');
@@ -269,34 +288,33 @@ switch ($action) {
             $msg .= '</div>';
 
             $urlyes = new moodle_url('report.php', array('action' => 'dvallresp', 'sid' => $sid,
-                             'instance' => $instance, 'group' => $currentgroupid));
+                'instance' => $instance, 'group' => $currentgroupid));
             $urlno = new moodle_url('report.php', array('instance' => $instance, 'group' => $currentgroupid));
-            $buttonyes = new single_button($urlyes, get_string('yes'), 'post');
-            $buttonno = new single_button($urlno, get_string('no'), 'get');
+            $buttonyes = new single_button($urlyes, get_string('delete'), 'post');
+            $buttonno = new single_button($urlno, get_string('cancel'), 'get');
 
-            echo $OUTPUT->confirm($msg, $buttonyes, $buttonno);
-
+            $questionnaire->page->add_to_page('notifications', $questionnaire->renderer->confirm($msg, $buttonyes, $buttonno));
+            echo $questionnaire->renderer->render($questionnaire->page);
             // Finish the page.
-            echo $OUTPUT->footer($course);
+            echo $questionnaire->renderer->footer($course);
         }
         break;
 
     case 'dvresp': // Delete single response. Do it!
-
         require_capability('mod/questionnaire:deleteresponses', $context);
 
         if (empty($questionnaire->survey)) {
-            print_error('surveynotexists', 'questionnaire');
-        } else if ($questionnaire->survey->owner != $course->id) {
-            print_error('surveyowner', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
+        } else if ($questionnaire->survey->courseid != $course->id) {
+            throw new \moodle_exception('surveyowner', 'mod_questionnaire');
         } else if (!$rid || !is_numeric($rid)) {
-            print_error('invalidresponse', 'questionnaire');
+            throw new \moodle_exception('invalidresponse', 'mod_questionnaire');
         } else if (!($response = $DB->get_record('questionnaire_response', array('id' => $rid)))) {
-            print_error('invalidresponserecord', 'questionnaire');
+            throw new \moodle_exception('invalidresponserecord', 'mod_questionnaire');
         }
 
         if (questionnaire_delete_response($response, $questionnaire)) {
-            if (!$DB->count_records('questionnaire_response', array('survey_id' => $sid, 'complete' => 'y'))) {
+            if (!$DB->count_records('questionnaire_response', array('questionnaireid' => $questionnaire->id, 'complete' => 'y'))) {
                 $redirection = $CFG->wwwroot.'/mod/questionnaire/view.php?id='.$cm->id;
             } else {
                 $redirection = $CFG->wwwroot.'/mod/questionnaire/report.php?action=vresp&amp;instance='.
@@ -305,39 +323,38 @@ switch ($action) {
 
             // Log this questionnaire delete single response action.
             $params = array('objectid' => $questionnaire->survey->id,
-                            'context' => $questionnaire->context,
-                            'courseid' => $questionnaire->course->id,
-                            'relateduserid' => $response->username);
+                'context' => $questionnaire->context,
+                'courseid' => $questionnaire->course->id,
+                'relateduserid' => $response->userid);
             $event = \mod_questionnaire\event\response_deleted::create($params);
             $event->trigger();
 
             redirect($redirection);
         } else {
             if ($questionnaire->respondenttype == 'anonymous') {
-                    $ruser = '- '.get_string('anonymous', 'questionnaire').' -';
-            } else if (is_numeric($response->username)) {
-                if ($user = $DB->get_record('user', array('id' => $response->username))) {
+                $ruser = '- '.get_string('anonymous', 'questionnaire').' -';
+            } else if (!empty($response->userid)) {
+                if ($user = $DB->get_record('user', ['id' => $response->userid])) {
                     $ruser = fullname($user);
                 } else {
                     $ruser = '- '.get_string('unknown', 'questionnaire').' -';
                 }
             } else {
-                $ruser = $response->username;
+                $ruser = $response->userid;
             }
             error (get_string('couldnotdelresp', 'questionnaire').$rid.get_string('by', 'questionnaire').$ruser.'?',
-                   $CFG->wwwroot.'/mod/questionnaire/report.php?action=vresp&amp;sid='.$sid.'&amp;&amp;instance='.
-                   $instance.'byresponse=1');
+                $CFG->wwwroot.'/mod/questionnaire/report.php?action=vresp&amp;sid='.$sid.'&amp;&amp;instance='.
+                $instance.'byresponse=1');
         }
         break;
 
     case 'dvallresp': // Delete all responses in questionnaire (or group). Do it!
-
         require_capability('mod/questionnaire:deleteresponses', $context);
 
         if (empty($questionnaire->survey)) {
-            print_error('surveynotexists', 'questionnaire');
-        } else if ($questionnaire->survey->owner != $course->id) {
-            print_error('surveyowner', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
+        } else if ($questionnaire->survey->courseid != $course->id) {
+            throw new \moodle_exception('surveyowner', 'mod_questionnaire');
         }
 
         // Available group modes (0 = no groups; 1 = separate groups; 2 = visible groups).
@@ -347,15 +364,8 @@ switch ($action) {
                     $resps = $respsallparticipants;
                     break;
                 default:     // Members of a specific group.
-                    $sql = "SELECT r.id, r.survey_id, r.submitted, r.username
-                        FROM {questionnaire_response} r,
-                            {groups_members} gm
-                         WHERE r.survey_id = ? AND
-                           r.complete ='y' AND
-                           gm.groupid = ? AND " . $castsql . " = gm.userid
-                        ORDER BY r.id";
-                    if (!($resps = $DB->get_records_sql($sql, array($sid, $currentgroupid)))) {
-                        $resps = array();
+                    if (!($resps = $questionnaire->get_responses(false, $currentgroupid))) {
+                        $resps = [];
                     }
             }
             if (empty($resps)) {
@@ -367,14 +377,14 @@ switch ($action) {
                 } else {
                     $resp = $DB->get_record('questionnaire_response', array('id' => $rid));
                 }
-                if (is_numeric($resp->username)) {
-                    if ($user = $DB->get_record('user', array('id' => $resp->username))) {
+                if (!empty($resp->userid)) {
+                    if ($user = $DB->get_record('user', ['id' => $resp->userid])) {
                         $ruser = fullname($user);
                     } else {
                         $ruser = '- '.get_string('unknown', 'questionnaire').' -';
                     }
                 } else {
-                    $ruser = $resp->username;
+                    $ruser = $resp->userid;
                 }
             }
         } else {
@@ -385,7 +395,7 @@ switch ($action) {
             foreach ($resps as $response) {
                 questionnaire_delete_response($response, $questionnaire);
             }
-            if (!$DB->count_records('questionnaire_response', array('survey_id' => $sid, 'complete' => 'y'))) {
+            if (!$questionnaire->count_submissions()) {
                 $redirection = $CFG->wwwroot.'/mod/questionnaire/view.php?id='.$cm->id;
             } else {
                 $redirection = $CFG->wwwroot.'/mod/questionnaire/report.php?action=vall&amp;sid='.$sid.'&amp;instance='.$instance;
@@ -396,26 +406,25 @@ switch ($action) {
             $anonymous = $questionnaire->respondenttype == 'anonymous';
 
             $event = \mod_questionnaire\event\all_responses_deleted::create(array(
-                            'objectid' => $questionnaire->id,
-                            'anonymous' => $anonymous,
-                            'context' => $context
+                'objectid' => $questionnaire->id,
+                'anonymous' => $anonymous,
+                'context' => $context
             ));
             $event->trigger();
 
             redirect($redirection);
         } else {
             error (get_string('couldnotdelresp', 'questionnaire'),
-                   $CFG->wwwroot.'/mod/questionnaire/report.php?action=vall&amp;sid='.$sid.'&amp;instance='.$instance);
+                $CFG->wwwroot.'/mod/questionnaire/report.php?action=vall&amp;sid='.$sid.'&amp;instance='.$instance);
         }
         break;
 
     case 'dwnpg': // Download page options.
-
         require_capability('mod/questionnaire:downloadresponses', $context);
 
         $PAGE->set_title(get_string('questionnairereport', 'questionnaire'));
         $PAGE->set_heading(format_string($course->fullname));
-        echo $OUTPUT->header();
+        echo $questionnaire->renderer->header();
 
         // Print the tabs.
         // Tab setup.
@@ -438,33 +447,35 @@ switch ($action) {
                         $questionnairegroups[$currentgroupid]->name;
             }
         }
-        echo "<br /><br />\n";
-        echo $OUTPUT->help_icon('downloadtextformat', 'questionnaire');
-        echo '&nbsp;'.(get_string('downloadtext')).':&nbsp;'.get_string('responses', 'questionnaire').'&nbsp;'.$groupname;
-        echo $OUTPUT->heading(get_string('textdownloadoptions', 'questionnaire'));
-        echo $OUTPUT->box_start();
-        echo "<form action=\"{$CFG->wwwroot}/mod/questionnaire/report.php\" method=\"GET\">\n";
-        echo "<input type=\"hidden\" name=\"instance\" value=\"$instance\" />\n";
-        echo "<input type=\"hidden\" name=\"user\" value=\"$user\" />\n";
-        echo "<input type=\"hidden\" name=\"sid\" value=\"$sid\" />\n";
-        echo "<input type=\"hidden\" name=\"action\" value=\"dcsv\" />\n";
-        echo "<input type=\"hidden\" name=\"group\" value=\"$currentgroupid\" />\n";
-        echo html_writer::checkbox('choicecodes', 1, true, get_string('includechoicecodes', 'questionnaire'));
-        echo "<br />\n";
-        echo html_writer::checkbox('choicetext', 1, true, get_string('includechoicetext', 'questionnaire'));
-        echo "<br />\n";
-        echo "<br />\n";
-        echo "<input type=\"submit\" name=\"submit\" value=\"".get_string('download', 'questionnaire')."\" />\n";
-        echo "</form>\n";
-        echo $OUTPUT->box_end();
+        $output = '';
+        $output .= "<br /><br />\n";
+        $output .= html_writer::tag('h2', (get_string('downloadtextformat', 'questionnaire'))
+                . ':&nbsp;' . get_string('responses', 'questionnaire') . '&nbsp;' .
+                $groupname . $questionnaire->renderer->help_icon('downloadtextformat', 'questionnaire'));
+        $output .= $questionnaire->renderer->heading(get_string('textdownloadoptions', 'questionnaire'), 3);
+        $output .= $questionnaire->renderer->box_start();
+        $downloadparams = [
+            'instance' => $instance,
+            'user' => $user,
+            'sid' => $sid,
+            'action' => 'dfs',
+            'group' => $currentgroupid
+        ];
+        $extrafields = $questionnaire->renderer->render_from_template('mod_questionnaire/extrafields', []);
+        $output .= $questionnaire->renderer->download_dataformat_selector(get_string('downloadtypes', 'questionnaire'),
+            'report.php', 'downloadformat', $downloadparams, $extrafields);
+        $output .= $questionnaire->renderer->box_end();
 
-        echo $OUTPUT->footer('none');
+        $questionnaire->page->add_to_page('respondentinfo', $output);
+        echo $questionnaire->renderer->render($questionnaire->page);
+
+        echo $questionnaire->renderer->footer('none');
 
         // Log saved as text action.
         $params = array('objectid' => $questionnaire->id,
-                        'context' => $questionnaire->context,
-                        'courseid' => $course->id,
-                        'other' => array('action' => $action, 'instance' => $instance, 'currentgroupid' => $currentgroupid)
+            'context' => $questionnaire->context,
+            'courseid' => $course->id,
+            'other' => array('action' => $action, 'instance' => $instance, 'currentgroupid' => $currentgroupid)
         );
         $event = \mod_questionnaire\event\all_responses_saved_as_text::create($params);
         $event->trigger();
@@ -472,26 +483,45 @@ switch ($action) {
         exit();
         break;
 
-    case 'dcsv': // Download responses data as text (cvs) format.
+    case 'dfs':
         require_capability('mod/questionnaire:downloadresponses', $context);
-
         // Use the questionnaire name as the file name. Clean it and change any non-filename characters to '_'.
         $name = clean_param($questionnaire->name, PARAM_FILE);
         $name = preg_replace("/[^A-Z0-9]+/i", "_", trim($name));
 
         $choicecodes = optional_param('choicecodes', '0', PARAM_INT);
-        $choicetext  = optional_param('choicetext', '0', PARAM_INT);
-        $output = $questionnaire->generate_csv('', $user, $choicecodes, $choicetext, $currentgroupid);
+        $choicetext = optional_param('choicetext', '0', PARAM_INT);
+        $showincompletes = optional_param('complete', '0', PARAM_INT);
+        $rankaverages = optional_param('rankaverages', '0', PARAM_INT);
+        $dataformat = optional_param('downloadformat', '', PARAM_ALPHA);
+        $emailroles = optional_param('emailroles', 0, PARAM_INT);
+        $emailextra = optional_param('emailextra', '', PARAM_RAW);
 
-        // CSV
-        // SEP. 2007 JR changed file extension to *.txt for non-English Excel users' sake
-        // and changed separator to tabulation
-        // JAN. 2008 added \r carriage return for better Windows implementation.
-        header("Content-Disposition: attachment; filename=$name.txt");
-        header("Content-Type: text/comma-separated-values");
-        foreach ($output as $row) {
-            $text = implode("\t", $row);
-            echo $text."\r\n";
+        $output = $questionnaire->generate_csv($currentgroupid, '', $user, $choicecodes, $choicetext, $showincompletes,
+            $rankaverages);
+
+        $columns = $output[0];
+        unset($output[0]);
+
+        // Check if email report was selected.
+        $emailreport = optional_param('emailreport', '', PARAM_ALPHA);
+        if (empty($emailreport)) {
+            \core\dataformat::download_data($name, $dataformat, $columns, $output);
+        } else {
+            // Emailreport button selected.
+            if (get_config('questionnaire', 'allowemailreporting') && (!empty($emailroles) || !empty($emailextra))) {
+                require_once('savefileformat.php');
+                $users = !empty($emailroles) ? $questionnaire->get_notifiable_users($USER->id) : [];
+                $otheremails = explode(',', $emailextra);
+                if (!empty($users) || !empty($otheremails)) {
+                    $thisurl = new moodle_url('report.php',
+                        ['instance' => $instance, 'action' => 'dwnpg', 'group' => $currentgroupid]);
+                    save_as_dataformat($name, $dataformat, $columns, $output, $users, $otheremails, $thisurl);
+                }
+            } else {
+                redirect(new moodle_url('report.php', ['instance' => $instance, 'action' => 'dwnpg', 'group' => $currentgroupid]),
+                    get_string('emailsnotspecified', 'questionnaire'));
+            }
         }
         exit();
         break;
@@ -499,17 +529,14 @@ switch ($action) {
     case 'vall':         // View all responses.
     case 'vallasort':    // View all responses sorted in ascending order.
     case 'vallarsort':   // View all responses sorted in descending order.
-
         $PAGE->set_title(get_string('questionnairereport', 'questionnaire'));
         $PAGE->set_heading(format_string($course->fullname));
-        echo $OUTPUT->header();
         if (!$questionnaire->capabilities->readallresponses && !$questionnaire->capabilities->readallresponseanytime) {
-
+            echo $questionnaire->renderer->header();
             // Should never happen, unless called directly by a snoop.
-            print_error('nopermissions', '', '', get_string('viewallresponses', 'questionnaire'));
-
+            throw new \moodle_exception('nopermissions', 'mod_questionnaire');
             // Finish the page.
-            echo $OUTPUT->footer($course);
+            echo $questionnaire->renderer->footer($course);
             break;
         }
 
@@ -524,8 +551,11 @@ switch ($action) {
             default:
                 $SESSION->questionnaire->current_tab = 'valldefault';
         }
-        include('tabs.php');
+        if ($outputtarget != 'print') {
+            include('tabs.php');
+        }
 
+        $respinfo = '';
         $resps = array();
         // Enable choose_group if there are questionnaire groups and groupmode is not set to "no groups"
         // and if there are more goups than 1 (or if user can view all groups).
@@ -533,11 +563,7 @@ switch ($action) {
             $groupselect = groups_print_activity_menu($cm, $url->out(), true);
             // Count number of responses in each group.
             foreach ($questionnairegroups as $group) {
-                $sql = 'SELECT COUNT(r.id) ' .
-                       'FROM {questionnaire_response} r ' .
-                       'INNER JOIN {groups_members} gm ON ' . $castsql . ' = gm.userid ' .
-                       'WHERE r.survey_id = ? AND r.complete = ? AND gm.groupid = ?';
-                $respscount = $DB->count_records_sql($sql, array($sid, 'y', $group->id));
+                $respscount = $questionnaire->count_submissions(false, $group->id);
                 $thisgroupname = groups_get_group_name($group->id);
                 $escapedgroupname = preg_quote($thisgroupname, '/');
                 if (!empty ($respscount)) {
@@ -547,16 +573,14 @@ switch ($action) {
                 } else {
                     // Remove groups with no responses from the groups select list.
                     $groupselect = preg_replace('/\<option value="'.$group->id.'">'.$escapedgroupname.
-                            '<\/option>/', '', $groupselect);
+                        '<\/option>/', '', $groupselect);
                 }
             }
-            echo isset($groupselect) ? $groupselect : '';
+            $respinfo .= isset($groupselect) ? ($groupselect . ' ') : '';
             $currentgroupid = groups_get_activity_group($cm);
-        } else {
-            echo ('<br />');
         }
         if ($currentgroupid > 0) {
-             $groupname = get_string('group').': <strong>'.groups_get_group_name($currentgroupid).'</strong>';
+            $groupname = get_string('group').': <strong>'.groups_get_group_name($currentgroupid).'</strong>';
         } else {
             $groupname = '<strong>'.get_string('allparticipants').'</strong>';
         }
@@ -568,11 +592,7 @@ switch ($action) {
                     $resps = $respsallparticipants;
                     break;
                 default:     // Members of a specific group.
-                    $sql = 'SELECT r.id, gm.id as groupid ' .
-                           'FROM {questionnaire_response} r ' .
-                           'INNER JOIN {groups_members} gm ON ' . $castsql . ' = gm.userid ' .
-                           'WHERE r.survey_id = ? AND r.complete = ? AND gm.groupid = ?';
-                    if (!($resps = $DB->get_records_sql($sql, array($sid, 'y', $currentgroupid)))) {
+                    if (!($resps = $questionnaire->get_responses(false, $currentgroupid))) {
                         $resps = '';
                     }
             }
@@ -585,38 +605,88 @@ switch ($action) {
         if (!empty($resps)) {
             // NOTE: response_analysis uses $resps to get the id's of the responses only.
             // Need to figure out what this function does.
-            $ret = $questionnaire->response_analysis($rid = 0, $resps, $compare = false,
-                            $isgroupmember = false, $allresponses = true, $currentgroupid);
+            $feedbackmessages = $questionnaire->response_analysis(0, $resps, false, false, true, $currentgroupid);
+
+            if ($feedbackmessages) {
+                $msgout = '';
+                foreach ($feedbackmessages as $msg) {
+                    $msgout .= $msg;
+                }
+                $questionnaire->page->add_to_page('feedbackmessages', $msgout);
+            }
         }
 
         $params = array('objectid' => $questionnaire->id,
-                        'context' => $context,
-                        'courseid' => $course->id,
-                        'other' => array('action' => $action, 'instance' => $instance, 'groupid' => $currentgroupid)
+            'context' => $context,
+            'courseid' => $course->id,
+            'other' => array('action' => $action, 'instance' => $instance, 'groupid' => $currentgroupid)
         );
-        $event = \mod_questionnaire\event\all_responses_viewed::create($params);
-        $event->trigger();
 
-        echo'<div class = "generalbox">';
-        echo (get_string('viewallresponses', 'questionnaire').'. '.$groupname.'. ');
-        $strsort = get_string('order_'.$sort, 'questionnaire');
-        echo $strsort;
-        echo $OUTPUT->help_icon('orderresponses', 'questionnaire');
+        if ($outputtarget == 'pdf') {
+            $pdf = questionnaire_report_start_pdf();
+            if ($currentgroupid > 0) {
+                $groupname = get_string('group') . ': <strong>' . groups_get_group_name($currentgroupid) . '</strong>';
+            } else {
+                $groupname = '<strong>' . get_string('allparticipants') . '</strong>';
+            }
+            $respinfo = get_string('viewallresponses', 'questionnaire') . '. ' . $groupname . '. ';
+            $strsort = get_string('order_' . $sort, 'questionnaire');
+            $respinfo .= $strsort;
+            $questionnaire->page->add_to_page('respondentinfo', $respinfo);
+            $questionnaire->survey_results('', false, true, $currentgroupid, $sort);
+            $html = $questionnaire->renderer->render($questionnaire->page);
 
-        $ret = $questionnaire->survey_results(1, 1, '', '', '', $uid = false, $currentgroupid, $sort);
-        echo '</div>';
+            // Supress any warnings. There is at least one error in the TCPF library at line 16749 where 'text-align' is
+            // not an array.
+            $errorreporting = error_reporting(0);
+            $pdf->writeHTML($html);
+            @$pdf->Output(clean_param($questionnaire->name, PARAM_FILE) . '.pdf', 'D');
+            error_reporting($errorreporting);
 
-        // Finish the page.
-        echo $OUTPUT->footer($course);
+        } else { // Default to HTML.
+            $event = \mod_questionnaire\event\all_responses_viewed::create($params);
+            $event->trigger();
+
+            if ($outputtarget != 'print') {
+                $linkname = get_string('downloadpdf', 'mod_questionnaire');
+                $link = new moodle_url('/mod/questionnaire/report.php',
+                    ['action' => 'vall', 'instance' => $instance, 'group' => $currentgroupid, 'target' => 'pdf']);
+                $downpdficon = new pix_icon('f/pdf', $linkname);
+                $respinfo .= $questionnaire->renderer->action_link($link, null, null, null, $downpdficon);
+
+                $linkname = get_string('print', 'mod_questionnaire');
+                $link = new \moodle_url('/mod/questionnaire/report.php',
+                    ['action' => 'vall', 'instance' => $instance, 'group' => $currentgroupid, 'target' => 'print']);
+                $htmlicon = new pix_icon('t/print', $linkname);
+                $options = ['menubar' => true, 'location' => false, 'scrollbars' => true, 'resizable' => true,
+                    'height' => 600, 'width' => 800, 'title' => $linkname];
+                $name = 'popup';
+                $action = new popup_action('click', $link, $name, $options);
+                $class = '';
+                $respinfo .= $questionnaire->renderer->action_link($link, null, $action,
+                        ['class' => $class, 'title' => $linkname], $htmlicon) . '&nbsp;';
+
+                $respinfo .= get_string('viewallresponses', 'questionnaire') . '. ' . $groupname . '. ';
+                $strsort = get_string('order_' . $sort, 'questionnaire');
+                $respinfo .= $strsort;
+                $respinfo .= $questionnaire->renderer->help_icon('orderresponses', 'questionnaire');
+                $questionnaire->page->add_to_page('respondentinfo', $respinfo);
+            }
+
+            $ret = $questionnaire->survey_results('', false, false, $currentgroupid, $sort);
+
+            echo $questionnaire->renderer->header();
+            echo $questionnaire->renderer->render($questionnaire->page);
+            echo $questionnaire->renderer->footer($course);
+        }
         break;
 
     case 'vresp': // View by response.
-
     default:
         if (empty($questionnaire->survey)) {
-            print_error('surveynotexists', 'questionnaire');
-        } else if ($questionnaire->survey->owner != $course->id) {
-            print_error('surveyowner', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
+        } else if ($questionnaire->survey->courseid != $course->id) {
+            throw new \moodle_exception('surveyowner', 'mod_questionnaire');
         }
         $ruser = false;
         $noresponses = false;
@@ -653,12 +723,7 @@ switch ($action) {
                         $resps = $respsallparticipants;
                         break;
                     default:     // Members of a specific group.
-                        $sql = 'SELECT r.id, r.survey_id, r.submitted, r.username ' .
-                               'FROM {questionnaire_response} r ' .
-                               'INNER JOIN {groups_members} gm ON ' . $castsql . ' = gm.userid ' .
-                               'WHERE r.survey_id = ? AND r.complete = ? AND gm.groupid = ? ' .
-                               'ORDER BY r.id';
-                        $resps = $DB->get_records_sql($sql, array($sid, 'y', $currentgroupid));
+                        $resps = $questionnaire->get_responses(false, $currentgroupid);
                 }
                 if (empty($resps)) {
                     $noresponses = true;
@@ -667,16 +732,16 @@ switch ($action) {
                         $resp = current($resps);
                         $rid = $resp->id;
                     } else {
-                        $resp = $DB->get_record('questionnaire_response', array('id' => $rid));
+                        $resp = $DB->get_record('questionnaire_response', ['id' => $rid]);
                     }
-                    if (is_numeric($resp->username)) {
-                        if ($user = $DB->get_record('user', array('id' => $resp->username))) {
+                    if (!empty($resp->userid)) {
+                        if ($user = $DB->get_record('user', ['id' => $resp->userid])) {
                             $ruser = fullname($user);
                         } else {
                             $ruser = '- '.get_string('unknown', 'questionnaire').' -';
                         }
                     } else {
-                        $ruser = $resp->username;
+                        $ruser = $resp->userid;
                     }
                 }
             } else {
@@ -688,48 +753,101 @@ switch ($action) {
             $rid = $rids[0];
         }
 
-        // Print the page header.
-        $PAGE->set_title(get_string('questionnairereport', 'questionnaire'));
-        $PAGE->set_heading(format_string($course->fullname));
-        echo $OUTPUT->header();
-
-        // Print the tabs.
-        if ($byresponse) {
-            $SESSION->questionnaire->current_tab = 'vrespsummary';
-        }
-        if ($individualresponse) {
-            $SESSION->questionnaire->current_tab = 'individualresp';
-        }
-        include('tabs.php');
-
-        // Print the main part of the page.
-        // TODO provide option to select how many columns and/or responses per page.
-
-        echo $OUTPUT->box_start();
-
         if ($noresponses) {
-            echo (get_string('group').' <strong>'.groups_get_group_name($currentgroupid).'</strong>: '.
+            $questionnaire->page->add_to_page('respondentinfo',
+                get_string('group') . ' <strong>' . groups_get_group_name($currentgroupid) . '</strong>: ' .
                 get_string('noresponses', 'questionnaire'));
-        } else {
+
+        } else if ($outputtarget == 'pdf') {
+            $pdf = questionnaire_report_start_pdf();
+            if ($currentgroupid > 0) {
+                $groupname = get_string('group') . ': <strong>' . groups_get_group_name($currentgroupid) . '</strong>';
+            } else {
+                $groupname = '<strong>' . get_string('allparticipants') . '</strong>';
+            }
+            if (!$byresponse) { // Show respondents individual responses.
+                $questionnaire->view_response($rid, '', $resps, true, true, false, $currentgroupid, $outputtarget);
+            }
+            $html = $questionnaire->renderer->render($questionnaire->page);
+            // Supress any warnings. There is at least one error in the TCPF library at line 16749 where 'text-align' is
+            // not an array.
+            $errorreporting = error_reporting(0);
+            $pdf->writeHTML($html);
+            @$pdf->Output(clean_param($questionnaire->name, PARAM_FILE), 'D');
+            error_reporting($errorreporting);
+
+        } else { // Default to HTML.
+            // Print the page header.
+            $PAGE->set_title(get_string('questionnairereport', 'questionnaire'));
+            $PAGE->set_heading(format_string($course->fullname));
+
+            // Print the tabs.
+            if ($byresponse) {
+                $SESSION->questionnaire->current_tab = 'vrespsummary';
+            }
+            if ($individualresponse) {
+                $SESSION->questionnaire->current_tab = 'individualresp';
+            }
+            if ($outputtarget == 'html') {
+                include('tabs.php');
+            }
+
+            // Print the main part of the page.
+            // TODO provide option to select how many columns and/or responses per page.
+
             $groupname = get_string('group').': <strong>'.groups_get_group_name($currentgroupid).'</strong>';
             if ($currentgroupid == 0 ) {
                 $groupname = get_string('allparticipants');
             }
             if ($byresponse) {
-                echo $OUTPUT->box_start();
-                echo $OUTPUT->help_icon('viewindividualresponse', 'questionnaire').'&nbsp;';
-                echo (get_string('viewindividualresponse', 'questionnaire').' <strong> : '.$groupname.'</strong>');
-                echo $OUTPUT->box_end();
+                $respinfo = '';
+                $respinfo .= $questionnaire->renderer->box_start();
+                $respinfo .= $questionnaire->renderer->help_icon('viewindividualresponse', 'questionnaire').'&nbsp;';
+                $respinfo .= get_string('viewindividualresponse', 'questionnaire').' <strong> : '.$groupname.'</strong>';
+                $respinfo .= $questionnaire->renderer->box_end();
+                $questionnaire->page->add_to_page('respondentinfo', $respinfo);
             }
-            $questionnaire->survey_results_navbar_alpha($rid, $currentgroupid, $cm, $byresponse);
+            if ($outputtarget == 'html') {
+                $questionnaire->survey_results_navbar_alpha($rid, $currentgroupid, $cm, $byresponse);
+            }
             if (!$byresponse) { // Show respondents individual responses.
-                $questionnaire->view_response($rid, $referer = '', $blankquestionnaire = false, $resps, $compare = true,
-                    $isgroupmember = true, $allresponses = false, $currentgroupid);
+                $questionnaire->view_response($rid, '', $resps, true, true, false, $currentgroupid, $outputtarget);
             }
+            echo $questionnaire->renderer->header();
+            echo $questionnaire->renderer->render($questionnaire->page);
+            echo $questionnaire->renderer->footer($course);
         }
-        echo $OUTPUT->box_end();
-
-        // Finish the page.
-        echo $OUTPUT->footer($course);
         break;
+}
+
+/**
+ * Return a pdf object.
+ * @return pdf
+ */
+function questionnaire_report_start_pdf() {
+    global $CFG;
+
+    require_once($CFG->libdir . '/pdflib.php');
+    $pdf = new pdf();
+    $pdf->SetCreator(PDF_CREATOR);
+    $pdf->SetAuthor('Moodle Questionnaire');
+    $pdf->SetTitle('All responses');
+    $pdf->setPrintHeader(false);
+    // Set default monospaced font.
+    $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+    // Set margins.
+    $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+    $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+    $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+
+    // Set auto page breaks.
+    $pdf->SetAutoPageBreak(true, PDF_MARGIN_BOTTOM);
+
+    // Set image scale factor.
+    $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+    // Set background color for headings.
+    $pdf->SetFillColor(238, 238, 238);
+    $pdf->AddPage('L');
+    return $pdf;
 }

@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->dirroot . '/blocks/ues_people/lib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/blocks/ues_people/lib.php');
 
 class cps_people_element extends ues_people_element_output {
     private function span_yes() {

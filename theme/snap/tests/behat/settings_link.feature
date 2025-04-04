@@ -16,17 +16,14 @@
 # Tests for settings link.
 #
 # @package    theme_snap
-# @copyright  2015 Guy Thomas <gthomas@moodlerooms.com>
+# @copyright  2015 Guy Thomas
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-
 
 @theme @theme_snap @_bug_phantomjs
 Feature: When the moodle theme is set to Snap, only teachers should see an admin settings link.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname | shortname | category | groupmode |
       | Course 1 | C1 | 0 | 1 |
     And the following "users" exist:
@@ -40,12 +37,12 @@ Feature: When the moodle theme is set to Snap, only teachers should see an admin
 
   @javascript
   Scenario: Teacher visits course.
-    Given I log in as "teacher1" (theme_snap)
+    Given I log in as "teacher1"
     And I am on the course main page for "C1"
-   Then "#admin-menu-trigger" "css_element" should exist
+    Then "#admin-menu-trigger" "css_element" should exist
 
   @javascript
   Scenario: Student visits course.
-    Given I log in as "student1" (theme_snap)
+    Given I log in as "student1"
     And I am on the course main page for "C1"
-   Then "#admin-menu-trigger" "css_element" should not exist
+    Then "#admin-menu-trigger" "css_element" should not exist

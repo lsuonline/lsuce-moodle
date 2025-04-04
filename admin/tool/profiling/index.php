@@ -26,7 +26,7 @@
 
 // TODO: it is wrong when core lib references ANY plugin lang strings, maybe more login could be moved here (skodak)
 
-require_once(dirname(__FILE__) . '/../../../config.php');
+require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir . '/xhprof/xhprof_moodle.php');
 
@@ -49,6 +49,12 @@ admin_externalpage_setup('toolprofiling');
 if ($listurl) {
     $listurlnav = new moodle_url('/admin/tool/profiling/index.php', array('listurl' => $listurl));
     $PAGE->navbar->add($listurl, $listurlnav);
+}
+
+// Add a new nav item to make $listurl clickable for the Boost theme.
+if (isset($script)) {
+    $lastrunnav = get_string('lastrun', 'tool_profiling');
+    $PAGE->navbar->add($lastrunnav);
 }
 
 // Header

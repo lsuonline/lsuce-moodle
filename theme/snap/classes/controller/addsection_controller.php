@@ -16,14 +16,12 @@
 
 namespace theme_snap\controller;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Add section Controller.
  * Handles requests to add a new section
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class addsection_controller extends controller_abstract {
@@ -52,28 +50,37 @@ class addsection_controller extends controller_abstract {
         require_once($CFG->dirroot.'/course/lib.php');
 
         $sectioname = optional_param('newsection', '', PARAM_TEXT);
-        $summary = optional_param('summary', '', PARAM_RAW);
+        $summary = optional_param_array('summary', '', PARAM_RAW);
+        $draftitemid = required_param('draftitemid', PARAM_INT);
+
         $sectioname = $sectioname === '' ? null : $sectioname;
+        $summarytext = !empty($summary['text']) ? $summary['text'] : '';
+        $summaryformat = !empty($summary['format']) ? $summary['format'] : FORMAT_HTML;
 
         require_sesskey();
 
-        $courseid = $PAGE->context->get_course_context()->instanceid;
+        $context = $PAGE->context->get_course_context();
+        $courseid = $context->instanceid;
 
         $course = course_get_format($courseid)->get_course();
-        $course->numsections++;
+        $numsections = course_get_format($courseid)->get_last_section_number() + 1;
+        course_create_sections_if_missing($course, range(0, $numsections));
 
-        course_get_format($course)->update_course_format_options(
-            array('numsections' => $course->numsections)
+        $options = array(
+            'subdirs' => 0,
+            'maxbytes' => 0,
+            'maxfiles' => -1,
+            'context' => $context,
         );
-        course_create_sections_if_missing($course, range(0, $course->numsections));
-
         $modinfo = get_fast_modinfo($course);
-        $section = $modinfo->get_section_info($course->numsections, MUST_EXIST);
+        $section = $modinfo->get_section_info($numsections, MUST_EXIST);
+        $summarytext = file_save_draft_area_files($draftitemid, $context->id, 'course', 'section',
+                                                  $section->id, $options, $summarytext);
         $DB->set_field('course_sections', 'name', $sectioname, array('id' => $section->id));
-        $DB->set_field('course_sections', 'summary', $summary, array('id' => $section->id));
-        $DB->set_field('course_sections', 'summaryformat', FORMAT_HTML, array('id' => $section->id));
+        $DB->set_field('course_sections', 'summary', $summarytext, array('id' => $section->id));
+        $DB->set_field('course_sections', 'summaryformat', $summaryformat, array('id' => $section->id));
         rebuild_course_cache($course->id);
 
-        redirect(course_get_url($course, $section->section));
+        redirect(course_get_url($course, $section->section, ['sr' => $section->sectionnum]));
     }
 }

@@ -1,11 +1,33 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+defined('MOODLE_INTERNAL') || die();
 
 ini_set('default_socket_timeout', 300);
 
 interface semester_codes {
     const FALL = '1S';
+    const FALL1 = '1L';
+    const FALL2 = '1P';
     const SPRING = '2S';
+    const SPRING1 = '2D';
+    const SPRING2 = '2L';
     const SUMMER = '3S';
+    const SUMMER1 = '3D';
+    const SUMMER2 = '1D';
     const WINTER_INT = '1T';
     const SPRING_INT = '2T';
     const SUMMER_INT = '3T';
@@ -13,28 +35,31 @@ interface semester_codes {
 
 interface institution_codes {
     const LSU_SEM = 'CLSB';
+    const ONLINE_SEM = 'CLSB';
     const LAW_SEM = 'LAWB';
 
     const LSU_FINAL = 'CLSE';
+    const ONLINE_FINAL = 'CLSE';
     const LAW_FINAL = 'LAWE';
 
     const LSU_CAMPUS = '01';
+    const ONLINE_CAMPUS = '01';
     const LAW_CAMPUS = '08';
 
     const LSU_INST = '1590';
+    const ONLINE_INST = '1590';
     const LAW_INST = '1595';
 }
 
 abstract class lsu_source implements institution_codes, semester_codes {
-    /**
-     * An LSU source requires these
-     */
-    var $serviceId;
-    var $username;
-    var $password;
-    var $wsdl;
 
-    function __construct($username, $password, $wsdl, $serviceId) {
+    // An LSU source requires these.
+    public $serviceId;
+    public $username;
+    public $password;
+    public $wsdl;
+
+    public function __construct($username, $password, $wsdl, $serviceId) {
         $this->username  = $username;
         $this->password  = $password;
         $this->wsdl      = $wsdl;
@@ -102,12 +127,30 @@ abstract class lsu_source implements institution_codes, semester_codes {
         };
 
         switch ($semester_name) {
-            case 'Fall': return $partial($semester_year + 1, self::FALL);
-            case 'WinterInt': return $partial($semester_year + 1, self::WINTER_INT);
-            case 'Summer': return $partial($semester_year, self::SUMMER);
-            case 'Spring': return $partial($semester_year, self::SPRING);
-            case 'SummerInt': return $partial($semester_year, self::SUMMER_INT);
-            case 'SpringInt': return $partial($semester_year, self::SPRING_INT);
+            case 'Fall':
+                return $partial($semester_year + 1, self::FALL);
+            case 'First Fall':
+                return $partial($semester_year + 1, self::FALL1);
+            case 'Second Fall':
+                return $partial($semester_year + 1, self::FALL2);
+            case 'WinterInt':
+                return $partial($semester_year + 1, self::WINTER_INT);
+            case 'Summer':
+                return $partial($semester_year, self::SUMMER);
+            case 'First Summer':
+                return $partial($semester_year, self::SUMMER1);
+            case 'Second Summer':
+                return $partial($semester_year + 1, self::SUMMER2);
+            case 'Spring':
+                return $partial($semester_year, self::SPRING);
+            case 'First Spring':
+                return $partial($semester_year, self::SPRING1);
+            case 'Second Spring':
+                return $partial($semester_year, self::SPRING2);
+            case 'SummerInt':
+                return $partial($semester_year, self::SUMMER_INT);
+            case 'SpringInt':
+                return $partial($semester_year, self::SPRING_INT);
         }
     }
 }

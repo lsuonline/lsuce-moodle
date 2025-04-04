@@ -13,16 +13,19 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
+namespace theme_snap;
 use theme_snap\webservice\ws_course_card;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
 
 /**
  * Test course card web service
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * 
  */
-class theme_snap_ws_course_card_test extends \advanced_testcase {
+class webservice_ws_course_card_test extends \advanced_testcase {
 
     public function test_service_parameters() {
         $params = ws_course_card::service_parameters();

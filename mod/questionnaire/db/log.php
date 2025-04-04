@@ -17,9 +17,8 @@
 /**
  * Capability definitions for the quiz module.
  *
- * @package    mod
- * @subpackage questionnaire
- * @copyright  2010 Remote-Learner.net (http://www.remote-learner.net)
+ * @package    mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetopensource.org)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,6 +26,6 @@ defined('MOODLE_INTERNAL') || die();
 
 $logs = array(
     array('module' => 'questionnaire', 'action' => 'view all', 'mtable' => 'questionnaire', 'field' => 'name'),
-    array('module' => 'questionnaire', 'action' => 'submit', 'mtable' => 'questionnaire_attempts', 'field' => 'rid'),
+    array('module' => 'questionnaire', 'action' => 'submit', 'mtable' => 'questionnaire_response', 'field' => 'id'),
     array('module' => 'questionnaire', 'action' => 'view', 'mtable' => 'questionnaire', 'field' => 'name'),
 );

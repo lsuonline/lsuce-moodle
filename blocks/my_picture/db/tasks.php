@@ -21,17 +21,17 @@
  *
  * @package    block_my_picture
  * @copyright  2017 Robert Russo, Louisiana State University
- */ 
+ */
+
+defined('MOODLE_INTERNAL') || die();
 
 // Define the task defaults.
 $tasks = array(
-    array(
-        'classname' => 'block_my_picture\task\grab_mypictures',
-        'blocking' => 0,
-        'minute' => '0',
-        'hour' => '*',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    )
+    array('classname' => 'block_my_picture\task\grab_mypictures'
+        , 'blocking' => 0
+        , 'minute' => '0'
+        , 'hour' => '*'
+        , 'day' => '*'
+        , 'dayofweek' => '*'
+        , 'month' => '*')
 );

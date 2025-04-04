@@ -14,20 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_logs
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 $events = array(
     'ues_student_release',
     'ues_student_process',
     'ues_section_drop'
 );
 
-$to_handler = function ($event) {
+$tohandler = function ($event) {
     return array(
         'handlerfile' => '/blocks/ues_logs/eventslib.php',
         'handlerfunction' => array('ues_logs_event_handler', $event),
@@ -35,4 +37,4 @@ $to_handler = function ($event) {
     );
 };
 
-$handlers = array_combine($events, array_map($to_handler, $events));
+$handlers = array_combine($events, array_map($tohandler, $events));

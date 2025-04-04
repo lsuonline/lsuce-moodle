@@ -14,14 +14,10 @@ Feature: Uniqueness of Group ID number
     And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | C1 | editingteacher |
-    And I log in as "teacher1"
-    And I follow "Course 1"
-    And I expand "Users" node
-    And I follow "Groups"
 
-  @javascript
   Scenario: Group ID number uniqueness
-    Given I press "Create group"
+    Given I am on the "Course 1" "groups" page logged in as "teacher1"
+    And I press "Create group"
     And I set the following fields to these values:
       | Group name | Group 1 |
       | Group ID number | G1 |
@@ -43,9 +39,8 @@ Feature: Uniqueness of Group ID number
     And I should see "This ID number is already taken"
     And I press "Cancel"
 
-  @javascript
   Scenario: Grouping ID number uniqueness
-    Given I follow "Groupings"
+    Given I am on the "Course 1" "groupings" page logged in as "teacher1"
     And I press "Create grouping"
     And I set the following fields to these values:
       | Grouping name | Grouping 1 |

@@ -49,7 +49,7 @@ class frontend extends \core_availability\frontend {
 
     protected function get_javascript_strings() {
         return array('ajaxerror', 'direction_before', 'direction_from', 'direction_until',
-                'direction_label');
+                'direction_label', 'error_dateconflict');
     }
 
     /**
@@ -84,8 +84,8 @@ class frontend extends \core_availability\frontend {
                 'hour' => $wrongfields['hours'], 'minute' => $wrongfields['minutes']);
     }
 
-    protected function get_javascript_init_params($course, \cm_info $cm = null,
-            \section_info $section = null) {
+    protected function get_javascript_init_params($course, ?\cm_info $cm = null,
+            ?\section_info $section = null) {
         global $CFG, $OUTPUT;
         require_once($CFG->libdir . '/formslib.php');
 
@@ -151,7 +151,7 @@ class frontend extends \core_availability\frontend {
             // NOTE: The fields need to have these weird names in order that they
             // match the standard Moodle form control, otherwise the date selector
             // won't find them.
-            $html .= \html_writer::start_tag('select', array('name' => 'x[' . $field . ']'));
+            $html .= \html_writer::start_tag('select', array('name' => 'x[' . $field . ']', 'class' => 'custom-select'));
             foreach ($options as $key => $value) {
                 $params = array('value' => $key);
                 if ($current[$field] == $key) {

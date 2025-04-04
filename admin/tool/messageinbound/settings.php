@@ -25,10 +25,9 @@
 defined('MOODLE_INTERNAL') || die;
 
 if ($hassiteconfig) {
-    $category = new admin_category('messageinbound', new lang_string('incomingmailconfiguration', 'tool_messageinbound'));
-
     // Create a settings page for all of the mail server settings.
-    $settings = new admin_settingpage('messageinbound_mailsettings', new lang_string('mailsettings', 'tool_messageinbound'));
+    $settings = new admin_settingpage('messageinbound_mailsettings',
+            new lang_string('incomingmailconfiguration', 'tool_messageinbound'));
 
     $settings->add(new admin_setting_heading('messageinbound_generalconfiguration',
             new lang_string('messageinboundgeneralconfiguration', 'tool_messageinbound'),
@@ -68,6 +67,27 @@ if ($hassiteconfig) {
             new lang_string('messageinboundhostssl', 'tool_messageinbound'),
             new lang_string('messageinboundhostssl_desc', 'tool_messageinbound'), 'ssl', $options));
 
+    // Get all the issuers.
+    $issuers = \core\oauth2\api::get_all_issuers();
+    $oauth2services = [
+        '' => new lang_string('none', 'admin'),
+    ];
+    foreach ($issuers as $issuer) {
+        // Get the enabled issuer only.
+        if ($issuer->get('enabled')) {
+            $oauth2services[$issuer->get('id')] = s($issuer->get('name'));
+        }
+    }
+
+    if (count($oauth2services) > 1) {
+        $settings->add(new admin_setting_configselect('messageinbound_hostoauth',
+            new lang_string('issuer', 'auth_oauth2'),
+            get_string('messageinboundhostoauth_help', 'tool_messageinbound'),
+            '',
+            $oauth2services
+        ));
+    }
+
     $settings->add(new admin_setting_configtext('messageinbound_hostuser',
             new lang_string('messageinboundhostuser', 'tool_messageinbound'),
             new lang_string('messageinboundhostuser_desc', 'tool_messageinbound'), '', PARAM_NOTAGS));
@@ -75,13 +95,10 @@ if ($hassiteconfig) {
             new lang_string('messageinboundhostpass', 'tool_messageinbound'),
             new lang_string('messageinboundhostpass_desc', 'tool_messageinbound'), ''));
 
-    $category->add('messageinbound', $settings);
-
+    // Add the category to the admin tree.
+    $ADMIN->add('email', $settings);
     // Link to the external page for Inbound Message handler configuration.
-    $category->add('messageinbound', new admin_externalpage('messageinbound_handlers',
+    $ADMIN->add('email', new admin_externalpage('messageinbound_handlers',
             new lang_string('message_handlers', 'tool_messageinbound'),
             "$CFG->wwwroot/$CFG->admin/tool/messageinbound/index.php"));
-
-    // Add the category to the admin tree.
-    $ADMIN->add('server', $category);
 }

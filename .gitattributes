@@ -1,4 +1,6 @@
 **/yui/build/** -diff
 **/amd/build/** -diff
-theme/bootstrapbase/style/editor.css -diff
-theme/bootstrapbase/style/moodle.css -diff
+lib/dml/oci_native_moodle_package.sql text eol=lf
+**.js.map -diff
+**-min.js -diff
+**.min.js -diff

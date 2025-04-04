@@ -18,13 +18,11 @@
  * General section trait.
  * @author    gthomas2
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\output;
-
-defined('MOODLE_INTERNAL') || die();
 
 trait general_section_trait {
 
@@ -38,8 +36,9 @@ trait general_section_trait {
      */
     protected function is_section_conditional(\section_info $section) {
         // Are there any conditional fields populated?
+        $sectionavailability = $section->availability === null ? '' : $section->availability;
         if (!empty($section->availableinfo)
-            || !empty(json_decode($section->availability)->c)) {
+            || !empty(json_decode($sectionavailability)->c)) {
             return true;
         }
         // OK - this isn't conditional.

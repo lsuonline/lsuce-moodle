@@ -14,47 +14,63 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * GeoIP tests
- *
- * @package    core_iplookup
- * @category   phpunit
- * @copyright  2012 Petr Skoda {@link http://skodak.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-defined('MOODLE_INTERNAL') || die();
-
+namespace core;
 
 /**
  * GeoIp data file parsing test.
+ *
+ * @package    core
+ * @category   test
+ * @copyright  2012 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_iplookup_geoplugin_testcase extends advanced_testcase {
+final class geoplugin_test extends \advanced_testcase {
 
-    public function test_geoip() {
+    /**
+     * Load required test libraries
+     */
+    public static function setUpBeforeClass(): void {
         global $CFG;
-        require_once("$CFG->libdir/filelib.php");
-        require_once("$CFG->dirroot/iplookup/lib.php");
+        require_once("{$CFG->dirroot}/iplookup/lib.php");
+        parent::setUpBeforeClass();
+    }
 
+    /**
+     * In order to execute this test PHPUNIT_LONGTEST should be defined as true in phpunit.xml or directly in config.php
+     */
+    public function setUp(): void {
+        parent::setUp();
         if (!PHPUNIT_LONGTEST) {
-            // we do not want to DDOS their server, right?
-            return;
+            $this->markTestSkipped('PHPUNIT_LONGTEST is not defined');
         }
+    }
 
-        $this->resetAfterTest();
+    /**
+     * Test IPv4 address
+     *
+     * @covers ::iplookup_find_location
+     */
+    public function test_ipv4(): void {
+        $result = iplookup_find_location('50.0.184.0');
 
-        $CFG->geoipfile = '';
-
-        $result = iplookup_find_location('147.230.16.1');
-
-        $this->assertEquals('array', gettype($result));
-        $this->assertEquals('Liberec', $result['city']);
-        $this->assertEquals(15.0653, $result['longitude'], '', 0.001);
-        $this->assertEquals(50.7639, $result['latitude'], '', 0.001);
+        $this->assertIsArray($result);
+        $this->assertIsFloat($result['latitude']);
+        $this->assertIsFloat($result['longitude']);
+        $this->assertIsString($result['city']);
+        $this->assertIsString($result['country']);
+        $this->assertIsArray($result['title']);
+        $this->assertIsString($result['title'][0]);
+        $this->assertIsString($result['title'][1]);
         $this->assertNull($result['error']);
-        $this->assertEquals('array', gettype($result['title']));
-        $this->assertEquals('Liberec', $result['title'][0]);
-        $this->assertEquals('Czech Republic', $result['title'][1]);
+    }
+
+    /**
+     * Test IPv6 address (unsupported by Geoplugin)
+     *
+     * @covers ::iplookup_find_location
+     */
+    public function test_ipv6(): void {
+        $result = iplookup_find_location('2a01:8900:2:3:8c6c:c0db:3d33:9ce6');
+        $this->assertEquals($result['error'], get_string('invalidipformat', 'error'));
     }
 }
-

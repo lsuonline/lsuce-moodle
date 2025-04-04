@@ -66,7 +66,7 @@ class mbz_packer extends file_packer {
      */
     public function archive_to_storage(array $files, $contextid,
             $component, $filearea, $itemid, $filepath, $filename,
-            $userid = null, $ignoreinvalidfiles = true, file_progress $progress = null) {
+            $userid = null, $ignoreinvalidfiles = true, ?file_progress $progress = null) {
         return $this->get_packer_for_archive_operation()->archive_to_storage($files,
                 $contextid, $component, $filearea, $itemid, $filepath, $filename,
                 $userid, $ignoreinvalidfiles, $progress);
@@ -83,7 +83,7 @@ class mbz_packer extends file_packer {
      * @throws coding_exception If any archive paths do not meet the restrictions
      */
     public function archive_to_pathname(array $files, $archivefile,
-            $ignoreinvalidfiles=true, file_progress $progress = null) {
+            $ignoreinvalidfiles=true, ?file_progress $progress = null) {
         return $this->get_packer_for_archive_operation()->archive_to_pathname($files,
                 $archivefile, $ignoreinvalidfiles, $progress);
     }
@@ -95,13 +95,15 @@ class mbz_packer extends file_packer {
      * @param string $pathname target directory
      * @param array $onlyfiles only extract files present in the array
      * @param file_progress $progress Progress indicator callback or null if not required
+     * @param bool $returnbool Whether to return a basic true/false indicating error state, or full per-file error
+     * details.
      * @return array list of processed files (name=>true)
      * @throws moodle_exception If error
      */
     public function extract_to_pathname($archivefile, $pathname,
-            array $onlyfiles = null, file_progress $progress = null) {
+            ?array $onlyfiles = null, ?file_progress $progress = null, $returnbool = false) {
         return $this->get_packer_for_read_operation($archivefile)->extract_to_pathname(
-                $archivefile, $pathname, $onlyfiles, $progress);
+                $archivefile, $pathname, $onlyfiles, $progress, $returnbool);
     }
 
     /**
@@ -120,7 +122,7 @@ class mbz_packer extends file_packer {
      */
     public function extract_to_storage($archivefile, $contextid,
             $component, $filearea, $itemid, $pathbase, $userid = null,
-            file_progress $progress = null) {
+            ?file_progress $progress = null) {
         return $this->get_packer_for_read_operation($archivefile)->extract_to_storage(
                 $archivefile, $contextid, $component, $filearea, $itemid, $pathbase,
                 $userid, $progress);

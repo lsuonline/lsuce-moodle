@@ -13,10 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- 
+
+
 /**
  * @package   block_ues_meta_viewer
- * @copyright 2016, Louisiana State University
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

@@ -23,13 +23,9 @@ class edit_tag extends edit_base {
     }
 
     public function output() {
-        global $CFG, $OUTPUT;
+        global $OUTPUT;
 
         $stradd = get_string('add');
-
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
 
         $manualform = '<input type="text" name="tag" /><input type="submit" value="'.$stradd.'" />';
         $manualform = $this->enclose_in_form($manualform);
@@ -37,10 +33,9 @@ class edit_tag extends edit_base {
         $iptcform = '';
         $deleteform = '';
 
-        $path = $storedfile->copy_content_to_temp();
-        $tags = $image->get_tags();
+        $path = $this->lbgimage->copy_content_to_temp();
+        $tags = $this->lbgimage->get_tags();
 
-        $size = getimagesize($path, $info);
         if (isset($info['APP13'])) {
             $iptc = iptcparse($info['APP13']);
             if (isset($iptc['2#025'])) {
@@ -62,11 +57,11 @@ class edit_tag extends edit_base {
         $iptcaddurl = new moodle_url('/mod/lightboxgallery/edit/tag/import.php', array('id' => $this->gallery->id));
         $iptcform .= $OUTPUT->single_button($iptcaddurl, get_string('tagsimport', 'lightboxgallery'));
 
-        if ($tags = $image->get_tags()) {
+        if ($tags = $this->lbgimage->get_tags()) {
             $deleteform = '<input type="hidden" name="delete" value="1" />';
             foreach ($tags as $tag) {
                 $deleteform .= '<label><input type="checkbox" name="deletetags[]" value="'.$tag->id.'" /> '.
-                               htmlentities(utf8_decode($tag->description)).'</label><br />';
+                               htmlentities($tag->description).'</label><br />';
             }
             $deleteform .= '<input type="submit" value="' . get_string('remove') . '" />';
             $deleteform = '<span class="tag-head"> ' . get_string('tagscurrent', 'lightboxgallery') . '</span>'
@@ -79,16 +74,12 @@ class edit_tag extends edit_base {
     public function process_form() {
         $tag = optional_param('tag', '', PARAM_TAG);
 
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
-
         if ($tag) {
-            $image->add_tag($tag);
+            $this->lbgimage->add_tag($tag);
         } else if (optional_param('delete', 0, PARAM_INT)) {
             if ($deletes = optional_param_array('deletetags', array(), PARAM_RAW)) {
                 foreach ($deletes as $delete) {
-                    $image->delete_tag(clean_param($delete, PARAM_INT));
+                    $this->lbgimage->delete_tag(clean_param($delete, PARAM_INT));
                 }
             }
         }

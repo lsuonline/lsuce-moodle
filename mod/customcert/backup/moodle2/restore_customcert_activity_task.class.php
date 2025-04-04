@@ -53,10 +53,10 @@ class restore_customcert_activity_task extends restore_activity_task {
     /**
      * Define the contents in the activity that must be processed by the link decoder.
      */
-    static public function define_decode_contents() {
-        $contents = array();
+    public static function define_decode_contents() {
+        $contents = [];
 
-        $contents[] = new restore_decode_content('customcert', array('intro'), 'customcert');
+        $contents[] = new restore_decode_content('customcert', ['intro'], 'customcert');
 
         return $contents;
     }
@@ -64,8 +64,8 @@ class restore_customcert_activity_task extends restore_activity_task {
     /**
      * Define the decoding rules for links belonging to the activity to be executed by the link decoder.
      */
-    static public function define_decode_rules() {
-        $rules = array();
+    public static function define_decode_rules() {
+        $rules = [];
 
         $rules[] = new restore_decode_rule('CUSTOMCERTVIEWBYID', '/mod/customcert/view.php?id=$1', 'course_module');
         $rules[] = new restore_decode_rule('CUSTOMCERTINDEX', '/mod/customcert/index.php?id=$1', 'course');
@@ -75,19 +75,19 @@ class restore_customcert_activity_task extends restore_activity_task {
     }
 
     /**
-     * Define the restore log rules that will be applied by the {@link restore_logs_processor} when restoring
-     * customcert logs. It must return one array of {@link restore_log_rule} objects.
+     * Define the restore log rules that will be applied by the {@see restore_logs_processor} when restoring
+     * customcert logs. It must return one array of {@see restore_log_rule} objects.
      *
      * @return array the restore log rules
      */
-    static public function define_restore_log_rules() {
-        $rules = array();
+    public static function define_restore_log_rules() {
+        $rules = [];
 
         $rules[] = new restore_log_rule('customcert', 'add', 'view.php?id={course_module}', '{customcert}');
         $rules[] = new restore_log_rule('customcert', 'update', 'view.php?id={course_module}', '{customcert}');
         $rules[] = new restore_log_rule('customcert', 'view', 'view.php?id={course_module}', '{customcert}');
-        $rules[] = new restore_log_rule('customcert', 'received', 'report.php?a={customcert}', '{customcert}');
-        $rules[] = new restore_log_rule('customcert', 'view report', 'report.php?id={customcert}', '{customcert}');
+        $rules[] = new restore_log_rule('customcert', 'received', 'view.php?id={course_module}', '{customcert}');
+        $rules[] = new restore_log_rule('customcert', 'view report', 'view.php?id={course_module}', '{customcert}');
 
         return $rules;
     }
@@ -108,7 +108,7 @@ class restore_customcert_activity_task extends restore_activity_task {
             INNER JOIN {customcert} c
                     ON p.templateid = c.templateid
                  WHERE c.id = :customcertid";
-        if ($elements = $DB->get_records_sql($sql, array('customcertid' => $this->get_activityid()))) {
+        if ($elements = $DB->get_records_sql($sql, ['customcertid' => $this->get_activityid()])) {
             // Go through the elements for the certificate.
             foreach ($elements as $e) {
                 // Get an instance of the element class.

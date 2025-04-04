@@ -23,7 +23,7 @@ $id                = required_param('id', PARAM_INT); // course id
 $PAGE->set_url('/grade/export/xml/export.php', array('id'=>$id));
 
 if (!$course = $DB->get_record('course', array('id'=>$id))) {
-    print_error('nocourseid');
+    throw new \moodle_exception('invalidcourseid');
 }
 
 require_login($course);
@@ -37,16 +37,23 @@ require_capability('gradeexport/xml:view', $context);
 // If you use this method without this check, will break the direct grade exporting (without publishing).
 $key = optional_param('key', '', PARAM_RAW);
 if (!empty($CFG->gradepublishing) && !empty($key)) {
-    print_grade_page_head($COURSE->id, 'export', 'xml', get_string('exportto', 'grades') . ' ' . get_string('pluginname', 'gradeexport_xml'));
+    $actionbar = new \core_grades\output\export_publish_action_bar($context, 'xml');
+    print_grade_page_head($COURSE->id, 'export', 'xml',
+        get_string('exportto', 'grades') . ' ' . get_string('pluginname', 'gradeexport_xml'),
+        false, false, true, null, null, null, $actionbar);
 }
 
 if (groups_get_course_groupmode($COURSE) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
     if (!groups_is_member($groupid, $USER->id)) {
-        print_error('cannotaccessgroup', 'grades');
+        throw new \moodle_exception('cannotaccessgroup', 'grades');
     }
 }
+
+// BEGIN LSU idnumber requirement stupidity.
 $mform = new grade_export_form(null, array('publishing' => true, 'simpleui' => true, 'multipledisplaytypes' => false,
-        'idnumberrequired' => true, 'updategradesonly' => true));
+        'idnumberrequired' => false, 'updategradesonly' => true));
+// END LSU idnumber requirement stupidity.
+
 $formdata = $mform->get_data();
 $export = new grade_export_xml($course, $groupid, $formdata);
 
@@ -56,6 +63,8 @@ if (!empty($CFG->gradepublishing) && !empty($key)) {
     echo $export->get_grade_publishing_url();
     echo $OUTPUT->footer();
 } else {
+    $event = \gradeexport_xml\event\grade_exported::create(array('context' => $context));
+    $event->trigger();
     $export->print_grades();
 }
 

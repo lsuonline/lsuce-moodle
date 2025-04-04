@@ -16,13 +16,11 @@
 
 /**
  * Renderable for course toc footer.
- * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace theme_snap\renderables;
-
-defined('MOODLE_INTERNAL') || die();
 
 class course_toc_footer implements \renderable {
 
@@ -30,16 +28,6 @@ class course_toc_footer implements \renderable {
      * @var boolean
      */
     public $canaddnewsection;
-
-    /**
-     * @var boolean
-     */
-    public $qmcansend;
-
-    /**
-     * @var string
-     */
-    public $qmurl;
 
     /**
      * @var string

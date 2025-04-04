@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 $string['pluginname'] = 'Course Preferences';
 $string['pluginname_desc'] = 'The Course Preferences block allows instructors to
 control course creation and enrollment behavior. These are system wide defaults for
@@ -51,7 +51,7 @@ configure the CPS settings.';
 $string['department'] = 'Department';
 $string['cou_number'] = 'Course Number';
 
-$string['material_shortname'] = 'Master Course {department} {course_number} for {fullname}';
+$string['material_shortname'] = 'Blueprint Course {department} {course_number} for {fullname}';
 
 $string['setting'] = 'User preferences';
 $string['setting_help'] = 'Faculty are allowed to change their first name to a preferred name. This change will be permanent until otherwise specified.';
@@ -69,7 +69,7 @@ $string['no_results'] = 'No results.';
 $string['team_request_limit'] = 'Number of Requests';
 $string['team_request_limit_desc'] = 'This is the the maximum number of requests a primary instructor can make (minimum of 1).';
 
-// Error Strings
+// Error Strings.
 $string['not_enabled'] = 'CPS Setting <strong>{$a}</strong> is not enabled.';
 $string['not_teacher'] = 'You are not enrolled or set to be enrolled in any course.
 If you believe that you should be, please contact the Moodle administrator for
@@ -105,7 +105,7 @@ $string['err_team_query_sections'] = '{$a->year} {$a->name} {$a->department}
 
 $string['err_select_teacher'] = 'You must select at least one Instructor';
 
-// Setting names
+// Setting names.
 $string['default_settings'] = 'Default Settings';
 $string['creation'] = 'Creation / Enrollment';
 $string['creation_help'] = 'Creation and Enrollment settings allow instructors
@@ -137,12 +137,12 @@ $string['unwant'] = 'Unwanted';
 $string['unwant_help'] = 'Unwanted sections will be removed from Moodle. Undoing
 an unwanted selection will re-enroll and/or re-create the sections in Moodle.';
 
-$string['material'] = 'Master Course';
-$string['material_help'] = 'A _Master Course_ is a Moodle course designated to store
+$string['material'] = 'Blueprint Course';
+$string['material_help'] = 'A _Blueprint Course_ is a Moodle course designated to store
 course materials for selected courses. These created courses will __not__
 contain student enrollment.';
 
-$string['creating_materials'] = 'Create master courses';
+$string['creating_materials'] = 'Create blueprint courses';
 
 $string['split'] = 'Splitting';
 $string['split_help'] = 'Splitting allows an instructor to separate online courses
@@ -161,11 +161,18 @@ $string['split_how_many_help'] = 'A _course shell_ is a Moodle course that encap
 For example: If you were splitting a course with three sections, you may decide to make
 two _course shells_, one containing one section, and the other containing two. In most cases,
 the number of _course shells_ is limited to the number of sections within a course.';
+$string['split_autopop'] = 'Do you want to automatically assign sections to course shells using generic shell names?';
+$string['split_autopop_help'] = 'When you have the same number of sections and available course shells,
+you may choose to automatically assign sections to course shells.  If you do, each section will be assigned
+to the next available course shell in turn, and a generic name will be given to each course shell by inserting
+\'Course #\' into the original course\'s full name for each section #.  If you don\'t, each course shell will have
+a customizable course shell name, and you will get a screen with a box for each course shell which you must use to
+choose one section for each shell.';
 $string['next'] = 'Next';
 $string['back'] = 'Back';
 
 $string['split_processed'] = 'Split Courses Processed';
-$string['split_thank_you'] = 'Your split selections have been processed. Conintue
+$string['split_thank_you'] = 'Your split selections have been processed. Continue
 to head back to the split home screen.';
 
 $string['chosen'] = 'Please review your selections.';
@@ -203,7 +210,7 @@ to head back to the cross-list home screen.';
 
 $string['crosslist_select'] = 'Select courses to Cross-list';
 
-// Team Requests
+// Team Requests.
 $string['team_request'] = 'Team Teach Requests';
 $string['team_request_help'] = '
 Team teach requests are made by an instructor who wants to _Team teach_ with
@@ -227,7 +234,7 @@ $string['team_going_email'] = 'The instructors you have selected will receive
 an email from you, inviting them to team teach. You can revoke team teach
 privileges at any time.';
 
-$string['team_how_many'] = 'How many courses will you combine?';
+$string['team_how_many'] = 'How many courses will you combine with this course?';
 $string['team_how_many_help'] = 'This number represents how many different
 course departments and numbers you are combining. In the next screen you will
 decide which courses.';
@@ -283,7 +290,7 @@ $string['team_revoke'] = 'Revoke';
 $string['team_approve'] = 'Approve';
 $string['team_do_nothing'] = 'Do Nothing';
 $string['team_deny'] = 'Deny';
-$string['team_cancel'] = 'Cancel';
+$string['team_cancel'] = 'Leave Team Teach';
 $string['team_actions'] = 'Actions';
 $string['team_requested_courses'] = 'Requested Courses';
 
@@ -311,7 +318,7 @@ $string['team_request_invite_body'] = '
 {$a->requester} has invited you and your students from your {$a->other_course}
 course to participate in a team-taught course with his/her {$a->course}
 course. If you accept this invitation, you and your students will be added
-and you will be made a non-primary instructor.
+and you will be made a primary instructor.
 
 Please click the following link to accept or reject {$a->requester}\'s request:
 {$a->link}';
@@ -340,7 +347,7 @@ $string['user_field_category'] = 'Profile Category';
 $string['user_field_category_desc'] = 'CPS will attempt to create Moodle user profile fields associated with the user meta information from UES.';
 $string['auto_field_desc'] = 'This field was automatically generated through CPS. Do not change the field settings unless you are absolutely certain of what you are doing.';
 
-// Meta Strings
+// Meta Strings.
 $string['username'] = 'Username';
 $string['user_year'] = 'Year';
 $string['user_ferpa'] = 'Ferpa';
@@ -356,3 +363,6 @@ $string['network_failure'] = 'There was a network error that caused the process 
 $string['sec_number'] = 'Section';
 $string['credit_hours'] = 'Credit Hours';
 $string['student_audit'] = 'Auditing';
+
+// Events.
+$string['eventues_course_created'] = 'UES started creating a course';

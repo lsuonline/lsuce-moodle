@@ -14,17 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once("../../config.php");
+/**
+ * Edit page for mod_journal
+ *
+ * @package mod_journal
+ * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ **/
+
+require_once('../../config.php');
 require_once('./edit_form.php');
 
 $id = required_param('id', PARAM_INT);    // Course Module ID.
 
 if (!$cm = get_coursemodule_from_id('journal', $id)) {
-    print_error("Course Module ID was incorrect");
+    throw new \moodle_exception(get_string('incorrectcmid', 'journal'));
 }
 
-if (!$course = $DB->get_record("course", array("id" => $cm->course))) {
-    print_error("Course is misconfigured");
+if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
+    throw new \moodle_exception(get_string('incorrectcourseid', 'journal'));
 }
 
 $context = context_module::instance($cm->id);
@@ -33,8 +41,8 @@ require_login($course, false, $cm);
 
 require_capability('mod/journal:addentries', $context);
 
-if (! $journal = $DB->get_record("journal", array("id" => $cm->instance))) {
-    print_error("Course module is incorrect");
+if (! $journal = $DB->get_record('journal', array('id' => $cm->instance))) {
+    throw new \moodle_exception(get_string('incorrectjournalid', 'journal'));
 }
 
 // Header.
@@ -42,10 +50,11 @@ $PAGE->set_url('/mod/journal/edit.php', array('id' => $id));
 $PAGE->navbar->add(get_string('edit'));
 $PAGE->set_title(format_string($journal->name));
 $PAGE->set_heading($course->fullname);
+$PAGE->set_activity_record($journal);
 
 $data = new stdClass();
 
-$entry = $DB->get_record("journal_entries", array("userid" => $USER->id, "journal" => $journal->id));
+$entry = $DB->get_record('journal_entries', array('userid' => $USER->id, 'journal' => $journal->id));
 if ($entry) {
     $data->entryid = $entry->id;
     $data->text = $entry->text;
@@ -87,14 +96,14 @@ if ($form->is_cancelled()) {
 
     if ($entry) {
         $newentry->id = $entry->id;
-        if (!$DB->update_record("journal_entries", $newentry)) {
-            print_error("Could not update your journal");
+        if (!$DB->update_record('journal_entries', $newentry)) {
+            throw new \moodle_exception(get_string('couldnotupdatejournal', 'journal'));
         }
     } else {
         $newentry->userid = $USER->id;
         $newentry->journal = $journal->id;
-        if (!$newentry->id = $DB->insert_record("journal_entries", $newentry)) {
-            print_error("Could not insert a new journal entry");
+        if (!$newentry->id = $DB->insert_record('journal_entries', $newentry)) {
+            throw new \moodle_exception(get_string('countnotinsertjournalentry', 'journal'));
         }
     }
 
@@ -134,10 +143,9 @@ if ($form->is_cancelled()) {
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($journal->name));
 
-$intro = format_module_intro('journal', $journal, $cm->id);
-echo $OUTPUT->box($intro);
-
-// Otherwise fill and print the form.
+if ($CFG->branch < 400) {
+    $intro = format_module_intro('journal', $journal, $cm->id);
+    echo $OUTPUT->box($intro);
+}
 $form->display();
-
 echo $OUTPUT->footer();

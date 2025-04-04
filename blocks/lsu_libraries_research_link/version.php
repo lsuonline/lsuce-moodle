@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * @package   block_lsu_libraries_research_link
  * @copyright 2016 Louisiana State University
- * @copyright 2016 Chad Mazilly, Robert Russo	
+ * @authors 2016 Chad Mazilly, Robert Russo
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

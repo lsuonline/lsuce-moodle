@@ -102,46 +102,17 @@ class v1migration {
     }
 
     /**
-     * Return the true if the user proceeds with the migration.
+     * Since April 2019 the parameters taken in are not used, however we leave them in to avoid forcing a V1 release/update.
      *
      * @param int $courseid - The course ID.
      * @param int $turnitintooltwoid - The turnitintooltwoid.
-     * @return string $output The HTML for the modal.
      */
     public function migrate_modal($courseid, $turnitintoolid) {
         global $PAGE;
-        $cssurl = new moodle_url('/mod/turnitintooltwo/jquery/colorbox.css');
-        $PAGE->requires->css($cssurl);
         $cssurl = new moodle_url('/mod/turnitintooltwo/css/font-awesome.min.css');
         $PAGE->requires->css($cssurl);
-        $PAGE->requires->jquery_plugin('turnitintooltwo-colorbox', 'mod_turnitintooltwo');
-        $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo', 'mod_turnitintooltwo');
-        $PAGE->requires->jquery_plugin('turnitintooltwo-migration_tool', 'mod_turnitintooltwo');
 
-        $PAGE->requires->string_for_js('closebutton', 'turnitintooltwo');
-
-        $migratelink = html_writer::tag('button', get_string('migrateassignment', 'turnitintooltwo'),
-                                                    array('class' => 'migrate_link btn-primary', 'id' => 'migrate_link',
-                                                    'data-courseid' => $courseid, 'data-turnitintoolid' => $turnitintoolid));
-        $dontmigratelink = html_writer::tag('button', get_string('dontmigrateassignment', 'turnitintooltwo'),
-                                                        array('class' => 'dontmigrate_link btn-default', 'id' => 'dontmigrate_link'));
-
-        $spinner = html_writer::tag('i', '', array('class' => 'fa fa-spinner fa-spin fa-2x'));
-        $spinner = html_writer::tag('div', $spinner, array('class' => 'migration-spinner'));
-
-        $migrating = html_writer::tag('div', html_writer::tag('p', get_string('migrating', 'turnitintooltwo'))
-                                        . $spinner
-                                        . html_writer::tag('p', get_string('migrationredirect', 'turnitintooltwo')),
-                                        array('id' => 'migrating', 'class' => 'hide'));
-
-        $asktomigrate = html_writer::tag('div', html_writer::tag('p', get_string('migrationtooltitle', 'turnitintooltwo'), array('class' => 'migrationtitle'))
-                                        . html_writer::tag('p', get_string('migrationtoolinfo', 'turnitintooltwo'), array('class' => 'migrationtoolinfo'))
-                                        . $migratelink . $dontmigratelink
-                                        , array('id' => 'asktomigrate', 'class' => 'hide'));
-
-        $output = html_writer::tag('div', $asktomigrate . $migrating, array('id' => 'migration_alert', 'class' => 'hide'));
-
-        return $output;
+        $PAGE->requires->js_call_amd('mod_turnitintooltwo/migration_tool_launch', 'migration_tool_launch');
     }
 
 	/**
@@ -171,7 +142,7 @@ class v1migration {
         $this->setup_v2_module($this->courseid, $turnitintooltwoid);
 
         // Get the assignment parts.
-        $v1parts = $DB->get_records('turnitintool_parts', array('turnitintoolid' => $this->v1assignment->id));
+        $v1parts = $DB->get_records('turnitintool_parts', array('turnitintoolid' => $this->v1assignment->id, 'deleted' => 0));
 
         // Migrate the parts.
         foreach ($v1parts as $v1part) {
@@ -298,16 +269,13 @@ class v1migration {
         $coursemodule->instance = $turnitintooltwoid;
         $coursemodule->section = 0;
 
-        // Add Course module and get course section.
+        // Add Course module.
         $coursemodule->coursemodule = add_course_module($coursemodule);
 
-        if (is_callable('course_add_cm_to_section')) {
-            $sectionid = course_add_cm_to_section($coursemodule->course, $coursemodule->coursemodule, $coursemodule->section);
-        } else {
-            $sectionid = add_mod_to_section($coursemodule);
-        }
+        // Get the section for the V1 assignment.
+        $section = $DB->get_record('course_sections', array('course' => $courseid, 'id' => $this->cm->section), 'section');
+        course_add_cm_to_section($coursemodule->course, $coursemodule->coursemodule, $section->section);
 
-        $DB->set_field("course_modules", "section", $sectionid, array("id" => $coursemodule->coursemodule));
         rebuild_course_cache($coursemodule->coursemodule);
     }
 
@@ -442,7 +410,7 @@ class v1migration {
                 // Handle overridden grades if necessary.
                 $grading_info = grade_get_grades($courseid, 'mod', 'turnitintool', $turnitintoolid, $submission->userid);
 
-                if (!empty($grading_info->items[0]->grades[$submission->userid]->overridden)) {
+                if ($grading_info != null && !empty($grading_info->items[0]->grades[$submission->userid]->overridden)) {
                     self::handle_overridden_grade($v1_grades[$submission->userid], $submission->userid, $turnitintooltwoid, $courseid);
                 }
 
@@ -469,6 +437,11 @@ class v1migration {
     public static function handle_overridden_grade($v1grade, $userid, $turnitintooltwoid, $courseid) {
         $grading_info = grade_get_grades($courseid, 'mod', 'turnitintooltwo', $turnitintooltwoid, $userid);
 
+        // Exit if this grading info cannot be found.
+        if (!$grading_info) {
+            return;
+        }
+
         $grades = new stdClass();
         $grades->userid = $userid;
         $grades->finalgrade = $v1grade;
@@ -493,6 +466,15 @@ class v1migration {
         $params = array();
         $params['itemname'] = $this->v1assignment->name;
         grade_update('mod/turnitintooltwo', $this->courseid, 'mod', 'turnitintooltwo', $v2assignmentid, 0, NULL, $params);
+
+        $gradeitemv1 = grade_item::fetch(array('itemmodule' => 'turnitintool', 'iteminstance' => $this->v1assignment->id, 'courseid' => $this->courseid));
+        $gradeitemv2 = grade_item::fetch(array('itemmodule' => 'turnitintooltwo', 'iteminstance' => $v2assignmentid, 'courseid' => $this->courseid));
+
+        // Update the grade category, if one exists.
+        if (isset($gradeitemv1->categoryid)) {
+            grade_item::set_properties($gradeitemv2, array('categoryid' => $gradeitemv1->categoryid, 'gradepass' => $gradeitemv1->gradepass));
+            $gradeitemv2->update();
+        }
 
         // Perform a grade check to double check the grades are in the gradebook.
         $v1_grades = $this->get_grades_array("turnitintool", $this->v1assignment->id, $this->courseid);
@@ -568,7 +550,7 @@ class v1migration {
     }
 
     /**
-     * Get assignments for migrated data table. Called from ajax.php via turnitintooltwo_extra-2018082301.min.js.
+     * Get assignments for migrated data table. Called from ajax.php via turnitintooltwo_extra-2024100901.min.js.
      *
      * @global type $DB
      * @return array return array of assignments to display
@@ -577,60 +559,12 @@ class v1migration {
         global $DB;
 
         $return = array();
-        $idisplaystart = optional_param('iDisplayStart', 0, PARAM_INT);
-        $idisplaylength = optional_param('iDisplayLength', 10, PARAM_INT);
         $secho = optional_param('sEcho', 1, PARAM_INT);
-        $displaycolumns = array('', 'id', 'name', 'migrated');
-        $queryparams = array();
-        // Add sort to query.
-        $isortcol[0] = optional_param('iSortCol_0', null, PARAM_INT);
-        $isortingcols = optional_param('iSortingCols', 0, PARAM_INT);
-        $queryorder = "";
-        if (!is_null( $isortcol[0])) {
-            $queryorder = " ORDER BY ";
-            $startorder = $queryorder;
-            for ($i = 0; $i < intval($isortingcols); $i++) {
-                $isortcol[$i] = optional_param('iSortCol_'.$i, null, PARAM_INT);
-                $bsortable[$i] = optional_param('bSortable_'.$isortcol[$i], null, PARAM_TEXT);
-                $ssortdir[$i] = optional_param('sSortDir_'.$i, null, PARAM_TEXT);
-                if ($bsortable[$i] == "true") {
-                    $queryorder .= $displaycolumns[$isortcol[$i]]." ".$ssortdir[$i].", ";
-                }
-            }
-            if ($queryorder == $startorder) {
-                $queryorder = "";
-            } else {
-                $queryorder = substr_replace($queryorder, "", -2);
-            }
-        }
-        // Add search to query.
-        $ssearch = optional_param('sSearch', '', PARAM_TEXT);
-        $querywhere = ' WHERE ( ';
-        for ($i = 0; $i < count($displaycolumns); $i++) {
-            $bsearchable[$i] = optional_param('bSearchable_'.$i, null, PARAM_TEXT);
-            if (!is_null($bsearchable[$i]) && $bsearchable[$i] == "true" && $ssearch != '') {
-                $include = true;
-                if ($i <= 1) {
-                    if (!is_int($ssearch) || is_null($ssearch)) {
-                        $include = false;
-                    }
-                }
-                if ($include) {
-                    $querywhere .= $DB->sql_like($displaycolumns[$i], ':search_term_'.$i, false)." OR ";
-                    $queryparams['search_term_'.$i] = '%'.$ssearch.'%';
-                }
-            }
-        }
-        if ( $querywhere == ' WHERE ( ' ) {
-            $querywhere = "";
-        } else {
-            $querywhere = substr_replace( $querywhere, "", -3 );
-            $querywhere .= " )";
-        }
-        $query = "SELECT id, name, migrated FROM {turnitintool}".$querywhere.$queryorder;
-        $assignments = $DB->get_records_sql($query, $queryparams, $idisplaystart, $idisplaylength);
 
-        $totalassignments = count($DB->get_records_sql($query, $queryparams));
+        $query = "SELECT id, name, migrated FROM {turnitintool}";
+        $assignments = $DB->get_records_sql($query);
+        $totalassignments = count($assignments);
+
         $return["aaData"] = array();
         foreach ($assignments as $assignment) {
             if ($assignment->migrated == 1) {

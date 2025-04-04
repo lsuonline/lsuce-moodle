@@ -23,7 +23,6 @@
  */
 
 namespace mod_attendance\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Event for when a attendance report is viewed.
@@ -74,16 +73,16 @@ class report_viewed extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/attendance/report.php', array('id' => $this->objectid));
+        return new \moodle_url('/mod/attendance/report.php', array('id' => $this->contextinstanceid));
     }
 
     /**
-     * Replace add_to_log() statement.
+     * Get objectid mapping
      *
-     * @return array of parameters to be passed to legacy add_to_log() function.
+     * @return array of parameters for object mapping.
      */
-    protected function get_legacy_logdata() {
-        return array($this->courseid, 'attendance', 'report', 'report.php?id=' . $this->objectid,
-            $this->objectid, $this->contextinstanceid);
+    public static function get_objectid_mapping() {
+        return array('db' => 'attendance', 'restore' => 'attendance');
     }
+
 }

@@ -16,8 +16,6 @@
 
 namespace theme_snap\controller;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Controller Kernel.
  *
@@ -27,7 +25,7 @@ defined('MOODLE_INTERNAL') || die();
  * values.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class kernel {
@@ -64,6 +62,7 @@ class kernel {
      * @return array
      */
     public function resolve_controller_callback($action) {
+        // @codingStandardsIgnoreLine
         /** @var $controller controller_abstract */
         list($controller, $method) = $this->router->route_action($action);
 
@@ -91,7 +90,7 @@ class kernel {
         $buffer   = trim(ob_get_contents());
         ob_end_clean();
 
-        if (!empty($response) and !empty($buffer)) {
+        if (!empty($response) && !empty($buffer)) {
             throw new \coding_exception('Mixed return output and buffer output');
         } else if (!empty($buffer)) {
             $response = $buffer;

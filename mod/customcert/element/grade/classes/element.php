@@ -24,8 +24,6 @@
 
 namespace customcertelement_grade;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Grade - Course
  */
@@ -43,13 +41,13 @@ class element extends \mod_customcert\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
         global $COURSE;
 
         // Get the grade items we can display.
-        $gradeitems = array();
+        $gradeitems = [];
         $gradeitems[CUSTOMCERT_GRADE_COURSE] = get_string('coursegrade', 'customcertelement_grade');
         $gradeitems = $gradeitems + \mod_customcert\element_helper::get_grade_items($COURSE);
 
@@ -75,10 +73,10 @@ class element extends \mod_customcert\element {
      */
     public function save_unique_data($data) {
         // Array of data we will be storing in the database.
-        $arrtostore = array(
+        $arrtostore = [
             'gradeitem' => $data->gradeitem,
-            'gradeformat' => $data->gradeformat
-        );
+            'gradeformat' => $data->gradeformat,
+        ];
 
         // Encode these variables before saving into the DB.
         return json_encode($arrtostore);
@@ -93,28 +91,21 @@ class element extends \mod_customcert\element {
      */
     public function render($pdf, $preview, $user) {
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
+        if (empty($this->get_data())) {
             return;
         }
 
         $courseid = \mod_customcert\element_helper::get_courseid($this->id);
 
         // Decode the information stored in the database.
-        $gradeinfo = json_decode($data);
+        $gradeinfo = json_decode($this->get_data());
         $gradeitem = $gradeinfo->gradeitem;
         $gradeformat = $gradeinfo->gradeformat;
 
         // If we are previewing this certificate then just show a demonstration grade.
         if ($preview) {
-            // Define how many decimals to display.
-            $decimals = 2;
-            if ($gradeinfo->gradeformat == GRADE_DISPLAY_TYPE_PERCENTAGE) {
-                $decimals = 0;
-            }
-
             $courseitem = \grade_item::fetch_course_item($courseid);
-            $grade = grade_format_gradevalue('100', $courseitem, true, $gradeinfo->gradeformat, $decimals);
+            $grade = grade_format_gradevalue('100', $courseitem, true, $gradeinfo->gradeformat);;
         } else {
             if ($gradeitem == CUSTOMCERT_GRADE_COURSE) {
                 $grade = \mod_customcert\element_helper::get_course_grade_info(
@@ -157,23 +148,16 @@ class element extends \mod_customcert\element {
         global $COURSE;
 
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
-            return '';
+        if (empty($this->get_data())) {
+            return;
         }
 
         // Decode the information stored in the database.
-        $gradeinfo = json_decode($data);
+        $gradeinfo = json_decode($this->get_data());
 
         $courseitem = \grade_item::fetch_course_item($COURSE->id);
 
-        // Define how many decimals to display.
-        $decimals = 2;
-        if ($gradeinfo->gradeformat == GRADE_DISPLAY_TYPE_PERCENTAGE) {
-            $decimals = 0;
-        }
-
-        $grade = grade_format_gradevalue('100', $courseitem, true, $gradeinfo->gradeformat, $decimals);
+        $grade = grade_format_gradevalue('100', $courseitem, true, $gradeinfo->gradeformat);
 
         return \mod_customcert\element_helper::render_html_content($this, $grade);
     }
@@ -181,13 +165,12 @@ class element extends \mod_customcert\element {
     /**
      * Sets the data on the form when editing an element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function definition_after_data($mform) {
         // Set the item and format for this element.
-        $data = $this->get_data();
-        if (!empty($data)) {
-            $gradeinfo = json_decode($data);
+        if (!empty($this->get_data())) {
+            $gradeinfo = json_decode($this->get_data());
 
             $element = $mform->getElement('gradeitem');
             $element->setValue($gradeinfo->gradeitem);
@@ -211,9 +194,22 @@ class element extends \mod_customcert\element {
         global $DB;
 
         $gradeinfo = json_decode($this->get_data());
-        if ($newitem = \restore_dbops::get_backup_ids_record($restore->get_restoreid(), 'course_module', $gradeinfo->gradeitem)) {
-            $gradeinfo->gradeitem = $newitem->newitemid;
-            $DB->set_field('customcert_elements', 'data', $this->save_unique_data($gradeinfo), array('id' => $this->get_id()));
+
+        $isgradeitem = false;
+        $oldid = $gradeinfo->gradeitem;
+        if (str_starts_with($gradeinfo->gradeitem, 'gradeitem:')) {
+            $isgradeitem = true;
+            $oldid = str_replace('gradeitem:', '', $gradeinfo->gradeitem);
+        }
+
+        $itemname = $isgradeitem ? 'grade_item' : 'course_module';
+        if ($newitem = \restore_dbops::get_backup_ids_record($restore->get_restoreid(), $itemname, $oldid)) {
+            $gradeinfo->gradeitem = '';
+            if ($isgradeitem) {
+                $gradeinfo->gradeitem = 'gradeitem:';
+            }
+            $gradeinfo->gradeitem = $gradeinfo->gradeitem . $newitem->newitemid;
+            $DB->set_field('customcert_elements', 'data', $this->save_unique_data($gradeinfo), ['id' => $this->get_id()]);
         }
     }
 
@@ -223,7 +219,7 @@ class element extends \mod_customcert\element {
      * @return array returns an array of grade formats
      */
     public static function get_grade_format_options() {
-        $gradeformat = array();
+        $gradeformat = [];
         $gradeformat[GRADE_DISPLAY_TYPE_REAL] = get_string('gradepoints', 'customcertelement_grade');
         $gradeformat[GRADE_DISPLAY_TYPE_PERCENTAGE] = get_string('gradepercent', 'customcertelement_grade');
         $gradeformat[GRADE_DISPLAY_TYPE_LETTER] = get_string('gradeletter', 'customcertelement_grade');

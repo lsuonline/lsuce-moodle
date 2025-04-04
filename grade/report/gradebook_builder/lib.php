@@ -122,8 +122,8 @@ class grade_report_gradebook_builder extends grade_report {
         $newcm->module = $DB->get_field('modules', 'id', array('name' => $item->itemmodule));
         $newcm->section = 1;
         $newcm->instance = 0;
-        $newcm->visible = 1;
-        $newcm->visibleold = 1;
+        $newcm->visible = 0;
+        $newcm->visibleold = 0;
         $newcm->groupmode = $course->groupmode;
         $newcm->groupmembersonly = 0;
         $newcm->groupingid = 0;
@@ -159,12 +159,13 @@ class grade_report_gradebook_builder extends grade_report {
         $module->decimalpoints = $quiz->decimalpoints;
         $module->questiondecimalpoints = $quiz->questiondecimalpoints;
         $module->questionsperpage = $quiz->questionsperpage;
-        $module->shufflequestions = $quiz->shufflequestions;
+	// Removed because it's no longer in Moodle.
+	// $module->shufflequestions = $quiz->shufflequestions;
         $module->shuffleanswers = $quiz->shuffleanswers;
         $module->sumgrades = 0.00000;
         $module->timecreated = time();
         $module->timelimit = $quiz->timelimit;
-        $module->quizpassword = $quiz->password;
+        $module->quizpassword = $quiz->quizpassword;
         $module->subnet = $quiz->subnet;
         $module->browsersecurity = $quiz->browsersecurity;
         $module->delay1 = $quiz->delay1;
@@ -212,7 +213,7 @@ class grade_report_gradebook_builder extends grade_report {
             global $CFG;
             $lib_file = $CFG->dirroot . '/mod/' . $item->itemmodule . '/lib.php';
             if (!file_exists($lib_file)) {
-                print_error('no_lib_file', 'gradereport_gradebook_builder',
+                moodle_exception('no_lib_file', 'gradereport_gradebook_builder',
                     '', $item->itemmodule);
             }
             require_once $lib_file;
@@ -287,6 +288,7 @@ class grade_report_gradebook_builder extends grade_report {
         $help_step_4 = get_string('help_step_4', 'gradereport_gradebook_builder');
         $help_step_5 = get_string('help_step_5', 'gradereport_gradebook_builder');
         $help_step_6 = get_string('help_step_6', 'gradereport_gradebook_builder');
+        $help_step_7 = get_string('help_step_7', 'gradereport_gradebook_builder');
 
         $step_1 = get_string('step_1', 'gradereport_gradebook_builder');
         $step_2 = get_string('step_2', 'gradereport_gradebook_builder');
@@ -368,7 +370,7 @@ class grade_report_gradebook_builder extends grade_report {
                         html_writer::select($this->get_aggregations(), 'aggregations', '', null, 
                         ['id' => 'grading-method']) 
                         . 
-                        html_writer::tag('form', $OUTPUT->heading('Category Weights', 4) 
+                        html_writer::tag('form', $OUTPUT->heading('Step 4: Set Category Weights', 4) 
                         .
                         html_writer::tag('fieldset', ''),
                         ['id' => 'category-weights']),
@@ -391,9 +393,7 @@ class grade_report_gradebook_builder extends grade_report {
                         html_writer::empty_tag('input', 
                         ['type' => 'hidden', 'name' => 'template', 'value' => $this->template->id]) 
                         . 
-                        html_writer::tag('span', 
-                            $step_4, 
-                        ['class' => 'bolder']) 
+                        html_writer::tag('h4', $step_4) 
                         . 
                         html_writer::tag('button', 'Save to Gradebook', 
                         ['type' => 'submit', 'id' => 'save-button', 'class' => 'btn btn-large btn-primary']),
@@ -426,12 +426,16 @@ class grade_report_gradebook_builder extends grade_report {
                             html_writer::tag('li', 
                                 $help_step_4) 
                             .
-                            html_writer::tag('li', 
-                                $help_step_5) 
+                            html_writer::tag('li',
+                                $help_step_5)
                             .
                             html_writer::tag('li', 
-                                $help_step_6)
-                        ),
+                                $help_step_6) 
+			) . 
+                        html_writer::tag('div',
+                            $help_step_7,
+                        ['class' => 'help_instructions'])
+                        ,
                     ['id' => 'howto']),
                 ['class' => 'col-md-7 col-lg-6']),
             ['class' => 'row']),
@@ -511,7 +515,7 @@ class grade_report_gradebook_builder extends grade_report {
             case CONTEXT_COURSECAT: return $this->course->category;
             case CONTEXT_SYSTEM: return 0;
         }
-        print_error('undefined_context', 'gradereport_gradebook_builder');
+        moodle_exception('undefined_context', 'gradereport_gradebook_builder');
     }
 
     function determine_label($contextlevel) {
@@ -618,7 +622,8 @@ class grade_report_gradebook_builder extends grade_report {
         $list = get_config('grade_builder', 'acceptable_mods');
         $acceptable_mods = explode(',', $list);
 
-        $mods = get_plugin_list('mod');
+        $mods = core_component::get_plugin_list('mod');
+        // $mods = get_plugin_list('mod');
 
         $options = array(
             'manual' => get_string('manual_item', 'gradereport_gradebook_builder')

@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once(dirname(__FILE__).'/lib.php');
+require_once(__DIR__.'/lib.php');
 require_once($CFG->dirroot.'/mod/book/locallib.php');
 
 /**
@@ -282,7 +282,7 @@ function toolbook_importhtml_get_chapter_files($package, $type) {
 
         } else {
             $mime = mimeinfo('icon', $file->pathname);
-            if ($mime !== 'html') {
+            if ($mime !== 'markup') {
                 continue;
             }
             $level = substr_count($file->pathname, '/');

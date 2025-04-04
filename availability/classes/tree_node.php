@@ -34,6 +34,10 @@ defined('MOODLE_INTERNAL') || die();
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class tree_node {
+
+    /** @var int Counter to be used in {@link tree_node::unique_sql_parameter()}. */
+    protected static $uniquesqlparametercounter = 1;
+
     /**
      * Determines whether this particular item is currently available
      * according to the availability criteria.
@@ -59,7 +63,7 @@ abstract class tree_node {
      * @param int $userid User ID to check availability for
      * @return result Availability check result
      */
-    public abstract function check_available($not,
+    abstract public function check_available($not,
             \core_availability\info $info, $grabthelot, $userid);
 
     /**
@@ -73,14 +77,14 @@ abstract class tree_node {
      * @param bool $not Set true if we are inverting the condition
      * @return bool True if condition will return available for everyone
      */
-    public abstract function is_available_for_all($not = false);
+    abstract public function is_available_for_all($not = false);
 
     /**
      * Saves tree data back to a structure object.
      *
      * @return \stdClass Structure object (ready to be made into JSON format)
      */
-    public abstract function save();
+    abstract public function save();
 
     /**
      * Checks whether this node should be included after restore or not. The
@@ -130,7 +134,7 @@ abstract class tree_node {
      * @param int $newid New ID
      * @return bool True if it changed, otherwise false
      */
-    public abstract function update_dependency_id($table, $oldid, $newid);
+    abstract public function update_dependency_id($table, $oldid, $newid);
 
     /**
      * Checks whether this condition applies to user lists. The default is
@@ -242,10 +246,11 @@ abstract class tree_node {
      * @return SQL code for the parameter, e.g. ':pr1234'
      */
     protected static function unique_sql_parameter(array &$params, $value) {
-        static $count = 1;
+
+        // Note we intentionally do not use self:: here.
+        $count = tree_node::$uniquesqlparametercounter++;
         $unique = 'usp' . $count;
         $params[$unique] = $value;
-        $count++;
         return ':' . $unique;
     }
 }

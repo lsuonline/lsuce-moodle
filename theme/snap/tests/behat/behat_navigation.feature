@@ -16,19 +16,13 @@
 # Tests for Snap behat tweaks.
 #
 # @package    theme_snap
-# @copyright  Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright  Copyright (c) 2015 Open LMS (https://www.openlms.net)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-
 
 @theme @theme_snap
 Feature: When the moodle theme is set to Snap, behat tests that navigate via the Nav block should still work
     even though this block is hidden by default in the Snap theme.
 
-  Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-
   Scenario: Log in as admin and always see the navigation block in behat
-    Given I log in as "admin" (theme_snap)
+    Given I log in as "admin"
     Then ".block_navigation" "css_element" should exist
-

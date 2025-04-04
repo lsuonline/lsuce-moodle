@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Customcert image element upgrade code.
  *
@@ -33,7 +31,7 @@ defined('MOODLE_INTERNAL') || die;
 function xmldb_customcertelement_image_upgrade($oldversion) {
     global $DB;
 
-    if ($oldversion < 2016052303) {
+    if ($oldversion < 2016120501) {
         // Go through each 'image' element and update the file stored information.
         if ($images = $DB->get_records_select('customcert_elements', $DB->sql_compare_text('element') . ' = \'image\'')) {
             // Create a file storage instance we are going to use to create pathname hashes.
@@ -43,23 +41,23 @@ function xmldb_customcertelement_image_upgrade($oldversion) {
                 // Get the current data we have stored for this element.
                 $elementinfo = json_decode($image->data);
                 if ($file = $fs->get_file_by_hash($elementinfo->pathnamehash)) {
-                    $arrtostore = array(
+                    $arrtostore = [
                         'contextid' => $file->get_contextid(),
                         'filearea' => $file->get_filearea(),
                         'itemid' => $file->get_itemid(),
                         'filepath' => $file->get_filepath(),
                         'filename' => $file->get_filename(),
                         'width' => (int) $elementinfo->width,
-                        'height' => (int) $elementinfo->height
-                    );
+                        'height' => (int) $elementinfo->height,
+                    ];
                     $arrtostore = json_encode($arrtostore);
-                    $DB->set_field('customcert_elements', 'data', $arrtostore,  array('id' => $image->id));
+                    $DB->set_field('customcert_elements', 'data', $arrtostore,  ['id' => $image->id]);
                 }
             }
         }
 
         // Savepoint reached.
-        upgrade_plugin_savepoint(true, 2016052303, 'customcertelement', 'image');
+        upgrade_plugin_savepoint(true, 2016120501, 'customcertelement', 'image');
     }
 
     return true;

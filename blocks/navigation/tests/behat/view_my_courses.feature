@@ -29,6 +29,17 @@ Feature: View my courses in navigation block
       | student1 | c1     | student |
       | student1 | c31    | student |
       | student1 | c331   | student |
+    And I log in as "admin"
+    And I am on site homepage
+    And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
+    And I add the "Navigation" block if not present
+    And I configure the "Navigation" block
+    And I set the following fields to these values:
+      | Page contexts | Display throughout the entire site |
+    And I press "Save changes"
+    And I log out
 
   @javascript
   Scenario: The plain list of enrolled courses is shown
@@ -93,3 +104,24 @@ Feature: View my courses in navigation block
     And I should not see "c2" in the "Navigation" "block"
     And I should see "c31" in the "Navigation" "block"
     And I should not see "c32" in the "Navigation" "block"
+
+  @javascript
+  Scenario: The course limit setting is applied in the navigation block
+    Given the following config values are set as admin:
+      | navcourselimit | 2 |
+    And I log in as "student1"
+    And I should see "More..." in the "Navigation" "block"
+    When I click on "More..." "link" in the "Navigation" "block"
+    Then I should see "My courses" in the "page-header" "region"
+
+  @javascript
+  Scenario: The dashboard node is not displayed in the navigation block when it is disabled
+    Given the following config values are set as admin:
+      | enabledashboard | 0 |
+    When I log in as "student1"
+    Then I should not see "Dashboard" in the "Navigation" "block"
+# Re-enable dashboard and check then it's displayed in the navigation block.
+    And the following config values are set as admin:
+      | enabledashboard | 1 |
+    And I reload the page
+    And I should see "Dashboard" in the "Navigation" "block"

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * manages the content on the Panopto block
+ * Manages the content on the Panopto block
  *
  * @package block_panopto
  * @copyright  Panopto 2009 - 2016 /With contributions from Spenser Jones (sjones@ambrose.edu)
@@ -23,34 +23,71 @@
  */
 
 define('AJAX_SCRIPT', true);
+define('READ_ONLY_SESSION', true);
+
+// @codingStandardsIgnoreLine
 global $CFG;
 if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
     require_once(dirname(__FILE__) . '/../../config.php');
 }
-
 require_once(dirname(__FILE__) . '/lib/panopto_data.php');
 
 try {
-    require_login();
+    $courseid = required_param('courseid', PARAM_INT);
+    $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+    require_login($course);
     require_sesskey();
+    // Close the session so that the users other tabs in the same session are not blocked.
+    \core\session\manager::write_close();
     header('Content-Type: text/html; charset=utf-8');
     global $CFG, $USER;
 
-    $courseid = required_param('courseid', PARAM_INT);
-
+    $CFG->enable_read_only_sessions = true;
     $content = new stdClass;
-
-    // Initialize $content->text to an empty string here to avoid trying to append to it before
-    // it has been initialized and throwing a warning. Bug 33163.
     $content->text = '';
 
     // Construct the Panopto data proxy object.
-    $panoptodata = new panopto_data($courseid);
+    $panoptodata = new \panopto_data($courseid);
+    $failedautoprovisioning = false;
 
-    if (empty($panoptodata->servername) || empty($panoptodata->instancename) || empty($panoptodata->applicationkey)) {
+    $allowautoprovision = get_config('block_panopto', 'auto_provision_new_courses');
+    $usercanprovision = $panoptodata->can_user_provision($courseid);
+
+    if ((empty($panoptodata->servername) ||
+        empty($panoptodata->instancename) ||
+        empty($panoptodata->applicationkey)) &&
+        $usercanprovision &&
+        ($allowautoprovision == 'onblockview')) {
+
+        $task = new \block_panopto\task\provision_course();
+        $task->set_custom_data([
+            'courseid' => $courseid,
+        ]);
+
+        try {
+            $task->execute();
+        } catch (Exception $e) {
+            $errormessage = $e->getMessage();
+            $content->text .= "<span class='error'>" . $errormessage . '</span>';
+            \panopto_data::print_log($errormessage);
+
+            $content->footer = '';
+
+            echo $content->text;
+            $failedautoprovisioning = true;
+        }
+
+        // Now that the course has been auto-provisioned lets try to get it again.
+        $panoptodata = new \panopto_data($courseid);
+    }
+
+
+    if (!$failedautoprovisioning && (empty($panoptodata->servername) ||
+        empty($panoptodata->instancename) || empty($panoptodata->applicationkey))) {
         $content->text = get_string('unprovisioned', 'block_panopto');
 
-        if ($panoptodata->can_user_provision($courseid)) {
+        if ($usercanprovision) {
             $content->text .= '<br/>' .
             "<a href='$CFG->wwwroot/blocks/panopto/provision_course_internal.php?id=$courseid'>" .
             get_string('provision_course_link_text', 'block_panopto') . '</a>';
@@ -59,35 +96,39 @@ try {
         $content->footer = '';
 
         echo $content->text;
-    } else {
+    } else if (!$failedautoprovisioning) {
 
         try {
             if (!$panoptodata->sessiongroupid) {
                 $content->text = get_string('no_course_selected', 'block_panopto');
             } else if (!\panopto_data::is_server_alive('https://' . $panoptodata->servername . '/Panopto')) {
-                \panopto_data::print_log(get_string('server_not_available', 'block_panopto', $panoptodata->servername));
-                $content->text .= "<span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
+                $servernotavailableestring = get_string('server_not_available', 'block_panopto', $panoptodata->servername);
+                \panopto_data::print_log($servernotavailableestring);
+                $content->text .= "<span class='error'>" . $servernotavailableestring . '</span>';
             } else {
                 // We can get by external_id but there is no point because atm it calls this method redundantly anyway.
                 $courseinfo = $panoptodata->get_folders_by_id();
 
-                // Panopto course folder was deleted, or an exception was thrown while retrieving course data.
-                if (!isset($courseinfo) || !$courseinfo || $courseinfo === -1) {
-                    $content->text .= "<span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
+                if (isset($courseinfo->noaccess) && $courseinfo->noaccess == true) {
+                    // The user did not have access to the Panopto content.
+                    $content->text .= "<span class='error'>" . get_string('no_access', 'block_panopto') . '</span>';
+                } else if (!empty($courseinfo->errormessage)) {
+                    // We failed for some other reason, display the error.
+                    $content->text .= "<span class='error'>" . $courseinfo->errormessage . '</span>';
                 } else {
                     // SSO form passes instance name in POST to keep URLs portable.
                     $content->text .= "<form name='SSO' method='post'>" .
                         "<input type='hidden' name='instance' value='$panoptodata->instancename' /></form>";
 
-
                     // Get all Completed.
                     $sessionlist = $panoptodata->get_session_list($courseinfo->DeliveriesHaveSpecifiedOrder);
-                    $livesessions = array();
+                    $livesessions = [];
 
                     if (is_array($sessionlist) && !empty($sessionlist)) {
                         foreach ($sessionlist as $sessionobj) {
 
-                            // If the session is a live broadcast from the Windows/Mac Recorder or Remote Recorder check if its live
+                            // If the session is a live broadcast from the Windows/Mac Recorder
+                            // or Remote Recorder check if its live.
                             $islivesession = $sessionobj->State === 'Broadcasting';
 
                             if ($islivesession) {
@@ -131,10 +172,33 @@ try {
 
                     if (!empty($completeddeliveries)) {
                         $i = 0;
+
+                        if (!function_exists('str_contains')) {
+                            /**
+                             * Check if string contains
+                             *
+                             * @param string $haystack
+                             * @param string $needle
+                             * @return bool
+                             */
+                            function str_contains(string $haystack, string $needle): bool {
+                                return '' === $needle || false !== strpos($haystack, $needle);
+                            }
+                        }
+
                         foreach ($completeddeliveries as $completeddelivery) {
                             // Collapse to 3 lectures by default.
                             if ($i == 3) {
                                 $content->text .= "<div id='hiddenLecturesDiv'>";
+                            }
+
+                            if (!str_contains($completeddelivery->ViewerUrl, '?instance') &&
+                                !str_contains($completeddelivery->ViewerUrl, '&instance')) {
+                                if (str_contains($completeddelivery->ViewerUrl, '?')) {
+                                    $completeddelivery->ViewerUrl .= '&instance=' . $panoptodata->instancename;
+                                } else {
+                                    $completeddelivery->ViewerUrl .= '?instance=' . $panoptodata->instancename;
+                                }
                             }
 
                             // Alternate gray background for readability.
@@ -191,8 +255,10 @@ try {
 
                     $hascreatoraccess = has_capability('block/panopto:provision_asteacher', $context, $USER->id);
 
-                    // Settings link can only be viewed by Teachers, Admins. If the proper setting is enabled, any creators can also view the link.
-                    if ($hascreatoraccess && ($isteacheroradmin || get_config('block_panopto', 'any_creator_can_view_folder_settings'))) {
+                    // Settings link can only be viewed by Teachers, Admins. If the proper setting is enabled,
+                    // any creators can also view the link.
+                    if ($hascreatoraccess && ($isteacheroradmin ||
+                        get_config('block_panopto', 'any_creator_can_view_folder_settings'))) {
                         $content->text .= "<div class='sectionHeader'><b>" . get_string('links', 'block_panopto') .
                             '</b></div>' .
                             "<div class='listItem'>" .
@@ -216,12 +282,11 @@ try {
                 }
             }
         } catch (Exception $e) {
-            $content->text .= "<br><span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
+            $content->text .= "<span class='error'>" . get_string('error_retrieving', 'block_panopto') . '</span>';
+            \panopto_data::print_log($e->getMessage());
         }
 
         $content->footer = '';
-
-
         echo $content->text;
     }
 } catch (Exception $e) {

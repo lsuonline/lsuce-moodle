@@ -121,7 +121,7 @@ class page_helper {
         $templateurl = null;
         if ($template) {
             $templateurl = new moodle_url('/admin/tool/lp/templatecompetencies.php', [
-                'templateid' => $template->get_id(),
+                'templateid' => $template->get('id'),
                 'pagecontextid' => $pagecontextid
             ]);
         }
@@ -133,25 +133,28 @@ class page_helper {
 
         $PAGE->navigation->override_active_url($templatesurl);
         $PAGE->set_context($pagecontext);
+        $PAGE->set_url($url);
 
         if (!empty($template)) {
-            $title = format_string($template->get_shortname(), true, array('context' => $context));
+            $title = format_string($template->get('shortname'), true, array('context' => $context));
         } else {
             $title = get_string('templates', 'tool_lp');
         }
 
         if ($pagecontext->contextlevel == CONTEXT_SYSTEM) {
-            $heading = $SITE->fullname;
+            $PAGE->set_heading($SITE->fullname);
         } else if ($pagecontext->contextlevel == CONTEXT_COURSECAT) {
-            $heading = $pagecontext->get_context_name();
+            \core_course_category::page_setup();
+            // Set the learning plan templates node active in the settings navigation block.
+            if ($learningplannode = $PAGE->settingsnav->find('learningplantemplates', \navigation_node::TYPE_SETTING)) {
+                $learningplannode->make_active();
+            }
         } else {
             throw new coding_exception('Unexpected context!');
         }
 
         $PAGE->set_pagelayout('admin');
-        $PAGE->set_url($url);
         $PAGE->set_title($title);
-        $PAGE->set_heading($heading);
 
         if (!empty($template)) {
             $PAGE->navbar->add($title, $templateurl);
@@ -199,7 +202,7 @@ class page_helper {
         $plansurl = new moodle_url('/admin/tool/lp/plans.php', array('userid' => $userid));
         $planurl = null;
         if ($plan) {
-            $planurl = new moodle_url('/admin/tool/lp/plan.php', array('id' => $plan->get_id()));
+            $planurl = new moodle_url('/admin/tool/lp/plan.php', array('id' => $plan->get('id')));
         }
 
         $returnurl = $plansurl;
@@ -218,7 +221,7 @@ class page_helper {
         }
 
         if (!empty($plan)) {
-            $title = format_string($plan->get_name(), true, array('context' => $context));
+            $title = format_string($plan->get('name'), true, array('context' => $context));
         } else {
             $title = get_string('learningplans', 'tool_lp');
         }
@@ -226,7 +229,6 @@ class page_helper {
         $PAGE->set_pagelayout('standard');
         $PAGE->set_url($url);
         $PAGE->set_title($title);
-        $PAGE->set_heading($title);
 
         if (!empty($plan)) {
             $PAGE->navbar->add($title, $planurl);
@@ -273,7 +275,7 @@ class page_helper {
         $evidencelisturl = new moodle_url('/admin/tool/lp/user_evidence_list.php', array('userid' => $userid));
         $evidenceurl = null;
         if ($evidence) {
-            $evidenceurl = new moodle_url('/admin/tool/lp/user_evidence.php', array('id' => $evidence->get_id()));
+            $evidenceurl = new moodle_url('/admin/tool/lp/user_evidence.php', array('id' => $evidence->get('id')));
         }
 
         $returnurl = $evidencelisturl;
@@ -292,7 +294,7 @@ class page_helper {
         }
 
         if (!empty($evidence)) {
-            $title = format_string($evidence->get_name(), true, array('context' => $context));
+            $title = format_string($evidence->get('name'), true, array('context' => $context));
         } else {
             $title = get_string('userevidence', 'tool_lp');
         }
@@ -300,7 +302,6 @@ class page_helper {
         $PAGE->set_pagelayout('standard');
         $PAGE->set_url($url);
         $PAGE->set_title($title);
-        $PAGE->set_heading($title);
 
         if (!empty($evidence)) {
             $PAGE->navbar->add($title, $evidenceurl);
@@ -334,7 +335,7 @@ class page_helper {
      *               - Page framework URL
      */
     public static function setup_for_framework($id, $pagecontextid, $framework = null, $returntype = null) {
-        global $PAGE;
+        global $PAGE, $SITE;
 
         // We keep the original context in the URLs, so that we remain in the same context.
         $url = new moodle_url("/admin/tool/lp/editcompetencyframework.php", array('id' => $id, 'pagecontextid' => $pagecontextid));
@@ -343,8 +344,26 @@ class page_helper {
         }
         $frameworksurl = new moodle_url('/admin/tool/lp/competencyframeworks.php', array('pagecontextid' => $pagecontextid));
 
-        $PAGE->navigation->override_active_url($frameworksurl);
+        $context = context::instance_by_id($pagecontextid);
+        $PAGE->set_context($context);
+        $PAGE->set_pagelayout('admin');
+        $PAGE->set_url($url);
+
         $title = get_string('competencies', 'core_competency');
+
+        if ($context->contextlevel == CONTEXT_COURSECAT) {
+            \core_course_category::page_setup();
+            // Set the competency frameworks node active in the settings navigation block.
+            if ($competencyframeworksnode = $PAGE->settingsnav->find('competencyframeworks', \navigation_node::TYPE_SETTING)) {
+                $competencyframeworksnode->make_active();
+            }
+        } else if ($context->contextlevel == CONTEXT_SYSTEM) {
+            $PAGE->set_heading($SITE->fullname);
+        } else {
+            $PAGE->set_heading($title);
+        }
+
+        $PAGE->navigation->override_active_url($frameworksurl);
         if (empty($id)) {
             $pagetitle = get_string('competencyframeworks', 'tool_lp');
             $pagesubtitle = get_string('addnewcompetencyframework', 'tool_lp');
@@ -352,7 +371,7 @@ class page_helper {
             $url->remove_params(array('id'));
             $PAGE->navbar->add($pagesubtitle, $url);
         } else {
-            $pagetitle = $framework->get_shortname();
+            $pagetitle = $framework->get('shortname');
             $pagesubtitle = get_string('editcompetencyframework', 'tool_lp');
             if ($returntype == 'competencies') {
                 $frameworksurl = new moodle_url('/admin/tool/lp/competencies.php', array(
@@ -367,11 +386,7 @@ class page_helper {
             $PAGE->navbar->add($pagesubtitle, $url);
         }
 
-        $PAGE->set_context(context::instance_by_id($pagecontextid));
-        $PAGE->set_pagelayout('admin');
-        $PAGE->set_url($url);
         $PAGE->set_title($title);
-        $PAGE->set_heading($title);
         return array($pagetitle, $pagesubtitle, $url, $frameworksurl);
     }
 
@@ -417,18 +432,18 @@ class page_helper {
 
         // Set return url.
         $returnurloptions = [
-            'competencyframeworkid' => $framework->get_id(),
+            'competencyframeworkid' => $framework->get('id'),
             'pagecontextid' => $pagecontextid
         ];
         $returnurl = new moodle_url('/admin/tool/lp/competencies.php', $returnurloptions);
-        $PAGE->navbar->add($framework->get_shortname(), $returnurl);
+        $PAGE->navbar->add($framework->get('shortname'), $returnurl);
 
         // Set page layout.
         $PAGE->set_pagelayout('admin');
 
         if (empty($competency)) {
             // Add mode.
-            $title = format_string($framework->get_shortname(), true, ['context' => $pagecontext]);
+            $title = format_string($framework->get('shortname'), true, ['context' => $pagecontext]);
 
             // Set the sub-title for add mode.
             $level = $parent ? $parent->get_level() + 1 : 1;
@@ -436,7 +451,7 @@ class page_helper {
 
         } else {
             // Edit mode.
-            $title = format_string($competency->get_shortname(), true, ['context' => $competency->get_context()]);
+            $title = format_string($competency->get('shortname'), true, ['context' => $competency->get_context()]);
 
             // Add competency name to breadcrumbs, if available.
             $PAGE->navbar->add($title);

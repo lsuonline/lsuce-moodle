@@ -23,10 +23,8 @@
  */
 
 require_once(dirname(__FILE__).'/../../config.php');
-
-global $CFG, $DB, $PAGE, $OUTPUT;
+require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/mod/attendance/locallib.php');
-require_once($CFG->dirroot.'/mod/attendance/tempmerge_form.php');
 
 $id = required_param('id', PARAM_INT);
 $userid = required_param('userid', PARAM_INT);
@@ -45,7 +43,6 @@ require_login($course, true, $cm);
 $PAGE->set_title($course->shortname.": ".$att->name.' - '.get_string('tempusermerge', 'attendance'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_cacheable(true);
-$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'attendance'));
 $PAGE->navbar->add(get_string('tempusermerge', 'attendance'));
 
 $formdata = (object)array(
@@ -56,7 +53,7 @@ $formdata = (object)array(
 $custom = array(
     'description' => format_string($tempuser->fullname).' ('.format_string($tempuser->email).')',
 );
-$mform = new tempmerge_form(null, $custom);
+$mform = new mod_attendance\form\tempmerge(null, $custom);
 $mform->set_data($formdata);
 
 if ($mform->is_cancelled()) {
@@ -93,12 +90,10 @@ if ($mform->is_cancelled()) {
     redirect($att->url_managetemp());
 }
 
-/** @var mod_attendance_renderer $output */
+/** @var mod_attendance\output\renderer $output */
 $output = $PAGE->get_renderer('mod_attendance');
-$tabs = new attendance_tabs($att, attendance_tabs::TAB_TEMPORARYUSERS);
 
 echo $output->header();
 echo $output->heading(get_string('tempusermerge', 'attendance').' : '.format_string($course->fullname));
-echo $output->render($tabs);
 $mform->display();
 echo $output->footer($course);

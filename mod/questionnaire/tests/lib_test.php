@@ -23,19 +23,29 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace mod_questionnaire;
 
-use mod_questionnaire\question\base;
+use mod_questionnaire\question\question;
+
+defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot.'/mod/questionnaire/lib.php');
-require_once($CFG->dirroot.'/mod/questionnaire/classes/question/base.php');
+require_once($CFG->dirroot.'/mod/questionnaire/classes/question/question.php');
 
 /**
- * Unit tests for {@link questionnaire_lib_testcase}.
+ * Unit tests for questionnaire_lib_testcase.
  * @group mod_questionnaire
  */
-class mod_questionnaire_lib_testcase extends advanced_testcase {
+class lib_test extends \advanced_testcase {
+
+    /**
+     * Test for questionnaire_supports.
+     *
+     * @return void
+     *
+     * @covers \questionnaire_supports
+     */
     public function test_questionnaire_supports() {
         $this->assertTrue(questionnaire_supports(FEATURE_BACKUP_MOODLE2));
         $this->assertFalse(questionnaire_supports(FEATURE_COMPLETION_TRACKS_VIEWS));
@@ -43,30 +53,43 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $this->assertFalse(questionnaire_supports(FEATURE_GRADE_HAS_GRADE));
         $this->assertFalse(questionnaire_supports(FEATURE_GRADE_OUTCOMES));
         $this->assertTrue(questionnaire_supports(FEATURE_GROUPINGS));
-        $this->assertTrue(questionnaire_supports(FEATURE_GROUPMEMBERSONLY));
         $this->assertTrue(questionnaire_supports(FEATURE_GROUPS));
         $this->assertTrue(questionnaire_supports(FEATURE_MOD_INTRO));
         $this->assertTrue(questionnaire_supports(FEATURE_SHOW_DESCRIPTION));
         $this->assertNull(questionnaire_supports('unknown option'));
     }
 
+    /**
+     * Test for questionnaire_get_extra_capabilities.
+     *
+     * @return void
+     *
+     * @covers \questionnaire_get_extra_capabilities
+     */
     public function test_questionnaire_get_extra_capabilities() {
         $caps = questionnaire_get_extra_capabilities();
-        $this->assertInternalType('array', $caps);
+        $this->assertIsArray($caps);
         $this->assertEquals(1, count($caps));
         $this->assertEquals('moodle/site:accessallgroups', reset($caps));
     }
 
+    /**
+     * Test for questionnaire_add_instance.
+     *
+     * @return void
+     * @throws moodle_exception
+     *
+     * @covers \questionnaire_add_instance
+     */
     public function test_add_instance() {
-        global $DB;
-
         $this->resetAfterTest();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
 
         // Create test data as a record.
-        $questdata = new stdClass();
+        $questdata = new \stdClass();
         $questdata->course = $course->id;
+        $questdata->coursemodule = '';
         $questdata->name = 'Test questionnaire';
         $questdata->intro = 'Intro to test questionnaire.';
         $questdata->introformat = FORMAT_HTML;
@@ -88,6 +111,14 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $this->assertTrue(questionnaire_add_instance($questdata) > 0);
     }
 
+    /**
+     * Test for questionnaire_update_instance().
+     *
+     * @return void
+     * @throws dml_exception
+     *
+     * @covers \questionnaire_update_instance
+     */
     public function test_update_instance() {
         global $DB;
 
@@ -109,9 +140,7 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $qrow->respondenttype = 'anonymous';
         $qrow->resp_eligible = 'none';
         $qrow->resp_view = 2;
-        $qrow->useopendate = true;
         $qrow->opendate = 99;
-        $qrow->useclosedate = true;
         $qrow->closedate = 50;
         $qrow->resume = 1;
         $qrow->navigate = 1;
@@ -119,6 +148,7 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $qrow->timemodified = 3;
         $qrow->completionsubmit = 1;
         $qrow->autonum = 1;
+        $qrow->coursemodule = $questionnaire->cm->id;
 
         // Moodle update form passes "instance" instead of "id" to [mod]_update_instance.
         $qrow->instance = $qid;
@@ -144,9 +174,15 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $this->assertEquals($qrow->autonum, $questrecord->autonum);
     }
 
-    /*
+    /**
+     * Test for questionnaire_delete_instance().
+     *
      * Need to verify that delete_instance deletes all data associated with a questionnaire.
      *
+     * @return void
+     * @throws dml_exception
+     *
+     * @covers \questionnaire_delete_instance
      */
     public function test_delete_instance() {
         global $DB;
@@ -173,13 +209,20 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $this->assertTrue(questionnaire_delete_instance($questionnaire->id));
         $this->assertEmpty($DB->get_record('questionnaire', array('id' => $questionnaire->id)));
         $this->assertEmpty($DB->get_record('questionnaire_survey', array('id' => $questionnaire->sid)));
-        $this->assertEmpty($DB->get_records('questionnaire_question', array('survey_id' => $survey->id)));
-        $this->assertEmpty($DB->get_records('questionnaire_response', array('survey_id' => $survey->id)));
-        $this->assertEmpty($DB->get_records('questionnaire_attempts', array('qid' => $questionnaire->id)));
+        $this->assertEmpty($DB->get_records('questionnaire_question', array('surveyid' => $survey->id)));
+        $this->assertEmpty($DB->get_records('questionnaire_response', array('questionnaireid' => $questionnaire->id)));
         $this->assertEmpty($DB->get_records('questionnaire_response_bool', array('response_id' => $response->id)));
         $this->assertEmpty($DB->get_records('event', array("modulename" => 'questionnaire', "instance" => $questionnaire->id)));
     }
 
+    /**
+     * Test for questionnaire_user_outline().
+     *
+     * @return void
+     * @throws coding_exception
+     *
+     * @covers \questionnaire_user_outline
+     */
     public function test_questionnaire_user_outline() {
         $this->resetAfterTest();
         $this->setAdminUser();
@@ -195,11 +238,19 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $this->assertEquals(get_string("noresponses", "questionnaire"), $outline->info);
 
         // Test for a user with one response.
-        $response = $generator->create_question_response($questionnaire, reset($questionnaire->questions), 'y', $user->id);
+        $generator->create_question_response($questionnaire, reset($questionnaire->questions), 'y', $user->id);
         $outline = questionnaire_user_outline($course, $user, null, $questionnaire);
         $this->assertEquals('1 '.get_string("response", "questionnaire"), $outline->info);
     }
 
+    /**
+     * Test for questionnaire_user_complete().
+     *
+     * @return void
+     * @throws coding_exception
+     *
+     * @covers \questionnaire_user_complete
+     */
     public function test_questionnaire_user_complete() {
         $this->resetAfterTest();
         $this->setAdminUser();
@@ -212,18 +263,39 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
         $this->expectOutputString(get_string('noresponses', 'questionnaire'));
     }
 
+    /**
+     * Test for questionnaire_print_recent_activity().
+     *
+     * @return void
+     *
+     * @covers \questionnaire_print_recent_activity
+     */
     public function test_questionnaire_print_recent_activity() {
         $this->resetAfterTest();
         $this->setAdminUser();
         $this->assertFalse(questionnaire_print_recent_activity(null, null, null));
     }
 
+    /**
+     * Test for questionnaire_grades().
+     *
+     * @return void
+     *
+     * @covers \questionnaire_grades
+     */
     public function test_questionnaire_grades() {
         $this->resetAfterTest();
         $this->setAdminUser();
         $this->assertNull(questionnaire_grades(null));
     }
 
+    /**
+     * Test for questionnaire_get_user_grades().
+     *
+     * @return void
+     *
+     * @covers \questionnaire_get_user_grades
+     */
     public function test_questionnaire_get_user_grades() {
         $this->resetAfterTest();
         $this->setAdminUser();
@@ -235,18 +307,32 @@ class mod_questionnaire_lib_testcase extends advanced_testcase {
 
         // Test for an array when user specified.
         $grades = questionnaire_get_user_grades($questionnaire, $user->id);
-        $this->assertInternalType('array', $grades);
+        $this->assertIsArray($grades);
 
         // Test for an array when no user specified.
         $grades = questionnaire_get_user_grades($questionnaire);
-        $this->assertInternalType('array', $grades);
+        $this->assertIsArray($grades);
     }
 
+    /**
+     * Test for questionnaire_update_grades().
+     *
+     * @return void
+     *
+     * @covers \questionnaire_update_grades
+     */
     public function test_questionnaire_update_grades() {
         // Don't know how to test this yet! It doesn't return anything.
         $this->assertNull(questionnaire_update_grades());
     }
 
+    /**
+     * Test for questionnaire_grade_item_update().
+     *
+     * @return void
+     *
+     * @covers \questionnaire_grade_item_update
+     */
     public function test_questionnaire_grade_item_update() {
         $this->resetAfterTest();
         $this->setAdminUser();

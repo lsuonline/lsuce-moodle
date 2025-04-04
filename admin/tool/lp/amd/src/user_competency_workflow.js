@@ -17,7 +17,6 @@
  * User competency workflow.
  *
  * @module     tool_lp/user_competency_workflow
- * @package    tool_lp
  * @copyright  2015 Frédéric Massart - FMCorz.net
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,22 +31,19 @@ define(['jquery',
 
     /**
      * UserCompetencyWorkflow class.
-     *
-     * @param {String} selector The node containing the buttons to switch mode.
      */
     var UserCompetencyWorkflow = function() {
         EventBase.prototype.constructor.apply(this, []);
     };
     UserCompetencyWorkflow.prototype = Object.create(EventBase.prototype);
 
-    /** @type {String} The selector to find the user competency data. */
+    /** @property {String} The selector to find the user competency data. */
     UserCompetencyWorkflow.prototype._nodeSelector = '[data-node="user-competency"]';
 
     /**
      * Cancel a review request and refresh the view.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method _cancelReviewRequest
      */
     UserCompetencyWorkflow.prototype._cancelReviewRequest = function(data) {
@@ -62,7 +58,7 @@ define(['jquery',
         Ajax.call([call])[0].then(function() {
             this._trigger('review-request-cancelled', data);
             this._trigger('status-changed', data);
-        }.bind(this), function() {
+        }.bind(this)).catch(function() {
             this._trigger('error-occured', data);
         }.bind(this));
     };
@@ -71,7 +67,6 @@ define(['jquery',
      * Cancel a review request an refresh the view.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method cancelReviewRequest
      */
     UserCompetencyWorkflow.prototype.cancelReviewRequest = function(data) {
@@ -82,7 +77,6 @@ define(['jquery',
      * Cancel a review request handler.
      *
      * @param  {Event} e The event.
-     * @return {Void}
      * @method _cancelReviewRequestHandler
      */
     UserCompetencyWorkflow.prototype._cancelReviewRequestHandler = function(e) {
@@ -95,7 +89,6 @@ define(['jquery',
      * Request a review and refresh the view.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method _requestReview
      */
     UserCompetencyWorkflow.prototype._requestReview = function(data) {
@@ -110,7 +103,7 @@ define(['jquery',
         Ajax.call([call])[0].then(function() {
             this._trigger('review-requested', data);
             this._trigger('status-changed', data);
-        }.bind(this), function() {
+        }.bind(this)).catch(function() {
             this._trigger('error-occured', data);
         }.bind(this));
     };
@@ -119,7 +112,6 @@ define(['jquery',
      * Request a review.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method requestReview
      */
     UserCompetencyWorkflow.prototype.requestReview = function(data) {
@@ -130,7 +122,6 @@ define(['jquery',
      * Request a review handler.
      *
      * @param  {Event} e The event.
-     * @return {Void}
      * @method _requestReviewHandler
      */
     UserCompetencyWorkflow.prototype._requestReviewHandler = function(e) {
@@ -143,7 +134,6 @@ define(['jquery',
      * Start a review and refresh the view.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method _startReview
      */
     UserCompetencyWorkflow.prototype._startReview = function(data) {
@@ -154,11 +144,10 @@ define(['jquery',
                 competencyid: data.competencyid
             }
         };
-
         Ajax.call([call])[0].then(function() {
             this._trigger('review-started', data);
             this._trigger('status-changed', data);
-        }.bind(this), function() {
+        }.bind(this)).catch(function() {
             this._trigger('error-occured', data);
         }.bind(this));
     };
@@ -167,7 +156,6 @@ define(['jquery',
      * Start a review.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method startReview
      */
     UserCompetencyWorkflow.prototype.startReview = function(data) {
@@ -178,7 +166,6 @@ define(['jquery',
      * Start a review handler.
      *
      * @param  {Event} e The event.
-     * @return {Void}
      * @method _startReviewHandler
      */
     UserCompetencyWorkflow.prototype._startReviewHandler = function(e) {
@@ -191,7 +178,6 @@ define(['jquery',
      * Stop a review and refresh the view.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method _stopReview
      */
     UserCompetencyWorkflow.prototype._stopReview = function(data) {
@@ -206,7 +192,7 @@ define(['jquery',
         Ajax.call([call])[0].then(function() {
             this._trigger('review-stopped', data);
             this._trigger('status-changed', data);
-        }.bind(this), function() {
+        }.bind(this)).catch(function() {
             this._trigger('error-occured', data);
         }.bind(this));
     };
@@ -215,7 +201,6 @@ define(['jquery',
      * Stop a review.
      *
      * @param  {Object} data The user competency data.
-     * @return {Void}
      * @method stopReview
      */
     UserCompetencyWorkflow.prototype.stopReview = function(data) {
@@ -226,7 +211,6 @@ define(['jquery',
      * Stop a review handler.
      *
      * @param  {Event} e The event.
-     * @return {Void}
      * @method _stopReviewHandler
      */
     UserCompetencyWorkflow.prototype._stopReviewHandler = function(e) {

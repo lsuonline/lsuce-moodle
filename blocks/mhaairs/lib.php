@@ -115,7 +115,7 @@ class block_mhaairs_connect {
         require_once('Zend/Oauth/Client.php');
         // @codingStandardsIgnoreEnd
 
-        $baseurl = 'http://mhaairs.tegrity.com/v1/Config/';
+        $baseurl = self::get_endpoint_base_url();
         $url = $baseurl.$customernumber.'/'.$endpoint;
 
         $aconfig = array(
@@ -197,5 +197,18 @@ class block_mhaairs_connect {
             return false;
         }
         return $CFG->block_mhaairs_customer_number;
+    }
+
+    /**
+     * Returns the configured end point base url or default if not configured.
+     * @return string
+     */
+    protected static function get_endpoint_base_url() {
+        global $CFG;
+
+        if (!empty($CFG->block_mhaairs_endpoint_url)) {
+            return $CFG->block_mhaairs_endpoint_url;
+        }
+        return 'http://mhaairs.tegrity.com/v1/Config/';
     }
 }

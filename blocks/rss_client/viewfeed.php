@@ -22,12 +22,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../../config.php');
+require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir .'/simplepie/moodle_simplepie.php');
 
 require_login();
 if (isguestuser()) {
-    print_error('guestsarenotallowed');
+    throw new \moodle_exception('guestsarenotallowed');
 }
 
 $returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
@@ -62,7 +62,7 @@ $rss = new moodle_simplepie($rssrecord->url);
 
 if ($rss->error()) {
     debugging($rss->error());
-    print_error('errorfetchingrssfeed');
+    throw new \moodle_exception('errorfetchingrssfeed');
 }
 
 $strviewfeed = get_string('viewfeed', 'block_rss_client');

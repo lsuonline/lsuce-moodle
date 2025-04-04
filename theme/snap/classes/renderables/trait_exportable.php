@@ -17,13 +17,11 @@
 /**
  * Trait for facilitating auto exporting.
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
-
-defined('MOODLE_INTERNAL') || die();
 
 use stdClass;
 
@@ -48,11 +46,11 @@ trait trait_exportable {
         $reflect = new \ReflectionClass($object);
         $props   = $reflect->getProperties(\ReflectionProperty::IS_PROTECTED);
         $protected = [];
-        foreach ($props as $prop){
+        foreach ($props as $prop) {
             $protected[] = $prop->getName();
         }
 
-        // Get publicly accessible vars, which also includes those that have been set manually, e.g. $myobj->test = 123;
+        // Get publicly accessible vars, which also includes those that have been set manually, e.g. $myobj->test = 123;.
         $vals = get_object_vars($object);
         $public = [];
         foreach ($vals as $key => $val) {

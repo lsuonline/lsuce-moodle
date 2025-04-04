@@ -17,12 +17,11 @@
 /**
  * Course toc section
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
-
 use theme_snap\output\shared;
 
 class course_toc_progress {
@@ -32,12 +31,12 @@ class course_toc_progress {
      * @wsparam {
      *     "complete": {
      *         "type": PARAM_INT,
-     *         "required": true,
+     *         "required": VALUE_OPTIONAL,
      *         "description": "Number of items completed"
      *     },
      *     "total": {
      *         "type": PARAM_INT,
-     *         "required": true,
+     *         "required": VALUE_OPTIONAL,
      *         "description": "Total items to complete"
      *     }
      * };
@@ -73,9 +72,9 @@ class course_toc_progress {
         // Set this to empty or web service won't be happy on early abort.
         $this->progress = (object) [
             'complete' => null,
-            'total' => null
+            'total' => null,
         ];
-        
+
         if (!$completioninfo->is_enabled()) {
             return ''; // Completion tracking not enabled.
         }
@@ -87,9 +86,9 @@ class course_toc_progress {
 
         $this->progress = (object) [
             'complete' => $sac->progress->complete,
-            'total' => $sac->progress->total
+            'total' => $sac->progress->total,
         ];
-        $this->pixcompleted = $OUTPUT->pix_url('i/completion-manual-y');
+        $this->pixcompleted = $OUTPUT->image_url('i/completion-manual-y');
         $this->completed = $sac->progress->complete === $sac->progress->total;
     }
 }

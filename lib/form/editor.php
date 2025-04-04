@@ -30,11 +30,12 @@ global $CFG;
 require_once('HTML/QuickForm/element.php');
 require_once($CFG->dirroot.'/lib/filelib.php');
 require_once($CFG->dirroot.'/repository/lib.php');
+require_once('templatable_form_element.php');
 
 /**
  * Editor element
  *
- * It creates preffered editor (textbox/TinyMce) form element for the format (Text/HTML) selected.
+ * It creates preffered editor (textbox/Tiny) form element for the format (Text/HTML) selected.
  *
  * @package   core_form
  * @category  form
@@ -43,7 +44,11 @@ require_once($CFG->dirroot.'/repository/lib.php');
  * @todo      MDL-29421 element Freezing
  * @todo      MDL-29426 ajax format conversion
  */
-class MoodleQuickForm_editor extends HTML_QuickForm_element {
+class MoodleQuickForm_editor extends HTML_QuickForm_element implements templatable {
+    use templatable_form_element {
+        export_for_template as export_for_template_base;
+    }
+
     /** @var string html for help button, if empty then no help will icon will be dispalyed. */
     public $_helpbutton = '';
 
@@ -53,11 +58,14 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element {
     /** @var array options provided to initalize filepicker */
     protected $_options = array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 0, 'changeformat' => 0,
             'areamaxbytes' => FILE_AREA_MAX_BYTES_UNLIMITED, 'context' => null, 'noclean' => 0, 'trusttext' => 0,
-            'return_types' => 7, 'enable_filemanagement' => true);
-    // $_options['return_types'] = FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE
+            'return_types' => 15, 'enable_filemanagement' => true, 'removeorphaneddrafts' => false, 'autosave' => true);
+    // 15 is $_options['return_types'] = FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE | FILE_CONTROLLED_LINK.
 
     /** @var array values for editor */
     protected $_values     = array('text'=>null, 'format'=>null, 'itemid'=>null);
+
+    /** @var bool if true label will be hidden */
+    protected $_hiddenLabel = false;
 
     /**
      * Constructor
@@ -241,6 +249,15 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element {
     }
 
     /**
+     * Returns editor text content
+     *
+     * @return string Text content
+     */
+    public function get_text(): string {
+        return $this->_values['text'];
+    }
+
+    /**
      * Returns editor format
      *
      * @return int.
@@ -293,7 +310,7 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element {
      * @return string
      */
     function toHtml() {
-        global $CFG, $PAGE;
+        global $CFG, $PAGE, $OUTPUT;
         require_once($CFG->dirroot.'/repository/lib.php');
 
         if ($this->_flagFrozen) {
@@ -376,12 +393,37 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element {
             $link_options->env = 'editor';
             $link_options->itemid = $draftitemid;
 
+            $args->accepted_types = array('.vtt');
+            $subtitle_options = initialise_filepicker($args);
+            $subtitle_options->context = $ctx;
+            $subtitle_options->client_id = uniqid();
+            $subtitle_options->maxbytes  = $this->_options['maxbytes'];
+            $subtitle_options->areamaxbytes  = $this->_options['areamaxbytes'];
+            $subtitle_options->env = 'editor';
+            $subtitle_options->itemid = $draftitemid;
+
+            if (has_capability('moodle/h5p:deploy', $ctx)) {
+                // Only set H5P Plugin settings if the user can deploy new H5P content.
+                // H5P plugin.
+                $args->accepted_types = array('.h5p');
+                $h5poptions = initialise_filepicker($args);
+                $h5poptions->context = $ctx;
+                $h5poptions->client_id = uniqid();
+                $h5poptions->maxbytes  = $this->_options['maxbytes'];
+                $h5poptions->areamaxbytes  = $this->_options['areamaxbytes'];
+                $h5poptions->env = 'editor';
+                $h5poptions->itemid = $draftitemid;
+                $fpoptions['h5p'] = $h5poptions;
+            }
+
             $fpoptions['image'] = $image_options;
             $fpoptions['media'] = $media_options;
             $fpoptions['link'] = $link_options;
+            $fpoptions['subtitle'] = $subtitle_options;
         }
 
-        //If editor is required and tinymce, then set required_tinymce option to initalize tinymce validation.
+        // TODO Remove this in MDL-77334 for Moodle 4.6.
+        // If editor is required and tinymce, then set required_tinymce option to initalize tinymce validation.
         if (($editor instanceof tinymce_texteditor)  && !is_null($this->getAttribute('onchange'))) {
             $this->_options['required'] = true;
         }
@@ -394,24 +436,31 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element {
         $cols = empty($this->_attributes['cols']) ? 80 : $this->_attributes['cols'];
 
         //Apply editor validation if required field
-        $editorrules = '';
-        if (!is_null($this->getAttribute('onblur')) && !is_null($this->getAttribute('onchange'))) {
-            $editorrules = ' onblur="'.htmlspecialchars($this->getAttribute('onblur')).'" onchange="'.htmlspecialchars($this->getAttribute('onchange')).'"';
+        $context = [];
+        $context['rows'] = $rows;
+        $context['cols'] = $cols;
+        $context['frozen'] = $this->_flagFrozen;
+        foreach ($this->getAttributes() as $name => $value) {
+            $context[$name] = $value;
         }
-        $str .= '<div><textarea id="'.$id.'" name="'.$elname.'[text]" rows="'.$rows.'" cols="'.$cols.'" spellcheck="true"'.$editorrules.'>';
-        $str .= s($text);
-        $str .= '</textarea></div>';
+        $context['hasformats'] = count($formats) > 1;
+        $context['formats'] = [];
+        if (($format === '' || $format === null) && count($formats)) {
+            $format = key($formats);
+        }
+        foreach ($formats as $formatvalue => $formattext) {
+            $context['formats'][] = ['value' => $formatvalue, 'text' => $formattext, 'selected' => ($formatvalue == $format)];
+        }
+        $context['id'] = $id;
+        $context['value'] = $text;
+        $context['format'] = $format;
+        $context['formatlabel'] = get_string('editorxformat', 'editor', $this->_label);
 
-        $str .= '<div>';
-        if (count($formats)>1) {
-            $str .= html_writer::label(get_string('format'), 'menu'. $elname. 'format', false, array('class' => 'accesshide'));
-            $str .= html_writer::select($formats, $elname.'[format]', $format, false, array('id' => 'menu'. $elname. 'format'));
-        } else {
-            $keys = array_keys($formats);
-            $str .= html_writer::empty_tag('input',
-                    array('name'=>$elname.'[format]', 'type'=> 'hidden', 'value' => array_pop($keys)));
+        if (!is_null($this->getAttribute('onblur')) && !is_null($this->getAttribute('onchange'))) {
+            $context['changelistener'] = true;
         }
-        $str .= '</div>';
+
+        $str .= $OUTPUT->render_from_template('core_form/editor_textarea', $context);
 
         // during moodle installation, user area doesn't exist
         // so we need to disable filepicker here.
@@ -446,13 +495,28 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element {
         return $str;
     }
 
-    /**
-     * What to display when element is frozen.
-     *
-     * @return empty string
-     */
-    function getFrozenHtml() {
+    public function export_for_template(renderer_base $output) {
+        $context = $this->export_for_template_base($output);
+        $context['html'] = $this->toHtml();
+        return $context;
+    }
 
-        return '';
+    /**
+     * Returns the formatted value. The return from parent class is not acceptable.
+     *
+     * @return string
+     */
+    public function getFrozenHtml(): string {
+        return format_text($this->get_text(), $this->getFormat()) . $this->_getPersistantData();
+    }
+
+    /**
+     * Sets label to be hidden.
+     *
+     * @param bool $hiddenLabel Whether the label should be hidden or not.
+     * @return void
+     */
+    function setHiddenLabel($hiddenLabel) {
+        $this->_hiddenLabel = $hiddenLabel;
     }
 }

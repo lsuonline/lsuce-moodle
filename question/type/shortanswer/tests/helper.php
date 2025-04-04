@@ -75,6 +75,7 @@ class qtype_shortanswer_test_helper extends question_test_helper {
         $qdata->name = 'Short answer question';
         $qdata->questiontext = 'Name an amphibian: __________';
         $qdata->generalfeedback = 'Generalfeedback: frog or toad would have been OK.';
+        $qdata->status = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
 
         $qdata->options = new stdClass();
         $qdata->options->usecase = 0;
@@ -108,7 +109,13 @@ class qtype_shortanswer_test_helper extends question_test_helper {
             array('text' => 'Toad is an OK good answer.', 'format' => FORMAT_HTML),
             array('text' => 'That is a bad answer.', 'format' => FORMAT_HTML),
         );
-
+        $form->status = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
+        $form->hint = [
+            [
+                'text' => 'Rhymes with dog',
+                'format' => FORMAT_HTML,
+            ],
+        ];
         return $form;
     }
 
@@ -146,6 +153,7 @@ class qtype_shortanswer_test_helper extends question_test_helper {
         $qdata->name = 'Short answer question';
         $qdata->questiontext = 'Name the best amphibian: __________';
         $qdata->generalfeedback = 'Generalfeedback: you should have said frog.';
+        $qdata->status = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY;
 
         $qdata->options = new stdClass();
         $qdata->options->usecase = false;

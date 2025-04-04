@@ -33,7 +33,7 @@ $userid   = optional_param('userid', $USER->id, PARAM_INT);
 $PAGE->set_url(new moodle_url('/grade/report/overview/index.php', array('id' => $courseid, 'userid' => $userid)));
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('nocourseid');
+    throw new \moodle_exception('invalidcourseid');
 }
 require_login(null, false);
 $PAGE->set_course($course);
@@ -52,7 +52,7 @@ if (empty($userid)) {
 
 } else {
     if (!$DB->get_record('user', array('id'=>$userid, 'deleted'=>0)) or isguestuser($userid)) {
-        print_error('invaliduserid');
+        throw new \moodle_exception('invaliduserid');
     }
     $personalcontext = context_user::instance($userid);
 }
@@ -71,31 +71,11 @@ if ($userid == $USER->id) {
     $PAGE->navigation->extend_for_user($user);
 }
 
-$access = false;
-if (has_capability('moodle/grade:viewall', $systemcontext)) {
-    // Ok - can view all course grades.
-    $access = true;
-
-} else if (has_capability('moodle/grade:viewall', $context)) {
-    // Ok - can view any grades in context.
-    $access = true;
-
-} else if ($userid == $USER->id and ((has_capability('moodle/grade:view', $context) and $course->showgrades)
-        || $courseid == SITEID)) {
-    // Ok - can view own course grades.
-    $access = true;
-
-} else if (has_capability('moodle/grade:viewall', $personalcontext) and $course->showgrades) {
-    // Ok - can view grades of this user - parent most probably.
-    $access = true;
-} else if (has_capability('moodle/user:viewuseractivitiesreport', $personalcontext) and $course->showgrades) {
-    // Ok - can view grades of this user - parent most probably.
-    $access = true;
-}
+$access = grade_report_overview::check_access($systemcontext, $context, $personalcontext, $course, $userid);
 
 if (!$access) {
     // no access to grades!
-    print_error('nopermissiontoviewgrades', 'error',  $CFG->wwwroot.'/course/view.php?id='.$courseid);
+    throw new \moodle_exception('nopermissiontoviewgrades', 'error',  $CFG->wwwroot.'/course/view.php?id='.$courseid);
 }
 
 /// return tracking object
@@ -107,13 +87,13 @@ if (!isset($USER->grade_last_report)) {
 }
 $USER->grade_last_report[$course->id] = 'overview';
 
-// First make sure we have proper final grades.
-grade_regrade_final_grades_if_required($course);
+$actionbar = new \core_grades\output\general_action_bar($context,
+    new moodle_url('/grade/report/overview/index.php', ['id' => $courseid]), 'report', 'overview');
 
 if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
     // Please note this would be extremely slow if we wanted to implement this properly for all teachers.
     $groupmode    = groups_get_course_groupmode($course);   // Groups are being used
-    $currentgroup = groups_get_course_group($course, true);
+    $currentgroup = $gpr->groupid;
 
     if (!$currentgroup) {      // To make some other functions work better later
         $currentgroup = NULL;
@@ -130,8 +110,11 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
     }
 
     if (empty($userid)) {
-        // Add tabs
-        print_grade_page_head($courseid, 'report', 'overview');
+        // BEGIN LSU last report selected.
+        print_grade_page_head($COURSE->id, 'report', 'overview',
+            get_string('pluginname', 'gradereport_overview') . ' - ' . fullname($user),
+            false, false, true, null, null, $user);
+        // END LSU last report selected.
 
         groups_print_course_menu($course, $gpr->get_return_url('index.php?id='.$courseid, array('userid'=>0)));
 
@@ -143,8 +126,22 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
 
     } else { // Only show one user's report
         $report = new grade_report_overview($userid, $gpr, $context);
-        print_grade_page_head($courseid, 'report', 'overview', get_string('pluginname', 'gradereport_overview') .
-                ' - ' . fullname($report->user), false, false, true, null, null, $report->user);
+
+        // BEGIN LSU Alternate Names support.
+        $user = $report->user;
+        $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
+
+        if ($alternateused) {
+            $user->firstname = $report->user->alternatename . ' (' . $report->user->firstname . ') ';
+        }
+        // END LSU Alternate Names support.
+
+        // BEGIN LSU last report selected.
+        print_grade_page_head($COURSE->id, 'report', 'overview',
+            get_string('pluginname', 'gradereport_overview') . ' - ' . fullname($report->user),
+            false, false, true, null, null, $report->user, $actionbar);
+        // END LSU last report selected.
+
         groups_print_course_menu($course, $gpr->get_return_url('index.php?id='.$courseid, array('userid'=>0)));
 
         if ($user_selector) {
@@ -189,8 +186,10 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
                 echo '<br />' . $report->print_table(true);
             }
         } else { // We have a course context. We must be navigating from the gradebook.
-            print_grade_page_head($courseid, 'report', 'overview', get_string('pluginname', 'gradereport_overview')
-                    . ' - ' . fullname($report->user));
+            // BEGIN LSU last report selected.
+            print_grade_page_head($COURSE->id, 'report', 'overview',
+                get_string('pluginname', 'gradereport_overview'));
+            // END LSU last report selected.
             if ($report->fill_table()) {
                 echo '<br />' . $report->print_table(true);
             }
@@ -214,15 +213,6 @@ if (has_capability('moodle/grade:viewall', $context) && $courseid != SITEID) {
     }
 }
 
-$event = \gradereport_overview\event\grade_report_viewed::create(
-    array(
-        'context' => $context,
-        'courseid' => $courseid,
-        'relateduserid' => $userid,
-    )
-);
-$event->trigger();
+grade_report_overview::viewed($context, $courseid, $userid);
 
 echo $OUTPUT->footer();
-
-

@@ -22,16 +22,15 @@
  * selected. (Or a single node if multiselect is disabled).
  *
  * @module     tool_lp/tree
- * @package    core
  * @copyright  2015 Damyon Wiese <damyon@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['jquery', 'core/url', 'core/log'], function($, url, log) {
     // Private variables and functions.
     /** @var {String} expandedImage The html for an expanded tree node twistie. */
-    var expandedImage = $('<img alt="" src="' + url.imageUrl('t/expanded') + '"/>');
+    var expandedImage = $('<img alt="" class="icon" src="' + url.imageUrl('t/expanded') + '"/>');
     /** @var {String} collapsedImage The html for a collapsed tree node twistie. */
-    var collapsedImage = $('<img alt="" src="' + url.imageUrl('t/collapsed') + '"/>');
+    var collapsedImage = $('<img alt="" class="icon" src="' + url.imageUrl('t/collapsed') + '"/>');
 
     /**
      * Constructor
@@ -168,7 +167,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
         if (!this.multiSelect) {
             allSelected = allSelected.first();
         }
-        this.treeRoot.trigger('selectionchanged', { selected: allSelected });
+        this.treeRoot.trigger('selectionchanged', {selected: allSelected});
     };
 
     /**
@@ -186,12 +185,12 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
             var oneItem = null;
 
             while (lastIndex < currentIndex) {
-                oneItem  = $(this.visibleItems.get(lastIndex));
+                oneItem = $(this.visibleItems.get(lastIndex));
                 oneItem.attr('aria-selected', 'true');
                 lastIndex++;
             }
             while (lastIndex > currentIndex) {
-                oneItem  = $(this.visibleItems.get(lastIndex));
+                oneItem = $(this.visibleItems.get(lastIndex));
                 oneItem.attr('aria-selected', 'true');
                 lastIndex--;
             }
@@ -230,7 +229,8 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      */
     Tree.prototype.toggleItem = function(item) {
         if (!this.multiSelect) {
-            return this.selectItem(item);
+            this.selectItem(item);
+            return;
         }
 
         var current = item.attr('aria-selected');
@@ -271,7 +271,10 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      * @method handleKeyDown
      * @param {Object} item is the jquery id of the parent item of the group
      * @param {Event} e The event.
+     * @return {Boolean}
      */
+     // This function should be simplified. In the meantime..
+    // eslint-disable-next-line complexity
     Tree.prototype.handleKeyDown = function(item, e) {
         var currentIndex = this.visibleItems.index(item);
         var newItem = null;
@@ -419,6 +422,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      * @method handleKeyPress
      * @param {Object} item is the jquery id of the parent item of the group
      * @param {Event} e The event.
+     * @return {Boolean}
      */
     Tree.prototype.handleKeyPress = function(item, e) {
         if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
@@ -454,7 +458,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
 
                 // Iterate through the menu items (starting from the current item and wrapping) until a match is found
                 // or the loop returns to the current menu item.
-                while (currentIndex != itemIndex)  {
+                while (currentIndex != itemIndex) {
 
                     var currentItem = this.visibleItems.eq(currentIndex);
                     var titleChr = currentItem.text().charAt(0);
@@ -468,7 +472,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
                         break;
                     }
 
-                    currentIndex = currentIndex+1;
+                    currentIndex = currentIndex + 1;
                     if (currentIndex == itemCount) {
                         // Reached the end of the list, start again at the beginning.
                         currentIndex = 0;
@@ -483,6 +487,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
             }
         }
 
+        // eslint-disable-next-line no-unreachable
         return true;
     };
 
@@ -507,6 +512,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      * @method handleDblClick
      * @param {Object} item is the jquery id of the parent item of the group
      * @param {Event} e The event.
+     * @return {Boolean}
      */
     Tree.prototype.handleDblClick = function(item, e) {
 
@@ -531,6 +537,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      * @method handleExpandCollapseClick
      * @param {Object} item is the jquery id of the parent item of the group
      * @param {Event} e The event.
+     * @return {Boolean}
      */
     Tree.prototype.handleExpandCollapseClick = function(item, e) {
 
@@ -547,6 +554,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      * @method handleClick
      * @param {Object} item is the jquery id of the parent item of the group
      * @param {Event} e The event.
+     * @return {Boolean}
      */
     Tree.prototype.handleClick = function(item, e) {
 
@@ -566,8 +574,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      * Handle a blur event
      *
      * @method handleBlur
-     * @param {Object} item item is the jquery id of the parent item of the group
-     * @param {Event} e The event.
+     * @return {Boolean}
      */
     Tree.prototype.handleBlur = function() {
         return true;
@@ -578,7 +585,7 @@ define(['jquery', 'core/url', 'core/log'], function($, url, log) {
      *
      * @method handleFocus
      * @param {Object} item item is the jquery id of the parent item of the group
-     * @param {Event} e The event.
+     * @return {Boolean}
      */
     Tree.prototype.handleFocus = function(item) {
 

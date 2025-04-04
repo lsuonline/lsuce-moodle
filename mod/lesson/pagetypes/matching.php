@@ -79,19 +79,22 @@ class lesson_page_type_matching extends lesson_page {
             $answers[$getanswer->id] = $getanswer;
         }
 
+        // Calculate the text for the dropdown, keyed by the non formatted version.
         $responses = array();
         foreach ($answers as $answer) {
-            // get all the response
+            // Get all the response.
             if ($answer->response != null) {
-                $responses[] = trim($answer->response);
+                $responses[trim($answer->response)] = format_text(trim($answer->response));
             }
         }
 
-        $responseoptions = array(''=>get_string('choosedots'));
+        // Now shuffle the answers to randomise the order of the items in the dropdown.
+        $responseoptions = ['' => get_string('choosedots')];
         if (!empty($responses)) {
-            shuffle($responses);
-            foreach ($responses as  $response) {
-                $responseoptions[htmlspecialchars($response)] = $response;
+            $keys = array_keys($responses);
+            shuffle($keys);
+            foreach ($keys as $key) {
+                $responseoptions[$key] = $responses[$key];
             }
         }
         if (isset($USER->modattempts[$this->lesson->id]) && !empty($attempt->useranswer)) {
@@ -117,6 +120,16 @@ class lesson_page_type_matching extends lesson_page {
 
         $cm = get_coursemodule_from_instance('lesson', $this->lesson->id, $this->lesson->course);
         $context = context_module::instance($cm->id);
+
+        // Check for duplicate response format.
+        $duplicateresponse = array();
+        if (is_array($properties->response_editor) &&             // If there are response_editors to iterate.
+                is_array(reset($properties->response_editor))) {  // And they come split into text & format array.
+            foreach ($properties->response_editor as $response) { // Iterate over all them.
+                $duplicateresponse[] = $response['text'];         // Picking the text only. This pagetype is that way.
+            }
+            $properties->response_editor = $duplicateresponse;
+        }
 
         $answers = array();
 
@@ -171,7 +184,9 @@ class lesson_page_type_matching extends lesson_page {
         require_sesskey();
 
         if (!$data) {
-            redirect(new moodle_url('/mod/lesson/view.php', array('id'=>$PAGE->cm->id, 'pageid'=>$this->properties->id)));
+            $result->inmediatejump = true;
+            $result->newpageid = $this->properties->id;
+            return $result;
         }
 
         $response = $data->response;
@@ -199,7 +214,6 @@ class lesson_page_type_matching extends lesson_page {
                 $result->noanswer = true;
                 return $result;
             }
-            $value = htmlspecialchars_decode($value);
             $userresponse[] = $value;
             // Make sure the user's answer exists in question's answer
             if (array_key_exists($id, $answers)) {
@@ -246,9 +260,9 @@ class lesson_page_type_matching extends lesson_page {
                 if ($answer->answer != null) {
                     $cells = array();
                     if ($n == 0) {
-                        $cells[] = "<span class=\"label\">".get_string("correctresponse", "lesson").'</span>';
+                        $cells[] = '<label>' . get_string('correctresponse', 'lesson') . '</label>';
                     } else {
-                        $cells[] = "<span class=\"label\">".get_string("wrongresponse", "lesson").'</span>';
+                        $cells[] = '<label>' . get_string('wrongresponse', 'lesson') . '</label>';
                     }
                     $cells[] = format_text($answer->answer, $answer->answerformat, $options);
                     $table->data[] = new html_table_row($cells);
@@ -256,22 +270,22 @@ class lesson_page_type_matching extends lesson_page {
 
                 if ($n == 0) {
                     $cells = array();
-                    $cells[] = '<span class="label">'.get_string("correctanswerscore", "lesson")."</span>: ";
+                    $cells[] = '<label>' . get_string('correctanswerscore', 'lesson') . '</label>: ';
                     $cells[] = $answer->score;
                     $table->data[] = new html_table_row($cells);
 
                     $cells = array();
-                    $cells[] = '<span class="label">'.get_string("correctanswerjump", "lesson")."</span>: ";
+                    $cells[] = '<label>' . get_string('correctanswerjump', 'lesson') . '</label>: ';
                     $cells[] = $this->get_jump_name($answer->jumpto);
                     $table->data[] = new html_table_row($cells);
                 } elseif ($n == 1) {
                     $cells = array();
-                    $cells[] = '<span class="label">'.get_string("wronganswerscore", "lesson")."</span>: ";
+                    $cells[] = '<label>' . get_string('wronganswerscore', 'lesson') . '</label>: ';
                     $cells[] = $answer->score;
                     $table->data[] = new html_table_row($cells);
 
                     $cells = array();
-                    $cells[] = '<span class="label">'.get_string("wronganswerjump", "lesson")."</span>: ";
+                    $cells[] = '<label>' . get_string('wronganswerjump', 'lesson') . '</label>: ';
                     $cells[] = $this->get_jump_name($answer->jumpto);
                     $table->data[] = new html_table_row($cells);
                 }
@@ -285,19 +299,19 @@ class lesson_page_type_matching extends lesson_page {
                 $cells = array();
                 if ($this->lesson->custom && $answer->score > 0) {
                     // if the score is > 0, then it is correct
-                    $cells[] = '<span class="labelcorrect">'.get_string("answer", "lesson")." $i</span>: \n";
+                    $cells[] = '<label class="correct">' . get_string('answer', 'lesson') . " {$i}</label>: \n";
                 } else if ($this->lesson->custom) {
-                    $cells[] = '<span class="label">'.get_string("answer", "lesson")." $i</span>: \n";
+                    $cells[] = '<label>' . get_string('answer', 'lesson') . " {$i}</label>: \n";
                 } else if ($this->lesson->jumpto_is_correct($this->properties->id, $answer->jumpto)) {
-                    $cells[] = '<span class="labelcorrect">'.get_string("answer", "lesson")." $i</span>: \n";
+                    $cells[] = '<label class="correct">' . get_string('answer', 'lesson') . " {$i}</label>: \n";
                 } else {
-                    $cells[] = '<span class="label">'.get_string("answer", "lesson")." $i</span>: \n";
+                    $cells[] = '<label>' . get_string('answer', 'lesson') . " {$i}</label>: \n";
                 }
                 $cells[] = format_text($answer->answer, $answer->answerformat, $options);
                 $table->data[] = new html_table_row($cells);
 
                 $cells = array();
-                $cells[] = '<span class="label">'.get_string("matchesanswer", "lesson")." $i</span>: ";
+                $cells[] = '<label>' . get_string('matchesanswer', 'lesson') . " {$i}</label>: \n";
                 $cells[] = format_text($answer->response, $answer->responseformat, $options);
                 $table->data[] = new html_table_row($cells);
             }
@@ -377,12 +391,7 @@ class lesson_page_type_matching extends lesson_page {
         return true;
     }
     public function stats(array &$pagestats, $tries) {
-        if(count($tries) > $this->lesson->maxattempts) { // if there are more tries than the max that is allowed, grab the last "legal" attempt
-            $temp = $tries[$this->lesson->maxattempts - 1];
-        } else {
-            // else, user attempted the question less than the max, so grab the last one
-            $temp = end($tries);
-        }
+        $temp = $this->lesson->get_last_attempt($tries);
         if ($temp->correct) {
             if (isset($pagestats[$temp->pageid]["correct"])) {
                 $pagestats[$temp->pageid]["correct"]++;
@@ -433,14 +442,16 @@ class lesson_page_type_matching extends lesson_page {
                 if ($useranswer != null) {
                     $userresponse = explode(",", $useranswer->useranswer);
                     $data .= '<label class="accesshide" for="stu_answer_response_' . $n . '">' . get_string('matchesanswer', 'lesson') . '</label>';
-                    $data .= "<select id=\"stu_answer_response_" . $n . "\" disabled=\"disabled\"><option selected=\"selected\">";
+                    $data .= "<select class=\"custom-select\" id=\"stu_answer_response_" . $n . "\" " .
+                             "disabled=\"disabled\"><option selected=\"selected\">";
                     if (array_key_exists($i, $userresponse)) {
                         $data .= $userresponse[$i];
                     }
                     $data .= "</option></select>";
                 } else {
                     $data .= '<label class="accesshide" for="answer_response_' . $n . '">' . get_string('matchesanswer', 'lesson') . '</label>';
-                    $data .= "<select id=\"answer_response_" . $n . "\" disabled=\"disabled\"><option selected=\"selected\">".strip_tags(format_string($answer->response))."</option></select>";
+                    $data .= "<select class=\"custom-select\" id=\"answer_response_" . $n . "\" " .
+                             "disabled=\"disabled\"><option selected=\"selected\">".strip_tags(format_string($answer->response))."</option></select>";
                 }
 
                 if ($n == 2) {
@@ -568,17 +579,15 @@ class lesson_display_answer_form_matching extends moodleform {
                 $responseid = 'response['.$answer->id.']';
                 if ($hasattempt) {
                     $responseid = 'response_'.$answer->id;
-                    $mform->addElement('hidden', 'response['.$answer->id.']', htmlspecialchars($useranswers[$i]));
+                    $mform->addElement('hidden', 'response['.$answer->id.']', htmlspecialchars($useranswers[$i], ENT_COMPAT));
                     // Temporary fixed until MDL-38885 gets integrated
                     $mform->setType('response', PARAM_TEXT);
                 }
-                $context = context_module::instance($PAGE->cm->id);
-                $answer->answer = file_rewrite_pluginfile_urls($answer->answer, 'pluginfile.php', $context->id,
-                        'mod_lesson', 'page_answers', $answer->id);
+                $answer = lesson_page_type_matching::rewrite_answers_urls($answer);
                 $mform->addElement('select', $responseid, format_text($answer->answer,$answer->answerformat,$options), $responseoptions, $disabled);
                 $mform->setType($responseid, PARAM_TEXT);
                 if ($hasattempt) {
-                    $mform->setDefault($responseid, htmlspecialchars(trim($useranswers[$i])));
+                    $mform->setDefault($responseid, htmlspecialchars(trim($useranswers[$i]), ENT_COMPAT));
                 } else {
                     $mform->setDefault($responseid, 'answeroption');
                 }

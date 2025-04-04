@@ -16,23 +16,23 @@
 # Tests for personal menu course feedback in course cards.
 #
 # @package    theme_snap
-# @copyright  Copyright (c) 2017 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright  Copyright (c) 2017 Open LMS (https://www.openlms.net)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@theme @theme_snap
-Feature: When the moodle theme is set to Snap, students and teachers can open a personal menu which features a
-  list of courses they are enrolled in with a feedback available or grade.
+@theme @theme_snap @theme_snap_personalmenu
+Feature: When the moodle theme is set to Snap, students and teachers can open a personal menu where they can find
+  a list of courses they are enrolled in with a feedback available or grade.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname        | shortname | category | groupmode | visible |
       | Course 1        | C1        | 0        | 1         | 1       |
     And the following "users" exist:
       | username | firstname    | lastname | email                |
       | student1 | Student      | 1        | student1@example.com |
       | teacher1 | Teacher      | 1        | teacher1@example.com |
+    And the following config values are set as admin:
+      | personalmenuenablepersonalmenu | 1 | theme_snap |
 
   @javascript
   Scenario Outline: Enrolled courses show grade in personal menu when enabled.
@@ -41,7 +41,7 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
       | student1 | C1     | student |
     And the following config values are set as admin:
       | showcoursegradepersonalmenu | <showgrades> | theme_snap |
-    And I log in as "student1" (theme_snap)
+    And I log in as "student1"
     And I open the personal menu
     Then I should see "Course 1"
     And "a.coursegrade" "css_element" should not exist
@@ -55,6 +55,6 @@ Feature: When the moodle theme is set to Snap, students and teachers can open a 
     When I open the personal menu
     Then <finalstep>
     Examples:
-    | showgrades | finalstep                                              |
-    | 1          | I should see "70" in the "div.coursegrade" "css_element" |
-    | 0          | "div.coursegrade" "css_element" should not exist         |
+      | showgrades | finalstep                                                |
+      | 1          | I should see "70" in the "div.coursegrade" "css_element" |
+      | 0          | "div.coursegrade" "css_element" should not exist         |

@@ -23,14 +23,29 @@ if (empty($settingspage) or !($settingspage instanceof admin_settingpage)) {
     if (moodle_needs_upgrading()) {
         redirect(new moodle_url('/admin/index.php'));
     } else {
-        print_error('sectionerror', 'admin', "$CFG->wwwroot/$CFG->admin/");
+        throw new \moodle_exception('sectionerror', 'admin', "$CFG->wwwroot/$CFG->admin/");
     }
     die;
 }
 
 if (!($settingspage->check_access())) {
-    print_error('accessdenied', 'admin');
+    throw new \moodle_exception('accessdenied', 'admin');
     die;
+}
+
+// If the context in the admin_settingpage object is explicitly defined and it is not system, reset the current
+// page context and use that one instead. This ensures that the proper navigation is displayed and highlighted.
+if ($settingspage->context && !$settingspage->context instanceof \context_system) {
+    $PAGE->set_context($settingspage->context);
+}
+
+$hassiteconfig = has_capability('moodle/site:config', context_system::instance());
+// Display the admin search input element in the page header if the user has the capability to change the site
+// configuration and the current page context is system.
+if ($hassiteconfig && $PAGE->context instanceof \context_system) {
+    $PAGE->add_header_action($OUTPUT->render_from_template('core_admin/header_search_input', [
+        'action' => new moodle_url('/admin/search.php'),
+    ]));
 }
 
 /// WRITING SUBMITTED DATA (IF ANY) -------------------------------------------------------------------------------
@@ -38,12 +53,17 @@ if (!($settingspage->check_access())) {
 $statusmsg = '';
 $errormsg  = '';
 
-if ($data = data_submitted() and confirm_sesskey()) {
-    if (admin_write_settings($data)) {
-        redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
-    }
+// Form is submitted with changed settings. Do not want to execute when modifying a block.
+if ($data = data_submitted() and confirm_sesskey() and isset($data->action) and $data->action == 'save-settings') {
 
+    $count = admin_write_settings($data);
+    // Regardless of whether any setting change was written (a positive count), check validation errors for those that didn't.
     if (empty($adminroot->errors)) {
+        // No errors. Did we change any setting? If so, then redirect with success.
+        if ($count) {
+            redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
+        }
+        // We didn't change a setting.
         switch ($return) {
             case 'site': redirect("$CFG->wwwroot/");
             case 'admin': redirect("$CFG->wwwroot/$CFG->admin/");
@@ -77,23 +97,26 @@ if (empty($SITE->fullname)) {
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    echo '<form action="' . $PAGE->url . '" method="post" id="adminsettings">';
-    echo '<div class="settingsform clearfix">';
-    echo html_writer::input_hidden_params($PAGE->url);
-    echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
-    echo '<input type="hidden" name="return" value="'.$return.'" />';
-    // HACK to prevent browsers from automatically inserting the user's password into the wrong fields.
-    echo prevent_form_autofill_password();
+    $pageparams = $PAGE->url->params();
+    $context = [
+        'actionurl' => $PAGE->url->out(false),
+        'params' => array_map(function($param) use ($pageparams) {
+            return [
+                'name' => $param,
+                'value' => $pageparams[$param]
+            ];
+        }, array_keys($pageparams)),
+        'sesskey' => sesskey(),
+        'return' => $return,
+        'title' => null,
+        'settings' => $settingspage->output_html(),
+        'showsave' => true
+    ];
 
-    echo $settingspage->output_html();
-
-    echo '<div class="form-buttons"><input class="form-submit" type="submit" value="'.get_string('savechanges','admin').'" /></div>';
-
-    echo '</div>';
-    echo '</form>';
+    echo $OUTPUT->render_from_template('core_admin/settings', $context);
 
 } else {
-    if ($PAGE->user_allowed_editing()) {
+    if ($PAGE->user_allowed_editing() && !$PAGE->theme->haseditswitch) {
         $url = clone($PAGE->url);
         if ($PAGE->user_is_editing()) {
             $caption = get_string('blockseditoff');
@@ -106,9 +129,7 @@ if (empty($SITE->fullname)) {
         $PAGE->set_button($buttons);
     }
 
-    $visiblepathtosection = array_reverse($settingspage->visiblepath);
-
-    $PAGE->set_title("$SITE->shortname: " . implode(": ",$visiblepathtosection));
+    $PAGE->set_title(implode(moodle_page::TITLE_SEPARATOR, $settingspage->visiblepath));
     $PAGE->set_heading($SITE->fullname);
     echo $OUTPUT->header();
 
@@ -121,31 +142,33 @@ if (empty($SITE->fullname)) {
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    echo '<form action="' . $PAGE->url . '" method="post" id="adminsettings">';
-    echo '<div class="settingsform clearfix">';
-    echo html_writer::input_hidden_params($PAGE->url);
-    echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
-    echo '<input type="hidden" name="return" value="'.$return.'" />';
-    // HACK to prevent browsers from automatically inserting the user's password into the wrong fields.
-    echo prevent_form_autofill_password();
-    echo $OUTPUT->heading($settingspage->visiblename);
+    $pageparams = $PAGE->url->params();
+    $context = [
+        'actionurl' => $PAGE->url->out(false),
+        'params' => array_map(function($param) use ($pageparams) {
+            return [
+                'name' => $param,
+                'value' => $pageparams[$param]
+            ];
+        }, array_keys($pageparams)),
+        'sesskey' => sesskey(),
+        'return' => $return,
+        'title' => $settingspage->visiblename,
+        'settings' => $settingspage->output_html(),
+        'showsave' => $settingspage->show_save()
+    ];
 
-    echo $settingspage->output_html();
-
-    if ($settingspage->show_save()) {
-        echo '<div class="form-buttons"><input class="form-submit" type="submit" value="'.get_string('savechanges','admin').'" /></div>';
-    }
-
-    echo '</div>';
-    echo '</form>';
+    echo $OUTPUT->render_from_template('core_admin/settings', $context);
 }
 
-$PAGE->requires->yui_module('moodle-core-formchangechecker',
-        'M.core_formchangechecker.init',
-        array(array(
-            'formid' => 'adminsettings'
-        ))
-);
-$PAGE->requires->string_for_js('changesmadereallygoaway', 'moodle');
+// Add the form change checker.
+$PAGE->requires->js_call_amd('core_form/changechecker', 'watchFormById', ['adminsettings']);
+
+if ($settingspage->has_dependencies()) {
+    $opts = [
+        'dependencies' => $settingspage->get_dependencies_for_javascript()
+    ];
+    $PAGE->requires->js_call_amd('core/showhidesettings', 'init', [$opts]);
+}
 
 echo $OUTPUT->footer();

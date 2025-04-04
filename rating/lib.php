@@ -46,7 +46,7 @@ define ('RATING_DEFAULT_SCALE', 5);
 class rating implements renderable {
 
     /**
-     * @var stdClass The context in which this rating exists
+     * @var context The context in which this rating exists
      */
     public $context;
 
@@ -455,7 +455,8 @@ class rating_manager {
             'component'  => $options->component,
             'ratingarea' => $options->ratingarea,
         );
-        $userfields = user_picture::fields('u', null, 'userid');
+        $userfieldsapi = \core_user\fields::for_userpic();
+        $userfields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;
         $sql = "SELECT r.id, r.rating, r.itemid, r.userid, r.timemodified, r.component, r.ratingarea, $userfields
                   FROM {rating} r
              LEFT JOIN {user} u ON r.userid = u.id
@@ -515,7 +516,13 @@ class rating_manager {
             // Ratings are not enabled.
             return $options->items;
         }
+
+        // Ensure average aggregation returns float.
         $aggregatestr = $this->get_aggregation_method($options->aggregate);
+        $aggregatefield = 'r.rating';
+        if ($aggregatestr === 'AVG') {
+            $aggregatefield = "1.0 * {$aggregatefield}";
+        }
 
         // Default the userid to the current user if it is not set.
         if (empty($options->userid)) {
@@ -558,7 +565,7 @@ class rating_manager {
               ORDER BY r.itemid";
         $userratings = $DB->get_records_sql($sql, $params);
 
-        $sql = "SELECT r.itemid, $aggregatestr(r.rating) AS aggrrating, COUNT(r.rating) AS numratings
+        $sql = "SELECT r.itemid, {$aggregatestr}({$aggregatefield}) AS aggrrating, COUNT(r.rating) AS numratings
                   FROM {rating} r
                  WHERE r.contextid = :contextid AND
                        r.itemid {$itemidtest} AND
@@ -819,7 +826,13 @@ class rating_manager {
         $itemtable            = $options->itemtable;
         $itemtableusercolumn  = $options->itemtableusercolumn;
         $scaleid              = $options->scaleid;
-        $aggregationstring    = $this->get_aggregation_method($options->aggregationmethod);
+
+        // Ensure average aggregation returns float.
+        $aggregationstring = $this->get_aggregation_method($options->aggregationmethod);
+        $aggregationfield = 'r.rating';
+        if ($aggregationstring === 'AVG') {
+            $aggregationfield = "1.0 * {$aggregationfield}";
+        }
 
         // If userid is not 0 we only want the grade for a single user.
         $singleuserwhere = '';
@@ -831,7 +844,7 @@ class rating_manager {
         // MDL-24648 The where line used to be "WHERE (r.contextid is null or r.contextid=:contextid)".
         // r.contextid will be null for users who haven't been rated yet.
         // No longer including users who haven't been rated to reduce memory requirements.
-        $sql = "SELECT u.id as id, u.id AS userid, $aggregationstring(r.rating) AS rawgrade
+        $sql = "SELECT u.id as id, u.id AS userid, {$aggregationstring}({$aggregationfield}) AS rawgrade
                   FROM {user} u
              LEFT JOIN {{$itemtable}} i ON u.id=i.{$itemtableusercolumn}
              LEFT JOIN {rating} r ON r.itemid=i.id
@@ -1051,6 +1064,163 @@ class rating_manager {
         return $aggregatelabel;
     }
 
+    /**
+     * Adds a new rating
+     *
+     * @param stdClass $cm course module object
+     * @param stdClass $context context object
+     * @param string $component component name
+     * @param string $ratingarea rating area
+     * @param int $itemid the item id
+     * @param int $scaleid the scale id
+     * @param int $userrating the user rating
+     * @param int $rateduserid the rated user id
+     * @param int $aggregationmethod the aggregation method
+     * @since Moodle 3.2
+     */
+    public function add_rating($cm, $context, $component, $ratingarea, $itemid, $scaleid, $userrating, $rateduserid,
+                                $aggregationmethod) {
+        global $CFG, $DB, $USER;
+
+        $result = new stdClass;
+        // Check the module rating permissions.
+        // Doing this check here rather than within rating_manager::get_ratings() so we can return a error response.
+        $pluginpermissionsarray = $this->get_plugin_permissions_array($context->id, $component, $ratingarea);
+
+        if (!$pluginpermissionsarray['rate']) {
+            $result->error = 'ratepermissiondenied';
+            return $result;
+        } else {
+            $params = array(
+                'context'     => $context,
+                'component'   => $component,
+                'ratingarea'  => $ratingarea,
+                'itemid'      => $itemid,
+                'scaleid'     => $scaleid,
+                'rating'      => $userrating,
+                'rateduserid' => $rateduserid,
+                'aggregation' => $aggregationmethod
+            );
+            if (!$this->check_rating_is_valid($params)) {
+                $result->error = 'ratinginvalid';
+                return $result;
+            }
+        }
+
+        // Rating options used to update the rating then retrieve the aggregate.
+        $ratingoptions = new stdClass;
+        $ratingoptions->context = $context;
+        $ratingoptions->ratingarea = $ratingarea;
+        $ratingoptions->component = $component;
+        $ratingoptions->itemid  = $itemid;
+        $ratingoptions->scaleid = $scaleid;
+        $ratingoptions->userid  = $USER->id;
+
+        if ($userrating != RATING_UNSET_RATING) {
+            $rating = new rating($ratingoptions);
+            $rating->update_rating($userrating);
+        } else { // Delete the rating if the user set to "Rate..."
+            $options = new stdClass;
+            $options->contextid = $context->id;
+            $options->component = $component;
+            $options->ratingarea = $ratingarea;
+            $options->userid = $USER->id;
+            $options->itemid = $itemid;
+
+            $this->delete_ratings($options);
+        }
+
+        // Future possible enhancement: add a setting to turn grade updating off for those who don't want them in gradebook.
+        // Note that this would need to be done in both rate.php and rate_ajax.php.
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            // Tell the module that its grades have changed.
+            $modinstance = $DB->get_record($cm->modname, array('id' => $cm->instance));
+            if ($modinstance) {
+                $modinstance->cmidnumber = $cm->id; // MDL-12961.
+                $functionname = $cm->modname.'_update_grades';
+                require_once($CFG->dirroot."/mod/{$cm->modname}/lib.php");
+                if (function_exists($functionname)) {
+                    $functionname($modinstance, $rateduserid);
+                }
+            }
+        }
+
+        // Object to return to client as JSON.
+        $result->success = true;
+
+        // Need to retrieve the updated item to get its new aggregate value.
+        $item = new stdClass;
+        $item->id = $itemid;
+
+        // Most of $ratingoptions variables were previously set.
+        $ratingoptions->items = array($item);
+        $ratingoptions->aggregate = $aggregationmethod;
+
+        $items = $this->get_ratings($ratingoptions);
+        $firstrating = $items[0]->rating;
+
+        // See if the user has permission to see the rating aggregate.
+        if ($firstrating->user_can_view_aggregate()) {
+
+            // For custom scales return text not the value.
+            // This scales weirdness will go away when scales are refactored.
+            $scalearray = null;
+            $aggregatetoreturn = round($firstrating->aggregate, 1);
+
+            // Output a dash if aggregation method == COUNT as the count is output next to the aggregate anyway.
+            if ($firstrating->settings->aggregationmethod == RATING_AGGREGATE_COUNT or $firstrating->count == 0) {
+                $aggregatetoreturn = ' - ';
+            } else if ($firstrating->settings->scale->id < 0) { // If its non-numeric scale.
+                // Dont use the scale item if the aggregation method is sum as adding items from a custom scale makes no sense.
+                if ($firstrating->settings->aggregationmethod != RATING_AGGREGATE_SUM) {
+                    $scalerecord = $DB->get_record('scale', array('id' => -$firstrating->settings->scale->id));
+                    if ($scalerecord) {
+                        $scalearray = explode(',', $scalerecord->scale);
+                        $aggregatetoreturn = $scalearray[$aggregatetoreturn - 1];
+                    }
+                }
+            }
+
+            $result->aggregate = $aggregatetoreturn;
+            $result->count = $firstrating->count;
+            $result->itemid = $itemid;
+        }
+        return $result;
+    }
+
+    /**
+     * Get ratings created since a given time.
+     *
+     * @param  stdClass $context   context object
+     * @param  string $component  component name
+     * @param  int $since         the time to check
+     * @return array list of ratings db records since the given timelimit
+     * @since Moodle 3.2
+     */
+    public function get_component_ratings_since($context, $component, $since) {
+        global $DB, $USER;
+
+        $ratingssince = array();
+        $where = 'contextid = ? AND component = ? AND (timecreated > ? OR timemodified > ?)';
+        $ratings = $DB->get_records_select('rating', $where, array($context->id, $component, $since, $since));
+        // Check area by area if we have permissions.
+        $permissions = array();
+        $rm = new rating_manager();
+
+        foreach ($ratings as $rating) {
+            // Check if the permission array for the area is cached.
+            if (!isset($permissions[$rating->ratingarea])) {
+                $permissions[$rating->ratingarea] = $rm->get_plugin_permissions_array($context->id, $component,
+                                                                                        $rating->ratingarea);
+            }
+
+            if (($permissions[$rating->ratingarea]['view'] and $rating->userid == $USER->id) or
+                    ($permissions[$rating->ratingarea]['viewany'] or $permissions[$rating->ratingarea]['viewall'])) {
+                $ratingssince[$rating->id] = $rating;
+            }
+        }
+        return $ratingssince;
+    }
 } // End rating_manager class definition.
 
 /**

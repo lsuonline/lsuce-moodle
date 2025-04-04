@@ -34,7 +34,7 @@ $PAGE->set_url('/user/emailupdate.php', array('id' => $id, 'key' => $key));
 $PAGE->set_context(context_system::instance());
 
 if (!$user = $DB->get_record('user', array('id' => $id))) {
-    print_error('invaliduserid');
+    throw new \moodle_exception('invaliduserid');
 }
 
 $preferences = get_user_preferences(null, null, $user->id);
@@ -42,8 +42,16 @@ $a = new stdClass();
 $a->fullname = fullname($user, true);
 $stremailupdate = get_string('emailupdate', 'auth', $a);
 
-$PAGE->set_title(format_string($SITE->fullname) . ": $stremailupdate");
+$PAGE->set_title($stremailupdate);
 $PAGE->set_heading(format_string($SITE->fullname) . ": $stremailupdate");
+// Validate the key.
+$errormessage = get_string('auth_invalidnewemailkey', 'auth');
+try {
+    $userkey = validate_user_key($key, 'core_user/email_change', null);
+} catch (moodle_exception $e) {
+    $userkey = null;
+    $errormessage = $e->getMessage();
+}
 
 if (empty($preferences['newemailattemptsleft'])) {
     redirect("$CFG->wwwroot/user/view.php?id=$user->id");
@@ -54,32 +62,43 @@ if (empty($preferences['newemailattemptsleft'])) {
     echo $OUTPUT->header();
     echo $OUTPUT->box(get_string('auth_outofnewemailupdateattempts', 'auth'), 'center');
     echo $OUTPUT->footer();
-} else if ($key == $preferences['newemailkey']) {
+} else if ($userkey && $userkey->userid == $user->id) {
+    // Key validated, continue with email update.
     $olduser = clone($user);
     cancel_email_update($user->id);
     $user->email = $preferences['newemail'];
 
     // Detect duplicate before saving.
-    if ($DB->get_record('user', array('email' => $user->email))) {
-        redirect(new moodle_url('/user/view.php', ['id' => $user->id]), get_string('emailnowexists', 'auth'));
-    } else {
-        // Update user email.
-        $authplugin = get_auth_plugin($user->auth);
-        $authplugin->user_update($olduser, $user);
-        user_update_user($user, false);
-        $a->email = $user->email;
-        redirect(
-                new moodle_url('/user/view.php', ['id' => $user->id]),
-                get_string('emailupdatesuccess', 'auth', $a),
-                null,
-                \core\output\notification::NOTIFY_SUCCESS
-            );
+    if (empty($CFG->allowaccountssameemail)) {
+        // Make a case-insensitive query for the given email address.
+        $select = $DB->sql_equal('email', ':email', false) . ' AND mnethostid = :mnethostid AND id <> :userid';
+        $params = array(
+            'email' => $user->email,
+            'mnethostid' => $CFG->mnet_localhost_id,
+            'userid' => $user->id
+        );
+        // If there are other user(s) that already have the same email, cancel and redirect.
+        if ($DB->record_exists_select('user', $select, $params)) {
+            redirect(new moodle_url('/user/view.php', ['id' => $user->id]), get_string('emailnowexists', 'auth'));
+        }
     }
+
+    // Update user email.
+    $authplugin = get_auth_plugin($user->auth);
+    $authplugin->user_update($olduser, $user);
+    user_update_user($user, false);
+    $a->email = $user->email;
+    redirect(
+        new moodle_url('/user/view.php', ['id' => $user->id]),
+        get_string('emailupdatesuccess', 'auth', $a),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 
 } else {
     $preferences['newemailattemptsleft']--;
     set_user_preference('newemailattemptsleft', $preferences['newemailattemptsleft'], $user->id);
     echo $OUTPUT->header();
-    echo $OUTPUT->box(get_string('auth_invalidnewemailkey', 'auth'), 'center');
+    echo $OUTPUT->box($errormessage, 'center');
     echo $OUTPUT->footer();
 }

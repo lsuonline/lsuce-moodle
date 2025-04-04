@@ -41,8 +41,7 @@ function report_customsql_limitnum() {
     return $limitnum;
 }
 
-function report_customsql_execute_query($sql, $params = null,
-        $querylimit) {
+function report_customsql_execute_query($sql, $querylimit, $params = null) {
     global $CFG, $DB;
 
     $sql = preg_replace('/\bprefix_(?=\w+)/i', $CFG->prefix, $sql);
@@ -105,7 +104,7 @@ function report_customsql_generate_csv($report, $timenow) {
 
     $donotescape = isset($report->donotescape) ? $report->donotescape : 0;
 
-    $rs = report_customsql_execute_query($sql, $queryparams, $querylimit);
+    $rs = report_customsql_execute_query($sql, $querylimit, $queryparams);
 
     $csvfilenames = array();
     $csvtimestamp = null;
@@ -131,7 +130,7 @@ function report_customsql_generate_csv($report, $timenow) {
             }
         }
         if ($report->singlerow) {
-            array_unshift($data, strftime('%Y-%m-%d', $timenow));
+            array_unshift($data, core_date::strftime('%Y-%m-%d', $timenow));
         }
         report_customsql_write_csv_row($handle, $data, $donotescape);
     }
@@ -196,7 +195,7 @@ function report_customsql_temp_cvs_name($reportid, $timestamp) {
     global $CFG;
     $path = 'admin_report_customsql/temp/'.$reportid;
     make_upload_directory($path);
-    return array($CFG->dataroot.'/'.$path.'/'.strftime('%Y%m%d-%H%M%S', $timestamp).'.csv',
+    return array($CFG->dataroot . '/' . $path . '/' . core_date::strftime('%Y%m%d-%H%M%S', $timestamp) . '.csv',
                  $timestamp);
 }
 
@@ -204,7 +203,7 @@ function report_customsql_scheduled_cvs_name($reportid, $timestart) {
     global $CFG;
     $path = 'admin_report_customsql/'.$reportid;
     make_upload_directory($path);
-    return array($CFG->dataroot.'/'.$path.'/'.strftime('%Y%m%d-%H%M%S', $timestart).'.csv',
+    return array($CFG->dataroot . '/' . $path . '/' . core_date::strftime('%Y%m%d-%H%M%S', $timestart) . '.csv',
                  $timestart);
 }
 
@@ -393,10 +392,11 @@ function report_customsql_pretify_column_names($row) {
 function report_customsql_customcodes() {
     global $CFG;
     $customcodes = array();
-    $customcodepairs = !empty($CFG->report_customsql_badwordsexception) ? explode(":",$CFG->report_customsql_badwordsexception) : null;
+    $customcodepairs = !empty($CFG->report_customsql_badwordsexception)
+        ? explode(":", $CFG->report_customsql_badwordsexception) : null;
     if ($customcodepairs) {
         foreach ($customcodepairs as $customcodepair) {
-            $ccp = explode(',',$customcodepair);
+            $ccp = explode(',', $customcodepair);
             $customcodes[$ccp[0]] = $ccp[1];
         }
     }
@@ -499,7 +499,7 @@ function report_customsql_delete_old_temp_files($upto) {
     global $CFG;
 
     $count = 0;
-    $comparison = strftime('%Y%m%d-%H%M%S', $upto).'csv';
+    $comparison = core_date::strftime('%Y%m%d-%H%M%S', $upto) . 'csv';
 
     $files = glob($CFG->dataroot.'/admin_report_customsql/temp/*/*.csv');
     if (empty($files)) {
@@ -678,12 +678,12 @@ function report_customsql_get_ready_to_run_daily_reports($timenow) {
 function report_customsql_send_email_notification($recipient, $message) {
 
     // Prepare the message.
-    $eventdata = new stdClass();
+    $eventdata = new \core\message\message();
     $eventdata->component         = 'report_customsql';
     $eventdata->name              = 'notification';
     $eventdata->notification      = 1;
-
-    $eventdata->userfrom          = get_admin();
+    $eventdata->courseid          = SITEID;
+    $eventdata->userfrom          = \core_user::get_support_user();
     $eventdata->userto            = $recipient;
     $eventdata->subject           = $message->subject;
     $eventdata->fullmessage       = $message->fullmessage;
@@ -755,7 +755,7 @@ function report_customsql_copy_csv_to_customdir($report, $timenow, $csvfilename 
  *
  * @param object $report report settings from the database.
  */
-function report_customsql_plain_text_report_name($report) {
+function report_customsql_plain_text_report_name($report): string {
     return format_string($report->displayname, true,
             ['context' => \context_system::instance()]);
 }

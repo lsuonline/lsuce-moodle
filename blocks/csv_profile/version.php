@@ -19,7 +19,7 @@
  *
  * @package   block_csv_profile
  * @copyright 2012 onwared Ted vd Brink, Brightally custom code
- * @copyright 2018 onwards Robert Russo, Louisiana State University
+ * @author    Robert Russo, Louisiana State University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

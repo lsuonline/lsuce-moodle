@@ -22,11 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace core_competency;
-defined('MOODLE_INTERNAL') || die();
 
 use coding_exception;
-use stdClass;
 use lang_string;
+use core_course\external\course_summary_exporter;
 
 /**
  * Class for loading/storing course_competencies from the DB.
@@ -81,8 +80,8 @@ class course_competency extends persistent {
      * @return void
      */
     protected function before_validate() {
-        if (($this->get_id() && $this->get_sortorder() === null) || !$this->get_id()) {
-            $this->set('sortorder', $this->count_records(array('courseid' => $this->get_courseid())));
+        if (($this->get('id') && $this->get('sortorder') === null) || !$this->get('id')) {
+            $this->set('sortorder', $this->count_records(array('courseid' => $this->get('courseid'))));
         }
     }
 
@@ -243,7 +242,13 @@ class course_competency extends persistent {
     public static function list_courses($competencyid) {
         global $DB;
 
-        $results = $DB->get_records_sql('SELECT course.id, course.visible, course.shortname, course.idnumber, course.fullname
+        // We need all the course summary exporter properties, plus category.
+        $coursefields = course_summary_exporter::properties_definition();
+        $coursefields = array_map(function(string $field): string {
+            return "course.{$field}";
+        }, array_keys($coursefields));
+
+        $results = $DB->get_records_sql('SELECT ' . implode(',', $coursefields) . ', course.category
                                            FROM {course} course
                                            JOIN {' . self::TABLE . '} coursecomp
                                              ON coursecomp.courseid = course.id
@@ -294,7 +299,7 @@ class course_competency extends persistent {
         $instances = array();
         foreach ($results as $result) {
             $comp = new competency(0, $result);
-            $instances[$comp->get_id()] = $comp;
+            $instances[$comp->get('id')] = $comp;
         }
         $results->close();
 
@@ -340,7 +345,7 @@ class course_competency extends persistent {
 
         $table = '{' . self::TABLE . '}';
         $sql = "UPDATE $table SET sortorder = sortorder -1  WHERE courseid = ? AND sortorder > ?";
-        $DB->execute($sql, array($this->get_courseid(), $this->get_sortorder()));
+        $DB->execute($sql, array($this->get('courseid'), $this->get('sortorder')));
     }
 
     /**

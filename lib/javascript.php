@@ -30,7 +30,6 @@ define('NO_DEBUG_DISPLAY', true);
 define('ABORT_AFTER_CONFIG', true);
 require('../config.php'); // this stops immediately at the beginning of lib/setup.php
 require_once("$CFG->dirroot/lib/jslib.php");
-require_once("$CFG->dirroot/lib/classes/minify.php");
 
 if ($slashargument = min_get_slash_argument()) {
     $slashargument = ltrim($slashargument, '/');
@@ -46,6 +45,11 @@ if ($slashargument = min_get_slash_argument()) {
 } else {
     $rev  = min_optional_param('rev', -1, 'INT');
     $file = min_optional_param('jsfile', '', 'RAW'); // 'file' would collide with URL rewriting!
+}
+
+if (!min_is_revision_valid_and_current($rev)) {
+    // If the rev is invalid, normalise it to -1 to disable all caching.
+    $rev = -1;
 }
 
 // some security first - pick only files with .js extension in dirroot
@@ -80,8 +84,7 @@ if (!$jsfiles) {
 
 $etag = sha1($rev.implode(',', $jsfiles));
 
-// Use the caching only for meaningful revision numbers which prevents future cache poisoning.
-if ($rev > 0 and $rev < (time() + 60*60)) {
+if ($rev > 0) {
     $candidate = $CFG->localcachedir.'/js/'.$etag;
 
     if (file_exists($candidate)) {
@@ -93,6 +96,15 @@ if ($rev > 0 and $rev < (time() + 60*60)) {
         js_send_cached($candidate, $etag);
 
     } else {
+        // The JS needs minfifying, so we're gonna have to load our full Moodle
+        // environment to process it..
+        define('ABORT_AFTER_CONFIG_CANCEL', true);
+
+        define('NO_MOODLE_COOKIES', true); // Session not used here.
+        define('NO_UPGRADE_CHECK', true);  // Ignore upgrade check.
+
+        require("$CFG->dirroot/lib/setup.php");
+
         js_write_cache_file_content($candidate, core_minify::js_files($jsfiles));
         // verify nothing failed in cache file creation
         clearstatcache();
@@ -106,4 +118,4 @@ $content = '';
 foreach ($jsfiles as $jsfile) {
     $content .= file_get_contents($jsfile)."\n";
 }
-js_send_uncached($content, $etag);
+js_send_uncached($content);

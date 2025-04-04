@@ -37,6 +37,7 @@ defined('MOODLE_INTERNAL') || die();
  *      - int mode: execution mode.
  *      - string operation: what operation are we performing?
  *      - boolean samesite: true if restoring to same site.
+ *      - int originalcourseid: the id of the course the course being restored, only included if samesite is true
  * }
  *
  * @package    core
@@ -70,7 +71,15 @@ class course_restored extends base {
      * @return string
      */
     public function get_description() {
-        return "The user with id '$this->userid' restored the course with id '$this->courseid'.";
+        $retstring = "The user with id '$this->userid' restored the course with id '$this->courseid'.";
+
+        if (isset($this->other['originalcourseid'])) {
+            $originalcourseid = $this->other['originalcourseid'];
+            $retstring = "The user with id '$this->userid' restored old course with id " .
+                "'$originalcourseid' to a new course with id '$this->courseid'.";
+        }
+
+        return $retstring;
     }
 
     /**
@@ -80,32 +89,6 @@ class course_restored extends base {
      */
     public function get_url() {
         return new \moodle_url('/course/view.php', array('id' => $this->objectid));
-    }
-
-    /**
-     * Returns the name of the legacy event.
-     *
-     * @return string legacy event name
-     */
-    public static function get_legacy_eventname() {
-        return 'course_restored';
-    }
-
-    /**
-     * Returns the legacy event data.
-     *
-     * @return \stdClass the legacy event data
-     */
-    protected function get_legacy_eventdata() {
-        return (object) array(
-            'courseid' => $this->objectid,
-            'userid' => $this->userid,
-            'type' => $this->other['type'],
-            'target' => $this->other['target'],
-            'mode' => $this->other['mode'],
-            'operation' => $this->other['operation'],
-            'samesite' => $this->other['samesite'],
-        );
     }
 
     /**

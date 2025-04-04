@@ -17,9 +17,11 @@
 /**
  * vidgridbutton settings.
  *
- * @package   atto_vidgridbutton
- * @copyright VidGrid 2018
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    atto_vidgridbutton
+ * @copyright  Panopto 2009 - 2016
+ * @copyright  ilos 2017
+ * @copyright  VidGrid 2018 - 2020
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 

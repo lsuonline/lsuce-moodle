@@ -66,14 +66,8 @@ $event->trigger();
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
+$PAGE->requires->css('/mod/kalvidres/styles.css');
 echo $OUTPUT->header();
-
-$description = format_module_intro('kalvidres', $kalvidres, $cm->id);
-if (!empty($description)) {
-    echo $OUTPUT->box_start('generalbox');
-    echo $description;
-    echo $OUTPUT->box_end();
-}
 
 $renderer = $PAGE->get_renderer('mod_kalvidres');
 
@@ -86,6 +80,7 @@ $params = array(
     'height' => $kalvidres->height
 );
 $PAGE->requires->yui_module('moodle-local_kaltura-lticontainer', 'M.local_kaltura.init', array($params), null, true);
+$PAGE->requires->js(new moodle_url('/local/kaltura/js/bse_iframe_resize.js'));
 
 echo $renderer->display_iframe($kalvidres, $course->id);
 

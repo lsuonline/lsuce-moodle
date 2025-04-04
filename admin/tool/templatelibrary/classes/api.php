@@ -47,7 +47,12 @@ class api {
      * @return array[string] Where each template is in the form "component/templatename".
      */
     public static function list_templates($component = '', $search = '', $themename = '') {
-        global $CFG;
+        global $CFG, $PAGE;
+
+        if (empty($themename)) {
+            $themename = $PAGE->theme->name;
+        }
+        $themeconfig = \theme_config::load($themename);
 
         $templatedirs = array();
         $results = array();
@@ -65,6 +70,9 @@ class api {
             // Look at all the templates dirs for subsystems.
             $subsystems = core_component::get_core_subsystems();
             foreach ($subsystems as $subsystem => $dir) {
+                if (empty($dir)) {
+                    continue;
+                }
                 $dir .= '/templates';
                 if (is_dir($dir)) {
                     $dirs = mustache_template_finder::get_template_directories_for_component('core_' . $subsystem, $themename);
@@ -77,6 +85,9 @@ class api {
             foreach ($plugintypes as $type => $dir) {
                 $plugins = core_component::get_plugin_list_with_file($type, 'templates', false);
                 foreach ($plugins as $plugin => $dir) {
+                    if ($type == 'theme' && $plugin != $themename && !in_array($plugin, $themeconfig->parents)) {
+                        continue;
+                    }
                     if (!empty($dir) && is_dir($dir)) {
                         $pluginname = $type . '_' . $plugin;
                         $dirs = mustache_template_finder::get_template_directories_for_component($pluginname, $themename);
@@ -88,13 +99,34 @@ class api {
 
         foreach ($templatedirs as $templatecomponent => $dirs) {
             foreach ($dirs as $dir) {
+                if (!is_dir($dir) || !is_readable($dir)) {
+                    continue;
+                }
+                $dir = realpath($dir);
+
                 // List it.
-                $files = glob($dir . '/*.mustache');
+                $directory = new \RecursiveDirectoryIterator($dir);
+                $files = new \RecursiveIteratorIterator($directory);
 
                 foreach ($files as $file) {
-                    $templatename = basename($file, '.mustache');
-                    if ($search == '' || strpos($templatename, $search) !== false) {
-                        $results[$templatecomponent . '/' . $templatename] = 1;
+                    if (!$file->isFile()) {
+                        continue;
+                    }
+                    $filename = substr($file->getRealpath(), strlen($dir) + 1);
+                    if (strpos($templatecomponent, 'theme_') === 0) {
+                        if (strpos($filename, '/') !== false && strpos($filename, 'local/') !== 0) {
+                            // Skip any template in a sub-directory of a theme which is not in a local directory.
+                            // These are theme overrides of core templates.
+                            // Note: There is a rare edge case where a theme may override a template and then have additional
+                            // dependant templates and these will not be shown.
+                            continue;
+                        }
+                    }
+                    $templatename = str_replace('.mustache', '', $filename);
+                    $componenttemplatename = "{$templatecomponent}/{$templatename}";
+
+                    if ($search == '' || strpos($componenttemplatename, $search) !== false) {
+                        $results[$componenttemplatename] = 1;
                     }
                 }
             }
@@ -111,30 +143,34 @@ class api {
      *
      * @param string $component The component that holds the template.
      * @param string $template The name of the template.
-     * @return string the template
+     * @return string the template or false if template doesn't exist.
      */
     public static function load_canonical_template($component, $template) {
         // Get the list of possible template directories.
         $dirs = mustache_template_finder::get_template_directories_for_component($component);
         $filename = false;
+        $themedir = core_component::get_plugin_types()['theme'];
 
         foreach ($dirs as $dir) {
             // Skip theme dirs - we only want the original plugin/core template.
-            if (strpos($dir, "/theme/") === false) {
-                $candidate = $dir . $template . '.mustache';
-                if (file_exists($candidate)) {
-                    $filename = $candidate;
-                    break;
-                }
+            if (strpos($dir, $themedir) === 0) {
+                continue;
+            }
+
+            $candidate = $dir . $template . '.mustache';
+            if (file_exists($candidate)) {
+                $filename = $candidate;
+                break;
             }
         }
+
         if ($filename === false) {
-            throw new moodle_exception('filenotfound', 'error');
+            // There are occasions where we don't have a core template.
+            return false;
         }
 
         $templatestr = file_get_contents($filename);
         return $templatestr;
     }
-
 
 }

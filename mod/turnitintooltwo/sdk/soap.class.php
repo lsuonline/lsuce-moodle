@@ -4,8 +4,8 @@
  * and open the template in the editor.
  */
 
-require_once( 'oauthsimple.class.php' );
-require_once( 'log.class.php' );
+require_once( __DIR__.'/oauthsimple.class.php' );
+require_once( __DIR__.'/log.class.php' );
 
 /**
  * @ignore
@@ -215,8 +215,8 @@ class Soap extends SoapClient {
             $oauth->setAction("POST");
             $oauth->genBodyHash( $request );
             $parse = parse_url($location);
-            $port = ( isset( $parse["port"] ) AND ( $parse["port"] == '80' OR $parse["port"] == '443' ) )
-                ? '' : !isset( $parse["port"] ) ? '' : ':'.$parse["port"];
+            $port = ( ( isset( $parse["port"] ) AND ( $parse["port"] == '80' OR $parse["port"] == '443' ) )
+                ? '' : !isset( $parse["port"] ) ) ? '' : ':'.$parse["port"];
             if ( !is_null( $this->language ) ) $oauth->setParameters( array( 'lang' => $this->language ) );
             $oauth->setPath( $parse["scheme"].'://'.$parse["host"].$port.$parse["path"] );
             $header_string = $oauth->getHeaderString();
@@ -282,8 +282,8 @@ class Soap extends SoapClient {
 
         parent::__construct( $wsdl, $options );
     }
-
-    public function __doRequest($request, $location, $action, $version, $one_way = null) {
+    
+    public function __doRequest($request, $location, $action, $version, $one_way = null): ?string {
 
         $http_headers = array(
             'Content-type: text/xml;charset="utf-8"',

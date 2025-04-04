@@ -36,6 +36,7 @@ require_once(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
 require_once($CFG->libdir . '/xhprof/xhprof_moodle.php');
 require_login();
 require_capability('moodle/site:config', context_system::instance());
+raise_memory_limit(MEMORY_HUGE);
 \core\session\manager::write_close();
 // End moodle modification.
 
@@ -91,6 +92,12 @@ $vgbar = ' class="vgbar"';
 // Start moodle modification: use own XHProfRuns implementation.
 // $xhprof_runs_impl = new XHProfRuns_Default();
 $xhprof_runs_impl = new moodle_xhprofrun();
+$reducedata = xhprof_get_bool_param('reducedata', 0); // Don't reduce data by default.
+$xhprof_runs_impl->set_reducedata($reducedata);
+if ($reducedata) {
+    // We need to inject it, so we continue in "reduced data mode" all the time.
+    $params['reducedata'] = $reducedata;
+}
 // End moodle modification.
 
 displayXHProfReport($xhprof_runs_impl, $params, $source, $run, $wts,

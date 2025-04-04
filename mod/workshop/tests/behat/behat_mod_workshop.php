@@ -48,15 +48,15 @@ class behat_mod_workshop extends behat_base {
     public function i_change_phase_in_workshop_to($workshopname, $phase) {
         $workshopname = $this->escape($workshopname);
         $phaseliteral = behat_context_helper::escape($phase);
-        $switchphase = behat_context_helper::escape(get_string('switchphase', 'workshop'));
 
-        $xpath = "//*[@class='userplan']/descendant::div[./span[contains(.,$phaseliteral)]]/".
-                "descendant-or-self::a[./img[@alt=$switchphase]]";
+        $xpath = "//*[@class='userplan']/descendant::div[./span[contains(.,$phaseliteral)]]";
         $continue = $this->escape(get_string('continue'));
 
-        $this->execute('behat_general::click_link', $workshopname);
+        $this->execute('behat_navigation::i_am_on_page_instance', [$workshopname, 'workshop activity']);
 
-        $this->execute("behat_general::i_click_on", array($xpath, "xpath_element"));
+        $this->execute('behat_general::i_click_on_in_the',
+            array('a.action-icon', "css_element", $this->escape($xpath), "xpath_element")
+        );
 
         $this->execute("behat_forms::press_button", $continue);
     }
@@ -64,6 +64,7 @@ class behat_mod_workshop extends behat_base {
     /**
      * Adds or edits a student workshop submission.
      *
+     * @When /^I add a submission in workshop "(?P<workshop_name_string>(?:[^"]|\\")*)" as:$/
      * @When /^I add a submission in workshop "(?P<workshop_name_string>(?:[^"]|\\")*)" as:"$/
      * @param string $workshopname
      * @param TableNode $table data to fill the submission form with, must contain 'Title'
@@ -71,9 +72,9 @@ class behat_mod_workshop extends behat_base {
     public function i_add_a_submission_in_workshop_as($workshopname, $table) {
         $workshopname = $this->escape($workshopname);
         $savechanges = $this->escape(get_string('savechanges'));
-        $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' ownsubmission ')]/descendant::input[@type='submit']";
+        $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' singlebutton ')]/descendant::*[@type='submit']";
 
-        $this->execute('behat_general::click_link', $workshopname);
+        $this->execute("behat_navigation::i_am_on_page_instance", [$workshopname, 'workshop activity']);
 
         $this->execute("behat_general::i_click_on", array($xpath, "xpath_element"));
 
@@ -85,27 +86,26 @@ class behat_mod_workshop extends behat_base {
     /**
      * Sets the workshop assessment form.
      *
+     * @When /^I edit assessment form in workshop "(?P<workshop_name_string>(?:[^"]|\\")*)" as:$/
      * @When /^I edit assessment form in workshop "(?P<workshop_name_string>(?:[^"]|\\")*)" as:"$/
      * @param string $workshopname
      * @param TableNode $table data to fill the submission form with, must contain 'Title'
      */
     public function i_edit_assessment_form_in_workshop_as($workshopname, $table) {
-        $workshopname = $this->escape($workshopname);
-        $editassessmentform = $this->escape(get_string('editassessmentform', 'workshop'));
-        $saveandclose = $this->escape(get_string('saveandclose', 'workshop'));
+        $this->execute("behat_navigation::i_am_on_page_instance", [$this->escape($workshopname), 'workshop activity']);
 
-        $this->execute('behat_general::click_link', $workshopname);
-
-        $this->execute('behat_general::click_link', $editassessmentform);
+        $this->execute('behat_navigation::i_navigate_to_in_current_page_administration',
+            get_string('assessmentform', 'workshop'));
 
         $this->execute("behat_forms::i_set_the_following_fields_to_these_values", $table);
 
-        $this->execute("behat_forms::press_button", $saveandclose);
+        $this->execute("behat_forms::press_button", get_string('saveandclose', 'workshop'));
     }
 
     /**
      * Peer-assesses a workshop submission.
      *
+     * @When /^I assess submission "(?P<submission_string>(?:[^"]|\\")*)" in workshop "(?P<workshop_name_string>(?:[^"]|\\")*)" as:$/
      * @When /^I assess submission "(?P<submission_string>(?:[^"]|\\")*)" in workshop "(?P<workshop_name_string>(?:[^"]|\\")*)" as:"$/
      * @param string $submission
      * @param string $workshopname
@@ -119,7 +119,7 @@ class behat_mod_workshop extends behat_base {
         $assess = $this->escape(get_string('assess', 'workshop'));
         $saveandclose = $this->escape(get_string('saveandclose', 'workshop'));
 
-        $this->execute('behat_general::click_link', $workshopname);
+        $this->execute('behat_navigation::i_am_on_page_instance', [$workshopname, 'workshop activity']);
 
         $this->execute('behat_general::i_click_on_in_the',
             array($assess, "button", $xpath, "xpath_element")
@@ -159,5 +159,28 @@ class behat_mod_workshop extends behat_base {
             }
         }
         $this->find('xpath', $xpath);
+    }
+
+    /**
+     * Configure portfolio plugin, set value for portfolio instance
+     *
+     * @When /^I set portfolio instance "(?P<portfolioinstance_string>(?:[^"]|\\")*)" to "(?P<value_string>(?:[^"]|\\")*)"$/
+     * @param string $portfolioinstance
+     * @param string $value
+     */
+    public function i_set_portfolio_instance_to($portfolioinstance, $value) {
+
+        $rowxpath = "//table[contains(@class, 'generaltable')]//tr//td[contains(text(), '"
+            . $portfolioinstance . "')]/following-sibling::td";
+
+        $selectxpath = $rowxpath.'//select';
+        $select = $this->find('xpath', $selectxpath);
+        $select->selectOption($value);
+
+        if (!$this->running_javascript()) {
+            $this->execute('behat_general::i_click_on_in_the',
+                array(get_string('go'), "button", $rowxpath, "xpath_element")
+            );
+        }
     }
 }

@@ -25,6 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+use \mod_assign\output\assign_header;
+
 require_once($CFG->dirroot.'/grade/grading/lib.php');
 
 /**
@@ -117,7 +119,7 @@ class assign_feedback_offline extends assign_feedback_plugin {
                                                                      'plugin'=>'offline',
                                                                      'pluginaction'=>'uploadgrades',
                                                                      'id' => $this->assignment->get_course_module()->id));
-            print_error('invalidgradeimport', 'assignfeedback_offline', $thisurl);
+            throw new \moodle_exception('invalidgradeimport', 'assignfeedback_offline', $thisurl);
             return;
         }
         // Does this assignment use a scale?
@@ -131,7 +133,8 @@ class assign_feedback_offline extends assign_feedback_plugin {
         $adminconfig = $this->assignment->get_admin_config();
         $gradebookplugin = $adminconfig->feedback_plugin_for_gradebook;
 
-        $updatecount = 0;
+        $updategradecount = 0;
+        $updatefeedbackcount = 0;
         while ($record = $gradeimporter->next()) {
             $user = $record->user;
             $modified = $record->modified;
@@ -179,7 +182,7 @@ class assign_feedback_offline extends assign_feedback_plugin {
                 $grade->grader = $USER->id;
                 if ($this->assignment->update_grade($grade)) {
                     $this->assignment->notify_grade_modified($grade);
-                    $updatecount += 1;
+                    $updategradecount += 1;
                 }
             }
 
@@ -197,7 +200,7 @@ class assign_feedback_offline extends assign_feedback_plugin {
                         }
                     }
                     if ($newvalue != $oldvalue) {
-                        $updatecount += 1;
+                        $updatefeedbackcount += 1;
                         $grade = $this->assignment->get_user_grade($record->user->id, true);
                         $this->assignment->notify_grade_modified($grade);
                         $plugin->set_editor_text($field, $newvalue, $grade->id);
@@ -222,7 +225,11 @@ class assign_feedback_offline extends assign_feedback_plugin {
                                                   false,
                                                   $this->assignment->get_course_module()->id,
                                                   get_string('importgrades', 'assignfeedback_offline')));
-        $o .= $renderer->box(get_string('updatedgrades', 'assignfeedback_offline', $updatecount));
+        $strparams = [
+            'gradeupdatescount' => $updategradecount,
+            'feedbackupdatescount' => $updatefeedbackcount,
+        ];
+        $o .= $renderer->box(get_string('updatedgrades', 'assignfeedback_offline', $strparams));
         $url = new moodle_url('view.php',
                               array('id'=>$this->assignment->get_course_module()->id,
                                     'action'=>'grading'));
@@ -288,7 +295,7 @@ class assign_feedback_offline extends assign_feedback_plugin {
         } else if ($confirm) {
             $importid = optional_param('importid', 0, PARAM_INT);
             $draftid = optional_param('draftid', 0, PARAM_INT);
-            $encoding = optional_param('encoding', 'utf-8', PARAM_ALPHAEXT);
+            $encoding = optional_param('encoding', 'utf-8', PARAM_ALPHANUMEXT);
             $separator = optional_param('separator', 'comma', PARAM_ALPHA);
             $ignoremodified = optional_param('ignoremodified', 0, PARAM_BOOL);
             $gradeimporter = new assignfeedback_offline_grade_importer($importid, $this->assignment, $encoding, $separator);
@@ -406,4 +413,13 @@ class assign_feedback_offline extends assign_feedback_plugin {
         return false;
     }
 
+    /**
+     * Return the plugin configs for external functions.
+     *
+     * @return array the list of settings
+     * @since Moodle 3.2
+     */
+    public function get_config_for_external() {
+        return (array) $this->get_config();
+    }
 }

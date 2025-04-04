@@ -96,6 +96,8 @@ class comment {
     private static $comment_page = null;
     /** @var string comment itemid component in non-javascript UI */
     private static $comment_component = null;
+    /** @var stdClass comment paramaters for callback. */
+    protected $comment_param;
 
     /**
      * Construct function of comment class, initialise
@@ -135,7 +137,7 @@ class comment {
             $this->contextid = $options->contextid;
             $this->context = context::instance_by_id($this->contextid);
         } else {
-            print_error('invalidcontext');
+            throw new \moodle_exception('invalidcontext');
         }
 
         if (!empty($options->component)) {
@@ -220,7 +222,7 @@ class comment {
         // load template
         $this->template = html_writer::start_tag('div', array('class' => 'comment-message'));
 
-        $this->template .= html_writer::start_tag('div', array('class' => 'comment-message-meta'));
+        $this->template .= html_writer::start_tag('div', array('class' => 'comment-message-meta me-3'));
 
         $this->template .= html_writer::tag('span', '___picture___', array('class' => 'picture'));
         $this->template .= html_writer::tag('span', '___name___', array('class' => 'user')) . ' - ';
@@ -244,7 +246,7 @@ class comment {
      * @param moodle_page $page The page object to initialise comments within
      *                          If not provided the global $PAGE is used
      */
-    public static function init(moodle_page $page = null) {
+    public static function init(?moodle_page $page = null) {
         global $PAGE;
 
         if (empty($page)) {
@@ -261,9 +263,8 @@ class comment {
         $page->requires->strings_for_js(array(
                 'addcomment',
                 'comments',
-                'commentscount',
                 'commentsrequirelogin',
-                'deletecomment',
+                'deletecommentbyon'
             ),
             'moodle'
         );
@@ -328,7 +329,7 @@ class comment {
      * @param moodle_page $page
      * @return moodle_url
      */
-    public function get_nojslink(moodle_page $page = null) {
+    public function get_nojslink(?moodle_page $page = null) {
         if ($page === null) {
             global $PAGE;
             $page = $PAGE;
@@ -452,16 +453,21 @@ class comment {
                 // comments open and closed
                 $countstring = '';
                 if ($this->displaytotalcount) {
-                    $countstring = '('.$this->count().')';
+                    $countstring = '(' . html_writer::span($this->count(), 'comment-link-count') . ')';
                 }
                 $collapsedimage= 't/collapsed';
                 if (right_to_left()) {
                     $collapsedimage= 't/collapsed_rtl';
-                } else {
-                    $collapsedimage= 't/collapsed';
                 }
-                $html .= html_writer::start_tag('a', array('class' => 'comment-link', 'id' => 'comment-link-'.$this->cid, 'href' => '#'));
-                $html .= html_writer::empty_tag('img', array('id' => 'comment-img-'.$this->cid, 'src' => $OUTPUT->pix_url($collapsedimage), 'alt' => $this->linktext, 'title' => $this->linktext));
+                $html .= html_writer::start_tag('a', array(
+                    'class' => 'comment-link',
+                    'id' => 'comment-link-'.$this->cid,
+                    'href' => '#',
+                    'role' => 'button',
+                    'aria-expanded' => 'false')
+                );
+                $html .= html_writer::img($OUTPUT->image_url($collapsedimage), $this->linktext,
+                    ['id' => 'comment-img-' . $this->cid, 'class' => 'icon']);
                 $html .= html_writer::tag('span', $this->linktext.' '.$countstring, array('id' => 'comment-link-text-'.$this->cid));
                 $html .= html_writer::end_tag('a');
             }
@@ -487,7 +493,8 @@ class comment {
                 $textareaattrs = array(
                     'name' => 'content',
                     'rows' => 2,
-                    'id' => 'dlg-content-'.$this->cid
+                    'id' => 'dlg-content-'.$this->cid,
+                    'aria-label' => get_string('addcomment')
                 );
                 if (!$this->fullwidth) {
                     $textareaattrs['cols'] = '20';
@@ -497,6 +504,9 @@ class comment {
 
                 $html .= html_writer::start_tag('div', array('class' => 'comment-area'));
                 $html .= html_writer::start_tag('div', array('class' => 'db'));
+                $html .= html_writer::tag('label',
+                        get_string('comment', 'comment'),
+                        ['for' => 'dlg-content-'.$this->cid, 'class' => 'sr-only']);
                 $html .= html_writer::tag('textarea', '', $textareaattrs);
                 $html .= html_writer::end_tag('div'); // .db
 
@@ -530,9 +540,10 @@ class comment {
      * Return matched comments
      *
      * @param  int $page
-     * @return array
+     * @param  str $sortdirection sort direction, ASC or DESC
+     * @return array|false
      */
-    public function get_comments($page = '') {
+    public function get_comments($page = '', $sortdirection = 'DESC') {
         global $DB, $CFG, $USER, $OUTPUT;
         if (!$this->can_view()) {
             return false;
@@ -543,13 +554,15 @@ class comment {
         $params = array();
         $perpage = (!empty($CFG->commentsperpage))?$CFG->commentsperpage:15;
         $start = $page * $perpage;
-        $ufields = user_picture::fields('u');
+        $userfieldsapi = \core_user\fields::for_userpic();
+        $ufields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
         list($componentwhere, $component) = $this->get_component_select_sql('c');
         if ($component) {
             $params['component'] = $component;
         }
 
+        $sortdirection = ($sortdirection === 'ASC') ? 'ASC' : 'DESC';
         $sql = "SELECT $ufields, c.id AS cid, c.content AS ccontent, c.format AS cformat, c.timecreated AS ctimecreated
                   FROM {comments} c
                   JOIN {user} u ON u.id = c.userid
@@ -557,13 +570,13 @@ class comment {
                        c.commentarea = :commentarea AND
                        c.itemid = :itemid AND
                        $componentwhere
-              ORDER BY c.timecreated DESC";
+              ORDER BY c.timecreated $sortdirection, c.id $sortdirection";
         $params['contextid'] = $this->contextid;
         $params['commentarea'] = $this->commentarea;
         $params['itemid'] = $this->itemid;
 
         $comments = array();
-        $formatoptions = array('overflowdiv' => true);
+        $formatoptions = array('overflowdiv' => true, 'blanktarget' => true);
         $rs = $DB->get_recordset_sql($sql, $params, $start, $perpage);
         foreach ($rs as $u) {
             $c = new stdClass();
@@ -577,11 +590,10 @@ class comment {
             $c->fullname = fullname($u);
             $c->time = userdate($c->timecreated, $c->strftimeformat);
             $c->content = format_text($c->content, $c->format, $formatoptions);
-            $c->avatar = $OUTPUT->user_picture($u, array('size'=>18));
+            $c->avatar = $OUTPUT->user_picture($u, array('size' => 16));
             $c->userid = $u->id;
 
-            $candelete = $this->can_delete($c->id);
-            if (($USER->id == $u->id) || !empty($candelete)) {
+            if ($this->can_delete($c)) {
                 $c->delete = true;
             }
             $comments[] = $c;
@@ -706,11 +718,12 @@ class comment {
         $cmt_id = $DB->insert_record('comments', $newcmt);
         if (!empty($cmt_id)) {
             $newcmt->id = $cmt_id;
-            $newcmt->strftimeformat = get_string('strftimerecent', 'langconfig');
+            $newcmt->strftimeformat = get_string('strftimerecentfull', 'langconfig');
             $newcmt->fullname = fullname($USER);
             $url = new moodle_url('/user/view.php', array('id' => $USER->id, 'course' => $this->courseid));
             $newcmt->profileurl = $url->out();
-            $newcmt->content = format_text($newcmt->content, $newcmt->format, array('overflowdiv'=>true));
+            $formatoptions = array('overflowdiv' => true, 'blanktarget' => true);
+            $newcmt->content = format_text($newcmt->content, $newcmt->format, $formatoptions);
             $newcmt->avatar = $OUTPUT->user_picture($USER, array('size'=>16));
 
             $commentlist = array($newcmt);
@@ -790,16 +803,22 @@ class comment {
     /**
      * Delete a comment
      *
-     * @param  int $commentid
+     * @param  int|stdClass $comment The id of a comment, or a comment record.
      * @return bool
      */
-    public function delete($commentid) {
-        global $DB, $USER;
-        $candelete = has_capability('moodle/comment:delete', $this->context);
-        if (!$comment = $DB->get_record('comments', array('id'=>$commentid))) {
+    public function delete($comment) {
+        global $DB;
+        if (is_object($comment)) {
+            $commentid = $comment->id;
+        } else {
+            $commentid = $comment;
+            $comment = $DB->get_record('comments', ['id' => $commentid]);
+        }
+
+        if (!$comment) {
             throw new comment_exception('dbupdatefailed');
         }
-        if (!($USER->id == $comment->userid || !empty($candelete))) {
+        if (!$this->can_delete($comment)) {
             throw new comment_exception('nopermissiontocomment');
         }
         $DB->delete_records('comments', array('id'=>$commentid));
@@ -909,9 +928,12 @@ class comment {
         $replacements = array();
 
         if (!empty($cmt->delete) && empty($nonjs)) {
+            $strdelete = get_string('deletecommentbyon', 'moodle', (object)['user' => $cmt->fullname, 'time' => $cmt->time]);
             $deletelink  = html_writer::start_tag('div', array('class'=>'comment-delete'));
-            $deletelink .= html_writer::start_tag('a', array('href' => '#', 'id' => 'comment-delete-'.$this->cid.'-'.$cmt->id));
-            $deletelink .= $OUTPUT->pix_icon('t/delete', get_string('delete'));
+            $deletelink .= html_writer::start_tag('a', array('href' => '#', 'id' => 'comment-delete-'.$this->cid.'-'.$cmt->id,
+                'class' => 'icon-no-margin', 'title' => $strdelete));
+
+            $deletelink .= $OUTPUT->pix_icon('t/delete', $strdelete);
             $deletelink .= html_writer::end_tag('a');
             $deletelink .= html_writer::end_tag('div');
             $cmt->content = $deletelink . $cmt->content;
@@ -932,7 +954,7 @@ class comment {
     /**
      * Revoke validate callbacks
      *
-     * @param stdClass $params addtionall parameters need to add to callbacks
+     * @param array $params addtionall parameters need to add to callbacks
      */
     protected function validate($params=array()) {
         foreach ($params as $key=>$value) {
@@ -963,13 +985,35 @@ class comment {
     }
 
     /**
-     * Returns true if the user can delete this comment
-     * @param int $commentid
+     * Returns true if the user can delete this comment.
+     *
+     * The user can delete comments if it is one they posted and they can still make posts,
+     * or they have the capability to delete comments.
+     *
+     * A database call is avoided if a comment record is passed.
+     *
+     * @param int|stdClass $comment The id of a comment, or a comment record.
      * @return bool
      */
-    public function can_delete($commentid) {
+    public function can_delete($comment) {
+        global $USER, $DB;
+        if (is_object($comment)) {
+            $commentid = $comment->id;
+        } else {
+            $commentid = $comment;
+        }
+
         $this->validate(array('commentid'=>$commentid));
-        return has_capability('moodle/comment:delete', $this->context);
+
+        if (!is_object($comment)) {
+            // Get the comment record from the database.
+            $comment = $DB->get_record('comments', array('id' => $commentid), 'id, userid', MUST_EXIST);
+        }
+
+        $hascapability = has_capability('moodle/comment:delete', $this->context);
+        $owncomment = $USER->id == $comment->userid;
+
+        return ($hascapability || ($owncomment && $this->can_post()));
     }
 
     /**
@@ -1028,7 +1072,7 @@ class comment {
     /**
      * Returns the comment area associated with the commentarea
      *
-     * @return stdClass
+     * @return string
      */
     public function get_commentarea() {
         return $this->commentarea;

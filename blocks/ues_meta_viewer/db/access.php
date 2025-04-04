@@ -16,11 +16,14 @@
 
 
 /**
- * 
  * @package    block_ues_meta_viewer
- * @copyright  2014 Louisiana State University
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 $capabilities = array(
     'block/ues_meta_viewer:access' => array(
         'captype' => 'read',

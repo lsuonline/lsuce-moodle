@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,18 +12,22 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace theme_snap;
 
-use html_writer;
-use \theme_snap\user_forums;
-use \theme_snap\course_total_grade;
+defined('MOODLE_INTERNAL') || die();
 
+use moodle_url;
+use stdClass;
+use stored_file;
+use theme_snap\output\core_renderer;
+use html_writer;
+use user_picture;
+
+global $CFG;
 require_once($CFG->dirroot.'/calendar/lib.php');
 require_once($CFG->libdir.'/completionlib.php');
-require_once($CFG->libdir.'/coursecatlib.php');
 require_once($CFG->dirroot.'/grade/lib.php');
 require_once($CFG->dirroot.'/grade/report/overview/lib.php');
 require_once($CFG->dirroot.'/mod/forum/lib.php');
@@ -35,10 +39,15 @@ require_once($CFG->dirroot.'/lib/enrollib.php');
  * Added to a class purely for the convenience of auto loading.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
+ * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class local {
+
+    /**
+     * Default limit for retrieving course completion data.
+     */
+    const DEFAULT_COMPLETION_COURSE_LIMIT = 100;
 
     /**
      * Is there a valid grade or feedback inside this grader report table item?
@@ -66,19 +75,19 @@ class local {
 
     /**
      * Does this course have any visible feedback for current user?.
-     *
      * @param \stdClass $course
-     * @return \stdClass
+     * @param bool $oncoursedashboard
+     * @return object
      */
-    public static function course_grade($course) {
+    public static function course_grade($course, $oncoursedashboard = false) {
         global $USER;
 
         $failobj = (object) [
-            'feedback' => false
+            'coursegrade' => false,
         ];
 
         $config = get_config('theme_snap');
-        if (empty($config->showcoursegradepersonalmenu)) {
+        if (empty($config->showcoursegradepersonalmenu) && $oncoursedashboard === false) {
             // If not enabled, don't return data.
             return $failobj;
         }
@@ -116,7 +125,7 @@ class local {
         // Default feedbackobj.
         $feedbackobj = (object) [
             'feedbackurl' => $feedbackurl->out(),
-            'showgrade' => $config->showcoursegradepersonalmenu
+            'showgrade' => $config->showcoursegradepersonalmenu,
         ];
 
         if (!$coursegrade->is_hidden() || $canviewhidden) {
@@ -125,18 +134,19 @@ class local {
                     'type' => 'report',
                     'plugin' => 'overview',
                     'courseid' => $course->id,
-                    'userid' => $USER->id)
+                    'userid' => $USER->id, )
             );
 
             // Create a report instance.
             $report = new course_total_grade($USER, $gpr, $course);
             $coursegrade = $report->get_course_total();
             $ignoregrades = [
+                '',
                 '-',
                 '&nbsp;',
-                get_string('error')
+                get_string('error'),
             ];
-            if (!in_array($coursegrade, $ignoregrades) && !preg_match("/.+?ndash.+?/", $coursegrade)) {
+            if (!in_array($coursegrade['value'], $ignoregrades)) {
                 $feedbackobj->coursegrade = $coursegrade;
             }
         }
@@ -202,7 +212,7 @@ class local {
         }
 
         $mnetpeertheme = '';
-        if (isloggedin() and isset($CFG->mnet_localhost_id) and $USER->mnethostid != $CFG->mnet_localhost_id) {
+        if (isloggedin() && isset($CFG->mnet_localhost_id) && $USER->mnethostid != $CFG->mnet_localhost_id) {
             require_once($CFG->dirroot.'/mnet/peer.php');
             $mnetpeer = new \mnet_peer();
             $mnetpeer->set_id($USER->mnethostid);
@@ -211,22 +221,16 @@ class local {
             }
         }
 
-        $deviceinuse = \core_useragent::get_device_type();
-        $devicetheme = \core_useragent::get_device_type_theme($deviceinuse);
-
-        // The user is using another device than default, and we have a theme for that, we should use it.
-        $hascustomdevicetheme = \core_useragent::DEVICETYPE_DEFAULT != $deviceinuse && !empty($devicetheme);
-
         foreach ($themeorder as $themetype) {
             switch ($themetype) {
                 case 'course':
-                    if (!empty($CFG->allowcoursethemes) && !empty($COURSE->theme) && !$hascustomdevicetheme) {
+                    if (!empty($CFG->allowcoursethemes) && !empty($COURSE->theme)) {
                         return $COURSE->theme;
                     }
                     break;
 
                 case 'category':
-                    if (!empty($CFG->allowcategorythemes) && !$hascustomdevicetheme) {
+                    if (!empty($CFG->allowcategorythemes)) {
                         $categories = self::get_course_categories($COURSE);
                         foreach ($categories as $category) {
                             if (!empty($category->theme)) {
@@ -243,7 +247,7 @@ class local {
                     break;
 
                 case 'user':
-                    if (!empty($CFG->allowuserthemes) && !empty($USER->theme) && !$hascustomdevicetheme) {
+                    if (!empty($CFG->allowuserthemes) && !empty($USER->theme)) {
                         if ($mnetpeertheme) {
                             return $mnetpeertheme;
                         } else {
@@ -256,16 +260,13 @@ class local {
                     if ($mnetpeertheme) {
                         return $mnetpeertheme;
                     }
-                    // First try for the device the user is using.
-                    if (!empty($devicetheme)) {
-                        return $devicetheme;
+
+                    // Use theme if it is set in config.
+                    if (!empty($CFG->theme)) {
+                        return $CFG->theme;
                     }
-                    // Next try for the default device (as a fallback).
-                    $devicetheme = \core_useragent::get_device_type_theme(\core_useragent::DEVICETYPE_DEFAULT);
-                    if (!empty($devicetheme)) {
-                        return $devicetheme;
-                    }
-                    // The default device theme isn't set up - use the overall default theme.
+
+                    // Use the overall default theme.
                     return \theme_config::DEFAULT_THEME;
             }
         }
@@ -337,10 +338,12 @@ class local {
             'total' => null,
             'progress' => null,
             'fromcache' => false, // Useful for debugging and unit testing.
-            'render' => false // Template flag.
+            'render' => false, // Template flag.
         ];
+        $completioninfo = new \completion_info($course);
 
-        if (!isloggedin() || isguestuser() || !$CFG->enablecompletion || !$course->enablecompletion) {
+        if (!isloggedin() || isguestuser() || !$CFG->enablecompletion || !$course->enablecompletion ||
+            !$completioninfo->is_tracked_user($USER->id)) {
             // Can't get completion progress for users who aren't logged in.
             // Or if completion tracking is not enabled at site / course level.
             // Don't even bother with the cache, just return empty object.
@@ -363,22 +366,15 @@ class local {
             return $cached;
         }
 
-        $completioninfo = new \completion_info($course);
         $trackcount = 0;
         $compcount = 0;
         if ($completioninfo->is_enabled()) {
-            $modinfo = get_fast_modinfo($course);
-
-            foreach ($modinfo->cms as $thismod) {
-                if (!$thismod->uservisible) {
-                    // Skip when mod is not user visible.
-                    continue;
-                }
-                $completioninfo->get_data($thismod, true);
-
-                if ($completioninfo->is_enabled($thismod) != COMPLETION_TRACKING_NONE) {
-                    $trackcount++;
-                    $completiondata = $completioninfo->get_data($thismod, true);
+            $modules = $completioninfo->get_activities();
+            $trackcount = count($modules);
+            foreach ($modules as $module) {
+                $completioninfo->get_data($module, true);
+                if ($completioninfo->is_enabled($module) != COMPLETION_TRACKING_NONE) {
+                    $completiondata = $completioninfo->get_data($module, true);
                     if ($completiondata->completionstate == COMPLETION_COMPLETE ||
                         $completiondata->completionstate == COMPLETION_COMPLETE_PASS) {
                         $compcount++;
@@ -388,14 +384,14 @@ class local {
         }
 
         if ($trackcount > 0) {
-            $progresspercent = ceil(($compcount / $trackcount) * 100);
+            $progresspercent = floor(($compcount / $trackcount) * 100);
             $compobj = (object) [
                 'complete' => $compcount,
                 'total' => $trackcount,
                 'progress' => $progresspercent,
                 'timestamp' => microtime(true),
                 'fromcache' => false,
-                'render' => true
+                'render' => true,
             ];
         } else {
             // Everything except timestamp is null because nothing is trackable at the moment.
@@ -424,7 +420,7 @@ class local {
             $completioninfo = new \completion_info($course);
             if ($completioninfo->is_enabled()) {
                 $modinfo = get_fast_modinfo($course);
-                $sections= $modinfo->get_section_info_all();
+                $sections = $modinfo->get_section_info_all();
                 foreach ($sections as $number => $section) {
                     $ci = new \core_availability\info_section($section);
                     if (!$ci->is_available($information, true)) {
@@ -449,15 +445,25 @@ class local {
      * @return bool | array
      */
     public static function courseinfo($courseids) {
+        global $CFG;
+
         $courseinfo = array();
 
         $courses = enrol_get_my_courses(['enablecompletion', 'showgrades']);
 
         // We do not support meta data for people who have a crazy number of courses!
-        if (count($courses) > 100) {
+        $maxcourses = !empty($CFG->theme_snap_max_pm_completion_courses) ?
+            $CFG->theme_snap_max_pm_completion_courses : self::DEFAULT_COMPLETION_COURSE_LIMIT;
+        $barlimit = !empty($CFG->theme_snap_bar_limit) ?
+            $CFG->theme_snap_bar_limit : self::DEFAULT_COMPLETION_COURSE_LIMIT;
+        if (count($courses) > $barlimit) {
             return $courseinfo;
         }
 
+        // Max completion review window. Default, 15 secs.
+        $maxtime = !empty($CFG->theme_snap_max_pm_completion_time_courses) ?
+            $CFG->theme_snap_max_pm_completion_time_courses : (MINSECS / 4);
+        $starttime = time();
         $showgrades = get_config('theme_snap', 'showcoursegradepersonalmenu');
 
         foreach ($courseids as $courseid) {
@@ -469,13 +475,18 @@ class local {
 
             $courseinfo[$courseid] = (object) array(
                 'course' => $courseid,
-                'completion' => self::course_completion_progress($course)
+                'completion' => self::course_completion_progress($course),
             );
 
             if (!empty($showgrades)) {
                 $feedback = self::course_grade($course);
                 $courseinfo[$courseid]->feedback = $feedback;
             }
+            // Only calculate completion within the configured time window or for maximum amount of courses.
+            if (count($courseinfo) == $maxcourses || ((time() - $starttime) > $maxtime)) {
+                break;
+            }
+
         }
         return $courseinfo;
     }
@@ -489,6 +500,10 @@ class local {
      */
     public static function course_participant_count($courseid, $modname = null) {
         static $participantcount = array();
+
+        if (defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
+            $participantcount = [];
+        }
 
         // Incorporate the modname in the static cache index.
         $idx = $courseid . $modname;
@@ -515,7 +530,7 @@ class local {
 
             $context = \context_course::instance($courseid);
             $onlyactive = true;
-            $enrolled = count_enrolled_users($context, $capability, null, $onlyactive);
+            $enrolled = self::count_enrolled_users($context, $capability, null, $onlyactive);
             $participantcount[$idx] = $enrolled;
         }
 
@@ -523,58 +538,154 @@ class local {
     }
 
     /**
-     * Get a user's messages read and unread.
-     *
-     * @param int $userid
-     * @param int $since optional timestamp, only return newer messages
-     * @return message[]
+     * Get total suspended participant count that
+     * attempts a quiz before being suspended
+     * @param $courseid
+     * @param $modid the id of the module
+     * @return int
      */
+    public static function suspended_participant_count($courseid, $modid) {
+        global $DB;
 
-    public static function get_user_messages($userid, $since = null) {
+        $params['courseid'] = $courseid;
+        $params['modid'] = intval($modid);
+        $sql = "-- Snap SQL
+                    SELECT COUNT(ue.userid) as suspended
+                      FROM {user_enrolments} ue
+                      JOIN {course} c ON c.id = :courseid
+                      JOIN {modules} m ON m.name = 'quiz'
+                      JOIN {course_modules} cm ON c.id = cm.course
+                      JOIN {quiz_attempts} qa ON cm.instance = qa.quiz
+                      JOIN {enrol} en ON en.courseid = c.id
+                     WHERE en.id = ue.enrolid
+                       AND qa.userid = ue.userid
+                       AND ue.status = 1
+                       AND cm.module = m.id
+                       AND cm.id = :modid";
+        $suspendedusers = $DB->get_record_sql($sql, $params);
+        return $suspendedusers->suspended;
+    }
+
+    /**
+     * Counts list of users enrolled given a context, skipping duplicate ids.
+     * Inspired by count_enrolled_users found in lib/enrollib.php
+     * Core method is counting duplicates because users can be enrolled into a course via different methods, hence,
+     * having multiple registered enrollments.
+     *
+     * @param \context $context
+     * @param string $withcapability
+     * @param int $groupid 0 means ignore groups, any other value limits the result by group id
+     * @param bool $onlyactive consider only active enrolments in enabled plugins and time restrictions
+     * @return int number of enrolled users.
+     */
+    public static function count_enrolled_users(\context $context, $withcapability = '', $groupid = 0, $onlyactive = false) {
+        global $DB, $USER;
+        $capjoin = get_enrolled_with_capabilities_join(
+            $context, '', $withcapability, $groupid, $onlyactive);
+
+        $sqlgroupsjoin = '';
+        $sqlgroupswhere = '';
+        $params = array();
+
+        $course = get_course($context->instanceid);
+        $groupmode = groups_get_course_groupmode($course);
+
+        if ($groupmode == SEPARATEGROUPS && !has_capability('moodle/site:accessallgroups', $context)) {
+            $params['userid'] = $USER->id;
+            $params['courseid2'] = $course->id;
+
+            $sqlgroupsjoin = "
+                     JOIN {groups_members} gm
+                       ON gm.userid = u.id
+                     JOIN {groups} g
+                       ON gm.groupid = g.id";
+            $sqlgroupswhere = "
+                      AND gm.groupid
+                       IN (SELECT g.id
+                     FROM {groups} g
+                     JOIN {groups_members} gm ON gm.groupid = g.id
+                    WHERE g.courseid = :courseid2
+                      AND gm.userid = :userid)";
+        }
+
+        $sql = "SELECT COUNT(*)
+                  FROM (SELECT DISTINCT u.id
+                          FROM {user} u
+                               $sqlgroupsjoin
+                               $capjoin->joins
+                         WHERE $capjoin->wheres
+                               $sqlgroupswhere
+                           AND u.deleted = 0) as uids
+                ";
+
+        return $DB->count_records_sql($sql, array_merge($capjoin->params, $params));
+    }
+
+    /**
+     * @param int $userid
+     * @param null|int $since optional timestamp, only return newer messages
+     * @param int $limitfrom
+     * @param int $limitnum
+     * @param int $maxid
+     * @return array
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public static function get_user_messages($userid, $since = null, $limitfrom = 0, $limitnum = 3, $maxid = -1) {
         global $DB;
 
         if ($since === null) {
             $since = time() - (12 * WEEKSECS);
         }
-
-        $select  = 'm.id, m.useridfrom, m.useridto, m.subject, m.fullmessage, m.fullmessageformat, m.fullmessagehtml, '.
-                   'm.smallmessage, m.timecreated, m.notification, m.contexturl, m.contexturlname, '.
-                   \user_picture::fields('u', null, 'useridfrom', 'fromuser');
+        $lastmessage = '';
+        if ($maxid >= 0) {
+            $lastmessage = 'AND m.id < '.($maxid + 1);
+        }
+        $select = \core_user\fields::for_userpic()->get_sql('u', false, 'fromuser', 'useridfrom', false)->selects;
 
         $sql  = "
-        (
-                SELECT $select, 1 unread
-                  FROM {message} m
-            INNER JOIN {user} u ON u.id = m.useridfrom AND u.deleted = 0
-                 WHERE m.useridto = :userid1
-                       AND contexturl IS NULL
-                       AND m.timecreated > :fromdate1
-                       AND m.timeusertodeleted = 0
-        ) UNION ALL (
-                SELECT $select, 0 unread
-                  FROM {message_read} m
-            INNER JOIN {user} u ON u.id = m.useridfrom AND u.deleted = 0
-                 WHERE m.useridto = :userid2
-                       AND contexturl IS NULL
-                       AND m.timecreated > :fromdate2
-                       AND m.timeusertodeleted = 0
-        )
-          ORDER BY timecreated DESC";
+            SELECT m.id,
+                   m.useridfrom,
+                   m.subject,
+                   m.fullmessage,
+                   m.fullmessageformat,
+                   m.fullmessagehtml,
+                   m.smallmessage,
+                   m.timecreated,
+                   CASE WHEN muar.id is NULL THEN 1 ELSE 0 END as unread,
+                   mcm.userid as useridto,
+                   {$select}
+              FROM {messages} m
+              JOIN {user} u ON u.id = m.useridfrom AND u.deleted = 0
+              JOIN {message_conversations} mc
+                ON mc.id = m.conversationid
+              JOIN {message_conversation_members} mcm
+                ON mcm.conversationid = mc.id
+         LEFT JOIN {message_user_actions} muad
+                ON (muad.messageid = m.id AND muad.userid = mcm.userid AND muad.action = :actiondeleted)
+         LEFT JOIN {message_user_actions} muar
+                ON (muar.messageid = m.id AND muar.userid = mcm.userid AND muar.action = :actionread)
+             WHERE muad.id is NULL
+               AND mcm.userid = :userid
+               AND m.timecreated > :fromdate
+               AND m.useridfrom <> mcm.userid
+               $lastmessage
+          ORDER BY m.timecreated DESC";
 
         $params = array(
-            'userid1' => $userid,
-            'userid2' => $userid,
-            'fromdate1' => $since,
-            'fromdate2' => $since,
+            'userid' => $userid,
+            'fromdate' => $since,
+            'actiondeleted' => \core_message\api::MESSAGE_ACTION_DELETED,
+            'actionread' => \core_message\api::MESSAGE_ACTION_READ,
         );
 
-        $records = $DB->get_records_sql($sql, $params, 0, 5);
+        $records = $DB->get_records_sql($sql, $params, $limitfrom, $limitnum);
 
         $messages = array();
         foreach ($records as $record) {
             $message = new message($record);
             $message->set_fromuser(\user_picture::unalias($record, null, 'useridfrom', 'fromuser'));
-
+            $message->uniqueid = $record->id;
             $messages[] = $message;
         }
         return $messages;
@@ -587,28 +698,63 @@ class local {
      * @return string
      */
     public static function messages() {
-        global $USER, $PAGE;
+        global $PAGE;
 
-        $messages = self::get_user_messages($USER->id);
+        $messages = self::messages_data(true);
         if (empty($messages)) {
-            return '<p>' . get_string('nomessages', 'theme_snap') . '</p>';
+            return '<p class="small">' . get_string('nomessages', 'theme_snap') . '</p>';
+        }
+
+        $o = '';
+        /** @var core_renderer $renderer */
+        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($messages as $message) {
+            $o .= $renderer->snap_media_object(
+                $message['actionUrl'],
+                $message['iconUrl'],
+                $message['title'],
+                $message['description'],
+                $message['subTitle']
+            );
+        }
+        return $o;
+    }
+
+    public static function messages_data($renderhtml = false, $limitfrom = 0, $limitnum = 5, $maxid = -1) {
+        global $USER, $PAGE, $CFG;
+
+        $messages = self::get_user_messages($USER->id, null, $limitfrom, $limitnum, $maxid);
+        if (empty($messages)) {
+            return [];
         }
 
         $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
-        $o = '';
+        $res = [];
         foreach ($messages as $message) {
+            // This URL will be to redirect the user to an unread message through the personal menu feed and open
+            // the specific message in the message index page.
             $url = new \moodle_url('/message/index.php', array(
-                'history' => 0,
-                'user1' => $message->useridto,
-                'user2' => $message->useridfrom,
-            ));
+                'viewing' => 'unread',
+                'user2' => $message->useridfrom, )
+            );
+
+            if (!$renderhtml) {
+                // We need to pass out() as false because is adding a amp; in the url and generating a bug where
+                // the message in the personal menu was not redirecting the user to the specific message.
+                $url = $url->out(false);
+            }
 
             $fromuser = $message->get_fromuser();
             $userpicture = new \user_picture($fromuser);
             $userpicture->link = false;
             $userpicture->alttext = false;
             $userpicture->size = 100;
-            $frompicture = $output->render($userpicture);
+
+            if ($renderhtml) {
+                $frompicture = $output->render($userpicture);
+            } else {
+                $frompicture = $userpicture->get_url($PAGE)->out(false);
+            }
 
             $fromname = format_string(fullname($fromuser));
 
@@ -619,11 +765,28 @@ class local {
                 $meta .= " <span class=snap-unread-marker>".get_string('unread', 'theme_snap')."</span>";
             }
 
-            $info = '<p>'.format_string($message->smallmessage).'</p>';
+            $info = format_string($message->smallmessage);
+            if ($renderhtml) {
+                $info = '<p>'.$info.'</p>';
+            }
 
-            $o .= $output->snap_media_object($url, $frompicture, $fromname, $meta, $info, $unreadclass);
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
+            $res[] = [
+                'iconUrl'      => $frompicture,
+                'iconDesc'     => '',
+                'iconClass'    => 'userpicture',
+                'title'        => $fromname,
+                'subTitle'     => $info,
+                'actionUrl'    => $url,
+                'description'  => $meta,
+                'extraClasses' => $unreadclass,
+                'fromCache'    => 0,
+                'itemId'    => $message->uniqueid,
+                'urlParameter'    => $snapfeedsurlparam,
+            ];
         }
-        return $o;
+        return $res;
     }
 
     /**
@@ -644,7 +807,7 @@ class local {
         $datetime = date(\DateTime::W3C, $timeinpast);
         return html_writer::tag('time', $relativetext, array(
             'is' => 'relative-time',
-            'datetime' => $datetime)
+            'datetime' => $datetime, )
         );
     }
 
@@ -660,197 +823,22 @@ class local {
         }
     }
 
-
-    /**
-     * Return user's upcoming deadlines from the calendar.
-     *
-     * All deadlines from today, then any from the next 12 months up to the
-     * max requested.
-     * @param \stdClass|integer $userorid
-     * @param integer $maxdeadlines
-     * @return array
-     */
-    public static function upcoming_deadlines($userorid, $maxdeadlines = 5) {
-
-        $user = self::get_user($userorid);
-        if (!$user) {
-            return [];
-        }
-
-        $courses = enrol_get_users_courses($user->id, true);
-
-        if (empty($courses)) {
-            return [];
-        }
-
-        $courseids = array_keys($courses);
-
-        $events = self::get_todays_deadlines($user, $courseids);
-
-        if (count($events) < $maxdeadlines) {
-            $maxaftercurrentday = $maxdeadlines - count($events);
-            $moreevents = self::get_upcoming_deadlines($user, $courseids, $maxaftercurrentday);
-            $events = $events + $moreevents;
-        }
-        foreach ($events as $event) {
-            if (isset($courses[$event->courseid])) {
-                $course = $courses[$event->courseid];
-                $event->coursefullname = $course->fullname;
-            }
-        }
-        return $events;
-    }
-
-    /**
-     * Return user's deadlines for today from the calendar.
-     *
-     * @param \stdClass|int $userorid
-     * @param array $courses ids of all user's courses.
-     * @return array
-     */
-    private static function get_todays_deadlines($userorid, $courses) {
-        // Get all deadlines for today, assume that will never be higher than 100.
-        return self::get_upcoming_deadlines($userorid, $courses, 100, true);
-    }
-
-    /**
-     * Return user's deadlines from the calendar.
-     *
-     * Usually called twice, once for all deadlines from today, then any from the next 12 months up to the
-     * max requested.
-     *
-     * Based on the calender function calendar_get_upcoming.
-     *
-     * @param \stdClass|int $userorid
-     * @param array $courses ids of all user's courses.
-     * @param int $maxevents to return
-     * @param bool $todayonly true if only the next 24 hours to be returned
-     * @return array
-     */
-    private static function get_upcoming_deadlines($userorid, $courses, $maxevents, $todayonly=false) {
-
-        $user = self::get_user($userorid);
-        if (!$user) {
-            return [];
-        }
-
-        // We need to do this so that we can calendar events and mod visibility for a specific user.
-        self::swap_global_user($user);
-
-        $tz = new \DateTimeZone(\core_date::get_user_timezone($user));
-        $today = new \DateTime('today', $tz);
-        $tomorrow = new \DateTime('tomorrow', $tz);
-
-        if ($todayonly === true) {
-            $starttime = $today->getTimestamp();
-            $endtime = $tomorrow->getTimestamp()-1;
-        } else {
-            $starttime = $tomorrow->getTimestamp();
-            $endtime = $starttime + (365 * DAYSECS) - 1;
-        }
-
-        $userevents = false;
-        $groupevents = false;
-        $events = calendar_get_events($starttime, $endtime, $userevents, $groupevents, $courses);
-
-        $processed = 0;
-        $output = array();
-        foreach ($events as $event) {
-            if ($event->eventtype === 'course') {
-                // Not an activity deadline.
-                continue;
-            }
-            if ($event->eventtype === 'open' && $event->timeduration == 0) {
-                // Only the opening of multi-day event, not a deadline.
-                continue;
-            }
-            if (!empty($event->modulename)) {
-                $modinfo = get_fast_modinfo($event->courseid);
-                $mods = $modinfo->get_instances_of($event->modulename);
-                if (isset($mods[$event->instance])) {
-                    $cminfo = $mods[$event->instance];
-                    if (!$cminfo->uservisible) {
-                        continue;
-                    }
-                    if ($event->eventtype === 'close') {
-                        // Revert the addition of e.g. "(Quiz closes)" to the event name.
-                        $event->name = $cminfo->name;
-                    }
-                }
-            }
-
-            $output[$event->id] = $event;
-            ++$processed;
-
-            if ($processed >= $maxevents) {
-                break;
-            }
-        }
-
-        self::swap_global_user(false);
-
-        return $output;
-    }
-
-    /**
-     * Get deadlines string.
-     * @return string
-     */
-    public static function deadlines() {
-        global $USER, $PAGE;
-
-        $events = self::upcoming_deadlines($USER->id);
-        if (empty($events)) {
-            return '<p>' . get_string('nodeadlines', 'theme_snap') . '</p>';
-        }
-
-        $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
-        $o = '';
-        foreach ($events as $event) {
-            if (!empty($event->modulename)) {
-                $modinfo = get_fast_modinfo($event->courseid);
-                $cm = $modinfo->instances[$event->modulename][$event->instance];
-
-                $eventtitle = $event->name .'<small><br>' .$event->coursefullname. '</small>';
-
-                $modimageurl = $output->pix_url('icon', $event->modulename);
-                $modname = get_string('modulename', $event->modulename);
-                $modimage = \html_writer::img($modimageurl, $modname);
-                $deadline = $event->timestart + $event->timeduration;
-                if ($event->modulename === 'quiz' || $event->modulename === 'lesson') {
-                    $override = \theme_snap\activity::instance_activity_dates($event->courseid, $cm);
-                    $deadline = $override->timeclose;
-                }
-                $meta = $output->friendly_datetime($deadline);
-                // Add completion meta data for students (exclude anyone who can grade them).
-                if (!has_capability('mod/assign:grade', $cm->context)) {
-                    /** @var \theme_snap_core_course_renderer $courserenderer */
-                    $courserenderer = $PAGE->get_renderer('core', 'course', RENDERER_TARGET_GENERAL);
-                    $activitymeta = activity::module_meta($cm);
-                    $meta .= '<div class="snap-completion-meta">' .
-                            $courserenderer->submission_cta($cm, $activitymeta) .
-                            '</div>';
-                }
-                $o .= $output->snap_media_object($cm->url, $modimage, $eventtitle, $meta, '');
-            }
-        }
-        return $o;
-    }
-
     /**
      * Get items which have been graded.
      *
      * @param bool $onlyactive - only show grades in courses actively enrolled on if true.
-     * @return string
+     * @param bool $renderhtml
+     * @return []
      * @throws \coding_exception
      */
-    public static function graded($onlyactive = true) {
-        global $USER, $PAGE;
+    public static function graded_data($onlyactive = true, $renderhtml = false) {
+        global $USER, $PAGE, $CFG;
 
+        /** @var \theme_snap\output\core_renderer $output */
         $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
         $grades = activity::events_graded($onlyactive);
 
-        $o = '';
+        $res = [];
         $enabledmods = \core_plugin_manager::instance()->get_enabled_plugins('mod');
         $enabledmods = array_keys($enabledmods);
         foreach ($grades as $grade) {
@@ -876,48 +864,110 @@ class local {
                 $url = $cm->url;
             }
 
-            $modimageurl = $output->pix_url('icon', $cm->modname);
-            $modname = get_string('modulename', 'mod_'.$cm->modname);
-            $modimage = \html_writer::img($modimageurl, $modname);
+            if (!$renderhtml) {
+                $url = $url->out();
+            }
 
-            $gradetitle = $cm->name. '<small><br>' .$course->fullname. '</small>';
+            $modimageurl = $output->image_url('icon', $cm->modname);
+            $modname = get_string('modulename', 'mod_'.$cm->modname);
+            if ($renderhtml) {
+                $modimage = \html_writer::img($modimageurl, $modname);
+            } else {
+                $modimage = $modimageurl->out();
+            }
+
+            $gradetitle = $cm->name;
+            $gradesubtitle = format_string($course->fullname);
 
             $releasedon = isset($grade->timemodified) ? $grade->timemodified : $grade->timecreated;
             $meta = get_string('released', 'theme_snap', $output->friendly_datetime($releasedon));
 
             $grade = new \grade_grade(array('itemid' => $grade->itemid, 'userid' => $USER->id));
+
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
             if (!$grade->is_hidden() || $canviewhiddengrade) {
-                $o .= $output->snap_media_object($url, $modimage, $gradetitle, $meta, '');
+                $res[] = [
+                    'iconUrl'      => $modimage,
+                    'iconDesc'     => $modname,
+                    'iconClass'    => '',
+                    'title'        => $gradetitle,
+                    'subTitle'     => $gradesubtitle,
+                    'actionUrl'    => $url,
+                    'description'  => $meta,
+                    'extraClasses' => '',
+                    'fromCache'    => 0,
+                    'urlParameter'    => $snapfeedsurlparam,
+                ];
             }
         }
 
-        if (empty($o)) {
-            return '<p>'. get_string('nograded', 'theme_snap') . '</p>';
+        return $res;
+    }
+
+    /**
+     * Get rendered items which have been graded.
+     *
+     * @param bool $onlyactive - only show grades in courses actively enrolled on if true.
+     * @return string
+     * @throws \coding_exception
+     */
+    public static function graded($onlyactive = true) {
+        global $PAGE;
+
+        $gradedarr = self::graded_data($onlyactive, true);
+        if (empty($gradedarr)) {
+            return '<p class="small">'. get_string('nograded', 'theme_snap') . '</p>';
+        }
+
+        $o = '';
+        /** @var \theme_snap\output\core_renderer $output */
+        $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($gradedarr as $gradeditem) {
+            $o .= $output->snap_media_object(
+                $gradeditem['actionUrl'],
+                $gradeditem['iconUrl'],
+                $gradeditem['title']. '<small><br>' .$gradeditem['subTitle']. '</small>',
+                $gradeditem['description'],
+                ''
+            );
         }
         return $o;
     }
 
-    public static function grading() {
-        global $USER, $PAGE;
+    public static function grading_data($renderhtml = false) {
+        global $USER, $PAGE, $CFG;
 
         $grading = self::all_ungraded($USER->id);
 
-        if (empty($grading)) {
-            return '<p>' . get_string('nograding', 'theme_snap') . '</p>';
-        }
-
         $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
-        $out = '';
-        foreach ($grading as $ungraded) {
+        $res = [];
+        foreach ($grading as $key => $ungraded) {
             $modinfo = get_fast_modinfo($ungraded->course);
             $course = $modinfo->get_course();
             $cm = $modinfo->get_cm($ungraded->coursemoduleid);
+            $groupmode = groups_get_activity_groupmode($cm);
 
-            $modimageurl = $output->pix_url('icon', $cm->modname);
+            $context = \context_module::instance($cm->id);
+
+            // Show grading in the personal menu only to the teachers with the proper access to the courses
+            // or the groups.
+            if ($groupmode == SEPARATEGROUPS && !has_capability('moodle/course:viewhiddenactivities', $context) &&
+                    $cm->uservisible != 1) {
+                unset($grading[$key]);
+                continue;
+            }
+
+            $modimageurl = $output->image_url('icon', $cm->modname);
             $modname = get_string('modulename', 'mod_'.$cm->modname);
-            $modimage = \html_writer::img($modimageurl, $modname);
+            if ($renderhtml) {
+                $modimage = \html_writer::img($modimageurl, $modname);
+            } else {
+                $modimage = $modimageurl->out();
+            }
 
-            $ungradedtitle = $cm->name. '<small><br>' .$course->fullname. '</small>';
+            $ungradedtitle = $cm->name;
+            $ungradedsubtitle = format_string($course->fullname);
 
             $xungraded = get_string('xungraded', 'theme_snap', $ungraded->ungraded);
 
@@ -932,10 +982,52 @@ class local {
                 $meta .= $output->friendly_datetime($ungraded->closetime);
             }
 
-            $out .= $output->snap_media_object($cm->url, $modimage, $ungradedtitle, $meta, '');
+            $url = $cm->url;
+            if (!$renderhtml) {
+                $url = $url->out();
+            }
+
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
+            $res[] = [
+                'iconUrl'      => $modimage,
+                'iconDesc'     => $modname,
+                'iconClass'    => '',
+                'title'        => $ungradedtitle,
+                'subTitle'     => $ungradedsubtitle,
+                'actionUrl'    => $url,
+                'description'  => $meta,
+                'extraClasses' => '',
+                'fromCache'    => 0,
+                'urlParameter' => $snapfeedsurlparam,
+                'modName'      => $cm->modname,
+            ];
         }
 
-        return $out;
+        return $res;
+    }
+
+    public static function grading() {
+        global $PAGE;
+
+        $gradingarr = self::grading_data(true);
+        if (empty($gradingarr)) {
+            return '<p class="small">' . get_string('nograding', 'theme_snap') . '</p>';
+        }
+
+        $o = '';
+        /** @var \theme_snap\output\core_renderer $output */
+        $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($gradingarr as $gradingitem) {
+            $o .= $output->snap_media_object(
+                $gradingitem['actionUrl'],
+                $gradingitem['iconUrl'],
+                $gradingitem['title']. '<small><br>' .$gradingitem['subTitle']. '</small>',
+                $gradingitem['description'],
+                ''
+            );
+        }
+        return $o;
     }
 
     /**
@@ -946,11 +1038,15 @@ class local {
      * @throws \coding_exception
      */
     public static function gradeable_courseids($userid) {
-        $courses = enrol_get_all_users_courses($userid);
+        $courses = enrol_get_all_users_courses($userid, true);
+        $courses = self::remove_hidden_courses($courses);
         $courseids = [];
         $capability = 'gradereport/grader:view';
+        $capabilitygrade = 'mod/assign:grade';
         foreach ($courses as $course) {
-            if (has_capability($capability, \context_course::instance($course->id), $userid)) {
+            $context = \context_course::instance($course->id);
+            if (has_capability($capability, $context, $userid) &&
+                has_capability($capabilitygrade, $context, $userid)) {
                 $courseids[] = $course->id;
             }
         }
@@ -986,7 +1082,7 @@ class local {
             }
         }
 
-        usort($grading, array('self', 'sort_graded'));
+        usort($grading, [self::class, 'sort_graded']);
 
         return $grading;
     }
@@ -1033,16 +1129,9 @@ class local {
      * @return string
      */
     public static function get_course_color($id) {
-        global $CFG, $USER;
-        require_once($CFG->dirroot.'/user/profile/lib.php');
-        profile_load_custom_fields($USER);
-
-        // Removed due to color issues
-        if ($USER->profile['limitmycolors'] == 1) {
-            return str_repeat(substr(md5($id), 1, 2), 3);
-        } else {
-            return substr(md5($id), 0, 6);
-        }
+        $colour = substr(md5($id), 0, 6);
+        $colour2 = substr(md5($id), 6, 6);
+        return 'linear-gradient(to bottom right, #' .$colour. ', #'. $colour2. ')';
     }
 
     public static function get_course_firstimage($courseid) {
@@ -1072,6 +1161,9 @@ class local {
     public static function extract_first_image($html) {
         $doc = new \DOMDocument();
         libxml_use_internal_errors(true); // Required for HTML5.
+
+        // An empty string here means that the string was filtered for safety reasons.
+        $html = $html ?: '<p></p>';
         $doc->loadHTML($html);
         libxml_clear_errors(); // Required for HTML5.
         $imagetags = $doc->getElementsByTagName('img');
@@ -1111,12 +1203,13 @@ class local {
      * @return array
      */
     public static function supported_coverimage_types() {
-        global $CFG;
-        $extsstr = strtolower($CFG->courseoverviewfilesext);
-
+        $filetype = (new \core_form\filetypes_util())->is_filetype_group('web_image');
         // Supported file extensions.
-        $extensions = explode(',', str_replace('.', '', $extsstr));
-        array_walk($extensions, function($s) {trim($s); });
+        $extensions = $filetype->extensions;
+        $extensions = array_map(function($s) {
+            return str_replace('.', '', $s);
+        }, $extensions);
+
         // Filter out any extensions that might be in the config but not image extensions.
         $imgextensions = ['jpg', 'png', 'gif', 'svg', 'webp'];
         return array_intersect ($extensions, $imgextensions);
@@ -1134,7 +1227,7 @@ class local {
             'jpg'  => 'image/jpeg',
             'gif'  => 'image/gif',
             'png'  => 'image/png',
-            'svg'  => 'image/svg'
+            'svg'  => 'image/svg',
         ];
         foreach ($supportedexts as $ext) {
             if (in_array($ext, $supportedexts) && isset($typemaps[$ext])) {
@@ -1147,22 +1240,26 @@ class local {
 
     /**
      * Deletes all previous course card images.
-     * @param int $context
+     * @param \context_course $context
      * @return void
      */
     public static function course_card_clean_up($context) {
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, 'theme_snap', 'coursecard');
+        self::clean_course_card_bg_image_cache($context->id);
     }
 
     /**
      * Creates a resized course card image when the cover image is too large, otherwise returns the original.
-     * @param int $context
+     * @param \context_course $context
      * @param stored_file|bool $originalfile
      * @return bool|stored_file
      */
     public static function set_course_card_image($context, $originalfile) {
         if ($originalfile) {
+            // Clean cache just in case image is updated.
+            self::clean_course_card_bg_image_cache($context->id);
+
             $finfo = $originalfile->get_imageinfo();
             $coursecardmaxwidth = 1000;
             $coursecardwidth = 720;
@@ -1192,7 +1289,7 @@ class local {
                 'filename' => 'course-card-'.$id.'-'.$filename,
             );
             $coursecardimage = $fs->create_file_from_storedfile($filespec, $originalfile);
-            $coursecardimage = image::resize($coursecardimage, false, $coursecardwidth);
+            $coursecardimage = image::resize($coursecardimage, false, round($coursecardwidth));
             return $coursecardimage;
         }
         return false;
@@ -1202,10 +1299,13 @@ class local {
      * Get the cover image url for the course card.
      *
      * @param int $courseid
-     * @return bool|moodle_url
+     * @return bool|\moodle_url
      */
     public static function course_card_image_url($courseid) {
         $context = \context_course::instance($courseid);
+        if (self::coverimage($context) === false) {
+            return false;
+        }
         $fs = get_file_storage();
         $cardimages = $fs->get_area_files($context->id, 'theme_snap', 'coursecard', 0, "itemid, filepath, filename", false);
         if ($cardimages) {
@@ -1218,7 +1318,11 @@ class local {
                 return self::snap_pluginfile_url($cardimage);
             }
         }
-        $originalfile = self::get_course_firstimage($courseid);
+        try {
+            $originalfile = self::get_course_firstimage($courseid);
+        } catch (\file_exception $e) {
+            $originalfile = false;
+        }
         $cardimage = self::set_course_card_image($context, $originalfile);
         return self::snap_pluginfile_url($cardimage);
     }
@@ -1230,7 +1334,8 @@ class local {
      * @return bool|stored_file
      * @throws \coding_exception
      */
-    public static function coverimage($context) {
+    public static function coverimage($context, $featuredcards = false) {
+        global $DB;
         $contextid = $context->id;
         $fs = get_file_storage();
 
@@ -1239,17 +1344,40 @@ class local {
                 return false;
             }
         }
-
-        $files = $fs->get_area_files($contextid, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+        if ($featuredcards) {
+            $files = $fs->get_area_files($contextid, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+        } else {
+            $files = $fs->get_area_files($contextid, 'theme_snap', 'croppedimage', 0, "itemid, filepath, filename", false);
+            if (!$files) {
+                $files = $fs->get_area_files($contextid, 'theme_snap', 'coverimage', 0, "itemid, filepath, filename", false);
+            }
+        }
         if (!$files) {
             return false;
         }
+        $coverimagefile = end($files);
         if (count($files) > 1) {
-            // Note this is a coding exception and not a moodle exception because there should never be more than one
-            // file in this area, where as the course summary files area can in some circumstances have more than on file.
-            throw new \coding_exception('Multiple files found in course coverimage area (context '.$contextid.')');
+            //There should never be more than one file in this area. We are deleting all but the first.
+            array_pop($files);
+            foreach ($files as $file) {
+                $fileid = $file->get_id();
+                $filerecord = $DB->get_record('files', array('id' => $fileid));
+                if ($filerecord) {
+                    $fs->get_file_instance($filerecord)->delete();
+                }
+            }
         }
-        return (end($files));
+        return ($coverimagefile);
+    }
+
+    /**
+     * Get processed course cat cover image.
+     * @param $catid
+     * @return bool|stored_file
+     */
+    public static function course_cat_coverimage($catid) {
+        $context = \context_coursecat::instance($catid);
+        return (self::coverimage($context));
     }
 
     /**
@@ -1258,22 +1386,62 @@ class local {
      * @param $courseid
      * @return stored_file|bool
      */
-    public static function course_coverimage($courseid) {
+    public static function course_coverimage($courseid, $featuredcards = false) {
         $context = \context_course::instance($courseid);
-        return (self::coverimage($context));
+        return (self::coverimage($context, $featuredcards));
+    }
+
+    /**
+     * Get cover image url for course category.
+     * @param int $catid
+     *
+     * @return bool|moodle_url
+     */
+    public static function course_cat_coverimage_url($catid) {
+        $file = self::course_cat_coverimage($catid);
+        if (!$file) {
+            $file = self::process_coverimage(\context_coursecat::instance($catid));
+        }
+        return self::snap_pluginfile_url($file);
     }
 
     /**
      * Get cover image url for course.
+     * @param int $courseid
      *
      * @return bool|moodle_url
      */
-    public static function course_coverimage_url($courseid) {
-        $file = self::course_coverimage($courseid);
+    public static function course_coverimage_url($courseid, $featuredcards = false) {
+        $file = self::course_coverimage($courseid, $featuredcards);
         if (!$file) {
             $file = self::process_coverimage(\context_course::instance($courseid));
         }
         return self::snap_pluginfile_url($file);
+    }
+
+    /**
+     * Get cover image url for category.
+     * @param int $categoryid
+     *
+     * @return bool|moodle_url
+     */
+    public static function category_coverimage_url($categoryid, $featuredcards = false) {
+        $file = self::category_coverimage($categoryid, $featuredcards);
+        if (!$file) {
+            $file = self::process_coverimage(\context_coursecat::instance($categoryid));
+        }
+        return self::snap_pluginfile_url($file);
+    }
+
+    /**
+     * Get processed category cover image.
+     *
+     * @param $categoryid
+     * @return stored_file|bool
+     */
+    public static function category_coverimage($categoryid, $featuredcards) {
+        $context = \context_coursecat::instance($categoryid);
+        return (self::coverimage($context, $featuredcards));
     }
 
     /**
@@ -1319,6 +1487,21 @@ class local {
 
 
     /**
+     * Adds the course category cover image to CSS.
+     *
+     * @param int $courseid
+     * @return string The parsed CSS
+     */
+    public static function course_cat_coverimage_css($catid) {
+        $css = '';
+        $coverurl = self::course_cat_coverimage_url($catid);
+        if ($coverurl) {
+            $css = "#page-header {background-image: url($coverurl);}";
+        }
+        return $css;
+    }
+
+    /**
      * Adds the course cover image to CSS.
      *
      * @param int $courseid
@@ -1343,7 +1526,29 @@ class local {
         if (!$coverurl) {
             return '';
         }
-        return "#page-site-index #page-header, #page-login-index #page {background-image: url($coverurl);}";
+        return ".theme-snap#page-site-index #page-header {background-image: url($coverurl);}";
+    }
+
+    /**
+     * Get the best cover image file name for a given context.
+     * @param \context $context
+     * @return string
+     * @throws \coding_exception
+     */
+    private static function coverimage_filename(\context $context) {
+        $contextlevel = $context->contextlevel;
+
+        $filenamemap = [
+            CONTEXT_SYSTEM => 'site-image',
+            CONTEXT_COURSECAT => 'category-image',
+            CONTEXT_COURSE => 'course-image',
+        ];
+
+        if (empty($filenamemap[$contextlevel])) {
+            throw new \coding_exception('Unsupported context level '.$contextlevel);
+        } else {
+            return $filenamemap[$contextlevel];
+        }
     }
 
     /**
@@ -1353,24 +1558,28 @@ class local {
      * @param stored_file $originalfile
      * @return stored_file|bool
      */
-    public static function process_coverimage($context, $originalfile = false) {
+    public static function process_coverimage(\context $context, $originalfile = false) {
 
         $contextlevel = $context->contextlevel;
-        if ($contextlevel != CONTEXT_SYSTEM && $contextlevel != CONTEXT_COURSE) {
+        $validcontexts = [CONTEXT_SYSTEM, CONTEXT_COURSECAT, CONTEXT_COURSE];
+        if (!in_array($contextlevel, $validcontexts)) {
             throw new \coding_exception('Invalid context passed to process_coverimage');
         }
-        $newfilename = $contextlevel == CONTEXT_SYSTEM ? 'site-image' : 'course-image';
+        $newfilename = self::coverimage_filename($context);
 
         if (!$originalfile) {
-            if ($contextlevel == CONTEXT_SYSTEM) {
+            if ($contextlevel === CONTEXT_SYSTEM) {
                 $originalfile = self::site_coverimage_original($context);
-            } else {
+            } else if ($contextlevel === CONTEXT_COURSE) {
                 $originalfile = self::get_course_firstimage($context->instanceid);
+            } else if ($contextlevel === CONTEXT_COURSECAT) {
+                $originalfile = self::coverimage($context);
             }
         }
 
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, 'theme_snap', 'coverimage');
+        $fs->delete_area_files($context->id, 'theme_snap', 'croppedimage');
 
         if (!$originalfile) {
             return false;
@@ -1391,10 +1600,12 @@ class local {
 
         $newfile = $fs->create_file_from_storedfile($filespec, $originalfile);
         $finfo = $newfile->get_imageinfo();
-        self::course_card_clean_up($context);
-        self::set_course_card_image($context, $originalfile);
-        if ($finfo['mimetype'] == 'image/jpeg' && $finfo['width'] > 3840) {
-            return image::resize($newfile, false, 3840);
+        if ($contextlevel === CONTEXT_COURSE) {
+            self::course_card_clean_up($context);
+            self::set_course_card_image($context, $originalfile);
+        }
+        if (!empty($finfo) && $finfo['mimetype'] == 'image/jpeg' && $finfo['width'] > 1380) {
+            return image::resize($newfile, false, 1280);
         } else {
             return $newfile;
         }
@@ -1423,20 +1634,24 @@ class local {
         $formatoptions->noclean = true;
         $formatoptions->context = $context;
 
+        // Process content.
+        $page->content = file_rewrite_pluginfile_urls($page->content,
+            'pluginfile.php', $context->id, 'mod_page', 'content', $page->revision);
+        $page->content = format_text($page->content, $page->contentformat, $formatoptions);
+
         // Make sure we have some summary/extract text for the course page.
         if (!empty($page->intro)) {
             $page->summary = file_rewrite_pluginfile_urls($page->intro,
                 'pluginfile.php', $context->id, 'mod_page', 'intro', null);
             $page->summary = format_text($page->summary, $page->introformat, $formatoptions);
         } else {
-            $preview = strip_tags($page->content);
+            $preview = $page->content;
+            // Prevent img alt tags from being spat out by html_to_text by escaping them.
+            $preview = str_replace('alt=', 'alt&#61;', $preview);
+            // Only formatting tags and links are allowed.
+            $preview = strip_tags($preview, '<b><i><em><mark><small><del><ins><sub><sup><style><a>');
             $page->summary = shorten_text($preview, 200);
         }
-
-        // Process content.
-        $page->content = file_rewrite_pluginfile_urls($page->content,
-            'pluginfile.php', $context->id, 'mod_page', 'content', $page->revision);
-        $page->content = format_text($page->content, $page->contentformat, $formatoptions);
 
         return ($page);
     }
@@ -1494,6 +1709,33 @@ class local {
         }
 
         return $user;
+    }
+
+    /**
+     * Get course by id.
+     * @param stdClass|int $courseorid
+     * @return stdClass|false
+     */
+    public static function get_course($courseorid = 0) {
+        global $COURSE;
+
+        if ($courseorid === 0) {
+            return false;
+        }
+
+        if (is_object($courseorid)) {
+            return $courseorid;
+        } else if (is_number($courseorid)) {
+            if (intval($courseorid) === $COURSE->id) {
+                $course = $COURSE;
+            } else {
+                $course = get_course($courseorid);
+            }
+        } else {
+            throw new \coding_exception('paramater $courseorid must be an object or an integer or a numeric string');
+        }
+
+        return $course;
     }
 
     /**
@@ -1568,7 +1810,7 @@ class local {
                                      'sepgps1a' => SEPARATEGROUPS,
                                      'sepgps2a' => SEPARATEGROUPS,
                                      'user1a'   => $user->id,
-                                     'user2a'   => $user->id
+                                     'user2a'   => $user->id,
 
                                  ]
             );
@@ -1591,7 +1833,7 @@ class local {
                                0 AS forumanonymous, f1.course, f1.name AS forumname,
                                u1.firstnamephonetic, u1.lastnamephonetic, u1.middlename, u1.alternatename, u1.firstname,
                                u1.lastname, u1.picture, u1.imagealt, u1.email,
-                               c.shortname AS courseshortname, c.fullname AS coursefullname
+                               c.shortname AS courseshortname, c.fullname AS coursefullname, fd1.timestart, fd1.timeend
 	                      FROM {forum_posts} fp1
 	                      JOIN {user} u1 ON u1.id = fp1.userid
                           JOIN {forum_discussions} fd1 ON fd1.id = fp1.discussion
@@ -1623,7 +1865,7 @@ class local {
                                       'user1b'   => $user->id,
                                       'user2b'   => $user->id,
                                       'user3b'   => $user->id,
-                                      'user4b'   => $user->id
+                                      'user4b'   => $user->id,
                                   ]
             );
 
@@ -1643,7 +1885,7 @@ class local {
                                f2.anonymous AS forumanonymous, f2.course, f2.name AS forumname,
                                u2.firstnamephonetic, u2.lastnamephonetic, u2.middlename, u2.alternatename, u2.firstname,
                                u2.lastname, u2.picture, u2.imagealt, u2.email,
-                               c.shortname AS courseshortname, c.fullname AS coursefullname
+                               c.shortname AS courseshortname, c.fullname AS coursefullname, fd2.timestart, fd2.timeend
                           FROM {hsuforum_posts} fp2
                           JOIN {user} u2 ON u2.id = fp2.userid
                           JOIN {hsuforum_discussions} fd2 ON fd2.id = fp2.discussion
@@ -1686,34 +1928,39 @@ class local {
                     'lastname' => $post->lastname,
                     'picture' => $post->picture,
                     'imagealt' => $post->imagealt,
-                    'email' => $post->email
+                    'email' => $post->email,
                 ];
 
                 if ($post->type === 'hsuforum') {
                     $postuser = hsuforum_anonymize_user($postuser, (object)array(
                         'id' => $post->forum,
                         'course' => $post->course,
-                        'anonymous' => $post->forumanonymous
+                        'anonymous' => $post->forumanonymous,
                     ), $post);
                 }
 
-                $activities[] = (object)[
-                    'type' => $post->type,
-                    'cmid' => $post->cmid,
-                    'name' => $post->subject,
-                    'courseshortname' => $post->courseshortname,
-                    'coursefullname' => $post->coursefullname,
-                    'forumname' => $post->forumname,
-                    'sectionnum' => null,
-                    'timestamp' => $post->modified,
-                    'content' => (object)[
-                        'id' => $post->postid,
-                        'discussion' => $post->discussion,
-                        'subject' => $post->subject,
-                        'parent' => $post->parent
-                    ],
-                    'user' => $postuser
-                ];
+                $hasstarted = $post->timestart < time();
+                $hasended = $post->timeend < time();
+                // Checking if the post is visible
+                if($hasstarted && (!$hasended || empty($post->timeend))) {
+                    $activities[] = (object)[
+                        'type' => $post->type,
+                        'cmid' => $post->cmid,
+                        'name' => $post->subject,
+                        'courseshortname' => $post->courseshortname,
+                        'coursefullname' => format_string($post->coursefullname),
+                        'forumname' => $post->forumname,
+                        'sectionnum' => null,
+                        'timestamp' => $post->modified,
+                        'content' => (object)[
+                            'id' => $post->postid,
+                            'discussion' => $post->discussion,
+                            'subject' => $post->subject,
+                            'parent' => $post->parent,
+                        ],
+                        'user' => $postuser,
+                    ];
+                }
             }
         }
 
@@ -1726,13 +1973,137 @@ class local {
      */
     public static function render_recent_forum_activity() {
         global $PAGE;
+        $activities = self::recent_forum_activity_data(true);
+        if (empty($activities)) {
+            return '<p class="small">' . get_string('noforumposts', 'theme_snap') . '</p>';
+        }
+
+        $o = '';
+        /** @var core_renderer $renderer */
+        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($activities as $activity) {
+            $o .= $renderer->snap_media_object(
+                $activity['actionUrl'],
+                $activity['iconUrl'],
+                $activity['title']. '<small><br>' .$activity['subTitle']. '</small>',
+                $activity['description'],
+                ''
+            );
+        }
+        return $o;
+    }
+
+    /**
+     * Returns the group ID's for a set of Forums or Open Forums within a course.
+     * @param array $activities
+     * @return array $groupsid
+     */
+    public static function get_groups_ids($activities) {
+        global $DB;
+        $discussions = [];
+        $groupsid = [];
+
+        // We need to get the ID of the discussions so we can
+        // find the Forum ID and later the group ID.
+        foreach ($activities as $activity) {
+            $discussions[] = $activity->content->discussion;
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($discussions);
+        // SQL for forums.
+        $sqlforum = "SELECT id, groupid
+                       FROM {forum_discussions}
+                      WHERE id $insql";
+        // We save both types of forums in the array $groupsid.
+        $groupsid['forum'] = $DB->get_records_sql($sqlforum, $params);
+
+        if (!get_config('hsuforum')) {
+            $groupsid['hsuforum'] = [];
+        } else {
+            // SQL for hsuforums.
+            $sqlhsuforum = "SELECT id, groupid
+                              FROM {hsuforum_discussions}
+                             WHERE id $insql";
+
+            $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+        }
+        return $groupsid;
+    }
+
+    /**
+     * @param bool $renderhtml
+     * @return array
+     * @throws \coding_exception
+     * @throws \moodle_exception
+     */
+    public static function recent_forum_activity_data($renderhtml = false) {
+        global $PAGE, $OUTPUT, $CFG;
         $activities = self::recent_forum_activity();
         if (empty($activities)) {
-            return '<p>' . get_string('noforumposts', 'theme_snap') . '</p>';
+            return [];
         }
-        $activities = array_slice($activities, 0, 10);
-        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
-        return $renderer->recent_forum_activity($activities);
+        $res = [];
+        $formatoptions = new stdClass;
+        $formatoptions->filter = false;
+
+        $groupsid = self::get_groups_ids($activities);
+
+        foreach ($activities as $activity) {
+            // We get the group ID for each activity.
+            $groupid = $groupsid[$activity->type][$activity->content->discussion]->groupid;
+            // Now we validate if the current user is member of the group stored in $groupid above.
+            $validation = groups_is_member($groupid);
+            if (!$validation && $groupid !== '-1') {
+                // If the user is not a member of the group, we must take the recent forum activity from
+                // showing up in the user personal menu.
+                unset($activity, $activities);
+                continue;
+            }
+
+            $iconurl = '';
+            if (!empty($activity->user)) {
+                $userpicture = new user_picture($activity->user);
+                $userpicture->link = false;
+                $userpicture->alttext = false;
+                $userpicture->size = 32;
+
+                if ($renderhtml) {
+                    $iconurl = $OUTPUT->render($userpicture);
+                } else {
+                    $iconurl = $userpicture->get_url($PAGE)->out(false);
+                }
+            }
+
+            $url = new moodle_url(
+                '/mod/'.$activity->type.'/discuss.php',
+                ['d' => $activity->content->discussion],
+                'p'.$activity->content->id
+            );
+            if (!$renderhtml) {
+                $url = $url->out();
+            }
+            $fullname = fullname($activity->user);
+            $forumpath = $activity->courseshortname. ' / ' .$activity->forumname;
+            $formattedsubject = format_text($activity->content->subject, FORMAT_HTML, $formatoptions);
+            $description = self::relative_time($activity->timestamp)
+                . '<br>' . format_text($forumpath, FORMAT_HTML, $formatoptions);
+
+            $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
+            $res[] = [
+                'iconUrl'      => $iconurl,
+                'iconDesc'     => '',
+                'iconClass'    => 'userpicture',
+                'title'        => $fullname,
+                'subTitle'     => $formattedsubject,
+                'actionUrl'    => $url,
+                'description'  => $description,
+                'extraClasses' => '',
+                'fromCache'    => 0,
+                'urlParameter'    => $snapfeedsurlparam,
+            ];
+        }
+        return $res;
     }
 
     /**
@@ -1747,5 +2118,452 @@ class local {
     public static function current_url_path() {
         global $PAGE;
         return parse_url($PAGE->url->out_as_local_url())['path'];
+    }
+
+    /**
+     * Add or update a calendar change stamp for a specific $courseid.
+     * @param $courseid
+     */
+    public static function add_calendar_change_stamp($courseid) {
+        $muc = \cache::make('theme_snap', 'generalstaticappcache');
+        $cached = $muc->get('calendarchangestamps');
+        if ($cached) {
+            $cached[$courseid] = microtime(true);
+        } else {
+            $cached = [$courseid => microtime(true)];
+        }
+        $muc->set('calendarchangestamps', $cached);
+    }
+
+    /**
+     * Recover calendar change stamps.
+     * @return false|mixed
+     */
+    public static function get_calendar_change_stamps() {
+        $muc = \cache::make('theme_snap', 'generalstaticappcache');
+        $cached = $muc->get('calendarchangestamps');
+        return $cached;
+    }
+
+    /**
+     * Slugifies the text.
+     * @param string $text
+     * @return string
+     */
+    private static function slugify(string $text) : string {
+        // Replace non letter or digits by -.
+        $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+
+        // Transliterate.
+        $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+
+        // Remove unwanted characters.
+        $text = preg_replace('~[^-\w]+~', '', $text);
+
+        // Trim.
+        $text = trim($text, '-');
+
+        // Remove duplicate -.
+        $text = preg_replace('~-+~', '-', $text);
+
+        // Lowercase.
+        $text = strtolower($text);
+
+        // Prepend pbb to avoid use of reserved classes.
+        if (empty($text)) {
+            return '';
+        }
+
+        return $text;
+    }
+
+    /**
+     * Calculates the slugified class to apply for Profile based branding.
+     * @param \stdClass $user
+     * @return string|bool
+     */
+    public static function get_profile_based_branding_class($user) {
+        global $DB;
+
+        if (empty(get_config('theme_snap', 'pbb_enable')) || !isloggedin()) {
+            return false;
+        }
+
+        $cache = \cache::make('theme_snap', 'profile_based_branding');
+        $class = $cache->get('pbb_class');
+        if (!empty($class)) {
+            return $class;
+        }
+
+        $pbbfield = get_config('theme_snap', 'pbb_field');
+        list($type, $fieldnameorid) = !empty($pbbfield) ? explode('|', $pbbfield) : [null, null];
+        if (empty($type) || empty($fieldnameorid)) {
+            return false;
+        }
+
+        $value = '';
+        if ($type === 'user') {
+            $value = $user->{$fieldnameorid};
+        } else if ($type === 'profile') {
+            $sql = <<<SQL
+                  SELECT dat.data
+                    FROM {user_info_data} dat
+                   WHERE dat.userid = :userid AND dat.fieldid = :fieldid
+SQL;
+            $params = [
+                'userid' => $user->id,
+                'fieldid' => $fieldnameorid,
+            ];
+            $value = $DB->get_field_sql($sql, $params);
+        }
+
+        if (!empty($value)) {
+            $class = 'snap-pbb-' . self::slugify($value);
+            $cache->set('pbb_class', $class);
+        }
+        return $class;
+    }
+
+    /**
+     * Cleans the profile based branding cache store.
+     */
+    public static function clean_profile_based_branding_cache() {
+        $cache = \cache::make('theme_snap', 'profile_based_branding');
+        $cache->purge();
+    }
+
+    /**
+     * Cleans the course bg image cache.
+     * @param null|int $contextid If null, cleans all course card images.
+     */
+    public static function clean_course_card_bg_image_cache($contextid = null) {
+        /** @var \cache_application $bgcache */
+        $bgcache = \cache::make('theme_snap', 'course_card_bg_image');
+        if (is_null($contextid)) {
+            $bgcache->purge();
+        } else {
+            $bgcache->delete($contextid);
+        }
+    }
+
+    /**
+     * Cleans the teacher course card avatars.
+     * @param null|int $contextid If null, cleans all teacher avatar images.
+     * @param null|int $userid If not null and found in stored user ids, cleans avatar images for course.
+     */
+    public static function clean_course_card_teacher_avatar_cache($contextid = null, $userid = null) {
+        /** @var \cache_application $avatarcache */
+        $avatarcache = \cache::make('theme_snap', 'course_card_teacher_avatar');
+        /** @var \cache_application $indexcache */
+        $indexcache = \cache::make('theme_snap', 'course_card_teacher_avatar_index');
+
+        if (self::duringtesting() && !$indexcache->has('idx')) {
+            // Somehow, application caches complain if the value is not set when running tests.
+            $indexcache->set('idx', []);
+        }
+
+        if (is_null($contextid) && is_null($userid)) {
+            // No params, purge all.
+            $avatarcache->purge();
+            return;
+        }
+
+        if (!is_null($contextid)) {
+            // In course context.
+
+            $userctxidx = $indexcache->get('idx');
+            if (!is_null($userid) && is_array($userctxidx)
+                && !empty($userctxidx[$userid]) && !empty($userctxidx[$userid][$contextid])) {
+                // Context + user.
+                $avatarcache->delete($contextid);
+                $userctxidx = self::remove_context_from_avatar_user_index($userctxidx, $contextid, $userid);
+            } else {
+                // Only context.
+                $avatarcache->delete($contextid);
+                $userctxidx = self::remove_context_from_avatar_user_index($userctxidx, $contextid);
+            }
+            // Save an empty array instead of boolean false which errors with cachestore_file.
+            if (!is_array($userctxidx)) {
+                $userctxidx = [];
+            }
+            $indexcache->set('idx', $userctxidx);
+            // Always return, next conditional only makes sense if there is no context.
+            return;
+        }
+
+        if (!is_null($userid)) {
+            // Only user was specified.
+
+            $userctxidx = $indexcache->get('idx');
+            if (is_array($userctxidx) && !empty($userctxidx[$userid])) {
+                $contextids = array_keys($userctxidx[$userid]);
+                foreach ($contextids as $contextid) {
+                    $avatarcache->delete($contextid);
+                }
+                // Remove user id from index since all avatar caches have been cleansed.
+                unset($userctxidx[$userid]);
+                $indexcache->set('idx', $userctxidx);
+            }
+        }
+    }
+
+    /**
+     * Removes specific context id from avatar index.
+     * @param bool[][] $userctxidx First key is user id, second key is course context id.
+     * @param int $contextid
+     * @param null|int $userid
+     * @return bool[][] New index
+     */
+    private static function remove_context_from_avatar_user_index($userctxidx, $contextid, $userid = null) {
+        if (!is_array($userctxidx)) {
+            return $userctxidx;
+        }
+
+        // If user id is specified, only remove the specific context.
+        if (isset($userid)) {
+            if (!empty($userctxidx[$userid]) && !empty($userctxidx[$userid][$contextid])) {
+                unset($userctxidx[$userid][$contextid]);
+            }
+            return $userctxidx;
+        }
+
+        // Remove the specific context id for all users.
+        $userids = array_keys($userctxidx);
+        foreach ($userids as $uid) {
+            $userctxidx = self::remove_context_from_avatar_user_index($userctxidx, $contextid, $uid);
+        }
+        return $userctxidx;
+    }
+
+    /**
+     * Is this script running during testing?
+     *
+     * @return bool
+     */
+    public static function duringtesting() {
+        $runningphpunittest = defined('PHPUNIT_TEST') && PHPUNIT_TEST;
+        $runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
+        return ($runningphpunittest || $runningbehattest);
+    }
+
+    public static function deadlines() {
+        global $PAGE, $USER;
+        $eventsobj = \theme_snap\activity::upcoming_deadlines($USER->id);
+
+        $events = self::deadlines_data($eventsobj, true);
+        $fromcache = $eventsobj->fromcache ? 1 : 0;
+        $datafromcache = ' data-from-cache="'.$fromcache.'" ';
+        if (empty($events)) {
+            return '<p class="small"'.$datafromcache.'>' . get_string('nodeadlines', 'theme_snap') . '</p>';
+        }
+
+        $o = '';
+        /** @var core_renderer $renderer */
+        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($events as $event) {
+            $o .= $renderer->snap_media_object(
+                    $event['actionUrl'],
+                    $event['iconUrl'],
+                    $event['title'] . "<small {$datafromcache}><br>{$event['subTitle']}</small>",
+                    $event['description'],
+                    '',
+                    $datafromcache
+                );
+        }
+        return $o;
+    }
+
+    public static function deadlines_data($eventsobj, $renderhtml = false) {
+        global $PAGE, $CFG;
+
+        $events = $eventsobj->events;
+        $fromcache = $eventsobj->fromcache ? 1 : 0;
+
+        /** @var core_renderer $output */
+        $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+
+        $res = [];
+        $id= 1;
+        foreach ($events as $event) {
+            if (!empty($event->modulename)) {
+                list ($course, $cm) = get_course_and_cm_from_instance(
+                    $event->instance,
+                    $event->modulename,
+                    $event->courseid,
+                    $event->userid);
+
+                $eventtitle = $event->name;
+                $eventsubtitle = $event->coursefullname;
+
+                $modimageurl = $output->image_url('icon', $cm->modname);
+                $modname = get_string('modulename', 'mod_'.$cm->modname);
+                if ($renderhtml) {
+                    $modimage = \html_writer::img($modimageurl, $modname);
+                } else {
+                    $modimage = $modimageurl->out();
+                }
+
+                if ($cm->modname == 'lti') {
+                    $r = new \ReflectionObject($cm);
+                    $p = $r->getProperty('iconurl');
+                    $p->setAccessible(true);
+                    $iconurl = $p->getValue($cm);
+                    if (!empty($iconurl)) {
+                        $modimage = $iconurl->out();
+                    }
+                }
+
+                if (!empty($event->extensionduedate)) {
+                    // If we have an extension then always show this as the due date.
+                    $deadline = $event->extensionduedate + $event->timeduration;
+                } else {
+                    $deadline = $event->timestart + $event->timeduration;
+                }
+                if ($event->modulename === 'collaborate') {
+                    if ($event->timeduration == 0) {
+                        // No deadline for long duration collab rooms.
+                        continue;
+                    }
+                    $deadline = $event->timestart;
+                }
+
+                $meta = $output->friendly_datetime($deadline);
+                // Add completion meta data for students (exclude anyone who can grade them).
+                if (!has_capability('mod/assign:grade', $cm->context)) {
+                    $activitymeta = activity::module_meta($cm);
+                    // Empty object with no metadata will generate empty links.
+                    $metalink = $activitymeta == new activity_meta() ? '' :
+                        \theme_snap\output\core\course_renderer::submission_cta($cm, $activitymeta);
+
+                    $meta .= '<div class="snap-completion-meta event-'.$id.'">' . $metalink .
+                        '</div>';
+                }
+                $url = !empty($event->actionurl) && ($event->actionurl instanceof \moodle_url) ?
+                    $event->actionurl : $cm->url;
+
+                if (empty($url)) {
+                    $csinfo = $cm->get_section_info();
+                    $url = new moodle_url('/course/view.php', ['id' => $cm->course], 'section-' . $csinfo->section);
+                }
+                if (!$renderhtml) {
+                    $url = $url->out();
+                }
+
+                $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
+
+                $res[] = [
+                    'iconUrl'      => $modimage,
+                    'iconDesc'     => $modname,
+                    'iconClass'    => '',
+                    'title'        => $eventtitle,
+                    'subTitle'     => $eventsubtitle,
+                    'actionUrl'    => $url,
+                    'description'  => $meta,
+                    'extraClasses' => '',
+                    'fromCache'    => $fromcache,
+                    'urlParameter' => $snapfeedsurlparam,
+                    'modName'      => $cm->modname
+                ];
+            }
+            $id++;
+        }
+        return $res;
+    }
+
+    /**
+     * @param string $feedid
+     * @param int $page
+     * @param int $pagesize
+     * @param int $maxid
+     * @param int $courseid
+     * @return array
+     * @throws \coding_exception
+     * @throws \moodle_exception
+     */
+    public static function get_feed(string $feedid, $page = 0, $pagesize = 3, $maxid = -1, $courseid = 0) : array {
+        global $USER, $CFG;
+        switch ($feedid) {
+            case 'graded':
+                $res = self::graded_data();
+                break;
+            case 'grading':
+                $res = self::grading_data();
+                break;
+            case 'forumposts':
+                $res = self::recent_forum_activity_data();
+                break;
+            case 'messages':
+                $limitfrom = $page * $pagesize;
+                $res = self::messages_data(false, $limitfrom, $pagesize, $maxid);
+                break;
+            case 'deadlines':
+                $limit = !empty($CFG->snap_advanced_feeds_max_deadlines) ? $CFG->snap_advanced_feeds_max_deadlines : 500;
+                $res = self::deadlines_data(
+                    activity::upcoming_deadlines($USER->id, $limit, $courseid)
+                );
+                break;
+            default:
+                $res = [];
+                break;
+        }
+        return $res;
+    }
+
+    /**
+     * This Validates if the settings are being shown on snap personal menu.
+     */
+    public static function show_setting_menu() {
+        global $PAGE, $COURSE;
+
+        // Are we on the main course page?
+        $oncoursepage = strpos($PAGE->pagetype, 'course-view') === 0;
+
+        // For any format other than topics, weeks, or singleactivity, always output admin menu on main
+        // course page.
+        $formats = ['topics', 'weeks', 'singleactivity'];
+        if ($oncoursepage && !empty($COURSE->format) && !in_array($COURSE->format, $formats)) {
+            return false;
+        }
+
+        // Page path blacklist for admin menu.
+        $adminblockblacklist = ['/user/profile.php'];
+        if (in_array(self::current_url_path(), $adminblockblacklist)) {
+            return false;
+        }
+
+        // Admin users always see the admin menu with the exception of blacklisted pages.
+        // The admin menu shows up for other users if they are a teacher in the current course.
+        if (!is_siteadmin()) {
+            // We don't want students to see the admin menu ever.
+            // Editing teachers are identified as people who can manage activities and non editing teachers as those who
+            // can view the gradebook. As editing teachers are almost certain to also be able to view the gradebook, the
+            // grader:view capability is checked first.
+            $caps = ['gradereport/grader:view', 'moodle/course:manageactivities'];
+            $canmanageacts = has_any_capability($caps, $PAGE->context);
+            $isstudent = !$canmanageacts && !is_role_switched($COURSE->id);
+
+            if ($isstudent) {
+                return false;
+            }
+        }
+
+        if (!$PAGE->blocks->is_block_present('settings')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove hidden courses from a list of courses.
+     *
+     * This function excludes courses that are marked as hidden from
+     * the provided array of courses (i.e. where $course->visible == 0).
+     *
+     * @param  array $courses Array of course objects
+     * @return array Array of non-hidden course objects
+     */
+    public static function remove_hidden_courses(array $courses) : array {
+        return array_filter($courses, fn($course) => $course->visible);
     }
 }

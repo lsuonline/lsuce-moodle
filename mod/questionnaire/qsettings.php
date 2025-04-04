@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// This page prints a particular instance of questionnaire.
+/**
+ * This page handles the question settings.
+ *
+ * @package    mod_questionnaire
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2016 Mike Churchward (mike.churchward@poetopensource.org)
+ */
 
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/questionnaire/questionnaire.class.php');
@@ -25,15 +31,15 @@ $cancel = optional_param('cancel', '', PARAM_ALPHA);
 $submitbutton2 = optional_param('submitbutton2', '', PARAM_ALPHA);
 
 if (! $cm = get_coursemodule_from_id('questionnaire', $id)) {
-    print_error('invalidcoursemodule');
+    throw new \moodle_exception('invalidcoursemodule', 'mod_questionnaire');
 }
 
 if (! $course = $DB->get_record("course", array("id" => $cm->course))) {
-    print_error('coursemisconf');
+    throw new \moodle_exception('coursemisconf', 'mod_questionnaire');
 }
 
 if (! $questionnaire = $DB->get_record("questionnaire", array("id" => $cm->instance))) {
-    print_error('invalidcoursemodule');
+    throw new \moodle_exception('invalidcoursemodule', 'mod_questionnaire');
 }
 
 // Needed here for forced language courses.
@@ -46,14 +52,19 @@ $PAGE->set_context($context);
 if (!isset($SESSION->questionnaire)) {
     $SESSION->questionnaire = new stdClass();
 }
-$questionnaire = new questionnaire(0, $questionnaire, $course, $cm);
+$questionnaire = new questionnaire($course, $cm, 0, $questionnaire);
+
+// Add renderer and page objects to the questionnaire object for display use.
+$questionnaire->add_renderer($PAGE->get_renderer('mod_questionnaire'));
+$questionnaire->add_page(new \mod_questionnaire\output\qsettingspage());
+
 $SESSION->questionnaire->current_tab = 'settings';
 
 if (!$questionnaire->capabilities->manage) {
-    print_error('nopermissions', 'error', 'mod:questionnaire:manage');
+    throw new \moodle_exception('nopermissions', 'mod_questionnaire');
 }
 
-$settingsform = new mod_questionnaire_settings_form('qsettings.php');
+$settingsform = new \mod_questionnaire\settings_form('qsettings.php');
 $sdata = clone($questionnaire->survey);
 $sdata->sid = $questionnaire->survey->id;
 $sdata->id = $cm->id;
@@ -67,11 +78,6 @@ $draftideditor = file_get_submitted_draft_itemid('thankbody');
 $currentinfo = file_prepare_draft_area($draftideditor, $context->id, 'mod_questionnaire', 'thankbody',
                 $sdata->sid, array('subdirs' => true), $questionnaire->survey->thank_body);
 $sdata->thank_body = array('text' => $currentinfo, 'format' => FORMAT_HTML, 'itemid' => $draftideditor);
-
-$draftideditor = file_get_submitted_draft_itemid('feedbacknotes');
-$currentinfo = file_prepare_draft_area($draftideditor, $context->id, 'mod_questionnaire', 'feedbacknotes',
-        $sdata->sid, array('subdirs' => true), $questionnaire->survey->feedbacknotes);
-$sdata->feedbacknotes = array('text' => $currentinfo, 'format' => FORMAT_HTML, 'itemid' => $draftideditor);
 
 $settingsform->set_data($sdata);
 
@@ -89,9 +95,9 @@ if ($settings = $settingsform->get_data()) {
 
     $sdata->infoitemid = $settings->info['itemid'];
     $sdata->infoformat = $settings->info['format'];
-    $sdata->info       = $settings->info['text'];
-    $sdata->info       = file_save_draft_area_files($sdata->infoitemid, $context->id, 'mod_questionnaire', 'info',
-                                                    $sdata->id, array('subdirs' => true), $sdata->info);
+    $sdata->info = $settings->info['text'];
+    $sdata->info = file_save_draft_area_files($sdata->infoitemid, $context->id, 'mod_questionnaire', 'info',
+                                              $sdata->id, array('subdirs' => true), $sdata->info);
 
     $sdata->theme = ''; // Deprecated theme field.
     $sdata->thanks_page = $settings->thanks_page;
@@ -99,46 +105,14 @@ if ($settings = $settingsform->get_data()) {
 
     $sdata->thankitemid = $settings->thank_body['itemid'];
     $sdata->thankformat = $settings->thank_body['format'];
-    $sdata->thank_body  = $settings->thank_body['text'];
-    $sdata->thank_body  = file_save_draft_area_files($sdata->thankitemid, $context->id, 'mod_questionnaire', 'thankbody',
-                                                     $sdata->id, array('subdirs' => true), $sdata->thank_body);
+    $sdata->thank_body = $settings->thank_body['text'];
+    $sdata->thank_body = file_save_draft_area_files($sdata->thankitemid, $context->id, 'mod_questionnaire', 'thankbody',
+                                                    $sdata->id, array('subdirs' => true), $sdata->thank_body);
     $sdata->email = $settings->email;
 
-    if (isset ($settings->feedbackscores)) {
-        $sdata->feedbackscores = $settings->feedbackscores;
-    } else {
-        $sdata->feedbackscores = 0;
-    }
-
-    if (isset ($settings->feedbacknotes)) {
-        $sdata->fbnotesitemid = $settings->feedbacknotes['itemid'];
-        $sdata->fbnotesformat = $settings->feedbacknotes['format'];
-        $sdata->feedbacknotes  = $settings->feedbacknotes['text'];
-        $sdata->feedbacknotes  = file_save_draft_area_files($sdata->fbnotesitemid,
-                        $context->id, 'mod_questionnaire', 'feedbacknotes',
-                        $sdata->id, array('subdirs' => true), $sdata->feedbacknotes);
-    } else {
-        $sdata->feedbacknotes = '';
-    }
-
-    if (isset ($settings->feedbacksections)) {
-        $sdata->feedbacksections = $settings->feedbacksections;
-        $usergraph = get_config('questionnaire', 'usergraph');
-        if ($usergraph) {
-            if ($settings->feedbacksections == 1) {
-                $sdata->chart_type = $settings->chart_type_global;
-            } else if ($settings->feedbacksections == 2) {
-                $sdata->chart_type = $settings->chart_type_two_sections;
-            } else if ($settings->feedbacksections > 2) {
-                $sdata->chart_type = $settings->chart_type_sections;
-            }
-        }
-    } else {
-        $sdata->feedbacksections = '';
-    }
-    $sdata->owner = $settings->owner;
+    $sdata->courseid = $settings->courseid;
     if (!($sid = $questionnaire->survey_update($sdata))) {
-        print_error('couldnotcreatenewsurvey', 'questionnaire');
+        throw new \moodle_exception('couldnotcreatenewsurvey', 'mod_questionnaire');
     } else {
         if ($submitbutton2) {
             $redirecturl = course_get_url($cm->course);
@@ -150,34 +124,6 @@ if ($settings = $settingsform->get_data()) {
         if (isset($settings->submitbutton) || isset($settings->submitbutton2)) {
             redirect ($redirecturl, get_string('settingssaved', 'questionnaire'));
         }
-
-        // Delete existing section and feedback records for this questionnaire if any were previously set and None are wanted now
-        // or Global feedback is now wanted.
-        if ($sdata->feedbacksections == 0 || ($questionnaire->survey->feedbacksections > 1 && $sdata->feedbacksections == 1)) {
-            if ($feedbacksections = $DB->get_records('questionnaire_fb_sections',
-                    array('survey_id' => $sid), '', 'id') ) {
-                foreach ($feedbacksections as $key => $feedbacksection) {
-                    $DB->delete_records('questionnaire_feedback', array('section_id' => $key));
-                }
-                $DB->delete_records('questionnaire_fb_sections', array('survey_id' => $sid));
-            }
-        }
-
-        // Save current advanced settings and go to edit feedback page(s).
-        $SESSION->questionnaire->currentfbsection = 1;
-        switch ($settings->feedbacksections) {
-            // 1 fbsection means Global feedback, redirect immediately to the fb settings page.
-            case 1:
-                redirect ($CFG->wwwroot.'/mod/questionnaire/fbsettings.php?id='.$questionnaire->cm->id,
-                        get_string('settingssaved', 'questionnaire'), 0);
-                break;
-            // More than 1 section, go to fb sections page for user to put questions inside sections.
-            default:
-                // This questionnaire has more than one feedback sections, so needs to set sections questions first
-                // before setting feedback messages.
-                redirect ($CFG->wwwroot.'/mod/questionnaire/fbsections.php?id='.$questionnaire->cm->id, '', 0);
-                break;
-        }
     }
 }
 
@@ -185,7 +131,8 @@ if ($settings = $settingsform->get_data()) {
 $PAGE->set_title(get_string('editingquestionnaire', 'questionnaire'));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->navbar->add(get_string('editingquestionnaire', 'questionnaire'));
-echo $OUTPUT->header();
+echo $questionnaire->renderer->header();
 require('tabs.php');
-$settingsform->display();
-echo $OUTPUT->footer($course);
+$questionnaire->page->add_to_page('formarea', $settingsform->render());
+echo $questionnaire->renderer->render($questionnaire->page);
+echo $questionnaire->renderer->footer($course);

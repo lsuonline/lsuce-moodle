@@ -25,9 +25,9 @@ if (empty($plugin)) {
     $plugin = new StdClass();
 }
 
-$plugin->version   = 2018082801;
-$plugin->release   = "2.7+";
-$plugin->requires  = 2014051200;
+$plugin->version   = 2024091101;
+$plugin->release   = "4.1+";
+$plugin->requires  = 2022112800; // Require Moodle 4.1.0+
 $plugin->component = 'mod_turnitintooltwo';
 $plugin->maturity  = MATURITY_STABLE;
 

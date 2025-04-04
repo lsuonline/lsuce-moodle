@@ -33,7 +33,12 @@ defined('MOODLE_INTERNAL') || die();
 class tool extends base {
 
     public function is_uninstall_allowed() {
-        return true;
+        // Some mobile settings are used by the core.
+        if ($this->name === 'mobile') {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -50,7 +55,7 @@ class tool extends base {
      * @return moodle_url
      */
     public static function get_manage_url() {
-        return new moodle_url('/admin/tools.php');
+        return new moodle_url('/admin/settings.php', ['section' => 'toolsmanagement']);
     }
 
     /**

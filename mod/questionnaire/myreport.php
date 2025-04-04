@@ -14,8 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// This page shows results of a questionnaire to a student.
-
+/**
+ * This page shows results of a questionnaire to a student.
+ *
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author     Mike Churchward
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/questionnaire/questionnaire.class.php');
 
@@ -27,13 +34,13 @@ $action = optional_param('action', 'summary', PARAM_ALPHA);
 $currentgroupid = optional_param('group', 0, PARAM_INT); // Groupid.
 
 if (! $questionnaire = $DB->get_record("questionnaire", array("id" => $instance))) {
-    print_error('incorrectquestionnaire', 'questionnaire');
+    throw new \moodle_exception('incorrectquestionnaire', 'mod_questionnaire');
 }
 if (! $course = $DB->get_record("course", array("id" => $questionnaire->course))) {
-    print_error('coursemisconf');
+    throw new \moodle_exception('coursemisconf', 'mod_questionnaire');
 }
 if (! $cm = get_coursemodule_from_instance("questionnaire", $questionnaire->id, $course->id)) {
-    print_error('invalidcoursemodule');
+    throw new \moodle_exception('invalidcoursemodule', 'mod_questionnaire');
 }
 
 require_course_login($course, true, $cm);
@@ -42,7 +49,7 @@ $questionnaire->canviewallgroups = has_capability('moodle/site:accessallgroups',
 // Should never happen, unless called directly by a snoop...
 if ( !has_capability('mod/questionnaire:readownresponses', $context)
     || $userid != $USER->id) {
-    print_error('Permission denied');
+    throw new \moodle_exception('nopermissions', 'mod_questionnaire');
 }
 $url = new moodle_url($CFG->wwwroot.'/mod/questionnaire/myreport.php', array('instance' => $instance));
 if (isset($userid)) {
@@ -65,7 +72,11 @@ $PAGE->set_context($context);
 $PAGE->set_title(get_string('questionnairereport', 'questionnaire'));
 $PAGE->set_heading(format_string($course->fullname));
 
-$questionnaire = new questionnaire(0, $questionnaire, $course, $cm);
+$questionnaire = new questionnaire($course, $cm, 0, $questionnaire);
+// Add renderer and page objects to the questionnaire object for display use.
+$questionnaire->add_renderer($PAGE->get_renderer('mod_questionnaire'));
+$questionnaire->add_page(new \mod_questionnaire\output\reportpage());
+
 $sid = $questionnaire->survey->id;
 $courseid = $course->id;
 
@@ -78,11 +89,10 @@ $SESSION->questionnaire->current_tab = 'myreport';
 switch ($action) {
     case 'summary':
         if (empty($questionnaire->survey)) {
-            print_error('surveynotexists', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
         }
         $SESSION->questionnaire->current_tab = 'mysummary';
-        $params = array('survey_id' => $questionnaire->sid, 'username' => $userid, 'complete' => 'y');
-        $resps = $DB->get_records('questionnaire_response', $params);
+        $resps = $questionnaire->get_responses($userid);
         $rids = array_keys($resps);
         if (count($resps) > 1) {
             $titletext = get_string('myresponsetitle', 'questionnaire', count($resps));
@@ -91,45 +101,44 @@ switch ($action) {
         }
 
         // Print the page header.
-        echo $OUTPUT->header();
+        echo $questionnaire->renderer->header();
 
         // Print the tabs.
         include('tabs.php');
 
-        echo $OUTPUT->heading($titletext);
-        echo '<div class = "generalbox">';
-        $questionnaire->survey_results(1, 1, '', '', $rids, $USER->id);
-        echo '</div>';
+        $questionnaire->page->add_to_page('myheaders', $titletext);
+        $questionnaire->survey_results($rids, $USER->id);
+
+        echo $questionnaire->renderer->render($questionnaire->page);
 
         // Finish the page.
-        echo $OUTPUT->footer($course);
+        echo $questionnaire->renderer->footer($course);
         break;
 
     case 'vall':
         if (empty($questionnaire->survey)) {
-            print_error('surveynotexists', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
         }
         $SESSION->questionnaire->current_tab = 'myvall';
-        $params = array('survey_id' => $questionnaire->sid, 'username' => $userid, 'complete' => 'y');
-        $resps = $DB->get_records('questionnaire_response', $params, 'submitted ASC');
+        $questionnaire->add_user_responses($userid);
         $titletext = get_string('myresponses', 'questionnaire');
 
         // Print the page header.
-        echo $OUTPUT->header();
+        echo $questionnaire->renderer->header();
 
         // Print the tabs.
         include('tabs.php');
 
-        echo $OUTPUT->heading($titletext.':');
-        $questionnaire->view_all_responses($resps);
-
+        $questionnaire->page->add_to_page('myheaders', $titletext);
+        $questionnaire->view_all_responses();
+        echo $questionnaire->renderer->render($questionnaire->page);
         // Finish the page.
-        echo $OUTPUT->footer($course);
+        echo $questionnaire->renderer->footer($course);
         break;
 
     case 'vresp':
         if (empty($questionnaire->survey)) {
-            print_error('surveynotexists', 'questionnaire');
+            throw new \moodle_exception('surveynotexists', 'mod_questionnaire');
         }
         $SESSION->questionnaire->current_tab = 'mybyresponse';
         $usergraph = get_config('questionnaire', 'usergraph');
@@ -157,17 +166,12 @@ switch ($action) {
                 }
             }
         }
-        $params = array('survey_id' => $questionnaire->sid, 'username' => $userid, 'complete' => 'y');
-        $resps = $DB->get_records('questionnaire_response', $params, 'submitted ASC');
+        $resps = $questionnaire->get_responses($userid);
 
         // All participants.
-        $params = array('survey_id' => $sid, 'complete' => 'y');
-        $fields = 'id,survey_id,submitted,username';
-        $respsallparticipants = $DB->get_records('questionnaire_response', $params, 'id', $fields);
+        $respsallparticipants = $questionnaire->get_responses();
 
-        $params = array('survey_id' => $questionnaire->sid, 'username' => $userid, 'complete' => 'y');
-        $fields = 'id,survey_id,submitted,username';
-        $respsuser = $DB->get_records('questionnaire_response', $params, '', $fields);
+        $respsuser = $questionnaire->get_responses($userid);
 
         $SESSION->questionnaire->numrespsallparticipants = count($respsallparticipants);
         $SESSION->questionnaire->numselectedresps = $SESSION->questionnaire->numrespsallparticipants;
@@ -206,13 +210,7 @@ switch ($action) {
                     $iscurrentgroupmember = true;
                 }
                 // Current group members.
-                $castsql = $DB->sql_cast_char2int('r.username');
-                $sql = 'SELECT r.id, r.survey_id, r.submitted, r.username '.
-                       'FROM {questionnaire_response} r, {groups_members} gm '.
-                       'WHERE r.survey_id = ? AND r.complete = \'y\' AND gm.groupid = ? AND '.
-                       $castsql . ' = gm.userid '.
-                       'ORDER BY r.id';
-                $currentgroupresps = $DB->get_records_sql($sql, array($sid, $currentgroupid));
+                $currentgroupresps = $questionnaire->get_responses(false, $currentgroupid);
 
             } else {
                 // Groupmode = separate groups but user is not member of any group
@@ -243,19 +241,15 @@ switch ($action) {
 
         $compare = false;
         // Print the page header.
-        echo $OUTPUT->header();
+        echo $questionnaire->renderer->header();
 
         // Print the tabs.
         include('tabs.php');
-        echo $OUTPUT->box_start();
-
-        echo $OUTPUT->heading($titletext);
+        $questionnaire->page->add_to_page('myheaders', $titletext);
 
         if (count($resps) > 1) {
             $userresps = $resps;
-            echo '<div style="text-align:center; padding-bottom:5px;">';
             $questionnaire->survey_results_navbar_student ($rid, $userid, $instance, $userresps);
-            echo '</div>';
         }
         $resps = array();
         // Determine here which "global" responses should get displayed for comparison with current user.
@@ -274,16 +268,10 @@ switch ($action) {
             $resps = $respsallparticipants;
         }
         $compare = true;
-        $questionnaire->view_response($rid, null, null, $resps, $compare, $iscurrentgroupmember,
-                        $allresponses = false, $currentgroupid);
-        if (isset($userresps) && count($userresps) > 1) {
-            echo '<div style="text-align:center; padding-bottom:5px;">';
-            $questionnaire->survey_results_navbar_student ($rid, $userid, $instance, $userresps);
-            echo '</div>';
-        }
-        echo $OUTPUT->box_end();
+        $questionnaire->view_response($rid, null, $resps, $compare, $iscurrentgroupmember, false, $currentgroupid);
         // Finish the page.
-        echo $OUTPUT->footer($course);
+        echo $questionnaire->renderer->render($questionnaire->page);
+        echo $questionnaire->renderer->footer($course);
         break;
 
     case get_string('return', 'questionnaire'):

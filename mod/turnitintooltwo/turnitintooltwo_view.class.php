@@ -23,6 +23,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__."/lib.php");
 require_once(__DIR__.'/turnitintooltwo_form.class.php');
+require_once(__DIR__.'/turnitintooltwo_submission.class.php');
 
 class turnitintooltwo_view {
 
@@ -53,10 +54,9 @@ class turnitintooltwo_view {
      * Load the Javascript and CSS components for page.
      *
      * @global type $PAGE
-     * @global type $CFG
      */
     public function load_page_components($hidebg = false) {
-        global $PAGE, $CFG;
+        global $PAGE;
 
         // Include CSS.
         if ($hidebg) {
@@ -108,16 +108,19 @@ class turnitintooltwo_view {
         $PAGE->requires->string_for_js('postdate_warning', 'turnitintooltwo');
         $PAGE->requires->string_for_js('deleteconfirm', 'turnitintooltwo');
         $PAGE->requires->string_for_js('turnitindeleteconfirm', 'turnitintooltwo');
+        $PAGE->requires->string_for_js('max_marks_warning', 'turnitintooltwo');
+        $PAGE->requires->string_for_js('download_button_warning', 'turnitintooltwo');
     }
 
     /**
      * Output the Menu in the settings area as an HTML list
      *
      * @global type $CFG
+     * @global type $DB
      * @return output the menu as an HTML list
      */
     public function draw_settings_menu($cmd) {
-        global $CFG, $OUTPUT, $DB;
+        global $CFG, $DB;
 
         $tabs = array();
 
@@ -146,7 +149,7 @@ class turnitintooltwo_view {
         $module = $DB->get_record('config_plugins', array('plugin' => 'mod_turnitintool'));
         if ( $module ) {
             $tabs[] = new tabobject('v1migration', $CFG->wwwroot.'/mod/turnitintooltwo/settings_extras.php?cmd=v1migration',
-                        get_string('v1migrationtitle', 'turnitintooltwo'), get_string('v1migrationtitle', 'turnitintooltwo'), false);    
+                        get_string('v1migrationtitle', 'turnitintooltwo'), get_string('v1migrationtitle', 'turnitintooltwo'), false);
         }
 
         $selected = ($cmd == 'activitylog') ? 'apilog' : $cmd;
@@ -204,7 +207,7 @@ class turnitintooltwo_view {
         global $OUTPUT;
 
         $receipt = html_writer::tag('p', get_string('submissionuploadsuccess', 'turnitintooltwo'),
-                                        array('class' => 'bold', 'id' => 'upload_success'));
+                                        array('class' => 'bold', 'id' => 'mod_turnitintooltwo_upload_success'));
 
         $receipt .= html_writer::tag('h2', get_string('digitalreceipt', 'turnitintooltwo'),
                                         array("id" => "digital_receipt"));
@@ -300,7 +303,7 @@ class turnitintooltwo_view {
 
             if ($istutor || $eulaaccepted == 1) {
 
-                if ($prevsubmission) {
+                if ($prevsubmission && ($istutor || $turnitintooltwoassignment->turnitintooltwo->studentreports)) {
                     $genparams = turnitintooltwo_get_report_gen_speed_params();
                     $elements[] = array('html', '<div class="tii_checkagainstnote">' . get_string('reportgenspeed_resubmission', 'turnitintooltwo', $genparams) . '</div>');
                 }
@@ -366,20 +369,20 @@ class turnitintooltwo_view {
             }
 
             // Output a link for the student to accept the turnitin licence agreement.
-            $noscriptula = "";
-            $ula = "";
+            $noscripteula = "";
+            $eula = "";
             if ($userid == $USER->id) {
                 if ($eulaaccepted != 1) {
-                    $ula = html_writer::tag('p', get_string('turnitinula', 'turnitintooltwo'), array('class' => 'turnitin_ula_text'));
-                    $ula .= html_writer::tag('div', self::output_dv_launch_form("useragreement", 0, $user->tiiuserid,
+                    $eula = html_writer::tag('p', get_string('turnitinula', 'turnitintooltwo'), array('class' => 'mod_turnitintooltwo_eula_text'));
+                    $eula .= html_writer::tag('div', self::output_dv_launch_form("useragreement", 0, $user->tiiuserid,
                                 "Learner", get_string('turnitinula_btn', 'turnitintooltwo'), false),
-                                    array('class' => 'turnitin_ula', 'data-userid' => $userid));
+                                    array('class' => 'mod_turnitintooltwo_eula', 'data-userid' => $userid));
 
-                    $noscriptula = html_writer::tag('noscript',
+                    $noscripteula = html_writer::tag('noscript',
                                             $this->output_dv_launch_form("useragreement", 0, $user->tiiuserid, "Learner",
                                             get_string('turnitinula', 'turnitintooltwo'), false)." ".
                                                 get_string('noscriptula', 'turnitintooltwo'),
-                                            array('class' => 'warning turnitin_ula_noscript'));
+                                            array('class' => 'warning mod_turnitintooltwo_eula_noscript'));
                 }
             }
 
@@ -393,7 +396,7 @@ class turnitintooltwo_view {
 
             $optionsform = new turnitintooltwo_form($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
                                                     '&do=submitpaper&view_context='.$viewcontext, $customdata);
-            $output .= $ula.$noscriptula;
+            $output .= $eula.$noscripteula;
             $output .= $OUTPUT->box($optionsform->display(), "submission_form_container");
 
             $turnitincomms = new turnitintooltwo_comms();
@@ -465,11 +468,11 @@ class turnitintooltwo_view {
         }
         if ($istutor) {
             $cells["student"] = new html_table_cell(
-                html_writer::tag('div', get_string('studentfirstname', 'turnitintooltwo'), array('class' => 'data-table-splitter splitter-firstname sorting', 'data-col'=> 3 )).
+                html_writer::tag('div', get_string('studentfirstname', 'turnitintooltwo'), array('class' => 'data-table-splitter splitter-firstname sorting', 'data-col'=> 18 )).
                 html_writer::tag('div', ' / '.get_string('studentlastname', 'turnitintooltwo'), array('class' => 'data-table-splitter splitter-lastname sorting', 'data-col' => 2))
             );
         } else {
-            $cells["student"] = new html_table_cell();
+            $cells["student"] = new html_table_cell('&nbsp;');
         }
         $cells["student"]->attributes['class'] = 'left';
         $cells["title_raw"] = new html_table_cell('&nbsp;');
@@ -484,13 +487,13 @@ class turnitintooltwo_view {
         $cells["submitted_date"]->attributes['class'] = 'right';
         if (($turnitintooltwouser->get_user_role() == 'Instructor') ||
                 ($turnitintooltwouser->get_user_role() == 'Learner' && $origreportenabled)) {
-            $cells["report_raw"] = new html_table_cell();
+            $cells["report_raw"] = new html_table_cell('&nbsp;');
             $cells["report_raw"]->attributes['class'] = 'raw_data';
             $cells["report"] = new html_table_cell(get_string('submissionorig', 'turnitintooltwo'));
             $cells["report"]->attributes['class'] = 'right';
         }
         if ($grademarkenabled) {
-            $cells["grade_raw"] = new html_table_cell();
+            $cells["grade_raw"] = new html_table_cell('&nbsp;');
             $cells["grade_raw"]->attributes['class'] = 'raw_data';
             $cells["grade"] = new html_table_cell(get_string('submissiongrade', 'turnitintooltwo'));
             $cells["grade"]->id = "grademark";
@@ -512,6 +515,14 @@ class turnitintooltwo_view {
 
         $cells["download"] = new html_table_cell('&nbsp;');
         $cells["delete"] = new html_table_cell('&nbsp;');
+
+        if ($turnitintooltwouser->get_user_role() != 'Learner') {
+            // These columns are used for sorting, and should retain their hidden_class class.
+            // Put the user firstame in the latest hidden cell.
+            $cells["studentfirstname"] = new html_table_cell( get_string('studentfirstname', 'turnitintooltwo'));
+            $cells["studentfirstname"]->attributes["class"] = 'sorting_name sorting_first_last';
+        }
+
         $tableheaders = $cells;
 
         $tables = "";
@@ -536,20 +547,15 @@ class turnitintooltwo_view {
 
                 $downloadlinks = "";
                 if ($turnitintooltwouser->get_user_role() == 'Instructor') {
-                    if ($CFG->branch >= 27) {
-                        $origfilesziplang = "origfileszip";
-                        $grademarkziplang = "grademarkzip";
-                    } else {
-                        $origfilesziplang = "downloadorigfileszip";
-                        $grademarkziplang = "downloadgrademarkzip";
-                    }
+                    $origfilesziplang = "origfileszip";
+                    $grademarkziplang = "grademarkzip";
 
                     // Output icon to download zip file of selected submissions in original format.
                     $exportorigfileszip = html_writer::tag('div',
                                                             html_writer::tag('i', '', array('class' => 'fa fa-file-o',
                                                     'title' => get_string($origfilesziplang, 'turnitintooltwo'))).' '.
                                                     get_string($origfilesziplang, 'turnitintooltwo'),
-                                                            array('class' => 'zip_open origchecked_zip_open',
+                                                            array('class' => 'mod_turnitintooltwo_zip_open mod_turnitintooltwo_origchecked_zip_open',
                                                                     'id' => 'origchecked_zip_'.$partobject->id));
                     // Put in div placeholder for launch form.
                     $exportorigfileszip .= $OUTPUT->box('', 'launch_form', 'origchecked_zip_form_'.$partobject->id);
@@ -560,32 +566,27 @@ class turnitintooltwo_view {
                                                     html_writer::tag('i', '', array('class' => 'fa fa-file-pdf-o',
                                                     'title' => get_string($grademarkziplang, 'turnitintooltwo'))).' '.
                                                     get_string($grademarkziplang, 'turnitintooltwo'),
-                                            array("class" => "gmpdfzip_box", "id" => "gmpdf_zip_".$partobject->id));
+                                            array("class" => "mod_turnitintooltwo_gmpdfzip_box", "id" => "gmpdf_zip_".$partobject->id));
 
-                    // Only Moodle versions 2.7+ came with bootstrap.
-                    if ($CFG->branch >= 27) {
-                        $linkstyles = array('class' => 'btn dropdown-toggle', 'data-toggle' => 'dropdown');
-                        $linkdropdown = html_writer::tag('ul',
-                                                    html_writer::tag('li', $exportorigfileszip).
-                                                        html_writer::tag('li', $exportgrademarkzip),
-                                                    array('class' => 'dropdown-menu'));
-                        $downloadlinks = html_writer::tag('div',
-                                            html_writer::tag('button', get_string('download', 'turnitintooltwo'),
-                                                $linkstyles).$linkdropdown,
-                                                array('id' => 'download_links', 'class' => 'btn-group' ));
-                    } else {
-                        $downloadlinks = $exportorigfileszip.$exportgrademarkzip;
-                    }
+                    $linkstyles = array('class' => 'btn dropdown-toggle', 'data-toggle' => 'dropdown', 'disabled' => 'disabled', 'title' => get_string("download_button_warning", 'turnitintooltwo'));
+                    $linkdropdown = html_writer::tag('ul',
+                                                html_writer::tag('li', $exportorigfileszip).
+                                                    html_writer::tag('li', $exportgrademarkzip),
+                                                array('class' => 'dropdown-menu mod_turnitintooltwo_dropdown-menu'));
+                    $downloadlinks = html_writer::tag('div',
+                                        html_writer::tag('button', get_string('download', 'turnitintooltwo'),
+                                            $linkstyles).$linkdropdown,
+                                            array('id' => 'mod_turnitintooltwo_download_links', 'class' => 'btn-group'));
                 }
 
                 // Include download links and info table.
-                $tables .= html_writer::tag('div', $downloadlinks, array('id' => 'part_' . $partobject->id, 'class' => 'zip_downloads'));
+                $tables .= html_writer::tag('div', $downloadlinks, array('id' => 'part_' . $partobject->id, 'class' => 'mod_turnitintooltwo_zip_downloads'));
                 $tables .= $this->get_submission_inbox_part_details($cm, $turnitintooltwoassignment, $partdetails, $partid);
 
                 // Construct submissions table.
                 $table = new html_table();
                 $table->id = $partid;
-                $table->attributes['class'] = 'submissionsDataTable';
+                $table->attributes['class'] = 'mod_turnitintooltwo_submissions_data_table';
                 $table->head = $tableheaders;
 
                 // Populate inbox if user is a student incase they do not have javascript enabled.
@@ -629,25 +630,19 @@ class turnitintooltwo_view {
                 $messagesinbox = '';
                 if ($turnitintooltwouser->get_user_role() == 'Instructor') {
                     $icon = html_writer::tag('i', '', array('class' => 'fa fa-envelope-o fa-lg'));
+                    $loading_icon = $OUTPUT->pix_icon('loading',
+                        get_string('turnitinloading', 'turnitintooltwo'), 'mod_turnitintooltwo');
                     $messagesinbox = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
-                                                        '&user='.$turnitintooltwouser->id.'&do=loadmessages&view_context=box',
-                                                            $icon.' '.get_string('messagesinbox', 'turnitintooltwo').
-                                                            ' ('.html_writer::tag('span', '', array('class' => 'messages_amount')).
-                                                                html_writer::tag('span', $OUTPUT->pix_icon('loading',
-                                                                get_string('turnitinloading', 'turnitintooltwo'), 'mod_turnitintooltwo'),
-                                                                array('class' => 'messages_loading messages_loading_span')).')',
-                                                array("class" => "messages_inbox"));
+                                                    '&user='.$turnitintooltwouser->id.'&do=loadmessages&view_context=box',
+                                                        $icon.' '.get_string('messagesinbox', 'turnitintooltwo').
+                                                        ' ('.html_writer::tag('span', '', array('class' => 'messages_amount')).
+                                                            html_writer::tag('span', $loading_icon,
+                                                            array('class' => 'mod_turnitintooltwo_messages_loading')).')',
+                                                array("class" => "mod_turnitintooltwo_messages_inbox"));
                 }
 
                 // Check that nonsubmitter messages have been configured to be sent.
-                $messageoutputs = get_config('message');
-                $nonsubsemailpermitted = false;
-                foreach ($messageoutputs as $k => $v) {
-                    if (strpos($k, '_mod_turnitintooltwo_nonsubmitters_loggedin') !== false ) {
-                        $nonsubsemailpermitted = true;
-                        break;
-                    }
-                }
+                $nonsubsemailpermitted = $this->is_nonsubmitter_emails_enabled();
 
                 // Link to email nonsubmitters.
                 $emailnonsubmitters = '';
@@ -656,20 +651,20 @@ class turnitintooltwo_view {
                     $emailnonsubmitters = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
                                                             '&part='.$partid.'&do=emailnonsubmittersform&view_context=box_solid',
                                                             $icon.' '.get_string('messagenonsubmitters', 'turnitintooltwo'),
-                                                            array("class" => "nonsubmitters_link", "id" => "nonsubmitters_".$partid));
+                                                            array("class" => "mod_turnitintooltwo_nonsubmitters_link", "id" => "nonsubmitters_".$partid));
                 }
 
                 // Link to refresh submissions with latest data from Turnitin.
                 $refreshlink = html_writer::tag('div', html_writer::tag('i', '', array('class' => 'fa fa-refresh fa-lg',
                                                     'title' => get_string('turnitinrefreshingsubmissions', 'turnitintooltwo')))." ".
                                                     get_string('turnitinrefreshsubmissions', 'turnitintooltwo'),
-                                                        array('class' => 'refresh_link', 'id' => 'refresh_'.$partid));
+                                                        array('class' => 'mod_turnitintooltwo_refresh_link', 'id' => 'refresh_'.$partid));
 
                 // Link which appears during the refresh of submissions.
                 $refreshinglink = html_writer::tag('div', html_writer::tag('i', '', array('class' => 'fa fa-spinner fa-spin fa-lg',
                                                     'title' => get_string('turnitinrefreshingsubmissions', 'turnitintooltwo')))." ".
                                                     get_string('turnitinrefreshingsubmissions', 'turnitintooltwo'),
-                                                        array('class' => 'refreshing_link', 'id' => 'refreshing_'.$partid));
+                                                        array('class' => 'mod_turnitintooltwo_refreshing_link', 'id' => 'refreshing_'.$partid));
 
                 // Output the links.
                 $output .= $OUTPUT->box($messagesinbox.$emailnonsubmitters.$refreshlink.$refreshinglink,
@@ -721,15 +716,6 @@ class turnitintooltwo_view {
         $partsheaders = $cells;
 
         $cells = array();
-        // Link to show intro/summary.
-        $links = "";
-        if (!empty($turnitintooltwoassignment->turnitintooltwo->intro)) {
-            $hideclass = 'hide_summary_'.$turnitintooltwoassignment->turnitintooltwo->id;
-            $hidetext = html_writer::tag('i', '', array('class' => 'fa fa-minus-circle red fa-lg '.$hideclass));
-            $showclass = 'show_summary_'.$turnitintooltwoassignment->turnitintooltwo->id;
-            $showtext = html_writer::tag('i', '', array('class' => 'fa fa-plus-circle green fa-lg '.$showclass));
-            $links = html_writer::link('javascript:void(0)', $showtext.$hidetext , array('class' => 'toggle_summary'));
-        }
 
         // Allow part name to be editable if a tutor is logged in.
         $textfield = $partdetails[$partid]->partname;
@@ -743,7 +729,7 @@ class turnitintooltwo_view {
                                                                     $turnitintooltwoassignment->turnitintooltwo->id.", ".
                                                                     "'action': 'edit_field', 'sesskey': '".sesskey()."' }"));
         }
-        $cells[0] = new html_table_cell($links.$turnitintooltwoassignment->turnitintooltwo->name." - ".$textfield." ");
+        $cells[0] = new html_table_cell($turnitintooltwoassignment->turnitintooltwo->name." - ".$textfield." ");
 
         // Allow start date field to be editable if a tutor is logged in.
         $dateformat = ($CFG->ostype == 'WINDOWS') ? '%d %b %Y - %H:%M' : '%d %h %Y - %H:%M';
@@ -803,18 +789,24 @@ class turnitintooltwo_view {
                 $rubricviewlink .= html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
                                                         '&part='.$partid.'&do=rubricview&view_context=box',
                                                     html_writer::tag('span', '',
-                                                        array('class' => 'tiiicon icon-rubric icon-lg', 'id' => 'rubric_view_form')),
-                                                    array('class' => 'rubric_view_launch', 'id' => 'rubric_view_launch',
+                                                        array('class' => 'tiiicon icon-rubric icon-lg', 'id' => 'mod_turnitintooltwo_rubric_view_form')),
+                                                    array('class' => 'mod_turnitintooltwo_rubric_view_launch', 'id' => 'rubric_view_launch',
                                                         'title' => get_string('launchrubricview', 'turnitintooltwo')));
                 $rubricviewlink .= $OUTPUT->box_end(true);
             }
+
+            // Show warning to instructor when changing maxmarks if grades exist
+            $turnitintooltwosubmission = new turnitintooltwo_submission();
+            $getgrades = $turnitintooltwosubmission->count_graded_submissions($turnitintooltwoassignment->turnitintooltwo->id);
+
+            $class = $getgrades > 0 ? 'max_marks_warning' : '';
 
             // Allow marks to be editable if a tutor is logged in.
             $textfield = $partdetails[$partid]->maxmarks.$rubricviewlink;
             if ($istutor) {
                 $textfield = html_writer::link('#', $partdetails[$partid]->maxmarks,
                                                 array('title' => get_string('edit', 'turnitintooltwo'),
-                                                    'class' => 'editable_text editable_text_'.$partid, 'id' => 'marks_'.$partid,
+                                                    'class' => 'editable_text editable_text_'.$partid . ' ' . $class, 'id' => 'marks_'.$partid,
                                                     'data-type' => 'text', 'data-pk' => $partid, 'data-name' => 'maxmarks',
                                                     'data-params' => "{ 'assignment': ".
                                                                         $turnitintooltwoassignment->turnitintooltwo->id.", ".
@@ -830,7 +822,7 @@ class turnitintooltwo_view {
             $exportoriginalzip .= $OUTPUT->box(
                 html_writer::tag('i', '', array('title' => get_string('exportoriginal', 'turnitintooltwo'),
                                                 'class' => 'fa fa-file-o fa-lg')),
-                'zip_open orig_zip_open', 'orig_zip_'.$partdetails[$partid]->tiiassignid
+                'mod_turnitintooltwo_zip_open orig_zip_open', 'orig_zip_'.$partdetails[$partid]->tiiassignid
             );
             // Put in div placeholder for launch form.
             $exportoriginalzip .= $OUTPUT->box('', 'launch_form', 'orig_zip_form_'.$partdetails[$partid]->tiiassignid);
@@ -849,7 +841,7 @@ class turnitintooltwo_view {
             $exportxlszip .= $OUTPUT->box(
                     html_writer::tag('i', '', array('title' => get_string('exportexcel', 'turnitintooltwo'),
                         'class' => 'fa fa-file-excel-o fa-lg')),
-                    'zip_open xls_inbox_open', 'xls_inbox_'.$partdetails[$partid]->tiiassignid
+                    'mod_turnitintooltwo_zip_open xls_inbox_open', 'xls_inbox_'.$partdetails[$partid]->tiiassignid
                 );
 
             // Put in div placeholder for launch form.
@@ -884,7 +876,7 @@ class turnitintooltwo_view {
                                         '/mod/turnitintooltwo/extras.php?cmd=rubricmanager&tiicourseid='.
                                             $coursedata->turnitin_cid.'&view_context=box',
                                                 html_writer::tag('i', '', array('class' => 'tiiicon icon-rubric icon-lg')),
-                                                array('class' => 'rubric_manager_launch', 'id' => 'rubric_manager_inbox_launch',
+                                                array('class' => 'mod_turnitintooltwo_rubric_manager_launch', 'id' => 'rubric_manager_inbox_launch',
                                                     'title' => get_string('launchrubricmanager', 'turnitintooltwo')));
                 $rubricmanagerlink .= html_writer::tag('span', '', array('class' => 'launch_form', 'id' => 'rubric_manager_form'));
                 $rubricmanagerlink .= $OUTPUT->box_end(true);
@@ -894,7 +886,7 @@ class turnitintooltwo_view {
                 $quickmarkmanagerlink .= html_writer::link($CFG->wwwroot.
                                             '/mod/turnitintooltwo/extras.php?cmd=quickmarkmanager&view_context=box',
                                                 html_writer::tag('i', '', array('class' => 'tiiicon icon-quickmarks icon-lg')),
-                                                array('class' => 'quickmark_manager_launch',
+                                                array('class' => 'mod_turnitintooltwo_quickmark_manager_launch',
                                                         'title' => get_string('launchquickmarkmanager', 'turnitintooltwo')));
                 $quickmarkmanagerlink .= html_writer::tag('span', '', array('class' => 'launch_form',
                                                                             'id' => 'quickmark_manager_form'));
@@ -968,7 +960,7 @@ class turnitintooltwo_view {
                                                     html_writer::tag('span', $count, array('class' => 'peermark_count')).
                                                     html_writer::tag('span', $OUTPUT->pix_icon('loading',
                                                         get_string('turnitinloading', 'turnitintooltwo'), 'mod_turnitintooltwo'),
-                                                    array('class' => 'peermark-loading peermark-loading-span')).')',
+                                                    array('class' => 'peermark-loading mod_turnitintooltwo_peermark-loading-span')).')',
                                                     array('class' => 'peermark_header')).$peermarkreviewslink.$peermarkmanagerlink);
                 $cells[0]->attributes['class'] = 'peermarks';
                 $cells[0]->colspan = ($config->usegrademark) ? '7' : '6';
@@ -986,7 +978,7 @@ class turnitintooltwo_view {
             }
         }
 
-        $table->attributes['class'] = 'partDetails';
+        $table->attributes['class'] = 'mod_turnitintooltwo_part_details';
         $table->head = $partsheaders;
 
         $table->data = $rows;
@@ -1064,7 +1056,7 @@ class turnitintooltwo_view {
         }
 
         $table->data = $rows;
-        $table->attributes['class'] = 'peermarkDetails';
+        $table->attributes['class'] = 'mod_turnitintooltwo_peermark_details';
         $output = html_writer::table($table);
 
         return $output;
@@ -1121,7 +1113,7 @@ class turnitintooltwo_view {
                 $studentname = html_writer::link($linkurl.'?'.$querystr,
                     $OUTPUT->pix_icon('receipt', get_string('digitalreceipt', 'turnitintooltwo'), 'mod_turnitintooltwo',
                         array('id' => 'tii_digital_receipt_icon')) . get_string('viewdigitalreceipt', 'turnitintooltwo'),
-                            array('class' => 'tii_digital_receipt')
+                            array('class' => 'mod_turnitintooltwo_digital_receipt')
                 );
             } else {
                 $studentname = "--";
@@ -1131,7 +1123,7 @@ class turnitintooltwo_view {
                 if (empty($submission->submission_unanon) AND $parts[$partid]->dtpost > time() AND
                                                         !empty($submission->submission_objectid)) {
                     // Anonymous marking is on, postdate has not passed and a submission has been made.
-                    $studentname = html_writer::link('.unanonymise_form',
+                    $studentname = html_writer::link('.mod_turnitintooltwo_unanonymise_form',
                                         get_string('anonenabled', 'turnitintooltwo'),
                                         array("class" => "unanonymise", "id" => "submission_".$submission->submission_objectid));
                     $studentlastname = get_string('anonenabled', 'turnitintooltwo');
@@ -1182,11 +1174,16 @@ class turnitintooltwo_view {
 
         // Submission title with link to open DV.
         if ( !empty($submission->submission_objectid) AND !empty($submission->submission_objectid) ) {
-            $title = $OUTPUT->box_start('default_open', 'default_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid);
-            $title .= $OUTPUT->box(format_string($submission->submission_title), 'submission_title underline');
-            $title .= $OUTPUT->box($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id, 'dv_url',
-                                'default_url_'.$submission->submission_objectid);
-            $title .= $OUTPUT->box_end(true);
+            $titleinner = html_writer::tag('div', format_string($submission->submission_title),
+                 	        array('class' => 'submission_title underline'));
+
+            $titleinner .= html_writer::tag('div', $CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id,
+                 	        array('id' => 'default_url_'.$submission->submission_objectid,
+                                    'class' => 'dv_url'));
+
+            $title = html_writer::tag('div', $titleinner,
+                	        array('id' => 'default_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid,
+                                    'class' => 'default_open'));
             $rawtitle = $submission->submission_title;
         } else {
             $title = "--";
@@ -1200,7 +1197,7 @@ class turnitintooltwo_view {
             $rawmodified = 1;
             $modified = html_writer::link($CFG->wwwroot."/mod/turnitintooltwo/view.php?id=".$cm->id."&action=manualsubmission".
                                             "&sub=".$submission->id.'&sesskey='.sesskey(),
-                                                $OUTPUT->pix_icon('icon-sml', get_string('submittoturnitin', 'turnitintooltwo'),
+                                                $OUTPUT->pix_icon('tii-icon', get_string('submittoturnitin', 'turnitintooltwo'),
                                                     'mod_turnitintooltwo')." ".get_string('submittoturnitin', 'turnitintooltwo'));
 
         } else if (empty($submission->submission_objectid)) {
@@ -1215,39 +1212,47 @@ class turnitintooltwo_view {
         }
 
         // Show Originality score with link to open document viewer.
-        if ( !empty($submission->id) && is_null($submission->submission_score) && $submission->submission_orcapable == 0 ) {
-            // Don't show if there is no OR score and submission is not OR capable.
-            $rawscore = null;
-            $score = '--';
-        } else if (!empty($submission->id) && !empty($submission->submission_objectid) &&
+        $rawscore = null;
+        $score = '--';
+        if (!empty($submission->id) && !empty($submission->submission_objectid) &&
                 ($istutor || $turnitintooltwoassignment->turnitintooltwo->studentreports)) {
 
-            // Show score.
+            //Show score.
             if (is_null($submission->submission_score)) {
-                $score = $OUTPUT->box_start('row_score',
-                                        'origreport_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid);
-                $score .= $OUTPUT->box('&nbsp;', 'score_colour score_colour_');
-                $score .= $OUTPUT->box(get_string('pending', 'turnitintooltwo'), 'origreport_score');
-                $rawscore = null;
+                $scoreinner = html_writer::tag('div', '&nbsp;',
+                                array('class' => 'score_colour score_colour_'));
+                $scoreinner .= html_writer::tag('div', get_string('pending', 'turnitintooltwo'),
+                                array('class' => 'origreport_score'));
+
             } else {
-                $score = $OUTPUT->box_start('row_score origreport_open',
-                                        'origreport_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid);
                 // Put EN flag if translated matching is on and that is the score used.
                 $transmatch = ($submission->submission_transmatch == 1) ? 'EN' : '&nbsp;';
-                $score .= $OUTPUT->box($transmatch, 'score_colour score_colour_'.round($submission->submission_score, -1));
-                $score .= $OUTPUT->box($submission->submission_score.'%', 'origreport_score');
+
+                $scoreinner = html_writer::tag('div', $transmatch,
+                                array('class' => 'score_colour score_colour_'.round($submission->submission_score, -1) ));
+                $scoreinner .= html_writer::tag('div', $submission->submission_score.'%',
+                                array('class' => 'origreport_score'));
                 $rawscore = $submission->submission_score;
             }
 
             // Put in div placeholder for DV launch form.
-            $score .= $OUTPUT->box('', 'launch_form', 'origreport_form_'.$submission->submission_objectid);
+            $scoreinner .= html_writer::tag('div', '',
+                            array('id' => 'origreport_form_'.$submission->submission_objectid,
+                                'class' => 'launch_form'));
             // URL for DV launcher.
-            $score .= $OUTPUT->box($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id, 'dv_url',
-                                'origreport_url_'.$submission->submission_objectid);
-            $score .= $OUTPUT->box_end(true);
-        } else {
-            $rawscore = null;
-            $score = '--';
+            $scoreinner .= html_writer::tag('div', $CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id,
+                            array('id' => 'origreport_url_'.$submission->submission_objectid,
+                                'class' => 'dv_url'));
+
+            if (is_null($submission->submission_score)) {
+                $score = html_writer::tag('div', $scoreinner,
+                                array('id' => 'origreport_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid,
+                                    'class' => 'row_score'));
+            } else {
+                $score = html_writer::tag('div', $scoreinner,
+                                array('id' => 'origreport_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid,
+                                    'class' => 'row_score origreport_open'));
+            }
         }
 
         // Show grade and link to DV.
@@ -1255,7 +1260,7 @@ class turnitintooltwo_view {
             if ($turnitintooltwoassignment->turnitintooltwo->grade == 0) {
                 // We set the grade column to N/A if there is no grade type set.
                 $rawgrade = null;
-                $grade = $OUTPUT->box('N/A', '');
+                $grade = html_writer::tag('div', 'N/A', array());
             } else if (isset($submission->submission_objectid) && ($istutor || (!$istutor && $parts[$partid]->dtpost < time()))) {
                 $submissiongrade = (!is_null($submission->submission_grade)) ? $submission->submission_grade : '';
 
@@ -1272,43 +1277,50 @@ class turnitintooltwo_view {
                 // Output grademark icon.
                 $grade = '';
                 if (!is_null($submission->submission_grade) || $submission->submission_gmimaged != 0 || $istutor) {
-                    $grade = $OUTPUT->box(
-                        html_writer::tag('i', '', array('title' => get_string('submissiongrade', 'turnitintooltwo'),
-                            'class' => 'fa fa-pencil fa-lg gm-blue')), 'grademark_open ' . $class,
-                        'grademark_' . $submission->submission_objectid . '_' . $partid . '_' . $moodleuserid,
-                        array('title' => $CFG->wwwroot . '/mod/turnitintooltwo/view.php?id=' . $cm->id)
-                    );
+
+                    $submissiongradeicon = html_writer::tag('i', '',
+                                                array('title' => get_string('submissiongrade', 'turnitintooltwo'),
+                                                    'class' => 'fa fa-pencil fa-lg gm-blue'));
+
+                    $grade = html_writer::tag('div', $submissiongradeicon,
+                                                array('id' => 'grademark_' . $submission->submission_objectid . '_' . $partid . '_' . $moodleuserid,
+                                                    'class' => 'grademark_open ' . $class,
+                                                    'title' => $CFG->wwwroot . '/mod/turnitintooltwo/view.php?id=' . $cm->id));
                 }
 
                 // Show grade.
                 if ($turnitintooltwoassignment->turnitintooltwo->gradedisplay == 2) { // 2 is fraction.
-                    $grade .= $OUTPUT->box(html_writer::tag('span', $submissiongrade, array("class" => "grade"))
-                                    ."/".$parts[$partid]->maxmarks, 'grademark_grade');
+                    $grade .= html_writer::tag('span', $submissiongrade, array("class" => "grade"))
+                            .html_writer::tag('span', "/".$parts[$partid]->maxmarks,
+                                    array("class" => "grademark_grade"));
                 } else if ($turnitintooltwoassignment->turnitintooltwo->gradedisplay == 1) { // 1 is percentage.
-                    $submissiongrade = round($submissiongrade / $parts[$partid]->maxmarks * 100, 1).'%';
-                    $grade .= $OUTPUT->box(html_writer::tag('span', $submissiongrade, array("class" => "grade"))
-                                    , 'grademark_grade');
+                    $submissiongrade = (is_numeric($submissiongrade) && $parts[$partid]->maxmarks > 0) ? round($submissiongrade / $parts[$partid]->maxmarks * 100, 1).'%' : $submissiongrade;
+                    $grade .= html_writer::tag('span', $submissiongrade,
+                                    array('class' => 'grade grademark_grade'));
                 }
 
                 // Put in div placeholder for DV launch form.
-                $grade .= $OUTPUT->box('', 'launch_form', 'grademark_form_'.$submission->submission_objectid);
+                $grade .= html_writer::tag('div', '',
+                    	array('id' => 'grademark_form_'.$submission->submission_objectid,
+                        	    'class' => 'launch_form'));
                 // URL for DV launcher.
-                $grade .= $OUTPUT->box($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id, 'dv_url',
-                                'grademark_url_'.$submission->submission_objectid);
+                $grade .= html_writer::tag('div', $CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id,
+                    	array('id' => 'grademark_url_'.$submission->submission_objectid,
+                                'class' => 'dv_url'));
+
                 $rawgrade = ($submissiongrade == "--") ? null : $submissiongrade;
 
             } else if (!isset($submission->submission_objectid) && empty($submission->id) && $istutor ) {
                 // Allow nothing submission if no submission has been made and this is a tutor.
-                $grade = $OUTPUT->box(
-                    html_writer::tag('i', '', array('class' => 'fa fa-pencil fa-lg grey')),
-                    'submit_nothing',
-                    'submitnothing_0_' . $partid . '_' . $submission->userid
-                );
+                $greysubmissiongradeicon = html_writer::tag('i', '', array('class' => 'fa fa-pencil fa-lg grey'));
 
+                $grade = html_writer::tag('div', $greysubmissiongradeicon,
+                        	array('id' => 'submitnothing_0_'.$partid . '_' . $submission->userid,
+                                    'class' =>'submit_nothing'));
                 $rawgrade = null;
             } else {
                 $rawgrade = null;
-                $grade = $OUTPUT->box('--', '');
+                $grade = html_writer::tag('div', '--', array());
             }
 
             // Show average grade if more than 1 part or using a scale.
@@ -1393,13 +1405,20 @@ class turnitintooltwo_view {
 
             $upload = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.'&part='.$partid.'&user='.
                                     $submission->userid.'&do=submitpaper&view_context=box_solid', $uploadtext.' '.
-                                    html_writer::tag('i', '', array('class' => 'fa fa-cloud-upload fa-lg')),
+                                    html_writer::tag('i', '', array('title' => get_string('submitpaper', 'turnitintooltwo'),
+                                        'class' => 'fa fa-cloud-upload fa-lg')),
                                     array("class" => "upload_box nowrap",
                                             "id" => "upload_".$submission->submission_objectid."_".$partid."_".$submission->userid,
                                             'data-eula' => $eulaaccepted, 'data-user-type' => $istutor));
 
-            if (time() > $parts[$partid]->dtdue && $turnitintooltwoassignment->turnitintooltwo->allowlate == 0 && !$istutor) {
-                $upload = "&nbsp;";
+            $duedatepassed = time() > $parts[$partid]->dtdue;
+            $latesubmissionsallowed = $turnitintooltwoassignment->turnitintooltwo->allowlate;
+            $submissionexists = empty($submission->submission_objectid);
+
+            // Show option to submit only when due date has passed, late submissions are allowed and student has not submitted.
+            // An instructor will always have the ability to make a late submission - to account for student exemptions.
+            if (!$istutor && ($duedatepassed && ($latesubmissionsallowed == 0 || ($latesubmissionsallowed == 1 && !$submissionexists)))) {
+                $upload = "&nbsp";
             }
 
         } else {
@@ -1408,13 +1427,18 @@ class turnitintooltwo_view {
 
         // Download submission in original format.
         if (!empty($submission->submission_objectid) && !empty($submission->id) && !$submission->submission_acceptnothing) {
-            $download = $OUTPUT->box(
-                html_writer::tag('i', '', array('title' => get_string('downloadsubmission', 'turnitintooltwo'),
-                    'class' => 'fa fa-download fa-lg')),
-                'download_original_open',
-                'downloadoriginal_' . $submission->submission_objectid . "_" . $partid . "_" . $moodleuserid
-            );
-            $download .= $OUTPUT->box('', 'launch_form', 'downloadoriginal_form_'.$submission->submission_objectid);
+
+            $downloadicon = html_writer::tag('i', '',
+                                array('title' => get_string('downloadsubmission', 'turnitintooltwo'),
+                                    'class' => 'fa fa-download fa-lg'));
+
+            $download = html_writer::tag('div', $downloadicon,
+                                array('id' => 'downloadoriginal_' . $submission->submission_objectid . "_" . $partid . "_" . $moodleuserid,
+                                    'class'=> 'download_original_open'));
+
+            $download .= html_writer::tag('div', '',
+                                array('id' => 'downloadoriginal_form_'.$submission->submission_objectid,
+                                    'class' => 'launch_form'));
 
             // Add in LTI launch form incase Javascript is disabled.
             if (!$istutor) {
@@ -1452,13 +1476,13 @@ class turnitintooltwo_view {
                                                 ));
         }
 
-        // The studentfirstname and studentlastname fields are for soting only, and thus should not be present if the user is a student.
+        // The studentfirstname and studentlastname fields are for sorting only, and thus should not be present if the user is a student.
         if (!$istutor) {
             $data = array($partid, $checkbox, $studentname, $rawtitle, $title, $objectid, $rawmodified, $modified);
         } else {
             $data = array($partid, $checkbox, $studentlastname, $studentname, $rawtitle, $title, $objectid, $rawmodified, $modified);
         }
-        
+
         if (($istutor) || (!$istutor && $turnitintooltwoassignment->turnitintooltwo->studentreports)) {
             $data[] = $rawscore;
             $data[] = $score;
@@ -1480,6 +1504,10 @@ class turnitintooltwo_view {
         }
         $data[] = $delete;
 
+        if ($istutor) {
+            $data[] = $submission->firstname;
+        }
+
         return $data;
     }
 
@@ -1496,8 +1524,8 @@ class turnitintooltwo_view {
 
         if ($istutor && !empty($submission->id)) {
             return true;
-        } else {            
-            if ((empty($submission->submission_objectid) && !empty($submission->id) 
+        } else {
+            if ((empty($submission->submission_objectid) && !empty($submission->id)
                 && ((time() < $dtdue) || (time() >= $dtdue && $allowlatesubmissions == 1)))) {
                 return true;
             }
@@ -1558,7 +1586,7 @@ class turnitintooltwo_view {
      * @return output
      */
     public function show_unanonymise_form() {
-        $output = html_writer::tag("span", get_string('revealdesc', 'turnitintooltwo'), array("id" => "unanonymise_desc"));
+        $output = html_writer::tag("span", get_string('revealdesc', 'turnitintooltwo'), array("id" => "mod_turnitintooltwo_unanonymise_desc"));
 
         $elements = array();
         $elements[] = array('textarea', 'anonymous_reveal_reason', get_string('revealreason', 'turnitintooltwo'),
@@ -1572,7 +1600,7 @@ class turnitintooltwo_view {
         $customdata["disable_form_change_checker"] = true;
         $optionsform = new turnitintooltwo_form('', $customdata);
 
-        return html_writer::tag('div', $output.$optionsform->display(), array('class' => 'unanonymise_form'));
+        return html_writer::tag('div', $output.$optionsform->display(), array('class' => 'mod_turnitintooltwo_unanonymise_form'));
     }
 
     /**
@@ -1845,15 +1873,13 @@ class turnitintooltwo_view {
         $rolestring = ($role == "Instructor") ? 'turnitintutors' : 'turnitinstudents';
         $cellheader = get_string($rolestring, 'turnitintooltwo');
         $output = "";
-        $enrollink = "";
-        $enrollingcontainer = "";
 
         if (has_capability('mod/turnitintooltwo:grade', context_module::instance($cm->id))) {
 
             // Link to enrol all students on course.
             if ($role == "Learner") {
                 $output .= $OUTPUT->box(get_string('errorenrollingall', 'turnitintooltwo'),
-                                            'general_warning', 'enrolling_error');
+                                            'mod_turnitintooltwo_general_warning', 'enrolling_error');
 
                 $enrollink = $OUTPUT->box($OUTPUT->pix_icon('enrolicon',
                                                     get_string('turnitinenrolstudents', 'turnitintooltwo'),
@@ -1864,8 +1890,9 @@ class turnitintooltwo_view {
                                                     get_string('enrolling', 'turnitintooltwo'),
                                                     'mod_turnitintooltwo')." ".
                                                         get_string('enrolling', 'turnitintooltwo'), 'enrolling_container');
+
+                $output .= $OUTPUT->box($enrollingcontainer.$enrollink, '');
             }
-            $output .= $OUTPUT->box($enrollingcontainer.$enrollink, '');
 
             // Output user role to hidden var for use in jQuery calls.
             $output .= $OUTPUT->box($role, '', 'user_role');
@@ -1984,5 +2011,28 @@ class turnitintooltwo_view {
 
         $output = $OUTPUT->box($form->display(), 'generalbox boxaligncenter', 'general');
         return $output;
+    }
+
+    /**
+     * Check whether email nosubmitters is enabled, and return true if so.
+     */
+    private function is_nonsubmitter_emails_enabled() {
+        global $CFG;
+
+        $messageoutputs = get_config('message');
+
+        if ($CFG->branch >= 400) {
+            if (isset($messageoutputs->mod_turnitintooltwo_nonsubmitters_disable) && $messageoutputs->mod_turnitintooltwo_nonsubmitters_disable == "0") {
+                return true;
+            }
+        } else {
+            // Support for older versions.
+            foreach ($messageoutputs as $k => $v) {
+                if (strpos($k, '_mod_turnitintooltwo_nonsubmitters_loggedin') !== false) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

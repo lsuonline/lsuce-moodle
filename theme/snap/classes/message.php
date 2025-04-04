@@ -16,13 +16,11 @@
 
 namespace theme_snap;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Message Model.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class message implements \renderable {
@@ -36,6 +34,11 @@ class message implements \renderable {
      * @var int
      */
     public $useridto;
+
+    /**
+     * @var int
+     */
+    public $uniqueid;
 
     /**
      * @var string
@@ -124,7 +127,8 @@ class message implements \renderable {
                 throw new \coding_exception('The message useridfrom is not set');
             }
             $this->set_fromuser(
-                $DB->get_record('user', array('id' => $this->useridfrom), \user_picture::fields(), MUST_EXIST)
+                $DB->get_record('user', array('id' => $this->useridfrom), \core_user\fields::for_userpic()
+                    ->get_sql('', false, '', '', false)->selects, MUST_EXIST)
             );
         }
         return $this->fromuser;

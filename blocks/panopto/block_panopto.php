@@ -76,41 +76,56 @@ class block_panopto extends block_base {
      * @param bool $nolongerused depcrecated variable
      */
     public function instance_config_save($data, $nolongerused = false) {
+
+        // Add roles mapping.
+        $publisherroles = (isset($data->publisher)) ? $data->publisher : [];
+        $creatorroles = (isset($data->creator)) ? $data->creator : [];
+
+        // Get the current role mappings set for the current course from the db.
+        $mappings = \panopto_data::get_course_role_mappings($this->page->course->id);
+
+        $oldcreators = array_diff($mappings['creator'], $creatorroles);
+        $oldpublishers = array_diff($mappings['publisher'], $publisherroles);
+
+        // Make sure the old unassigned roles get unset.
+        \panopto_data::unset_course_role_permissions(
+            $this->page->course->id,
+            $oldpublishers,
+            $oldcreators
+        );
+
+        \panopto_data::set_course_role_permissions(
+            $this->page->course->id,
+            $publisherroles,
+            $creatorroles
+        );
+
         if (!empty($data->course)) {
 
-            // Add roles mapping.
-            $publisherroles = (isset($data->publisher)) ? $data->publisher : array();
-            $creatorroles = (isset($data->creator)) ? $data->creator : array();
+            // Only perform this chunk if we are remapping to a new folder.
+            $panoptodata = new \panopto_data($this->page->course->id);
 
-            // Get the current role mappings set for the current course from the db.
-            $mappings = panopto_data::get_course_role_mappings($this->page->course->id);
+            if (strcasecmp($panoptodata->sessiongroupid, $data->course) != 0) {
+                $oldsessionid = null;
+                if (!empty($panoptodata->sessiongroupid)) {
+                    $oldsessionid = $panoptodata->sessiongroupid;
+                    $panoptodata->unprovision_course();
+                }
+                // Manually overwrite the sessiongroupid on this Panopto_Data instance,
+                // so we can test provision the attempted new mapping.
+                // If the provision fails do not allow it. Provision could fail if the user attempts to provision a personal folder.
+                $panoptodata->sessiongroupid = $data->course;
 
-            $oldcreators = array_diff($mappings['creator'], $creatorroles);
-            $oldpublishers = array_diff($mappings['publisher'], $publisherroles);
-
-            // Make sure the old unassigned roles get unset.
-            panopto_data::unset_course_role_permissions(
-                $this->page->course->id,
-                $oldpublishers,
-                $oldcreators
-            );
-
-            panopto_data::set_course_role_permissions(
-                $this->page->course->id,
-                $publisherroles,
-                $creatorroles
-            );
-
-            $panoptodata = new panopto_data($this->page->course->id);
-
-            // Manually overwrite the sessiongroupid on this Panopto_Data instance so we can test provision the attempted new mapping. If the provision fails do not allow it.
-            //  Provision could fail if the user attempts to provision a personal folder.
-            $panoptodata->sessiongroupid = $data->course;
-
-            $provisioninginfo = $panoptodata->get_provisioning_info();
-            $provisioneddata = $panoptodata->provision_course($provisioninginfo, false);
-            if (isset($provisioneddata->Id) && !empty($provisioneddata->Id)) {
-                panopto_data::set_panopto_course_id($this->page->course->id, $data->course);
+                $provisioninginfo = $panoptodata->get_provisioning_info();
+                $provisioneddata = $panoptodata->provision_course($provisioninginfo, false);
+                if (isset($provisioneddata->Id) && !empty($provisioneddata->Id)) {
+                    $panoptodata->update_folder_external_id_with_provider();
+                    \panopto_data::set_panopto_course_id($this->page->course->id, $data->course);
+                } else {
+                    $panoptodata->sessiongroupid = $oldsessionid;
+                    $provisioninginfo = $panoptodata->get_provisioning_info();
+                    $provisioneddata = $panoptodata->provision_course($provisioninginfo, false);
+                }
             }
         }
     }
@@ -126,7 +141,7 @@ class block_panopto extends block_base {
      * Generate HTML for block contents.
      */
     public function get_content() {
-        global $COURSE, $PAGE;
+        global $COURSE;
 
         if ($this->content !== null) {
             return $this->content;
@@ -139,15 +154,15 @@ class block_panopto extends block_base {
         $this->content->text = '';
         $this->content->footer = '';
 
-        $params = array('id' => self::CONTENTID, 'courseid' => $COURSE->id);
+        $params = ['id' => self::CONTENTID, 'courseid' => $COURSE->id];
 
-        $PAGE->requires->yui_module('moodle-block_panopto-asyncload',
+        $this->page->requires->yui_module('moodle-block_panopto-asyncload',
                                     'M.block_panopto.asyncload.init',
-                                    array($params),
+                                    [$params],
                                     null,
                                     true);
 
-        $this->content->text  = html_writer::tag('div', "<font id='loading_text'>" .
+        $this->content->text = html_writer::tag('div', "<font id='loading_text'>" .
             get_string('fetching_content', 'block_panopto') . '</font>', $params);
 
         $this->content->text .= '<script type="text/javascript">' .
@@ -177,7 +192,7 @@ class block_panopto extends block_base {
                         'var showAllToggle = document.getElementById("showAllToggle");' .
                         'var hiddenLecturesDiv = document.getElementById("hiddenLecturesDiv");' .
 
-                        'if(hiddenLecturesDiv.style.display == "block") {' .
+                        'if (hiddenLecturesDiv.style.display == "block") {' .
                             'hiddenLecturesDiv.style.display = "none";' .
                             'showAllToggle.innerHTML = "' . get_string('show_all', 'block_panopto') . '";' .
                         '} else {' .
@@ -195,11 +210,18 @@ class block_panopto extends block_base {
      * @return array
      */
     public function applicable_formats() {
-        // Since block is dealing with courses and enrolments the only possible.
+        // Since block is dealing with courses and enrollment's the only possible.
         // place where Panopto block can be used is the course.
-        return array('course-view' => true);
+        return ['course-view' => true];
     }
 
+    /**
+     * Allow more than one instance of the block on a page
+     *
+     * @return boolean
+     */
+    public function instance_allow_multiple() {
+        return false;
+    }
 }
-
 // End of block_panopto.php.

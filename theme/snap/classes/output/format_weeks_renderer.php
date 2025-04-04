@@ -18,16 +18,15 @@
  * Snap weeks format renderer.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\output;
 
-defined('MOODLE_INTERNAL') || die();
+use format_weeks\output\renderer;
 
-class format_weeks_renderer extends \format_weeks_renderer {
+class format_weeks_renderer extends renderer {
 
     use format_section_trait;
-
 }

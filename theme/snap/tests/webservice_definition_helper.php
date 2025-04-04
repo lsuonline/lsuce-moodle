@@ -13,9 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+namespace theme_snap;
+defined('MOODLE_INTERNAL') || die();
 
 use theme_snap\webservice\definition_helper;
 use theme_snap\renderables\course_toc;
+use core_external\external_value;
 
 /**
  * Testable version of definition_helper.
@@ -50,9 +53,9 @@ class definition_helper_testable extends definition_helper {
      * @return mixed
      */
     public function __call($name, $arguments) {
-        $reflection = new ReflectionObject($this);
-        $parentReflection = $reflection->getParentClass();
-        $method = $parentReflection->getMethod($name);
+        $reflection = new \ReflectionObject($this);
+        $parentreflection = $reflection->getParentClass();
+        $method = $parentreflection->getMethod($name);
         $method->setAccessible(true);
         return $method->invokeArgs($this, $arguments);
     }
@@ -150,11 +153,11 @@ class wsparam_notype {
 
 /**
  * Tests for webservice definition healper.
- * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class theme_snap_webservice_definition_helper_test extends advanced_testcase {
+class webservice_definition_helper extends \advanced_testcase {
 
     public function test_classname() {
         $this->resetAfterTest();
@@ -194,36 +197,36 @@ class theme_snap_webservice_definition_helper_test extends advanced_testcase {
                 'type' => PARAM_RAW,
                 'desc' => 'My head',
                 'required' => false,
-                'allownull' => true
+                'allownull' => true,
             ],
             'shoulders' => [
                 'instanceof' => 'external_value',
                 'type' => PARAM_RAW,
                 'desc' => 'My shoulders',
                 'required' => true,
-                'allownull' => true
+                'allownull' => true,
             ],
             'knees' => [
                 'instanceof' => 'external_value',
                 'type' => PARAM_ALPHA,
                 'desc' => 'A description of my knees.',
                 'required' => false,
-                'allownull' => false
+                'allownull' => false,
             ],
             'toes' => [
                 'instanceof' => 'external_value',
                 'type' => PARAM_INT,
                 'desc' => 'Count of my toes.',
                 'required' => false,
-                'allownull' => true
+                'allownull' => true,
             ],
             'ears' => [
                 'instanceof' => 'external_value',
                 'type' => PARAM_TEXT,
                 'desc' => 'A description of my ears.',
                 'required' => true,
-                'allownull' => true
-            ]
+                'allownull' => true,
+            ],
         ];
 
         foreach ($expecteds as $name => $expected) {
@@ -316,7 +319,8 @@ EOF;
     }
 
     public function test_convert_ws_param_no_type() {
-        $this->setExpectedException('coding_exception', 'Type not specified');
+        $this->expectException('coding_exception');
+        $this->expectExceptionMessage('Type not specified');
         new definition_helper_testable(new wsparam_notype());
     }
 
@@ -335,7 +339,7 @@ EOF;
         $definition = $helper->get_definition();
 
         // Wipe cache so we can test nothing in cache.
-        $cache = cache::make('theme_snap', 'webservicedefinitions');
+        $cache = \cache::make('theme_snap', 'webservicedefinitions');
         $data = $cache->delete($classname);
 
         // Test empty cache.

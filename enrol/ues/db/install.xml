@@ -47,7 +47,8 @@
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="courseidtocourses"/>
         <KEY NAME="courseidtocourses" TYPE="foreign" FIELDS="courseid" REFTABLE="enrol_ues_courses" REFFIELDS="id" PREVIOUS="primary" NEXT="semestersidtosemester"/>
-        <KEY NAME="semestersidtosemester" TYPE="foreign" FIELDS="semesterid" REFTABLE="enrol_ues_semesters" REFFIELDS="id" PREVIOUS="courseidtocourses"/>
+        <KEY NAME="semestersidtosemester" TYPE="foreign" FIELDS="semesterid" REFTABLE="enrol_ues_semesters" REFFIELDS="id" PREVIOUS="courseidtocourses" NEXT="idnumbertoidnumber"/>
+        <KEY NAME="idnumbertoidnumber" TYPE="foreign" FIELDS="idnumber" REFTABLE="course" REFFIELDS="idnumber" PREVIOUS="semestersidtosemester"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="semcousec" UNIQUE="true" FIELDS="semesterid, courseid, sec_number"/>

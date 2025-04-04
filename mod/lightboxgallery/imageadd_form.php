@@ -16,6 +16,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(dirname(__FILE__).'/locallib.php');
+require_once($CFG->libdir.'/formslib.php');
+require_once(dirname(__FILE__).'/imageclass.php');
+
 /**
  * Prints a particular instance of lightboxgallery
  *
@@ -24,11 +28,6 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright 2012 NetSpot Pty Ltd
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-require_once(dirname(__FILE__).'/locallib.php');
-require_once($CFG->libdir.'/formslib.php');
-require_once(dirname(__FILE__).'/imageclass.php');
-
 class mod_lightboxgallery_imageadd_form extends moodleform {
 
     public function definition() {
@@ -36,13 +35,21 @@ class mod_lightboxgallery_imageadd_form extends moodleform {
         global $COURSE, $cm;
 
         $mform =& $this->_form;
-        $gallery = $this->_customdata;
 
-        $handlecollisions = !get_config('lightboxgallery', 'overwritefiles');
         $mform->addElement('header', 'general', get_string('addimage', 'lightboxgallery'));
 
+        // We want to accept SVG, but not SVGZ. Using web_image has the UI say both are accepted.
+        // Using optimised_image excludes .svg and also has text referring to badges and optimisation that
+        // aren't really relevant to what we're doing. So, we just explicitly say the ones we accept:
+        $acceptedtypes = [
+            'application/zip',
+            '.svg',
+            'image/gif',
+            'image/jpeg',
+            'image/png',
+        ];
         $mform->addElement('filemanager', 'image', get_string('file'), '0',
-                           array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_image', 'archive')));
+                           array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => $acceptedtypes));
         $mform->addRule('image', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('image', 'addimage', 'lightboxgallery');
 
@@ -82,6 +89,9 @@ class mod_lightboxgallery_imageadd_form extends moodleform {
             $file = reset($files);
             if ($file->get_mimetype() != 'application/zip' && !$file->is_valid_image()) {
                 $errors['image'] = get_string('invalidfiletype', 'error', $file->get_filename());
+                if ($file->get_mimetype() == 'image/svg+xml') {
+                    $errors['image'] = get_string('svgzunsupported', 'mod_lightboxgallery', $file->get_filename());
+                }
                 // Better delete current file, it is not usable anyway.
                 $fs->delete_area_files($usercontext->id, 'user', 'draft', $data['image']);
             }
@@ -92,8 +102,7 @@ class mod_lightboxgallery_imageadd_form extends moodleform {
 
 
     private function can_resize() {
-        global $gallery;
-
+        $gallery = $this->_customdata['gallery'];
         return !in_array($gallery->autoresize, array(AUTO_RESIZE_UPLOAD, AUTO_RESIZE_BOTH));
     }
 }

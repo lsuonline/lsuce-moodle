@@ -39,8 +39,11 @@ require_login($course);
 
 $modinfo = get_fast_modinfo($course->id);
 $cm = $modinfo->get_cm($modid);
+
 $modcontext = context_module::instance($cm->id);
 require_capability('mod/assign:grade', $modcontext);
+
+$showgroups = !empty($course->groupmode) && get_config('report_componentgrades', 'showgroups');
 
 // Trigger event for logging.
 $event = \report_componentgrades\event\report_viewed::create(array(
@@ -58,25 +61,24 @@ $data = $DB->get_records_sql("SELECT    grf.id AS grfid, crs.shortname AS course
                                         grc.description, grl.definition, grl.score, grf.remark, grf.criterionid,
                                         rubm.username AS grader, stu.id AS userid, stu.idnumber AS idnumber, stu.firstname,
                                         stu.lastname, stu.username AS student, gin.timemodified AS modified
-                                FROM {course} AS crs
-                                JOIN {course_modules} AS cm ON crs.id = cm.course
-                                JOIN {assign} AS asg ON asg.id = cm.instance
-                                JOIN {context} AS c ON cm.id = c.instanceid
-                                JOIN {grading_areas} AS ga ON c.id=ga.contextid
-                                JOIN {grading_definitions} AS gd ON ga.id = gd.areaid
-                                JOIN {gradingform_rubric_criteria} AS grc ON (grc.definitionid = gd.id)
-                                JOIN {gradingform_rubric_levels} AS grl ON (grl.criterionid = grc.id)
-                                JOIN {grading_instances} AS gin ON gin.definitionid = gd.id
-                                JOIN {assign_grades} AS ag ON ag.id = gin.itemid
-                                JOIN {user} AS stu ON stu.id = ag.userid
-                                JOIN {user} AS rubm ON rubm.id = gin.raterid
-                                JOIN {gradingform_rubric_fillings} AS grf ON (grf.instanceid = gin.id)
-                                AND (grf.criterionid = grc.id) AND (grf.levelid = grl.id)
-                                WHERE cm.id = ? AND gin.status = 1
-                                ORDER BY lastname ASC, firstname ASC, userid ASC, grc.sortorder ASC,
+                                FROM {course} crs
+                                JOIN {course_modules} cm ON crs.id = cm.course
+                                JOIN {assign} asg ON asg.id = cm.instance
+                                JOIN {context} c ON cm.id = c.instanceid
+                                JOIN {grading_areas}  ga ON c.id=ga.contextid
+                                JOIN {grading_definitions} gd ON ga.id = gd.areaid
+                                JOIN {gradingform_rubric_criteria} grc ON (grc.definitionid = gd.id)
+                                JOIN {gradingform_rubric_levels} grl ON (grl.criterionid = grc.id)
+                                JOIN {grading_instances} gin ON gin.definitionid = gd.id
+                                JOIN {assign_grades} ag ON ag.id = gin.itemid
+                                JOIN {user} stu ON stu.id = ag.userid
+                                JOIN {user} rubm ON rubm.id = gin.raterid
+                                JOIN {gradingform_rubric_fillings} grf ON (grf.instanceid = gin.id)
+                                 AND (grf.criterionid = grc.id) AND (grf.levelid = grl.id)
+                               WHERE cm.id = ? AND gin.status = 1
+                            ORDER BY lastname ASC, firstname ASC, userid ASC, grc.sortorder ASC,
                                 grc.description ASC", array($cm->id));
-
-$students = report_componentgrades_get_students($course->id);
+$students = report_componentgrades_get_students($modcontext, $cm);
 
 $first = reset($data);
 if ($first === false) {
@@ -90,21 +92,20 @@ $workbook = new MoodleExcelWorkbook("-");
 $workbook->send($filename);
 $sheet = $workbook->add_worksheet($cm->name);
 
-report_componentgrades_add_header($workbook, $sheet, $course->fullname, $cm->name, 'rubric', $first->rubric);
+$pos = report_componentgrades_add_header($workbook, $sheet, $course->fullname, $cm->name, 'rubric', $first->rubric, $showgroups);
 
-$pos = 4;
 $format = $workbook->add_format(array('size' => 12, 'bold' => 1));
 $format2 = $workbook->add_format(array('bold' => 1));
 foreach ($data as $line) {
     if ($line->userid !== $first->userid) {
         break;
     }
-    $sheet->write_string(4, $pos, $line->description, $format);
-    $sheet->merge_cells(4, $pos, 4, $pos + 2, $format);
-    $sheet->write_string(5, $pos, get_string('score', 'report_componentgrades'), $format2);
+    $sheet->write_string(TITLESROW, $pos, $line->description, $format);
+    $sheet->merge_cells(TITLESROW, $pos, TITLESROW, $pos + 2, $format);
+    $sheet->write_string(HEADINGSROW, $pos, get_string('score', 'report_componentgrades'), $format2);
     $sheet->set_column($pos, $pos++, 6); // Set column width to 6.
-    $sheet->write_string(5, $pos++, get_string('definition', 'report_componentgrades'), $format2);
-    $sheet->write_string(5, $pos, get_string('feedback', 'report_componentgrades'), $format2);
+    $sheet->write_string(HEADINGSROW, $pos++, get_string('definition', 'report_componentgrades'), $format2);
+    $sheet->write_string(HEADINGSROW, $pos, get_string('feedback', 'report_componentgrades'), $format2);
     $sheet->set_column($pos - 1, $pos++, 10); // Set column widths to 10.
 }
 
@@ -112,8 +113,14 @@ $gradinginfopos = $pos;
 report_componentgrades_finish_colheaders($workbook, $sheet, $pos);
 
 $students = report_componentgrades_process_data($students, $data);
-report_componentgrades_add_data($sheet, $students, $gradinginfopos, 'rubric');
+
+$groups = array();
+if ($showgroups) {
+    $groups = report_componentgrades_get_user_groups($course->id);
+}
+$row = report_componentgrades_add_data($sheet, $students, $gradinginfopos, 'rubric', $groups);
 
 $workbook->close();
+
 
 exit;

@@ -24,7 +24,6 @@
  */
 
 namespace mod_attendance\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Event for when an attendance status is removed.
@@ -80,12 +79,12 @@ class status_removed extends \core\event\base {
     }
 
     /**
-     * Replace add_to_log() statement.
+     * Get objectid mapping
      *
-     * @return array of parameters to be passed to legacy add_to_log() function.
+     * @return array of parameters for object mapping.
      */
-    protected function get_legacy_logdata() {
-        return array($this->courseid, 'attendance', 'status removed', $this->get_url(),
-            $this->other['acronym'] . ' - ' . $this->other['description'], $this->contextinstanceid);
+    public static function get_objectid_mapping() {
+        return array('db' => 'attendance', 'restore' => 'attendance');
     }
+
 }

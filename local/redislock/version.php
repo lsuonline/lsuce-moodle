@@ -19,14 +19,14 @@
  *
  * @package   local_redislock
  * @author    Sam Chaffee
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
 
 /** @var object $plugin */
-$plugin->version   = 2016012200; // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2015111604; // Requires this Moodle version (3.0.4).
+$plugin->version   = 2020061100; // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires  = 2020061500; // Requires this Moodle version.
 $plugin->component = 'local_redislock'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '3.0.4 (Build: 20160509)';
+$plugin->release   = '3.9.3';

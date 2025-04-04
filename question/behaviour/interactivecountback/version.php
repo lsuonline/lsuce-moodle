@@ -26,11 +26,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'qbehaviour_interactivecountback';
-$plugin->version   = 2016052300;
+$plugin->version   = 2024100700;
 
-$plugin->requires  = 2016051900;
-$plugin->dependencies = array(
-    'qbehaviour_interactive' => 2016051900
-);
+$plugin->requires  = 2024100100;
+$plugin->dependencies = [
+    'qbehaviour_interactive' => 2024100100,
+];
 
 $plugin->maturity  = MATURITY_STABLE;

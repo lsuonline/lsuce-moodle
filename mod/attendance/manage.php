@@ -75,22 +75,17 @@ $PAGE->set_url($att->url_manage());
 $PAGE->set_title($course->shortname. ": ".$att->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_cacheable(true);
-$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'attendance'));
-$PAGE->navbar->add($att->name);
+$PAGE->force_settings_menu(true);
 
 $output = $PAGE->get_renderer('mod_attendance');
-$tabs = new attendance_tabs($att, attendance_tabs::TAB_SESSIONS);
-$filtercontrols = new attendance_filter_controls($att);
-$sesstable = new attendance_manage_data($att);
+$filtercontrols = new mod_attendance\output\filter_controls($att);
+$sesstable = new mod_attendance\output\manage_data($att);
 
 // Output starts here.
 
 echo $output->header();
-echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .format_string($course->fullname));
 mod_attendance_notifyqueue::show();
-echo $output->render($tabs);
 echo $output->render($filtercontrols);
 echo $output->render($sesstable);
 
 echo $output->footer();
-

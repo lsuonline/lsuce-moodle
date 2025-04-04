@@ -14,18 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->libdir . '/formslib.php';
-require_once $CFG->libdir . '/completionlib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->libdir . '/completionlib.php');
 
 class creation_form extends moodleform {
-    function definition() {
+    public function definition() {
         $m =& $this->_form;
 
         $sections = $this->_customdata['sections'];
@@ -33,11 +35,11 @@ class creation_form extends moodleform {
         $semesters = ues_semester::get_all();
 
         $courses = array();
-        $course_semesters = array();
+        $coursesemesters = array();
         foreach ($sections as $section) {
             $semesterid = $section->semesterid;
-            if (!isset($course_semesters[$semesterid])) {
-                $course_semesters[$semesterid] = array();
+            if (!isset($coursesemesters[$semesterid])) {
+                $coursesemesters[$semesterid] = array();
             }
 
             $courseid = $section->courseid;
@@ -45,32 +47,36 @@ class creation_form extends moodleform {
                 $courses[$courseid] = $section->course();
             }
 
-            $course_semesters[$semesterid][$courseid] = $courses[$courseid];
+            $coursesemesters[$semesterid][$courseid] = $courses[$courseid];
         }
 
         unset ($courses, $sections);
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
-        $bold = function ($text) { return '<strong>'.$text.'</strong>'; };
-
-        $spacer = function ($how_many) {
-            return array(implode('', array_map(function($i) { return '&nbsp;'; },
-                range(1, $how_many))));
+        $bold = function ($text) {
+            return '<strong>'.$text.'</strong>';
         };
 
-        $default_create_days = get_config('block_cps', 'create_days');
-        $default_enroll_days = get_config('block_cps', 'enroll_days');
+        $spacer = function ($howmany) {
+            return array(implode('', array_map(function($i) {
+                return '&nbsp;';
+            }
+            , range(1, $howmany))));
+        };
 
-        $m->addElement('header', 'defaults', $_s('default_settings'));
+        $defaultcreatedays = get_config('block_cps', 'create_days');
+        $defaultenrolldays = get_config('block_cps', 'enroll_days');
 
-        $m->addElement('static', 'def_create', $_s('default_create_days'),
-            $default_create_days);
+        $m->addElement('header', 'defaults', $s('default_settings'));
 
-        $m->addElement('static', 'def_enroll', $_s('default_enroll_days'),
-            $default_enroll_days);
+        $m->addElement('static', 'def_create', $s('default_create_days'),
+            $defaultcreatedays);
 
-        $course_sorter = function($coursea, $courseb) {
+        $m->addElement('static', 'def_enroll', $s('default_enroll_days'),
+            $defaultenrolldays);
+
+        $coursesorter = function($coursea, $courseb) {
             if ($coursea->department == $courseb->department) {
                 return strcmp($coursea->cou_number, $courseb->cou_number);
             } else {
@@ -78,17 +84,17 @@ class creation_form extends moodleform {
             }
         };
 
-        $m->addElement('header', 'create_header', $_s('creation_settings'));
+        $m->addElement('header', 'create_header', $s('creation_settings'));
 
-        $m->addElement('checkbox', 'creation_defaults', $_s('use_defaults'));
+        $m->addElement('checkbox', 'creation_defaults', $s('use_defaults'));
 
         // Add the Appearance option for choosing theme.
         $themeobjects = get_list_of_themes();
-        $themes=array();
+        $themes = array();
         $themes[''] = get_string('forceno');
-        foreach ($themeobjects as $key=>$theme) {
+        foreach ($themeobjects as $key => $theme) {
             if (empty($theme->hidefromselector)) {
-                $themes[$key] = get_string('pluginname', 'theme_'.$theme->name);
+                $themes[$key] = get_string('pluginname', 'theme_' . $theme->name);
             }
         }
         $m->addElement('select', 'creation_theme', get_string('forcetheme'), $themes);
@@ -100,29 +106,29 @@ class creation_form extends moodleform {
             $options[$format] = get_string('pluginname', "format_$format");
         }
 
-        $default_format = get_config('moodlecourse', 'format');
+        $defaultformat = get_config('moodlecourse', 'format');
 
         $str = get_string('format');
         $m->addElement('select', "creation_format", $str, $options);
-        $m->setDefault('creation_format', $default_format);
+        $m->setDefault('creation_format', $defaultformat);
         $m->disabledIf('creation_format', 'creation_defaults', 'checked');
 
         $maxsections = get_config('moodlecourse', 'maxsections');
-        $default_number = get_config('moodlecourse', 'numsections');
+        $defaultnumber = get_config('moodlecourse', 'numsections');
         $options = array_combine(range(1, $maxsections), range(1, $maxsections));
         $str = get_string('numberweeks');
         $m->addElement('select', 'creation_numsections', $str, $options);
-        $m->setDefault('creation_numsections', $default_number);
+        $m->setDefault('creation_numsections', $defaultnumber);
         $m->disabledIf('creation_numsections', 'creation_defaults', 'checked');
 
-        $default_visibility = get_config('moodlecourse', 'visible');
+        $defaultvisibility = get_config('moodlecourse', 'visible');
         $options = array(
             '0' => get_string('courseavailablenot'),
             '1' => get_string('courseavailable')
         );
         $str = get_string('availability');
         $m->addElement('select', 'creation_visible', $str, $options);
-        $m->setDefault('creation_visible', $default_visibility);
+        $m->setDefault('creation_visible', $defaultvisibility);
         $m->disabledIf('creation_visible', 'creation_defaults', 'checked');
 
         if (completion_info::is_enabled_for_site()) {
@@ -131,25 +137,14 @@ class creation_form extends moodleform {
                 1 => get_string('completionenabled', 'completion')
             );
 
-            $m->addElement('static', '',
-                '<strong>' . get_string('progress', 'completion') . '</strong>', '');
+            $m->addElement('static', '', '<strong>' . get_string('progress', 'completion') . '</strong>', '');
             $m->addElement('select', 'creation_enablecompletion', get_string('completion', 'completion'), $options);
             $m->setDefault('creation_enablecompletion', get_config('moodlecourse', 'enablecompletion'));
             $m->disabledIf('creation_enablecompletion', 'creation_defaults', 'checked');
-
-
-            /* Removed from Moodle
-                $m->addElement('checkbox', 'creation_completionstartonenrol', get_string('completionstartonenrol', 'completion'));
-                $m->setDefault('creation_completionstartonenrol', get_config('moodlecourse', 'completionstartonenrol'));
-
-                $m->disabledIf('creation_completionstartonenrol', 'creation_enablecompletion', 'eq', 0);
-                $m->disabledIf('creation_completionstartonenrol', 'creation_defaults', 'checked');
-            */
-
         }
 
-        foreach ($course_semesters as $semesterid => $courses) {
-            uasort($courses, $course_sorter);
+        foreach ($coursesemesters as $semesterid => $courses) {
+            uasort($courses, $coursesorter);
 
             $semester = $semesters[$semesterid];
             $name = "{$semester->year} {$semester->name}";
@@ -157,14 +152,14 @@ class creation_form extends moodleform {
             $m->addElement('header', 'semester_' . $semesterid, $name);
 
             $label = array(
-                $m->createElement('static', 'label', '', $bold($_s('create_days'))),
-                $m->createElement('static', 'label', '', $bold($_s('enroll_days')))
+                $m->createElement('static', 'label', '', $bold($s('create_days'))),
+                $m->createElement('static', 'label', '', $bold($s('enroll_days')))
             );
 
             $m->addGroup($label, 'labels', '&nbsp;', $spacer(15));
-            
-            $create_default = get_config('block_cps', 'create_days');
-            $enroll_default = get_config('block_cps', 'enroll_days');
+
+            $createdefault = get_config('block_cps', 'create_days');
+            $enrolldefault = get_config('block_cps', 'enroll_days');
 
             foreach ($courses as $courseid => $course) {
                 $id = "{$semesterid}_{$courseid}";
@@ -175,12 +170,10 @@ class creation_form extends moodleform {
                 );
 
                 $m->addGroup($group, 'create_group_'.$id, $course, $spacer(1));
-                
                 $m->setType("create_group_{$id}[create_days_{$id}]", PARAM_INT);
-                $m->setDefault("create_group_{$id}[create_days_{$id}]", $create_default);
-
+                $m->setDefault("create_group_{$id}[create_days_{$id}]", $createdefault);
                 $m->setType("create_group_{$id}[enroll_days_{$id}]", PARAM_INT);
-                $m->setDefault("create_group_{$id}[enroll_days_{$id}]", $enroll_default);
+                $m->setDefault("create_group_{$id}[enroll_days_{$id}]", $enrolldefault);
             }
         }
 
@@ -201,10 +194,10 @@ class creation_form extends moodleform {
                 $collection[$semesterid] = array();
             }
 
-            $numeric   = is_numeric($value) && (int) $value > 0;
-            $empty_str = trim($value) === '';
+            $numeric = is_numeric($value) && (int) $value > 0;
+            $emptystr = trim($value) === '';
 
-            if ($numeric || $empty_str){
+            if ($numeric || $emptystr) {
                 $value = $numeric ? (int) $value : $value;
                 $collection[$semesterid][$courseid] = $value;
                 return true;
@@ -213,9 +206,9 @@ class creation_form extends moodleform {
             }
         };
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
-        // iterate over the form values for creation and enrollment data.
+        // Iterate over the form values for creation and enrollment data.
         foreach ($data as $gname => $group) {
             if ($gname === 'creation_defaults') {
                 continue;
@@ -234,51 +227,47 @@ class creation_form extends moodleform {
                     if (preg_match('/^create_days/', $name)) {
                         $filled = $fill($create_days, $semesterid,
                             $courseid, $value);
-                        if(!$filled){
-                            if(!is_numeric($value)){
-                                $errors[$gname] = $_s('err_numeric');                                
-                            }else{
-                                $errors[$gname] = $_s('err_number');
+                        if (!$filled) {
+                            if (!is_numeric($value)) {
+                                $errors[$gname] = $s('err_numeric');
+                            } else {
+                                $errors[$gname] = $s('err_number');
                             }
                             break;
-                        } 
-
+                        }
                     } else {
                         $filled = $fill($enroll_days, $semesterid, $courseid, $value);
 
                         $valid = true;
-                        if(!$filled){
-                            if(!is_numeric($value)){
-                                $errors[$gname] = $_s('err_numeric');                                
-                            }else{
-                                $errors[$gname] = $_s('err_number');
+                        if (!$filled) {
+                            if (!is_numeric($value)) {
+                                $errors[$gname] = $s('err_numeric');
+                            } else {
+                                $errors[$gname] = $s('err_number');
                             }
                             break;
-                        }else{
-                        
-                            if($create_days[$semesterid][$courseid] == '' &&
+                        } else {
+                            if ($create_days[$semesterid][$courseid] == '' &&
                                     $enroll_days[$semesterid][$courseid] == '') {
-                                $both_empty = true;
-                            }else{
-                                $both_empty = false;
-                                if(is_numeric($create_days[$semesterid][$courseid]) &&
-                                        is_numeric($enroll_days[$semesterid][$courseid])){
-                                    $both_numeric = true;
-                                }else{
-                                    $both_numeric = false; 
+                                $bothempty = true;
+                            } else {
+                                $bothempty = false;
+                                if (is_numeric($create_days[$semesterid][$courseid]) &&
+                                        is_numeric($enroll_days[$semesterid][$courseid])) {
+                                    $bothnumeric = true;
+                                } else {
+                                    $bothnumeric = false;
                                 }
 
-                                if($filled && !$both_empty && !$both_numeric){
-                                    $errors[$gname] = $_s('err_both_empty');
-                                }else{
-                                    $valid = 
-                                        ($create_days[$semesterid][$courseid] >= $value);
+                                if ($filled && !$bothempty && !$bothnumeric) {
+                                    $errors[$gname] = $s('err_both_empty');
+                                } else {
+                                    $valid = ($create_days[$semesterid][$courseid] >= $value);
 
                                     if ($filled and !$valid) {
-                                        $errors[$gname] = $_s('err_enrol_days');
+                                        $errors[$gname] = $s('err_enrol_days');
                                     }
                                 }
-
                             }
                         }
                     }

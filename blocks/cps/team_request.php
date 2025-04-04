@@ -14,48 +14,48 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'team_request_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('team_request_form.php');
 
 require_login();
 
 if (!cps_team_request::is_enabled()) {
-    print_error('not_enabled', 'block_cps', '', cps_team_request::name());
+    moodle_exception('not_enabled', 'block_cps', '', cps_team_request::name());
 }
 
 if (!ues_user::is_teacher()) {
-    print_error('not_teacher', 'block_cps');
+    moodle_exception('not_teacher', 'block_cps');
 }
 
 $teacher = ues_teacher::get(array('userid' => $USER->id));
 
-$non_primaries = (bool) get_config('block_cps', 'team_request_nonprimary');
+$nonprimaries = (bool) get_config('block_cps', 'team_request_nonprimary');
 
-$sections = cps_unwant::active_sections_for($teacher, !$non_primaries);
+$sections = cps_unwant::active_sections_for($teacher, !$nonprimaries);
 
 if (empty($sections)) {
-    print_error('no_section', 'block_cps');
+    moodle_exception('no_section', 'block_cps');
 }
 
 $semesters = ues_semester::merge_sections($sections);
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_team_request::name();
 
 $context = context_system::instance();
 
 $PAGE->set_context($context);
-$PAGE->set_heading($blockname . ': '. $heading);
+$PAGE->set_heading($blockname . ': ' . $heading);
 $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($heading);
 $PAGE->set_title($heading);

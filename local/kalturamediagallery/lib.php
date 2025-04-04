@@ -33,8 +33,7 @@ function local_kalturamediagallery_extend_navigation($navigation) {
     global $USER, $PAGE, $DB;
 
     // Either a set value of 0 or an unset value means hook into navigation block.
-    if (!empty(get_config('local_kalturamediagallery', 'link_location')))
-    {
+    if (!empty(get_config('local_kalturamediagallery', 'link_location'))) {
         return;
     }
 
@@ -68,15 +67,37 @@ function local_kalturamediagallery_extend_navigation($navigation) {
         $coursecontext = $context;
     }
 
-    $mycoursesnode = $navigation->find('currentcourse', $navigation::TYPE_ROOTNODE);
-
-    if (empty($mycoursesnode) || !has_capability('local/kalturamediagallery:view', $coursecontext, $USER)) {
+    if(!has_capability('local/kalturamediagallery:view', $coursecontext, $USER)) {
         return;
     }
 
-    $name = get_string('nav_mediagallery', 'local_kalturamediagallery');
-    $url = new moodle_url('/local/kalturamediagallery/index.php', array('courseid' => $coursecontext->instanceid));
-    $kalmedgalnode = $mycoursesnode->add($name, $url, navigation_node::NODETYPE_LEAF, $name, 'kalcrsgal');
+    $icon = getMediaGalleryIcon();
+    $mediaGalleryLinkName = get_string('nav_mediagallery', 'local_kalturamediagallery');
+    $linkUrl = new moodle_url('/local/kalturamediagallery/index.php', array('courseid' => $coursecontext->instanceid));
+
+    $currentCourseNode = $navigation->find('currentcourse', $navigation::TYPE_ROOTNODE);
+    if (isNodeNotEmpty($currentCourseNode)) {
+        // we have a 'current course' node, add the link to it.
+        $currentCourseNode->add($mediaGalleryLinkName, $linkUrl, navigation_node::NODETYPE_LEAF, $mediaGalleryLinkName, 'kalturacoursegallerylink-currentcourse', $icon);
+    }
+
+    $myCoursesNode = $navigation->find('mycourses', $navigation::TYPE_ROOTNODE);
+    if(isNodeNotEmpty($myCoursesNode)) {
+        $currentCourseInMyCourses = $myCoursesNode->find($coursecontext->instanceid, navigation_node::TYPE_COURSE);
+        if($currentCourseInMyCourses) {
+            // we found the current course in 'my courses' node, add the link to it.
+            $currentCourseInMyCourses->add($mediaGalleryLinkName, $linkUrl, navigation_node::NODETYPE_LEAF, $mediaGalleryLinkName, 'kalturacoursegallerylink-mycourses', $icon);
+        }
+    }
+
+    $coursesNode = $navigation->find('courses', $navigation::TYPE_ROOTNODE);
+    if (isNodeNotEmpty($coursesNode)) {
+        $currentCourseInCourses = $coursesNode->find($coursecontext->instanceid, navigation_node::TYPE_COURSE);
+        if ($currentCourseInCourses) {
+            // we found the current course in the 'courses' node, add the link to it.
+            $currentCourseInCourses->add($mediaGalleryLinkName, $linkUrl, navigation_node::NODETYPE_LEAF, $mediaGalleryLinkName, 'kalturacoursegallerylink-allcourses', $icon);
+        }
+    }
 }
 
 function local_kalturamediagallery_extend_navigation_course(navigation_node $parent, stdClass $course, context_course $context) {
@@ -90,6 +111,13 @@ function local_kalturamediagallery_extend_navigation_course(navigation_node $par
 
     $name = get_string('nav_mediagallery', 'local_kalturamediagallery');
     $url = new moodle_url('/local/kalturamediagallery/index.php', array('courseid' => $course->id));
-    $icon = new pix_icon('kaltura_icon', $name);
-    $parent->add($name, $url, navigation_node::NODETYPE_LEAF, $name, 'kalturamediagallery-settings', $icon);
+    $parent->add($name, $url, navigation_node::NODETYPE_LEAF, $name, 'kalturamediagallery-settings', getMediaGalleryIcon());
+}
+
+function isNodeNotEmpty(navigation_node $node) {
+    return $node !== false && $node->has_children();
+}
+
+function getMediaGalleryIcon() {
+    return new pix_icon('media-gallery', '', 'local_kalturamediagallery');
 }

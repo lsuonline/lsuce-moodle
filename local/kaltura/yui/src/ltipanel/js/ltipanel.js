@@ -123,10 +123,10 @@ Y.extend(LTIPANEL, Y.Base, {
         iframenode.setAttribute('height', Y.one('input[id=height]').getAttribute('value'));
         iframenode.setStyle('display', 'inline');
 
-        // If the page is a Video presentation or resource execute a function to change the button caption KALDEV-579
+        // If the page is a Video resource execute a function to change the button caption KALDEV-579
         var element = Y.one('input[name=modulename]');
 
-        if (undefined !== element && ('kalvidres' === this.modulename || 'kalvidpres' === this.modulename)) {
+        if (undefined !== element && 'kalvidres' === this.modulename) {
             this.lti_panel_change_add_media_button_caption();
         }
 
@@ -241,6 +241,11 @@ Y.extend(LTIPANELMEDIAASSIGNMENT, Y.Base, {
         iframenode.setAttribute('height', Y.one('input[id=height]').getAttribute('value'));
         iframenode.setStyle('display', 'inline');
         Y.one('#id_add_video').set('value', M.util.get_string('replacevideo', 'kalvidassign'));
+        // Update button classes.
+        Y.one('#id_add_video').addClass('btn-secondary');
+        Y.one('#submit_video').addClass('btn-primary');
+        Y.one('#id_add_video').removeClass('btn-primary');
+        Y.one('#submit_video').removeClass('btn-secondary');
         document.body.bsePopup.close();
     },
 

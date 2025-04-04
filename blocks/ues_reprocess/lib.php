@@ -14,13 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_ues_reprocess
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 abstract class ues_reprocess {
     public static function select($sections) {
         global $OUTPUT;
@@ -36,7 +38,7 @@ abstract class ues_reprocess {
 
         ues::reset_unenrollments($sections);
 
-        // Build processed entries
+        // Build processed entries.
         foreach ($sections as $section) {
             $section->save_meta(array('section_reprocessed' => true));
         }
@@ -44,31 +46,30 @@ abstract class ues_reprocess {
         echo html_writer::end_tag('pre');
     }
 
-    public static function post($owned_sections, $data) {
+    public static function post($ownedsections, $data) {
         $sections = array();
 
         foreach ($data as $key => $checked) {
             if (preg_match('/course_(\d+)_(\d+)/', $key, $matches)) {
-                $in_ues_course = function($section) use ($matches) {
+                $inuescourse = function($section) use ($matches) {
 
-                    $same_semester = $section->semesterid == $matches[1];
-                    $same_course = $section->courseid == $matches[2];
+                    $samesemester = $section->semesterid == $matches[1];
+                    $samecourse = $section->courseid == $matches[2];
 
-                    $same = ($same_semester and $same_course);
+                    $same = ($samesemester and $samecourse);
 
                     return ($same and empty($section->section_reprocessed));
                 };
 
-                $sections += array_filter($owned_sections, $in_ues_course);
+                $sections += array_filter($ownedsections, $inuescourse);
                 continue;
             }
 
             if (preg_match('/section_(\d+)/', $key, $matches)) {
-                $sections[$matches[1]] = $owned_sections[$matches[1]];
+                $sections[$matches[1]] = $ownedsections[$matches[1]];
             }
         }
 
         return $sections;
     }
 }
-

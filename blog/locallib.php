@@ -68,16 +68,80 @@ class blog_entry implements renderable {
     /** @var StdClass Data needed to render the entry */
     public $renderable;
 
+    /** @var string summary format. */
+    public string $summaryformat;
+
+    /** @var array summary editor. */
+    public array $summary_editor;
+
+    /** @var string */
+    public $summarytrust;
+
+    /** @var int course associated with the blog post. */
+    public $courseassoc;
+
+    /** @var string module associated with the blog post. */
+    public $modassoc;
+
+    /** @var mixed attachment. */
+    public $attachment_filemanager;
+
+    /** @var string blog post body. */
+    public $body;
+
+    /** @var int attachment entry id. */
+    public $entryid;
+
+    /** @var string|null submit button. */
+    public $submitbutton;
+
+    /** @var string|null user alias. */
+    public $useridalias;
+
+    /** @var string|null user picture. */
+    public $picture;
+
+    /** @var string|null user first name. */
+    public $firstname;
+
+    /** @var string|null user middle name. */
+    public $middlename;
+
+    /** @var string|null user last name. */
+    public $lastname;
+
+    /** @var string|null user first name phonetic. */
+    public $firstnamephonetic;
+
+    /** @var string|null user last name phonetic. */
+    public $lastnamephonetic;
+
+    /** @var string|null user alternate name. */
+    public $alternatename;
+
+    /** @var string|null user email address. */
+    public $email;
+
+    /** @var string */
+    public $action;
+
+    /** @var string|null user picture description. */
+    public $imagealt;
+
+    /** @var int module instance id. */
+    public $modid;
+
     /**
      * Constructor. If given an id, will fetch the corresponding record from the DB.
      *
      * @param mixed $idorparams A blog entry id if INT, or data for a new entry if array
+     * @throws moodle_exception
      */
     public function __construct($id=null, $params=null, $form=null) {
         global $DB, $PAGE, $CFG;
 
         if (!empty($id)) {
-            $object = $DB->get_record('post', array('id' => $id));
+            $object = $DB->get_record('post', array('id' => $id), '*', MUST_EXIST);
             foreach ($object as $var => $val) {
                 $this->$var = $val;
             }
@@ -403,11 +467,29 @@ class blog_entry implements renderable {
 
     /**
      * remove all associations for a blog entry
-     * @return voic
+     *
+     * @return void
      */
     public function remove_associations() {
         global $DB;
-        $DB->delete_records('blog_association', array('blogid' => $this->id));
+
+        $associations = $DB->get_records('blog_association', array('blogid' => $this->id));
+        foreach ($associations as $association) {
+
+            // Trigger an association deleted event.
+            $context = context::instance_by_id($association->contextid);
+            $eventparam = array(
+                'objectid' => $this->id,
+                'other' => array('subject' => $this->subject, 'blogid' => $this->id),
+                'relateduserid' => $this->userid
+            );
+            $event = \core\event\blog_association_deleted::create($eventparam);
+            $event->add_record_snapshot('blog_association', $association);
+            $event->trigger();
+
+            // Now remove the association.
+            $DB->delete_records('blog_association', array('id' => $association->id));
+        }
     }
 
     /**
@@ -628,8 +710,8 @@ class blog_listing {
         if (!$userid) {
             $userid = $USER->id;
         }
-
-        $allnamefields = \user_picture::fields('u', null, 'useridalias');
+        $userfieldsapi = \core_user\fields::for_userpic();
+        $allnamefields = $userfieldsapi->get_sql('u', false, '', 'useridalias', false)->selects;
         // The query used to locate blog entries is complicated.  It will be built from the following components:
         $requiredfields = "p.*, $allnamefields";  // The SELECT clause.
         $tables = array('p' => 'post', 'u' => 'user');   // Components of the FROM clause (table_id => table_name).

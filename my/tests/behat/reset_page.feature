@@ -17,16 +17,15 @@ Feature: Reset dashboard page to default
       | student1 | C1 | student |
       | student2 | C1 | student |
     And I log in as "student1"
-    And I click on "Dashboard" "link" in the "Navigation" "block"
 
   Scenario: Add blocks to page and reset
-    When I press "Customise this page"
+    When I turn editing mode on
     And I add the "Latest announcements" block
     And I add the "Comments" block
     And I press "Reset page to default"
     Then I should not see "Latest announcements"
-    And I should see "Latest badges"
+    And I should see "Timeline"
     And I should see "Calendar"
-    And I should see "Upcoming events"
+    And I should not see "Upcoming events"
     And I should not see "Comments"
     And I should not see "Reset page to default"

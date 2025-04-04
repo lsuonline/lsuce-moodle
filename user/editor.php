@@ -36,7 +36,7 @@ $PAGE->set_url('/user/editor.php', array('id' => $userid, 'course' => $courseid)
 list($user, $course) = useredit_setup_preference_page($userid, $courseid);
 
 // Create form.
-$editorform = new user_edit_editor_form(null, array('userid' => $user->id));
+$editorform = new user_edit_editor_form();
 
 $user->preference_htmleditor = get_user_preferences( 'htmleditor', '', $user->id);
 $editorform->set_data($user);
@@ -48,11 +48,11 @@ if ($editorform->is_cancelled()) {
 
     $user->preference_htmleditor = $data->preference_htmleditor;
 
-    useredit_update_user_preference($user, false, false);
+    useredit_update_user_preference($user);
     // Trigger event.
     \core\event\user_updated::create_from_userid($user->id)->trigger();
 
-    redirect($redirect);
+    redirect($redirect, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
 // Display page header.
@@ -61,6 +61,7 @@ $userfullname     = fullname($user, true);
 
 $PAGE->navbar->includesettingsbase = true;
 
+$PAGE->add_body_class('limitedwidth');
 $PAGE->set_title("$course->shortname: $streditmyeditor");
 $PAGE->set_heading($userfullname);
 
@@ -72,4 +73,3 @@ $editorform->display();
 
 // And proper footer.
 echo $OUTPUT->footer();
-

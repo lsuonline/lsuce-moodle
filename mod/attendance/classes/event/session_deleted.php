@@ -23,7 +23,6 @@
  */
 
 namespace mod_attendance\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Event for when an attendance session is deleted.
@@ -78,13 +77,12 @@ class session_deleted extends \core\event\base {
     }
 
     /**
-     * Replace add_to_log() statement.
+     * Get objectid mapping
      *
-     * @return array of parameters to be passed to legacy add_to_log() function.
+     * @return array of parameters for object mapping.
      */
-    protected function get_legacy_logdata() {
-        return array($this->courseid, 'attendance', 'sessions deleted', $this->get_url(),
-            $this->other['info'], $this->contextinstanceid);
+    public static function get_objectid_mapping() {
+        return array('db' => 'attendance', 'restore' => 'attendance');
     }
 
     /**

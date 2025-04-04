@@ -22,11 +22,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+define('NO_OUTPUT_BUFFERING', true);
+
 require_once(dirname(__FILE__).'/../../config.php');
 require_once(dirname(__FILE__).'/locallib.php');
-require_once(dirname(__FILE__).'/export_form.php');
-require_once(dirname(__FILE__).'/renderables.php');
 require_once(dirname(__FILE__).'/renderhelpers.php');
+require_once($CFG->libdir.'/formslib.php');
 
 $id             = required_param('id', PARAM_INT);
 
@@ -44,14 +45,17 @@ $att = new mod_attendance_structure($att, $cm, $course, $context);
 $PAGE->set_url($att->url_export());
 $PAGE->set_title($course->shortname. ": ".$att->name);
 $PAGE->set_heading($course->fullname);
+$PAGE->force_settings_menu(true);
 $PAGE->set_cacheable(true);
-$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'attendance'));
 $PAGE->navbar->add(get_string('export', 'attendance'));
 
 $formparams = array('course' => $course, 'cm' => $cm, 'modcontext' => $context);
-$mform = new mod_attendance_export_form($att->url_export(), $formparams);
+$mform = new mod_attendance\form\export($att->url_export(), $formparams);
 
 if ($formdata = $mform->get_data()) {
+    // Exporting large courses may use a bit of memory/take a bit of time.
+    \core_php_time_limit::raise();
+    raise_memory_limit(MEMORY_HUGE);
 
     $pageparams = new mod_attendance_page_with_filter_controls();
     $pageparams->init($cm);
@@ -75,9 +79,11 @@ if ($formdata = $mform->get_data()) {
     }
     $att->pageparams = $pageparams;
 
-    $reportdata = new attendance_report_data($att);
+    $reportdata = new mod_attendance\output\report_data($att);
     if ($reportdata->users) {
-        $filename = clean_filename($course->shortname.'_Attendances_'.userdate(time(), '%Y%m%d-%H%M'));
+        $filename = clean_filename($course->shortname.'_'.
+            get_string('modulenameplural', 'attendance').
+            '_'.userdate(time(), '%Y%m%d-%H%M'));
 
         $group = $formdata->group ? $reportdata->groups[$formdata->group] : 0;
         $data = new stdClass;
@@ -85,25 +91,29 @@ if ($formdata = $mform->get_data()) {
         $data->course = $att->course->fullname;
         $data->group = $group ? $group->name : get_string('allparticipants');
 
-        if (isset($formdata->ident['id'])) {
-            $data->tabhead[] = get_string('studentid', 'attendance');
-        }
-        if (isset($formdata->ident['uname'])) {
-            $data->tabhead[] = get_string('username');
-        }
-
-        $optional = array('idnumber', 'institution', 'department');
-        foreach ($optional as $opt) {
-            if (isset($formdata->ident[$opt])) {
-                $data->tabhead[] = get_string($opt);
-            }
-        }
-
         $data->tabhead[] = get_string('lastname');
         $data->tabhead[] = get_string('firstname');
         $groupmode = groups_get_activity_groupmode($cm, $course);
         if (!empty($groupmode)) {
             $data->tabhead[] = get_string('groups');
+        }
+        require_once($CFG->dirroot . '/user/profile/lib.php');
+        $customfields = profile_get_custom_fields(false);
+
+        if (isset($formdata->ident)) {
+            foreach (array_keys($formdata->ident) as $opt) {
+                if ($opt == 'id') {
+                    $data->tabhead[] = get_string('studentid', 'attendance');
+                } else if (in_array($opt, array_column($customfields, 'shortname'))) {
+                    foreach ($customfields as $customfield) {
+                        if ($opt == $customfield->shortname) {
+                            $data->tabhead[] = format_string($customfield->name, true, array('context' => $context));
+                        }
+                    }
+                } else {
+                    $data->tabhead[] = get_string($opt);
+                }
+            }
         }
 
         if (count($reportdata->sessions) > 0) {
@@ -115,14 +125,27 @@ if ($formdata = $mform->get_data()) {
                 } else {
                     $text .= $sess->groupid ? $reportdata->groups[$sess->groupid]->name : get_string('commonsession', 'attendance');
                 }
+                if (isset($formdata->includedescription) && !empty($sess->description)) {
+                    $text .= " ". strip_tags($sess->description);
+                }
                 $data->tabhead[] = $text;
                 if (isset($formdata->includeremarks)) {
                     $data->tabhead[] = ''; // Space for the remarks.
                 }
             }
         } else {
-            print_error('sessionsnotfound', 'attendance', $att->url_manage());
+            throw new moodle_exception('sessionsnotfound', 'mod_attendance', $att->url_manage());
         }
+
+        $setnumber = -1;
+        foreach ($reportdata->statuses as $sts) {
+            if ($sts->setnumber != $setnumber) {
+                $setnumber = $sts->setnumber;
+            }
+
+            $data->tabhead[] = $sts->acronym;
+        }
+
         $data->tabhead[] = get_string('takensessions', 'attendance');
         $data->tabhead[] = get_string('points', 'attendance');
         $data->tabhead[] = get_string('percentage', 'attendance');
@@ -130,19 +153,7 @@ if ($formdata = $mform->get_data()) {
         $i = 0;
         $data->table = array();
         foreach ($reportdata->users as $user) {
-            if (isset($formdata->ident['id'])) {
-                $data->table[$i][] = $user->id;
-            }
-            if (isset($formdata->ident['uname'])) {
-                $data->table[$i][] = $user->username;
-            }
-
-            $optionalrow = array('idnumber', 'institution', 'department');
-            foreach ($optionalrow as $opt) {
-                if (isset($formdata->ident[$opt])) {
-                    $data->table[$i][] = $user->$opt;
-                }
-            }
+            profile_load_custom_fields($user);
 
             $data->table[$i][] = $user->lastname;
             $data->table[$i][] = $user->firstname;
@@ -155,102 +166,59 @@ if ($formdata = $mform->get_data()) {
                 }
                 $data->table[$i][] = implode(', ', $groups);
             }
+
+            if (isset($formdata->ident)) {
+                foreach (array_keys($formdata->ident) as $opt) {
+                    if (in_array($opt, array_column($customfields, 'shortname'))) {
+                        if (isset($user->profile[$opt])) {
+                            $data->table[$i][] = format_string($user->profile[$opt], true, array('context' => $context));
+                        } else {
+                            $data->table[$i][] = '';
+                        }
+                        continue;
+                    }
+
+                    $data->table[$i][] = $user->$opt;
+                }
+            }
+
             $cellsgenerator = new user_sessions_cells_text_generator($reportdata, $user);
             $data->table[$i] = array_merge($data->table[$i], $cellsgenerator->get_cells(isset($formdata->includeremarks)));
 
             $usersummary = $reportdata->summary->get_taken_sessions_summary_for($user->id);
+
+            foreach ($reportdata->statuses as $sts) {
+                if (isset($usersummary->userstakensessionsbyacronym[$sts->setnumber][$sts->acronym])) {
+                    $data->table[$i][] = $usersummary->userstakensessionsbyacronym[$sts->setnumber][$sts->acronym];
+                } else {
+                    $data->table[$i][] = 0;
+                }
+            }
+
             $data->table[$i][] = $usersummary->numtakensessions;
-            $data->table[$i][] = format_float($usersummary->takensessionspoints, 1, true, true) . ' / ' .
-                                    format_float($usersummary->takensessionsmaxpoints, 1, true, true);
+            $data->table[$i][] = $usersummary->pointssessionscompleted;
             $data->table[$i][] = format_float($usersummary->takensessionspercentage * 100);
 
             $i++;
         }
 
         if ($formdata->format === 'text') {
-            exporttocsv($data, $filename);
+            attendance_exporttocsv($data, $filename);
         } else {
-            exporttotableed($data, $filename, $formdata->format);
+            attendance_exporttotableed($data, $filename, $formdata->format);
         }
         exit;
     } else {
-        print_error('studentsnotfound', 'attendance', $att->url_manage());
+        throw new moodle_exception('studentsnotfound', 'mod_attendance', $att->url_manage());
     }
 }
 
 $output = $PAGE->get_renderer('mod_attendance');
-$tabs = new attendance_tabs($att, attendance_tabs::TAB_EXPORT);
 echo $output->header();
-echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .format_string($course->fullname));
-echo $output->render($tabs);
 
 $mform->display();
 
 echo $OUTPUT->footer();
 
 
-function exporttotableed($data, $filename, $format) {
-    global $CFG;
 
-    if ($format === 'excel') {
-        require_once("$CFG->libdir/excellib.class.php");
-        $filename .= ".xls";
-        $workbook = new MoodleExcelWorkbook("-");
-    } else {
-        require_once("$CFG->libdir/odslib.class.php");
-        $filename .= ".ods";
-        $workbook = new MoodleODSWorkbook("-");
-    }
-    // Sending HTTP headers.
-    $workbook->send($filename);
-    // Creating the first worksheet.
-    $myxls = $workbook->add_worksheet('Attendances');
-    // Format types.
-    $formatbc = $workbook->add_format();
-    $formatbc->set_bold(1);
-
-    $myxls->write(0, 0, get_string('course'), $formatbc);
-    $myxls->write(0, 1, $data->course);
-    $myxls->write(1, 0, get_string('group'), $formatbc);
-    $myxls->write(1, 1, $data->group);
-
-    $i = 3;
-    $j = 0;
-    foreach ($data->tabhead as $cell) {
-        // Merge cells if the heading would be empty (remarks column).
-        if (empty($cell)) {
-            $myxls->merge_cells($i, $j - 1, $i, $j);
-        } else {
-            $myxls->write($i, $j, $cell, $formatbc);
-        }
-        $j++;
-    }
-    $i++;
-    $j = 0;
-    foreach ($data->table as $row) {
-        foreach ($row as $cell) {
-            $myxls->write($i, $j++, $cell);
-        }
-        $i++;
-        $j = 0;
-    }
-    $workbook->close();
-}
-
-function exporttocsv($data, $filename) {
-    $filename .= ".txt";
-
-    header("Content-Type: application/download\n");
-    header("Content-Disposition: attachment; filename=\"$filename\"");
-    header("Expires: 0");
-    header("Cache-Control: must-revalidate,post-check=0,pre-check=0");
-    header("Pragma: public");
-
-    echo get_string('course')."\t".$data->course."\n";
-    echo get_string('group')."\t".$data->group."\n\n";
-
-    echo implode("\t", $data->tabhead)."\n";
-    foreach ($data->table as $row) {
-        echo implode("\t", $row)."\n";
-    }
-}

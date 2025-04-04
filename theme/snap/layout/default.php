@@ -18,7 +18,7 @@
  * Layout - default.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -26,46 +26,76 @@ defined('MOODLE_INTERNAL') || die();
 require(__DIR__.'/header.php');
 
 use theme_snap\local;
+use theme_snap\output\shared;
 
+// @codingStandardsIgnoreStart
+// Note, coding standards ignore is required so that we can have more readable indentation under php tags.
+
+$mastimage = '';
+// Check we are in a course (not the site level course), and the course is using a cover image.
+if ($COURSE->id != SITEID && !empty($coverimagecss)) {
+    $mastimage = 'mast-image';
+}
+if ($PAGE->pagetype == 'admin-search') {
+    $PAGE->set_secondary_navigation(false);
+}
 ?>
-<!-- moodle js hooks -->
+
+<!-- Moodle js hooks -->
 <div id="page">
 <div id="page-content">
 
 <!--
 ////////////////////////// MAIN  ///////////////////////////////
 -->
-<main id="moodle-page" class="clearfix">
-<div id="page-header" class="clearfix
+<div id="moodle-page" class="clearfix">
 <?php
-// Check we are in a course (not the site level course), and the course is using a cover image.
-if ($COURSE->id != SITEID && !empty($coverimagecss)): ?>
- mast-image
-<?php endif;?>">
-<div class="breadcrumb-nav" aria-label="breadcrumb"><?php echo $OUTPUT->navbar(); ?></div>
-<div id="page-mast">
-<?php
-echo $OUTPUT->page_heading();
-echo $OUTPUT->course_header();
-if ($PAGE->pagetype == 'site-index') {
-    echo $OUTPUT->login_button();
-}
+echo $OUTPUT->custom_menu_spacer();
 ?>
+<div id="page-header" class="clearfix <?php echo $mastimage; ?>">
+    <?php if ($PAGE->pagetype !== 'site-index') { ?>
+        <nav class="breadcrumb-nav" aria-label="breadcrumbs"><?php echo $OUTPUT->snapnavbar($mastimage); ?></nav>
+    <?php }
+        if ($carousel) {
+            // Front page carousel.
+            echo $carousel;
+        } else {
+            // Front page banner image.
+    ?>
+        <div id="page-mast">
+        <?php
+            echo $OUTPUT->page_heading();
+            echo $OUTPUT->course_header();
+            // Content bank for Snap.
+            if ($PAGE->pagetype === 'contentbank') {
+                echo $OUTPUT->snap_content_bank();
+            }
+        ?>
+        </div>
+        <?php
+            if ($this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
+                echo $OUTPUT->cover_image_selector();
+            }
+        } // End else.
+        if ($PAGE->pagetype == 'admin-search') {
+            echo implode('', $PAGE->get_header_actions());
+        }
+        ?>
 </div>
-<?php
-if ($this->page->user_is_editing() && $PAGE->pagetype == 'site-index') {
-    $url = new moodle_url('/admin/settings.php', ['section' => 'themesettingsnap'], 'admin-poster');
-    echo $OUTPUT->cover_image_selector();
-}
-?>
-</div>
-
+<div id="region-main-box">
 <section id="region-main">
 <?php
+if ($OUTPUT->snap_page_is_activity_view()) {
+    echo $OUTPUT->context_header();
+}
 echo $OUTPUT->course_content_header();
 
 // Ensure edit blocks button is only shown for appropriate pages.
-$hasadminbutton = stripos($PAGE->button, '"adminedit"') || stripos($PAGE->button, '"edit"');
+if ($PAGE->button === null) {
+    $hasadminbutton = false;
+} else {
+    $hasadminbutton = stripos($PAGE->button, '"adminedit"') || stripos($PAGE->button, '"edit"');
+}
 
 if ($hasadminbutton) {
     // List paths to black list for 'turn editting on' button here.
@@ -80,13 +110,11 @@ if ($hasadminbutton) {
         '/grade/edit/scale/index.php',
         '/outcome/admin.php',
         '/mod/assign/adminmanageplugins.php',
-        '/message/defaultoutputs.php',
         '/theme/index.php',
         '/user/editadvanced.php',
         '/user/profile/index.php',
         '/mnet/service/enrol/index.php',
         '/local/mrooms/view.php',
-        '/local/xray/view.php'
     );
     $pagepath = local::current_url_path();
 
@@ -104,16 +132,34 @@ if ($hasadminbutton) {
     }
 }
 
-echo $OUTPUT->page_heading_button();
-
+echo "<div class='snap-page-heading-button' >";
+if ($PAGE->pagelayout !== 'admin') {
+    echo $OUTPUT->page_heading_button();
+}
+// Validation added to check if settings option should be displayed;
+$buildregionmainsettings = !$PAGE->include_region_main_settings_in_header_actions() && !local::show_setting_menu() ;
+$regionmainsettingsmenu = $buildregionmainsettings ? $OUTPUT->region_main_settings_menu() : false;
+echo $regionmainsettingsmenu;
+echo "</div>";
+if ($PAGE->pagelayout === 'mycourses') {
+    // Add kebab menu for course management options in my courses page.
+    echo $OUTPUT->snap_my_courses_management_options();
+}
 if ($PAGE->pagelayout === 'frontpage' && $PAGE->pagetype === 'site-index') {
     require(__DIR__.'/faux_site_index.php');
 } else {
+    echo $OUTPUT->activity_header();
+    if ($PAGE->has_secondary_navigation() && $PAGE->pagetype == 'mod-data-view') {
+        $tablistnav = $PAGE->has_tablist_secondary_navigation();
+        $moremenu = new \core\navigation\output\more_menu($PAGE->secondarynav, 'nav-tabs', true, $tablistnav);
+        $secondarynavigation = $moremenu->export_for_template($OUTPUT);
+        echo $OUTPUT->render_from_template('theme_snap/secondary_navigation', ['secondarymoremenu' => $secondarynavigation]);
+    }
     echo $OUTPUT->main_content();
 }
 
+echo $OUTPUT->activity_navigation();
 echo $OUTPUT->course_content_footer();
-
 if (stripos($PAGE->bodyclasses, 'format-singleactivity') !== false ) {
     // Shared renderer is only loaded if required at this point.
     $output = \theme_snap\output\shared::course_tools();
@@ -125,12 +171,18 @@ if (stripos($PAGE->bodyclasses, 'format-singleactivity') !== false ) {
 ?>
 
 </section>
+</div>
 
-<?php require(__DIR__.'/moodle-blocks.php'); ?>
-</main>
+<?php
+require __DIR__.'/blocks_drawer.php';
+echo $OUTPUT->snap_feeds_side_menu();
+?>
+</div>
 
 </div>
 </div>
+
+<?php echo $OUTPUT->standard_after_main_region_html() ?>
 <!-- close moodle js hooks -->
-
-<?php require(__DIR__.'/footer.php');
+<?php // @codingStandardsIgnoreEnd
+require(__DIR__.'/footer.php');

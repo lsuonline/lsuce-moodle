@@ -34,21 +34,13 @@ require_once($CFG->dirroot.'/course/lib.php');
 
 $id         = required_param('id', PARAM_INT);
 $switchrole = optional_param('switchrole', -1, PARAM_INT);
-$returnurl  = optional_param('returnurl', '', PARAM_RAW);
+$returnurl  = optional_param('returnurl', '', PARAM_LOCALURL);
 
-if (strpos($returnurl, '?') === false) {
-    // Looks like somebody did not set proper page url, better go to course page.
-    $returnurl = new moodle_url('/course/view.php', array('id' => $id));
-} else {
-    if (strpos($returnurl, $CFG->wwwroot) !== 0) {
-        $returnurl = $CFG->wwwroot.$returnurl;
-    }
-    $returnurl  = clean_param($returnurl, PARAM_URL);
+$PAGE->set_url('/course/switchrole.php', array('id'=>$id, 'switchrole'=>$switchrole));
+
+if ($switchrole >= 0) {
+    require_sesskey();
 }
-
-$PAGE->set_url('/course/switchrole.php', array('id'=>$id));
-
-require_sesskey();
 
 if (!$course = $DB->get_record('course', array('id'=>$id))) {
     redirect(new moodle_url('/'));
@@ -70,6 +62,44 @@ if ($switchrole > 0 && has_capability('moodle/role:switchroles', $context)) {
     if (is_array($aroles) && isset($aroles[$switchrole])) {
         role_switch($switchrole, $context);
     }
+} else if ($switchrole < 0) {
+
+    $PAGE->set_title(get_string('switchroleto'));
+    $PAGE->set_heading($course->fullname);
+    $PAGE->set_pagelayout('incourse');
+
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading(get_string('switchroleto'));
+
+    // Overall criteria aggregation.
+    $roles = array();
+    $assumedrole = -1;
+    if (is_role_switched($course->id)) {
+        $roles[0] = get_string('switchrolereturn');
+        $assumedrole = $USER->access['rsw'][$context->path];
+    }
+    $availableroles = get_switchable_roles($context, ROLENAME_BOTH);
+    if (is_array($availableroles)) {
+        foreach ($availableroles as $key => $role) {
+            if ($assumedrole == (int)$key) {
+                continue;
+            }
+            $roles[$key] = $role;
+        }
+    }
+    echo $OUTPUT->box(markdown_to_html(get_string('switchroleto_help')));
+
+    foreach ($roles as $key => $role) {
+        $url = new moodle_url('/course/switchrole.php', array('id' => $id, 'switchrole' => $key, 'returnurl' => $returnurl));
+        // Button encodes special characters, apply htmlspecialchars_decode() to avoid double escaping.
+        echo $OUTPUT->container($OUTPUT->single_button($url, htmlspecialchars_decode($role, ENT_COMPAT)), 'mx-3 mb-1');
+    }
+
+    $url = new moodle_url($returnurl);
+    echo $OUTPUT->container($OUTPUT->action_link($url, get_string('cancel')), 'mx-3 mb-1');
+
+    echo $OUTPUT->footer();
+    exit;
 }
 
-redirect($returnurl);
+redirect(new moodle_url($returnurl));

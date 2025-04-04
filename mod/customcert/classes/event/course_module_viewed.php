@@ -24,8 +24,6 @@
 
 namespace mod_customcert\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The course module viewed event class.
  *
@@ -41,5 +39,24 @@ class course_module_viewed extends \core\event\course_module_viewed {
     protected function init() {
         $this->data['objecttable'] = 'customcert';
         parent::init();
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string[]
+     */
+    public static function get_objectid_mapping() {
+        return ['db' => 'customcert', 'restore' => 'customcert'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public static function get_other_mapping() {
+        // No need to map.
+        return false;
     }
 }

@@ -24,6 +24,8 @@
 
 namespace mod_customcert;
 
+use customcertelement_expiry\element as expiry_element;
+
 defined('MOODLE_INTERNAL') || die;
 
 global $CFG;
@@ -65,16 +67,39 @@ class report_table extends \table_sql {
     public function __construct($customcertid, $cm, $groupmode, $download = null) {
         parent::__construct('mod_customcert_report_table');
 
-        $columns = array(
-            'fullname',
-            'timecreated',
-            'code'
-        );
-        $headers = array(
-            get_string('fullname'),
-            get_string('receiveddate', 'customcert'),
-            get_string('code', 'customcert')
-        );
+        $context = \context_module::instance($cm->id);
+        $extrafields = \core_user\fields::for_identity($context)->get_required_fields();
+        $showexpiry = false;
+
+        if (class_exists('\customcertelement_expiry\element')) {
+            $showexpiry = expiry_element::has_expiry($customcertid);
+        }
+
+        $columns = [];
+        $columns[] = 'fullname';
+        foreach ($extrafields as $extrafield) {
+            $columns[] = $extrafield;
+        }
+        $columns[] = 'timecreated';
+
+        if ($showexpiry) {
+            $columns[] = 'timeexpires';
+        }
+
+        $columns[] = 'code';
+
+        $headers = [];
+        $headers[] = get_string('fullname');
+        foreach ($extrafields as $extrafield) {
+            $headers[] = \core_user\fields::get_display_name($extrafield);
+        }
+        $headers[] = get_string('receiveddate', 'customcert');
+
+        if ($showexpiry) {
+            $headers[] = get_string('expireson', 'customcertelement_expiry');
+        }
+
+        $headers[] = get_string('code', 'customcert');
 
         // Check if we were passed a filename, which means we want to download it.
         if ($download) {
@@ -86,7 +111,7 @@ class report_table extends \table_sql {
             $headers[] = get_string('file');
         }
 
-        if (!$this->is_downloading() && has_capability('mod/customcert:manage', \context_module::instance($cm->id))) {
+        if (!$this->is_downloading() && has_capability('mod/customcert:manage', $context)) {
             $columns[] = 'actions';
             $headers[] = '';
         }
@@ -127,7 +152,25 @@ class report_table extends \table_sql {
      * @return string
      */
     public function col_timecreated($user) {
-        return userdate($user->timecreated);
+        if ($this->is_downloading() === '') {
+            return userdate($user->timecreated);
+        }
+        $format = '%Y-%m-%d %H:%M';
+        return userdate($user->timecreated, $format);
+    }
+
+    /**
+     * Generate the optional certificate expires time column.
+     *
+     * @param \stdClass $user
+     * @return string
+     */
+    public function col_timeexpires($user) {
+        if ($this->is_downloading() === '') {
+            return expiry_element::get_expiry_html($this->customcertid, $user->id);
+        }
+        $format = '%Y-%m-%d %H:%M';
+        return userdate(expiry_element::get_expiry_date($this->customcertid, $user->id), $format);
     }
 
     /**
@@ -149,11 +192,13 @@ class report_table extends \table_sql {
     public function col_download($user) {
         global $OUTPUT;
 
-        $icon = new \pix_icon('i/import', get_string('download'));
-        $link = new \moodle_url('/mod/customcert/report.php',
-            array('id' => $this->cm->id,
-                  'downloadcert' => '1',
-                  'userid' => $user->id));
+        $icon = new \pix_icon('download', get_string('download'), 'customcert');
+        $link = new \moodle_url('/mod/customcert/view.php',
+            [
+                'id' => $this->cm->id,
+                'downloadissue' => $user->id,
+            ]
+        );
 
         return $OUTPUT->action_link($link, '', null, null, $icon);
     }
@@ -168,11 +213,11 @@ class report_table extends \table_sql {
         global $OUTPUT;
 
         $icon = new \pix_icon('i/delete', get_string('delete'));
-        $link = new \moodle_url('/mod/customcert/report.php',
+        $link = new \moodle_url('/mod/customcert/view.php',
             [
                 'id' => $this->cm->id,
                 'deleteissue' => $user->issueid,
-                'sesskey' => sesskey()
+                'sesskey' => sesskey(),
             ]
         );
 
@@ -209,4 +254,3 @@ class report_table extends \table_sql {
         exit;
     }
 }
-

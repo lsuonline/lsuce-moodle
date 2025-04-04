@@ -64,6 +64,9 @@ abstract class data_object {
     /* @var int The primary key */
     public $id;
 
+    /** @var int completed status. */
+    public $completedself;
+
 
     /**
      * Constructor. Optionally (and by default) attempts to fetch corresponding row from DB.
@@ -188,7 +191,7 @@ abstract class data_object {
         if ($instances = self::fetch_all_helper($table, $classname, $params)) {
             if (count($instances) > 1) {
                 // we should not tolerate any errors here - problems might appear later
-                print_error('morethanonerecordinfetch','debug');
+                throw new \moodle_exception('morethanonerecordinfetch', 'debug');
             }
             return reset($instances);
         } else {
@@ -213,6 +216,7 @@ abstract class data_object {
 
         $wheresql = array();
 
+        $dbparams = array();
         foreach ($params as $var=>$value) {
             if (!in_array($var, $instance->required_fields) and !array_key_exists($var, $instance->optional_fields)) {
                 continue;
@@ -221,7 +225,7 @@ abstract class data_object {
                 $wheresql[] = " $var IS NULL ";
             } else {
                 $wheresql[] = " $var = ? ";
-                $params[] = $value;
+                $dbparams[] = $value;
             }
         }
 
@@ -232,7 +236,7 @@ abstract class data_object {
         }
 
         global $DB;
-        if ($datas = $DB->get_records_select($table, $wheresql, $params)) {
+        if ($datas = $DB->get_records_select($table, $wheresql, $dbparams)) {
 
             $result = array();
             foreach($datas as $data) {

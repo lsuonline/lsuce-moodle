@@ -16,34 +16,38 @@
 # Tests for settings link.
 #
 # @package    theme_snap
-# @copyright Copyright (c) 2016 Blackboard Inc. (http://www.blackboard.com)
+# @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-
 
 @theme @theme_snap
 Feature: When the moodle theme is set to Snap, and global search is enabled, users should see a global search interface.
 
   Background:
     Given the following config values are set as admin:
-      | theme              | snap |
       | enableglobalsearch | true |
 
   @javascript
   Scenario: Non-logged in user sees search interface.
     Given I am on site homepage
     Then ".snap-login-button" "css_element" should exist
-    Then ".search-input-form" "css_element" should exist
+    Then "div[id^='searchinput-navbar-']" "css_element" should exist
     And the following config values are set as admin:
         | enableglobalsearch | |
     And I reload the page
-    Then ".search-input-form" "css_element" should not exist
+    Then "div[id^='searchinput-navbar-']" "css_element" should not exist
 
   @javascript
   Scenario: Logged in user sees search interface.
-    Given I log in as "admin" (theme_snap)
-    Then ".search-input-form" "css_element" should exist
+    Given I log in as "admin"
+    Then "div[id^='searchinput-navbar-']" "css_element" should exist
     And the following config values are set as admin:
         | enableglobalsearch | |
     And I reload the page
-    Then ".search-input-form" "css_element" should not exist
+    Then "div[id^='searchinput-navbar-']" "css_element" should not exist
 
+  @javascript
+  Scenario: Logged in user sees search interface.
+    Given I log in as "admin"
+    And I go to link "/admin/search.php"
+    And ".nav-tabs" "css_element" should exist
+    And ".simplesearchform" "css_element" should exist

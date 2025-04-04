@@ -94,7 +94,7 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
                             if (o.error) {
                                 new M.core.ajaxException(o);
                             } else {
-                                this.users[userid].addRoleToDisplay(args.roleid, this.get(ASSIGNABLEROLES)[args.roleid]);
+                                this.users[userid].addRoleToDisplay(args.roleid, this._getAssignableRole(args.roleid));
                             }
                         } catch (e) {
                             new M.core.exception(e);
@@ -108,26 +108,22 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
                 }
             });
         },
-        removeRole : function(e, user, roleid) {
+        removeRole: function(e, user, roleid) {
             e.halt();
-            var event = this.on('assignablerolesloaded', function(){
-                event.detach();
-                var confirmation = {
-                    modal:  true,
-                    visible  :  false,
-                    centered :  true,
-                    title    :  M.util.get_string('confirmunassigntitle', 'role'),
-                    question :  M.util.get_string('confirmunassign', 'role'),
-                    yesLabel :  M.util.get_string('confirmunassignyes', 'role'),
-                    noLabel  :  M.util.get_string('confirmunassignno', 'role')
-                };
-                new M.core.confirm(confirmation)
-                        .show()
-                        .on('complete-yes', this.removeRoleCallback, this, user.get(USERID), roleid);
-            }, this);
+            require(['core/notification'], function(Notification) {
+                Notification.saveCancelPromise(
+                    M.util.get_string('confirmation', 'admin'),
+                    M.util.get_string('confirmunassign', 'role'),
+                    M.util.get_string('confirmunassignyes', 'role')
+                ).then(function() {
+                    return this.removeRoleCallback(user.get(USERID), roleid);
+                }.bind(this)).catch(function() {
+                    // User cancelled.
+                });
+            }.bind(this));
             this._loadAssignableRoles();
         },
-        removeRoleCallback : function(e, userid, roleid) {
+        removeRoleCallback: function(userid, roleid) {
             Y.io(M.cfg.wwwroot+'/enrol/ajax.php', {
                 method:'POST',
                 data:'id='+this.get(COURSEID)+'&action=unassign&sesskey='+M.cfg.sesskey+'&role='+roleid+'&user='+userid,
@@ -151,6 +147,15 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
                     roleid : roleid
                 }
             });
+        },
+        _getAssignableRole: function(roleid) {
+            var roles = this.get(ASSIGNABLEROLES);
+            for (var i in roles) {
+                if (roles[i].id == roleid) {
+                    return roles[i].name;
+                }
+            }
+            return null;
         },
         _loadAssignableRoles : function() {
             var c = this.get(COURSEID), params = {
@@ -277,7 +282,7 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
             var current = this.get(CURRENTROLES);
             var allroles = true, i = 0;
             for (i in roles) {
-                if (!current[i]) {
+                if (!current[roles[i].id]) {
                     allroles = false;
                     break;
                 }
@@ -292,12 +297,18 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
         addRoleToDisplay : function(roleId, roleTitle) {
             var m = this.get(MANIPULATOR);
             var container = this.get(CONTAINER);
-            var role = Y.Node.create('<div class="role role_'+roleId+'">'+roleTitle+'<a class="unassignrolelink"><img src="'+M.util.image_url('t/delete', 'moodle')+'" alt="" /></a></div>');
-            var link = role.one('.unassignrolelink');
-            link.roleId = roleId;
-            link.on('click', m.removeRole, m, this, link.roleId);
-            container.one('.col_role .roles').append(role);
-            this._toggleCurrentRole(link.roleId, true);
+            window.require(['core/templates'], function(Templates) {
+                Templates.renderPix('t/delete', 'core').then(function(pix) {
+                    var role = Y.Node.create('<div class="role role_' + roleId + '">' +
+                                             roleTitle +
+                                             '<a class="unassignrolelink">' + pix + '</a></div>');
+                    var link = role.one('.unassignrolelink');
+                    link.roleId = roleId;
+                    link.on('click', m.removeRole, m, this, link.roleId);
+                    container.one('.col_role .roles').append(role);
+                    this._toggleCurrentRole(link.roleId, true);
+                }.bind(this));
+            }.bind(this));
         },
         removeRoleFromDisplay : function(roleId) {
             var container = this.get(CONTAINER);
@@ -349,18 +360,28 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
         submitevent : null,
         initializer : function() {
             var i, m = this.get(MANIPULATOR);
-            var element = Y.Node.create('<div class="enrolpanel roleassign"><div class="container"><div class="header"><h2>'+M.util.get_string('assignroles', 'role')+'</h2><div class="close"></div></div><div class="content"></div></div></div>');
+            var element = Y.Node.create('<div class="popover popover-bottom"><div class="arrow"></div>' +
+                                        '<div class="header popover-title">' +
+                                        '<div role="button" class="btn-close" aria-label="' +
+                                        M.util.get_string('closebuttontitle', 'moodle') + '">' +
+                                        '<span aria-hidden="true">&times;</span></div>' +
+                                        '<h3>'+M.util.get_string('assignroles', 'role')+'</h3>' +
+                                        '</div><div class="content popover-content' +
+                                        ' d-flex flex-wrap align-items-center mb-3"></div></div>');
             var content = element.one('.content');
             var roles = m.get(ASSIGNABLEROLES);
             for (i in roles) {
-                var button = Y.Node.create('<input type="button" value="'+roles[i]+'" id="add_assignable_role_'+i+'" />');
-                button.on('click', this.submit, this, i);
+                var buttonid = 'add_assignable_role_' + roles[i].id;
+                var buttonhtml = '<input type="button" class="btn btn-secondary me-1" value="' +
+                                 roles[i].name + '" id="' + buttonid + '" />';
+                var button = Y.Node.create(buttonhtml);
+                button.on('click', this.submit, this, roles[i].id);
                 content.append(button);
             }
             Y.one(document.body).append(element);
             this.set('elementNode', element);
             this.set('contentNode', content);
-            element.one('.header .close').on('click', this.hide, this);
+            element.one('.header .btn-close').on('click', this.hide, this);
         },
         display : function(user) {
             var currentroles = user.get(CURRENTROLES), node = null;
@@ -381,7 +402,7 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
             } else {
                 this.get('elementNode').setStyle('left', x).setStyle('top', y);
             }
-            this.get('elementNode').addClass('visible');
+            this.get('elementNode').setStyle('display', 'block');
             this.escCloseEvent = Y.on('key', this.hide, document.body, 'down:27', this);
             this.displayed = true;
         },
@@ -398,7 +419,7 @@ YUI.add('moodle-enrol-rolemanager', function(Y) {
             }
             this.roles = [];
             this.user = null;
-            this.get('elementNode').removeClass('visible');
+            this.get('elementNode').setStyle('display', 'none');
             if (this.submitevent) {
                 this.submitevent.detach();
                 this.submitevent = null;

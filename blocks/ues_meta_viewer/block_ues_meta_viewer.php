@@ -16,22 +16,28 @@
 
 
 /**
- * 
+ *
+ * The main file that sets the block up.
+ *
  * @package    block_ues_meta_viewer
- * @copyright  2014 Louisiana State University
+ * @copyright  2008 Onwards - Louisiana State University
+ * @copyright  2008 Onwards - Philip Cali, Jason Peak, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
 class block_ues_meta_viewer extends block_list {
-    function init() {
-        $this->title= get_string('pluginname', 'block_ues_meta_viewer');
+    public function init() {
+        $this->title = get_string('pluginname', 'block_ues_meta_viewer');
     }
 
-    function applicable_formats() {
+    public function applicable_formats() {
         return array('site' => true, 'my' => true, 'course' => false);
     }
 
-    function get_content() {
-        if ($this->content !== NULL) {
+    public function get_content() {
+        if ($this->content !== null) {
             return $this->content;
         }
 
@@ -43,21 +49,18 @@ class block_ues_meta_viewer extends block_list {
         $content->icons = array();
         $content->footer = '';
 
-        require_once $CFG->dirroot . '/blocks/ues_meta_viewer/lib.php';
+        require_once($CFG->dirroot . '/blocks/ues_meta_viewer/lib.php');
 
-        $meta_types = ues_meta_viewer::supported_types();
+        $metatypes = ues_meta_viewer::supported_types();
 
         $base = '/blocks/ues_meta_viewer/viewer.php';
 
-        foreach ($meta_types as $type => $support) {
+        foreach ($metatypes as $type => $support) {
             if (!$support->can_use()) {
                 continue;
             }
-
             $url = new moodle_url($base, array('type' => $type));
-
             $str = get_string('viewer', 'block_ues_meta_viewer', $support->name());
-
             $content->items[] = html_writer::link($url, $str);
         }
 

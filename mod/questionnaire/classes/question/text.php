@@ -14,55 +14,151 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace mod_questionnaire\question;
+
 /**
  * This file contains the parent class for text question types.
  *
  * @author Mike Churchward
+ * @copyright 2016 onward Mike Churchward (mike.churchward@poetopensource.org)
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package questiontypes
+ * @package mod_questionnaire
  */
-
-namespace mod_questionnaire\question;
-defined('MOODLE_INTERNAL') || die();
-
-class text extends base {
+class text extends question {
 
     /**
-     * Constructor. Use to set any default properties.
-     *
+     * The class constructor
+     * @param int $id
+     * @param \stdClass $question
+     * @param \context $context
+     * @param array $params
      */
-    public function __construct($id = 0, $question = null, $context = null, $params = array()) {
+    public function __construct($id = 0, $question = null, $context = null, $params = []) {
         $this->length = 20;
         $this->precise = 25;
         return parent::__construct($id, $question, $context, $params);
     }
 
+    /**
+     * Each question type must define its response class.
+     * @return object The response object based off of questionnaire_response_base.
+     */
     protected function responseclass() {
-        return '\\mod_questionnaire\\response\\text';
+        return '\\mod_questionnaire\\responsetype\\text';
     }
 
+    /**
+     * Short name for this question type - no spaces, etc..
+     * @return string
+     */
     public function helpname() {
         return 'textbox';
     }
 
-    protected function question_survey_display($data, $descendantsdata, $blankquestionnaire=false) {
+    /**
+     * Override and return a form template if provided. Output of question_survey_display is iterpreted based on this.
+     * @return boolean | string
+     */
+    public function question_template() {
+        return 'mod_questionnaire/question_text';
+    }
+
+    /**
+     * Override and return a response template if provided. Output of response_survey_display is iterpreted based on this.
+     * @return boolean | string
+     */
+    public function response_template() {
+        return 'mod_questionnaire/response_text';
+    }
+
+    /**
+     * Question specific display method.
+     * @param \stdClass $response
+     * @param array $descendantsdata
+     * @param bool $blankquestionnaire
+     *
+     */
+    protected function question_survey_display($response, $descendantsdata, $blankquestionnaire=false) {
         // Text Box.
-        echo '<input onkeypress="return event.keyCode != 13;" type="text" size="'.$this->length.'" name="q'.$this->id.'"'.
-             ($this->precise > 0 ? ' maxlength="'.$this->precise.'"' : '').' value="'.
-             (isset($data->{'q'.$this->id}) ? stripslashes($data->{'q'.$this->id}) : '').
-             '" id="' . $this->type . $this->id . '" />';
+        $questiontags = new \stdClass();
+        $questiontags->qelements = new \stdClass();
+        $choice = new \stdClass();
+        $choice->onkeypress = 'return event.keyCode != 13;';
+        $choice->size = $this->length;
+        $choice->name = 'q'.$this->id;
+        if ($this->precise > 0) {
+            $choice->maxlength = $this->precise;
+        }
+        $choice->value = (isset($response->answers[$this->id][0]) ?
+            format_string(stripslashes($response->answers[$this->id][0]->value)) : '');
+        $choice->id = self::qtypename($this->type_id) . $this->id;
+        $questiontags->qelements->choice = $choice;
+        return $questiontags;
     }
 
-    protected function response_survey_display($data) {
-        $response = isset($data->{'q'.$this->id}) ? format_text($data->{'q'.$this->id}, FORMAT_HTML) : '';
-        echo '<div class="response text"><span class="selected">'.$response.'</span></div>';
+    /**
+     * Question specific response display method.
+     * @param \stdClass $response
+     */
+    protected function response_survey_display($response) {
+        $resptags = new \stdClass();
+        if (isset($response->answers[$this->id])) {
+            $answer = reset($response->answers[$this->id]);
+            $resptags->content = format_text($answer->value, FORMAT_HTML);
+        }
+        return $resptags;
     }
 
+    /**
+     * Return the length form element.
+     * @param \MoodleQuickForm $mform
+     * @param string $helptext
+     */
     protected function form_length(\MoodleQuickForm $mform, $helptext = '') {
         return parent::form_length($mform, 'fieldlength');
     }
 
+    /**
+     * Return the precision form element.
+     * @param \MoodleQuickForm $mform
+     * @param string $helptext
+     */
     protected function form_precise(\MoodleQuickForm $mform, $helptext = '') {
         return parent::form_precise($mform, 'maxtextlength');
+    }
+
+    /**
+     * True if question provides mobile support.
+     * @return bool
+     */
+    public function supports_mobile() {
+        return true;
+    }
+
+    /**
+     * Override and return false if not supporting mobile app.
+     * @param int $qnum
+     * @param bool $autonum
+     * @return \stdClass
+     */
+    public function mobile_question_display($qnum, $autonum = false) {
+        $mobiledata = parent::mobile_question_display($qnum, $autonum);
+        $mobiledata->istextessay = true;
+        return $mobiledata;
+    }
+
+    /**
+     * Override and return false if not supporting mobile app.
+     * @return array
+     */
+    public function mobile_question_choices_display() {
+        $choices = [];
+        $choices[0] = new \stdClass();
+        $choices[0]->id = 0;
+        $choices[0]->choice_id = 0;
+        $choices[0]->question_id = $this->id;
+        $choices[0]->content = '';
+        $choices[0]->value = null;
+        return $choices;
     }
 }

@@ -18,7 +18,7 @@
  * Theme config
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -44,12 +44,6 @@ if ($themeissnap && $notajaxscript) {
         ini_set('error_append_string', '</div>');
     }
 
-    // SL - dec 2015 - Make sure editing sessions are not carried over between courses.
-    if (empty($SESSION->theme_snap_last_course) || $SESSION->theme_snap_last_course != $COURSE->id) {
-        $USER->editing = 0;
-        $SESSION->theme_snap_last_course = $COURSE->id;
-    }
-
     if (isset($SESSION->wantsurl)) {
         // We are taking a backup of this because it can get unset later by core.
         $SESSION->snapwantsurl = $SESSION->wantsurl;
@@ -59,28 +53,21 @@ if ($themeissnap && $notajaxscript) {
 $THEME->doctype = 'html5';
 $THEME->yuicssmodules = array('cssgrids'); // This is required for joule grader.
 $THEME->name = 'snap';
-$THEME->parents = array();
-$THEME->sheets = array('moodle');
+$THEME->parents = array('boost');
+
+$THEME->enable_dock = false;
+$THEME->prescsscallback = 'theme_snap_get_pre_scss';
+$THEME->scss = function($theme) {
+    return theme_snap_get_main_scss_content($theme);
+};
+$THEME->csspostprocess = 'theme_snap_process_css';
 $THEME->supportscssoptimisation = false;
 
 $THEME->editor_sheets = array('editor');
 
-$THEME->plugins_exclude_sheets = array(
-    'block' => array(
-        'html'
-    ),
-);
-
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
 
 $THEME->layouts = array(
-    'format_flexpage' => array(
-        'file' => 'flexpage.php',
-        'regions' => array('side-top', 'side-pre', 'main', 'side-main-box', 'side-post'),
-        'defaultregion' => 'main',
-        'options' => array('langmenu' => true),
-    ),
-
     // Most backwards compatible layout without the blocks - this is the layout used by default.
     'base' => array(
         'file' => 'default.php',
@@ -104,7 +91,7 @@ $THEME->layouts = array(
         'options' => array('langmenu' => true),
     ),
     'coursecategory' => array(
-        'file' => 'default.php',
+        'file' => 'course-index-category.php',
         'regions' => array(),
     ),
     // Part of course, typical for modules - default page layout if $cm specified in require_login().
@@ -123,6 +110,12 @@ $THEME->layouts = array(
     // Server administration pages.
     'admin' => array(
         'file' => 'default.php',
+        'regions' => array('side-pre'),
+        'defaultregion' => 'side-pre',
+    ),
+    // My courses page.
+    'mycourses' => array(
+        'file' => 'mycourses.php',
         'regions' => array('side-pre'),
         'defaultregion' => 'side-pre',
     ),
@@ -160,7 +153,7 @@ $THEME->layouts = array(
     // Embeded pages, like iframe/object embeded in moodleform - it needs as much space as possible.
     'embedded' => array(
         'file' => 'embedded.php',
-        'regions' => array()
+        'regions' => array(),
     ),
     // Used during upgrade and install, and for the 'This site is undergoing maintenance' message.
     // This must not have any blocks, links, or API calls that would lead to database or cache interaction.
@@ -194,18 +187,15 @@ $THEME->layouts = array(
     ),
 );
 
-$THEME->javascripts = array(
-);
-$THEME->javascripts_footer = array(
-);
+$THEME->javascripts = array();
+$THEME->javascripts_footer = array();
 
-$THEME->csspostprocess = 'theme_snap_process_css';
 $THEME->hidefromselector = false;
 
 // For use with Flexpage layouts.
 $THEME->blockrtlmanipulations = array(
     'side-pre' => 'side-post',
-    'side-post' => 'side-pre'
+    'side-post' => 'side-pre',
 );
 
 if ($themeissnap && $notajaxscript) {
@@ -219,3 +209,13 @@ if ($themeissnap && $notajaxscript) {
     }
 
 }
+
+$runningbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
+$requiredblocks = array('settings');
+if ($runningbehattest) {
+    array_push($requiredblocks, 'navigation');
+}
+
+$THEME->requiredblocks = $requiredblocks;
+$THEME->haseditswitch = false;
+$THEME->iconsystem = '\\theme_snap\\output\\icon_system_fontawesome';

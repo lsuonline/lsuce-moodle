@@ -20,13 +20,11 @@
  * This is also responsible for opening the pop-up window, if the quiz requires to be in one.
  *
  * @module    mod_quiz/preflightcheck
- * @class     preflightcheck
- * @package   mod_quiz
  * @copyright 2016 The Open University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since     3.1
  */
-define(['jquery', 'core/yui'], function($, Y) {
+define(['jquery', 'core/yui', 'core_form/changechecker'], function($, Y, FormChangeChecker) {
 
     /**
      * @alias module:mod_quiz/preflightcheck
@@ -37,7 +35,7 @@ define(['jquery', 'core/yui'], function($, Y) {
         /**
          * Initialise the start attempt button.
          *
-         * @param {String} startButtonId the id of the start attempt button that we will be enhancing.
+         * @param {String} startButton the id of the start attempt button that we will be enhancing.
          * @param {String} confirmationTitle the title of the dialogue.
          * @param {String} confirmationForm selector for the confirmation form to show in the dialogue.
          * @param {String} popupoptions If not null, the quiz should be launced in a pop-up.
@@ -45,7 +43,7 @@ define(['jquery', 'core/yui'], function($, Y) {
         init: function(startButton, confirmationTitle, confirmationForm, popupoptions) {
             var finalStartButton = startButton;
 
-            Y.use('moodle-core-notification', 'moodle-core-formchangechecker', 'io-form', function () {
+            Y.use('moodle-core-notification', function() {
                 if (Y.one(confirmationForm)) {
                     t.confirmDialogue = new M.core.dialogue({
                         headerContent: confirmationTitle,
@@ -94,16 +92,21 @@ define(['jquery', 'core/yui'], function($, Y) {
 
         /**
          * Event handler for the quiz start attempt button.
+         * @param {Event} e the event being responded to
+         * @param {Object} popupoptions
          */
         launchQuizPopup: function(e, popupoptions) {
             e.halt();
-            M.core_formchangechecker.reset_form_dirty_state();
-            var form = e.target.ancestor('form');
-            window.openpopup(e, {
-                url: form.get('action') + '?' + Y.IO.stringify(form).replace(/\bcancel=/, 'x='),
-                windowname: 'quizpopup',
-                options: popupoptions,
-                fullscreen: true,
+            Y.use('io-form', function() {
+                var form = e.target.ancestor('form');
+
+                FormChangeChecker.resetFormDirtyState(form.getDOMNode());
+                window.openpopup(e, {
+                    url: form.get('action') + '?' + Y.IO.stringify(form).replace(/\bcancel=/, 'x='),
+                    windowname: 'quizpopup',
+                    options: popupoptions,
+                    fullscreen: true,
+                });
             });
         }
     };

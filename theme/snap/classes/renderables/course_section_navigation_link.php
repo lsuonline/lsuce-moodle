@@ -17,20 +17,18 @@
 /**
  * Navigation link.
  * @package   theme_snap
- * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Renderable class for navigation link.
  * @package   theme_snap
- * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_section_navigation_link implements \renderable {

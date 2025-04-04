@@ -22,15 +22,15 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Set and get the config variable
+defined('MOODLE_INTERNAL') || die();
+
+// Set and get the config variable.
 global $CFG;
 require_once(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
 require_once($CFG->dirroot . '/blocks/my_picture/lib.php');
+require_login();
 
-
-/**
- * The class for the my_picture scehduled task.
- */
+// The class for the my_picture scehduled task.
 class grab_my_picture {
 
     /**
@@ -42,26 +42,26 @@ class grab_my_picture {
      * @global stdClass $DB
      * @return true
      */
-    function run_grab_mypictures() {
+    public function run_grab_mypictures() {
         global $CFG, $DB;
 
-        $_s = function($k, $a=null) {
+        $s = function($k, $a=null) {
             return get_string($k, 'block_my_picture', $a);
         };
 
-        //quit if the webservice doesn't respond with json
-        if(!mypic_verifyWebserviceExists()){
+        // Quit if the webservice doesn't respond with json.
+        if (!mypic_verifyWebserviceExists()) {
             mtrace(get_string("cron_webservice_err", "block_my_picture"));
             return true;
         }
 
-        mtrace("\n" . $_s('start'));
+        mtrace("\n" . $s('start'));
 
         if (get_config('block_my_picture', 'fetch')) {
             $limit = get_config('block_my_picture', 'cron_users');
             $users = mypic_get_users_without_pictures($limit);
             if (!$users) {
-                mtrace($_s('no_missing_pictures'));
+                mtrace($s('no_missing_pictures'));
             } else {
                 mypic_batch_update($users);
             }

@@ -24,10 +24,10 @@
  * @copyright 2009 Penny Leach
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once(dirname(dirname(dirname(__FILE__))). '/config.php');
+require_once(__DIR__ . '/../../config.php');
 
 if (empty($CFG->enableportfolios)) {
-    print_error('disabled', 'portfolio');
+    throw new \moodle_exception('disabled', 'portfolio');
 }
 
 require_once($CFG->libdir . '/portfoliolib.php');

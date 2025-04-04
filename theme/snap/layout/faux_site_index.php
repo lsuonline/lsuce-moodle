@@ -20,13 +20,16 @@
  * way.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-if (isloggedin() and !isguestuser() and isset($CFG->frontpageloggedin)) {
+use theme_snap\renderables\featured_courses;
+use theme_snap\renderables\featured_categories;
+
+if (isloggedin() && !isguestuser() && isset($CFG->frontpageloggedin)) {
     $frontpagelayout = $CFG->frontpageloggedin;
 } else {
     $frontpagelayout = $CFG->frontpage;
@@ -45,8 +48,11 @@ if (substr_compare($maincontent, $lastclosetag, -strlen($lastclosetag)) !== 0) {
 // Snap feature spots.
 echo $this->feature_spot_cards();
 
+// Snap featured categories.
+echo $OUTPUT->render(new featured_categories());
+
 // Snap featured courses.
-echo $this->featured_courses();
+echo $OUTPUT->render(new featured_courses());
 
 echo substr($maincontent, 0, -strlen($lastclosetag));
 $courserenderer = $PAGE->get_renderer('core', 'course');
@@ -68,7 +74,10 @@ foreach (explode(',', $frontpagelayout) as $section) {
         case FRONTPAGEENROLLEDCOURSELIST:
             $mycourseshtml = $courserenderer->frontpage_my_courses();
             if (!empty($mycourseshtml)) {
-                echo html_writer::tag('a', get_string('skipa', 'access', core_text::strtolower(get_string('mycourses'))), array('href' => '#skipmycourses', 'class' => 'skip-block'));
+                echo html_writer::tag('a',
+                    get_string('skipa', 'access', core_text::strtolower(get_string('mycourses'))),
+                    array('href' => '#skipmycourses', 'class' => 'skip-block')
+                );
 
                 // Wrap frontpage course list in div container.
                 echo html_writer::start_tag('div', array('id' => 'frontpage-course-list'));
@@ -88,7 +97,10 @@ foreach (explode(',', $frontpagelayout) as $section) {
         case FRONTPAGEALLCOURSELIST:
             $availablecourseshtml = $courserenderer->frontpage_available_courses();
             if (!empty($availablecourseshtml)) {
-                echo html_writer::tag('a', get_string('skipa', 'access', core_text::strtolower(get_string('availablecourses'))), array('href' => '#skipavailablecourses', 'class' => 'skip-block'));
+                echo html_writer::tag('a',
+                    get_string('skipa', 'access', core_text::strtolower(get_string('availablecourses'))),
+                    array('href' => '#skipavailablecourses', 'class' => 'skip-block')
+                );
 
                 // Wrap frontpage course list in div container.
                 echo html_writer::start_tag('div', array('id' => 'frontpage-course-list'));
@@ -104,7 +116,10 @@ foreach (explode(',', $frontpagelayout) as $section) {
         break;
 
         case FRONTPAGECATEGORYNAMES:
-            echo html_writer::tag('a', get_string('skipa', 'access', core_text::strtolower(get_string('categories'))), array('href' => '#skipcategories', 'class' => 'skip-block'));
+            echo html_writer::tag('a',
+                get_string('skipa', 'access', core_text::strtolower(get_string('categories'))),
+                array('href' => '#skipcategories', 'class' => 'skip-block')
+            );
 
             // Wrap frontpage category names in div container.
             echo html_writer::start_tag('div', array('id' => 'frontpage-category-names'));
@@ -119,7 +134,10 @@ foreach (explode(',', $frontpagelayout) as $section) {
         break;
 
         case FRONTPAGECATEGORYCOMBO:
-            echo html_writer::tag('a', get_string('skipa', 'access', core_text::strtolower(get_string('courses'))), array('href' => '#skipcourses', 'class' => 'skip-block'));
+            echo html_writer::tag('a',
+                get_string('skipa', 'access', core_text::strtolower(get_string('courses'))),
+                array('href' => '#skipcourses', 'class' => 'skip-block')
+            );
 
             // Wrap frontpage category combo in div container.
             echo html_writer::start_tag('div', array('id' => 'frontpage-category-combo'));

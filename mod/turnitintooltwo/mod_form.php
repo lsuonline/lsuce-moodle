@@ -34,7 +34,18 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
     private $turnitintooltwo;
 
     public function definition() {
-        global $DB, $USER, $COURSE;
+        global $DB, $USER, $COURSE, $PAGE;
+
+        // Don't do anything here if called from a completion page as output has already begun.
+        // This is needed because of MDL-78528.
+        $completionpagetypes = [
+            'course-defaultcompletion' => 'Edit completion default settings (Moodle >= 4.3)',
+            'course-editbulkcompletion' => 'Edit completion settings in bulk for a single course',
+            'course-editdefaultcompletion' => 'Edit completion default settings (Moodle < 4.3)',
+        ];
+        if (isset($completionpagetypes[$PAGE->pagetype])) {
+            return;
+        }
 
         // Module string is useful for product support.
         $modulestring = '<!-- Turnitin Moodle Direct Version: '.turnitintooltwo_get_version().' - (';
@@ -60,6 +71,11 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $instructor->set_user_values_from_tii();
         $instructorrubrics = $instructor->get_instructor_rubrics();
 
+        // Decode the assignment name.
+        if (isset($this->current->name)) {
+            $this->current->name = html_entity_decode($this->current->name);
+        }
+
         // Get rubrics that are shared on the account.
         $turnitinclass = new turnitintooltwo_class($course->id);
         $turnitinclass->read_class_from_tii();
@@ -73,7 +89,7 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
 
             $this->turnitintooltwo = $DB->get_record("turnitintooltwo", array("id" => $this->_cm->instance));
             $parts = $DB->get_records("turnitintooltwo_parts",
-                                        array("turnitintooltwoid" => $this->_cm->instance, "deleted" => 0), 'id');
+                                        array("turnitintooltwoid" => $this->_cm->instance), 'id');
 
             $i = 0;
             foreach ($parts as $part) {
@@ -114,10 +130,10 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
 
         $modulestring .= ') -->';
 
-        $this->show_form($instructorrubrics, $sharedrubrics, $modulestring, $course->turnitin_cid);
+        $this->show_form($instructorrubrics, $sharedrubrics, $course->turnitin_cid, $modulestring);
     }
 
-    public function show_form($instructorrubrics, $sharedrubrics, $modulestring = '', $tiicourseid) {
+    public function show_form($instructorrubrics, $sharedrubrics, $tiicourseid, $modulestring = '') {
         global $CFG, $OUTPUT, $COURSE, $PAGE, $DB;
         $PAGE->requires->string_for_js('changerubricwarning', 'turnitintooltwo');
         $PAGE->requires->string_for_js('closebutton', 'turnitintooltwo');
@@ -126,32 +142,16 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
 
         $mform =& $this->_form;
 
-        $script = '';
         // Add in custom Javascript and CSS.
-        if ($CFG->branch <= 25) {
-            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
-                                                "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-1.8.2.min.js"));
-            $script .= html_writer::tag('script', '', array("id" => "plugin_turnitin_script", "type" => "text/javascript",
-                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo-2018082301.min.js"));
-            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
-                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-ui-1.10.4.custom.min.js"));
-            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
-                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery.colorbox.js"));
-            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
-                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery.colorbox.js"));
-            $script .= html_writer::tag('script', '', array("type" => "text/javascript",
-                                            "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/moment.js"));
-        } else {
-            $PAGE->requires->jquery();
-            $PAGE->requires->jquery_plugin('ui');
-            $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo', 'mod_turnitintooltwo');
-            $PAGE->requires->jquery_plugin('turnitintooltwo-colorbox', 'mod_turnitintooltwo');
-            $PAGE->requires->jquery_plugin('turnitintooltwo-moment', 'mod_turnitintooltwo');
-        }
+        $PAGE->requires->jquery();
+        $PAGE->requires->jquery_plugin('ui');
+        $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo', 'mod_turnitintooltwo');
+        $PAGE->requires->jquery_plugin('turnitintooltwo-colorbox', 'mod_turnitintooltwo');
+        $PAGE->requires->jquery_plugin('turnitintooltwo-moment', 'mod_turnitintooltwo');
 
         $PAGE->requires->string_for_js('anonalert', 'turnitintooltwo');
 
-        $script .= html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
+        $script = html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
                                                         "href" => $CFG->wwwroot."/mod/turnitintooltwo/styles.css"));
         $script .= html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
                                                         "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/colorbox.css"));
@@ -219,11 +219,7 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $mform->addRule('name', get_string('maxlength', 'turnitintooltwo', $input), 'maxlength', $input->length, 'client');
         $mform->addRule('name', get_string('maxlength', 'turnitintooltwo', $input), 'maxlength', $input->length, 'server');
 
-        if ($CFG->branch >= 29) {
-            $this->standard_intro_elements(get_string('turnitintooltwointro', 'turnitintooltwo'));
-        } else {
-            $this->add_intro_editor(true, get_string('turnitintooltwointro', 'turnitintooltwo'));
-        }
+        $this->standard_intro_elements(get_string('turnitintooltwointro', 'turnitintooltwo'));
 
         $typeoptions = turnitintooltwo_filetype_array(true);
 
@@ -406,7 +402,7 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
         $genoptions = array(0 => get_string('genimmediately1', 'turnitintooltwo'),
                             1 => get_string('genimmediately2', 'turnitintooltwo', $genparams),
                                 2 => get_string('genduedate', 'turnitintooltwo'));
-        $mform->addElement('select', 'reportgenspeed', get_string('reportgenspeed', 'turnitintooltwo'), $genoptions, array('class' => 'selectlong'));
+        $mform->addElement('select', 'reportgenspeed', get_string('reportgenspeed', 'turnitintooltwo'), $genoptions);
         $mform->addHelpButton('reportgenspeed', 'reportgenspeed', 'turnitintooltwo');
         $mform->setDefault('reportgenspeed', $config->default_reportgenspeed);
 
@@ -563,7 +559,7 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
                                                         html_writer::tag('i', '',
                                                             array('class' => 'tiiicon icon-rubric icon-lg icon_margin')).
                                                         get_string('launchrubricmanager', 'turnitintooltwo'),
-                                                    array('class' => 'rubric_manager_launch',
+                                                    array('class' => 'mod_turnitintooltwo_rubric_manager_launch',
                                                         'title' => get_string('launchrubricmanager', 'turnitintooltwo'))).
                                             html_writer::tag('span', '',
                                                         array('class' => 'launch_form', 'id' => 'rubric_manager_form')));
@@ -578,7 +574,7 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
             $mform->setType('rubric', PARAM_RAW);
         }
 
-        if (!empty($config->useerater)) {
+        if (!empty($config->usegrammar)) {
             $handbookoptions = array(
                                         1 => get_string('erater_handbook_advanced', 'turnitintooltwo'),
                                         2 => get_string('erater_handbook_highschool', 'turnitintooltwo'),
@@ -592,36 +588,36 @@ class mod_turnitintooltwo_mod_form extends moodleform_mod {
                                         'en' => get_string('erater_dictionary_en', 'turnitintooltwo')
                                     );
             $mform->addElement('select', 'erater', get_string('erater', 'turnitintooltwo'), $ynoptions);
-            $mform->setDefault('erater', $config->default_erater);
+            $mform->setDefault('erater', $config->default_grammar);
 
             $mform->addElement('select', 'erater_handbook', get_string('erater_handbook', 'turnitintooltwo'), $handbookoptions);
-            $mform->setDefault('erater_handbook', $config->default_erater_handbook);
+            $mform->setDefault('erater_handbook', $config->default_grammar_handbook);
             $mform->disabledIf('erater_handbook', 'erater', 'eq', 0);
 
             $mform->addElement('select', 'erater_dictionary', get_string('erater_dictionary', 'turnitintooltwo'),
                                     $dictionaryoptions);
-            $mform->setDefault('erater_dictionary', $config->default_erater_dictionary);
+            $mform->setDefault('erater_dictionary', $config->default_grammar_dictionary);
             $mform->disabledIf('erater_dictionary', 'erater', 'eq', 0);
 
             $mform->addElement('checkbox', 'erater_spelling', get_string('erater_categories', 'turnitintooltwo'),
                                     " ".get_string('erater_spelling', 'turnitintooltwo'));
-            $mform->setDefault('erater_spelling', $config->default_erater_spelling);
+            $mform->setDefault('erater_spelling', $config->default_grammar_spelling);
             $mform->disabledIf('erater_spelling', 'erater', 'eq', 0);
 
             $mform->addElement('checkbox', 'erater_grammar', '', " ".get_string('erater_grammar', 'turnitintooltwo'));
-            $mform->setDefault('erater_grammar', $config->default_erater_grammar);
+            $mform->setDefault('erater_grammar', $config->default_grammar_grammar);
             $mform->disabledIf('erater_grammar', 'erater', 'eq', 0);
 
             $mform->addElement('checkbox', 'erater_usage', '', " ".get_string('erater_usage', 'turnitintooltwo'));
-            $mform->setDefault('erater_usage', $config->default_erater_usage);
+            $mform->setDefault('erater_usage', $config->default_grammar_usage);
             $mform->disabledIf('erater_usage', 'erater', 'eq', 0);
 
             $mform->addElement('checkbox', 'erater_mechanics', '', " ".get_string('erater_mechanics', 'turnitintooltwo'));
-            $mform->setDefault('erater_mechanics', $config->default_erater_mechanics);
+            $mform->setDefault('erater_mechanics', $config->default_grammar_mechanics);
             $mform->disabledIf('erater_mechanics', 'erater', 'eq', 0);
 
             $mform->addElement('checkbox', 'erater_style', '', " ".get_string('erater_style', 'turnitintooltwo'));
-            $mform->setDefault('erater_style', $config->default_erater_style);
+            $mform->setDefault('erater_style', $config->default_grammar_style);
             $mform->disabledIf('erater_style', 'erater', 'eq', 0);
         }
 

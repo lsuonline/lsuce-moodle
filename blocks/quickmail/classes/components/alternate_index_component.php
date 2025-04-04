@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,6 +22,8 @@
  */
 
 namespace block_quickmail\components;
+
+defined('MOODLE_INTERNAL') || die();
 
 use block_quickmail\components\component;
 use block_quickmail_string;
@@ -58,12 +59,13 @@ class alternate_index_component extends component implements \renderable {
         ];
 
         $data->tableRows = [];
-        
+
         foreach ($this->alternates as $alternate) {
             $data->tableRows[] = [
                 'id' => $alternate->get('id'),
                 'email' => $alternate->get('email'),
                 'fullname' => $alternate->get_fullname(),
+                'courseid' => $this->course_id,
                 'status' => $alternate->get_status(),
                 'scope' => $alternate->get_scope(),
                 'isValidated' => $alternate->get('is_validated'),
@@ -71,16 +73,16 @@ class alternate_index_component extends component implements \renderable {
             ];
         }
 
-        $data->urlBack = $this->course_id 
+        $data->urlBack = $this->course_id
             ? new moodle_url('/course/view.php', ['id' => $this->course_id])
             : new moodle_url('/my');
 
-        $data->urlBackLabel = $this->course_id 
+        $data->urlBackLabel = $this->course_id
             ? block_quickmail_string::get('back_to_course')
             : block_quickmail_string::get('back_to_mypage');
 
         $data->urlCreate = new moodle_url('/blocks/quickmail/create_alternate.php', ['courseid' => $this->course_id]);
-        
+
         return $data;
     }
 

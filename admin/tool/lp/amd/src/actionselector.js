@@ -20,7 +20,7 @@
  * This will receive the information to display in popup.
  * The actions have the format [{'text': sometext, 'value' : somevalue}].
  *
- * @package    tool_lp
+ * @module     tool_lp/actionselector
  * @copyright  2016 Serge Gauthier - <serge.gauthier.2@umontreal.ca>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -35,6 +35,8 @@ define(['jquery',
 
     /**
      * Action selector class.
+     *
+     * @class tool_lp/actionselector
      * @param {String} title The title of popup.
      * @param {String} message The message to display.
      * @param {object} actions The actions that can be selected.
@@ -56,19 +58,19 @@ define(['jquery',
 
     ActionSelector.prototype = Object.create(EventBase.prototype);
 
-    /** @type {String} The value that was selected. */
+    /** @property {String} The value that was selected. */
     ActionSelector.prototype._selectedValue = null;
-    /** @type {Dialogue} The reference to the dialogue. */
+    /** @property {Dialogue} The reference to the dialogue. */
     ActionSelector.prototype._popup = null;
-    /** @type {String} The title of popup. */
+    /** @property {String} The title of popup. */
     ActionSelector.prototype._title = null;
-    /** @type {String} The message in popup. */
+    /** @property {String} The message in popup. */
     ActionSelector.prototype._message = null;
-    /** @type {object} The information for radion buttons. */
+    /** @property {object} The information for radion buttons. */
     ActionSelector.prototype._actions = null;
-    /** @type {String} The text for confirm button. */
+    /** @property {String} The text for confirm button. */
     ActionSelector.prototype._confirm = null;
-    /** @type {String} The text for cancel button. */
+    /** @property {String} The text for cancel button. */
     ActionSelector.prototype._cancel = null;
 
     /**
@@ -87,13 +89,13 @@ define(['jquery',
             self._selectedValue = $("input[type='radio']:checked").val();
             self._find('[data-action="action-selector-confirm"]').removeAttr('disabled');
             self._refresh.bind(self);
-        }.bind(self));
+        });
 
         // Add listener for cancel.
         self._find('[data-action="action-selector-cancel"]').click(function(e) {
             e.preventDefault();
             self.close();
-        }.bind(self));
+        });
 
         // Add listener for confirm.
         self._find('[data-action="action-selector-confirm"]').click(function(e) {
@@ -101,9 +103,9 @@ define(['jquery',
             if (!self._selectedValue.length) {
                 return;
             }
-            self._trigger('save', { action: self._selectedValue });
+            self._trigger('save', {action: self._selectedValue});
             self.close();
-        }.bind(self));
+        });
     };
 
     /**
@@ -131,13 +133,15 @@ define(['jquery',
                 html,
                 self._afterRender.bind(self)
             );
-        }.bind(self)).fail(Notification.exception);
+            return;
+        }).fail(Notification.exception);
     };
 
     /**
      * Find a node in the dialogue.
      *
      * @param {String} selector
+     * @return {JQuery} The node
      * @method _find
      */
     ActionSelector.prototype._find = function(selector) {
@@ -155,7 +159,8 @@ define(['jquery',
         return self._render().then(function(html) {
             self._find('[data-region="action-selector"]').replaceWith(html);
             self._afterRender();
-        }.bind(self));
+            return;
+        });
     };
 
     /**
@@ -170,8 +175,8 @@ define(['jquery',
         for (var i in self._actions) {
             choices.push(self._actions[i]);
         }
-        var content = {'message': self._message, 'choices' : choices,
-            'confirm' : self._confirm, 'cancel' : self._cancel};
+        var content = {'message': self._message, 'choices': choices,
+            'confirm': self._confirm, 'cancel': self._cancel};
 
         return Templates.render('tool_lp/action_selector', content);
     };
@@ -188,6 +193,6 @@ define(['jquery',
         this._selectedValue = '';
     };
 
-    return /** @alias module:tool_lp/actionselector */ ActionSelector;
+    return ActionSelector;
 
 });

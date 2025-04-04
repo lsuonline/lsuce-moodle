@@ -21,10 +21,11 @@
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once $CFG->dirroot . '/enrol/ues/publiclib.php';
+
+require_once('../../config.php');
+require_once($CFG->dirroot . '/enrol/ues/publiclib.php');
 ues::require_daos();
-require_once 'lib.php';
+require_once('lib.php');
 
 require_login();
 
@@ -40,7 +41,7 @@ if ($type == 'user') {
     };
 
     $context = context_system::instance();
-    $back_url = new moodle_url('/my');
+    $backurl = new moodle_url('/my');
 } else {
     $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
     $user = $USER;
@@ -51,32 +52,32 @@ if ($type == 'user') {
     };
 
     $context = context_course::instance($course->id);
-    $back_url = new moodle_url('/course/view.php', array('id' => $id));
+    $backurl = new moodle_url('/course/view.php', array('id' => $id));
 }
 
 $PAGE->set_context($context);
 
-$_s = ues::gen_str('block_ues_reprocess');
+$s = ues::gen_str('block_ues_reprocess');
 
-$ues_user = ues_user::upgrade($user);
+$uesuser = ues_user::upgrade($user);
 
 if (has_capability('block/ues_reprocess:canreprocess', $context)) {
-    $pre_sections = ues_section::from_course($course);
+    $presections = ues_section::from_course($course);
 } else {
-    $pre_sections = $ues_user->sections(true);
+    $presections = $uesuser->sections(true);
 }
 
-$owned_sections = array_filter($pre_sections, $filter);
+$ownedsections = array_filter($presections, $filter);
 
-if ($data = data_submitted() and !empty($owned_sections)) {
+if ($data = data_submitted() and !empty($ownedsections)) {
     try {
-        $sections = ues_reprocess::post($owned_sections, $data);
+        $sections = ues_reprocess::post($ownedsections, $data);
         ues_reprocess::select($sections);
     } catch (Exception $e) {
         echo $OUTPUT->notification($e->getMessage());
     }
 } else {
-    echo $OUTPUT->notification($_s('none_found'));
+    echo $OUTPUT->notification($s('none_found'));
 }
 
-echo $OUTPUT->continue_button($back_url);
+echo $OUTPUT->continue_button($backurl);

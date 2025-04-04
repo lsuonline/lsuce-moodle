@@ -23,9 +23,8 @@
  */
 
 require_once(dirname(__FILE__).'/../../config.php');
-global $CFG, $DB, $OUTPUT, $PAGE, $COURSE;
+require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/mod/attendance/locallib.php');
-require_once($CFG->dirroot.'/mod/attendance/temp_form.php');
 
 $id = required_param('id', PARAM_INT);
 
@@ -42,16 +41,16 @@ require_capability('mod/attendance:managetemporaryusers', $context);
 
 $PAGE->set_title($course->shortname.": ".$att->name.' - '.get_string('tempusers', 'attendance'));
 $PAGE->set_heading($course->fullname);
+$PAGE->force_settings_menu(true);
 $PAGE->set_cacheable(true);
 $PAGE->navbar->add(get_string('tempusers', 'attendance'));
 
 $output = $PAGE->get_renderer('mod_attendance');
-$tabs = new attendance_tabs($att, attendance_tabs::TAB_TEMPORARYUSERS);
 
 $formdata = (object)array(
     'id' => $cm->id,
 );
-$mform = new temp_form();
+$mform = new mod_attendance\form\tempuser();
 $mform->set_data($formdata);
 
 if ($data = $mform->get_data()) {
@@ -60,8 +59,8 @@ if ($data = $mform->get_data()) {
     $user->auth = 'manual';
     $user->confirmed = 1;
     $user->deleted = 1;
-    $user->email = time().'@ghost.user.de';
-    $user->username = time().'@ghost.user.de';
+    $user->email = time().'@attendance.danmarsden.com';
+    $user->username = time().'@attendance.danmarsden.com';
     $user->idnumber = 'tempghost';
     $user->mnethostid = $CFG->mnet_localhost_id;
     $studentid = $DB->insert_record('user', $user);
@@ -80,8 +79,6 @@ if ($data = $mform->get_data()) {
 
 // Output starts here.
 echo $output->header();
-echo $output->heading(get_string('tempusers', 'attendance').' : '.format_string($course->fullname));
-echo $output->render($tabs);
 $mform->display();
 
 $tempusers = $DB->get_records('attendance_tempusers', array('courseid' => $course->id), 'fullname, email');
@@ -89,12 +86,18 @@ $tempusers = $DB->get_records('attendance_tempusers', array('courseid' => $cours
 echo '<div>';
 echo '<p style="margin-left:10%;">'.get_string('tempuserslist', 'attendance').'</p>';
 if ($tempusers) {
-    print_tempusers($tempusers, $att);
+    attendance_print_tempusers($tempusers, $att);
 }
 echo '</div>';
 echo $output->footer($course);
 
-function print_tempusers($tempusers, mod_attendance_structure $att) {
+/**
+ * Print list of users.
+ *
+ * @param stdClass $tempusers
+ * @param mod_attendance_structure $att
+ */
+function attendance_print_tempusers($tempusers, mod_attendance_structure $att) {
     echo '<p></p>';
     echo '<table border="1" bordercolor="#EEEEEE" style="background-color:#fff" cellpadding="2" align="center"'.
           'width="80%" summary="'.get_string('temptable', 'attendance').'"><tr>';

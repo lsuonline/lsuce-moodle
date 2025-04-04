@@ -22,22 +22,28 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// This file does not need require_login because capability to verify can be granted to guests, skip codechecker here.
 // @codingStandardsIgnoreLine
 require_once('../../config.php');
 
 $contextid = optional_param('contextid', context_system::instance()->id, PARAM_INT);
 $code = optional_param('code', '', PARAM_ALPHANUM); // The code for the certificate we are verifying.
+$qrcode = optional_param('qrcode', false, PARAM_BOOL);
 
 $context = context::instance_by_id($contextid);
 
 // Set up the page.
-$pageurl = new moodle_url('/mod/customcert/verify_certificate.php', array('contextid' => $contextid));
+$pageurl = new moodle_url('/mod/customcert/verify_certificate.php', ['contextid' => $contextid]);
+
+if ($code) {
+    $pageurl->param('code', $code);
+}
 
 // Ok, a certificate was specified.
 if ($context->contextlevel != CONTEXT_SYSTEM) {
     $cm = get_coursemodule_from_id('customcert', $context->instanceid, 0, false, MUST_EXIST);
-    $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-    $customcert = $DB->get_record('customcert', array('id' => $cm->instance), '*', MUST_EXIST);
+    $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
+    $customcert = $DB->get_record('customcert', ['id' => $cm->instance], '*', MUST_EXIST);
 
     // Check if we are allowing anyone to verify, if so, no need to check login, or permissions.
     if (!$customcert->verifyany) {
@@ -49,47 +55,47 @@ if ($context->contextlevel != CONTEXT_SYSTEM) {
         $PAGE->set_cm($cm, $course);
     }
 
+    $title = $customcert->name;
     $checkallofsite = false;
 } else {
+    $title = $SITE->fullname;
+    $checkallofsite = true;
+}
+
+\mod_customcert\page_helper::page_setup($pageurl, $context, $title);
+$PAGE->activityheader->set_attrs(['hidecompletion' => true,
+            'description' => '']);
+
+// Additional page setup.
+if ($context->contextlevel == CONTEXT_SYSTEM) {
+    $PAGE->navbar->add(get_string('verifycertificate', 'customcert'));
+}
+
+if ($checkallofsite) {
     // If the 'verifyallcertificates' is not set and the user does not have the capability 'mod/customcert:verifyallcertificates'
     // then show them a message letting them know they can not proceed.
     $verifyallcertificates = get_config('customcert', 'verifyallcertificates');
     $canverifyallcertificates = has_capability('mod/customcert:verifyallcertificates', $context);
     if (!$verifyallcertificates && !$canverifyallcertificates) {
-        $strheading = get_string('verifycertificate', 'customcert');
-        $PAGE->navbar->add($strheading);
-        $PAGE->set_context(context_system::instance());
-        $PAGE->set_title($strheading);
-        $PAGE->set_url($pageurl);
         echo $OUTPUT->header();
-        echo $OUTPUT->heading($strheading);
         echo $OUTPUT->notification(get_string('cannotverifyallcertificates', 'customcert'));
         echo $OUTPUT->footer();
         exit();
     }
-
-    $checkallofsite = true;
 }
-
-if ($code) {
-    $pageurl->param('code', $code);
-}
-
-$PAGE->set_url($pageurl);
-$PAGE->set_context($context);
-$PAGE->set_title(get_string('verifycertificate', 'customcert'));
 
 // The form we are using to verify these codes.
 $form = new \mod_customcert\verify_certificate_form($pageurl);
 
-if ($form->get_data()) {
+if ($code) {
     $result = new stdClass();
-    $result->issues = array();
+    $result->issues = [];
 
     // Ok, now check if the code is valid.
-    $userfields = get_all_user_name_fields(true, 'u');
+    $userfields = \mod_customcert\helper::get_all_user_name_fields('u');
     $sql = "SELECT ci.id, u.id as userid, $userfields, co.id as courseid,
-                   co.fullname as coursefullname, c.name as certificatename, c.verifyany
+                   co.fullname as coursefullname, c.id as certificateid,
+                   c.name as certificatename, c.verifyany
               FROM {customcert} c
               JOIN {customcert_issues} ci
                 ON c.id = ci.customcertid
@@ -110,10 +116,15 @@ if ($form->get_data()) {
         $params = ['code' => $code, 'customcertid' => $customcert->id];
     }
 
-    $sql .= " AND u.deleted = 0";
-
     // It is possible (though unlikely) that there is the same code for issued certificates.
     if ($issues = $DB->get_records_sql($sql, $params)) {
+        foreach ($issues as $issue) {
+            if (class_exists('\customcertelement_expiry\element') &&
+                        \customcertelement_expiry\element::has_expiry($issue->certificateid)) {
+                $issue->expiry = \customcertelement_expiry\element::get_expiry_html($issue->certificateid, $issue->userid);
+            }
+        }
+
         $result->success = true;
         $result->issues = $issues;
     } else {
@@ -123,8 +134,10 @@ if ($form->get_data()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('verifycertificate', 'customcert'));
-echo $form->display();
+// Don't show the form if we are coming from a QR code.
+if (!$qrcode) {
+    echo $form->display();
+}
 if (isset($result)) {
     $renderer = $PAGE->get_renderer('mod_customcert');
     $result = new \mod_customcert\output\verify_certificate_results($result);

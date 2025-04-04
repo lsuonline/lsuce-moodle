@@ -42,12 +42,8 @@ class qtype_oumultiresponse_test extends question_testcase {
      */
     private $qtype;
 
-    public function setUp() {
+    public function setUp(): void {
         $this->qtype = new qtype_oumultiresponse();
-    }
-
-    public function tearDown() {
-        $this->qtype = null;
     }
 
     public function assert_same_xml($expectedxml, $xml) {
@@ -79,9 +75,12 @@ class qtype_oumultiresponse_test extends question_testcase {
     public function test_get_possible_responses() {
         $q = new stdClass();
         $q->id = 1;
-        $q->options->answers[1] = (object) array('answer' => 'frog', 'fraction' => 1);
-        $q->options->answers[2] = (object) array('answer' => 'toad', 'fraction' => 1);
-        $q->options->answers[3] = (object) array('answer' => 'newt', 'fraction' => 0);
+        $q->options = new stdClass();
+        $q->options->answers = [
+            1 => (object) array('answer' => 'frog', 'fraction' => 1),
+            2 => (object) array('answer' => 'toad', 'fraction' => 1),
+            3 => (object) array('answer' => 'newt', 'fraction' => 0),
+        ];
         $responses = $this->qtype->get_possible_responses($q);
 
         $this->assertEquals(array(
@@ -127,6 +126,7 @@ class qtype_oumultiresponse_test extends question_testcase {
     <hidden>0</hidden>
     <answernumbering>abc</answernumbering>
     <shuffleanswers>true</shuffleanswers>
+    <showstandardinstruction>0</showstandardinstruction>
     <correctfeedback>
       <text>Well done.</text>
     </correctfeedback>
@@ -244,7 +244,6 @@ class qtype_oumultiresponse_test extends question_testcase {
     <hidden>0</hidden>
     <shuffleanswers>1</shuffleanswers>
     <answernumbering>abc</answernumbering>
-    <shuffleanswers>true</shuffleanswers>
     <answer>
       <correctanswer>1</correctanswer>
       <text>eighta</text>
@@ -380,8 +379,10 @@ class qtype_oumultiresponse_test extends question_testcase {
     <defaultgrade>6</defaultgrade>
     <penalty>0.3333333</penalty>
     <hidden>0</hidden>
+    <idnumber></idnumber>
     <shuffleanswers>true</shuffleanswers>
     <answernumbering>123</answernumbering>
+    <showstandardinstruction>0</showstandardinstruction>
     <correctfeedback format="html">
       <text>Well done!</text>
     </correctfeedback>
@@ -428,6 +429,11 @@ class qtype_oumultiresponse_test extends question_testcase {
     </hint>
   </question>
 ';
+
+        // Hack so the test passes in both 3.5 and 3.6.
+        if (strpos($xml, 'idnumber') === false) {
+            $expectedxml = str_replace("    <idnumber></idnumber>\n", '', $expectedxml);
+        }
 
         $this->assert_same_xml($expectedxml, $xml);
     }

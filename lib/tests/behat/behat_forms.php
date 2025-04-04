@@ -28,13 +28,15 @@
 require_once(__DIR__ . '/../../../lib/behat/behat_base.php');
 require_once(__DIR__ . '/../../../lib/behat/behat_field_manager.php');
 
-use Behat\Gherkin\Node\TableNode as TableNode,
-    Behat\Gherkin\Node\PyStringNode as PyStringNode,
-    Behat\Mink\Exception\ExpectationException as ExpectationException,
-    Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException;
+use Behat\Gherkin\Node\{TableNode, PyStringNode};
+use Behat\Mink\Element\NodeElement;
+use Behat\Mink\Exception\{ElementNotFoundException, ExpectationException};
 
 /**
  * Forms-related steps definitions.
+ *
+ * Note, Behat tests to verify that the steps defined here work as advertised
+ * are kept in admin/tool/behat/tests/behat.
  *
  * @package    core
  * @category   test
@@ -51,10 +53,7 @@ class behat_forms extends behat_base {
      * @param string $button
      */
     public function press_button($button) {
-
-        // Ensures the button is present.
-        $buttonnode = $this->find_button($button);
-        $buttonnode->press();
+        $this->execute('behat_general::i_click_on', [$button, 'button']);
     }
 
     /**
@@ -68,13 +67,15 @@ class behat_forms extends behat_base {
         // Ensures the button is present, before pressing.
         $buttonnode = $this->find_button($button);
         $buttonnode->press();
+        $this->wait_for_pending_js();
+        $this->look_for_exceptions();
 
         // Switch to main window.
-        $this->getSession()->switchToWindow(behat_general::MAIN_WINDOW_NAME);
+        $this->execute('behat_general::switch_to_the_main_window');
     }
 
     /**
-     * Fills a form with field/value data. More info in http://docs.moodle.org/dev/Acceptance_testing#Providing_values_to_steps.
+     * Fills a form with field/value data.
      *
      * @Given /^I set the following fields to these values:$/
      * @throws ElementNotFoundException Thrown by behat_base::find
@@ -90,6 +91,29 @@ class behat_forms extends behat_base {
         // The action depends on the field type.
         foreach ($datahash as $locator => $value) {
             $this->set_field_value($locator, $value);
+        }
+    }
+
+    /**
+     * Fills a form with field/value data.
+     *
+     * @Given /^I set the following fields in the "(?P<element_container_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)" to these values:$/
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $containerelement Element we look in
+     * @param string $containerselectortype The type of selector where we look in
+     * @param TableNode $data
+     */
+    public function i_set_the_following_fields_in_container_to_these_values(
+            $containerelement, $containerselectortype, TableNode $data) {
+
+        // Expand all fields in case we have.
+        $this->expand_all_fields();
+
+        $datahash = $data->getRowsHash();
+
+        // The action depends on the field type.
+        foreach ($datahash as $locator => $value) {
+            $this->set_field_value_in_container($locator, $value, $containerselectortype, $containerelement);
         }
     }
 
@@ -119,13 +143,22 @@ class behat_forms extends behat_base {
         // We already know that we waited for the DOM and the JS to be loaded, even the editor
         // so, we will use the reduced timeout as it is a common task and we should save time.
         try {
+            $this->wait_for_pending_js();
+            // Expand all fieldsets link - which will only be there if there is more than one collapsible section.
+            $expandallxpath = "//div[@class='collapsible-actions']" .
+                "//a[contains(concat(' ', @class, ' '), ' collapsed ')]" .
+                "//span[contains(concat(' ', @class, ' '), ' expandall ')]";
+            // Else, look for the first expand fieldset link (old theme structure).
+            $expandsectionold = "//legend[@class='ftoggler']" .
+                    "//a[contains(concat(' ', @class, ' '), ' icons-collapse-expand ') and @aria-expanded = 'false']";
+            // Else, look for the first expand fieldset link (current theme structure).
+            $expandsectioncurrent = "//fieldset//div[contains(concat(' ', @class, ' '), ' ftoggler ')]" .
+                    "//a[contains(concat(' ', @class, ' '), ' icons-collapse-expand ') and @aria-expanded = 'false']";
 
-            // Expand fieldsets link.
-            $xpath = "//div[@class='collapsible-actions']" .
-                "/descendant::a[contains(concat(' ', @class, ' '), ' collapseexpand ')]" .
-                "[not(contains(concat(' ', @class, ' '), ' collapse-all '))]";
-            $collapseexpandlink = $this->find('xpath', $xpath, false, false, self::REDUCED_TIMEOUT);
+            $collapseexpandlink = $this->find('xpath', $expandallxpath . '|' . $expandsectionold . '|' . $expandsectioncurrent,
+                    false, false, behat_base::get_reduced_timeout());
             $collapseexpandlink->click();
+            $this->wait_for_pending_js();
 
         } catch (ElementNotFoundException $e) {
             // The behat_base::find() method throws an exception if there are no elements,
@@ -134,7 +167,7 @@ class behat_forms extends behat_base {
 
         // Different try & catch as we can have expanded fieldsets with advanced fields on them.
         try {
-
+            $this->wait_for_pending_js();
             // Expand all fields xpath.
             $showmorexpath = "//a[normalize-space(.)='" . get_string('showmore', 'form') . "']" .
                 "[contains(concat(' ', normalize-space(@class), ' '), ' moreless-toggler')]";
@@ -144,15 +177,23 @@ class behat_forms extends behat_base {
                 return;
             }
 
-            // Funny thing about this, with findAll() we specify a pattern and each element matching the pattern is added to the array
-            // with of xpaths with a [0], [1]... sufix, but when we click on an element it does not matches the specified xpath
-            // anymore (now is a "Show less..." link) so [1] becomes [0], that's why we always click on the first XPath match,
-            // will be always the next one.
-            $iterations = count($showmores);
-            for ($i = 0; $i < $iterations; $i++) {
-                $showmores[0]->click();
-            }
+            $js = <<<EOF
+            require(['core/pending'], function(Pending) {
+                const query = document.evaluate("{$showmorexpath}", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                if (query.snapshotLength > 0) {
+                    const pendingPromise = new Pending('showmore:expand');
+                    for (let i = 0, length = query.snapshotLength; i < length; ++i) {
+                        query.snapshotItem(i).click();
+                        if (i === length - 1) {
+                            pendingPromise.resolve();
+                        }
+                    }
+                }
+            });
+            EOF;
 
+            $this->execute_script($js);
+            $this->wait_for_pending_js();
         } catch (ElementNotFoundException $e) {
             // We continue with the test.
         }
@@ -187,6 +228,20 @@ class behat_forms extends behat_base {
     }
 
     /**
+     * Sets the specified value to the field.
+     *
+     * @Given /^I set the field "(?P<field_string>(?:[^"]|\\")*)" in the "(?P<element_container_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)" to "(?P<field_value_string>(?:[^"]|\\")*)"$/
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $field
+     * @param string $containerelement Element we look in
+     * @param string $containerselectortype The type of selector where we look in
+     * @param string $value
+     */
+    public function i_set_the_field_in_container_to($field, $containerelement, $containerselectortype, $value) {
+        $this->set_field_value_in_container($field, $value, $containerselectortype, $containerelement);
+    }
+
+    /**
      * Press the key in the field to trigger the javascript keypress event
      *
      * Note that the character key will not actually be typed in the input field
@@ -217,7 +272,7 @@ class behat_forms extends behat_base {
     /**
      * Sets the specified value to the field.
      *
-     * @Given /^I set the field "(?P<field_string>(?:[^"]|\\")*)" to multiline$/
+     * @Given /^I set the field "(?P<field_string>(?:[^"]|\\")*)" to multiline:$/
      * @throws ElementNotFoundException Thrown by behat_base::find
      * @param string $field
      * @param PyStringNode $value
@@ -237,13 +292,11 @@ class behat_forms extends behat_base {
      * @return void
      */
     public function i_set_the_field_with_xpath_to($fieldxpath, $value) {
-        $fieldNode = $this->find('xpath', $fieldxpath);
-        $field = behat_field_manager::get_form_field($fieldNode, $this->getSession());
-        $field->set_value($value);
+        $this->set_field_node_value($this->find('xpath', $fieldxpath), $value);
     }
 
     /**
-     * Checks, the field matches the value. More info in http://docs.moodle.org/dev/Acceptance_testing#Providing_values_to_steps.
+     * Checks, the field matches the value.
      *
      * @Then /^the field "(?P<field_string>(?:[^"]|\\")*)" matches value "(?P<field_value_string>(?:[^"]|\\")*)"$/
      * @throws ElementNotFoundException Thrown by behat_base::find
@@ -267,14 +320,64 @@ class behat_forms extends behat_base {
     }
 
     /**
-     * Checks, the field does not match the value. More info in http://docs.moodle.org/dev/Acceptance_testing#Providing_values_to_steps.
+     * Checks, the field contains the value.
+     *
+     * @Then /^the field "(?P<field_string>(?:[^"]|\\")*)" (?P<doesnot_bool>does not )?match(?:es)* expression "(?P<expression_string>(?:[^"]|\\")*)"$/
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $field The naem or reference to the field
+     * @param bool $doesnot
+     * @param string $expression The Perl-like regular expression, including any delimeters and flag
+     * @return void
+     */
+    public function the_field_matches_expression(
+        string $field,
+        bool $doesnot,
+        string $expression,
+    ): void {
+        // Get the field.
+        $formfield = behat_field_manager::get_form_field_from_label($field, $this);
+
+        // Checks if the provided value matches the current field value.
+        $fieldvalue = $formfield->get_value();
+        $matches = preg_match($expression, $fieldvalue);
+        if ($matches === 1 && $doesnot) {
+            throw new ExpectationException(
+                "The '{$field}' field matches the expression '{$expression}' and it should not",
+                $this->getSession()
+            );
+        } else if ($matches === 0 && !$doesnot) {
+            throw new ExpectationException(
+                "The '{$field}' field does not match the expression '{$expression}'",
+                $this->getSession()
+            );
+        } else if ($matches === false) {
+            throw new coding_exception(
+                "The expression '{$expression}' was not valid",
+            );
+        }
+    }
+
+    /**
+     * Checks, the field matches the value.
+     *
+     * @Then /^the field "(?P<field_string>(?:[^"]|\\")*)" matches multiline:$/
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $field
+     * @param PyStringNode $value
+     * @return void
+     */
+    public function the_field_matches_multiline($field, PyStringNode $value) {
+        $this->the_field_matches_value($field, (string)$value);
+    }
+
+    /**
+     * Checks, the field does not match the value.
      *
      * @Then /^the field "(?P<field_string>(?:[^"]|\\")*)" does not match value "(?P<field_value_string>(?:[^"]|\\")*)"$/
      * @throws ExpectationException
      * @throws ElementNotFoundException Thrown by behat_base::find
      * @param string $field
      * @param string $value
-     * @return void
      */
     public function the_field_does_not_match_value($field, $value) {
 
@@ -286,6 +389,58 @@ class behat_forms extends behat_base {
             throw new ExpectationException(
                 'The \'' . $field . '\' value matches \'' . $value . '\' and it should not match it' ,
                 $this->getSession()
+            );
+        }
+    }
+
+    /**
+     * Checks, the field matches the value.
+     *
+     * @Then /^the field "(?P<field_string>(?:[^"]|\\")*)" in the "(?P<element_container_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)" matches value "(?P<field_value_string>(?:[^"]|\\")*)"$/
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $field
+     * @param string $containerelement Element we look in
+     * @param string $containerselectortype The type of selector where we look in
+     * @param string $value
+     */
+    public function the_field_in_container_matches_value($field, $containerelement, $containerselectortype, $value) {
+
+        // Get the field.
+        $node = $this->get_node_in_container('field', $field, $containerselectortype, $containerelement);
+        $formfield = behat_field_manager::get_form_field($node, $this->getSession());
+
+        // Checks if the provided value matches the current field value.
+        if (!$formfield->matches($value)) {
+            $fieldvalue = $formfield->get_value();
+            throw new ExpectationException(
+                    'The \'' . $field . '\' value is \'' . $fieldvalue . '\', \'' . $value . '\' expected' ,
+                    $this->getSession()
+            );
+        }
+    }
+
+    /**
+     * Checks, the field does not match the value.
+     *
+     * @Then /^the field "(?P<field_string>(?:[^"]|\\")*)" in the "(?P<element_container_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)" does not match value "(?P<field_value_string>(?:[^"]|\\")*)"$/
+     * @throws ExpectationException
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $field
+     * @param string $containerelement Element we look in
+     * @param string $containerselectortype The type of selector where we look in
+     * @param string $value
+     */
+    public function the_field_in_container_does_not_match_value($field, $containerelement, $containerselectortype, $value) {
+
+        // Get the field.
+        $node = $this->get_node_in_container('field', $field, $containerselectortype, $containerelement);
+        $formfield = behat_field_manager::get_form_field($node, $this->getSession());
+
+        // Checks if the provided value matches the current field value.
+        if ($formfield->matches($value)) {
+            throw new ExpectationException(
+                    'The \'' . $field . '\' value matches \'' . $value . '\' and it should not match it' ,
+                    $this->getSession()
             );
         }
     }
@@ -342,7 +497,7 @@ class behat_forms extends behat_base {
     }
 
     /**
-     * Checks, the provided field/value matches. More info in http://docs.moodle.org/dev/Acceptance_testing#Providing_values_to_steps.
+     * Checks, the provided field/value matches.
      *
      * @Then /^the following fields match these values:$/
      * @throws ExpectationException
@@ -362,7 +517,7 @@ class behat_forms extends behat_base {
     }
 
     /**
-     * Checks that the provided field/value pairs don't match. More info in http://docs.moodle.org/dev/Acceptance_testing#Providing_values_to_steps.
+     * Checks that the provided field/value pairs don't match.
      *
      * @Then /^the following fields do not match these values:$/
      * @throws ExpectationException
@@ -378,6 +533,52 @@ class behat_forms extends behat_base {
         // The action depends on the field type.
         foreach ($datahash as $locator => $value) {
             $this->the_field_does_not_match_value($locator, $value);
+        }
+    }
+
+    /**
+     * Checks, the provided field/value matches.
+     *
+     * @Then /^the following fields in the "(?P<element_container_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)" match these values:$/
+     * @throws ExpectationException
+     * @param string $containerelement Element we look in
+     * @param string $containerselectortype The type of selector where we look in
+     * @param TableNode $data Pairs of | field | value |
+     */
+    public function the_following_fields_in_container_match_these_values(
+            $containerelement, $containerselectortype, TableNode $data) {
+
+        // Expand all fields in case we have.
+        $this->expand_all_fields();
+
+        $datahash = $data->getRowsHash();
+
+        // The action depends on the field type.
+        foreach ($datahash as $locator => $value) {
+            $this->the_field_in_container_matches_value($locator, $containerelement, $containerselectortype, $value);
+        }
+    }
+
+    /**
+     * Checks that the provided field/value pairs don't match.
+     *
+     * @Then /^the following fields in the "(?P<element_container_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)" do not match these values:$/
+     * @throws ExpectationException
+     * @param string $containerelement Element we look in
+     * @param string $containerselectortype The type of selector where we look in
+     * @param TableNode $data Pairs of | field | value |
+     */
+    public function the_following_fields_in_container_do_not_match_these_values(
+            $containerelement, $containerselectortype, TableNode $data) {
+
+        // Expand all fields in case we have.
+        $this->expand_all_fields();
+
+        $datahash = $data->getRowsHash();
+
+        // The action depends on the field type.
+        foreach ($datahash as $locator => $value) {
+            $this->the_field_in_container_does_not_match_value($locator, $containerelement, $containerselectortype, $value);
         }
     }
 
@@ -480,11 +681,37 @@ class behat_forms extends behat_base {
      * @return void
      */
     protected function set_field_value($fieldlocator, $value) {
-
         // We delegate to behat_form_field class, it will
         // guess the type properly as it is a select tag.
         $field = behat_field_manager::get_form_field_from_label($fieldlocator, $this);
         $field->set_value($value);
+    }
+
+    /**
+     * Generic field setter to be used by chainable steps.
+     *
+     * @param NodeElement $fieldnode
+     * @param string $value
+     */
+    public function set_field_node_value(NodeElement $fieldnode, string $value): void {
+        $field = behat_field_manager::get_form_field($fieldnode, $this->getSession());
+        $field->set_value($value);
+    }
+
+    /**
+     * Generic field setter.
+     *
+     * Internal API method, a generic *I set "VALUE" to "FIELD" field*
+     * could be created based on it.
+     *
+     * @param string $fieldlocator The pointer to the field, it will depend on the field type.
+     * @param string $value the value to set
+     * @param string $containerselectortype The type of selector where we look in
+     * @param string $containerelement Element we look in
+     */
+    protected function set_field_value_in_container($fieldlocator, $value, $containerselectortype, $containerelement) {
+        $node = $this->get_node_in_container('field', $fieldlocator, $containerselectortype, $containerelement);
+        $this->set_field_node_value($node, $value);
     }
 
     /**
@@ -510,6 +737,177 @@ class behat_forms extends behat_base {
                 array(get_string('go'), "button", $containerxpath, "xpath_element")
             );
         }
+    }
+
+    /**
+     * Select item from autocomplete list.
+     *
+     * @Given /^I click on "([^"]*)" item in the autocomplete list$/
+     *
+     * @param string $item
+     */
+    public function i_click_on_item_in_the_autocomplete_list($item) {
+        $xpathtarget = "//ul[@class='form-autocomplete-suggestions']//*" .
+            "[contains(concat('|', normalize-space(.), '|'),'|" . $item . "|')]";
+
+        $this->execute('behat_general::i_click_on', [$xpathtarget, 'xpath_element']);
+    }
+
+    /**
+     * Open the auto-complete suggestions list (Assuming there is only one on the page.).
+     *
+     * @Given I open the autocomplete suggestions list
+     * @Given I open the autocomplete suggestions list in the :container :containertype
+     */
+    public function i_open_the_autocomplete_suggestions_list($container = null, $containertype = null) {
+        $csstarget = ".form-autocomplete-downarrow";
+        if ($container && $containertype) {
+            $this->execute('behat_general::i_click_on_in_the', [$csstarget, 'css_element', $container, $containertype]);
+        } else {
+            $this->execute('behat_general::i_click_on', [$csstarget, 'css_element']);
+        }
+    }
+
+    /**
+     * Expand the given autocomplete list
+     *
+     * @Given /^I expand the "(?P<field_string>(?:[^"]|\\")*)" autocomplete$/
+     *
+     * @param string $field Field name
+     */
+    public function i_expand_the_autocomplete($field) {
+        $csstarget = '.form-autocomplete-downarrow';
+        $node = $this->get_node_in_container('css_element', $csstarget, 'form_row', $field);
+        $node->click();
+    }
+
+    /**
+     * Assert the given option exist in the given autocomplete list
+     *
+     * @Given /^I should see "(?P<option_string>(?:[^"]|\\")*)" in the list of options for the "(?P<field_string>(?:[^"]|\\")*)" autocomplete$$/
+     *
+     * @param string $option Name of option
+     * @param string $field Field name
+     */
+    public function i_should_see_in_the_list_of_option_for_the_autocomplete($option, $field) {
+        $xpathtarget = "//div[contains(@class, 'form-autocomplete-selection') and contains(.//div, '" . $option . "')]";
+        $node = $this->get_node_in_container('xpath_element', $xpathtarget, 'form_row', $field);
+        $this->ensure_node_is_visible($node);
+    }
+
+    /**
+     * Checks whether the select menu contains an option with specified text or not.
+     *
+     * @Then the :name select menu should contain :option
+     * @Then the :name select menu should :not contain :option
+     *
+     * @throws ExpectationException When the expectation is not satisfied
+     * @param string $label The label of the select menu element
+     * @param string $option The string that is used to identify an option within the select menu. If the string
+     *                       has two items separated by '>' (ex. "Group > Option"), the first item ("Group") will be
+     *                       used to identify a particular group within the select menu, while the second ("Option")
+     *                       will be used to identify an option within that group. Otherwise, a string with a single
+     *                       item (ex. "Option") will be used to identify an option within the select menu regardless
+     *                       of any existing groups.
+     * @param string|null $not If set, the select menu should not contain the specified option. If null, the option
+     *                         should be present.
+     */
+    public function the_select_menu_should_contain(string $label, string $option, ?string $not = null) {
+
+        $field = behat_field_manager::get_form_field_from_label($label, $this);
+
+        if (!method_exists($field, 'has_option')) {
+            throw new coding_exception('Field does not support the has_option function.');
+        }
+
+        // If the select menu contains the specified option but it should not.
+        if ($field->has_option($option) && $not) {
+            throw new ExpectationException(
+                "The select menu should not contain \"{$option}\" but it does.",
+                $this->getSession()
+            );
+        }
+        // If the select menu does not contain the specified option but it should.
+        if (!$field->has_option($option) && !$not) {
+            throw new ExpectationException(
+                "The select menu should contain \"{$option}\" but it does not.",
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
+     * Check that the validationMessage property on a form field element includes the given text.
+     *
+     * @Then the :field field validation message should contain :text
+     * @param string $field The css selector for the input field
+     * @param string $text The text which should be found in the validation message
+     */
+    public function the_field_validation_message_should_contain(string $field, string $text): void {
+
+        // We can't use this assertion if javascript is not running.
+        $this->require_javascript();
+
+        // Check that the element exists.
+        // This is fail and go no further, if the element does not exist.
+        $node = $this->get_selected_node('field', $field);
+
+        // Get the validity result.
+        $wdelement = $this->get_webdriver_element_from_node_element($node);
+        $webdriver = $this->getSession()->getDriver()->getWebDriver();
+        $message = $webdriver->executeScript("return arguments[0].validationMessage;", [$wdelement]);
+        if (strpos($message, $text) === false) {
+            throw new ExpectationException(
+                '"' . $field . '" validation message does not contain "' . $text . '"', $this->getSession()
+            );
+        }
+
+    }
+
+    /**
+     * Check that the result of calling the checkValidity API on a form field element matches the expected result.
+     *
+     * @Then the :field field validity check should return :result
+     * @param string $field The css selector for the input field
+     * @param string $expected "true" or "false"
+     */
+    public function the_field_validity_check_should_return(string $field, string $expected): void {
+
+        // We can't use this assertion if javascript is not running.
+        $this->require_javascript();
+
+        // Expected value can only be 'true' or 'false'.
+        $expected = strtolower($expected);
+        if (!in_array($expected, ['true', 'false'])) {
+            throw new ExpectationException(
+                'Invalid value for expected value "' . $expected . '". Should be "true" or "false".',
+                $this->getSession());
+        }
+
+        // Convert the expected result from a string to bool.
+        $expected = ($expected === "true");
+
+        // Check that the element exists.
+        // This is fail and go no further, if the element does not exist.
+        $node = $this->get_selected_node('field', $field);
+
+        // Get the validity result.
+        $wdelement = $this->get_webdriver_element_from_node_element($node);
+        $webdriver = $this->getSession()->getDriver()->getWebDriver();
+        $result = $webdriver->executeScript("return arguments[0].checkValidity();", [$wdelement]);
+        if ($result !== $expected) {
+
+            // Convert booleans to strings for the exception message.
+            $result = ($result) ? "true" : "false";
+            $expected = ($expected) ? "true" : "false";
+
+            throw new ExpectationException(
+                '"' . $field . '" validation check was "' . $result . '". Expected: "' .
+                $expected . '"', $this->getSession()
+            );
+
+        }
+
     }
 
 }

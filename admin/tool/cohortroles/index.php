@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../../../config.php');
+require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/tablelib.php');
 
@@ -86,8 +86,8 @@ if ($removeid) {
 
     $title = get_string('existingcohortroles', 'tool_cohortroles');
     echo $output->heading($title);
-    $url = new moodle_url('/admin/tool/cohortroles/index.php');
-    $table = new tool_cohortroles\output\cohort_role_assignments_table(uniqid(), $url);
+
+    $table = new tool_cohortroles\output\cohort_role_assignments_table('cohort-role-assignments', $pageurl);
     echo $table->out(50, true);
 
     echo $output->spacer();

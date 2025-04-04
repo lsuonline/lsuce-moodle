@@ -1,5 +1,5 @@
 @block @block_private_files @_file_upload
-Feature: The private files block allows users to store files privately in moodle
+Feature: The private files block allows users to store files privately in moodle on front page.
   In order to store a private file in moodle
   As a teacher
   I can upload the file to my private files area using the private files block from the front page
@@ -11,11 +11,9 @@ Feature: The private files block allows users to store files privately in moodle
     And the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@example.com |
-    And I log in as "admin"
-    And I am on site homepage
-    And I navigate to "Turn editing on" node in "Front page settings"
-    And I add the "Private files" block
-    And I log out
+    And the following "blocks" exist:
+      | blockname     | contextlevel | reference | pagetypepattern | defaultregion |
+      | private_files | System       | 1         | site-index      | side-pre      |
 
   Scenario: Try to view the private files block as a guest
     Given I log in as "guest"

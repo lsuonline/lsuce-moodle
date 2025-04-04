@@ -15,26 +15,29 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * the provision course logic for Panopto
+ * The provision course logic for Panopto
  *
  * @package block_panopto
  * @copyright  Panopto 2009 - 2016 /With contributions from Spenser Jones (sjones@ambrose.edu)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+// @codingStandardsIgnoreLine
 global $CFG;
 if (empty($CFG)) {
+    // @codingStandardsIgnoreLine
     require_once(dirname(__FILE__) . '/../../config.php');
 }
-
 require_once($CFG->libdir . '/formslib.php');
+require_once(dirname(__FILE__) . '/classes/panopto_provision_form.php');
 require_once(dirname(__FILE__) . '/lib/panopto_data.php');
 require_once(dirname(__FILE__) . '/lib/block_panopto_lib.php');
 
 global $courses;
 
 // Populate list of servernames to select from.
-$aserverarray = array();
-$appkeyarray = array();
+$aserverarray = [];
+$appkeyarray = [];
 
 $numservers = get_config('block_panopto', 'server_number');
 $numservers = isset($numservers) ? $numservers : 0;
@@ -48,8 +51,8 @@ for ($serverwalker = 1; $serverwalker <= $numservers; ++$serverwalker) {
     $thisservername = get_config('block_panopto', 'server_name' . $serverwalker);
     $thisappkey = get_config('block_panopto', 'application_key' . $serverwalker);
 
-    $hasservername = !is_null_or_empty_string($thisservername);
-    if ($hasservername && !is_null_or_empty_string($thisappkey)) {
+    $hasservername = !panopto_is_string_empty($thisservername);
+    if ($hasservername && !panopto_is_string_empty($thisappkey)) {
         $aserverarray[$serverwalker - 1] = $thisservername;
         $appkeyarray[$serverwalker - 1] = $thisappkey;
     }
@@ -62,56 +65,6 @@ if (count($aserverarray) == 1) {
     $key = array_keys($aserverarray);
     $selectedserver = trim($aserverarray[$key[0]]);
     $selectedkey = trim($appkeyarray[$key[0]]);
-}
-
-/**
- * Create form for server selection.
- *
- * @copyright  Panopto 2009 - 2015
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class panopto_provision_form extends moodleform {
-
-    /**
-     * @var string $title
-     */
-    protected $title = '';
-
-    /**
-     * @var string $description
-     */
-    protected $description = '';
-
-    /**
-     * Defines a Panopto provision form
-     */
-    public function definition() {
-
-        global $DB;
-        global $aserverarray;
-
-        $mform = & $this->_form;
-        $selectquery = 'id <> 1';
-        $coursesraw = $DB->get_records_select('course', $selectquery, null, 'id, shortname, fullname');
-        $courses = array();
-        if ($coursesraw) {
-            foreach ($coursesraw as $course) {
-                $courses[$course->id] = $course->shortname . ': ' . $course->fullname;
-            }
-        }
-        asort($courses);
-
-        $serverselect = $mform->addElement('select', 'servers', get_string('select_server', 'block_panopto'), $aserverarray);
-        $mform->addHelpButton('servers', 'select_server', 'block_panopto');
-
-        $select = $mform->addElement('select', 'courses', get_string('provisioncourseselect', 'block_panopto'), $courses);
-        $select->setMultiple(true);
-        $select->setSize(32);
-        $mform->addHelpButton('courses', 'provisioncourseselect', 'block_panopto');
-
-        $this->add_action_buttons(true, get_string('provision', 'block_panopto'));
-    }
-
 }
 
 require_login();
@@ -148,7 +101,7 @@ if ($mform->is_cancelled()) {
         // Course context.
         require_capability('block/panopto:provision_course', $context);
 
-        $courses = array($courseidparam);
+        $courses = [$courseidparam];
         $editcourseurl = new moodle_url($returnurl);
         $PAGE->navbar->add(get_string('pluginname', 'block_panopto'), $editcourseurl);
     } else {
@@ -181,7 +134,7 @@ if ($mform->is_cancelled()) {
             }
 
             // Set the current Moodle course to retrieve info for / provision.
-            $panoptodata = new panopto_data($courseid);
+            $panoptodata = new \panopto_data($courseid);
 
             // If an application key and server name are pre-set (happens when provisioning from multi-select page) use those,
             // otherwise retrieve values from the db.
@@ -204,10 +157,12 @@ if ($mform->is_cancelled()) {
                 $provisioneddata = $panoptodata->provision_course($provisioningdata, false);
                 include('views/provisioned_course.html.php');
             } else if ($coursecount == 1) {
-                // If there is only one course in the count and the server info is invalid redirect to the form for manual provisioning.
+                // If there is only one course in the count and the server info is invalid redirect
+                // to the form for manual provisioning.
                 $mform->display();
             } else {
-                // For some reason the server name or application key are invalid and we can't redirect to the form since there are multiple courses, let the user know.
+                // For some reason the server name or application key are invalid and we can't redirect
+                // to the form since there are multiple courses, let the user know.
                 echo "<div class='block_panopto'>" .
                         "<div class='panoptoProcessInformation'>" .
                             "<div class='errorMessage'>" . get_string('server_info_not_valid', 'block_panopto') . "</div>" .

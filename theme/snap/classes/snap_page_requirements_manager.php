@@ -18,13 +18,13 @@
  * Snap page requirements manager.
  * Required for blacklisting core javascript / css.
  * @author    Guy Thomas
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap;
 
-require_once($CFG->dirroot.'/lib/outputrequirementslib.php');
+defined('MOODLE_INTERNAL') || die();
 
 class snap_page_requirements_manager extends \page_requirements_manager {
     /**
@@ -41,7 +41,7 @@ class snap_page_requirements_manager extends \page_requirements_manager {
      */
     public function js_init_call($function, array $extraarguments = null, $ondomready = false, array $module = null) {
         $blacklist = [
-            'M.core_completion.init'
+            'M.core_completion.init',
         ];
         if (in_array($function, $blacklist)) {
             return;
@@ -71,7 +71,7 @@ class snap_page_requirements_manager extends \page_requirements_manager {
             }
 
             $snapmanprop = new \ReflectionProperty($this, $pname);
-            // if the property is private or protected  set accessible, after the copy reset to not accessible.
+            // If the property is private or protected  set accessible, after the copy reset to not accessible.
             $isprotected = $snapmanprop->isPrivate() || $snapmanprop->isProtected();
             if ($isprotected) {
                 $snapmanprop->setAccessible(true);

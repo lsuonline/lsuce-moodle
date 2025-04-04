@@ -1,5 +1,5 @@
 @block @block_private_files @_file_upload @javascript
-Feature: The private files block allows users to store files privately in moodle
+Feature: The private files block allows users to store files privately in moodle on dashboard
   In order to store a private file in moodle
   As a user
   I can upload the file to my private files area using the private files block on the dashboard
@@ -8,6 +8,9 @@ Feature: The private files block allows users to store files privately in moodle
     Given the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@example.com |
+    And the following "blocks" exist:
+      | blockname     | contextlevel | reference | pagetypepattern | defaultregion |
+      | private_files | System       | 1         | my-index        | side-post     |
     And I log in as "teacher1"
     And "Private files" "block" should exist
     And I should see "No files available" in the "Private files" "block"

@@ -20,13 +20,13 @@
  * Displays the list of found plagiarism plugins, their version (if found) and
  * a link to uninstall the plagiarism plugin.
  *
- * @see       http://docs.moodle.org/dev/Plagiarism_API
+ * @see       https://moodledev.io/docs/apis/subsystems/plagiarism
  * @package   admin
  * @copyright 2012 Dan Marsden <dan@danmarsden.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(dirname(__FILE__)) . '/config.php');
+require_once(__DIR__ . '/../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/tablelib.php');
 

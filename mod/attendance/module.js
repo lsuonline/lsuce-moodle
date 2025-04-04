@@ -1,6 +1,6 @@
-M.mod_attendance = {};
+M.mod_attendance = {}; // eslint-disable-line camelcase
 
-M.mod_attendance.init_manage = function(Y) {
+M.mod_attendance.init_manage = function(Y) { // eslint-disable-line camelcase
 
     Y.on('click', function(e) {
         if (e.target.get('checked')) {
@@ -12,10 +12,10 @@ M.mod_attendance.init_manage = function(Y) {
                 this.set('checked', '');
             });
         }
-    }, '#cb_selector' );
+    }, '#cb_selector');
 };
 
-M.mod_attendance.set_preferences_action = function(action) {
+M.mod_attendance.set_preferences_action = function(action) { // eslint-disable-line camelcase
     var item = document.getElementById('preferencesaction');
     if (item) {
         item.setAttribute('value', action);

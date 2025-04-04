@@ -17,7 +17,6 @@
  * Event base javascript module.
  *
  * @module     tool_lp/event_base
- * @package    tool_lp
  * @copyright  2015 Frédéric Massart - FMCorz.net
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,7 +29,7 @@ define(['jquery'], function($) {
         this._eventNode = $('<div></div>');
     };
 
-    /** @type {Node} The node we attach the events to. */
+    /** @property {Node} The node we attach the events to. */
     Base.prototype._eventNode = null;
 
     /**
@@ -48,7 +47,7 @@ define(['jquery'], function($) {
      * Trigger an event.
      *
      * @param {String} type The type of event.
-     * @param {Object} The data to pass to the listeners.
+     * @param {Object} data The data to pass to the listeners.
      * @method _trigger
      */
     Base.prototype._trigger = function(type, data) {

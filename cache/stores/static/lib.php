@@ -26,6 +26,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_cache\definition;
+use core_cache\store;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -34,8 +37,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2012 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-abstract class static_data_store extends cache_store {
-
+abstract class static_data_store extends store {
     /**
      * An array for storage.
      * @var array
@@ -107,16 +109,16 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     protected $store;
 
     /**
-     * The ttl if there is one. Hopefully not.
-     * @var int
-     */
-    protected $ttl = 0;
-
-    /**
      * The maximum size for the store, or false if there isn't one.
      * @var bool
      */
     protected $maxsize = false;
+
+    /**
+     * Where this cache uses simpledata and we don't need to serialize it.
+     * @var bool
+     */
+    protected $simpledata = false;
 
     /**
      * The number of items currently being stored.
@@ -125,10 +127,16 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     protected $storecount = 0;
 
     /**
+     * igbinary extension available.
+     * @var bool
+     */
+    protected $igbinaryfound = false;
+
+    /**
      * Constructs the store instance.
      *
      * Noting that this function is not an initialisation. It is used to prepare the store for use.
-     * The store will be initialised when required and will be provided with a cache_definition at that time.
+     * The store will be initialised when required and will be provided with a definition at that time.
      *
      * @param string $name
      * @param array $configuration
@@ -146,18 +154,20 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     public static function get_supported_features(array $configuration = array()) {
         return self::SUPPORTS_DATA_GUARANTEE +
                self::SUPPORTS_NATIVE_TTL +
-               self::IS_SEARCHABLE;
+               self::IS_SEARCHABLE +
+               self::SUPPORTS_MULTIPLE_IDENTIFIERS +
+               self::DEREFERENCES_OBJECTS;
     }
 
     /**
-     * Returns false as this store does not support multiple identifiers.
+     * Returns true as this store does support multiple identifiers.
      * (This optional function is a performance optimisation; it must be
      * consistent with the value from get_supported_features.)
      *
-     * @return bool False
+     * @return bool true
      */
     public function supports_multiple_identifiers() {
-        return false;
+        return true;
     }
 
     /**
@@ -182,11 +192,11 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     /**
      * Returns true if the given mode is supported by this store.
      *
-     * @param int $mode One of cache_store::MODE_*
+     * @param int $mode One of store::MODE_*
      * @return bool
      */
     public static function is_supported_mode($mode) {
-        return ($mode === self::MODE_REQUEST);
+        return ($mode === store::MODE_REQUEST);
     }
 
     /**
@@ -194,13 +204,15 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      *
      * Once this has been done the cache is all set to be used.
      *
-     * @param cache_definition $definition
+     * @param definition $definition
      */
-    public function initialise(cache_definition $definition) {
-        $this->storeid = $definition->generate_definition_hash();
+    public function initialise(definition $definition) {
+        $keyarray = $definition->generate_multi_key_parts();
+        $this->storeid = $keyarray['mode'].'/'.$keyarray['component'].'/'.$keyarray['area'].'/'.$keyarray['siteidentifier'];
         $this->store = &self::register_store_id($this->storeid);
-        $this->ttl = $definition->get_ttl();
         $maxsize = $definition->get_maxsize();
+        $this->simpledata = $definition->uses_simple_data();
+        $this->igbinaryfound = extension_loaded('igbinary');
         if ($maxsize !== null) {
             // Must be a positive int.
             $this->maxsize = abs((int)$maxsize);
@@ -218,17 +230,57 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     }
 
     /**
+     * Uses igbinary serializer if igbinary extension is loaded.
+     * Fallback to PHP serializer.
+     *
+     * @param mixed $data
+     * The value to be serialized.
+     * @return string a string containing a byte-stream representation of
+     * value that can be stored anywhere.
+     */
+    protected function serialize($data) {
+        if ($this->igbinaryfound) {
+            return igbinary_serialize($data);
+        } else {
+            return serialize($data);
+        }
+    }
+
+    /**
+     * Uses igbinary unserializer if igbinary extension is loaded.
+     * Fallback to PHP unserializer.
+     *
+     * @param string $str
+     * The serialized string.
+     * @return mixed The converted value is returned, and can be a boolean,
+     * integer, float, string,
+     * array or object.
+     */
+    protected function unserialize($str) {
+        if ($this->igbinaryfound) {
+            return igbinary_unserialize($str);
+        } else {
+            return unserialize($str);
+        }
+    }
+
+    /**
      * Retrieves an item from the cache store given its key.
      *
      * @param string $key The key to retrieve
      * @return mixed The data that was associated with the key, or false if the key did not exist.
      */
     public function get($key) {
+        if (!is_array($key)) {
+            $key = array('key' => $key);
+        }
+
+        $key = $key['key'];
         if (isset($this->store[$key])) {
-            if ($this->ttl == 0) {
-                return $this->store[$key][0];
-            } else if ($this->store[$key][1] >= (cache::now() - $this->ttl)) {
-                return $this->store[$key][0];
+            if ($this->store[$key]['serialized']) {
+                return $this->unserialize($this->store[$key]['data']);
+            } else {
+                return $this->store[$key]['data'];
             }
         }
         return false;
@@ -245,17 +297,18 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      */
     public function get_many($keys) {
         $return = array();
-        if ($this->ttl != 0) {
-            $maxtime = cache::now() - $this->ttl;
-        }
 
         foreach ($keys as $key) {
+            if (!is_array($key)) {
+                $key = array('key' => $key);
+            }
+            $key = $key['key'];
             $return[$key] = false;
             if (isset($this->store[$key])) {
-                if ($this->ttl == 0) {
-                    $return[$key] = $this->store[$key][0];
-                } else if ($this->store[$key][1] >= $maxtime) {
-                    $return[$key] = $this->store[$key][0];
+                if ($this->store[$key]['serialized']) {
+                    $return[$key] = $this->unserialize($this->store[$key]['data']);
+                } else {
+                    $return[$key] = $this->store[$key]['data'];
                 }
             }
         }
@@ -271,15 +324,23 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      * @return bool True if the operation was a success false otherwise.
      */
     public function set($key, $data, $testmaxsize = true) {
+        if (!is_array($key)) {
+            $key = array('key' => $key);
+        }
+        $key = $key['key'];
         $testmaxsize = ($testmaxsize && $this->maxsize !== false);
         if ($testmaxsize) {
             $increment = (!isset($this->store[$key]));
         }
-        if ($this->ttl == 0) {
-            $this->store[$key][0] = $data;
+
+        if ($this->simpledata || is_scalar($data)) {
+            $this->store[$key]['data'] = $data;
+            $this->store[$key]['serialized'] = false;
         } else {
-            $this->store[$key] = array($data, cache::now());
+            $this->store[$key]['data'] = $this->serialize($data);
+            $this->store[$key]['serialized'] = true;
         }
+
         if ($testmaxsize && $increment) {
             $this->storecount++;
             if ($this->storecount > $this->maxsize) {
@@ -300,8 +361,11 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     public function set_many(array $keyvaluearray) {
         $count = 0;
         foreach ($keyvaluearray as $pair) {
+            if (!is_array($pair['key'])) {
+                $pair['key'] = array('key' => $pair['key']);
+            }
             // Don't test the maxsize here. We'll do it once when we are done.
-            $this->set($pair['key'], $pair['value'], false);
+            $this->set($pair['key']['key'], $pair['value'], false);
             $count++;
         }
         if ($this->maxsize !== false) {
@@ -320,14 +384,10 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      * @return bool
      */
     public function has($key) {
-        if (isset($this->store[$key])) {
-            if ($this->ttl == 0) {
-                return true;
-            } else if ($this->store[$key][1] >= (cache::now() - $this->ttl)) {
-                return true;
-            }
+        if (is_array($key)) {
+            $key = $key['key'];
         }
-        return false;
+        return isset($this->store[$key]);
     }
 
     /**
@@ -337,15 +397,12 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      * @return bool
      */
     public function has_all(array $keys) {
-        if ($this->ttl != 0) {
-            $maxtime = cache::now() - $this->ttl;
-        }
-
         foreach ($keys as $key) {
-            if (!isset($this->store[$key])) {
-                return false;
+            if (!is_array($key)) {
+                $key = array('key' => $key);
             }
-            if ($this->ttl != 0 && $this->store[$key][1] < $maxtime) {
+            $key = $key['key'];
+            if (!isset($this->store[$key])) {
                 return false;
             }
         }
@@ -359,12 +416,13 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      * @return bool
      */
     public function has_any(array $keys) {
-        if ($this->ttl != 0) {
-            $maxtime = cache::now() - $this->ttl;
-        }
-
         foreach ($keys as $key) {
-            if (isset($this->store[$key]) && ($this->ttl == 0 || $this->store[$key][1] >= $maxtime)) {
+            if (!is_array($key)) {
+                $key = array('key' => $key);
+            }
+            $key = $key['key'];
+
+            if (isset($this->store[$key])) {
                 return true;
             }
         }
@@ -378,6 +436,10 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
      * @return bool Returns true if the operation was a success, false otherwise.
      */
     public function delete($key) {
+        if (!is_array($key)) {
+            $key = array('key' => $key);
+        }
+        $key = $key['key'];
         $result = isset($this->store[$key]);
         unset($this->store[$key]);
         if ($this->maxsize !== false) {
@@ -395,6 +457,10 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     public function delete_many(array $keys) {
         $count = 0;
         foreach ($keys as $key) {
+            if (!is_array($key)) {
+                $key = array('key' => $key);
+            }
+            $key = $key['key'];
             if (isset($this->store[$key])) {
                 $count++;
             }
@@ -461,14 +527,23 @@ class cachestore_static extends static_data_store implements cache_is_key_aware,
     /**
      * Generates an instance of the cache store that can be used for testing.
      *
-     * @param cache_definition $definition
+     * @param definition $definition
      * @return cachestore_static
      */
-    public static function initialise_test_instance(cache_definition $definition) {
+    public static function initialise_test_instance(definition $definition) {
         // Do something here perhaps.
         $cache = new cachestore_static('Static store');
         $cache->initialise($definition);
         return $cache;
+    }
+
+    /**
+     * Generates the appropriate configuration required for unit testing.
+     *
+     * @return array Array of unit test configuration data to be used by initialise().
+     */
+    public static function unit_test_configuration() {
+        return array();
     }
 
     /**

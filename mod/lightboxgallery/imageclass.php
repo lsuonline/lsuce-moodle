@@ -16,14 +16,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Main image class with all image manipulations as methods
- *
- * @package   mod_lightboxgallery
- * @copyright 2010 John Kelsh
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 require_once($CFG->libdir.'/gdlib.php');
 
 define('THUMBNAIL_WIDTH', 162);
@@ -32,17 +24,39 @@ define('LIGHTBOXGALLERY_POS_HID', 2);
 define('LIGHTBOXGALLERY_POS_TOP', 1);
 define('LIGHTBOXGALLERY_POS_BOT', 0);
 
+/**
+ * Main image class with all image manipulations as methods
+ *
+ * @package   mod_lightboxgallery
+ * @copyright 2010 John Kelsh
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class lightboxgallery_image {
 
     private $cm;
     private $cmid;
-    private $storedfile;
-    private $imageurl;
-    private $tags;
-    private $thumburl;
     private $context;
+    private $gallery;
+    private $imageurl;
 
-    public function __construct($storedfile, $gallery, $cm) {
+    // A quick lookup cache of this images metadata. Mainly useful during initial display.
+    private $metadata = null;
+
+
+    /**
+     * The filepool object.
+     *
+     * @var stored_file
+     */
+    private $storedfile;
+    private $tags;
+    private $thumbnail;
+    private $thumburl;
+
+    public $height = null;
+    public $width = null;
+
+    public function __construct($storedfile, $gallery, $cm, $metadata = null, $thumbnail = false, $loadextrainfo = true) {
         global $CFG;
 
         $this->storedfile = &$storedfile;
@@ -51,19 +65,40 @@ class lightboxgallery_image {
         $this->cmid = $cm->id;
         $this->context = context_module::instance($cm->id);
 
-        $this->imageurl = $CFG->wwwroot.'/pluginfile.php/'.$this->context->id.'/mod_lightboxgallery/gallery_images/'.
-                           $this->storedfile->get_itemid().$this->storedfile->get_filepath().$this->storedfile->get_filename();
-        $this->thumburl = $CFG->wwwroot.'/pluginfile.php/'.$this->context->id.'/mod_lightboxgallery/gallery_thumbs/0/'.
-                           $this->storedfile->get_filepath().$this->storedfile->get_filename().'.png';
+        $this->imageurl = moodle_url::make_pluginfile_url($this->context->id,
+            'mod_lightboxgallery',
+            'gallery_images',
+            $this->storedfile->get_itemid(),
+            $this->storedfile->get_filepath(),
+            $this->storedfile->get_filename());
+        $this->imageurl->param('mtime', $this->storedfile->get_timemodified());
 
-        $imageinfo = $this->storedfile->get_imageinfo();
+        $this->thumburl = moodle_url::make_pluginfile_url($this->context->id,
+            'mod_lightboxgallery',
+            'gallery_thumbs',
+            0,
+            $this->storedfile->get_filepath(),
+            $this->storedfile->get_filename().'.png');
+        $this->thumburl->param('mtime', $this->storedfile->get_timemodified());
 
-        $this->height = $imageinfo['height'];
-        $this->width = $imageinfo['width'];
+        if ($this->storedfile->get_mimetype() == 'image/svg+xml') {
+            $this->thumburl = $this->imageurl;
+        }
 
-        if (!$this->thumbnail = $this->get_thumbnail()) {
+        if ($loadextrainfo) {
+            $imageinfo = $this->storedfile->get_imageinfo();
+            $this->height = $imageinfo['height'];
+            $this->width = $imageinfo['width'];
+        }
+
+        $this->thumbnail = $thumbnail;
+
+        // If we weren't given a thumbnail, double check if it exists before generating one.
+        if (!$thumbnail && (!$this->thumbnail = $this->get_thumbnail())) {
             $this->thumbnail = $this->create_thumbnail();
         }
+
+        $this->metadata = $metadata;
     }
 
     public function add_tag($tag) {
@@ -79,7 +114,11 @@ class lightboxgallery_image {
     }
 
     public function create_thumbnail($offsetx = 0, $offsety = 0) {
-        global $CFG;
+        if ($this->storedfile->get_mimetype() == 'image/svg+xml'
+            || $this->width === null || $this->height === null) {
+            // We can't resize SVG or files we don't know the dimensions of.
+            return $this->storedfile;
+        }
 
         $fileinfo = array(
             'contextid' => $this->context->id,
@@ -112,7 +151,7 @@ class lightboxgallery_image {
         $base = imagecreatefrompng($CFG->dirroot.'/mod/lightboxgallery/pix/index.png');
         $transparent = imagecolorat($base, 0, 0);
 
-        $shrunk = imagerotate($this->get_image_resized(48, 48, 0, 0), 351, $transparent, 0);
+        $shrunk = imagerotate($this->get_image_resized(48, 48, 0, 0), 351, $transparent);
 
         imagecolortransparent($base, $transparent);
 
@@ -170,28 +209,41 @@ class lightboxgallery_image {
         $this->delete_file(false);
         $fs = get_file_storage();
         $this->set_stored_file($fs->create_file_from_string($fileinfo, $flipped));
-
         $this->create_thumbnail();
+        return $fileinfo['filename'];
     }
 
     private function get_editing_options() {
         global $CFG;
+
+        $options = [
+            'caption',
+            'delete',
+            'flip',
+            'resize',
+            'rotate',
+            'tag',
+            'thumbnail',
+        ];
+
+        if ($this->storedfile->get_mimetype() == 'image/svg+xml') {
+            $options = [
+                'caption',
+                'delete',
+                'tag',
+            ];
+        }
 
         $html = '<form action="'.$CFG->wwwroot.'/mod/lightboxgallery/imageedit.php" method="post"/>'.
                     '<input type="hidden" name="id" value="'.$this->cmid.'" />'.
                     '<input type="hidden" name="image" value="'.$this->storedfile->get_filename().'" />'.
                     '<input type="hidden" name="page" value="0" />'.
                     '<select name="tab" class="lightbox-edit-select" onchange="submit();">'.
-                        '<option disabled selected>'.get_string('edit_choose', 'lightboxgallery').'</option>'.
-                        '<option value="caption">'.get_string('edit_caption', 'lightboxgallery').'</option>'.
-                        '<!--<option value="crop">'.get_string('edit_crop', 'lightboxgallery').'</option>-->'.
-                        '<option value="delete">'.get_string('edit_delete', 'lightboxgallery').'</option>'.
-                        '<option value="flip">'.get_string('edit_flip', 'lightboxgallery').'</option>'.
-                        '<option value="resize">'.get_string('edit_resize', 'lightboxgallery').'</option>'.
-                        '<option value="rotate">'.get_string('edit_rotate', 'lightboxgallery').'</option>'.
-                        '<option value="tag">'.get_string('edit_tag', 'lightboxgallery').'</option>'.
-                        '<option value="thumbnail">'.get_string('edit_thumbnail', 'lightboxgallery').'</option>'.
-                    '</select>'.
+                        '<option disabled selected>'.get_string('edit_choose', 'lightboxgallery').'</option>';
+        foreach ($options as $option) {
+            $html .= '<option value="'.$option.'">'.get_string('edit_'.$option, 'lightboxgallery').'</option>';
+        }
+        $html .= '</select>'.
                 '</form>';
 
         return $html;
@@ -200,6 +252,14 @@ class lightboxgallery_image {
     public function get_image_caption() {
         global $DB;
         $caption = '';
+
+        if ($this->metadata !== null) {
+            foreach ($this->metadata as $metarecord) {
+                if ($metarecord->metatype == 'caption') {
+                    return $metarecord->description;
+                }
+            }
+        }
 
         if ($imagemeta = $DB->get_record('lightboxgallery_image_meta',
                 array('gallery' => $this->gallery->id, 'image' => $this->storedfile->get_filename(), 'metatype' => 'caption'))) {
@@ -215,7 +275,7 @@ class lightboxgallery_image {
         } else {
             $caption = lightboxgallery_resize_text($this->get_image_caption(), MAX_IMAGE_LABEL);
         }
-        $timemodified = strftime(get_string('strftimedatetimeshort', 'langconfig'), $this->storedfile->get_timemodified());
+        $timemodified = userdate($this->storedfile->get_timemodified(), get_string('strftimedatetimeshort', 'langconfig'));
         $filesize = round($this->storedfile->get_filesize() / 100) / 10;
 
         // Hide the caption.
@@ -254,7 +314,7 @@ class lightboxgallery_image {
         $flipped = imagecreatetruecolor($this->width, $this->height);
         $w = $this->width;
         $h = $this->height;
-        if ($direction == 'horizontal') {
+        if ($direction == 'vertical') {
             for ($x = 0; $x < $w; $x++) {
                 for ($y = 0; $y < $h; $y++) {
                     imagecopy($flipped, $image, $x, $h - $y - 1, $x, $y, 1, 1);
@@ -273,6 +333,7 @@ class lightboxgallery_image {
     }
 
     private function get_image_resized($height = THUMBNAIL_HEIGHT, $width = THUMBNAIL_WIDTH, $offsetx = 0, $offsety = 0) {
+        raise_memory_limit(MEMORY_EXTRA);
         $image = imagecreatefromstring($this->storedfile->get_content());
         $resized = imagecreatetruecolor($width, $height);
         imagealphablending($resized, false);
@@ -320,10 +381,19 @@ class lightboxgallery_image {
             return $this->tags;
         }
 
-        $this->tags = $DB->get_records('lightboxgallery_image_meta',
-                                        array('image' => $this->storedfile->get_filename(), 'metatype' => 'tag'));
+        $tags = [];
+        if ($this->metadata !== null) {
+            foreach ($this->metadata as $metarecord) {
+                if ($metarecord->metatype == 'tag') {
+                    $tags[$metarecord->id] = $metarecord;
+                }
+            }
+        } else {
+            $tags = $DB->get_records('lightboxgallery_image_meta',
+                ['image' => $this->storedfile->get_filename(), 'metatype' => 'tag']);
+        }
 
-        return $this->tags;
+        return $this->tags = $tags;
     }
 
     private function get_thumbnail() {
@@ -417,6 +487,10 @@ class lightboxgallery_image {
         } else {
             return $DB->insert_record('lightboxgallery_image_meta', $imagemeta);
         }
+    }
+
+    public function copy_content_to_temp() {
+        return $this->storedfile->copy_content_to_temp();
     }
 
     public function set_stored_file($storedfile) {

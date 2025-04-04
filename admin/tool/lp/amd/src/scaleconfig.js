@@ -17,7 +17,6 @@
  * Handle opening a dialogue to configure scale data.
  *
  * @module     tool_lp/scaleconfig
- * @package    tool_lp
  * @copyright  2015 Adrian Greeve <adrian@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -140,7 +139,7 @@ define(['jquery', 'core/notification', 'core/templates', 'core/ajax', 'tool_lp/d
         }.bind(this));
         body.on('click', '[data-action="cancel"]', function() {
             popup.close();
-        }.bind(this));
+        });
     };
 
     /**
@@ -151,7 +150,7 @@ define(['jquery', 'core/notification', 'core/templates', 'core/ajax', 'tool_lp/d
     ScaleConfig.prototype.setScaleConfig = function() {
         var body = $(this.popup.getContent());
         // Get the data.
-        var data = [{ scaleid: this.scaleid}];
+        var data = [{scaleid: this.scaleid}];
         this.scalevalues.forEach(function(value) {
             var scaledefault = 0;
             var proficient = 0;
@@ -198,7 +197,6 @@ define(['jquery', 'core/notification', 'core/templates', 'core/ajax', 'tool_lp/d
      *
      * @name   scaleChangeHandler
      * @param  {Event} e
-     * @return {Void}
      * @function
      */
     ScaleConfig.prototype.scaleChangeHandler = function(e) {

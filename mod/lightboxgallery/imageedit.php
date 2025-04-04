@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+use core\output\tabobject;
 
 /**
  * Image editing page
@@ -58,7 +59,7 @@ $tabs = array();
 foreach ($edittypes as $type => $name) {
     $editurl = new moodle_url('/mod/lightboxgallery/imageedit.php',
                                 array('id' => $cm->id, 'image' => $image, 'page' => $page, 'tab' => $type));
-    $tabs[] = new tabObject($type, $editurl, $name);
+    $tabs[] = new tabobject($type, $editurl, $name);
 }
 
 if (!in_array($tab, array_keys($edittypes))) {
@@ -76,7 +77,7 @@ $editinstance = new $editclass($gallery, $cm, $image, $tab);
 
 $fs = get_file_storage();
 if (!$storedfile = $fs->get_file($context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $image)) {
-    print_error(get_string('errornofile', 'lightboxgallery', $image));
+    throw new \moodle_exception(get_string('errornofile', 'lightboxgallery', $image));
 }
 
 if ($editinstance->processing() && confirm_sesskey()) {

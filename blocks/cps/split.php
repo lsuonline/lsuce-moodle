@@ -14,25 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
- * @copyright  2014 Louisiana State University
+ * @copyright  2019 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once '../../config.php';
-require_once 'classes/lib.php';
-require_once 'split_form.php';
+
+require_once('../../config.php');
+require_once('classes/lib.php');
+require_once('split_form.php');
 
 require_login();
 
 if (!cps_split::is_enabled()) {
-    print_error('not_enabled', 'block_cps', '', cps_split::name());
+    moodle_exception('not_enabled', 'block_cps', '', cps_split::name());
 }
 
 if (!ues_user::is_teacher()) {
-    print_error('not_teacher', 'block_cps');
+    moodle_exception('not_teacher', 'block_cps');
 }
 
 $teacher = ues_teacher::get(array('userid' => $USER->id));
@@ -40,20 +40,20 @@ $teacher = ues_teacher::get(array('userid' => $USER->id));
 $sections = cps_unwant::active_sections_for($teacher);
 
 if (empty($sections)) {
-    print_error('no_section', 'block_cps');
+    moodle_exception('no_section', 'block_cps');
 }
 
 $semesters = ues_semester::merge_sections($sections);
 
-$valid_semesters = cps_split::filter_valid($semesters);
+$validsemesters = cps_split::filter_valid($semesters);
 
-if (empty($valid_semesters)) {
-    print_error('no_courses', 'block_cps');
+if (empty($validsemesters)) {
+    moodle_exception('no_courses', 'block_cps');
 }
 
-$_s = ues::gen_str('block_cps');
+$s = ues::gen_str('block_cps');
 
-$blockname = $_s('pluginname');
+$blockname = $s('pluginname');
 $heading = cps_split::name();
 
 $context = context_system::instance();
@@ -70,7 +70,7 @@ $PAGE->requires->jquery();
 $PAGE->requires->js('/blocks/cps/js/selection.js');
 $PAGE->requires->js('/blocks/cps/js/split.js');
 
-$form = cps_form::create('split', $valid_semesters);
+$form = cps_form::create('split', $validsemesters);
 
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/my'));
@@ -83,18 +83,18 @@ if ($form->is_cancelled()) {
         $form = new split_form_finish();
 
         try {
-            $form->process($data, $valid_semesters);
+            $form->process($data, $validsemesters);
 
             $form->display();
         } catch (Exception $e) {
-            echo $OUTPUT->notification($_s('application_errors', $e->getMessage()));
+            echo $OUTPUT->notification($s('application_errors', $e->getMessage()));
             echo $OUTPUT->continue_button('/my');
         }
 
         die();
     }
 
-    $form = cps_form::next_from('split', $form->next, $data, $valid_semesters);
+    $form = cps_form::next_from('split', $form->next, $data, $validsemesters);
 }
 
 echo $OUTPUT->header();

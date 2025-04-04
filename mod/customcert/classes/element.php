@@ -24,18 +24,31 @@
 
 namespace mod_customcert;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class element
  *
- * All customercert element plugins are based on this class.
+ * All customcert element plugins are based on this class.
  *
  * @package    mod_customcert
  * @copyright  2013 Mark Nelson <markn@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class element {
+
+    /**
+     * @var string The left alignment constant.
+     */
+    const ALIGN_LEFT = 'L';
+
+    /**
+     * @var string The centered alignment constant.
+     */
+    const ALIGN_CENTER = 'C';
+
+    /**
+     * @var string The right alignment constant.
+     */
+    const ALIGN_RIGHT = 'R';
 
     /**
      * @var \stdClass $element The data for the element we are adding - do not use, kept for legacy reasons.
@@ -98,9 +111,19 @@ abstract class element {
     protected $refpoint;
 
     /**
+     * @var string The alignment.
+     */
+    protected $alignment;
+
+    /**
      * @var bool $showposxy Show position XY form elements?
      */
     protected $showposxy;
+
+    /**
+     * @var edit_element_form Element edit form instance.
+     */
+    private $editelementform;
 
     /**
      * Constructor.
@@ -125,6 +148,7 @@ abstract class element {
         $this->width = $element->width;
         $this->refpoint = $element->refpoint;
         $this->showposxy = isset($showposxy) && $showposxy;
+        $this->set_alignment($element->alignment ?? self::ALIGN_LEFT);
     }
 
     /**
@@ -227,10 +251,35 @@ abstract class element {
     }
 
     /**
+     * Returns the alignment.
+     *
+     * @return string The current alignment value.
+     */
+    public function get_alignment() {
+        return $this->alignment ?? self::ALIGN_LEFT;
+    }
+
+    /**
+     * Sets the alignment.
+     *
+     * @param string $alignment The new alignment.
+     *
+     * @throws \InvalidArgumentException if the provided new alignment is not valid.
+     */
+    protected function set_alignment(string $alignment) {
+        $validvalues = [self::ALIGN_LEFT, self::ALIGN_CENTER, self::ALIGN_RIGHT];
+        if (!in_array($alignment, $validvalues)) {
+            throw new \InvalidArgumentException("'$alignment' is not a valid alignment value. It has to be one of " .
+                implode(', ', $validvalues));
+        }
+        $this->alignment = $alignment;
+    }
+
+    /**
      * This function renders the form elements when adding a customcert element.
      * Can be overridden if more functionality is needed.
      *
-     * @param edit_element_form $mform the edit_form instance.
+     * @param \MoodleQuickForm $mform the edit_form instance.
      */
     public function render_form_elements($mform) {
         // Render the common elements.
@@ -240,6 +289,8 @@ abstract class element {
             element_helper::render_form_element_position($mform);
         }
         element_helper::render_form_element_width($mform);
+        element_helper::render_form_element_refpoint($mform);
+        element_helper::render_form_element_alignment($mform);
     }
 
     /**
@@ -259,7 +310,8 @@ abstract class element {
             'posx' => $this->posx,
             'posy' => $this->posy,
             'width' => $this->width,
-            'refpoint' => $this->refpoint
+            'refpoint' => $this->refpoint,
+            'alignment' => $this->get_alignment(),
         ];
         foreach ($properties as $property => $value) {
             if (!is_null($value) && $mform->elementExists($property)) {
@@ -279,7 +331,7 @@ abstract class element {
      */
     public function validate_form_elements($data, $files) {
         // Array to return the errors.
-        $errors = array();
+        $errors = [];
 
         // Common validation methods.
         $errors += element_helper::validate_form_element_colour($data);
@@ -305,27 +357,37 @@ abstract class element {
         $element = new \stdClass();
         $element->name = $data->name;
         $element->data = $this->save_unique_data($data);
-        $element->font = (isset($data->font)) ? $data->font : null;
-        $element->fontsize = (isset($data->fontsize)) ? $data->fontsize : null;
-        $element->colour = (isset($data->colour)) ? $data->colour : null;
+        $element->font = $data->font ?? null;
+        $element->fontsize = $data->fontsize ?? null;
+        $element->colour = $data->colour ?? null;
         if ($this->showposxy) {
-            $element->posx = (isset($data->posx)) ? $data->posx : null;
-            $element->posy = (isset($data->posy)) ? $data->posy : null;
+            $element->posx = $data->posx ?? null;
+            $element->posy = $data->posy ?? null;
         }
-        $element->width = (isset($data->width)) ? $data->width : null;
-        $element->refpoint = (isset($data->refpoint)) ? $data->refpoint : null;
+        $element->width = $data->width ?? null;
+        $element->refpoint = $data->refpoint ?? null;
+        $element->alignment = $data->alignment ?? self::ALIGN_LEFT;
         $element->timemodified = time();
 
         // Check if we are updating, or inserting a new element.
         if (!empty($this->id)) { // Must be updating a record in the database.
             $element->id = $this->id;
-            return $DB->update_record('customcert_elements', $element);
+            $return = $DB->update_record('customcert_elements', $element);
+
+            \mod_customcert\event\element_updated::create_from_element($this)->trigger();
+
+            return $return;
         } else { // Must be adding a new one.
             $element->element = $data->element;
             $element->pageid = $data->pageid;
             $element->sequence = \mod_customcert\element_helper::get_element_sequence($element->pageid);
             $element->timecreated = time();
-            return $DB->insert_record('customcert_elements', $element, false);
+            $element->id = $DB->insert_record('customcert_elements', $element, true);
+            $this->id = $element->id;
+
+            \mod_customcert\event\element_created::create_from_element($this)->trigger();
+
+            return $element->id;
         }
     }
 
@@ -353,6 +415,16 @@ abstract class element {
     }
 
     /**
+     * This defines if an element plugin can be added to a certificate.
+     * Can be overridden if an element plugin wants to take over the control.
+     *
+     * @return bool returns true if the element can be added, false otherwise
+     */
+    public static function can_add() {
+        return true;
+    }
+
+    /**
      * Handles rendering the element on the pdf.
      *
      * Must be overridden.
@@ -361,7 +433,7 @@ abstract class element {
      * @param bool $preview true if it is a preview, false otherwise
      * @param \stdClass $user the user we are rendering this for
      */
-    public abstract function render($pdf, $preview, $user);
+    abstract public function render($pdf, $preview, $user);
 
     /**
      * Render the element in html.
@@ -373,7 +445,7 @@ abstract class element {
      *
      * @return string the html
      */
-    public abstract function render_html();
+    abstract public function render_html();
 
     /**
      * Handles deleting any data this element may have introduced.
@@ -384,7 +456,11 @@ abstract class element {
     public function delete() {
         global $DB;
 
-        return $DB->delete_records('customcert_elements', array('id' => $this->id));
+        $return = $DB->delete_records('customcert_elements', ['id' => $this->id]);
+
+        \mod_customcert\event\element_deleted::create_from_element($this)->trigger();
+
+        return $return;
     }
 
     /**
@@ -410,5 +486,37 @@ abstract class element {
         if (property_exists($this->element, $name)) {
             return $this->element->$name;
         }
+    }
+
+    /**
+     * Set edit form instance for the custom cert element.
+     *
+     * @param \mod_customcert\edit_element_form $editelementform
+     */
+    public function set_edit_element_form(edit_element_form $editelementform) {
+        $this->editelementform = $editelementform;
+    }
+
+    /**
+     * Get edit form instance for the custom cert element.
+     *
+     * @return \mod_customcert\edit_element_form
+     */
+    public function get_edit_element_form() {
+        if (empty($this->editelementform)) {
+            throw new \coding_exception('Edit element form instance is not set.');
+        }
+
+        return $this->editelementform;
+    }
+
+    /**
+     * This defines if an element plugin need to add the "Save and continue" button.
+     * Can be overridden if an element plugin wants to take over the control.
+     *
+     * @return bool returns true if the element need to add the "Save and continue" button, false otherwise
+     */
+    public function has_save_and_continue(): bool {
+        return false;
     }
 }

@@ -196,7 +196,7 @@ function kalvidassign_display_lateness($timesubmitted, $timedue) {
  * @return void
  */
 function kalvidassign_email_teachers($cm, $name, $submission, $context) {
-    global $CFG, $DB;
+    global $CFG, $DB, $COURSE;
 
     $user = $DB->get_record('user', array('id'=>$submission->userid));
 
@@ -220,6 +220,7 @@ function kalvidassign_email_teachers($cm, $name, $submission, $context) {
             $posthtml = ($teacher->mailformat == 1) ? kalvidassign_email_teachers_html($info) : '';
 
             $eventdata = new \core\message\message();
+            $eventdata->courseid         = $COURSE->id;
             $eventdata->modulename       = 'kalvidassign';
             $eventdata->userfrom         = $user;
             $eventdata->userto           = $teacher;
@@ -250,7 +251,7 @@ function kalvidassign_email_teachers($cm, $name, $submission, $context) {
  */
 function kalvidassign_get_graders($cm, $user, $context) {
     // Potential graders.
-    $potgraders = get_users_by_capability($context, 'mod/kalvidassign:gradesubmission', '', '', '', '', '', '', false, false);
+    $potgraders = get_enrolled_users($context, 'mod/kalvidassign:gradesubmission', 0, 'u.*', null, 0, 0, true);
 
     $graders = array();
     // Separate groups are being used.

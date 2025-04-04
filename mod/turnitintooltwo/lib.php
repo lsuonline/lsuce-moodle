@@ -24,11 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+
 require_once(__DIR__.'/turnitintooltwo_assignment.class.php');
 require_once(__DIR__.'/turnitintooltwo_class.class.php');
+require_once($CFG->libdir . "/gradelib.php");
 
 // Constants.
-define('TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE', 41943040);
+define('TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE', 104857600);
 define('TURNITINTOOLTWO_DEFAULT_PSEUDO_DOMAIN', '@tiimoodle.com');
 define('TURNITINTOOLTWO_DEFAULT_PSEUDO_FIRSTNAME', get_string('defaultcoursestudent'));
 define('TURNITINTOOLTWO_SUBMISSION_GET_LIMIT', 100);
@@ -52,9 +55,27 @@ define('SUBMIT_TO_STANDARD_REPOSITORY', 1);
 define('SUBMIT_TO_INSTITUTIONAL_REPOSITORY', 2);
 
 // For use in course migration.
-$tiiintegrationids = array(0 => get_string('nointegration', 'turnitintooltwo'), 1 => 'Blackboard Basic',
-                                    2 => 'WebCT', 5 => 'Angel', 6 => 'Moodle Basic', 7 => 'eCollege', 8 => 'Desire2Learn',
-                                    9 => 'Sakai', 12 => 'Moodle Direct', 13 => 'Blackboard Direct');
+/**
+ * Returns the integration ids and labels.
+ * @return array Integration ids and labels.
+ */
+function turnitintooltwo_get_integration_ids() {
+    static $tiiintegrationids = [];
+    if (empty($tiiintegrationids)) {
+        $tiiintegrationids[0] = get_string('nointegration', 'turnitintooltwo');
+        $tiiintegrationids[1] = 'Blackboard Basic';
+        $tiiintegrationids[2] = 'WebCT';
+        $tiiintegrationids[5] = 'Angel';
+        $tiiintegrationids[6] = 'Moodle Basic';
+        $tiiintegrationids[7] = 'eCollege';
+        $tiiintegrationids[8] = 'Desire2Learn';
+        $tiiintegrationids[9] = 'Sakai';
+        $tiiintegrationids[12] = 'Moodle Direct';
+        $tiiintegrationids[13] = 'Blackboard Direct';
+        $tiiintegrationids[26] = 'LTI';
+    }
+    return $tiiintegrationids;
+}
 
 /**
  * Function for either adding to log or triggering an event
@@ -66,24 +87,21 @@ $tiiintegrationids = array(0 => get_string('nointegration', 'turnitintooltwo'), 
  * @param int $cmid Course module id
  */
 function turnitintooltwo_add_to_log($courseid, $eventname, $link, $desc, $cmid, $userid = 0) {
-    global $CFG, $USER;
-    if ( ( property_exists( $CFG, 'branch' ) AND ( $CFG->branch < 27 ) ) || ( !property_exists( $CFG, 'branch' ) ) ) {
-        add_to_log($courseid, "turnitintooltwo", $eventname, $link, $desc, $cmid);
-    } else {
-        $eventname = str_replace(' ', '_', $eventname);
-        $eventpath = '\mod_turnitintooltwo\event\\'.$eventname;
+    global $USER;
 
-        $data = array(
-            'objectid' => $cmid,
-            'context' => ( $cmid == 0 ) ? context_course::instance($courseid) : context_module::instance($cmid),
-            'other' => array('desc' => $desc)
-        );
-        if (!empty($userid) && ($userid != $USER->id)) {
-            $data['relateduserid'] = $userid;
-        }
-        $event = $eventpath::create($data);
-        $event->trigger();
+    $eventname = str_replace(' ', '_', $eventname);
+    $eventpath = '\mod_turnitintooltwo\event\\'.$eventname;
+
+    $data = array(
+        'objectid' => $cmid,
+        'context' => ( $cmid == 0 ) ? context_course::instance($courseid) : context_module::instance($cmid),
+        'other' => array('desc' => $desc)
+    );
+    if (!empty($userid) && ($userid != $USER->id)) {
+        $data['relateduserid'] = $userid;
     }
+    $event = $eventpath::create($data);
+    $event->trigger();
 }
 
 /**
@@ -101,6 +119,7 @@ function turnitintooltwo_supports($feature) {
         case FEATURE_GRADE_OUTCOMES:
         case FEATURE_BACKUP_MOODLE2:
         case FEATURE_SHOW_DESCRIPTION:
+        case FEATURE_CONTROLS_GRADE_VISIBILITY:
             return true;
         default:
             return null;
@@ -111,18 +130,10 @@ function turnitintooltwo_supports($feature) {
  * @return int the plugin version for use within the plugin.
  */
 function turnitintooltwo_get_version() {
-    global $DB, $CFG;
-    $pluginversion = '';
+    global $DB;
+    $version = $DB->get_record('config_plugins', array('plugin' => 'mod_turnitintooltwo', 'name' => 'version'));
 
-    if ($CFG->branch >= 26) {
-        $module = $DB->get_record('config_plugins', array('plugin' => 'mod_turnitintooltwo', 'name' => 'version'));
-        $pluginversion = $module->value;
-    } else {
-        $module = $DB->get_record('modules', array('name' => 'turnitintooltwo'));
-        $pluginversion = $module->version;
-    }
-
-    return $pluginversion;
+    return $version->value;
 }
 
 /**
@@ -187,7 +198,7 @@ function turnitintooltwo_activitylog($string, $activity) {
  * @param  boolean $nullifnone
  */
 function turnitintooltwo_update_grades($turnitintooltwo, $userid = 0, $nullifnone = true) {
-    global $DB, $USER, $CFG;
+    global $DB;
 
     if ($userid != 0) {
         return;
@@ -205,29 +216,7 @@ function turnitintooltwo_update_grades($turnitintooltwo, $userid = 0, $nullifnon
     $parts = $DB->get_records_select("turnitintooltwo_parts", " turnitintooltwoid = ? ",
                                         array($turnitintooltwo->id), 'id ASC');
     foreach ($parts as $part) {
-        $dbselect = " modulename = ? AND instance = ? AND courseid = ? AND name LIKE ? ";
-        // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
-        // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
-        if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
-            $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ?
-                            AND courseid = ? AND CAST(name AS nvarchar(max)) = ? ";
-        }
-
-        try {
-            // Update event for assignment part.
-            if ($event = $DB->get_record_select("event", $dbselect,
-                                        array('turnitintooltwo', $turnitintooltwo->id,
-                                                    $turnitintooltwo->course, '% - '.$part->partname))) {
-                $updatedevent = new stdClass();
-                $updatedevent->id = $event->id;
-                $updatedevent->userid = $USER->id;
-                $updatedevent->name = $turnitintooltwo->name." - ".$part->partname;
-
-                $DB->update_record('event', $updatedevent);
-            }
-        } catch (Exception $e) {
-            turnitintooltwo_comms::handle_exceptions($e, 'turnitintooltwoupdateerror', false);
-        }
+        turnitintooltwo_update_event($turnitintooltwo, $part, true);
     }
 }
 
@@ -260,9 +249,16 @@ function turnitintooltwo_grade_item_update($turnitintooltwo, $grades = null) {
         $params['gradetype'] = GRADE_TYPE_NONE;
     }
 
+    // Get the latest part, for the post date and set the default hidden value on grade item.
     $lastpart = $DB->get_record('turnitintooltwo_parts', array('turnitintooltwoid' => $turnitintooltwo->id), 'max(dtpost)');
-    $lastpart = current($lastpart);
+    $lastpart = current((array)$lastpart);
     $params['hidden'] = $lastpart;
+
+    // There should always be a $cm unless this is called on module creation.
+    if (!empty($cm)) {
+        // The value of hidden should be 1 if The Turnitin activity is visible so the post date should be used.
+        $params['hidden'] = ($cm->visible) ? $lastpart : 1;
+    }
     $params['grademin']  = 0;
 
     return grade_update('mod/turnitintooltwo', $turnitintooltwo->course, 'mod', 'turnitintooltwo',
@@ -291,6 +287,8 @@ function turnitintooltwo_update_instance($turnitintooltwo) {
 
 function turnitintooltwo_edit_instance($id, $turnitintooltwo) {
     global $USER;
+
+    $turnitintooltwo->name = htmlentities($turnitintooltwo->name);
 
     $turnitintooltwoassignment = new turnitintooltwo_assignment($id, $turnitintooltwo);
     if ($id == 0) {
@@ -353,18 +351,23 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
     }
 
     foreach ($turnitintooltwos as $turnitintooltwo) {
-        if (!$parts = $DB->get_records('turnitintooltwo_parts', array('turnitintooltwoid' => $turnitintooltwo->id,
-                                                                            'deleted' => 0))) {
+        if (!$parts = $DB->get_records('turnitintooltwo_parts', array('turnitintooltwoid' => $turnitintooltwo->id))) {
             turnitintooltwo_print_error('partgeterror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
             exit();
         }
 
         foreach ($parts as $part) {
             $partsarray[$courseid][$turnitintooltwo->id][$part->id]['tiiassignid'] = $part->tiiassignid;
+
+            if ($action == "UNTOUCHED") {
+                $turnitintooltwoassignment = new turnitintooltwo_assignment($turnitintooltwo->id);
+                turnitintooltwo_update_event($turnitintooltwoassignment->turnitintooltwo, $part);
+            }
         }
 
         /* Set legacy to 0 for all TII2s so that we can have all recreated assignments on the same TII class.
-           Legacy is set to 1 only for migrated assignments that were migrated on a course where there were pre-existing V2 assignments.*/
+           Legacy is set to 1 only for migrated assignments that were migrated on
+           a course where there were pre-existing V2 assignments.*/
         if ($action == "NEWCLASS") {
             $update = new stdClass();
             $update->id = $turnitintooltwo->id;
@@ -376,6 +379,11 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
                 turnitintooltwo_activitylog("Assignment updated (".$turnitintooltwo->id.")", "REQUEST");
             }
         }
+    }
+
+    // We don't want to go any further if Turnitin Assignments aren't going to be touched.
+    if ($action == "UNTOUCHED") {
+        return array();
     }
 
     $currentcourse = turnitintooltwo_assignment::get_course_data($courseid);
@@ -485,13 +493,13 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
             $assignment->setEraterHandbook($eraterhandbook);
 
             // Generate the assignment dates depending on whether we are renewing them or not.
-            $date_start = turnitintooltwo_generate_part_dates($renewdates, "start", $turnitintooltwoassignment->turnitintooltwo, $i);
-            $date_due   = turnitintooltwo_generate_part_dates($renewdates, "due", $turnitintooltwoassignment->turnitintooltwo, $i);
-            $date_post  = turnitintooltwo_generate_part_dates($renewdates, "post", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $datestart = turnitintooltwo_generate_part_dates($renewdates, "start", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $datedue   = turnitintooltwo_generate_part_dates($renewdates, "due", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $datepost  = turnitintooltwo_generate_part_dates($renewdates, "post", $turnitintooltwoassignment->turnitintooltwo, $i);
 
-            $assignment->setStartDate($date_start);
-            $assignment->setDueDate($date_due);
-            $assignment->setFeedbackReleaseDate($date_post);
+            $assignment->setStartDate($datestart);
+            $assignment->setDueDate($datedue);
+            $assignment->setFeedbackReleaseDate($datepost);
 
             $attribute = "partname".$i;
             $tiititle = $turnitintooltwoassignment->turnitintooltwo->name." ".$turnitintooltwoassignment->turnitintooltwo->$attribute;
@@ -521,6 +529,7 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
             $part->submitted = 0;
 
             turnitintooltwo_reset_part_update($part, $i);
+            turnitintooltwo_update_event($turnitintooltwoassignment->turnitintooltwo, $part);
 
             if (!$DB->delete_records('turnitintooltwo_submissions', array('submission_part' => $partid))) {
                 turnitintooltwo_print_error('submissiondeleteerror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
@@ -540,14 +549,14 @@ function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = nul
  * Function called by turnitintooltwo_duplicate_recycle to generate part dates during the course reset process.
  *
  * @param int $renewdates Determines whether to use new dates or existing dates.
- * @param string $date_type "start", "due" or "post" - Determines the kind of date we need to return.
+ * @param string $datetype "start", "due" or "post" - Determines the kind of date we need to return.
  * @param object $part The assignment in which we need dates for.
  * @param int The counter used during the part creation.
  * @return int A timestamp for the date we requested.
  */
-function turnitintooltwo_generate_part_dates($renewdates, $date_type, $part, $i) {
+function turnitintooltwo_generate_part_dates($renewdates, $datetype, $part, $i) {
     if ($renewdates) {
-        switch ($date_type) {
+        switch ($datetype) {
             case 'start':
                 return gmdate("Y-m-d\TH:i:s\Z", time());
             case 'due':
@@ -557,7 +566,7 @@ function turnitintooltwo_generate_part_dates($renewdates, $date_type, $part, $i)
                 return NULL;
         }
     } else {
-        $attribute = "dt".$date_type.$i;
+        $attribute = "dt".$datetype.$i;
         return gmdate("Y-m-d\TH:i:s\Z", $part->$attribute);
     }
 }
@@ -586,15 +595,20 @@ function turnitintooltwo_reset_part_update($part, $i) {
  * @return array The Result of the turnitintooltwo_duplicate_recycle call
  */
 function turnitintooltwo_reset_userdata($data) {
-    $status = array();
+    $renewdates = isset($data->renew_assignment_dates) ? 1 : null;
 
-    $renew_dates = isset($data->renew_assignment_dates) ? 1 : null;
-
-    if ($data->reset_turnitintooltwo == 0) {
-        $status = turnitintooltwo_duplicate_recycle($data->courseid, 'NEWCLASS', $renew_dates);
-    } else if ($data->reset_turnitintooltwo == 1) {
-        $status = turnitintooltwo_duplicate_recycle($data->courseid, 'OLDCLASS', $renew_dates);
+    $action = 'UNTOUCHED';
+    switch ($data->reset_turnitintooltwo) {
+        case 0:
+            $action = 'NEWCLASS';
+            break;
+        case 1:
+            $action = 'OLDCLASS';
+            break;
     }
+
+    $status = turnitintooltwo_duplicate_recycle($data->courseid, $action, $renewdates);
+
     return $status;
 }
 
@@ -658,7 +672,7 @@ function turnitintooltwo_cron() {
     // Get a list of assignments that need updating.
     if ($assignmentlist = $DB->get_records_sql("SELECT DISTINCT(t.id) FROM {turnitintooltwo} t
                                                 LEFT JOIN {turnitintooltwo_parts} p ON (p.turnitintooltwoid = t.id)
-                                                WHERE (p.turnitintooltwoid + p.dtpost IN 
+                                                WHERE (p.turnitintooltwoid + p.dtpost IN
                                                     (SELECT p2.turnitintooltwoid + MAX(p2.dtpost)
                                                         FROM {turnitintooltwo_parts} p2
                                                         GROUP BY p2.turnitintooltwoid))
@@ -695,7 +709,6 @@ function turnitintooltwo_cron() {
 
     // Perform gradebook migrations for submissions that were not actioned during the migration tool.
     turnitintooltwo_cron_migrate_gradebook();
-
 }
 
 /**
@@ -810,7 +823,7 @@ function turnitintooltwo_cron_update_gradbook($assignment, $task) {
 }
 
 /**
- * Abstracted version of print_error()
+ * Abstracted version of throw new moodle_exception() - formerly print_error()
  *
  * @param string $input The error string if module = null otherwise the language string called by get_string()
  * @param string $module The module string
@@ -834,7 +847,7 @@ function turnitintooltwo_print_error($input, $module = 'turnitintooltwo',
         $message .= ' ('.basename($file).' | '.$line.')';
     }
 
-    print_error($input, 'turnitintooltwo', $link, $message);
+    throw new moodle_exception($input, 'turnitintooltwo', $link, $message);
     exit();
 }
 
@@ -885,6 +898,9 @@ function turnitintooltwo_tempfile(array $filename, $suffix) {
         $extlength = $permittedstrlength;
     }
 
+    // Deal with characters which cause problems on some environments.
+    $filename = iconv('UTF-8', 'us-ascii//TRANSLIT//IGNORE', $filename);
+
     // Shorten the filename as needed, taking the extension into consideration.
     $permittedstrlength -= $extlength;
     $filename = mb_substr($filename, 0, $permittedstrlength, 'UTF-8');
@@ -903,55 +919,6 @@ function turnitintooltwo_tempfile(array $filename, $suffix) {
     } while ( !touch($file) );
 
     return $file;
-}
-
-/**
- * Checks whether update is available for plugin from Turnitin.
- *
- * @param type $module
- * @return null
- */
-function turnitintooltwo_updateavailable($currentversion) {
-    global $CFG;
-
-    $updateneeded['update'] = 0;
-
-    try {
-        // Open connection.
-        $ch = curl_init();
-
-        // Set the url, number of POST vars, POST data.
-        curl_setopt($ch, CURLOPT_URL, "https://www.turnitin.com/static/resources/files/moodledirect2_latest.xml");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        if (isset($CFG->proxyhost) AND !empty($CFG->proxyhost)) {
-            curl_setopt($ch, CURLOPT_PROXY, $CFG->proxyhost.':'.$CFG->proxyport);
-        }
-        if (isset($CFG->proxyuser) AND !empty($CFG->proxyuser)) {
-            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, sprintf('%s:%s', $CFG->proxyuser, $CFG->proxypassword));
-        }
-
-        // Execute post.
-        $result = curl_exec($ch);
-
-        // Close connection.
-        curl_close($ch);
-
-        $xml = simplexml_load_string($result);
-        if ((isset($xml)) AND (isset($xml->version))) {
-            if ($xml->version > $currentversion) {
-                $updateneeded['update'] = 1;
-                $updateneeded['file'] = $xml->filename;
-            }
-        }
-
-    } catch (Exception $e) {
-        turnitintooltwo_comms::handle_exceptions($e, 'checkupdateavailableerror', false);
-    }
-
-    return $updateneeded;
 }
 
 /**
@@ -1129,7 +1096,7 @@ function turnitintooltwo_get_courses_from_tii($tiiintegrationids, $coursetitle, 
                                                         '&view_context=box&sesskey='.sesskey(),
                                                         $readclass->getTitle(), array("class" => "course_recreate",
                                                                                 "id" => "course_".$readclass->getClassId()));
-                        $datecell = html_writer::link('.edit_course_end_date_form',
+                        $datecell = html_writer::link('.mod_turnitintooltwo_edit_course_end_date_form',
                                         html_writer::tag('span',
                                                 userdate(strtotime($readclass->getEndDate()),
                                                             get_string('strftimedate', 'langconfig')),
@@ -1200,7 +1167,7 @@ function turnitintooltwo_sort_array(&$data, $sortcol, $sortdir) {
 }
 
 /**
- * Get files for displaying in settings. Called from ajax.php via turnitintooltwo-2018082301.min.js.
+ * Get files for displaying in settings. Called from ajax.php via turnitintooltwo-2024100901.min.js.
  *
  * @param  $moduleid the id of the module to return files for
  * @global type $DB
@@ -1211,70 +1178,10 @@ function turnitintooltwo_sort_array(&$data, $sortcol, $sortdir) {
 function turnitintooltwo_getfiles($moduleid) {
     global $DB, $CFG, $OUTPUT;
 
-    $return = array();
-    $idisplaystart = optional_param('iDisplayStart', 0, PARAM_INT);
-    $idisplaylength = optional_param('iDisplayLength', 10, PARAM_INT);
     $secho = optional_param('sEcho', 1, PARAM_INT);
     $moduleid = (int)$moduleid;
 
-    $displaycolumns = array( 'tu.name', 'cs.shortname', 'cs.fullname', 'sb.submission_filename', 'us.firstname',
-                                'us.lastname', 'us.email', 'fl.filename', 'sb.submission_objectid' );
     $queryparams = array();
-
-    // Add Sort to Query.
-    $isortcol[0] = optional_param('iSortCol_0', null, PARAM_INT);
-    $isortingcols = optional_param('iSortingCols', 0, PARAM_INT);
-    $queryorder = "";
-    if (!is_null( $isortcol[0])) {
-        $queryorder = " ORDER BY ";
-        $startorder = $queryorder;
-        for ($i = 0; $i < intval($isortingcols); $i++) {
-            $isortcol[$i] = optional_param('iSortCol_'.$i, null, PARAM_INT);
-            $bsortable[$i] = optional_param('bSortable_'.$isortcol[$i], null, PARAM_TEXT);
-            $ssortdir[$i] = optional_param('sSortDir_'.$i, null, PARAM_TEXT);
-            if ( $bsortable[$i] == "true" ) {
-                $queryorder .= $displaycolumns[$isortcol[$i]]." ".$ssortdir[$i].", ";
-            }
-        }
-        $queryorder = substr_replace($queryorder, "", -2);
-        if ($queryorder == $startorder) {
-            $queryorder = "";
-        }
-    }
-    $queryorder .= ", tu.id asc ";
-
-    // Add Search to Query.
-    $ssearch = optional_param('sSearch', '', PARAM_TEXT);
-    $start = true;
-    $querywhere = " AND ( ";
-    $nobracket = false;
-    for ($i = 0; $i < count($displaycolumns); $i++) {
-        $bsearchable[$i] = optional_param('bSearchable_'.$i, null, PARAM_TEXT);
-        $ssearchn[$i] = optional_param('sSearch_'.$i, null, PARAM_TEXT);
-        if (!is_null($bsearchable[$i]) && $bsearchable[$i] == "true" && ( $ssearch != '' OR $ssearchn[$i] != '')) {
-            if (!$start) {
-                $querywhere .= " OR ";
-            }
-
-            if ($displaycolumns[$i] == 'sb.submission_objectid') {
-                $querywhere = ( $querywhere == ' AND ( ' ) ? '' : substr_replace( $querywhere, "", -3 ) . ' )';
-                $querywhere .= " AND ( sb.submission_objectid IS NOT NULL OR sb.submission_filename IS NULL )";
-                $nobracket = true;
-            } else if ($displaycolumns[$i] != ' ') {
-                $namedparam = 'search_term_'.$i;
-                $querywhere .= $DB->sql_like($displaycolumns[$i], ':'.$namedparam, false);
-                $queryparams['search_term_'.$i] = '%'.$ssearch.'%';
-                $start = false;
-            }
-        }
-    }
-    if ($querywhere != ' AND ( ' AND !$nobracket) {
-        $querywhere .= " ) ";
-    } else if ($nobracket) {
-        $querywhere .= " ";
-    } else {
-        $querywhere = "";
-    }
 
     $query = "SELECT fl.id AS id, cm.id AS cmid, tu.id AS activityid, tu.name AS activity, tu.anon AS anon_enabled, ".
              "sb.submission_unanon AS unanon, sb.id AS submission_id, us.firstname AS firstname, us.lastname AS lastname, ".
@@ -1289,11 +1196,11 @@ function turnitintooltwo_getfiles($moduleid) {
              "LEFT JOIN {course_modules} cm ON cx.instanceid = cm.id ".
              "LEFT JOIN {turnitintooltwo} tu ON cm.instance = tu.id ".
              "LEFT JOIN {course} cs ON tu.course = cs.id ".
-             "WHERE fl.component = 'mod_turnitintooltwo' AND fl.filesize != 0 AND cm.module = :moduleid ".$querywhere.$queryorder;
+             "WHERE fl.component = 'mod_turnitintooltwo' AND fl.filesize != 0 AND cm.module = :moduleid ";
 
     $params = array_merge(array('moduleid' => $moduleid), $queryparams);
-    $files = $DB->get_records_sql($query, $params, $idisplaystart, $idisplaylength);
-    $totalfiles = count($DB->get_records_sql($query, $params));
+    $files = $DB->get_records_sql($query, $params);
+    $totalfiles = count($files);
 
     $return = array("sEcho" => $secho, "iTotalRecords" => count($files), "iTotalDisplayRecords" => $totalfiles,
                 "aaData" => array());
@@ -1383,7 +1290,7 @@ function turnitintooltwo_pluginfile($course,
 }
 
 /**
- * Get users for unlinking/relinking. Called from ajax.php via turnitintooltwo-2018082301.min.js.
+ * Get users for unlinking/relinking. Called from ajax.php via turnitintooltwo-2024100901.min.js.
  *
  * @global type $DB
  * @return array return array of users to display
@@ -1393,68 +1300,15 @@ function turnitintooltwo_getusers() {
 
     $config = turnitintooltwo_admin_config();
     $return = array();
-    $idisplaystart = optional_param('iDisplayStart', 0, PARAM_INT);
-    $idisplaylength = optional_param('iDisplayLength', 10, PARAM_INT);
     $secho = optional_param('sEcho', 1, PARAM_INT);
-
-    $displaycolumns = array('tu.userid', 'tu.turnitin_uid', 'mu.lastname', 'mu.firstname', 'mu.email');
-    $queryparams = array();
-
-    // Add sort to query.
-    $isortcol[0] = optional_param('iSortCol_0', null, PARAM_INT);
-    $isortingcols = optional_param('iSortingCols', 0, PARAM_INT);
-    $queryorder = "";
-    if (!is_null( $isortcol[0])) {
-        $queryorder = " ORDER BY ";
-        $startorder = $queryorder;
-        for ($i = 0; $i < intval($isortingcols); $i++) {
-            $isortcol[$i] = optional_param('iSortCol_'.$i, null, PARAM_INT);
-            $bsortable[$i] = optional_param('bSortable_'.$isortcol[$i], null, PARAM_TEXT);
-            $ssortdir[$i] = optional_param('sSortDir_'.$i, null, PARAM_TEXT);
-            if ($bsortable[$i] == "true") {
-                $queryorder .= $displaycolumns[$isortcol[$i]]." ".$ssortdir[$i].", ";
-            }
-        }
-        if ($queryorder == $startorder) {
-            $queryorder = "";
-        } else {
-            $queryorder = substr_replace($queryorder, "", -2);
-        }
-    }
-
-    // Add search to query.
-    $ssearch = optional_param('sSearch', '', PARAM_TEXT);
-    $querywhere = ' WHERE ( ';
-    for ($i = 0; $i < count($displaycolumns); $i++) {
-        $bsearchable[$i] = optional_param('bSearchable_'.$i, null, PARAM_TEXT);
-        if (!is_null($bsearchable[$i]) && $bsearchable[$i] == "true" && $ssearch != '') {
-            $include = true;
-            if ($i <= 1) {
-                if (!is_int($ssearch) || is_null($ssearch)) {
-                    $include = false;
-                }
-            }
-
-            if ($include) {
-                $querywhere .= $DB->sql_like($displaycolumns[$i], ':search_term_'.$i, false)." OR ";
-                $queryparams['search_term_'.$i] = '%'.$ssearch.'%';
-            }
-        }
-    }
-    if ( $querywhere == ' WHERE ( ' ) {
-        $querywhere = "";
-    } else {
-        $querywhere = substr_replace( $querywhere, "", -3 );
-        $querywhere .= " )";
-    }
 
     $query = "SELECT tu.id AS id, tu.userid AS userid, tu.turnitin_uid AS turnitin_uid, tu.turnitin_utp AS turnitin_utp, ".
              "mu.firstname AS firstname, mu.lastname AS lastname, mu.email AS email ".
              "FROM {turnitintooltwo_users} tu ".
-             "LEFT JOIN {user} mu ON tu.userid = mu.id ".$querywhere.$queryorder;
+             "LEFT JOIN {user} mu ON tu.userid = mu.id ";
 
-    $users = $DB->get_records_sql($query, $queryparams, $idisplaystart, $idisplaylength);
-    $totalusers = count($DB->get_records_sql($query, $queryparams));
+    $users = $DB->get_records_sql($query);
+    $totalusers = count($users);
 
     $return["aaData"] = array();
     foreach ($users as $user) {
@@ -1518,7 +1372,7 @@ function turnitintooltwo_print_overview($courses, &$htmlarray) {
                 if (!isset($submissioncount[$submission->submission_part])) {
                     $submissioncount[$submission->submission_part] = array('graded' => 0, 'submitted' => 0);
                 }
-                if ($submission->submission_grade != 'NULL' and $submission->submission_gmimaged == 1) {
+                if (!is_null($submission->submission_grade) and $submission->submission_gmimaged == 1) {
                     $submissioncount[$submission->submission_part]['graded']++;
                 }
                 $submissioncount[$submission->submission_part]['submitted']++;
@@ -1587,26 +1441,12 @@ function turnitintooltwo_print_overview($courses, &$htmlarray) {
 /**
  * Show form to create a new moodle course from the existing Turnitin Course
  *
- * @global type $OUTPUT
  * @return html the form object to create a new course
  */
 function turnitintooltwo_show_browser_new_course_form() {
-    global $CFG;
-
     $elements = array();
     $elements[] = array('header', 'create_course_fieldset', get_string('createcourse', 'turnitintooltwo'));
-    $displaylist = array();
-    $parentlist = array();
-    require_once($CFG->dirroot."/course/lib.php");
-
-    if (file_exists($CFG->libdir.'/coursecatlib.php')) {
-        require_once($CFG->libdir.'/coursecatlib.php');
-        $displaylist = coursecat::make_categories_list('');
-    } else {
-        make_categories_list($displaylist, $parentlist, '');
-    }
-
-    $elements[] = array('select', 'coursecategory', get_string('category'), '', $displaylist);
+    $elements[] = array('select', 'coursecategory', get_string('category'), '', core_course_category::make_categories_list(''));
     $elements[] = array('text', 'coursename', get_string('coursetitle', 'turnitintooltwo'), '');
     $elements[] = array('button', 'create_course', get_string('createcourse', 'turnitintooltwo'));
     $customdata["elements"] = $elements;
@@ -1683,7 +1523,7 @@ function turnitintooltwo_init_browser_assignment_table($tiicourseid) {
                         );
 
     if (!empty($turnitincourse)) {
-        $course = current($turnitincourse);
+        $course = current((array)$turnitincourse);
         $coursedetails = turnitintooltwo_assignment::get_course_data($course->courseid, $course->course_type);
         $courseid = $course->courseid;
         $coursetitle = $coursedetails->fullname;
@@ -1743,7 +1583,7 @@ function turnitintooltwo_show_edit_course_end_date_form() {
     $customdata["disable_form_change_checker"] = true;
     $optionsform = new turnitintooltwo_form('', $customdata);
 
-    return html_writer::tag('div', $output.$optionsform->display(), array('class' => 'edit_course_end_date_form'));
+    return html_writer::tag('div', $output.$optionsform->display(), array('class' => 'mod_turnitintooltwo_edit_course_end_date_form'));
 }
 
 /**
@@ -1838,22 +1678,33 @@ function turnitintooltwo_override_repository($submitpapersto) {
  */
 function mod_turnitintooltwo_core_calendar_provide_event_action(calendar_event $event,
                                                                 \core_calendar\action_factory $factory) {
+    global $DB, $USER;
     $cm = get_fast_modinfo($event->courseid)->instances['turnitintooltwo'][$event->instance];
-
-    if (!empty($cm->customdata['timeclose']) && $cm->customdata['timeclose'] < time()) {
-        // The assignment has closed so the user can no longer submit anything.
-        return null;
-    }
+    $isinstructor = (has_capability('mod/turnitintooltwo:grade', context_module::instance($cm->id)));
 
     // Restore object from cached values in $cm, we only need id, timeclose and timeopen.
     $customdata = $cm->customdata ?: [];
     $customdata['id'] = $cm->instance;
     $data = (object)($customdata + ['timeclose' => 0, 'timeopen' => 0]);
+    $assignmentpart = $DB->get_record('turnitintooltwo_parts', array('turnitintooltwoid' => $customdata['id']), 'max(dtpost)');
+
+    // Check whether the logged in user has a submission, should always be false for Instructors.
+    $hassubmission = false;
+    if (!$isinstructor) {
+        $queryparams = array('userid' => $USER->id, 'turnitintooltwoid' => $customdata['id']);
+        $hassubmission = $DB->get_records('turnitintooltwo_submissions', $queryparams);
+    }
+
+    if ((!empty($cm->customdata['timeclose']) && $cm->customdata['timeclose'] < time()) ||
+        (isset($assignmentpart->max) && $assignmentpart->max < time()) || !empty($hassubmission))  {
+        // The assignment has closed so the user can no longer submit anything.
+        return null;
+    }
 
     // Check that the activity is open.
     list($actionable, $warnings) = mod_turnitintooltwo_get_availability_status($data, true, context_module::instance($cm->id));
 
-    $identifier = (has_capability('mod/turnitintooltwo:grade', context_module::instance($cm->id))) ? 'allsubmissions' : 'addsubmission';
+    $identifier = ($isinstructor) ? 'allsubmissions' : 'addsubmission';
     return $factory->create_instance(
         get_string($identifier, 'turnitintooltwo'),
         new \moodle_url('/mod/turnitintooltwo/view.php', array('id' => $cm->id)),
@@ -1889,4 +1740,53 @@ function mod_turnitintooltwo_get_availability_status($data, $checkcapability = f
     }
 
     return array($open, $warnings);
+}
+
+/**
+ * Update a Moodle event based on passed in details.
+ *
+ * @param  object  $turnitintooltwo    The turnitintooltwo assignment object.
+ * @param  object  $part               The name of the part we are updating.
+ * @param  boolean $courseparam        True if we wish to include the course field in our query.
+ * @param  boolean $convertevent       True if we are converting the event from assignment page load.
+ */
+function turnitintooltwo_update_event($turnitintooltwo, $part, $courseparam = false, $convertevent = false) {
+    global $DB, $CFG, $USER;
+
+    // Create the SQL depending on whether we need to check the course parameter.
+    $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+    $dbparams = array('turnitintooltwo', $turnitintooltwo->id, '% - '.$part->partname);
+    if ($courseparam) {
+        $dbselect .= "AND courseid = ? ";
+        $dbparams[] = $turnitintooltwo->course;
+    }
+    try {
+        // Create event data.
+        $updatedevent = new stdClass();
+        $updatedevent->userid = $USER->id;
+        $updatedevent->name = $turnitintooltwo->name." - ".$part->partname;
+        $updatedevent->timestart = $part->dtdue;
+
+        // Create/Update event for assignment part.
+        if ($event = $DB->get_record_select("event", $dbselect, $dbparams)) {
+            $updatedevent->id = $event->id;
+
+            if ($CFG->branch >= 33) {
+                $updatedevent->timesort = $part->dtdue;
+                $updatedevent->type = 1;
+
+                // No need to continue updating on this occasion if we have a new event type already.
+                if (($convertevent) && ($event->type == 1)) {
+                    return;
+                }
+            }
+
+            $DB->update_record('event', $updatedevent);
+        } else {
+            $turnitintooltwoassignment = new turnitintooltwo_assignment($turnitintooltwo->id);
+            $turnitintooltwoassignment->create_event($turnitintooltwo->id, $part->partname, $part->dtdue);
+        }
+    } catch (Exception $e) {
+        turnitintooltwo_comms::handle_exceptions($e, 'turnitintooltwoupdateerror', false);
+    }
 }

@@ -50,6 +50,9 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/createnewusers',
         get_string('createnewusers', 'enrol_imsenterprise'), get_string('createnewusers_desc', 'enrol_imsenterprise'), 0));
 
+    $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/imsupdateusers',
+        get_string('updateusers', 'enrol_imsenterprise'), get_string('updateusers_desc', 'enrol_imsenterprise'), 0));
+
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/imsdeleteusers',
         get_string('deleteusers', 'enrol_imsenterprise'), get_string('deleteusers_desc', 'enrol_imsenterprise'), 0));
 
@@ -88,12 +91,45 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/createnewcourses',
         get_string('createnewcourses', 'enrol_imsenterprise'), get_string('createnewcourses_desc', 'enrol_imsenterprise'), 0));
 
+    $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/updatecourses',
+        get_string('updatecourses', 'enrol_imsenterprise'), get_string('updatecourses_desc', 'enrol_imsenterprise'), 0));
+
+    // BEGIN LSU
+    $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/updatecourseslong',
+        get_string('updatecourseslong', 'enrol_imsenterprise'), get_string('updatecourses_desclong', 'enrol_imsenterprise'), 0));
+    // END LSU
+
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/createnewcategories',
         get_string('createnewcategories', 'enrol_imsenterprise'), get_string('createnewcategories_desc', 'enrol_imsenterprise'),
         0));
 
+    $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/nestedcategories',
+        get_string('nestedcategories', 'enrol_imsenterprise'), get_string('nestedcategories_desc', 'enrol_imsenterprise'), 0));
+
+    $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/categoryidnumber',
+        get_string('categoryidnumber', 'enrol_imsenterprise'), get_string('categoryidnumber_desc', 'enrol_imsenterprise'), 0));
+
+    $settings->add(new admin_setting_configtext('enrol_imsenterprise/categoryseparator',
+        get_string('categoryseparator', 'enrol_imsenterprise'), get_string('categoryseparator_desc', 'enrol_imsenterprise'), '',
+        PARAM_TEXT, 3));
+
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/imsunenrol',
         get_string('allowunenrol', 'enrol_imsenterprise'), get_string('allowunenrol_desc', 'enrol_imsenterprise'), 0));
+
+    /* Action to take when a request to remove a user enrolment record is detected in the IMS file */
+    $options = [
+        ENROL_EXT_REMOVED_KEEP => get_string('noaction', 'enrol_imsenterprise'),
+        ENROL_EXT_REMOVED_UNENROL => get_string('removeenrolmentandallroles', 'enrol_imsenterprise'),
+        ENROL_EXT_REMOVED_SUSPEND => get_string('disableenrolonly', 'enrol_imsenterprise'),
+        ENROL_EXT_REMOVED_SUSPENDNOROLES => get_string('disableenrolmentandremoveallroles', 'enrol_imsenterprise'),
+    ];
+
+    $settings->add(
+        new admin_setting_configselect('enrol_imsenterprise/unenrolaction',
+            get_string('unenrolaction', 'enrol_imsenterprise'),
+            get_string('unenrolaction_desc', 'enrol_imsenterprise'),
+            ENROL_EXT_REMOVED_UNENROL, $options)
+    );
 
     if (!during_initial_install()) {
         $imscourses = new imsenterprise_courses();
@@ -118,6 +154,11 @@ if ($ADMIN->fulltree) {
 
     $settings->add(new admin_setting_configcheckbox('enrol_imsenterprise/imscapitafix',
         get_string('usecapitafix', 'enrol_imsenterprise'), get_string('usecapitafix_desc', 'enrol_imsenterprise'), 0));
+
+    // BEGIN LSU IMS Profile Field support.
+    $settings->add(new admin_setting_configtext('enrol_imsenterprise/profilefield',
+        get_string('profilefield', 'enrol_imsenterprise'), get_string('profilefielddesc', 'enrol_imsenterprise'), ''));
+    // END LSU IMS Profile Field support.
 
     $importurl = new moodle_url('/enrol/imsenterprise/importnow.php', array('sesskey' => sesskey()));
     $importnowstring = get_string('aftersaving...', 'enrol_imsenterprise').' ';

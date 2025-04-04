@@ -18,24 +18,21 @@
  * Local Tests
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-namespace theme_snap\tests;
-
+namespace theme_snap;
 use theme_snap\local;
+use theme_snap\output\core_renderer;
 use theme_snap\user_forums;
 use core_component;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class theme_snap_recent_forum_activity_test extends \advanced_testcase {
+class recent_forum_activity_test extends \advanced_testcase {
 
     /**
      * @var stdClass
@@ -50,7 +47,12 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     /**
      * @var stdClass
      */
-    protected $teacher;
+    protected $teacher1;
+
+    /**
+     * @var stdClass
+     */
+    protected $teacher2;
 
     /**
      * @var stdClass
@@ -87,7 +89,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
      * Pre-requisites for tests.
      * @throws \coding_exception
      */
-    public function setUp() {
+    public function setUp():void {
         global $CFG, $DB;
 
         require_once($CFG->dirroot . '/mod/forum/lib.php');
@@ -115,7 +117,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
             $sturole->id);
 
         // Enrol teachers on both courses.
-        $teacherrole = $DB->get_record('role', array('shortname' => 'teacher'));
+        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
         $teachers = [$this->teacher2, $this->teacher1];
         foreach ($teachers as $teacher) {
             $this->getDataGenerator()->enrol_user($teacher->id,
@@ -129,11 +131,11 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
         // Add 2 groups to course2.
         $this->group1 = $this->getDataGenerator()->create_group([
             'courseid' => $this->course2->id,
-            'name' => 'Group 1'
+            'name' => 'Group 1',
         ]);
         $this->group2 = $this->getDataGenerator()->create_group([
             'courseid' => $this->course2->id,
-            'name' => 'Group 2'
+            'name' => 'Group 2',
         ]);
 
         // Add user1 to both groups but user2 to just group1.
@@ -221,7 +223,8 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
         // Note: In testing number of posts, discussions are counted too as there is a post for each discussion created.
         $discussion1 = $this->create_discussion($ftype, $this->course1->id, $this->teacher1->id, $forum1->id);
         $this->create_post($ftype, $this->course1->id, $this->teacher1->id, $forum1->id, $discussion1->id);
-        $this->create_post($ftype, $this->course1->id, $this->teacher1->id, $forum1->id, $discussion1->id, ['modified' => time() - (13 * WEEKSECS)]);
+        $this->create_post($ftype, $this->course1->id, $this->teacher1->id, $forum1->id, $discussion1->id,
+            ['modified' => time() - (13 * WEEKSECS)]);
 
         // Check teacher viewable posts is 2.
         $this->assert_user_activity($this->teacher2, $toffset + 2);
@@ -276,11 +279,6 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
             $this->markTestSkipped('Skipped test, mod_hsuforum is not installed.');
         }
 
-        // Disabled for general use.
-        $this->markTestIncomplete(
-            'This test has to be enabled manually in code.'
-        );
-
         $forums = [];
 
         // Teacher count.
@@ -330,7 +328,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
             foreach ($users as $user) {
                 $eventparams = [
                     'userid' => $user->id,
-                    'context' => \context_course::instance($tmpcourse->id)
+                    'context' => \context_course::instance($tmpcourse->id),
                 ];
                 $event = \core\event\course_viewed::create($eventparams);
                 $event->trigger();
@@ -408,20 +406,6 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
         $timeu2nl = microtime(true) - $startu2nl;
 
         $end = microtime(true);
-
-        if (get_class($this) === "theme_snap\\tests\\theme_snap_recent_forum_activity_test") {
-            mtrace('Recent '.$ftype.' activity test - sql mode');
-        } else {
-            mtrace('Recent '.$ftype.' activity test - non-sql mode');
-        }
-        mtrace('Teacher (limited to 10 posts) time = '.round($timetchl10, 2).' seconds');
-        mtrace('User1 (limited to 10 posts) time = '.round($timeu1l10, 2).' seconds');
-        mtrace('User2 (limited to 10 posts) time = '.round($timeu2l10, 2).' seconds');
-        mtrace('Teacher (limited to '.$xteacherc.' posts) time = '.round($timetchnl, 2).' seconds');
-        mtrace('User1 (limited to '.$xuser1c.' posts) time = '.round($timeu1nl, 2).' seconds');
-        mtrace('User2 (limited to '.$xuser2c.' posts) time = '.round($timeu2nl, 2).' seconds');
-        mtrace('High volume time = '.round(($end - $start), 2).' seconds');
-        mtrace('Total posts made = '.$teacherc);
     }
 
     public function test_hsuforum_high_volume_posts() {
@@ -429,7 +413,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Test an anonymous advanced forum with one anonymous discussion & reply.
+     * Test an anonymous Open Forum with one anonymous discussion & reply.
      * @throws \coding_exception
      */
     public function test_hsuforum_anonymous() {
@@ -498,14 +482,14 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Test qanda advanced forum.
+     * Test qanda Open Forum.
      */
     public function test_hsuforum_qanda() {
         self::test_forum_qanda('hsuforum');
     }
 
     /**
-     * Test qanda forum & advanced forum combined.
+     * Test qanda forum & Open Forum combined.
      */
     public function test_combined_qanda() {
         self::test_forum_qanda('forum');
@@ -513,7 +497,7 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     }
 
     /**
-     * Test an advanced forum with one private reply.
+     * Test an Open Forum with one private reply.
      * @throws \coding_exception
      */
     public function test_hsuforum_private() {
@@ -657,6 +641,38 @@ class theme_snap_recent_forum_activity_test extends \advanced_testcase {
     public function test_combined_group_posts() {
         $this->test_forum_group_posts('forum');
         $this->test_forum_group_posts('hsuforum', 5, 4, 2);
+    }
+
+    /**
+     * Test site news date on front page
+     */
+    public function test_site_news_date() {
+        global $SITE, $DB;
+        $this->resetAfterTest();
+
+        $forum = forum_get_course_forum($SITE->id, 'news');
+        $user = $this->getDataGenerator()->create_user();
+        $courseid = 1; // Id for home "course".
+        $discussion = $this->create_discussion('forum', $courseid, $user->id, $forum->id);
+
+        // Set new Moodle Page and set context.
+        $page = new \moodle_page();
+        $page->set_context(\context_system::instance());
+
+        $target = null;
+        $renderer = new core_renderer($page, $target);
+        $output = $renderer->site_frontpage_news();
+        $dateparsed = userdate($discussion->timemodified, get_string('strftimedatetime', 'langconfig'));
+        $this->assertStringContainsString($dateparsed, $output);
+
+        $newtimestamp = time();
+        $updatediscussion = new \stdClass();
+        $updatediscussion->id = $discussion->id;
+        $updatediscussion->timemodified = $newtimestamp;
+        $DB->update_record('forum_discussions', $updatediscussion);
+
+        $output = $renderer->site_frontpage_news();
+        $this->assertStringContainsString(userdate($newtimestamp, get_string('strftimedatetime', 'langconfig')), $output);
     }
 
     /**

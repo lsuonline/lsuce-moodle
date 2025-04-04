@@ -26,7 +26,7 @@ require_once($CFG->libdir.'/gdlib.php');
  * Provides image resizing functionality.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class image {
@@ -74,14 +74,19 @@ class image {
         $tmpimage = tempnam(sys_get_temp_dir(), 'tmpimg');
         \file_put_contents($tmpimage, $originalfile->get_content());
 
-        if (!$newheight) {
+        if (!$newheight && (isset($imageinfo->height) && isset($imageinfo->width))) {
             $m = $imageinfo->height / $imageinfo->width; // Multiplier to work out $newheight.
-            $newheight = $newwidth * $m;
-        } else if (!$newwidth) {
+            $newheight = round($newwidth * $m);
+        } else if (!$newwidth && (isset($imageinfo->height) && isset($imageinfo->width))) {
             $m = $imageinfo->width / $imageinfo->height; // Multiplier to work out $newwidth.
-            $newwidth = $newheight * $m;
+            $newwidth = round($newheight * $m);
         }
         $t = null;
+
+        if (!isset($imageinfo->mimetype)) {
+            unlink ($tmpimage);
+            return false;
+        }
         switch ($imageinfo->mimetype) {
             case 'image/gif':
                 if (\function_exists('imagecreatefromgif')) {
@@ -153,7 +158,7 @@ class image {
 
         if (\function_exists('imagecreatetruecolor')) {
             $newimage = \imagecreatetruecolor($newwidth, $newheight);
-            if ($imageinfo->mimetype != 'image/jpeg' and $imagefnc === 'imagepng') {
+            if ($imageinfo->mimetype != 'image/jpeg' && $imagefnc === 'imagepng') {
                 if ($t) {
                     // Transparent GIF hacking...
                     $transparentcolour = \imagecolorallocate($newimage , $t['red'] , $t['green'] , $t['blue']);
@@ -178,12 +183,18 @@ class image {
             'component' => $component,
             'filearea' => $filearea,
             'itemid' => $itemid,
-            'filepath' => '/'
+            'filepath' => '/',
         );
 
         \ob_start();
-        if (!$imagefnc($newimage, null, $quality, $filters)) {
-            return false;
+        if ($imagefnc == 'imagejpeg') {
+            if (!$imagefnc($newimage, null, $quality)) {
+                return false;
+            }
+        } else {
+            if (!$imagefnc($newimage, null, $quality, $filters)) {
+                return false;
+            }
         }
 
         $data = \ob_get_clean();

@@ -142,7 +142,6 @@ class turnitintooltwo_user {
     /**
      * Convert a regular lastname into the pseudo equivelant for student data privacy purpose
      *
-     * @param string $email The users email address
      * @return string A pseudo lastname address
      */
     private function get_pseudo_lastname() {
@@ -152,12 +151,18 @@ class turnitintooltwo_user {
 
         if ((!isset($userinfo->data) || empty($userinfo->data)) && $config->pseudolastname != 0 && $config->lastnamegen == 1) {
             $uniqueid = strtoupper(strrev(uniqid()));
+
+            $userinfoid = '';
+            if (isset($userinfo->id)) {
+                $userinfoid = $userinfo->id;
+            }
+
             $userinfo = new stdClass();
             $userinfo->userid = $this->id;
             $userinfo->fieldid = $config->pseudolastname;
             $userinfo->data = $uniqueid;
-            if (isset($userinfo->data)) {
-                $userinfo->id = $userinfo->id;
+            if (!empty($userinfoid)) {
+                $userinfo->id = $userinfoid;
                 $DB->update_record('user_info_data', $userinfo);
             } else {
                 $DB->insert_record('user_info_data', $userinfo);
@@ -345,10 +350,7 @@ class turnitintooltwo_user {
         $user = new stdClass();
         $user->userid = $this->id;
         $user->turnitin_uid = $this->tiiuserid;
-        $user->turnitin_utp = 1;
-        if ($this->role == "Instructor") {
-            $user->turnitin_utp = 2;
-        }
+        $user->turnitin_utp = ($this->role == "Instructor") ? 2 : 1;
 
         if ($turnitintooltwouser = $DB->get_record("turnitintooltwo_users", array("userid" => $this->id))) {
             $user->id = $turnitintooltwouser->id;

@@ -83,6 +83,7 @@ function scorm_get_aicc_columns($row, $mastername='system_id') {
     $tok = strtok(strtolower($row), "\",\n\r");
     $result = new stdClass();
     $result->columns = array();
+    $result->mastercol = 0;
     $i = 0;
     while ($tok) {
         if ($tok != '') {
@@ -250,7 +251,13 @@ function scorm_parse_aicc(&$scorm) {
             $regexp = scorm_forge_cols_regexp($columns->columns, '(.+),');
             for ($i = 1; $i < count($rows); $i++) {
                 if (preg_match($regexp, $rows[$i], $matches)) {
-                    $courses[$courseid]->elements[$columns->mastercol + 1]->prerequisites = substr(trim($matches[2 - $columns->mastercol]), 1, -1);
+                    $elementid = trim($matches[$columns->mastercol + 1]);
+                    $elementid = trim(trim($elementid, '"'), "'"); // Remove any quotes.
+
+                    $prereq = trim($matches[2 - $columns->mastercol]);
+                    $prereq = trim(trim($prereq, '"'), "'"); // Remove any quotes.
+
+                    $courses[$courseid]->elements[$elementid]->prerequisites = $prereq;
                 }
             }
         }
@@ -367,8 +374,8 @@ function scorm_parse_aicc(&$scorm) {
     }
     if (!empty($oldscoes)) {
         foreach ($oldscoes as $oldsco) {
-            $DB->delete_records('scorm_scoes', array('id' => $oldsco->id));
-            $DB->delete_records('scorm_scoes_track', array('scoid' => $oldsco->id));
+            scorm_delete_tracks($scorm->id, $oldsco->id);
+            $DB->delete_records('scorm_scoes', ['id' => $oldsco->id]);
         }
     }
 
@@ -454,8 +461,8 @@ function scorm_aicc_generate_simple_sco($scorm) {
     }
     // Get rid of old ones.
     foreach ($scos as $oldsco) {
-        $DB->delete_records('scorm_scoes', array('id' => $oldsco->id));
-        $DB->delete_records('scorm_scoes_track', array('scoid' => $oldsco->id));
+        scorm_delete_tracks($scorm->id, $oldsco->id);
+        $DB->delete_records('scorm_scoes', ['id' => $oldsco->id]);
     }
 
     $sco->identifier = 'A1';
@@ -513,10 +520,10 @@ function get_scorm_default (&$userdata, $scorm, $scoid, $attempt, $mode) {
             $userdata->$key = $value;
         }
     } else {
-        print_error('cannotfindsco', 'scorm');
+        throw new \moodle_exception('cannotfindsco', 'scorm');
     }
     if (!$sco = scorm_get_sco($scoid)) {
-        print_error('cannotfindsco', 'scorm');
+        throw new \moodle_exception('cannotfindsco', 'scorm');
     }
 
     $userdata->mode = 'normal';

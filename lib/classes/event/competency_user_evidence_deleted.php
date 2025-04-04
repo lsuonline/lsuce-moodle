@@ -48,14 +48,14 @@ class competency_user_evidence_deleted extends base {
      * @param user_evidence $userevidence The evidence of prior learning.
      * @return self
      */
-    public static final function create_from_user_evidence(user_evidence $userevidence) {
-        if (!$userevidence->get_id()) {
+    final public static function create_from_user_evidence(user_evidence $userevidence) {
+        if (!$userevidence->get('id')) {
             throw new \coding_exception('The evidence of prior learning ID must be set.');
         }
         $event = static::create(array(
             'contextid'  => $userevidence->get_context()->id,
-            'objectid' => $userevidence->get_id(),
-            'relateduserid' => $userevidence->get_userid()
+            'objectid' => $userevidence->get('id'),
+            'relateduserid' => $userevidence->get('userid')
         ));
         $event->add_record_snapshot(user_evidence::TABLE, $userevidence->to_record());
         return $event;

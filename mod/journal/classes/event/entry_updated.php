@@ -23,7 +23,6 @@
  */
 
 namespace mod_journal\event;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * The mod_journal entry updated class.
@@ -69,15 +68,5 @@ class entry_updated extends \core\event\base {
      */
     public function get_url() {
         return new \moodle_url('/mod/journal/edit.php', array('id' => $this->contextinstanceid));
-    }
-
-    /**
-     * replace add_to_log() statement.
-     *
-     * @return array of parameters to be passed to legacy add_to_log() function.
-     */
-    protected function get_legacy_logdata() {
-        $url = new \moodle_url('edit.php', array('id' => $this->contextinstanceid));
-        return array($this->courseid, 'journal', 'update entry', $url->out(), $this->objectid, $this->contextinstanceid);
     }
 }

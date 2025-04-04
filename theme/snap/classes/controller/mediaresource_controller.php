@@ -16,14 +16,12 @@
 
 namespace theme_snap\controller;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Deadlines Controller.
  * Handles requests for media elements that can be viewed inline.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mediaresource_controller extends controller_abstract {
@@ -59,7 +57,7 @@ class mediaresource_controller extends controller_abstract {
      * @return string
      */
     private function get_media_html($resource, $context, \cm_info $cm) {
-        global $OUTPUT, $PAGE;
+        global $OUTPUT;
 
         $fs = get_file_storage();
         $files = $fs->get_area_files($context->id, 'mod_resource', 'content', 0, 'sortorder DESC, id ASC', false);
@@ -68,14 +66,13 @@ class mediaresource_controller extends controller_abstract {
         } else {
             $file = reset($files);
             unset($files);
-            $mediarenderer = $PAGE->get_renderer('core', 'media');
             $embedoptions = array(
-                \core_media::OPTION_TRUSTED => true,
-                \core_media::OPTION_BLOCK => true,
+                \core_media_manager::OPTION_TRUSTED => true,
+                \core_media_manager::OPTION_BLOCK => true,
             );
             $path = '/'.$context->id.'/mod_resource/content/'.$resource->revision.$file->get_filepath().$file->get_filename();
             $moodleurl = new \moodle_url('/pluginfile.php' . $path);
-            $embedhtml = $mediarenderer->embed_url($moodleurl, $resource->name, 0, 0, $embedoptions);
+            $embedhtml = \core_media_manager::instance()->embed_url($moodleurl, $resource->name, 0, 0, $embedoptions);
             // Modal title.
             $content = "<h5 class='snap-lightbox-title'>".format_string($resource->name)."</h5>";
 
@@ -107,7 +104,7 @@ class mediaresource_controller extends controller_abstract {
         // Trigger module instance viewed event.
         $event = \mod_resource\event\course_module_viewed::create(array(
             'objectid' => $cm->instance,
-            'context' => $context
+            'context' => $context,
         ));
         $resource = $DB->get_record('resource', array('id' => $cm->instance));
         $event->add_record_snapshot('course_modules', $cm);
@@ -121,7 +118,7 @@ class mediaresource_controller extends controller_abstract {
         $completion = new \completion_info($COURSE);
         $completion->set_module_viewed($cm);
         $renderer = $PAGE->get_renderer('core', 'course');
-        $resource->completionhtml = $renderer->course_section_cm_completion($COURSE, $completion, $cm);
+        $resource->completionhtml = $renderer->snap_course_section_cm_completion($COURSE, $completion, $cm);
 
         return $resource;
     }
@@ -136,7 +133,7 @@ class mediaresource_controller extends controller_abstract {
 
         return json_encode(array(
             'html' => $media->content,
-            'completionhtml' => $media->completionhtml
+            'completionhtml' => $media->completionhtml,
         ));
     }
 

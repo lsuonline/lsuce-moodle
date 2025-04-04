@@ -24,8 +24,6 @@
 
 namespace mod_customcert;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class certificate.
  *
@@ -36,6 +34,16 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class certificate {
+
+    /**
+     * Send the file inline to the browser.
+     */
+    const DELIVERY_OPTION_INLINE = 'I';
+
+    /**
+     * Send to the browser and force a file download
+     */
+    const DELIVERY_OPTION_DOWNLOAD = 'D';
 
     /**
      * @var string the print protection variable
@@ -59,13 +67,23 @@ class certificate {
     const CUSTOMCERT_PER_PAGE = '50';
 
     /**
+     * Date format in filename for download all zip file.
+     */
+    private const ZIP_FILE_NAME_DOWNLOAD_ALL_CERTIFICATES_DATE_FORMAT = '%Y%m%d%H%M%S';
+
+    /**
+     * The ending part of the name of the zip file.
+     */
+    private const ZIP_FILE_NAME_DOWNLOAD_ALL_CERTIFICATES = 'all_certificates.zip';
+
+    /**
      * Handles setting the protection field for the customcert
      *
      * @param \stdClass $data
      * @return string the value to insert into the protection field
      */
     public static function set_protection($data) {
-        $protection = array();
+        $protection = [];
 
         if (!empty($data->protection_print)) {
             $protection[] = self::PROTECTION_PRINT;
@@ -102,23 +120,20 @@ class certificate {
     public static function get_fonts() {
         global $CFG;
 
-        // Array to store the available fonts.
-        $options = array();
+        require_once($CFG->libdir . '/pdflib.php');
 
-        // Location of fonts in Moodle.
-        $fontdir = "$CFG->dirroot/lib/tcpdf/fonts";
-        // Check that the directory exists.
-        if (file_exists($fontdir)) {
-            // Get directory contents.
-            $fonts = new \DirectoryIterator($fontdir);
-            // Loop through the font folder.
-            foreach ($fonts as $font) {
-                // If it is not a file, or either '.' or '..', or
-                // the extension is not php, or we can not open file,
-                // skip it.
-                if (!$font->isFile() || $font->isDot() || ($font->getExtension() != 'php')) {
-                    continue;
+        $arrfonts = [];
+        $pdf = new \pdf();
+        $fontfamilies = $pdf->get_font_families();
+        foreach ($fontfamilies as $fontfamily => $fontstyles) {
+            foreach ($fontstyles as $fontstyle) {
+                $fontstyle = strtolower($fontstyle);
+                if ($fontstyle == 'r') {
+                    $filenamewoextension = $fontfamily;
+                } else {
+                    $filenamewoextension = $fontfamily . $fontstyle;
                 }
+                $fullpath = \TCPDF_FONTS::_getfontpath() . $filenamewoextension;
                 // Set the name of the font to null, the include next should then set this
                 // value, if it is not set then the file does not include the necessary data.
                 $name = null;
@@ -127,25 +142,24 @@ class certificate {
                 $displayname = null;
                 // Some of the TCPDF files include files that are not present, so we have to
                 // suppress warnings, this is the TCPDF libraries fault, grrr.
-                @include("$fontdir/$font");
+                @include($fullpath . '.php');
                 // If no $name variable in file, skip it.
                 if (is_null($name)) {
                     continue;
                 }
-                // Remove the extension of the ".php" file that contains the font information.
-                $filename = basename($font, ".php");
                 // Check if there is no display name to use.
                 if (is_null($displayname)) {
                     // Format the font name, so "FontName-Style" becomes "Font Name - Style".
                     $displayname = preg_replace("/([a-z])([A-Z])/", "$1 $2", $name);
                     $displayname = preg_replace("/([a-zA-Z])-([a-zA-Z])/", "$1 - $2", $displayname);
                 }
-                $options[$filename] = $displayname;
-            }
-            ksort($options);
-        }
 
-        return $options;
+                $arrfonts[$filenamewoextension] = $displayname;
+            }
+        }
+        ksort($arrfonts);
+
+        return $arrfonts;
     }
 
     /**
@@ -153,7 +167,7 @@ class certificate {
      */
     public static function get_font_sizes() {
         // Array to store the sizes.
-        $sizes = array();
+        $sizes = [];
 
         for ($i = 1; $i <= 200; $i++) {
             $sizes[$i] = $i;
@@ -169,7 +183,7 @@ class certificate {
      * @param int $userid
      * @return int the total time spent in seconds
      */
-    public static function get_course_time($courseid, $userid = 0) {
+    public static function get_course_time(int $courseid, int $userid = 0): int {
         global $CFG, $DB, $USER;
 
         if (empty($userid)) {
@@ -210,7 +224,7 @@ class certificate {
                  WHERE userid = :userid
                    AND $coursefield = :courseid
               ORDER BY $timefield ASC";
-        $params = array('userid' => $userid, 'courseid' => $courseid);
+        $params = ['userid' => $userid, 'courseid' => $courseid];
         $totaltime = 0;
         if ($logs = $DB->get_recordset_sql($sql, $params)) {
             foreach ($logs as $log) {
@@ -221,7 +235,7 @@ class certificate {
                     $totaltime = 0;
                 }
                 $delay = $log->$timefield - $lasthit;
-                if ($delay > ($CFG->sessiontimeout * 60)) {
+                if ($delay > $CFG->sessiontimeout) {
                     // The difference between the last log and the current log is more than
                     // the timeout Register session value so that we have found a session!
                     $login = $log->$timefield;
@@ -236,6 +250,89 @@ class certificate {
         }
 
         return 0;
+    }
+
+    /**
+     * Download all certificate issues.
+     *
+     * @param template $template
+     * @param array $issues
+     * @return void
+     * @throws \moodle_exception
+     */
+    public static function download_all_issues_for_instance(\mod_customcert\template $template, array $issues): void {
+        $zipdir = make_request_directory();
+        if (!$zipdir) {
+            return;
+        }
+
+        $zipfilenameprefix = userdate(time(), self::ZIP_FILE_NAME_DOWNLOAD_ALL_CERTIFICATES_DATE_FORMAT);
+        $zipfilename = $zipfilenameprefix . "_" . self::ZIP_FILE_NAME_DOWNLOAD_ALL_CERTIFICATES;
+        $zipfullpath = $zipdir . DIRECTORY_SEPARATOR . $zipfilename;
+
+        $ziparchive = new \zip_archive();
+        if ($ziparchive->open($zipfullpath)) {
+            foreach ($issues as $issue) {
+                $userfullname = str_replace(' ', '_', mb_strtolower(format_text(fullname($issue), FORMAT_PLAIN)));
+                $pdfname = $userfullname . DIRECTORY_SEPARATOR . 'certificate.pdf';
+                $filecontents = $template->generate_pdf(false, $issue->id, true);
+                $ziparchive->add_file_from_string($pdfname, $filecontents);
+            }
+            $ziparchive->close();
+        }
+
+        send_file($zipfullpath, $zipfilename);
+        exit();
+    }
+
+    /**
+     * Download all certificates on the site.
+     *
+     * @return void
+     */
+    public static function download_all_for_site(): void {
+        global $DB;
+
+        list($namefields, $nameparams) = \core_user\fields::get_sql_fullname();
+        $sql = "SELECT ci.*, $namefields as fullname, ct.id as templateid, ct.name as templatename, ct.contextid
+                  FROM {customcert_issues} ci
+                  JOIN {user} u
+                    ON ci.userid = u.id
+                  JOIN {customcert} c
+                    ON ci.customcertid = c.id
+                  JOIN {customcert_templates} ct
+                    ON c.templateid = ct.id";
+        if ($issues = $DB->get_records_sql($sql, $nameparams)) {
+            $zipdir = make_request_directory();
+            if (!$zipdir) {
+                return;
+            }
+
+            $zipfilenameprefix = userdate(time(), self::ZIP_FILE_NAME_DOWNLOAD_ALL_CERTIFICATES_DATE_FORMAT);
+            $zipfilename = $zipfilenameprefix . "_" . self::ZIP_FILE_NAME_DOWNLOAD_ALL_CERTIFICATES;
+            $zipfullpath = $zipdir . DIRECTORY_SEPARATOR . $zipfilename;
+
+            $ziparchive = new \zip_archive();
+            if ($ziparchive->open($zipfullpath)) {
+                foreach ($issues as $issue) {
+                    $template = new \stdClass();
+                    $template->id = $issue->templateid;
+                    $template->name = $issue->templatename;
+                    $template->contextid = $issue->contextid;
+                    $template = new \mod_customcert\template($template);
+
+                    $ctname = str_replace(' ', '_', mb_strtolower($template->get_name()));
+                    $userfullname = str_replace(' ', '_', mb_strtolower($issue->fullname));
+                    $pdfname = $userfullname . DIRECTORY_SEPARATOR . $ctname . '_' . 'certificate.pdf';
+                    $filecontents = $template->generate_pdf(false, $issue->userid, true);
+                    $ziparchive->add_file_from_string($pdfname, $filecontents);
+                }
+                $ziparchive->close();
+            }
+
+            send_file($zipfullpath, $zipfilename);
+            exit();
+        }
     }
 
     /**
@@ -257,26 +354,25 @@ class certificate {
 
         // If it is empty then return an empty array.
         if (empty($conditionsparams)) {
-            return array();
+            return [];
         }
-
-        // Add the conditional SQL and the customcertid to form all used parameters.
-        $allparams = $conditionsparams + array('customcertid' => $customcertid);
 
         // Return the issues.
-        $ufields = \user_picture::fields('u');
-        $sql = "SELECT $ufields, ci.id as issueid, ci.code, ci.timecreated
+        $context = \context_module::instance($cm->id);
+        $query = \core_user\fields::for_identity($context)->with_userpic()->get_sql('u', true, '', '', false);
+
+        // Add the conditional SQL and the customcertid to form all used parameters.
+        $allparams = $query->params + $conditionsparams + ['customcertid' => $customcertid];
+
+        $orderby = $sort ?: $DB->sql_fullname();
+
+        $sql = "SELECT $query->selects, ci.id as issueid, ci.code, ci.timecreated
                   FROM {user} u
-            INNER JOIN {customcert_issues} ci
-                    ON u.id = ci.userid
-                 WHERE u.deleted = 0
-                   AND ci.customcertid = :customcertid
-                       $conditionssql";
-        if ($sort) {
-            $sql .= "ORDER BY " . $sort;
-        } else {
-            $sql .= "ORDER BY " . $DB->sql_fullname();
-        }
+            INNER JOIN {customcert_issues} ci ON (u.id = ci.userid)
+                       $query->joins
+                 WHERE u.deleted = 0 AND ci.customcertid = :customcertid
+                       $conditionssql
+              ORDER BY $orderby";
 
         return $DB->get_records_sql($sql, $allparams, $limitfrom, $limitnum);
     }
@@ -301,7 +397,7 @@ class certificate {
         }
 
         // Add the conditional SQL and the customcertid to form all used parameters.
-        $allparams = $conditionsparams + array('customcertid' => $customcertid);
+        $allparams = $conditionsparams + ['customcertid' => $customcertid];
 
         // Return the number of issues.
         $sql = "SELECT COUNT(u.id) as count
@@ -327,7 +423,7 @@ class certificate {
         // Get all users that can manage this customcert to exclude them from the report.
         $context = \context_module::instance($cm->id);
         $conditionssql = '';
-        $conditionsparams = array();
+        $conditionsparams = [];
 
         // Get all users that can manage this certificate to exclude them from the report.
         $certmanagers = array_keys(get_users_by_capability($context, 'mod/customcert:manage', 'u.id'));
@@ -342,30 +438,30 @@ class certificate {
 
             // If we are viewing all participants and the user does not have access to all groups then return nothing.
             if (!$currentgroup && !$canaccessallgroups) {
-                return array('', array());
+                return ['', []];
             }
 
             if ($currentgroup) {
                 if (!$canaccessallgroups) {
                     // Guest users do not belong to any groups.
                     if (isguestuser()) {
-                        return array('', array());
+                        return ['', []];
                     }
 
                     // Check that the user belongs to the group we are viewing.
                     $usersgroups = groups_get_all_groups($cm->course, $USER->id, $cm->groupingid);
                     if ($usersgroups) {
                         if (!isset($usersgroups[$currentgroup])) {
-                            return array('', array());
+                            return ['', []];
                         }
                     } else { // They belong to no group, so return an empty array.
-                        return array('', array());
+                        return ['', []];
                     }
                 }
 
                 $groupusers = array_keys(groups_get_members($currentgroup, 'u.*'));
                 if (empty($groupusers)) {
-                    return array('', array());
+                    return ['', []];
                 }
 
                 list($sql, $params) = $DB->get_in_or_equal($groupusers, SQL_PARAMS_NAMED, 'grp');
@@ -374,7 +470,7 @@ class certificate {
             }
         }
 
-        return array($conditionssql, $conditionsparams);
+        return [$conditionssql, $conditionsparams];
     }
 
     /**
@@ -391,7 +487,7 @@ class certificate {
             INNER JOIN {customcert_issues} ci
                     ON c.id = ci.customcertid
                  WHERE ci.userid = :userid";
-        return $DB->count_records_sql($sql, array('userid' => $userid));
+        return $DB->count_records_sql($sql, ['userid' => $userid]);
     }
 
     /**
@@ -418,7 +514,7 @@ class certificate {
                     ON c.course = co.id
                  WHERE ci.userid = :userid
               ORDER BY $sort";
-        return $DB->get_records_sql($sql, array('userid' => $userid), $limitfrom, $limitnum);
+        return $DB->get_records_sql($sql, ['userid' => $userid], $limitfrom, $limitnum);
     }
 
     /**
@@ -453,7 +549,7 @@ class certificate {
         $uniquecodefound = false;
         $code = random_string(10);
         while (!$uniquecodefound) {
-            if (!$DB->record_exists('customcert_issues', array('code' => $code))) {
+            if (!$DB->record_exists('customcert_issues', ['code' => $code])) {
                 $uniquecodefound = true;
             } else {
                 $code = random_string(10);

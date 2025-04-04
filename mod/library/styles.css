@@ -7,7 +7,6 @@ li.modtype_library img {
   margin-right: 5px;
 }
 
-
 .modtype_library p {
 }
 
@@ -21,7 +20,10 @@ li.modtype_library img {
   margin-right: 3px;
 }
 
-
 .snap-activity.modtype_library p {
   margin-right: 100px;
+}
+
+.modtype_library div.activityinstance > div.snap-header-card > div.snap-header-card-icons {
+  width: 100%;
 }

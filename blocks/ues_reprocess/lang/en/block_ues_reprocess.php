@@ -21,12 +21,11 @@
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$string['pluginname'] = 'Reprocess Enrollment';
 
+$string['pluginname'] = 'Reprocess Enrollment';
 $string['ues_reprocess:canreprocess'] = 'Allow UES enrollment reprocessing for courses';
 $string['ues_reprocess:addinstance'] = 'Add UES Repocess block';
 $string['ues_reprocess:myaddinstance'] = 'Add UES Repocess block';
-
 $string['not_supported'] = 'You have requested an unsupported reprocess type: {$a}';
 $string['reprocess'] = 'Reprocess';
 $string['reprocess_course'] = 'Reprocess Course';
@@ -40,3 +39,13 @@ $string['are_you_sure'] = 'Are you sure you want to reprocess the following sect
     </ul>
 ';
 $string['patience'] = 'Reprocessing can take a few minutes. Please be patient while the job finishes. Thank you.';
+
+// Settings.
+$string['settings'] = 'UES Reprocess All';
+$string['reprocess_all_courses'] = 'Reprocess requested courses';
+$string['semesters'] = 'Semester List';
+$string['semesters_help'] = 'Select as many semesters as you\'d like to reprocess';
+$string['categories'] = 'Course Categories';
+$string['categories_help'] = 'Select as many categories as you\'d like to reprocess for the selected semester(s)';
+$string['priorafter'] = 'Days prior / after';
+$string['priorafter_help'] = 'The number of days you would like to use as a buffer when listing semesters.';

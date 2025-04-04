@@ -14,17 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  *
  * @package    block_cps
  * @copyright  2014 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once $CFG->libdir . '/formslib.php';
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/formslib.php');
 
 class material_form extends moodleform {
-    function definition() {
+    public function definition() {
         global $USER;
 
         $m =& $this->_form;
@@ -33,9 +35,9 @@ class material_form extends moodleform {
 
         $courses = ues_course::merge_sections($sections);
 
-        $_s = ues::gen_str('block_cps');
+        $s = ues::gen_str('block_cps');
 
-        $m->addElement('header', 'materials', $_s('creating_materials'));
+        $m->addElement('header', 'materials', $s('creating_materials'));
 
         foreach ($courses as $course) {
             $checkbox =& $m->addElement(

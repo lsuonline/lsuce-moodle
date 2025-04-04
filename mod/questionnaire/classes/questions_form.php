@@ -14,22 +14,38 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * @authors Mike Churchward & Joseph Rézeau
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package questionnaire
- */
+namespace mod_questionnaire;
+
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->libdir . '/formslib.php');
 
-class mod_questionnaire_questions_form extends moodleform {
+#[\AllowDynamicProperties]
+/**
+ * The form definition class for questions.
+ *
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author Mike Churchward & Joseph Rézeau
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class questions_form extends \moodleform {
 
+    /**
+     * The constructor.
+     * @param mixed $action
+     * @param bool $moveq
+     */
     public function __construct($action, $moveq=false) {
         $this->moveq = $moveq;
         return parent::__construct($action);
     }
 
+    /**
+     * Form definition.
+     */
     public function definition() {
-        global $CFG, $questionnaire, $SESSION, $OUTPUT;
+        global $CFG, $questionnaire, $SESSION;
         global $DB;
 
         $sid = $questionnaire->survey->id;
@@ -75,7 +91,7 @@ class mod_questionnaire_questions_form extends moodleform {
 
         $addqgroup[] =& $mform->createElement('submit', 'addqbutton', get_string('addselqtype', 'questionnaire'));
 
-        $questionnairehasdependencies = questionnaire_has_dependencies($questionnaire->questions);
+        $questionnairehasdependencies = $questionnaire->has_dependencies();
 
         $mform->addGroup($addqgroup, 'addqgroup', '', ' ', false);
 
@@ -91,8 +107,8 @@ class mod_questionnaire_questions_form extends moodleform {
         // we must get now the parent and child positions.
 
         if ($questionnairehasdependencies) {
-            $parentpositions = questionnaire_get_parent_positions ($questionnaire->questions);
-            $childpositions = questionnaire_get_child_positions ($questionnaire->questions);
+            $parentpositions = questionnaire_get_parent_positions($questionnaire->questions);
+            $childpositions = questionnaire_get_child_positions($questionnaire->questions);
         }
 
         $mform->addElement('header', 'manageq', get_string('managequestions', 'questionnaire'));
@@ -109,21 +125,20 @@ class mod_questionnaire_questions_form extends moodleform {
             $qtype = $question->type;
             $required = $question->required;
 
-            // Does this questionnaire contain branching questions already?
-            $dependency = '';
+            // Get displayable list of parents for the questions in questions_form.
             if ($questionnairehasdependencies) {
-                if ($question->dependquestion != 0) {
-                    $parent = questionnaire_get_parent ($question);
-                    $dependency = '<strong>'.get_string('dependquestion', 'questionnaire').'</strong> : '.
-                        $strposition.' '.$parent[$qid]['parentposition'].' ('.$parent[$qid]['parent'].')';
-                }
+                // TODO - Perhaps this should be a function called by the questionnaire after it loads all questions?
+                $questionnaire->load_parents($question);
+                $dependencies = $questionnaire->renderer->get_dependency_html($question->id, $question->dependencies);
+            } else {
+                $dependencies = '';
             }
 
             $pos = $question->position;
 
             // No page break in first position!
             if ($tid == QUESPAGEBREAK && $pos == 1) {
-                $DB->set_field('questionnaire_question', 'deleted', 'y', array('id' => $qid, 'survey_id' => $sid));
+                $DB->set_field('questionnaire_question', 'deleted', 'y', ['id' => $qid, 'surveyid' => $sid]);
                 if ($records = $DB->get_records_select('questionnaire_question', $select, null, 'position ASC')) {
                     foreach ($records as $record) {
                         $DB->set_field('questionnaire_question', 'position', $record->position - 1, array('id' => $record->id));
@@ -132,7 +147,7 @@ class mod_questionnaire_questions_form extends moodleform {
                 redirect($CFG->wwwroot.'/mod/questionnaire/questions.php?id='.$questionnaire->cm->id);
             }
 
-            if ($tid != QUESPAGEBREAK && $tid != QUESSECTIONTEXT) {
+            if ($question->is_numbered()) {
                 $qnum++;
             }
 
@@ -146,14 +161,20 @@ class mod_questionnaire_questions_form extends moodleform {
             if ($tid != QUESPAGEBREAK) {
                 // Needed to print potential media in question text.
                 $content = format_text(file_rewrite_pluginfile_urls($question->content, 'pluginfile.php',
-                                $question->context->id, 'mod_questionnaire', 'question', $question->id), FORMAT_HTML);
+                    $question->context->id, 'mod_questionnaire', 'question', $question->id), FORMAT_HTML, ['noclean' => true]);
             }
             $moveqgroup = array();
 
-            $spacer = $OUTPUT->pix_url('spacer');
+            $spacer = $questionnaire->renderer->image_url('spacer');
 
             if (!$this->moveq) {
-                $mform->addElement('html', '<div class="qn-container">'); // Begin div qn-container.
+                if ($dependencies) {
+                    // Begin div qn-container with indent if questionnaire has child.
+                    $mform->addElement('html', '<div class="qn-container qn-indent">');
+                } else {
+                    $mform->addElement('html', '<div class="qn-container">'); // Begin div qn-container.
+                }
+
                 $mextra = array('value' => $question->id,
                                 'alt' => $strmove,
                                 'title' => $strmove);
@@ -165,19 +186,12 @@ class mod_questionnaire_questions_form extends moodleform {
                                 'title' => $strremove);
 
                 if ($tid == QUESPAGEBREAK) {
-                    $esrc = $CFG->wwwroot.'/mod/questionnaire/images/editd.gif';
-                    $eextra = array('disabled' => 'disabled');
-                } else {
-                    $esrc = $CFG->wwwroot.'/mod/questionnaire/images/edit.gif';
-                }
-
-                if ($tid == QUESPAGEBREAK) {
                     $esrc = $spacer;
                     $eextra = array('disabled' => 'disabled');
                 } else {
-                    $esrc = $OUTPUT->pix_url('t/edit');
+                    $esrc = $questionnaire->renderer->image_url('t/edit');
                 }
-                $rsrc = $OUTPUT->pix_url('t/delete');
+                $rsrc = $questionnaire->renderer->image_url('t/delete');
 
                 // Question numbers.
                 $manageqgroup[] =& $mform->createElement('static', 'qnums', '',
@@ -185,7 +199,7 @@ class mod_questionnaire_questions_form extends moodleform {
 
                 // Need to index by 'id' since IE doesn't return assigned 'values' for image inputs.
                 $manageqgroup[] =& $mform->createElement('static', 'opentag_'.$question->id, '', '');
-                $msrc = $OUTPUT->pix_url('t/move');
+                $msrc = $questionnaire->renderer->image_url('t/move');
 
                 if ($questionnairehasdependencies) {
                     // Do not allow moving parent question at position #1 to be moved down if it has a child at position < 4.
@@ -194,7 +208,7 @@ class mod_questionnaire_questions_form extends moodleform {
                             $maxdown = $childpositions[$qid];
                             if ($maxdown < 4) {
                                 $strdisabled = get_string('movedisabled', 'questionnaire');
-                                $msrc = $OUTPUT->pix_url('t/block');
+                                $msrc = $questionnaire->renderer->image_url('t/block');
                                 $mextra = array('value' => $question->id,
                                                 'alt' => $strdisabled,
                                                 'title' => $strdisabled);
@@ -202,19 +216,26 @@ class mod_questionnaire_questions_form extends moodleform {
                             }
                         }
                     }
+
                     // Do not allow moving or deleting a page break if immediately followed by a child question
                     // or immediately preceded by a question with a dependency and followed by a non-dependent question.
                     if ($tid == QUESPAGEBREAK) {
-                        if ($nextquestion = $DB->get_record('questionnaire_question', array('survey_id' => $sid,
-                                        'position' => $pos + 1, 'deleted' => 'n' ), $fields = 'dependquestion, name, content') ) {
-                            if ($previousquestion = $DB->get_record('questionnaire_question', array('survey_id' => $sid,
-                                            'position' => $pos - 1, 'deleted' => 'n' ),
-                                            $fields = 'dependquestion, name, content')) {
-                                if ($nextquestion->dependquestion != 0
-                                                || ($previousquestion->dependquestion != 0
-                                                    && $nextquestion->dependquestion == 0) ) {
+                        if ($nextquestion = $DB->get_record('questionnaire_question',
+                            ['surveyid' => $sid, 'position' => $pos + 1, 'deleted' => 'n'], 'id, name, content') ) {
+
+                            $nextquestiondependencies = $DB->get_records('questionnaire_dependency',
+                                ['questionid' => $nextquestion->id , 'surveyid' => $sid], 'id ASC');
+
+                            if ($previousquestion = $DB->get_record('questionnaire_question',
+                                ['surveyid' => $sid, 'position' => $pos - 1, 'deleted' => 'n'], 'id, name, content')) {
+
+                                $previousquestiondependencies = $DB->get_records('questionnaire_dependency',
+                                    ['questionid' => $previousquestion->id , 'surveyid' => $sid], 'id ASC');
+
+                                if (!empty($nextquestiondependencies) ||
+                                    (!empty($previousquestiondependencies) && empty($nextquestiondependencies))) {
                                     $strdisabled = get_string('movedisabled', 'questionnaire');
-                                    $msrc = $OUTPUT->pix_url('t/block');
+                                    $msrc = $questionnaire->renderer->image_url('t/block');
                                     $mextra = array('value' => $question->id,
                                                     'alt' => $strdisabled,
                                                     'title' => $strdisabled);
@@ -236,12 +257,12 @@ class mod_questionnaire_questions_form extends moodleform {
                 $manageqgroup[] =& $mform->createElement('image', 'editbutton['.$question->id.']', $esrc, $eextra);
                 $manageqgroup[] =& $mform->createElement('image', 'removebutton['.$question->id.']', $rsrc, $rextra);
 
-                if ($tid != QUESPAGEBREAK && $tid != QUESSECTIONTEXT) {
+                if ($tid != QUESPAGEBREAK && $tid != QUESSECTIONTEXT  && $tid != QUESSLIDER) {
                     if ($required == 'y') {
-                        $reqsrc = $OUTPUT->pix_url('t/stop');
+                        $reqsrc = $questionnaire->renderer->image_url('t/stop');
                         $strrequired = get_string('required', 'questionnaire');
                     } else {
-                        $reqsrc = $OUTPUT->pix_url('t/go');
+                        $reqsrc = $questionnaire->renderer->image_url('t/go');
                         $strrequired = get_string('notrequired', 'questionnaire');
                     }
                     $strrequired .= ' '.get_string('clicktoswitch', 'questionnaire');
@@ -288,7 +309,7 @@ class mod_questionnaire_questions_form extends moodleform {
                             $mextra = array('value' => $question->id,
                                             'alt' => $strmove,
                                             'title' => $strmovehere.' (position '.$pos.')');
-                            $msrc = $OUTPUT->pix_url('movehere');
+                            $msrc = $questionnaire->renderer->image_url('movehere');
                             $moveqgroup[] =& $mform->createElement('static', 'opentag_'.$question->id, '', '');
                             $moveqgroup[] =& $mform->createElement('image', 'moveherebutton['.$pos.']', $msrc, $mextra);
                             $moveqgroup[] =& $mform->createElement('static', 'closetag_'.$question->id, '', '');
@@ -306,15 +327,14 @@ class mod_questionnaire_questions_form extends moodleform {
             }
             $manageqgroup[] =& $mform->createElement('static', 'qinfo_'.$question->id, '', $qtype.' '.$qname);
 
-            if ($dependency) {
-                $mform->addElement('static', 'qdepend_'.$question->id, '', '<div class="qdepend">'.$dependency.'</div>');
+            if (!empty($dependencies)) {
+                $mform->addElement('static', 'qdepend_' . $question->id, '', $dependencies);
             }
-            if ($tid != QUESPAGEBREAK) {
-                if ($tid != QUESSECTIONTEXT) {
+
+            if ($question->is_numbered()) {
                     $qnumber = '<div class="qn-info"><h2 class="qn-number">'.$qnum.'</h2></div>';
-                } else {
+            } else {
                     $qnumber = '';
-                }
             }
 
             if ($this->moveq && $pos < $moveqposition) {
@@ -355,9 +375,14 @@ class mod_questionnaire_questions_form extends moodleform {
         $mform->addElement('html', '</div>');
     }
 
+    /**
+     * Form validation.
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
         return $errors;
     }
-
 }

@@ -29,10 +29,12 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 
 // Validate course id.
 if (empty($courseid)) {
-    require_login();
+    require_login(null, false);
     $context = context_system::instance();
     $coursename = format_string($SITE->fullname, true, array('context' => $context));
     $PAGE->set_context($context);
+    $PAGE->set_primary_active_tab('siteadminnode');
+    $PAGE->set_secondary_active_tab('reports');
 } else {
     $course = get_course($courseid);
     require_login($course);
@@ -54,12 +56,6 @@ $PAGE->set_heading($coursename);
 // Get data ready for mform.
 $eventlist = tool_monitor\eventlist::get_all_eventlist(true);
 $pluginlist = tool_monitor\eventlist::get_plugin_list();
-$eventlist = array_merge(array('' => get_string('choosedots')), $eventlist);
-$pluginlist = array_merge(array('' => get_string('choosedots')), $pluginlist);
-
-// Set up the yui module.
-$PAGE->requires->yui_module('moodle-tool_monitor-dropdown', 'Y.M.tool_monitor.DropDown.init',
-        array(array('eventlist' => $eventlist)));
 
 // Site level report.
 if (empty($courseid)) {
@@ -71,14 +67,30 @@ if (empty($courseid)) {
 
 // Mform setup.
 if (!empty($ruleid)) {
+    $PAGE->navbar->add(get_string('editrule', 'tool_monitor'), $PAGE->url);
     $rule = \tool_monitor\rule_manager::get_rule($ruleid)->get_mform_set_data();
     $rule->minutes = $rule->timewindow / MINSECS;
     $subscriptioncount = \tool_monitor\subscription_manager::count_rule_subscriptions($ruleid);
+
+    // Filter out events which cannot be triggered for some reason.
+    $eventlist = array_filter($eventlist, function($classname) use ($rule) {
+        // Filter out all deprecated events, except for the current one.
+        return $classname === $rule->eventname || !$classname::is_deprecated();
+    }, ARRAY_FILTER_USE_KEY);
 } else {
+    $PAGE->navbar->add(get_string('addrule', 'tool_monitor'), $PAGE->url);
     $rule = new stdClass();
     $subscriptioncount = 0;
+
+    // Filter out events which cannot be triggered for some reason.
+    $eventlist = array_filter($eventlist, function($classname) {
+        return !$classname::is_deprecated();
+    }, ARRAY_FILTER_USE_KEY);
 }
 
+// Modify the lists to add the choosers.
+$eventlist = array_merge(array('' => get_string('choosedots')), $eventlist);
+$pluginlist = array_merge(['' => [0 => get_string('choosedots')]], $pluginlist);
 $mform = new tool_monitor\rule_form(null, array('eventlist' => $eventlist, 'pluginlist' => $pluginlist, 'rule' => $rule,
         'courseid' => $courseid, 'subscriptioncount' => $subscriptioncount));
 

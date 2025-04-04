@@ -16,7 +16,7 @@
 /**
  * Module to enable inline editing of a comptency grade.
  *
- * @package    tool_lp
+ * @module     tool_lp/user_competency_course_navigation
  * @copyright  2015 Damyon Wiese
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,12 +26,13 @@ define(['jquery'], function($) {
     /**
      * UserCompetencyCourseNavigation
      *
-     * @param {String} The selector of the user element.
-     * @param {String} The selector of the competency element.
-     * @param {String} The base url for the page (no params).
-     * @param {Number} The course id
-     * @param {Number} The user id
-     * @param {Number} The competency id
+     * @class tool_lp/user_competency_course_navigation
+     * @param {String} userSelector The selector of the user element.
+     * @param {String} competencySelector The selector of the competency element.
+     * @param {String} baseUrl The base url for the page (no params).
+     * @param {Number} userId The user id
+     * @param {Number} competencyId The competency id
+     * @param {Number} courseId The course id
      */
     var UserCompetencyCourseNavigation = function(userSelector, competencySelector, baseUrl, userId, competencyId, courseId) {
         this._baseUrl = baseUrl;
@@ -67,17 +68,16 @@ define(['jquery'], function($) {
         document.location = this._baseUrl + queryStr;
     };
 
-    /** @type {Number} The id of the competency. */
+    /** @property {Number} The id of the competency. */
     UserCompetencyCourseNavigation.prototype._competencyId = null;
-    /** @type {Number} The id of the user. */
+    /** @property {Number} The id of the user. */
     UserCompetencyCourseNavigation.prototype._userId = null;
-    /** @type {Number} The id of the course. */
+    /** @property {Number} The id of the course. */
     UserCompetencyCourseNavigation.prototype._courseId = null;
-    /** @type {String} Plugin base url. */
+    /** @property {String} Plugin base url. */
     UserCompetencyCourseNavigation.prototype._baseUrl = null;
-    /** @type {Boolean} Ignore the first change event for competencies. */
+    /** @property {Boolean} Ignore the first change event for competencies. */
     UserCompetencyCourseNavigation.prototype._ignoreFirstCompetency = null;
 
-    return /** @alias module:tool_lp/user_competency_course_navigation */ UserCompetencyCourseNavigation;
-
+    return UserCompetencyCourseNavigation;
 });

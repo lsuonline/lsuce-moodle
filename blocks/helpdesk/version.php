@@ -14,16 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * @package   block_helpdesk
- * @copyright 2016, Louisiana State University
+ * @copyright 2019 Louisiana State University
+ * @author    Robert Russo, Philip Cali, Adam Zapletal, Jason Peak, Chad Mazilly
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_helpdesk';
-$plugin->version = 2016040800;
+$plugin->version = 2019102900;
 $plugin->requires = 2015111600;
 $plugin->release = 'v3.0.0';
+
+$plugin->dependencies = array(
+    'enrol_ues' => 2016022912,
+);

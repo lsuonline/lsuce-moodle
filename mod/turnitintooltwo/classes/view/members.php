@@ -41,7 +41,6 @@ class members_view {
      * @return string Members HTML for a role
      */
     public function build_members_view($displayrole = "students") {
-        $output  = "";
         $istutor = $this->is_tutor();
 
         if (!$istutor) {
@@ -49,10 +48,10 @@ class members_view {
             exit();
         }
 
-        $wrapperclass = $displayrole == "tutors" ? "members members-instructors" : "members members-students";
+        $wrapperclass = $displayrole == "tutors" ? "members-instructors" : "members-students";
 
-        // wrapper element for strong CSS selectors
-        $output .= html_writer::start_tag("div", array("class" => $wrapperclass));
+        // Wrapper element for strong CSS selectors.
+        $output = html_writer::start_tag("div", array("class" => "mod_turnitintooltwo_members " . $wrapperclass));
 
         $output .= $this->build_intro_message($displayrole);
         $output .= $this->build_members_table($displayrole);
@@ -117,8 +116,7 @@ class members_view {
         $coursemodule = $this->coursemodule;
         $role = $this->get_role_for_display_role($displayrole);
 
-        return $turnitintooltwoview
-            ->init_tii_member_by_role_table($coursemodule, $turnitintooltwoassignment, $role);
+        return $turnitintooltwoview->init_tii_member_by_role_table($coursemodule, $turnitintooltwoassignment, $role);
     }
 
     /**

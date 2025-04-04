@@ -18,29 +18,93 @@
  * Layout - default.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
 
 require(__DIR__.'/header.php');
+global $SESSION;
 ?>
 <!-- moodle js hooks -->
-<div id="page">
+<?php
+$fullscreenclasses = '';
+// Don't create the background login image in the sign up page.
+if (!($PAGE->pagetype === 'login-signup')) {
+    // Check if there is a background image configured for the login.
+    if (empty(get_config('theme_snap', 'loginbgimg'))) {
+        if (get_config('theme_snap', 'loginpagetemplate') == "stylish") {
+            // If the login template is Stylish, then add a new div called page-stylish-content
+            // and a new class called page-stylish-login.
+            echo '<div id="page">';
+            echo '<div id="page-stylish-content" class="page-stylish-login">';
+        } else {
+            echo '<div id="page">';
+        }
+    } else {
+        if (get_config('theme_snap', 'loginpagetemplate') == "stylish") {
+            // If the login template is Stylish and there are images for the background
+            // add a new class called page-stylish-background and a new class called page-stylish-login.
+            $imgsrc = $OUTPUT->login_bg_slides();
+            $imageinitialurl = '';
+            $imagid = 1;
+            foreach ($imgsrc as $image) {
+                $imageinitialurl = ($imagid == count($imgsrc)) ?
+                    $imageinitialurl.'url('.$image.')' :
+                    $imageinitialurl.'url('.$image.'),';
+                $imagid ++;
+            }
+            echo '<div id="page" class="page-stylish-background" style="background-image: '.$imageinitialurl.';">';
+            echo '<div id="snap-login-carousel" class="carousel slide page-stylish-login">';
+        } else {
+            $imgsrc = $OUTPUT->login_bg_slides();
+            $imageinitialurl = '';
+            $imagid = 1;
+            foreach ($imgsrc as $image) {
+                $imageinitialurl = ($imagid == count($imgsrc)) ?
+                    $imageinitialurl.'url('.$image.')' :
+                    $imageinitialurl.'url('.$image.'),';
+                $imagid ++;
+            }
+            echo '<div id="page" style="background-image: '.$imageinitialurl.';">';
+            echo '<div id="snap-login-carousel" class="carousel slide">';
+        }
+    }
+}
+?>
 <div id="page-content">
 <!--
 ////////////////////////// MAIN  ///////////////////////////////
 -->
-<main id="moodle-page" class="clearfix">
+<div id="moodle-page" class="clearfix">
 <div id="page-header" class="clearfix">
 </div>
 
 <section id="region-main">
 <?php
-echo $OUTPUT->main_content();
+if ($PAGE->title === get_string('restoredaccount')) {
+    echo html_writer::start_div('loginerror-restoredaccount');
+    echo $OUTPUT->main_content();
+    echo html_writer::end_div();
+} else {
+    echo $OUTPUT->main_content();
+}
 ?>
 </section>
-</main>
+</div>
+</div>
+<?php
+if (!empty(get_config('theme_snap', 'loginbgimg'))) {
+    $images = $OUTPUT->login_bg_slides();
+    $PAGE->requires->js_call_amd('theme_snap/carousel_login', 'init', ['images' => $images]);
+}
+// Set wantsutl to null to prevent redirect to draftfile after login.
+if (isset($SESSION->wantsurl)) {
+    if (preg_match('/draftfile/', $SESSION->wantsurl)) {
+        $SESSION->wantsurl = null;
+    }
+}
+?>
 </div>
 </div>
 <!-- close moodle js hooks -->

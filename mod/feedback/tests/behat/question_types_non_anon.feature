@@ -4,7 +4,8 @@ Feature: Test creating different types of feedback questions for non-anonymous f
   As a teacher
   I need to be able to add different question types
 
-  Background:
+  @javascript
+  Scenario: Create different types of questions in non-anonymous feedback with javascript enabled
     Given the following "users" exist:
       | username | firstname | lastname |
       | teacher1 | Teacher   | 1        |
@@ -21,10 +22,8 @@ Feature: Test creating different types of feedback questions for non-anonymous f
     And the following "activities" exist:
       | activity   | name                | course | idnumber    | anonymous |
       | feedback   | Learning experience | C1     | feedback0   | 2         |
-    When I log in as "teacher1"
-    And I follow "Course 1"
-    And I follow "Learning experience"
-    And I follow "Edit questions"
+    When I am on the "Learning experience" "feedback activity" page logged in as teacher1
+    And I navigate to "Questions" in current page administration
     And I add a "Information" question to the feedback with:
       | Question         | this is an information question |
       | Label            | info                            |
@@ -32,8 +31,8 @@ Feature: Test creating different types of feedback questions for non-anonymous f
     And I add a "Information" question to the feedback with:
       | Question         | this is a response time question |
       | Label            | curtime                          |
-      | Information type | Responsestime                    |
-    And I add a "Label" question to the feedback with:
+      | Information type | Responses time                   |
+    And I add a "Text and media area" question to the feedback with:
       | Contents | label text |
     And I add a "Longer text answer" question to the feedback with:
       | Question         | this is a longer text answer |
@@ -47,12 +46,11 @@ Feature: Test creating different types of feedback questions for non-anonymous f
       | Question                       | this is a multiple choice 2        |
       | Label                          | multichoice2                       |
       | Multiple choice type           | Multiple choice - multiple answers |
-      | Hide the "Not selected" option | Yes                                |
       | Multiple choice values         | option d\noption e\noption f       |
     And I add a "Multiple choice" question to the feedback with:
       | Question                       | this is a multiple choice 3        |
       | Label                          | multichoice3                       |
-      | Multiple choice type           | Multiple choice - single answer allowed (dropdownlist) |
+      | Multiple choice type           | Multiple choice - single answer allowed (drop-down menu) |
       | Multiple choice values         | option g\noption h\noption i                           |
     And I add a "Multiple choice (rated)" question to the feedback with:
       | Question               | this is a multiple choice rated |
@@ -69,10 +67,8 @@ Feature: Test creating different types of feedback questions for non-anonymous f
       | Label                  | shorttext                   |
       | Maximum characters accepted | 200                    |
     And I log out
-    And I log in as "student1"
-    And I follow "Course 1"
-    And I follow "Learning experience"
-    And I follow "Answer the questions..."
+    When I am on the "Learning experience" "feedback activity" page logged in as student1
+    And I follow "Answer the questions"
     And I set the following fields to these values:
       | this is a longer text answer | my long answer |
       | option b                     | 1              |
@@ -84,10 +80,8 @@ Feature: Test creating different types of feedback questions for non-anonymous f
       | this is a short text answer  | hello          |
     And I press "Submit your answers"
     And I log out
-    And I log in as "student2"
-    And I follow "Course 1"
-    And I follow "Learning experience"
-    And I follow "Answer the questions..."
+    When I am on the "Learning experience" "feedback activity" page logged in as student2
+    And I follow "Answer the questions"
     And I set the following fields to these values:
       | this is a longer text answer | lots of feedbacks |
       | option a                     | 1              |
@@ -99,43 +93,37 @@ Feature: Test creating different types of feedback questions for non-anonymous f
       | this is a short text answer  | no way         |
     And I press "Submit your answers"
     And I log out
-    When I log in as "teacher1"
-    And I follow "Course 1"
-    And I follow "Learning experience"
-    And I follow "Analysis"
+    When I am on the "Learning experience" "feedback activity" page logged in as teacher1
+    And I navigate to "Analysis" in current page administration
     And I should see "Submitted answers: 2"
     And I should see "Questions: 9"
     And I log out
-    And I log in as "teacher1"
-    And I follow "Course 1"
-    And I follow "Learning experience"
-    And I follow "Analysis"
+    And I am on the "Learning experience" "feedback activity" page logged in as teacher1
+    And I navigate to "Analysis" in current page administration
     And I should see "C1" in the "(info)" "table"
     And I should see "my long answer" in the "(longertext)" "table"
     And I should see "lots of feedbacks" in the "(longertext)" "table"
-    And I should see "2 (100.00 %)" in the "option d:" "table_row"
-    And I should see "1 (50.00 %)" in the "option e:" "table_row"
-    And I should see "1 (50.00 %)" in the "option f:" "table_row"
-    And I should see "0" in the "option g:" "table_row"
-    And I should not see "%" in the "option g:" "table_row"
-    And I should see "1 (50.00 %)" in the "option h:" "table_row"
-    And I should see "1 (50.00 %)" in the "option i:" "table_row"
+    And I show chart data for the "multichoice2" feedback
+    And I should see "2 (100.00 %)" in the "option d" "table_row"
+    And I should see "1 (50.00 %)" in the "option e" "table_row"
+    And I should see "1 (50.00 %)" in the "option f" "table_row"
+    And I show chart data for the "multichoice3" feedback
+    And I should see "0" in the "option g" "table_row"
+    And I should not see "%" in the "option g" "table_row"
+    And I should see "1 (50.00 %)" in the "option h" "table_row"
+    And I should see "1 (50.00 %)" in the "option i" "table_row"
+    And I show chart data for the "multichoice4" feedback
     And I should see "0" in the "(0) option k" "table_row"
     And I should not see "%" in the "(0) option k" "table_row"
     And I should see "1 (50.00 %)" in the "(1) option l" "table_row"
-    And I should see "1 (50.00 %)" in the "(5) option m:" "table_row"
-    And I should see "Average: 3.00" in the "(multichoice4)" "table"
+    And I should see "1 (50.00 %)" in the "(5) option m" "table_row"
+    And I should see "Average: 3.00"
     And I should see "35" in the "(numeric)" "table"
     And I should see "71" in the "(numeric)" "table"
     And I should see "Average: 53.00" in the "(numeric)" "table"
     And I should see "no way" in the "(shorttext)" "table"
     And I should see "hello" in the "(shorttext)" "table"
-
-  Scenario: Create different types of questions in non-anonymous feedback with javascript disabled
-    And I log out
-
-  @javascript
-  Scenario: Create different types of questions in non-anonymous feedback with javascript enabled
-    And I should see "1 (50.00 %)" in the "option a:" "table_row"
-    And I should see "1 (50.00 %)" in the "option b:" "table_row"
+    And I show chart data for the "multichoice1" feedback
+    And I should see "1 (50.00 %)" in the "option a" "table_row"
+    And I should see "1 (50.00 %)" in the "option b" "table_row"
     And I log out

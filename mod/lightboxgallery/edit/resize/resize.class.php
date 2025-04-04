@@ -58,10 +58,6 @@ class edit_resize extends edit_base {
     public function process_form() {
         $button = required_param('button', PARAM_TEXT);
 
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
-
         switch ($button) {
             case $this->strresize:
                 $size = required_param('size', PARAM_INT);
@@ -69,12 +65,12 @@ class edit_resize extends edit_base {
             break;
             case $this->strscale:
                 $scale = required_param('scale', PARAM_INT);
-                $width = $image->width * ($scale / 100);
-                $height = $image->height * ($scale / 100);
+                $width = $this->lbgimage->width * ($scale / 100);
+                $height = $this->lbgimage->height * ($scale / 100);
             break;
         }
 
-        $this->image = $image->resize_image($width, $height);
+        $this->image = $this->lbgimage->resize_image($width, $height);
     }
 
 }

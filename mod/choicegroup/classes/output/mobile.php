@@ -24,8 +24,6 @@
 
 namespace mod_choicegroup\output;
 
-defined('MOODLE_INTERNAL') || die();
-
 use context_module;
 use mod_choicegroup_external;
 use completion_info;
@@ -39,18 +37,36 @@ use completion_info;
 class mobile {
 
     /**
+     * Returns the javascript needed to initialize choice group in the app.
+     *
+     * @param  array $args Arguments from tool_mobile_get_content WS
+     * @return array javascript
+     */
+    public static function mobile_init($args) {
+        global $CFG;
+
+        $args = (object) $args;
+
+        return [
+            'templates' => [],
+            'javascript' => file_get_contents($CFG->dirroot . "/mod/choicegroup/mobile/js/latest/init.js"),
+        ];
+    }
+
+    /**
      * Returns the choice group course view for the mobile app.
      * @param  array $args Arguments from tool_mobile_get_content WS
      *
      * @return array HTML, javascript and otherdata
      */
     public static function mobile_course_view($args) {
-        global $OUTPUT, $USER, $DB;
+        global $OUTPUT, $USER, $DB, $CFG;
 
         $args = (object) $args;
 
+        $versionname = $args->appversioncode >= 44000 ? 'latest' : 'ionic5';
         $cm = get_coursemodule_from_id('choicegroup', $args->cmid);
-        $course = $DB->get_record('course', array('id' => $cm->course));
+        $course = $DB->get_record('course', ['id' => $cm->course]);
 
         // Capabilities check.
         require_login($args->courseid, false, $cm, true, true);
@@ -81,7 +97,7 @@ class mobile {
         $choicegroup->answergiven = choicegroup_get_user_answer($choicegroup, $USER->id);
         $choicegroup->alloptionsdisabled = (!$choicegroup->open || $choicegroup->expired
                 || ($choicegroup->answergiven && !$choicegroup->allowupdate)
-                || !is_enrolled($context, NULL, 'mod/choicegroup:choose')
+                || !is_enrolled($context, null, 'mod/choicegroup:choose')
             );
 
         // Get choicegroup options from external.
@@ -92,7 +108,7 @@ class mobile {
                 $choicegroup->alloptionsdisabled
             );
             $options = array_values($returnedoptions['options']); // Make it mustache compatible.
-            $responses = array();
+            $responses = [];
             foreach ($options as $option) {
                 if ($choicegroup->multipleenrollmentspossible) {
                     $responses['responses_'.$option['id']] = $option['checked'];
@@ -101,7 +117,7 @@ class mobile {
                 }
             }
         } catch (Exception $e) {
-            $options = array();
+            $options = [];
         }
 
         // Format name and intro.
@@ -113,22 +129,27 @@ class mobile {
             'mod_choicegroup',
             'intro'
         );
-        $data = array(
+        $data = [
             'cmid' => $cm->id,
             'courseid' => $args->courseid,
             'choicegroup' => $choicegroup,
-            'options' => $options
-        );
+            'options' => $options,
+        ];
 
-        return array(
-            'templates' => array(
-                array(
+        return [
+            'templates' => [
+                [
                     'id' => 'main',
-                    'html' => $OUTPUT->render_from_template('mod_choicegroup/mobile_view_page', $data),
-                ),
-            ),
-            'javascript' => '',
-            'otherdata' => array('data' => json_encode($responses))
-        );
+                    'html' => $OUTPUT->render_from_template("mod_choicegroup/mobile_view_page_$versionname", $data),
+                ],
+            ],
+            'javascript' => file_get_contents($CFG->dirroot . "/mod/choicegroup/mobile/js/latest/courseview.js"),
+            'otherdata' => [
+                'data' => json_encode($responses),
+                'allowupdate' => $choicegroup->allowupdate ? 1 : 0,
+                'multipleenrollmentspossible' => $choicegroup->multipleenrollmentspossible ? 1 : 0,
+                'answergiven' => $choicegroup->answergiven ? 1 : 0,
+            ],
+        ];
     }
 }

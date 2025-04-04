@@ -15,122 +15,73 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Upgrade code for gradebook grader report.
+ * Grader report upgrade steps.
  *
- * @package   gradereport_grader
- * @copyright 2013 Moodle Pty Ltd (http://moodle.com)
+ * @package    gradereport_grader
+ * @copyright  2023 Ilya Tregubov <ilya@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-function xmldb_gradereport_grader_upgrade($oldversion) {
-    global $CFG, $DB;
-    // Set rawgrade on manual grade items so that multiplicator and offset
-    // works on them like any other grade item.
-    $sql = "UPDATE  {grade_grades} gr, {grade_items} gi
-            SET     gr.rawgrade = gr.finalgrade
-            WHERE   gi.id = gr.itemid AND gi.itemtype = 'manual' AND gr.rawgrade IS NULL";
-    $DB->execute($sql);
+/**
+ * Function to upgrade grader report.
+ *
+ * @param int $oldversion the version we are upgrading from
+ * @return bool result
+ */
+function xmldb_gradereport_grader_upgrade(int $oldversion): bool {
+    global $DB;
 
-    // BEGIN LSU Anonymous Grade DB upgrade
-    $dbman = $DB->get_manager();
+    if ($oldversion < 2023032100) {
+        // Remove grade_report_showquickfeedback, grade_report_enableajax, grade_report_showeyecons,
+        // grade_report_showlocks, grade_report_showanalysisicon preferences for every user.
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_showquickfeedback']);
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_enableajax']);
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_showeyecons']);
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_showlocks']);
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_showanalysisicon']);
 
-    // Create tables to support anonymous grading.
-    if (!$dbman->table_exists('grade_anon_items')) {
-        // Define table grade_anonymous_items to be created.
-        $table = new xmldb_table('grade_anon_items');
+        // Remove grade_report_showactivityicons, grade_report_showcalculations preferences for every user.
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_showactivityicons']);
+        $DB->delete_records('user_preferences', ['name' => 'grade_report_showcalculations']);
 
-        // Adding fields to table grade_anonymous_items.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('complete', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        // The grade_report_showquickfeedback, grade_report_enableajax, grade_report_showeyecons,
+        // grade_report_showlocks, grade_report_showanalysisicon settings have been removed.
+        unset_config('grade_report_showquickfeedback');
+        unset_config('grade_report_enableajax');
+        unset_config('grade_report_showeyecons');
+        unset_config('grade_report_showlocks');
+        unset_config('grade_report_showanalysisicon');
 
-        // Adding keys to table grade_anonymous_items.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->add_key('fk_gradeitemid', XMLDB_KEY_FOREIGN_UNIQUE, array('itemid'), 'grade_items', array('id'));
+        // The grade_report_showactivityicons, grade_report_showcalculations settings have been removed.
+        unset_config('grade_report_showactivityicons');
+        unset_config('grade_report_showcalculations');
 
-        // Conditionally launch create table for grade_anonymous_items.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        // Define table grade_anon_items_history to be created.
-        $table = new xmldb_table('grade_anon_items_history');
-
-        // Adding fields to table grade_anon_items_history.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('action', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('oldid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('source', XMLDB_TYPE_CHAR, '255', null, null, null, null);
-        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null);
-        $table->add_field('loggeduser', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null);
-        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('complete', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
-
-        // Adding keys to table grade_anon_items_history.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-
-        // Adding indexes to table grade_anon_items_history.
-        $table->add_index('gradeanonhist_act_ix', XMLDB_INDEX_NOTUNIQUE, array('action'));
-        $table->add_index('gradeanonhist_old_ix', XMLDB_INDEX_NOTUNIQUE, array('oldid'));
-        $table->add_index('gradeanonhist_log_ix', XMLDB_INDEX_NOTUNIQUE, array('loggeduser'));
-        $table->add_index('gradeanonhist_ite_ix', XMLDB_INDEX_NOTUNIQUE, array('itemid'));
-
-        // Conditionally launch create table for grade_anon_items_history.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-         // Define table grade_anonymous_grades to be created.
-        $table = new xmldb_table('grade_anon_grades');
-
-        // Adding fields to table grade_anonymous_grades.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('anonymous_itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('finalgrade', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, null);
-        $table->add_field('adjust_value', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '0.00000');
-
-        // Adding keys to table grade_anonymous_grades.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->add_key('fk_gradeitemid', XMLDB_KEY_FOREIGN, array('anonymous_itemid'), 'grade_anonymous_items', array('id'));
-        $table->add_key('fk_userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
-
-        // Conditionally launch create table for grade_anonymous_grades.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-         // Define table grade_anon_grades_history to be created.
-        $table = new xmldb_table('grade_anon_grades_history');
-
-        // Adding fields to table grade_anon_grades_history.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('action', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('oldid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('source', XMLDB_TYPE_CHAR, '255', null, null, null, null);
-        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null);
-        $table->add_field('loggeduser', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null);
-        $table->add_field('anonymous_itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('finalgrade', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, null);
-        $table->add_field('adjust_value', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '0.00000');
-
-        // Adding keys to table grade_anon_grades_history.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-
-        // Adding indexes to table grade_anon_grades_history.
-        $table->add_index('gradeanongrahist_act_ix', XMLDB_INDEX_NOTUNIQUE, array('action'));
-        $table->add_index('gradeanongrahist_old_ix', XMLDB_INDEX_NOTUNIQUE, array('oldid'));
-        $table->add_index('gradeanongrahist_log_ix', XMLDB_INDEX_NOTUNIQUE, array('loggeduser'));
-        $table->add_index('gradeanongrahist_ait_ix', XMLDB_INDEX_NOTUNIQUE, array('anonymous_itemid'));
-
-        // Conditionally launch create table for grade_anon_grades_history.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
+        // Main savepoint reached.
+        upgrade_plugin_savepoint(true, 2023032100, 'gradereport', 'grader');
     }
-    // END LSU Anonymous Grade DB upgrade
 
-    upgrade_plugin_savepoint(true, 2016052302, 'gradereport', 'grader');
+    if ($oldversion < 2023032700) {
+        unset_config('grade_report_studentsperpage');
+        upgrade_plugin_savepoint(true, 2023032700, 'gradereport', 'grader');
+    }
+
+    if ($oldversion < 2023032800) {
+        // Remove plugin entry created by previously incorrect 2023032100 savepoint.
+        $DB->delete_records('config_plugins', ['plugin' => 'grade_gradereport_grader']);
+        upgrade_plugin_savepoint(true, 2023032800, 'gradereport', 'grader');
+    }
+
+    // Automatically generated Moodle v4.2.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Automatically generated Moodle v4.3.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Automatically generated Moodle v4.4.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Automatically generated Moodle v4.5.0 release upgrade line.
+    // Put any upgrade step following this.
+
     return true;
 }

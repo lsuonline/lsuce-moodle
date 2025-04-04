@@ -52,17 +52,21 @@ function testing_cli_argument_path($moodlepath) {
         // This is the real CLI script, work with relative paths.
         $cwd = getcwd();
     }
-    if (substr($cwd, -1) !== DIRECTORY_SEPARATOR) {
-        $cwd .= DIRECTORY_SEPARATOR;
+
+    // Remove last directory separator as $path will not contain one.
+    if ((substr($cwd, -1) === '/') || (substr($cwd, -1) === '\\')) {
+        $cwd = substr($cwd, -1);
     }
+
     $path = realpath($CFG->dirroot.$moodlepath);
 
-    if (strpos($path, $cwd) === 0) {
-        $path = substr($path, strlen($cwd));
-    }
+    // We need standrad directory seperator for path and cwd, so it can be compared.
+    $cwd = testing_cli_fix_directory_separator($cwd);
+    $path = testing_cli_fix_directory_separator($path);
 
-    if (testing_is_cygwin()) {
-        $path = str_replace('\\', '/', $path);
+    if (strpos($path, $cwd) === 0) {
+        // Remove current working directory and directory separator.
+        $path = substr($path, strlen($cwd) + 1);
     }
 
     return $path;
@@ -170,25 +174,30 @@ function testing_error($errorcode, $text = '') {
 }
 
 /**
- * Updates the composer installer and the dependencies.
+ * Perform necessary steps to install and/or upgrade composer and its dependencies.
  *
- * @return void exit() if something goes wrong
+ * Installation is mandatory, but upgrade is optional.
+ *
+ * Note: This function does not return, but will call `exit()` on error.
+ *
+ * @param   bool $selfupdate Perform a composer self-update to update the composer.phar utility
+ * @param   bool $updatedependencies Upgrade dependencies
  */
-function testing_update_composer_dependencies() {
+function testing_update_composer_dependencies(bool $selfupdate = true, bool $updatedependencies = true): void {
     // To restore the value after finishing.
     $cwd = getcwd();
 
     // Set some paths.
     $dirroot = dirname(dirname(__DIR__));
-    $composerpath = $dirroot . DIRECTORY_SEPARATOR . 'composer.phar';
-    $composerurl = 'https://getcomposer.org/composer.phar';
 
     // Switch to Moodle's dirroot for easier path handling.
     chdir($dirroot);
 
     // Download or update composer.phar. Unfortunately we can't use the curl
     // class in filelib.php as we're running within one of the test platforms.
+    $composerpath = $dirroot . DIRECTORY_SEPARATOR . 'composer.phar';
     if (!file_exists($composerpath)) {
+        $composerurl = 'https://getcomposer.org/composer.phar';
         $file = @fopen($composerpath, 'w');
         if ($file === false) {
             $errordetails = error_get_last();
@@ -222,19 +231,77 @@ function testing_update_composer_dependencies() {
                                 "404 http status code fetching $composerurl");
             testing_error(TESTING_EXITCODE_COMPOSER, $error);
         }
-    } else {
+
+        // Do not self-update after installation.
+        $selfupdate = false;
+    }
+
+    if ($selfupdate) {
         passthru("php composer.phar self-update", $code);
         if ($code != 0) {
             exit($code);
         }
     }
 
-    // Update composer dependencies.
-    passthru("php composer.phar install", $code);
-    if ($code != 0) {
-        exit($code);
+    // If the vendor directory does not exist, force the installation of dependencies.
+    $vendorpath = $dirroot . DIRECTORY_SEPARATOR . 'vendor';
+    if (!file_exists($vendorpath)) {
+        $updatedependencies = true;
+    }
+
+    if ($updatedependencies) {
+        // Update composer dependencies.
+        passthru("php composer.phar install", $code);
+        if ($code != 0) {
+            exit($code);
+        }
     }
 
     // Return to our original location.
     chdir($cwd);
+}
+
+/**
+ * Fix DIRECTORY_SEPARATOR for windows.
+ *
+ * In PHP on Windows, DIRECTORY_SEPARATOR is set to the backslash (\)
+ * character. However, if you're running a Cygwin/Msys/Git shell
+ * exec() calls will return paths using the forward slash (/) character.
+ *
+ * NOTE: Because PHP on Windows will accept either forward or backslashes,
+ * paths should be built using ONLY forward slashes, regardless of
+ * OS. MOODLE_DIRECTORY_SEPARATOR should only be used when parsing
+ * paths returned by the shell.
+ *
+ * @param string $path
+ * @return string
+ */
+function testing_cli_fix_directory_separator($path) {
+    global $CFG;
+
+    static $dirseparator = null;
+
+    if (!$dirseparator) {
+        // Default directory separator.
+        $dirseparator = DIRECTORY_SEPARATOR;
+
+        // On windows we need to find what directory separator is used.
+        if ($CFG->ostype = 'WINDOWS') {
+            if (!empty($_SERVER['argv'][0])) {
+                if (false === strstr($_SERVER['argv'][0], '\\')) {
+                    $dirseparator = '/';
+                } else {
+                    $dirseparator = '\\';
+                }
+            } else if (testing_is_cygwin()) {
+                $dirseparator = '/';
+            }
+        }
+    }
+
+    // Normalize \ and / to directory separator.
+    $path = str_replace('\\', $dirseparator, $path);
+    $path = str_replace('/', $dirseparator, $path);
+
+    return $path;
 }

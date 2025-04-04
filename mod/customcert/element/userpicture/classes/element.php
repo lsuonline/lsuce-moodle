@@ -24,8 +24,6 @@
 
 namespace customcertelement_userpicture;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The customcert element userpicture's core interaction API.
  *
@@ -38,18 +36,12 @@ class element extends \mod_customcert\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
-        $mform->addElement('text', 'width', get_string('width', 'customcertelement_userpicture'), array('size' => 10));
-        $mform->setType('width', PARAM_INT);
-        $mform->setDefault('width', 0);
-        $mform->addHelpButton('width', 'width', 'customcertelement_userpicture');
+        \mod_customcert\element_helper::render_form_element_width($mform);
 
-        $mform->addElement('text', 'height', get_string('height', 'customcertelement_userpicture'), array('size' => 10));
-        $mform->setType('height', PARAM_INT);
-        $mform->setDefault('height', 0);
-        $mform->addHelpButton('height', 'height', 'customcertelement_userpicture');
+        \mod_customcert\element_helper::render_form_element_height($mform);
 
         if (get_config('customcert', 'showposxy')) {
             \mod_customcert\element_helper::render_form_element_position($mform);
@@ -65,17 +57,13 @@ class element extends \mod_customcert\element {
      */
     public function validate_form_elements($data, $files) {
         // Array to return the errors.
-        $errors = array();
+        $errors = [];
 
-        // Check if width is not set, or not numeric or less than 0.
-        if ((!isset($data['width'])) || (!is_numeric($data['width'])) || ($data['width'] < 0)) {
-            $errors['width'] = get_string('invalidwidth', 'customcertelement_userpicture');
-        }
+        // Validate the width.
+        $errors += \mod_customcert\element_helper::validate_form_element_width($data);
 
-        // Check if height is not set, or not numeric or less than 0.
-        if ((!isset($data['height'])) || (!is_numeric($data['height'])) || ($data['height'] < 0)) {
-            $errors['height'] = get_string('invalidheight', 'customcertelement_userpicture');
-        }
+        // Validate the height.
+        $errors += \mod_customcert\element_helper::validate_form_element_height($data);
 
         // Validate the position.
         if (get_config('customcert', 'showposxy')) {
@@ -94,10 +82,10 @@ class element extends \mod_customcert\element {
      */
     public function save_unique_data($data) {
         // Array of data we will be storing in the database.
-        $arrtostore = array(
+        $arrtostore = [
             'width' => (int) $data->width,
-            'height' => (int) $data->height
-        );
+            'height' => (int) $data->height,
+        ];
 
         return json_encode($arrtostore);
     }
@@ -113,12 +101,11 @@ class element extends \mod_customcert\element {
         global $CFG;
 
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
+        if (empty($this->get_data())) {
             return;
         }
 
-        $imageinfo = json_decode($data);
+        $imageinfo = json_decode($this->get_data());
 
         $context = \context_user::instance($user->id);
 
@@ -158,12 +145,11 @@ class element extends \mod_customcert\element {
         global $PAGE, $USER;
 
         // If there is no element data, we have nothing to display.
-        $data = $this->get_data();
-        if (empty($data)) {
+        if (empty($this->get_data())) {
             return '';
         }
 
-        $imageinfo = json_decode($data);
+        $imageinfo = json_decode($this->get_data());
 
         // Get the image.
         $userpicture = new \user_picture($USER);
@@ -186,19 +172,18 @@ class element extends \mod_customcert\element {
             $style .= 'height: ' . $imageinfo->height . 'mm';
         }
 
-        return \html_writer::tag('img', '', array('src' => $url, 'style' => $style));
+        return \html_writer::tag('img', '', ['src' => $url, 'style' => $style]);
     }
 
     /**
      * Sets the data on the form when editing an element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function definition_after_data($mform) {
         // Set the image, width and height for this element.
-        $data = $this->get_data();
-        if (!empty($data)) {
-            $imageinfo = json_decode($data);
+        if (!empty($this->get_data())) {
+            $imageinfo = json_decode($this->get_data());
 
             $element = $mform->getElement('width');
             $element->setValue($imageinfo->width);

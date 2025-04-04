@@ -149,13 +149,14 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
 
         // Create TII User Account Details.
         if (!$tiiuser = $DB->get_record('turnitintooltwo_users', array('turnitin_uid' => $data->tiiuserid))) {
+            $tiiuser = new stdClass();
             $tiiuser->userid = $data->userid;
             $tiiuser->turnitin_uid = $data->tiiuserid;
             $DB->insert_record('turnitintooltwo_users', $tiiuser);
         }
 
         // Check if this hash already exists.
-        if ($check_hash = $DB->get_record('turnitintooltwo_submissions', array('submission_hash' => $data->submission_hash))) {
+        if ($DB->get_record('turnitintooltwo_submissions', array('submission_hash' => $data->submission_hash))) {
             $data->submission_hash = turnitintooltwo_genUuid();
         }
 

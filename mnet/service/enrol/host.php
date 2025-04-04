@@ -28,7 +28,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
+require(__DIR__.'/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/mnet/service/enrol/locallib.php');
 
@@ -49,7 +49,7 @@ if (!$service->is_available()) {
 $hosts = $service->get_remote_publishers();
 
 if (empty($hosts[$hostid])) {
-    print_error('wearenotsubscribedtothishost', 'mnetservice_enrol');
+    throw new \moodle_exception('wearenotsubscribedtothishost', 'mnetservice_enrol');
 }
 $host = $hosts[$hostid];
 
@@ -59,7 +59,7 @@ if (!$usecache) {
 }
 $courses = $service->get_remote_courses($host->id, $usecache);
 if (is_string($courses)) {
-    print_error('fetchingcourses', 'mnetservice_enrol', '', null, $service->format_error_message($courses));
+    throw new \moodle_exception('fetchingcourses', 'mnetservice_enrol', '', null, $service->format_error_message($courses));
 }
 
 echo $OUTPUT->header();
@@ -83,7 +83,7 @@ $table->head = array(
     get_string('action')
 );
 $table->attributes['class'] = 'generaltable remotecourses';
-$icon = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url('i/course'), 'alt' => get_string('category')));
+$icon = $OUTPUT->pix_icon('i/course', get_string('category'));
 $prevcat = null;
 foreach ($courses as $course) {
     $course = (object)$course;

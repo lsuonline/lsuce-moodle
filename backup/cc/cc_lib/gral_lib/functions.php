@@ -53,7 +53,7 @@ function errorHandler($errno, $errstr, $errfile, $errline) {
  */
 function file_mime_type ($file, $default_type = 'application/octet-stream'){
     $ftype = $default_type;
-    $magic_path =   dirname(__FILE__)
+    $magic_path =   __DIR__
                   . DIRECTORY_SEPARATOR
                   . '..'
                   . DIRECTORY_SEPARATOR
@@ -89,7 +89,7 @@ function array_remove_by_key($arr,$key) {
 
 
 function cc_print_object($object) {
-    echo '<pre>' . htmlspecialchars(print_r($object,true)) . '</pre>';
+    echo '<pre>' . htmlspecialchars(print_r($object,true), ENT_COMPAT) . '</pre>';
 }
 
 

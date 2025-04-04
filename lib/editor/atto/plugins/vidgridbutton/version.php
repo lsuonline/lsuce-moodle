@@ -18,14 +18,16 @@
  * Atto vidgridbutton  version file.
  *
  * @package    atto_vidgridbutton
- * @copyright  VidGrid 2018
+ * @copyright  Panopto 2009 - 2016
+ * @copyright  ilos 2017
+ * @copyright  VidGrid 2018 - 2020
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 // The current plugin version (Date: YYYYMMDDXX).
-$plugin->version   = 2018081001;
+$plugin->version   = 2018112801;
 
 // Requires this Moodle version - 2.7.
 $plugin->requires  = 2014051200;

@@ -24,6 +24,7 @@ var CSS = {
     SELECTORS = {
         NEWROW: '.' + CSS.NEWROW,
         TBODY: '.flexible tbody',
+        ACTIONLINK: '[data-action="action-popup"]',
         PAUSEBUTTON: '#livelogs-pause-button',
         SPINNER: '.' + CSS.SPINNER
     };
@@ -61,7 +62,7 @@ Y.extend(FetchLogs, Y.Base, {
 
     /**
      * Initializer.
-     * Basic setup and delegations.
+     * Basic setup and event listeners.
      *
      * @method initializer
      */
@@ -74,7 +75,8 @@ Y.extend(FetchLogs, Y.Base, {
         this.spinner = Y.one(SELECTORS.SPINNER);
         this.pauseButton = Y.one(SELECTORS.PAUSEBUTTON);
         this.spinner.hide();
-        Y.delegate('click', this.toggleUpdate, 'button', SELECTORS.PAUSEBUTTON, this);
+        Y.one(SELECTORS.TBODY).delegate('click', this.openActionLink, SELECTORS.ACTIONLINK, this);
+        Y.one(SELECTORS.PAUSEBUTTON).on('click', this.toggleUpdate, this);
     },
 
     /**
@@ -126,7 +128,7 @@ Y.extend(FetchLogs, Y.Base, {
             });
             return this;
         }
-        this.set('since' , responseobject.until);
+        this.set('since', responseobject.until);
         var logs = responseobject.logs;
         var tbody = Y.one(SELECTORS.TBODY);
         var firstTr = null;
@@ -141,7 +143,7 @@ Y.extend(FetchLogs, Y.Base, {
             // Let us chop off some data from end of table to prevent really long pages.
             var oldChildren = tbody.get('children').slice(this.get('perpage'));
             oldChildren.remove();
-            Y.later(5000, this, 'removeHighlight', responseobject.until); // Remove highlighting from new rows.
+            Y.later(5000, this, 'removeHighlight'); // Remove highlighting from new rows.
         }
     },
 
@@ -150,8 +152,8 @@ Y.extend(FetchLogs, Y.Base, {
      *
      * @method removeHighlight
      */
-    removeHighlight: function(timeStamp) {
-        Y.all('.time' + timeStamp).removeClass(CSS.NEWROW);
+    removeHighlight: function() {
+        Y.all(SELECTORS.NEWROW).removeClass(CSS.NEWROW);
     },
 
     /**
@@ -161,6 +163,17 @@ Y.extend(FetchLogs, Y.Base, {
      */
     hideLoadingIcon: function() {
         this.spinner.hide();
+    },
+
+    /**
+     * Open a report action link
+     *
+     * @param {Event} event
+     * @method openActionLink
+     */
+    openActionLink: function(event) {
+        var popupAction = JSON.parse(event.target.get('dataset').popupAction);
+        window.openpopup(event, popupAction.jsfunctionargs);
     },
 
     /**

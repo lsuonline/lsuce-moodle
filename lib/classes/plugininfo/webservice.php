@@ -23,17 +23,21 @@
  */
 namespace core\plugininfo;
 
-use part_of_admin_tree, admin_settingpage;
-
-defined('MOODLE_INTERNAL') || die();
+use admin_settingpage;
+use part_of_admin_tree;
 
 /**
  * Class for webservice protocols
  */
 class webservice extends base {
+
+    public static function plugintype_supports_disabling(): bool {
+        return true;
+    }
+
     /**
      * Finds all enabled plugins, the result may include missing plugins.
-     * @return array|null of enabled plugins $pluginname=>$pluginname, null means unknown
+     * @return array of enabled plugins $pluginname => $pluginname
      */
     public static function get_enabled_plugins() {
         global $CFG;
@@ -50,12 +54,50 @@ class webservice extends base {
         return $enabled;
     }
 
+    public static function enable_plugin(string $pluginname, int $enabled): bool {
+        global $CFG;
+
+        $haschanged = false;
+        $plugins = [];
+        if (!empty($CFG->webserviceprotocols)) {
+            $plugins = array_flip(explode(',', $CFG->webserviceprotocols));
+        }
+
+        // Remove plugins that are no longer available.
+        $availablews = \core_component::get_plugin_list('webservice');
+        foreach ($plugins as $key => $notused) {
+            if (empty($availablews[$key])) {
+                unset($plugins[$key]);
+            }
+        }
+
+        // Only set visibility if it's different from the current value.
+        if ($enabled && !array_key_exists($pluginname, $plugins)) {
+            $plugins[$pluginname] = $pluginname;
+            $haschanged = true;
+        } else if (!$enabled && array_key_exists($pluginname, $plugins)) {
+            unset($plugins[$pluginname]);
+            $haschanged = true;
+        }
+
+        if ($haschanged) {
+            $new = implode(',', array_flip($plugins));
+            add_to_config_log('webserviceprotocols', $CFG->webserviceprotocols ?? '', $new, 'core');
+            set_config('webserviceprotocols', $new);
+            // Reset caches.
+            \core_plugin_manager::reset_caches();
+        }
+
+        return $haschanged;
+    }
+
     public function get_settings_section_name() {
         return 'webservicesetting' . $this->name;
     }
 
     public function load_settings(part_of_admin_tree $adminroot, $parentnodename, $hassiteconfig) {
         global $CFG, $USER, $DB, $OUTPUT, $PAGE; // In case settings.php wants to refer to them.
+        /** @var \admin_root $ADMIN */
         $ADMIN = $adminroot; // May be used in settings.php.
         $plugininfo = $this; // Also can be used inside settings.php.
         $webservice = $this; // Also can be used inside settings.php.
@@ -79,6 +121,6 @@ class webservice extends base {
     }
 
     public function is_uninstall_allowed() {
-        return false;
+        return true;
     }
 }

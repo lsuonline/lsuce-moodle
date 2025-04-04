@@ -23,6 +23,10 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace core;
+
+use core_string_manager_standard;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -31,23 +35,27 @@ require_once($CFG->libdir.'/moodlelib.php');
 /**
  * Tests for the API of the string_manager.
  *
+ * Unit tests for localization support in lib/moodlelib.php
+ *
+ * @package   core
+ * @category  test
  * @copyright 2013 David Mudrak <david@moodle.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_string_manager_standard_testcase extends advanced_testcase {
+final class string_manager_standard_test extends \advanced_testcase {
 
-    public function test_string_manager_instance() {
+    public function test_string_manager_instance(): void {
         $this->resetAfterTest();
 
-        $otherroot = dirname(__FILE__).'/fixtures/langtest';
+        $otherroot = __DIR__.'/fixtures/langtest';
         $stringman = testable_core_string_manager::instance($otherroot);
         $this->assertInstanceOf('core_string_manager', $stringman);
     }
 
-    public function test_get_language_dependencies() {
+    public function test_get_language_dependencies(): void {
         $this->resetAfterTest();
 
-        $otherroot = dirname(__FILE__).'/fixtures/langtest';
+        $otherroot = __DIR__.'/fixtures/langtest';
         $stringman = testable_core_string_manager::instance($otherroot);
 
         // There is no parent language for 'en'.
@@ -68,50 +76,138 @@ class core_string_manager_standard_testcase extends advanced_testcase {
         $this->assertSame(array('bb', 'bc'), $stringman->get_language_dependencies('bc'));
     }
 
-    public function test_deprecated_strings() {
+    public function test_deprecated_strings(): void {
         $stringman = get_string_manager();
 
         // Check non-deprecated string.
         $this->assertFalse($stringman->string_deprecated('hidden', 'grades'));
 
-        // Check deprecated string.
-        $this->assertTrue($stringman->string_deprecated('timelimitmin', 'mod_quiz'));
-        $this->assertTrue($stringman->string_exists('timelimitmin', 'mod_quiz'));
+        // Check deprecated string, make sure to update once that chosen below is finally removed.
+        $this->assertTrue($stringman->string_deprecated('selectdevice', 'core_admin'));
+        $this->assertTrue($stringman->string_exists('selectdevice', 'core_admin'));
         $this->assertDebuggingNotCalled();
-        $this->assertEquals('Time limit (minutes)', get_string('timelimitmin', 'mod_quiz'));
-        $this->assertDebuggingCalled('String [timelimitmin,mod_quiz] is deprecated. '.
+        $this->assertEquals('Select device', get_string('selectdevice', 'core_admin'));
+        $this->assertDebuggingCalled('String [selectdevice,core_admin] is deprecated. '.
             'Either you should no longer be using that string, or the string has been incorrectly deprecated, in which case you should report this as a bug. '.
-            'Please refer to https://docs.moodle.org/dev/String_deprecation');
+            'Please refer to https://moodledev.io/general/projects/api/string-deprecation');
+    }
+
+    /**
+     * Return all deprecated strings.
+     *
+     * @return array
+     */
+    public static function get_deprecated_strings_provider(): array {
+        global $CFG;
+
+        $teststringman = testable_core_string_manager::instance($CFG->langotherroot, $CFG->langlocalroot, []);
+        $allstrings = $teststringman->get_all_deprecated_strings();
+        return array_map(fn ($string): array => [$string], $allstrings);
     }
 
     /**
      * This test is a built-in validation of deprecated.txt files in lang locations.
      *
      * It will fail if the string in the wrong format or non-existing (mistyped) string was deprecated.
+     *
+     * @dataProvider get_deprecated_strings_provider
+     * @param   string      $string     The string to be tested
      */
-    public function test_validate_deprecated_strings_files() {
-        global $CFG;
+    public function test_validate_deprecated_strings_files($string): void {
         $stringman = get_string_manager();
-        $teststringman = testable_core_string_manager::instance($CFG->langotherroot, $CFG->langlocalroot, array());
-        $allstrings = $teststringman->get_all_deprecated_strings();
 
-        foreach ($allstrings as $string) {
-            if (!preg_match('/^(.*),(.*)$/', $string, $matches) ||
-                clean_param($matches[2], PARAM_COMPONENT) !== $matches[2]) {
-                $this->fail('String "'.$string.'" appearing in one of the lang/en/deprecated.txt files does not have correct syntax');
-            }
-            list($pluginttype, $pluginname) = core_component::normalize_component($matches[2]);
-            $normcomponent = $pluginname ? ($pluginttype . '_' . $pluginname) : $pluginttype;
-            if ($matches[2] !== $normcomponent) {
-                $this->fail('String "'.$string.'" appearing in one of the lang/en/deprecated.txt files does not have normalised component name');
-            }
-            if (!$stringman->string_exists($matches[1], $matches[2])) {
-                $this->fail('String "'.$string.'" appearing in one of the lang/en/deprecated.txt files does not exist');
-            }
-        }
+        $result = preg_match('/^(.*),(.*)$/', $string, $matches);
+        $this->assertEquals(1, $result);
+        $this->assertCount(3, $matches);
+        $this->assertEquals($matches[2], clean_param($matches[2], PARAM_COMPONENT),
+            "Component name {$string} appearing in one of the lang/en/deprecated.txt files does not have correct syntax");
+
+        list($pluginttype, $pluginname) = \core_component::normalize_component($matches[2]);
+        $normcomponent = $pluginname ? ($pluginttype . '_' . $pluginname) : $pluginttype;
+        $this->assertEquals($normcomponent, $matches[2],
+            'String "'.$string.'" appearing in one of the lang/en/deprecated.txt files does not have normalised component name');
+
+        $this->assertTrue($stringman->string_exists($matches[1], $matches[2]),
+            "String {$string} appearing in one of the lang/en/deprecated.txt files does not exist");
+    }
+
+    /**
+     * Test for $CFG->langlist (without installation of additional languages)
+     */
+    public function test_get_list_of_translations(): void {
+        $this->resetAfterTest();
+        $stringman = get_string_manager();
+
+        $this->assertEquals(['en' => 'English ‎(en)‎'], $stringman->get_list_of_translations());
+
+        set_config('langlist', 'en|En');
+        get_string_manager(true);
+        $stringman = get_string_manager();
+
+        $this->assertEquals(['en' => 'En'], $stringman->get_list_of_translations());
+
+        // Set invalid config, ensure original list is returned.
+        set_config('langlist', 'xx');
+        $this->assertEquals(['en' => 'English ‎(en)‎'], get_string_manager(true)->get_list_of_translations());
+
+        set_config('langlist', 'xx,en|En');
+        $this->assertEquals(['en' => 'En'], get_string_manager(true)->get_list_of_translations());
+
+        set_config('langlist', '');
+        get_string_manager(true);
+    }
+
+    /**
+     * Test {@see core_string_manager_standard::get_list_of_countries()} under different conditions.
+     */
+    public function test_get_list_of_countries(): void {
+
+        $this->resetAfterTest();
+        $stringman = get_string_manager();
+
+        $countries = $stringman->get_list_of_countries(true);
+        $this->assertIsArray($countries);
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
+
+        set_config('allcountrycodes', '');
+        $countries = $stringman->get_list_of_countries(false);
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
+
+        set_config('allcountrycodes', 'CZ,BE');
+        $countries = $stringman->get_list_of_countries(true);
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
+
+        $countries = $stringman->get_list_of_countries(false);
+        $this->assertEquals(2, count($countries));
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+
+        set_config('allcountrycodes', 'CZ,UVWXYZ');
+        $countries = $stringman->get_list_of_countries();
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertEquals(1, count($countries));
+
+        set_config('allcountrycodes', 'UVWXYZ');
+        $countries = $stringman->get_list_of_countries();
+        $this->assertArrayHasKey('AU', $countries);
+        $this->assertArrayHasKey('BE', $countries);
+        $this->assertArrayHasKey('CZ', $countries);
+        $this->assertArrayHasKey('ES', $countries);
+        $this->assertGreaterThan(4, count($countries));
     }
 }
-
 
 /**
  * Helper class providing testable string_manager

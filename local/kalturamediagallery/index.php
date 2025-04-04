@@ -33,20 +33,14 @@ $courseid = required_param('courseid', PARAM_INT);
 $context = context_course::instance($courseid);
 require_capability('local/kalturamediagallery:view', $context);
 
-$mediagallery = get_string('heading_mediagallery', 'local_kalturamediagallery');
-
 $course = get_course($courseid);
 
 $PAGE->set_context($context);
 $PAGE->set_course($course);
-$site = get_site();
-$header  = format_string($site->shortname).": $mediagallery";
-
-$PAGE->navbar->add(get_string('nav_mediagallery', 'local_kalturamediagallery'));
+$header = format_string($course->fullname) . ": " . get_string('heading_mediagallery', 'local_kalturamediagallery');
 
 $PAGE->set_url('/local/kalturamediagallery/index.php', array('courseid' => $courseid));
 $PAGE->set_pagetype('kalturamediagallery-index');
-$PAGE->set_pagelayout('standard');
 $PAGE->set_title($header);
 $PAGE->set_heading($header);
 
@@ -61,7 +55,8 @@ $attr = array(
     'height' => '600px',
     'width' => '100%',
     'allowfullscreen' => 'true',
-    'src' => 'lti_launch.php?courseid='.$courseid
+    'src' => 'lti_launch.php?courseid='.$courseid,
+    'allow' => 'autoplay *; fullscreen *; encrypted-media *; camera *; microphone *; display-capture *;',
 );
 echo html_writer::tag('iframe', '', $attr);
 
@@ -72,5 +67,6 @@ $params = array(
     'padding' => 15
 );
 $PAGE->requires->yui_module('moodle-local_kaltura-lticontainer', 'M.local_kaltura.init', array($params), null, true);
+$PAGE->requires->js(new moodle_url('/local/kaltura/js/kea_resize.js'));
 
 echo $OUTPUT->footer();

@@ -31,7 +31,6 @@ $ccsectid = required_param('ccsectid', PARAM_INT);
 $course   = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 $context  = context_course::instance($courseid);
 
-$PAGE->set_url('/mod/course/view.php', array('id' => $courseid));
 $user = $USER;
 
 $fs       = get_file_storage();
@@ -45,6 +44,8 @@ $modinfo     = get_fast_modinfo($course);
 $cms         = array();
 $materialien = array();
 $filestodownload = array();
+
+require_login($course);
 
 foreach ($modinfo->instances as $modname => $instances) {
     if (array_key_exists($modname, $resources)) {

@@ -15,21 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package moodlecore
- * @subpackage backup-moodle2
- * @copyright 2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-/**
- * Define all the backup steps that will be used by the backup_questionnaire_activity_task
- */
-
-/**
- * Define the complete choice structure for backup, with file and id annotations
+ * Define all the backup steps that will be used by the backup_questionnaire_activity_task.
+ *
+ * Define the complete choice structure for backup, with file and id annotations.
+ *
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author     Mike Churchward
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class backup_questionnaire_activity_structure_step extends backup_activity_structure_step {
 
+    /**
+     * Defines the backup structure.
+     * @return backup_nested_element
+     */
     protected function define_structure() {
         global $DB;
         // To know if we are including userinfo.
@@ -44,50 +44,46 @@ class backup_questionnaire_activity_structure_step extends backup_activity_struc
         $surveys = new backup_nested_element('surveys');
 
         $survey = new backup_nested_element('survey', array('id'), array(
-            'name', 'owner', 'realm', 'status', 'title', 'email', 'subtitle',
+            'name', 'courseid', 'realm', 'status', 'title', 'email', 'subtitle',
             'info', 'theme', 'thanks_page', 'thank_head', 'thank_body', 'feedbacksections',
             'feedbacknotes', 'feedbackscores', 'chart_type'));
 
         $questions = new backup_nested_element('questions');
 
-        $question = new backup_nested_element('question', array('id'), array(
-            'survey_id', 'name', 'type_id', 'result_id', 'length', 'precise',
-            'position', 'content', 'required', 'deleted', 'dependquestion', 'dependchoice'));
+        $question = new backup_nested_element('question', array('id'), array('surveyid', 'name', 'type_id', 'result_id',
+            'length', 'precise', 'position', 'content', 'required', 'deleted', 'extradata'));
 
         $questchoices = new backup_nested_element('quest_choices');
 
-        $questchoice = new backup_nested_element('quest_choice', array('id'), array(
-            'question_id', 'content', 'value'));
+        $questchoice = new backup_nested_element('quest_choice', array('id'), array('question_id', 'content', 'value'));
+
+        $questdependencies = new backup_nested_element('quest_dependencies');
+
+        $questdependency = new backup_nested_element('quest_dependency', array('id'), array(
+            'dependquestionid', 'dependchoiceid', 'dependlogic', 'questionid', 'surveyid', 'dependandor'));
 
         $fbsections = new backup_nested_element('fb_sections');
 
         $fbsection = new backup_nested_element('fb_section', array('id'), array(
-                'survey_id', 'section', 'scorecalculation', 'sectionlabel', 'sectionheading', 'sectionheadingformat'));
+                'surveyid', 'section', 'scorecalculation', 'sectionlabel', 'sectionheading', 'sectionheadingformat'));
 
         $feedbacks = new backup_nested_element('feedbacks');
 
         $feedback = new backup_nested_element('feedback', array('id'), array(
-                'section_id', 'feedbacklabel', 'feedbacktext', 'feedbacktextformat', 'minscore', 'maxscore'));
-
-        $attempts = new backup_nested_element('attempts');
-
-        $attempt = new backup_nested_element('attempt', array('id'), array(
-            'qid', 'userid', 'rid', 'timemodified'));
+                'sectionid', 'feedbacklabel', 'feedbacktext', 'feedbacktextformat', 'minscore', 'maxscore'));
 
         $responses = new backup_nested_element('responses');
 
         $response = new backup_nested_element('response', array('id'), array(
-            'survey_id', 'submitted', 'complete', 'grade', 'username'));
+            'questionnaireid', 'submitted', 'complete', 'grade', 'userid'));
 
         $responsebools = new backup_nested_element('response_bools');
 
-        $responsebool = new backup_nested_element('response_bool', array('id'), array(
-            'response_id', 'question_id', 'choice_id'));
+        $responsebool = new backup_nested_element('response_bool', array('id'), array('response_id', 'question_id', 'choice_id'));
 
         $responsedates = new backup_nested_element('response_dates');
 
-        $responsedate = new backup_nested_element('response_date', array('id'), array(
-            'response_id', 'question_id', 'response'));
+        $responsedate = new backup_nested_element('response_date', array('id'), array('response_id', 'question_id', 'response'));
 
         $responsemultiples = new backup_nested_element('response_multiples');
 
@@ -102,7 +98,7 @@ class backup_questionnaire_activity_structure_step extends backup_activity_struc
         $responseranks = new backup_nested_element('response_ranks');
 
         $responserank = new backup_nested_element('response_rank', array('id'), array(
-            'response_id', 'question_id', 'choice_id', 'rank'));
+            'response_id', 'question_id', 'choice_id', 'rankvalue'));
 
         $responsesingles = new backup_nested_element('response_singles');
 
@@ -111,8 +107,7 @@ class backup_questionnaire_activity_structure_step extends backup_activity_struc
 
         $responsetexts = new backup_nested_element('response_texts');
 
-        $responsetext = new backup_nested_element('response_text', array('id'), array(
-            'response_id', 'question_id', 'response'));
+        $responsetext = new backup_nested_element('response_text', array('id'), array('response_id', 'question_id', 'response'));
 
         // Build the tree.
         $questionnaire->add_child($surveys);
@@ -123,16 +118,17 @@ class backup_questionnaire_activity_structure_step extends backup_activity_struc
 
         $question->add_child($questchoices);
         $questchoices->add_child($questchoice);
+
+        $question->add_child($questdependencies);
+        $questdependencies->add_child($questdependency);
+
         $survey->add_child($fbsections);
         $fbsections->add_child($fbsection);
 
         $fbsection->add_child($feedbacks);
         $feedbacks->add_child($feedback);
 
-        $questionnaire->add_child($attempts);
-        $attempts->add_child($attempt);
-
-        $attempt->add_child($responses);
+        $questionnaire->add_child($responses);
         $responses->add_child($response);
 
         $response->add_child($responsebools);
@@ -164,22 +160,22 @@ class backup_questionnaire_activity_structure_step extends backup_activity_struc
         $currentquestionnaire = $DB->get_record("questionnaire", array ("id" => $qid));
         $currentsurvey = $DB->get_record("questionnaire_survey", array ("id" => $currentquestionnaire->sid));
         $haspublic = false;
-        if ($currentsurvey->realm == 'public' && $currentsurvey->owner != $currentquestionnaire->course) {
+        if ($currentsurvey->realm == 'public' && $currentsurvey->courseid != $currentquestionnaire->course) {
             $haspublic = true;
         }
 
         // If current questionnaire is based on a public one, do not include survey nor questions in backup.
         if (!$haspublic) {
             $survey->set_source_table('questionnaire_survey', array('id' => '../../sid'));
-            $question->set_source_table('questionnaire_question', array('survey_id' => backup::VAR_PARENTID));
-            $fbsection->set_source_table('questionnaire_fb_sections', array('survey_id' => backup::VAR_PARENTID));
-            $feedback->set_source_table('questionnaire_feedback', array('section_id' => backup::VAR_PARENTID));
-            $questchoice->set_source_table('questionnaire_quest_choice', array('question_id' => backup::VAR_PARENTID));
+            $question->set_source_table('questionnaire_question', array('surveyid' => backup::VAR_PARENTID));
+            $fbsection->set_source_table('questionnaire_fb_sections', array('surveyid' => backup::VAR_PARENTID));
+            $feedback->set_source_table('questionnaire_feedback', array('sectionid' => backup::VAR_PARENTID));
+            $questchoice->set_source_table('questionnaire_quest_choice', array('question_id' => backup::VAR_PARENTID), 'id ASC');
+            $questdependency->set_source_table('questionnaire_dependency', array('questionid' => backup::VAR_PARENTID));
 
             // All the rest of elements only happen if we are including user info.
             if ($userinfo) {
-                $attempt->set_source_table('questionnaire_attempts', array('qid' => backup::VAR_PARENTID));
-                $response->set_source_table('questionnaire_response', array('id' => '../../rid'));
+                $response->set_source_table('questionnaire_response', array('questionnaireid' => backup::VAR_PARENTID));
                 $responsebool->set_source_table('questionnaire_response_bool', array('response_id' => backup::VAR_PARENTID));
                 $responsedate->set_source_table('questionnaire_response_date', array('response_id' => backup::VAR_PARENTID));
                 $responsemultiple->set_source_table('questionnaire_resp_multiple', array('response_id' => backup::VAR_PARENTID));
@@ -190,12 +186,12 @@ class backup_questionnaire_activity_structure_step extends backup_activity_struc
             }
 
             // Define id annotations.
-            $attempt->annotate_ids('user', 'userid');
+            $response->annotate_ids('user', 'userid');
         }
-        // Define file annotations
+        // Define file annotations.
         $questionnaire->annotate_files('mod_questionnaire', 'intro', null); // This file area hasn't itemid.
 
-        $survey->annotate_files('mod_questionnaire', 'info', 'id'); // By survey->id
+        $survey->annotate_files('mod_questionnaire', 'info', 'id'); // By survey->id.
         $survey->annotate_files('mod_questionnaire', 'thankbody', 'id'); // By survey->id.
 
         $question->annotate_files('mod_questionnaire', 'question', 'id'); // By question->id.

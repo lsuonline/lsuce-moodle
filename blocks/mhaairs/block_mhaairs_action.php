@@ -21,6 +21,8 @@ global $CFG;
 require_once($CFG->libdir.'/enrollib.php');
 require_once($CFG->dirroot.'/blocks/mhaairs/block_mhaairs_util.php');
 
+$PAGE->set_context(context_system::instance());
+
 $secure = '';
 if (isset($_SERVER['HTTPS'])) {
     $secure   = filter_var($_SERVER['HTTPS'], FILTER_SANITIZE_STRING);

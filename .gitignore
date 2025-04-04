@@ -9,10 +9,17 @@
 #
 # See gitignore(5) man page for more details
 #
-/config.php
-/lib/editor/tinymce/extra/tools/temp/
+
+# Swap files (vim)
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+# Temporary files including undo
 *~
-*.swp
+#
+/lib/editor/tinymce/extra/tools/temp/
 /tags
 /TAGS
 /cscope.*
@@ -36,3 +43,8 @@ composer.phar
 /lib/yuilib/*/*/*-coverage.js
 atlassian-ide-plugin.xml
 /node_modules/
+
+# Syllabus
+/syllabus
+
+config_local.php

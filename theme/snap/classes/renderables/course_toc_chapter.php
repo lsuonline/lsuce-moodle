@@ -17,18 +17,16 @@
 /**
  * Course toc section
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
 
-defined('MOODLE_INTERNAL') || die();
-
 class course_toc_chapter implements \renderable {
-    
+
     /**
-     * @var bool 
+     * @var bool
      */
     public $outputlink;
 
@@ -38,9 +36,19 @@ class course_toc_chapter implements \renderable {
     public $title;
 
     /**
+     * @var string
+     */
+    public $classes;
+
+    /**
      * @var bool
      */
     public $iscurrent;
+
+    /**
+     * @var bool
+     */
+    public $isweeksformat;
 
     /**
      * @var string
@@ -61,5 +69,15 @@ class course_toc_chapter implements \renderable {
      * @var string
      */
     public $url;
+
+    /**
+     * @var string
+     */
+    public $section;
+
+    /**
+     * @var int
+     */
+    public $sectionid;
 
 }

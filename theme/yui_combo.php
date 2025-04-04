@@ -38,8 +38,20 @@ if (!$parts) {
     combo_not_found();
 }
 
-$etag = sha1($parts);
 $parts = trim($parts, '&');
+
+// Remove any duplicate parts, since each file only needs to be loaded once (which also helps reduce total file size).
+$parts = implode('&', array_unique(explode('&', $parts)));
+
+// Limit length of parts to match the YUI loader limit of 1024, to prevent loading an arbitrary number of files.
+if (strlen($parts) > 1024) {
+    $parts = substr($parts, 0, 1024);
+
+    // If the shortened $parts has been cut off mid-way through a filename, trim back to the end of the previous filename.
+    if (substr($parts, -3) !== '.js' && substr($parts, -4) !== '.css') {
+        $parts = substr($parts, 0, strrpos($parts, '&'));
+    }
+}
 
 // find out what we are serving - only one type per request
 $content = '';
@@ -50,6 +62,8 @@ if (substr($parts, -3) === '.js') {
 } else {
     combo_not_found();
 }
+
+$etag = sha1($parts);
 
 // if they are requesting a revision that's not -1, and they have supplied an
 // If-Modified-Since header, we can send back a 304 Not Modified since the
@@ -180,9 +194,6 @@ while (count($parts)) {
                 'dd-ddm-base',
                 'dd-drag',
                 'dd-plugin',
-
-                // Cache is used by moodle-core-tooltip which we include everywhere.
-                'cache-base',
             );
 
             // We need to add these new parts to the beginning of the $parts list, not the end.
@@ -208,30 +219,6 @@ while (count($parts)) {
             }
         }
 
-        // Handle the mcore rollup.
-        if (strpos($rollupname, 'mcore') !== false) {
-            $yuimodules = array(
-                'core/tooltip/tooltip',
-                'core/popuphelp/popuphelp',
-                'core/widget-focusafterclose/widget-focusafterclose',
-                'core/dock/dock-loader',
-                'core/notification/notification-dialogue',
-            );
-
-            // Determine which version of this rollup should be used.
-            $filesuffix = '.js';
-            preg_match('/(-(debug|min))?\.js/', $rollupname, $matches);
-            if (isset($matches[1])) {
-                $filesuffix = $matches[0];
-            }
-
-            // We need to add these new parts to the beginning of the $parts list, not the end.
-            $newparts = array();
-            foreach ($yuimodules as $module) {
-                $newparts[] = 'm/' . $revision . '/' . $module . $filesuffix;
-            }
-            $parts = array_merge($newparts, $parts);
-        }
         continue;
     }
     if ($version === 'm') {
@@ -244,8 +231,9 @@ while (count($parts)) {
             continue;
         }
         $revision = (int)array_shift($bits);
-        if ($revision === -1) {
-            // Revision -1 says please don't cache the JS
+        if (!min_is_revision_valid_and_current($revision)) {
+            // A non-current revision means please don't cache the JS
+            $revision = -1;
             $cache = false;
         }
         $frankenstyle = array_shift($bits);
@@ -291,8 +279,9 @@ while (count($parts)) {
             continue;
         }
         $revision = (int)array_shift($bits);
-        if ($revision === -1) {
-            // Revision -1 says please don't cache the JS
+        if (!min_is_revision_valid_and_current($revision)) {
+            // A non-current revision means please don't cache the JS
+            $revision = -1;
             $cache = false;
         }
         $contentfile = "$CFG->libdir/yuilib/gallery/" . join('/', $bits);
@@ -401,7 +390,7 @@ function combo_send_cached($content, $mimetype, $etag, $lastmodified) {
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', $lastmodified) .' GMT');
     header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
     header('Pragma: ');
-    header('Cache-Control: public, max-age='.$lifetime);
+    header('Cache-Control: public, max-age='.$lifetime.', immutable');
     header('Accept-Ranges: none');
     header('Content-Type: '.$mimetype);
     header('Etag: "'.$etag.'"');

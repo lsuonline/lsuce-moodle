@@ -27,22 +27,25 @@ defined('MOODLE_INTERNAL') || die();
 class edit_base {
 
     public $imageobj;
-
+    public $cm;
     public $gallery;
     public $image;
+    public $lbgimage;
     public $tab;
     public $showthumb;
     public $context;
 
     public function __construct($gallery, $cm, $image, $tab, $showthumb = true) {
-        global $CFG;
-
         $this->gallery = $gallery;
         $this->cm = $cm;
         $this->image = $image;
         $this->tab = $tab;
         $this->showthumb = $showthumb;
         $this->context = context_module::instance($this->cm->id);
+
+        $fs = get_file_storage();
+        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
+        $this->lbgimage = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
     }
 
     public function processing() {

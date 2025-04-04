@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
+namespace theme_snap;
 use theme_snap\services\course;
 use theme_snap\renderables\course_card;
 use theme_snap\local;
@@ -22,10 +22,10 @@ use theme_snap\local;
  * Test course card service.
  * @package   theme_snap
  * @author    gthomas2
- * @copyright Copyright (c) 2016 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2016 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class theme_snap_services_course_test extends \advanced_testcase {
+class services_course_test extends \advanced_testcase {
 
     /**
      * @var stdClass
@@ -46,7 +46,7 @@ class theme_snap_services_course_test extends \advanced_testcase {
      * Pre-requisites for tests.
      * @throws \coding_exception
      */
-    public function setUp() {
+    public function setUp(): void {
         global $CFG, $DB;
 
         require_once($CFG->dirroot . '/mod/forum/lib.php');
@@ -58,6 +58,17 @@ class theme_snap_services_course_test extends \advanced_testcase {
         // Create 10 courses.
         for ($c = 0; $c < 10; $c++) {
             $this->courses[] = $this->getDataGenerator()->create_course();
+        }
+
+        // Create 5 courses in the past.
+        for ($c = 0; $c < 5; $c++) {
+            $enddate = time() - DAYSECS * ($c + 1) * 10;
+            $startdate = $enddate - YEARSECS;
+            $record = (object) [
+                'startdate' => $startdate,
+                'enddate' => $enddate,
+            ];
+            $this->courses[] = $this->getDataGenerator()->create_course($record);
         }
 
         $this->user1 = $this->getDataGenerator()->create_user();
@@ -97,33 +108,53 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $service->setfavorite($this->courses[0]->shortname, true, $this->user1->id);
         $service->setfavorite($this->courses[1]->shortname, true, $this->user1->id);
 
-        $favorites = $service->favorites($this->user1->id);
+        $favorites = $service->favorites($this->user1->id, false);
         $this->assertTrue(isset($favorites[$this->courses[0]->id]));
         $this->assertTrue(isset($favorites[$this->courses[1]->id]));
         $this->assertFalse(isset($favorites[$this->courses[2]->id]));
     }
 
-    public function test_my_courses_split_by_favorites() {
+    public function test_my_courses_split_by_past_courses_favorites() {
         $service = $this->courseservice;
         $service->setfavorite($this->courses[0]->shortname, true, $this->user1->id);
         $service->setfavorite($this->courses[1]->shortname, true, $this->user1->id);
 
         $this->setUser($this->user1);
-        list ($favorites, $notfavorites) = $service->my_courses_split_by_favorites();
+        list ($pastcourses, $favorites, $notfavorites) = $service->my_courses_split_by_favorites();
+        $notfavorites = array_keys($notfavorites);
+        sort($notfavorites);
 
-        $expectedfavorites = [
-            $this->courses[0]->id,
-            $this->courses[1]->id
+        $expectedpastcourses = [
+            $this->courses[10]->id,
+            $this->courses[11]->id,
+            $this->courses[12]->id,
+            $this->courses[13]->id,
+            $this->courses[14]->id,
         ];
 
+        // Collapse pastcourses (currently hashed by year).
+        $collapsed = [];
+        foreach ($pastcourses as $year => $courses) {
+            $collapsed = array_merge($collapsed, array_keys($courses));
+        }
+        $pastcourses = $collapsed;
+        foreach ($expectedpastcourses as $expectedpastcourse) {
+            $this->assertTrue(in_array($expectedpastcourse, $pastcourses));
+        }
+        $expectedfavorites = [
+            $this->courses[0]->id,
+            $this->courses[1]->id,
+        ];
         $this->assertEquals($expectedfavorites, array_keys($favorites));
-        $notfavoritecourses = array_slice($this->courses, 2);
+
+        $notfavoritecourses = array_slice($this->courses, 2, 8);
+        $expectednotfavorites = array_keys($notfavoritecourses);
+        sort($expectednotfavorites);
         $expectednotfavorites = [];
         foreach ($notfavoritecourses as $course) {
             $expectednotfavorites[] = $course->id;
         }
-        asort($notfavorites);
-        $this->assertEquals($expectednotfavorites, array_keys($notfavorites));
+        $this->assertEquals($expectednotfavorites, $notfavorites);
     }
 
     public function test_setfavorite() {
@@ -145,8 +176,8 @@ class theme_snap_services_course_test extends \advanced_testcase {
     }
 
     public function test_course_completion() {
+        $this->markTestSkipped('To be reviewed in INT-20324');
         global $DB;
-
         $this->resetAfterTest();
 
         // Enable avaibility.
@@ -162,9 +193,9 @@ class theme_snap_services_course_test extends \advanced_testcase {
         // Create course with completion tracking enabled.
         $course = $generator->create_course([
             'enablecompletion' => 1,
-            'numsections' => 3
+            'numsections' => 3,
         ], ['createsections' => true]);
-                
+
         // Enrol user to completion tracking course.
         $sturole = $DB->get_record('role', array('shortname' => 'student'));
         $generator->enrol_user($this->user1->id,
@@ -187,10 +218,10 @@ class theme_snap_services_course_test extends \advanced_testcase {
 
         // Make section 2 restricted to only show when first page is viewed.
         $section = $modinfo->get_section_info(2);
-        $sectionupdate =  [
+        $sectionupdate = [
             'id' => $section->id,
             'availability' => json_encode(\core_availability\tree::get_root_json(
-                [\availability_completion\condition::get_json($page1->cmid, COMPLETION_COMPLETE)], '&'))
+                [\availability_completion\condition::get_json($page1->cmid, COMPLETION_COMPLETE)], '&')),
         ];
         $DB->update_record('course_sections', $sectionupdate);
 
@@ -205,11 +236,11 @@ class theme_snap_services_course_test extends \advanced_testcase {
         list ($previouslyunavailablesections, $previouslyunavailablemods) = local::conditionally_unavailable_elements($course);
         $this->assertContains(2, $previouslyunavailablesections);
         $this->assertContains($page2cm->id, $previouslyunavailablemods);
-        
-        // View page1 to trigger completion
-        $context = context_module::instance($page1->cmid);
+
+        // View page1 to trigger completion.
+        $context = \context_module::instance($page1->cmid);
         page_view($page1, $course, $page1cm, $context);
-        $completion = new completion_info($course);
+        $completion = new \completion_info($course);
         $completiondata = $completion->get_data($page1cm);
         $this->assertEquals(COMPLETION_COMPLETE, $completiondata->completionstate);
 
@@ -220,7 +251,7 @@ class theme_snap_services_course_test extends \advanced_testcase {
         list ($unavailablesections, $unavailablemods) = local::conditionally_unavailable_elements($course);
         $this->assertNotContains($page2cm->id, $unavailablemods);
         $this->assertNotContains(2, $unavailablesections);
-                
+
         $result = $this->courseservice->course_completion($course->shortname,
             $previouslyunavailablesections,
             $previouslyunavailablemods);
@@ -242,14 +273,14 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $course = $generator->create_course([
             'shortname' => 'testlistlarge',
             'format' => 'topics',
-            'numsections' => 10
+            'numsections' => 10,
         ], ['createsections' => true]);
         $page = $generator->create_module('page', array('course' => $course->id, 'name' => 'test page'));
 
         $toc = $this->courseservice->course_toc('testlistlarge');
-        $this->assertTrue($toc->modules[0] instanceof theme_snap\renderables\course_toc_module);
+        $this->assertTrue($toc->modules[0] instanceof \theme_snap\renderables\course_toc_module);
         $this->assertTrue($toc->modules[0]->url === '#section-0&module-'.$page->cmid);
-        $this->assertTrue($toc instanceof theme_snap\renderables\course_toc);
+        $this->assertTrue($toc instanceof \theme_snap\renderables\course_toc);
         $this->assertEquals(true, $toc->formatsupportstoc);
         $this->assertEquals('list-large', $toc->chapters->listlarge);
         $this->assertCount(11, $toc->chapters->chapters);
@@ -258,7 +289,7 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $generator->create_course([
             'shortname' => 'testlistsmall',
             'format' => 'topics',
-            'numsections' => 9
+            'numsections' => 9,
         ], ['createsections' => true]);
         $toc = $this->courseservice->course_toc('testlistsmall');
         $this->assertNotEquals('list-large', $toc->chapters->listlarge);
@@ -267,7 +298,7 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $generator->create_course([
             'shortname' => 'socialcourse',
             'format' => 'social',
-            'numsections' => 2
+            'numsections' => 2,
         ], ['createsections' => true]);
         $toc = $this->courseservice->course_toc('socialcourse');
         $this->assertFalse($toc->formatsupportstoc);
@@ -276,28 +307,27 @@ class theme_snap_services_course_test extends \advanced_testcase {
     public function test_course_toc_chapters() {
         $generator = $this->getDataGenerator();
 
-        // Create topics course
+        // Create topics course.
         $generator->create_course([
             'shortname' => 'testcourse',
             'format' => 'topics',
-            'numsections' => 2
+            'numsections' => 2,
         ], ['createsections' => true]);
         $chapters = $this->courseservice->course_toc_chapters('testcourse');
 
         $this->assertCount(3, $chapters->chapters);
-        $this->assertTrue($chapters->chapters[0] instanceof theme_snap\renderables\course_toc_chapter);
+        $this->assertTrue($chapters->chapters[0] instanceof \theme_snap\renderables\course_toc_chapter);
     }
-    
+
     public function test_course_toc_chapters_escaped_chars() {
         global $OUTPUT, $DB;
-
         $titles = [ "This & that", "This < that", "This > that", "This & & that"];
         $generator = $this->getDataGenerator();
 
         $course = $generator->create_course([
             'shortname' => 'testcourse',
             'format' => 'topics',
-            'numsections' => count($titles) - 1
+            'numsections' => count($titles) - 1,
         ], ['createsections' => true]);
 
         // Get section names for course.
@@ -314,22 +344,22 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $chapters = $this->courseservice->course_toc_chapters('testcourse');
 
         $tochtml = $OUTPUT->render_from_template('theme_snap/course_toc_chapters',
-            (object) ['chapters' => $chapters->chapters, 'listlarge' => (count($chapters) > 9)]);
+            (object) ['chapters' => $chapters->chapters, 'listlarge' => (count($chapters->chapters) > 9)]);
         $pattern = '/>(.*)<\/a>/';
         preg_match_all($pattern, $tochtml, $matches);
-        for ($x = 0;  $x < count($titles); $x++) {
-            $this->assertEquals(htmlspecialchars($titles[$x]), $matches[1][$x]);
+        for ($x = 0; $x < count($titles); $x++) {
+            $this->assertEquals(htmlspecialchars($titles[$x], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401), $matches[1][$x]);
         }
     }
 
     public function test_highlight_section() {
         $generator = $this->getDataGenerator();
 
-        // Create topics course
+        // Create topics course.
         $generator->create_course([
             'shortname' => 'testcourse',
             'format' => 'topics',
-            'numsections' => 5
+            'numsections' => 5,
         ], ['createsections' => true]);
 
         $this->setAdminUser();
@@ -340,33 +370,32 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $this->assertTrue(isset($highlight['toc']));
         $actionmodel = $highlight['actionmodel'];
         $toc = $highlight['toc'];
-        $this->assertTrue($actionmodel instanceof theme_snap\renderables\course_action_section_highlight);
-        $this->assertTrue($toc instanceof theme_snap\renderables\course_toc);
+        $this->assertTrue($actionmodel instanceof \theme_snap\renderables\course_action_section_highlight);
+        $this->assertTrue($toc instanceof \theme_snap\renderables\course_toc);
 
         // Check that action model has toggled after highlight.
-        $this->assertEquals('snap-highlight snap-marked', $actionmodel->class);
-        $this->assertEquals('This topic is highlighted as the current topic', $actionmodel->title);
-        $this->assertContains('marker=0', $actionmodel->url);
+        $this->assertEquals('aria-pressed="true"', $actionmodel->ariapressed);
+        $this->assertStringContainsString('marker=0', $actionmodel->url);
 
         // Unhiglight the section.
         $highlight = $this->courseservice->highlight_section('testcourse', 3, false);
         $actionmodel = $highlight['actionmodel'];
-        $this->assertTrue($actionmodel instanceof theme_snap\renderables\course_action_section_highlight);
+        $this->assertTrue($actionmodel instanceof \theme_snap\renderables\course_action_section_highlight);
 
         // Check that action model now corresponds to unhighlighted state.
-        $this->assertEquals('snap-highlight snap-marker', $actionmodel->class);
-        $this->assertEquals('Highlight this topic as the current topic', $actionmodel->title);
-        $this->assertContains('marker=3', $actionmodel->url);
+        $this->assertEquals('aria-pressed="false"', $actionmodel->ariapressed);
+        $this->assertStringContainsString('marker=3', $actionmodel->url);
     }
 
     public function test_set_section_visibility() {
+        $this->markTestSkipped('To be reviewed in INT-20323');
         $generator = $this->getDataGenerator();
 
-        // Create topics course
+        // Create topics course.
         $generator->create_course([
             'shortname' => 'testcourse',
             'format' => 'topics',
-            'numsections' => 5
+            'numsections' => 5,
         ], ['createsections' => true]);
 
         $this->setAdminUser();
@@ -377,37 +406,54 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $this->assertTrue(isset($visibility['toc']));
         $actionmodel = $visibility['actionmodel'];
         $toc = $visibility['toc'];
-        $this->assertTrue($actionmodel instanceof theme_snap\renderables\course_action_section_visibility);
-        $this->assertTrue($toc instanceof theme_snap\renderables\course_toc);
-
+        $this->assertTrue($actionmodel instanceof \theme_snap\renderables\course_action_section_visibility);
+        $this->assertTrue($toc instanceof \theme_snap\renderables\course_toc);
 
         // Check that action model has toggled after section hidden.
         $this->assertEquals('snap-visibility snap-show', $actionmodel->class);
-        $this->assertEquals('Show topic', $actionmodel->title);
-        $this->assertContains('show=3', $actionmodel->url);
+        $this->assertEquals('Show', $actionmodel->title);
+        $this->assertStringContainsString('show=3', $actionmodel->url);
 
         // Unhide the section.
         $visibility = $this->courseservice->set_section_visibility('testcourse', 3, true);
         $actionmodel = $visibility['actionmodel'];
-        $this->assertTrue($actionmodel instanceof theme_snap\renderables\course_action_section_visibility);
+        $this->assertTrue($actionmodel instanceof \theme_snap\renderables\course_action_section_visibility);
 
         // Check that action model now corresponds to unhighlighted state.
         $this->assertEquals('snap-visibility snap-hide', $actionmodel->class);
-        $this->assertEquals('Hide topic', $actionmodel->title);
-        $this->assertContains('hide=3', $actionmodel->url);
+        $this->assertEquals('Hide', $actionmodel->title);
+        $this->assertStringContainsString('hide=3', $actionmodel->url);
     }
 
     // Records for favorite courses should not exist when the user is deleted.
     public function test_user_deletion() {
         global $DB;
-
         $service = $this->courseservice;
         $service->setfavorite($this->courses[0]->shortname, true, $this->user1->id);
         $service->setfavorite($this->courses[1]->shortname, true, $this->user1->id);
-        $favorites = $DB->get_records('theme_snap_course_favorites', array('userid'=>$this->user1->id));
+        $params = array('userid' => $this->user1->id, 'component' => 'core_course');
+        $favorites = $DB->get_records('favourite', $params);
         $this->assertNotEmpty($favorites);
         delete_user($this->user1);
-        $favorites = $DB->get_records('theme_snap_course_favorites', array('userid'=>$this->user1->id));
+        $favorites = $DB->get_records('favourite', $params);
+        $this->assertEmpty($favorites);
+    }
+
+    // Records for favorite courses should not exist when the course is deleted.
+    public function test_course_deletion() {
+        global $DB;
+        $service = $this->courseservice;
+        $service->setfavorite($this->courses[0]->shortname, true, $this->user1->id);
+        $service->setfavorite($this->courses[1]->shortname, true, $this->user1->id);
+        $params = array('userid' => $this->user1->id, 'component' => 'core_course');
+        $favorites = $DB->count_records('favourite', $params);
+        $this->assertEquals(2, $favorites);
+        $this->assertNotEmpty($favorites);
+        delete_course($this->courses[0], false);
+        $favorites = $DB->count_records('favourite', $params);
+        $this->assertEquals(1, $favorites);
+        delete_course($this->courses[1], false);
+        $favorites = $DB->get_records('favourite', $params);
         $this->assertEmpty($favorites);
     }
 
@@ -422,11 +468,11 @@ class theme_snap_services_course_test extends \advanced_testcase {
         $service = $this->courseservice;
         $generator = $this->getDataGenerator();
 
-        // Create topics course
+        // Create topics course.
         $course = $generator->create_course([
             'shortname' => 'testcourse',
             'format' => 'topics',
-            'numsections' => 5
+            'numsections' => 5,
         ], ['createsections' => true]);
 
         $this->assertEquals(6, $this->count_course_sections($course->id));
@@ -440,7 +486,7 @@ class theme_snap_services_course_test extends \advanced_testcase {
 
     public function test_module_toggle_completion() {
         global $DB;
-        
+
         $service = $this->courseservice;
         $this->resetAfterTest();
 
@@ -457,9 +503,8 @@ class theme_snap_services_course_test extends \advanced_testcase {
         // Create course with completion tracking enabled.
         $course = $generator->create_course([
             'enablecompletion' => 1,
-            'numsections' => 3
+            'numsections' => 3,
         ], ['createsections' => true]);
-
 
         // Enrol user to completion tracking course.
         $sturole = $DB->get_record('role', array('shortname' => 'student'));
@@ -467,15 +512,17 @@ class theme_snap_services_course_test extends \advanced_testcase {
             $course->id,
             $sturole->id);
 
+        $this->setUser($this->user1);
+
         // Create page with completion marked manually.
         $page1 = $generator->create_module('page', array('course' => $course->id, 'name' => 'page1 complete manually'),
             array('completion' => 1, 'completionview' => 0));
         $modinfo = get_fast_modinfo($course);
         $page1cm = $modinfo->get_cm($page1->cmid);
-        $completion = new completion_info($course);
+        $completion = new \completion_info($course);
         $completiondata = $completion->get_data($page1cm);
         $this->assertEquals(COMPLETION_INCOMPLETE, $completiondata->completionstate);
-        
+
         // Manually mark page complete.
         $service->module_toggle_completion($page1cm->id, COMPLETION_COMPLETE);
 
@@ -483,7 +530,7 @@ class theme_snap_services_course_test extends \advanced_testcase {
         get_fast_modinfo($course, 0, true);
         $modinfo = get_fast_modinfo($course);
         $page1cm = $modinfo->get_cm($page1->cmid);
-        $completion = new completion_info($course);
+        $completion = new \completion_info($course);
         $completiondata = $completion->get_data($page1cm);
         // Assert complete.
         $this->assertEquals(COMPLETION_COMPLETE, $completiondata->completionstate);
@@ -495,10 +542,53 @@ class theme_snap_services_course_test extends \advanced_testcase {
         get_fast_modinfo($course, 0, true);
         $modinfo = get_fast_modinfo($course);
         $page1cm = $modinfo->get_cm($page1->cmid);
-        $completion = new completion_info($course);
+        $completion = new \completion_info($course);
         $completiondata = $completion->get_data($page1cm);
         // Assert incomplete.
         $this->assertEquals(COMPLETION_INCOMPLETE, $completiondata->completionstate);
 
+    }
+
+    public function test_section_fragment() {
+        $this->markTestSkipped('To be reviewed in INT-20324');
+        global $CFG, $DB;
+        require_once($CFG->dirroot .'/theme/snap/lib.php');
+        $topics = $this->getDataGenerator()->create_course(
+            array('numsections' => 5, 'format' => 'topics', 'initsections' => '1'),
+            array('createsections' => true));
+        $studentrole = $DB->get_record('role', array('shortname' => 'student'));
+        $teacherole = $DB->get_record('role', array('shortname' => 'editingteacher'));
+
+        $student = $this->getDataGenerator()->create_user();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id,
+            $topics->id,
+            'student');
+        $this->getDataGenerator()->enrol_user($teacher->id,
+            $topics->id,
+            'editingteacher');
+        $this->getDataGenerator()->create_module('assign', ['course' => $topics->id, 'section' => 1,
+            'name' => 'Section Assign', ]);
+        $params = ['courseid' => $topics->id, 'section' => 1];
+        $this->setUser($student);
+        $section = theme_snap_output_fragment_section($params);
+        $this->assertStringContainsString('aria-label="Section 1"', $section);
+        // Section doesn't have the modchooser div.
+        $this->assertStringNotContainsString('snap-modchooser', $section);
+        $this->assertStringContainsString('Section Assign', $section);
+        $this->getDataGenerator()->create_module('forum', ['course' => $topics->id, 'section' => 2,
+            'name' => 'Fragment forum', ]);
+        $params['section'] = 2;
+        $section = theme_snap_output_fragment_section($params);
+        $this->assertStringContainsString('Fragment forum', $section);
+        $this->setUser($teacher);
+        // Missing param will result on empty text.
+        $params['section'] = '';
+        $section = theme_snap_output_fragment_section($params);
+        $this->assertEmpty($section);
+        $params['section'] = 2;
+        $section = theme_snap_output_fragment_section($params);
+        $this->assertStringContainsString('Fragment forum', $section);
+        $this->assertStringContainsString('snap-modchooser', $section);
     }
 }

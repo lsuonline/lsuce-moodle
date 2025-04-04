@@ -14,17 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * print the form to add or edit a questionnaire-instance
- *
- * @author Mike Churchward
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package questionnaire
- */
+namespace mod_questionnaire;
+
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->libdir . '/formslib.php');
 
-class mod_questionnaire_settings_form extends moodleform {
+/**
+ * The questionnaire settings form.
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author     Mike Churchward
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class settings_form extends \moodleform {
 
+    /**
+     * Defines the form.
+     */
     public function definition() {
         global $questionnaire, $questionnairerealms;
 
@@ -84,108 +91,16 @@ class mod_questionnaire_settings_form extends moodleform {
         $mform->setType('thank_body', PARAM_RAW);
         $mform->setDefault('thank_body', $questionnaire->survey->thank_body);
 
-        $mform->addElement('text', 'email', get_string('email', 'questionnaire'), array('size' => '75'));
+        $allowemailreporting = get_config('questionnaire', 'allowemailreporting');
+        if (!$allowemailreporting) {
+            $attributes = ['size' => '75', 'disabled' => 'disabled'];
+        } else {
+            $attributes = ['size' => '75'];
+        }
+        $mform->addElement('text', 'email', get_string('email', 'questionnaire'), $attributes);
         $mform->setType('email', PARAM_TEXT);
         $mform->setDefault('email', $questionnaire->survey->email);
         $mform->addHelpButton('email', 'sendemail', 'questionnaire');
-
-        $defaultsections = get_config('questionnaire', 'maxsections');
-
-        // We cannot have more sections than available (required) questions with a choice value.
-        $nbquestions = 0;
-        foreach ($questionnaire->questions as $question) {
-            $qtype = $question->type_id;
-            $qname = $question->name;
-            $required = $question->required;
-            // Question types accepted for feedback; QUESRATE ok except noduplicates.
-            if (($qtype == QUESRADIO || $qtype == QUESDROP || ($qtype == QUESRATE && $question->precise != 2))
-                            && $required == 'y' && $qname != '') {
-                foreach ($question->choices as $choice) {
-                    if (isset($choice->value) && $choice->value != null && $choice->value != 'NULL') {
-                        $nbquestions ++;
-                        break;
-                    }
-                }
-            }
-            if ($qtype == QUESYESNO && $required == 'y' && $qname != '') {
-                $nbquestions ++;
-            }
-        }
-
-        // Questionnaire Feedback Sections and Messages.
-        if ($nbquestions != 0) {
-            $maxsections = min ($nbquestions, $defaultsections);
-            $feedbackoptions = array();
-            $feedbackoptions[0] = get_string('feedbacknone', 'questionnaire');
-            $mform->addElement('header', 'submithdr', get_string('feedbackoptions', 'questionnaire'));
-            $feedbackoptions[1] = get_string('feedbackglobal', 'questionnaire');
-            for ($i = 2; $i <= $maxsections; ++$i) {
-                $feedbackoptions[$i] = get_string('feedbacksections', 'questionnaire', $i);
-            }
-            $mform->addElement('select', 'feedbacksections', get_string('feedbackoptions', 'questionnaire'), $feedbackoptions);
-            $mform->setDefault('feedbacksections', $questionnaire->survey->feedbacksections);
-            $mform->addHelpButton('feedbacksections', 'feedbackoptions', 'questionnaire');
-
-            $options = array('0' => get_string('no'), '1' => get_string('yes'));
-            $mform->addElement('select', 'feedbackscores', get_string('feedbackscores', 'questionnaire'), $options);
-            $mform->addHelpButton('feedbackscores', 'feedbackscores', 'questionnaire');
-
-            // Is the RGraph library enabled at level site?
-            $usergraph = get_config('questionnaire', 'usergraph');
-            if ($usergraph) {
-                $chartgroup = array();
-                $charttypes = array (null => get_string('none'),
-                        'bipolar' => get_string('chart:bipolar', 'questionnaire'),
-                        'vprogress' => get_string('chart:vprogress', 'questionnaire'));
-                $chartgroup[] = $mform->createElement('select', 'chart_type_global',
-                        get_string('chart:type', 'questionnaire').' ('.
-                                get_string('feedbackglobal', 'questionnaire').')', $charttypes);
-                if ($questionnaire->survey->feedbacksections == 1) {
-                    $mform->setDefault('chart_type_global', $questionnaire->survey->chart_type);
-                }
-                $mform->disabledIf('chart_type_global', 'feedbacksections', 'eq', 0);
-                $mform->disabledIf('chart_type_global', 'feedbacksections', 'neq', 1);
-
-                $charttypes = array (null => get_string('none'),
-                        'bipolar' => get_string('chart:bipolar', 'questionnaire'),
-                        'hbar' => get_string('chart:hbar', 'questionnaire'),
-                        'rose' => get_string('chart:rose', 'questionnaire'));
-                $chartgroup[] = $mform->createElement('select', 'chart_type_two_sections',
-                        get_string('chart:type', 'questionnaire').' ('.
-                                get_string('feedbackbysection', 'questionnaire').')', $charttypes);
-                if ($questionnaire->survey->feedbacksections > 1) {
-                    $mform->setDefault('chart_type_two_sections', $questionnaire->survey->chart_type);
-                }
-                $mform->disabledIf('chart_type_two_sections', 'feedbacksections', 'neq', 2);
-
-                $charttypes = array (null => get_string('none'),
-                        'bipolar' => get_string('chart:bipolar', 'questionnaire'),
-                        'hbar' => get_string('chart:hbar', 'questionnaire'),
-                        'radar' => get_string('chart:radar', 'questionnaire'),
-                        'rose' => get_string('chart:rose', 'questionnaire'));
-                $chartgroup[] = $mform->createElement('select', 'chart_type_sections',
-                        get_string('chart:type', 'questionnaire').' ('.
-                                get_string('feedbackbysection', 'questionnaire').')', $charttypes);
-                if ($questionnaire->survey->feedbacksections > 1) {
-                    $mform->setDefault('chart_type_sections', $questionnaire->survey->chart_type);
-                }
-                $mform->disabledIf('chart_type_sections', 'feedbacksections', 'eq', 0);
-                $mform->disabledIf('chart_type_sections', 'feedbacksections', 'eq', 1);
-                $mform->disabledIf('chart_type_sections', 'feedbacksections', 'eq', 2);
-
-                $mform->addGroup($chartgroup, 'chartgroup',
-                        get_string('chart:type', 'questionnaire'), null, false);
-                $mform->addHelpButton('chartgroup', 'chart:type', 'questionnaire');
-            }
-            $editoroptions = array('maxfiles' => EDITOR_UNLIMITED_FILES, 'trusttext' => true);
-            $mform->addElement('editor', 'feedbacknotes', get_string('feedbacknotes', 'questionnaire'), null, $editoroptions);
-            $mform->setType('feedbacknotes', PARAM_RAW);
-            $mform->setDefault('feedbacknotes', $questionnaire->survey->feedbacknotes);
-            $mform->addHelpButton('feedbacknotes', 'feedbacknotes', 'questionnaire');
-
-            $mform->addElement('submit', 'feedbackeditbutton', get_string('feedbackeditsections', 'questionnaire'));
-            $mform->disabledIf('feedbackeditbutton', 'feedbacksections', 'eq', 0);
-        }
 
         // Hidden fields.
         $mform->addElement('hidden', 'id', 0);
@@ -194,8 +109,8 @@ class mod_questionnaire_settings_form extends moodleform {
         $mform->setType('sid', PARAM_INT);
         $mform->addElement('hidden', 'name', '');
         $mform->setType('name', PARAM_TEXT);
-        $mform->addElement('hidden', 'owner', '');
-        $mform->setType('owner', PARAM_RAW);
+        $mform->addElement('hidden', 'courseid', '');
+        $mform->setType('courseid', PARAM_RAW);
 
         // Buttons.
 
@@ -215,6 +130,13 @@ class mod_questionnaire_settings_form extends moodleform {
 
     }
 
+    /**
+     * Validation rules for form.
+     * @param array $data array of ("fieldname"=>value) of submitted data
+     * @param array $files array of uploaded files "element_name"=>tmp_file_path
+     * @return array of "element_name"=>"error_description" if there are errors,
+     *         or an empty array if everything is OK (true allowed for backwards compatibility too).
+     */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
         return $errors;

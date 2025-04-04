@@ -17,12 +17,10 @@
 /**
  * This script lists all the instances of questionnaire in a particular course
  *
- * @package    mod
- * @subpackage questionnaire
- * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @package    mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetopensource.org)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/questionnaire/locallib.php');
@@ -30,7 +28,7 @@ require_once($CFG->dirroot.'/mod/questionnaire/locallib.php');
 $id = required_param('id', PARAM_INT);
 $PAGE->set_url('/mod/questionnaire/index.php', array('id' => $id));
 if (! $course = $DB->get_record('course', array('id' => $id))) {
-    print_error('incorrectcourseid', 'questionnaire');
+    throw new \moodle_exception('Filter has not been set.', 'mod_questionnaire');
 }
 $coursecontext = context_course::instance($id);
 require_login($course->id);
@@ -127,7 +125,7 @@ foreach ($questionnaires as $questionnaire) {
 
         if ($showing == 'responses') {
             $status = '';
-            if ($responses = questionnaire_get_user_responses($questionnaire->sid, $USER->id, $complete = false)) {
+            if ($responses = questionnaire_get_user_responses($questionnaire->id, $USER->id, $complete = false)) {
                 foreach ($responses as $response) {
                     if ($response->complete == 'y') {
                         $status .= get_string('submitted', 'questionnaire').' '.userdate($response->submitted).'<br />';
@@ -139,19 +137,19 @@ foreach ($questionnaires as $questionnaire) {
             }
             $data[] = $status;
         } else if ($showing == 'stats') {
-            $data[] = $DB->count_records('questionnaire_response', array('survey_id' => $questionnaire->sid, 'complete' => 'y'));
-            if ($survey = $DB->get_record('questionnaire_survey', array('id' => $questionnaire->sid))) {
+            $data[] = $DB->count_records('questionnaire_response', ['questionnaireid' => $questionnaire->id, 'complete' => 'y']);
+            if ($survey = $DB->get_record('questionnaire_survey', ['id' => $questionnaire->sid])) {
                 // For a public questionnaire, look for the original public questionnaire that it is based on.
                 if ($survey->realm == 'public') {
                     $strpreview = get_string('preview_questionnaire', 'questionnaire');
-                    if ($survey->owner != $course->id) {
+                    if ($survey->courseid != $course->id) {
                         $publicoriginal = '';
-                        $originalcourse = $DB->get_record('course', array('id' => $survey->owner));
-                        $originalcoursecontext = context_course::instance($survey->owner);
+                        $originalcourse = $DB->get_record('course', ['id' => $survey->courseid]);
+                        $originalcoursecontext = context_course::instance($survey->courseid);
                         $originalquestionnaire = $DB->get_record('questionnaire',
-                                        array('sid' => $survey->id, 'course' => $survey->owner));
-                        $cm = get_coursemodule_from_instance("questionnaire", $originalquestionnaire->id, $survey->owner);
-                        $context = context_course::instance($survey->owner, MUST_EXIST);
+                            ['sid' => $survey->id, 'course' => $survey->courseid]);
+                        $cm = get_coursemodule_from_instance("questionnaire", $originalquestionnaire->id, $survey->courseid);
+                        $context = context_course::instance($survey->courseid, MUST_EXIST);
                         $canvieworiginal = has_capability('mod/questionnaire:preview', $context, $USER->id, true);
                         // If current user can view questionnaires in original course,
                         // provide a link to the original public questionnaire.

@@ -15,10 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace theme_snap\controller;
-
 use coding_exception;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Controller Router.
@@ -28,7 +25,7 @@ defined('MOODLE_INTERNAL') || die();
  * that matches the action wins.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class router {

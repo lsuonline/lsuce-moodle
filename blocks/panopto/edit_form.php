@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * the edit form for the Panopto block
+ * The edit form for the Panopto block.
  *
  * @package block_panopto
  * @copyright  Panopto 2009 - 2016 /With contributions from Spenser Jones (sjones@ambrose.edu)
@@ -45,7 +45,7 @@ class block_panopto_edit_form extends block_edit_form {
         global $COURSE, $CFG;
 
         // Construct the Panopto data proxy object.
-        $panoptodata = new panopto_data($COURSE->id);
+        $panoptodata = new \panopto_data($COURSE->id);
 
         if (!empty($panoptodata->servername) && !empty($panoptodata->instancename) && !empty($panoptodata->applicationkey)) {
             $mform->addElement('header', 'configheader', get_string('block_edit_header', 'block_panopto'));
@@ -55,16 +55,23 @@ class block_panopto_edit_form extends block_edit_form {
             $params->course_id = $COURSE->id;
             $params->return_url = $_SERVER['REQUEST_URI'];
             $querystring = http_build_query($params, '', '&');
-            $provisionurl = "$CFG->wwwroot/blocks/panopto/provision_course.php?" . $querystring;
 
+            $provisionurl = "$CFG->wwwroot/blocks/panopto/provision_course.php?" . $querystring;
             $addtopanopto = get_string('add_to_panopto', 'block_panopto');
+            $unprovisionurl = "$CFG->wwwroot/blocks/panopto/unprovision_course_internal.php?id=" . $COURSE->id;
+            $unprovisionfrommoodle = get_string('unprovision_from_moodle', 'block_panopto');
             $or = get_string('or', 'block_panopto');
-            $mform->addElement('html', "<a href='$provisionurl'>$addtopanopto</a><br><br>-- $or --<br><br>");
+            $html = "<a href='$unprovisionurl'>$unprovisionfrommoodle</a><br><br>";
+            $html .= "-- $or --<br><br>";
+            $html .= "<a href='$provisionurl'>$addtopanopto</a><br><br>";
+            $html .= "-- $or --<br><br>";
+            $mform->addElement('html', $html);
 
             $courselist = $panoptodata->get_course_options();
 
             $mform->addElement('select', 'config_course', get_string('existing_course', 'block_panopto'),
                 $courselist['courses']);
+            $mform->addHelpButton('config_course', 'existing_course', 'block_panopto');
             $mform->setDefault('config_course', $courselist['selected']);
 
             // Set course context to get roles.
@@ -74,8 +81,9 @@ class block_panopto_edit_form extends block_edit_form {
             $currentmappings = $panoptodata->get_course_role_mappings($COURSE->id);
 
             // Get roles that current user may assign in this course.
-            $currentcourseroles = get_assignable_roles($context, $rolenamedisplay = ROLENAME_ALIAS,
-                $withusercounts = false, $user = null);
+            $currentcourseroles = get_all_roles($context);
+
+            $currentcourseroles = role_fix_names($currentcourseroles, $context, ROLENAME_ALIAS, true);
 
             while ($role = current($currentcourseroles)) {
                 $rolearray[key($currentcourseroles)] = $currentcourseroles[key($currentcourseroles)];
@@ -109,6 +117,27 @@ class block_panopto_edit_form extends block_edit_form {
         }
     }
 
+    /**
+     * Custom form validation
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        // Check to determine if folder is inheriting permissions.
+        $panoptodata = new \panopto_data($this->page->course->id);
+        $isfolderinheritingpermissions = $panoptodata->is_folder_inheriting_permissions($data['config_course']);
+
+        // If folder is inheriting permissions, display error.
+        if ($isfolderinheritingpermissions) {
+            $errors['config_course'] = get_string('block_edit_error_inherited_permissions', 'block_panopto');
+        }
+
+        return $errors;
+    }
 }
 
 /* End of file edit_form.php */

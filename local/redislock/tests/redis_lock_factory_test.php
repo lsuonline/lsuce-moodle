@@ -19,33 +19,44 @@
  *
  * @package   local_redislock
  * @author    Sam Chaffee
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 use core\lock\lock_config;
+use local_redislock\api\shared_redis_connection;
 
 /**
  * PHPUnit testcase class for \local_redislock\lock\redis_lock_factory.
  *
  * @package   local_redislock
  * @author    Sam Chaffee
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Blackboard Inc. (http://www.blackboard.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 class local_redislock_redis_lock_factory_test extends \advanced_testcase {
 
-    public function setUp() {
+    public function setUp(): void {
         global $CFG;
 
         $this->resetAfterTest();
         if (empty($CFG->local_redislock_redis_server)) {
-            $CFG->local_redislock_redis_server = 'tcp://127.0.0.1';
+            $CFG->local_redislock_redis_server = '127.0.0.1';
         }
         $CFG->lock_factory = '\\local_redislock\\lock\\redis_lock_factory';
+    }
+
+    /**
+     * @throws coding_exception
+     */
+    protected function tearDown(): void {
+        shared_redis_connection::get_instance()->close();
+        while (!empty(shared_redis_connection::get_instance()->get_factory_count())) {
+            shared_redis_connection::get_instance()->remove_factory();
+        }
     }
 
     /**
@@ -78,6 +89,33 @@ class local_redislock_redis_lock_factory_test extends \advanced_testcase {
         $this->assertEmpty($lock4);
 
         $this->assertTrue($lock3->release());
+
+        // Now try some interesting keys.
+        $key1 = "\\A\\key_with!odd:Chars$^\\A newline\n\\1\\And unicode ☀↑!";
+        $key2 = "\\A\\key_with!odd:Chars$^\\A newline\n\\2\\And unicode ☀↑!";
+        $lock5 = $redislockfactory->get_lock($key1, 2);
+        $this->assertNotEmpty($lock5);
+        $this->assertEquals(-1, $redislockfactory->get_ttl($lock5));
+
+        // This key should also aquire.
+        $lock6 = $redislockfactory->get_lock($key2, 2);
+        $this->assertNotEmpty($lock6);
+        $this->assertEquals(-1, $redislockfactory->get_ttl($lock6));
+
+        // But this should not (already held).
+        $lock7 = $redislockfactory->get_lock($key1, 2);
+        $this->assertEmpty($lock7);
+
+        $this->assertTrue($lock5->release());
+        $this->assertTrue($lock6->release());
+
+        // Now get lock 2 again to be sure we had released.
+        // This key should also aquire.
+        $lock8 = $redislockfactory->get_lock($key2, 2);
+        $this->assertNotEmpty($lock8);
+        $this->assertEquals(-1, $redislockfactory->get_ttl($lock8));
+
+        $this->assertTrue($lock8->release());
     }
 
     /**
@@ -160,6 +198,44 @@ class local_redislock_redis_lock_factory_test extends \advanced_testcase {
         $start = microtime(true);
         $this->assertFalse($factory->get_lock('block_conduit', 0));
         $this->assertLessThan(.5, microtime(true) - $start);
+    }
+
+    /**
+     * Tests shared connection.
+     *
+     * @throws coding_exception
+     */
+    public function test_shared_connection() {
+        if (!$this->is_redis_available()) {
+            $this->markTestSkipped('Redis server not available');
+        }
+
+        /** @var local_redislock\lock\redis_lock_factory $redislockfactory1 */
+        $redislockfactory1 = lock_config::get_lock_factory('conduit_cron');
+        $lock1 = $redislockfactory1->get_lock('shared_conn_test1', 10, 200);
+        $this->assertNotEmpty($lock1);
+        $redis1 = shared_redis_connection::get_instance()->get_redis();
+        $this->assertNotNull($redis1);
+        $lock1->release(); // All locks should be released.
+
+        /** @var local_redislock\lock\redis_lock_factory $redislockfactory2 */
+        $redislockfactory2 = lock_config::get_lock_factory('cron');
+        $lock2 = $redislockfactory2->get_lock('shared_conn_test2', 10, 200);
+        $this->assertNotEmpty($lock2);
+
+        // Simulating auto releases.
+        $redislockfactory1->auto_release(); // This should not close redis.
+
+        $redis2 = shared_redis_connection::get_instance()->get_redis();
+        $this->assertSame($redis1, $redis2);
+        $this->assertTrue($redis2->isConnected());
+
+        // Last auto-release.
+        $redislockfactory2->auto_release(); // This SHOULD close redis.
+
+        // Connection should be auto closed when Moodle shuts down (All auto-releases have run).
+        $redis3 = shared_redis_connection::get_instance()->get_redis();
+        $this->assertNull($redis3);
     }
 
     /**

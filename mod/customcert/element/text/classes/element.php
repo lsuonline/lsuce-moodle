@@ -24,8 +24,6 @@
 
 namespace customcertelement_text;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The customcert element text's core interaction API.
  *
@@ -38,7 +36,7 @@ class element extends \mod_customcert\element {
     /**
      * This function renders the form elements when adding a customcert element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function render_form_elements($mform) {
         $mform->addElement('textarea', 'text', get_string('text', 'customcertelement_text'));
@@ -67,7 +65,7 @@ class element extends \mod_customcert\element {
      * @param \stdClass $user the user we are rendering this for
      */
     public function render($pdf, $preview, $user) {
-        \mod_customcert\element_helper::render_content($pdf, $this, $this->get_data());
+        \mod_customcert\element_helper::render_content($pdf, $this, $this->get_text());
     }
 
     /**
@@ -79,20 +77,29 @@ class element extends \mod_customcert\element {
      * @return string the html
      */
     public function render_html() {
-        return \mod_customcert\element_helper::render_html_content($this, $this->get_data());
+        return \mod_customcert\element_helper::render_html_content($this, $this->get_text());
     }
 
     /**
      * Sets the data on the form when editing an element.
      *
-     * @param \mod_customcert\edit_element_form $mform the edit_form instance
+     * @param \MoodleQuickForm $mform the edit_form instance
      */
     public function definition_after_data($mform) {
-        $data = $this->get_data();
-        if (!empty($data)) {
+        if (!empty($this->get_data())) {
             $element = $mform->getElement('text');
-            $element->setValue($data);
+            $element->setValue($this->get_data());
         }
         parent::definition_after_data($mform);
+    }
+
+    /**
+     * Helper function that returns the text.
+     *
+     * @return string
+     */
+    protected function get_text(): string {
+        $context = \mod_customcert\element_helper::get_context($this->get_id());
+        return format_text($this->get_data(), FORMAT_HTML, ['context' => $context]);
     }
 }

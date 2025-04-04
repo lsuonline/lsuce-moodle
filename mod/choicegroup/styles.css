@@ -125,11 +125,23 @@
     font-size: 108%;
 }
 
-#page-mod-choice-report .downloadreport ul li {
+#page-mod-choicegroup-report .downloadreport {
+    text-align: center;
+}
+
+#page-mod-choicegroup-report .downloadreport ul {
+    overflow: auto;
+    min-width: 80%;
+    max-width: 100%;
+    display: inline-block;
+    margin-left: 0;
+    margin-right: auto;
+    padding-left: 0;
+    text-align: left;
+}
+
+#page-mod-choicegroup-report .downloadreport ul li {
     list-style: none;
-    padding: 0 20px;
-    display: inline;
-    float: left;
 }
 
 .path-mod-choicegroup .clearfloat {
@@ -141,7 +153,7 @@
  * Override for RTL layout
  */
 .path-mod-choicegroup.dir-rtl .horizontal .choicegroups .option {
-    padding-right: 0px;
+    padding-right: 0;
     padding-left: 20px;
     float: right;
 }
@@ -162,26 +174,20 @@
 .path-mod-choicegroup.dir-rtl .results.names .user .image,
 .path-mod-choicegroup.dir-rtl .results.names .user .fullname,
 .path-mod-choicegroup.dir-rtl .results.names .user .fullname {
-    padding-left: 0px;
+    padding-left: 0;
     padding-right: 5px;
 }
 
 .path-mod-choicegroup.dir-rtl .downloadreport {
     margin-left: 0;
-    margin-right: 25%;
+    text-align: center;
 }
 
-#page-mod-choice-report.dir-rtl .downloadreport ul li {
-    float: right;
-}
-
-#page-mod-choice-view.dir-rtl .reportlink {
+#page-mod-choicegroup-view.dir-rtl .reportlink {
     text-align: left;
 }
 
 .path-mod-choicegroup div.tablecontainer {
-    overflow: auto;
-    border: 1px #ccc solid;
     min-width: 80%;
     max-width: 100%;
     display: inline-block;
@@ -207,7 +213,8 @@
     border-top: 1px #ccc solid;
 }
 
-.path-mod-choicegroup th, .path-mod-choicegroup td {
+.path-mod-choicegroup th,
+.path-mod-choicegroup td {
     padding: 10px 15px;
 }
 
@@ -223,7 +230,7 @@
     text-align: center;
     display: block;
     border: 1px #999 solid;
-    margin: 0px auto;
+    margin: 0 auto;
 }
 
 .path-mod-choicegroup table.choicegroups {
@@ -232,7 +239,7 @@
 
 .path-mod-choicegroup a.choicegroup-memberdisplay,
 .path-mod-choicegroup a.choicegroup-descriptiondisplay {
-    display: block;
+    display: inline-block;
 }
 
 .path-mod-choicegroup div.choicegroups-membersnames.hidden,
@@ -253,7 +260,7 @@
 }
 
 .path-mod-choicegroup .tableform {
-    text-align: center
+    text-align: center;
 }
 
 /* Styles to format the Choices table. */

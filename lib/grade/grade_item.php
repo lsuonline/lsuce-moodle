@@ -258,6 +258,27 @@ class grade_item extends grade_object {
     public $dependson_cache = null;
 
     /**
+     * @var bool If we regrade this item should we mark it as overridden?
+     */
+    public $markasoverriddenwhengraded = true;
+
+    /**
+     * @var int course module ID
+     */
+    public $cmid;
+
+    /**
+     * @var string average information.
+     */
+    public $avg;
+
+    /**
+     * Category name.
+     * @var string
+     */
+    public $category;
+
+    /**
      * Constructor. Optionally (and by default) attempts to fetch corresponding row from the database
      *
      * @param array $params An array with required parameters for this grade object.
@@ -277,9 +298,10 @@ class grade_item extends grade_object {
      * the reason is we need to compare the db value with computed number to skip regrading if possible.
      *
      * @param string $source from where was the object inserted (mod/forum, manual, etc.)
+     * @param bool $isbulkupdate If bulk grade update is happening.
      * @return bool success
      */
-    public function update($source=null) {
+    public function update($source = null, $isbulkupdate = false) {
         // reset caches
         $this->dependson_cache = null;
 
@@ -304,7 +326,14 @@ class grade_item extends grade_object {
         $this->aggregationcoef = grade_floatval($this->aggregationcoef);
         $this->aggregationcoef2 = grade_floatval($this->aggregationcoef2);
 
-        return parent::update($source);
+        $result = parent::update($source, $isbulkupdate);
+
+        if ($result) {
+            $event = \core\event\grade_item_updated::create_from_grade_item($this);
+            $event->trigger();
+        }
+
+        return $result;
     }
 
     /**
@@ -400,14 +429,21 @@ class grade_item extends grade_object {
      * @return bool success
      */
     public function delete($source=null) {
-        // BEGIN LSU Anonymous Grades
-        if ($anon = grade_anonymous::fetch(array('itemid' => $this->id))) {
-            $anon->delete($source);
-        }
-        // END LSU Anonymous Grades
+        global $DB;
 
-        $this->delete_all_grades($source);
-        return parent::delete($source);
+        try {
+            $transaction = $DB->start_delegated_transaction();
+            $this->delete_all_grades($source);
+            $success = parent::delete($source);
+            if ($success) {
+                $event = \core\event\grade_item_deleted::create_from_grade_item($this);
+                $event->trigger();
+            }
+            $transaction->allow_commit();
+        } catch (Exception $e) {
+            $transaction->rollback($e);
+        }
+        return $success;
     }
 
     /**
@@ -417,30 +453,82 @@ class grade_item extends grade_object {
      * @return bool
      */
     public function delete_all_grades($source=null) {
-        if (!$this->is_course_item()) {
-            $this->force_regrading();
-        }
+        global $DB;
 
-        if ($grades = grade_grade::fetch_all(array('itemid'=>$this->id))) {
-            foreach ($grades as $grade) {
-                $grade->delete($source);
+        try {
+            $transaction = $DB->start_delegated_transaction();
+
+            if (!$this->is_course_item()) {
+                $this->force_regrading();
             }
+
+            if ($grades = grade_grade::fetch_all(['itemid' => $this->id])) {
+                foreach ($grades as $grade) {
+                    $grade->delete($source);
+                }
+            }
+
+            // Delete all the historical files.
+            // We only support feedback files for modules atm.
+            if ($this->is_external_item()) {
+                $fs = new file_storage();
+                $fs->delete_area_files($this->get_context()->id, GRADE_FILE_COMPONENT, GRADE_HISTORY_FEEDBACK_FILEAREA);
+            }
+
+            $transaction->allow_commit();
+        } catch (Exception $e) {
+            $transaction->rollback($e);
+        }
+        return true;
+    }
+
+    /**
+     * Duplicate grade item.
+     *
+     * @return grade_item The duplicate grade item
+     */
+    public function duplicate() {
+        // Convert current object to array.
+        $copy = (array) $this;
+
+        if (empty($copy["id"])) {
+            throw new moodle_exception('invalidgradeitemid');
         }
 
-        return true;
+        // Remove fields that will be either unique or automatically filled.
+        $removekeys = array();
+        $removekeys[] = 'id';
+        $removekeys[] = 'idnumber';
+        $removekeys[] = 'timecreated';
+        $removekeys[] = 'sortorder';
+        foreach ($removekeys as $key) {
+            unset($copy[$key]);
+        }
+
+        // Addendum to name.
+        $copy["itemname"] = get_string('duplicatedgradeitem', 'grades', $copy["itemname"]);
+
+        // Create new grade item.
+        $gradeitem = new grade_item($copy);
+
+        // Insert grade item into database.
+        $gradeitem->insert();
+
+        return $gradeitem;
     }
 
     /**
      * In addition to perform parent::insert(), calls force_regrading() method too.
      *
      * @param string $source From where was the object inserted (mod/forum, manual, etc.)
+     * @param string $isbulkupdate If bulk grade update is happening.
      * @return int PK ID if successful, false otherwise
      */
-    public function insert($source=null) {
+    public function insert($source = null, $isbulkupdate = false) {
         global $CFG, $DB;
 
         if (empty($this->courseid)) {
-            print_error('cannotinsertgrade');
+            throw new \moodle_exception('cannotinsertgrade');
         }
 
         // load scale if needed
@@ -475,9 +563,13 @@ class grade_item extends grade_object {
 
         $this->timecreated = $this->timemodified = time();
 
-        if (parent::insert($source)) {
+        if (parent::insert($source, $isbulkupdate)) {
             // force regrading of items if needed
             $this->force_regrading();
+
+            $event = \core\event\grade_item_created::create_from_grade_item($this);
+            $event->trigger();
+
             return $this->id;
 
         } else {
@@ -530,6 +622,14 @@ class grade_item extends grade_object {
      * @return bool Locked state
      */
     public function is_locked($userid=NULL) {
+        global $CFG;
+
+        // Override for any grade items belonging to activities which are in the process of being deleted.
+        require_once($CFG->dirroot . '/course/lib.php');
+        if (course_module_instance_pending_deletion($this->courseid, $this->itemmodule, $this->iteminstance)) {
+            return true;
+        }
+
         if (!empty($this->locked)) {
             return true;
         }
@@ -554,12 +654,16 @@ class grade_item extends grade_object {
      */
     public function set_locked($lockedstate, $cascade=false, $refresh=true) {
         if ($lockedstate) {
-        /// setting lock
-            if ($this->needsupdate) {
-                return false; // can not lock grade without first having final grade
+            // Setting lock.
+            if (empty($this->id)) {
+                return false;
+            } else if ($this->needsupdate) {
+                // Can not lock grade without first having final grade,
+                // so we schedule it to be locked as soon as regrading is finished.
+                $this->locktime = time() - 1;
+            } else {
+                $this->locked = time();
             }
-
-            $this->locked = time();
             $this->update();
 
             if ($cascade) {
@@ -661,9 +765,7 @@ class grade_item extends grade_object {
             if ($category_array && array_key_exists($this->categoryid, $category_array)) {
                 $category = $category_array[$this->categoryid];
                 //call set_hidden on the category regardless of whether it is hidden as its parent might be hidden
-                //if($category->is_hidden()) {
-                    $category->set_hidden($hidden, false);
-                //}
+                $category->set_hidden($hidden, false);
             }
         }
     }
@@ -676,7 +778,7 @@ class grade_item extends grade_object {
      * @param string $groupwheresql Where conditions for $groupsql
      * @return int The number of hidden grades
      */
-    public function has_hidden_grades($groupsql="", array $params=null, $groupwheresql="") {
+    public function has_hidden_grades($groupsql="", ?array $params=null, $groupwheresql="") {
         global $DB;
         $params = (array)$params;
         $params['itemid'] = $this->id;
@@ -686,7 +788,8 @@ class grade_item extends grade_object {
     }
 
     /**
-     * Mark regrading as finished successfully.
+     * Mark regrading as finished successfully. This will also be called when subsequent regrading will not change any grades.
+     * Situations such as an error being found will still result in the regrading being finished.
      */
     public function regrading_finished() {
         global $DB;
@@ -703,10 +806,15 @@ class grade_item extends grade_object {
      * because the regrading must be done in correct order!!
      *
      * @param int $userid Supply a user ID to limit the regrading to a single user
+     * @param \core\progress\base|null $progress Optional progress object, will be updated per user
      * @return bool true if ok, error string otherwise
      */
-    public function regrade_final_grades($userid=null) {
+    public function regrade_final_grades($userid=null, ?\core\progress\base $progress = null) {
         global $CFG, $DB;
+
+        // BEGIN LSU Manual Grade Raw Grade support.
+        $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
+        // END LSU Manual Grade Raw Grade support.
 
         // locked grade items already have correct final grades
         if ($this->is_locked()) {
@@ -730,13 +838,15 @@ class grade_item extends grade_object {
             // aggregate category grade item
             $category = $this->load_item_category();
             $category->grade_item =& $this;
-            if ($category->generate_grades($userid)) {
+            if ($category->generate_grades($userid, $progress)) {
                 return true;
             } else {
                 return "Could not aggregate final grades for category:".$this->id; // TODO: improve and localize
             }
 
-        } else if ($this->is_manual_item()) {
+        // BEGIN LSU Manual Grade Raw Grade support.
+        } else if ($this->is_manual_item() && !$manualraw) {
+        // END LSU Manual Grade Raw Grade support.
             // manual items track only final grades, no raw grades
             return true;
 
@@ -759,18 +869,24 @@ class grade_item extends grade_object {
             foreach ($rs as $grade_record) {
                 $grade = new grade_grade($grade_record, false);
 
+                // Incrementing the progress by nothing causes it to send an update (once per second)
+                // to the web browser so as to prevent the connection timing out.
+                if ($progress) {
+                    $progress->increment_progress(0);
+                }
+
                 if (!empty($grade_record->locked) or !empty($grade_record->overridden)) {
                     // this grade is locked - final grade must be ok
                     continue;
                 }
 
-                // Manual item rawgrade might be recomputed
-                if ($this->is_manual_item() and $CFG->grade_item_manual_recompute) {
-                    $maxscale = ($this->grademax / $grade->rawgrademax);
+                // BEGIN LSU Manual Grade Raw Grade support.
+                if ($this->is_manual_item() and $manualraw) {
                     $grade->rawgrademax = $this->grademax;
                     $grade->rawgrademin = $this->grademin;
                     $grade->rawgrade = $this->bounded_grade($grade->rawgrade);
                 }
+                // END LSU Manual Grade Raw Grade support.
 
                 $grade->finalgrade = $this->adjust_raw_grade($grade->rawgrade, $grade->rawgrademin, $grade->rawgrademax);
 
@@ -780,7 +896,7 @@ class grade_item extends grade_object {
                     // If successful trigger a user_graded event.
                     if ($success) {
                         $grade->load_grade_item();
-                        \core\event\user_graded::create_from_grade($grade)->trigger();
+                        \core\event\user_graded::create_from_grade($grade, \core\event\base::USER_OTHER)->trigger();
                     } else {
                         $result = "Internal error updating final grade";
                     }
@@ -818,11 +934,13 @@ class grade_item extends grade_object {
 
             // Standardise score to the new grade range
             // NOTE: skip if the activity provides a manual rescaling option.
+            // BEGIN LSU Manual Grade Raw Grade support.
             if ($this->itemtype != 'manual') {
                 $manuallyrescale = (component_callback_exists('mod_' . $this->itemmodule, 'rescale_activity_grades') !== false);
                 if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
                     $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
                 }
+            // END LSU Manual Grade Raw Grade support.
             }
 
             // Apply other grade_item factors
@@ -846,17 +964,16 @@ class grade_item extends grade_object {
 
             // Convert scale if needed
             // NOTE: skip if the activity provides a manual rescaling option.
-            if (!$this->is_manual_item()) {
+            // BEGIN LSU Manual Grade Raw Grade support.
+            if ($this->itemtype != 'manual') {
                 $manuallyrescale = (component_callback_exists('mod_' . $this->itemmodule, 'rescale_activity_grades') !== false);
+                if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
+                    // This should never happen because scales are locked if they are in use.
+                    $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
+                }
             }
-            if (!$manuallyrescale && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
-                // This should never happen because scales are locked if they are in use.
-                $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
-            }
-
+            // END LSU Manual Grade Raw Grade support.
             return $this->bounded_grade($rawgrade);
-
-
         } else if ($this->gradetype == GRADE_TYPE_TEXT or $this->gradetype == GRADE_TYPE_NONE) { // no value
             // somebody changed the grading type when grades already existed
             return null;
@@ -1111,17 +1228,28 @@ class grade_item extends grade_object {
      * @return bool
      */
     public function is_raw_used() {
+        // BEGIN LSU Manual Grade Raw Grade support.
         global $CFG;
+        $manualraw = isset($CFG->grade_item_manual_recompute) ? $CFG->grade_item_manual_recompute : 0;
         if($CFG->manipulate_categories) {
             $manipulatable_item = ($this->is_category_item() or $this->is_course_item());
         } else {
             $manipulatable_item = NULL;
         }
-        if($CFG->grade_item_manual_recompute) {
-            return ($this->is_manual_item() or $this->is_external_item() or $manipulatable_item and !$this->is_calculated() and !$this->is_outcome_item());
+        if($manualraw) {
+            return ($this->is_manual_item()
+                 or $this->is_external_item()
+                 or $manipulatable_item
+                 and !$this->is_calculated()
+                 and !$this->is_outcome_item()
+            );
         } else {
-            return ($this->is_external_item() and !$this->is_calculated() and !$this->is_outcome_item());
+            return ($this->is_external_item()
+                and !$this->is_calculated()
+                and !$this->is_outcome_item()
+            );
         }
+        // END LSU Manual Grade Raw Grade support.
     }
 
     /**
@@ -1415,12 +1543,23 @@ class grade_item extends grade_object {
      * Determines what type of grade item it is then returns the appropriate string
      *
      * @param bool $fulltotal If the item is a category total, returns $categoryname."total" instead of "Category total" or "Course total"
+     * @param bool $escape Whether the returned category name is to be HTML escaped or not.
      * @return string name
      */
-    public function get_name($fulltotal=false) {
+    public function get_name($fulltotal=false, $escape = true) {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
         if (strval($this->itemname) !== '') {
             // MDL-10557
-            return format_string($this->itemname);
+
+            // Make it obvious to users if the course module to which this grade item relates, is currently being removed.
+            $deletionpending = course_module_instance_pending_deletion($this->courseid, $this->itemmodule, $this->iteminstance);
+            $deletionnotice = get_string('gradesmoduledeletionprefix', 'grades');
+
+            $options = ['context' => context_course::instance($this->courseid), 'escape' => $escape];
+            return $deletionpending ?
+                format_string($deletionnotice . ' ' . $this->itemname, true, $options) :
+                format_string($this->itemname, true, $options);
 
         } else if ($this->is_course_item()) {
             return get_string('coursetotal', 'grades');
@@ -1429,14 +1568,14 @@ class grade_item extends grade_object {
             if ($fulltotal) {
                 $category = $this->load_parent_category();
                 $a = new stdClass();
-                $a->category = $category->get_name();
+                $a->category = $category->get_name($escape);
                 return get_string('categorytotalfull', 'grades', $a);
             } else {
             return get_string('categorytotal', 'grades');
             }
 
         } else {
-            return get_string('grade');
+            return get_string('gradenoun');
         }
     }
 
@@ -1464,7 +1603,7 @@ class grade_item extends grade_object {
      */
     public function set_parent($parentid, $updateaggregationfields = true) {
         if ($this->is_course_item() or $this->is_category_item()) {
-            print_error('cannotsetparentforcatoritem');
+            throw new \moodle_exception('cannotsetparentforcatoritem');
         }
 
         if ($this->categoryid == $parentid) {
@@ -1517,13 +1656,17 @@ class grade_item extends grade_object {
         if ($from == GRADE_AGGREGATE_SUM && $to == GRADE_AGGREGATE_SUM && $this->weightoverride) {
             // Do nothing. We are switching from SUM to SUM and the weight is overriden,
             // a teacher would not expect any change in this situation.
+
         } else if ($from == GRADE_AGGREGATE_WEIGHTED_MEAN && $to == GRADE_AGGREGATE_WEIGHTED_MEAN) {
             // Do nothing. The weights can be kept in this case.
+
         } else if (in_array($from, array(GRADE_AGGREGATE_SUM,  GRADE_AGGREGATE_EXTRACREDIT_MEAN, GRADE_AGGREGATE_WEIGHTED_MEAN2))
                 && in_array($to, array(GRADE_AGGREGATE_SUM,  GRADE_AGGREGATE_EXTRACREDIT_MEAN, GRADE_AGGREGATE_WEIGHTED_MEAN2))) {
+
             // Reset all but the the extra credit field.
             $this->aggregationcoef2 = $defaults['aggregationcoef2'];
 
+            // BEGIN LSU Weighted Mean Extra Credit
             if ($from == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $to == GRADE_AGGREGATE_SUM && $this->aggregationcoef == 1) {
                 $this->weightoverride = 1;
                 $this->aggregationcoef = '1.00000';
@@ -1531,11 +1674,14 @@ class grade_item extends grade_object {
             } else {
                 $this->weightoverride = $defaults['weightoverride'];
             }
+            // END LSU Weighted Mean Extra Credit
 
             if ($to != GRADE_AGGREGATE_EXTRACREDIT_MEAN) {
                 // Normalise extra credit, except for 'Mean with extra credit' which supports higher values than 1.
                 $this->aggregationcoef = min(1, $this->aggregationcoef);
             }
+
+        // BEGIN LSU Weighted Mean Extra Credit
         } else if (($from == GRADE_AGGREGATE_WEIGHTED_MEAN && $to == GRADE_AGGREGATE_SUM) && $this->aggregationcoef <= 0) {
             $this->weightoverride = 1;
             $this->aggregationcoef2 = '0.00000';
@@ -1552,6 +1698,8 @@ class grade_item extends grade_object {
             $this->aggregationcoef = $this->aggregationcoef * -1;
             $this->aggregationcoef2 = $defaults['aggregationcoef2'];
             $this->weightoverride = '1';
+        // END LSU Weighted Mean Extra Credit
+
         } else {
             // Reset all.
             $this->aggregationcoef = $defaults['aggregationcoef'];
@@ -1573,7 +1721,7 @@ class grade_item extends grade_object {
      * @return mixed float or int fixed grade value
      */
     public function bounded_grade($gradevalue) {
-        global $CFG, $COURSE;
+        global $CFG;
 
         if (is_null($gradevalue)) {
             return null;
@@ -1590,16 +1738,14 @@ class grade_item extends grade_object {
         // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
         $maxcoef = isset($CFG->gradeoverhundredprocentmax) ? $CFG->gradeoverhundredprocentmax : 10; // 1000% max by default
 
-        if (!grade_anonymous::is_supported($COURSE)) {
-            if (!empty($CFG->unlimitedgrades)) {
-                // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
+        if (!empty($CFG->unlimitedgrades)) {
+            // NOTE: if you change this value you must manually reset the needsupdate flag in all grade items
+            $grademax = $grademax * $maxcoef;
+        } else if ($this->is_category_item() or $this->is_course_item()) {
+            $category = $this->load_item_category();
+            if ($category->aggregation >= 100) {
+                // grade >100% hack
                 $grademax = $grademax * $maxcoef;
-            } else if ($this->is_category_item() or $this->is_course_item()) {
-                $category = $this->load_item_category();
-                if ($category->aggregation >= 100) {
-                    // grade >100% hack
-                    $grademax = $grademax * $maxcoef;
-                }
             }
         }
 
@@ -1621,7 +1767,7 @@ class grade_item extends grade_object {
             return $this->dependson_cache;
         }
 
-        if ($this->is_locked()) {
+        if ($this->is_locked() && !$this->is_category_item()) {
             // locked items do not need to be regraded
             $this->dependson_cache = array();
             return $this->dependson_cache;
@@ -1747,9 +1893,12 @@ class grade_item extends grade_object {
      * @param string $feedback Optional teacher feedback
      * @param int $feedbackformat A format like FORMAT_PLAIN or FORMAT_HTML
      * @param int $usermodified The ID of the user making the modification
+     * @param int $timemodified Optional parameter to set the time modified, if not present current time.
+     * @param bool $isbulkupdate If bulk grade update is happening.
      * @return bool success
      */
-    public function update_final_grade($userid, $finalgrade=false, $source=NULL, $feedback=false, $feedbackformat=FORMAT_MOODLE, $usermodified=null) {
+    public function update_final_grade($userid, $finalgrade = false, $source = null, $feedback = false,
+            $feedbackformat = FORMAT_MOODLE, $usermodified = null, $timemodified = null, $isbulkupdate = false) {
         global $USER, $CFG;
 
         $result = true;
@@ -1780,13 +1929,14 @@ class grade_item extends grade_object {
             return false;
         }
 
-        // Manual Item raw-grade support
+        // BEGIN LSU Manual Grade Raw Grade support.
         if ($this->is_manual_item()) {
             return $this->update_raw_grade(
                 $userid, $finalgrade, $source, $feedback, $feedbackformat,
                 $usermodified, null, null, $grade
             );
         }
+        // END LSU Manual Grade Raw Grade support.
 
         $oldgrade = new stdClass();
         $oldgrade->finalgrade     = $grade->finalgrade;
@@ -1803,7 +1953,7 @@ class grade_item extends grade_object {
 
         // changed grade?
         if ($finalgrade !== false) {
-            if ($this->is_overridable_item()) {
+            if ($this->is_overridable_item() && $this->markasoverriddenwhengraded) {
                 $grade->overridden = time();
             }
 
@@ -1823,9 +1973,9 @@ class grade_item extends grade_object {
 
         $gradechanged = false;
         if (empty($grade->id)) {
-            $grade->timecreated  = null;   // hack alert - date submitted - no submission yet
-            $grade->timemodified = time(); // hack alert - date graded
-            $result = (bool)$grade->insert($source);
+            $grade->timecreated = null;   // Hack alert - date submitted - no submission yet.
+            $grade->timemodified = $timemodified ?? time(); // Hack alert - date graded.
+            $result = (bool)$grade->insert($source, $isbulkupdate);
 
             // If the grade insert was successful and the final grade was not null then trigger a user_graded event.
             if ($result && !is_null($grade->finalgrade)) {
@@ -1848,8 +1998,8 @@ class grade_item extends grade_object {
                 return $result;
             }
 
-            $grade->timemodified = time(); // hack alert - date graded
-            $result = $grade->update($source);
+            $grade->timemodified = $timemodified ?? time(); // Hack alert - date graded.
+            $result = $grade->update($source, $isbulkupdate);
 
             // If the grade update was successful and the actual grade has changed then trigger a user_graded event.
             if ($result && grade_floats_different($grade->finalgrade, $oldgrade->finalgrade)) {
@@ -1903,9 +2053,20 @@ class grade_item extends grade_object {
      * @param int $dategraded A timestamp of when the student's work was graded
      * @param int $datesubmitted A timestamp of when the student's work was submitted
      * @param grade_grade $grade A grade object, useful for bulk upgrades
+     * @param array $feedbackfiles An array identifying the location of files we want to copy to the gradebook feedback area.
+     *        Example -
+     *        [
+     *            'contextid' => 1,
+     *            'component' => 'mod_xyz',
+     *            'filearea' => 'mod_xyz_feedback',
+     *            'itemid' => 2
+     *        ];
+     * @param bool $isbulkupdate If bulk grade update is happening.
      * @return bool success
      */
-    public function update_raw_grade($userid, $rawgrade=false, $source=NULL, $feedback=false, $feedbackformat=FORMAT_MOODLE, $usermodified=null, $dategraded=null, $datesubmitted=null, $grade=null) {
+    public function update_raw_grade($userid, $rawgrade = false, $source = null, $feedback = false,
+            $feedbackformat = FORMAT_MOODLE, $usermodified = null, $dategraded = null, $datesubmitted=null,
+            $grade = null, array $feedbackfiles = [], $isbulkupdate = false) {
         global $USER;
 
         $result = true;
@@ -1968,6 +2129,7 @@ class grade_item extends grade_object {
         if ($feedback !== false and !$grade->is_overridden()) {
             $grade->feedback       = $feedback;
             $grade->feedbackformat = $feedbackformat;
+            $grade->feedbackfiles  = $feedbackfiles;
         }
 
         // update final grade if possible
@@ -2004,7 +2166,7 @@ class grade_item extends grade_object {
 
         $gradechanged = false;
         if (empty($grade->id)) {
-            $result = (bool)$grade->insert($source);
+            $result = (bool)$grade->insert($source, $isbulkupdate);
 
             // If the grade insert was successful and the final grade was not null then trigger a user_graded event.
             if ($result && !is_null($grade->finalgrade)) {
@@ -2031,7 +2193,7 @@ class grade_item extends grade_object {
                 // No changes.
                 return $result;
             }
-            $result = $grade->update($source);
+            $result = $grade->update($source, $isbulkupdate);
 
             // If the grade update was successful and the actual grade has changed then trigger a user_graded event.
             if ($result && grade_floats_different($grade->finalgrade, $oldgrade->finalgrade)) {
@@ -2127,25 +2289,21 @@ class grade_item extends grade_object {
         list($usql, $params) = $DB->get_in_or_equal($gis);
 
         if ($userid) {
-            $usersql = "AND g.userid=?";
+            $usersql = "AND userid=?";
             $params[] = $userid;
         } else {
             $usersql = "";
         }
 
-        $grade_inst = new grade_grade();
-        $fields = 'g.'.implode(',g.', $grade_inst->required_fields);
+        $gradeinst = new grade_grade();
+        $fields = implode(',', $gradeinst->required_fields);
 
         $params[] = $this->courseid;
-        $sql = "SELECT $fields
-                  FROM {grade_grades} g, {grade_items} gi
-                 WHERE gi.id = g.itemid AND gi.id $usql $usersql AND gi.courseid=?
-                 ORDER BY g.userid";
 
         $return = true;
 
         // group the grades by userid and use formula on the group
-        $rs = $DB->get_recordset_sql($sql, $params);
+        $rs = $DB->get_recordset_select('grade_grades', "itemid $usql $usersql", $params, 'userid', $fields);
         if ($rs->valid()) {
             $prevuser = 0;
             $grade_records   = array();
@@ -2432,7 +2590,7 @@ class grade_item extends grade_object {
         global $USER;
 
         // Determine which display type to use for this average
-        if (isset($USER->gradeediting) && array_key_exists($this->courseid, $USER->gradeediting) && $USER->gradeediting[$this->courseid]) {
+        if (isset($USER->editing) && $USER->editing) {
             $displaytype = GRADE_DISPLAY_TYPE_REAL;
 
         } else if ($rangesdisplaytype == GRADE_REPORT_PREFERENCE_INHERIT) { // no ==0 here, please resave report and user prefs
@@ -2507,5 +2665,34 @@ class grade_item extends grade_object {
         if (!empty($CFG->enableavailability) && class_exists('\availability_grade\callbacks')) {
             \availability_grade\callbacks::grade_item_changed($this->courseid);
         }
+    }
+
+    /**
+     * Helper function to get the accurate context for this grade column.
+     *
+     * @return context
+     */
+    public function get_context() {
+        if ($this->itemtype == 'mod') {
+            $modinfo = get_fast_modinfo($this->courseid);
+            // Sometimes the course module cache is out of date and needs to be rebuilt.
+            if (!isset($modinfo->instances[$this->itemmodule][$this->iteminstance])) {
+                rebuild_course_cache($this->courseid, true);
+                $modinfo = get_fast_modinfo($this->courseid);
+            }
+            // Even with a rebuilt cache the module does not exist. This means the
+            // database is in an invalid state - we will log an error and return
+            // the course context but the calling code should be updated.
+            if (!isset($modinfo->instances[$this->itemmodule][$this->iteminstance])) {
+                mtrace(get_string('moduleinstancedoesnotexist', 'error'));
+                $context = \context_course::instance($this->courseid);
+            } else {
+                $cm = $modinfo->instances[$this->itemmodule][$this->iteminstance];
+                $context = \context_module::instance($cm->id);
+            }
+        } else {
+            $context = \context_course::instance($this->courseid);
+        }
+        return $context;
     }
 }

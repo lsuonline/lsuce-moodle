@@ -18,8 +18,8 @@
  * The mod_quiz attempt viewed event.
  *
  * @package    mod_lightboxgallery
- * @copyright  2014 NetSpot Pty Ltd
- * @author     Adam Olley <adam.olley@netspot.com.au>
+ * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @author     Adam Olley <adam.olley@openlms.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -38,8 +38,8 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @package    mod_lightboxgallery
  * @since      Moodle 2.7
- * @copyright  2014 NetSpot Pty Ltd
- * @author     Adam Olley <adam.olley@netspot.com.au>
+ * @copyright  Copyright (c) 2021 Open LMS (https://www.openlms.net)
+ * @author     Adam Olley <adam.olley@openlms.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_module_viewed extends \core\event\course_module_viewed {
@@ -65,13 +65,10 @@ class course_module_viewed extends \core\event\course_module_viewed {
     }
 
     /**
-     * Return the legacy event log data.
-     *
-     * @return array|null
+     * Get objectid mapping
      */
-    protected function get_legacy_logdata() {
-        return array($this->courseid, 'forum', 'view', 'view.php?l=' . $this->objectid,
-            $this->objectid, $this->contextinstanceid);
+    public static function get_objectid_mapping() {
+        return array('db' => 'lightboxgallery', 'restore' => 'lightboxgallery');
     }
 
 }

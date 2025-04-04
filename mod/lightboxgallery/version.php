@@ -18,16 +18,15 @@
  * Lightbox gallery version info.
  *
  * @package   mod_lightboxgallery
- * @copyright 2014 NetSpot Pty Ltd
+ * @copyright Copyright (c) 2021 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2017050300;  // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires = 2014111000;  // Requires this Moodle version.
-$plugin->cron     = 0;           // Period for cron to check this plugin (secs).
+$plugin->version  = 2024121600;  // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires = 2024100700;  // Requires this Moodle version.
 
 $plugin->component = 'mod_lightboxgallery';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.8.0.10';
+$plugin->release = '4.5.0';

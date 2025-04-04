@@ -17,14 +17,12 @@
 /**
  * Settings link renderable.
  * @author    gthomas2
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
 use theme_snap\local;
-
-defined('MOODLE_INTERNAL') || die();
 
 class settings_link implements \renderable {
 
@@ -47,9 +45,9 @@ class settings_link implements \renderable {
         // Are we on the main course page?
         $oncoursepage = strpos($PAGE->pagetype, 'course-view') === 0;
 
-        // For any format other than topics, weeks, folderview or singleactivity, always output admin menu on main
+        // For any format other than topics, weeks, or singleactivity, always output admin menu on main
         // course page.
-        $formats = ['topics', 'weeks', 'folderview', 'singleactivity'];
+        $formats = ['topics', 'weeks', 'singleactivity'];
         if ($oncoursepage && !empty($COURSE->format) && !in_array($COURSE->format, $formats)) {
             $this->set_admin_menu_instance();
             return;
@@ -68,7 +66,7 @@ class settings_link implements \renderable {
             // Editing teachers are identified as people who can manage activities and non editing teachers as those who
             // can view the gradebook. As editing teachers are almost certain to also be able to view the gradebook, the
             // grader:view capability is checked first.
-            $caps = ['gradereport/grader:view', 'moodle/course:manageactivities'];
+            $caps = ['gradereport/grader:view', 'moodle/course:manageactivities', 'moodle/site:configview'];
             $canmanageacts = has_any_capability($caps, $PAGE->context);
             $isstudent = !$canmanageacts && !is_role_switched($COURSE->id);
             if ($isstudent) {
@@ -77,11 +75,6 @@ class settings_link implements \renderable {
         }
 
         if (!$PAGE->blocks->is_block_present('settings')) {
-            // Throw error if on front page or course page.
-            // (There are pages that don't have a settings block so we shouldn't throw an error on those pages).
-            if ($oncoursepage || $PAGE->pagetype === 'site-index') {
-                debugging('Settings block was not found on this page', DEBUG_DEVELOPER);
-            }
             return;
         }
 
@@ -91,7 +84,7 @@ class settings_link implements \renderable {
 
     /**
      * Set admin menu instance, if required capability satisfied.
-     * 
+     *
      * @throws \coding_exception
      */
     private function set_admin_menu_instance() {

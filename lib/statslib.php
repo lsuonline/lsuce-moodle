@@ -138,29 +138,12 @@ function stats_cron_daily($maxdays=1) {
         set_config('statslastdaily', $timestart);
     }
 
-    // calculate scheduled time
-    $scheduledtime = stats_get_base_daily() + $CFG->statsruntimestarthour*60*60 + $CFG->statsruntimestartminute*60;
-
-    // Note: This will work fine for sites running cron each 4 hours or less (hopefully, 99.99% of sites). MDL-16709
-    // check to make sure we're due to run, at least 20 hours after last run
-    if (isset($CFG->statslastexecution) && ((time() - 20*60*60) < $CFG->statslastexecution)) {
-        mtrace("...preventing stats to run, last execution was less than 20 hours ago.");
-        return false;
-    // also check that we are a max of 4 hours after scheduled time, stats won't run after that
-    } else if (time() > $scheduledtime + 4*60*60) {
-        mtrace("...preventing stats to run, more than 4 hours since scheduled time.");
-        return false;
-    } else {
-        set_config('statslastexecution', time()); /// Grab this execution as last one
-    }
-
     $nextmidnight = stats_get_next_day_start($timestart);
 
     // are there any days that need to be processed?
     if ($now < $nextmidnight) {
         return true; // everything ok and up-to-date
     }
-
 
     $timeout = empty($CFG->statsmaxruntime) ? 60*60*24 : $CFG->statsmaxruntime;
 
@@ -181,7 +164,7 @@ function stats_cron_daily($maxdays=1) {
     $defaultfproleid = (int)$CFG->defaultfrontpageroleid;
 
     mtrace("Running daily statistics gathering, starting at $timestart:");
-    cron_trace_time_and_memory();
+    \core\cron::trace_time_and_memory();
 
     $days  = 0;
     $total = 0;
@@ -681,7 +664,7 @@ function stats_cron_weekly() {
     $DB->delete_records_select('stats_user_weekly', "timeend > $timestart");
 
     mtrace("Running weekly statistics gathering, starting at $timestart:");
-    cron_trace_time_and_memory();
+    \core\cron::trace_time_and_memory();
 
     $weeks = 0;
     while ($now > $nextstartweek) {
@@ -824,7 +807,7 @@ function stats_cron_monthly() {
 
 
     mtrace("Running monthly statistics gathering, starting at $timestart:");
-    cron_trace_time_and_memory();
+    \core\cron::trace_time_and_memory();
 
     $months = 0;
     while ($now > $nextstartmonth) {
@@ -1004,18 +987,24 @@ function stats_get_base_daily($time=0) {
 function stats_get_base_weekly($time=0) {
     global $CFG;
 
-    $time = stats_get_base_daily($time);
+    $datetime = new DateTime();
+    $datetime->setTimestamp(stats_get_base_daily($time));
     $startday = $CFG->calendar_startwday;
 
     core_date::set_default_server_timezone();
     $thisday = date('w', $time);
 
+    $days = 0;
+
     if ($thisday > $startday) {
-        $time = $time - (($thisday - $startday) * 60*60*24);
+        $days = $thisday - $startday;
     } else if ($thisday < $startday) {
-        $time = $time - ((7 + $thisday - $startday) * 60*60*24);
+        $days = 7 + $thisday - $startday;
     }
-    return $time;
+
+    $datetime->sub(new DateInterval("P{$days}D"));
+
+    return $datetime->getTimestamp();
 }
 
 /**
@@ -1037,49 +1026,40 @@ function stats_get_base_monthly($time=0) {
 /**
  * Start of next day
  * @param int $time timestamp
- * @return start of next day
+ * @return int start of next day
  */
 function stats_get_next_day_start($time) {
     $next = stats_get_base_daily($time);
-    $next = $next + 60*60*26;
-    $next = stats_get_base_daily($next);
-    if ($next <= $time) {
-        //DST trouble - prevent infinite loops
-        $next = $next + 60*60*24;
-    }
-    return $next;
+    $nextdate = new DateTime();
+    $nextdate->setTimestamp($next);
+    $nextdate->add(new DateInterval('P1D'));
+    return $nextdate->getTimestamp();
 }
 
 /**
  * Start of next week
  * @param int $time timestamp
- * @return start of next week
+ * @return int start of next week
  */
 function stats_get_next_week_start($time) {
     $next = stats_get_base_weekly($time);
-    $next = $next + 60*60*24*9;
-    $next = stats_get_base_weekly($next);
-    if ($next <= $time) {
-        //DST trouble - prevent infinite loops
-        $next = $next + 60*60*24*7;
-    }
-    return $next;
+    $nextdate = new DateTime();
+    $nextdate->setTimestamp($next);
+    $nextdate->add(new DateInterval('P1W'));
+    return $nextdate->getTimestamp();
 }
 
 /**
  * Start of next month
  * @param int $time timestamp
- * @return start of next month
+ * @return int start of next month
  */
 function stats_get_next_month_start($time) {
     $next = stats_get_base_monthly($time);
-    $next = $next + 60*60*24*33;
-    $next = stats_get_base_monthly($next);
-    if ($next <= $time) {
-        //DST trouble - prevent infinite loops
-        $next = $next + 60*60*24*31;
-    }
-    return $next;
+    $nextdate = new DateTime();
+    $nextdate->setTimestamp($next);
+    $nextdate->add(new DateInterval('P1M'));
+    return $nextdate->getTimestamp();
 }
 
 /**
@@ -1088,7 +1068,7 @@ function stats_get_next_month_start($time) {
 function stats_clean_old() {
     global $DB;
     mtrace("Running stats cleanup tasks...");
-    cron_trace_time_and_memory();
+    \core\cron::trace_time_and_memory();
     $deletebefore =  stats_get_base_monthly();
 
     // delete dailies older than 3 months (to be safe)
@@ -1182,7 +1162,12 @@ function stats_get_parameters($time,$report,$courseid,$mode,$roleid=0) {
     case STATS_REPORT_ACTIVITYBYROLE;
         $param->fields = 'stat1 AS line1, stat2 AS line2';
         $param->stattype = 'activity';
-        $rolename = $DB->get_field('role','name', array('id'=>$roleid));
+        $rolename = '';
+        if ($roleid <> 0) {
+            if ($role = $DB->get_record('role', ['id' => $roleid])) {
+                $rolename = role_get_name($role, context_course::instance($courseid)) . ' ';
+            }
+        }
         $param->line1 = $rolename . get_string('statsreads');
         $param->line2 = $rolename . get_string('statswrites');
         if ($courseid == SITEID) {
@@ -1211,11 +1196,13 @@ function stats_get_parameters($time,$report,$courseid,$mode,$roleid=0) {
         break;
 
     case STATS_REPORT_USER_VIEW:
-        $param->fields = 'statsreads as line1, statswrites as line2, statsreads+statswrites as line3';
+        $param->fields = 'timeend, SUM(statsreads) AS line1, SUM(statswrites) AS line2, SUM(statsreads+statswrites) AS line3';
+        $param->fieldscomplete = true;
         $param->line1 = get_string('statsuserreads');
         $param->line2 = get_string('statsuserwrites');
         $param->line3 = get_string('statsuseractivity');
         $param->stattype = 'activity';
+        $param->extras = "GROUP BY timeend";
         break;
 
     // ******************** STATS_MODE_RANKED ******************** //
@@ -1314,7 +1301,8 @@ function stats_get_view_actions() {
 }
 
 function stats_get_post_actions() {
-    return array('add','delete','edit','add mod','delete mod','edit section'.'enrol','loginas','new','unenrol','update','update mod');
+    return ['add', 'delete', 'edit', 'add mod', 'delete mod', 'edit section', 'enrol', 'loginas', 'new', 'unenrol', 'update',
+            'update mod'];
 }
 
 function stats_get_action_names($str) {
@@ -1422,10 +1410,13 @@ function stats_get_report_options($courseid,$mode) {
     case STATS_MODE_GENERAL:
         $reportoptions[STATS_REPORT_ACTIVITY] = get_string('statsreport'.STATS_REPORT_ACTIVITY);
         if ($courseid != SITEID && $context = context_course::instance($courseid)) {
-            $sql = 'SELECT r.id, r.name FROM {role} r JOIN {stats_daily} s ON s.roleid = r.id WHERE s.courseid = :courseid GROUP BY r.id, r.name';
+            $sql = 'SELECT r.id, r.name, r.shortname FROM {role} r JOIN {stats_daily} s ON s.roleid = r.id
+                 WHERE s.courseid = :courseid GROUP BY r.id, r.name, r.shortname';
             if ($roles = $DB->get_records_sql($sql, array('courseid' => $courseid))) {
+                $roles = array_intersect_key($roles, get_viewable_roles($context));
                 foreach ($roles as $role) {
-                    $reportoptions[STATS_REPORT_ACTIVITYBYROLE.$role->id] = get_string('statsreport'.STATS_REPORT_ACTIVITYBYROLE). ' '.$role->name;
+                    $reportoptions[STATS_REPORT_ACTIVITYBYROLE.$role->id] = get_string('statsreport'.STATS_REPORT_ACTIVITYBYROLE).
+                        ' ' . role_get_name($role, $context);
                 }
             }
         }
@@ -1467,7 +1458,7 @@ function stats_get_report_options($courseid,$mode) {
  * @param string $timestr type of statistics to generate (dayly, weekly, monthly).
  * @param boolean $line2
  * @param boolean $line3
- * @return array of fixed statistics.
+ * @return ?array of fixed statistics.
  */
 function stats_fix_zeros($stats,$timeafter,$timestr,$line2=true,$line3=false) {
 
@@ -1642,6 +1633,7 @@ function stats_temp_table_create() {
     $table->add_index('userid', XMLDB_INDEX_NOTUNIQUE, array('userid'));
     $table->add_index('courseid', XMLDB_INDEX_NOTUNIQUE, array('courseid'));
     $table->add_index('roleid', XMLDB_INDEX_NOTUNIQUE, array('roleid'));
+    $table->add_index('useridroleidcourseid', XMLDB_INDEX_NOTUNIQUE, array('userid', 'roleid', 'courseid'));
     $tables['temp_enroled'] = $table;
 
 

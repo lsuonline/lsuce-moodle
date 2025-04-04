@@ -45,21 +45,36 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/attendance:viewreports', $context);
 
+// If separate groups and user does not have accessallgroups force a group to be selected - don't show "all users" view.
+if (empty($pageparams->group) && !has_capability('moodle/site:accessallgroups', $PAGE->context)) {
+    $groupmode = groups_get_activity_groupmode($cm, $course);
+    if ($groupmode == SEPARATEGROUPS) {
+        $allowedgroups = groups_get_all_groups($cm->course, $USER->id, $cm->groupingid);
+        if (empty($allowedgroups)) {
+            throw new moodle_exception('cannottakethisgroup', 'attendance');
+        }
+        $pageparams->group = array_shift($allowedgroups)->id;
+    }
+}
+
 $pageparams->init($cm);
+$pageparams->showextrauserdetails = optional_param('showextrauserdetails', $attrecord->showextrauserdetails, PARAM_INT);
+$pageparams->showsessiondetails = optional_param('showsessiondetails', $attrecord->showsessiondetails, PARAM_INT);
+$pageparams->sessiondetailspos = optional_param('sessiondetailspos', $attrecord->sessiondetailspos, PARAM_TEXT);
+
 $att = new mod_attendance_structure($attrecord, $cm, $course, $context, $pageparams);
 
 $PAGE->set_url($att->url_report());
 $PAGE->set_pagelayout('report');
 $PAGE->set_title($course->shortname. ": ".$att->name.' - '.get_string('report', 'attendance'));
 $PAGE->set_heading($course->fullname);
+$PAGE->force_settings_menu(true);
 $PAGE->set_cacheable(true);
-$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'attendance'));
 $PAGE->navbar->add(get_string('report', 'attendance'));
 
 $output = $PAGE->get_renderer('mod_attendance');
-$tabs = new attendance_tabs($att, attendance_tabs::TAB_REPORT);
-$filtercontrols = new attendance_filter_controls($att, true);
-$reportdata = new attendance_report_data($att);
+$filtercontrols = new mod_attendance\output\filter_controls($att, true);
+$reportdata = new mod_attendance\output\report_data($att);
 
 // Trigger a report viewed event.
 $event = \mod_attendance\event\report_viewed::create(array(
@@ -72,12 +87,8 @@ $event->add_record_snapshot('attendance', $attrecord);
 $event->trigger();
 
 // Output starts here.
-
 echo $output->header();
-echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: ' .format_string($course->fullname));
-echo $output->render($tabs);
 echo $output->render($filtercontrols);
 echo $output->render($reportdata);
-
 echo $output->footer();
 

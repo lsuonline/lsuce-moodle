@@ -17,9 +17,10 @@
 /**
  * Defines message providers (types of messages being sent)
  *
- * @package mod-questionnaire
+ * @package mod_questionnaire
  * @copyright  2010 onwards  Aparup Banerjee  http://moodle.com
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author     Mike Churchward
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();

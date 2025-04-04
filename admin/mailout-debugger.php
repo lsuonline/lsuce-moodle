@@ -29,7 +29,7 @@
    */
 
 // Security check.
-if (!file_exists(dirname(__FILE__).'/mailout-debugger.enable')) {
+if (!file_exists(__DIR__.'/mailout-debugger.enable')) {
     mdie("Disabled.");
 }
 $tmpdir=sys_get_temp_dir(); // default
@@ -45,7 +45,7 @@ if (isset($_ENV['TMPDIR']) && is_dir($_ENV['TMPDIR'])) {
 $tmpfile = $tmpdir . '/moodle-mailout.log';
 $fh = fopen($tmpfile, 'a+', false)
     or mdie("Error openning $tmpfile on append\n");
-fwrite($fh, "==== ".strftime("%a %b %e %H:%M:%S %Y", time())." ====\n");
+fwrite($fh, "==== ".date("D M d H:i:s Y", time())." ====\n");
 fwrite($fh, "==== Commandline: " . implode(' ',$argv) . "\n");
 
 $stdin = fopen('php://stdin', 'r');

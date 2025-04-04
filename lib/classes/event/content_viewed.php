@@ -96,24 +96,6 @@ abstract class content_viewed extends base {
     }
 
     /**
-     * Set legacy logdata.
-     *
-     * @param array $legacydata legacy logdata.
-     */
-    public function set_legacy_logdata(array $legacydata) {
-        $this->legacylogdata = $legacydata;
-    }
-
-    /**
-     * Get legacy logdata.
-     *
-     * @return null|array legacy log data.
-     */
-    protected function get_legacy_logdata() {
-        return $this->legacylogdata;
-    }
-
-    /**
      * Custom validation.
      *
      * @throws \coding_exception when validation does not pass.
@@ -130,5 +112,13 @@ abstract class content_viewed extends base {
     public static function get_other_mapping() {
         return false;
     }
-}
 
+    /**
+     * This event has been deprected.
+     *
+     * @return boolean
+     */
+    public static function is_deprecated() {
+        return true;
+    }
+}

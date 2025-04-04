@@ -76,9 +76,9 @@
  *                     $a = new stdClass();
  *                     $a->url = 'https://download.moodle.org/langpack/2.0/es.zip';
  *                     $a->dest= $CFG->dataroot.'/lang';
- *                     print_error($cd->get_error(), 'error', '', $a);
+ *                     throw new \moodle_exception($cd->get_error(), 'error', '', $a);
  *                 } else {
- *                     print_error($cd->get_error(), 'error');
+ *                     throw new \moodle_exception($cd->get_error(), 'error');
  *                 }
  *                 break;
  *             case COMPONENT_UPTODATE:
@@ -268,15 +268,13 @@ class component_installer {
      * compare md5 values, download, unzip, install and regenerate
      * local md5 file
      *
-     * @global object
      * @uses COMPONENT_ERROR
      * @uses COMPONENT_UPTODATE
      * @uses COMPONENT_ERROR
      * @uses COMPONENT_INSTALLED
      * @return int COMPONENT_(ERROR | UPTODATE | INSTALLED)
      */
-    function install() {
-
+    public function install() {
         global $CFG;
 
     /// Check requisites are passed
@@ -304,9 +302,10 @@ class component_installer {
 
         $zipfile= $CFG->tempdir.'/'.$this->zipfilename;
 
-        if($contents = download_file_content($source)) {
+        $contents = download_file_content($source, null, null, true);
+        if ($contents->results && (int) $contents->status === 200) {
             if ($file = fopen($zipfile, 'w')) {
-                if (!fwrite($file, $contents)) {
+                if (!fwrite($file, $contents->results)) {
                     fclose($file);
                     $this->errorstring='cannotsavezipfile';
                     return COMPONENT_ERROR;
@@ -321,7 +320,7 @@ class component_installer {
             return COMPONENT_ERROR;
         }
     /// Calculate its md5
-        $new_md5 = md5($contents);
+        $new_md5 = md5($contents->results);
     /// Compare it with the remote md5 to check if we have the correct zip file
         if (!$remote_md5 = $this->get_component_md5()) {
             return COMPONENT_ERROR;
@@ -330,25 +329,30 @@ class component_installer {
             $this->errorstring='downloadedfilecheckfailed';
             return COMPONENT_ERROR;
         }
-    /// Move current revision to a safe place
-        $destinationdir = $CFG->dataroot.'/'.$this->destpath;
-        $destinationcomponent = $destinationdir.'/'.$this->componentname;
-        @remove_dir($destinationcomponent.'_old');     // Deleting a possible old version.
+
+        // Move current revision to a safe place.
+        $destinationdir = $CFG->dataroot . '/' . $this->destpath;
+        $destinationcomponent = $destinationdir . '/' . $this->componentname;
+        $destinationcomponentold = $destinationcomponent . '_old';
+        @remove_dir($destinationcomponentold);     // Deleting a possible old version.
 
         // Moving to a safe place.
-        @rename($destinationcomponent, $destinationcomponent.'_old');
+        @rename($destinationcomponent, $destinationcomponentold);
 
-    /// Unzip new version
-        if (!unzip_file($zipfile, $destinationdir, false)) {
-        /// Error so, go back to the older
+        // Unzip new version.
+        $packer = get_file_packer('application/zip');
+        $unzipsuccess = $packer->extract_to_pathname($zipfile, $destinationdir, null, null, true);
+        if (!$unzipsuccess) {
             @remove_dir($destinationcomponent);
-            @rename ($destinationcomponent.'_old', $destinationcomponent);
-            $this->errorstring='cannotunzipfile';
+            @rename($destinationcomponentold, $destinationcomponent);
+            $this->errorstring = 'cannotunzipfile';
             return COMPONENT_ERROR;
         }
-    /// Delete old component version
-        @remove_dir($destinationcomponent.'_old');
-    /// Create local md5
+
+        // Delete old component version.
+        @remove_dir($destinationcomponentold);
+
+        // Create local md5.
         if ($file = fopen($destinationcomponent.'/'.$this->componentname.'.md5', 'w')) {
             if (!fwrite($file, $new_md5)) {
                 fclose($file);
@@ -505,9 +509,10 @@ class component_installer {
         /// Not downloaded, let's do it now
             $availablecomponents = array();
 
-            if ($contents = download_file_content($source)) {
+            $contents = download_file_content($source, null, null, true);
+            if ($contents->results && (int) $contents->status === 200) {
             /// Split text into lines
-                $lines=preg_split('/\r?\n/',$contents);
+                $lines = preg_split('/\r?\n/', $contents->results);
             /// Each line will be one component
                 foreach($lines as $line) {
                     $availablecomponents[] = explode(',', $line);
@@ -702,8 +707,9 @@ class lang_installer {
         $source = 'https://download.moodle.org/langpack/' . $this->version . '/languages.md5';
         $availablelangs = array();
 
-        if ($content = download_file_content($source)) {
-            $alllines = explode("\n", $content);
+        $contents = download_file_content($source, null, null, true);
+        if ($contents->results && (int) $contents->status === 200) {
+            $alllines = explode("\n", $contents->results);
             foreach($alllines as $line) {
                 if (!empty($line)){
                     $availablelangs[] = explode(',', $line);
@@ -786,7 +792,7 @@ class lang_installer {
      *
      * @uses component_installer
      * @param string $langcode
-     * @return int return status
+     * @return string return status
      */
     protected function install_language_pack($langcode) {
 

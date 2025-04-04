@@ -71,7 +71,9 @@ function import_kioskpearsonjson_grades($items, $course, &$error) {
                         $resultStats->numUnfoundUsers++;
                         
                         $status = false;
-                        break 3;
+
+						//TPLMS-5655 remove break 3
+                        continue;
                     }
 
 					//1. Check to see if grade exists, if not, create it... if it does, check other things					

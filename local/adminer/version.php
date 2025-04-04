@@ -17,16 +17,16 @@
 /**
  * Version details.
  *
- * @package    local
- * @subpackage adminer
- * @copyright  2011 Andreas Grabs
+ * @package    local_adminer
+ * @author     Andreas Grabs <moodle@grabs-edv.de>
+ * @copyright  Andreas Grabs
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version  = 2015052700;
-$plugin->release = '2.9 (2015052700)';
-$plugin->requires = 2013101800;
-$plugin->maturity = MATURITY_BETA;
+$plugin->version  = 2025031700;
+$plugin->release = '4.17.2 (2025031700)';
+$plugin->requires = 2022111800;
+$plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'local_adminer';

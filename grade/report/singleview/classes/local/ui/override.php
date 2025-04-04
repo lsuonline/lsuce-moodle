@@ -24,6 +24,8 @@
 
 namespace gradereport_singleview\local\ui;
 
+use context_course;
+
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -33,9 +35,12 @@ defined('MOODLE_INTERNAL') || die;
  * @copyright 2014 Moodle Pty Ltd (http://moodle.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class override extends grade_attribute_format implements be_checked, be_disabled {
+class override extends grade_attribute_format implements be_checked, be_disabled, be_readonly {
 
-    /** @var string $name The name for this input */
+    /**
+     * The name for this input
+     * @var string $name
+     */
     public $name = 'override';
 
     /**
@@ -43,7 +48,7 @@ class override extends grade_attribute_format implements be_checked, be_disabled
      *
      * @return bool
      */
-    public function is_checked() {
+    public function is_checked(): bool {
         return $this->grade->is_overridden();
     }
 
@@ -52,7 +57,7 @@ class override extends grade_attribute_format implements be_checked, be_disabled
      *
      * @return bool
      */
-    public function is_disabled() {
+    public function is_disabled(): bool {
         $lockedgrade = $lockedgradeitem = 0;
         if (!empty($this->grade->locked)) {
             $lockedgrade = 1;
@@ -64,11 +69,21 @@ class override extends grade_attribute_format implements be_checked, be_disabled
     }
 
     /**
+     * Return true if this is read-only.
+     *
+     * @return bool
+     */
+    public function is_readonly(): bool {
+        global $USER;
+        return empty($USER->editing);
+    }
+
+    /**
      * Get the label for this form element.
      *
      * @return string
      */
-    public function get_label() {
+    public function get_label(): string {
         if (!isset($this->grade->label)) {
             $this->grade->label = '';
         }
@@ -80,15 +95,20 @@ class override extends grade_attribute_format implements be_checked, be_disabled
      *
      * @return element
      */
-    public function determine_format() {
-        if (!$this->grade->grade_item->is_overridable_item()) {
+    public function determine_format(): element {
+        // If the grade is hidden and the user does not have permission to view hidden grades,
+        // then we don't show the override checkbox.
+        $allowhiddenoverride = (!$this->grade->is_hidden() && !$this->grade->grade_item->is_hidden()) ||
+            has_capability('moodle/grade:viewhidden', context_course::instance($this->grade->grade_item->courseid));
+        if (!$allowhiddenoverride || !$this->grade->grade_item->is_overridable_item()) {
             return new empty_element();
         }
         return new checkbox_attribute(
             $this->get_name(),
             $this->get_label(),
             $this->is_checked(),
-            $this->is_disabled()
+            $this->is_disabled(),
+            $this->is_readonly()
         );
     }
 
@@ -103,7 +123,7 @@ class override extends grade_attribute_format implements be_checked, be_disabled
             return false;
         }
 
-        $state = $value == 0 ? false : true;
+        $state = !($value == 0);
 
         $this->grade->set_overridden($state);
         $this->grade->grade_item->force_regrading();

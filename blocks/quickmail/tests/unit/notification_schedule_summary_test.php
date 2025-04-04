@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -21,22 +20,23 @@
  * @copyright  2008 onwards Chad Mazilly, Robert Russo, Jason Peak, Dave Elliott, Adam Zapletal, Philip Cali
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
+
+defined('MOODLE_INTERNAL') || die();
+
 require_once(dirname(__FILE__) . '/traits/unit_testcase_traits.php');
 
 use block_quickmail\notifier\notification_schedule_summary;
 
 class block_quickmail_notification_schedule_summary_testcase extends advanced_testcase {
-    
+
     use has_general_helpers;
 
-    public function test_gets_schedule_summary_from_params()
-    {
+    public function test_gets_schedule_summary_from_params() {
         $params = [];
 
         $summary = notification_schedule_summary::get_from_params($params);
 
-        $this->assertInternalType('string', $summary);
+        $this->assertIsString($summary);
         $this->assertEquals('', $summary);
 
         $begin = $this->get_timestamp_for_date('jun 26 2018 08:30:00');
@@ -51,7 +51,7 @@ class block_quickmail_notification_schedule_summary_testcase extends advanced_te
 
         $summary = notification_schedule_summary::get_from_params($params);
 
-        $this->assertInternalType('string', $summary);
+        $this->assertIsString($summary);
         $this->assertEquals('Every 3 Days, Beginning Jun 26 2018, 12:30am, Ending Nov 30 2018, 12:30am', $summary);
 
         $begin = $this->get_timestamp_for_date('jun 26 2018 08:30:00');
@@ -64,16 +64,8 @@ class block_quickmail_notification_schedule_summary_testcase extends advanced_te
 
         $summary = notification_schedule_summary::get_from_params($params);
 
-        $this->assertInternalType('string', $summary);
+        $this->assertIsString($summary);
         $this->assertEquals('Once a Week, Beginning Jun 26 2018, 12:30am', $summary);
     }
-
-    ///////////////////////////////////////////////
-    ///
-    /// HELPERS
-    /// 
-    //////////////////////////////////////////////
-    
-    // 
 
 }

@@ -26,6 +26,7 @@
  */
 
 require_once('HTML/QuickForm/password.php');
+require_once('templatable_form_element.php');
 
 /**
  * Password type form element
@@ -37,9 +38,14 @@ require_once('HTML/QuickForm/password.php');
  * @copyright 2006 Jamie Pratt <me@jamiep.org>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class MoodleQuickForm_password extends HTML_QuickForm_password{
+class MoodleQuickForm_password extends HTML_QuickForm_password implements templatable {
+    use templatable_form_element;
+
     /** @var string, html for help button, if empty then no help */
     var $_helpbutton='';
+
+    /** @var bool if true label will be hidden. */
+    protected $_hiddenLabel = false;
 
     /**
      * constructor
@@ -51,14 +57,19 @@ class MoodleQuickForm_password extends HTML_QuickForm_password{
      */
     public function __construct($elementName=null, $elementLabel=null, $attributes=null) {
         global $CFG;
-        // no standard mform in moodle should allow autocomplete of passwords
+
+        // No standard mform in moodle should allow autocomplete of passwords.
         if (empty($attributes)) {
-            $attributes = array('autocomplete'=>'off');
-        } else if (is_array($attributes)) {
-            $attributes['autocomplete'] = 'off';
-        } else {
+            $attributes = ['autocomplete' => 'new-password'];
+        } else if (is_array($attributes) && empty($attributes['autocomplete'])) {
+            $attributes['autocomplete'] = 'new-password';
+        } else if (is_array($attributes) && $attributes['autocomplete'] === 'off') {
+            // A value of 'off' is ignored in all modern browsers and password
+            // managers and should be new-password instead.
+            $attributes['autocomplete'] = 'new-password';
+        } else if (is_string($attributes)) {
             if (strpos($attributes, 'autocomplete') === false) {
-                $attributes .= ' autocomplete="off" ';
+                $attributes .= ' autocomplete="new-password" ';
             }
         }
 
@@ -82,5 +93,14 @@ class MoodleQuickForm_password extends HTML_QuickForm_password{
      */
     function getHelpButton(){
         return $this->_helpbutton;
+    }
+
+    /**
+     * Sets label to be hidden
+     *
+     * @param bool $hiddenLabel sets if label should be hidden
+     */
+    public function setHiddenLabel($hiddenLabel) {
+        $this->_hiddenLabel = $hiddenLabel;
     }
 }

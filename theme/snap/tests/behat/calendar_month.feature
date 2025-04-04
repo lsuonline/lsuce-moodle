@@ -15,17 +15,15 @@
 #
 #
 # @package    theme_snap
-# @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+# @copyright  Copyright (c) 2015 Open LMS (https://www.openlms.net)
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@theme @theme_snap
+@theme @theme_snap @theme_snap_calendar
 Feature: When a user clicks on next or previous month link in the calendar block, then
   the page redirects and the calendar block must be visible.
 
   Background:
-    Given the following config values are set as admin:
-      | theme | snap |
-    And the following "courses" exist:
+    Given the following "courses" exist:
       | fullname               | shortname     | category | groupmode | format         |
       | Course 1               | course_topics | 0        | 1         | topics         |
     And the following "users" exist:
@@ -34,32 +32,30 @@ Feature: When a user clicks on next or previous month link in the calendar block
     And the following "course enrolments" exist:
       | user     | course        | role           |
       | teacher1 | course_topics | editingteacher |
-
+    And the following "blocks" exist:
+      | blockname         | contextlevel | reference | pagetypepattern | defaultregion |
+      | calendar_month    | Course       | course_topics        | course-view-*   | side-pre      |
 
   @javascript
   Scenario: Ensure that on the redirection the calendar is being display on the page when a user clicks on the next month link
     or in the previous month link
-  Given I log in as "teacher1" (theme_snap)
+    And I change window size to "large"
+    Given I log in as "teacher1"
     And I am on the course main page for "course_topics"
-   Then I follow "Course Tools"
-    And I follow "Edit blocks"
-   Then I add the "Calendar" block
-    And I turn editing mode off
-   Then I follow "Course Tools"
+    Then I follow "Course Dashboard"
+    And I click on "button[data-original-title='Open block drawer']" "css_element"
     And I should see "Calendar"
-    And I follow "Next month"
-   Then I should see "Calendar"
+    And I click on ".arrow_link.next" "css_element"
+    Then I should see "Calendar"
 
   @javascript
   Scenario: Ensure that on the redirection the calendar is being display on the page when a user clicks on the previous month link
     or in the previous month link
-  Given I log in as "teacher1" (theme_snap)
-   Then I am on the course main page for "course_topics"
-   Then I follow "Course Tools"
-    And I follow "Edit blocks"
-   Then I add the "Calendar" block
-    And I turn editing mode off
-   Then I follow "Course Tools"
+    And I change window size to "large"
+    Given I log in as "teacher1"
+    Then I am on the course main page for "course_topics"
+    Then I follow "Course Dashboard"
+    And I click on "button[data-original-title='Open block drawer']" "css_element"
     And I should see "Calendar"
     And I follow "Previous month"
-   Then I should see "Calendar"
+    Then I should see "Calendar"

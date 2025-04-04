@@ -18,11 +18,11 @@
  * Controller Router Tests
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace theme_snap\tests\controller;
+namespace theme_snap\controller;
 
 use theme_snap\controller\controller_abstract;
 use theme_snap\controller\router;
@@ -31,13 +31,15 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class router_test extends \basic_testcase {
     public function test_route_action() {
-        $controller1 = $this->getMock('\theme_snap\controller\controller_abstract', array('init', 'test_action', 'require_capability'));
-        $controller2 = $this->getMock('\theme_snap\controller\controller_abstract', array('init', 'test_action', 'require_capability'));
+        $controller1 = $this->createPartialMock('\theme_snap\controller\controller_abstract',
+            array('init', 'test_action', 'require_capability'));
+        $controller2 = $this->createPartialMock('\theme_snap\controller\controller_abstract',
+            array('init', 'test_action', 'require_capability'));
 
         $router = new router();
         $router->add_controller($controller1);
@@ -49,9 +51,6 @@ class router_test extends \basic_testcase {
         $this->assertEquals('test_action', $method);
     }
 
-    /**
-     * @expectedException \coding_exception
-     */
     public function test_non_public_action() {
         $controller = new private_action_test_helper();
         $router     = new router();
@@ -59,11 +58,8 @@ class router_test extends \basic_testcase {
         $router->route_action('test');
     }
 
-    /**
-     * @expectedException \coding_exception
-     */
     public function test_route_fail() {
-        $controller = $this->getMock('\theme_snap\controller\controller_abstract', array('init', 'require_capability'));
+        $controller = $this->createPartialMock('\theme_snap\controller\controller_abstract', array('init', 'require_capability'));
         $router     = new router();
         $router->add_controller($controller);
         $router->route_action('test');
@@ -77,7 +73,7 @@ class private_action_test_helper extends controller_abstract {
     public function init($action) {
     }
 
-    protected function test_action() {
+    public function test_action() {
     }
 
     public function require_capability($action) {

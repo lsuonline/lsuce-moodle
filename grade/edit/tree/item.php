@@ -23,6 +23,8 @@
  */
 
 
+use core_grades\form\add_item;
+
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/lib.php';
 require_once $CFG->dirroot.'/grade/report/lib.php';
@@ -41,7 +43,7 @@ navigation_node::override_active_url(new moodle_url('/grade/edit/tree/index.php'
     array('id'=>$courseid)));
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('nocourseid');
+    throw new \moodle_exception('invalidcourseid');
 }
 
 require_login($course);
@@ -57,12 +59,12 @@ $heading = get_string('itemsedit', 'grades');
 if ($grade_item = grade_item::fetch(array('id'=>$id, 'courseid'=>$courseid))) {
     // redirect if outcomeid present
     if (!empty($grade_item->outcomeid) && !empty($CFG->enableoutcomes)) {
-        $url = $CFG->wwwroot.'/grade/edit/tree/outcomeitem.php?id='.$id.'&amp;courseid='.$courseid;
+        $url = new moodle_url('/grade/edit/tree/outcomeitem.php', ['id' => $id, 'courseid' => $courseid]);
         redirect($gpr->add_url_params($url));
     }
     if ($grade_item->is_course_item() or $grade_item->is_category_item()) {
         $grade_category = $grade_item->get_item_category();
-        $url = $CFG->wwwroot.'/grade/edit/tree/category.php?id='.$grade_category->id.'&amp;courseid='.$courseid;
+        $url = new moodle_url('/grade/edit/tree/category.php', ['id' => $grade_category->id, 'courseid' => $courseid]);
         redirect($gpr->add_url_params($url));
     }
 
@@ -106,10 +108,16 @@ $item->cancontrolvisibility = $grade_item->can_control_visibility();
 
 $mform = new edit_item_form(null, array('current'=>$item, 'gpr'=>$gpr));
 
+$simpleform = new add_item(null, ['itemid' => $grade_item->id, 'courseid' => $courseid, 'gpr' => $gpr]);
+// Data has been carried over from the dynamic form.
+if ($simpledata = $simpleform->get_submitted_data()) {
+    $mform->set_data($simpledata);
+}
+
 if ($mform->is_cancelled()) {
     redirect($returnurl);
 
-} else if ($data = $mform->get_data(false)) {
+} else if ($data = $mform->get_data()) {
 
     // This is a new item, and the category chosen is different than the default category.
     if (empty($grade_item->id) && isset($data->parentcategory) && $parent_category->id != $data->parentcategory) {
@@ -133,8 +141,11 @@ if ($mform->is_cancelled()) {
         $data->grademin = 0;
     }
 
-    $hidden      = empty($data->hidden) ? 0: $data->hidden;
-    $hiddenuntil = empty($data->hiddenuntil) ? 0: $data->hiddenuntil;
+    $hide = empty($data->hiddenuntil) ? 0 : $data->hiddenuntil;
+    if (!$hide) {
+        $hide = empty($data->hidden) ? 0 : $data->hidden;
+    }
+
     unset($data->hidden);
     unset($data->hiddenuntil);
 
@@ -155,69 +166,60 @@ if ($mform->is_cancelled()) {
         $data->aggregationcoef2 = $defaults['aggregationcoef2'];
     }
 
-    $grade_item = new grade_item(array('id'=>$id, 'courseid'=>$courseid));
-    $oldmin = $grade_item->grademin;
-    $oldmax = $grade_item->grademax;
-    grade_item::set_properties($grade_item, $data);
-    $grade_item->outcomeid = null;
-
-    // BEGIN LSU Anonymous Grades
-    unset($grade_item->anonymous);
-    // END LSU Anonymous Grades
-
+    $gradeitem = new grade_item(array('id' => $id, 'courseid' => $courseid));
+    $oldmin = $gradeitem->grademin;
+    $oldmax = $gradeitem->grademax;
+    grade_item::set_properties($gradeitem, $data);
+    $gradeitem->outcomeid = null;
 
     // Handle null decimals value
     if (!property_exists($data, 'decimals') or $data->decimals < 0) {
-        $grade_item->decimals = null;
+        $gradeitem->decimals = null;
     }
 
-    if (empty($grade_item->id)) {
-        $grade_item->itemtype = 'manual'; // all new items to be manual only
-        $grade_item->insert();
-
-        // BEGIN LSU Anonymous Grades check
-        if (isset($data->anonymous) and grade_anonymous::is_supported($course)) {
-            $anon = new grade_anonymous(array('itemid' => $grade_item->id));
-
-            if (empty($anon->id)) {
-                $anon->insert();
-            }
+    if (empty($gradeitem->id)) {
+        // BEGIN LSU Weighted Mean Extra Credit
+        $ectest = isset($data->extracred);
+        if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ectest == 1) {
+            $gradeitem->aggregationcoef = $gradeitem->aggregationcoef <> 0 ? abs($gradeitem->aggregationcoef) * -1 : -1;
         }
-        // END LSU Anonymous Grades check
+        // END LSU Weighted Mean Extra Credit
+
+        $gradeitem->itemtype = 'manual'; // All new items to be manual only.
+        $gradeitem->insert();
 
         // set parent if needed
         if (isset($data->parentcategory)) {
-            $grade_item->set_parent($data->parentcategory, false);
+            $gradeitem->set_parent($data->parentcategory, false);
         }
 
     } else {
-           $ec_test = isset($data->extracred);
-           if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ec_test == 1) {
-               $grade_item->aggregationcoef = $grade_item->aggregationcoef <> 0 ? abs($grade_item->aggregationcoef) * -1 : -1;
-           }
-           if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
-               $grade_item->aggregationcoef2 = 0;
-               $grade_item->weightoverride = 1;
-           }
+        // BEGIN LSU Weighted Mean Extra Credit
+        $ectest = isset($data->extracred);
+        if ($parent_category->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN && $ectest == 1) {
+            $gradeitem->aggregationcoef = $gradeitem->aggregationcoef <> 0 ? abs($gradeitem->aggregationcoef) * -1 : -1;
+        }
+        if ($parent_category->aggregation == GRADE_AGGREGATE_SUM && $data->aggregationcoef == 1) {
+            $gradeitem->aggregationcoef2 = 0;
+            $gradeitem->weightoverride = 1;
+        }
 
-        $grade_item->update();
+        $gradeitem->update();
+        // END LSU Weighted Mean Extra Credit
 
         if (!empty($data->rescalegrades) && $data->rescalegrades == 'yes') {
-            $newmin = $grade_item->grademin;
-            $newmax = $grade_item->grademax;
-            $grade_item->rescale_grades_keep_percentage($oldmin, $oldmax, $newmin, $newmax, 'gradebook');
+            $newmin = $gradeitem->grademin;
+            $newmax = $gradeitem->grademax;
+            $gradeitem->rescale_grades_keep_percentage($oldmin, $oldmax, $newmin, $newmax, 'gradebook');
         }
     }
 
-    // update hiding flag
-    if ($hiddenuntil) {
-        $grade_item->set_hidden($hiddenuntil, false);
-    } else {
-        $grade_item->set_hidden($hidden, false);
-    }
+    // BEGIN LSU Visibility Issues.
+    $gradeitem->set_hidden($hide, true);
+    // END LSU Visibility Issues.
 
-    $grade_item->set_locktime($locktime); // locktime first - it might be removed when unlocking
-    $grade_item->set_locked($locked, false, true);
+    $gradeitem->set_locktime($locktime); // Locktime first - it might be removed when unlocking.
+    $gradeitem->set_locked($locked, false, true);
 
     redirect($returnurl);
 }

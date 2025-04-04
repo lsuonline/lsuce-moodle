@@ -24,19 +24,12 @@ require_once(dirname(__FILE__) . '/locallib.php');
 $err = new stdClass();
 
 // Parameters
-$course_id = 0;
-if (isset($_GET['course_id'])) {
-    $course_id = $_GET['course_id'];
-} else {
-    // Raise an error here.
-}
+// If not found, an error is thrown (Ref: lib/moodlelib.php, line: 522)
+$course_id = required_param('course_id', PARAM_TEXT);
+$user_id = required_param('user_id', PARAM_TEXT);
 
-$user_id = 0;
-if (isset($GET['user_id'])) {
-    $user_id = $_GET['user_id'];
-} else {
-    // Raise an error
-}
+//set context
+$PAGE->set_context(context_system::instance());
 
 // Send the AJAX headers
 echo($OUTPUT->header());
@@ -79,6 +72,7 @@ if (isset($mapping->code) && $mapping->code !== 'unmapped') {
         $local_config->code = $mapping->code;
         $local_config->platform = $mapping->platform;
         $local_config->description = '<p>Pearson MyLab & Mastering course pairing: ' . $mapping->platform . '</p>';
+        $local_config->plugin_name = 'block_mylabmastering';
 
         mylabmastering_update_course_config($local_config);
     }
@@ -98,5 +92,5 @@ if ($updated_mapping) {
     rebuild_course_cache($course_id);
     echo(json_encode($local_config));
 } else {
-    echo(json_encode(array("code" => "no update")));
+    echo(json_encode(array("code" => "no update", "plugin_name" => "block_mylabmastering")));
 }

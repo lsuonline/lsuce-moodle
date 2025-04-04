@@ -24,35 +24,22 @@
  */
 namespace block_my_picture\task;
 
-/**
- *
- * Extend the Moodle scheduled task class with our mods
- *
- */
+defined('MOODLE_INTERNAL') || die();
+
+// Extend the Moodle scheduled task class with our mods.
 class grab_mypictures extends \core\task\scheduled_task {
 
-    /**
-     * Get a descriptive name for this task (shown to admins).
-     *
-     * @return string
-     */
+    // Get a descriptive name for this task (shown to admins).
+    // @return string.
     public function get_name() {
-
         return get_string('grab_mypictures', 'block_my_picture');
-
     }
 
-    /**
-     * Do the job.
-     *
-     * Throw exceptions on errors (the job will be retried).
-     */
+    // Do the job and throw exceptions on errors (the job will be retried).
     public function execute() {
-
         global $CFG;
         require_once($CFG->dirroot . '/blocks/my_picture/classes/grab_my_picture.php');
         $mypictures = new \grab_my_picture();
         $mypictures->run_grab_mypictures();
-
     }
 }

@@ -25,7 +25,7 @@
 
 define('AJAX_SCRIPT', true);
 
-require_once(dirname(__FILE__) . '/../../../../../config.php');
+require_once(__DIR__ . '/../../../../../config.php');
 
 $contextid = required_param('contextid', PARAM_INT);
 
@@ -48,4 +48,4 @@ if ($action === 'filtertext') {
     die();
 }
 
-print_error('invalidarguments');
+throw new \moodle_exception('invalidarguments');

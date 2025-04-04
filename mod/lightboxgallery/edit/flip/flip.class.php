@@ -37,15 +37,11 @@ class edit_flip extends edit_base {
     public function process_form() {
         $mode = required_param('mode', PARAM_INT);
 
-        $fs = get_file_storage();
-        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
-
+        $flip = 'vertical';
         if ($mode & FLIP_HORIZONTAL) {
-            $image->flip_image('horizontal');
-        } else {
-            $image->flip_image('vertical');
+            $flip = 'horizontal';
         }
+        $this->image = $this->lbgimage->flip_image($flip);
     }
 
 }

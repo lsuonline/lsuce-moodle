@@ -15,33 +15,57 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @authors Mike Churchward & Joseph Rézeau
+ * The form class for editing questions.
+ * @package mod_questionnaire
+ * @copyright  2016 Mike Churchward (mike.churchward@poetgroup.org)
+ * @author Mike Churchward & Joseph Rézeau
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package questionnaire
  */
+
+namespace mod_questionnaire;
+
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->libdir . '/formslib.php');
 
-class mod_questionnaire_edit_question_form extends moodleform {
+/**
+ * Class edit_question_form
+ * @package mod_questionnaire
+ * @property \MoodleQuickForm _form
+ * @property array _customdata
+ */
+class edit_question_form extends \moodleform {
 
+    /**
+     * Form definition.
+     */
     public function definition() {
+        // TODO - Find a way to not use globals. Maybe the base class allows more parameters to be passed?
         global $questionnaire, $question, $SESSION;
 
+        // TODO - Is there a better way to do this without session global?
         // The 'sticky' required response value for further new questions.
         if (isset($SESSION->questionnaire->required) && !isset($question->qid)) {
             $question->required = $SESSION->questionnaire->required;
         }
         if (!isset($question->type_id)) {
-            print_error('undefinedquestiontype', 'questionnaire');
+            throw new \moodle_exception('undefinedquestiontype', 'mod_questionnaire');
         }
 
-        $mform =& $this->_form;
-
         // Each question can provide its own form elements to the provided form, or use the default ones.
-        if (!$question->edit_form($mform, $questionnaire, $this->_customdata['modcontext'])) {
-            print_error("Question type had an unknown error in the edit_form method.");
+        if (!$question->edit_form($this, $questionnaire)) {
+            throw new \moodle_exception('Question type had an unknown error in the edit_form method.', 'mod_questionnaire');
         }
     }
 
+    /**
+     * Form validation.
+     *
+     * @param array $data array of ("fieldname"=>value) of submitted data
+     * @param array $files array of uploaded files "element_name"=>tmp_file_path
+     * @return array of "element_name"=>"error_description" if there are errors,
+     *         or an empty array if everything is OK (true allowed for backwards compatibility too).
+     */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
@@ -66,6 +90,51 @@ class mod_questionnaire_edit_question_form extends moodleform {
             }
         }
 
+        // If this is a slider question.
+        if ($data['type_id'] == QUESSLIDER) {
+            if (isset($data['minrange']) && isset($data['maxrange']) && isset($data['startingvalue']) &&
+                    isset($data['stepvalue'])) {
+                if ($data['minrange'] >= $data['maxrange']) {
+                    $errors['maxrange'] = get_string('invalidrange', 'questionnaire');
+                }
+
+                if (($data['startingvalue'] > $data['maxrange']) || ($data['startingvalue'] < $data['minrange'])) {
+                    $errors['startingvalue'] = get_string('invalidstartingvalue', 'questionnaire');
+                }
+
+                if ($data['startingvalue'] > 100 || $data['startingvalue'] < -100) {
+                    $errors['startingvalue'] = get_string('invalidstartingvalue', 'questionnaire');
+                }
+
+                if (($data['stepvalue'] > $data['maxrange']) || $data['stepvalue'] < 1) {
+                    $errors['stepvalue'] = get_string('invalidincrement', 'questionnaire');
+                }
+
+                if ($data['minrange'] < -100) {
+                    $errors['minrange'] = get_string('invalidminmaxrange', 'questionnaire');
+                }
+
+                if ($data['maxrange'] > 100) {
+                    $errors['maxrange'] = get_string('invalidminmaxrange', 'questionnaire');
+                }
+            }
+        }
+
         return $errors;
+    }
+
+    /**
+     * Magic method for getting the protected $_form MoodleQuickForm and $_customdata array properties.
+     * @param string $name
+     * @return mixed
+     */
+    public function __get($name) {
+        if ($name == '_form') {
+            return $this->_form;
+        } else if ($name == '_customdata') {
+            return $this->_customdata;
+        } else {
+            throw new \coding_exception($name.' is not a publicly accessible property of '.get_class($this));
+        }
     }
 }

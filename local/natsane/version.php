@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,8 +22,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2017101100;
+$plugin->version = 2021031903;
 $plugin->requires = 2015111600;
 $plugin->component = 'local_natsane';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '0.5';
+$plugin->release = '0.7';

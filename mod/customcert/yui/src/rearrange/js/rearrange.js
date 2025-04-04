@@ -78,24 +78,14 @@ Y.extend(Rearrange, Y.Base, {
         this.elements = params[2];
 
         // Set the PDF dimensions.
-        this.pdfx = Y.one('#pdf').getX();
-        this.pdfy = Y.one('#pdf').getY();
-        this.pdfwidth = parseFloat(Y.one('#pdf').getComputedStyle('width'));
-        this.pdfheight = parseFloat(Y.one('#pdf').getComputedStyle('height'));
+        this.setPdfDimensions();
 
         // Set the boundaries.
-        this.pdfleftboundary = this.pdfx;
-        if (this.page.leftmargin) {
-            this.pdfleftboundary += parseInt(this.page.leftmargin * this.pixelsinmm, 10);
-        }
-
-        this.pdfrightboundary = this.pdfx + this.pdfwidth;
-        if (this.page.rightmargin) {
-            this.pdfrightboundary -= parseInt(this.page.rightmargin * this.pixelsinmm, 10);
-        }
+        this.setBoundaries();
 
         this.setpositions();
         this.createevents();
+        window.addEventListener("resize", this.checkWindownResize.bind(this));
     },
 
     /**
@@ -129,16 +119,50 @@ Y.extend(Rearrange, Y.Base, {
     },
 
     /**
+     * Sets the PDF dimensions.
+     */
+    setPdfDimensions: function() {
+        this.pdfx = Y.one('#pdf').getX();
+        this.pdfy = Y.one('#pdf').getY();
+        this.pdfwidth = parseFloat(Y.one('#pdf').getComputedStyle('width'));
+        this.pdfheight = parseFloat(Y.one('#pdf').getComputedStyle('height'));
+    },
+
+    /**
+     * Sets the boundaries.
+     */
+    setBoundaries: function() {
+        this.pdfleftboundary = this.pdfx;
+        if (this.page.leftmargin) {
+            this.pdfleftboundary += parseInt(this.page.leftmargin * this.pixelsinmm, 10);
+        }
+
+        this.pdfrightboundary = this.pdfx + this.pdfwidth;
+        if (this.page.rightmargin) {
+            this.pdfrightboundary -= parseInt(this.page.rightmargin * this.pixelsinmm, 10);
+        }
+    },
+
+    /**
+     * Check browser resize and reset position.
+     */
+    checkWindownResize: function() {
+        this.setPdfDimensions();
+        this.setBoundaries();
+        this.setpositions();
+    },
+
+    /**
      * Creates the JS events for changing element positions.
      */
     createevents: function() {
         // Trigger a save event when save button is pushed.
-        Y.one('.savepositionsbtn input[type=submit]').on('click', function(e) {
+        Y.one('.savepositionsbtn [type=submit]').on('click', function(e) {
             this.savepositions(e);
         }, this);
 
         // Trigger a save event when apply button is pushed.
-        Y.one('.applypositionsbtn input[type=submit]').on('click', function(e) {
+        Y.one('.applypositionsbtn [type=submit]').on('click', function(e) {
             this.savepositions(e);
             e.preventDefault();
         }, this);
@@ -182,6 +206,9 @@ Y.extend(Rearrange, Y.Base, {
         var top = node.getY();
         var bottom = top + nodeheight;
 
+        this.pdfx = Y.one('#pdf').getX();
+        this.pdfy = Y.one('#pdf').getY();
+
         // Check if it is out of bounds horizontally.
         if ((left < this.pdfleftboundary) || (right > this.pdfrightboundary)) {
             return true;
@@ -206,6 +233,9 @@ Y.extend(Rearrange, Y.Base, {
             tid: this.templateid,
             values: []
         };
+
+        this.pdfx = Y.one("#pdf").getX();
+        this.pdfy = Y.one("#pdf").getY();
 
         // Go through the elements and save their positions.
         for (var key in this.elements) {

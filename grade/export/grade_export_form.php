@@ -82,7 +82,8 @@ class grade_export_form extends moodleform {
         }
 
         $mform->addElement('advcheckbox', 'export_feedback', get_string('exportfeedback', 'grades'));
-        $mform->setDefault('export_feedback', 0);
+        $exportfeedback = isset($CFG->grade_export_exportfeedback) ? $CFG->grade_export_exportfeedback : 0;
+        $mform->setDefault('export_feedback', $exportfeedback);
         $coursecontext = context_course::instance($COURSE->id);
         if (has_capability('moodle/course:viewsuspendedusers', $coursecontext)) {
             $mform->addElement('advcheckbox', 'export_onlyactive', get_string('exportonlyactive', 'grades'));
@@ -191,11 +192,14 @@ class grade_export_form extends moodleform {
             $mform->disabledIf('validuntil', 'key', 'noteq', 1);
         }
 
-        if($CFG->privacy_ack) {
+        // BEGIN LSU Grade Privacy Aggreement.
+        $privacyack = isset($CFG->privacy_ack) ? $CFG->privacy_ack : 0;
+        if($privacyack) {
             $mform->addElement('header', 'privacy_ack_header', get_string('privacy_ack', 'grades'));
             $mform->addElement('checkbox', 'privacy_ack_required', null, get_string('privacy_ack_required', 'grades'));
             $mform->addRule('privacy_ack_required', get_string('missing_privacy_ack_required', 'grades'), 'required', NULL, 'client');
         }
+        // END LSU Grade Privacy Aggreement.
 
         $mform->addElement('hidden', 'id', $COURSE->id);
         $mform->setType('id', PARAM_INT);
@@ -206,7 +210,7 @@ class grade_export_form extends moodleform {
             $submitstring = get_string('export', 'grades');
         }
 
-        $this->add_action_buttons(false, $submitstring);
+        $this->add_sticky_action_buttons(false, $submitstring);
     }
 
     /**
@@ -234,4 +238,3 @@ class grade_export_form extends moodleform {
         return $data;
     }
 }
-

@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,21 +12,16 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace theme_snap;
-
-use theme_snap\local;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Provides information on all forums a user has access to.
  *
  * @package   theme_snap
- * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright Copyright (c) 2015 Open LMS (https://www.openlms.net)
+ * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class user_forums {
 
@@ -176,23 +171,16 @@ class user_forums {
      * @param int $limit
      * @return array
      */
-    protected function forumids_by_lastpost($limit) {
+    protected function forumids_by_lastpost($forumids, $limit) {
         global $DB;
 
-        $params = [$this->user->id];
+        $sql = 'SELECT fd.forum, MAX(fd.timemodified) lastpost
+              FROM {forum_discussions} fd
+             WHERE fd.forum IN '.$forumids.'
+          GROUP BY fd.forum
+          ORDER BY lastpost desc';
 
-        $sql = 'SELECT fd.forum, MAX(fp.modified) lastpost
-                  FROM {forum_posts} fp
-                  JOIN {forum_discussions} fd
-                    ON fd.id = fp.discussion
-                  JOIN {enrol} e
-                    ON e.courseid = fd.course
-                  JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                 WHERE ue.userid = ?
-              GROUP BY fd.forum
-              ORDER BY lastpost desc';
-
-        return $DB->get_records_sql($sql, $params, 0, $limit);
+        return $DB->get_records_sql($sql, null, 0, $limit);
     }
 
     /**
@@ -201,25 +189,16 @@ class user_forums {
      * @param int $limit
      * @return array
      */
-    protected function hsuforumids_by_lastpost($limit) {
+    protected function hsuforumids_by_lastpost($forumids,$limit) {
         global $DB;
 
-        $params = [$this->user->id];
-
-        $sql = 'SELECT fd.forum, MAX(fp.modified) lastpost
-                  FROM {hsuforum_posts} fp
-                  JOIN {hsuforum_discussions} fd
-                    ON fd.id = fp.discussion
-                  JOIN {hsuforum} f
-                    ON f.id = fd.forum
-                  JOIN {enrol} e
-                    ON e.courseid = f.course
-                  JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                 WHERE ue.userid = ?
+        $sql = 'SELECT fd.forum, MAX(fd.timemodified) lastpost
+                  FROM {hsuforum_discussions} fd
+                 WHERE fd.forum IN '.$forumids.'
               GROUP BY fd.forum
               ORDER BY lastpost desc';
 
-        return $DB->get_records_sql($sql, $params, 0, $limit);
+        return $DB->get_records_sql($sql, null, 0, $limit);
     }
 
     /**
@@ -228,17 +207,23 @@ class user_forums {
      * there are query parameter limits in mssql and oracle.
      *
      * @param array $forums
-     * @param bool $hsufourm - is this a collection of advanced forums?
+     * @param bool $hsufourm - is this a collection of Open Forums?
      * @return mixed
      */
     protected function process_stale_forums(Array $forums, $hsuforum = false) {
 
         if (count($forums) > self::$forumlimit) {
             // Get forum ids by postid (ordered by most recently posted).
+            $forumids = '(';
+            foreach ($forums as $forum) {
+                $forumids .= $forum->id.',';
+            }
+            $forumids = rtrim($forumids, ',');
+            $forumids .= ')';
             if (!$hsuforum) {
-                $forumidsbypost = $this->forumids_by_lastpost(self::$forumlimit);
+                $forumidsbypost = $this->forumids_by_lastpost($forumids, self::$forumlimit);
             } else {
-                $forumidsbypost = $this->hsuforumids_by_lastpost(self::$forumlimit);
+                $forumidsbypost = $this->hsuforumids_by_lastpost($forumids, self::$forumlimit);
             }
 
             $tmpforums = [];
@@ -272,6 +257,7 @@ class user_forums {
         // be increased in courses where learning takes place and the front page is unlikely to fit that model.
         // Currently we are using local::swap_global_user as a hack for the following function (MDL-51353).
         $this->courses = enrol_get_my_courses();
+        $this->courses = local::remove_hidden_courses($this->courses);
 
         $forums = [];
         $hsuforums = [];

@@ -17,11 +17,18 @@
 // Only when master becomes a stable the version value will be changed for
 // the current date. Otherwise we just increase the last NN by one.
 
+/**
+ * mod_journal version file
+ *
+ * @package    mod_journal
+ * @copyright  2014 David Monllao <david.monllao@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_journal';
-$plugin->version  = 2017121105;
-$plugin->requires = 2016052300;  /* Moodle 3.1 */
-$plugin->release = '31.1 (Build: 2017121105)';
+$plugin->version  = 2023091500;
+$plugin->requires = 2017111300;  /* Moodle 3.4 */
+$plugin->release = '4.2.1 (Build: 2023091500)';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->cron     = 60;

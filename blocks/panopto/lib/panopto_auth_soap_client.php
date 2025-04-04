@@ -24,20 +24,20 @@
  */
 
 // This can't be defined Moodle internal because it is called from Panopto to authorize login.
-
-/**
- * The auth soap client for Panopto
- *
- * @copyright Panopto 2009 - 2016 with contributions from Spenser Jones (sjones@ambrose.edu),
- * Skylar Kelty <S.Kelty@kent.ac.uk>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+// @codingStandardsIgnoreLine
 require_once(dirname(__FILE__) . '/AuthManagement/AuthManagementAutoload.php');
 require_once(dirname(__FILE__) . '/panopto_data.php');
 require_once(dirname(__FILE__) . '/block_panopto_lib.php');
+require_once(dirname(__FILE__) . '/panopto_timeout_soap_client.php');
 
-class panopto_auth_soap_client extends SoapClient {
-
+/**
+ * Panopto auth soap client class.
+ *
+ * @package block_panopto
+ * @copyright  Panopto 2009 - 2016
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class panopto_auth_soap_client extends PanoptoTimeoutSoapClient {
 
     /**
      * @var array $authparam
@@ -60,7 +60,18 @@ class panopto_auth_soap_client extends SoapClient {
     private $authmanagementserviceget;
 
     /**
-     * main constructor
+     * @var AuthManagementServiceLog authmanagementservicelog object used to call the auth log service
+     */
+    private $authmanagementservicelog;
+
+    /**
+     * @var array panoptoauthcookies - this array will contain the cookies retrieved from the logOnWithExternalProvider response
+     * These cookies are used to call the REST API
+     */
+    public $panoptoauthcookies;
+
+    /**
+     * Main constructor
      *
      * @param string $servername
      * @param string $apiuseruserkey
@@ -75,12 +86,13 @@ class panopto_auth_soap_client extends SoapClient {
             $apiuseruserkey
         );
 
-        $this->serviceparams = generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.2/Auth.svc?singlewsdl');
-
+        $this->serviceparams =
+            panopto_generate_wsdl_service_params('https://'. $servername . '/Panopto/PublicAPI/4.2/Auth.svc?singlewsdl');
+        $this->serviceparams['wsdl_trace'] = true;
     }
 
     /**
-     * gets the version of the server.
+     * Gets the version of the server.
      */
     public function get_server_version() {
         $returnvalue = false;
@@ -92,14 +104,15 @@ class panopto_auth_soap_client extends SoapClient {
         if ($this->authmanagementserviceget->GetServerVersion()) {
             $returnvalue = $this->authmanagementserviceget->getResult()->GetServerVersionResult;
         } else {
-            panopto_data::print_log(print_r($this->authmanagementserviceget->getLastError(), true));
+            \panopto_data::print_log(var_export($this->authmanagementserviceget->getLastError(), true));
         }
         return $returnvalue;
     }
 
     /**
      * Returns the version number of the current Panopto server.
-     * @param string $idprovidername - instnace name for current server IDP
+     *
+     * @param string $idprovidername - instance name for current server IDP
      * @param string $moduleversion - current plug in version
      * @param string $targetplatformversion - Moodle version
      */
@@ -121,10 +134,31 @@ class panopto_auth_soap_client extends SoapClient {
             $returnvalue = true;
         } else {
             $lasterror = $this->authmanagementservicereport->getLastError()['AuthManagementServiceReport::ReportIntegrationInfo'];
-            panopto_data::print_log(print_r($lasterror, true));
+            \panopto_data::print_log(var_export($lasterror, true));
         }
 
         return $returnvalue;
+    }
+
+    /**
+     * Logs the user into the WS service and retrieves the cookie for later use.
+     */
+    public function log_on_with_external_provider() {
+        $this->authmanagementservicelog = new AuthManagementServiceLog($this->serviceparams, true);
+
+        $logonparams = new AuthManagementStructLogOnWithExternalProvider(
+            $this->authparam->getUserKey(),
+            $this->authparam->getAuthCode()
+        );
+
+        if ($this->authmanagementservicelog->LogOnWithExternalProvider($logonparams)) {
+            $soapclient = $this->authmanagementservicelog->getSoapClient();
+
+            $this->panoptoauthcookies = $soapclient->getpanoptocookies();
+        } else {
+            $lasterror = $this->authmanagementservicelog->getLastError()['AuthManagementServiceLog::LogOnWithExternalProvider'];
+            \panopto_data::print_log(var_export($lasterror, true));
+        }
     }
 }
 /* End of file panopto_auth_soap_client.php */

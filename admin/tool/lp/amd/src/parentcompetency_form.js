@@ -17,7 +17,6 @@
  * Handle selecting parent competency in competency form.
  *
  * @module     tool_lp/parentcompetency_form
- * @package    tool_lp
  * @copyright  2015 Issam Taboubi <issam.taboubi@umontreal.ca>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -61,7 +60,7 @@ define(['jquery', 'core/ajax', 'core/str', 'tool_lp/competencypicker', 'core/tem
     /**
      * Set the parent competency in the competency form.
      *
-     * @param {Object} Data containing selected cmpetency.
+     * @param {Object} data Data containing selected competency.
      * @method setParent
      */
     ParentCompetencyForm.prototype.setParent = function(data) {
@@ -69,7 +68,7 @@ define(['jquery', 'core/ajax', 'core/str', 'tool_lp/competencypicker', 'core/tem
 
         if (data.competencyId !== 0) {
             ajax.call([
-                { methodname: 'core_competency_read_competency', args: {
+                {methodname: 'core_competency_read_competency', args: {
                     id: data.competencyId
                 }}
             ])[0].done(function(competency) {
@@ -81,6 +80,7 @@ define(['jquery', 'core/ajax', 'core/str', 'tool_lp/competencypicker', 'core/tem
             Str.get_string('competencyframeworkroot', 'tool_lp').then(function(rootframework) {
                 $(self.staticElementSelector).html(rootframework);
                 $(self.inputHiddenSelector).val(data.competencyId);
+                return;
             }).fail(Notification.exception);
         }
     };
@@ -112,13 +112,13 @@ define(['jquery', 'core/ajax', 'core/str', 'tool_lp/competencypicker', 'core/tem
                     };
 
                     return Templates.render('tool_lp/competency_picker_competencyform', context);
-                }.bind(self));
+                });
             };
 
             // On selected competency.
             picker.on('save', function(e, data) {
                 self.setParent(data);
-            }.bind(self));
+            });
 
             picker.display();
         });
@@ -129,7 +129,7 @@ define(['jquery', 'core/ajax', 'core/str', 'tool_lp/competencypicker', 'core/tem
         /**
          * Main initialisation.
          * @param {String} buttonSelector The parent competency button selector.
-         * @param {String} inputHiddenSelector The hidden input field selector.
+         * @param {String} inputSelector The hidden input field selector.
          * @param {String} staticElementSelector The static element displaying the parent competency.
          * @param {Number} frameworkId The competency framework ID.
          * @param {Number} pageContextId The page context ID.

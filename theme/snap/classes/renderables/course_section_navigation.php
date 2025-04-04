@@ -17,22 +17,19 @@
 /**
  * Renderable for course section navigation.
  * @package   theme_snap
- * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace theme_snap\renderables;
-
 use context_course;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Renderable class for course section navigation.
  * @package   theme_snap
- * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_section_navigation implements \renderable {
@@ -57,7 +54,7 @@ class course_section_navigation implements \renderable {
         $course = course_get_format($course)->get_course();
 
         $canviewhidden = has_capability('moodle/course:viewhiddensections', context_course::instance($course->id))
-        or !$course->hiddensections;
+        || !$course->hiddensections;
 
         $this->previous = false;
         $target = $sectionno - 1;
@@ -83,7 +80,8 @@ class course_section_navigation implements \renderable {
 
         $this->next = false;
         $target = $sectionno + 1;
-        while ($target <= $course->numsections && empty($this->next)) {
+        $lastsectionno = course_get_format($course)->get_last_section_number();
+        while ($target <= $lastsectionno && empty($this->next)) {
             $extraclasses = '';
             if ($canviewhidden
                 || $sections[$target]->uservisible
