@@ -32,7 +32,7 @@ require_once(__DIR__ . '/../workdaystudent.php');
 
 $mshell = new stdClass();
 
-$mshell->coursesection = "LSUAM_ACCT9000_00008223";
+$mshell->coursesection = "LSUAM_ACCT9000_00079591";
 $mshell->period_year = "2025";
 $mshell->period_type = "Summer";
 $mshell->start_date = "1748322000";
@@ -43,18 +43,18 @@ $mshell->course_abbreviated_title = "Dissertation Research";
 $mshell->course_number = "9000";
 $mshell->academic_level = "Graduate";
 $mshell->class_type = "Research";
-$mshell->universal_id = "00008223";
+$mshell->universal_id = "00079591";
 $mshell->userid = "94050";
-$mshell->username = "danahollie1@lsu.edu";
-$mshell->email = "danahollie1@lsu.edu";
-$mshell->preferred_firstname = NULL;
-$mshell->firstname = "Dana";
+$mshell->username = "jlejune@lsu.edu";
+$mshell->email = "jlejune@lsu.edu";
+$mshell->preferred_firstname = "JJ";
+$mshell->firstname = "Jonathan";
 $mshell->preferred_lastname = NULL;
-$mshell->lastname = "Hollie";
+$mshell->lastname = "Lejune";
 $mshell->delivery_mode = "On Campus";
-$mshell->sectionids = "504,3868,525";
-$mshell->sections = "002-RES-SM";
-$mshell->roles = "primary";
+$mshell->sectionids = "504,525";
+$mshell->sections = "001-RES-SM,002-RES-SM";
+$mshell->roles = "primary,primary";
 
 
 $userprefs = workdaystudent::wds_get_faculty_preferences($mshell);

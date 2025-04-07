@@ -52,6 +52,7 @@ $string['help_cross_listing_help'] = 'Merge multiple courses and their sections 
 $string['help_team_teaching_help'] = 'Invite another professor and their section\'s roster into your course shell. Enrollment will be kept and grade posting permitted from this course shell.';
 
 // WDS Page strings.
+$string['wdsprefs:format'] = 'Course Format';
 $string['wdsprefs:cdaysprior'] = 'Create Days Prior';
 $string['wdsprefs:cdaysprior_help'] = 'Number of days prior to the semester starting to <strong>create courses</strong>.';
 $string['wdsprefs:cdaysprior_desc'] = 'Number of days prior to the semester starting to <strong>create courses</strong>.';

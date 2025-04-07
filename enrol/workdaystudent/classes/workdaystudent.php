@@ -79,22 +79,31 @@ class workdaystudent {
 
         // Define default values.
         $defaults = [
-            'wdspref_createprior' => isset($s->createprior) ? (int) $s->createprior : 14,
-            'wdspref_enrollprior' => isset($s->enrollprior) ? (int) $s->enrollprior : 7,
-            'wdspref_courselimit' => isset($s->numberthreshold) ? (int) $s->numberthreshold : 5000
+            'wdspref_createprior' => isset($s->createprior) ? (int) $s->createprior : 28,
+            'wdspref_enrollprior' => isset($s->enrollprior) ? (int) $s->enrollprior : 14,
+            'wdspref_courselimit' => isset($s->numberthreshold) ? (int) $s->numberthreshold : 7000,
+            'wdspref_format' => 'topics'
         ];
 
         // Initialize user preferences with defaults.
         $userprefs = new stdClass();
         foreach ($defaults as $key => $value) {
             $shortkey = str_replace('wdspref_', '', $key);
-            $userprefs->$shortkey = $value;
+            if ($shortkey == 'format') {
+                $userprefs->$shortkey = $value;
+            } else {
+                $userprefs->$shortkey = (int) $value;
+            }
         }
 
         // Override defaults with retrieved preferences.
         foreach ($preferences as $pref) {
             $shortkey = str_replace('wdspref_', '', $pref->name);
-            $userprefs->$shortkey = (int) $pref->value;
+            if ($shortkey == 'format') {
+                $userprefs->$shortkey = $pref->value;
+            } else {
+                $userprefs->$shortkey = (int) $pref->value;
+            }
         }
 
         return $userprefs;
@@ -3741,20 +3750,8 @@ class workdaystudent {
     }
 
 
-    public static function create_moodle_shell($mshell) {
+    public static function create_moodle_shell($mshell, $userprefs) {
         global $CFG, $DB;
-
-/*
-// Delete all test courses!
-require_once($CFG->libdir . '/moodlelib.php');
-$csql = "SELECT * FROM {course} WHERE fullname LIKE 'WDS - %'";
-$courses = $DB->get_records_sql($csql);
-foreach ($courses as $course) {
-    // Delete the course using Moodle's course deletion API
-    delete_course($course);
-}
-die();
-*/
 
         // Get some moodle files as needed.
         require_once($CFG->dirroot . '/course/lib.php');
@@ -3762,6 +3759,7 @@ die();
         // Get or create the course category in the specified parent.
         $cat = self::get_create_course_category_id($mshell);
 
+        // Get settings.
         $s = self::get_settings();
 
         // Get the Moodle course defaults.
@@ -3774,8 +3772,9 @@ die();
         $course->idnumber = self::build_mshell_idnumber($mshell);
         $course->category = $cat->id;
         $course->visible = $s->visible ?? 0;
-        // TODO: Make this a default and user preference.
-        $course->format = $s->format ?? 'topics';
+        $course->format = isset($userprefs->format) ?
+            $userprefs->format :
+            $coursedefaults->format;
         $course->groupmode = $coursedefaults->groupmode;
         $course->groupmodeforce = $coursedefaults->groupmodeforce;
         $course->summary = $mshell->course_abbreviated_title;
@@ -5328,7 +5327,7 @@ class wdscronhelper {
                             workdaystudent::dtrace("  Creating $mshell->fullname.");
 
                             // Create the shell.
-                            $courseshell = workdaystudent::create_moodle_shell($mshell);
+                            $courseshell = workdaystudent::create_moodle_shell($mshell, $userprefs);
                     }
                 }
             }

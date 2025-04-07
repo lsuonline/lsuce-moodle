@@ -29,6 +29,22 @@ class wdsprefs_cps_edit_form extends moodleform {
     public function definition() {
         $mform = $this->_form;
 
+        // Instantiate the plugin manager.
+        $pluginman = core_plugin_manager::instance();
+
+        // Get the course formats.
+        $formats = $pluginman->get_plugins_of_type('format');
+
+        // Build the empty array.
+        $enabledformats = array();
+
+        // Loop through the formats and add enabled ones to the array.
+        foreach ($formats as $format => $plugininfo) {
+            if ($plugininfo->is_enabled()) {
+                $enabledformats[$format] = $format;
+            }
+        }
+
         // Add the days prior item.
         $mform->addElement('text',
             'wdspref_createprior',
@@ -86,6 +102,15 @@ class wdsprefs_cps_edit_form extends moodleform {
             get_string('wdsprefs:courselimit_desc', 'block_wdsprefs')
         );
 
+        // Default course format.
+        $mform->addElement('select',
+            'wdspref_format',
+            get_string('wdsprefs:format', 'block_wdsprefs'),
+            $enabledformats
+        );
+
+        $mform->setDefault('wdspref_format', 'topics');
+
         // Add the action buttons.
         $this->add_action_buttons(true, get_string('wdsprefs:saveprefs', 'block_wdsprefs'));
     }
@@ -106,6 +131,7 @@ class wdsprefs_cps_edit_form extends moodleform {
         $defaults->createprior = isset($s->createprior) ? (int) $s->createprior : 14;
         $defaults->enrollprior = isset($s->enrollprior) ? (int) $s->enrollprior : 7;
         $defaults->courselimit = isset($s->numberthreshold) ? (int) $s->numberthreshold : 7;
+        $defaults->format = 'topics';
 
         // Build out the createprior item with default from wds.
         $data->wdspref_createprior = get_user_preferences(
@@ -125,6 +151,13 @@ class wdsprefs_cps_edit_form extends moodleform {
         $data->wdspref_courselimit = get_user_preferences(
             'wdspref_courselimit',
             $s->numberthreshold,
+            $userid
+        );
+
+        // Build out the course format item with default from wds.
+        $data->wdspref_format = get_user_preferences(
+            'wdspref_format',
+            $defaults->format,
             $userid
         );
 
