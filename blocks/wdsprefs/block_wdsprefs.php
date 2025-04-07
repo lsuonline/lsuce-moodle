@@ -66,8 +66,8 @@ class block_wdsprefs extends block_base {
             ],
         ];
 
-        // Build out other priveleged items.
-        $privelegeditems = [
+        // Build out student items.
+        $studentitems = [
             [
                 'text' => get_string('wdsprefs:schedule', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/scheduleview.php'),
@@ -142,9 +142,9 @@ class block_wdsprefs extends block_base {
         }
 
         // If we're either an instructor or a student.
-        if ($instructor || $student) {
-            // Loop through all the priveleged items.
-            foreach ($privelegeditems as $item) {
+        if ($student) {
+            // Loop through all the student items.
+            foreach ($studentitems as $item) {
                 $icon = html_writer::tag('i', '',
                     ['class' => 'wds icon fa ' . $item['icon'], 'aria-hidden' => 'true']);
                 $link = html_writer::link($item['url'], $icon . $item['text'], ['class' => 'wds menu-link']);
