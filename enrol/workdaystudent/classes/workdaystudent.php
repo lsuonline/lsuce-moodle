@@ -55,8 +55,11 @@ class workdaystudent {
      * @param int $userid The user ID.
      * @return stdClass An object containing the user's preferences.
      */
-    public static function wds_get_faculty_preferences($userid) {
+    public static function wds_get_faculty_preferences($mshell) {
         global $DB;
+
+        // Set this for use later.
+        $userid = $mshell->userid;
 
         // Validate user ID.
         if (!is_numeric($userid) || $userid <= 0) {
@@ -95,6 +98,21 @@ class workdaystudent {
         }
 
         return $userprefs;
+    }
+
+    public static function wds_get_unwants($mshell) {
+        global $DB;
+
+        // Build the SQL.
+        $usql = "SELECT *
+            FROM {block_wdspref_unwants}
+             WHERE userid = $mshell->userid
+                 AND sectionid IN ($mshell->sectionids)";
+
+        $unwants = $DB->get_records_sql($usql);
+
+        // Remove this after testing.
+        return $unwants;
     }
 
     public static function get_students($s, $periodid, $studentid) {
@@ -4119,6 +4137,13 @@ die();
                     // This will only be one student, so reset the array.
                     $student = reset($foundstudents);
 
+                    $email = workdaystudent::wds_email_finder($s, $student);
+
+                    // We do not have an email, try the next one.
+                    if (is_null($email)) {
+                        continue;
+                    }
+
                     // We could probably use create_istudent, but this is safer. 
                     $stu = workdaystudent::create_update_istudent($s, $student);
 
@@ -4385,6 +4410,54 @@ die();
 
         return $emorgrades;
     }
+
+    public static function wds_email_finder($s, $student) {
+
+        // Set this to null so we can work with it.
+        $email = null;
+
+        // Build out the email address suffix.
+        $esuffix = $s->campusname . '_Email';
+
+        // If the default suffix does not exist, look for others.
+        if (isset($student->$esuffix)) {
+
+            // We have a default email. Grab it like you want it.
+            $email = isset($student->$esuffix) ? $student->$esuffix : null;
+        } else {
+
+            // Log that email is borked.
+            self::dtrace(
+                'We have a non-default or missing email for ' .
+                $student->Universal_Id . ' - ' .
+                $student->First_Name . ' ' .
+                $student->Last_Name . '.'
+            );
+
+            // We do not have a default suffix, build one out based on institution.
+            $esuffix = self::get_suffix_from_institution($student) . '_Email';
+
+            // If the default suffix does not exist, look for others.
+            if (isset($student->$esuffix)) {
+
+                // Set email accordingly.
+                $email = isset($student->$esuffix) ? $student->$esuffix : null;
+            } else {
+
+                // Log that email is borked.
+                mtrace(
+                    'We have a missing email for ' .
+                    $student->Universal_Id . ' - ' .
+                    $student->First_Name . ' ' .
+                    $student->Last_Name . '.'
+                );
+            }
+        }
+
+        // This should either be a real email or null.
+        return $email;
+    }
+
 }
 
 class wdscronhelper {
@@ -4922,31 +4995,7 @@ class wdscronhelper {
                 // Loop through the students and insert / update their data.
                 foreach ($students as $student) {
 
-                    // Build out the email address suffix.
-                    $esuffix = $s->campusname . '_Email';
-
-                    // If the default suffix does not exist, look for others.
-                    if (isset($student->$esuffix)) {
-
-                        // We have a default email. Grab it like you want it.
-                        $email = isset($student->$esuffix) ?
-                            $student->$esuffix :
-                            null;
-                    } else {
-                        workdaystudent::dtrace(
-                            'We found a non-default or missing email for ' . 
-                            $student->Universal_Id . ' - ' .
-                            $student->First_Name . ' ' .
-                            $student->Last_Name . '.');
-
-                        // We do not have a default suffix, build one out based on institution.
-                        $esuffix = workdaystudent::get_suffix_from_institution(
-                            $student
-                        ) . '_Email';
-
-                        // Set email accordingly.
-                        $email = isset($student->$esuffix) ? $student->$esuffix : null;
-                    }
+                    $email = workdaystudent::wds_email_finder($s, $student);
 
                     // GTFO if we don't have a UID or email.
                     if (!isset($student->Universal_Id) || is_null($email)) {
@@ -5250,7 +5299,7 @@ class wdscronhelper {
                     $mshell->numerical_value = workdaystudent::get_numeric_course_value($mshell);
 
                     // Get the faculty preferences.
-                    $userprefs = workdaystudent::wds_get_faculty_preferences($mshell->userid);
+                    $userprefs = workdaystudent::wds_get_faculty_preferences($mshell);
 
                     // Set the course number threshold.
                     $cnthreshold = $userprefs->courselimit;
