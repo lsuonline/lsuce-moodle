@@ -65,3 +65,18 @@ $string['wdsprefs:courselimit_desc'] = 'Only create courses below this threshold
 
 // Unwant Page Strings.
 $string['wdsprefs:period'] = 'Academic Period';
+
+// Schedule view strings.
+$string['wdsprefs:courselink'] = 'Course Link';
+$string['wdsprefs:scheduleview'] = 'Course Schedule View';
+$string['wdsprefs:courseschedule'] = 'Your Course Schedule';
+$string['wdsprefs:courseheading'] = 'Course';
+$string['wdsprefs:sectionheading'] = 'Section';
+$string['wdsprefs:statusheading'] = 'Moodle Status';
+$string['wdsprefs:instructorheading'] = 'Instructor';
+$string['wdsprefs:daysheading'] = 'Days';
+$string['wdsprefs:timesheading'] = 'Times';
+$string['wdsprefs:wdstatusheading'] = 'Workday Status';
+$string['wdsprefs:deliverymodeheading'] = 'Delivery Mode';
+$string['wdsprefs:nocourses'] = 'You are not registered for courses in Workday.';
+
