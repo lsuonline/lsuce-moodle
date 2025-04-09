@@ -426,6 +426,17 @@ class auth extends \auth_plugin_base {
             $client->log_out();
             redirect(new moodle_url('/login/index.php'));
         }
+
+        // BEGIN LSU userPrincipalName to email mapping.
+        if (empty($userinfo['username'])) {
+            $userinfo['username'] = $rawuserinfo->userPrincipalName;
+        }
+        if (empty($userinfo['email']) || $userinfo['email'] != $rawuserinfo->userPrincipalName) {
+            $rawuserinfo->mail = $rawuserinfo->userPrincipalName;
+            $userinfo['email'] = $rawuserinfo->userPrincipalName;
+        }
+        // END LSU userPrincipalName to email mapping.
+
         if (empty($userinfo['username']) || empty($userinfo['email'])) {
             // Trigger login failed event.
             $failurereason = AUTH_LOGIN_NOUSER;
