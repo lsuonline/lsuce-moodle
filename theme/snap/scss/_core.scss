@@ -1261,7 +1261,7 @@ footer #moodle-footer
     #snap-header {
         padding: .5em 4%;
         padding-bottom: 0;
-        .pull-right.js-only, .float-right.js-only {
+        .pull-right.js-only, .float-end.js-only {
             .nav-link {
                 padding: .5rem .5rem;
             }
@@ -1287,7 +1287,7 @@ footer #moodle-footer
 
     @media (max-width: 991px) {
         width: 100%;
-        .float-right.js-only.row {
+        .float-end.js-only.row {
             margin-right: 0.2rem;
         }
     }
@@ -1416,7 +1416,7 @@ footer #moodle-footer
 // Styles for Snap user menu.
 #snap-header {
 
-    .pull-right.js-only.row, .float-right.js-only.row {
+    .pull-right.js-only.row, .float-end.js-only.row {
         margin-top: 1em;
 
         @media (max-width: 768px) {
@@ -1516,57 +1516,6 @@ footer #moodle-footer
     }
 }
 
-// Core alerts badge.
-.badge-count-container {
-    display: inline-block;
-    float: none;
-    width: 2.1em;
-
-    // we want to maintain the position along the Intellicart or notification icons when
-    // these icons don't exists in the Snap header.
-    a.snap-message-count {
-        border-radius: .5rem;
-        padding: .5rem .5rem;
-        display: block;
-    }
-
-    .icon.fa-comment {
-        font-size: 24px;
-        position: relative;
-        margin: 0;
-
-        &:before {
-            content: "\f0e5";
-        }
-
-        &:hover {
-            @extend .fa-beat;
-            --fa-animation-duration: 0.5s;
-            --fa-animation-iteration-count: 1;
-
-            font-weight: bolder;
-        }
-    }
-    .conversation_badge_count {
-        height: 18px;
-        width: 18px;
-        border-radius: 50%;
-        color: white !important; // Override core color preset for anchors.
-        font-size: x-small;
-        font-family: $font-family-system;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        right: -0.5em; // Magic number.
-        top: -0.5em; // Magic number.
-
-        &.hidden {
-            display: none;
-        }
-    }
-}
-
 @include media-breakpoint-down(sm) {
     .js-snap-pm-trigger.snap-my-courses-menu {
         margin-bottom: 0.5em;
@@ -1630,7 +1579,7 @@ footer #moodle-footer
         #admin-menu-trigger {
             margin-left: .2em;
         }
-        .float-right.js-only.row .hidden-md-down a[aria-label="Search"] i.fa-search {
+        .float-end.js-only.row .hidden-md-down a[aria-label="Search"] i.fa-search {
             font-size: 1.6rem;
         }
     }
@@ -1639,7 +1588,7 @@ footer #moodle-footer
 // md: 768px.
 @include media-breakpoint-down(md) {
     #snap-header {
-        .pull-right.js-only.row, .float-right.js-only.row {
+        .pull-right.js-only.row, .float-end.js-only.row {
             padding-top: 0;
             margin-top: 0;
             #snap-pm-trigger.js-snap-pm-trigger {
@@ -1739,6 +1688,10 @@ body.contains-snap-custom_menu-spacer {
     padding-top: 1em;
     float: none;
     border: none;
+}
+
+#page-backup-restorefile #region-main {
+    max-width: 100%;
 }
 
 #page-course-view-topics #region-main, #page-course-view-weeks #region-main {
@@ -5094,8 +5047,8 @@ section#region-main {
 .activity-navigation {
     .pull-right,
     .pull-left,
-    .float-right,
-    .float-left {
+    .float-end,
+    .float-start {
         a {
             white-space: inherit;
         }
@@ -5433,7 +5386,7 @@ li.snap-activity.modtype_folder div[id^="folder_tree"] {
 
 
 
-.theme-snap [data-region=right-hand-drawer].drawer {
+.theme-snap [data-region=right-hand-drawer].drawer:not([data-origin^="message-drawer-toggle-"]) {
     z-index: 12;
     position: fixed;
     right: 0;
@@ -5661,14 +5614,6 @@ div[id^=snap-create-activity-] .section-modchooser-link {
     width: 100%;
 }
 
-// Go to top button Snap Mobile
-@media (max-width: 991px) {
-    .theme-snap #goto-top-link {
-        bottom: 5em;
-        right: 0.7em;
-    }
-}
-
 #goto-top-link i.icon {
     color: #696969;
 }
@@ -5853,7 +5798,7 @@ $gototop-bottom-position: 50px !default;
     opacity: 0;
     transition: opacity .7s ease 0s, visibility .1s ease .8s;
     display: block;
-    position: fixed;
+    position: absolute;
     bottom: $gototop-bottom-position;
     right: 0;
     a {
@@ -5872,7 +5817,7 @@ $gototop-bottom-position: 50px !default;
 body.scrolled #goto-top-link {
     opacity: 1;
     visibility: visible;
-    transition: visibility 0s ease 0s, opacity .7s ease .1s;
+    transition: visibility 0s ease 0s, opacity .7s ease .1s, margin 0.2s ease;
 }
 
 body[id^="page-mod-"][id$="-view"] #region-main .tertiary-navigation .row .navitem {
@@ -6279,17 +6224,6 @@ body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
         }
     }
 
-    // Messages icon.
-    .badge-count-container a.snap-message-count:focus-visible {
-        @extend .fa-beat;
-        --fa-animation-duration: 0.5s;
-        --fa-animation-iteration-count: 1;
-        font-weight: bolder;
-        .icon.fa-comment {
-            font-weight: bolder;
-        }
-    }
-
     // Intellicart icon.
     #nav-intellicart-popover-container .popover-region-toggle.nav-link.icon-no-margin:focus-visible {
         @extend .fa-beat;
@@ -6316,9 +6250,10 @@ body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
             -webkit-text-stroke-width: 1px;
         }
     }
+}
 
-    // Snap Feeds icon.
-    #snap_feeds_side_menu_trigger:focus-visible {
+.blocks-drawer-button {
+    &:hover, &:focus-visible {
         @extend .fa-bounce;
         --fa-animation-duration: 1s;
         --fa-animation-iteration-count: 1;
@@ -6326,14 +6261,22 @@ body[id^="page-grade-"] #region-main .container-fluid.tertiary-navigation {
             opacity: 1;
         }
     }
+}
 
-    // Admin gear icon.
-    #admin-menu-trigger:focus-visible {
-        svg {
-            transform: rotate(90deg);
-        }
-        .snap-gear-icon {
-            fill: currentColor;
+[id^="message-drawer-toggle-"] {
+    &:focus-visible,
+    &:hover {
+        @extend .fa-beat;
+        --fa-animation-duration: 0.5s;
+        --fa-animation-iteration-count: 1;
+        font-weight: bolder;
+        .icon.fa-comment-o {
+            font-weight: bolder;
         }
     }
+}
+
+// Paginator space in category view
+.category-browse .pagination {
+    margin-top: 3rem;
 }

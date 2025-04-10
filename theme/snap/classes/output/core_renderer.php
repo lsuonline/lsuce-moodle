@@ -251,7 +251,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $url = '#inst' . $settingslink->instanceid;
         $attributes = [
             'id' => 'admin-menu-trigger',
-            'class' => 'float-right',
+            'class' => 'float-end',
             'data-toggle' => 'tooltip',
             'data-placement' => 'bottom',
             'title' => get_string('admin', 'theme_snap'),
@@ -290,40 +290,6 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
         if (!empty($headercontext)) {
             return $this->render_from_template('core/activity_header', $headercontext);
-        }
-        return '';
-    }
-
-    /**
-     * Badge counter for new messages.
-     * @return string
-     */
-    protected function render_message_icon() {
-        global $CFG, $USER;
-
-        // Add the messages icon with message count.
-        // The icon should not be displayed if the user is not logged in.
-        if (!isloggedin() || isguestuser() || user_not_fully_set_up($USER) ||
-            get_user_preferences('auth_forcepasswordchange') ||
-            (!$USER->policyagreed && !is_siteadmin() &&
-                ($manager = new \core_privacy\local\sitepolicy\manager()) && $manager->is_defined())) {
-            return '';
-        }
-
-        if (!empty($CFG->messaging) && !empty(get_config('theme_snap', 'messagestoggle'))) {
-            $url = new \moodle_url($CFG->wwwroot."/message/");
-            // Get number of unread conversations.
-            $unreadcount = \core_message\api::count_unread_conversations($USER);
-            $unreadconversationsstr = get_string('unreadconversations', 'core_message', $unreadcount);
-            $ariaopenmessagedrawer = get_string('openmessagedrawer', 'theme_snap');
-            return '<div class="badge-count-container">
-                        <a class="snap-message-count" aria-label="'.$ariaopenmessagedrawer.$unreadconversationsstr.'" +
-                         href="'.$url.'" title="'.$ariaopenmessagedrawer.$unreadconversationsstr.'">
-                            <i class="icon fa-regular fa-comment fa-fw">
-                                <div class="conversation_badge_count hidden"></div>
-                            </i>
-                        </a>
-                    </div>';
         }
         return '';
     }
@@ -1296,6 +1262,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $heading = html_writer::link($courseurl, $heading);
             if (!$this->snap_page_is_activity_view() && !$this->snap_page_is_edit_section() && !$this->snap_page_is_activity_mod() && !$this->snap_page_is_user_view()) {
                 $heading = $this->context_header(['heading' => $heading]);
+            } else {
+                $heading = html_writer::tag($tag, $heading);
             }
         } else {
             // Default heading.
@@ -2197,14 +2165,13 @@ HTML;
     protected function render_notification_popups() {
         // @codingStandardsIgnoreStart
         // Core renderer has not $output attribute, but code checker requires it.
-        global $CFG, $OUTPUT;
+        global $OUTPUT, $CFG;
 
         $navoutput = '';
         if (\core_component::get_component_directory('local_intellicart') !== null) {
             require_once(__DIR__ . '/../../../../local/intellicart/lib.php');
             $navoutput .= local_intellicart_render_navbar_output($OUTPUT);
         }
-        // We only want the notifications bell, not the messages badge so temporarilly disable messaging to exclude it.
         $messagingenabled = $CFG->messaging;
         $CFG->messaging = false;
         $navoutput .= message_popup_render_navbar_output($OUTPUT);
@@ -2373,8 +2340,7 @@ HTML;
             $spacer  = '<div class="snap-custom-menu-spacer"></div>';
 
             // Style to fix the block settings menu when custom menu is active.
-            $css = '#page-content .block_settings.state-visible div.card-body {margin-top: 3em;}';
-            $css .= '#page-admin-purgecaches #notice, #notice.snap-continue-cancel';
+            $css = '#page-admin-purgecaches #notice, #notice.snap-continue-cancel';
 
             $spacer .= "<style> {$css} </style>";
         }
@@ -2810,8 +2776,7 @@ HTML;
      */
     protected function snap_page_is_activity_view() {
         return $this->page->context->contextlevel === CONTEXT_MODULE
-               && strpos($this->page->pagetype, 'mod-') === 0
-               && substr($this->page->pagetype, -5) === '-view';
+               && strpos($this->page->pagetype, 'mod-') === 0;
     }
 
     /**
@@ -2841,5 +2806,15 @@ HTML;
      */
     protected function snap_page_is_user_view() {
         return $this->page->pagetype === 'user-view';
+    }
+
+    /**
+     * Checks if the current page is a book type activity.
+     *
+     * @return bool
+     */
+    protected function snap_page_is_book() {
+        return $this->page->context->contextlevel === CONTEXT_MODULE
+            && $this->page->cm->modname === 'book';
     }
 }

@@ -919,7 +919,7 @@ class behat_theme_snap extends behat_base {
         // @codingStandardsIgnoreLine
         /* @var $generalcontext behat_general */
         $generalcontext = behat_context_helper::get('behat_general');
-        $generalcontext->ensure_element_exists('.block_adminblock', 'css_element');
+        $generalcontext->ensure_element_exists('#admin-menu-trigger', 'css_element');
         $generalcontext->ensure_element_exists('body.editing', 'css_element');
     }
 
@@ -2129,5 +2129,40 @@ JS;
      */
     public function disable_site_completion_tracking(): void {
         set_config('enablecompletion', 0);
+    }
+
+    /**
+     * Navigate through the Snap administration menu using a path string.
+     *
+     * @When I go to :path in snap administration
+     * @param string $path Path in the format "Parent > Child > Grandchild"
+     */
+    public function i_go_to_in_snap_administration($path) {
+        // First click on the admin menu trigger to open the menu
+        $this->execute('behat_general::i_click_on', ['#admin-menu-trigger', 'css_element']);
+        $nodes = array_map('trim', explode('>', $path));
+        
+        foreach ($nodes as $index => $node) {
+            // Find the element by its text content
+            $this->getSession()->wait(500);
+            $xpath = "//span[contains(text(), '$node')]";
+            $element = $this->find('xpath', $xpath);
+            
+            if (!$element) {
+                // If it's the last node, try finding it as a link instead
+                if ($index === count($nodes) - 1) {
+                    $xpath = "//a[contains(text(), '$node')]";
+                    $element = $this->find('xpath', $xpath);
+                }
+                
+                if (!$element) {
+                    throw new \Exception("Could not find administration node with text: $node");
+                }
+            }
+            // Scroll the element into view
+            $this->execute_js_on_node($element, '{{ELEMENT}}.scrollIntoView({ block: "center", inline: "center" })');
+            $element->click();
+            $this->getSession()->wait(300);
+        }
     }
 }

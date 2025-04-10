@@ -73,10 +73,7 @@ Feature: Elements for Snap should have the proper aria attributes.
     And the following config values are set as admin:
     | linkadmincategories | 0 |
     And I am on site homepage
-    And I click on "#admin-menu-trigger" "css_element"
-    And I expand "Site administration" node
-    And I expand "Appearance" node
-    And I follow "Themes"
+    And I go to "Site administration > Appearance > Themes" in snap administration
     And I follow "Edit theme settings 'Snap'"
     And I follow "Featured categories and courses"
     And I set the field with xpath "//div[@class='form-text defaultsnext']//input[@id='id_s_theme_snap_fc_one']" to "1"
@@ -132,7 +129,7 @@ Feature: Elements for Snap should have the proper aria attributes.
     And I click on "//fieldset[@id=\"id_availabilityconditionsheader\"]" "xpath_element"
     And I click on "//button[text()=\"Add restriction...\"]" "xpath_element"
     And I click on "//button[@id=\"availability_addrestriction_grade\"]" "xpath_element"
-    And I set the field with xpath "//span[@class=\"pr-3\"][text()=\"Grade\"]//following-sibling::span//select" to "Test assignment2"
+    And I set the field with xpath "//span[@class=\"pe-3\"][text()=\"Grade\"]//following-sibling::span//select" to "Test assignment2"
     Then I click on "//input[@id=\"id_submitbutton2\"]" "xpath_element"
     And I wait until the page is ready
     # To be reviewed on INT-20292.

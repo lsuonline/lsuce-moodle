@@ -56,7 +56,7 @@ if (!empty($PAGE->theme->settings->logo)) {
 echo html_writer::link($defaulthomeurl, $sitefullname, $attrs);
 ?>
 
-<div class="float-right js-only row">
+<div class="float-end js-only row">
     <?php
     if (class_exists('local_geniusws\navigation')) {
         $bblink = new genius_dashboard_link();
@@ -66,19 +66,15 @@ echo html_writer::link($defaulthomeurl, $sitefullname, $attrs);
     }
     echo $OUTPUT->my_courses_nav_link();
     echo $OUTPUT->user_menu_nav_dropdown();
-    echo $OUTPUT->render_message_icon();
     echo $OUTPUT->render_notification_popups();
 
-    $settingslink = new settings_link();
     echo '<span class="hidden-md-down">';
     echo $OUTPUT->search_box();
     echo '</span>';
-    echo $OUTPUT->snap_feeds_side_menu_trigger();
-    if ($settingslink->output || $this->page->user_allowed_editing()) {
+    if ($this->page->user_allowed_editing()) {
         echo '<div class="snap_line_separator"></div>';
     }
     echo $OUTPUT->edit_switch();
-    echo $OUTPUT->render($settingslink);
     ?>
 </div>
 </div>
@@ -100,7 +96,112 @@ if (!empty($custommenu)) {
 </header>
 
 <?php
-if (!empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
-    echo $OUTPUT->personal_menu();
+// Only proceed with sidebar menu for logged-in users
+if (isloggedin() && !isguestuser()) {
+    if (!empty($CFG->messaging)) {
+        $unreadcount = \core_message\api::count_unread_conversations($USER);
+        $requestcount = \core_message\api::get_received_contact_requests_count($USER->id);
+        $context = [
+            'userid' => $USER->id,
+            'unreadcount' => $unreadcount + $requestcount
+        ];
+        $messages_item = $OUTPUT->render_from_template('core_message/message_popover', $context);
+    }
+    $addblockbutton = $OUTPUT->addblockbutton();
+    $blockshtml = $OUTPUT->blocks('side-pre');
+    $settingslink = new settings_link();
+    // Excluding settings block from blocks count
+    $hasblocks = (strpos($blockshtml, 'data-block=') !== false && 
+                 !(strpos($blockshtml, 'data-block="settings"') !== false && 
+                   substr_count($blockshtml, 'data-block="') === 1)) || 
+                 !empty($addblockbutton);
+    // Define page types where blocks should be shown
+    // Using patterns with exact matches and prefix matches
+    $whitelistpagesforblocks = [
+        'exact' => ['site-index', 'my-index'],
+        'prefix' => ['course-view']
+    ];
+    
+    $sidebarmenuitems = [];
+
+    // Only add settings link if it has output
+    if (!empty($settingslink->output)) {
+        $sidebarmenuitems[] = [
+            'customcontent' => $OUTPUT->render($settingslink),
+            'dataattributes' => [
+                ['name' => 'activeselector', 'value' => '#admin-menu-trigger.active']
+            ]
+        ];
+    }
+    
+    // Check if current page type matches any whitelist pattern
+    $pagematcheswhitelist = false;
+    
+    // Check exact matches
+    if (in_array($PAGE->pagetype, $whitelistpagesforblocks['exact'])) {
+        $pagematcheswhitelist = true;
+    }
+    
+    // Check prefix matches if not already matched
+    if (!$pagematcheswhitelist) {
+        foreach ($whitelistpagesforblocks['prefix'] as $prefix) {
+            if (strpos($PAGE->pagetype, $prefix) === 0) {
+                $pagematcheswhitelist = true;
+                break;
+            }
+        }
+    }
+    
+    // Only add blocks drawer button if there are blocks and page type matches whitelist
+    if ($hasblocks && $pagematcheswhitelist) {
+        $sidebarmenuitems[] = [
+            'title' => get_string('toggleblocksdrawer', 'theme_snap'),
+            'iconimg' => $OUTPUT->image_url('blocksdrawers', 'theme'),
+            'isbutton' => true,
+            'dataattributes' => [
+                ['name' => 'toggler', 'value' => 'drawers'],
+                ['name' => 'action', 'value' => 'toggle'],
+                ['name' => 'target', 'value' => 'theme_snap-drawers-blocks'],
+                ['name' => 'toggle', 'value' => 'tooltip'],
+                ['name' => 'placement', 'value' => 'right'],
+                ['name' => 'activeselector', 'value' => '#theme_snap-drawers-blocks.show']
+            ],
+            'classes' => 'blocks-drawer-button'
+        ];
+    }
+
+    // Only add feeds side menu trigger if it exists
+    $feedsTrigger = $OUTPUT->snap_feeds_side_menu_trigger();
+    if (!empty($feedsTrigger)) {
+        $sidebarmenuitems[] = [
+            'customcontent' => $feedsTrigger,
+            'dataattributes' => [
+                ['name' => 'activeselector', 'value' => '#snap_feeds_side_menu_trigger.active']
+            ]
+        ];
+    }
+
+    // Only add messages item if messaging is enabled
+    if (!empty($messages_item)) {
+        $sidebarmenuitems[] = [
+            'customcontent' => $messages_item,
+            'dataattributes' => [
+                ['name' => 'activeselector', 'value' => '[data-region="popover-region-messages"]:not(.collapsed)']
+            ]
+        ];
+    }
+
+    // Only render the sidebar menu if there are items to display
+    if (!empty($sidebarmenuitems)) {
+        $opensidebar = true; // Opened by default
+        echo $OUTPUT->render_from_template('theme_snap/sidebar_menu', [
+            'menuitems' => $sidebarmenuitems,
+            'opensidebar' => $opensidebar
+        ]);
+    }
+
+    if (!empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
+        echo $OUTPUT->personal_menu();
+    }
 }
 

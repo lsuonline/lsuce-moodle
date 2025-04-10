@@ -142,7 +142,7 @@ $regionmainsettingsmenu = $buildregionmainsettings ? $OUTPUT->region_main_settin
 echo $regionmainsettingsmenu;
 echo "</div>";
 if ($PAGE->pagelayout === 'mycourses') {
-    // Add kebab menu for course management options in my courses page.
+    // Add course management options in my courses page.
     echo $OUTPUT->snap_my_courses_management_options();
 }
 if ($PAGE->pagelayout === 'frontpage' && $PAGE->pagetype === 'site-index') {
@@ -174,6 +174,10 @@ if (stripos($PAGE->bodyclasses, 'format-singleactivity') !== false ) {
 </div>
 
 <?php
+if($OUTPUT->snap_page_is_book()){
+    echo $OUTPUT->snap_blocks();
+}
+
 require __DIR__.'/blocks_drawer.php';
 echo $OUTPUT->snap_feeds_side_menu();
 ?>
