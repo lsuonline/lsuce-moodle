@@ -61,6 +61,7 @@ $sql = "SELECT
             IF(c.visible=0, 'Hidden', c.id)
         )
     ) AS moodlecourse,
+    count(secm.start_time) as timecount,
     COALESCE(
         CONCAT(
             COALESCE(tea.preferred_firstname, tea.firstname),
@@ -70,11 +71,11 @@ $sql = "SELECT
         'None assigned yet'
     ) AS instructor,
     COALESCE(
-        GROUP_CONCAT(secm.short_day SEPARATOR ', '),
+        GROUP_CONCAT(secm.short_day ORDER BY secm.day ASC SEPARATOR '<br>'),
         'Not provided'
     ) AS days,
     COALESCE(
-        CONCAT(secm.start_time, ' - ', secm.end_time),
+        GROUP_CONCAT(CONCAT(secm.start_time, ' - ', secm.end_time) ORDER BY secm.day ASC SEPARATOR '<br>'),
         'Not provided'
     ) AS times,
     sec.wd_status AS workdaystatus,
@@ -156,6 +157,9 @@ if (empty($records)) {
             get_string('wdsprefs:deliverymodeheading','block_wdsprefs')
         ];
 
+        // Define the correct order of the days of the week.
+        $dayorder = ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
+
         // Loop through the records to build the table data.
         foreach ($periodrecords as $records) {
 
@@ -175,14 +179,42 @@ if (empty($records)) {
                 );
             }
 
+            // Convert days to array.
+            $daysarray = explode('<br>', $records->days);
+
+            // Convert times to array.
+            $timesarray = explode('<br>', $records->times);
+
+            // Sort the days based on the correct order with a fancy anonymous function.
+            usort($daysarray, function($a, $b) use ($dayorder) {
+                return array_search($a, $dayorder) - array_search($b, $dayorder);
+            });
+
+            // Handle the case where the times are identical across all days.
+            if (count(array_unique($timesarray)) == 1) {
+
+                // If all times are the same, show the time once and then list the days.
+                $timesdisplay = $timesarray[0];
+                $daysdisplay = implode(', ', $daysarray);
+            } else {
+
+                // Otherwise, use the original values (one time per day).
+                $timesdisplay = format_text($records->times, FORMAT_HTML);
+                $daysdisplay = format_text($records->days, FORMAT_HTML);
+            }
+
             // Build the table.
             $table->data[] = [
                 s($records->course),
                 s($records->section),
                 $courselink,
                 s($records->instructor),
-                s($records->days),
-                s($records->times),
+
+                // Show the cleaned-up days.
+                $daysdisplay,
+
+                // Show the cleaned-up times.
+                $timesdisplay,
                 s($records->workdaystatus),
                 s($records->delivery),
             ];
