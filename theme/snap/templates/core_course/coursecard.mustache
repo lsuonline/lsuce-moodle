@@ -89,27 +89,8 @@
 
 {{! BEGIN LSU Course Card Quick Links. }}
 {{#js}}
-require(['jquery', 'core/templates'], function($, coretemp) {
-    $.ajax({
-        type: "GET",
-        async: true,
-        url: M.cfg.wwwroot + '/theme/snap/rest.php?action=get_course_card_quick_links',
-        data: 'courseid={{{id}}}',
-        success: function(data) {
-            // This will call the function to load and render our template.
-            coretemp.renderForPromise('theme_snap/course_card_links', data)
-
-            // It returns a promise that needs to be resoved.
-            .then(({html, js}) => {
-                // replace the templated html
-                var thislink = 'span.course_quick_link_swap_' + data.courseid;
-                coretemp.replaceNodeContents(thislink, html, js);
-            })
-
-            // Deal with this exception (Using core/notify exception function is recommended).
-            .catch(ex => displayException(ex));
-        }
-    });
+require(['jquery', 'theme_snap/lsu'], function($, LSU) {
+    LSU.updateCard({{{id}}});
 });
 {{/js}}
 {{! END LSU Course Card Quick Links. }}
