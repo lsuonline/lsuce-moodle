@@ -129,6 +129,13 @@ class course_card implements \renderable {
      */
     private $contextid;
 
+    // BEGIN LSU Course Card Quick Links.
+    /**
+     * @var array
+     */
+    public $coursequicklinks;
+    // END LSU Course Card Quick Links.
+
     /**
      * @param \stdClass $course
      * @param course | null $service
@@ -140,6 +147,9 @@ class course_card implements \renderable {
         $this->service = $service ? : course::service();
         $this->apply_properties();
         $this->model = $this;
+        // BEGIN LSU Course Card Quick Links.
+        $this->coursequicklinks = $this->apply_course_quick_links();
+        // END LSU Course Card Quick Links.
     }
 
     /**
@@ -147,10 +157,25 @@ class course_card implements \renderable {
      */
     private function apply_properties() {
         $this->category = $this->course->category;
-        $this->url = new \moodle_url('/course/view.php', ['id' => $this->courseid]) . '';
-        $this->feedbackurl = new \moodle_url('/grade/report/user/index.php', ['id' => $this->courseid]) . '';
-        $this->shortname = $this->course->shortname;
-        $this->fullname = format_string($this->course->fullname);
+        // BEGIN LSU Extra Course Tabs.
+        if (isset($this->course->remoteid)) {
+            $baseurl = get_config('theme_snap', 'remotesite');
+            $this->url = $baseurl . '/course/view.php?id=' . $this->course->remoteid;
+            $this->feedbackurl = $baseurl . '/grade/report/user/index.php?id=' . $this->course->remoteid;
+            $this->shortname = $this->course->shortname;
+            $this->fullname = format_string($this->course->fullname);
+        } else {
+            $this->url = new \moodle_url('/course/view.php', ['id' => $this->courseid]) . '';
+            $this->feedbackurl = new \moodle_url('/grade/report/user/index.php', ['id' => $this->courseid]) . '';
+            $this->shortname = $this->course->shortname;
+            $this->fullname = format_string($this->course->fullname);
+        }
+        // $this->url = new \moodle_url('/course/view.php', ['id' => $this->courseid]) . '';
+        // $this->feedbackurl = new \moodle_url('/grade/report/user/index.php', ['id' => $this->courseid]) . '';
+        // $this->shortname = $this->course->shortname;
+        // $this->fullname = format_string($this->course->fullname);
+        // END LSU Extra Course Tabs.
+
         $this->published = (bool)$this->course->visible;
         $this->favorited = $this->service->favorited($this->courseid);
         $togglestrkey = !$this->favorited ? 'favorite' : 'favorited';
@@ -182,7 +207,9 @@ class course_card implements \renderable {
         }
         $isajax = defined('AJAX_SCRIPT') && AJAX_SCRIPT;
         if (!empty($bgimage)) {
-            if (!$isajax && $count <= 12) {
+            // BEGIN LSU Extra Course Tabs.
+            if (!$isajax && $count <= 120) {
+            // END LSU Extra Course Tabs.
                 $this->imagecss = "background-image: url($bgimage);";
             } else {
                 $this->lazyloadimageurl = $bgimage;
@@ -293,4 +320,129 @@ class course_card implements \renderable {
         $this->model = $this;
         return $retval;
     }
+
+        // BEGIN LSU Course Card Quick Links.
+    /**
+     * Get the quick links for the course cards
+     * @return array - the quick links to show
+     */
+    public function get_course_quick_links() {
+        return $this->coursequicklinks;
+    }
+
+    /**
+     * Adding some quick links for the course cards for quick and easy access to sections of the course.
+     * @param object the user
+     * @return
+     */
+    private function apply_course_quick_links() {
+        global $DB, $USER, $CFG;
+
+        $config = get_config('theme_snap');
+        if (empty($config->showcoursecardquicklinks)) {
+            // If not enabled in the Personal menu then return nothing.
+            // ccql is course card quick links
+            $this->coursequicklinks = [
+                "ccqlrender" => false,
+                "quicklinks" => array()
+            ];
+            return;
+        }
+
+        $context = \context_course::instance($this->courseid);
+
+        // Is the user a student?
+        $isstudent = false;
+        $isteacher = false;
+
+        $sroleids = explode(',', get_config('moodle', 'gradebookroles'));
+        $troleids = explode(',', get_config('moodle', 'coursecontact'));
+
+        foreach ($sroleids as $sroleid) {
+            if (user_has_role_assignment($USER->id, $sroleid, $context->id)) {
+                $isstudent = true;
+                break;
+            }
+        }
+
+        foreach ($troleids as $troleid) {
+            if (user_has_role_assignment($USER->id, $troleid, $context->id)) {
+                $isteacher = true;
+                break;
+            }
+        }
+
+        // Check to see if we're dealing with a student in the course.
+        if ($isstudent && !$isteacher) {
+
+            // Check course config for the QM settings in the course in question.
+            $courseconfig = $DB->get_records_menu('block_quickmail_config', ['coursesid' => $this->courseid], '', 'name,value');
+
+            // Get the master block config for Quickmail.
+            $blockconfig = get_config('moodle', 'block_quickmail_allowstudents');
+
+            // Determine Quickmail allowstudents for this course.
+            // Negative 1 is set for "Never" allow students to use QM.
+            if ((int) $blockconfig < 0) {
+                $qmon = false;
+            } else {
+                // Get the correct setting for the course.
+                $qmon = array_key_exists('allowstudents', $courseconfig) ?
+                    ((int) $courseconfig['allowstudents'] > 0 ? true : false) :
+                    ((int) $blockconfig < 1 ? false : true);
+            }
+
+        } else {
+            // Not a student, what role and do they have for quickmail capabilities.
+            $qmon = has_capability('block/quickmail:cansend', $context, $USER) ? true : false;
+        }
+
+        // Now let's build the list of link items.
+        $linklist = array();
+
+        // Quickmail.
+        if ($qmon || is_siteadmin()) {
+            $thislink = new \moodle_url('/blocks/quickmail/qm.php?courseid='. $this->courseid);
+            $linklist[] = array(
+                "link" => $thislink->out(false),
+                "icon" => "fa-envelope-o",
+                "title" => get_string("pluginname", "block_quickmail")
+            );
+        }
+        // Grades.
+        $thislink = new \moodle_url('/grade/index.php?id='. $this->courseid);
+        $linklist[] = array(
+            "link" => $thislink->out(false),
+            "icon" => "fa-table",
+            "title" => get_string("grades", "moodle")
+        );
+        // Participants.
+        $thislink = new \moodle_url('/user/index.php?id='. $this->courseid);
+        $linklist[] = array(
+            "link" => $thislink->out(false),
+            "icon" => "fa-users",
+            "title" => get_string("participants", "moodle")
+        );
+        // Course Tools.
+        $thislink = new \moodle_url('/course/view.php?id='. $this->courseid. "#coursetools");
+        $linklist[] = array(
+            "link" => $thislink->out(false),
+            "icon" => "fa-dashboard",
+            "title" => get_string("coursetools", "theme_snap")
+        );
+        // Edit Course Settings.
+        if ($isteacher) {
+            $thislink = new \moodle_url('/course/edit.php?id='. $this->courseid);
+            $linklist[] = array(
+                "link" => $thislink->out(false),
+                "icon" => "fa-gear",
+                "title" => get_string("editsettings", "moodle")
+            );
+        }
+        return array(
+            "ccqlrender" => true,
+            "quicklinks" => $linklist
+        );
+    }
+    // END LSU Course Card Quick Links.
 }

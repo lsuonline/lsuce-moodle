@@ -81,6 +81,37 @@ echo $OUTPUT->custom_menu_spacer();
     }
     ?>
     </div>
+
+    <?php
+        // BEGIN LSU - Insert the course file size total.
+        $showcs = get_config('theme_snap', 'enable_course_size');
+        if ($showcs) {
+            include_once($CFG->dirroot. "/theme/lsu.php");
+            $showcssnippet = new lsu_theme_snippets();
+
+            // Was calling this func twice so call once and send to show_course_size.
+            $isadmin = is_siteadmin();
+
+            $ccontext = context_course::instance($COURSE->id);
+            $speshul = false;
+            $seebreakdown = false;
+            
+            if (has_capability('report/coursesize:view', $ccontext)) {
+                $speshul = true;
+            }
+
+            if (has_capability('report/coursesize:breakdown', $ccontext)) {
+                $seebreakdown = true;
+            }
+
+            if (!$showcssnippet->are_you_student() || $speshul) {
+                // User does NOT have a student role in a course.
+                echo $showcssnippet->show_course_size($isadmin ?: $seebreakdown);
+            }
+        }
+        // END LSU - Insert the course file size total.
+    ?>
+
 </div>
 <?php
 if ($tocformat && $leftnav) {

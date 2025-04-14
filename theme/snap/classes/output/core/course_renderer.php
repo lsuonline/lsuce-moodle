@@ -178,9 +178,17 @@ class course_renderer extends \core_course_renderer {
             }
 
             // Special classes for native html elements.
-            if (in_array($mod->modname, ['page', 'book'])) {
-                $modclasses = ['snap-native', 'snap-mime-'.$mod->modname];
+            // BEGIN LSU Book native to activity module.
+            // if (in_array($mod->modname, ['page', 'book'])) {
+            //     $modclasses = ['snap-native', 'snap-mime-'.$mod->modname];
+            //     $attr['aria-expanded'] = "false";
+            if (in_array($mod->modname, ['page'])) {
+                $modclasses = array('snap-native', 'snap-mime-'.$mod->modname);
                 $attr['aria-expanded'] = "false";
+            } else if (in_array($mod->modname, ['book'])) {
+                $modclasses = array('snap-activity', 'snap-mime-'.$mod->modname);
+                $attr['aria-expanded'] = "false";
+            // END LSU Book native to activity module.
             } else if ($modurl = $mod->url) {
                 // For snap cards, js uses this to make the whole card clickable.
                 if ($mod->uservisible) {
