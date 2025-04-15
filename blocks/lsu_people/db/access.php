@@ -34,5 +34,13 @@ $capabilities = [
             'manager' => CAP_ALLOW
         ],
     ],
+    'block/lsu_people:view' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+        ]
+    ],
 ];
 

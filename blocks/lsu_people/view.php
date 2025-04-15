@@ -41,6 +41,9 @@ $context = context_course::instance($courseid);
 // Make sure they can view the participants of THIS course.
 require_capability('moodle/course:viewparticipants', $context);
 
+// Make sure they can use this tool.
+require_capability('block/lsu_people:view', $context);
+
 // Build the url.
 $url = new moodle_url('/blocks/lsu_people/view.php', ['id' => $courseid]);
 
