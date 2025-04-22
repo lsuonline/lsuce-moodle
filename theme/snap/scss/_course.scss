@@ -901,6 +901,10 @@ li.section:focus {
     }
 }
 
+#page-mod-quiz-view.pagelayout-secure #page.container{
+    padding-left: 15px;
+}
+
 .section-modchooser-link {
     display: block;
     text-align: center;
@@ -924,11 +928,6 @@ li.section:focus {
 .section-modchooser-link,
 .snap-dropzone {
     margin-top: 1em;
-}
-
-/* Landing page does not have renderer, so markup is different. */
-#page-site-index .section-modchooser-link {
-    border-color: white;
 }
 
 // get rid of js cursor style applied to the whole commands area
@@ -2815,7 +2814,7 @@ form.togglecompletion {
     .snap-edit-more-dropdown {
         &:hover,
         &:focus {
-            .icon {
+            .snap-edit-asset-more .icon {
                 transform: scale(1.1);
                 border-color: $gray-light;
             }

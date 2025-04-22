@@ -475,6 +475,7 @@ const noCoursesRender = root => {
 const renderCourses = (root, coursesData) => {
 
     const filters = getFilterValues(root);
+
     let currentTemplate = '';
     if (filters.display === 'card') {
         currentTemplate = TEMPLATES.COURSES_CARDS;

@@ -232,7 +232,6 @@ EOF;
             'groupsnone',
             'groupsvisible',
             'groupsseparate',
-            'hide',
             //'markthistopic',TODO: Review how to address this string deprecation.
             //'markedthistopic', TODO: Review how to address this string deprecation.
             'moveleft',
@@ -240,7 +239,6 @@ EOF;
             'movecoursemodule',
             'movecoursesection',
             'movecontent',
-            'show',
             'tocontent',
             'totopofsection',
             'unknownerror',
