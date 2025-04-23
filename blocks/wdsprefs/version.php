@@ -21,12 +21,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// TODO: Think about my own DB table to store this data.
-
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_wdsprefs';
-$plugin->version   = 2025030600;
+$plugin->version   = 2025042301;
 $plugin->requires  = 2023112800;
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.2';
+$plugin->maturity  = MATURITY_BETA;
+$plugin->release   = '0.4';
