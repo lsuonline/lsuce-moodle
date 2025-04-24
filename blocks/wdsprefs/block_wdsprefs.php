@@ -127,17 +127,11 @@ class block_wdsprefs extends block_base {
                     $icon=$item['icon'];
                 }
 
-                // Add help icon string.
-                $helpstringkey = 'help_' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $item['text']));
-
-                // Add help icon.
-                $helpicon = $OUTPUT->help_icon($helpstringkey, 'block_wdsprefs');
-
-                // Create the link with the help icon.
+                // Create the links.
                 $link = html_writer::link($item['url'], $icon . $item['text'], ['class' => 'wds menu-link']);
     
-                // Append the help icon after the link.
-                $listitems .= html_writer::tag('li', $link . ' ' . $helpicon, ['class' => 'wds menu-item']);
+                // Add the links to list items.
+                $listitems .= html_writer::tag('li', $link, ['class' => 'wds menu-item']);
             }
         }
 
@@ -178,7 +172,7 @@ class block_wdsprefs extends block_base {
         return false;
     }
 
-    // This has no config of it's own, but TODO: get base prefs from enrol_workdaystudent.
+    // This has no config of it's own, but gets base prefs from enrol_workdaystudent.
     public function has_config() {
         return false;
     }
