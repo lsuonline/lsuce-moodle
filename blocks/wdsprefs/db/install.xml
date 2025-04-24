@@ -4,7 +4,7 @@
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="block_wdspref_unwants" COMMENT="block_wdspref_unwants table retrofitted from MySQL">
+    <TABLE NAME="block_wdsprefs_unwants" COMMENT="block_wdsprefs_unwants table retrofitted from MySQL">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="19" NOTNULL="true" SEQUENCE="false"/>
