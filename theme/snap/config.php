@@ -65,6 +65,10 @@ $THEME->supportscssoptimisation = false;
 
 $THEME->editor_sheets = array('editor');
 
+// BEGIN LSU Course Card Quick Links.
+$THEME->sheets = array('lsu');
+// END LSU Course Card Quick Links.
+
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
 
 $THEME->layouts = array(
@@ -217,5 +221,6 @@ if ($runningbehattest) {
 }
 
 $THEME->requiredblocks = $requiredblocks;
+$THEME->addblockposition = BLOCK_ADDBLOCK_POSITION_FLATNAV;
 $THEME->haseditswitch = false;
 $THEME->iconsystem = '\\theme_snap\\output\\icon_system_fontawesome';

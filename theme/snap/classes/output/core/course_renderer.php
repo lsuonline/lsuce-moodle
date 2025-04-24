@@ -178,9 +178,17 @@ class course_renderer extends \core_course_renderer {
             }
 
             // Special classes for native html elements.
-            if (in_array($mod->modname, ['page', 'book'])) {
-                $modclasses = ['snap-native', 'snap-mime-'.$mod->modname];
+            // BEGIN LSU Book native to activity module.
+            // if (in_array($mod->modname, ['page', 'book'])) {
+            //     $modclasses = ['snap-native', 'snap-mime-'.$mod->modname];
+            //     $attr['aria-expanded'] = "false";
+            if (in_array($mod->modname, ['page'])) {
+                $modclasses = array('snap-native', 'snap-mime-'.$mod->modname);
                 $attr['aria-expanded'] = "false";
+            } else if (in_array($mod->modname, ['book'])) {
+                $modclasses = array('snap-activity', 'snap-mime-'.$mod->modname);
+                $attr['aria-expanded'] = "false";
+            // END LSU Book native to activity module.
             } else if ($modurl = $mod->url) {
                 // For snap cards, js uses this to make the whole card clickable.
                 if ($mod->uservisible) {
@@ -961,8 +969,12 @@ class course_renderer extends \core_course_renderer {
 
         $preview = $page->summary;
 
+        $showexpandicon = true;
         if (!$page->intro) {
             $preview = shorten_text($page->content, 200);
+            if ($preview == $page->content) {
+                $showexpandicon = false;
+            }
         }
 
         $readmore = get_string('readmore', 'theme_snap');
@@ -1006,20 +1018,23 @@ class course_renderer extends \core_course_renderer {
             <div class='summary-text'>
                 {$preview}
             </div>
-        </div>
-        <div class='readmore-container d-flex justify-content-center'>
-            {$expandpagebutton}
-        </div>
-        <div class=pagemod-content tabindex='-1' data-content-loaded={$contentloaded}>
-            <div id='pagemod-content-container'>
-                {$content}
-            </div>
-            <div class='d-flex justify-content-center w-100 pt-3'>
-                <button class='snap-action-icon btn btn-outline-primary p-2 d-inline-flex' aria-expanded='true' title='{$close} {$page->name}'>
-                    <i aria-hidden='true' class='icon fa fa-chevron-up fa-fw m-0' title='{$expand} {$page->name}'></i>
-                </button>
-            </div>
         </div>";
+        if ($showexpandicon) {
+            $o .= "
+            <div class='readmore-container d-flex justify-content-center'>
+                {$expandpagebutton}
+            </div>
+            <div class=pagemod-content tabindex='-1' data-content-loaded={$contentloaded}>
+                <div id='pagemod-content-container'>
+                    {$content}
+                </div>
+                <div class='d-flex justify-content-center w-100 pt-3'>
+                    <button class='snap-action-icon btn btn-outline-primary p-2 d-inline-flex' aria-expanded='true' title='{$close} {$page->name}'>
+                        <i aria-hidden='true' class='icon fa fa-chevron-up fa-fw m-0' title='{$expand} {$page->name}'></i>
+                    </button>
+                </div>
+            </div>";
+        }
         return $o;
     }
 
@@ -1570,7 +1585,7 @@ class course_renderer extends \core_course_renderer {
     public function communication_link(): string {
         $link = $this->communication_url() ?? '';
         $commicon = $this->pix_icon('t/messages-o', '', 'moodle', ['class' => 'fa fa-comments']);
-        $newwindowicon = $this->pix_icon('i/externallink', get_string('opensinnewwindow'), 'moodle', ['class' => 'ml-1']);
+        $newwindowicon = $this->pix_icon('i/externallink', get_string('opensinnewwindow'), 'moodle', ['class' => 'ms-1']);
         $content = $commicon . get_string('communicationroomlink', 'course') . $newwindowicon;
         $html = html_writer::tag('a', $content, ['target' => '_blank', 'href' => $link]);
 

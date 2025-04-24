@@ -22,7 +22,7 @@
  */
 
 // Plugin stuff.
-$string['wdsprefs:pluginname'] = 'WDS Preferences';
+$string['wdsprefs:pluginname'] = 'Workday Preferences';
 
 // Basic stuff.
 $string['wdsprefs:cancel'] = 'Preference modification cancelled.';

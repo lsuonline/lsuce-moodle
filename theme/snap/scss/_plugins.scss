@@ -1199,7 +1199,7 @@ body.format-tiles.editing {
     }
 
     // Sections styles.
-    #changenumsections a.pull-right, #changenumsections a.float-right {
+    #changenumsections a.pull-right, #changenumsections a.float-end {
         color: #fff;
         background-color: $brand-primary;
         border: 1px solid transparent;
@@ -1421,9 +1421,6 @@ body.format-tiles.editing {
         float: left;
         margin-bottom: 1rem;
     }
-    .tiles[data-for="course_sectionlist"] {
-        float: left;
-    }
     .alert-block {
         display: inline-block;
         margin-left: 2em;
@@ -1504,14 +1501,6 @@ body.format-tiles.editing .section .snap-asset .actions {
 
     &.contains-snap-custom_menu-spacer #page-header {
         padding-top: 8em;
-    }
-}
-
-.theme-snap #sticky-footer {
-    @media (min-width: 768px) {
-        &.snap-mod-data-sticky-footer {
-            margin-right: $drawer-width;
-        }
     }
 }
 

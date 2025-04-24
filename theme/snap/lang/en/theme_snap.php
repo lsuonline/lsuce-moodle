@@ -31,7 +31,6 @@ $string['action:highlightsectionvisibility'] = 'highlight section visibility';
 $string['action:sectiontoc'] = 'get section table of contents';
 $string['addanewsection'] = 'Create a new section';
 $string['addresourceoractivity'] = 'Create learning activity';
-$string['admin'] = 'Admin';
 $string['advancedbrandingheading'] = 'Advanced branding';
 $string['advancedbrandingheadingdesc'] = '';
 $string['ago'] = 'ago';
@@ -313,7 +312,7 @@ $string['notsubmitted'] = 'Not Submitted';
 $string['overdue'] = 'Overdue';
 $string['pausegraphicsanim'] = 'Pause GIF animation.';
 $string['personalmenu'] = 'Personal menu';
-$string['personalmenuandsnapfeeds'] = 'Personal menu and Snap feeds';
+$string['personalmenuandsnapfeeds'] = 'Snap feeds';
 $string['personalmenufeatures'] = 'Personal menu features';
 $string['personalmenulogintoggle'] = 'Show personal menu on login';
 $string['personalmenulogintoggledesc'] = 'Opens the personal menu immediately after login';
@@ -456,7 +455,6 @@ $string['enabledloginorderdesc'] = 'Select which login option should be displaye
 $string['moodleloginfirst'] = 'Display Moodle login first';
 $string['alternativeloginfirst'] = 'Display alternative login options first';
 $string['alternativeloginoptions'] = 'Alternative login options';
-$string['openmessagedrawer'] = 'Open messaging drawer. ';
 $string['refreshdeadlinestask'] = 'Refresh deadlines cached data. This should be run before all users login.';
 $string['resetdeadlinesquerycounttask'] = 'Reset deadlines query count';
 $string['refreshdeadlinestaskoff'] = 'Didn\'t look for data to populate. Please turn on the setting "Refresh deadlines using scheduled task" in Snap\'s Personal menu settings to allow this task to populate deadlines cached data.';
@@ -510,3 +508,87 @@ $string['allyears'] = 'All years';
 $string['courselink'] = 'Go to course';
 $string['student'] = 'Student';
 $string['showcourseinformation'] = 'Show course information';
+$string['pageactivitywithnodescription'] = 'If the Page Description is empty and the Page Content contains fewer than 200 characters, the expand icon will not be displayed for the Page Activity on the Course page, as the Page Content will serve as the Page Description.';
+$string['toggleadmindrawer'] = 'Toggle admin drawer';
+$string['toggleblockdrawer'] = 'Toggle block drawer';
+$string['togglesnapfeedsdrawer'] = 'Toggle Snap feeds drawer';
+
+// BEGIN LSU Course Card Quick Links.
+$string['showcoursecardquicklinks'] = 'Course Card Quick Links';
+$string['showcoursecardquicklinksdesc'] = 'Add quick links to the course cards for quick access to sections of the course';
+// END LSU Course Card Quick Links.
+
+// BEGIN LSU Extra Course Tabs.
+$string['coursetabs'] = 'Course Tabs';
+$string['remotecourses'] = 'Remote Courses';
+$string['remotecoursestoggle'] = 'Use this tab?';
+$string['remotecoursesoptin'] = 'Require users to opt in?';
+$string['remotecoursesoptin_help'] = 'If checked, administrators will need to create a snap_remotecourses checkbox user profile field, and users will have to select that checkbox in their profile.';
+$string['remotesite'] = 'Remote Site';
+$string['remotesite_help'] = 'FQDN of remote site including https:// and any suffix.';
+$string['wstoken'] = 'Web Services Token';
+$string['wstoken_help'] = 'Token from the remote site.';
+$string['localproxy'] = 'Local Proxy Course';
+$string['localproxy_help'] = 'The course id of the local proxy course to be used for local lookups.';
+$string['cachetimeout'] = 'Cache timeout (days)';
+$string['cachetimeout_help'] = 'How long, in days, you want the local cache of remote course information to be valid.';
+
+$string['extratab1head'] = 'Extra Tab 1';
+$string['extratab1toggle'] = 'Use this tab?';
+$string['extratab1enrolled'] = 'Require Enrollment?';
+$string['extratab1datelimits'] = 'Date Limited?';
+$string['extratab1datelimits_help'] = 'The course end-date must be set and the current date must occur within the timeframe of the course.';
+$string['extratab1name'] = 'Tab Name';
+$string['extratab1name_help'] = 'The name of the tab. This should be something short.';
+$string['extratab1coursefield'] = 'Course Field';
+$string['extratab1coursefield_help'] = 'The course field you which to search in.';
+$string['extratab1searchopts'] = 'Search Option';
+$string['extratab1searchopts_help'] = 'How you want the search to be carried out.';
+$string['extratab1searchterm'] = 'Search Term';
+$string['extratab1searchterm_help'] = 'The term you wish to search for.';
+
+$string['extratab2head'] = 'Extra Tab 2';
+$string['extratab2toggle'] = 'Use this tab?';
+$string['extratab2enrolled'] = 'Require Enrollment?';
+$string['extratab2datelimits'] = 'Date Limited?';
+$string['extratab2datelimits_help'] = 'The course end-date must be set and the current date must occur within the timeframe of the course.';
+$string['extratab2name'] = 'Tab Name';
+$string['extratab2name_help'] = 'The name of the tab. This should be something short.';
+$string['extratab2coursefield'] = 'Course Field';
+$string['extratab2coursefield_help'] = 'The course field you which to search in.';
+$string['extratab2searchopts'] = 'Search Option';
+$string['extratab2searchopts_help'] = 'How you want the search to be carried out.';
+$string['extratab2searchterm'] = 'Search Term';
+$string['extratab2searchterm_help'] = 'The term you wish to search for.';
+
+$string['extratab3head'] = 'Extra Tab 3';
+$string['extratab3toggle'] = 'Use this tab?';
+$string['extratab3enrolled'] = 'Require Enrollment?';
+$string['extratab3datelimits'] = 'Date Limited?';
+$string['extratab3datelimits_help'] = 'The course end-date must be set and the current date must occur within the timeframe of the course.';
+$string['extratab3name'] = 'Tab Name';
+$string['extratab3name_help'] = 'The name of the tab. This should be something short.';
+$string['extratab3coursefield'] = 'Course Field';
+$string['extratab3coursefield_help'] = 'The course field you which to search in.';
+$string['extratab3searchopts'] = 'Search Option';
+$string['extratab3searchopts_help'] = 'How you want the search to be carried out.';
+$string['extratab3searchterm'] = 'Search Term';
+$string['extratab3searchterm_help'] = 'The term you wish to search for.';
+$string['extratab3repop'] = 'Repopulate empty course tab?';
+$string['extratab3repop_help'] = 'Repopulate the main course tab from tab 3 if tab 3 is populated and coure tab is empty.';
+
+$string['beginswith'] = 'Begins With';
+$string['contains'] = 'Contains';
+$string['endswith'] = 'Ends With';
+$string['regex'] = 'Regular Expression';
+// END LSU Extra Course Tabs.
+
+// BEGIN LSU Extra Course Size.
+$string['enable_course_size'] = 'Enable course size tool.';
+$string['enable_course_size_description'] = 'If enabled, this will show the  course size based on a limit that is set by the admin.';
+$string['course_size_limit'] = 'Course size limit (MB)';
+$string['course_size_limit_description'] = 'Set the limit for the size of the course that instructors will be able to see.';
+
+$string['course_size'] = 'Course Size';
+$string['course_size_help'] = 'Indicates the total size of your course, including all course materials.';
+// END LSU Extra Course Size.

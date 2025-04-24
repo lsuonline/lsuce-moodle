@@ -28,16 +28,22 @@ require_once($CFG->libdir . '/formslib.php');
 // Ensure user is logged in.
 require_login();
 
+// Local requirements.
+require_once($CFG->dirroot . '/blocks/wdsprefs/classes/wdsprefs.php');
+
+// Workdaystudent enrollment stuff.
+require_once($CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php');
+
 // Get the system context.
 $context = context_system::instance();
 
 // Define the url for the page.
 $url = new moodle_url('/blocks/wdsprefs/unwantview.php');
+
 // Page setup.
 $PAGE->set_url($url);
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('wdsprefs:unwant', 'block_wdsprefs'));
-// $PAGE->set_heading(get_string('wdsprefs:unwant', 'block_wdsprefs'));
 
 // Add breadcrumbs.
 $PAGE->navbar->add(
@@ -52,68 +58,10 @@ $PAGE->navbar->add(
 // Set page layout.
 $PAGE->set_pagelayout('base');
 
+// Add the css.
+$PAGE->requires->css('/blocks/wdsprefs/styles.css');
+
 class section_preferences_form extends moodleform {
-    public static function get_numeric_course_value($section) {
-
-        // Extract the numeric portion from the start of the string.
-        preg_match('/^\d+/', $section->course_number, $matches);
-
-        // If we have a match, set it in the $section object..
-        if (!empty($matches)) {
-            $numerical_value = (int)$matches[0];
-
-            // Return the numerical value.
-            return $numerical_value;
-        }
-
-        // Return nothing.
-        return null;
-    }
-
-    public static function get_courses($userid) {
-        global $DB;
-
-        // Define the SQL.
-        $ssql = "SELECT sec.id,
-                per.period_year,
-                per.period_type,
-                per.academic_period_id,
-                sec.course_subject_abbreviation,
-                cou.course_number,
-                sec.section_listing_id,
-                tea.userid,
-                sec.section_number,
-                COALESCE(c.id, 'Pending') AS moodle_courseid
-            FROM {enrol_wds_sections} sec
-                INNER JOIN {enrol_wds_courses} cou
-                    ON cou.course_definition_id = sec.course_definition_id
-                INNER JOIN {enrol_wds_periods} per
-                    ON per.academic_period_id = sec.academic_period_id
-                INNER JOIN {enrol_wds_teacher_enroll} tenr
-                    ON sec.section_listing_id = tenr.section_listing_id
-                INNER JOIN {enrol_wds_teachers} tea
-                    ON tea.universal_id = tenr.universal_id
-                LEFT JOIN {course} c ON c.id = sec.moodle_status
-            WHERE sec.controls_grading = 1
-                AND tenr.role = 'Primary'
-                AND tea.userid = ?
-            ORDER BY per.start_date ASC,
-                sec.course_subject_abbreviation ASC,
-                cou.course_number ASC,
-                sec.section_number ASC";
-
-        // Fetch all sections for the user on this page.
-        $sections = $DB->get_records_sql($ssql, [$userid]);
-
-        // Group sections by academic_period_id.
-        $gsections = [];
-        foreach ($sections as $section) {
-            $gsections[$section->academic_period_id][] = $section;
-        }
-
-        // Return them.
-        return $gsections;
-    }
 
     public function definition() {
         global $CFG, $DB, $USER;
@@ -136,16 +84,28 @@ class section_preferences_form extends moodleform {
 
         // Iterate over academic periods.
         foreach ($gsections as $academic_period_id => $sections) {
+            $periodname = wdsprefs::get_period_online($sections[0]->academic_period);
 
             // Add a header for each academic period.
-            $mform->addElement('header', "academic_period_$academic_period_id", 
+            $mform->addElement('header',
+                    "academic_period_$academic_period_id", 
                     $sections[0]->period_year .
                     " " .
-                    $sections[0]->period_type
+                    $sections[0]->period_type . $periodname
             );
 
             // Iterate through sections in the academic period.
             foreach ($sections as $section) {
+
+                // Build a fake object.
+                $courseobj = new stdClass();
+
+                // Populate it with userid and sectionid.
+                $courseobj->userid = $USER->id;
+                $courseobj->sectionids = $section->id; 
+
+                $userprefs = workdaystudent::wds_get_faculty_preferences($courseobj);
+
                 // Define the checkbox name.
                 $checkboxname = 'section_' . $section->id;
 
@@ -168,7 +128,10 @@ class section_preferences_form extends moodleform {
                 // Set the default values.
                 if (isset($existing->id) && $existing->unwanted == 1) {
                     $mform->setDefault($checkboxname, 1);
-                } else if (!isset($existing->id) && self::get_numeric_course_value($section) > 5000) {
+                } else if (
+                    !isset($existing->id) &&
+                    workdaystudent::get_numeric_course_value($section) > $userprefs->courselimit
+                ) {
                     $mform->setDefault($checkboxname, 1);
                 }
             }
@@ -183,22 +146,13 @@ class section_preferences_form extends moodleform {
 }
 
 // Fetch sections once and group them by academic_period_id.
-$gsections = section_preferences_form::get_courses($USER->id);
+$gsections = wdsprefs::get_courses($USER->id);
 
 // Instantiate the form and pass grouped sections as custom data.
 $form = new section_preferences_form('', ['gsections' => $gsections]);
 
-// Get the workdaystudent lib for later.
-$wdslib = $CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php';
-
 // Process form submission.
 if ($form->is_submitted() && $data = $form->get_data()) {
-
-    // Just to be safe.
-    if (file_exists($wdslib)) {
-        require_once($wdslib);
-        $usingwds = true;
-    }
 
     // Loop through grouped sections by academic period.
     foreach ($gsections as $academic_period_id => $sections) {
@@ -238,7 +192,7 @@ if ($form->is_submitted() && $data = $form->get_data()) {
 
             // Insert a new record only if checked.
             } else if ($unwanted == 1 ||
-                section_preferences_form::get_numeric_course_value($section) > 5000
+                workdaystudent::get_numeric_course_value($section) > 5000
             )  {
 
                 // Build the new record object.
@@ -250,6 +204,11 @@ if ($form->is_submitted() && $data = $form->get_data()) {
 
                 // Insert the record.
                 $DB->insert_record('block_wdspref_unwants', $newrecord);
+            }
+
+            // Here is where we're going to actually deal with enrollment and the course.
+            if ($unwanted == 1) {
+                wdsprefs::update_faculty_enrollment($USER->id, $sectionid);
             }
         }
     }
@@ -264,5 +223,12 @@ if ($form->is_submitted() && $data = $form->get_data()) {
 
 // Render the page.
 echo $OUTPUT->header();
+
+echo '<div id="spinner" class="spinner" style="display:none;">
+        <div class="spinner-inner"></div>
+      </div>';
+
 $form->display();
+
 echo $OUTPUT->footer();
+die();

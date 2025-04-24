@@ -445,7 +445,11 @@ class local {
      * @return bool | array
      */
     public static function courseinfo($courseids) {
-        global $CFG;
+
+        // BEGIN LSU Course Card Quick Links.
+        global $CFG, $PAGE;
+        $quicklinks = array();
+        // END LSU Course Card Quick Links.
 
         $courseinfo = array();
 
@@ -466,6 +470,14 @@ class local {
         $starttime = time();
         $showgrades = get_config('theme_snap', 'showcoursegradepersonalmenu');
 
+        // BEGIN LSU Course Card Quick Links.
+        // Get renderer so we can call the quick links func to get the quick links.
+        $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
+        foreach ($courses as $course) {
+            $quicklinks[$course->id] = $renderer->get_quick_links($course);
+        }
+        // END LSU Course Card Quick Links.
+
         foreach ($courseids as $courseid) {
             if (!isset($courses[$courseid])) {
                 // Don't throw an error, just carry on.
@@ -477,6 +489,12 @@ class local {
                 'course' => $courseid,
                 'completion' => self::course_completion_progress($course),
             );
+
+            // BEGIN LSU Course Card Quick Links.
+            // Adding quicklinks to the course card.
+            $courseinfo[$courseid]->quicklinks = $quicklinks[$courseid]['quicklinks'];
+            $courseinfo[$courseid]->ccqlrender = $quicklinks[$courseid]['ccqlrender'];
+            // END LSU Course Card Quick Links.
 
             if (!empty($showgrades)) {
                 $feedback = self::course_grade($course);
@@ -1786,8 +1804,16 @@ class local {
         $userforums = new user_forums($user, $limit);
         $forumids = $userforums->forumids();
         $forumidsallgroups = $userforums->forumidsallgroups();
-        $hsuforumids = $userforums->hsuforumids();
-        $hsuforumidsallgroups = $userforums->hsuforumidsallgroups();
+
+        // BEGIN LSU Removal of HSU Forum Post code.
+        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            $hsuforumids = $userforums->hsuforumids();
+            $hsuforumidsallgroups = $userforums->hsuforumidsallgroups();
+        } else {
+            $hsuforumids = array();
+            $hsuforumidsallgroups = array();
+        }
+        // END LSU Removal of HSU Forum Post code.
 
         if (empty($forumids) && empty($hsuforumids)) {
             return [];
@@ -1855,7 +1881,13 @@ class local {
             // TODO - when moodle gets private reply (anonymous) forums, we need to handle this here.
         }
 
-        if (!empty($hsuforumids)) {
+        // BEGIN LSU Removal of HSU Forum Post code.
+        if (!file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            unset($hsuforumids);
+        }
+
+        if (isset($hsuforumids) && !empty($hsuforumids)) {
+        // END LSU Removal of HSU Forum Post code.
             list($afinsql, $afinparams) = $DB->get_in_or_equal($hsuforumids, SQL_PARAMS_NAMED, 'finb');
             $params = array_merge($params, $afinparams);
             $params = array_merge($params,
@@ -2017,16 +2049,21 @@ class local {
         // We save both types of forums in the array $groupsid.
         $groupsid['forum'] = $DB->get_records_sql($sqlforum, $params);
 
-        if (!get_config('hsuforum')) {
-            $groupsid['hsuforum'] = [];
-        } else {
-            // SQL for hsuforums.
-            $sqlhsuforum = "SELECT id, groupid
+        // BEGIN LSU Removal of HSU Forum Post code.
+        if (file_exists($CFG->dirroot.'/mod/hsuforum')) {
+            if (!get_config('hsuforum')) {
+                $groupsid['hsuforum'] = [];
+            } else {
+                // SQL for hsuforums.
+                $sqlhsuforum = "SELECT id, groupid
                               FROM {hsuforum_discussions}
                              WHERE id $insql";
 
-            $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+                $groupsid['hsuforum'] = $DB->get_records_sql($sqlhsuforum, $params);
+            }
         }
+        // END LSU Removal of HSU Forum Post code.
+
         return $groupsid;
     }
 

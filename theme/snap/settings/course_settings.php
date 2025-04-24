@@ -72,4 +72,19 @@ $description = get_string('lazyload_mod_page_description', 'theme_snap');
 $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
 $snapsettings->add($setting);
 
+// BEGIN LSU - Enable course size tool & size limit.
+$name = 'theme_snap/enable_course_size';
+$title = get_string('enable_course_size', 'theme_snap');
+$description = get_string('enable_course_size_description', 'theme_snap');
+$setting = new admin_setting_configcheckbox($name, $title, $description, 0);
+$snapsettings->add($setting);
+
+$name = 'theme_snap/course_size_limit';
+$title = get_string('course_size_limit', 'theme_snap');
+$description = get_string('course_size_limit_description', 'theme_snap');
+$default = '';
+$setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT, 64);
+$snapsettings->add($setting);
+// END LSU - Enable course size tool & size limit.
+
 $settings->add($snapsettings);

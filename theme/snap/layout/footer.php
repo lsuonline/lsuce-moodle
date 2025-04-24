@@ -24,6 +24,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
+// BEGIN LSU Move the custom menu to the bottom above the footer.
+$custommenu = $OUTPUT->custom_menu();
+if (!empty($custommenu)) {
+    echo '<div id="footer-snap-custom-menu">' . $custommenu . '</div>';
+}
+// END LSU Move the custom menu to the bottom above the footer.
 ?>
 
 <footer id="moodle-footer" role="contentinfo" class="clearfix">
@@ -105,13 +111,6 @@ if (!empty($custommenu)) {
     </div>
 </div>
 <?php
-$tittle = get_string('totop', 'theme_snap');
-echo
-    '<div id="goto-top-link">
-        <a class="btn btn-light" role="button" href="javascript:void(0)" aria-label = "' . $tittle .'">
-            <i class="icon fa fa-arrow-up fa-fw" title="' . $tittle .'" aria-label="'. $tittle .'"></i>
-        </a>
-    </div>'
 ?>
 <div id="page-footer">
 <br/>

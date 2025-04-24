@@ -63,6 +63,7 @@ class workdaystudent {
 
         // Validate user ID.
         if (!is_numeric($userid) || $userid <= 0) {
+            var_dump($mshell);
             throw new invalid_parameter_exception('Invalid user ID provided.');
         }
 
@@ -81,7 +82,7 @@ class workdaystudent {
         $defaults = [
             'wdspref_createprior' => isset($s->createprior) ? (int) $s->createprior : 28,
             'wdspref_enrollprior' => isset($s->enrollprior) ? (int) $s->enrollprior : 14,
-            'wdspref_courselimit' => isset($s->numberthreshold) ? (int) $s->numberthreshold : 7000,
+            'wdspref_courselimit' => isset($s->numberthreshold) ? (int) $s->numberthreshold : 8000,
             'wdspref_format' => 'topics'
         ];
 
@@ -106,6 +107,30 @@ class workdaystudent {
             }
         }
 
+        // Get any unwants we might have that are relvant to this shell.
+        $unwants = self::wds_get_unwants($mshell);
+
+        // Get the unwanted or sepcifivally wanted count.
+        $uwcount = count($unwants);
+
+        // Build out the arrays.
+        $userprefs->unwants = [];
+        $userprefs->wants = [];
+
+        // Loop through the data.
+        foreach($unwants as $unwant) {
+
+            // If the sectionid is unwanted add it to the unwants array.
+            if ($unwant->unwanted === "1") {
+                $userprefs->unwants[] = $unwant->sectionid;
+            }
+
+            // If the sectionid is wanted add it to the wants array.
+            if ($unwant->unwanted === "0") {
+                $userprefs->wants[] = $unwant->sectionid;
+            }
+        }
+
         return $userprefs;
     }
 
@@ -120,7 +145,6 @@ class workdaystudent {
 
         $unwants = $DB->get_records_sql($usql);
 
-        // Remove this after testing.
         return $unwants;
     }
 
@@ -583,7 +607,7 @@ class workdaystudent {
         $as2->delivery_mode = $section->Delivery_Mode;
         $as2->class_type = $section->Class_Type;
         $as2->controls_grading = $section->Controls_Grading;
-        $as2->wd_status = isset($section->Course_Section_Status) ? $section->Course_Section_Status : 'Pending';
+        $as2->wd_status = isset($section->Course_Section_Status) ? $section->Course_Section_Status : 'pending';
 
         // Compare the objects.
         if (get_object_vars($as) === get_object_vars($as2)) {
@@ -635,7 +659,7 @@ class workdaystudent {
         $tas->class_type = $section->Class_Type;
         $tas->idnumber = null;
         $tas->controls_grading = $section->Controls_Grading;
-        $tas->wd_status = isset($section->Course_Section_Status) ? $section->Course_Section_Status : 'Pending';
+        $tas->wd_status = isset($section->Course_Section_Status) ? $section->Course_Section_Status : 'pending';
 
         $as = $DB->insert_record($table, $tas);
         self::dtrace("Inserted section_listing_id: $tas->section_listing_id.");
@@ -963,26 +987,79 @@ class workdaystudent {
         return $ac;
     }
 
+    public static function check_unwant($section, $as) {
+        global $DB;
+
+        // Short curcuit this in case we have no PMI.
+        if (!isset($section->PMI_Universal_ID)) {
+            return false;
+        }
+
+        $parms = [
+            'section' => $as->id,
+            'pmi' => $section->PMI_Universal_ID
+        ];
+
+        // Build the SQL.
+        $usql = "SELECT
+            tea.universal_id,
+            uw.unwanted
+            FROM {block_wdspref_unwants} uw
+            INNER JOIN {enrol_wds_teachers} tea
+                ON tea.userid = uw.userid
+            WHERE uw.sectionid = :section
+                AND tea.universal_id = :pmi";
+
+        // Get the record.
+        $unwanted = $DB->get_record_sql($usql, $parms);
+
+        return $unwanted;
+    }
+
     public static function insert_update_section($section) {
+
         // Check to see if we have a matching section.
         $as = self::check_section($section);
 
         // We do! We do have a matching section.
         if (isset($as->id)) {
-            // Update it.
-            $as = self::update_section($section, $as);
+
+            // Check if this section / teacher combo is unwanted.
+            $unwanted = self::check_unwant($section, $as);
+
+            // We do not have a record of this section being unwanted.
+            if (!isset($unwanted->universal_id)) {
+
+                // Existing not-specifically-unwanted section, update it.
+                $as = self::update_section($section, $as);
+
+            // This section is specifically wanted by the Primary instructor.
+            } else if ($section->PMI_Universal_ID == $unwanted->universal_id &&
+                $unwanted->unwanted == 0) {
+
+                // Existing specifically-wanted section, update it.
+                $as = self::update_section($section, $as);
+
+            // The section is unwanted, do not updated it, just return it so we can move on.
+            } else {
+                mtrace("\n$as->section_listing_id is unwanted by $unwanted->universal_id.");
+
+                return $as; 
+            }
+
+        // We have no record of this section, add it.
         } else {
+
             // Insert it.
             $as = self::insert_section($section);
         }
+
         return $as;
     }
 
     public static function process_section_schedule(object $section,
+        string $schedule,
         string $timezone = 'America/Chicago'): array {
-
-        // Grab the schedule.
-        $schedule = $section->Meeting_Patterns;
 
         // Split the string into days and time.
         [$dayspart, $timepart] = explode('|', $schedule);
@@ -1002,9 +1079,9 @@ class workdaystudent {
 
         // Ensure we have exactly 2 times (start and end).
         if (count($times) < 2) {
-
             // If we don't have both start and end times, log the issue and exit.
             self::dtrace("Invalid time format: $timepart");
+            var_dump($times);
             return [];
         }
 
@@ -1024,7 +1101,7 @@ class workdaystudent {
         $tz = new DateTimeZone($timezone);
 
         // Build an array to hold this stuff.
-        $schedule_items = [];
+        $scheduleitems = [];
 
         // Loop through the days and times, ensuring each day has a corresponding time.
         foreach ($days as $index => $day) {
@@ -1048,8 +1125,8 @@ class workdaystudent {
             }
 
             // Create an object for each day with start or end times.
-            $schedule_items[] = (object)[
-                'section_listing_id' => $section->Section_Listing_ID, // Add section_listing_id to each object
+            $scheduleitems[] = (object)[
+                'section_listing_id' => $section->Section_Listing_ID,
                 'day' => $day,
                 'short_day' => $shortdays[$index] ?? null,
                 'start_time' => $startdatetime->setTimezone($tz)->format('g:i A T'),
@@ -1058,57 +1135,85 @@ class workdaystudent {
         }
 
         // Return the array of schedule items.
-        return $schedule_items;
+        return $scheduleitems;
     }
 
-    public static function insert_update_section_schedule($schedules) {
-        $sss = [];
-        foreach ($schedules as $schedule) {
-            // Check to see if we have a matching section.
-            $ss = self::check_section_schedule($schedule);
+    /**
+     * Store the schedule (add, update, or delete records) based on the provided data.
+     *
+     * @param array $schedule An array of stdClass objects containing the schedule data.
+     * @return void
+     */
+    public static function wds_store_schedules($section, $schedules) {
+        global $DB;
 
-            // We do! We do have a matching section.
-            if (isset($ss->id)) {
-                // TODO: Build out updating.
-                // Update it.
-                // $sss[] = self::update_section_schedule($schedule, $ss);
+        // Check if the schedule is valid
+        if (empty($schedules)) {
+            return;
+        }
+
+        // Set the table.
+        $table = 'enrol_wds_section_meta';
+
+        // Build out the query parms.
+        $parms = ['section_listing_id' => $section->Section_Listing_ID];
+
+        // Retrieve existing records for the given section_listing_id.
+        $existingrecords = $DB->get_records($table, $parms);
+
+        // Build an array for future use.
+        $existingmap = [];
+
+        // Convert to an associative array by day for easy access.
+        foreach ($existingrecords as $record) {
+            $existingmap[$record->day] = $record;
+        }
+
+        // Process each schedule entry.
+        foreach ($schedules as $scheduleitem) {
+
+            // Validate the required fields.
+            if (empty($scheduleitem->section_listing_id) || empty($scheduleitem->day)) {
+                mtrace("Schedule is borked for $section->section_listing_id.");
+                continue;
+            }
+
+            // Check if this day already exists in the database.
+            if (isset($existingmap[$scheduleitem->day])) {
+
+                // The day already exists, check if the times are different.
+                $existingrecord = $existingmap[$scheduleitem->day];
+
+                // The record exists but it does not match the stored value.
+                if ($existingrecord->start_time !== $scheduleitem->start_time ||
+                    $existingrecord->end_time !== $scheduleitem->end_time) {
+
+                    // Times differ, set them accordingly and update the record.
+                    $existingrecord->start_time = $scheduleitem->start_time;
+                    $existingrecord->end_time = $scheduleitem->end_time;
+                    $DB->update_record($table, $existingrecord);
+                }
+            
+                // Remove handled items from the existingmap.
+                unset($existingmap[$scheduleitem->day]);
             } else {
-                // Insert it.
-                $sss[] = self::insert_section_schedule($schedule);
+                // No record for this day. Insert one.
+                $DB->insert_record($table, $scheduleitem);
+
+                // Remove handled items from the existingmap.
+                unset($existingmap[$scheduleitem->day]);
             }
         }
-        return $sss;
-    }
 
-    public static function check_section_schedule($schedule) {
-        global $DB;
+        if (!empty($existingmap)) {
+            // After processing the schedules, remove any days not in the new schedules.
+            foreach ($existingmap as $day => $recordtoremove) {
+                $DB->delete_records($table, ['id' => $recordtoremove->id]);
+                mtrace("Removed $recordtoremove->day section schedule from " .
+                    "$recordtoremove->section_listing_id.");
+            }
 
-        // Set the table.
-        $table = 'enrol_wds_section_meta';
-
-        // Set the parameters.
-        $parms = [
-            'section_listing_id' => $schedule->section_listing_id,
-            'day' => $schedule->day
-        ];
-
-        // Get the academic unit record.
-        $ss = $DB->get_record($table, $parms);
-
-        return $ss;
-    }
-
-    public static function insert_section_schedule($schedule) {
-        global $DB;
-
-        // Set the table.
-        $table = 'enrol_wds_section_meta';
-
-        $ss = $DB->insert_record($table, $schedule);
-        self::dtrace("Inserted $schedule->day $schedule->start_time - $schedule->end_time " .
-            "for section_listing_id: $schedule->section_listing_id.");
-
-        return $ss;
+        }
     }
 
     public static function grab_section_schedule($universalid = null) {
@@ -1128,9 +1233,6 @@ class workdaystudent {
                          AND ap.end_date > UNIX_TIMESTAMP()";
         }
 
-        // TODO: Change this to use the $USER->id once we populate students.
-        // TODO: Link to visible moodle courses, otherwise let them know they're hidden.
-        // TODO: Build a WDS block for the dashboard featuring the above and move this functionality there.
         // Build out the sql to grab the data for everyone.
         $sql = 'SELECT
             CONCAT(
@@ -3638,9 +3740,17 @@ class workdaystudent {
                 INNER JOIN {enrol_wds_teachers} tea
                     ON tenr.universal_id = tea.universal_id
             WHERE sec.controls_grading = 1
+                AND (
+                    sec.wd_status = 'Open' OR
+                    sec.wd_status = 'Closed' OR
+                    sec.wd_status = 'Waitlist'
+                )
                 AND tenr.role = 'primary'
                 AND sec.academic_period_id = '$period->academic_period_id'
-                AND (sec.idnumber IS NULL OR sec.moodle_status = 'Pending')
+                AND (
+                    sec.idnumber IS NULL OR
+                    sec.moodle_status = 'pending'
+                )
                 $grouper
             ORDER BY cou.course_listing_id ASC";
 
@@ -3705,7 +3815,6 @@ class workdaystudent {
         foreach ($sections as $section) {
             // Build out the groupname.
             $groupname = "$mshell->course_subject_abbreviation $mshell->course_number $section";
-
 
             // Build out an array of groupids.
             $groupids = [];
@@ -4037,7 +4146,9 @@ class workdaystudent {
                 $mtrace = print(".");
             }
 
-            return $mtrace;
+            if (PHP_SAPI === 'cli') {
+                return $mtrace;
+            }
         }
     }
 
@@ -4127,15 +4238,31 @@ class workdaystudent {
                 // If any were found, do some stuff.
                 if ($foundstudents) {
 
+                    // I cannot believe we ahve to do this trash.
                     if (count($foundstudents) > 1) {
-                        mtrace("\nError! Found more than one student with the same universal id: " .
-                            "$missingstudent->universal_id. Skipping.");
-                        return;
+
+                        // Loop through the duplicate foundstudents and id the reporting record.
+                        foreach($foundstudents as $foundstudent) {
+
+                            // Make sure it's the reporting record.
+                            if ($foundstudent->Is_Reporting_Record == "1") {
+
+                                // Set the student record.
+                                $student = $foundstudent;
+
+                                // Drop out of the foreach.
+                                continue;
+                            }
+                        }
+
+                    // We only have one record in the array.
+                    } else {
+
+                        // This will only be one student, so reset the array.
+                        $student = reset($foundstudents);
                     }
 
-                    // This will only be one student, so reset the array.
-                    $student = reset($foundstudents);
-
+                    // Get their email.
                     $email = workdaystudent::wds_email_finder($s, $student);
 
                     // We do not have an email, try the next one.
@@ -4766,9 +4893,45 @@ class wdscronhelper {
                 $sec = workdaystudent::insert_update_section($section);
 
                 // If we have section components, add / update the schedule data.
-                if (isset($section->Meeting_Patterns)) {
-                    $schedule = workdaystudent::process_section_schedule($section);
-                    $sectionschedule = workdaystudent::insert_update_section_schedule($schedule);
+                if (isset($section->Meeting_Patterns) || isset($section->Section_Components)) {
+
+                    // Because some people cannot consistently set shit up.
+                    if (isset($section->Meeting_Patterns)) {
+                        // Set this for easier use.
+                        $mps = $section->Meeting_Patterns;
+                    } else {
+                        // Set this for easier use.
+                        $mps = $section->Section_Components;
+                    }
+
+                    // Check to see if we have more than one meeting patterns.
+                    if (str_contains($mps, ';')) {
+
+                        // Split into two (or more) meeting patterns.
+                        $mpsa = array_map('trim', explode(';', $mps));
+
+                    // We do not have more than one meeting pattern.
+                    } else {
+
+                        // Return the original string as a single-item array.
+                        $mpsa = [trim($mps)];
+                    }
+
+                    // Set up an empty array for this.
+                    $schedules = [];
+
+                    // Loop through the meeting patterns array.
+                    foreach ($mpsa as $mp) {
+
+                        // Process the section schedule for this meeting pattern.
+                        $schedule = workdaystudent::process_section_schedule($section, $mp);
+
+                        // Merge this shit together.
+                        $schedules = array_merge($schedules, $schedule);
+                    }
+
+                    // Add these meeting patterns to the DB.
+                    $sectionschedule = workdaystudent::wds_store_schedules($section, $schedules);
                 }
 
                 // If we do not have an instructor, let us know.
@@ -5101,7 +5264,7 @@ class wdscronhelper {
             $enrollmentstart = $periodstart;
 
             // Fetch the actual enrollments for the period.
-	    $enrollments = workdaystudent::get_period_enrollments($s, $period, null);
+            $enrollments = workdaystudent::get_period_enrollments($s, $period, null);
 
             // Set some times.
             $enrollmentend = microtime(true);
@@ -5300,24 +5463,63 @@ class wdscronhelper {
                     // Get the faculty preferences.
                     $userprefs = workdaystudent::wds_get_faculty_preferences($mshell);
 
+                    // Convert comma-separated sectionids string to an array of strings.
+                    $sectionids = array_map('trim', explode(',', $mshell->sectionids));
+
+                    // Cast preference arrays to sets of strings for safe comparisons.
+                    $wants = array_map('strval', $userprefs->wants);
+                    $unwants = array_map('strval', $userprefs->unwants);
+
+                    // Flag to determine whether to create the shell.
+                    $shouldcreate = false;
+
                     // Set the course number threshold.
                     $cnthreshold = $userprefs->courselimit;
                     $sdthreshold = $userprefs->createprior;
 
-                    // Use the user (if they have) or site course number threshold.
                     if ($mshell->numerical_value >= $cnthreshold) {
-                            $skippedcount++;
-                            workdaystudent::dtrace(
-                                "$mshell->fullname not created due to " .
-                                "$mshell->numerical_value > $cnthreshold."
-                            );
+                        $reason = "$mshell->numerical_value > $cnthreshold.";
+                    }
+
+                    // Check each section ID.
+                    foreach ($sectionids as $sectionid) {
+
+                        // If we are NOT unwanted AND the numerical threshold is under the limit.
+                        if ((!in_array($sectionid, $unwants) &&
+                            $mshell->numerical_value < $cnthreshold) ||
+
+                            // OR the section is SPECIFICALLY WANTED.
+                            in_array($sectionid, $wants)) {
+
+                            // We found a wanted section.
+                            $shouldcreate = true;
+
+                            // Once we find one section in the shell, we want to create the shell.
+                            break;
+                        }
+                    }
+
+                    if ($mshell->numerical_value >= $cnthreshold) {
+                        $reason = "$mshell->numerical_value > $cnthreshold.";
+                    }
+
+                    if (in_array($sectionid, $unwants)) {
+                        $reason = "user: $mshell->userid unwant rules.";
+                    }
+
+                    // Use the user (if they have) or site course number threshold.
+                    if (!$shouldcreate) {
+                        $skippedcount++;
+                        workdaystudent::dtrace(
+                            "$mshell->fullname not created due to $reason"
+                        );
                         continue;
 
                     // Use the user (if they have) or site create prior threshold.
-                    } else if (((int) $mshell->start_date - (86400 * $sdthreshold)) < time()) {
+                    } else if (((int) $mshell->start_date - (86400 * $sdthreshold)) > time()) {
                             $skippedcount++;
                             workdaystudent::dtrace(                                                                                             "$mshell->fullname not created due to start date " .
-                                "being sooner than $sdthreshold days from now."
+                                "being farther than $sdthreshold days from now."
                             );
                         continue;
 
@@ -5539,6 +5741,7 @@ class enrol_workdaystudent extends enrol_plugin {
                     mtrace("\n" . 'Error! ' .
                         $enrollment->universal_id .
                         ' is missing their email, they were not enrolled in ' .
+                        $periodid . ' ' .
                         $enrollment->department . ' ' .
                         $enrollment->course_number . ' ' .
                         $enrollment->section_number .

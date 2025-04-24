@@ -33,10 +33,7 @@ Feature: When the moodle theme is set to Snap, the custom snap login form should
     And the following config values are set as admin:
       | linkadmincategories | 0 |
     And I am on site homepage
-    And I click on "#admin-menu-trigger" "css_element"
-    And I expand "Site administration" node
-    And I expand "Appearance" node
-    And I follow "Themes"
+    And I go to "Site administration > Appearance > Themes" in snap administration
     And I follow "Edit theme settings 'Snap'"
     And I click on "Login page" "link"
     And I should see "Stylish template"
@@ -72,7 +69,7 @@ Feature: When the moodle theme is set to Snap, the custom snap login form should
   @javascript
   Scenario: A guest user can login using the Snap login page.
     Given I am on login page
-    And "#page-site-index #page-mast" "css_element" should not be visible
+    And "#page-mast" "css_element" should not be visible
     And I press "Access as a guest"
-    And "#page-site-index #page-mast" "css_element" should be visible
+    And "#page-mast" "css_element" should be visible
     And I should not see "Invalid login, please try again"

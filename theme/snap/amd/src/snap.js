@@ -25,10 +25,11 @@
 /**
  * Main snap initialising function.
  */
-define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_snap/personal_menu',
+define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/util', 'theme_snap/personal_menu',
         'theme_snap/cover_image', 'theme_snap/progressbar', 'core/templates', 'core/str', 'core/ajax', 'theme_snap/accessibility',
         'theme_snap/messages', 'theme_snap/scroll'],
-    function($, log, Headroom, util, personalMenu, coverImage, ProgressBar, templates, str, ajax, accessibility, messages, Scroll) {
+    function($, log, Aria, Headroom, util, personalMenu, coverImage, ProgressBar, templates, str, ajax, accessibility,
+             messages, Scroll) {
 
         'use strict';
 
@@ -541,36 +542,29 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                 }
             });
 
-            // Onclick for toggle of state-visible of admin block and mobile menu.
+            // Admin drawer: Onclick for toggle of state-visible of admin block and mobile menu.
             $(document).on("click", "#admin-menu-trigger, #toc-mobile-menu-toggle", function(e) {
-
-                // Close the Snap feeds side menu in case it is open.
-                var snapFeedsTrigger = document.getElementById('snap_feeds_side_menu_trigger');
-                if ($(snapFeedsTrigger).length != 0) {
-                    var hrefSnapFeeds = snapFeedsTrigger.getAttribute('href');
-                    if ($(snapFeedsTrigger).hasClass('active') && $(hrefSnapFeeds).hasClass('state-visible')) {
-                        var showFeedsString = M.util.get_string('show', 'moodle')
-                            + ' ' +  M.util.get_string('snapfeedsblocktitle', 'theme_snap');
-                        $(snapFeedsTrigger).attr('title', showFeedsString);
-                        $(snapFeedsTrigger).attr('aria-label', showFeedsString);
-                        $(snapFeedsTrigger).attr('aria-expanded', false);
-                        $(snapFeedsTrigger).removeClass('active');
-                        $(hrefSnapFeeds).removeClass('state-visible');
-                        $('#page').toggleClass('offcanvas');
-                        if ($('#sticky-footer').length != 0) {
-                            $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
-                        }
-                    }
-                }
                 var href = this.getAttribute('href');
                 // Make this only happen for settings button.
                 if (this.getAttribute('id') === 'admin-menu-trigger') {
                     $(this).toggleClass('active');
                     $('#page').toggleClass('offcanvas');
+                    if ($(this).attr('aria-expanded') === 'true') {
+                        $(this).attr('aria-expanded', false);
+                    } else {
+                        $(this).attr('aria-expanded', true);
+                    }
                 }
                 $(href).attr('tabindex', '0');
                 $(href).toggleClass('state-visible').focus();
                 e.preventDefault();
+
+                // Toggle accessibility visibility for screen readers using aria-hidden.
+                if ($(href).hasClass('state-visible')) {
+                    Aria.unhide(document.querySelector('#settingsnav'));
+                } else {
+                    Aria.hide(document.querySelector('#settingsnav'));
+                }
 
                 if ($('.message-app.main').length === 0) {
                     document.dispatchEvent(new Event("messages-drawer:toggle"));
@@ -582,39 +576,17 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                 }
             });
 
-            // Onclick for toggle of state-visible of snap feeds side menu.
+            // Snap feeds drawer: Onclick for toggle of state-visible of Snap feeds side menu.
             $(document).on("click", "#snap_feeds_side_menu_trigger", function(e) {
-                // Close the Admin settings block in case it is open.
-                var adminSettingsTrigger = document.getElementById('admin-menu-trigger');
-                if ($(adminSettingsTrigger).length != 0) {
-                    var hrefAdminSettings = adminSettingsTrigger.getAttribute('href');
-                    if ($(adminSettingsTrigger).hasClass('active') && $(hrefAdminSettings).hasClass('state-visible')) {
-                        $(adminSettingsTrigger).removeClass('active');
-                        $(hrefAdminSettings).removeClass('state-visible');
-                        $('#page').toggleClass('offcanvas');
-                        if ($('#sticky-footer').length != 0) {
-                            $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
-                        }
-                    }
-                }
-
                 var href = this.getAttribute('href');
                 if (this.getAttribute('id') === 'snap_feeds_side_menu_trigger') {
-                    var showFeedsString = M.util.get_string('show', 'moodle')
-                        + ' ' +  M.util.get_string('snapfeedsblocktitle', 'theme_snap');
-                    var hideFeedsString = M.util.get_string('hide', 'moodle')
-                        + ' ' +  M.util.get_string('snapfeedsblocktitle', 'theme_snap');
-                    if (this.getAttribute('title') === showFeedsString) {
-                        $(this).attr('title', hideFeedsString);
-                        $(this).attr('aria-label', hideFeedsString);
-                        $(this).attr('aria-expanded', true);
-                    } else {
-                        $(this).attr('title', showFeedsString);
-                        $(this).attr('aria-label', showFeedsString);
-                        $(this).attr('aria-expanded', false);
-                    }
                     $(this).toggleClass('active');
                     $('#page').toggleClass('offcanvas');
+                    if ($(this).attr('aria-expanded') === 'true') {
+                        $(this).attr('aria-expanded', false);
+                    } else {
+                        $(this).attr('aria-expanded', true);
+                    }
                 }
                 $(href).toggleClass('state-visible').focus();
                 e.preventDefault();
@@ -1153,6 +1125,15 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                                     $(cardmultimedia).append(activityCards);
                                 });
                             }
+                            str.get_strings([
+                                {key: 'pageactivitywithnodescription', component: 'theme_snap'}
+                            ]).done(function (stringsjs) {
+                                let stringmsg = stringsjs[0];
+                                let modpagelocation = $("#page-mod-page-mod")
+                                    .find("#id_coursecontentnotification")
+                                    .closest('.form-group');
+                                $(modpagelocation).append(stringmsg);
+                            });
                         }
 
                         // Resources - put description in common mod settings.
@@ -1444,7 +1425,7 @@ define(['jquery', 'core/log', 'theme_snap/headroom', 'theme_snap/util', 'theme_s
                     if ($('body#page-report-competency-index').length > 0) {
                         const userCompetency = $('.user-competency-course-navigation');
                         if (userCompetency.length > 0) {
-                            userCompetency.parent().addClass('ml-4');
+                            userCompetency.parent().addClass('ms-4');
                         }
                     }
 

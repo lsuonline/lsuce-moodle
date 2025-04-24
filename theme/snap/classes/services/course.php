@@ -19,6 +19,9 @@ namespace theme_snap\services;
 defined('MOODLE_INTERNAL') || die();
 
 use theme_snap\renderables\course_card;
+// BEGIN LSU Extra Course Tabs.
+use theme_snap\renderables\remote_card;
+// END LSU Extra Course Tabs.
 use theme_snap\local;
 use theme_snap\renderables\course_toc;
 use theme_snap\color_contrast;
@@ -48,6 +51,152 @@ class course {
         }
         return $instance;
     }
+
+    // BEGIN LSU Extra Course Tabs.
+    public static function get_remote_courses($user, $debugging) {
+        // Get the current time.
+        $timer1 = microtime(true);
+
+        // Set the curl up.
+        $curl = curl_init();
+
+        // Set some URL vars.
+        $baseurl    = get_config('theme_snap', 'remotesite');
+        $wsurl      = '/webservice/rest/server.php';
+        $wstoken    = '?wstoken=' . get_config("theme_snap", "wstoken");
+        $wsfunction = '&wsfunction=local_remote_courses_get_courses_by_username';
+        $wsformat   = '&moodlewsrestformat=json';
+        $wsusername = '&username=' . $user->username;
+
+        // Build the URL.
+        $url = $baseurl . $wsurl . $wstoken . $wsfunction . $wsformat . $wsusername;
+
+        // Set the curl opts.
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => $url,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        // Execute the curel.
+        $json_response = curl_exec($curl);
+
+        // Decode the json response.
+        $response = json_decode($json_response);
+
+        // Close the curl.
+        curl_close($curl);
+
+        // Gett the new current time.
+        $timer2 = microtime(true);
+
+        // Calculate the elapsed time.
+        $elapsed = round($timer2 - $timer1, 2);
+
+        if ($debugging) {
+            echo("Remote course lookup took $elapsed seconds for $user->username.<br>");
+        }
+
+        // Return the response.
+        return $response;
+    }
+
+    public static function update_remote_courses($json, $userid, $id) {
+        global $DB;
+
+        // Build the remote course object.
+        $rcobj = new \stdClass();
+
+        // Set the id, userid, JSON, and time.
+        $rcobj->id          = $id;
+        $rcobj->userid      = $userid;
+        $rcobj->rcjson      = $json;
+        $rcobj->lastupdated = time();
+
+        // Set the table.
+        $table = 'theme_snap_remotes';
+
+        // Insert the data and set the id.
+        $updated = $DB->update_record($table, $rcobj, true);
+
+        // Return the id of the updated record.
+        return $updated;
+    }
+
+    public static function insert_remote_courses($json, $userid) {
+        global $DB;
+
+        // Build the remote course object.
+        $rcobj = new \stdClass();
+
+        // Set the userid, JSON, and time.
+        $rcobj->userid      = $userid;
+        $rcobj->rcjson      = $json;
+        $rcobj->lastupdated = time();
+
+        // Set the table.
+        $table = 'theme_snap_remotes';
+
+        // Insert the data and set the id.
+        $inserted = $DB->insert_record($table, $rcobj, true);
+
+        // Return the id of the new record.
+        return $inserted;
+    }
+
+    public static function get_et_courses($tab, $enrolled, $datelimit) {
+        global $DB, $USER;
+        $etsearchterm  = get_config('theme_snap', $tab . 'searchterm');
+        $etsearchopts  = get_config('theme_snap', $tab . 'searchopts');
+        $etsearchfield = get_config('theme_snap', $tab . 'coursefield');
+        $userid        = $USER->id;
+        if ($etsearchopts == 0) {
+            $term = "LIKE";
+            $searcher = $etsearchterm . '%';
+        } else if ($etsearchopts == 1) {
+            $term = "LIKE";
+            $searcher = '%' . $etsearchterm . '%';
+        } else if ($etsearchopts == 2) {
+            $term = "LIKE";
+            $searcher = '%' . $etsearchterm;
+        } else {
+            $term = "REGEXP";
+            $searcher = $etsearchterm;
+        }
+        if ($datelimit) {
+            $limiter = "AND c.startdate < UNIX_TIMESTAMP()
+                  AND c.enddate > UNIX_TIMESTAMP()";
+        } else {
+            $limiter = "";
+        }
+
+        $all = "SELECT * FROM mdl_course c
+                WHERE c.$etsearchfield $term '$searcher'"
+                  . $limiter;
+
+        $current = "SELECT c.* FROM mdl_user u
+                      INNER JOIN mdl_user_enrolments ue ON ue.userid = u.id
+                      INNER JOIN mdl_enrol e ON e.id = ue.enrolid
+                      INNER JOIN mdl_course c ON e.courseid = c.id
+                    WHERE u.id = $userid
+                      AND c.$etsearchfield $term '$searcher'
+                      AND ue.status = 0
+                      AND (ue.timeend > UNIX_TIMESTAMP() OR ue.timeend = 0) "
+                      . $limiter .
+                      "GROUP BY c.id";
+
+        $sql = $enrolled ? $current : $all;
+
+        $courses = $DB->get_records_sql($sql);
+
+        return $courses;
+    }
+    // END LSU Extra Course Tabs.
 
     /**
      * Return false if the summary files are is not suitable for course cover images.

@@ -42,6 +42,9 @@ use theme_snap\services\course;
 use theme_snap\renderables\settings_link;
 use theme_snap\renderables\genius_dashboard_link;
 use theme_snap\renderables\course_card;
+// BEGIN LSU Extra Course Tabs.
+use theme_snap\renderables\remote_card;
+// END LSU Extra Course Tabs.
 use theme_snap\renderables\course_toc;
 use theme_snap\renderables\featured_courses;
 use theme_snap\renderables\featured_categories;
@@ -238,7 +241,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
         // @codingStandardsIgnoreStart
         $gearicon = '<svg xmlns="http://www.w3.org/2000/svg" id="snap-admin-icon" viewBox="0 0 100 100">
-                        <title>'.get_string('admin', 'theme_snap').'</title>
+                        <title>'.get_string('toggleadmindrawer', 'theme_snap').'</title>
                         <path d="M85.2,54.9c0.2-1.4,0.3-2.9,0.3-4.5c0-1.5-0.1-3-0.3-4.5l9.6-7.5c0.9-0.7,1-1.9,0.6-2.9l-9.1-15.8c-0.6-1-1.8-1.3-2.8-1
                         l-11.3,4.6c-2.4-1.8-4.9-3.3-7.7-4.5l-1.8-12c-0.1-1-1-1.9-2.2-1.9H42.3c-1.1,0-2.1,0.9-2.2,1.9l-1.7,12.1c-2.8,1.1-5.3,2.7-7.7,4.5
                         l-11.3-4.6c-1-0.4-2.2,0-2.8,1L7.5,35.6c-0.6,1-0.3,2.2,0.6,2.9l9.6,7.5c-0.2,1.4-0.3,2.9-0.3,4.5c0,1.5,0.1,3,0.3,4.5L8,62.4
@@ -251,11 +254,12 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $url = '#inst' . $settingslink->instanceid;
         $attributes = [
             'id' => 'admin-menu-trigger',
-            'class' => 'float-right',
-            'data-toggle' => 'tooltip',
+            'class' => 'float-end',
             'data-placement' => 'bottom',
-            'title' => get_string('admin', 'theme_snap'),
-            'aria-label' => get_string('admin', 'theme_snap'),
+            'title' => get_string('toggleadmindrawer', 'theme_snap'),
+            'aria-label' => get_string('toggleadmindrawer', 'theme_snap'),
+            'data-original-title' => get_string('toggleadmindrawer', 'theme_snap'),
+            'aria-expanded' => 'false',
         ];
 
         return html_writer::link($url, $gearicon, $attributes);
@@ -290,40 +294,6 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
         if (!empty($headercontext)) {
             return $this->render_from_template('core/activity_header', $headercontext);
-        }
-        return '';
-    }
-
-    /**
-     * Badge counter for new messages.
-     * @return string
-     */
-    protected function render_message_icon() {
-        global $CFG, $USER;
-
-        // Add the messages icon with message count.
-        // The icon should not be displayed if the user is not logged in.
-        if (!isloggedin() || isguestuser() || user_not_fully_set_up($USER) ||
-            get_user_preferences('auth_forcepasswordchange') ||
-            (!$USER->policyagreed && !is_siteadmin() &&
-                ($manager = new \core_privacy\local\sitepolicy\manager()) && $manager->is_defined())) {
-            return '';
-        }
-
-        if (!empty($CFG->messaging) && !empty(get_config('theme_snap', 'messagestoggle'))) {
-            $url = new \moodle_url($CFG->wwwroot."/message/");
-            // Get number of unread conversations.
-            $unreadcount = \core_message\api::count_unread_conversations($USER);
-            $unreadconversationsstr = get_string('unreadconversations', 'core_message', $unreadcount);
-            $ariaopenmessagedrawer = get_string('openmessagedrawer', 'theme_snap');
-            return '<div class="badge-count-container">
-                        <a class="snap-message-count" aria-label="'.$ariaopenmessagedrawer.$unreadconversationsstr.'" +
-                         href="'.$url.'" title="'.$ariaopenmessagedrawer.$unreadconversationsstr.'">
-                            <i class="icon fa-regular fa-comment fa-fw">
-                                <div class="conversation_badge_count hidden"></div>
-                            </i>
-                        </a>
-                    </div>';
         }
         return '';
     }
@@ -807,11 +777,26 @@ class core_renderer extends \theme_boost\output\core_renderer {
         return $this->render_from_template('theme_snap/login_base_methods', $data);
     }
 
+    // BEGIN LSU Course Card Quick Links.
+    /**
+     * Get the links to show on course cards.
+     */
+    public function get_quick_links($course) {
+        $ccard = new course_card($course);
+        return $ccard->get_course_quick_links();
+    }
+    // END LSU Course Card Quick Links.
+
     /**
      * Personal menu or authenticate form.
      */
     public function personal_menu() {
+        // BEGIN LSU Course Card Quick Links.
         global $USER, $CFG;
+
+        // Use the can view gradebook and can manage activities as the capability we check for.
+        $caps = ['gradereport/grader:view', 'moodle/course:manageactivities'];
+        // END LSU Course Card Quick Links.
 
         if (!isloggedin() || isguestuser()) {
             return '';
@@ -955,16 +940,129 @@ class core_renderer extends \theme_boost\output\core_renderer {
         $currentcourses = $favorited + $notfavorited;
         $published = []; // Published course & favorites when user visible.
         $hidden = []; // Hidden courses.
-        foreach ($currentcourses as $course) {
-            $ccard = new course_card($course);
-            if (isset($favorited[$course->id]) || $course->visible) {
-                $published[] = $ccard;
+
+        // BEGIN LSU Extra Course Tabs.
+        // Get the debugging settings.
+        $debugging  = $CFG->debugdisplay == 1 && is_siteadmin() ? 1 : 0;
+
+        // Get the tab settings.
+        $et1      = get_config('theme_snap', 'extratab1toggle');
+        $et2      = get_config('theme_snap', 'extratab2toggle');
+        $et3      = get_config('theme_snap', 'extratab3toggle');
+        $dl1      = get_config('theme_snap', 'extratab1datelimits');
+        $dl2      = get_config('theme_snap', 'extratab2datelimits');
+        $dl3      = get_config('theme_snap', 'extratab3datelimits');
+        $enr1     = get_config('theme_snap', 'extratab1enrolled');
+        $enr2     = get_config('theme_snap', 'extratab2enrolled');
+        $enr3     = get_config('theme_snap', 'extratab3enrolled');
+        $et3repop = get_config('theme_snap', 'extratab3repop');
+        // If extra tab 1 is enabled.
+        if ($et1) {
+            // Get the courses for extra tab 1.
+            $et1courses = course::get_et_courses('extratab1', $et1, $dl1);
+            // If we have any courses, merge them into the overall extra tabs array.
+            if (isset($etcourses)) {
+                $etcourses = array_merge($etcourses, $et1courses);
+            } else {
+                $etcourses = $et1courses;
             }
         }
+        // If extra tab 2 is enabled.
+        if ($et2) {
+            // Get the courses for extra tab 2.
+            $et2courses = course::get_et_courses('extratab2', $et2, $dl2);
+            // If we have any courses, merge them into the overall extra tabs array.
+            if (isset($etcourses)) {
+                $etcourses = array_merge($etcourses, $et2courses);
+            } else {
+                $etcourses = $et2courses;
+            }
+        }
+        // If extra tab 3 is enabled.
+        if ($et3) {
+            // Get the courses for extra tab 3.
+            $et3courses = course::get_et_courses('extratab3', $et3, $dl3);
+            // If we have any courses, merge them into the overall extra tabs array.
+            if (isset($etcourses)) {
+                $etcourses = array_merge($etcourses, $et3courses);
+            } else {
+                $etcourses = $et3courses;
+            }
+        }
+        // END LSU Extra Course Tabs.
+        
         foreach ($currentcourses as $course) {
-            $ccard = new course_card($course);
-            if (!isset($favorited[$course->id]) && !$course->visible) {
-                $hidden[] = $ccard;
+            // BEGIN LSU Extra Course Tabs.
+            // If we have extra courses, remove them from the array.
+            if (isset($etcourses)) {
+                // Loop through the extra tab courses.
+                foreach ($etcourses as $etcourse) {
+                    // Check for a match.
+                    if ($course->id == $etcourse->id) {
+                        // Remove it.
+                        unset($course);
+                        break 1;
+                    }
+                }
+            }
+            // If we have a course.
+            if (isset($course)) {
+                // Build a course card for it.
+                $ccard = new course_card($course);
+                if (isset($favorited[$course->id]) || $course->visible) {
+                    $published[] = $ccard;
+                }
+            }
+            // END LSU Extra Course Tabs.
+        }
+
+        // BEGIN LSU Extra Course Tabs.
+        // Set this helper to false for now.
+        $et3empty = false;
+
+        if ($et3 && $et3repop) {
+            // If we have 0 published courses and 0 current coutrses + we have courses in tab 3.
+            if (count($published) == 0 && isset($et3courses)) {
+                foreach ($et3courses as $course) {
+                    // Get the course context for this course.
+                    $coursecontext = context_course::instance($course->id);
+                    // Check to see if the logged in user has any of thise caps anywhere.
+                    $canmanageacts = has_any_capability($caps, $coursecontext);
+                    // Students cannot manage those things.
+                    $isstudent = !$canmanageacts;
+                    if (isset($course)) {
+                        $ccard = new course_card($course);
+                        $et3empty = true;
+                        // Add the visible or favorited courses to the main tab.
+                        if (isset($favorited[$course->id]) || $course->visible) {
+                            $published[] = $ccard;
+                        }
+                        // Add the hidden courses to the hidden tab for faculty.
+                        if (!isset($favorited[$course->id]) && !$course->visible && !$isstudent) {
+                            $hidden[] = $ccard;
+                        }
+                    }
+                }
+            }
+        }
+        // END LSU Extra Course Tabs.
+
+        foreach ($currentcourses as $course) {
+            // BEGIN LSU Extra Course Tabs.
+            if (isset($etcourses)) {
+                foreach ($etcourses as $etcourse) {
+                    if ($course->id == $etcourse->id) {
+                        unset($course);
+                          break 1;
+                    }
+                }
+            }
+            // END LSU Extra Course Tabs.
+            if (isset($course)) {
+                $ccard = new course_card($course);
+                if (!isset($favorited[$course->id]) && !$course->visible) {
+                    $hidden[] = $ccard;
+                }
             }
         }
 
@@ -983,6 +1081,193 @@ class core_renderer extends \theme_boost\output\core_renderer {
                 'courses' => $hidden,
             ];
         }
+
+        // BEGIN LSU Extra Course Tabs.
+        // Are we using remote courses?
+        $rc      = get_config('theme_snap', 'remotecoursestoggle');
+        // Is it opt-in or not?
+        $rcoptin = get_config('theme_snap', 'remotecoursesoptin');
+
+        // Get the STORED user preference DO NOT CACHE OR USE USER object.
+        $fieldvalue = isset($USER->profile['snap_remotecourses']) ? $USER->profile['snap_remotecourses'] : "I was in the pool!";
+
+        if ($rcoptin) {
+            // Make sure the preference is EXPRESSLY set to show, otherwise hide.
+            $userc = $fieldvalue === "Opt-In" ? 1 : 0;
+        } else {
+            // Make sure the preference is EXPRESSLY set to hide, otherwise show.
+            $userc = $fieldvalue === "Opt-Out" ? 0 : 1;
+        }
+
+        // Get the remote course cache timeout value.
+        $rcdays = get_config('theme_snap', 'cachetimeout');
+        $rcdays = $rcdays ? $rcdays : 10;
+        $rccache = 86400 * $rcdays;
+
+        // If we want to grab remote courses, do it.
+        if ($rc && $userc == 1) {
+            global $DB;
+
+            // Grab the other courses from the local cache.
+            $rccontainer = $DB->get_record('theme_snap_remotes', array('userid' => $USER->id));
+
+            // If we have data for the user.
+            if ($rccontainer) {
+
+                // Decode the data for future use.
+                $rccourses = json_decode($rccontainer->rcjson);
+
+            // We have no stored local record.
+            } else {
+
+                // Set the data as false.
+                $rccourses = false;
+            }
+
+            // We have no stored local record.
+            if (!$rccontainer) {
+
+                if ($debugging) {
+                    echo("<span class = 'snap_debug_hidden'>We have no local cache for $USER->username.<br></span>");
+                }
+
+                // Fetch the remote courses.
+                $remotecourses = course::get_remote_courses($USER, $debugging);
+
+                // Insert the record.
+                $inserted = course::insert_remote_courses(json_encode($remotecourses), $USER->id);
+
+                // If we have an exception, set remote courses to false.
+                if (isset($remotecourses->exception)) {
+                    $remotecourses = false;
+                }
+
+            // We have a valid stored cache, but no courses in the remote system for this user.
+            } else if (isset($rccourses->exception) && $rccontainer->lastupdated > (time() - $rccache)) {
+
+                if ($debugging) {
+                    echo("<span class = 'snap_debug_hidden'>We have a valid exception cache stored for $USER->username.<br></span>");
+                }
+
+                // If we have a valid cached exception, set remote courses to false.
+                $remotecourses = false;
+
+            // We have an expired stored local record.
+            } else if ($rccontainer->lastupdated < (time() - $rccache)) {
+
+                if ($debugging) {
+                    echo("We have an expired cache for $USER->username.<br>");
+                }
+
+                // Fetch the remote courses.
+                $remotecourses = course::get_remote_courses($USER, $debugging);
+
+                // Update the local record.
+                $updated = course::update_remote_courses(json_encode($remotecourses), $USER->id, $rccontainer->id);
+
+                // If we have an exception, set remote courses to false.
+                if (isset($remotecourses->exception)) {
+                    $remotecourses = false;
+                }
+
+                // We are good, we just use the cached record.
+            } else {
+
+                if ($debugging) {
+                    echo("We have a valid cache for $USER->username, use it.<br>");
+                }
+
+                // Decode the cached record.
+                $remotecourses = $rccourses;
+            }
+
+            // Make sure the name has no spaces.
+            $rcname = preg_replace('/\s+/', '-', get_string('remotecourses', 'theme_snap'));
+
+            // Get the config from the remote courses plugin config.
+            $lpid = get_config('theme_snap', 'localproxy');
+
+            // Get the course object for the local proxy course.
+            $localproxy = get_course($lpid);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            if ($remotecourses) {
+                foreach($remotecourses as $remotecourse) {
+                    $remotecourse->remoteid  = $remotecourse->id;
+                    $remotecourse->category  = $localproxy->category;
+                    $remotecourse->id        = $localproxy->id;
+                    $remotecourse->idnumber  = $localproxy->idnumber;
+                    $remotecourse->startdate = $localproxy->startdate;
+                    $remotecourse->enddate   = $localproxy->enddate;
+                    $remotecourse->endyear   = $rcname;
+                    $ccard = new course_card($remotecourse);
+                    $ccard->archived = true;
+                    $pastcourses[$rcname][] = $remotecourse;
+                }
+            }
+        }
+
+        // Get the extra tab 1 setting.
+        $et1name = preg_replace('/\s+/', '-', get_config('theme_snap', 'extratab1name'));
+        $et2name = preg_replace('/\s+/', '-', get_config('theme_snap', 'extratab2name'));
+        $et3name = preg_replace('/\s+/', '-', get_config('theme_snap', 'extratab3name'));
+
+        // If we want to grab and show extra tab 1, do it.
+        if ($et1) {
+            // Grab the courses for extra tab 1.
+            $et1courses = course::get_et_courses('extratab1', $enr1, $dl1);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            foreach($et1courses as $et1course) {
+                $et1course->endyear   = $et1name;
+                $ccard = new course_card($et1course);
+                $ccard->archived = true;
+                $pastcourses[$et1name][] = $et1course;
+            }
+        }
+
+        if ($et2) {
+            // Grab the courses for extra tab 2.
+            $et2courses = course::get_et_courses('extratab2', $enr2, $dl2);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            foreach($et2courses as $et2course) {
+                $et2course->endyear   = $et2name;
+                $ccard = new course_card($et2course);
+                $ccard->archived = true;
+                $pastcourses[$et2name][] = $et2course;
+            }
+        }
+
+        if ($et3 && $et3empty == false) {
+            // Grab the courses for extra tab 3.
+            $et3courses = course::get_et_courses('extratab3', $enr3, $dl3);
+
+            // Loop through the other courses and fill in the info from the local proxy as needed.
+            foreach($et3courses as $et3course) {
+                // Get the course context for this course.
+                $coursecontext = context_course::instance($et3course->id);
+                // Check to see if the logged in user has any of thise caps anywhere.
+                $canmanageacts = has_any_capability($caps, $coursecontext);
+                // Students cannot manage those things.
+                $isstudent = !$canmanageacts;
+
+                // If you are not a student, load the course regardless of the visibility.
+                if (!$isstudent) {
+                    $et3course->endyear   = $et3name;
+                    $ccard = new course_card($et3course);
+                    $ccard->archived = true;
+                    $pastcourses[$et3name][] = $et3course;
+                // If you are a student, only load visible courses.
+                } else if ($et3course->visible == 1 && $isstudent) {
+                    $et3course->endyear   = $et3name;
+                    $ccard = new course_card($et3course);
+                    $ccard->archived = true;
+                    $pastcourses[$et3name][] = $et3course;
+                }
+            }
+        }
+        // END LSU Extra Course Tabs.
 
         // Past courses data.
         $pastcourselist = [];
@@ -1044,6 +1329,11 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $courselimitclass = 'warning';
             $warningstring = get_string('courselimitstrwarning', 'theme_snap', $maxcourses);
         }
+
+        // BEGIN LSU Extra Course Tabs.
+        // Make sure we have the latest list of pastcourses to work from.
+        $coursenav = !empty($pastcourses);
+        // END LSU Extra Course Tabs.
 
         $data = (object) [
             'userpicture' => $picture,
@@ -1296,6 +1586,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $heading = html_writer::link($courseurl, $heading);
             if (!$this->snap_page_is_activity_view() && !$this->snap_page_is_edit_section() && !$this->snap_page_is_activity_mod() && !$this->snap_page_is_user_view()) {
                 $heading = $this->context_header(['heading' => $heading]);
+            } else {
+                $heading = html_writer::tag($tag, $heading);
             }
         } else {
             // Default heading.
@@ -2197,14 +2489,13 @@ HTML;
     protected function render_notification_popups() {
         // @codingStandardsIgnoreStart
         // Core renderer has not $output attribute, but code checker requires it.
-        global $CFG, $OUTPUT;
+        global $OUTPUT, $CFG;
 
         $navoutput = '';
         if (\core_component::get_component_directory('local_intellicart') !== null) {
             require_once(__DIR__ . '/../../../../local/intellicart/lib.php');
             $navoutput .= local_intellicart_render_navbar_output($OUTPUT);
         }
-        // We only want the notifications bell, not the messages badge so temporarilly disable messaging to exclude it.
         $messagingenabled = $CFG->messaging;
         $CFG->messaging = false;
         $navoutput .= message_popup_render_navbar_output($OUTPUT);
@@ -2290,6 +2581,13 @@ HTML;
         if (!empty($coverimage)) {
             $attrs['class'] .= ' mast-breadcrumb';
         }
+        // BEGIN LSU Extra My Course or My Home.
+        if (empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
+            $snapmycourses = html_writer::link(new moodle_url('/my/courses.php'), get_string('menu', 'theme_snap'), $attrs);
+        } else {
+            $snapmycourses = html_writer::link(new moodle_url('/my/'), get_string('myhome'), $attrs);
+        }
+        // END LSU Extra My Course or My Home.
         $snapmycourses = html_writer::link(new moodle_url('/my/courses.php'), get_string('menu', 'theme_snap'), $attrs);
         $filteredbreadcrumbs = $this->remove_duplicated_breadcrumbs($this->page->navbar->get_items());
         foreach ($filteredbreadcrumbs as $item) {
@@ -2373,8 +2671,7 @@ HTML;
             $spacer  = '<div class="snap-custom-menu-spacer"></div>';
 
             // Style to fix the block settings menu when custom menu is active.
-            $css = '#page-content .block_settings.state-visible div.card-body {margin-top: 3em;}';
-            $css .= '#page-admin-purgecaches #notice, #notice.snap-continue-cancel';
+            $css = '#page-admin-purgecaches #notice, #notice.snap-continue-cancel';
 
             $spacer .= "<style> {$css} </style>";
         }
@@ -2725,13 +3022,12 @@ HTML;
         $attributes = [
             'id' => 'snap_feeds_side_menu_trigger',
             'class' => 'js-snap-feeds-side-menu-trigger',
-            'title' => get_string('show'). ' ' .get_string('snapfeedsblocktitle', 'theme_snap'),
-            'aria-label' => get_string('show'). ' ' .get_string('snapfeedsblocktitle', 'theme_snap'),
+            'title' => get_string('togglesnapfeedsdrawer', 'theme_snap'),
+            'aria-label' => get_string('togglesnapfeedsdrawer', 'theme_snap'),
             'aria-expanded' => "false",
         ];
 
         return html_writer::link($url, $icon, $attributes);
-
     }
 
     /**
@@ -2810,8 +3106,7 @@ HTML;
      */
     protected function snap_page_is_activity_view() {
         return $this->page->context->contextlevel === CONTEXT_MODULE
-               && strpos($this->page->pagetype, 'mod-') === 0
-               && substr($this->page->pagetype, -5) === '-view';
+               && strpos($this->page->pagetype, 'mod-') === 0;
     }
 
     /**
@@ -2841,5 +3136,15 @@ HTML;
      */
     protected function snap_page_is_user_view() {
         return $this->page->pagetype === 'user-view';
+    }
+
+    /**
+     * Check if current page is a whitelisted mod that we need to show snap blocks in some special cases.
+     * @return bool
+     */
+    protected function snap_page_is_whitelisted_mod() {
+        $whitelist = ['book', 'quiz'];
+        return $this->page->context->contextlevel === CONTEXT_MODULE
+            && in_array($this->page->cm->modname, $whitelist);
     }
 }

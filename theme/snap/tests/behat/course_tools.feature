@@ -116,15 +116,15 @@ Feature: When the moodle theme is set to Snap, a course tools section is availab
     # Note we have to call this step twice because for some reason it doesn't automatically go to the module page the
     # first time - that's a core issue though.
     And I am on the course main page for "C1"
-    Then I should not see "<formatdisplay>" in the "#page-mast" "css_element"
+    Then I should not see "<formatdisplay>" in the ".format-singleactivity .page-header-headings > h1" "css_element"
     Then I should see "Course Dashboard" in the "#coursetools" "css_element"
     And "#snap-student-dashboard" "css_element" should exist
     And ".snap-student-dashboard-progress" "css_element" <seecompletion> exist
     And ".snap-student-dashboard-grade" "css_element" <seegrade> exist
     Examples:
       | type    | completionenabled | gradebookaccessible | seecompletion | seegrade   | formatdisplay |
-      | general | Enabled           | Allow               | should        | should     | C1            |
-      | general | Disabled          | Prohibit            | should not    | should not | C1            |
+      | general | Enabled           | Allow               | should        | should     | Course 1      |
+      | general | Disabled          | Prohibit            | should not    | should not | Course 1      |
       | single  | Enabled           | Allow               | should        | should     | Course 1      |
       | single  | Disabled          | Prohibit            | should not    | should not | Course 1      |
 
@@ -246,41 +246,3 @@ Feature: When the moodle theme is set to Snap, a course tools section is availab
     And I switch edit mode in Snap
     And I wait until the page is ready
     Then I should not see "Course Dashboard" in the "#coursetools" "css_element"
-
-  @javascript
-  Scenario: User should be redirected to the Course Dashboard in the course in Snap when modifying block.
-    Given I log in as "teacher1"
-    And I change window size to "large"
-    And I am on the course main page for "C1"
-    When I click on "Course Dashboard" "link"
-    And I wait until the page is ready
-    And I switch edit mode in Snap
-    And I wait until the page is ready
-    And I click on "button[data-original-title='Open block drawer']" "css_element"
-    And I should see "Add a block"
-    And I set the field with xpath "//select[@class = 'custom-select singleselect']" to "Calendar"
-    And I wait until the page is ready
-    And I click on "button[data-original-title='Open block drawer']" "css_element"
-    And I should see "Calendar"
-    And I click on ".block_calendar_month .action-menu-item" "css_element"
-    And I click on "//a[contains(text(), 'To item \"Navigation\"')]" "xpath_element"
-    And I wait until the page is ready
-    And I click on ".block_calendar_month .block-controls .action-menu-trigger" "css_element"
-    And I follow "Hide Calendar block"
-    And I wait until the page is ready
-    And I click on "button[data-original-title='Open block drawer']" "css_element"
-    And I should see "Add a block"
-    And ".block_calendar_month.block.invisibleblock" "css_element" should exist
-    And I click on ".block_calendar_month .block-controls .action-menu-trigger" "css_element"
-    And I follow "Show Calendar block"
-    And I wait until the page is ready
-    And I click on "button[data-original-title='Open block drawer']" "css_element"
-    And I should see "Add a block"
-    And ".block_calendar_month.block.invisibleblock" "css_element" should not exist
-    And I click on ".block_calendar_month .block-controls .action-menu-trigger" "css_element"
-    And I follow "Delete Calendar block"
-    And I click on ".modal button[data-action='save']" "css_element"
-    And I wait until the page is ready
-    And I click on "button[data-original-title='Open block drawer']" "css_element"
-    And I should see "Add a block"
-    And ".block_calendar_month" "css_element" should not exist
