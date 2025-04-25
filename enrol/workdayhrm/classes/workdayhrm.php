@@ -789,7 +789,9 @@ die();
             $username = strtolower($student->work_email);
         } else {
             // Build the new username (lowercase it in case the admin is a moron).
-            $username = strtolower(str_replace('@', '_', $student->work_email) . '#ext#' . $extdomain);
+            // We are no longer doing external usernames.
+            // $username = strtolower(str_replace('@', '_', $student->work_email) . '#ext#' . $extdomain);
+            $username = strtolower($student->work_email);
         }
 
         // Build the conditions to get some users.
