@@ -100,7 +100,7 @@ class block_wdsprefs extends block_base {
             ],
             [
                 'text' => get_string('wdsprefs:crosslist', 'block_wdsprefs'),
-                'url' => new moodle_url('/blocks/wdsprefs/crosslistview.php'),
+                'url' => new moodle_url('/blocks/wdsprefs/crosslist.php'),
                 'icontype' => 'fontawesome',
                 'icon' => 'fa-link'
             ],
