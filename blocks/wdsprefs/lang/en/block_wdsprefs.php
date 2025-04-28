@@ -80,3 +80,18 @@ $string['wdsprefs:wdstatusheading'] = 'Workday Status';
 $string['wdsprefs:deliverymodeheading'] = 'Delivery Mode';
 $string['wdsprefs:nocourses'] = 'You are not registered for courses in Workday.';
 
+// Crosslist strings.
+$string['wdsprefs:crosslisttitle'] = 'Cross-list Sections';
+$string['wdsprefs:crosslistheading'] = 'Cross-list Course Sections';
+$string['wdsprefs:selectcoursesheader'] = 'Step 1: Choose Courses and Number of Shells';
+$string['wdsprefs:assignshellsheader'] = 'Step 2: Assign Sections to Shells';
+$string['wdsprefs:selectcourses'] = 'Courses to include';
+$string['wdsprefs:shellcount'] = 'Number of course shells';
+$string['wdsprefs:shell'] = 'Shell {$a}';
+$string['wdsprefs:atleasttwosections'] = 'You must select at least two sections to enable cross-listing.';
+$string['wdsprefs:crosslistsuccess'] = 'Cross-listing setup successful.';
+$string['wdsprefs:duplicatesection'] = 'Each section can only be assigned to one shell.';
+$string['wdsprefs:availablesections'] = 'Available Sections';
+$string['wdsprefs:selectedsections'] = 'Shell {$a} Sections';
+$string['wdsprefs:crosslistfail'] = 'Crosslisting Failed?';
+$string['wdsprefs:crosslistinstructions'] = 'Click on a shell container to select it (highlighted in blue), then select sections from the left and click "Add to Shell" to assign them. You can select sections from any shell and click "Remove" to return them to the available list. You need to create {$a} shell(s).';
