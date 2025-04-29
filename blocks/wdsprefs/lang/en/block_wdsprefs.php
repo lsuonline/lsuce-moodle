@@ -93,5 +93,7 @@ $string['wdsprefs:crosslistsuccess'] = 'Cross-listing setup successful.';
 $string['wdsprefs:duplicatesection'] = 'Each section can only be assigned to one shell.';
 $string['wdsprefs:availablesections'] = 'Available Sections';
 $string['wdsprefs:selectedsections'] = 'Shell {$a} Sections';
+$string['wdsprefs:selectperiodsheader'] = 'Current / Near-Future Periods';
+$string['wdsprefs:selectperiod'] = 'Select a term/period to use';
 $string['wdsprefs:crosslistfail'] = 'Crosslisting Failed?';
 $string['wdsprefs:crosslistinstructions'] = 'Click on a shell container to select it (highlighted in blue), then select sections from the left and click "Add to Shell" to assign them. You can select sections from any shell and click "Remove" to return them to the available list. You need to create {$a} shell(s).';

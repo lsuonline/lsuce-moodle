@@ -37,6 +37,10 @@
   padding-bottom: 0 !important;
 }
 
+.mform .d-flex .fitem.wdsprefsradio {
+  margin: unset !important;
+}
+
 /* Dual list styling */
 .duallist-container {
     display: flex;

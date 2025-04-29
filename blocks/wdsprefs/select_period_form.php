@@ -23,46 +23,35 @@
 
 require_once("$CFG->libdir/formslib.php");
 
-class select_courses_form extends moodleform {
+class select_period_form extends moodleform {
     public function definition() {
         $mform = $this->_form;
 
         // Add the step = assign crap.
-        $this->_form->addElement('hidden', 'step', 'course');
+        $this->_form->addElement('hidden', 'step', 'period');
         $this->_form->setType('step', PARAM_TEXT);
 
-        // Get the sections for this period.
-        $sectionsbycourse = $this->_customdata['sectionsbycourse'] ?? [];
-
-        // Get the count of sections.
-        $sectioncount = array_sum(array_map('count', $sectionsbycourse));
-
-        // Get the courses.
-        $courses = array_keys($sectionsbycourse);
+        // Get the periods.
+        $periods = $this->_customdata['periods'] ?? [];
 
         // Add the header.
         $mform->addElement('header',
-            'wdsprefs:selectcoursesheader',
-            get_string('wdsprefs:selectcoursesheader', 'block_wdsprefs'));
+            'wdsprefs:selectperiodsheader',
+            get_string('wdsprefs:selectperiodsheader', 'block_wdsprefs'));
 
-        // Add checkboxes for course selection.
-        foreach ($courses as $coursename) {
+        // Build the radio array.
+        $radioarray = [];
+        // Set the class.
+        $parms = ['class' => 'wdsprefsradio'];
 
-            // Sanitize course name.
-            $sanitized = str_replace([' ', '/'], ['_', '-'], $coursename);
-
-            // Add the form items.
-            $mform->addElement('advcheckbox', 'selectedcourses_' . $sanitized, '', $coursename);
+        // Loop through the periods to build out the radio array.
+        foreach ($periods as $periodid => $periodname) {
+            $radioarray[] = $mform->createElement('radio', 'periodid', '', $periodname, $periodid, $parms);
         }
 
-        // Add the form item for the number of course shells dropdown.
-        $mform->addElement('select',
-            'shellcount',
-            get_string('wdsprefs:shellcount', 'block_wdsprefs'),
-            array_combine(range(1, $sectioncount), range(1, $sectioncount)));
-
-        // Set the default.
-        $mform->setDefault('shellcount', 1);
+        $mform->addGroup($radioarray, 'periodid_group', get_string('wdsprefs:selectperiod', 'block_wdsprefs'), '<br>', false);
+        $mform->addRule('periodid_group', null, 'required', null, 'client');
+        $mform->setType('periodid', PARAM_ALPHANUMEXT);
 
         // Add the action buttons.
         $this->add_action_buttons(true, get_string('continue'));
