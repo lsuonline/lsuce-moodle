@@ -45,11 +45,6 @@ require_once($CFG->dirroot.'/lib/enrollib.php');
 class local {
 
     /**
-     * Default limit for retrieving course completion data.
-     */
-    const DEFAULT_COMPLETION_COURSE_LIMIT = 100;
-
-    /**
      * Is there a valid grade or feedback inside this grader report table item?
      *
      * @param $item
@@ -76,21 +71,14 @@ class local {
     /**
      * Does this course have any visible feedback for current user?.
      * @param \stdClass $course
-     * @param bool $oncoursedashboard
      * @return object
      */
-    public static function course_grade($course, $oncoursedashboard = false) {
+    public static function course_grade($course) {
         global $USER;
 
         $failobj = (object) [
             'coursegrade' => false,
         ];
-
-        $config = get_config('theme_snap');
-        if (empty($config->showcoursegradepersonalmenu) && $oncoursedashboard === false) {
-            // If not enabled, don't return data.
-            return $failobj;
-        }
 
         if (!isloggedin() || isguestuser()) {
             return $failobj;
@@ -125,7 +113,6 @@ class local {
         // Default feedbackobj.
         $feedbackobj = (object) [
             'feedbackurl' => $feedbackurl->out(),
-            'showgrade' => $config->showcoursegradepersonalmenu,
         ];
 
         if (!$coursegrade->is_hidden() || $canviewhidden) {
@@ -456,7 +443,8 @@ class local {
         $courses = enrol_get_my_courses(['enablecompletion', 'showgrades']);
 
         // We do not support meta data for people who have a crazy number of courses!
-        $maxcourses = !empty($CFG->theme_snap_max_pm_completion_courses) ?
+        /*
+	$maxcourses = !empty($CFG->theme_snap_max_pm_completion_courses) ?
             $CFG->theme_snap_max_pm_completion_courses : self::DEFAULT_COMPLETION_COURSE_LIMIT;
         $barlimit = !empty($CFG->theme_snap_bar_limit) ?
             $CFG->theme_snap_bar_limit : self::DEFAULT_COMPLETION_COURSE_LIMIT;
@@ -469,7 +457,7 @@ class local {
             $CFG->theme_snap_max_pm_completion_time_courses : (MINSECS / 4);
         $starttime = time();
         $showgrades = get_config('theme_snap', 'showcoursegradepersonalmenu');
-
+	*/
         // BEGIN LSU Course Card Quick Links.
         // Get renderer so we can call the quick links func to get the quick links.
         $renderer = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
