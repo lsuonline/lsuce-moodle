@@ -24,11 +24,11 @@
 require_once("$CFG->libdir/formslib.php");
 
 class crosslist_form extends moodleform {
+
     public function definition() {
         global $PAGE, $OUTPUT;
-        $PAGE->requires->js_call_amd('block_wdsprefs/duallist', 'init');
-
-        // Add the step = assign crap.
+        
+        // Add the step parameter
         $this->_form->addElement('hidden', 'step', 'assign');
         $this->_form->setType('step', PARAM_TEXT);
 
@@ -40,21 +40,27 @@ class crosslist_form extends moodleform {
         $mform->addElement('header', 'assignshellsheader',
             get_string('wdsprefs:assignshellsheader', 'block_wdsprefs'));
             
-        // Instructions.
+        // Instructions
         $mform->addElement('html',
             '<div class="alert alert-info"><p>' .
             get_string('wdsprefs:crosslistinstructions',
                 'block_wdsprefs', $shellcount
             ) . '</p></div>');
             
-        // Start container.
+        // Add hidden fields for each shell to store selections
+        for ($i = 1; $i <= $shellcount; $i++) {
+            $mform->addElement('hidden', "shell_{$i}_data", '');
+            $mform->setType("shell_{$i}_data", PARAM_RAW);
+        }
+        
+        // Start dual list container
         $mform->addElement('html', '<div class="duallist-container">');
         
-        // Available sections (single box on left).
+        // Available sections (single box on left)
         $mform->addElement('html', '<div class="duallist-available"><label>' .
             get_string('wdsprefs:availablesections', 'block_wdsprefs') .
-            '</label><select class="form-control" name="available_sections" ' .
-            'id="available_sections" multiple size="10">');
+            '</label><select class="form-control" id="available_sections" ' .
+            'multiple size="10">');
                 
         foreach ($sectiondata as $value => $label) {
             $mform->addElement('html',
@@ -64,51 +70,135 @@ class crosslist_form extends moodleform {
         
         $mform->addElement('html', '</select></div>');
         
-        // Control buttons. TODO: STRINGME!
+        // Control buttons
         $mform->addElement('html', '
             <div class="duallist-controls">
-                <button type="button" class="btn btn-secondary mb-2" onclick="moveToShell()">
+                <button type="button" class="btn btn-secondary mb-2" id="move-to-shell-btn">
                     ' . $OUTPUT->pix_icon('t/right', '') . ' Add to Shell</button>
-                <button type="button" class="btn btn-secondary" onclick="moveBackToAvailable()">
+                <button type="button" class="btn btn-secondary" id="move-back-btn">
                     ' . $OUTPUT->pix_icon('t/left', '') . ' Remove</button>
             </div>');
             
-        // Shell sections (multiple boxes on right).
+        // Shell sections (multiple boxes on right)
         $mform->addElement('html', '<div class="duallist-shells">');
         
-        // Create the shell select boxes. TODO: REAL DATA!
+        // Create the shell select boxes
         for ($i = 1; $i <= $shellcount; $i++) {
             $mform->addElement('html', '
                 <div class="duallist-shell"><label>' .
                 get_string('wdsprefs:shell', 'block_wdsprefs', $i) .
-                '</label><select class="form-control" name="shell_' .
-                $i . '[]" id="shell_' . $i .
-                '" multiple size="10"></select></div>');
+                '</label><select class="form-control shell-select" ' .
+                'id="shell_' . $i . '" data-shell-num="' . $i . '" multiple size="10"></select></div>');
         }
 
         $mform->addElement('html', '</div></div>');
+        
+        // Add JavaScript INLINE to manage the dual list functionality.
+        $mform->addElement('html', '
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let activeShellId = "shell_1";
+            
+            // Set active shell when clicked
+            function setActiveShell(shellId) {
+                document.querySelectorAll(".duallist-shell").forEach(shell => {
+                    shell.classList.remove("active-shell");
+                });
+                
+                const shellContainer = document.getElementById(shellId).parentElement;
+                shellContainer.classList.add("active-shell");
+                
+                activeShellId = shellId;
+            }
+            
+            // Initialize by setting first shell as active
+            setActiveShell("shell_1");
+            
+            // Add click event to shells
+            document.querySelectorAll(".duallist-shell").forEach(shell => {
+                shell.addEventListener("click", function() {
+                    const selectElement = this.querySelector("select");
+                    if (selectElement) {
+                        setActiveShell(selectElement.id);
+                    }
+                });
+            });
+            
+            // Make select elements forward click events
+            document.querySelectorAll(".shell-select").forEach(select => {
+                select.addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    setActiveShell(this.id);
+                });
+            });
+            
+            // Move selected options to active shell
+            document.getElementById("move-to-shell-btn").addEventListener("click", function() {
+                const available = document.getElementById("available_sections");
+                const target = document.getElementById(activeShellId);
+                
+                if (available && target) {
+                    const selectedOptions = Array.from(available.selectedOptions);
+                    
+                    selectedOptions.forEach(option => {
+                        const newOption = document.createElement("option");
+                        newOption.value = option.value;
+                        newOption.text = option.text;
+                        target.appendChild(newOption);
+                        
+                        available.removeChild(option);
+                    });
+                    
+                    // Update hidden fields
+                    updateHiddenFields();
+                }
+            });
+            
+            // Move selected options back to available
+            document.getElementById("move-back-btn").addEventListener("click", function() {
+                const available = document.getElementById("available_sections");
+                
+                document.querySelectorAll(".shell-select").forEach(shellSelect => {
+                    const selectedOptions = Array.from(shellSelect.selectedOptions);
+                    
+                    selectedOptions.forEach(option => {
+                        const newOption = document.createElement("option");
+                        newOption.value = option.value;
+                        newOption.text = option.text;
+                        available.appendChild(newOption);
+                        
+                        shellSelect.removeChild(option);
+                    });
+                });
+                
+                // Update hidden fields
+                updateHiddenFields();
+            });
+            
+            // Update hidden fields with current selections
+            function updateHiddenFields() {
+                document.querySelectorAll(".shell-select").forEach(select => {
+                    const shellNum = select.getAttribute("data-shell-num");
+                    const values = Array.from(select.options).map(opt => opt.value);
+                    
+                    // Store as JSON in hidden field
+                    document.querySelector(`input[name="shell_${shellNum}_data"]`).value = 
+                        JSON.stringify(values);
+                });
+            }
+            
+            // Handle form submission
+            const form = document.querySelector("form.mform");
+            if (form) {
+                form.addEventListener("submit", function(e) {
+                    // Final update of hidden fields before submission
+                    updateHiddenFields();
+                });
+            }
+        });
+        </script>
+        ');
 
         $this->add_action_buttons(true, get_string('submit'));
     }
-
-/* TODO: Real validation?
-    public function validation($data, $files) {
-        $errors = [];
-        $assigned = [];
-        
-        foreach ($data as $key => $sections) {
-            if (strpos($key, 'shell_') === 0 && is_array($sections)) {
-                foreach ($sections as $sectionid) {
-                    if (in_array($sectionid, $assigned)) {
-                        $errors[$key] = get_string('wdsprefs:duplicatesection', 'block_wdsprefs');
-                    } else {
-                        $assigned[] = $sectionid;
-                    }
-                }
-            }
-        }
-        
-        return $errors;
-    }
-*/
 }
