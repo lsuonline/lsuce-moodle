@@ -25,6 +25,12 @@ require_once("$CFG->dirroot/enrol/workdaystudent/classes/workdaystudent.php");
 
 class wdsprefs {
 
+    /**
+     * Gets the period object from the period id.
+     *
+     * @param @string $periodid The academic period ID to fetch sections for.
+     * @return @object The period object.
+     */
     public static function get_period_from_id($periodid) {
         global $DB;
 
@@ -40,16 +46,25 @@ class wdsprefs {
         return $period;
     }
 
+    /**
+     * Gets future and current taught academic periods.
+     *
+     * @return @array Formatted array of periods.
+     */
     public static function get_current_taught_periods(): array {
         global $USER, $DB;
 
+        // Get the user's idnumber.
         $uid = $USER->idnumber;
+
+        // TODO: REMOVE THIS!
         $uid = '00007566';
+
+        // Get settings to limit semesters to current ones.
         $s = workdaystudent::get_settings();
 
         // Set the semester range for getting future and recent semesters.
         $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
-        $psemrange = isset($s->erange) ? ($s->erange * 86400) : 0;
 
         // Build the SQL.
         $sql = "SELECT p.academic_period_id,
@@ -63,7 +78,7 @@ class wdsprefs {
                     ON tenr.section_listing_id = sec.section_listing_id
             WHERE tenr.universal_id = :userid
                 AND p.start_date < UNIX_TIMESTAMP() + :fsemrange
-                AND p.end_date > UNIX_TIMESTAMP() - :psemrange
+                AND p.end_date > UNIX_TIMESTAMP()
             GROUP BY p.academic_period_id
                 HAVING COUNT(p.academic_period_id) > 1
             ORDER BY p.start_date ASC, p.period_type ASC";
@@ -71,12 +86,13 @@ class wdsprefs {
         // Use named parameters for security.
         $parms = [
             'userid' => $uid,
-            'fsemrange' => $fsemrange,
-            'psemrange' => $psemrange
+            'fsemrange' => $fsemrange
         ];
 
         // Get the actual data.
         $records = $DB->get_records_sql($sql, $parms);
+
+        // Build the periods array.
         $periods = [];
 
         // Loop through the data.
@@ -101,16 +117,18 @@ class wdsprefs {
     /**
      * Gets sections taught by current user for a specific academic period.
      *
-     * This function retrieves all course sections taught by the current user for
-     * a given academic period ID and formats them into a hierarchical array.
-     *
-     * @param string $periodid The academic period ID to fetch sections for.
-     * @return array Formatted array of sections grouped by course.
+     * @param @string $periodid The academic period ID to fetch sections for.
+     * @return @array Formatted array of sections grouped by course.
      */
     public static function get_sections_by_course_for_period(string $periodid): array {
        global $USER, $DB;
+
+       // Get the user's idnumber.
        $uid = $USER->idnumber;
+
+       // TODO: REMOVE THIS!!!
        $uid = '00007566';
+
        // Build SQL query to get all relevant section information.
        $sql = "SELECT sec.id AS sectionid,
            p.period_year,
@@ -145,8 +163,10 @@ class wdsprefs {
        // Get the actual data.
        $records = $DB->get_records_sql($sql, $parms);
 
-       // Transform the data.
+       // Build the formatteddata array.
        $formatteddata = [];
+
+       // Loop through the records to buuild the formatted array.
        foreach ($records as $record) {
 
            // Create the course group key.
@@ -171,6 +191,12 @@ class wdsprefs {
        return $formatteddata;
     }
 
+    /**
+     * Gets course/sections for the requested user.
+     *
+     * @param @string $userid The user id.
+     * @return @array Array of sections per academic period.
+     */
     public static function get_courses($userid) {
         global $DB;
 
@@ -211,6 +237,7 @@ class wdsprefs {
 
         // Group sections by academic_period_id.
         $gsections = [];
+
         foreach ($sections as $section) {
             $gsections[$section->academic_period_id][] = $section;
         }
@@ -219,6 +246,12 @@ class wdsprefs {
         return $gsections;
     }
 
+    /**
+     * Determines if an academic period is an ONLINE period.
+     *
+     * @param @string $period The academic period ID to fetch idata for.
+     * @return @string ' (Online) or an empty string depending if it's online or not.
+     */
     public static function get_period_online(string $period): string {
 
         // If the period contains the term "online", desired string, otherwise empty.
@@ -228,13 +261,20 @@ class wdsprefs {
         return $online;
     }
 
-
-
+    /**
+     * Gets faculty enrollment for the requested user and section.
+     *
+     * @param @string $userid The user id.
+     * @param @string $sectionid The section id.
+     * @return @object An object with the required info for building out a course.
+     */
     public static function get_faculty_enrollment($userid, $sectionid) {
         global $DB;
 
+        // Set the parms.
         $parms = ['sectionid' => $sectionid, 'userid' => $userid];
 
+        // Build the sql.
         $gsql = "SELECT tenr.id AS enrollment_id,
             sec.id AS sectionid,
             sec.section_listing_id,
@@ -275,11 +315,18 @@ class wdsprefs {
             ORDER BY c.id ASC,
                 tenr.id ASC";
 
+        // Actually get the data.
         $enrollment = $DB->get_record_sql($gsql, $parms);
 
         return $enrollment;
     }
 
+    /**
+     * Updates the teacher enrollment record.
+     *
+     * @param @object The $enrollment object.
+     * @return @bool Depends on if the update was successful or not.
+     */
     public static function update_teacher_enroll_records($enrollment) {
         global $DB;
 
@@ -309,6 +356,12 @@ class wdsprefs {
         }
     }
 
+    /**
+     * Updates the student enrollment record.
+     *
+     * @param @object The $enrollment object.
+     * @return @bool Depends on if the update was successful or not.
+     */
     public static function update_student_enroll_records($enrollment) {
         global $DB;
 
@@ -340,6 +393,13 @@ class wdsprefs {
         }
     }
 
+    /**
+     * Master function for updating records when a course is unwanted.
+     *
+     * @param @string The user id.
+     * @param @string The section id.
+     * @return @bool
+     */
     public static function update_faculty_enrollment($userid, $sectionid) {
         global $CFG;
 
@@ -374,6 +434,12 @@ class wdsprefs {
         return true;
     }
 
+    /**
+     * Determines if the user is a teacher or not.
+     *
+     * @param @object The $user object.
+     * @return @bool
+     */
     public static function get_instructor($user) : bool {
         global $DB;
 
@@ -384,6 +450,12 @@ class wdsprefs {
         return $instructor;
     }
 
+    /**
+     * Determines if the user is a student or not.
+     *
+     * @param @object The $user object.
+     * @return @bool
+     */
     public static function get_student($user) : bool {
         global $DB;
 
