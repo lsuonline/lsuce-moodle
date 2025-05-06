@@ -36,6 +36,9 @@ class crosslist_form extends moodleform {
 
         $sectiondata = $this->_customdata['sectiondata'] ?? [];
         $shellcount = $this->_customdata['shellcount'] ?? 2;
+        $period = $this->_customdata['period'] ?? [];
+        $teacher = $this->_customdata['teacher'] ?? 2;
+
         
         $mform->addElement('header', 'assignshellsheader',
             get_string('wdsprefs:assignshellsheader', 'block_wdsprefs'));
@@ -86,7 +89,7 @@ class crosslist_form extends moodleform {
         for ($i = 1; $i <= $shellcount; $i++) {
             $mform->addElement('html', '
                 <div class="duallist-shell"><label>' .
-                get_string('wdsprefs:shell', 'block_wdsprefs', $i) .
+                "$period (Shell $i) for $teacher" .
                 '</label><select class="form-control shell-select" ' .
                 'id="shell_' . $i . '" data-shell-num="' . $i . '" multiple size="10"></select></div>');
         }

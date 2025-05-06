@@ -85,6 +85,7 @@ if ($step == 'period') {
         $sectionsbycourse = wdsprefs::get_sections_by_course_for_period($data->periodid);
 
         // Store selection data in session for next step.
+        $SESSION->wdsprefs_periodid = $data->periodid;
         $SESSION->wdsprefs_sectionsbycourse = $sectionsbycourse;
 
         // Redirect to step 2.
@@ -98,7 +99,12 @@ if ($step == 'period') {
 } else if ($step == 'course') {
     $actionurl = new moodle_url('/blocks/wdsprefs/crosslist.php', ['step' => 'course']);
 
+    // Set this from the session.
     $sectionsbycourse = $SESSION->wdsprefs_sectionsbycourse;
+    $periodid =  $SESSION->wdsprefs_periodid;
+
+    // Get the full period info for building shell names.
+    $period = wdsprefs::get_period_from_id($periodid);
 
     // Initialize the first form with course data.
     $form2 = new select_courses_form($actionurl, ['sectionsbycourse' => $sectionsbycourse]);
@@ -145,6 +151,8 @@ if ($step == 'period') {
         }
 
         // Store selection data in session for next step.
+        $SESSION->wdsprefs_prefixinfo = $sectiondata;
+        $SESSION->wdsprefs_suffixinfo = $sectiondata;
         $SESSION->wdsprefs_sectiondata = $sectiondata;
         $SESSION->wdsprefs_shellcount = $data->shellcount;
 
@@ -166,8 +174,13 @@ if ($step == 'period') {
 
     $actionurl = new moodle_url('/blocks/wdsprefs/crosslist.php', ['step' => 'assign']);
 
+    $period = '2025 Summer 1';
+    $teacher = 'Glenn Sumners';
+
     // Initialize the second form with section data.
     $form3 = new crosslist_form($actionurl, [
+        'period' => $period,
+        'teacher' => $teacher,
         'sectiondata' => $sectiondata,
         'shellcount' => $shellcount,
     ]);
@@ -188,6 +201,7 @@ if ($step == 'period') {
 
     // Process form submission.
     if (!is_null($data)) {
+
         // Prepare array to store results.
         $results = [];
 
@@ -197,6 +211,7 @@ if ($step == 'period') {
             $shellsections = [];
 
             if (!empty($data->$fieldname)) {
+
                 // Decode JSON array of section IDs.
                 $sectionids = json_decode($data->$fieldname, true);
 
@@ -208,7 +223,7 @@ if ($step == 'period') {
                     }
                 }
             }
-            $results["Shell $i"] = $shellsections;
+            $results["$period (Shell $i) for $teacher"] = $shellsections;
         }
 
         // Display success message.
