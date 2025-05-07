@@ -17,14 +17,33 @@
 /**
  * @package    block_wdsprefs
  * @copyright  2025 onwards Louisiana State University
- * @copyright  2025 onwards Robert Russo
+ * @copyright  2025 onwards Robert Russo, David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_wdsprefs';
-$plugin->version   = 2025050601;
-$plugin->requires  = 2023112800;
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.4';
+require_once($CFG->dirroot . '/blocks/wdsprefs/events/wds_people_lib.php');
+
+abstract class blocks_wdsprefs_wds_people_handler {
+    public static function wds_people_outputs($data) {
+        // Contains the requested order.
+        $interfere = array(
+            'sec_number', 'credit_hours', 'user_degree', 'user_ferpa',
+            'user_keypadid', 'user_college', 'user_major', 'user_year',
+            'user_reg_status'
+        );
+
+        $s = wds::gen_str('block_wdsprefs');
+
+        foreach ($interfere as $meta) {
+            if (!isset($data->outputs[$meta])) {
+                $data->outputs[$meta] = new wds_people_element($meta, $s($meta));
+            }
+            unset($data->outputs[$meta]);
+            $data->outputs[$meta] = new wds_people_element($meta, $s($meta));
+        }
+
+        return $data;
+    }
+}

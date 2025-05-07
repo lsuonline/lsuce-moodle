@@ -180,6 +180,6 @@ class block_wdsprefs extends block_base {
 
     // This has no config of it's own, but gets base prefs from enrol_workdaystudent.
     public function has_config() {
-        return false;
+        return true;
     }
 }

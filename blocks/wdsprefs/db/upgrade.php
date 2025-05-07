@@ -125,5 +125,52 @@ function xmldb_block_wdsprefs_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2025050700, 'wdsprefs');
     }
 
+    if ($oldversion < 2025050601) {
+        if (!$dbman->table_exists('block_wdsprefs_splits')) {
+            $wdsfile = new xmldb_table('block_wdsprefs_splits');
+            $wdsfile->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $wdsfile->add_field('section_listing_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('groupingid', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('shell_name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+            $wdsfile->add_field('lastupdated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            
+            // Adding keys to table block_quickmail_drafts.
+            $wdsfile->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+            $dbman->create_table($wdsfile);
+        }        
+        
+        if (!$dbman->table_exists('block_wdsprefs_materials')) {
+            $wdsfile = new xmldb_table('block_wdsprefs_materials');
+            $wdsfile->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $wdsfile->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('moodleid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+            
+            // Adding keys to table block_quickmail_drafts.
+            $wdsfile->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+            $dbman->create_table($wdsfile);
+        }
+
+        if (!$dbman->table_exists('block_wdsprefs_creations')) {
+            $wdsfile = new xmldb_table('block_wdsprefs_creations');
+            $wdsfile->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $wdsfile->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('semesterid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('create_days', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, null);
+            $wdsfile->add_field('enroll_days', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, null);
+            
+            // Adding keys to table block_quickmail_drafts.
+            $wdsfile->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+            $dbman->create_table($wdsfile);
+        }
+
+        // Update version
+        upgrade_block_savepoint(true, 2025050601, 'wdsprefs');
+    }
+
     return true;
 }

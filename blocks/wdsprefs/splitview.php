@@ -17,67 +17,98 @@
 /**
  * @package    block_wdsprefs
  * @copyright  2025 onwards Louisiana State University
- * @copyright  2025 onwards Robert Russo
+ * @copyright  2025 onwards Robert Russo & David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 // Required stuffs.
 require_once('../../config.php');
-require_once('edit_form.php');
+require_once('classes/forms/edit_form.php');
+require_once('classes/lib.php');
+require_once('classes/forms/splitview_form.php');
+
+// require_once('../../config.php');
+// require_once($CFG->dirroot . '/enrol/workdaystudent/lib.php');
+
 
 // Require login to use this.
 require_login();
-
-// We need this stuff.
-global $PAGE, $OUTPUT, $USER;
-
-// Get the context.
-$context = context_system::instance();
-
-// Set the context and other page stuff.
-$PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/blocks/wdsprefs/courseview.php'));
-$PAGE->set_title(get_string('wdsprefs:course', 'block_wdsprefs'));
-$PAGE->set_heading(get_string('wdsprefs:course', 'block_wdsprefs'));
-$PAGE->set_pagelayout('standard');
-
-// Get the userid from the USER object.
-$userid = $USER->id;
-
-// Define the form.
-$mform = new wdsprefs_cps_edit_form();
-
-// If form is cancelled.
-if ($mform->is_cancelled()) {
-
-    // Redirect on cancel.
-    redirect(
-        new moodle_url('/'),
-        get_string('wdsprefs:cancel', 'block_wdsprefs'),
-        null,
-        \core\output\notification::NOTIFY_WARNING
-    );
-
-// If form is submitted and validated.
-} elseif ($data = $mform->get_data()) {
-
-    // Set the preferences as needed. TODO: add more shit.
-    set_user_preference('wdspref_daysprior', $data->wdspref_daysprior, $userid);
-
-    // Redirect on submit.
-    redirect(
-        new moodle_url('/blocks/wdsprefs/view.php'),
-        get_string('wdsprefs:success', 'block_wdsprefs'),
-        null,
-        \core\output\notification::NOTIFY_SUCCESS
-    );
+/*
+if (!wds_split::is_enabled()) {
+    moodle_exception('not_enabled', 'block_wdsprefs', '', wds_split::name());
 }
 
-// Set form defaults from user preferences.
-$mform->set_data_from_preferences($userid);
+if (!wds_user::is_teacher()) {
+    moodle_exception('not_teacher', 'block_wdsprefs');
+}
+*/
+$teacher = wds_teacher::get(array('userid' => $USER->id));
 
-// Output the rest of the required Moodle stuff.
+$sections = wds_unwant::active_sections_for($teacher);
+
+if (empty($sections)) {
+    moodle_exception('no_section', 'block_wdsprefs');
+}
+
+$semesters = wds_period::merge_sections($sections);
+
+$validsemesters = wds_split::filter_valid($semesters);
+
+if (empty($validsemesters)) {
+    moodle_exception('no_courses', 'block_wdsprefs');
+}
+
+$s = wds::gen_str('block_wdsprefs');
+
+$blockname = $s('pluginname');
+$heading = wds_split::name();
+
+$context = context_system::instance();
+
+$PAGE->set_context($context);
+$PAGE->set_heading($blockname . ': '. $heading);
+$PAGE->navbar->add($blockname);
+$PAGE->navbar->add($heading);
+$PAGE->set_url('/blocks/wdsprefs/splitview.php');
+$PAGE->set_title($heading);
+$PAGE->set_pagetype('wds-split');
+
+// $PAGE->requires->jquery();
+// $PAGE->requires->js('/blocks/cps/js/selection.js');
+$PAGE->requires->js_call_amd('block_wdsprefs/selection', 'init');
+$PAGE->requires->js_call_amd('block_wdsprefs/split', 'init');
+// $PAGE->requires->js('/blocks/cps/js/split.js');
+
+$form = wds_form::create('split', $validsemesters);
+
+if ($form->is_cancelled()) {
+    redirect(new moodle_url('/my'));
+} else if ($data = $form->get_data()) {
+
+    if (isset($data->back)) {
+        $form->next = $form->prev;
+
+    } else if ($form->next == split_form::FINISHED) {
+        $form = new split_form_finish();
+
+        try {
+            $form->process($data, $validsemesters);
+
+            $form->display();
+        } catch (Exception $e) {
+            echo $OUTPUT->notification($s('application_errors', $e->getMessage()));
+            echo $OUTPUT->continue_button('/my');
+        }
+
+        die();
+    }
+
+    $form = wds_form::next_from('split', $form->next, $data, $validsemesters);
+}
+
 echo $OUTPUT->header();
-$mform->display();
+echo $OUTPUT->heading_with_help($heading, 'wdsprefs:split', 'block_wdsprefs');
+
+$form->display();
 echo $OUTPUT->footer();
 

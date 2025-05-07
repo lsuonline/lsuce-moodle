@@ -17,7 +17,7 @@
 /**
  * @package    block_wdsprefs
  * @copyright  2025 onwards Louisiana State University
- * @copyright  2025 onwards Robert Russo
+ * @copyright  2025 onwards Robert Russo, David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -1283,7 +1283,7 @@ class wdsprefs {
         global $DB;
 
         // Get a bool if they exist in this table or not.
-        $instructor = $DB->record_exists('enrol_wds_teachers', ['userid' => $user->id]);
+        $instructor = $DB->record_exists('enrol_wds_teachers', ['universal_id' => $user->id]);
 
         // Return the value.
         return $instructor;
@@ -1299,7 +1299,7 @@ class wdsprefs {
         global $DB;
 
         // Get a bool if they exist in this table or not.
-        $student = $DB->record_exists('enrol_wds_students', ['userid' => $user->id]);
+        $student = $DB->record_exists('enrol_wds_students', ['universal_id' => $user->id]);
 
         // Return the value.
         return $student;

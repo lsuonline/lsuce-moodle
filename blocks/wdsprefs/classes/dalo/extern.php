@@ -17,14 +17,26 @@
 /**
  * @package    block_wdsprefs
  * @copyright  2025 onwards Louisiana State University
- * @copyright  2025 onwards Robert Russo
+ * @copyright  2025 onwards Robert Russo, David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_wdsprefs';
-$plugin->version   = 2025050601;
-$plugin->requires  = 2023112800;
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.4';
+abstract class wds_external extends wds_base {
+    public static function by_id($id) {
+        return self::get(array('id' => $id));
+    }
+
+    public static function get_all($params = array(), $sort = '', $fields = '*', $offset = 0, $limit = 0) {
+        return self::get_all_internal($params, $sort, $fields, $offset, $limit);
+    }
+
+    public static function get($params, $fields = '*') {
+        return current(self::get_all($params, '', $fields));
+    }
+
+    public static function delete_all($params = array()) {
+        return self::delete_all_internal($params);
+    }
+}
