@@ -41,7 +41,7 @@ class wdsprefs {
         $universalid = $user->idnumber;
 
         // Query to get unique courses (by course_definition_id) taught by this instructor.
-        $sql = "SELECT DISTINCT c.course_definition_id, 
+        $sql = "SELECT DISTINCT c.course_definition_id,
                 c.course_subject_abbreviation,
                 c.course_number,
                 c.course_abbreviated_title AS course_title
@@ -128,14 +128,14 @@ class wdsprefs {
 
         // Get course info.
         $courseinfo = self::get_course_info_by_definition_id($cdid);
-    
+
         if (!$courseinfo) {
             return false;
         }
 
         // Start transaction.
         $transaction = $DB->start_delegated_transaction();
-    
+
         try {
             // Create blueprint record.
             $blueprint = new stdClass();
@@ -145,24 +145,29 @@ class wdsprefs {
             $blueprint->status = 'pending';
             $blueprint->timecreated = time();
             $blueprint->timemodified = time();
-        
+
             // Insert record first.
             $blueprintid = $DB->insert_record('block_wdsprefs_blueprints', $blueprint);
-        
+
             if (!$blueprintid) {
                 throw new Exception('Failed to create blueprint record');
             }
-        
+
+            // Set this for the course record and shortname.
+            $timecreated = time();
+
             // Create course shell. TODO: allow multiple!
-            $shortname = 'BLUEPRINT-' . $courseinfo->course_subject_abbreviation . 
-                     '-' . $courseinfo->course_number;
-        
-            $fullname = 'Blueprint: ' . $courseinfo->course_subject_abbreviation . 
-                    ' ' . $courseinfo->course_number . 
-                    ' - ' . $courseinfo->course_title . 
+            $shortname = 'Blueprint-' . $courseinfo->course_subject_abbreviation .
+                     '-' . $courseinfo->course_number .
+                     '-' . $timecreated .
+                     '-' . $userid;
+
+            $fullname = 'Blueprint: ' . $courseinfo->course_subject_abbreviation .
+                    ' ' . $courseinfo->course_number .
+                    ' - ' . $courseinfo->course_title .
                     ' for ' . $user->firstname .
                     ' ' . $user->lastname;
-        
+
             // Set course parameters.
             $course = new stdClass();
             $course->shortname = $shortname;
@@ -171,49 +176,51 @@ class wdsprefs {
             // TODO: Deal with this when david has settings.
             $course->category = get_config('enrol_workdaystudent', 'blueprint_category') ?: 1;
             $course->visible = 1;
-        
+
             // Get user's preferred course format.
             $format = get_user_preferences('wdspref_format', 'topics', $userid);
             $course->format = $format;
-        
-            // Create course in Moodle
+
+            // Create course in Moodle.
             $course = create_course($course);
-        
+
+            // Make sure it was created.
             if (!$course->id) {
                 throw new Exception('Failed to create course');
             }
-        
-            // Update blueprint record with moodle_course_id.
+
+            // Update blueprint record with moodle course id.
             $blueprint = new stdClass();
             $blueprint->id = $blueprintid;
             $blueprint->moodle_course_id = $course->id;
             $blueprint->status = 'created';
-            $blueprint->timemodified = time();
-        
+            $blueprint->timemodified = $timecreated;
+
+            // Update the record.
             $DB->update_record('block_wdsprefs_blueprints', $blueprint);
-        
-            // Commit transaction.
+
+            // Commit the transaction.
             $transaction->allow_commit();
-        
+
+        // If something broke.
         } catch (Exception $e) {
-            // Rollback transaction.
+
+            // Rollback the transaction.
             $transaction->rollback($e);
             return false;
         }
 
+        // TODO: MAKE THIS A SETTING!
+        // Get the teacher role ID.
+        $teacherroleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+
         // Enroll user as teacher in the course.
-        if (!enrol_try_internal_enrol($course->id, $userid, 3)) {
+        if (!enrol_try_internal_enrol($course->id, $userid, $teacherroleid)) {
             throw new Exception('Failed to enroll user as teacher');
         }
 
         return true;
     }
-
-
-
-
-
-
 
     /**
      * Gets the period object from the period id.
