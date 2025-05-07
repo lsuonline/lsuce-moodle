@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="blocks/wdsprefs/db" VERSION="20250404" COMMENT="XMLDB file for Moodle blocks/wdsprefs"
+<XMLDB PATH="blocks/wdsprefs/db" VERSION="20250507" COMMENT="XMLDB file for Moodle blocks/wdsprefs"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -40,6 +40,48 @@
         <INDEX NAME="blueprint_cdid_ix" UNIQUE="false" FIELDS="course_definition_id"/>
         <INDEX NAME="blueprint_unid_ix" UNIQUE="false" FIELDS="universal_id"/>
         <INDEX NAME="blueprint_status_ix" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="block_wdsprefs_crosslists" COMMENT="Stores crosslisted course shells configuration">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="19" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="universal_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="academic_period_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="shell_name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="moodle_course_id" TYPE="int" LENGTH="19" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="pending" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="crosslist_uid_ix" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="crosslist_apid_ix" UNIQUE="false" FIELDS="academic_period_id"/>
+        <INDEX NAME="crosslist_unid_ix" UNIQUE="false" FIELDS="universal_id"/>
+        <INDEX NAME="crosslist_status_ix" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="block_wdsprefs_crosslist_sections" COMMENT="Stores sections assigned to crosslisted course shells">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="crosslist_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="section_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="section_listing_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="pending" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_crosslist_id" TYPE="foreign" FIELDS="crosslist_id" REFTABLE="block_wdsprefs_crosslists" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="cls_section_id_ix" UNIQUE="false" FIELDS="section_id"/>
+        <INDEX NAME="cls_section_listing_id_ix" UNIQUE="false" FIELDS="section_listing_id"/>
+        <INDEX NAME="cls_status_ix" UNIQUE="false" FIELDS="status"/>
       </INDEXES>
     </TABLE>
   </TABLES>

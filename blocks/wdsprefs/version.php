@@ -24,7 +24,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_wdsprefs';
-$plugin->version   = 2025050600;
+$plugin->version   = 2025050700;
 $plugin->requires  = 2023112800;
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.4';
+$plugin->release   = '0.7';

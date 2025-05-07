@@ -26,6 +26,517 @@ require_once("$CFG->dirroot/enrol/workdaystudent/classes/workdaystudent.php");
 class wdsprefs {
 
     /**
+     * Creates a crosslisted course shell and assigns sections to it.
+     *
+     * @param @int $userid User ID creating the crosslist.
+     * @param @string $periodid The academic period ID.
+     * @param @array $sectionids Array of section IDs to be included in the crosslisted course.
+     * @param @string $shellname Name for the crosslisted shell.
+     * @return @int | @bool The new crosslist_id if successful, false on failure.
+     */
+    public static function create_crosslist_shell($userid, $periodid, $sectionids, $shellname) {
+        global $DB, $CFG;
+
+        // Require workdaystudent for course creation functionality.
+        require_once($CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php');
+
+        // Get user's universal_id.
+        $user = $DB->get_record('user', ['id' => $userid], '*');
+
+        // Set this for later.
+        $universalid = $user->idnumber;
+
+        // Get settings.
+        $s = workdaystudent::get_settings();
+
+        // Get the faculty preferences.
+        $userprefs = self::get_faculty_preferences($userid);
+
+        // Get the Moodle course defaults.
+        $coursedefaults = get_config('moodlecourse');
+
+        // Get period info.
+        $period = self::get_period_from_periodid($periodid);
+
+        // Start transaction.
+        $transaction = $DB->start_delegated_transaction();
+
+        try {
+            // Create crosslist record.
+            $crosslist = new stdClass();
+            $crosslist->userid = $userid;
+            $crosslist->universal_id = $universalid;
+            $crosslist->academic_period_id = $period->academic_period_id;
+            $crosslist->shell_name = $shellname;
+            $crosslist->status = 'pending';
+            $crosslist->timecreated = time();
+            $crosslist->timemodified = time();
+
+            // Insert record first.
+            $crosslistid = $DB->insert_record('block_wdsprefs_crosslists', $crosslist);
+
+            if (!$crosslistid) {
+                throw new Exception('Failed to create crosslist record');
+            }
+
+            // Get the first section to use for course info and category info.
+            $firstsection = $DB->get_record('enrol_wds_sections', ['id' => reset($sectionids)]);
+            if (!$firstsection) {
+                throw new Exception('Failed to find section data');
+            }
+
+            // Build the SQL.
+            $csql = "SELECT c.*
+                FROM {enrol_wds_courses} c
+                WHERE c.course_listing_id = :courselistingid";
+
+            // Build out the parms.
+            $parms = ['courselistingid' => $firstsection->course_listing_id];
+
+            // Get the course info for the first section.
+            $courseinfo = $DB->get_record_sql($csql, $parms);
+
+            if (!$courseinfo) {
+                throw new Exception('Failed to find course data');
+            }
+
+            // Set this for the course record and shortname.
+            $timecreated = time();
+
+            // Create course shell.
+            $shortname = 'Crosslist-' . $period->period_year .
+                     '-' . $period->period_type .
+                     '-' . $timecreated .
+                     '-' . $userid;
+
+            // TODO: This is gross. figure some shit out.
+            $fullname = 'Crosslisted: ' . $shellname;
+
+            // Set course parameters.
+            $course = new stdClass();
+            $course->shortname = $shortname;
+            $course->fullname = $fullname;
+            $course->numsections = $coursedefaults->numsections;
+            $course->summary = 'Crosslisted course shell containing sections from multiple courses';
+
+            // Get the category based on subject of first course.
+            $cat = self::get_subject_category($courseinfo->course_subject_abbreviation);
+
+            // Use appropriate category.
+            $course->category = $cat;
+
+            // Course visibility.
+            $course->visible = $s->visible;
+
+            // Use user's preferred course format.
+            $course->format = $userprefs->format;
+
+            // Create course in Moodle
+            $course = create_course($course);
+
+            // Make sure it was created
+            if (!$course->id) {
+                throw new Exception('Failed to create course');
+            }
+
+            // Update crosslist record with moodle course id.
+            $crosslist = new stdClass();
+            $crosslist->id = $crosslistid;
+            $crosslist->moodle_course_id = $course->id;
+            $crosslist->status = 'created';
+            $crosslist->timemodified = $timecreated;
+
+            // Update the record.
+            $DB->update_record('block_wdsprefs_crosslists', $crosslist);
+
+            // Process each section.
+            foreach ($sectionids as $sectionid) {
+                // Get section details
+                $section = $DB->get_record('enrol_wds_sections', ['id' => $sectionid]);
+
+                if ($section) {
+                    $crosslistsection = new stdClass();
+                    $crosslistsection->crosslist_id = $crosslistid;
+                    $crosslistsection->section_id = $sectionid;
+                    $crosslistsection->section_listing_id = $section->section_listing_id;
+                    $crosslistsection->status = 'pending';
+                    $crosslistsection->timecreated = $timecreated;
+                    $crosslistsection->timemodified = $timecreated;
+
+                    // Save section record.
+                    $DB->insert_record('block_wdsprefs_crosslist_sections', $crosslistsection);
+                }
+            }
+
+            // Commit the transaction.
+            $transaction->allow_commit();
+
+        } catch (Exception $e) {
+            // Rollback the transaction.
+            $transaction->rollback($e);
+            return false;
+        }
+
+        // Enroll user as teacher in the course.
+        $teacherroleid = $s->primaryrole;
+
+        if (!enrol_try_internal_enrol($course->id, $userid, $teacherroleid)) {
+            throw new Exception('Failed to enroll creator as teacher');
+        }
+
+        // Enroll students from each section
+        self::process_crosslist_enrollments($crosslistid);
+
+        return $crosslistid;
+    }
+
+    /**
+     * Gets subject category based on subject abbreviation.
+     *
+     * @param string $subjectabbrev The subject abbreviation
+     * @return int Category ID or false if not found
+     */
+    public static function get_subject_category($subjectabbrev) {
+        global $DB;
+
+        // Get settings.
+        $s = workdaystudent::get_settings();
+
+        // Set the table.
+        $table = 'course_categories';
+
+        // Set the parms.
+        $parms = [
+            'parent' => $s->parentcat,
+            'name' =>  $subjectabbrev
+        ];
+
+        // Get BP category.
+        $cats = $DB->get_records($table, $parms);
+
+        // In the weird event we have more than one, please grab the 1st one.
+        $category = reset($cats);
+
+        return $category;
+    }
+
+    /**
+     * Processes student enrollments for a crosslisted course.
+     *
+     * @param int $crosslistid The crosslist ID
+     * @return bool Success or failure
+     */
+    public static function process_crosslist_enrollments($crosslistid) {
+        global $DB, $CFG;
+
+        // Require workdaystudent for enrollment functionality.
+        require_once($CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php');
+
+        // Get the crosslist record.
+        $crosslist = $DB->get_record('block_wdsprefs_crosslists', ['id' => $crosslistid]);
+        if (!$crosslist || !$crosslist->moodle_course_id) {
+            return false;
+        }
+
+        // Get all sections in this crosslist.
+        $sections = $DB->get_records('block_wdsprefs_crosslist_sections', ['crosslist_id' => $crosslistid]);
+        if (empty($sections)) {
+            return false;
+        }
+
+        // Process each section.
+        foreach ($sections as $clsection) {
+            // Get the actual section.
+            $section = $DB->get_record('enrol_wds_sections', ['id' => $clsection->section_id]);
+            if (!$section) {
+                continue;
+            }
+
+            // Get all student enrollments for this section.
+            $studentenrolls = $DB->get_records('enrol_wds_student_enroll',
+                ['section_listing_id' => $section->section_listing_id]
+            );
+
+            // Process each student enrollment.
+            foreach ($studentenrolls as $studenroll) {
+                // Get student record.
+                $student = $DB->get_record('enrol_wds_students',
+                    ['universal_id' => $studenroll->universal_id]
+                );
+
+                if ($student && $student->userid) {
+
+                    // Enroll student in crosslisted course.
+//TODO: Deal with this manual enrollment stopgap.
+                    $studentroleid = $DB->get_field('role', 'id', ['shortname' => 'student']);
+                    enrol_try_internal_enrol($crosslist->moodle_course_id, $student->userid, $studentroleid);
+
+                    // Update original enrollment status if needed.
+                    if ($section->controls_grading == 1) {
+
+                        // Mark the enrollment as crosslisted in wds tables.
+                        $DB->set_field('enrol_wds_student_enroll', 'status', 'crosslisted',
+                            ['id' => $studenroll->id]
+                        );
+
+                        // Unenroll from original course if it exists.
+                        if ($section->moodle_status && is_numeric($section->moodle_status)) {
+                            $originalcourseid = (int)$section->moodle_status;
+
+//TODO: Deal with this manual enrollment stopgap.
+                            // Get the manual enrolment plugin instance for this course
+                            $manualinstance = $DB->get_record('enrol',
+                                ['courseid' => $originalcourseid, 'enrol' => 'manual']
+                            );
+
+//TODO: Deal with this manual enrollment stopgap.
+                            if ($manualinstance) {
+
+                                // Get the enrolment manager.
+                                $enrolmanager = enrol_get_plugin('manual');
+
+                                // Unenroll the student.
+                                $enrolmanager->unenrol_user($manualinstance, $student->userid);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update teacher enrollments.
+            self::process_crosslist_teacher_enrollments($crosslist->moodle_course_id, $section);
+
+            // Update section's crosslist status.
+            $DB->set_field('block_wdsprefs_crosslist_sections', 'status', 'enrolled',
+                ['id' => $clsection->id]
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Processes teacher enrollments for a section in a crosslisted course.
+     *
+     * @param int $courseid The crosslisted course ID
+     * @param object $section The section object
+     * @return bool Success or failure
+     */
+    public static function process_crosslist_teacher_enrollments($courseid, $section) {
+        global $DB;
+
+        // Get teacher enrollments for this section
+        $teacherenrolls = $DB->get_records('enrol_wds_teacher_enroll',
+            ['section_listing_id' => $section->section_listing_id]
+        );
+
+        if (empty($teacherenrolls)) {
+            return false;
+        }
+
+        $teacherroleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+
+        // Process each teacher enrollment
+        foreach ($teacherenrolls as $teacherenroll) {
+
+            // Get teacher record
+            $teacher = $DB->get_record('enrol_wds_teachers',
+                ['universal_id' => $teacherenroll->universal_id]
+            );
+
+            if ($teacher && $teacher->userid) {
+
+                // Enroll teacher in crosslisted course
+                enrol_try_internal_enrol($courseid, $teacher->userid, $teacherroleid);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Gets existing crosslisted shells for a user.
+     *
+     * @param int $userid The user ID
+     * @return array Existing crosslist records
+     */
+    public static function get_user_crosslists($userid) {
+        global $DB;
+
+        // Build the SQL to get the user's crosslisted courses
+        $sql = "SELECT c.*
+            FROM {block_wdsprefs_crosslists} c
+            WHERE c.userid = :userid
+            ORDER BY c.timemodified DESC";
+
+        // Set the parameters
+        $params = ['userid' => $userid];
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Gets sections assigned to a crosslisted shell.
+     *
+     * @param int $crosslistid The crosslist ID
+     * @return array Array of section objects with additional data
+     */
+    public static function get_crosslist_sections($crosslistid) {
+        global $DB;
+
+        // Build the SQL to get detailed section information
+        $sql = "SELECT cs.id, cs.crosslist_id, cs.section_id, cs.status,
+                   s.section_number, s.section_listing_id,
+                   c.course_subject_abbreviation, c.course_number,
+                   p.period_year, p.period_type
+            FROM {block_wdsprefs_crosslist_sections} cs
+            JOIN {enrol_wds_sections} s ON s.id = cs.section_id
+            JOIN {enrol_wds_courses} c ON c.course_listing_id = s.course_listing_id
+            JOIN {enrol_wds_periods} p ON p.academic_period_id = s.academic_period_id
+            WHERE cs.crosslist_id = :crosslistid
+            ORDER BY c.course_subject_abbreviation, c.course_number, s.section_number";
+
+        // Set the parameters
+        $params = ['crosslistid' => $crosslistid];
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Gets detailed information about a crosslisted shell.
+     *
+     * @param int $crosslistid The crosslist ID
+     * @return object Crosslist record with additional data
+     */
+    public static function get_crosslist_info($crosslistid) {
+        global $DB;
+
+        // Build the SQL to get detailed crosslist information
+        $sql = "SELECT c.*,
+            p.period_year,
+            p.period_type,
+            p.academic_period,
+            course.id as course_id,
+            course.fullname,
+            course.shortname
+            FROM {block_wdsprefs_crosslists} c
+            JOIN {enrol_wds_periods} p ON p.academic_period_id = c.academic_period_id
+            LEFT JOIN {course} course ON course.id = c.moodle_course_id
+            WHERE c.id = :crosslistid";
+
+        // Set the parameters
+        $params = ['crosslistid' => $crosslistid];
+
+        return $DB->get_record_sql($sql, $params);
+    }
+
+    /**
+     * Handles the submission of the crosslist form and creates the crosslisted shells.
+     *
+     * @param object $data Form data
+     * @param string $period Period information
+     * @param string $teacher Teacher information
+     * @param int $shellcount Number of shells to create
+     * @return array Array of results with shell information and assigned sections
+     */
+    public static function process_crosslist_form($data, $period, $teacher, $shellcount) {
+        global $USER, $DB;
+
+        // Get the period id.
+        $periodid = $period->id;
+
+        // Build the period name.
+        $periodname = $period->period_year . ' ' . $period->period_type;
+
+        // Prepare array to store results
+        $results = [];
+
+        // Process each shell's data from hidden fields
+        for ($i = 1; $i <= $shellcount; $i++) {
+            $fieldname = "shell_{$i}_data";
+            $shellsections = [];
+            $sectionids = [];
+
+            if (!empty($data->$fieldname)) {
+                // Decode JSON array of section IDs
+                $sectionids = json_decode($data->$fieldname, true);
+
+                // Skip if no sections assigned or decode failed
+                if (!is_array($sectionids) || empty($sectionids)) {
+                    continue;
+                }
+
+                // Create the shell name
+                $shellname = "$periodname (Shell $i) for $teacher";
+
+                // Create the crosslisted shell
+                $crosslistid = self::create_crosslist_shell($USER->id, $periodid, $sectionids, $shellname);
+
+                if ($crosslistid) {
+
+                    // Get info about the sections.
+                    $sections = [];
+
+                    foreach ($sectionids as $sectionid) {
+
+                        // Build outy the sql.
+                        $ssql = "SELECT sec.section_number,
+                                cou.course_subject_abbreviation,
+                                cou.course_number
+                         FROM {enrol_wds_sections} sec
+                         JOIN {enrol_wds_courses} cou ON cou.course_listing_id = sec.course_listing_id
+                         WHERE sec.id = :sectionid";
+
+                         // Build the parms.
+                         $parms = ['sectionid' => $sectionid];
+
+                         // Get teh data.
+                         $section = $DB->get_record_sql($ssql, $parms);
+
+                        if ($section) {
+                            $sections[] = $section->course_subject_abbreviation . ' ' .
+                                      $section->course_number . ' ' .
+                                      $section->section_number;
+                        }
+                    }
+
+                    // Store in results.
+                    $results[$shellname] = [
+                        'crosslist_id' => $crosslistid,
+                        'sections' => $sections
+                    ];
+                }
+            }
+        }
+
+        return $results;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
      * Gets courses taught by the instructor.
      *
      * @param @string $userid The user ID.
@@ -108,6 +619,66 @@ class wdsprefs {
     }
 
     /**
+     * Retrieves faculty preferences for a given user.
+     *
+     * If personal preferences are missing, return the global settings or fallbacks.
+     *
+     * @param int $userid The user ID.
+     * @return stdClass An object containing the user's preferences.
+     */
+    public static function get_faculty_preferences($userid) {
+        global $DB;
+
+        // Validate user ID.
+        if (!is_numeric($userid) || $userid <= 0) {
+            var_dump($userid);
+            throw new invalid_parameter_exception('Invalid user ID provided.');
+        }
+
+        // Retrieve user preferences related to 'wdspref_'.
+        $sql = "SELECT * FROM {user_preferences}
+            WHERE name LIKE 'wdspref_%'
+                AND userid = ?";
+
+        // Get the data.
+        $preferences = $DB->get_records_sql($sql, [$userid]);
+
+        // Get global settings.
+        $s = workdaystudent::get_settings();
+
+        // Define default values.
+        $defaults = [
+            'wdspref_createprior' => isset($s->createprior) ? (int) $s->createprior : 28,
+            'wdspref_enrollprior' => isset($s->enrollprior) ? (int) $s->enrollprior : 14,
+            'wdspref_courselimit' => isset($s->numberthreshold) ? (int) $s->numberthreshold : 8000,
+            'wdspref_format' => 'topics'
+        ];
+
+        // Initialize user preferences with defaults.
+        $userprefs = new stdClass();
+        foreach ($defaults as $key => $value) {
+            $shortkey = str_replace('wdspref_', '', $key);
+            if ($shortkey == 'format') {
+                $userprefs->$shortkey = $value;
+            } else {
+                $userprefs->$shortkey = (int) $value;
+            }
+        }
+
+        // Override defaults with retrieved preferences.
+        foreach ($preferences as $pref) {
+            $shortkey = str_replace('wdspref_', '', $pref->name);
+            if ($shortkey == 'format') {
+                $userprefs->$shortkey = $pref->value;
+            } else {
+                $userprefs->$shortkey = (int) $pref->value;
+            }
+        }
+
+        return $userprefs;
+    }
+
+    /**
      * Creates a blueprint shell for the instructor.
      *
      * @param @string $userid The user ID.
@@ -123,6 +694,12 @@ class wdsprefs {
         // Get settings.
         $s = workdaystudent::get_settings();
 
+        // Get the faculty preferences.
+        $userprefs = self::get_faculty_preferences($userid);
+
+        // Get the Moodle course defaults.
+        $coursedefaults = get_config('moodlecourse');
+
         // Get user's universal_id.
         $user = $DB->get_record('user', ['id' => $userid], '*');
 
@@ -136,20 +713,8 @@ class wdsprefs {
             return false;
         }
 
-        // Set the table.
-        $table = 'course_categories';
-
-        // Set the parms.
-        $parms = [
-            'parent' => $s->parentcat,
-            'name' =>  $courseinfo->course_subject_abbreviation
-        ];
-
-        // Get BP category.
-        $cats = $DB->get_records($table, $parms);
-
-        // In the weird event we have more than one, please grab the 1st one.
-        $cat = reset($cats);
+        // Get the course category.
+        $cat = self::get_subject_category($courseinfo->course_subject_abbreviation);
 
         // Start transaction.
         $transaction = $DB->start_delegated_transaction();
@@ -174,7 +739,7 @@ class wdsprefs {
             // Set this for the course record and shortname.
             $timecreated = time();
 
-            // Create course shell. TODO: allow multiple!
+            // Create course shell.
             $shortname = 'Blueprint-' . $courseinfo->course_subject_abbreviation .
                      '-' . $courseinfo->course_number .
                      '-' . $timecreated .
@@ -191,18 +756,19 @@ class wdsprefs {
             $course->shortname = $shortname;
             $course->fullname = $fullname;
 
-            // TODO: Build out this checkbox.
+            // TODO: Build out this shit in settings.
             $course->category = get_config('block_wdsprefs', 'blueprint_category_forced') ?
-
-                // TODO: Build out this setting too.
                 get_config('block_wdsprefs', 'blueprint_category') :
                 $cat->id;
 
-            $course->visible = 1;
+            // Set the course visibility based on WDS settings.
+            $course->visible = $s->visible;
 
-            // Get user's preferred course format.
-            $format = get_user_preferences('wdspref_format', 'topics', $userid);
-            $course->format = $format;
+            // Grab the course default number of srctions.
+            $course->numsections = $coursedefaults->numsections;
+
+            // Use user's preferred course format.
+            $course->format = $userprefs->format;
 
             // Create course in Moodle.
             $course = create_course($course);
@@ -233,9 +799,8 @@ class wdsprefs {
             return false;
         }
 
-        // TODO: MAKE THIS A SETTING!
         // Get the teacher role ID.
-        $teacherroleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+        $teacherroleid = $s->primaryrole;
 
         // Enroll user as teacher in the course.
         if (!enrol_try_internal_enrol($course->id, $userid, $teacherroleid)) {
@@ -243,6 +808,27 @@ class wdsprefs {
         }
 
         return true;
+    }
+
+    /**
+     * Gets the period object from the periodid.
+     *
+     * @param @string $periodid The periodid to fetch sections for.
+     * @return @object The period object.
+     */
+    public static function get_period_from_periodid($periodid) {
+        global $DB;
+
+        // Set the table.
+        $table = 'enrol_wds_periods';
+
+        // Set the apid.
+        $parms = ['id' => $periodid];
+
+        // Get the period record.
+        $period = $DB->get_record($table, $parms);
+
+        return $period;
     }
 
     /**
