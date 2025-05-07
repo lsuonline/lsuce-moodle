@@ -26,6 +26,196 @@ require_once("$CFG->dirroot/enrol/workdaystudent/classes/workdaystudent.php");
 class wdsprefs {
 
     /**
+     * Gets courses taught by the instructor.
+     *
+     * @param @string $userid The user ID.
+     * @return @array Courses taught by the instructor.
+     */
+    public static function get_instructor_courses($userid) {
+        global $DB, $USER;
+
+        // Get the user's idnumber.
+        $user = $DB->get_record('user', ['id' => $userid], 'idnumber');
+
+        // Set this for parms.
+        $universalid = $user->idnumber;
+
+        // Query to get unique courses (by course_definition_id) taught by this instructor.
+        $sql = "SELECT DISTINCT c.course_definition_id, 
+                c.course_subject_abbreviation,
+                c.course_number,
+                c.course_abbreviated_title AS course_title
+            FROM {enrol_wds_courses} c
+            INNER JOIN {enrol_wds_sections} s
+                ON s.course_listing_id = c.course_listing_id
+            INNER JOIN {enrol_wds_teacher_enroll} te
+                ON te.section_listing_id = s.section_listing_id
+            INNER JOIN {enrol_wds_teachers} t
+                ON te.universal_id = t.universal_id
+            INNER JOIN {enrol_wds_periods} p
+                ON p.academic_period_id = s.academic_period_id
+            WHERE te.universal_id = :universalid
+            AND p.end_date >= :currenttime
+            ORDER BY c.course_subject_abbreviation, c.course_number";
+
+        // Build out the parms.
+        $parms = [
+            'universalid' => $universalid,
+            'currenttime' => time()
+        ];
+
+        return $DB->get_records_sql($sql, $parms);
+    }
+
+    /**
+     * Gets existing blueprint shells for a user.
+     *
+     * @param @string $userid The user ID.
+     * @return @array Existing blueprint shell records.
+     */
+    public static function get_user_blueprints($userid) {
+        global $DB;
+
+        // Build the SQL to get the user's BP courses.
+        $sql = "SELECT b.*
+            FROM {block_wdsprefs_blueprints} b
+            WHERE b.userid = :userid
+            ORDER BY b.timemodified DESC";
+
+        // Set the parms.
+        $parms = ['userid' => $userid];
+
+        return $DB->get_records_sql($sql, $parms);
+    }
+
+    /**
+     * Gets course information by course_definition_id.
+     *
+     * @param @string $cdid The course definition ID.
+     * @return @object Course information.
+     */
+    public static function get_course_info_by_definition_id($cdid) {
+        global $DB;
+
+        $sql = "SELECT c.*, c.course_abbreviated_title AS course_title
+            FROM {enrol_wds_courses} c
+            WHERE c.course_definition_id = :course_definition_id
+            LIMIT 1";
+
+        $parms = ['course_definition_id' => $cdid];
+
+        return $DB->get_record_sql($sql, $parms);
+    }
+
+    /**
+     * Creates a blueprint shell for the instructor.
+     *
+     * @param @string $userid The user ID.
+     * @param @string $cdid The course definition ID.
+     * @return @bool Success or failure.
+     */
+    public static function create_blueprint_shell($userid, $cdid) {
+        global $DB, $CFG;
+
+        // Require workdaystudent for course creation functionality.
+        require_once($CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php');
+
+        // Get user's universal_id.
+        $user = $DB->get_record('user', ['id' => $userid], '*');
+
+        // Set this...should I just include this in the parent call so I don't keep getting it?
+        $universalid = $user->idnumber;
+
+        // Get course info.
+        $courseinfo = self::get_course_info_by_definition_id($cdid);
+    
+        if (!$courseinfo) {
+            return false;
+        }
+
+        // Start transaction.
+        $transaction = $DB->start_delegated_transaction();
+    
+        try {
+            // Create blueprint record.
+            $blueprint = new stdClass();
+            $blueprint->userid = $userid;
+            $blueprint->universal_id = $universalid;
+            $blueprint->course_definition_id = $cdid;
+            $blueprint->status = 'pending';
+            $blueprint->timecreated = time();
+            $blueprint->timemodified = time();
+        
+            // Insert record first.
+            $blueprintid = $DB->insert_record('block_wdsprefs_blueprints', $blueprint);
+        
+            if (!$blueprintid) {
+                throw new Exception('Failed to create blueprint record');
+            }
+        
+            // Create course shell. TODO: allow multiple!
+            $shortname = 'BLUEPRINT-' . $courseinfo->course_subject_abbreviation . 
+                     '-' . $courseinfo->course_number;
+        
+            $fullname = 'Blueprint: ' . $courseinfo->course_subject_abbreviation . 
+                    ' ' . $courseinfo->course_number . 
+                    ' - ' . $courseinfo->course_title . 
+                    ' for ' . $user->firstname .
+                    ' ' . $user->lastname;
+        
+            // Set course parameters.
+            $course = new stdClass();
+            $course->shortname = $shortname;
+            $course->fullname = $fullname;
+
+            // TODO: Deal with this when david has settings.
+            $course->category = get_config('enrol_workdaystudent', 'blueprint_category') ?: 1;
+            $course->visible = 1;
+        
+            // Get user's preferred course format.
+            $format = get_user_preferences('wdspref_format', 'topics', $userid);
+            $course->format = $format;
+        
+            // Create course in Moodle
+            $course = create_course($course);
+        
+            if (!$course->id) {
+                throw new Exception('Failed to create course');
+            }
+        
+            // Update blueprint record with moodle_course_id.
+            $blueprint = new stdClass();
+            $blueprint->id = $blueprintid;
+            $blueprint->moodle_course_id = $course->id;
+            $blueprint->status = 'created';
+            $blueprint->timemodified = time();
+        
+            $DB->update_record('block_wdsprefs_blueprints', $blueprint);
+        
+            // Commit transaction.
+            $transaction->allow_commit();
+        
+        } catch (Exception $e) {
+            // Rollback transaction.
+            $transaction->rollback($e);
+            return false;
+        }
+
+        // Enroll user as teacher in the course.
+        if (!enrol_try_internal_enrol($course->id, $userid, 3)) {
+            throw new Exception('Failed to enroll user as teacher');
+        }
+
+        return true;
+    }
+
+
+
+
+
+
+
+    /**
      * Gets the period object from the period id.
      *
      * @param @string $periodid The academic period ID to fetch sections for.

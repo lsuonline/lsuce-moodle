@@ -110,6 +110,12 @@ class block_wdsprefs extends block_base {
                 'icontype' => 'fontawesome',
                 'icon' => 'fa-user-plus'
             ],
+            [
+                'text' => get_string('wdsprefs:blueprint', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/blueprintview.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-recycle'
+            ],
         ];
 
         // Set this up for later.

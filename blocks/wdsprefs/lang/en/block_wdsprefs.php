@@ -97,3 +97,27 @@ $string['wdsprefs:selectperiodsheader'] = 'Current / Near-Future Periods';
 $string['wdsprefs:selectperiod'] = 'Select a term/period to use';
 $string['wdsprefs:crosslistfail'] = 'Crosslisting Failed?';
 $string['wdsprefs:crosslistinstructions'] = 'Click on a shell container to select it (highlighted in blue), then select sections from the left and click "Add to Shell" to assign them. You can select sections from any shell and click "Remove" to return them to the available list. You need to create {$a} shell(s).';
+
+// Blueprint shells related strings.
+$string['wdsprefs:blueprint'] = 'Blueprint Shells';
+$string['wdsprefs:blueprinttitle'] = 'Blueprint Shells';
+$string['wdsprefs:blueprintheading'] = 'Blueprint Shells for Courses';
+$string['wdsprefs:requestblueprint'] = 'Request a Blueprint Shell';
+$string['wdsprefs:existingblueprints'] = 'Your Existing Blueprint Shells';
+$string['wdsprefs:createblueprint'] = 'Create Blueprint Shell';
+$string['wdsprefs:selectcourseforblueprint'] = 'Select Course for Blueprint';
+$string['wdsprefs:blueprintexplanation'] = 'Blueprint shells allow you to create a template course that can be used as a starting point for your future courses. Create a blueprint shell for any course you teach and set it up exactly how you want. You can use this to import materials into in the future.';
+$string['wdsprefs:blueprintnotes'] = 'Notes (optional)';
+$string['wdsprefs:blueprintnotes_help'] = 'Add any notes or reminders about this blueprint shell for your future reference.';
+$string['wdsprefs:blueprintsuccess'] = 'Blueprint shell created successfully!';
+$string['wdsprefs:blueprintfailed'] = 'Failed to create blueprint shell. Please try again or contact support.';
+$string['wdsprefs:blueprintalreadyexists'] = 'You already have a blueprint shell for this course.';
+$string['wdsprefs:noinstructor'] = 'Only instructors can create blueprint shells.';
+$string['wdsprefs:nocourses'] = 'You are not teaching any courses in the current or upcoming terms.';
+$string['wdsprefs:viewcourse'] = 'View Course';
+$string['wdsprefs:status'] = 'Status';
+$string['wdsprefs:datecreated'] = 'Date Created';
+$string['wdsprefs:actions'] = 'Actions';
+$string['wdsprefs:blueprintstatus_pending'] = 'Pending';
+$string['wdsprefs:blueprintstatus_created'] = 'Created';
+$string['wdsprefs:blueprintstatus_failed'] = 'Failed';
