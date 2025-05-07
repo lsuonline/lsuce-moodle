@@ -122,8 +122,10 @@ class wdsprefs {
             // Get the category based on subject of first course.
             $cat = self::get_subject_category($courseinfo->course_subject_abbreviation);
 
-            // Use appropriate category.
-            $course->category = $cat;
+            // TODO: Build out this shit in settings.
+            $course->category = get_config('block_wdsprefs', 'blueprint_category_forced') ?
+                get_config('block_wdsprefs', 'blueprint_category') :
+                $cat->id;
 
             // Course visibility.
             $course->visible = $s->visible;
@@ -244,59 +246,96 @@ class wdsprefs {
             return false;
         }
 
+        // Get the enrollment plugin.
+        $plugin = enrol_get_plugin('workdaystudent');
+
+        // Try to get existing instance.
+        $instance = $DB->get_record('enrol',
+            ['courseid' => $crosslist->moodle_course_id, 'enrol' => 'workdaystudent']);
+
+        // If no instance exists, create a new one.
+        if (!$instance) {
+            $instance = workdaystudent::wds_create_enrollment_instance($crosslist->moodle_course_id);
+        }
+
+        // Set the students table.
+        $stutable = 'enrol_wds_students';
+
+        // Set the section student enrollment table.
+        $stuenrtable = 'enrol_wds_student_enroll';
+
+        // Set the section table.
+        $stable = 'enrol_wds_sections';
+
         // Process each section.
         foreach ($sections as $clsection) {
+
             // Get the actual section.
-            $section = $DB->get_record('enrol_wds_sections', ['id' => $clsection->section_id]);
+            $section = $DB->get_record($stable, ['id' => $clsection->section_id]);
+
             if (!$section) {
                 continue;
             }
 
+            // Set this for later use.
+            $originalcourseid = $section->moodle_status;
+
+            // Assign the section to the new course shell id.
+            $DB->set_field($stable, 'moodle_status', $crosslist->moodle_course_id,
+                ['id' => $section->id]
+            );
+
             // Get all student enrollments for this section.
-            $studentenrolls = $DB->get_records('enrol_wds_student_enroll',
+            $studentenrolls = $DB->get_records($stuenrtable,
                 ['section_listing_id' => $section->section_listing_id]
             );
 
             // Process each student enrollment.
             foreach ($studentenrolls as $studenroll) {
                 // Get student record.
-                $student = $DB->get_record('enrol_wds_students',
+                $student = $DB->get_record($stutable,
                     ['universal_id' => $studenroll->universal_id]
                 );
 
                 if ($student && $student->userid) {
 
                     // Enroll student in crosslisted course.
-//TODO: Deal with this manual enrollment stopgap.
                     $studentroleid = $DB->get_field('role', 'id', ['shortname' => 'student']);
-                    enrol_try_internal_enrol($crosslist->moodle_course_id, $student->userid, $studentroleid);
+                    $plugin->enrol_user($instance,
+                        $student->userid,
+                        $studentroleid,
+                        $studenroll->registered_date,
+                        $studenroll->drop_date,
+                        ENROL_USER_ACTIVE
+                    );
 
                     // Update original enrollment status if needed.
                     if ($section->controls_grading == 1) {
 
-                        // Mark the enrollment as crosslisted in wds tables.
-                        $DB->set_field('enrol_wds_student_enroll', 'status', 'crosslisted',
+                        /* TODO: DEAL with this shit somehow?
+
+                        Mark the enrollment as crosslisted in wds tables.
+                        $DB->set_field($stuenrtable, 'status', 'crosslisted',
                             ['id' => $studenroll->id]
                         );
 
+                        */
+
                         // Unenroll from original course if it exists.
                         if ($section->moodle_status && is_numeric($section->moodle_status)) {
-                            $originalcourseid = (int)$section->moodle_status;
 
-//TODO: Deal with this manual enrollment stopgap.
-                            // Get the manual enrolment plugin instance for this course
-                            $manualinstance = $DB->get_record('enrol',
-                                ['courseid' => $originalcourseid, 'enrol' => 'manual']
+                            // Get the old enrolment plugin instance for the old course.
+                            $oldinstance = $DB->get_record('enrol',
+                                ['courseid' => $originalcourseid, 'enrol' => 'workdaystudent']
                             );
 
-//TODO: Deal with this manual enrollment stopgap.
-                            if ($manualinstance) {
+                            if ($oldinstance) {
 
                                 // Get the enrolment manager.
-                                $enrolmanager = enrol_get_plugin('manual');
+                                $enrolmanager = enrol_get_plugin('workdaystudent');
 
                                 // Unenroll the student.
-                                $enrolmanager->unenrol_user($manualinstance, $student->userid);
+                                $enrolmanager->unenrol_user($oldinstance, $student->userid);
                             }
                         }
                     }
