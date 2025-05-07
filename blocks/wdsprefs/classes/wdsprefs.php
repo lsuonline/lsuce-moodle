@@ -120,6 +120,9 @@ class wdsprefs {
         // Require workdaystudent for course creation functionality.
         require_once($CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php');
 
+        // Get settings.
+        $s = workdaystudent::get_settings();
+
         // Get user's universal_id.
         $user = $DB->get_record('user', ['id' => $userid], '*');
 
@@ -132,6 +135,21 @@ class wdsprefs {
         if (!$courseinfo) {
             return false;
         }
+
+        // Set the table.
+        $table = 'course_categories';
+
+        // Set the parms.
+        $parms = [
+            'parent' => $s->parentcat,
+            'name' =>  $courseinfo->course_subject_abbreviation
+        ];
+
+        // Get BP category.
+        $cats = $DB->get_records($table, $parms);
+
+        // In the weird event we have more than one, please grab the 1st one.
+        $cat = reset($cats);
 
         // Start transaction.
         $transaction = $DB->start_delegated_transaction();
@@ -173,8 +191,13 @@ class wdsprefs {
             $course->shortname = $shortname;
             $course->fullname = $fullname;
 
-            // TODO: Deal with this when david has settings.
-            $course->category = get_config('enrol_workdaystudent', 'blueprint_category') ?: 1;
+            // TODO: Build out this checkbox.
+            $course->category = get_config('block_wdsprefs', 'blueprint_category_forced') ?
+
+                // TODO: Build out this setting too.
+                get_config('block_wdsprefs', 'blueprint_category') :
+                $cat->id;
+
             $course->visible = 1;
 
             // Get user's preferred course format.
@@ -254,9 +277,6 @@ class wdsprefs {
         // Get the user's idnumber.
         $uid = $USER->idnumber;
 
-        // TODO: REMOVE THIS!
-        $uid = '00007566';
-
         // Get settings to limit semesters to current ones.
         $s = workdaystudent::get_settings();
 
@@ -322,9 +342,6 @@ class wdsprefs {
 
        // Get the user's idnumber.
        $uid = $USER->idnumber;
-
-       // TODO: REMOVE THIS!!!
-       $uid = '00007566';
 
        // Build SQL query to get all relevant section information.
        $sql = "SELECT sec.id AS sectionid,

@@ -78,9 +78,6 @@ if (!$isinstructor) {
 // User id.
 $uid = $USER->id;
 
-// TODO: REMOVE THIS!
-$uid = '195';
-
 // Get all taught courses.
 $taughtcourses = wdsprefs::get_instructor_courses($uid);
 
