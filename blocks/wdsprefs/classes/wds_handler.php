@@ -52,37 +52,7 @@ abstract class blocks_wdsprefs_wds_handler {
         return $DB->update_record('user', $user);
     }
 
-    /**
-     * For users who have previously set their preferred name
-     * and who have now had their name changed officially (so that
-     * provider returns this name as firstname), delete the setting
-     * for firstname.
-     * @param type $user
-     */
-    public static function preferred_name_legitimized($user) {
-        $params = array(
-            'universal_id' => $user->id,
-            'name' => 'user_firstname'
-        );
-        wds_setting::delete_all($params);
-    }
-
-    public static function wds_primary_change($data) {
-        // Empty enrollment / idnumber.
-        wds::unenroll_users(array($data->section));
-
-        // Safe keeping.
-        $data->section->idnumber = '';
-        $data->section->status = wds::PROCESSED;
-        $data->section->save();
-
-        // Set to re-enroll.
-        wds_student::reset_status($data->section, wds::PROCESSED);
-        wds_teacher::reset_status($data->section, wds::PROCESSED);
-
-        return $data;
-    }
-
+    
     public static function wds_teacher_process($wdsteacher) {
         $threshold = get_config('block_wdsprefs', 'course_threshold');
 
@@ -105,58 +75,6 @@ abstract class blocks_wdsprefs_wds_handler {
         }
 
         return true;
-    }
-
-    public static function wds_teacher_release($wdsteacher) {
-        // Check for promotion or demotion.
-        $params = array(
-            'universal_id' => $wdsteacher->userid,
-            'section_listing_id' => $wdsteacher->sectionid,
-            'status' => wds::PROCESSED
-        );
-
-        $otherself = wds_teacher::get($params);
-
-        if ($otherself) {
-            $promotion = $otherself->primary_flag == 1;
-            $demotion = $otherself->primary_flag == 0;
-        } else {
-            $promotion = $demotion = false;
-        }
-
-        $deleteparams = array('universal_id' => $wdsteacher->userid);
-
-        $allsectionsettings = array('unwant', 'split', 'crosslist');
-
-        if ($promotion) {
-            // Promotion means all settings are in tact.
-            return $wdsteacher;
-        } else if ($demotion) {
-            // Demotion means crosslist and split behavior must be effected.
-            unset($allsectionsettings[0]);
-        }
-
-        $bysuccessfuldelete = function($in, $setting) use ($deleteparams, $wdsteacher) {
-            $class = 'wds_'.$setting;
-            return $in && $class::delete_all($deleteparams + array(
-                'section_listing_id' => $wdsteacher->sectionid
-            ));
-        };
-
-        $success = array_reduce($allsectionsettings, $bysuccessfuldelete, true);
-
-        $creationparams = array(
-            'course_listing_id' => $wdsteacher->section()->courseid,
-            'semesterid' => $wdsteacher->section()->semesterid
-        );
-
-        $success = (
-            wds_creation::delete_all($deleteparams + $creationparams) and
-            wds_team_request::delete_all($deleteparams + $creationparams) and
-            $success
-        );
-
-        return $wdsteacher;
     }
 
     public static function wds_section_process($section) {
@@ -232,29 +150,7 @@ abstract class blocks_wdsprefs_wds_handler {
 
         return $section;
     }
-
-    public static function wds_section_drop($section) {
-        $sectionsettings = array('unwant', 'split', 'crosslist', 'team_section');
-
-        foreach ($sectionsettings as $settting) {
-            $class = 'wds_' . $settting;
-
-            $class::delete_all(array('sectionid' => $section->id));
-        }
-
-        return true;
-    }
-
-    public static function wds_semester_drop($semester) {
-        $semestersettings = array('wds_creation', 'wds_team_request');
-
-        foreach ($semestersettings as $class) {
-            $class::delete_all(array('semesterid' => $semester->id));
-        }
-
-        return true;
-    }
-
+    
     /**
      * Manipulates the shortname and fullname of a split, crosslist, or team-teach
      * of a newly created course shell. It may be invoked either by a wds_course_created
@@ -350,9 +246,7 @@ abstract class blocks_wdsprefs_wds_handler {
             // $a->fullname = fullname($user);
 
             $stringkey = 'split_shortname';
-            // $pattern = "WDS - {period_year} {period_type} {course_subject_abbreviation} {course_number} for {firstname} {lastname} {delivery_mode}";
         }
-
 
         // DALO - gotta look into this
         /* 
@@ -461,7 +355,7 @@ abstract class blocks_wdsprefs_wds_handler {
 
         return true;
     }
-
+    /*
     public static function wds_lsu_student_data_updated($user) {
         if (empty($user->user_keypadid)) {
             return blocks_wds_profile_field_helper::clear_field_data($user, 'user_keypadid');
@@ -510,4 +404,113 @@ abstract class blocks_wdsprefs_wds_handler {
     public static function wds_group_emptied($params) {
         return true;
     }
+    */
+   /*
+    public static function wds_section_drop($section) {
+        $sectionsettings = array('unwant', 'split', 'crosslist', 'team_section');
+
+        foreach ($sectionsettings as $settting) {
+            $class = 'wds_' . $settting;
+
+            $class::delete_all(array('sectionid' => $section->id));
+        }
+
+        return true;
+    }
+
+    public static function wds_semester_drop($semester) {
+        $semestersettings = array('wds_creation', 'wds_team_request');
+
+        foreach ($semestersettings as $class) {
+            $class::delete_all(array('semesterid' => $semester->id));
+        }
+
+        return true;
+    }
+    */
+   
+   /*
+     * For users who have previously set their preferred name
+     * and who have now had their name changed officially (so that
+     * provider returns this name as firstname), delete the setting
+     * for firstname.
+     * @param type $user
+     *
+    public static function preferred_name_legitimized($user) {
+        $params = array(
+            'universal_id' => $user->id,
+            'name' => 'user_firstname'
+        );
+        wds_setting::delete_all($params);
+    }
+
+    public static function wds_primary_change($data) {
+        // Empty enrollment / idnumber.
+        wds::unenroll_users(array($data->section));
+
+        // Safe keeping.
+        $data->section->idnumber = '';
+        $data->section->status = wds::PROCESSED;
+        $data->section->save();
+
+        // Set to re-enroll.
+        wds_student::reset_status($data->section, wds::PROCESSED);
+        wds_teacher::reset_status($data->section, wds::PROCESSED);
+
+        return $data;
+    }
+    */
+   /*
+    public static function wds_teacher_release($wdsteacher) {
+        // Check for promotion or demotion.
+        $params = array(
+            'universal_id' => $wdsteacher->userid,
+            'section_listing_id' => $wdsteacher->sectionid,
+            'status' => wds::PROCESSED
+        );
+
+        $otherself = wds_teacher::get($params);
+
+        if ($otherself) {
+            $promotion = $otherself->primary_flag == 1;
+            $demotion = $otherself->primary_flag == 0;
+        } else {
+            $promotion = $demotion = false;
+        }
+
+        $deleteparams = array('universal_id' => $wdsteacher->userid);
+
+        $allsectionsettings = array('unwant', 'split', 'crosslist');
+
+        if ($promotion) {
+            // Promotion means all settings are in tact.
+            return $wdsteacher;
+        } else if ($demotion) {
+            // Demotion means crosslist and split behavior must be effected.
+            unset($allsectionsettings[0]);
+        }
+
+        $bysuccessfuldelete = function($in, $setting) use ($deleteparams, $wdsteacher) {
+            $class = 'wds_'.$setting;
+            return $in && $class::delete_all($deleteparams + array(
+                'section_listing_id' => $wdsteacher->sectionid
+            ));
+        };
+
+        $success = array_reduce($allsectionsettings, $bysuccessfuldelete, true);
+
+        $creationparams = array(
+            'course_listing_id' => $wdsteacher->section()->courseid,
+            'semesterid' => $wdsteacher->section()->semesterid
+        );
+
+        $success = (
+            wds_creation::delete_all($deleteparams + $creationparams) and
+            wds_team_request::delete_all($deleteparams + $creationparams) and
+            $success
+        );
+
+        return $wdsteacher;
+    }
+    */
 }

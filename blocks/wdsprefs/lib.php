@@ -23,11 +23,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// require_once("$CFG->dirroot/enrol/workdaystudent/lib.php");
 if (isset($CFG)) {
     require_once($CFG->dirroot . '/enrol/workdaystudent/lib.php');
 } else {
-    // require_once('../../config.php');
     require_once('../../enrol/workdaystudent/lib.php');
 }
 
@@ -94,241 +92,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
     }
 
     /**
-     * Master method for kicking off WDS enrollment
-     * First checks a few top-level requirements to run, and then passes on to a secondary method for handling the process
-     *
-     * @param  boolean $run_as_adhoc  whether or not the task has been run "ad-hoc" or "scheduled" (default)
-     * @return boolean
-     */
-    public function run_enrollment_process($runasadhoc = false) {
-        global $CFG;
-
-        // Capture start time for later use.
-        $starttime = microtime(true);
-
-        // First, run a few top-level checks before processing enrollment.
-        try {
-            // Make sure task is NOT disabled (if not run adhoc).
-            if (!$runasadhoc and ! $this->task_is_enabled()) {
-                // TODO: Make a real lang string for this.
-                throw new WdsInitException('This scheduled task has been disabled.');
-            }
-
-            // Make sure WDS is NOT running.
-            if ($this->is_running()) {
-                throw new WdsInitException(
-                    wds::_s('already_running', $CFG->wwwroot . '/admin/settings.php?section=enrolsettingswds')
-                );
-            }
-
-            // Make sure WDS is not within grace period threshold.
-            if ($this->is_within_graceperiod()) {
-                throw new WdsInitException(
-                    wds::_s('within_grace_period', $CFG->wwwroot . '/admin/settings.php?section=enrolsettingswds')
-                );
-            }
-
-            // Attempt to fetch the configured enrollment provider.
-            $provider = $this->provider();
-
-            // Make sure we have a provider loaded before we proceed any further.
-            if (!$provider) {
-                // TODO: Make a real lang string for this.
-                throw new WdsInitException('Could not load the enrollment provider.');
-            }
-
-            // Catch any initial errors here before attempting to run.
-        } catch (WdsInitException $e) {
-            // Add the error to the stack.
-            $this->add_error($e->getMessage());
-
-            // Email the error report, reporting errors only.
-            $this->email_reports(true);
-
-            // Leave the process.
-            return false;
-        }
-
-         // Now, begin using the provider to pull data and manifest enrollment.
-         // Note start time for reporting.
-        return $this->run_provider_enrollment($provider, $starttime);
-    }
-
-    /**
-     * Runs enrollment for a given wds provider
-     *
-     * @param  enrollment_provider  $provider
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return boolean  success
-     */
-    public function run_provider_enrollment($provider, $starttime) {
-        // First, flag the process as running.
-        $this->setting('running', true);
-
-        // Send startup email.
-        $this->email_startup_report($starttime);
-
-        // Begin log messages.
-        $this->log('------------------------------------------------');
-        $this->log(wds::_s('pluginname'));
-        $this->log('------------------------------------------------');
-
-        // Handle any provider preprocesses.
-        if (!$provider->preprocess($this)) {
-            $this->add_error('Error during preprocess.');
-        }
-
-        // Pull provider data.
-        $this->log('Pulling information from ' . $provider->get_name());
-        $this->process_all();
-        $this->log('------------------------------------------------');
-
-        // Manifest provider data.
-        $this->log('Begin manifestation ...');
-        $this->handle_enrollments();
-
-        // Handle any provider postprocesses.
-        if (!$provider->postprocess($this)) {
-            $this->add_error('Error during postprocess.');
-        }
-
-        // End log messages.
-        $this->log('------------------------------------------------');
-        $this->log('wds enrollment took: ' . $this->get_time_elapsed_during_enrollment($starttime));
-        $this->log('------------------------------------------------');
-
-        // Flag the process as no longer running.
-        $this->setting('running', false);
-
-        // Email final report.
-        $this->email_reports(false, $starttime);
-
-        // Handle any errors automatically per threshold settings.
-        // TODO: This causes a blank email to be sent even if everything ran OK.
-        $this->handle_automatic_errors();
-
-        $this->email_reports(true);
-        return true;
-    }
-
-    /**
-     * Emails a wds "startup" report to moodle administrators
-     *
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return void
-     */
-    private function email_startup_report($starttime) {
-        // Get all moodle admin users.
-        $users = get_admins();
-        // Email these users the job has begun.
-        $this->email_wds_startup_report_to_users($users, $starttime);
-    }
-
-    /**
-     * Emails a wds startup report (notification of start time) to given users
-     *
-     * @param  array  $users  moodle users
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return void
-     */
-    private function email_wds_startup_report_to_users($users, $starttime) {
-        global $CFG;
-
-        $starttimedisplay = $this->format_time_display($starttime);
-
-        // Get email content from email log.
-        $emailcontent = 'This email is to let you know that WDS Enrollment has begun at:' . $starttimedisplay;
-
-        // Send to each admin.
-        foreach ($users as $user) {
-            email_to_user($user, wds::_s('pluginname'), sprintf('WDS Enrollment Begun [%s]', $CFG->wwwroot), $emailcontent);
-        }
-    }
-
-    /**
-     * Finds and emails moodle administrators enrollment reports
-     *
-     * Optionally, skips the default log report and send errors only
-     *
-     * @param  boolean  $report_errors_only
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return void
-     */
-    public function email_reports($reporterrorsonly = false, $starttime = '') {
-        // Get all moodle admin users.
-        $users = get_admins();
-
-        // Determine whether or not we're sending an email log report to admins.
-        if (!$reporterrorsonly and $this->setting('email_report')) {
-            $this->email_wds_log_report_to_users($users, $starttime);
-        }
-
-        // Determine whether or not there are errors to report.
-        if ($this->errors_exist()) {
-            $this->email_wds_error_report_to_users($users, $starttime);
-        }
-    }
-
-    /**
-     * Emails a wds log report (from emaillog) to given users
-     *
-     * @param  array  $users  moodle users
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return void
-     */
-    private function email_wds_log_report_to_users($users, $starttime) {
-        global $CFG;
-
-        // Get email content from email log.
-        $emailcontent = implode("\n", $this->emaillog);
-
-        if ($starttime) {
-            $starttimedisplay = $this->format_time_display($starttime);
-
-            $emailcontent .= "\n\nThis process began at: " . $starttimedisplay;
-        }
-
-        // Send to each admin.
-        foreach ($users as $user) {
-            email_to_user($user, wds::_s('pluginname'), sprintf('WDS Log [%s]', $CFG->wwwroot), $emailcontent);
-        }
-    }
-
-    /**
-     * Emails a wds error report (from errors stack) to given users
-     *
-     * @param  array  $users  moodle users
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return void
-     */
-    private function email_wds_error_report_to_users($users, $starttime) {
-        global $CFG;
-
-        // Get email content from error log.
-        $emailerrorcontent = implode("\n", $this->get_errors());
-
-        if ($starttime) {
-            $starttimedisplay = $this->format_time_display($starttime);
-
-            $emailerrorcontent .= "\n\nThis process begun at: " . $starttimedisplay;
-        }
-
-        // Send to each admin.
-        foreach ($users as $user) {
-            email_to_user($user, wds::_s('pluginname'), sprintf('[SEVERE] WDS Errors [%s]', $CFG->wwwroot), $emailerrorcontent);
-        }
-    }
-
-    /**
-     * Determines whether or not there are any saved errors at this point
-     *
-     * @return bool
-     */
-    private function errors_exist() {
-        return (empty($this->get_errors())) ? false : true;
-    }
-
-    /**
      * Formats a Unix time for display
      *
      * @param  float  $start_time  the current time in seconds since the Unix epoch
@@ -342,26 +105,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         $formatted = sprintf('%s%s', date($dformat), $msecs);
 
         return $formatted;
-    }
-
-    /**
-     * Calculates amount of time (in seconds) that has elapsed since a given start time
-     *
-     * @param  float  $start_time  the current time in seconds since the Unix epoch
-     * @return string  time difference in seconds
-     */
-    private function get_time_elapsed_during_enrollment($starttime) {
-        // Get the difference between start and end in microseconds, as a float value.
-        $diff = microtime(true) - $starttime;
-
-        // Break the difference into seconds and microseconds.
-        $sec = intval($diff);
-        $micro = $diff - $sec;
-
-        // Format the result as you want it - will contain something like "00:00:02.452".
-        $timeelapsed = core_date::strftime('%T', mktime(0, 0, $sec)) . str_replace('0.', '.', sprintf('%.3f', $micro));
-
-        return $timeelapsed;
     }
 
     /**
@@ -420,26 +163,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         }
     }
 
-    private function handle_automatic_errors() {
-        $errors = wds_error::get_all();
-
-        $errorthreshold = $this->setting('error_threshold');
-
-        $running = (bool)$this->setting('running');
-
-        // Don't reprocess if the module is running.
-        if ($running) {
-            return;
-        }
-
-        if (count($errors) > $errorthreshold) {
-            $this->add_error(wds::_s('error_threshold_log'));
-            return;
-        }
-
-        wds::reprocess_errors($errors, true);
-    }
-
     public function handle_enrollments() {
         // Users will be unenrolled.
         $pending = wds_section::get_all(array('status' => wds::PENDING));
@@ -450,11 +173,12 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         $this->handle_processed_sections($processed);
     }
 
-    /**
+    /*
      * Get (fetch, instantiate, save) semesters
      * considered valid at the current time, and
      * process enrollment for each.
-     */
+     *
+    
     public function process_all() {
         $time = time();
         $processedsemesters = $this->get_semesters($time);
@@ -463,72 +187,14 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             $this->process_semester($semester);
         }
     }
-
-    /**
-     * @param wds_semester[] $semester
-     */
-    public function process_semester($semester) {
-        $processcourses = $this->get_courses($semester);
-
-        if (empty($processcourses)) {
-            return;
-        }
-
-        $setbydepartment   = (bool) $this->setting('process_by_department');
-
-        $supportsdepartment = $this->provider()->supports_department_lookups();
-
-        $supportssection    = $this->provider()->supports_section_lookups();
-
-        if ($setbydepartment and $supportsdepartment) {
-            $this->process_semester_by_department($semester, $processcourses);
-        } else if (!$setbydepartment and $supportssection) {
-            $this->process_semester_by_section($semester, $processcourses);
-        } else {
-            $message = wds::_s('could_not_enroll', $semester);
-
-            $this->log($message);
-            $this->add_error($message);
-        }
-    }
-
-    /**
-     * @param wds_semester $semester
-     * @param wds_course[] $courses NB: must have department attribute set
-     */
-    private function process_semester_by_department($semester, $courses) {
-        $departments = wds_course::flatten_departments($courses);
-
-        foreach ($departments as $department => $courseids) {
-            $filters = wds::where()->semesterid->equal($semester->id)->courseid->in($courseids);
-
-            // Current means they already exist in the DB.
-            $currentsections = wds_section::get_all($filters);
-
-            $this->process_enrollment_by_department(
-                $semester, $department, $currentsections
-            );
-        }
-    }
-
-    private function process_semester_by_section($semester, $courses) {
-        foreach ($courses as $course) {
-            foreach ($course->sections as $section) {
-                $wdssection = wds_section::by_id($section->id);
-                $this->process_enrollment(
-                    $semester, $course, $wdssection
-                );
-            }
-        }
-    }
-
-    /**
+    */
+    /*
      * From enrollment provider, get, instantiate,
      * save (to {enrol_wds_semesters}) and return all valid semesters.
      * @param int time
      * @return wds_semester[] these objects will be later upgraded to wds_semesters
      *
-     */
+     *
     public function get_semesters($time) {
         $setdays = (int) $this->setting('sub_days');
         $subdays = 24 * $setdays * 60 * 60;
@@ -617,7 +283,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      *
      * @param wds_semester $semester
      * @return wds_course[]
-     */
+     *
     public function get_courses($semester) {
         $this->log('Pulling Courses / Sections for ' . $semester);
         try {
@@ -648,7 +314,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @param wds_semester $semester semester to process
      * @param string $department department to process
      * @param wds_section[] $current_sections current wds records for the department/semester combination
-     */
+     *
     public function process_enrollment_by_department($semester, $department, $currentsections) {
         try {
 
@@ -712,7 +378,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @param string $department
      * @param object[] $teachers
      * @param wds_teacher[] $current_teachers
-     */
+     *
     public function process_teachers_by_department($semester, $department, $teachers, $currentteachers) {
         $this->fill_roles_by_department('teacher', $semester, $department, $teachers, $currentteachers);
     }
@@ -723,7 +389,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @param string $department
      * @param object[] $students
      * @param wds_student[] $current_students
-     */
+     *
     public function process_students_by_department($semester, $department, $students, $currentstudents) {
         $this->fill_roles_by_department('student', $semester, $department, $students, $currentstudents);
     }
@@ -737,7 +403,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @param string $department
      * @param object[] $pulled_users incoming users from the provider
      * @param wds_teacher[] | wds_student[] $current_users all wds users for this semester
-     */
+     *
     private function fill_roles_by_department($type, $semester, $department, $pulledusers, $currentusers) {
         foreach ($pulledusers as $user) {
             $courseparams = array(
@@ -773,7 +439,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      *
      * @param stdClass[] $semesters
      * @return wds_semester[]
-     */
+     *
     public function process_semesters($semesters) {
         $processed = array();
 
@@ -807,7 +473,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
 
         return $processed;
     }
-
+    */
     /**
      * For each of the courses provided, instantiate as a wds_course
      * object; persist to the {enrol_wds_courses} table; then iterate
@@ -875,9 +541,9 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         return $processed;
     }
 
-    /**
+    /*
      * Could be used to process a single course upon request
-     */
+     *
     public function process_enrollment($semester, $course, $section) {
         $teachersource = $this->provider()->teacher_source();
 
@@ -904,7 +570,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             wds_error::section($section)->save();
         }
     }
-
+    *
     private function release($type, $users) {
 
         foreach ($users as $user) {
@@ -952,7 +618,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             }
         }
     }
-
+    *
     private function post_section_process($semester, $course, $section) {
         // Process section only if teachers can be processed.
         // Take into consideration outside forces manipulating.
@@ -1004,7 +670,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             return array('primary_flag' => $user->primary_flag);
         });
     }
-
+    */
     /**
      * Process students.
      *
@@ -1065,18 +731,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
     public function handle_pending_sections($sections) {
         global $DB, $USER;
 
-        if ($sections) {
-            
-            $zcount = count($sections);
-            error_log('Found ' . $zcount. ' Sections that will not be manifested.');
-            
-            // try {
-            //     $this->log('Found ' . count($sections) . ' Sections that will not be manifested.');
-            // } catch (Exception $e) {
-            //     error_log("\n\nERROR: can't seem to output to the log");
-            // }
-        }
-
         foreach ($sections as $section) {
             if ($section->is_manifested()) {
 
@@ -1098,26 +752,11 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
                             wds::ENROLLED,
                             wds::PROCESSED,
                             wds::PENDING,
-                            // wds::UNENROLLED,
-                            // wds::COMPLETED,
                             wds::COMPLETEDED,
                             wds::ENROLL,
                             wds::UNENROLL
                         );
 
-                    // $params = $class::get_all(wds::where()
-                    //     ->join('{enrol_'.$class.'_enroll}', 'rolly')->on('universal_id', 'universal_id')
-                    //     ->rolly->section_listing_id->equal($section->section_listing_id)
-                    //     ->status->status
-                    //     ->in(
-                    //         wds::ENROLLED,
-                    //         wds::PROCESSED,
-                    //         wds::PENDING,
-                    //         wds::UNENROLLED
-                    //     )
-                    // );
-
-                    // DALO: hack fix for now
                     if ($class == 'wds_student') {
                         $params->tablex = 'enrol_wds_student_enroll';
                     } else if ($class == 'wds_teacher') {
@@ -1127,17 +766,13 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
 
                     foreach ($users as $user) {
                         $dis_user = $class::get_userid($user->universal_id);
-                        // $class::get_all(wds::where()->universal_id
-                        //     ->equal($user->universal_id
-                        // ));
-                        // $dis_user = $class::get_all($params);
                         $users[$user->id]->user = $dis_user;
                         $users[$user->id]->userid = $dis_user->userid;
                     }
                     $this->unenroll_users($group, $users);
                 }
                 // DALO: TODO - visible setting???????
-                // Set course visibility according to user preferences (block_cps).
+                // Set course visibility according to user preferences
                 /*
                 $settingparams = wds::where()->userid->equal($USER->id)->name->starts_with('creation_');
 
@@ -1178,10 +813,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @param wds_section[] $sections
      */
     public function handle_processed_sections($sections) {
-        if ($sections) {
-            error_log('STUPID POS LOG CRASHES LIKE A BIT**');
-            // $this->log('Found ' . count($sections) . ' Sections ready to be manifested.');
-        }
 
         $returndata = [];
 
@@ -1209,9 +840,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             }
             $returndata[] = $data;
         }
-
-        // $this->log(' ');
-        // log keeps crashing
 
         return $returndata;
     }
@@ -1357,7 +985,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
 
         // For certain we are working with a real course.
         try {
-            // Quick fix 1/13/17 - if this fails, let's throw an exception, log, and then continue.
             $moodlecourse = $this->manifest_course($semester, $course, $section);
         } catch (Exception $e) {
             $this->log($e->getMessage());
@@ -1458,19 +1085,10 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         foreach ($users as $user) {
             $roley = $this->determine_role($user);
             
+            // DALO FIX: test this out.
             $roleid = $this->setting($roley->role . '_role');
 
-            // DALO FIX: there is no setting for WDSPREFS YET!
-            // if ($roleid == false) {
-            //     if ($shortname == "student") {
-            //         $roleid = 5;
-            //     } else if ($shortname == "teacher") {
-            //         $roleid = 10;
-            //     }
-            // }
             $user2 = $user::get_userid($user->universal_id);
-            // $user3 = $userr::get(array('universal_id' => $userr->universal_id));
-
             $user->userid = $user2->userid;
             $this->enrol_user($instance, $user->userid, $roley->id);
             groups_add_member($group->id, $user->userid);
@@ -1499,16 +1117,9 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             $roley = $this->determine_role($user);
 
             $class = 'wds_' . $roley->role;
+            // DALO FIX: Test this out.
             $roleid = $this->setting($roley->role . '_role');
 
-            // DALO FIX: there is no setting for WDSPREFS YET!
-            // if ($roleid == false) {
-            //     if ($shortname == "student") {
-            //         $roleid = 5;
-            //     } else if ($shortname == "teacher") {
-            //         $roleid = 10;
-            //     }
-            // }
             // Ignore pending statuses for users who have no role assignment.
             $context = context_course::instance($course->id);
             if (!is_enrolled($context, $user->userid)) {
@@ -1530,7 +1141,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             $user->status = $tostatus;
             
             // DALO: Can't use wsd_teacher obj as enroll has status.
-            // $user->save();
             $this_class = 'enrol_'.$class.'_enroll';
             $userenrol = array(
                 'section_listing_id' => $user->section_listing_id,
@@ -1619,17 +1229,14 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
 
             $primaryteacher = current($section->teachers());
 
-            // Quick fix 1/13/17 - if there is still no primary teacher at this point
             // let's throw an exception to the parent manifestation method (which will log).
             if (!$primaryteacher) {
                 throw new Exception('Cannot find primary teacher for section id: ' . $section->id);
-
                 return;
             }
         }
 
         $assumedidnumber = $semester->period_year . $semester->period_type .
-            // $course->course_subject_abbreviation . $semester->session_key . $course->course_number .
             $course->course_subject_abbreviation . $course->course_number .
             '-'.$primaryteacher->universal_id;
 
@@ -1654,7 +1261,6 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             // DALO: this breaks, need mdl user, not wsd_user object
             // $user = $primaryteacher->user();
             $user = $DB->get_record('user', array('id' => $primaryteacher->userid));
-            // $user = $primaryteacher->user();
 
             $session = empty($semester->session_key) ? '' :
                 '(' . $semester->session_key . ') ';
@@ -1681,12 +1287,12 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
             $moodlecourse = new stdClass;
             $moodlecourse->idnumber = $idnumber;
             $moodlecourse->shortname = $section->moodle->shortname;
+            // Was going to format but let's just use the full & short name.
             // $moodlecourse->shortname = $shortname;
             // $moodlecourse->fullname = $assumedfullname;
             $moodlecourse->fullname = $section->moodle->fullname;
             $moodlecourse->category = $category->id;
             $moodlecourse->summary = $section->moodle->summary;
-            // $moodlecourse->startdate = $semester->classes_start;
             $moodlecourse->startdate = $semester->start_date;
 
             // Set system defaults.
@@ -1728,14 +1334,14 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         return $moodlecourse;
     }
 
-    /**
+    /*
      *
      * @global type $CFG
      * @param type $u
      *
      * @returnwds_user $user
      * @throws Exception
-     */
+     *
     private function create_user($u) {
         $present = !empty($u->idnumber);
 
@@ -1817,7 +1423,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         return $user;
     }
 
-    /**
+    /*
      *
      * @global object $DB
      * @paramwds_user $prev these var names are misleading: $prev is the user
@@ -1829,7 +1435,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @return boolean According to our comparissons, does current hold new information
      * for a previously stored user that we need to replace the DB record with [replacement
      * happens in the calling function]?
-     */
+     *
     private function user_changed(wds_user $prev,wds_user $current) {
         global $DB;
         $namefields = \core_user\fields::for_userpic()->get_sql('', false, '', '', false)->selects;
@@ -1898,7 +1504,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         return false;
     }
 
-    /**
+    /*
      *
      * @param string $type 'student' or 'teacher'
      * @param wds_section $section
@@ -1906,7 +1512,7 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
      * @param wds_student[] $current_users all users currently registered in the wds tables for this section
      * @param callback $extra_params function returning additional user parameters/fields
      * an associative array of additional params, given a user as input
-     */
+     *
     private function fill_role($type, $section, $users, &$currentusers, $extraparams = null) {
         $class = 'wds_' . $type;
         $alreadyenrolled = array(wds::ENROLLED, wds::PROCESSED);
@@ -2047,11 +1653,11 @@ class enrol_wds_plugin extends enrol_workdaystudent_plugin {
         return $this->errors;
     }
 
-    /**
-     * Determines whether or not this enrollment plugin's scheduled task is enabled
-     *
-     * @return bool
-     */
+    // /**
+    //  * Determines whether or not this enrollment plugin's scheduled task is enabled
+    //  *
+    //  * @return bool
+    //  */
     private function task_is_enabled() {
         $task = $this->get_scheduled_task();
 

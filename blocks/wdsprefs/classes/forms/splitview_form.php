@@ -27,20 +27,9 @@ require_once($CFG->dirroot . '/blocks/wdsprefs/classes/forms/formslib.php');
 trait Extractor {
     public static function stupid_course($semesters, $semid, $couid) {
             
-        // $sems = $semesters[$semid];
-        // // $this_course = array_values($sems->courses);
-        // if (count($this_course) < 1) {
-        //     // if (empty($semesters[$semid]->courses[$couid])) {
-        //     return array('selected' => self::_s('err_select'));
-        // }
-
-        // return array_values($this_course)[0];
-        // $semesters[$semid]->courses[$couid]
         $sems = $semesters[$semid];
         $courses = $sems->courses;
-        // // $this_course = array_values($sems->courses);
         if (count($courses) < 1) {
-        //     // if (empty($semesters[$semid]->courses[$couid])) {
             return array('selected' => self::_s('err_select'));
         }
 
@@ -111,18 +100,9 @@ class split_form_select extends split_form {
         }
 
         list($semid, $couid) = explode('_', $data['selected']);
-        // $sems = $semesters[$semid];
-        // $this_course = array_values($sems->courses);
-        // if (count($this_course) < 1) {
-        //     // if (empty($semesters[$semid]->courses[$couid])) {
-        //     return array('selected' => self::_s('err_select'));
-        // }
-        // $course = array_values($this_course)[0];
         $course = self::stupid_course($semesters, $semid, $couid);
             
         $errors = array();
-
-        // $course = $semesters[$semid]->courses[$couid];
 
         $sectioncount = count($course->sections);
 

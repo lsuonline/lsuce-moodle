@@ -92,10 +92,6 @@ abstract class wds_base {
                 unset($params->tablex);
             } else {
                 $tablename = self::call('tablename');
-                // , array(
-                //     'alias' => '',
-                //     'tablex' => 'enroll'
-                // ));
             }
 
             $ofields = array_map(
@@ -267,18 +263,14 @@ abstract class wds_base {
     }
 
     public static function tablename($alias = '') {
-        // DALO: Testing this shit out
+        // DALO: probably a shitty way to do this.....
         if (!empty($alias) && $alias['tablex'] != '') {
             $name = sprintf('enrol_%s', get_called_class() . '_enroll');
         } else {
             $name = sprintf('enrol_%s', get_called_class() . 's');
         }
 
-        // if (!empty($alias)) {
-        //     return '{' . $name . '} ' . $alias;
-        // } else {
-            return $name;
-        // }
+        return $name;
     }
 
     /**

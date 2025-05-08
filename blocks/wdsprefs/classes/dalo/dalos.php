@@ -24,7 +24,6 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__) . '/lib.php');
 
-// class wds_semester extends wds_dalo {
 class wds_period extends wds_dalo {
     public $sections;
     public $courses;
@@ -221,7 +220,13 @@ class wds_section extends wds_dalo {
 
     // This is very important!!!
     protected function qualified() {
-        return wds::where()->section_listing_id->equal($this->section_listing_id)->status->in(wds::ENROLLED, wds::PROCESSED);
+        return wds::where()
+            ->section_listing_id->equal($this->section_listing_id)
+            ->status
+                ->in(
+                    wds::ENROLLED,
+                    wds::PROCESSED
+            );
     }
 
     public function primary() {
@@ -396,11 +401,6 @@ abstract class user_handler extends wds_dalo {
         $class = 'enrol_'. get_called_class(). '_enroll';
         $params->tablex = $class;
         
-        // if ($class == 'wds_student') {
-        //     $params->tablex = 'enrol_wds_student_enroll';
-        // } else if ($class == 'wds_teacher') {
-        //     $params->tablex = 'enrol_wds_teacher_enroll';
-        // }
         $bystatus = self::call('get_all', $params);
 
         $sections = array();
@@ -414,18 +414,9 @@ abstract class user_handler extends wds_dalo {
 
     public function section() {
         if (empty($this->section)) {
-            // $section = wds_section::get(array('id' => $this->sectionid));
-            // if (get_called_class() == "wds_teacher") {
-
-            //     $section = wds_section::get(array(
-            //         'section_listing_id' => $this->section_listing_id,
-            //         'tablex' => 'enrol_'. get_called_class(). '_enroll'
-            //     ));
-            // } else {
-                $section = wds_section::get(array(
-                    'section_listing_id' => $this->section_listing_id
-                ));
-            // }
+            $section = wds_section::get(array(
+                'section_listing_id' => $this->section_listing_id
+            ));
             
             $this->section = $section;
         }
@@ -444,18 +435,16 @@ abstract class user_handler extends wds_dalo {
         } else {
             $id = $obj;
         }
-        error_log("\n\nget_userid() -> what is the universal id: ". $id. "\n\n");
         $class = 'enrol_'. get_called_class(). 's';
         $params = array('universal_id' => $id);
         $user_info = $DB->get_record($class, $params);
         if ($user_info == false) {
-            error_log("\n\nget_userid() -> you donkey fucker!!!!\n\n");
+            error_log("\n\nERROR: Trying to get moodle id and universal id is NOT FOUND, universal_id: ". $id);
         }
         $user_info2 = $DB->get_records($class, $params);
 
         if (count($user_info2) > 1) {
-            error_log("\n\nWhat is universal_id: ". $id);
-            error_log("\n\nWhat is class: ". $class);
+            error_log("\n\nERROR: There is a user conflict, there is more than one user with universal_id: ". $id);
         }
         
         if (!isset($user_info->userid) || $user_info->userid == '') {
@@ -465,7 +454,6 @@ abstract class user_handler extends wds_dalo {
             $user_info->userid = $mdl_user->id;
         }
         // Get the actual object.
-        // get_called_class()::get(array('universal_id' => $user->universal_id));
         return $user_info;
     }
 
@@ -474,7 +462,6 @@ abstract class user_handler extends wds_dalo {
 
             $extrafields = \core_user\fields::for_userpic()->get_required_fields();
             $usernamefields = implode(",", $extrafields);
-            // DALO CHECK - second param was true, now false (meta)
             $user = wds_user::get(array('id' => $this->userid), false,
                 "{$usernamefields}, username, idnumber");
             $this->user = $user;
@@ -489,7 +476,6 @@ abstract class user_handler extends wds_dalo {
         }
 
         $class = get_called_class();
-        // DALO: hack fix for now
         $params['status'] = $to;
         if ($class == 'wds_student') {
             $params['tablex'] = 'enrol_wds_student_enroll';
@@ -510,9 +496,6 @@ class wds_teacher extends user_handler {
         if (empty($this->sections)) {
             $qualified = $this->qualified();
 
-            // if ($isprimary) {
-            //     $qualified->primary_flag->equal(1);
-            // }
             $qualified->tablex = 'enrol_wds_teacher_enroll';
             $allteaching = self::get_all($qualified);
             $sections = array();

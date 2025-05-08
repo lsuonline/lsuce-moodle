@@ -46,9 +46,6 @@ abstract class wds {
     const ENROLL = 'enroll';
     const UNENROLL = 'unenroll';
     
-    // const ENROLLED = 'enrolled';
-    // const UNENROLLED = 'unenrolled';
-
     public static function require_libs() {
         self::require_daos();
         self::require_extensions();
@@ -155,6 +152,29 @@ abstract class wds {
         return $enrol->get_errors();
     }
 
+    public static function gen_str($plugin = 'block_wdsprefs') {
+        return function ($key, $a = null) use ($plugin) {
+            return get_string('wdsprefs:'.$key, $plugin, $a);
+        };
+    }
+
+    public static function _s($key, $a=null) {
+        return get_string('wdsprefs:'.$key, 'block_wdsprefs', $a);
+    }
+
+    public static function format_string($pattern, $obj) {
+        foreach (get_object_vars($obj) as $key => $value) {
+            $pattern = preg_replace('/\{' . $key . '\}/', $value, $pattern);
+        }
+
+        return $pattern;
+    }
+
+    public static function base($dir='') {
+        return dirname(__FILE__) . (empty($dir) ? '' : '/'.$dir);
+    }
+    /*
+    
     public static function reprocess_department($semester, $department, $silent = true) {
         $enrol = self::get_enrol_plugin();
 
@@ -382,29 +402,9 @@ abstract class wds {
 
         $log('Done');
     }
+    */
 
-    public static function gen_str($plugin = 'block_wdsprefs') {
-        return function ($key, $a = null) use ($plugin) {
-            return get_string('wdsprefs:'.$key, $plugin, $a);
-        };
-    }
-
-    public static function _s($key, $a=null) {
-        return get_string('wdsprefs:'.$key, 'block_wdsprefs', $a);
-    }
-
-    public static function format_string($pattern, $obj) {
-        foreach (get_object_vars($obj) as $key => $value) {
-            $pattern = preg_replace('/\{' . $key . '\}/', $value, $pattern);
-        }
-
-        return $pattern;
-    }
-
-    public static function base($dir='') {
-        return dirname(__FILE__) . (empty($dir) ? '' : '/'.$dir);
-    }
-
+    /*
     public static function list_plugins() {
         global $CFG;
         $data = new stdClass;
@@ -496,4 +496,5 @@ abstract class wds {
 
         return false;
     }
+    */
 }
