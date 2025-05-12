@@ -45,14 +45,36 @@ class select_courses_form extends moodleform {
             'wdsprefs:selectcoursesheader',
             get_string('wdsprefs:selectcoursesheader', 'block_wdsprefs'));
 
+        // Instructions.
+        $mform->addElement('html',
+            '<div class="alert alert-info"><p>' .
+            get_string('wdsprefs:crosssplitinstructions2', 'block_wdsprefs') .
+            '</p></div>'
+        );
+
+
         // Add checkboxes for course selection.
-        foreach ($courses as $coursename) {
+        foreach ($sectionsbycourse as $coursename => $sections) {
+
+            // Get the section count for this course.
+            $scount = count($sections);
+
+            // Handle pluralization manually.
+            $sectionslabel = $scount == 1 ?
+                ' (' . $scount . ' ' . get_string('wdsprefs:section', 'block_wdsprefs') . ')' :
+                ' (' . $scount . ' ' . get_string('wdsprefs:sections', 'block_wdsprefs') . ')';
+
 
             // Sanitize course name.
             $sanitized = str_replace([' ', '/'], ['_', '-'], $coursename);
 
             // Add the form items.
-            $mform->addElement('advcheckbox', 'selectedcourses_' . $sanitized, '', $coursename);
+            $mform->addElement('advcheckbox', 'selectedcourses_' .
+                $sanitized,
+                '',
+                $coursename .
+                $sectionslabel
+            );
         }
 
         // Add the form item for the number of course shells dropdown.

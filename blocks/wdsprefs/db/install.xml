@@ -4,7 +4,7 @@
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="block_wdsprefs_unwants" COMMENT="block_wdsprefs_unwants table retrofitted from MySQL" NEXT="block_wdsprefs_splits">
+    <TABLE NAME="block_wdsprefs_unwants" COMMENT="block_wdsprefs_unwants table retrofitted from MySQL">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="19" NOTNULL="true" SEQUENCE="false"/>
@@ -42,7 +42,7 @@
         <INDEX NAME="blueprint_status_ix" UNIQUE="false" FIELDS="status"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="block_wdsprefs_crosslists" COMMENT="Stores crosslisted course shells configuration">
+    <TABLE NAME="block_wdsprefs_crosssplits" COMMENT="Stores crosssplited course shells configuration">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="19" NOTNULL="true" SEQUENCE="false"/>
@@ -58,16 +58,16 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="crosslist_uid_ix" UNIQUE="false" FIELDS="userid"/>
-        <INDEX NAME="crosslist_apid_ix" UNIQUE="false" FIELDS="academic_period_id"/>
-        <INDEX NAME="crosslist_unid_ix" UNIQUE="false" FIELDS="universal_id"/>
-        <INDEX NAME="crosslist_status_ix" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="crosssplit_uid_ix" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="crosssplit_apid_ix" UNIQUE="false" FIELDS="academic_period_id"/>
+        <INDEX NAME="crosssplit_unid_ix" UNIQUE="false" FIELDS="universal_id"/>
+        <INDEX NAME="crosssplit_status_ix" UNIQUE="false" FIELDS="status"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="block_wdsprefs_crosslist_sections" COMMENT="Stores sections assigned to crosslisted course shells">
+    <TABLE NAME="block_wdsprefs_crosssplit_sections" COMMENT="Stores sections assigned to crosssplited course shells">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="crosslist_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="crosssplit_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="section_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="section_listing_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="status" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="pending" SEQUENCE="false"/>
@@ -76,7 +76,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="fk_crosslist_id" TYPE="foreign" FIELDS="crosslist_id" REFTABLE="block_wdsprefs_crosslists" REFFIELDS="id"/>
+        <KEY NAME="fk_crosssplit_id" TYPE="foreign" FIELDS="crosssplit_id" REFTABLE="block_wdsprefs_crosssplits" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="cls_section_id_ix" UNIQUE="false" FIELDS="section_id"/>
@@ -85,57 +85,4 @@
       </INDEXES>
     </TABLE>
   </TABLES>
-  <TABLE NAME="block_wdsprefs_splits" COMMENT="Table storing section split information" PREVIOUS="block_wdsprefs_unwants">
-    <FIELDS>
-      <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="userid"/>
-      <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="sectionid"/>
-      <FIELD NAME="sectionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid" NEXT="groupingid"/>
-      <FIELD NAME="groupingid" TYPE="int" LENGTH="3" NOTNULL="true" SEQUENCE="false" PREVIOUS="sectionid" NEXT="shell_name"/>
-      <FIELD NAME="shell_name" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" PREVIOUS="groupingid"  NEXT="lastupdated"/>
-      <FIELD NAME="lastupdated" TYPE="timestamp" DEFAULT="CURRENT_TIMESTAMP" NOTNULL="true" SEQUENCE="false" PREVIOUS="shell_name"/>
-    </FIELDS>
-    <KEYS>
-      <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="useridtomoodle"/>
-      <KEY NAME="useridtomoodle" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" PREVIOUS="primary" NEXT="sectionidtosection"/>
-      <KEY NAME="sectionidtosection" TYPE="foreign" FIELDS="sectionid" REFTABLE="enrol_wds_sections" REFFIELDS="id" PREVIOUS="useridtomoodle"/>
-    </KEYS>
-    <INDEXES>
-      <INDEX NAME="usesec" UNIQUE="true" FIELDS="userid, sectionid"/>
-    </INDEXES>
-  </TABLE>
-  <TABLE NAME="block_wdsprefs_materials" COMMENT="Table storing all the material courses." PREVIOUS="block_wdsprefs_splits"  NEXT="block_wdsprefs_creations">
-    <FIELDS>
-      <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="userid"/>
-      <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="courseid"/>
-      <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid" NEXT="moodleid"/>
-      <FIELD NAME="moodleid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" PREVIOUS="courseid"/>
-    </FIELDS>
-    <KEYS>
-      <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="useridtomoodle"/>
-      <KEY NAME="useridtomoodle" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" PREVIOUS="primary" NEXT="courseidtocourse"/>
-      <KEY NAME="courseidtocourse" TYPE="foreign" FIELDS="courseid" REFTABLE="enrol_wds_courses" REFFIELDS="id" PREVIOUS="useridtomoodle"/>
-    </KEYS>
-    <INDEXES>
-      <INDEX NAME="usecourse" UNIQUE="true" FIELDS="userid, courseid"/>
-    </INDEXES>
-  </TABLE>
-  <TABLE NAME="block_wdsprefs_creations" COMMENT="Table containing instructor settings for creation and enrollment" PREVIOUS="block_wdsprefs_materials">
-    <FIELDS>
-      <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="userid"/>
-      <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="courseid"/>
-      <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid" NEXT="semesterid"/>
-      <FIELD NAME="semesterid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="courseid" NEXT="create_days"/>
-      <FIELD NAME="create_days" TYPE="int" LENGTH="3" NOTNULL="true" SEQUENCE="false" PREVIOUS="semesterid" NEXT="enroll_days"/>
-      <FIELD NAME="enroll_days" TYPE="int" LENGTH="3" NOTNULL="true" SEQUENCE="false" PREVIOUS="create_days"/>
-    </FIELDS>
-    <KEYS>
-      <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="useridtomoodle"/>
-      <KEY NAME="useridtomoodle" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" PREVIOUS="primary" NEXT="courseidtocourse"/>
-      <KEY NAME="courseidtocourse" TYPE="foreign" FIELDS="courseid" REFTABLE="enrol_wds_courses" REFFIELDS="id" PREVIOUS="useridtomoodle" NEXT="semesteridtosemester"/>
-      <KEY NAME="semesteridtosemester" TYPE="foreign" FIELDS="semesterid" REFTABLE="enrol_wds_periods" REFFIELDS="id" PREVIOUS="courseidtocourse"/>
-    </KEYS>
-    <INDEXES>
-      <INDEX NAME="usecousem" UNIQUE="true" FIELDS="userid, courseid, semesterid"/>
-    </INDEXES>
-  </TABLE>
 </XMLDB>

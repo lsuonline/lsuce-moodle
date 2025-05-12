@@ -87,34 +87,30 @@ class block_wdsprefs extends block_base {
                 'icon' => 'fa-landmark'
             ],
             [
-                'text' => get_string('wdsprefs:unwant', 'block_wdsprefs'),
-                'url' => new moodle_url('/blocks/wdsprefs/unwantview.php'),
-                'icontype' => 'fontawesome',
-                'icon' => 'fa-ban'
-            ],
-            [
-                'text' => get_string('wdsprefs:split', 'block_wdsprefs'),
-                'url' => new moodle_url('/blocks/wdsprefs/splitview.php'),
+                'text' => get_string('wdsprefs:crosssplit', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/crosssplit.php'),
                 'icontype' => 'fontawesome',
                 'icon' => 'fa-folder-tree'
             ],
-            [
-                'text' => get_string('wdsprefs:crosslist', 'block_wdsprefs'),
-                'url' => new moodle_url('/blocks/wdsprefs/crosslist.php'),
-                'icontype' => 'fontawesome',
-                'icon' => 'fa-link'
-            ],
+/*
             [
                 'text' => get_string('wdsprefs:teamteach', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/teamteachview.php'),
                 'icontype' => 'fontawesome',
                 'icon' => 'fa-user-plus'
             ],
+*/
             [
                 'text' => get_string('wdsprefs:blueprint', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/blueprintview.php'),
                 'icontype' => 'fontawesome',
                 'icon' => 'fa-recycle'
+            ],
+            [
+                'text' => get_string('wdsprefs:unwant', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/unwantview.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-ban'
             ],
         ];
 

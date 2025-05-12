@@ -15,11 +15,11 @@
 // along with Moodle. If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Crosslisting interface for combining multiple course sections into shells.
- * 
- * This page provides a three-step interface for crosslisting course sections:
- * 1. Select the semester in which you'd like to crosslist.
- * 2. Select source courses containing sections to be crosslisted.
+ * CrossSpliting interface for combining multiple course sections into shells.
+ *
+ * This page provides a three-step interface for crossspliting course sections:
+ * 1. Select the semester in which you'd like to crosssplit.
+ * 2. Select source courses containing sections to be crosssplited.
  * 3. Assign sections from selected courses into destination course shells.
  *
  * @package    block_wdsprefs
@@ -37,7 +37,7 @@ require_once("$CFG->dirroot/blocks/wdsprefs/classes/wdsprefs.php");
 // Include the form class definitions.
 require_once("$CFG->dirroot/blocks/wdsprefs/select_period_form.php");
 require_once("$CFG->dirroot/blocks/wdsprefs/select_courses_form.php");
-require_once("$CFG->dirroot/blocks/wdsprefs/crosslist_form.php");
+require_once("$CFG->dirroot/blocks/wdsprefs/crosssplit_form.php");
 
 // Require user to be logged in.
 require_login();
@@ -48,13 +48,13 @@ $context = context_system::instance();
 // TODO: Uncomment me.
 //require_capability('block/wdsprefs:manage', $context);
 
-$url = new moodle_url('/blocks/wdsprefs/crosslist.php');
+$url = new moodle_url('/blocks/wdsprefs/crosssplit.php');
 
 // Set up the page.
 $PAGE->set_url($url);
 $PAGE->set_context($context);
-$PAGE->set_title(get_string('wdsprefs:crosslisttitle', 'block_wdsprefs'));
-$PAGE->set_heading(get_string('wdsprefs:crosslistheading', 'block_wdsprefs'));
+$PAGE->set_title(get_string('wdsprefs:crosssplittitle', 'block_wdsprefs'));
+$PAGE->set_heading(get_string('wdsprefs:crosssplitheading', 'block_wdsprefs'));
 
 // Get the optional param.
 if(!optional_param('step', '', PARAM_ALPHA)) {
@@ -72,8 +72,8 @@ $PAGE->navbar->add(
     new moodle_url('/')
 );
 $PAGE->navbar->add(
-    get_string('wdsprefs:crosslist', 'block_wdsprefs'),
-    new moodle_url('/blocks/wdsprefs/crosslist.php')
+    get_string('wdsprefs:crosssplit', 'block_wdsprefs'),
+    new moodle_url('/blocks/wdsprefs/crosssplit.php')
 );
 
 // Output the header.
@@ -83,7 +83,7 @@ $periods = wdsprefs::get_current_taught_periods();
 
 // Step 1: Period selection - displays the first form to select a source period.
 if ($step == 'period') {
-    $actionurl = new moodle_url('/blocks/wdsprefs/crosslist.php', ['step' => 'period']);
+    $actionurl = new moodle_url('/blocks/wdsprefs/crosssplit.php', ['step' => 'period']);
 
     // Instantiate the form1.
     $form1 = new select_period_form($actionurl, ['periods' => $periods]);
@@ -92,22 +92,36 @@ if ($step == 'period') {
         redirect(new moodle_url('/my'));
     } else if ($data = $form1->get_data()) {
 
+        // Get the sections by course.
         $sectionsbycourse = wdsprefs::get_sections_by_course_for_period($data->periodid);
+
+        // Count them.
+        $seccoursecount = count($sectionsbycourse);
+
+        // Check if there are any sections available for crosssplitting.
+        if (empty($sectionsbycourse) || $seccoursecount < 2) {
+            echo $OUTPUT->notification(
+                get_string('wdsprefs:nosectionsavailable', 'block_wdsprefs'),
+                'notifyinfo');
+            echo $OUTPUT->footer();
+            exit;
+        }
+
 
         // Store selection data in session for next step.
         $SESSION->wdsprefs_periodid = $data->periodid;
         $SESSION->wdsprefs_sectionsbycourse = $sectionsbycourse;
 
         // Redirect to step 2.
-        redirect(new moodle_url('/blocks/wdsprefs/crosslist.php',
+        redirect(new moodle_url('/blocks/wdsprefs/crosssplit.php',
             ['step' => 'course']));
     } else {
         $form1->display();
     }
 
-// Step 2: Courses selection - displays the second form to select the courses to crosslist.
+// Step 2: Courses selection - displays the second form to select the courses to crosssplit.
 } else if ($step == 'course') {
-    $actionurl = new moodle_url('/blocks/wdsprefs/crosslist.php', ['step' => 'course']);
+    $actionurl = new moodle_url('/blocks/wdsprefs/crosssplit.php', ['step' => 'course']);
 
     // Set this from the session.
     $sectionsbycourse = $SESSION->wdsprefs_sectionsbycourse;
@@ -151,10 +165,10 @@ if ($step == 'period') {
             }
         }
 
-        // Verify at least two sections are selected (required for crosslisting).
-        if (count($sectiondata) < 2) {
-            echo $OUTPUT->notification(get_string('wdsprefs:atleasttwosections', 
-                'block_wdsprefs'), 'notifyproblem');
+        // Verify at least two sections are selected (required for crossspliting).
+        if (count($sectiondata) < 1) {
+            echo $OUTPUT->notification(get_string('wdsprefs:atleastonesection',
+                'block_wdsprefs'), 'notify-warning');
             $form2->display();
             echo $OUTPUT->footer();
             exit;
@@ -167,7 +181,7 @@ if ($step == 'period') {
         $SESSION->wdsprefs_shellcount = $data->shellcount;
 
         // Redirect to step 3.
-        redirect(new moodle_url('/blocks/wdsprefs/crosslist.php', 
+        redirect(new moodle_url('/blocks/wdsprefs/crosssplit.php',
             ['step' => 'assign']));
     } else {
 
@@ -177,13 +191,13 @@ if ($step == 'period') {
 
 // Step 3: Assign sections to shells.
 } else if ($step == 'assign') {
-    
+
     // Retrieve data from session.
     $sectiondata = $SESSION->wdsprefs_sectiondata ?? [];
     $shellcount = $SESSION->wdsprefs_shellcount ?? 2;
     $periodid = $SESSION->wdsprefs_periodid ?? '';
 
-    $actionurl = new moodle_url('/blocks/wdsprefs/crosslist.php', ['step' => 'assign']);
+    $actionurl = new moodle_url('/blocks/wdsprefs/crosssplit.php', ['step' => 'assign']);
 
     // Get full period info for shell naming
     $period = wdsprefs::get_period_from_id($periodid);
@@ -193,7 +207,7 @@ if ($step == 'period') {
     $teachername = fullname($USER);
 
     // Initialize the second form with section data.
-    $form3 = new crosslist_form($actionurl, [
+    $form3 = new crosssplit_form($actionurl, [
         'period' => $periodname,
         'teacher' => $teachername,
         'sectiondata' => $sectiondata,
@@ -212,62 +226,62 @@ if ($step == 'period') {
         unset($SESSION->wdsprefs_shellcount);
         unset($SESSION->wdsprefs_periodid);
 
-        redirect(new moodle_url('/blocks/wdsprefs/crosslist.php'));
+        redirect(new moodle_url('/blocks/wdsprefs/crosssplit.php'));
     }
 
     // Process form submission.
     if (!is_null($data)) {
-        // Process the crosslisting
-        $results = wdsprefs::process_crosslist_form($data, $period, $teachername, $shellcount);
+        // Process the crossspliting
+        $results = wdsprefs::process_crosssplit_form($data, $period, $teachername, $shellcount);
 
         // Check if we have results
         if (!empty($results)) {
             // Display success message
-            echo $OUTPUT->notification(get_string('wdsprefs:crosslistsuccess', 
-                'block_wdsprefs'), 'notifysuccess');
+            echo $OUTPUT->notification(get_string('wdsprefs:crosssplitsuccess',
+                'block_wdsprefs'), 'notify-success');
 
             // Display the results for each shell
             foreach ($results as $shellname => $shelldata) {
                 echo html_writer::tag('h4', $shellname);
-                
+
                 if (empty($shelldata['sections'])) {
                     echo html_writer::tag('p', 'No sections assigned');
                 } else {
                     echo html_writer::alist($shelldata['sections']);
-                    
+
                     // Add link to view the created course
-                    $crosslistinfo = wdsprefs::get_crosslist_info($shelldata['crosslist_id']);
-                    if ($crosslistinfo && $crosslistinfo->moodle_course_id) {
-                        $courseurl = new moodle_url('/course/view.php', 
-                            ['id' => $crosslistinfo->moodle_course_id]
+                    $crosssplitinfo = wdsprefs::get_crosssplit_info($shelldata['crosssplit_id']);
+                    if ($crosssplitinfo && $crosssplitinfo->moodle_course_id) {
+                        $courseurl = new moodle_url('/course/view.php',
+                            ['id' => $crosssplitinfo->moodle_course_id]
                         );
-                        echo html_writer::link($courseurl, 
+                        echo html_writer::link($courseurl,
                             get_string('wdsprefs:viewcourse', 'block_wdsprefs'),
                             ['class' => 'btn btn-primary']
                         );
                     }
                 }
             }
-            
+
             // Clear session data now that we're done
             unset($SESSION->wdsprefs_sectiondata);
             unset($SESSION->wdsprefs_shellcount);
             unset($SESSION->wdsprefs_periodid);
-            
-            // Add link to view all crosslists
-            echo html_writer::tag('div', 
+
+            // Add link to view all crosssplits
+            echo html_writer::tag('div',
                 html_writer::link(
-                    new moodle_url('/blocks/wdsprefs/crosslist.php'), 
-                    get_string('wdsprefs:crosslist', 'block_wdsprefs'),
+                    new moodle_url('/blocks/wdsprefs/crosssplit.php'),
+                    get_string('wdsprefs:crosssplit', 'block_wdsprefs'),
                     ['class' => 'btn btn-secondary mt-3']
                 ),
                 ['class' => 'mt-4']
             );
         } else {
             // Display error message
-            echo $OUTPUT->notification(get_string('wdsprefs:crosslistfail', 
-                'block_wdsprefs'), 'notifyerror');
-                
+            echo $OUTPUT->notification(get_string('wdsprefs:crosssplitfail',
+                'block_wdsprefs'), 'notifyproblem');
+
             // Display the form again
             $form3->display();
         }
@@ -276,14 +290,15 @@ if ($step == 'period') {
     }
 }
 
-// Display existing crosslisted shells if we're on the first step
+// Display existing crosssplited shells if we're on the first step
 if ($step == 'period') {
-    // Get existing crosslisted shells for this user
-    $existingcrosslists = wdsprefs::get_user_crosslists($USER->id);
-    
-    if (!empty($existingcrosslists)) {
-        echo html_writer::tag('h3', get_string('wdsprefs:existingcrosslists', 'block_wdsprefs'));
-        
+
+    // Get existing crosssplited shells for this user
+    $existingcrosssplits = wdsprefs::get_user_crosssplits($USER->id);
+
+    if (!empty($existingcrosssplits)) {
+        echo html_writer::tag('h3', get_string('wdsprefs:existingcrosssplits', 'block_wdsprefs'));
+
         $table = new html_table();
         $table->head = [
             get_string('wdsprefs:shellname', 'block_wdsprefs'),
@@ -291,30 +306,42 @@ if ($step == 'period') {
             get_string('wdsprefs:datecreated', 'block_wdsprefs'),
             get_string('wdsprefs:actions', 'block_wdsprefs')
         ];
-        
-        foreach ($existingcrosslists as $crosslist) {
+
+        foreach ($existingcrosssplits as $crosssplit) {
             // Get period info
-            $period = wdsprefs::get_period_from_id($crosslist->academic_period_id);
+            $period = wdsprefs::get_period_from_id($crosssplit->academic_period_id);
             $periodname = $period ? $period->period_year . ' ' . $period->period_type : '';
-            
+
+            // Get the Moodle course name if available.
+            $displayname = $crosssplit->shell_name;
+
+/*
+            if ($crosssplit->moodle_course_id) {
+                $course = $DB->get_record('course', ['id' => $crosssplit->moodle_course_id], 'fullname');
+                if ($course) {
+                    $displayname = $course->fullname;
+                }
+            }
+*/
+
             $row = [];
-            $row[] = $crosslist->shell_name;
+            $row[] = $displayname;
             $row[] = $periodname;
-            $row[] = userdate($crosslist->timecreated);
-            
+            $row[] = userdate($crosssplit->timecreated);
+
             // Action buttons
             $actions = '';
-            if ($crosslist->moodle_course_id) {
-                $courseurl = new moodle_url('/course/view.php', ['id' => $crosslist->moodle_course_id]);
+            if ($crosssplit->moodle_course_id) {
+                $courseurl = new moodle_url('/course/view.php', ['id' => $crosssplit->moodle_course_id]);
                 $actions .= html_writer::link(
-                    $courseurl, 
+                    $courseurl,
                     get_string('wdsprefs:viewcourse', 'block_wdsprefs'),
                     ['class' => 'btn btn-sm btn-primary', 'target' => '_blank']
                 );
-                
+
                 // Add view sections button
-                $sectionsurl = new moodle_url('/blocks/wdsprefs/crosslist_sections.php', 
-                    ['id' => $crosslist->id]
+                $sectionsurl = new moodle_url('/blocks/wdsprefs/crosssplit_sections.php',
+                    ['id' => $crosssplit->id]
                 );
                 $actions .= ' ' . html_writer::link(
                     $sectionsurl,
@@ -322,11 +349,11 @@ if ($step == 'period') {
                     ['class' => 'btn btn-sm btn-secondary']
                 );
             }
-            
+
             $row[] = $actions;
             $table->data[] = $row;
         }
-        
+
         echo html_writer::table($table);
     }
 }
