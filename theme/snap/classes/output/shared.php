@@ -306,7 +306,6 @@ EOF;
             'forumpicturegroup',
             'forumreplies',
             'forumlastpost',
-            'hiddencoursestoggle',
             'loading',
             'more',
             'moving',
@@ -412,9 +411,6 @@ EOF;
         $conversationbadgecountenabled = isloggedin() && $PAGE->theme->settings->messagestoggle == 1;
 
         $userid = $USER->id;
-        $manager = new \core_privacy\local\sitepolicy\manager();
-        $policyurlexist = $manager->is_defined();
-        $sitepolicyacceptreqd = isloggedin() && $policyurlexist && empty($USER->policyagreed) && !is_siteadmin();
         $inalternativerole = $OUTPUT->in_alternative_role();
         // Bring pre contents scss branding variables, to pass them to Snap init.
         $pre = file_get_contents($CFG->dirroot . '/theme/snap/scss/pre.scss');
@@ -488,8 +484,8 @@ EOF;
         }
 
         $initvars = [$coursevars, $pagehascoursecontent, get_max_upload_file_size($CFG->maxbytes), $forcepwdchange,
-                     $conversationbadgecountenabled, $userid, $sitepolicyacceptreqd, $inalternativerole, $brandcolors,
-                     $gradingconstants, (bool) get_config('theme_snap', 'personalmenuadvancedfeedsenable')];
+                     $conversationbadgecountenabled, $userid, $inalternativerole, $brandcolors,
+                     $gradingconstants];
         $initaxvars = [$localjoulegrader, $allyreport, $blockreports, $localcatalogue];
         $alternativelogins = new login_alternative_methods();
         if ($alternativelogins->potentialidps) {
@@ -1034,7 +1030,7 @@ EOF;
 
         // User grade.
         if (has_capability('gradereport/overview:view', $coursecontext)) {
-            $grade = local::course_grade($COURSE, true);
+            $grade = local::course_grade($COURSE);
             $coursegrade = '-';
             $gradeitem = \grade_item::fetch_course_item($COURSE->id);
             $displayformat = $gradeitem->get_displaytype();

@@ -73,21 +73,18 @@ const POPOVERS_DROPDOWNS = {
 };
 
 const ACTIVE_SELECTORS = {
-    ADMIN_MENU: '[data-activeselector="#admin-menu-trigger.active"]',
     BLOCKS_DRAWER: '[data-activeselector="#theme_snap-drawers-blocks.show"]',
     SNAP_FEEDS: '[data-activeselector="#snap_feeds_side_menu_trigger.active"]',
     MESSAGES_DRAWER: '[data-activeselector=\'[data-region="popover-region-messages"]:not(.collapsed)\']',
 };
 
 const PREFERENCES = {
-    ADMIN_MENU: 'snap-admin-menu-open',
     BLOCKS_DRAWER: 'drawer-open-block',
     SNAP_FEEDS: 'snap-feeds-open',
     MESSAGES_DRAWER: 'snap-message-drawer-open',
 };
 
 const PREFERENCE_MAP = {
-    [PREFERENCES.ADMIN_MENU]: ACTIVE_SELECTORS.ADMIN_MENU,
     [PREFERENCES.BLOCKS_DRAWER]: ACTIVE_SELECTORS.BLOCKS_DRAWER,
     [PREFERENCES.SNAP_FEEDS]: ACTIVE_SELECTORS.SNAP_FEEDS,
     [PREFERENCES.MESSAGES_DRAWER]: ACTIVE_SELECTORS.MESSAGES_DRAWER,
@@ -415,41 +412,8 @@ const setupEventListeners = () => {
         element.addEventListener('click', handleCloseDrawerClick);
     });
     
-    // Set up course TOC observer
-    setupCourseTocObserver();
-
     // Set up popover/dropdown click handlers
     setupPopoverClickHandlers();
-};
-
-/**
- * Set up a MutationObserver to watch for changes to #course-toc
- */
-const setupCourseTocObserver = () => {
-    const courseToc = document.querySelector(SELECTORS.COURSE_TOC);
-    if (courseToc) {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    if (courseToc.classList.contains(CLASSES.STATE_VISIBLE)) {
-                        // Close the sidebar when course TOC becomes visible
-                        const sidebar = document.querySelector(SELECTORS.SIDEBAR);
-                        const icon = document.querySelector(SELECTORS.TRIGGER_ICON);
-                        
-                        if (sidebar && sidebar.classList.contains(CLASSES.SHOW)) {
-                            sidebar.classList.remove(CLASSES.SHOW);
-                            if (icon) {
-                                icon.classList.remove(CLASSES.ROTATE);
-                            }
-                            closeAllDrawers();
-                            updateElementPositions();
-                        }
-                    }
-                }
-            });
-        });
-        observer.observe(courseToc, { attributes: true });
-    }
 };
 
 /**

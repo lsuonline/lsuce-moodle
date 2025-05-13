@@ -123,7 +123,7 @@ class section_preferences_form extends moodleform {
 
                 // Check if the user has previously set the section as unwanted.
                 $parms = ['userid' => $section->userid, 'sectionid' => $section->id];
-                $existing = $DB->get_record('block_wdspref_unwants', $parms);
+                $existing = $DB->get_record('block_wdsprefs_unwants', $parms);
 
                 // Set the default values.
                 if (isset($existing->id) && $existing->unwanted == 1) {
@@ -174,7 +174,7 @@ if ($form->is_submitted() && $data = $form->get_data()) {
 
             // Check if this record already exists.
             $existing = $DB->get_record(
-                'block_wdspref_unwants',
+                'block_wdsprefs_unwants',
                 ['userid' => $USER->id, 'sectionid' => $sectionid]
             );
 
@@ -187,7 +187,7 @@ if ($form->is_submitted() && $data = $form->get_data()) {
                     $existing->lastupdated = time();
 
                     // Update the record.
-                    $DB->update_record('block_wdspref_unwants', $existing);
+                    $DB->update_record('block_wdsprefs_unwants', $existing);
                 }
 
             // Insert a new record only if checked.
@@ -203,7 +203,7 @@ if ($form->is_submitted() && $data = $form->get_data()) {
                 $newrecord->lastupdated = time();
 
                 // Insert the record.
-                $DB->insert_record('block_wdspref_unwants', $newrecord);
+                $DB->insert_record('block_wdsprefs_unwants', $newrecord);
             }
 
             // Here is where we're going to actually deal with enrollment and the course.

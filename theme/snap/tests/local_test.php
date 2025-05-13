@@ -958,82 +958,6 @@ class local_test extends snap_base_test {
         $this->assertEquals(100, $comp->progress);
     }
 
-    public function test_course_grade() {
-        global $DB;
-
-        $this->resetAfterTest();
-
-        set_config('showcoursegradepersonalmenu', 1, 'theme_snap');
-
-        // Set up.
-        $generator = $this->getDataGenerator();
-        $course = $generator->create_course();
-        $student = $generator->create_user();
-        $student2 = $generator->create_user();
-        $studentrole = $DB->get_record('role', ['shortname' => 'student']);
-        $generator->enrol_user($student->id, $course->id, $studentrole->id);
-        $generator->enrol_user($student2->id, $course->id, $studentrole->id);
-        grade_regrade_final_grades($course->id);
-
-        $this->setUser($student);
-
-        // Assert no feedback available.
-        $feedback = local::course_grade($course);
-        $this->assertTrue(empty($feedback->coursegrade)); // Can't use assertEmpty as property wont exist.
-
-        // Assert feedback available is empty.
-        // (requires grading for feedback available).
-        $params = [
-            'course' => $course->id,
-        ];
-        $cm = $this->add_assignment($params);
-        $feedback = local::course_grade($course);
-        $this->assertTrue(empty($feedback->coursegrade));
-
-        // Assert feedback available does not update for current user when grading someone else's assignment.
-        $assign = new \assign($cm->context, $cm, $course);
-        $gradeitem = $assign->get_grade_item();
-        \grade_object::set_properties($gradeitem, array('gradepass' => 50.0));
-        $gradeitem->update();
-        $assignrow = $assign->get_instance();
-        $grades = array();
-        $grades[$student2->id] = (object) [
-            'rawgrade' => 60,
-            'userid' => $student2->id,
-        ];
-        $assignrow->cmidnumber = null;
-        assign_grade_item_update($assignrow, $grades);
-        grade_regrade_final_grades($course->id);
-
-        $feedback = local::course_grade($course);
-        // Still no feedback avialable.
-        $this->assertTrue(empty($feedback->coursegrade));
-
-        // Assert feedback available is populated when a teacher grades the students assignment (submission not
-        // required for this test.
-        $assign = new \assign($cm->context, $cm, $course);
-        $gradeitem = $assign->get_grade_item();
-        \grade_object::set_properties($gradeitem, array('gradepass' => 50.0));
-        $gradeitem->update();
-        $assignrow = $assign->get_instance();
-        $grades = array();
-        $grades[$student->id] = (object) [
-            'rawgrade' => 60,
-            'userid' => $student->id,
-        ];
-        $assignrow->cmidnumber = null;
-        assign_grade_item_update($assignrow, $grades);
-        grade_regrade_final_grades($course->id);
-        $feedback = local::course_grade($course);
-        // Feedback should be available now.
-        $this->assertNotEmpty($feedback->coursegrade);
-
-        // Assert coursegrade property does not exist when disabled in settings.
-        set_config('showcoursegradepersonalmenu', 0, 'theme_snap');
-        $feedback = local::course_grade($course);
-        $this->assertTrue(empty($feedback->coursegrade));
-    }
-
     public function test_add_get_calendar_change_stamp() {
         $this->resetAfterTest();
 
@@ -1378,49 +1302,6 @@ class local_test extends snap_base_test {
         $this->assertTrue($colorratio >= 4.5);
         $colorratio = color_contrast::calculate_luminosity_ratio($color3, $color4);
         $this->assertFalse($colorratio >= 4.5);
-    }
-
-    /**
-     * Test the $CFG limit that can be set to improve the Snap personal menu performance.
-     */
-
-    public function test_course_completion_progress_limit() {
-        global $CFG;
-
-        $this->resetAfterTest();
-
-        $CFG->enablecompletion = true;
-        $generator = $this->getDataGenerator();
-        $student = $generator->create_user();
-        $teacher = $generator->create_user();
-        $courseids = $this->completion_activity_helper($student, $teacher, 22);
-        // No limit should return 22 courses.
-        $result = local::courseinfo($courseids);
-        $this->assertCount(22, $result);
-        $result = reset($result);
-        // Verify data.
-        $this->assertFalse($result->completion->fromcache);
-        $this->assertEquals(1, $result->completion->complete);
-        $this->assertEquals(1, $result->completion->total);
-        $this->assertEquals(100, $result->completion->progress);
-
-        // Lower limit.
-        $CFG->theme_snap_max_pm_completion_courses = 10;
-        $this->assertCount(10, local::courseinfo($courseids));
-        $CFG->theme_snap_max_pm_completion_courses = 99;
-        $this->assertCount(22, local::courseinfo($courseids));
-        // Limit as 0 will fall into the default 100 number.
-        $CFG->theme_snap_max_pm_completion_courses = 0;
-        $this->assertCount(22, local::courseinfo($courseids));
-        $CFG->theme_snap_max_pm_completion_courses = 2;
-        $result = local::courseinfo($courseids);
-        $this->assertCount(2, $result);
-        $result = reset($result);
-        // Finally verify data.
-        $this->assertTrue($result->completion->fromcache); // Cache should still be valid.
-        $this->assertEquals(1, $result->completion->complete);
-        $this->assertEquals(1, $result->completion->total);
-        $this->assertEquals(100, $result->completion->progress);
     }
 
     /**

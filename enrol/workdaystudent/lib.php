@@ -112,7 +112,16 @@ class enrol_workdaystudent_plugin extends enrol_plugin {
      * @return boolean
      */
     public static function run_workdaystudent_reprocess($courseid) {
-        global $CFG;
+        global $CFG, $DB;
+
+        // Set the sections table.
+        $stable = 'enrol_wds_sections';
+
+        // Set the parms for fetching csdids for this course.
+        $sparms = ['moodle_status' => $courseid];
+
+        // Get the section records.
+        $sections = $DB->get_records($stable, $sparms);
 
         // Fetch the main class.
         require_once('classes/workdaystudent.php');
@@ -120,16 +129,27 @@ class enrol_workdaystudent_plugin extends enrol_plugin {
         // Set the start time.
         $starttime = microtime(true);
 
-        mtrace("Starting Moodle Student enrollments.");
+        foreach ($sections as $section) {
 
-        // Process wds enrollments.
-        $cronstuenroll = wdscronhelper::cronstuenroll($courseid);
+            mtrace("Starting Moodle Student enrollments for $section->section_listing_id..");
 
-        // Fetch and update any missing students not in an active period.
-        $nonactive = workdaystudent::wds_get_insert_missing_students($courseid);
+            // Process wds enrollments.
+            $cronstuenroll = wdscronhelper::cronstuenroll(
+                $section->course_section_definition_id
+            );
 
-        // Enroll the students into courses and groups.
-        $cronenrollments = wdscronhelper::cronmenrolls($courseid);
+            // Fetch and update any missing students not in an active period.
+            $nonactive = workdaystudent::wds_get_insert_missing_students(
+                $section->course_section_definition_id
+            );
+
+            // Enroll the students into courses and groups.
+            $cronenrollments = wdscronhelper::cronmenrolls(
+                $section->course_section_definition_id
+            );
+
+            mtrace("Finished Moodle Student enrollments for $section->section_listing_id..");
+        }
 
         $endtime = microtime(true);
         $elapsedtime = round($endtime - $starttime, 2);
@@ -309,7 +329,8 @@ class enrol_workdaystudent_plugin extends enrol_plugin {
  */
 function enrol_workdaystudent_extend_navigation_course($navigation, $course, $context) {
     // Make sure we can reprocess enrollments.
-    if (has_capability('enrol/workdaystudent:reprocess', $context)) {
+    if (is_siteadmin()) {
+    // if (has_capability('enrol/workdaystudent:reprocess', $context)) {
 
         // Set the url for the reprocesser.
         $url = new moodle_url('/enrol/workdaystudent/reprocess.php', array('courseid' => $course->id));

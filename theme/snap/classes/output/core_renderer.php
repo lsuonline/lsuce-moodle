@@ -176,9 +176,9 @@ class core_renderer extends \theme_boost\output\core_renderer {
             }
 
         } else if ($location == 'mycourses') {
-            $link = '<a class="snap-personal-menu-more browseallcourses" href="' .$url. '"><small>' .$text. '</small>' .$svgicon. '</a>';
+            $link = '<a class="snap-sidebar-menu-more browseallcourses" href="' .$url. '"><small>' .$text. '</small>' .$svgicon. '</a>';
         } else {
-            $link = '<a class="snap-personal-menu-more" href="' .$url. '"><small>' .$text. '</small>' .$svgicon. '</a>';
+            $link = '<a class="snap-sidebar-menu-more" href="' .$url. '"><small>' .$text. '</small>' .$svgicon. '</a>';
         }
         return $link;
         // @codingStandardsIgnoreEnd
@@ -311,14 +311,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($this->advanced_feeds_enabled()) {
             $o = ce_render_helper::get_instance()
                 ->render_feed_web_component('messages', $heading, get_string('nomessages', 'theme_snap'),
-                    false, true, true, 0, $location);
+                    false, true, 0, $location);
         } else {
             if ($location == 'snapfeedsmenu') {
                 $o = '<h2>'.$heading.'</h2>';
                 $o .= '<div id="snap-feeds-menu-messages"></div>';
             } else {
                 $o = '<h2>'.$heading.'</h2>';
-                $o .= '<div id="snap-personal-menu-messages"></div>';
+                $o .= '<div id="snap-sidebar-menu-messages"></div>';
             }
         }
 
@@ -344,14 +344,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('forumposts', $heading,
                             get_string('noforumposts', 'theme_snap'), $virtualpaging,
-                 true, true, 0, $location);
+                 true, 0, $location);
         } else {
             if ($location == 'snapfeedsmenu') {
                 $o = '<h2>'.$heading.'</h2>
                 <div id="snap-feeds-menu-forumposts"></div>';
             } else {
                 $o = '<h2>'.$heading.'</h2>
-                <div id="snap-personal-menu-forumposts"></div>';
+                <div id="snap-sidebar-menu-forumposts"></div>';
             }
         }
 
@@ -447,7 +447,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
     }
 
     private function get_calltoaction_url($key) {
-        return '#snap-personal-menu-' .
+        return '#snap-sidebar-menu-' .
             ($this->advanced_feeds_enabled() ? 'feed-' : '') .
             $key;
     }
@@ -602,8 +602,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * @return bool
      */
     private function advanced_feeds_enabled() {
-        $advancedfeedsenabled = property_exists($this->page->theme->settings, 'personalmenuadvancedfeedsenable')
-        && $this->page->theme->settings->personalmenuadvancedfeedsenable == 1;
+        $advancedfeedsenabled = property_exists($this->page->theme->settings, 'advancedfeedsenable')
+        && $this->page->theme->settings->advancedfeedsenable == 1;
         $anydependencyenabled = property_exists($this->page->theme->settings, 'deadlinestoggle')
         && $this->page->theme->settings->deadlinestoggle == 1 || property_exists($this->page->theme->settings, 'feedbacktoggle')
         && $this->page->theme->settings->feedbacktoggle == 1 || property_exists($this->page->theme->settings, 'messagestoggle')
@@ -638,14 +638,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('grading', $heading,
                             get_string('nograding', 'theme_snap'), $virtualpaging,
-                true, true, 0, $location);
+                true, 0, $location);
         } else {
             if ($location == 'snapfeedsmenu') {
                 $o = "<h2>$heading</h2>";
                 $o .= '<div id="snap-feeds-menu-grading"></div>';
             } else {
                 $o = "<h2>$heading</h2>";
-                $o .= '<div id="snap-personal-menu-grading"></div>';
+                $o .= '<div id="snap-sidebar-menu-grading"></div>';
             }
         }
 
@@ -667,14 +667,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('graded', $heading,
                             get_string('nograded', 'theme_snap'), $virtualpaging,
-                true, true, 0, $location);
+                true, 0, $location);
         } else {
             if ($location == 'snapfeedsmenu') {
                 $o = "<h2>$heading</h2>";
                 $o .= '<div id="snap-feeds-menu-graded"></div>';
             } else {
                 $o = "<h2>$heading</h2>";
-                $o .= '<div id="snap-personal-menu-graded"></div>';
+                $o .= '<div id="snap-sidebar-menu-graded"></div>';
             }
         }
 
@@ -699,14 +699,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $virtualpaging = true; // Web service retrieves all elements, need to do virtual paging.
             $o = ce_render_helper::get_instance()->render_feed_web_component('deadlines', $heading,
                 get_string('nodeadlines', 'theme_snap'), $virtualpaging,
-                true, true, 0, $location);
+                true, 0, $location);
         } else {
             if ($location == 'snapfeedsmenu') {
                 $o = "<h2>$heading</h2>";
                 $o .= '<div id="snap-feeds-menu-deadlines"></div>';
             } else {
                 $o = "<h2>$heading</h2>";
-                $o .= '<div id="snap-personal-menu-deadlines"></div>';
+                $o .= '<div id="snap-sidebar-menu-deadlines"></div>';
             }
         }
 
@@ -735,15 +735,6 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $output = html_writer::link($loginurl, get_string('login'), $loginatts);
         }
         return $output;
-    }
-
-    /**
-     * @param course_card $card
-     * @return string
-     * @throws \moodle_exception
-     */
-    public function render_course_card(course_card $card) {
-        return $this->render_from_template('theme_snap/course_cards', $card);
     }
 
     /**
@@ -789,7 +780,8 @@ class core_renderer extends \theme_boost\output\core_renderer {
 
     /**
      * Personal menu or authenticate form.
-     */
+     *
+    
     public function personal_menu() {
         // BEGIN LSU Course Card Quick Links.
         global $USER, $CFG;
@@ -1359,7 +1351,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
     /**
      * Personal menu trigger - a login link or my courses link.
      *
-     */
+     *
     public function personal_menu_trigger() {
         global $USER;
         $output = '';
@@ -1386,7 +1378,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
         return $output;
     }
-
+    */
 
     /**
      * get section number by section id
@@ -1795,28 +1787,12 @@ HTML;
      * @return array|string
      */
     public function body_css_classes(array $additionalclasses = []) {
-        global $COURSE, $SESSION, $CFG, $USER;
-
-        $openfixyafterlogin = false;
+        global $COURSE, $CFG, $USER;
 
         $classes = parent::body_css_classes($additionalclasses);
         $classes = explode (' ', $classes);
 
         $classes[] = 'device-type-'.$this->page->devicetypeinuse;
-
-        $forcepasschange = get_user_preferences('auth_forcepasswordchange');
-        if (isset($SESSION->justloggedin) && empty($forcepasschange)) {
-            // We need to check first if the personal menu is enabled.
-            if (!empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
-                $openfixyafterlogin = !empty($this->page->theme->settings->personalmenulogintoggle);
-            }
-            $onfrontpage = ($this->page->pagetype === 'site-index');
-            $onuserdashboard = ($this->page->pagetype === 'my-index');
-            if ($openfixyafterlogin && !isguestuser() && ($onfrontpage || $onuserdashboard)) {
-                $classes[] = 'snap-pm-open';
-            }
-        }
-        unset($SESSION->justloggedin);
 
         // Define the page types we want to purge yui classes from the body  - e.g. local-joulegrader-view,
         // local-pld-view, etc.
@@ -2447,7 +2423,7 @@ HTML;
                 '</div>';
         } else {
             $o = '<h2>' .$intelliboardheading. '</h2>';
-            $o .= '<div id="snap-personal-menu-intelliboard">'
+            $o .= '<div id="snap-sidebar-menu-intelliboard">'
                 .$links.
                 '</div>';
         }
@@ -2557,7 +2533,7 @@ HTML;
                 '</div>';
         } else {
             $o = '<h2>' .$intellicartheading. '</h2>';
-            $o .= '<div id="snap-personal-menu-intellicart">'
+            $o .= '<div id="snap-sidebar-menu-intellicart">'
                 .$link.
                 '</div>';
         }
@@ -2799,18 +2775,13 @@ HTML;
         if (!isloggedin() || isguestuser()) {
             return $output;
         }
-        if (empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
-            $classes = 'snap-my-courses-menu snap-my-courses-link';
-            $url = new \moodle_url('/my/courses.php');
-        } else {
-            $classes = 'js-snap-pm-trigger snap-my-courses-menu snap-my-courses-link';
-            $url = '#';
-        }
+        $classes = 'snap-my-courses-menu snap-my-courses-link';
+        $url = new \moodle_url('/my/courses.php');
         $menu = '<span class="hidden-xs-down">' .get_string('menu', 'theme_snap'). '</span>';
         $attributes = [
             'aria-haspopup' => 'true',
             'class' => $classes,
-            'id' => 'snap-pm-trigger',
+            'id' => 'snap-my-courses-trigger',
         ];
         $output .= html_writer::link($url, $menu, $attributes);
         return $output;
@@ -2835,15 +2806,13 @@ HTML;
                 $additionallinks = [];
 
                 // My courses link.
-                if (empty(get_config('theme_snap', 'personalmenuenablepersonalmenu'))) {
-                    $mycourses = new stdClass();
-                    $mycourses->itemtype = 'link';
-                    $mycourses->url = new moodle_url('/my/courses.php');
-                    $mycourses->link = $mycourses->itemtype == 'link';
-                    $mycourses->title = get_string('menu', 'theme_snap');
-                    $mycourses->titleidentifier = 'menu,theme_snap';
-                    $additionallinks[] = $mycourses;
-                }
+                $mycourses = new stdClass();
+                $mycourses->itemtype = 'link';
+                $mycourses->url = new moodle_url('/my/courses.php');
+                $mycourses->link = $mycourses->itemtype == 'link';
+                $mycourses->title = get_string('menu', 'theme_snap');
+                $mycourses->titleidentifier = 'menu,theme_snap';
+                $additionallinks[] = $mycourses;
 
                 // My programs link.
                 if (is_callable('mr_on') && mr_on('myprograms', '_MR_BLOCKS')) {
@@ -3143,7 +3112,7 @@ HTML;
      * @return bool
      */
     protected function snap_page_is_whitelisted_mod() {
-        $whitelist = ['book', 'quiz'];
+        $whitelist = ['book', 'lesson', 'quiz'];
         return $this->page->context->contextlevel === CONTEXT_MODULE
             && in_array($this->page->cm->modname, $whitelist);
     }
