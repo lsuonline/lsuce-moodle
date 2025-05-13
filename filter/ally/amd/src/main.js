@@ -918,14 +918,13 @@ chapterId;
                         }
                     });
 
-                    // BEGIN LSU Fix for Ally to work with Snap.
+                    // BEGIN LSU Fix for Ally to work with Snap
                     // document.addEventListener('core_filters/contentUpdated', () => {
                         // When Snap lazy loads a section it triggers this event.
                         // We can ensure everything has been processed on lazy load by recalling the second
                         // stage initialization.
                         // self.initStageTwo();
                     // });
-
                     if (!self.hasContentUpdatedListener) { // Open LMS Patch for INT-20689: Prevent infinite loop.
                         document.addEventListener('core_filters/contentUpdated', () => {
                             // When Snap lazy loads a section it triggers this event.
@@ -935,7 +934,7 @@ chapterId;
                         });
                         self.hasContentUpdatedListener = true;
                     }
-                    // END LSU Fix for Ally to work with Snap.
+                    // BEGIN LSU Fix for Ally to work with Snap
                 }
             }
         };

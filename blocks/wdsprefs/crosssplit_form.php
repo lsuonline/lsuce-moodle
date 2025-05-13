@@ -58,18 +58,28 @@ class crosssplit_form extends moodleform {
         if ($shellcount > $sectioncount) {
             redirect(
                 $CFG->wwwroot . '/blocks/wdsprefs/crosssplit.php',
-                    get_string('wdsprefs:toomanyshells',
-                        'block_wdsprefs', [
-                            'shell' => $shellcount,
-                            'sec' => $sectioncount,
-                            'shellword' => $shellword,
-                            'secword' => $secword,
-                        ]
-                    ),
+                get_string('wdsprefs:toomanyshells',
+                    'block_wdsprefs', [
+                        'shell' => $shellcount,
+                        'sec' => $sectioncount,
+                        'shellword' => $shellword,
+                        'secword' => $secword,
+                    ]
+                ),
                 null,
                 core\output\notification::NOTIFY_WARNING
             );
         }
+
+        if ($shellcount == 1 && $sectioncount == 1) {
+            redirect(
+                $CFG->wwwroot . '/blocks/wdsprefs/crosssplit.php',
+                get_string('wdsprefs:onetoone', 'block_wdsprefs'),
+                null,
+                core\output\notification::NOTIFY_WARNING
+            );
+        }
+
 
         // Instructions.
         $mform->addElement('html',

@@ -88,6 +88,7 @@ $string['wdsprefs:assignshellsheader'] = 'Step 2: Assign Sections to Shells';
 $string['wdsprefs:selectcourses'] = 'Courses to include';
 $string['wdsprefs:shellcount'] = 'Number of course shells';
 $string['wdsprefs:shell'] = 'Shell {$a}';
+$string['wdsprefs:onetoone'] = 'Splitting one (1) course with one (1) section will not do anything.';
 $string['wdsprefs:toomanyshells'] = 'You have selected more course shells: {$a->shellword} ({$a->shell}) than sections: {$a->secword} ({$a->sec}).';
 $string['wdsprefs:atleastonesections'] = 'You must select at least one section to enable Crosslisting & Splitting.';
 $string['wdsprefs:crosssplitsuccess'] = 'CrossSplitting setup successful.';
