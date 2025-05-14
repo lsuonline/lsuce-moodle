@@ -548,5 +548,24 @@ function theme_snap_user_preferences(): array {
             'default' => false,
             'permissioncallback' => [core_user::class, 'is_current_user'],
         ],
+        // BEGIN LSU - preferences.
+        'snap_user_grouping_year_preference' => [
+            'null' => NULL_NOT_ALLOWED,
+            'default' => 'all',
+            'type' => PARAM_TEXT,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+        'snap_user_grouping_progress_preference' => [
+            'null' => NULL_NOT_ALLOWED,
+            'default' => 'all',
+            'type' => PARAM_TEXT,
+            'choices' => array(
+                'all',
+                'completed',
+                'notcompleted',
+            ),
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ]
+        // END LSU - preferences.
     ];
 }

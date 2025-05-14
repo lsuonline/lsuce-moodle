@@ -28,10 +28,21 @@ use block_myoverview\output\main;
 use html_writer;
 use stdClass;
 
+// BEGIN LSU - completion filter
+require_once($CFG->libdir . '/completionlib.php');
+// END LSU - completion filter
+
 defined('MOODLE_INTERNAL') || die();
 
 class block_myoverview_renderer extends \block_myoverview\output\renderer {
 
+    // BEGIN LSU - completion filter
+    public function get_completion($course) {
+        global $USER;
+        $cinfo = new \completion_info($course);
+        return $cinfo->is_course_complete($USER->id);
+    }
+    // END LSU - completion filter
     /**
      * Return the main content for the block overview.
      *
@@ -47,19 +58,54 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
                 $main->export_for_zero_state_template($this)
             );
         }
-
         $data = $main->export_for_template($this);
+
+        // BEGIN LSU - get user pref for year and completion.
+        $prefyear = get_user_preferences('snap_user_grouping_year_preference');
+        if ($prefyear == "all") {
+            $data['prefyear'] = 'All years';
+        } else if ($prefyear != '') {
+            $data['prefyear'] = $prefyear;
+        }
+
+        $prefprog = get_user_preferences('snap_user_grouping_progress_preference');
+        $progstatus = 0;
+        if ($prefprog == 'all') {
+            $progstatus = 2;
+            $data['prefprog'] = 'All';
+        } else if ($prefprog == 'completed') {
+            $progstatus = 1;
+            $data['prefprog'] = 'Completed';
+        } else if ($prefprog == 'notcompleted') {
+            $progstatus = 0;
+            $data['prefprog'] = 'Not completed';
+        }
 
         $courses = enrol_get_my_courses('enddate', 'fullname ASC, id DESC');
         $coursesyears = [];
         foreach ($courses as $course) {
+            $huzzuh = $this->get_completion($course);
+            if ($progstatus < 2) {
+                if ($progstatus == 1 && !$huzzuh) {
+                    continue;
+                } else if ($progstatus == 0 && $huzzuh) {
+                    continue;
+                }
+            }
             if (!empty($course->enddate)) {
                 $endyear = userdate($course->enddate, '%Y');
+                if ($prefyear != 'all' ) {
+                    if ($prefyear != $endyear) {
+                        continue;
+                    }
+                }
+
                 $yearlink = html_writer::tag('a', $endyear,[
                     'class' => 'dropdown-item',
                     'href' => '#',
                     'data-filter' => 'year',
-                    'data-value' => $endyear
+                    'data-value' => $endyear,
+                    'data-pref' => $endyear,
                 ]);
                 $yearitem = new stdClass();
                 $yearitem->$endyear = html_writer::tag('li', $yearlink);
@@ -72,7 +118,8 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
                 'class' => 'dropdown-item',
                 'href' => '#',
                 'data-filter' => 'year',
-                'data-value' => 'all'
+                'data-value' => 'all',
+                'data-pref' => 'all',
             ]);
             $yearslist = $allyearslink;
             foreach ($coursesyears as $year => $yearlistitem) {
@@ -80,6 +127,8 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
             }
             $data['years'] = $yearslist;
         }
+
+        // END LSU - get user pref for year and completion.
 
         return $this->render_from_template('block_myoverview/main', $data);
     }
