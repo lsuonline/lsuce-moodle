@@ -84,33 +84,22 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
         $courses = enrol_get_my_courses('enddate', 'fullname ASC, id DESC');
         $coursesyears = [];
         foreach ($courses as $course) {
-            $huzzuh = $this->get_completion($course);
-            if ($progstatus < 2) {
-                if ($progstatus == 1 && !$huzzuh) {
-                    continue;
-                } else if ($progstatus == 0 && $huzzuh) {
-                    continue;
-                }
+            
+            $endyear = userdate($course->enddate, '%Y');
+            if (empty($course->enddate)) {
+                $endyear = userdate($course->startdate, '%Y');
             }
-            if (!empty($course->enddate)) {
-                $endyear = userdate($course->enddate, '%Y');
-                if ($prefyear != 'all' ) {
-                    if ($prefyear != $endyear) {
-                        continue;
-                    }
-                }
-
-                $yearlink = html_writer::tag('a', $endyear,[
-                    'class' => 'dropdown-item',
-                    'href' => '#',
-                    'data-filter' => 'year',
-                    'data-value' => $endyear,
-                    'data-pref' => $endyear,
-                ]);
-                $yearitem = new stdClass();
-                $yearitem->$endyear = html_writer::tag('li', $yearlink);
-                $coursesyears[$endyear] = $yearitem;
-            }
+            
+            $yearlink = html_writer::tag('a', $endyear,[
+                'class' => 'dropdown-item',
+                'href' => '#',
+                'data-filter' => 'year',
+                'data-value' => $endyear,
+                'data-pref' => $endyear,
+            ]);
+            $yearitem = new stdClass();
+            $yearitem->$endyear = html_writer::tag('li', $yearlink);
+            $coursesyears[$endyear] = $yearitem;
             ksort($coursesyears);
         }
         if (!empty($coursesyears)) {
@@ -127,7 +116,6 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
             }
             $data['years'] = $yearslist;
         }
-
         // END LSU - get user pref for year and completion.
 
         return $this->render_from_template('block_myoverview/main', $data);

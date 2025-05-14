@@ -78,8 +78,11 @@ const getFilterValues = root => {
         displaycategories: courseRegion.attr('data-displaycategories'),
         customfieldname: courseRegion.attr('data-customfieldname'),
         customfieldvalue: courseRegion.attr('data-customfieldvalue'),
-        yeardata: courseRegion.attr('data-year'),
-        progress: courseRegion.attr('data-progress'),
+        // This doesn't work at all!
+        // yeardata: courseRegion.attr('data-year'),
+        // progress: courseRegion.attr('data-progress'),
+        yeardata: $('#yeardropdown > span').text(),
+        progress: $('#progressdropdown > span').text(),
     };
 };
 

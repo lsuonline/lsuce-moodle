@@ -113,17 +113,30 @@ class ws_block_myoverview extends external_api {
             $searchvalue
         );
 
-        if ($params['yeardata'] != null && $params['yeardata'] != "all") {
+
+        // BEGIN LSU - need to make the webservice reflect the renderer.                
+        if ($params['yeardata'] != null && $params['yeardata'] == "All years") {
+            $yd = 'all';
+        } else {
+            $yd = $params['yeardata'];
+        }
+
+        if ($yd != "all") {
             $filteredbyyearcourses = [];
             foreach ($mainFiltersResult["courses"] as $course) {
-                $endyear = userdate($course->enddate, '%Y');
-                if ($endyear == $params['yeardata']) {
+                if (!empty($course->enddate)) {
+                    $endyear = userdate($course->enddate, '%Y');
+                } else {
+                    // Just need the year, so if end isn't enabled use start.
+                    $endyear = userdate($course->startdate, '%Y');
+                }
+                if ($endyear == $yd) {
                     $filteredbyyearcourses[] = $course;
                 }
             }
             $mainFiltersResult["courses"] = $filteredbyyearcourses;
         }
-
+        $params['progress'] = trim(strtolower($params['progress']));
         if ($params['progress'] != "all") {
             $filteredbycompleted = [];
             $filteredbynotcompleted = [];
@@ -137,10 +150,11 @@ class ws_block_myoverview extends external_api {
 
             if ($params['progress'] == 'completed') {
                 $mainFiltersResult["courses"] = $filteredbycompleted;
-            } elseif ($params['progress'] == 'notcompleted') {
+            } elseif ($params['progress'] == 'notcompleted' || $params['progress'] == 'not completed') {
                 $mainFiltersResult["courses"] = $filteredbynotcompleted;
             }
         }
+        // END LSU - need to make the webservice reflect the renderer.                
         return $mainFiltersResult;
     }
 }
