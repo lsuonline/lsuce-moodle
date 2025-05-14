@@ -25,6 +25,9 @@
 
 namespace theme_snap\privacy;
 
+// BEGIN LSU - preferences for filters on my courses page.
+use core_privacy\local\request\user_preference_provider;
+// END LSU - preferences for filters on my courses page.
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\approved_contextlist;
@@ -42,7 +45,7 @@ use core_privacy\local\request\writer;
  * @copyright  Copyright (c) 2018 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements metadata_provider, request_provider,
+class provider implements metadata_provider, request_provider, user_preference_provider,
     \core_privacy\local\request\core_userlist_provider {
 
     /**
@@ -162,6 +165,13 @@ class provider implements metadata_provider, request_provider,
             'timefavorited' => 'privacy:metadata:theme_snap_course_favorites:timefavorited',
         ];
         $summary = 'privacy:metadata:theme_snap_course_favorites';
+        // BEGIN LSU getting the stupid filters to work.
+        $year = 'privacy:metadata:snap_user_grouping_year_preference';
+        $progress = 'privacy:metadata:snap_user_grouping_progress_preference';
+        $collection->add_user_preference('snap_user_grouping_year_preference', $year);
+        $collection->add_user_preference('snap_user_grouping_progress_preference', $progress);
+        // END LSU getting the stupid filters to work.
+
         $collection->add_database_table('theme_snap_course_favorites', $fields, $summary);
 
         return $collection;
@@ -209,4 +219,32 @@ class provider implements metadata_provider, request_provider,
 
         $DB->delete_records_select('theme_snap_course_favorites', $sql, $params);
     }
+
+    // BEGIN LSU getting the stupid filters to work.
+    /**
+     * Export all user preferences for the myoverview block
+     *
+     * @param int $userid The userid of the user whose data is to be exported.
+     */
+    
+    // snap_user_grouping_year_preference
+    // snap_user_grouping_progress_preference
+    public static function export_user_preferences(int $userid) {
+        $preference = get_user_preferences('snap_user_grouping_year_preference', null, $userid);
+        if (isset($preference)) {
+            writer::export_user_preference('theme_snap',
+                'snap_user_grouping_year_preference',
+                get_string($preference, 'theme_snap'),
+                get_string('privacy:metadata:snapuseryearpref', 'theme_snap'));
+        }
+
+        $preference = get_user_preferences('snap_user_grouping_progress_preference', null, $userid);
+        if (isset($preference)) {
+            writer::export_user_preference('theme_snap',
+                'snap_user_grouping_progress_preference',
+                get_string($preference, 'theme_snap'),
+                get_string('privacy:metadata:snapuserprogresspref', 'theme_snap'));
+        }
+    }
+    // END LSU getting the stupid filters to work.
 }

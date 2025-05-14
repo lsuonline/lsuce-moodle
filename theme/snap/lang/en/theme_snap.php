@@ -580,3 +580,7 @@ $string['course_size_limit_description'] = 'Set the limit for the size of the co
 $string['course_size'] = 'Course Size';
 $string['course_size_help'] = 'Indicates the total size of your course, including all course materials.';
 // END LSU Extra Course Size.
+// BEGIN LSU course preferences
+$string['privacy:metadata:snapuseryearpref'] = 'The Course overview block year preference.';
+$string['privacy:metadata:snapuserprogresspref'] = 'The Course overview block progress preference.';
+// END LSU course preferences

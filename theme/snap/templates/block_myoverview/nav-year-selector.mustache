@@ -24,7 +24,9 @@
 <div class="dropdown mb-1 me-1">
     <button id="yeardropdown" type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="{{#str}} year, theme_snap {{/str}}">
         <span data-active-item-text>
-            {{#str}} year, theme_snap {{/str}}
+            {{! BEGIN LSU - Display the preference for year }}
+            {{{prefyear}}}
+            {{! END LSU - Display the preference for year }}
         </span>
     </button>
     <ul class="dropdown-menu" role="menu" data-show-active-item data-skip-active-class="true" data-active-item-text aria-labelledby="yeardropdown">

@@ -302,9 +302,13 @@ const handleMessagesPopoverClick = (e) => {
 const setActiveDrawer = async() => {
     const preferences = await getUserPreferences();
     const preferencesArray = {};
-    preferences.preferences.forEach(pref => {
-        preferencesArray[pref.name] = pref.value;
-    });
+    // BEGIN LSU adding check for preferences otherwise an error is generated.
+    if (preferences.hasOwnProperty('preferences')) {
+        preferences.preferences.forEach(pref => {
+            preferencesArray[pref.name] = pref.value;
+        });
+    }
+    // END LSU adding check for preferences otherwise an error is generated.
 
     // Review which user preference is set to true, from PREFERENCE_MAP
     for (const [prefKey, drawerSelector] of Object.entries(PREFERENCE_MAP)) {
