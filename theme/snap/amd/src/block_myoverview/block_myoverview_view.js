@@ -71,6 +71,21 @@ let namespace = null;
  */
 const getFilterValues = root => {
     const courseRegion = root.find(SELECTORS.courseView.region);
+    let zyeardata = $('#yeardropdown > span').text(),
+        zprogress = $('#progressdropdown > span').text();
+
+    // If the filters aren't initially set, set them.
+    if (zyeardata == '') {
+        setUserPreference('snap_user_grouping_year_preference', 'all')
+            .catch(Notification.exception);
+        zyeardata = 'all';
+    }
+
+    if (zprogress == '') {
+        setUserPreference('snap_user_grouping_progress_preference', 'all')
+            .catch(Notification.exception);
+            zprogress = 'all';
+    }
     return {
         display: courseRegion.attr('data-display'),
         grouping: courseRegion.attr('data-grouping'),
@@ -81,8 +96,8 @@ const getFilterValues = root => {
         // This doesn't work at all!
         // yeardata: courseRegion.attr('data-year'),
         // progress: courseRegion.attr('data-progress'),
-        yeardata: $('#yeardropdown > span').text(),
-        progress: $('#progressdropdown > span').text(),
+        yeardata: zyeardata,
+        progress: zprogress,
     };
 };
 

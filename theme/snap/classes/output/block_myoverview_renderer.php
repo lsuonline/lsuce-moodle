@@ -61,14 +61,18 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
         $data = $main->export_for_template($this);
 
         // BEGIN LSU - get user pref for year and completion.
-        $prefyear = get_user_preferences('snap_user_grouping_year_preference');
-        if ($prefyear == "all") {
+        if (!$prefyear = get_user_preferences('snap_user_grouping_year_preference')) {
+            $prefyear = 'all';
+        }
+        if ($prefyear == 'all') {
             $data['prefyear'] = 'All years';
         } else if ($prefyear != '') {
             $data['prefyear'] = $prefyear;
         }
 
-        $prefprog = get_user_preferences('snap_user_grouping_progress_preference');
+        if (!$prefprog = get_user_preferences('snap_user_grouping_progress_preference')) {
+            $prefprog = 'all';
+        }
         $progstatus = 0;
         if ($prefprog == 'all') {
             $progstatus = 2;
