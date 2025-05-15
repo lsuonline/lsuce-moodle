@@ -1621,10 +1621,11 @@ class wdsprefs {
         $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
 
         if (!is_null($periodid)) {
-            $periodidparms = ['periodid' => $periodid];
-            $periodidsql = ' AND p.academic_period_id = :periodid ';
+            $periodidsql = ' AND p.academic_period_id = :periodid
+                GROUP BY p.academic_period_id';
         } else {
-            $periodidsql = '';
+            $periodidsql = 'GROUP BY p.academic_period_id
+                HAVING COUNT(p.academic_period_id) > 1';
         }
 
         // Build the SQL.
@@ -1641,8 +1642,6 @@ class wdsprefs {
                 AND p.start_date < UNIX_TIMESTAMP() + :fsemrange
                 AND p.end_date > UNIX_TIMESTAMP()
                 $periodidsql
-            GROUP BY p.academic_period_id
-                HAVING COUNT(p.academic_period_id) > 1
             ORDER BY p.start_date ASC, p.period_type ASC";
 
         if (is_null($periodid)) {

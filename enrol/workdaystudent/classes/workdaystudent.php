@@ -647,6 +647,7 @@ class workdaystudent {
         $as2 = unserialize(serialize($as));
 
         // Keep id, section_listing_id, idnumber, and status from $as and populate the rest from $section.
+
         $as2->course_section_definition_id = $section->Course_Section_Definition_ID;
         $as2->section_number = $section->Section_Number;
         $as2->course_definition_id = $section->Course_Definition_ID;
@@ -4228,17 +4229,8 @@ class workdaystudent {
     public static function get_current_taught_periods($mshell): array {
         global $DB;
 
-        // Get the user's idnumber.
-        $user = $DB->get_record('user', ['id' => $mshell->userid]);
-
         // Set this.
-        $uid = $user->idnumber;
-
-        // Get settings to limit semesters to current ones.
-        $s = workdaystudent::get_settings();
-
-        // Set the semester range for getting future and recent semesters.
-        $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
+        $uid = $mshell->universal_id;
 
         // Build the SQL.
         $sql = "SELECT p.academic_period_id,
@@ -4251,17 +4243,14 @@ class workdaystudent {
                 INNER JOIN {enrol_wds_teacher_enroll} tenr
                     ON tenr.section_listing_id = sec.section_listing_id
             WHERE tenr.universal_id = :userid
-                AND p.start_date < UNIX_TIMESTAMP() + :fsemrange
                 AND p.end_date > UNIX_TIMESTAMP()
                 AND p.academic_period_id = :periodid
             GROUP BY p.academic_period_id
-                HAVING COUNT(p.academic_period_id) > 1
             ORDER BY p.start_date ASC, p.period_type ASC";
 
         // Use named parameters for security.
         $parms = [
             'userid' => $uid,
-            'fsemrange' => $fsemrange,
             'periodid' => $mshell->academic_period_id
         ];
 
@@ -4323,6 +4312,13 @@ class workdaystudent {
 
         // Remove space before (Online) and remove parentheses.
         $pname = str_replace(' (Online)', 'Online', $pname);
+
+if ($pname == '') {
+echo"\n\nPeriodName: ";
+var_dump($periodname);
+echo"\n\nMshell: ";
+var_dump($mshell);
+}
 
         // Build out the idnumber.
         $idnumber = $pname .
