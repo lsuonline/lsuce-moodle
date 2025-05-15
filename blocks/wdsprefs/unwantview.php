@@ -69,6 +69,19 @@ class section_preferences_form extends moodleform {
         // Retrieve grouped sections from custom data.
         $gsections = $this->_customdata['gsections'] ?? [];
 
+        // Get any crosssplits for this user
+        $crosssplits = wdsprefs::get_user_crosssplits($USER->id);
+
+        // Build a simple array.
+        $csarray = [];
+
+        // Populate that array.
+        foreach ($crosssplits as $crosssplit) {
+
+            // Build this for later.
+            $csarray[$crosssplit->moodle_course_id] = $crosssplit->id;
+        }
+
         // Instantiate the form.
         $mform = $this->_form;
 
@@ -114,12 +127,36 @@ class section_preferences_form extends moodleform {
                     $section->course_number . ' ' .
                     $section->section_number;
 
-                // Add the form checkbox.
-                $checkbox = $mform->addElement(
-                    'advcheckbox',
-                    $checkboxname,
-                    $section->name
-                );
+                // If we have a match to a crosssplit course id.
+                if (isset($csarray[$section->moodle_courseid])) {
+
+                    // Build out a url for the link to undo crosssplitting.
+                    $clurlid = $csarray[$section->moodle_courseid];
+                    $clurlparm = ['id' => $clurlid];
+                    $clurl = new moodle_url('/blocks/wdsprefs/crosssplit_sections.php', $clurlparm);
+
+                    // Add the HTML to not deviate much from the form.
+                    $mform->addElement(
+                        'html',
+                        '<div class="form-group  fitem  ">' .
+                        '<div class="checkbox crosslisted"><label>' .
+                            $section->name .
+                        ' is crosslisted! Please <a href="' .
+                        $clurl->out() .
+                        '">undo crosslisting</a> to unwant this section.' .
+                        '</label></div></div>'
+                    );
+
+
+                } else {
+
+                    // Add the form checkbox.
+                    $checkbox = $mform->addElement(
+                        'advcheckbox',
+                        $checkboxname,
+                        $section->name
+                    );
+                }
 
                 // Check if the user has previously set the section as unwanted.
                 $parms = ['userid' => $section->userid, 'sectionid' => $section->id];

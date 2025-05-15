@@ -41,6 +41,10 @@
   margin: unset !important;
 }
 
+.mform .checkbox.crosslisted {
+  padding-left: 1em;
+}
+
 /* Dual list styling */
 .duallist-container {
     display: flex;
