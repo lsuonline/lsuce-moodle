@@ -796,11 +796,11 @@ die();
 
         // Build the conditions to get some users.
         $conditions = array();
-        $conditions[] = array("idnumber"=>$student->universal_id, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1, "suspended"=>0);
-        $conditions[] = array("idnumber"=>$student->school_id, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1, "suspended"=>0);
-        $conditions[] = array("username"=>$user->username, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1, "suspended"=>0);
-        $conditions[] = array("username"=>$username, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1, "suspended"=>0);
-        $conditions[] = array("email"=>$user->email, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1, "suspended"=>0);
+        $conditions[] = array("idnumber"=>$student->universal_id, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1);
+        $conditions[] = array("idnumber"=>$student->school_id, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1);
+        $conditions[] = array("username"=>$user->username, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1);
+        $conditions[] = array("username"=>$username, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1);
+        $conditions[] = array("email"=>$user->email, "mnethostid"=>1, "deleted"=>0, "confirmed"=>1);
 
         $muser = new stdClass();
         $counter = 0;
