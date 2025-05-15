@@ -76,7 +76,7 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
         $progstatus = 0;
         if ($prefprog == 'all') {
             $progstatus = 2;
-            $data['prefprog'] = 'All';
+            $data['prefprog'] = 'Progress';
         } else if ($prefprog == 'completed') {
             $progstatus = 1;
             $data['prefprog'] = 'Completed';
