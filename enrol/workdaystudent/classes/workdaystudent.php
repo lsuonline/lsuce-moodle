@@ -647,6 +647,7 @@ class workdaystudent {
         $as2 = unserialize(serialize($as));
 
         // Keep id, section_listing_id, idnumber, and status from $as and populate the rest from $section.
+
         $as2->course_section_definition_id = $section->Course_Section_Definition_ID;
         $as2->section_number = $section->Section_Number;
         $as2->course_definition_id = $section->Course_Definition_ID;
