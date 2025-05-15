@@ -133,8 +133,9 @@ class lsuxe_helpers {
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
                 INNER JOIN {enrol_wds_sections} sec ON sec.idnumber = c.idnumber
                 INNER JOIN {enrol_wds_courses} cou ON cou.course_listing_id = sec.course_listing_id
-                INNER JOIN {enrol_wds_students} stu ON stu.section_listing_id = sec.section_listing_id
-                INNER JOIN {user} u ON u.id = stu.userid
+                INNER JOIN {enrol_wds_student_enroll} stu ON stu.section_listing_id = sec.section_listing_id
+                INNER JOIN {enrol_wds_students} wdsu ON wdsu.universal_id = stu.universal_id
+                INNER JOIN {user} u ON u.id = wdsu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "workdaystudent"
                 INNER JOIN {groups} g ON g.courseid = c.id
@@ -184,8 +185,9 @@ class lsuxe_helpers {
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
                 INNER JOIN {enrol_wds_sections} sec ON sec.idnumber = c.idnumber
                 INNER JOIN {enrol_wds_courses} cou ON cou.course_listing_id = sec.course_listing_id
-                INNER JOIN {enrol_wds_teachers} stu ON stu.section_listing_id = sec.section_listing_id
-                INNER JOIN {user} u ON u.id = stu.userid
+                INNER JOIN {enrol_wds_teacher_enroll} stu ON stu.section_listing_id = sec.section_listing_id
+                INNER JOIN {enrol_wds_teachers} wdsu ON wdsu.universal_id = stu.universal_id
+                INNER JOIN {user} u ON u.id = wdsu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "workdaystudent"
                 INNER JOIN {groups} g ON g.courseid = c.id

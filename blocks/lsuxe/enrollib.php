@@ -48,8 +48,6 @@ class lsuxe {
 
         if (lsuxe_helpers::is_wds()) {
             mtrace("Using LSU WDS");
-        // } else if (lsuxe_helpers::is_ues()) {
-            // mtrace("Using LSU UES");
         } else {
             mtrace("Normal Moodle Enrollment");
         }
@@ -108,8 +106,6 @@ class lsuxe {
 
         if (lsuxe_helpers::is_wds()) {
             mtrace("Using LSU WDS");
-        // } else if (lsuxe_helpers::is_ues()) {
-        //     mtrace("Using LSU UES");
         } else {
             mtrace("Normal Moodle Enrollment");
         }
@@ -132,8 +128,6 @@ class lsuxe {
 
         if (lsuxe_helpers::is_wds()) {
             mtrace("Using LSU WDS");
-        // } else if (lsuxe_helpers::is_ues()) {
-        //     mtrace("Using LSU UES");
         } else {
             mtrace("Normal Moodle Enrollment");
         }
@@ -175,8 +169,6 @@ class lsuxe {
 
         if (lsuxe_helpers::is_wds()) {
             mtrace("Using LSU WDS");
-        // } else if (lsuxe_helpers::is_ues()) {
-        //     mtrace("Using LSU UES");
         } else {
             mtrace("Normal Moodle Enrollment");
         }
@@ -200,8 +192,6 @@ class lsuxe {
 
         if (lsuxe_helpers::is_wds()) {
             mtrace("Using LSU WDS");
-        // } else if (lsuxe_helpers::is_ues()) {
-        //     mtrace("Using LSU UES");
         } else {
             mtrace("Normal Moodle Enrollment");
         }
