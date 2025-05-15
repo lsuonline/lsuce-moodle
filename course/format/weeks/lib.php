@@ -87,6 +87,10 @@ class format_weeks extends core_courseformat\base {
      * @return string The default value for the section name.
      */
     public function get_default_section_name($section) {
+        // BEGIN LSU daylight savings time fix.
+        global $CFG;
+        // END LSU daylight savings time fix.
+
         if ($section->section == 0) {
             // Return the general section.
             return get_string('section0name', 'format_weeks');
