@@ -201,7 +201,12 @@ if ($step == 'period') {
 
     // Get full period info for shell naming
     $period = wdsprefs::get_period_from_id($periodid);
-    $periodname = $period->period_year . ' ' . $period->period_type;
+
+    // Build out the period name.
+    $periodname = wdsprefs::get_current_taught_periods($periodid);
+
+    // It's an array of one, so make it an object.
+    $periodname = reset($periodname);
 
     // Get teacher name
     $teachername = fullname($USER);
@@ -310,7 +315,12 @@ if ($step == 'period') {
         foreach ($existingcrosssplits as $crosssplit) {
             // Get period info
             $period = wdsprefs::get_period_from_id($crosssplit->academic_period_id);
-            $periodname = $period ? $period->period_year . ' ' . $period->period_type : '';
+
+            // Build out the period name.
+            $periodname = wdsprefs::get_current_taught_periods($crosssplit->academic_period_id);
+
+            // It's an array of one, so make it an object.
+            $periodname = reset($periodname);
 
             // Get the Moodle course name if available.
             $displayname = $crosssplit->shell_name;

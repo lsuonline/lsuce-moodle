@@ -184,9 +184,18 @@ class wdsprefs {
                 // Get period info.
                 $period = $DB->get_record('enrol_wds_periods', ['academic_period_id' => $section->academic_period_id]);
 
-                // Create the new idnumber format.
-                $idnumber = $period->period_year .
-                    $period->period_type .
+                // Build the period name.
+                $periodname = self::get_current_taught_periods($section->academic_period_id);
+                $periodname = reset($periodname);
+
+                // Remove space between year and term.
+                $pname = preg_replace('/(\d{4}) /', '$1', $periodname);
+
+                // Remove space before (Online) and remove parentheses.
+                $pname = str_replace(' (Online)', 'Online', $pname);
+
+                // Create the idnumber format.
+                $idnumber = $pname .
                     $course->course_subject_abbreviation .
                     $course->course_number .
                     '-' . $teacher->universal_id;
@@ -201,8 +210,7 @@ class wdsprefs {
                 } else {
 
                     // Create new course.
-                    $fullname = $period->period_year . ' ' .
-                        $period->period_type . ' ' .
+                    $fullname = $periodname . ' ' .
                         $course->course_subject_abbreviation . ' ' .
                         $course->course_number . ' for ' .
                         $teacher->firstname . ' ' .
@@ -607,16 +615,24 @@ class wdsprefs {
         // Join the fullname identifiers with " / " between different prefixes.
         $fnidstring = implode(' / ', $fullnameidentifiers);
 
+        // Build the period name.
+        $periodname = self::get_current_taught_periods($section->academic_period_id);
+        $periodname = reset($periodname);
+
+        // Remove space between year and term.
+        $pname = preg_replace('/(\d{4}) /', '$1', $periodname);
+    
+        // Remove space before (Online) and remove parentheses.
+        $pname = str_replace(' (Online)', 'Online', $pname);
+
         // Generate the idnumber.
-        $idnumber = $period->period_year .
-                    $period->period_type .
+        $idnumber = $pname .
                     $idnumberidentifiers .
                     '-' . $universalid .
                     '-cl';
 
         // Generate the fullname - only include (Shell X) if shellnum > 1.
-        $fullname = $period->period_year .
-                ' ' . $period->period_type .
+        $fullname = $periodname .
                 ' ' . $fnidstring .
                 ' for ' . $user->firstname .
                 ' ' . $user->lastname;
@@ -1197,7 +1213,8 @@ class wdsprefs {
         $periodid = $period->id;
 
         // Build the period name.
-        $periodname = $period->period_year . ' ' . $period->period_type;
+        $periodname = self::get_current_taught_periods($periodid);
+        $periodname = reset($periodname);
 
         // Prepare array to store results.
         $results = [];
@@ -1591,7 +1608,7 @@ class wdsprefs {
      *
      * @return @array Formatted array of periods.
      */
-    public static function get_current_taught_periods(): array {
+    public static function get_current_taught_periods($periodid = null): array {
         global $USER, $DB;
 
         // Get the user's idnumber.
@@ -1602,6 +1619,13 @@ class wdsprefs {
 
         // Set the semester range for getting future and recent semesters.
         $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
+
+        if (!is_null($periodid)) {
+            $periodidparms = ['periodid' => $periodid];
+            $periodidsql = ' AND p.academic_period_id = :periodid ';
+        } else {
+            $periodidsql = '';
+        }
 
         // Build the SQL.
         $sql = "SELECT p.academic_period_id,
@@ -1616,15 +1640,27 @@ class wdsprefs {
             WHERE tenr.universal_id = :userid
                 AND p.start_date < UNIX_TIMESTAMP() + :fsemrange
                 AND p.end_date > UNIX_TIMESTAMP()
+                $periodidsql
             GROUP BY p.academic_period_id
                 HAVING COUNT(p.academic_period_id) > 1
             ORDER BY p.start_date ASC, p.period_type ASC";
 
-        // Use named parameters for security.
-        $parms = [
-            'userid' => $uid,
-            'fsemrange' => $fsemrange
-        ];
+        if (is_null($periodid)) {
+
+            // Use named parameters for security.
+            $parms = [
+                'userid' => $uid,
+                'fsemrange' => $fsemrange
+            ]; 
+        } else {
+
+            // Use named parameters for security.
+            $parms = [
+                'userid' => $uid,
+                'fsemrange' => $fsemrange,
+                'periodid' => $periodid
+            ]; 
+        }
 
         // Get the actual data.
         $records = $DB->get_records_sql($sql, $parms);
@@ -1638,7 +1674,7 @@ class wdsprefs {
             // Determine if this is an online period or not.
             $online = self::get_period_online($record->academic_period);
 
-            // Gett eh academic period id.
+            // Get the academic period id.
             $pid = $record->academic_period_id;
 
             // Get the period name matching the course designation.
@@ -1687,6 +1723,7 @@ class wdsprefs {
         $sql = "SELECT sec.id AS sectionid,
            p.period_year,
            p.period_type,
+           p.academic_period_id,
            c.course_subject_abbreviation,
            c.course_number,
            sec.section_number,
@@ -1727,8 +1764,12 @@ class wdsprefs {
        // Loop through the records to buuild the formatted array.
        foreach ($records as $record) {
 
+           // Build the period name.
+           $periodname = self::get_current_taught_periods($record->academic_period_id);
+           $periodname = reset($periodname);
+
            // Create the course group key.
-           $coursekey = "{$record->period_year} {$record->period_type} ";
+           $coursekey = "{$periodname} ";
            $coursekey .= "{$record->course_subject_abbreviation} ";
            $coursekey .= "{$record->course_number} for ";
            $coursekey .= "{$record->firstname} {$record->lastname}";
