@@ -22,6 +22,7 @@
  */
 
 // Plugin stuff.
+$string['pluginname'] = 'Workday Preferences';
 $string['wdsprefs:pluginname'] = 'Workday Preferences';
 
 // Basic stuff.
