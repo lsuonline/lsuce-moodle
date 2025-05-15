@@ -130,7 +130,7 @@ class wdsprefs_cps_edit_form extends moodleform {
         // Get the defaults form config if they're there.
         $defaults->createprior = isset($s->createprior) ? (int) $s->createprior : 14;
         $defaults->enrollprior = isset($s->enrollprior) ? (int) $s->enrollprior : 7;
-        $defaults->courselimit = isset($s->numberthreshold) ? (int) $s->numberthreshold : 7;
+        $defaults->courselimit = isset($s->numberthreshold) ? (int) $s->numberthreshold : 7000;
         $defaults->format = 'topics';
 
         // Build out the createprior item with default from wds.

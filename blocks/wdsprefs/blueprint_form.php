@@ -69,7 +69,7 @@ class blueprint_form extends moodleform {
 
     // Custom validation if needed.
     public function validation($data, $files) {
-        global $DB;
+        global $USER, $DB;
         
         $errors = parent::validation($data, $files);
         

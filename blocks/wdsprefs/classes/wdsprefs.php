@@ -314,7 +314,6 @@ class wdsprefs {
                     groups_add_member($groupid, $teacher->userid);
                 }
 
-
                 $teacherenrollparms = [
                     'section_listing_id' => $section->section_listing_id,
                     'role' => 'teacher'
@@ -881,7 +880,6 @@ class wdsprefs {
         // Track original courses and whether they can be deleted.
         $originalcoursesdata = [];
 
-
         // Process each section.
         foreach ($sections as $clsection) {
 
@@ -1047,7 +1045,6 @@ class wdsprefs {
         if (!$instance) {
             $instance = workdaystudent::wds_create_enrollment_instance($courseid);
         }
-
 
         // Process each teacher enrollment.
         foreach ($teacherenrolls as $teacherenroll) {
@@ -1272,30 +1269,6 @@ class wdsprefs {
 
         return $results;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Gets courses taught by the instructor.

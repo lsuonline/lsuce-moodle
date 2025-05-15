@@ -89,7 +89,7 @@ if ($step == 'period') {
     $form1 = new select_period_form($actionurl, ['periods' => $periods]);
 
     if ($form1->is_cancelled()) {
-        redirect(new moodle_url('/my'));
+        redirect(new moodle_url('/'));
     } else if ($data = $form1->get_data()) {
 
         // Get the sections by course.
@@ -135,7 +135,7 @@ if ($step == 'period') {
 
     // Handle form cancellation.
     if ($form2->is_cancelled()) {
-        redirect(new moodle_url('/my'));
+        redirect(new moodle_url('/'));
 
     // Process form submission.
     } else if ($data = $form2->get_data()) {
