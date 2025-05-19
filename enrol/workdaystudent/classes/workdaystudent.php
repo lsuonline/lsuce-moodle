@@ -369,7 +369,6 @@ class workdaystudent {
         return $dateobj;
     }
 
-    // TODO: Possibly deprecated, please remove.
     public static function clean_honors_grade($grade) {
 
         // First get universal ID.
@@ -916,6 +915,7 @@ class workdaystudent {
         // Build the cloned object.
         $as2 = unserialize(serialize($as));
 
+        // TODO: Make sure we only care about this on enrollment and not unenrollment.
         if (!isset($enrollment->Grading_Basis)) {
             mtrace("*** Grading basis not set for course: $enrollment->Section_Listing_ID and student: $enrollment->Universal_Id.");
         }
@@ -1226,8 +1226,8 @@ class workdaystudent {
         if (count($times) < 2) {
 
             // If we don't have both start and end times, log the issue and exit.
-            self::dtrace("Invalid time format: $timepart");
-            var_dump($times);
+            self::dtrace("Error! Invalid time format: $schedule");
+            var_dump($section);
             return [];
         }
 
@@ -2000,7 +2000,7 @@ class workdaystudent {
 
         // Set some more parms up.
 
-        // TODO: Add me back! $parms['Institution!Academic_Unit_ID'] = $s->campus;
+        $parms['Institution!Academic_Unit_ID'] = $s->campus;
         $parms['format'] = 'json';
 
         // Build out the settins based on settings, endpoint, and parms.
@@ -2090,8 +2090,6 @@ class workdaystudent {
             // Update the record.
             $success = $DB->update_record($table, $pgm1, false);
 
-            // TODO: RETURN ERRORS.
-
             // Return the new record.
             return $pgm1;
         }
@@ -2131,8 +2129,6 @@ class workdaystudent {
 
         // We may not need to fetch/send this. Revisit.
         $gs = $DB->get_record($table, ['id' => $gsid]);
-
-        // TODO: RETURN ERRORS.
 
         return $gs;
     }
@@ -2748,11 +2744,6 @@ class workdaystudent {
         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_setopt($ch, CURLOPT_TIMEOUT, 1800);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-
-        // Debug this connection.
-        if ($CFG->debugdisplay == 1) {
-            // TODO: curl_setopt($ch, CURLOPT_VERBOSE, true);
-        }
 
         // Get the data.
         $json_response = curl_exec($ch);
@@ -3665,8 +3656,6 @@ class workdaystudent {
         // Make sure we care only setting usernames and emails in lowecase.
         $user->username = \core_text::strtolower($student->username);
         $user->email = \core_text::strtolower($student->email);
-
-        // Idnumber is universal ID. TODO: Deal with school ID as well.
         $user->idnumber = $student->universal_id;
 
         // Make sure we're using their preferred names.
@@ -3785,8 +3774,6 @@ class workdaystudent {
 
         // Compare each field and track any changes.
         $changes = false;
-
-        // TODO: Deal with 'school_id' somehow.
 
         // List the fields to compare.
         $fields_to_check = [
@@ -4440,8 +4427,6 @@ die();
             // Moodle wants an array for the new category.
             $categorydata = [
                 'name' => $catname,
-
-                // TODO: Use the settings value for parent category.
                 'parent' => $parentcat,
                 'description' => $catdesc,
                 'descriptionformat' => FORMAT_HTML,
@@ -6189,7 +6174,6 @@ class wdscronhelper {
         $processend = microtime(true);
         $processtime = round($processend - $processstart, 2);
 
-        // TODO: DEAL WITH TIMES.
         mtrace("Processing $numgrabbed periods took $processtime seconds.");
     }
 
@@ -6929,12 +6913,7 @@ class enrol_workdaystudent extends enrol_plugin {
             $groupid = isset($group->id) ? $group->id : $newgroupid;
 
             // Enrollment follows.
-
-            // TODO: Go back to just enroll.
-
-            // if ($enrollment->moodle_enrollment_status == 'enroll') {
-            if ($enrollment->moodle_enrollment_status == 'enroll' ||
-                $enrollment->moodle_enrollment_status == 'completed') {
+            if ($enrollment->moodle_enrollment_status == 'enroll') {
 
                 // If we don't have any enrollments for this course, set it to 0.
                 if (!isset($enrollmentcounts[$courseid])) {
