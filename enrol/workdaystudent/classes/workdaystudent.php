@@ -1226,8 +1226,8 @@ class workdaystudent {
         if (count($times) < 2) {
 
             // If we don't have both start and end times, log the issue and exit.
-            self::dtrace("Invalid time format: $timepart");
-            var_dump($times);
+            self::dtrace("Error! Invalid time format: $schedule");
+            var_dump($section);
             return [];
         }
 
