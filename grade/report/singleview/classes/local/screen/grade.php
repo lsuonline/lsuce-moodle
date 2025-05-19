@@ -234,12 +234,25 @@ class grade extends tablelike implements selectable_items, filterable_items {
         }
 
         // BEGIN LSU Alternate Names support.
-        $alternateused = isset($item->alternatename) && $item->alternatename <> '' ? $item->alternatename : 0;
-
+        /*
+        $lockicon = '';
+ 
+        $lockedgrade = $lockedgradeitem = 0;
+        if (!empty($grade->locked)) {
+            $lockedgrade = 1;
+        }
+        if (!empty($grade->grade_item->locked)) {
+            $lockedgradeitem = 1;
+        }
+        // Check both grade and grade item.
+        if ( $lockedgrade || $lockedgradeitem ) {
+            $lockicon = $OUTPUT->pix_icon('t/locked', 'grade is locked') . ' ';
+        }
+        */
         if (has_capability('moodle/site:viewfullnames', \context_course::instance($this->courseid))) {
-            $fullname = $lockicon . $alternateused ? $item->alternatename . ' (' . $item->firstname . ') '. $item->lastname : fullname($item, true);
+            $fullname = fullname($item, true);
         } else {
-            $fullname = $lockicon . fullname($item);
+            $fullname = fullname($item);
         }
         // END LSU Alternate Names support.
 
