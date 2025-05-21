@@ -28,7 +28,7 @@ use stdClass;
 use moodle_exception;
 use moodle_url;
 
-defined('MOODLE_INTERNAL') || die();
+// defined('MOODLE_INTERNAL') || die();
 
 /**
  * Static list of api methods for auth oauth2 configuration.
@@ -250,14 +250,15 @@ class api {
      * @return bool
      */
     public static function create_new_confirmed_account($userinfo, $issuer) {
-        global $CFG, $DB;
+        global $DB;
+        // BEGIN LSU case fixes.
+        require_once(dirname(dirname(dirname(__DIR__))).'/config.php');
         require_once($CFG->dirroot.'/user/profile/lib.php');
         require_once($CFG->dirroot.'/user/lib.php');
 
         $user = new stdClass();
-        // BEGIN LSU case fixes.
-        $user->username = trim(core_text::strtolower($userinfo['username']));
-        $user->email = trim(core_text::strtolower($userinfo['email']));
+        $user->username = trim(\core_text::strtolower($userinfo['username']));
+        $user->email = trim(\core_text::strtolower($userinfo['email']));
         // END LSU case fixes.
         $user->auth = 'oauth2';
         $user->mnethostid = $CFG->mnet_localhost_id;
