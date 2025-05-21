@@ -233,15 +233,11 @@ class grade extends tablelike implements selectable_items, filterable_items {
             $gradestatus = $OUTPUT->render_from_template('core_grades/status_icons', $context);
         }
 
-        // BEGIN LSU Alternate Names support.
-        $alternateused = isset($item->alternatename) && $item->alternatename <> '' ? $item->alternatename : 0;
-
         if (has_capability('moodle/site:viewfullnames', \context_course::instance($this->courseid))) {
-            $fullname = $lockicon . $alternateused ? $item->alternatename . ' (' . $item->firstname . ') '. $item->lastname : fullname($item, true);
+            $fullname = fullname($item, true);
         } else {
-            $fullname = $lockicon . fullname($item);
+            $fullname = fullname($item);
         }
-        // END LSU Alternate Names support.
 
         $item->imagealt = $fullname;
         $url = new moodle_url("/user/view.php", ['id' => $item->id, 'course' => $this->courseid]);
