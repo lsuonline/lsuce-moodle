@@ -34,6 +34,9 @@ use stdClass;
 use core\oauth2\issuer;
 use core\oauth2\client;
 
+if (!isset($CFG)) {
+    require_once(dirname(dirname(dirname(__DIR__))).'/config.php');
+}
 require_once($CFG->libdir.'/authlib.php');
 require_once($CFG->dirroot.'/user/lib.php');
 require_once($CFG->dirroot.'/user/profile/lib.php');

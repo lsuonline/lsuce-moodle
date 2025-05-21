@@ -28,7 +28,7 @@ use stdClass;
 use moodle_exception;
 use moodle_url;
 
-// defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Static list of api methods for auth oauth2 configuration.
