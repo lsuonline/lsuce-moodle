@@ -250,11 +250,17 @@ class api {
      * @return bool
      */
     public static function create_new_confirmed_account($userinfo, $issuer) {
-        global $DB;
+        global $DB, $CFG;
         // BEGIN LSU case fixes.
         require_once(dirname(dirname(dirname(__DIR__))).'/config.php');
-        require_once($CFG->dirroot.'/user/profile/lib.php');
-        require_once($CFG->dirroot.'/user/lib.php');
+        
+        if (!isset($CFG)) {
+            $this_path = dirname(dirname(dirname(__DIR__)));
+        } else {
+            $this_path = $CFG->dirroot;
+        }
+        require_once($this_path.'/user/profile/lib.php');
+        require_once($this_path.'/user/lib.php');
 
         $user = new stdClass();
         $user->username = trim(\core_text::strtolower($userinfo['username']));
