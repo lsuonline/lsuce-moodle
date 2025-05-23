@@ -98,15 +98,23 @@ if ($step == 'period') {
         // Count them.
         $seccoursecount = count($sectionsbycourse);
 
+        // Fix for people with one course and multiple sections who want to split.
+        $hasmultipleentries = false;
+        foreach ($sectionsbycourse as $sub) {
+            if (is_array($sub) && count($sub) > 1) {
+                $hasmultipleentries = true;
+                break;
+            }
+        }
+
         // Check if there are any sections available for crosssplitting.
-        if (empty($sectionsbycourse) || $seccoursecount < 2) {
+        if (empty($sectionsbycourse) || (!$hasmultipleentries && $seccoursecount < 2)) {
             echo $OUTPUT->notification(
                 get_string('wdsprefs:nosectionsavailable', 'block_wdsprefs'),
                 'notifyinfo');
             echo $OUTPUT->footer();
             exit;
         }
-
 
         // Store selection data in session for next step.
         $SESSION->wdsprefs_periodid = $data->periodid;
