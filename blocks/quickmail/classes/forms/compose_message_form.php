@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');
 
+
 use block_quickmail\forms\concerns\is_quickmail_form;
 use block_quickmail_plugin;
 use block_quickmail_string;
@@ -34,6 +35,7 @@ use block_quickmail_config;
 use block_quickmail\persistents\signature;
 use block_quickmail\persistents\alternate_email;
 use block_quickmail\messenger\message\substitution_code;
+use block_quickmail\repos\role_repo;
 
 class compose_message_form extends \moodleform {
 
@@ -743,7 +745,19 @@ class compose_message_form extends \moodleform {
     private function get_recipient_entities() {
         $results = [];
 
-        $results['all'] = block_quickmail_string::get('all_in_course');
+        
+        $roleids = role_repo::get_user_roles_in_course($this->user->id, $this->course->id);
+        $found = false;
+        foreach ($roleids as $dis_id) {
+            if ($dis_id == 5) {
+                // user is a student, no 'All in course' option for them.
+                $found = true;
+            }
+        }
+
+        if ($found == false) {
+            $results['all'] = block_quickmail_string::get('all_in_course');
+        }
 
         foreach (['role', 'group', 'user'] as $type) {
             foreach ($this->course_user_data[$type . 's'] as $entity) {
