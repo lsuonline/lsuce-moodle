@@ -107,6 +107,10 @@ class observer {
             'id' => $data['objectid'],
         ], 'quiz, userid, attempt');
 
+        if (debugging()) {
+            error_log("\nHL -> quiz_attempt_submitted() -> attempt: ". print_r($attempt, true). "\n");
+        }
+
         // Check Honorlock Enabled.
         if (!static::is_honorlock_enabled_quiz($attempt->quiz)) {
             return;
@@ -132,6 +136,9 @@ class observer {
             'id' => $quizid,
         ], 'password');
 
+        if (debugging()) {
+            error_log("\nHL -> is_honorlock_enabled_quiz() -> quizid: ". $quizid. "\n");
+        }
         return strpos($quiz->password, HL_NO_EDIT) === 0;
     }
 

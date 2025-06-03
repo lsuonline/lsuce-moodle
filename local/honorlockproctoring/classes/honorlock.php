@@ -115,7 +115,9 @@ class honorlock {
         ];
 
         $result = $this->honorlockapi->send_request("post", "/api/en/v1/session/complete", $payload);
-
+        if (debugging()) {
+            error_log("\nHL -> end_session() -> payload: ". print_r($payload, true). "\n");
+        }
         return $result->data;
     }
 }
