@@ -115,7 +115,6 @@ class honorlock {
         ];
 
         $result = $this->honorlockapi->send_request("post", "/api/en/v1/session/complete", $payload);
-        mtrace('  => HL -> end_session() -> result: '. print_r($result, true));
 
         return $result->data;
     }

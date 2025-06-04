@@ -107,8 +107,6 @@ class observer {
             'id' => $data['objectid'],
         ], 'quiz, userid, attempt');
 
-        mtrace('  => HL -> quiz_attempt_submitted() -> attempt: '. print_r($attempt, true));
-
         // Check Honorlock Enabled.
         if (!static::is_honorlock_enabled_quiz($attempt->quiz)) {
             return;
@@ -134,7 +132,6 @@ class observer {
             'id' => $quizid,
         ], 'password');
 
-        mtrace('  => HL -> is_honorlock_enabled_quiz() -> quizid: '. $quizid);
         return strpos($quiz->password, HL_NO_EDIT) === 0;
     }
 
