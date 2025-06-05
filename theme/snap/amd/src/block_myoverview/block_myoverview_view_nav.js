@@ -40,12 +40,12 @@ const updatePreferences = (filter, value) => {
         type = 'block_myoverview_user_view_preference';
     } else if (filter === 'sort') {
         type = 'block_myoverview_user_sort_preference';
-    // BEGIN LSU - Save these f***in preferences.
+    // BEGIN LSU - Save these in preferences.
     } else if (filter === 'year') {
         type = 'snap_user_grouping_year_preference';
     } else if (filter === 'progress') {
         type = 'snap_user_grouping_progress_preference';
-    // END LSU - Save these f***in preferences.
+    // END LSU - Save these in preferences.
     } else if (filter === 'customfieldvalue') {
         type = 'block_myoverview_user_grouping_customfieldvalue_preference';
     } else {
