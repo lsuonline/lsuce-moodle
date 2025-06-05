@@ -147,7 +147,7 @@ const updateElementPositions = (selectors = null) => {
         
         // Update each element's position
         selectorsArray.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
+            const elements = queryActiveDrawers(selector);
             
             elements.forEach(element => {    
                 if (isNavUnpinned) {
@@ -445,6 +445,9 @@ const queryActiveDrawers = (selector) => {
     if (selector === '.drawer:not(.hidden):has(.message-app)') {
         // Workaround for :has(.message-app)
         const potentialDrawers = document.querySelectorAll('.drawer:not(.hidden)');
+        return Array.from(potentialDrawers).filter(drawer => drawer.querySelector('.message-app'));
+    } else if (selector === '.drawer:has(.message-app)') {
+        const potentialDrawers = document.querySelectorAll('.drawer');
         return Array.from(potentialDrawers).filter(drawer => drawer.querySelector('.message-app'));
     } else {
         // Standard query for other selectors
