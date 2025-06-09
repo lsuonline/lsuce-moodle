@@ -233,11 +233,28 @@ class grade extends tablelike implements selectable_items, filterable_items {
             $gradestatus = $OUTPUT->render_from_template('core_grades/status_icons', $context);
         }
 
+        // BEGIN LSU Alternate Names support.
+        /*
+        $lockicon = '';
+ 
+        $lockedgrade = $lockedgradeitem = 0;
+        if (!empty($grade->locked)) {
+            $lockedgrade = 1;
+        }
+        if (!empty($grade->grade_item->locked)) {
+            $lockedgradeitem = 1;
+        }
+        // Check both grade and grade item.
+        if ( $lockedgrade || $lockedgradeitem ) {
+            $lockicon = $OUTPUT->pix_icon('t/locked', 'grade is locked') . ' ';
+        }
+        */
         if (has_capability('moodle/site:viewfullnames', \context_course::instance($this->courseid))) {
             $fullname = fullname($item, true);
         } else {
             $fullname = fullname($item);
         }
+        // END LSU Alternate Names support.
 
         $item->imagealt = $fullname;
         $url = new moodle_url("/user/view.php", ['id' => $item->id, 'course' => $this->courseid]);

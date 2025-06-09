@@ -746,15 +746,7 @@ class grade_report_grader extends grade_report {
                 ]));
             }
 
-            // BEGIN LSU Alternate Names support.
-            $alternateused = isset($user->alternatename) && $user->alternatename <> '' ? $user->alternatename : 0;
-            if ($alternateused) {
-                $fullname = $user->alternatename . ' (' . $user->firstname . ') ' . $user->lastname;
-            } else {
-                $fullname = fullname($user);
-            }
-            // END LSU Alternate Names support.
-
+            $fullname = fullname($user, $viewfullnames);
             $usercell->text = html_writer::link(
                 \core_user::get_profile_url($user, $coursecontext),
                 $usercell->text . $fullname,
