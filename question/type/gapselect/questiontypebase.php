@@ -131,8 +131,16 @@ abstract class qtype_gapselect_base extends question_type {
 
     public function get_question_options($question) {
         global $DB;
+
+        // BEGIN LSU Missing gap_select id hack.
         $question->options = $DB->get_record('question_'.$this->name(),
-                array('questionid' => $question->id), '*', MUST_EXIST);
+                array('questionid' => $question->id), '*', IGNORE_MISSING);
+
+        if (!$question->options) {
+            $question->options = new stdClass();
+        }
+        // END LSU Missing gap_select id hack.
+
         parent::get_question_options($question);
     }
 
