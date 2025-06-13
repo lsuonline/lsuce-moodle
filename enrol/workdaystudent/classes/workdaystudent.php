@@ -61,8 +61,8 @@ class workdaystudent {
 
         // Build out the SQL to update the records.
         $sql = "UPDATE {enrol_wds_student_enroll}
-             SET registration_status = 'Unregistered',
-             status = 'unenrolled'
+             SET registration_status = 'ToBeUpdated',
+             status = 'tobeupdated'
              WHERE section_listing_id = :slid";
 
         // Do the nasty.

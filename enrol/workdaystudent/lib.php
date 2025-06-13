@@ -136,7 +136,7 @@ class enrol_workdaystudent_plugin extends enrol_plugin {
 
             mtrace("Starting Moodle Student enrollments for $section->section_listing_id..");
 
-            // Reprocess should first set all enrollments in the course to unenrolled prior to reprocessing.
+            // Reprocess should first set all enrollments in the course to ToBeUpdated prior to reprocessing.
             $reset = workdaystudent::reset_enrollments($section->section_listing_id);
 
             // Process wds enrollments.
