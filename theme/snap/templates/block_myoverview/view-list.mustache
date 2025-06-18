@@ -42,26 +42,24 @@
 
 <ul class="list-group">
     {{#courses}}
-        <li class="list-group-item course-listitem border-start-0 border-end-0 border-top-0 px-2 rounded-0"
+        <li class="list-group-item course-listitem"
             data-region="course-content"
             data-course-id="{{{id}}}">
             <div class="row">
-                <div class="col-md-2 d-flex align-items-center mb-sm-3 mb-md-0">
+                <div class="col-md-2 d-flex align-items-top mb-sm-3 mb-md-0">
                 {{! BEGIN LSU Course Card Quick Links. }}
                 <span class="course_quick_link_swap_list_{{{id}}}" data-courseid="{{{id}}}"></span>
                 {{! END LSU Course Card Quick Links. }}
                     <a href="{{viewurl}}" tabindex="-1"  class="mw-100 w-100">
-                        <div class="rounded list-image mw-100" style='background-image: url("{{{courseimage}}}");'>
+                        <div class="list-image mw-100" style='background-image: url("{{{courseimage}}}");'>
                             <span class="sr-only">{{fullname}}</span>
                         </div>
                     </a>
+                    {{> block_myoverview/star_button }}
                 </div>
                 <div class="col-md-9 d-flex flex-column">
                     {{#showshortname}}
                         <div class="text-muted muted d-flex flex-wrap">
-                            {{#showcoursecategory}}
-                                <div class="px-1">|</div>
-                            {{/showcoursecategory}}
                             <span class="sr-only">
                                 {{#str}}aria:courseshortname, core_course{{/str}}
                             </span>

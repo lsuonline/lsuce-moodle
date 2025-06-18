@@ -56,3 +56,8 @@ moodle-plugin-ci.phar
 .hugo_build.lock
 phpcs.xml
 jsconfig.json
+
+# Syllabus
+/syllabus
+
+config_local.php

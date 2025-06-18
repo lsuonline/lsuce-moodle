@@ -24,8 +24,8 @@
 /**
  * JS code to assign attributes and expected behavior for elements in the Dom regarding accessibility.
  */
-define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitizer', 'theme_boost/popover'],
-    function($, str, Event, { DefaultWhitelist }) {
+define(['jquery', 'core/str', 'core/event', 'core_form/events', 'theme_boost/bootstrap/tools/sanitizer', 'theme_boost/popover'],
+    function($, str, Event, FormEvents, { DefaultWhitelist }) {
         return {
             snapAxInit: function(localJouleGrader, allyReport, blockReports, localCatalogue) {
 
@@ -220,6 +220,173 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
                         });
                     }
                     carouselPausePlay();
+
+                    /**
+                     * Set all the side drawers tabbing order.
+                     */
+                    function setDrawersTabOrder() {
+                        let blocksDrawerFocus;
+                        let blocksDrawerAccessed = false;
+
+                        /**
+                         * Gets both the first and the last focusable elements from a drawer.
+                         *
+                         * @param {object} drawer The drawer to be analyzed.
+                         */
+                        function getFirstAndLastOfDrawer(drawer) {
+                            let focusables = '[tabindex]:not([tabindex="-1"]),' +
+                                ' a[href]:not([tabindex]),' +
+                                ' button:not([disabled]):not([tabindex]),' +
+                                ' input:not([disabled]):not([tabindex]),' +
+                                ' textarea:not([disabled]):not([tabindex]),' +
+                                ' select:not([disabled]):not([tabindex]), details:not([tabindex])';
+
+                            let first = null;
+                            let last = null;
+                            if (drawer) {
+                                let drawerFocusables = Array.from(drawer.querySelectorAll(focusables)).filter(el => {
+                                    return el.checkVisibility();
+                                });
+                                first = drawerFocusables[0];
+                                last = drawerFocusables[drawerFocusables.length - 1];
+                            }
+                            return [first, last];
+                        }
+
+                        /**
+                         * Event listener to determine keyboard navigation of the drawers.
+                         *
+                         * @param {object} ev event
+                         */
+                        function drawerTabListener(ev) {
+
+                            // Setup for the listener.
+                            let adminDrawerIcon = document.getElementById('admin-menu-trigger');
+                            let adminDrawer = adminDrawerIcon ?
+                                document.querySelector('section.block_settings[data-block="settings"]') : null;
+                            let blocksDrawerIcon = document.querySelector('.blocks-drawer-button');
+                            let blocksDrawer = blocksDrawerIcon ?
+                                document.getElementById('theme_snap-drawers-blocks') : null;
+                            let blocksDrawerClose = document.querySelector('#theme_snap-drawers-blocks > .drawerheader > button');
+                            let snapfeedsDrawerIcon = document.getElementById('snap_feeds_side_menu_trigger');
+                            let snapfeedsDrawer = snapfeedsDrawerIcon ?
+                                document.querySelector('#snap_feeds_side_menu .snap-feeds') : null;
+                            let snapfeedsSideMenu = document.getElementById('snap_feeds_side_menu');
+                            let messageDrawerIcon = document.querySelector('a[id^=\'message-drawer-toggle-\']');
+                            let messageDrawerChild = document.querySelector('div[data-region="message-drawer"]');
+                            let messageDrawer = messageDrawerChild ? messageDrawerChild.parentElement : null;
+                            messageDrawer = messageDrawerIcon ? messageDrawer : null;
+                            let messageDrawerClose = document.querySelector('[id^="message-drawer-"] > div.closewidget > a');
+                            let drawerIcons = [adminDrawerIcon, blocksDrawerIcon, snapfeedsDrawerIcon, messageDrawerIcon]
+                                .filter(el => {
+                                    return el !== null;
+                                });
+                            let drawers = [adminDrawer, blocksDrawer, snapfeedsDrawer, messageDrawer]
+                                .filter(el => {
+                                    return el !== null;
+                                });
+                            let beforeDrawers = document.querySelector('#snap-custom-menu-header div > ul > li:nth-child(2) > a');
+                            beforeDrawers = beforeDrawers ?
+                                beforeDrawers : document.querySelector('#snap-custom-menu-header > nav > div > ul > li > a');
+                            let afterDrawers = document.querySelector('#snap-sidebar-menu > button.snap-sidebar-menu-trigger');
+
+                            let adminDrawerFirst = null;
+                            let adminDrawerLast = null;
+                            [adminDrawerFirst, adminDrawerLast] = getFirstAndLastOfDrawer(adminDrawer);
+
+                            let blocksDrawerFirst = null;
+                            let blocksDrawerLast = null;
+                            [blocksDrawerFirst, blocksDrawerLast] = getFirstAndLastOfDrawer(blocksDrawer);
+
+                            let snapfeedsDrawerFirst = null;
+                            let snapfeedsDrawerLast = null;
+                            [snapfeedsDrawerFirst, snapfeedsDrawerLast] = getFirstAndLastOfDrawer(snapfeedsDrawer);
+
+                            let messageDrawerFirst = null;
+                            let messageDrawerLast = null;
+                            [messageDrawerFirst, messageDrawerLast] = getFirstAndLastOfDrawer(messageDrawer);
+
+                            let drawerFirsts = [adminDrawerFirst, blocksDrawerFirst, snapfeedsDrawerFirst, messageDrawerFirst]
+                                .filter(el => {
+                                    return el !== null;
+                                });
+                            let drawerLasts = [adminDrawerLast, blocksDrawerLast, snapfeedsDrawerLast, messageDrawerLast]
+                                .filter(el => {
+                                    return el !== null;
+                                });
+
+                            // Process keys (Tab, Shift+Tab, and Enter).
+                            if (ev.key === 'Tab' && drawerIcons.includes(ev.target)) {
+                                ev.preventDefault();
+                                let idx = drawerIcons.indexOf(ev.target);
+                                if ((drawers[idx].classList.contains('state-visible')
+                                        && adminDrawer && drawers[idx] === adminDrawer) ||
+                                    (drawers[idx].classList.contains('show') && blocksDrawer && drawers[idx] === blocksDrawer) ||
+                                    (snapfeedsSideMenu && snapfeedsSideMenu.classList.contains('state-visible')
+                                        && snapfeedsDrawer && drawers[idx] === snapfeedsDrawer) ||
+                                    (!drawers[idx].classList.contains('hidden')
+                                        && messageDrawer && drawers[idx] === messageDrawer)) {
+                                    if (ev.shiftKey) {
+                                        drawerLasts[idx].focus();
+                                    } else {
+                                        drawerFirsts[idx].focus();
+                                    }
+                                } else {
+                                    if (ev.shiftKey) {
+                                        if (idx === 0) {
+                                            beforeDrawers.focus();
+                                        } else {
+                                            drawerIcons[idx - 1].focus();
+                                        }
+                                    } else {
+                                        if (idx < drawers.length - 1) {
+                                            drawerIcons[idx + 1].focus();
+                                        } else {
+                                            afterDrawers.focus();
+                                        }
+                                    }
+                                }
+                            } else if (ev.key === 'Tab' && !ev.shiftKey && drawerLasts.includes(ev.target)) {
+                                ev.preventDefault();
+                                let idx = drawerLasts.indexOf(ev.target);
+                                drawerIcons[idx].focus();
+                            } else if (ev.key === 'Tab' && ev.shiftKey && drawerFirsts.includes(ev.target)) {
+                                ev.preventDefault();
+                                let idx = drawerFirsts.indexOf(ev.target);
+                                drawerIcons[idx].focus();
+                            } else if (ev.key === 'Enter' && (drawerIcons.includes(ev.target)
+                                || messageDrawerClose === ev.target)) {
+                                blocksDrawerAccessed = false;
+                                ev.preventDefault();
+                                let idx = drawerIcons.indexOf(ev.target);
+                                if (drawerIcons[idx] === messageDrawerIcon) {
+                                    document.getElementById('page').classList.toggle('offcanvas');
+                                } else if (drawerIcons[idx] === blocksDrawerIcon) {
+                                    drawerIcons[idx].click();
+                                    blocksDrawerFocus = function() {
+                                        if (blocksDrawerAccessed) {
+                                            return;
+                                        } else {
+                                            blocksDrawerAccessed = true;
+                                        }
+                                        blocksDrawerIcon.focus();
+                                        blocksDrawerClose.removeEventListener('focus', blocksDrawerFocus);
+                                    };
+                                    blocksDrawerClose.addEventListener('focus', blocksDrawerFocus);
+                                } else if (messageDrawerClose !== ev.target) {
+                                    drawerIcons[idx].click();
+                                } else {
+                                    document.getElementById('page').classList.toggle('offcanvas');
+                                    messageDrawerIcon.focus();
+                                }
+                                if (idx >= 0) {
+                                    drawerIcons[idx].focus();
+                                }
+                            }
+                        }
+                        document.addEventListener('keydown', drawerTabListener);
+                    }
+                    setDrawersTabOrder();
                 });
 
                 /**
@@ -326,39 +493,65 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
              * @param {string} elementid
              */
             enhanceform: function(elementid) {
-                var element = document.getElementById(elementid);
-                $(element).on(Event.Events.FORM_FIELD_VALIDATION, function(event, msg) {
+                const element = document.getElementById(elementid);
+                if (!element) {
+                    return;
+                }
+
+                element.addEventListener(FormEvents.eventTypes.formFieldValidationFailed, function(event) {
                     event.preventDefault();
-                    var parent = $(element).closest('.form-group');
-                    var feedback = parent.find('.form-control-feedback');
-                    var invalidinput = parent.find('input.form-control.is-invalid');
+                    const msg = event.detail?.message || '';
+
+                    const parent = element.closest('.form-group');
+                    if (!parent) {
+                        return;
+                    }
+                    const feedback = parent.querySelector('.form-control-feedback');
+                    const invalidInput = parent.querySelector('input.form-control.is-invalid');
+
+                    let activeElement = element;
 
                     // Sometimes (atto) we have a hidden textarea backed by a real contenteditable div.
-                    if (($(element).prop("tagName") == 'TEXTAREA') && parent.find('[contenteditable]')) {
-                        element = parent.find('[contenteditable]');
+                    if (element.tagName === 'TEXTAREA') {
+                        const contentEditable = parent.querySelector('[contenteditable]');
+                        if (contentEditable) {
+                            activeElement = contentEditable;
+                        }
                     }
-                    if (msg !== '') {
-                        parent.addClass('has-danger');
-                        parent.data('client-validation-error', true);
-                        $(element).addClass('is-invalid');
-                        $(element).attr('aria-describedby', feedback.attr('id'));
-                        $(element).attr('aria-invalid', true);
-                        invalidinput.attr('tabindex', 0);
-                        feedback.html(msg);
 
-                        // Only display and focus when the error was not already visible.
-                        if (!feedback.is(':visible')) {
-                            feedback.show();
-                            feedback.focus();
+                    if (msg !== '') {
+                        parent.classList.add('has-danger');
+                        parent.dataset.clientValidationError = "true";
+                        activeElement.classList.add('is-invalid');
+
+                        if (feedback) {
+                            activeElement.setAttribute('aria-describedby', feedback.id);
+                            activeElement.setAttribute('aria-invalid', 'true');
+                            if (invalidInput) {
+                                invalidInput.setAttribute('tabindex', '0');
+                            }
+                            feedback.innerHTML = msg;
+
+                            // Only focus if there is no other element with focus error already.
+                            if (!document.querySelector('[data-error-focused="true"]')) {
+                                activeElement.setAttribute('data-error-focused', 'true');
+                                setTimeout(function() {
+                                    activeElement.focus();
+                                    activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 0);
+                            }
                         }
                     } else {
-                        if (parent.data('client-validation-error') === true) {
-                            parent.removeClass('has-danger');
-                            parent.data('client-validation-error', false);
-                            $(element).removeClass('is-invalid');
-                            $(element).removeAttr('aria-describedby');
-                            $(element).attr('aria-invalid', false);
-                            feedback.hide();
+                        if (parent.dataset.clientValidationError === "true") {
+                            parent.classList.remove('has-danger');
+                            delete parent.dataset.clientValidationError;
+                            activeElement.classList.remove('is-invalid');
+                            activeElement.removeAttribute('aria-describedby');
+                            activeElement.setAttribute('aria-invalid', 'false');
+
+                            if (feedback) {
+                                feedback.style.display = 'none';
+                            }
                         }
                     }
                 });

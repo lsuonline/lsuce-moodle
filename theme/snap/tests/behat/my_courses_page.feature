@@ -29,15 +29,20 @@ Feature: Users can access to the My Courses page in Snap.
       | student1  | Student    | 1         | student1@example.com  |
       | teacher1 | Teacher     | 1         | teacher1@example.com  |
     And the following "courses" exist:
-      | fullname | shortname | format |
-      | Course 1 | C1        | topics |
+      | fullname | shortname | format | summary      | enablecompletion |
+      | Course 1 | C1        | topics | Summary text | 1                |
     And the following "course enrolments" exist:
       | user      | course  | role            |
       | student1  | C1      | student         |
       | teacher1 | C1       | editingteacher  |
     Given the following "activities" exist:
-      | activity | course | idnumber | name             | intro             | duedate   |
-      | assign   | C1     | assign1  | Test assignment1 | Test assignment 1 | ##today## |
+      | activity | course | idnumber | name             | intro             | duedate   | completion |
+      | assign   | C1     | assign1  | Test assignment1 | Test assignment 1 | ##today## | 1          |
+      | assign   | C1     | assign2  | Test assignment2 | Test assignment 2 | ##today## | 1          |
+      | assign   | C1     | assign3  | Test assignment3 | Test assignment 3 | ##today## | 1          |
+      | assign   | C1     | assign4  | Test assignment4 | Test assignment 4 | ##today## | 1          |
+      | assign   | C1     | assign5  | Test assignment5 | Test assignment 5 | ##today## | 1          |
+      | assign   | C1     | assign6  | Test assignment6 | Test assignment 6 | ##today## | 1          |
     And the following config values are set as admin:
       | defaulthomepage | 3 |
     And the following "permission overrides" exist:
@@ -75,6 +80,10 @@ Feature: Users can access to the My Courses page in Snap.
     And I should see "Course overview"
     Then ".block_myoverview" "css_element" should exist
     And ".snap-page-my-courses-options .btn-group" "css_element" should not exist
+    And I click on "#snap-sidebar-menu button.blocks-drawer-button" "css_element"
+    Then I should see "Navigation"
+    Then I should see "Site pages"
+    Then I should see "Site badges"
 
   @javascript
   Scenario: User will see a warning message when the Course overview block is disabled.
@@ -103,7 +112,6 @@ Feature: Users can access to the My Courses page in Snap.
 
   @javascript
   Scenario: User can use the year filter in the Course overview block in Snap.
-    Given I skip because "Will be reviewed on INT-20992"
     Given I log in as "teacher1"
     And I should see "Course overview"
     And "#yeardropdown" "css_element" should not exist
@@ -131,6 +139,9 @@ Feature: Users can access to the My Courses page in Snap.
     And I click on "ul[aria-labelledby='yeardropdown'] :nth-child(3)" "css_element"
     And I should see "Course 3"
     And I should not see "Course 2"
+    And I reload the page
+    And I should see "Course 3"
+    And I should not see "Course 2"
     And I click on "#yeardropdown" "css_element"
     And I click on "ul[aria-labelledby='yeardropdown'] :nth-child(1)" "css_element"
     And I should see "Course 2"
@@ -138,7 +149,6 @@ Feature: Users can access to the My Courses page in Snap.
 
   @javascript
   Scenario: User can use the completion filter in the Course overview block in Snap.
-    Given I skip because "Will be reviewed on INT-20992"
     Given the following "courses" exist:
       | fullname | shortname | category | enablecompletion |
       | Course 2 | C2        | 0        | 1                |
@@ -174,8 +184,37 @@ Feature: Users can access to the My Courses page in Snap.
     And I should not see "Course 2"
     And I should see "Course 1"
     And I should see "Course 3"
+    And I reload the page
+    And I should not see "Course 2"
+    And I should see "Course 1"
+    And I should see "Course 3"
     And I click on "#progressdropdown" "css_element"
     And I click on "ul[aria-labelledby='progressdropdown'] :nth-child(1)" "css_element"
     And I should see "Course 1"
     And I should see "Course 2"
     And I should see "Course 3"
+
+  @javascript
+  Scenario Outline: User can star course using card star icon.
+    Given I log in as "student1"
+    And I click on "#displaydropdown" "css_element"
+    And I follow "<Option>"
+    And I should see "Course 1"
+    And ".star-button [data-action='add-favourite']" "css_element" should be visible
+    And I click on "#groupingdropdown" "css_element"
+    And I follow "Starred"
+    And I should not see "Course 1"
+    And I click on "#groupingdropdown" "css_element"
+    And I follow "All"
+    And I hover "<Class>" "css_element"
+    And I click on ".star-button" "css_element"
+    And ".star-button [data-action='remove-favourite']" "css_element" should be visible
+    And I click on "#groupingdropdown" "css_element"
+    And I follow "Starred"
+    And I should see "Course 1"
+    And I click on ".star-button" "css_element"
+    Examples:
+      | Option   | Class   |
+      | Card     | .course-card     |
+      | List     | .course-listitem     |
+      | Summary  | .course-summaryitem  |

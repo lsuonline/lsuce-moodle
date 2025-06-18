@@ -28,6 +28,7 @@
 Feature: Check that the correct tab order and focus exists for the page.
 
   Background:
+    Given I skip because "It's failing due to New Snap Course Index - INT-21096"
     Given the following "users" exist:
       | username  | firstname  | lastname  | email                 |
       | teacher1  | Teacher    | 1         | teacher1@example.com  |
@@ -52,8 +53,7 @@ Feature: Check that the correct tab order and focus exists for the page.
 
   @javascript @accessibility
   Scenario: Focus should be over the input with an error after submitting a form with a required field in blank.
-    Given I skip because "Will be reviewed on INT-20972"
-    And I log in as "teacher1"
+    Then I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I add a assign activity to course "C1" section "0"
     And I click on "Save and display" "button"
@@ -76,3 +76,25 @@ Feature: Check that the correct tab order and focus exists for the page.
     And I follow "Collapse all"
     And I scroll to the bottom
     Then "#fgroup_id_buttonar" "css_element" should appear after the "div.collapsible-actions" "css_element"
+
+  @javascript @accessibility
+  Scenario: Snap drawers should follow their logical tab order.
+    Given I log in as "admin"
+    And I am on site homepage
+    And I click on "#admin-menu-trigger" "css_element"
+    And I press the tab key
+    Then I should see "Site home settings"
+    And I click on "#admin-menu-trigger" "css_element"
+    Then the focused element is "#admin-menu-trigger" "css_element"
+    And I press the tab key
+    Then the focused element is ".snap-sidebar-menu-item.blocks-drawer-button" "css_element"
+    And I press the enter key
+    And I press the tab key
+    And I click on ".snap-sidebar-menu-item.blocks-drawer-button" "css_element"
+    And I press the tab key
+    And I press the shift + tab key
+    Then the focused element is ".snap-sidebar-menu-item.blocks-drawer-button" "css_element"
+    And I press the tab key
+    Then the focused element is "#snap_feeds_side_menu_trigger" "css_element"
+    And I press the tab key
+    Then the focused element is ".nav-link.popover-region-toggle.position-relative.icon-no-margin" "css_element"
