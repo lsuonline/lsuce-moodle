@@ -4870,7 +4870,7 @@ class workdaystudent {
                 AND stuenr.status IN ('enroll', 'unenroll')
                 $reprocesssection
             GROUP BY stuenr.id
-            ORDER BY sec.section_listing_id ASC";
+            ORDER BY sec.idnumber ASC, stuenr.registered_date ASC, stuenr.lastupdate ASC";
 
             $enrollments = $DB->get_records_sql($sql, $parms);
 
