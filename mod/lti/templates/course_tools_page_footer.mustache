@@ -41,11 +41,8 @@
         "addlink": "http://SITE/mod/lti/coursetooledit?course=45"
     }
 }}
-<div>
-    <p>
-        {{#str}} courseexternaltoolsinfo, mod_lti {{/str}}
-    </p>
-    {{#notoolsnotice}}
-        {{> core/notification_info}}
-    {{/notoolsnotice}}
-</div>
+{{#addlink}}
+    <div class="mb-3">
+        <a class="btn btn-primary" href="{{{.}}}">{{#str}}addtool, mod_lti{{/str}}</a>
+    </div>
+{{/addlink}}

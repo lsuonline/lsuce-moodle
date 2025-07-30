@@ -96,8 +96,10 @@ class renderer extends plugin_renderer_base {
         $headerrenderable = $page->get_header();
         $table = $page->get_table();
         $headercontext = $headerrenderable->export_for_template($this);
+        
         $headeroutput = parent::render_from_template('mod_lti/course_tools_page_header', $headercontext);
+        $footeroutput = parent::render_from_template('mod_lti/course_tools_page_footer', $headercontext);
 
-        return $headeroutput . $table->output();
+        return $headeroutput . $table->output(). $footeroutput;
     }
 }
