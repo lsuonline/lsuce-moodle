@@ -24,3 +24,25 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
+
+// Only for admins.
+if ($ADMIN->fulltree) {
+
+    // Add a heading.
+    $settings->add(
+        new admin_setting_heading(
+            'block_wds_sportsgrades/pluginsettings',
+            '',
+            get_string('wds_sportsgrades:pluginsettings', 'block_wds_sportsgrades')
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_wds_sportsgrades/adminaccessall',
+            get_string('wds_sportsgrades:adminaccessall', 'block_wds_sportsgrades'),
+            get_string('wds_sportsgrades:adminaccessall_desc', 'block_wds_sportsgrades'),
+            0
+        )
+    );
+}

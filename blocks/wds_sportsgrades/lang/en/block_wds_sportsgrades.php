@@ -110,3 +110,8 @@ $string['adduser'] = 'Add User';
 $string['removeuser'] = 'Remove Users';
 $string['sport'] = 'Sport';
 $string['all_sports'] = 'All Sports';
+
+// Settings.
+$string['wds_sportsgrades:pluginsettings'] = 'Plugin Settings';
+$string['wds_sportsgrades:adminaccessall'] = 'Admin Access All Sports';
+$string['wds_sportsgrades:adminaccessall_desc'] = 'Moodle admins can access all sports regardless of sport associations.';

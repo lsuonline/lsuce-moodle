@@ -23,14 +23,16 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace block_wds_sportsgrades;
+
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/wds_sportsgrades/classes/search.php');
 require_once($CFG->dirroot . '/blocks/wds_sportsgrades/classes/forms/search_form.php');
 require_once($CFG->libdir . '/tablelib.php');
 
 // Page setup.
-$PAGE->set_url(new moodle_url('/blocks/wds_sportsgrades/view.php'));
-$PAGE->set_context(context_system::instance());
+$PAGE->set_url(new \moodle_url('/blocks/wds_sportsgrades/view.php'));
+$PAGE->set_context(\context_system::instance());
 $PAGE->set_title(get_string('page_title', 'block_wds_sportsgrades'));
 $PAGE->set_heading(get_string('page_title', 'block_wds_sportsgrades'));
 $PAGE->set_pagelayout('standard');
@@ -38,29 +40,20 @@ $PAGE->set_pagelayout('standard');
 // Add breadcrumbs.
 $PAGE->navbar->add(
     get_string('home'),
-    new moodle_url('/')
+    new \moodle_url('/')
 );
 
 $PAGE->navbar->add(
     get_string('search_page_link', 'block_wds_sportsgrades'),
-    new moodle_url('/blocks/wds_sportsgrades/view.php')
+    new \moodle_url('/blocks/wds_sportsgrades/view.php')
 );
-
 
 // Check access.
 require_login();
-require_capability('block/wds_sportsgrades:view', context_system::instance());
-
-// Check if the user has access.
-$search = new \block_wds_sportsgrades\search();
-$access = $search::get_user_access($USER->id);
-
-if (empty($access)) {
-    throw new moodle_exception('noaccess', 'block_wds_sportsgrades');
-}
+require_capability('block/wds_sportsgrades:view', \context_system::instance());
 
 // Create the search form.
-$search_form = new block_wds_sportsgrades_search_form();
+$search_form = new \block_wds_sportsgrades_search_form();
 
 // Start output.
 echo $OUTPUT->header();
@@ -68,10 +61,13 @@ echo $OUTPUT->header();
 // Display the search form.
 $search_form->display();
 
+// Initialize the search.
+$search = new search();
+
 // Process form submission.
 if ($data = $search_form->get_data()) {
     // Convert form data to object for search.
-    $search_params = new stdClass();
+    $search_params = new \stdClass();
     $search_params->universal_id = $data->universal_id;
     $search_params->username = $data->username;
     $search_params->firstname = $data->firstname;
@@ -85,10 +81,10 @@ if ($data = $search_form->get_data()) {
 
     // Display results if search was successful.
     if (!empty($results['success']) && !empty($results['results'])) {
-        echo html_writer::tag('h4', get_string('search_results', 'block_wds_sportsgrades'));
+        echo \html_writer::tag('h4', get_string('search_results', 'block_wds_sportsgrades'));
 
         // Create a standard HTML table instead of using table_sql.
-        $table = new html_table();
+        $table = new \html_table();
         $table->head = [
             get_string('result_username', 'block_wds_sportsgrades'),
             get_string('result_universal_id', 'block_wds_sportsgrades'),
@@ -107,15 +103,15 @@ if ($data = $search_form->get_data()) {
             $sports_output = '';
             if (!empty($student->sports)) {
                 foreach ($student->sports as $sport) {
-                    $sports_output .= html_writer::tag('span', $sport->name,
+                    $sports_output .= \html_writer::tag('span', $sport->name,
                         ['class' => 'badge badge-info m-1']);
                 }
             }
 
             // Create the actions column with View Grades link.
-            $url = new moodle_url('/blocks/wds_sportsgrades/view_grades.php',
+            $url = new \moodle_url('/blocks/wds_sportsgrades/view_grades.php',
                 ['studentid' => $student->studentid]);
-            $actions = html_writer::link(
+            $actions = \html_writer::link(
                 $url,
                 get_string('result_view_grades', 'block_wds_sportsgrades'),
                 ['class' => 'sportsgrades btn btn-primary btn-sm']
@@ -136,11 +132,11 @@ if ($data = $search_form->get_data()) {
         }
 
         // Output the table.
-        echo html_writer::table($table);
+        echo \html_writer::table($table);
     } else if (!empty($results['error'])) {
-        echo html_writer::div($results['error'], 'alert alert-danger');
+        echo \html_writer::div($results['error'], 'alert alert-danger');
     } else {
-        echo html_writer::div(get_string('search_no_results', 'block_wds_sportsgrades'), 'alert alert-info');
+        echo \html_writer::div(get_string('search_no_results', 'block_wds_sportsgrades'), 'alert alert-info');
     }
 }
 

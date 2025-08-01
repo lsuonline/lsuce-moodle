@@ -53,17 +53,18 @@ class block_wds_sportsgrades_search_form extends moodleform {
         // Build out the parm for limiting sport searches.
         $sportsparms = ['userid' => $USER->id];
 
-        // Get list of sports from the database
+        // Get list of sports from the database.
         $sportsql = 'SELECT sa.id AS said, COALESCE(s.id, 0) AS id, s.code, COALESCE(s.name, "All Sports") AS name
             FROM {block_wds_sportsgrades_access} sa
             LEFT JOIN {enrol_wds_sport} s ON sa.sportid = s.id
             WHERE sa.userid = :userid
             GROUP BY name ORDER BY name ASC';
 
+        // Pre add this so admins do not error out.
+        $sport_options = ['' => get_string('search_sport_all', 'block_wds_sportsgrades')];
+
         // Get the sports.
         $sports = $DB->get_records_sql($sportsql, $sportsparms);
-
-//        $sport_options = ['' => get_string('search_sport_all', 'block_wds_sportsgrades')];
 
         // Loop through the sports.
         foreach ($sports as $sport) {
@@ -96,12 +97,26 @@ class block_wds_sportsgrades_search_form extends moodleform {
 
         // Build out the SQL to get classifications.
         $csql = "SELECT sm.data
-            FROM mdl_enrol_wds_students_meta sm
-            INNER JOIN mdl_enrol_wds_students_meta sm2
+            FROM {enrol_wds_students_meta} sm
+            INNER JOIN {enrol_wds_students_meta} sm2
                 ON sm.studentid = sm2.studentid
                 AND sm2.datatype = 'Athletic_Team_ID'
             WHERE sm.datatype = 'Classification'
-            GROUP BY sm.data";
+            GROUP BY sm.data
+            ORDER BY FIELD(
+                RIGHT(sm.data, LENGTH(sm.data) - INSTR(sm.data, ' ')),
+                'Freshman',
+                'First Year',
+                '1L',
+                'Sophomore',
+                'Second Year',
+                '2L',
+                'Junior',
+                'Third Year',
+                '3L',
+                'Senior',
+                'Fourth Year',
+                'Graduate')";
 
         // Get the list of classifications.
         $cobj = $DB->get_records_sql($csql, null);

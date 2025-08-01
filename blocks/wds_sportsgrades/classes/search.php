@@ -44,7 +44,7 @@ class search {
         // Let's work with arrays.
         $parms = json_decode(json_encode($parms), true);
 
-        // Check if user has access to any sports or specific students.
+        // Check if user has access to any sports TODO: or specific students.
         $access = self::get_user_access($USER->id);
 
         if (empty($access)) {
@@ -66,36 +66,51 @@ class search {
             p.major,
             p.classification";
 
-        $sqlfrom = " FROM mdl_user u
-            INNER JOIN mdl_enrol_wds_students stu
+        $sqlfrom = " FROM {user} u
+            INNER JOIN {enrol_wds_students} stu
                 ON u.id = stu.userid
-            INNER JOIN mdl_enrol_wds_students_meta sm
+            INNER JOIN {enrol_wds_students_meta} sm
                 ON sm.studentid = stu.id
             INNER JOIN {enrol_wds_periods} per
                 ON per.academic_period_id = sm.academic_period_id
                 AND per.start_date <= UNIX_TIMESTAMP()
                 AND per.end_date >= UNIX_TIMESTAMP()
             INNER JOIN (
-                SELECT stumeta.studentid, stumeta.academic_period_id,
-                    GROUP_CONCAT(CASE WHEN datatype = 'Athletic_Team_ID' THEN data ELSE NULL END) AS sport,
-                    GROUP_CONCAT(CASE WHEN datatype = 'Academic_Unit_Code' THEN
-                        (SELECT academic_unit FROM mdl_enrol_wds_units WHERE academic_unit_code = data)
-                        ELSE NULL END) AS college,
-                    GROUP_CONCAT(CASE WHEN datatype = 'Program_of_Study_Code' THEN
-                        (SELECT program_of_study FROM mdl_enrol_wds_programs WHERE program_of_study_code = data)
-                        ELSE NULL END) AS major,
-                    GROUP_CONCAT(CASE WHEN datatype = 'Classification' THEN data ELSE NULL END) AS classification
-                FROM mdl_enrol_wds_students_meta stumeta
+                SELECT 
+                    stumeta.studentid,
+                    stumeta.academic_period_id,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Athletic_Team_ID' THEN stumeta.data ELSE NULL END) AS sport,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Academic_Unit_Code' THEN units.academic_unit ELSE NULL END) AS college,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Program_of_Study_Code' THEN programs.program_of_study ELSE NULL END) AS major,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Classification' THEN stumeta.data ELSE NULL END) AS classification
+                FROM {enrol_wds_students_meta} stumeta
+                INNER JOIN {enrol_wds_periods} per2
+                    ON per2.academic_period_id = stumeta.academic_period_id
+                    AND per2.start_date <= UNIX_TIMESTAMP()
+                    AND per2.end_date >= UNIX_TIMESTAMP()
+                JOIN (
+                    SELECT DISTINCT stu.id AS studentid, sm.academic_period_id
+                        FROM {user} u
+                        JOIN {enrol_wds_students} stu ON u.id = stu.userid
+                        JOIN {enrol_wds_students_meta} sm ON sm.studentid = stu.id
+                ) filtered_students
+                    ON stumeta.studentid = filtered_students.studentid
+                    AND stumeta.academic_period_id = filtered_students.academic_period_id
+                LEFT JOIN {enrol_wds_units} units
+                    ON stumeta.datatype = 'Academic_Unit_Code' AND stumeta.data = units.academic_unit_code
+                LEFT JOIN {enrol_wds_programs} programs
+                    ON stumeta.datatype = 'Program_of_Study_Code' AND stumeta.data = programs.program_of_study_code
                 GROUP BY stumeta.studentid, stumeta.academic_period_id
-                    ) p
+            ) p
                 ON p.studentid = stu.id
                 AND p.academic_period_id = per.academic_period_id
+                AND p.sport = sm.data
             WHERE sm.datatype = 'Athletic_Team_ID'";
 
         $conditions = [];
         $parmssql = [];
 
-        // Filter by access permissions.
+        // Filter by sport access permissions.
         if (!empty($access['sports']) && !$access['all_students']) {
             $sportplaceholders = [];
             $i = 0;
@@ -171,6 +186,7 @@ class search {
         $sql = $sqlselect . $sqlfrom . $sqlwhere . $sqlorder;
 
         try {
+            // Get the students.
             $students = $DB->get_records_sql($sql, $parmssql);
 
             // Process results to add sports information.
@@ -213,7 +229,7 @@ class search {
             INNER JOIN {enrol_wds_students_meta} sm
                 ON sm.data = s.code
                 AND sm.datatype = 'Athletic_Team_ID'
-            INNER JOIN mdl_enrol_wds_periods per
+            INNER JOIN {enrol_wds_periods} per
                 ON per.academic_period_id = sm.academic_period_id
                 AND per.start_date <= UNIX_TIMESTAMP()
                 AND per.end_date >= UNIX_TIMESTAMP()
@@ -245,40 +261,44 @@ class search {
     public static function get_user_access($userid) {
         global $DB, $USER;
 
+        // Build the access array of arrays.
         $access = [
             'sports' => [],
             'student_ids' => [],
             'all_students' => false
         ];
 
-        // Check if user is in the hardcoded list of allowed users.
-        $allowed_users = [
-            'rrusso33',
-        ];
+        // Get our settings.
+        $s = get_config('block_wds_sportsgrades');
 
-        // Admin can access all students.
-        if ($USER->username == 'admin') {
+        // Admin can access all students if config allows.
+        if (is_siteadmin() && $s->adminaccessall) {
             $access['all_students'] = true;
             return $access;
         }
 
-        // Check if user is in the hardcoded list.
-        if (in_array($USER->username, $allowed_users)) {
-            $access['all_students'] = true;
-            return $access;
-        }
+        // Build the parms to fetch user sport access.
+        $sparms = ['userid' => $userid];
 
-        // Get sports that the user has access to through the mentors table.
-        $sports_mentors = $DB->get_records('enrol_sports_mentors', ['userid' => $userid]);
+        // Build the SQL to fetch user sport access.
+        $ssql = 'SELECT sa.id, sa.userid, COALESCE(s.code, "") AS code
+            FROM {block_wds_sportsgrades_access} sa
+            LEFT JOIN {enrol_wds_sport} s ON sa.sportid = s.id
+            WHERE sa.userid = :userid';
+
+        // Get sports that the user has access to through the new access table.
+        $sports_mentors = $DB->get_records_sql($ssql, $sparms);
+
+        // Build the sports access array.
         foreach ($sports_mentors as $mentor) {
-            $access['sports'][] = $mentor->path; // path is sport code.
+            if ($mentor->code == '') {
+                $access['all_students'] = true;
+            } else {
+                $access['sports'][] = $mentor->code;
+            }
         }
 
-        // Get specific students that the user has access to.
-        $person_mentors = $DB->get_records('enrol_person_mentors', ['userid' => $userid]);
-        foreach ($person_mentors as $mentor) {
-            $access['student_ids'][] = $mentor->path; // path is student userid.
-        }
+        // TODO: Get specific students that the user has access to.
 
         return $access;
     }
