@@ -109,6 +109,12 @@ class block_wds_sportsgrades extends block_base {
                 'icontype' => 'fontawesome',
                 'icon' => 'fa-users-gear'
             ],
+            [
+                'text' => get_string('assignmentors', 'block_wds_sportsgrades'),
+                'url' => new moodle_url('/blocks/wds_sportsgrades/assign_mentors.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-chalkboard-user'
+            ],
         ];
 
         // Create a button to access the search page.

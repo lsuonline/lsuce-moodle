@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025071800;
+$plugin->version   = 2025080800;
 $plugin->requires  = 2023100900;
 $plugin->component = 'block_wds_sportsgrades';
 $plugin->maturity  = MATURITY_STABLE;

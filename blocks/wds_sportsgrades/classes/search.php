@@ -51,6 +51,47 @@ class search {
             return ['error' => get_string('noaccess', 'block_wds_sportsgrades')];
         }
 
+        $sqlmentors = " FROM {user} u
+            INNER JOIN {enrol_wds_students} stu
+                ON u.id = stu.userid
+            INNER JOIN {enrol_wds_students_meta} sm
+                ON sm.studentid = stu.id
+            INNER JOIN {enrol_wds_periods} per
+                ON per.academic_period_id = sm.academic_period_id
+                AND per.start_date <= UNIX_TIMESTAMP()
+                AND per.end_date >= UNIX_TIMESTAMP()
+            INNER JOIN mdl_block_wds_sportsgrades_mentor sgm ON sgm.userid = u.id AND sgm.mentorid = " . $USER->id . "
+            INNER JOIN (
+                SELECT
+                    stumeta.studentid,
+                    stumeta.academic_period_id,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Athletic_Team_ID' THEN stumeta.data ELSE NULL END) AS sport,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Academic_Unit_Code' THEN units.academic_unit ELSE NULL END) AS college,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Program_of_Study_Code' THEN programs.program_of_study ELSE NULL END) AS major,
+                    GROUP_CONCAT(CASE WHEN stumeta.datatype = 'Classification' THEN stumeta.data ELSE NULL END) AS classification
+                FROM {enrol_wds_students_meta} stumeta
+                INNER JOIN {enrol_wds_periods} per2
+                    ON per2.academic_period_id = stumeta.academic_period_id
+                    AND per2.start_date <= UNIX_TIMESTAMP()
+                    AND per2.end_date >= UNIX_TIMESTAMP()
+                JOIN (
+                    SELECT DISTINCT stu.id AS studentid, sm.academic_period_id
+                        FROM {user} u
+                        JOIN {enrol_wds_students} stu ON u.id = stu.userid
+                        JOIN {enrol_wds_students_meta} sm ON sm.studentid = stu.id
+                ) filtered_students
+                    ON stumeta.studentid = filtered_students.studentid
+                    AND stumeta.academic_period_id = filtered_students.academic_period_id
+                LEFT JOIN {enrol_wds_units} units
+                    ON stumeta.datatype = 'Academic_Unit_Code' AND stumeta.data = units.academic_unit_code
+                LEFT JOIN {enrol_wds_programs} programs
+                    ON stumeta.datatype = 'Program_of_Study_Code' AND stumeta.data = programs.program_of_study_code
+                GROUP BY stumeta.studentid,stumeta.academic_period_id
+            ) p
+                ON p.studentid = stu.id
+                AND p.academic_period_id = per.academic_period_id
+            WHERE sm.datatype = 'Athletic_Team_ID'";
+
         // Build the SQL query.
         $sqlselect = "SELECT CONCAT(sm.id, '-', u.id) as uniqueid,
             sm.id AS stumetaid,
@@ -104,10 +145,10 @@ class search {
             ) p
                 ON p.studentid = stu.id
                 AND p.academic_period_id = per.academic_period_id
-                AND p.sport = sm.data
             WHERE sm.datatype = 'Athletic_Team_ID'";
 
         $conditions = [];
+        $mconditions = [];
         $parmssql = [];
 
         // Filter by sport access permissions.
@@ -133,67 +174,94 @@ class search {
                 $i++;
             }
 
-            if (!empty($conditions)) {
+            if (!empty($conditions) && !empty($mconditions)) {
                 $conditions[] = "OR u.id IN (" . implode(',', $studentplaceholders) . ")";
+                $mconditions[] = "OR u.id IN (" . implode(',', $studentplaceholders) . ")";
             } else {
                 $conditions[] = "u.id IN (" . implode(',', $studentplaceholders) . ")";
+                $mconditions[] = "u.id IN (" . implode(',', $studentplaceholders) . ")";
             }
         }
 
         // Apply search filters.
         if (!empty($parms['universal_id'])) {
             $conditions[] = "stu.universal_id LIKE :universal_id";
+            $mconditions[] = "stu.universal_id LIKE :universal_id";
             $parmssql['universal_id'] = '%' . $parms['universal_id'] . '%';
         }
 
         if (!empty($parms['username'])) {
             $conditions[] = "u.username LIKE :username";
+            $mconditions[] = "u.username LIKE :username";
             $parmssql['username'] = '%' . $parms['username'] . '%';
         }
 
         if (!empty($parms['firstname'])) {
             $conditions[] = "u.firstname LIKE :firstname";
+            $mconditions[] = "u.firstname LIKE :firstname";
             $parmssql['firstname'] = '%' . $parms['firstname'] . '%';
         }
 
         if (!empty($parms['lastname'])) {
             $conditions[] = "u.lastname LIKE :lastname";
+            $mconditions[] = "u.lastname LIKE :lastname";
             $parmssql['lastname'] = '%' . $parms['lastname'] . '%';
         }
 
         if (!empty($parms['major'])) {
             $conditions[] = "p.major LIKE :major";
+            $mconditions[] = "p.major LIKE :major";
             $parmssql['major'] = '%' . $parms['major'] . '%';
         }
 
         if (!empty($parms['classification'])) {
             $conditions[] = "p.classification = :classification";
+            $mconditions[] = "p.classification = :classification";
             $parmssql['classification'] = $parms['classification'];
         }
 
         if (!empty($parms['sport'])) {
             $conditions[] = "sm.data = :sport";
+            $mconditions[] = "sm.data = :sport";
             $parmssql['sport'] = $parms['sport'];
         }
 
         // Build the WHERE clause.
         $sqlwhere = !empty($conditions) ? " AND " . implode(' AND ', $conditions) : "";
+        $msqlwhere = !empty($mconditions) ? " AND " . implode(' AND ', $mconditions) : "";
 
         // Add ORDER BY clause to sort results.
         $sqlorder = " ORDER BY u.lastname ASC, u.firstname ASC";
 
         // Execute the query.
         $sql = $sqlselect . $sqlfrom . $sqlwhere . $sqlorder;
+        $msql = $sqlselect . $sqlmentors . $msqlwhere . $sqlorder;
 
         try {
             // Get the students.
             $students = $DB->get_records_sql($sql, $parmssql);
+            $mstudents = $DB->get_records_sql($msql, $parmssql);
+
+            $mergedstudents = $students + $mstudents;
+
+            // Sort by first name, last name.
+            uasort($mergedstudents, function($a, $b) {
+
+                // Compare lastnames first.
+                $lastcompare = strcasecmp($a->lastname, $b->lastname);
+                if ($lastcompare !== 0) {
+                    return $lastcompare;
+                }
+
+                // If lastnames are the same, compare firstnames.
+                return strcasecmp($a->firstname, $b->firstname);
+            });
 
             // Process results to add sports information.
             $results = [];
             $processed_student_ids = [];
 
-            foreach ($students as $student) {
+            foreach ($mergedstudents as $student) {
                 // Only process each student once to avoid duplicates.
                 if (in_array($student->studentid, $processed_student_ids)) {
                     continue;

@@ -105,7 +105,7 @@ $string['privacy:metadata:block_wds_sportsgrades_access:modifiedby'] = 'Who last
 
 // User management.
 $string['wdsaddusertitle'] = 'Manage Sport Associations';
-$string['manageaccess'] = 'Manage Access';
+$string['manageaccess'] = 'Sport Mentors';
 $string['adduser'] = 'Add User';
 $string['removeuser'] = 'Remove Users';
 $string['sport'] = 'Sport';
@@ -114,4 +114,14 @@ $string['all_sports'] = 'All Sports';
 // Settings.
 $string['wds_sportsgrades:pluginsettings'] = 'Plugin Settings';
 $string['wds_sportsgrades:adminaccessall'] = 'Admin Access All Sports';
-$string['wds_sportsgrades:adminaccessall_desc'] = 'Moodle admins can access all sports regardless of sport associations.';
+$string['wds_sportsgrades:adminaccessall_desc'] = 'Moodle admins can access all sports and athletes.';
+
+// Mentor management.
+$string['filter'] = 'Filter students';
+$string['assignmentors'] = 'Student Mentors';
+$string['assignmentor'] = 'Assign Mentor';
+$string['mentor'] = 'Mentor';
+$string['students'] = 'Students';
+$string['removementor'] = 'Remove student assignment from mentor';
+$string['wds_sportsgrades:assignmentors'] = 'Assign students to mentors';
+$string['wds_sportsgrades:nostudents'] = 'No students found with provided search term.';

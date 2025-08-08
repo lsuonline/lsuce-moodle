@@ -69,15 +69,9 @@ class block_wds_sportsgrades_search_form extends moodleform {
         // Loop through the sports.
         foreach ($sports as $sport) {
 
-            // TODO: No clue if we need this. Need to get it to search class.
-            $sportids[] = $sport->id;
-
             // Build out the sport code / name options.
             $sport_options[$sport->code] = $sport->name;
         }
-
-        // TODO No clue if we need this. Need to get it to search class.
-        $sportsids = implode(',', $sportids);
 
         // Add the search.
         $mform->addElement('select', 'sport', get_string('search_sport', 'block_wds_sportsgrades'), $sport_options);
