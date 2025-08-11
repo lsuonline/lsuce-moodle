@@ -45,4 +45,24 @@ if ($ADMIN->fulltree) {
             0
         )
     );
+
+    // Days prior.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_wds_sportsgrades/daysprior',
+            get_string('wds_sportsgrades:daysprior', 'block_wds_sportsgrades'),
+            get_string('wds_sportsgrades:daysprior_desc', 'block_wds_sportsgrades'),
+            '10', PARAM_INT
+        )
+    );
+
+    // Days prior.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_wds_sportsgrades/daysafter',
+            get_string('wds_sportsgrades:daysafter', 'block_wds_sportsgrades'),
+            get_string('wds_sportsgrades:daysafter_desc', 'block_wds_sportsgrades'),
+            '10', PARAM_INT
+        )
+    );
 }

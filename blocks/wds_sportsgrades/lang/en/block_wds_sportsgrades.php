@@ -115,6 +115,10 @@ $string['all_sports'] = 'All Sports';
 $string['wds_sportsgrades:pluginsettings'] = 'Plugin Settings';
 $string['wds_sportsgrades:adminaccessall'] = 'Admin Access All Sports';
 $string['wds_sportsgrades:adminaccessall_desc'] = 'Moodle admins can access all sports and athletes.';
+$string['wds_sportsgrades:daysprior'] = 'Days Prior';
+$string['wds_sportsgrades:daysprior_desc'] = 'Number of days prior to the start of classes for the period.';
+$string['wds_sportsgrades:daysafter'] = 'Days After';
+$string['wds_sportsgrades:daysafter_desc'] = 'Number of days after the last day of classes for the period.';
 
 // Mentor management.
 $string['filter'] = 'Filter students';

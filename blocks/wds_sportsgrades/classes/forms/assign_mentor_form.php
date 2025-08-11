@@ -25,13 +25,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir.'/formslib.php');
+require_once($CFG->libdir . '/formslib.php');
 
 class assign_mentor_form extends moodleform {
 
     // Build the form.
     public function definition() {
         global $DB;
+
+        // Get our settings.
+        $s = get_config('block_wds_sportsgrades');
 
         // Instantiate the form.
         $mform = $this->_form;
@@ -77,28 +80,28 @@ class assign_mentor_form extends moodleform {
             $useroptions[$pmentor->id] = fullname($pmentor) . ' (' . $pmentor->username . ')';
         }
 
-        $stusql = 'SELECT u.*,
+        $stusql = "SELECT u.*,
             stu.id AS studentid,
             u.firstname,
             u.lastname, 
             s.code AS sportcode,
-            GROUP_CONCAT(DISTINCT(s.name) SEPARATOR ", ") AS sportname
+            GROUP_CONCAT(DISTINCT(s.name) SEPARATOR ', ') AS sportname
             FROM mdl_user u
             INNER JOIN mdl_enrol_wds_students stu
                 ON stu.userid = u.id
             INNER JOIN mdl_enrol_wds_students_meta sm
                 ON sm.studentid = stu.id
-                AND sm.datatype = "Athletic_Team_ID"
+                AND sm.datatype = 'Athletic_Team_ID'
             INNER JOIN mdl_enrol_wds_sport s
                 ON s.code = sm.data
             INNER JOIN mdl_enrol_wds_periods per
                 ON per.academic_period_id = sm.academic_period_id
-                AND per.start_date < UNIX_TIMESTAMP()
-                AND per.end_date > UNIX_TIMESTAMP()
-            WHERE s.code NOT LIKE "LSUE_%"
-                ' . $conditions . '
+                AND per.start_date - (86400 * $s->daysprior) < UNIX_TIMESTAMP()
+                AND per.end_date + (86400 * $s->daysafter) > UNIX_TIMESTAMP()
+            WHERE s.code NOT LIKE 'LSUE_%'
+                $conditions
             GROUP BY u.id
-            ORDER BY u.lastname ASC, u.firstname ASC';
+            ORDER BY u.lastname ASC, u.firstname ASC";
 
         $pstudents = $DB->get_records_sql($stusql, $parms);
 

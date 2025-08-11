@@ -41,10 +41,13 @@ class search {
     public static function search_students($parms) {
         global $DB, $USER;
 
+        // Get our settings.
+        $s = get_config('block_wds_sportsgrades');
+
         // Let's work with arrays.
         $parms = json_decode(json_encode($parms), true);
 
-        // Check if user has access to any sports TODO: or specific students.
+        // Check if user has access to any sports.
         $access = self::get_user_access($USER->id);
 
         if (empty($access)) {
@@ -58,8 +61,8 @@ class search {
                 ON sm.studentid = stu.id
             INNER JOIN {enrol_wds_periods} per
                 ON per.academic_period_id = sm.academic_period_id
-                AND per.start_date <= UNIX_TIMESTAMP()
-                AND per.end_date >= UNIX_TIMESTAMP()
+                AND per.start_date - (86400 * $s->daysprior) <= UNIX_TIMESTAMP()
+                AND per.end_date + (86400 * $s->daysafter) >= UNIX_TIMESTAMP()
             INNER JOIN mdl_block_wds_sportsgrades_mentor sgm ON sgm.userid = u.id AND sgm.mentorid = " . $USER->id . "
             INNER JOIN (
                 SELECT
@@ -72,8 +75,8 @@ class search {
                 FROM {enrol_wds_students_meta} stumeta
                 INNER JOIN {enrol_wds_periods} per2
                     ON per2.academic_period_id = stumeta.academic_period_id
-                    AND per2.start_date <= UNIX_TIMESTAMP()
-                    AND per2.end_date >= UNIX_TIMESTAMP()
+                    AND per2.start_date - (86400 * $s->daysprior) <= UNIX_TIMESTAMP()
+                    AND per2.end_date + (86400 * $s->daysafter) >= UNIX_TIMESTAMP()
                 JOIN (
                     SELECT DISTINCT stu.id AS studentid, sm.academic_period_id
                         FROM {user} u
@@ -114,8 +117,8 @@ class search {
                 ON sm.studentid = stu.id
             INNER JOIN {enrol_wds_periods} per
                 ON per.academic_period_id = sm.academic_period_id
-                AND per.start_date <= UNIX_TIMESTAMP()
-                AND per.end_date >= UNIX_TIMESTAMP()
+                AND per.start_date - (86400 * $s->daysprior) <= UNIX_TIMESTAMP()
+                AND per.end_date + (86400 * $s->daysafter) >= UNIX_TIMESTAMP()
             INNER JOIN (
                 SELECT 
                     stumeta.studentid,
@@ -127,8 +130,8 @@ class search {
                 FROM {enrol_wds_students_meta} stumeta
                 INNER JOIN {enrol_wds_periods} per2
                     ON per2.academic_period_id = stumeta.academic_period_id
-                    AND per2.start_date <= UNIX_TIMESTAMP()
-                    AND per2.end_date >= UNIX_TIMESTAMP()
+                    AND per2.start_date - (86400 * $s->daysprior) <= UNIX_TIMESTAMP()
+                    AND per2.end_date + (86400 * $s->daysafter) >= UNIX_TIMESTAMP()
                 JOIN (
                     SELECT DISTINCT stu.id AS studentid, sm.academic_period_id
                         FROM {user} u
@@ -238,8 +241,14 @@ class search {
         $msql = $sqlselect . $sqlmentors . $msqlwhere . $sqlorder;
 
         try {
-            // Get the students.
-            $students = $DB->get_records_sql($sql, $parmssql);
+            // Get the sports students.
+            if (!empty($access['sports'])) {
+                $students = $DB->get_records_sql($sql, $parmssql);
+            } else {
+                $students = [];
+            }
+
+            // Get the individual students.
             $mstudents = $DB->get_records_sql($msql, $parmssql);
 
             $mergedstudents = $students + $mstudents;
@@ -292,6 +301,9 @@ class search {
     public static function get_student_sports($studentid) {
         global $DB;
 
+        // Get our settings.
+        $s = get_config('block_wds_sportsgrades');
+
         $sql = "SELECT CONCAT(sm.id, '-', s.id) as uniqueid, s.id, s.code, s.name
             FROM {enrol_wds_sport} s
             INNER JOIN {enrol_wds_students_meta} sm
@@ -299,8 +311,8 @@ class search {
                 AND sm.datatype = 'Athletic_Team_ID'
             INNER JOIN {enrol_wds_periods} per
                 ON per.academic_period_id = sm.academic_period_id
-                AND per.start_date <= UNIX_TIMESTAMP()
-                AND per.end_date >= UNIX_TIMESTAMP()
+                AND per.start_date - (86400 * $s->daysprior) <= UNIX_TIMESTAMP()
+                AND per.end_date + (86400 * $s->daysafter) >= UNIX_TIMESTAMP()
             WHERE sm.studentid = :studentid
             GROUP BY uniqueid
             ORDER BY s.name ASC";
