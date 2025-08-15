@@ -242,7 +242,7 @@ class search {
 
         try {
             // Get the sports students.
-            if (!empty($access['sports'])) {
+            if (!empty($access['sports']) || $access['all_students'] == true) {
                 $students = $DB->get_records_sql($sql, $parmssql);
             } else {
                 $students = [];
@@ -378,7 +378,19 @@ class search {
             }
         }
 
-        // TODO: Get specific students that the user has access to.
+        // Get specific students that the user has access to.
+        $usql = 'SELECT sm.id, sm.userid, "" AS code
+            FROM {block_wds_sportsgrades_mentor} sm
+            WHERE sm.mentorid = :userid';
+
+        // Get sports that the user has access to through the new access table.
+        $sports_users = $DB->get_records_sql($usql, $sparms);
+
+        // Build the sports access array.
+        foreach ($sports_users as $mentor) {
+
+            $access['student_ids'][] = $mentor->userid;
+        }
 
         return $access;
     }

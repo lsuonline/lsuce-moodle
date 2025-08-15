@@ -127,14 +127,22 @@ foreach ($grades['courses'] as $i => $course) {
     if (!empty($course['term'])) {
         $cterm = $course['term'];
         $term = $DB->get_record('enrol_wds_periods', ['academic_period_id' => $cterm]);
-        echo ($term->period_year . ' ' . $term->period_type . ' &middot; ');
+
+        $period_year = isset($term->period_year) ? $term->period_year : null;
+        $period_type = isset($term->period_type) ? $term->period_type : null;
+
+        if (isset($term->period_year)) {
+            echo ($period_year . ' ' . $period_type . ' &middot; ');
+        } else {
+            echo ($cterm . ' &middot; ');
+        }
     }
     if (!empty($course['section'])) {
         echo get_string('grade_section', 'block_wds_sportsgrades') . ': ' . $course['section'];
     }
     echo html_writer::end_div();
     echo html_writer::end_div();
-    
+
     // Grade
     echo html_writer::start_div('text-right');
     echo html_writer::tag('span', $course['letter_grade'], ['class' => 'badge badge-primary']);
@@ -185,7 +193,14 @@ if (!$selected_course) {
         $cterm = $selected_course['term'];
         $term = $DB->get_record('enrol_wds_periods', ['academic_period_id' => $cterm]);
 
-        echo html_writer::tag('span', $term->period_year . ' ' . $term->period_type, ['class' => 'badge badge-secondary mr-2']);
+        $period_year = isset($term->period_year) ? $term->period_year : null;
+        $period_type = isset($term->period_type) ? $term->period_type : null;
+
+        if (isset($term->period_year)) {
+            echo html_writer::tag('span', $period_year . ' ' . $period_type, ['class' => 'badge badge-secondary mr-2']);
+        } else {
+            echo html_writer::tag('span', $cterm, ['class' => 'badge badge-secondary mr-2']);
+        }
     }
     if (!empty($selected_course['section'])) {
         echo html_writer::tag('span', 

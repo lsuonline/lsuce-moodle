@@ -52,9 +52,11 @@ class grade_fetcher {
             return ['error' => get_string('noaccess', 'block_wds_sportsgrades')];
         }
 
+        $student = $DB->get_record('enrol_wds_students', ['id' => $studentid]);
+
         // Check if user has access to this specific student.
         if (!$access['all_students'] &&
-            !in_array($studentid, $access['student_ids']) &&
+            !in_array($student->userid, $access['student_ids']) &&
             !self::is_student_in_accessible_sports($studentid, $access['sports'])) {
             return ['error' => get_string('noaccess', 'block_wds_sportsgrades')];
         }
@@ -67,6 +69,19 @@ class grade_fetcher {
         }
         */
 
+        // Build generic SQL for grabbing ALL (not just WDS) enrollment.
+        $sql = "SELECT c.*
+            FROM {course} c
+            INNER JOIN {enrol} e ON e.courseid = c.id
+            INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+            WHERE ue.status = 0
+                AND c.visible = 1
+                AND ue.userid = :userid
+            ORDER BY c.startdate DESC, c.fullname ASC";
+
+        $courses = $DB->get_records_sql($sql, ['userid' => $student->userid]);
+
+        /*
         // Get courses the student is enrolled in.
         $sql = "SELECT DISTINCT c.id AS courseid, stu.userid, c.fullname, c.shortname,
                 sec.academic_period_id as term, sec.section_number, c.startdate
@@ -80,6 +95,7 @@ class grade_fetcher {
                 ORDER BY c.startdate DESC, c.fullname ASC";
 
         $courses = $DB->get_records_sql($sql, ['studentid' => $studentid]);
+        */
 
         if (empty($courses)) {
             return ['courses' => []];
@@ -88,8 +104,26 @@ class grade_fetcher {
         $results = [];
         foreach ($courses as $course) {
 
+            // Get the section info.
+            $sectioninfo = $DB->get_records('enrol_wds_sections', ['moodle_status' => $course->id]);
+            $sectioninfo = reset($sectioninfo);
+
+            if (!isset($sectioninfo->academic_period_id)) {
+                if (preg_match('/^(\d{4}\s+\w+(?:\s+\d+)?)(?=\s+[A-Z]{2,}\s+\d+)/', $course->fullname, $matches)) {
+                    $derivedterm = $matches[1];
+                }
+            }
+
+            $groupinfo = groups_get_all_groups($course->id, $student->userid);
+            $groupinfo = reset($groupinfo);
+
+            // Set this for later.
+            $course->userid = $student->userid;
+            $course->term = isset($sectioninfo->academic_period_id) ? $sectioninfo->academic_period_id : $derivedterm;
+            $course->section_number = isset($sectioninfo->section_number) ? $sectioninfo->section_number : $groupinfo->name;
+
             // Get the course total grade item.
-            $grade_item = \grade_item::fetch_course_item($course->courseid);
+            $grade_item = \grade_item::fetch_course_item($course->id);
 
             // Get the student's final grade object for the course.
             $grade_info = \grade_grade::fetch([
@@ -102,7 +136,7 @@ class grade_fetcher {
                 $grademax = $grade_info->rawgrademax;
                 $grade_item->grademax = $grade_info->rawgrademax;
             } else {
-                $grade_info = \grade_get_course_grade($course->userid, $course->courseid);
+                $grade_info = \grade_get_course_grade($course->userid, $course->id);
                 $finalgrade = $grade_info->grade;
                 $grademax = $grade_item->grademax;
             }
@@ -126,7 +160,7 @@ class grade_fetcher {
             );
 
             $course_data = [
-                'id' => $course->courseid,
+                'id' => $course->id,
                 'fullname' => $course->fullname,
                 'shortname' => $course->shortname,
                 'section' => $course->section_number,
@@ -136,7 +170,7 @@ class grade_fetcher {
                 'final_grade_formatted' => $realgrade,
                 'grademax' => number_format($grademax, $grade_item->get_decimals()),
                 'letter_grade' => isset($grade_info->grade) || isset($grade_info->finalgrade) ? $lettergrade : 'N/A',
-                'grade_items' => self::get_grade_items($course->userid, $course->courseid)
+                'grade_items' => self::get_grade_items($course->userid, $course->id)
             ];
 
             $results[] = $course_data;
