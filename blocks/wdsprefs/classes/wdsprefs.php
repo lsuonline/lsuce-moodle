@@ -189,7 +189,6 @@ class wdsprefs {
                         INNER JOIN {enrol_wds_teachers} t
                             ON t.universal_id = te.universal_id
                     WHERE te.section_listing_id = :section_listing_id
-                        AND te.role = 'primary'
                     LIMIT 1";
 
                 // Build out the parms.
