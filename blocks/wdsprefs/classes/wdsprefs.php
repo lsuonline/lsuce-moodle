@@ -253,6 +253,8 @@ class wdsprefs {
                     $coursedata->numsections = $coursedefaults->numsections;
                     $coursedata->category = $ccat->id;
                     $coursedata->visible = 1;
+                    $coursedata->groupmode = $coursedefaults->groupmode;
+                    $coursedata->groupmodeforce = $coursedefaults->groupmodeforce;
 
                     // Add the course start and end dates.
                     $coursedata->startdate = $period->start_date;
@@ -749,6 +751,10 @@ class wdsprefs {
 
             // Use user's preferred course format.
             $course->format = $userprefs->format;
+
+            // Set the group mode.
+            $course->groupmode = $coursedefaults->groupmode;
+            $course->groupmodeforce = $coursedefaults->groupmodeforce;
 
             $excourseidn = $DB->get_record('course', ['idnumber' => $idnumber]);
             $excoursesn = $DB->get_record('course', ['shortname' => $shortname]);
@@ -1557,6 +1563,10 @@ class wdsprefs {
 
             // Use user's preferred course format.
             $course->format = $userprefs->format;
+
+            // Set the group mode.
+            $course->groupmode = $coursedefaults->groupmode;
+            $course->groupmodeforce = $coursedefaults->groupmodeforce;
 
             // Create course in Moodle.
             $course = create_course($course);
