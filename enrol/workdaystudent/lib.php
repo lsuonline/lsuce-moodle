@@ -65,16 +65,16 @@ class enrol_workdaystudent_plugin extends enrol_plugin {
         mtrace("Starting Moodle Student enrollments.");
 
         // Process the academic units.
-        $cronunits = wdscronhelper::cronunits();
+//        $cronunits = wdscronhelper::cronunits();
 
         // Process academic periods.
-        $cronperiods = wdscronhelper::cronperiods();
+//        $cronperiods = wdscronhelper::cronperiods();
 
         // Proces programs of study.
-        $cronprograms = wdscronhelper::cronprograms();
+//        $cronprograms = wdscronhelper::cronprograms();
 
         // Process courses.
-        $croncourses = wdscronhelper::croncourses();
+//        $croncourses = wdscronhelper::croncourses();
 
         // Process sections.
         $cronsections = wdscronhelper::cronsections();
