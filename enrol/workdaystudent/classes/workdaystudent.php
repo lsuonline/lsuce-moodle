@@ -4300,35 +4300,46 @@ class workdaystudent {
             $groups = self::wds_create_moodle_groups($exists, $mshell);
         }
 
-        // If the exists and the idnumbers match, update the interstitial record.
-        if (isset($exists->id) && $exists->idnumber == $course->idnumber) {
+        // If the exists and the idnumbers or shortnames match, update the interstitial record.
+        if (isset($exists->id) && ($exists->idnumber == $course->idnumber || $exists->shortname == $course->shortname))  {
             $sectiontable = 'enrol_wds_sections';
             $sectionids = explode(",", $mshell->sectionids);
 
             // Loop through the section ids.
             foreach ($sectionids as $sectionid) {
 
-                // Build the parms.
-                $parms = [
+                // Build the idb parms.
+                $idbparms = [
                     'id' => $sectionid,
                     'idnumber' => $course->idnumber,
                     'moodle_status' => $exists->id
                 ];
 
                 // Update the record.
-                $updated = $DB->update_record($sectiontable, $parms);
+                $idbupdated = $DB->update_record($sectiontable, $idbparms);
                 self::dtrace("   Course idumber / moodle_status updated in $sectiontable for id: $sectionid.");
             }
+
+            $coursetable = 'course';
+
+            // Build the idb parms.
+            $cparms = [
+                'id' => $exists->id,
+                'idnumber' => $course->idnumber
+            ];
+
+            // Update the record.
+            $cupdated = $DB->update_record($coursetable, $cparms);
 
             // Everything is awesome, return the existing course.
             return $exists;
 
-        // This is not right! The course exists but fullname and idnumber do not match what they're supposed to be.
+        // We should never be here! The course exists but shortname and idnumber still do not match what they're supposed to be.
         } else if (isset($exists->id) && $exists->idnumber != $course->idnumber) {
             mtrace(" Error! We should never have a matching " .
                 "shortname with a mismatched idnumber!");
-            mtrace(" - Error! Course Shell: $exists->idnumber, " .
-                "Interstitial record: $course->idnumber.");
+            mtrace(" - Error! Course Shell id: $exists->id, " .
+                "Interstitial record idnumber: $course->idnumber.");
             return false;
         }
 
@@ -4935,9 +4946,6 @@ class workdaystudent {
                 // Build out the reprocessectionsql.
                 $reprocesssection = ' AND sec.course_section_definition_id = :courseid';
             }
-//        } else {
-//            $reprocesssection = ' AND tenr.role = \'primary\'
-//                AND sec.controls_grading = 1';
         }
 
         $sql = "SELECT stuenr.id AS enrollment_id,
@@ -4972,6 +4980,7 @@ class workdaystudent {
             GROUP BY stuenr.id
             ORDER BY sec.idnumber ASC,
                 sec.controls_grading ASC,
+                stuenr.status DESC,
                 stuenr.registered_date ASC,
                 stuenr.lastupdate ASC";
 
