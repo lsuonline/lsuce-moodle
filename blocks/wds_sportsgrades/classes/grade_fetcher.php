@@ -372,12 +372,10 @@ class grade_fetcher {
                     'grade_formatted' => $finalgrade . ' / ' . $grademax,
                     'grademax' => $grademax,
                     'letter' => $lettergrade,
-                    'percentage' => !empty($grade->finalgrade) ?
-                        ($finalgrade / $grademax) * 100 :
-                        null,
-                    'percentage_formatted' => !empty($grade->finalgrade) ?
-                        number_format(($finalgrade / $grademax) * 100, $item->get_decimals()) . '%' :
-                        '-'
+                    'percentage' => empty($grade->finalgrade) || $grademax == 0 ? null :
+                        ($finalgrade / $grademax) * 100,
+                    'percentage_formatted' => empty($grade->finalgrade) || $grademax == 0 ? '-' :
+                        number_format(($finalgrade / $grademax) * 100, $item->get_decimals()) . '%'
                 ];
             } else if ($item->iteminfo == 'categorized') {
                 $results[] = [
@@ -392,12 +390,10 @@ class grade_fetcher {
                     'grade_formatted' => $finalgrade . ' / ' . $grademax,
                     'grademax' => $grademax,
                     'letter' => $lettergrade,
-                    'percentage' => !empty($grade->finalgrade) ?
-                        ($finalgrade / $grademax) * 100 :
-                        null,
-                    'percentage_formatted' => !empty($grade->finalgrade) ?
-                        number_format(($finalgrade / $grademax) * 100, $item->get_decimals()) . '%' :
-                        '-'
+                    'percentage' => empty($grade->finalgrade) || $grademax == 0 ? null :
+                        ($finalgrade / $grademax) * 100,
+                    'percentage_formatted' => empty($grade->finalgrade) || $grademax == 0 ? '-' :
+                        number_format(($finalgrade / $grademax) * 100, $item->get_decimals()) . '%'
                 ];
             } else {
                 $results[] = [
@@ -412,12 +408,10 @@ class grade_fetcher {
                     'grade_formatted' => $finalgrade . ' / ' . $grademax,
                     'grademax' => $grademax,
                     'letter' => $lettergrade,
-                    'percentage' => !empty($grade->finalgrade) ?
-                        ($finalgrade / $grademax) * 100 :
-                        null,
-                    'percentage_formatted' => !empty($grade->finalgrade) ?
-                        number_format(($finalgrade / $grademax) * 100, $item->get_decimals()) . '%' :
-                        '-'
+                    'percentage' => empty($grade->finalgrade) || $grademax == 0 ? null :
+                        ($finalgrade / $grademax) * 100,
+                    'percentage_formatted' => empty($grade->finalgrade) || $grademax == 0 ? '-' :
+                        number_format(($finalgrade / $grademax) * 100, $item->get_decimals()) . '%'
                 ];
             }
         }
