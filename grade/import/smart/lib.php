@@ -110,7 +110,7 @@ function smart_split_file($file) {
 // Checks whether or not a string is a valid LSUID. It must be a nine digit
 // digit number that starts with 89 to pass.
 function smart_is_lsuid2($s) {
-    return preg_match('/^89\d{7}$/', $s);
+    return preg_match('/^\d{8}$/', $s);
 }
 
 // Checks whether or not a string is a valid LSU Email address.
@@ -123,7 +123,7 @@ function smart_is_email($s) {
 // Checks whether or not a string is a valid MEC LSUID. It must be a twelve digit
 // digit number that starts with three digits and has 89.* afterward.
 function smart_is_mec_lsuid($s) {
-    return preg_match('/^...89\d{7}$/', $s);
+    return preg_match('/^...\d{8}$/', $s);
 }
 
 // Checks whether or not a string is a valid grade. It must be of the form

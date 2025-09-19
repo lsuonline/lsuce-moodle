@@ -42,7 +42,9 @@ require_capability('gradeimport/smart:view', $context);
 
 $filetext = optional_param('file_text', null, PARAM_TEXT);
 
-print_grade_page_head($course->id, 'import', 'smart');
+$actionbar = new \core_grades\output\import_action_bar($context, null, 'smart');
+print_grade_page_head($course->id, 'import', 'smart', '', false, false, true,
+    'import', 'grades', null, $actionbar);
 
 $fileform = new smart_file_form();
 $resultsform = new smart_results_form(null, array('messages' => null));

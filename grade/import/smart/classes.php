@@ -101,6 +101,11 @@ abstract class SmartFileBase {
         return $DB->get_records_sql($sql, $params);
     }
 
+    public static function get_all_user_name_fields_compat(string $alias = 'u'): string {
+        $fields = \core_user\fields::for_name()->get_sql($alias);
+        return $fields->selects;
+    }
+
     // Takes $ids_to_grades and fills $moodleidstogrades.
     public function convert_ids() {
         global $CFG;
@@ -108,7 +113,7 @@ abstract class SmartFileBase {
         $roleids = explode(',', $CFG->gradebookroles);
         $context = context_course::instance($this->courseid);
         $moodleidstofield = array();
-        $userfields = 'u.id, u.username, ' . get_all_user_name_fields(true, 'u');
+        $userfields = 'u.id, u.email, ' . self::get_all_user_name_fields_compat('u');
         $users = array();
 
         // Keypadid temp fix.
@@ -195,13 +200,13 @@ abstract class SmartFileBase {
 }
 
 // Fixed width grade file.
-// 89XXXXXXX 100.00.
-// 89XXXXXXX 090.00.
+// NNNNNNNN 100.00.
+// NNNNNNNN 090.00.
 class SmartFileFixed extends SmartFileBase {
     protected $field = 'idnumber';
 
     public static function validate_line($line) {
-        if (smart_is_lsuid2(substr($line, 0, 9))) {
+        if (smart_is_lsuid2(substr($line, 0, 8))) {
             if (strlen(trim($line)) == 16 && count(explode(' ', $line)) == 2) {
                 return true;
             }
@@ -221,13 +226,13 @@ class SmartFileFixed extends SmartFileBase {
 }
 
 // Insane Fixed width grade file.
-// 89XXXXXXX anything you want in here 100.00.
-// 89XXXXXXX i mean anything 090.00.
+// NNNNNNNN anything you want in here 100.00.
+// NNNNNNNN i mean anything 090.00.
 class SmartFileInsane extends SmartFileBase {
     protected $field = 'idnumber';
 
     public static function validate_line($line) {
-        if (smart_is_lsuid2(substr($line, 0, 9))) {
+        if (smart_is_lsuid2(substr($line, 0, 8))) {
             if (count(explode(' ', $line)) > 2) {
                 if (count(explode(',', $line)) > 2) {
                     return false;
@@ -251,13 +256,13 @@ class SmartFileInsane extends SmartFileBase {
 
 
 // Grade file from the Measurement and Evaluation Center.
-// XXX89XXXXXXX 100.00.
-// XXX89XXXXXXX  90.00.
+// XXXNNNNNNNN 100.00.
+// XXXNNNNNNNN  90.00.
 class SmartFileMEC extends SmartFileBase {
     protected $field = 'idnumber';
 
     public static function validate_line($line) {
-        if (smart_is_mec_lsuid(substr($line, 0, 12))) {
+        if (smart_is_mec_lsuid(substr($line, 0, 11))) {
             if (count(explode(' ', $line)) >= 2) {
                 return true;
             }
@@ -271,7 +276,7 @@ class SmartFileMEC extends SmartFileBase {
     public function extract_data() {
         foreach ($this->filecontents as $line) {
             $fields = explode(' ', $line);
-            $this->ids_to_grades[substr($fields[0], 3, 9)] = trim(end($fields));
+            $this->ids_to_grades[substr($fields[0], 3, 8)] = trim(end($fields));
         }
     }
 }
@@ -296,8 +301,8 @@ class SmartFileAnonymous extends SmartFileBase {
 }
 
 // Tab-delimited grade file keyed with lsuid that contains extra information.
-// 89XXXXXXX    F,  L   M   shortname   data    time    XX  XX  100.00.
-// 89XXXXXXX    F,  L   M   shortname   data    time    XX  XX  90.00.
+// NNNNNNNN    F,  L   M   shortname   data    time    XX  XX  100.00.
+// NNNNNNNN    F,  L   M   shortname   data    time    XX  XX  90.00.
 class SmartFileTabLongLsuid extends SmartFileBase {
     protected $field = 'idnumber';
 
@@ -316,11 +321,11 @@ class SmartFileTabLongLsuid extends SmartFileBase {
     }
 }
 
-// Tab-delimited grade file keyed with pawsid.
-// pawsid   100.00.
-// pawsid   90.00.
+// Tab-delimited grade file keyed with email.
+// email   100.00.
+// email   90.00.
 class SmartFileTabShortPawsid extends SmartFileBase {
-    protected $field = 'username';
+    protected $field = 'email';
 
     public static function validate_line($line) {
         $tabs = explode("\t", $line);
@@ -329,7 +334,7 @@ class SmartFileTabShortPawsid extends SmartFileBase {
             return false;
         }
 
-        return smart_is_pawsid($tabs[0]) && smart_is_grade($tabs[1]) && count($tabs) == 2;
+        return smart_is_email($tabs[0]) && smart_is_grade($tabs[1]) && count($tabs) == 2;
     }
 
     public function extract_data() {
@@ -341,16 +346,16 @@ class SmartFileTabShortPawsid extends SmartFileBase {
 }
 
 // Tab-delimited grade file keyed with pawsid that contains extra information.
-// pawsid    F,  L   M   shortname   data    time    XX  XX  100.00.
-// pawsid    F,  L   M   shortname   data    time    XX  XX  90.00.
+// email    F,  L   M   shortname   data    time    XX  XX  100.00.
+// email    F,  L   M   shortname   data    time    XX  XX  90.00.
 class SmartFileTabLongPawsid extends SmartFileBase {
-    protected $field = 'username';
+    protected $field = 'email';
 
     public static function validate_line($line) {
         $tabs = explode("\t", $line);
         $n = count($tabs);
 
-        return smart_is_pawsid($tabs[0]) && smart_is_grade($tabs[$n - 1]) && $n > 2;
+        return smart_is_email($tabs[0]) && smart_is_grade($tabs[$n - 1]) && $n > 2;
     }
 
     public function extract_data() {
@@ -363,8 +368,8 @@ class SmartFileTabLongPawsid extends SmartFileBase {
 
 
 // Tab-delimited grade file keyed with lsuid.
-// 89XXXXXXX    100.00.
-// 89XXXXXXX    90.00.
+// NNNNNNNN    100.00.
+// NNNNNNNN    90.00.
 class SmartFileTabShortLsuid extends SmartFileBase {
     protected $field = 'idnumber';
 
@@ -382,11 +387,11 @@ class SmartFileTabShortLsuid extends SmartFileBase {
     }
 }
 
-// Grade file with comma-separated values keyed with pawsid.
-// pawsid,100.00.
-// pawsid,90.00.
+// Grade file with comma-separated values keyed with email.
+// email,100.00.
+// email,90.00.
 class SmartFileCSVPawsid extends SmartFileBase {
-    protected $field = 'username';
+    protected $field = 'email';
 
     public static function validate_line($line) {
         $fields = array_map('trim', explode(',', $line));
@@ -395,7 +400,7 @@ class SmartFileCSVPawsid extends SmartFileBase {
             return false;
         }
 
-        return smart_is_pawsid($fields[0]) && smart_is_grade($fields[1]) && count($fields) == 2;
+        return smart_is_email($fields[0]) && smart_is_grade($fields[1]) && count($fields) == 2;
     }
 
     public function extract_data() {
@@ -407,8 +412,8 @@ class SmartFileCSVPawsid extends SmartFileBase {
 }
 
 // Grade file with comma-separated values keyed with lsuid.
-// 89XXXXXXX,100.00.
-// 89XXXXXXX,90.00.
+// NNNNNNNN,100.00.
+// NNNNNNNN,90.00.
 class SmartFileCSVLsuid extends SmartFileBase {
     protected $field = 'idnumber';
 
@@ -427,8 +432,8 @@ class SmartFileCSVLsuid extends SmartFileBase {
 }
 
 // Comma seperated grade file keyed with lsuid that contains extra information.
-// 89XXXXXXX,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  100.00.
-// 89XXXXXXX,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  90.00.
+// NNNNNNNN,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  100.00.
+// NNNNNNNN,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  90.00.
 class SmartFileCommaLongLsuid extends SmartFileBase {
     protected $field = 'idnumber';
 
@@ -448,16 +453,16 @@ class SmartFileCommaLongLsuid extends SmartFileBase {
 }
 
 // Comma seperated grade file keyed with pawsid that contains extra information.
-// pawsid,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  100.00.
-// pawsid,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  90.00.
+// email,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  100.00.
+// email,    F,  L,   M,   shortname,   data,    time,    XX,  XX,  90.00.
 class SmartFileCommaLongPawsid extends SmartFileBase {
-    protected $field = 'username';
+    protected $field = 'email';
 
     public static function validate_line($line) {
         $commas = explode(',', $line);
         $n = count($commas);
 
-        return smart_is_pawsid($commas[0]) && smart_is_grade($commas[$n - 1]) && $n > 2;
+        return smart_is_email($commas[0]) && smart_is_grade($commas[$n - 1]) && $n > 2;
     }
 
     public function extract_data() {
@@ -473,8 +478,8 @@ class SmartFileCommaLongPawsid extends SmartFileBase {
 // Grade file from the Maple software package.
 // Irrelevant line.
 // Irrelevant line.
-// Name, 89XXXXXXX, Grade %, Grade, Weighted %, Blank Field.
-// Name, 89XXXXXXX, Grade %, Grade, Weighted %, Blank Field.
+// Name, NNNNNNNN, Grade %, Grade, Weighted %, Blank Field.
+// Name, NNNNNNNN, Grade %, Grade, Weighted %, Blank Field.
 // Irrelevant line.
 // Irrelevant line.
 class SmartFileMaple extends SmartFileBase {
