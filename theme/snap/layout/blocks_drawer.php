@@ -15,7 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * TODO describe file blocks_drawer
+ * Similar to theme/boost/layout/drawers.php
+ *  Used to display the Blocks Drawer on Snap.
  *
  * @package    theme_snap
  * @copyright  2025 Copyright (c) 2024 Open LMS (https://www.openlms.net)

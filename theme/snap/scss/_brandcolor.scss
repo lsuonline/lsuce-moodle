@@ -148,8 +148,28 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
 
     #admin-menu-trigger {
         &:focus {
-            outline: 3px solid $brand-primary;
-            border-color: $brand-primary;
+            outline: 3px solid white;
+            border-color: white;
+            border-radius: 0.5rem;
+            width: 37px;
+            padding: .2em;
+            #snap-admin-icon {
+                transform: rotate(90deg);
+                transition: all 0.4s ease-in-out;
+                .snap-gear-icon {
+                    fill: currentColor;
+                }
+            }
+        }
+    }
+
+    [data-target='theme_snap-drawers-blocks'] {
+        &:focus {
+            outline: 3px solid white;
+            border-color: white;
+            border-radius: 0.5rem;
+            width: 37px;
+            padding: .2em;
         }
     }
 
@@ -685,11 +705,11 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
     // -------------------------
     #mr-nav {
         a {
-            color: $nav-color;
+            color: $nav-text-color;
 
             &:hover,
             &:focus {
-                color: darken($nav-color, 8%);
+                color: darken($nav-text-color, 8%);
             }
         }
 
@@ -699,7 +719,7 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
             border-color: $nav-login-bg;
         }
 
-        .icon.fa-search {
+        .btn-open .icon.fa-search {
             color: $nav-color;
             
             &:hover {
@@ -708,6 +728,18 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
 
                 -webkit-text-stroke-width: 1px;
             }
+        }
+
+        .btn-submit .icon.fa-search {
+            color: $nav-text-color;
+
+            &:hover {
+                -webkit-text-stroke-width: 1px;
+            }
+        }
+
+        #searchform-navbar .form-control:focus {
+            outline: 3px auto $nav-text-color;
         }
 
         .popover-region-notifications > div > .icon {
@@ -722,22 +754,34 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
             color: $nav-button-color;
         }
 
+        .dropdown-toggle::after {
+            color: $nav-button-color;
+        }
+
+        #snap-home:not(.logo) {
+            color: $nav-button-color;
+        }
+
         // Edit mode toggle.
         .editmode-switch-form {
             margin-bottom: 0;
             .input-group {
                 label {
-                    color: $brand-primary !important;
+                    color: $nav-button-color !important;
                 }
             }
             .custom-control-input:checked~.custom-control-label::before {
-                background-color: $brand-primary;
-                border-color: $brand-primary;
+                background-color: $nav-color;
+                border-color: $nav-button-color;
+            }
+            .custom-control-input:checked~.custom-control-label::after {
+                background-color: $nav-bg;
             }
         }
 
         #nav-notification-popover-container .count-container {
             background-color: $nav-color;
+            color: $nav-bg;
         }
 
         #nav-notification-popover-container {
@@ -776,7 +820,7 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
 
     [id^="message-drawer-toggle-"] {
         .count-container {
-            background-color: $nav-color;
+            background-color: $brand-primary;
         }
     }
 
@@ -1323,7 +1367,7 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
         }
     }
 
-    .dropdown-item {
+    .dropdown-item:not(.groupsearchdropdown *) {
         &.groups-dropdown::before,
         &.availability-dropdown::before {
             opacity: (0.5);
@@ -1334,7 +1378,7 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
         &:focus,
         &:focus-within {
             background-color: $brand-primary;
-            color: white;
+            color: white !important;
             i {
                 color: white;
             }
@@ -1372,7 +1416,7 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
         .dropdown-item {
             &:hover,
             &:focus {
-                background-color: $brand-primary;
+                background-color: $nav-text-color;
                 color: white;
             }
         }
@@ -1428,6 +1472,30 @@ $custom-menu-text-color: rgb(255, 255, 255) !default; // Need to define this wit
         
         &.show {
             background-color: rgba($brand-primary, 0.8);
+        }
+    }
+
+    .initialsdropdown .page-link {
+        color: $brand-primary;
+    }
+
+    // local_olms_ai
+    #region-main .custom-control-input:checked~.custom-control-label::before {
+        background-color: $brand-primary;
+        border-color: $brand-primary;
+    }
+
+    #send-email-form {
+        #actionEmailRecipientTabs {
+            li:has(> button.active) {
+                &:after {
+                    background: $brand-primary;
+                }
+            }
+        }
+
+        .bg-color-primary {
+            background-color: $brand-primary;
         }
     }
 }

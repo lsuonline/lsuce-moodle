@@ -24,7 +24,7 @@
 namespace theme_snap\renderables;
 use theme_snap\local;
 
-class settings_link implements \renderable {
+class settings_link implements \core\output\renderable {
 
     /**
      * @var int $instanceid
@@ -37,7 +37,7 @@ class settings_link implements \renderable {
     public $output = false;
 
     /**
-     * @throws coding_exception
+     * @throws \core\exception\coding_exception
      */
     public function __construct() {
         global $PAGE, $COURSE;
@@ -72,6 +72,12 @@ class settings_link implements \renderable {
             if ($isstudent) {
                 return;
             }
+        } else {
+            // The admin user should not see the settings (gear) icon on the message index page.
+            $currenturl = $PAGE->url->get_path();
+            if ($currenturl === '/message/index.php') {
+                return;
+            }
         }
 
         if (!$PAGE->blocks->is_block_present('settings')) {
@@ -85,7 +91,7 @@ class settings_link implements \renderable {
     /**
      * Set admin menu instance, if required capability satisfied.
      *
-     * @throws \coding_exception
+     * @throws \core\exception\coding_exception
      */
     private function set_admin_menu_instance() {
         global $PAGE;

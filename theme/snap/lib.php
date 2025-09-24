@@ -26,7 +26,7 @@ use theme_snap\image;
  * Process site cover image.
  *
  * @throws Exception
- * @throws coding_exception
+ * @throws \core\exception\coding_exception
  * @throws dml_exception
  */
 function theme_snap_process_site_coverimage() {
@@ -39,10 +39,10 @@ function theme_snap_process_site_coverimage() {
  * CSS Processor
  *
  * @param string $css
- * @param theme_config $theme
+ * @param \core\output\theme_config $theme
  * @return string
  */
-function theme_snap_process_css($css, theme_config $theme) {
+function theme_snap_process_css($css, \core\output\theme_config $theme) {
 
     $css = theme_snap_set_category_colors($css, $theme);
 
@@ -109,6 +109,8 @@ function theme_snap_set_category_colors($css, $theme) {
                 'nav-color' => $colors[$category->id],
                 'nav-button-color' => $colors[$category->id],
                 'nav-login-bg' => $colors[$category->id],
+                'nav-text-color' => $colors[$category->id],
+                'nav-bg' => '#FFFFFF',
                 'nav-login-color' => '#FFFFFF',
                 'custom-menu-text-color' => $dbcustommenutextcoloractive ? $dbcustommenutextcolor : '#FFFFFF',
                 'gray-light' => '#6a737b',
@@ -230,7 +232,7 @@ function theme_snap_pluginfile($course, $cm, $context, $filearea, $args, $forced
     ];
 
     if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, $sysfileareas)) {
-        $theme = theme_config::load('snap');
+        $theme = \core\output\theme_config::load('snap');
         return $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
     } else if (in_array($context->contextlevel, $coverimagecontexts)
             && $filearea == 'coverimage' || $filearea == 'coursecard'|| $filearea == 'croppedimage') {
@@ -243,7 +245,7 @@ function theme_snap_pluginfile($course, $cm, $context, $filearea, $args, $forced
         return true;
     } else if ($filearea === 'hvp' || $filearea === 'hvpcustomcss') {
         // Call to serve H5P Custom CSS.
-        $theme = theme_config::load('snap');
+        $theme = \core\output\theme_config::load('snap');
         $hvpcustomcss = $theme->settings->hvpcustomcss;
         theme_snap_serve_hvp_css($args[1], $hvpcustomcss);
     } else {
@@ -262,7 +264,7 @@ function theme_snap_myprofile_navigation(core_user\output\myprofile\tree $tree, 
             } else {
                 $after = null;
             }
-            $url = new moodle_url('/user/preferences.php');
+            $url = new \core\url('/user/preferences.php');
             $prefnode = new core_user\output\myprofile\node('contact', 'userpreferences', $str->preferences, $after, $url);
 
             $tree->add_node($prefnode);
@@ -308,7 +310,7 @@ function theme_snap_get_main_scss_content($theme) {
 /**
  * Get SCSS to prepend.
  *
- * @param theme_config $theme The theme config object.
+ * @param \core\output\theme_config $theme The theme config object.
  * @return array
  */
 function theme_snap_get_pre_scss($theme) {
@@ -370,74 +372,92 @@ function theme_snap_get_pre_scss($theme) {
 }
 
 /**
+ * Inject additional SCSS.
+ *
+ * @param \core\output\theme_config $theme The theme config object.
+ * @return string
+ */
+function theme_snap_get_extra_scss($theme) {
+    return !empty($theme->settings->customscss) ? $theme->settings->customscss : '';
+}
+
+/**
  * Fragment API function to render course sections.
  * @param $args
  * @return string
  */
 function theme_snap_output_fragment_section($args) {
     global $PAGE, $CFG;
-    if (!empty($args['courseid']) && $args['section'] != '') {
-        $course = get_course($args['courseid']);
-        $PAGE->set_context(\context_course::instance($course->id));
-        $format = course_get_format($args['courseid']);
-        $formatname = $format->get_format();
-        if ($formatname == 'weeks' || $formatname == 'topics' || $formatname == 'tiles') {
-            $course = $format->get_course();
-            $formatrenderer = $format->get_renderer($PAGE);
-            $modinfo = get_fast_modinfo($course);
-            $section = $modinfo->get_section_info($args['section']);
-
-            // We need to double check if the page has an instance of SharingCart.
-            // Current $PAGE object can't be modified.
-            $page = new moodle_page();
-            $page->set_course($course);
-            $page->set_pagelayout('course');
-            $page->set_pagetype('course-view-' . $formatname);
-            $page->initialise_theme_and_output();
-            $page->blocks->load_blocks();
-            $page->blocks->create_all_block_instances();
-            if ($page->blocks->is_block_present('sharing_cart') && !empty($section) &&
-                file_exists($CFG->dirroot . '/blocks/sharing_cart/amd/src/script.js')) {
-                $sectionsjs = new stdClass();
-                $sectionsjs->id = $section->id;
-                $sectionsjs->name = $section->name;
-                $sectionsjs->num = $args['section'];
-                $PAGE->requires->js_call_amd(
-                    'block_sharing_cart/script',
-                    'init',
-                    [['add_method' => get_config('block_sharing_cart', 'add_to_sharing_cart')], [$sectionsjs], true]
-                );
-                $PAGE->requires->strings_for_js(
-                    array('yes', 'no', 'ok', 'cancel', 'error', 'edit', 'move', 'delete', 'movehere'),
-                    'moodle'
-                );
-
-                $PAGE->requires->strings_for_js(
-                    array('copyhere', 'notarget', 'backup', 'restore', 'movedir', 'clipboard',
-                        'confirm_backup', 'confirm_backup_section', 'confirm_userdata',
-                        'confirm_delete', 'clicktomove', 'folder_string',
-                        'activity_string', 'delete_folder', 'modal_checkbox',
-                        'modal_confirm_backup', 'modal_confirm_delete', 'backup_heavy_load_warning_message',
-                        'snap_dialog_restore'),
-                    'block_sharing_cart'
-                );
-            }
-            $maxbytes = get_max_upload_file_size($CFG->maxbytes, $course->maxbytes);
-            if (has_capability('moodle/course:ignorefilesizelimits', $PAGE->context)) {
-                $maxbytes = 0;
-            }
-            $html = $formatrenderer->course_section($course, $section, $modinfo);
-            $PAGE->requires->js('/course/dndupload.js');
-            $vars = array(
-                array('courseid' => $course->id,
-                    'maxbytes' => $maxbytes,
-                    'showstatus' => false)
-            );
-            $PAGE->requires->js_call_amd('theme_snap/dndupload-lazy', 'init', $vars);
-            return $html;
-        }
+    if (empty($args['courseid']) || $args['section'] == '') {
+        return '';
     }
-    return '';
+    $course = get_course($args['courseid']);
+    $PAGE->set_context(\context_course::instance($course->id));
+    $format = course_get_format($args['courseid']);
+    $formatname = $format->get_format();
+    $format->set_sectionnum($args['section']);
+    if ($formatname !== 'weeks' && $formatname !== 'topics' && $formatname !== 'tiles') {
+        return $formatname;
+    }
+    $formatrenderer = $format->get_renderer($PAGE);
+    $modinfo = get_fast_modinfo($course);
+    $section = $modinfo->get_section_info($args['section']);
+
+    // We need to double check if the page has an instance of SharingCart.
+    // Current $PAGE object can't be modified.
+    $page = new moodle_page();
+    $page->set_course($course);
+    $page->set_pagelayout('course');
+    $page->set_pagetype('course-view-' . $formatname);
+    $page->initialise_theme_and_output();
+    $page->blocks->load_blocks();
+    $page->blocks->create_all_block_instances();
+    if ($page->blocks->is_block_present('sharing_cart') && !empty($section) &&
+        file_exists($CFG->dirroot . '/blocks/sharing_cart/amd/src/script.js')) {
+        $sectionsjs = new stdClass();
+        $sectionsjs->id = $section->id;
+        $sectionsjs->name = $section->name;
+        $sectionsjs->num = $args['section'];
+        $PAGE->requires->js_call_amd(
+            'block_sharing_cart/script',
+            'init',
+            [['add_method' => get_config('block_sharing_cart', 'add_to_sharing_cart')], [$sectionsjs], true]
+        );
+        $PAGE->requires->strings_for_js(
+            array('yes', 'no', 'ok', 'cancel', 'error', 'edit', 'move', 'delete', 'movehere'),
+            'moodle'
+        );
+
+        $PAGE->requires->strings_for_js(
+            array('copyhere', 'notarget', 'backup', 'restore', 'movedir', 'clipboard',
+                'confirm_backup', 'confirm_backup_section', 'confirm_userdata',
+                'confirm_delete', 'clicktomove', 'folder_string',
+                'activity_string', 'delete_folder', 'modal_checkbox',
+                'modal_confirm_backup', 'modal_confirm_delete', 'backup_heavy_load_warning_message',
+                'snap_dialog_restore'),
+            'block_sharing_cart'
+        );
+    }
+    $maxbytes = get_max_upload_file_size($CFG->maxbytes, $course->maxbytes);
+    if (has_capability('moodle/course:ignorefilesizelimits', $PAGE->context)) {
+        $maxbytes = 0;
+    }
+    $PAGE->requires->js('/course/dndupload.js');
+    $vars = array(
+        array('courseid' => $course->id,
+            'maxbytes' => $maxbytes,
+            'showstatus' => false)
+    );
+    $PAGE->requires->js_call_amd('theme_snap/dndupload-lazy', 'init', $vars);
+
+    // Create the renderable class.
+    $sectionclass = "core_courseformat\output\local\content";
+    $sectionrenderable = new $sectionclass($format, $section);
+
+    // Render the HTML of the section.
+    $html = $formatrenderer->render($sectionrenderable);
+
+    return $html;
 }
 
 function theme_snap_course_module_background_deletion_recommended() {
@@ -518,13 +538,13 @@ function snap_print_course_request_buttons($context) {
         if ($context instanceof context_coursecat) {
             $params['category'] = $context->instanceid;
         }
-        echo $OUTPUT->single_button(new moodle_url('/course/request.php', $params),
+        echo $OUTPUT->single_button(new \core\url('/course/request.php', $params),
             get_string('requestcourse'), 'get');
     }
     // Print a button to manage pending requests.
     if (has_capability('moodle/site:approvecourse', $context)) {
         $disabled = !$DB->record_exists('course_request', array());
-        echo $OUTPUT->single_button(new moodle_url('/course/pending.php'), get_string('coursespending'),
+        echo $OUTPUT->single_button(new \core\url('/course/pending.php'), get_string('coursespending'),
             'get', array('disabled' => $disabled));
     }
 }

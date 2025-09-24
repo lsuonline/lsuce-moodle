@@ -31,6 +31,7 @@ const SELECTORS = {
     TRIGGER_ICON: '.snap-sidebar-menu-trigger i',
     HEADER: 'header',
     DRAWER_BUTTON: '.snap-sidebar-menu-item[data-activeselector]',
+    COURSE_INDEX_DRAWER_BUTTON: '.drawer-toggler.drawer-left-toggle',
     MESSAGES_POPOVER: '[data-region="popover-region-messages"]',
     CLOSE_DRAWER_BUTTON: '[data-action="closedrawer"]',
     SIDEBAR_MENU_ITEM: '.snap-sidebar-menu-item',
@@ -57,7 +58,7 @@ const DRAWERS = {
         '.drawer:has(.message-app)'
     ],
     ACTIVE_SELECTORS: [
-        '.drawer.show',
+        '.drawer-right.drawer.show',
         '.block_settings.block.state-visible',
         '#snap_feeds_side_menu.state-visible',
         '.drawer:not(.hidden):has(.message-app)'
@@ -83,6 +84,11 @@ const PREFERENCES = {
     SNAP_FEEDS: 'snap-feeds-open',
     MESSAGES_DRAWER: 'snap-message-drawer-open',
 };
+
+const FORCEOPEN_BODY_IDS = [
+    'page-mod-quiz-attempt',
+    'page-mod-book-view'
+];
 
 const PREFERENCE_MAP = {
     [PREFERENCES.BLOCKS_DRAWER]: ACTIVE_SELECTORS.BLOCKS_DRAWER,
@@ -147,7 +153,7 @@ const updateElementPositions = (selectors = null) => {
         
         // Update each element's position
         selectorsArray.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
+            const elements = queryActiveDrawers(selector);
             
             elements.forEach(element => {    
                 if (isNavUnpinned) {
@@ -166,6 +172,16 @@ const updateElementPositions = (selectors = null) => {
                 }
             });
         });
+    }
+
+    // Updates Course Index Button position.
+    const courseindexbutton = document.querySelector(SELECTORS.COURSE_INDEX_DRAWER_BUTTON);
+    if (courseindexbutton) {
+        if (isNavUnpinned) {
+            courseindexbutton.style.top = '280px';
+        } else {
+            courseindexbutton.style.top = `${topPosition + 260}px`;
+        }
     }
 };
 
@@ -300,16 +316,30 @@ const handleMessagesPopoverClick = (e) => {
  * @return {Promise}
  */
 const setActiveDrawer = async() => {
-    const preferences = await getUserPreferences();
+    let preferences = await getUserPreferences(null, M.cfg.userId);
     const preferencesArray = {};
-    // BEGIN LSU adding check for preferences otherwise an error is generated.
-    if (preferences.hasOwnProperty('preferences')) {
-        preferences.preferences.forEach(pref => {
-            preferencesArray[pref.name] = pref.value;
-        });
-    }
-    // END LSU adding check for preferences otherwise an error is generated.
 
+    // Ensure required preference keys exist with default value if missing.
+    const defaultPreferences = {};
+    Object.values(PREFERENCES).forEach(key => {
+        if (!(key in preferences)) {
+            defaultPreferences[key] = 0;
+        }
+    });
+    preferences = { ...defaultPreferences, ...preferences };
+
+    Object.keys(preferences).forEach(pref => {
+        if (M.cfg.behatsiterunning) {
+            preferencesArray[pref] = 0;
+        } else {
+            preferencesArray[pref] = preferences[pref];
+        }
+        if (pref === PREFERENCES.BLOCKS_DRAWER) {
+            if (FORCEOPEN_BODY_IDS.includes(document.body.id)) {
+                preferencesArray[pref] = 1;
+            }
+        }
+    });
     // Review which user preference is set to true, from PREFERENCE_MAP
     for (const [prefKey, drawerSelector] of Object.entries(PREFERENCE_MAP)) {
         // See if any Drawer was opened. (Preference set to 1)
@@ -338,13 +368,13 @@ const setDrawerPreference = (activeSelector, value) => {
     for (const [preference, selector] of Object.entries(PREFERENCE_MAP)) {
         if (selector.includes(activeSelector) && !isSmall() && value) {
             // Set open status to selected Drawer.
-            setUserPreferences([{name: preference, value: true}]);
+            setUserPreferences([{name: preference, value: true, userid: M.cfg.userId}]);
         } else if (value) {
             // Set closed status to other Drawers.
-            setUserPreferences([{name: preference, value: false}]);
+            setUserPreferences([{name: preference, value: false, userid: M.cfg.userId}]);
         } else if (selector.includes(activeSelector) && !value) {
             // Set closed status to selected Drawer.
-            setUserPreferences([{name: preference, value: false}]);
+            setUserPreferences([{name: preference, value: false, userid: M.cfg.userId}]);
         }
     }
 };
@@ -446,6 +476,9 @@ const queryActiveDrawers = (selector) => {
         // Workaround for :has(.message-app)
         const potentialDrawers = document.querySelectorAll('.drawer:not(.hidden)');
         return Array.from(potentialDrawers).filter(drawer => drawer.querySelector('.message-app'));
+    } else if (selector === '.drawer:has(.message-app)') {
+        const potentialDrawers = document.querySelectorAll('.drawer');
+        return Array.from(potentialDrawers).filter(drawer => drawer.querySelector('.message-app'));
     } else {
         // Standard query for other selectors
         return document.querySelectorAll(selector);
@@ -501,7 +534,7 @@ const toggleSidebarOnHorizontalScroll = (scrollX) => {
         if (lastScrollX === 0) {
             // Hide sidebar
             sidebar.style.right = '-100%';
-            
+            sidebar.classList.remove('show');
             // Hide active drawers
             DRAWERS.ACTIVE_SELECTORS.forEach(selector => {
                 const activeDrawers = queryActiveDrawers(selector); // Use the helper function
@@ -513,7 +546,7 @@ const toggleSidebarOnHorizontalScroll = (scrollX) => {
     } else if (lastScrollX !== 0) {
         // When returning to scroll position 0
         sidebar.style.right = '';
-        
+        sidebar.classList.add('show');
         // Restore active drawers visibility
         DRAWERS.ACTIVE_SELECTORS.forEach(selector => {
             const activeDrawers = queryActiveDrawers(selector); // Use the helper function

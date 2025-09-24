@@ -100,6 +100,7 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
         $(window).on('resize', function() {
             mobileFormChecker();
             updateGraderHeadersTop();
+            updateSubmissionsHeaderTop();
         });
 
         var mobileFormChecker = function() {
@@ -117,6 +118,16 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
             const graderHeader = $('.path-grade-report-grader .gradeparent tr.heading');
             if (graderHeader.length) {
                 graderHeader.css('top', $('#mr-nav').height() + 'px');
+            }
+        };
+
+        /**
+         * Update the top position of the submissions header in assignment submissions view.
+         */
+        const updateSubmissionsHeaderTop = function() {
+            const submissionsHeader = $('#page-mod-assign-grading #submissions');
+            if (submissionsHeader.length) {
+                submissionsHeader.css('top', $('#mr-nav').height() + 'px');
             }
         };
 
@@ -495,12 +506,12 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
 
             // Listener for toc search.
             var dataList = $("#toc-searchables").find('li').clone(true);
-            $('#course-toc').on('keyup', '#toc-search-input', function() {
+            $('#theme_boost-drawers-courseindex').on('keyup', '#toc-search-input', function() {
                 tocSearchCourse(dataList);
             });
 
             // Handle keyboard navigation of search items.
-            $('#course-toc').on('keydown', '#toc-search-input', function(e) {
+            $('#theme_boost-drawers-courseindex').on('keydown', '#toc-search-input', function(e) {
                 var keyCode = e.keyCode || e.which;
                 if (keyCode === 9) {
                     // 9 tab
@@ -517,7 +528,7 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
                 }
             });
 
-            $('#course-toc').on("click", '#toc-search-results a', function() {
+            $('#theme_boost-drawers-courseindex').on("click", '#toc-search-results a', function() {
                 $("#toc-search-input").val('');
                 $('#toc-search-results').html('');
                 $("#toc-search-input").removeClass('state-active');
@@ -538,10 +549,11 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
             });
 
             // Admin drawer: Onclick for toggle of state-visible of admin block and mobile menu.
-            $(document).on("click", "#admin-menu-trigger, #toc-mobile-menu-toggle", function(e) {
+            $(document).on("click", "#admin-menu-trigger, #toc-mobile-menu-toggle, [id^=\"message-drawer-toggle-\"]", function(e) {
                 var href = this.getAttribute('href');
                 // Make this only happen for settings button.
-                if (this.getAttribute('id') === 'admin-menu-trigger') {
+                if (this.getAttribute('id') === 'admin-menu-trigger'
+                    || this.getAttribute('id').startsWith('message-drawer-toggle-')) {
                     $(this).toggleClass('active');
                     $('#page').toggleClass('offcanvas');
                     if ($(this).attr('aria-expanded') === 'true') {
@@ -550,6 +562,11 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
                         $(this).attr('aria-expanded', true);
                     }
                 }
+                // Code for mod_data sticky footer.
+                if ($('#sticky-footer').length != 0) {
+                    $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
+                }
+
                 $(href).attr('tabindex', '0');
                 $(href).toggleClass('state-visible').focus();
                 e.preventDefault();
@@ -563,11 +580,6 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
 
                 if ($('.message-app.main').length === 0) {
                     document.dispatchEvent(new Event("messages-drawer:toggle"));
-                }
-
-                // Code for mod_data sticky footer.
-                if ($('#sticky-footer').length != 0) {
-                    $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
                 }
             });
 
@@ -606,6 +618,11 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
                 if ($('#sticky-footer').length != 0) {
                     $('#sticky-footer').toggleClass('snap-mod-data-sticky-footer');
                 }
+            });
+
+            $(document).on("click", "[id^=\"message-drawer-\"] > div.closewidget > a", function(e) {
+                $('#page').toggleClass('offcanvas');
+                e.preventDefault();
             });
 
             // Mobile menu button.
@@ -828,6 +845,66 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
                     }
                 }
             }, 2000);
+        }
+
+        /**
+         * Sets up event listeners for the "Go to Top" and "Go to Left" buttons.
+         */
+        function setupGotoButtons() {
+            const goLeftButtonId = 'goto-left-link';
+            const goTopButtonId = 'goto-top-link';
+
+            // Scroll listener for "Go to Left" button
+            const goLeftBtn = document.getElementById(goLeftButtonId);
+            let ticking = false;
+
+            if (goLeftBtn) {
+                window.addEventListener("scroll", () => {
+                    if (!ticking) {
+                        window.requestAnimationFrame(() => {
+                            const isScrolled = window.scrollX > 10;
+                            const hasClass = goLeftBtn.classList.contains("scrolled");
+
+                            if (isScrolled && !hasClass) {
+                                goLeftBtn.classList.add("scrolled");
+                            } else if (!isScrolled && hasClass) {
+                                goLeftBtn.classList.remove("scrolled");
+                            }
+                            ticking = false;
+                        });
+                        ticking = true;
+                    }
+                });
+
+                // Click listener for "Go to Left" link inside the button
+                const goLeftLink = goLeftBtn.querySelector("a");
+                if (goLeftLink) {
+                    goLeftLink.addEventListener("click", function () {
+                        window.scrollTo({ left: 0, behavior: "smooth" });
+
+                        const focusable = document.querySelector("body a, body [tabindex='0']");
+                        if (focusable) {
+                            focusable.focus();
+                        }
+                    });
+                }
+            }
+
+            // Click listener for "Go to Top" link
+            const goTopBtn = document.getElementById(goTopButtonId);
+            if (goTopBtn) {
+                const goTopLink = goTopBtn.querySelector("a");
+                if (goTopLink) {
+                    goTopLink.addEventListener("click", function () {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+
+                        const focusable = document.querySelector("body a, body [tabindex='0']");
+                        if (focusable) {
+                            focusable.focus();
+                        }
+                    });
+                }
+            }
         }
 
         /**
@@ -1464,11 +1541,8 @@ define(['jquery', 'core/log', 'core/aria', 'theme_snap/headroom', 'theme_snap/ut
                 accessibility.snapAxInit();
                 messages.init();
 
-                // Smooth scroll for go to top button.
-                $("div#goto-top-link > a").click(function() {
-                    window.scrollTo({top: 0, behavior: 'smooth'});
-                    $('body').find('a, [tabindex=0]').first().focus();
-                });
+                // Smooth scroll for go to top and left button.
+                setupGotoButtons();
 
                 // Blocks selectors to remove 'editing' class because is not necessary to access their settings.
                 var noneditingblocks = {};

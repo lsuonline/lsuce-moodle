@@ -53,7 +53,7 @@ if (!empty($PAGE->theme->settings->logo)) {
     $attrs['class'] = 'logo';
 }
 
-echo html_writer::link($defaulthomeurl, $sitefullname, $attrs);
+echo \core\output\html_writer::link($defaulthomeurl, $sitefullname, $attrs);
 ?>
 
 <div class="float-end js-only row">
@@ -119,7 +119,7 @@ if (isloggedin() && !isguestuser()) {
     // Using patterns with exact matches and prefix matches
     $whitelistpagesforblocks = [
         'exact' => ['site-index', 'my-index'],
-        'prefix' => ['course-view']
+        'prefix' => ['course-view', 'mod']
     ];
     
     $sidebarmenuitems = [];

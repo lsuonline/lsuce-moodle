@@ -31,12 +31,12 @@ use context_course;
 use context_system;
 // END LSU Enhancement add Kaltura my media.
 use core_component;
-use html_writer;
-use moodle_url;
+use \core\output\html_writer;
+use \core\url as moodle_url;
 use stdClass;
 use theme_snap\local;
 use theme_snap\renderables\login_alternative_methods;
-use single_button;
+use \core\output\single_button;
 
 require_once($CFG->dirroot.'/grade/querylib.php');
 require_once($CFG->libdir.'/gradelib.php');
@@ -44,7 +44,7 @@ require_once($CFG->dirroot.'/grade/lib.php');
 require_once($CFG->libdir.'/badgeslib.php');
 require_once($CFG->dirroot.'/repository/lib.php');
 
-class shared extends \renderer_base {
+class shared extends \core\output\renderer_base {
 
     /**
      * Taken from /format/renderer.php
@@ -575,7 +575,7 @@ EOF;
             // Generate linkhtml.
             $attributes = $item->attributes ?? null;
             $o .= '<li>';
-            $o .= html_writer::link($item->link, $item->title, $attributes);
+            $o .= \core\output\html_writer::link($item->link, $item->title, $attributes);
             $o .= '</li>';
         }
         return $o;
@@ -685,7 +685,7 @@ EOF;
                 $usersubset = get_enrolled_users($coursecontext,
                         '', 0, 'u.*', 'picture desc, lastaccess desc', 0, 4, true);
                 foreach ($usersubset as $user) {
-                    $userpicture = new \user_picture($user);
+                    $userpicture = new \core\output\user_picture($user);
                     $userpicture->link = false;
                     $userpicture->size = 100;
                     $participanticons .= $OUTPUT->render($userpicture);
@@ -809,7 +809,7 @@ EOF;
                 $iconurl = $OUTPUT->image_url('badges', 'theme');
                 $badgesicon = '<img src="'.$iconurl.'" class="svg-icon" alt="" role="presentation">';
                 $links[] = array(
-                    'link' => 'badges/view.php?type=' . BADGE_TYPE_COURSE . '&id=' . $COURSE->id,
+                    'link' => 'badges/index.php?type=' . BADGE_TYPE_COURSE . '&id=' . $COURSE->id,
                     'title' => $badgesicon.get_string('badges', 'badges')
                 );
             }
@@ -1005,7 +1005,7 @@ EOF;
             return $output;
         }
 
-        $userpicture = new \user_picture($USER);
+        $userpicture = new \core\output\user_picture($USER);
         $userpicture->link = false;
         $userpicture->alttext = false;
         $userpicture->class = 'userpicture snap-icon'; // Icon class for margin.

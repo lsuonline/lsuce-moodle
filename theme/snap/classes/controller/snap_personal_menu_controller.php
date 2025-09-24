@@ -116,7 +116,7 @@ class snap_personal_menu_controller extends controller_abstract {
      * Get user's current login status.
      *
      * @return string
-     * @throws \coding_exception
+     * @throws \core\exception\coding_exception
      */
     public function get_loginstatus_action() {
         $failedactionmsg = optional_param('failedactionmsg', null, PARAM_TEXT);

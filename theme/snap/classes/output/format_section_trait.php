@@ -28,9 +28,9 @@ namespace theme_snap\output;
 use context_course;
 use core_courseformat\base as course_format;
 use core_courseformat\output\local\content;
-use renderable;
-use html_writer;
-use moodle_url;
+use core_courseformat\output\local\content\sectionnavigation;
+use \core\output\html_writer;
+use \core\url as moodle_url;
 use stdClass;
 use theme_snap\output\core\course_renderer;
 use theme_snap\renderables\course_action_section_duplicate;
@@ -48,35 +48,6 @@ trait format_section_trait {
      static $SECTION_ACTIONS_BEFORE_MENU = 2;
 
     /**
-     * Renders HTML to display one course module for display within a section.
-     *
-     * @deprecated since 4.0 - use core_course output components or course_format::course_section_updated_cm_item instead.
-     *
-     * This function calls:
-     * {@link core_course_renderer::course_section_cm()}
-     *
-     * @param stdClass $course
-     * @param \completion_info $completioninfo
-     * @param \cm_info $mod
-     * @param int|null $sectionreturn
-     * @param array $displayoptions
-     * @return String
-     */
-    public function course_section_updated_cm_item(
-        course_format $format,
-        \section_info $section,
-        \cm_info $cm,
-        array $displayoptions = []
-    ) {
-        global $PAGE;
-        $course = $format->get_course();
-        $completioninfo = new \completion_info($course);
-        $render = new course_renderer($PAGE, null);
-        return $render->course_section_cm_list_item_snap($course, $completioninfo, $cm, $format->get_sectionnum(),
-            $displayoptions);
-    }
-
-    /**
      * Render the enable bulk editing button.
      * @param course_format $format the course format
      * @return string|null the enable bulk button HTML (or null if no bulk available).
@@ -86,27 +57,109 @@ trait format_section_trait {
         return '';
     }
 
-    /**
-     * New moodle 4.0 render_content function.
-     * @param renderable $widget
-     */
+    public function render(\core\output\renderable $widget): string {
+        global $PAGE, $DB;
 
-    public function render_content(renderable $widget) {
-        // We need access to format and course to avoid more queries.
-        $reflectionf = new \ReflectionClass($widget);
-        $property = $reflectionf->getProperty('format');
-        $property->setAccessible(true);
-        $format = $property->getValue($widget);
-        $reflectioncourse = new \ReflectionClass($format);
-        $property = $reflectioncourse->getProperty('course');
-        $property->setAccessible(true);
-        $course = $property->getValue($format);
-
+        // Render the course content based on Core templates.
         if ($widget instanceof content) {
-            $this->print_multiple_section_page($course, null, null, null, null);
-        } else {
-            return parent::render($widget);
+            $context = \context_course::instance($PAGE->course->id);
+            $course = get_course($context->instanceid);
+            $modinfo = get_fast_modinfo($course);
+            $courseformat = course_get_format($course);
+
+            // Check if we are in a specific section by URL.
+            $pagepath = $PAGE->url->get_path();
+            $sectionid = optional_param('id', -1, PARAM_INT);
+            $sectionnumber = optional_param('section', -1, PARAM_INT);
+            $currentsection = null;
+            $onsectionpage = false;
+
+            if ($pagepath === '/course/section.php' && $sectionid !== -1) { // For section.php render
+                $sectionrecord = $DB->get_record('course_sections', ['id' => $sectionid], '*', MUST_EXIST);
+                $currentsection = $modinfo->get_section_info($sectionrecord->section);
+                $onsectionpage = true;
+            } elseif ($sectionnumber !== -1) { // For view.php?section=0 render - (single section via URL parameter)
+                $currentsection = $modinfo->get_section_info($sectionnumber);
+                $onsectionpage = true;
+            } else if ($pagepath === '/course/view.php' && $sectionnumber === -1) { // For view.php render - (Main course view)
+                $startsectionid = $this->get_snap_active_section($course);
+
+                // Set current section to Course.
+                $courseformat->set_sectionnum($startsectionid);
+                $reflection = new \ReflectionClass($widget);
+                $formatProperty = $reflection->getProperty('format');
+                $formatProperty->setAccessible(true);
+                $formatProperty->setValue($widget, $courseformat);
+
+                $currentsection = $modinfo->get_section_info($startsectionid);
+                $onsectionpage = true;
+            } else if ($pagepath === '/') { // For call via AJAX - theme_snap_output_fragment_section
+                $currentsection = $modinfo->get_section_info($courseformat->get_sectionnum());
+            }
+
+            // Bring core render.
+            $corecontent = parent::render($widget);
+            $output = $corecontent;
+
+            if ($currentsection) {
+                // For rendering a single section.
+                $sectionheader = $this->section_header(
+                    $currentsection,
+                    $course,
+                    true,
+                    $currentsection->section
+                );
+                $output = $sectionheader;
+                $output .= $corecontent;
+
+                if ($currentsection->uservisible) {
+                    // Add Snap modchooser and Snap drop file.
+                    $sectionfooter = $this->course_section_add_cm_control_snap($course, $currentsection->section, 0);
+                    $output .= $sectionfooter;
+                }
+                // Add Snap footer navigation for course.
+                $output .= $this->render(new course_section_navigation($course, $modinfo->get_section_info_all(), $currentsection->section));
+            }
+            if ($onsectionpage) {
+                $sections = html_writer::start_tag('ul', ['class' => 'sections']);
+                $sections .= $this->render_from_template('theme_snap/course_section_loading', []);
+                $sections .= $output;
+                $sections .= html_writer::end_tag('ul');
+                $output = $sections;
+                // Output the "Add new section" form.
+                $output .= $this->change_num_sections($course);
+                // Add Snap Course Dashboard.
+                $output .= shared::course_tools(true);
+            }
+            return $output;
         }
+
+        // Render as usual for any other widget.
+        return parent::render($widget);
+    }
+
+    /**
+     * Find the active section for main Course view.
+     *
+     * @param stdClass $course The course entry from DB
+     * @return mixed The section to show by default in Snap Course View
+     */
+    protected function get_snap_active_section($course) {
+        $startsectionid = 0; // Default section 0.
+        if ($course->format == 'weeks') {
+            $numsections = course_get_format($course)->get_last_section_number();
+            for ($i = 0; $i <= $numsections; $i++) {
+                if (course_get_format($course)->is_section_current($i)) {
+                    $startsectionid = $i;
+                    break;
+                }
+            }
+        } else if ($course->format == 'topics') {
+            $startsectionid = !empty($course->marker) ? $course->marker : 0;
+        }
+        $startsectionid = !empty($course->sectionreturn) ? $course->sectionreturn : $startsectionid;
+
+        return $startsectionid;
     }
 
     /**
@@ -915,7 +968,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_move $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_move(course_action_section_move $action) {
         $data = $action->export_for_template($this);
@@ -925,7 +978,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_visibility $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_visibility(course_action_section_visibility $action) {
         $data = $action->export_for_template($this);
@@ -935,7 +988,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_highlight $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_highlight(course_action_section_highlight $action) {
         $data = $action->export_for_template($this);
@@ -945,7 +998,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_delete $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_delete(course_action_section_delete $action) {
         $data = $action->export_for_template($this);
@@ -955,7 +1008,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_duplicate $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_duplicate(course_action_section_duplicate $action) {
         $data = $action->export_for_template($this);
@@ -965,7 +1018,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_extra_menu $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_extra_menu(course_action_section_extra_menu $action) {
         $data = $action->export_for_template($this);
@@ -975,7 +1028,7 @@ trait format_section_trait {
     /**
      * @param course_action_section_permalink $action
      * @return mixed
-     * @throws \moodle_exception
+     * @throws \core\exception\moodle_exception
      */
     public function render_course_action_section_permalink(course_action_section_permalink $action) {
         $data = $action->export_for_template($this);

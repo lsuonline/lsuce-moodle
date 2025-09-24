@@ -25,7 +25,7 @@
 namespace theme_snap\output;
 
 use block_myoverview\output\main;
-use html_writer;
+use \core\output\html_writer as html_writer;
 use stdClass;
 
 // BEGIN LSU - completion filter
@@ -58,6 +58,7 @@ class block_myoverview_renderer extends \block_myoverview\output\renderer {
                 $main->export_for_zero_state_template($this)
             );
         }
+
         $data = $main->export_for_template($this);
 
         // BEGIN LSU - get user pref for year and completion.
