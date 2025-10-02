@@ -120,6 +120,9 @@
     background-color: #3a1867;
 }
 
+#page-blocks-wds_sportsgrades-view #region-main {
+    max-width: none;
+}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

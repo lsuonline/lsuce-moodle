@@ -153,6 +153,7 @@ class search {
         $conditions = [];
         $mconditions = [];
         $parmssql = [];
+        $mparmssql = [];
 
         // Filter by sport access permissions.
         if (!empty($access['sports']) && !$access['all_students']) {
@@ -162,6 +163,7 @@ class search {
                 $parmname = 'sport' . $i;
                 $sportplaceholders[] = ':' . $parmname;
                 $parmssql[$parmname] = $sportcode;
+                $mparmssql[$parmname] = $sportcode;
                 $i++;
             }
             $conditions[] = "sm.data IN (" . implode(',', $sportplaceholders) . ")";
@@ -171,17 +173,15 @@ class search {
             $studentplaceholders = [];
             $i = 0;
             foreach ($access['student_ids'] as $studentid) {
-                $parmname = 'student' . $i;
-                $studentplaceholders[] = ':' . $parmname;
-                $parmssql[$parmname] = $studentid;
+                $mparmname = 'student' . $i;
+                $studentplaceholders[] = ':' . $mparmname;
+                $mparmssql[$mparmname] = $studentid;
                 $i++;
             }
 
-            if (!empty($conditions) && !empty($mconditions)) {
-                $conditions[] = "OR u.id IN (" . implode(',', $studentplaceholders) . ")";
+            if (!empty($mconditions)) {
                 $mconditions[] = "OR u.id IN (" . implode(',', $studentplaceholders) . ")";
             } else {
-                $conditions[] = "u.id IN (" . implode(',', $studentplaceholders) . ")";
                 $mconditions[] = "u.id IN (" . implode(',', $studentplaceholders) . ")";
             }
         }
@@ -191,42 +191,49 @@ class search {
             $conditions[] = "stu.universal_id LIKE :universal_id";
             $mconditions[] = "stu.universal_id LIKE :universal_id";
             $parmssql['universal_id'] = '%' . $parms['universal_id'] . '%';
+            $mparmssql['universal_id'] = '%' . $parms['universal_id'] . '%';
         }
 
         if (!empty($parms['username'])) {
             $conditions[] = "u.username LIKE :username";
             $mconditions[] = "u.username LIKE :username";
             $parmssql['username'] = '%' . $parms['username'] . '%';
+            $mparmssql['username'] = '%' . $parms['username'] . '%';
         }
 
         if (!empty($parms['firstname'])) {
             $conditions[] = "u.firstname LIKE :firstname";
             $mconditions[] = "u.firstname LIKE :firstname";
             $parmssql['firstname'] = '%' . $parms['firstname'] . '%';
+            $mparmssql['firstname'] = '%' . $parms['firstname'] . '%';
         }
 
         if (!empty($parms['lastname'])) {
             $conditions[] = "u.lastname LIKE :lastname";
             $mconditions[] = "u.lastname LIKE :lastname";
             $parmssql['lastname'] = '%' . $parms['lastname'] . '%';
+            $mparmssql['lastname'] = '%' . $parms['lastname'] . '%';
         }
 
         if (!empty($parms['major'])) {
             $conditions[] = "p.major LIKE :major";
             $mconditions[] = "p.major LIKE :major";
             $parmssql['major'] = '%' . $parms['major'] . '%';
+            $mparmssql['major'] = '%' . $parms['major'] . '%';
         }
 
         if (!empty($parms['classification'])) {
             $conditions[] = "p.classification = :classification";
             $mconditions[] = "p.classification = :classification";
             $parmssql['classification'] = $parms['classification'];
+            $mparmssql['classification'] = $parms['classification'];
         }
 
         if (!empty($parms['sport'])) {
             $conditions[] = "sm.data = :sport";
             $mconditions[] = "sm.data = :sport";
             $parmssql['sport'] = $parms['sport'];
+            $mparmssql['sport'] = $parms['sport'];
         }
 
         // Build the WHERE clause.
@@ -249,8 +256,9 @@ class search {
             }
 
             // Get the individual students.
-            $mstudents = $DB->get_records_sql($msql, $parmssql);
+            $mstudents = $DB->get_records_sql($msql, $mparmssql);
 
+            // Merge the students and singletons together.
             $mergedstudents = $students + $mstudents;
 
             // Sort by first name, last name.
