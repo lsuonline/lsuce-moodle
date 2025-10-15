@@ -76,7 +76,7 @@ if ($formdata = $fileform->get_data()) {
 
         if ($smartfile->bad_lines) {
             foreach ($smartfile->bad_lines as $n => $line) {
-                $messages[] = $s('bad_line', $n);
+                $messages[] = $s('bad_line', $line);
             }
         }
 
