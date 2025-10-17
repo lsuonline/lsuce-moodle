@@ -4,6 +4,16 @@ moodle-local_bulkenrol
 Changes
 -------
 
+### v4.5-r3
+
+* 2025-09-11 - Improvement: Make enrollment instructions gender-neutral, solved by #40.
+* 2025-09-10 - Improvement: Document the fact that the teacher can use multiple users per line as well.
+* 2025-09-05 - Feature: Allow the teacher to unenrol users from the course as well, thanks to the MoodleMootDACH '25 DevCamp team 35.
+
+### v4.5-r2
+
+* 2025-05-22 - Improvement: E-Mail adresses are now case-insensitive, resolves #30 and #35
+
 ### v4.5-r1
 
 * 2024-10-14 - Upgrade: Adopt changes from MDL-82183 and use new \core\output\pix_icon class
