@@ -10,7 +10,7 @@ enum OptionType: int {
     case NUMBER = 3;
 }
 
-class CommandlineOption {
+class CLIOption {
     public ?string $shortname;
     public string $longname;
     public ?string $description;
@@ -26,7 +26,7 @@ class CommandlineOption {
     public function html() {
         # On click, toggle the input checkbox or focus the input.
         $html = '<tr
-            class="commandline-option-row"
+            class="cli-option-row"
             title="' . $this->description . '"
             onclick="
                 const input = this.querySelector(\'input\');
@@ -54,27 +54,10 @@ class CommandlineOption {
         return $html;
     }
 
-    static function find_help_option_text($contents) {
-        $lines = explode(PHP_EOL, $contents);
-        $helplines = [];
-        $inoptions = false;
-        foreach ($lines as $line) {
-            if (strpos($line, 'Options:') !== false) {
-                $inoptions = true;
-                continue;
-            }
-            if ($inoptions) {
-                if (trim($line) === '' && count($helplines) > 0) {
-                    break;
-                }
-                $helplines[] = $line;
-            }
-        }
-        return implode(PHP_EOL, $helplines);
-    }
-
-    static function parse_from_helptext($helptext) {
-        $lines = explode(PHP_EOL, $helptext);
+    /*
+    * @return CLIOption[]
+    */
+    static function parse_lines(array $lines) {
         $options_array = [];
         foreach ($lines as $line) {
             $line = trim($line);
@@ -123,7 +106,7 @@ class CommandlineOption {
 
             $description = implode(' ', $words);
 
-            $options_array[] = new CommandlineOption(
+            $options_array[] = new CLIOption(
                 $shortname,
                 $longname,
                 $description,
@@ -133,21 +116,13 @@ class CommandlineOption {
         return $options_array;
     }
 
-    static function parse_from_file($filepath) {
-        $contents = file_get_contents($filepath);
-        # Find the $help variable.
-
-        $helptext = self::find_help_option_text($contents);
-
-        return self::parse_from_helptext($helptext);
-    }
 
     static function array_to_html($options) {
         if (count($options) === 0) {
             return '';
         }
         $html = '<a href="javascript:void(0)" 
-            class="commandline-table-toggle"
+            class="cli-table-toggle"
             onclick="this.nextElementSibling.classList.toggle(\'hidden\');">
                 Show/Hide Options
             </a>';
