@@ -5,13 +5,20 @@ require_once("$CFG->libdir/formslib.php");
 
 require_once(__DIR__ . '/classes/cli_option.php');
 require_once(__DIR__ . '/classes/cli_script.php');
+
+use core_search\external\get_search_areas_list;
 use local_lsucli\CLIOption;
 use local_lsucli\CLIScript;
+use local_lsucli\OptionType;
+use tool_brickfield\local\areas\mod_choice\option;
 
 function pretty_print_r($data) {
     # Wrap in <pre>
-    
-
+    echo '<pre>';
+    # Print the data
+    print_r($data);
+    # Close the <pre>
+    echo '</pre>';
 }
 
 
@@ -19,21 +26,48 @@ class lsucli_form extends \moodleform {
     public function definition() {
         global $CFG;
         $cliscripts = CLIScript::gen_scripts();
-        pretty_print_r($cliscripts);
         $mform = $this->_form;
-        // $mform->addElement('static', 'info', 'LSU CLI Tool', 'This tool allows you to view and schedule Moodle CLI scripts.');
-        $options = new core\output\choicelist();
+        $scripts = [];
         foreach ($cliscripts as $script) {
-            // $options->add_option(
-            //     $script->file_name,
-            //     $script->file_name, [
-            //     'description' => $script->help_text,
-            // ]);
-            $mform->addElement('static', '', $script->file_name, );
+            $scripts[$script->file_name] = $script->file_name;
         }
-        $mform->addElement('submit', 'submitbutton', 'blah');
-        $mform->addElement('reset', 'reset', 'reset');
-        $mform->addElement('cancel', 'cancel', 'cancel');
+        $mform->addElement('autocomplete', 'script', 'Script to execute', $scripts);
+        $this->add_script_elements($cliscripts);
+        $mform->addElement('submit', 'submitbutton', 'Run Task');
+    }
+
+    private function add_script_elements($cliscripts) {
+        $mform = $this->_form;
+        foreach ($cliscripts as $script) {
+            $group = $this->add_option_elements($script);
+            $mform->addGroup($group, $script->file_name, null, null, false);
+            $mform->hideIf($script->file_name, 'script', 'neq', $script->file_name);
+        }
+    }
+
+    /**
+    * @return HTML_QuickForm_element[]
+    */
+    private function add_option_elements($script) {
+        $mform = $this->_form;
+        $group = [];
+        foreach ($script->get_options() as $option) {
+            $unique = $script->file_name . '_' . $option->longname;
+            if ($option->type == OptionType::BOOL) {
+                $group[] =& $mform->createElement('checkbox', $unique, $option->longname);
+            } else if ($option->type == OptionType::NUMBER) {
+                $group[] =& $mform->createElement('static', $unique, $option->longname, $option->longname);
+                $group[] =& $mform->createElement('text', $unique);
+                $mform->setType($unique, PARAM_INT);
+            } else if ($option->type == OptionType::STRING) {
+                $group[] =& $mform->createElement('static', $unique, $option->longname, $option->longname);
+                $group[] =& $mform->createElement('text', $unique);
+                $mform->setType($unique, PARAM_TEXT);
+            } else {
+                $group[] =& $mform->createElement('static', $unique, $option->longname);
+            }
+        }
+        return $group;
     }
 }
 
@@ -42,16 +76,12 @@ require_login();
 $PAGE->set_context($context);
 $PAGE->set_url('/local/lsucli/index.php');
 
-$mform = new lsucli_form();
-
 echo $OUTPUT->header();
 
 echo $OUTPUT->heading(get_string('lsucli', 'local_lsucli'));
 
-if ($mform->is_cancelled()) {
-    // redirect(new moodle_url('/local/lsucli/index.php'));
-    echo 'blah';
-}
+$mform = new lsucli_form();
+
 if ($data = $mform->get_data()) {
     pretty_print_r($data);
 }

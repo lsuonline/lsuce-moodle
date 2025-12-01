@@ -12,8 +12,9 @@ class CLIScript {
 
     public function __construct($file_name) {
         global $CFG;
-        $this->file_name = $file_name;
         $this->file_path = "$CFG->dirroot/admin/cli/$file_name";
+        $file_name = substr($file_name, 0, -4);
+        $this->file_name = ltrim(strtolower(preg_replace('/([A-Z])/', '_$1', $file_name)), '_');
         $this->parse_help_text();
     }
 
@@ -26,22 +27,18 @@ class CLIScript {
         $stage = 0;
         foreach ($lines as $line) {
             if ($stage == 0) {
-                if (strpos($line, '$help') !== false || strpos($line, "options['help'])") !== false) {
-                    $stage = 1;
-                }
-            } else if ($stage == 1) {
                 if (strpos($line, 'Options:') !== false) {
-                    $stage = 2;
+                    $stage = 1;
                     continue;
                 }
                 $help_lines[] = $line;
-            } else if ($stage == 2) {
+            } else if ($stage == 1) {
                 if (trim($line) === '' && count($option_lines) > 0) {
-                    $stage = 3;
+                    $stage = 2;
                     continue;
                 }
                 $option_lines[] = $line;
-            } else if ($stage == 3) {
+            } else if ($stage == 2) {
                 if (preg_match('/\"\;?/', $line) || $line == 'EOT;') {
                     break;
                 }
@@ -54,7 +51,14 @@ class CLIScript {
     }
 
     public function html() {
-        
+        ob_start(); ?>
+        <table>
+            <?php foreach ($this->options as $option) {
+                echo $option->html();
+            } ?>
+        </table>
+
+        <?php return ob_get_clean();
     }
 
     /**
@@ -68,5 +72,12 @@ class CLIScript {
             $results[] = new CLIScript($script);
         }
         return $results;
+    }
+
+    /**
+     * @return CLIOption[]
+     */
+    public function get_options(): array {
+        return $this->options;
     }
 }
