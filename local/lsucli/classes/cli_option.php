@@ -23,40 +23,12 @@ class CLIOption {
         $this->type = $type;
     }
 
-    public function html() {
-        # On click, toggle the input checkbox or focus the input.
-        $html = '<tr
-            class="cli-option-row"
-            title="' . $this->description . '"
-            onclick="
-                const input = this.querySelector(\'input\');
-                if (input) {
-                    if (input.type === \'checkbox\') {
-                        input.checked = !input.checked;
-                    } else {
-                        input.focus();
-                    }
-                }"
-            >';
-        if ($this->type === OptionType::BOOL) {
-            $html .= '<td><input type="checkbox" /></td>';
-        } else {
-            $html .= '<td></td>';
-        }
-        $html .= '<td>' . htmlspecialchars($this->longname) . '</td>';
-        $html .= '<td>';
-        if ($this->type === OptionType::NUMBER) {
-            $html .= '<input type="number" />';
-        } elseif ($this->type === OptionType::STRING) {
-            $html .= '<input type="text" />';
-        }
-        $html .= '</td></tr>';
-        return $html;
-    }
-
-    /*
-    * @return CLIOption[]
-    */
+    /**
+     * Parses the option lines of a help text.
+     * Creates a CLIOption for each line.
+     * @param   string[]    $lines  An array of strings
+     * @return CLIOption[]
+     */
     static function parse_lines(array $lines) {
         $options_array = [];
         foreach ($lines as $line) {
@@ -66,10 +38,6 @@ class CLIOption {
             }
 
             $words = preg_split('/\s+/', $line, -1, PREG_SPLIT_NO_EMPTY);
-            
-            // if (strstr($filepath, 'fix_course_sequence.php') !== false) {
-            //     pretty_print_r($words);
-            // }
             
             $shortname = null;
             $longname = null;
@@ -114,23 +82,5 @@ class CLIOption {
             );
         }
         return $options_array;
-    }
-
-
-    static function array_to_html($options) {
-        if (count($options) === 0) {
-            return '';
-        }
-        $html = '<a href="javascript:void(0)" 
-            class="cli-table-toggle"
-            onclick="this.nextElementSibling.classList.toggle(\'hidden\');">
-                Show/Hide Options
-            </a>';
-        $html .= '<table class="hidden">';
-        foreach ($options as $option) {
-            $html .= $option->html();
-        }
-        $html .= '</table>';
-        return $html;
     }
 }

@@ -18,6 +18,10 @@ class CLIScript {
         $this->parse_help_text();
     }
 
+    /**
+     * Scans the script file for its information.
+     */
+
     function parse_help_text() {
         $contents = file_get_contents($this->file_path);
         $lines = explode(PHP_EOL, $contents);
@@ -50,18 +54,8 @@ class CLIScript {
         $this->example_text = implode(PHP_EOL, $example_lines);
     }
 
-    public function html() {
-        ob_start(); ?>
-        <table>
-            <?php foreach ($this->options as $option) {
-                echo $option->html();
-            } ?>
-        </table>
-
-        <?php return ob_get_clean();
-    }
-
     /**
+     * Scans the admin/cli folder for cli scripts and parses them for information.
      * @return CLIScript[]
      */
     public static function gen_scripts(): array {
