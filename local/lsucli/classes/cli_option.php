@@ -73,6 +73,8 @@ class CLIOption {
             }
 
             $description = implode(' ', $words);
+            $description = html_entity_decode($description);
+            $description = preg_replace('/\\\(.)/', '$1', $description);
 
             $options_array[] = new CLIOption(
                 $shortname,

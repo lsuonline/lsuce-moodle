@@ -51,3 +51,9 @@
 .theme-snap.path-local-lsucli .form-group .form-inline:has(input[type="submit"]) {
     margin-top: 2em;
 }
+ 
+.tooltip .tooltip-inner {
+  max-width: 50vw;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}

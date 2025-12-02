@@ -29,6 +29,10 @@ class lsucli_form extends \moodleform
         $mform->addElement('submit', 'submitbutton', 'Run Task');
     }
 
+    /**
+     * @param CLIScript[] $cliscripts
+     * @return void
+     */
     private function add_script_elements($cliscripts)
     {
         $mform = $this->_form;
@@ -40,12 +44,23 @@ class lsucli_form extends \moodleform
     }
 
     /**
+     * @param CLIScript $script
      * @return HTML_QuickForm_element[]
      */
     private function add_option_elements($script)
     {
         $mform = $this->_form;
         $group = [];
+        $group = [...$group, ...$this->labelwrap(
+            'Custom Parameters 1', 
+            $mform->createElement(
+                'text', 
+                $script->file_name . "_custom_pre", 
+                null,
+                ['title' => 'Arbitrary text to go before all other parameters.']
+            )
+        )];
+        $mform->setType($script->file_name . '_custom_pre', PARAM_TEXT);
         /** @var CLIOption $option */
         foreach ($script->get_options() as $option) {
             $unique = $script->file_name . '_' . $option->longname;
@@ -58,26 +73,55 @@ class lsucli_form extends \moodleform
                     ['title' => $option->description],
                 );
             } else {
-                $group[] = &$mform->createElement(
-                    'static',
-                    null,
-                    null,
-                    '
-                    <label 
-                        title="' . html_entity_decode($option->description) . '"
-                    >' .
-                        $option->longname
-                );
-                $group[] = &$mform->createElement('text', $unique, null, null, ['onchange' => 'update_command_preview']);
-                $group[] = &$mform->createElement('static', null, null, '</label>');
+                $group = [...$group,...$this->labelwrap(
+                    $option->longname, 
+                    $mform->createElement(
+                        'text', 
+                        $unique,
+                        null,
+                        ['title' => $option->description],
+                    ),
+                )];
                 if ($option->type == OptionType::NUMBER) {
                     $mform->setType($unique, PARAM_INT);
                 } else {
-                    $mform->setType($unique, PARAM_INT);
+                    $mform->setType($unique, PARAM_TEXT);
                 }
             }
         }
+        $group = [...$group, ...$this->labelwrap(
+            'Custom Parameters 2', 
+            $mform->createElement(
+                'text', 
+                $script->file_name . "_custom_post", 
+                null,
+                ['title' => 'Arbitrary text to go after all other parameters.']
+            )
+        )];
+        $mform->setType($script->file_name . '_custom_post', PARAM_TEXT);
         return $group;
+    }
+
+    private function labelwrap($pretext, $child, $posttext = '') {
+        $elements = [];
+        $elements[] = &$this->_form->createElement(
+            'static',
+            null,
+            null,
+            '<label data-toggle="tooltip">' . $pretext,
+        );
+        $elements[] = $child;
+        $elements[] = &$this->_form->createElement(
+            'static',
+            null,
+            null,
+            $posttext . '</label>',
+        );
+        return $elements;
+    }
+
+    public function reset() {
+        $this->_form->updateSubmission(null, null);
     }
 }
 
@@ -97,8 +141,20 @@ if ($data = $mform->get_data()) {
     echo "<pre>";
     print_r($data);
     echo "</pre>";
+    $mform->reset();
 }
 
 $mform->display();
 
 echo $OUTPUT->footer();
+?>
+<script>
+    // Moodle themes don't always like setting titles on labels properly.
+document.querySelectorAll('input').forEach((e, i) => {
+    var label = e.closest('label');
+    if (label === null)
+        return;
+    label.setAttribute('title', e.getAttribute('title'));
+    label.setAttribute('data-toggle', 'tooltip');
+});
+</script>
