@@ -63,7 +63,8 @@ class CLIScript {
         $results = [];
         $scripts = array_diff(scandir($CFG->dirroot . '/admin/cli'), array('..', '.'));
         foreach ($scripts as $script) {
-            $results[] = new CLIScript($script);
+            $new_script = new CLIScript($script);
+            $results[$new_script->file_name] = $new_script;
         }
         return $results;
     }

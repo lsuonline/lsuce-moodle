@@ -14,17 +14,19 @@ use tool_brickfield\local\areas\mod_choice\option;
 
 class lsucli_form extends \moodleform
 {
+    /** @var CLIScript[] $cliscripts */
+    public $cliscripts = [];
     public function definition()
     {
         global $CFG;
-        $cliscripts = CLIScript::gen_scripts();
+        $this->cliscripts = CLIScript::gen_scripts();
         $mform = $this->_form;
         $scripts = [];
-        foreach ($cliscripts as $script) {
+        foreach ($this->cliscripts as $script) {
             $scripts[$script->file_name] = $script->file_name;
         }
         $mform->addElement('autocomplete', 'script', 'Script to execute', $scripts);
-        $this->add_script_elements($cliscripts);
+        $this->add_script_elements($this->cliscripts);
         $mform->addElement('static', null, '<command_preview />');
         $mform->addElement('submit', 'submitbutton', 'Run Task');
     }
@@ -123,6 +125,38 @@ class lsucli_form extends \moodleform
     public function reset() {
         $this->_form->updateSubmission(null, null);
     }
+
+    public function build_cmd() {
+        setlocale(LC_CTYPE, "en_US.UTF-8");
+        $data = $this->get_data();
+        $script = $this->cliscripts[$data->script];
+        $command = [
+            "php", 
+            $script->file_path,
+            $data->{$data->script . '_custom_pre'} ?? null
+        ];
+        foreach ($script->get_options() as $option) {
+            $key = $data->script . '_' . $option->longname;
+            $value = $data->{$key} ?? null;
+            if ($value == null)
+                continue;
+            if ($option->type == OptionType::BOOL && $value == 1) {
+                $command[] = "--$option->longname";
+                continue;
+            }
+            if ($option->type == OptionType::STRING) {
+                $command[] = "--$option->longname=" . escapeshellarg($value);
+            } else {
+                $command[] = "--$option->longname=$value";
+            }
+        }
+        $command[] = $data->{$data->script . '_custom_post'} ?? null;
+        $command = array_filter( $command, function($v) {
+            return $v !== null;
+        });
+        $command = implode(' ', $command);
+        return $command;
+    }
 }
 
 $context = context_system::instance();
@@ -140,8 +174,9 @@ $mform = new lsucli_form();
 if ($data = $mform->get_data()) {
     echo "<pre>";
     print_r($data);
+    $command = $mform->build_cmd();
+    echo $command;
     echo "</pre>";
-    $mform->reset();
 }
 
 $mform->display();
