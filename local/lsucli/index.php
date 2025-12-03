@@ -19,10 +19,12 @@ $mform = new lsucli_form();
 
 if ($data = $mform->get_data()) {
     echo "<pre>";
-    print_r($data);
     $command = $mform->build_cmd();
-    echo $command;
+    echo "EXECUTING: $command";
+    exec($command, $output);
+    echo implode("\n", $output);
     echo "</pre>";
+    $mform->reset();
 }
 
 $mform->display();
