@@ -247,12 +247,21 @@ class wdsprefs {
 
                     // Build out the new course obj.
                     $coursedata = new stdClass();
+
+                    // Apply defaults for any fields not already set.
+                    foreach ($coursedefaults as $name => $value) {
+                        if (!property_exists($coursedata, $name)) {
+                            $coursedata->$name = $value;
+                        }
+                    }
+
                     $coursedata->fullname = $fullname;
                     $coursedata->shortname = $fullname;
                     $coursedata->idnumber = $idnumber;
                     $coursedata->numsections = $coursedefaults->numsections;
                     $coursedata->category = $ccat->id;
                     $coursedata->visible = 1;
+                    $coursedata->enablecompletion = $coursedefaults->enablecompletion;
                     $coursedata->groupmode = $coursedefaults->groupmode;
                     $coursedata->groupmodeforce = $coursedefaults->groupmodeforce;
 
@@ -728,6 +737,14 @@ class wdsprefs {
 
             // Set course parameters.
             $course = new stdClass();
+
+            // Apply defaults for any fields not already set.
+            foreach ($coursedefaults as $name => $value) {
+                if (!property_exists($course, $name)) {
+                    $course->$name = $value;
+                }
+            }
+
             $course->shortname = $shortname;
             $course->fullname = $fullname;
             $course->numsections = $coursedefaults->numsections;
@@ -755,6 +772,9 @@ class wdsprefs {
             // Set the group mode.
             $course->groupmode = $coursedefaults->groupmode;
             $course->groupmodeforce = $coursedefaults->groupmodeforce;
+
+            // Set the completion options.
+            $course->enablecompletion = $coursedefaults->enablecompletion;
 
             $excourseidn = $DB->get_record('course', ['idnumber' => $idnumber]);
             $excoursesn = $DB->get_record('course', ['shortname' => $shortname]);
@@ -1547,6 +1567,14 @@ class wdsprefs {
 
             // Set course parameters.
             $course = new stdClass();
+
+            // Apply defaults for any fields not already set.
+            foreach ($coursedefaults as $name => $value) {
+                if (!property_exists($course, $name)) {
+                    $course->$name = $value;
+                }
+            }
+
             $course->shortname = $shortname;
             $course->fullname = $fullname;
 
@@ -1567,6 +1595,9 @@ class wdsprefs {
             // Set the group mode.
             $course->groupmode = $coursedefaults->groupmode;
             $course->groupmodeforce = $coursedefaults->groupmodeforce;
+
+            // Set the completion options.
+            $course->enablecompletion = $coursedefaults->enablecompletion;
 
             // Create course in Moodle.
             $course = create_course($course);
