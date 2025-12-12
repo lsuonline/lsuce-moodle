@@ -5970,6 +5970,9 @@ class wdscronhelper {
 
         $numgrabbed = 0;
 
+        // Set up some timing.
+        $processstart = microtime(true);
+
         foreach($periods as $period) {
 
             // Set upo the parameter array.
@@ -5997,7 +6000,7 @@ class wdscronhelper {
                 "$period->academic_period_id in $grabtime seconds. Processing.");
 
             // Set up some timing.
-            $processstart = microtime(true);
+            $periodstart = microtime(true);
 
             // Loop through the sections.
             foreach ($sections as $section) {
