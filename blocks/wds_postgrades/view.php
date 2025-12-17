@@ -499,8 +499,7 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
         }
 
         // Check if this is a failing grade.
-        $isfailinggrade = (in_array($gradecode->grade_display, ['F', 'Fail', 'No Credit (HNR)']) ||
-                          substr($gradecode->grade_id, -1) === 'F');
+        $isfailinggrade = $gradecode->requires_last_attendance == 1 ? true : false;
 
         // Count valid grades.
         $stats['available']++;
