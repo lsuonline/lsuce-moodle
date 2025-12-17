@@ -1123,9 +1123,7 @@ class wdspg {
         }
 
         // Get grade decimal points setting.
-        $gradedecimalpoints = !is_null($gradeitem->decimals) ?
-            $gradeitem->decimals :
-            $CFG->grade_decimalpoints;
+        $gradedecimalpoints = $gradeitem->get_decimals();
 
         // Format the grade according to different display types. Real.
         $formattedgrades->real = grade_format_gradevalue(
