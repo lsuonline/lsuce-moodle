@@ -435,6 +435,8 @@ echo $OUTPUT->footer();
 function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $sectionid) {
     global $OUTPUT, $DB;
 
+    $neverseen = (int) get_config('block_wds_postgrades', 'neverseen');
+
     if (empty($enrolledstudents)) {
         echo get_string('nostudents', 'block_wds_postgrades');
         return;
@@ -495,11 +497,13 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
         if (!$gradecode) {
             continue;
         } else if ($gradecode->grade_display == 'No Grade') {
-            continue;
+            $gradecode->grade_display = 'No matching grade code';
+            // continue;
         }
 
         // Check if this is a failing grade.
-        $isfailinggrade = $gradecode->requires_last_attendance == 1 ? true : false;
+        $isfailinggrade = isset($gradecode->requires_last_attendance) &&
+            $gradecode->requires_last_attendance == 1 ? true : false;
 
         // Count valid grades.
         $stats['available']++;
@@ -513,6 +517,17 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
             $finalgrade->letter,
             $gradecode->grade_display
         ];
+
+        if ($gradecode->grade_display == 'No matching grade code') {
+            $tablerow = [
+                $student->firstname,
+                $student->lastname,
+                $student->universal_id,
+                $student->grading_basis,
+                $finalgrade->letter,
+                html_writer::tag('div', $gradecode->grade_display, ['class' => 'small text-danger'])
+            ];
+        }
 
         // Status column.
         $status = 'Not posted';
@@ -578,7 +593,7 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
             if ($isfailinggrade) {
 
                 // Get student period start date.
-                $sps = $student->periodstart - (86400 * 10);
+                $sps = $student->periodstart - (86400 * $neverseen);
 
                 // Get default last access date.
                 $lastaccess = \block_wds_postgrades\wdspg::get_wds_sla($student->userid, $courseid);
@@ -613,7 +628,15 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
                     'Required for this grade value',
                     ['class' => 'small text-danger']);
             } else {
-                $attendancedatefield = get_string('lastattendancedatenotapplicable', 'block_wds_postgrades');
+
+                // This should NOT happen unless someone in Workday screws up.
+                if ($gradecode->grade_display == 'No matching grade code') {
+                    $attendancedatefield .= html_writer::tag('div',
+                        'Grade will not be posted to Workday',
+                        ['class' => 'small text-danger']);
+                } else {
+                    $attendancedatefield = get_string('lastattendancedatenotapplicable', 'block_wds_postgrades');
+                }
             }
         } else {
 
