@@ -51,6 +51,16 @@ $cparms = ['course_listing_id' => $section->course_listing_id];
 // Get course details.
 $wdscourse = $DB->get_record($ctable, $cparms, '*', MUST_EXIST);
 
+// Set the period table.
+$ptable = 'enrol_wds_periods';
+
+// Set some period parms.
+$pparms = ['academic_period_id' => $section->academic_period_id];
+
+// Get the academic period for this section.
+$period = $DB->get_record($ptable, $pparms, '*', MUST_EXIST);
+
+// Build out the section title.
 $sectiontitle = $section->course_subject_abbreviation .
     ' ' .
     $wdscourse->course_number .
@@ -179,18 +189,29 @@ if ($action === 'postgrades' && confirm_sesskey()) {
 
                 // Convert date string to timestamp.
                 $dateobj = \DateTime::createFromFormat('Y-m-d', $lastattendancedates[$student->universal_id]);
+
                 if ($dateobj !== false) {
+                    $submittedtimestamp = $dateobj->getTimestamp();
+                    $minvalid = $period->start_date + 86400;
+                    $maxvalid = $period->end_date - 86400;
 
-                    // Use the manually entered date.
-                    $gradeobj->last_attendance_date = $dateobj->getTimestamp();
-                    $gradeobj->wdladate = $lastattendancedates[$student->universal_id];
-                } else {
+                    if ($submittedtimestamp >= $minvalid && $submittedtimestamp <= $maxvalid) {
+                        $gradeobj->last_attendance_date = $submittedtimestamp;
+                        $gradeobj->wdladate = $lastattendancedates[$student->universal_id];
+                    } else {
+                        // Notify the user that their manual entry was invalid and corrected.
+                        \core\notification::error(get_string('alldatesmustcomply', 'block_wds_postgrades'));
 
-                    // If invalid date provided, fallback to last course access.
-                    $gradeobj->last_attendance_date = \block_wds_postgrades\wdspg::get_wds_sla(
-                        $student->userid, $courseid
-                    );
-                    $gradeobj->wdladate = date('Y-m-d', $gradeobj->last_attendance_date);
+                        // Re-calculate the safe fallback.
+                        $fallback = \block_wds_postgrades\wdspg::get_wds_sla($student->userid, $courseid);
+                        $lata = ($fallback && isset($fallback->timeaccess)) ? (int)$fallback->timeaccess : $minvalid;
+
+                        // Force the fallback to stay within the window.
+                        $lata = max($minvalid, min($maxvalid, $lata));
+
+                        $gradeobj->last_attendance_date = $lata;
+                        $gradeobj->wdladate = date('Y-m-d', $lata);
+                    }
                 }
             } else {
 
@@ -281,37 +302,65 @@ if ($isopen) {
 
         // Add jQuery date picker inclusion (only for final grades).
         if ($gradetype === 'final') {
-            $PAGE->requires->js_init_code('
-                require(["jquery"], function($) {
-                    $(".attendance-date-picker").attr("type", "date");
-                });
-            ');
 
-            // JavaScript for loading modal.
+            // Set the min and max dates.
+            $mindate = date('Y-m-d', $period->start_date + 86400);
+            $maxdate = date('Y-m-d', $period->end_date - 86400);
+
+            // Implement the picker.
+            $PAGE->requires->js_init_code("
+                require(['jquery'], function($) {
+                    $('.attendance-date-picker').each(function() {
+                        var currentVal = $(this).val(); // Get the PHP-clamped value
+                        $(this).attr('type', 'date')
+                               .attr('min', '{$mindate}')
+                               .attr('max', '{$maxdate}')
+                               .val(currentVal); // Force the value back in after type change
+                    });
+                });
+            ");
+
             $PAGE->requires->js_init_code('
-                require(["jquery"], function($) {
+                require(["jquery", "core/notification"], function($, Notification) {
                     $(document).ready(function() {
                         const loadingModal = $("#loadingModal");
 
-                        // Function to show the modal
                         window.showLoadingModal = function() {
-                            if (loadingModal.length) {
-                                loadingModal.show();
+                            const datePickers = $(".attendance-date-picker");
+                            let allValid = true;
+
+                            datePickers.each(function() {
+                                const picker = $(this);
+
+                                // checkValidity is a native DOM method.
+                                if (!this.checkValidity()) {
+                                    allValid = false;
+
+                                    // Add red border inline.
+                                    picker.css("border", "2px solid #dc3545");
+                                    picker.addClass("is-invalid");
+                                    this.reportValidity();
+                                } else {
+
+                                    // Remove highlighting if corrected.
+                                    picker.css("border", "");
+                                    picker.removeClass("is-invalid");
+                                }
+                            });
+
+                            if (allValid) {
+                                if (loadingModal.length) {
+                                    loadingModal.show();
+                                }
+                                return true;
+                            } else {
+                                Notification.addNotification({
+                                    message: "' . get_string('alldatesmustcomply', 'block_wds_postgrades') . '",
+                                    type: "error"
+                                });
+                                return false;
                             }
                         };
-
-                        // Function to hide the modal
-                        window.hideLoadingModal = function() {
-                            if (loadingModal.length) {
-                                loadingModal.hide();
-                            }
-                        };
-
-                        // Hide modal on page load, just in case.
-                        // It is initially hidden by CSS, but this is an extra precaution.
-                        if (loadingModal.length) {
-                             hideLoadingModal();
-                        }
                     });
                 });
             ');
@@ -485,22 +534,26 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
     ];
 
     foreach ($enrolledstudents as $student) {
+
         // Get formatted grade.
         $finalgrade = \block_wds_postgrades\wdspg::get_formatted_grade($student->coursegradeitem, $student->userid, $courseid);
 
         // Get grade code.
         $gradecode = \block_wds_postgrades\wdspg::get_graded_wds_gradecode($student, $finalgrade);
 
-        // Skip invalid grades.
+        // Skip completely borked grades.
         if (!$gradecode) {
-            continue;
-        } else if ($gradecode->grade_display == 'No Grade') {
             continue;
         }
 
+        // Document invalid grade codes for the teacher.
+        if ($gradecode->grade_display == 'No Grade') {
+            $gradecode->grade_display = 'No matching grade code';
+        }
+
         // Check if this is a failing grade.
-        $isfailinggrade = (in_array($gradecode->grade_display, ['F', 'Fail', 'No Credit (HNR)']) ||
-                          substr($gradecode->grade_id, -1) === 'F');
+        $isfailinggrade = isset($gradecode->requires_last_attendance) &&
+            $gradecode->requires_last_attendance == 1 ? true : false;
 
         // Count valid grades.
         $stats['available']++;
@@ -514,6 +567,17 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
             $finalgrade->letter,
             $gradecode->grade_display
         ];
+
+        if ($gradecode->grade_display == 'No matching grade code') {
+            $tablerow = [
+                $student->firstname,
+                $student->lastname,
+                $student->universal_id,
+                $student->grading_basis,
+                $finalgrade->letter,
+                html_writer::tag('div', $gradecode->grade_display, ['class' => 'small text-danger'])
+            ];
+        }
 
         // Status column.
         $status = 'Not posted';
@@ -578,14 +642,22 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
         if (!isset($postedgrades[$student->universal_id])) {
             if ($isfailinggrade) {
 
-                // Get student period start date.
-                $sps = $student->periodstart - (86400 * 10);
+                // Define the absolute valid window for this specific student.
+                $minvalid = (int)$student->periodstart + 86400;
+                $maxvalid = (int)$student->periodend - 86400;
 
-                // Get default last access date.
+                // Get the raw last access record.
                 $lastaccess = \block_wds_postgrades\wdspg::get_wds_sla($student->userid, $courseid);
 
+                // Extract the timestamp safely.
+                $lata = ($lastaccess && isset($lastaccess->timeaccess)) ? (int)$lastaccess->timeaccess : $minvalid;
+
+                if (is_object($lastaccess) && $lastaccess->timeaccess - 86400 < $student->periodstart) {
+                    $lastaccess->timeaccess = $student->periodstart + 86400;
+                }
+
                 // If we don't have any last access dates, it returns false, so check for that.
-                if ($lastaccess) {
+                if ($lastaccess && isset($lastaccess->timeaccess)) {
 
                    // Set this to the last access date.
                    $lata = (int)$lastaccess->timeaccess;
@@ -595,10 +667,15 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
                    $lata = 0;
                 }
 
+                // CLAMPING: If the date is outside the window, force it to the nearest boundary.
+                if ($lata < $minvalid) {
+                    $lata = $minvalid;
+                } else if ($lata > $maxvalid) {
+                    $lata = $maxvalid;
+                }
+
                 // Build out the default date for the picker.
-                $defaultdate = ($lata > 0) ?
-                    date('Y-m-d', $lata) :
-                    date('Y-m-d', $sps);
+                $defaultdate = date('Y-m-d', $lata);
 
                 // Create date picker.
                 $attendancedatefield = html_writer::empty_tag('input', [
@@ -611,10 +688,18 @@ function generateFinalGradesTableWithDatePickers($enrolledstudents, $courseid, $
 
                 // Add explanation label.
                 $attendancedatefield .= html_writer::tag('div',
-                    'Required for this grade value',
+                     get_string('lastattendancedaterequired', 'block_wds_postgrades'),
                     ['class' => 'small text-danger']);
             } else {
-                $attendancedatefield = get_string('lastattendancedatenotapplicable', 'block_wds_postgrades');
+
+                // This should NOT happen unless someone in Workday screws up.
+                if ($gradecode->grade_display == 'No matching grade code') {
+                    $attendancedatefield .= html_writer::tag('div',
+                        'Grade will not be posted to Workday',
+                        ['class' => 'small text-danger']);
+                } else {
+                    $attendancedatefield = get_string('lastattendancedatenotapplicable', 'block_wds_postgrades');
+                }
             }
         } else {
 

@@ -424,6 +424,11 @@ class wdspg {
             // Post grades one at a time.
             foreach ($grades as $grade) {
 
+                // We don't actually want to post these.
+                if ($grade->grade_id == 'No Grade') {
+                    continue;
+                }
+
                 // Create an array with just this student.
                 $singlegrade = array($grade);
 
@@ -454,12 +459,16 @@ class wdspg {
 
                     $results->failures[] = $grade;
                 } else {
-
                     // Success.
                     $results->successes[] = $grade;
                 }
             }
         } else {
+
+            // Remove "No Grade" grades from array.
+            $grades = array_values(array_filter($grades, function ($item) {
+                return $item->grade_id !== 'No Grade';
+            }));
 
             // Default to batch posting (all students at once).
             $result = self::post_grade($grades, $gradetype, $sectionlistingid);
@@ -1123,9 +1132,7 @@ class wdspg {
         }
 
         // Get grade decimal points setting.
-        $gradedecimalpoints = !is_null($gradeitem->decimals) ?
-            $gradeitem->decimals :
-            $CFG->grade_decimalpoints;
+        $gradedecimalpoints = $gradeitem->get_decimals();
 
         // Format the grade according to different display types. Real.
         $formattedgrades->real = grade_format_gradevalue(
@@ -1360,7 +1367,7 @@ class wdspg {
         $gradecode = $DB->get_records($table, $parms);
 
         // Student has no final grade.
-        if (!$gradecode) {
+        if (!$gradecode || count($gradecode) == 0) {
             $gradecode = new \stdClass();
             $gradecode->grading_scheme_id = $student->grading_scheme;
             $gradecode->grading_basis = $student->grading_basis;
@@ -1408,14 +1415,9 @@ class wdspg {
             get_string('firstname', 'block_wds_postgrades'),
             get_string('lastname', 'block_wds_postgrades'),
             get_string('universalid', 'block_wds_postgrades'),
-//            get_string('section', 'block_wds_postgrades'),
-//            get_string('gradingscheme', 'block_wds_postgrades'),
             get_string('gradingbasis', 'block_wds_postgrades'),
-//            get_string('real', 'grades'),
-//            get_string('percentage', 'grades'),
             get_string('letter', 'block_wds_postgrades'),
-            get_string('grade', 'block_wds_postgrades'),
-//            get_string('gradecode', 'block_wds_postgrades')
+            get_string('grade', 'block_wds_postgrades')
         ];
 
         // Get course grade item from first student.
@@ -1463,14 +1465,9 @@ class wdspg {
                 $student->firstname,
                 $student->lastname,
                 $student->universal_id,
-//                $sectionidentifier,
-//                $student->grading_scheme,
                 $student->grading_basis,
-//                $finalgrade->real,
-//                $finalgrade->percent,
                 $finalgrade->letter,
-                $gradecode->grade_display,
-//                $gradecode->grade_id,
+                $gradecode->grade_display
             ];
 
             // Populate it.
