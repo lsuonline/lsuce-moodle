@@ -1,0 +1,59 @@
+/*Boost Theme*/
+.theme.path-local-lsucli [data-fieldtype="group"] .form-inline {
+    display: flex;
+}
+
+.theme.path-local-lsucli [data-fieldtype="group"] label {
+    width: 100%;
+    justify-content: normal;
+    cursor: pointer;
+    padding: 0.5em;
+}
+
+.theme.path-local-lsucli [data-fieldtype="group"] label:has(input[type="text"]) {
+    width: 100%;
+    justify-content: normal;
+    /* margin-left: 1.3em; */
+    margin-bottom: -1.25rem;
+}
+
+.theme.path-local-lsucli [data-fieldtype="group"] label:hover {
+    background: #00000031;
+}
+
+.theme.path-local-lsucli [data-fieldtype="group"] div:has(input[type="text"]) {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/*Snap Theme*/
+.theme-snap.path-local-lsucli .form-group .form-inline {
+    display: flex;
+}
+
+.theme-snap.path-local-lsucli .form-group .form-inline label {
+    width: 100%;
+    justify-content: normal;
+    margin-bottom: -1.5em !important;
+    cursor: pointer;
+}
+
+.theme-snap.path-local-lsucli .form-group .form-inline label:hover {
+    background: #00000031;
+}
+
+.theme-snap.path-local-lsucli .form-group .form-inline label:has(input[type="text"]) {
+    width: 100%;
+    justify-content: normal;
+    margin-bottom: -1.5em !important;
+}
+
+.theme-snap.path-local-lsucli .form-group .form-inline:has(input[type="submit"]) {
+    margin-top: 2em;
+}
+ 
+.tooltip .tooltip-inner {
+  max-width: 50vw;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}

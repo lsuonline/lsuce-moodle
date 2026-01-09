@@ -1,33 +1,42 @@
 <?php
 require_once(__DIR__ . '/../../config.php');
-require_once($CFG->libdir.'/adminlib.php');
+require_once("$CFG->libdir/adminlib.php");
+require_once("$CFG->libdir/formslib.php");
 
-//admin_externalpage_setup('local_lsucli');
+require_once(__DIR__ . '/classes/form.php');
 
 $context = context_system::instance();
-
+require_login();
 $PAGE->set_context($context);
 $PAGE->set_url('/local/lsucli/index.php');
+$PAGE->requires->css('/local/lsucli/styles.css');
 
 echo $OUTPUT->header();
+
 echo $OUTPUT->heading(get_string('lsucli', 'local_lsucli'));
 
-$cliscripts = array_diff(scandir($CFG->dirroot . '/admin/cli'), array('..', '.'));
+$mform = new lsucli_form();
 
-$table = new html_table();
-$table->head = array(get_string('scriptname', 'local_lsucli'), get_string('schedule'));
-
-foreach ($cliscripts as $script) {
-    if (substr($script, -4) !== '.php') {
-        continue;
-    }
-
-    $schedule_url = new moodle_url('/local/lsucli/schedule.php', array('script' => $script));
-    $schedule_button = new single_button($schedule_url, get_string('schedule'));
-    $row = new html_table_row(array($script, $OUTPUT->render($schedule_button)));
-    $table->data[] = $row;
+if ($data = $mform->get_data()) {
+    echo "<pre>";
+    $command = $mform->build_cmd();
+    echo "EXECUTING: $command";
+    exec($command, $output);
+    echo implode("\n", $output);
+    echo "</pre>";
+    $mform->reset();
 }
 
-echo html_writer::table($table);
-
+$mform->display();
 echo $OUTPUT->footer();
+?>
+<script>
+    // Moodle themes don't always like setting titles on labels properly.
+    document.querySelectorAll('input').forEach((e, i) => {
+        var label = e.closest('label');
+        if (label === null)
+            return;
+        label.setAttribute('title', e.getAttribute('title'));
+        label.setAttribute('data-toggle', 'tooltip');
+    });
+</script>
