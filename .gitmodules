@@ -1,0 +1,9 @@
+[submodule "enrol/workdaystudent"]
+	path = enrol/workdaystudent
+	url = https://github.com/lsuonline/moodle-enrol_workdaystudent
+[submodule "enrol/workdayhrm"]
+	path = enrol/workdayhrm
+	url = https://github.com/lsuonline/moodle-enrol_workdayhrm
+[submodule "blocks/wdsprefs"]
+	path = blocks/wdsprefs
+	url = https://github.com/lsuonline/moodle-block_wdsprefs
