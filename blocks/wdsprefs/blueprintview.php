@@ -97,7 +97,7 @@ if (!empty($existingblueprints)) {
     );
 
     foreach ($existingblueprints as $blueprint) {
-        $courseinfo = wdsprefs::get_course_info_by_definition_id($blueprint->course_definition_id);
+        $courseinfo = wdsprefs::get_course_info_by_listing_id($blueprint->course_listing_id);
         $coursename = $courseinfo->course_subject_abbreviation . ' ' . $courseinfo->course_number;
         
         $row = array();
@@ -138,7 +138,7 @@ if ($form->is_cancelled()) {
 } else if ($data = $form->get_data()) {
 
     // Process the form data.
-    $result = wdsprefs::create_blueprint_shell($uid, $data->course_definition_id);
+    $result = wdsprefs::create_blueprint_shell($uid, $data->course_listing_id);
 
     if ($result) {
         redirect(
