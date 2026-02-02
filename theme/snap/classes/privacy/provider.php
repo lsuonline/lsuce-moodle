@@ -45,7 +45,7 @@ use core_privacy\local\request\writer;
  * @copyright  Copyright (c) 2018 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements metadata_provider, request_provider, user_preference_provider,
+class provider implements metadata_provider, request_provider,
     \core_privacy\local\request\core_userlist_provider {
 
     /**
