@@ -1,4 +1,9 @@
-##v4.5.3
+
+## v4.5.4
+ - Fixed a depracated variable message in notifications.
+ - Added the ability to select multiple roles to stop receiving emails.
+
+## v4.5.3
  - Fixed issue with excludes not actually excluding.
  - Fixed messages being updated constantly.
  - Fixed bug with send all not actually sending.

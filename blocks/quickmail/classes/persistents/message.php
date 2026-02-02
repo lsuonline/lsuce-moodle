@@ -347,7 +347,7 @@ class message extends \block_quickmail\persistents\persistent {
      */
     public function get_message_recipients($status = 'all', $asuseridarray = false) {
         $messageid = $this->get('id');
-
+        error_log("\n\n ------>>>>>>> EAT SHIT MOTHER FUCKER <<<<<<<-------------");
         // Be sure we have a valid status.
         if (!in_array($status, ['all', 'sent', 'unsent'])) {
             $status = 'all';
