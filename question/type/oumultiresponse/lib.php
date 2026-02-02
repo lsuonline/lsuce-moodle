@@ -22,10 +22,13 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Checks file access for oumultiresponse questions.
  */
-function qtype_oumultiresponse_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
+function qtype_oumultiresponse_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
     global $CFG;
     require_once($CFG->libdir . '/questionlib.php');
     question_pluginfile($course, $context, 'qtype_oumultiresponse', $filearea, $args, $forcedownload, $options);

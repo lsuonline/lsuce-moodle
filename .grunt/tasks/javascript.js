@@ -30,10 +30,9 @@
  * @param {String} srcPath the  matched src path
  * @return {String} The rewritten destination path.
  */
-
 const babelRename = function(destPath, srcPath) {
-    destPath = srcPath.replace('src', 'build');
-    destPath = destPath.replace('.js', '.min.js');
+    destPath = srcPath.replace(`amd/src`, `amd/build`);
+    destPath = destPath.replace(/\.js$/, '.min.js');
     return destPath;
 };
 
@@ -104,6 +103,7 @@ module.exports = grunt => {
         // The queue runner will run the next `size` items in the queue.
         const runQueue = (size = 1) => {
             queue.splice(0, size).forEach(resolve => {
+                grunt.log.debug(`Item resolved. Kicking off next one.`);
                 resolve();
             });
         };
@@ -113,21 +113,23 @@ module.exports = grunt => {
 
             // The options hook is run in parallel.
             // We can return an unresolved Promise which is queued for later resolution.
-            options: async() => {
+            options: async(options) => {
                 return new Promise(resolve => {
                     queue.push(resolve);
                     startQueue();
+                    return options;
                 });
             },
 
             // When an item in the queue completes, start the next item in the queue.
-            buildEnd: () => {
+            generateBundle: (options, bundle) => {
+                grunt.log.debug(`Finished output phase for ${Object.keys(bundle).join(', ')}`);
                 runQueue();
             },
         };
     };
 
-    const terser = require('@rollup/plugin-terser');
+    const terser = require('rollup-plugin-terser').terser;
     grunt.config.merge({
         rollup: {
             options: {
@@ -136,13 +138,6 @@ module.exports = grunt => {
                 sourcemap: true,
                 treeshake: false,
                 context: 'window',
-
-                // Treat all modules as external and do not try to resolve them.
-                // https://rollupjs.org/configuration-options/#external
-                // We do not need to resolve them as each module is transpiled individually and there is no tree shaking
-                // or combining of dependencies.
-                external: true,
-
                 plugins: [
                     rateLimit(),
                     babel({
@@ -158,11 +153,7 @@ module.exports = grunt => {
                             //
                             // It also adds the Moodle plugin name to the AMD module definition
                             // so that it can be imported as expected in other modules.
-                            path.resolve('.grunt/babel-plugin-add-module-to-define.js'),
-                            '@babel/plugin-syntax-dynamic-import',
-                            '@babel/plugin-syntax-import-meta',
-                            ['@babel/plugin-proposal-class-properties', {'loose': false}],
-                            '@babel/plugin-proposal-json-strings'
+                            path.resolve('.grunt/babel-plugin-add-module-to-define.js')
                         ],
                         presets: [
                             ['@babel/preset-env', {

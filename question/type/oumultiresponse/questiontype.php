@@ -43,43 +43,28 @@ require_once($CFG->dirroot . '/question/format/xml/format.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qtype_oumultiresponse extends question_type {
-
-    #[\Override]
     public function has_html_answers() {
         return true;
     }
 
-    /**
-     * Get the name of this question type.
-     */
     public function requires_qtypes() {
-        return ['multichoice'];
+        return array('multichoice');
     }
 
-    #[\Override]
     public function get_question_options($question) {
         global $DB;
         $question->options = $DB->get_record('question_oumultiresponse',
-            ['questionid' => $question->id], '*', MUST_EXIST);
+                array('questionid' => $question->id), '*', MUST_EXIST);
         parent::get_question_options($question);
     }
 
-    #[\Override]
-    public function save_defaults_for_new_questions(stdClass $fromform): void {
-        parent::save_defaults_for_new_questions($fromform);
-        $this->set_default_value('shuffleanswers', $fromform->shuffleanswers);
-        $this->set_default_value('answernumbering', $fromform->answernumbering);
-        $this->set_default_value('showstandardinstruction', $fromform->showstandardinstruction);
-    }
-
-    #[\Override]
     public function save_question_options($question) {
         global $DB;
         $context = $question->context;
         $result = new stdClass();
 
         $oldanswers = $DB->get_records('question_answers',
-            ['question' => $question->id], 'id ASC');
+                array('question' => $question->id), 'id ASC');
 
         // The following hack to checks that at least two answers exist.
         $answercount = 0;
@@ -94,7 +79,7 @@ class qtype_oumultiresponse extends question_type {
         }
 
         // Insert all the new answers.
-        $answers = [];
+        $answers = array();
         foreach ($question->answer as $key => $answerdata) {
             if (trim($answerdata['text']) == '') {
                 continue;
@@ -126,11 +111,11 @@ class qtype_oumultiresponse extends question_type {
         $fs = get_file_storage();
         foreach ($oldanswers as $oldanswer) {
             $fs->delete_area_files($context->id, 'question', 'answerfeedback', $oldanswer->id);
-            $DB->delete_records('question_answers', ['id' => $oldanswer->id]);
+            $DB->delete_records('question_answers', array('id' => $oldanswer->id));
         }
 
         $options = $DB->get_record('question_oumultiresponse',
-            ['questionid' => $question->id]);
+                array('questionid' => $question->id));
         if (!$options) {
             $options = new stdClass();
             $options->questionid = $question->id;
@@ -150,13 +135,12 @@ class qtype_oumultiresponse extends question_type {
         $this->save_hints($question, true);
     }
 
-    #[\Override]
     public function save_hints($formdata, $withparts = false) {
         global $DB;
         $context = $formdata->context;
 
         $oldhints = $DB->get_records('question_hints',
-            ['questionid' => $formdata->id], 'id ASC');
+                array('questionid' => $formdata->id), 'id ASC');
 
         if (!empty($formdata->hint)) {
             $numhints = max(array_keys($formdata->hint)) + 1;
@@ -226,23 +210,19 @@ class qtype_oumultiresponse extends question_type {
         $fs = get_file_storage();
         foreach ($oldhints as $oldhint) {
             $fs->delete_area_files($context->id, 'question', 'hint', $oldhint->id);
-            $DB->delete_records('question_hints', ['id' => $oldhint->id]);
+            $DB->delete_records('question_hints', array('id' => $oldhint->id));
         }
     }
 
-    #[\Override]
     protected function make_hint($hint) {
         return qtype_oumultiresponse_hint::load_from_record($hint);
     }
 
-    #[\Override]
-    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
     public function make_answer($answer) {
         // Overridden just so we can make it public for use by question.php.
         return parent::make_answer($answer);
     }
 
-    #[\Override]
     protected function initialise_question_instance(question_definition $question, $questiondata) {
         parent::initialise_question_instance($question, $questiondata);
         $question->shuffleanswers = $questiondata->options->shuffleanswers;
@@ -252,18 +232,12 @@ class qtype_oumultiresponse extends question_type {
         $this->initialise_question_answers($question, $questiondata, false);
     }
 
-    #[\Override]
     public function delete_question($questionid, $contextid) {
         global $DB;
-        $DB->delete_records('question_oumultiresponse', ['questionid' => $questionid]);
+        $DB->delete_records('question_oumultiresponse', array('questionid' => $questionid));
         return parent::delete_question($questionid, $contextid);
     }
 
-    /**
-     * Get the number of correct choices in the question.
-     *
-     * @param question_definition $questiondata The question data.
-     */
     protected function get_num_correct_choices($questiondata) {
         $numright = 0;
         foreach ($questiondata->options->answers as $answer) {
@@ -274,7 +248,6 @@ class qtype_oumultiresponse extends question_type {
         return $numright;
     }
 
-    #[\Override]
     public function get_random_guess_score($questiondata) {
         // We compute the randome guess score here on the assumption we are using
         // the deferred feedback behaviour, and the question text tells the
@@ -285,20 +258,18 @@ class qtype_oumultiresponse extends question_type {
                 count($questiondata->options->answers);
     }
 
-    #[\Override]
     public function get_possible_responses($questiondata) {
         $numright = $this->get_num_correct_choices($questiondata);
-        $parts = [];
+        $parts = array();
 
         foreach ($questiondata->options->answers as $aid => $answer) {
-            $parts[$aid] = [$aid =>
-                new question_possible_response($answer->answer, $answer->fraction / $numright)];
+            $parts[$aid] = array($aid =>
+                    new question_possible_response($answer->answer, $answer->fraction / $numright));
         }
 
         return $parts;
     }
 
-    #[\Override]
     public function import_from_xml($data, $question, qformat_xml $format, $extra=null) {
         if (!isset($data['@']['type']) || $data['@']['type'] != 'oumultiresponse') {
             return false;
@@ -308,11 +279,11 @@ class qtype_oumultiresponse extends question_type {
         $question->qtype = 'oumultiresponse';
 
         $question->shuffleanswers = $format->trans_single(
-            $format->getpath($data, ['#', 'shuffleanswers', 0, '#'], 1));
+                $format->getpath($data, array('#', 'shuffleanswers', 0, '#'), 1));
         $question->answernumbering = $format->getpath($data,
-            ['#', 'answernumbering', 0, '#'], 'abc');
+                array('#', 'answernumbering', 0, '#'), 'abc');
         $question->showstandardinstruction = $format->getpath($data,
-            ['#', 'showstandardinstruction', 0, '#'], 1);
+            array('#', 'showstandardinstruction', 0, '#'), 1);
 
         $format->import_combined_feedback($question, $data, true);
 
@@ -329,7 +300,7 @@ class qtype_oumultiresponse extends question_type {
             if (array_key_exists('correctanswer', $answer['#'])) {
                 $keys = array_keys($question->correctanswer);
                 $question->correctanswer[end($keys)] = $format->getpath($answer,
-                    ['#', 'correctanswer', 0, '#'], 0);
+                        array('#', 'correctanswer', 0, '#'), 0);
             }
         }
 
@@ -346,7 +317,6 @@ class qtype_oumultiresponse extends question_type {
         return $question;
     }
 
-    #[\Override]
     public function export_to_xml($question, qformat_xml $format, $extra = null) {
         $output = '';
 
@@ -363,7 +333,6 @@ class qtype_oumultiresponse extends question_type {
         return $output;
     }
 
-    #[\Override]
     public function move_files($questionid, $oldcontextid, $newcontextid) {
         $fs = get_file_storage();
 
@@ -379,7 +348,6 @@ class qtype_oumultiresponse extends question_type {
                 $newcontextid, 'question', 'incorrectfeedback', $questionid);
     }
 
-    #[\Override]
     protected function delete_files($questionid, $contextid) {
         $fs = get_file_storage();
 
@@ -401,7 +369,7 @@ class qtype_oumultiresponse extends question_type {
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qtype_oumultiresponse_hint extends question_hint_with_parts {
-    /** @var bool whether to show the feedback for each choice. */
+    /** @var boolean whether to show the feedback for each choice. */
     public $showchoicefeedback;
 
     /**
@@ -427,17 +395,8 @@ class qtype_oumultiresponse_hint extends question_hint_with_parts {
                 $row->shownumcorrect, $row->clearwrong, !empty($row->options));
     }
 
-    #[\Override]
     public function adjust_display_options(question_display_options $options) {
         parent::adjust_display_options($options);
-        if (defined('qtype_multichoice::COMBINED_BUT_NOT_CHOICE_FEEDBACK')) {
-            // Newer Moodle versions.
-            if ($options->feedback && !$this->showchoicefeedback) {
-                $options->feedback = qtype_multichoice::COMBINED_BUT_NOT_CHOICE_FEEDBACK;
-            }
-        } else {
-            // Older Moodle versions.
-            $options->suppresschoicefeedback = !$this->showchoicefeedback;
-        }
+        $options->suppresschoicefeedback = !$this->showchoicefeedback;
     }
 }

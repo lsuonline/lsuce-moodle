@@ -94,7 +94,7 @@ function xmldb_block_wdsprefs_upgrade($oldversion) {
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
         }
-        
+
         // Define table block_wdsprefs_crosssplit_sections to be created
         $table = new xmldb_table('block_wdsprefs_crosssplit_sections');
 
@@ -123,6 +123,69 @@ function xmldb_block_wdsprefs_upgrade($oldversion) {
 
         // Update version
         upgrade_block_savepoint(true, 2025050700, 'wdsprefs');
+    }
+
+    if ($oldversion < 2026010900) {
+        // Define table block_wdsprefs_blueprints.
+        $table = new xmldb_table('block_wdsprefs_blueprints');
+
+        // Define the new field course_listing_id.
+        $field = new xmldb_field('course_listing_id', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'course_definition_id');
+
+        // Add the field if it doesn't exist.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Now we need to migrate the data.
+        // We need to look up the course_listing_id for each course_definition_id.
+        // This is a bit tricky because course_definition_id might not map 1:1 to course_listing_id if there are multiple listings for a definition.
+        // But we will grab the first one we find.
+        $sql = "SELECT b.id, b.course_definition_id, c.course_listing_id
+                FROM {block_wdsprefs_blueprints} b
+                JOIN {enrol_wds_courses} c ON b.course_definition_id = c.course_definition_id";
+
+        // Use a recordset to avoid memory issues.
+        $rs = $DB->get_recordset_sql($sql);
+
+        foreach ($rs as $record) {
+            if (!empty($record->course_listing_id)) {
+                $DB->set_field('block_wdsprefs_blueprints', 'course_listing_id', $record->course_listing_id, ['id' => $record->id]);
+            }
+        }
+        $rs->close();
+
+        // Now, we should check if there are any records with NULL course_listing_id (i.e. no match found).
+        // If there are, we can't really do much but maybe we should keep them?
+        // But we are making the column NOT NULL eventually.
+        // For now, let's just delete them or fill them with empty string? 
+        // Better to delete broken blueprints than keep them in invalid state.
+        $DB->delete_records_select('block_wdsprefs_blueprints', 'course_listing_id IS NULL');
+
+        // Now change the field to be NOT NULL.
+        $field = new xmldb_field('course_listing_id', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'course_definition_id');
+        $dbman->change_field_notnull($table, $field);
+
+        // Drop the old index.
+        $index = new xmldb_index('blueprint_cdid_ix', XMLDB_INDEX_NOTUNIQUE, ['course_definition_id']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Drop the old field.
+        $oldfield = new xmldb_field('course_definition_id');
+        if ($dbman->field_exists($table, $oldfield)) {
+            $dbman->drop_field($table, $oldfield);
+        }
+
+        // Add the new index.
+        $newindex = new xmldb_index('blueprint_clid_ix', XMLDB_INDEX_NOTUNIQUE, ['course_listing_id']);
+        if (!$dbman->index_exists($table, $newindex)) {
+            $dbman->add_index($table, $newindex);
+        }
+
+        // Update version
+        upgrade_block_savepoint(true, 20256010900, 'wdsprefs');
     }
 
     return true;

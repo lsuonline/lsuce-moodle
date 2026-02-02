@@ -54,17 +54,18 @@ class natsane {
         $itemsql = 'SELECT DISTINCT(gi.id), gi.courseid FROM {course} c
                                        INNER JOIN {grade_items} gi on c.id = gi.courseid
                                        INNER JOIN {grade_categories} gc ON gi.categoryid = gc.id
-                                       LEFT JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                                       LEFT JOIN {enrol_wds_sections} sec ON sec.idnumber = c.idnumber
+                                                AND sec.moodle_status = c.id
                                                 AND c.idnumber IS NOT NULL
                                                 AND c.idnumber <> ""
-                                       LEFT JOIN {enrol_ues_semesters} sem ON sec.semesterid = sem.id
+                                       LEFT JOIN {enrol_wds_periods} per ON sec.academic_period_id = per.academic_period_id
                                        WHERE gc.aggregation = 13
                                         AND gi.gradetype = 1
                                         AND gi.itemtype <> "course"
                                         AND gi.itemtype <> "category"
                                         AND gi.aggregationcoef = 1
                                         AND gi.aggregationcoef2 <> 0
-                                        AND (sem.classes_start >= ' . $startdate . ' OR sem.id IS NULL)';
+                                        AND (per.start_date >= ' . $startdate . ' OR per.id IS NULL)';
 
         // Standard moodle function to get records from the above SQL.
         $items = $DB->get_records_sql($itemsql);
@@ -142,10 +143,7 @@ class natsane {
                               FROM {kalvidres} res
                               WHERE (res.source IS NULL OR res.source = "")
                                     AND res.entry_id <> "") AS "num_res_source",
-                             (SELECT COUNT(id)
-                              FROM {kalvidpres} pres
-                              WHERE (pres.source IS NULL OR pres.source = "")
-                                    AND pres.entry_id <> "") AS "num_pres_source",
+                             0 AS "num_pres_source",
                              (SELECT COUNT(id)
                               FROM {kalvidassign_submission} sub
                               WHERE (sub.source IS NULL OR sub.source = "")
@@ -153,10 +151,7 @@ class natsane {
                              (SELECT COUNT(id) FROM {kalvidres} res
                               WHERE res.uiconf_id <> "1"
                                     AND res.uiconf_id <> "30928192") AS "num_uiconf_res",
-                             (SELECT COUNT(id)
-                              FROM {kalvidpres} pres
-                              WHERE pres.uiconf_id <> "1"
-                                    AND pres.uiconf_id <> "30928192") AS "num_uiconf_pres"';
+                             0 AS "num_uiconf_pres"';
 
         // Fix restored kaltura resources. Updates DB to ensure the source url is appropriate for restored.
         $sourceupdatesres = 'UPDATE {kalvidres} res
@@ -165,12 +160,7 @@ class natsane {
                                 , "/showDescription/true/showTitle/true/showTags/true/showDuration/true/showOwner/true/showUploadDate/false/playerSize/400x365/playerSkin/30928192/")
                              WHERE (res.source IS NULL OR res.source = "")
                                 AND res.entry_id <> ""';
-        $sourceupdatespres = 'UPDATE {kalvidpres} pres
-                              SET pres.source = CONCAT("http://kaltura-kaf-uri.com/browseandembed/index/media/entryid/"
-                                , pres.entry_id
-                                , "/showDescription/false/showTitle/false/showTags/false/showDuration/false/showOwner/false/showUploadDate/false/playerSize/400x365/playerSkin/30928192/")
-                              WHERE (pres.source IS NULL OR pres.source = "")
-                                AND pres.entry_id <> ""';
+        $sourceupdatespres = '';
         $sourceupdatessub = 'UPDATE {kalvidassign_submission} sub
                              SET sub.source = CONCAT("http://kaltura-kaf-uri.com/browseandembed/index/media/entryid/"
                                 , sub.entry_id
@@ -183,10 +173,7 @@ class natsane {
                              SET res.uiconf_id = "30928192"
                              WHERE res.uiconf_id <> "1"
                                 AND res.uiconf_id <> "30928192"';
-        $uiconfupdatespres = 'UPDATE {kalvidpres} pres
-                              SET pres.uiconf_id = "30928192"
-                              WHERE pres.uiconf_id <> "1"
-                                AND pres.uiconf_id <> "30928192"';
+        $uiconfupdatespres = '';
 
         // Get the count of records needing to be fixed.
         $count = $DB->get_record_sql($kalcount);

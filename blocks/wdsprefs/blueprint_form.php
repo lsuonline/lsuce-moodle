@@ -49,8 +49,8 @@ class blueprint_form extends moodleform {
             // Create the display name.
             $displayname = "$abbreviation $number - $title";
             
-            // Use course_definition_id as the key.
-            $courseoptions[$course->course_definition_id] = $displayname;
+            // Use course_listing_id as the key.
+            $courseoptions[$course->course_listing_id] = $displayname;
         }
         
         // Sort the courses alphabetically.
@@ -58,10 +58,10 @@ class blueprint_form extends moodleform {
         
         // Add the dropdown to select a course.
         $mform->addElement('select', 
-                          'course_definition_id', 
+                          'course_listing_id',
                           get_string('wdsprefs:selectcourseforblueprint', 'block_wdsprefs'), 
                           $courseoptions);
-        $mform->addRule('course_definition_id', null, 'required', null, 'client');
+        $mform->addRule('course_listing_id', null, 'required', null, 'client');
         
         // Add action buttons.
         $this->add_action_buttons(true, get_string('wdsprefs:createblueprint', 'block_wdsprefs'));
@@ -74,14 +74,14 @@ class blueprint_form extends moodleform {
         $errors = parent::validation($data, $files);
         
         // Check if user already has a blueprint for this course.
-        if (!empty($data['course_definition_id'])) {
+        if (!empty($data['course_listing_id'])) {
             $exists = $DB->record_exists('block_wdsprefs_blueprints', [
                 'userid' => $USER->id,
-                'course_definition_id' => $data['course_definition_id']
+                'course_listing_id' => $data['course_listing_id']
             ]);
 
             if ($exists) {
-                $errors['course_definition_id'] = get_string('wdsprefs:blueprintalreadyexists', 'block_wdsprefs');
+                $errors['course_listing_id'] = get_string('wdsprefs:blueprintalreadyexists', 'block_wdsprefs');
             }
         }
         

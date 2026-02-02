@@ -22,6 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
+
 /**
  * Editing form for the oumultiresponse question type.
  *
@@ -30,25 +33,21 @@
  */
 class qtype_oumultiresponse_edit_form extends question_edit_form {
 
-    #[\Override]
     protected function definition_inner($mform) {
         $mform->addElement('advcheckbox', 'shuffleanswers',
-                get_string('shuffleanswers', 'qtype_multichoice'), null, null, [0, 1]);
+                get_string('shuffleanswers', 'qtype_multichoice'), null, null, array(0, 1));
         $mform->addHelpButton('shuffleanswers', 'shuffleanswers', 'qtype_multichoice');
-        $mform->setDefault('shuffleanswers', $this->get_default_value('shuffleanswers',
-                get_config('qtype_multichoice', 'shuffleanswers')));
+        $mform->setDefault('shuffleanswers', 1);
 
         $mform->addElement('select', 'answernumbering',
                 get_string('answernumbering', 'qtype_multichoice'),
                 qtype_multichoice::get_numbering_styles());
-        $mform->setDefault('answernumbering', $this->get_default_value('answernumbering',
-                get_config('qtype_multichoice', 'answernumbering')));
+        $mform->setDefault('answernumbering', 'abc');
 
         $mform->addElement('selectyesno', 'showstandardinstruction',
             get_string('showstandardinstruction', 'qtype_oumultiresponse'), null, null, [0, 1]);
         $mform->addHelpButton('showstandardinstruction', 'showstandardinstruction', 'qtype_oumultiresponse');
-        $mform->setDefault('showstandardinstruction', $this->get_default_value('showstandardinstruction',
-                get_config('qtype_multichoice', 'showstandardinstruction')));
+        $mform->setDefault('showstandardinstruction', 0);
 
         $this->add_per_answer_fields($mform, get_string('choiceno', 'qtype_multichoice', '{no}'),
                 null, max(5, QUESTION_NUMANS_START));
@@ -58,16 +57,15 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
         $this->add_interactive_settings(true, true);
     }
 
-    #[\Override]
     protected function get_per_answer_fields($mform, $label, $gradeoptions,
             &$repeatedoptions, &$answersoption) {
-        $repeated = [];
+        $repeated = array();
         $repeated[] = $mform->createElement('editor', 'answer',
-                $label, ['rows' => 2], $this->editoroptions);
+                $label, array('rows' => 1), $this->editoroptions);
         $repeated[] = $mform->createElement('checkbox', 'correctanswer',
                 get_string('correctanswer', 'qtype_oumultiresponse'));
         $repeated[] = $mform->createElement('editor', 'feedback',
-                get_string('feedback', 'question'), ['rows' => 2], $this->editoroptions);
+                get_string('feedback', 'question'), array('rows' => 1), $this->editoroptions);
 
         // These are returned by arguments passed by reference.
         $repeatedoptions['answer']['type'] = PARAM_RAW;
@@ -76,7 +74,6 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
         return $repeated;
     }
 
-    #[\Override]
     protected function get_hint_fields($withclearwrong = false, $withshownumpartscorrect = false) {
         list($repeated, $repeatedoptions) = parent::get_hint_fields(
                 $withclearwrong, $withshownumpartscorrect);
@@ -98,10 +95,9 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
             $repeated[] = $showchoicefeedback;
         }
 
-        return [$repeated, $repeatedoptions];
+        return array($repeated, $repeatedoptions);
     }
 
-    #[\Override]
     protected function data_preprocessing($question) {
         $question = parent::data_preprocessing($question);
         $question = $this->data_preprocessing_answers($question, true);
@@ -133,7 +129,6 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
         return $question;
     }
 
-    #[\Override]
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
@@ -168,11 +163,6 @@ class qtype_oumultiresponse_edit_form extends question_edit_form {
         return $errors;
     }
 
-    /**
-     * Returns the question type.
-     *
-     * @return string The question type.
-     */
     public function qtype() {
         return 'oumultiresponse';
     }
