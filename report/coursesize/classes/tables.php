@@ -25,11 +25,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// use renderable;
-// use renderer_base;
-// use moodle_url;
-// use flexible_table;
-// use html_writer;
 require_once($CFG->dirroot.'/report/coursesize/locallib.php');
 require_once($CFG->libdir.'/tablelib.php');
 
@@ -130,7 +125,7 @@ class cstables {
 
     public function process_course_data($baseurl) {
         global $DB, $CFG;
-        
+
         $coursesql = 'SELECT cx.id, c.id as courseid ' .
             'FROM {course} c ' .
             ' INNER JOIN {context} cx ON cx.instanceid=c.id AND cx.contextlevel = ' . CONTEXT_COURSE;
@@ -146,7 +141,6 @@ class cstables {
 
             if (!empty($courses)) {
                 list($insql, $courseparams) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED);
-                // $extracoursesql = ' WHERE c.id ' . $insql;
                 $extracoursesql = ' WHERE c.category = ' . $this->urlparams->category;
             } else {
                 // Don't show any courses if category is selected but category has no courses.
@@ -154,9 +148,6 @@ class cstables {
                 $extracoursesql = ' WHERE c.id is null';
             }
         }
-        // $coursesql .= $extracoursesql;
-        // $params = array_merge($params, $courseparams);
-        // $courselookup = $DB->get_records_sql($coursesql, $params);
 
         $backupsizes = [];
         if (isset($this->reportconfig->calcmethod) && ($this->reportconfig->calcmethod) == 'live') {
@@ -209,6 +200,7 @@ class cstables {
 
         // IF the download option is on then we want full list.
         if ($this->reportconfig->usepagination && !property_exists($this->urlparams, 'download')) {
+            // TODO DALO: This needs to be improved, cached or something! It's a bottleneck!
             $size = "SELECT COUNT(the_list.id)
                 FROM (
                     ".$sql."
@@ -220,8 +212,6 @@ class cstables {
             $courses = $DB->get_records_sql($sql, $courseparams);
             $this->coursessizecount = count($courses);
         }
-
-        // $this->table = new flexible_table('admin_coursesize_report');
 
         $acr_columns = array(
             'course',
@@ -240,8 +230,8 @@ class cstables {
         $this->table->define_columns($acr_columns);
         $this->table->define_headers($acr_headers);
         $this->table->define_baseurl($baseurl);
-        
-        // Enable sorting. The second argument sets the default sort column, 
+
+        // Enable sorting. The second argument sets the default sort column,
         // and the third sets the default sort order (e.g., SORT_DESC or SORT_ASC).
         $this->table->sortable(true, 'filesize', SORT_ASC);
 
@@ -251,10 +241,9 @@ class cstables {
         if (property_exists($this->urlparams, 'download')) {
             $this->table->is_downloading($this->urlparams->download, 'course_size_'.time(), 'LSU Course Size Report');
         }
-        // $this->table->is_downloading('csv');
 
         // Build out the download buttons and options.
-        $this->table->show_download_buttons_at([TABLE_P_BOTTOM]);    
+        $this->table->show_download_buttons_at([TABLE_P_BOTTOM]);
         // Set up the table. This processes the user's sort/page requests.
         $this->table->setup();
 
@@ -290,20 +279,19 @@ class cstables {
             $bytesused = get_string('coursebytes', 'report_coursesize', $a);
             $backupbytesused = get_string('coursebackupbytes', 'report_coursesize', $a);
             $summarylink = new moodle_url('/report/coursesize/course.php', array('id' => $course->id));
-            
+
             if (property_exists($this->urlparams, 'download')) {
                 $summary = '';
             } else {
                 $summary = html_writer::link($summarylink, ' ' . get_string('coursesummary', 'report_coursesize'));
             }
 
-            
             if ($course->backupsize == "" || $course->backupsize == null) {
                 $course->backupsize = 0;
             }
             $row[] = "<span title=\"$backupbytesused\">" . display_size((int)$course->backupsize) . "</span>";
             $row[] = "<span id=\"coursesize_" . $course->shortname . "\" title=\"$bytesused\">$readablesize</span>" . $summary;
-            
+
             $this->table->add_data($row);
 
             $downloaddata[] = array($course->shortname, $course->name, str_replace(',', '', $readablesize),
@@ -324,59 +312,36 @@ class cstables {
                 $row[] = '<a href="' . $CFG->wwwroot . '/course/view.php?id=' . $course->id . '">' . $course->shortname . '</a>';
                 $row[] = "<span title=\"$bytesused\">0</span>";
                 $row[] = "<span title=\"$bytesused\">0</span>";
-                // $this->table->data[] = $row;
                 $this->table->add_data($row);
             }
         }
         // Now add the totals to the bottom of the table.
-        // $this->table->data[] = array(); // Add empty row before total.
         $downloaddata[] = array();
         $row = array();
         $row[] = get_string('total');
         $row[] = '';
         $row[] = display_size($totalbackupsize);
         $row[] = display_size($totalsize);
-        // $this->table->data[] = $row;
         $this->table->add_data($row);
 
         $downloaddata[] = [get_string('total'), '', display_size($totalsize), display_size($totalbackupsize)];
         unset($courses);
 
-        
         // Finish export and exit before sending any output.
-        // if ($this->table->is_downloading($this->urlparams->download)) {
         if ($this->table->is_downloading()) {
             $this->table->finish_output();
             exit;
         }
-        // Add in Course Cat including dropdown to filter.
 
         // Start the output buffering.
         ob_start();
 
         // This is a nasty way to avoid the html being littered with str_replace deprecation warnings.
         @$this->table->print_html();
-        $wanker = ob_get_clean();
+        $finaloutput = ob_get_clean();
         // Return the data.
         return (object)[
-            // 'tablehtml' => ob_get_clean()
-            'tablehtml' => $wanker
+            'tablehtml' => $finaloutput
         ];
-        
-
-        // Add in download option. Exports CSV.
-
-        // if ($download == 1) {
-        //     $downloadfilename = clean_filename("export_csv");
-        //     $csvexport = new csv_export_writer ('commer');
-        //     $csvexport->set_filename($downloadfilename);
-        //     foreach ($downloaddata as $data) {
-        //         $csvexport->add_data($data);
-        //     }
-        //     $csvexport->download_file();
-        //     exit;
-        // }
-
-        
     }
 }

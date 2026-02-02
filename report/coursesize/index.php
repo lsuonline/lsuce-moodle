@@ -38,8 +38,6 @@ admin_externalpage_setup('reportcoursesize');
 $coursecategory = optional_param('category', '', PARAM_INT);
 $tsort = optional_param('tsort', '', PARAM_TEXT);
 $tdir = optional_param('tdir', '', PARAM_TEXT);
-// $download = optional_param('download', '', PARAM_TEXT);
-$download2 = optional_param('download', '', PARAM_TEXT);
 $download = optional_param('download', '', PARAM_ALPHA);
 $viewtab = optional_param('view', 'coursesize', PARAM_ALPHA);
 
@@ -105,37 +103,13 @@ foreach ($tabdata as $tabname => $param) {
 if (empty($download)) {
     echo $OUTPUT->header();
     echo $OUTPUT->tabtree($tabs, $viewtab);
-    // $finaloutput .= $OUTPUT->header();
-    // $finaloutput .= $OUTPUT->tabtree($tabs, $viewtab);
 }
 
 if ($viewtab == 'userstopnum') {
-    
-    // if (!empty($usersizes)) {
-        // $usertable = new html_table();
 
     $tobj = new cstables($urlparams, 'admin_usersize_report');
-    // $table = new flexible_table('admin_usersize_report');
-
     $toprint = $tobj->process_user_data($baseurl);
-
-    // unset($users);
     $finaloutput .= $OUTPUT->heading(get_string('userstopnum', 'report_coursesize', $numberofusers));
-
-
-        /*
-        if (!isset($cstable)) {
-            $finaloutput .= get_string('nouserfiles', 'report_coursesize');
-        } else {
-            // print html_writer::table($cstable);
-            // Finish export and exit before sending any output.
-            if ($cstable->is_downloading($download)) {
-                $cstable->finish_output();
-                exit;
-            }
-        }
-        */
-    // }
 
 } else if ($viewtab == 'coursesize') {
 
@@ -159,7 +133,7 @@ if ($viewtab == 'userstopnum') {
     $systembackupreadable = display_size($systembackupsize);
 
     if (empty($coursecategory)) {
-        
+
         $updatestring = !empty($tobj->get_config('filessizeupdated')) ? userdate($tobj->get_config('filessizeupdated')) : get_string('never');
         $finaloutput .= $OUTPUT->heading(get_string("sitefilesusage", 'report_coursesize'));
         $finaloutput .= '<strong>' . get_string("totalsitedata", 'report_coursesize', $totalusagereadable) . '</strong> ';
@@ -199,15 +173,11 @@ if ($viewtab == 'userstopnum') {
         $options[$cat->id] = format_string($cat->name, true, ['context' => $context]);
     }
     $filter = $OUTPUT->single_select($url, 'category', $options, $coursecategory, []);
-    // $filter .= $OUTPUT->single_button(new moodle_url('index.php', array('download' => 1, 'category' => $this->urlparams->coursecategory)),
-    //     get_string('exportcsv', 'report_coursesize'), 'post', ['class' => 'coursesizedownload']);
-
     $finaloutput .= $OUTPUT->box($filter) . "<br/>";
 }
 
 echo $finaloutput;
 echo $toprint->tablehtml;
-// $cstable->print_html();
 
 if ($tobj->get_config('usepagination')) {
     $perpage = $perpage;
