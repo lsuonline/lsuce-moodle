@@ -476,7 +476,7 @@ $string['frozen_readonly_pages_desc'] = 'When the context is frozen these pages 
 
 // Block Roles from sending emails.
 $string['selectable_block_roles'] = 'Emails will not be sent to these roles';
-$string['selectable_block_roles_desc'] = 'Before a message is sent, the selected role(s) will be removed from the message queue.';
+$string['selectable_block_roles_desc'] = "Before a message is sent, the selected role(s) will be removed from the message queue.";
 
 // Miscellaneous settings.
 $string['misc_settings_heading_title'] = 'Miscellaneous settings';
