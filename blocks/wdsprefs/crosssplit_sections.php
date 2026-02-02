@@ -94,7 +94,7 @@ $crosssplit = wdsprefs::get_crosssplit_info($id);
 
 // Check if crosssplit exists and belongs to current user.
 if (!$crosssplit || $crosssplit->userid != $USER->id) {
-    echo $OUTPUT->notification(get_string('wdsprefs:nocrosssplit', 'block_wdsprefs'), 'notifyerror');
+    echo $OUTPUT->notification(get_string('wdsprefs:nocrosssplit', 'block_wdsprefs'), \core\output\notification::NOTIFY_ERROR);
     echo $OUTPUT->footer();
     exit;
 }
@@ -123,13 +123,23 @@ if (empty($sections)) {
     // Create table for sections.
     $table = new html_table();
     $table->head = [
-        get_string('wdsprefs:course', 'block_wdsprefs'),
+        get_string('wdsprefs:period', 'block_wdsprefs'),
+        get_string('wdsprefs:coursename', 'block_wdsprefs'),
         get_string('wdsprefs:section', 'block_wdsprefs'),
         get_string('wdsprefs:status', 'block_wdsprefs')
     ];
 
     foreach ($sections as $section) {
+
+        // Determine if this is an online period or not.
+        $online = wdsprefs::get_period_online($section->academic_period);
+
+        // Get the period name matching the course designation.
+        $pname = $section->period_year . ' ' . $section->period_type . $online;
+
+        // Build out the table data.
         $row = [];
+        $row[] = $pname;
         $row[] = $section->course_subject_abbreviation . ' ' . $section->course_number;
         $row[] = $section->section_number;
         $row[] = get_string('wdsprefs:sectionstatus_' . $section->status, 'block_wdsprefs');

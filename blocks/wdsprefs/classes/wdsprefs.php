@@ -26,7 +26,7 @@ require_once("$CFG->dirroot/enrol/workdaystudent/classes/workdaystudent.php");
 class wdsprefs {
 
     /**
-     * Checks if a course can be safely deleted after crossspliting.
+     * Checks if a course can be safely deleted after cross-splitting.
      *
      * @param @int $courseid The Moodle course ID to check
      * @return @bool True if the course can be safely deleted
@@ -129,7 +129,7 @@ class wdsprefs {
     }
 
     /**
-     * Undoes a crossspliting operation, reverting sections back to original course shells.
+     * Undoes a cross-splitting operation, reverting sections back to original course shells.
      *
      * @param @int $crosssplitid The crosssplit ID to undo.
      * @return @bool Success or failure.
@@ -660,12 +660,13 @@ class wdsprefs {
         $fnidstring = implode(' / ', $fullnameidentifiers);
 
         // Build the period name.
-        $periodname = self::get_current_taught_periods($section->academic_period_id);
+//        $periodname = self::get_current_taught_periods($section->academic_period_id);
+        $periodname = self::get_current_taught_periods($period->academic_period_id);
         $periodname = reset($periodname);
 
         // Remove space between year and term.
         $pname = preg_replace('/(\d{4}) /', '$1', $periodname);
-    
+
         // Remove space before (Online) and remove parentheses.
         $pname = str_replace(' (Online)', 'Online', $pname);
 
@@ -1078,7 +1079,7 @@ class wdsprefs {
         foreach ($originalcoursesdata as $originalcourseid => $data) {
             if (self::can_delete_original_course($originalcourseid)) {
                 // Log the deletion
-                mtrace("Deleting original course ID $originalcourseid (idnumber: {$data['idnumber']}) after crossspliting as it has no students, grades, or custom content");
+                mtrace("Deleting original course ID $originalcourseid (idnumber: {$data['idnumber']}) after cross-splitting as it has no students, grades, or custom content");
                 self::delete_original_course($originalcourseid);
             }
         }
@@ -1213,7 +1214,7 @@ class wdsprefs {
         $sql = "SELECT cs.id, cs.crosssplit_id, cs.section_id, cs.status,
                    s.section_number, s.section_listing_id,
                    c.course_subject_abbreviation, c.course_number,
-                   p.period_year, p.period_type
+                   p.period_year, p.period_type, p.academic_period
             FROM {block_wdsprefs_crosssplit_sections} cs
             INNER JOIN {enrol_wds_sections} s
                 ON s.id = cs.section_id
@@ -1276,7 +1277,7 @@ class wdsprefs {
         $periodid = $period->id;
 
         // Build the period name.
-        $periodname = self::get_current_taught_periods($periodid);
+        $periodname = self::get_current_taught_periods($period->academic_period_id);
         $periodname = reset($periodname);
 
         // Prepare array to store results.
@@ -1310,6 +1311,12 @@ class wdsprefs {
                 );
 
                 if ($crosssplitid) {
+
+                    // Fetch the actual shell name from the DB.
+                    $created_shell = $DB->get_record('block_wdsprefs_crosssplits', ['id' => $crosssplitid], 'shell_name');
+                    if ($created_shell) {
+                        $shellname = $created_shell->shell_name;
+                    }
 
                     // Get info about the sections.
                     $sections = [];
@@ -1348,6 +1355,63 @@ class wdsprefs {
         }
 
         return $results;
+    }
+
+    /**
+     * Am I an instructor?
+     *
+     * @param @string $userid The user ID.
+     * @return @bool
+     */
+    public static function faster_get_instructor_status($userid):bool {
+        global $DB;
+
+        // Check if they have a teacher record.
+        $exists = $DB->record_exists(
+            'enrol_wds_teachers',
+            ['userid' => $userid]
+        );
+
+        // Return that status.
+        return $exists;
+    }
+
+    /**
+     * Am I a student?
+     *
+     * @param @string $userid The user ID.
+     * @return @bool
+     */
+    public static function faster_get_student_status($userid):bool {
+        global $DB;
+
+        // Check if they have a teacher record.
+        $exists = $DB->record_exists(
+            'enrol_wds_students',
+            ['userid' => $userid]
+        );
+
+        // Return that status.
+        return $exists;
+    }
+
+    /**
+     * Am I a student?
+     *
+     * @param @string $userid The user ID.
+     * @return @bool
+     */
+    public static function get_current_student_status($userid):bool {
+        global $DB;
+
+        // Check if they have a teacher record.
+        $exists = $DB->record_exists(
+            'enrol_wds_students',
+            ['userid' => $userid]
+        );
+
+        // Return that status.
+        return $exists;
     }
 
     /**
@@ -1707,7 +1771,7 @@ class wdsprefs {
      *
      * @return @array Formatted array of periods.
      */
-    public static function get_current_taught_periods($periodid = null): array {
+    public static function get_current_taught_periods($periodid = null, $include_counts = false): array {
         global $USER, $DB;
 
         // Get the user's idnumber.
@@ -1749,7 +1813,7 @@ class wdsprefs {
             $parms = [
                 'userid' => $uid,
                 'fsemrange' => $fsemrange
-            ]; 
+            ];
         } else {
 
             // Use named parameters for security.
@@ -1757,7 +1821,7 @@ class wdsprefs {
                 'userid' => $uid,
                 'fsemrange' => $fsemrange,
                 'periodid' => $periodid
-            ]; 
+            ];
         }
 
         // Get the actual data.
@@ -1777,6 +1841,20 @@ class wdsprefs {
 
             // Get the period name matching the course designation.
             $pname = $record->period_year . ' ' . $record->period_type . $online;
+
+            if ($include_counts) {
+                // Get sections for this period to count them.
+                $sections = self::get_sections_by_course_for_period($pid);
+                $count = 0;
+                foreach ($sections as $course_sections) {
+                    $count += count($course_sections);
+                }
+
+                $a = new stdClass();
+                $a->name = $pname;
+                $a->count = $count;
+                $pname = get_string('wdsprefs:periodwithcount', 'block_wdsprefs', $a);
+            }
 
             // Add the key/value pair to the array.
             $periods[$pid] = $pname;
@@ -1799,7 +1877,8 @@ class wdsprefs {
 
         // Use named parameters for security.
         $parms = [
-            'userid' => $uid,
+            'userid' => $USER->id,
+            'uid' => $uid,
             'periodid' => $periodid
         ];
 
@@ -1808,8 +1887,9 @@ class wdsprefs {
             FROM {block_wdsprefs_crosssplits} cs
             INNER JOIN {block_wdsprefs_crosssplit_sections} css
                 ON cs.id = css.crosssplit_id
-                AND cs.academic_period_id = :periodid
-                AND cs.universal_id = :userid";
+               #AND cs.academic_period_id = :periodid
+                AND cs.userid = :userid
+                AND cs.universal_id = :uid";
 
         // Get the data.
         $crosssplitsections = $DB->get_records_sql($crosssplitsql, $parms);
@@ -1838,16 +1918,17 @@ class wdsprefs {
                    ON tenr.section_listing_id = sec.section_listing_id
                INNER JOIN {enrol_wds_teachers} t
                    ON t.universal_id = tenr.universal_id
-           WHERE tenr.universal_id = :userid
+           WHERE tenr.universal_id = :uid
+             AND t.userid = :userid
              AND sec.academic_period_id = :periodid";
 
         // Add condition to exclude already crosssplit sections if we have any.
         if (!empty($excludeids)) {
             list($insql, $inparms) = $DB->get_in_or_equal($excludeids, SQL_PARAMS_NAMED, 'exclude_', false);
             $sql .= " AND sec.id " . $insql;
-            $parms = array_merge(['userid' => $uid, 'periodid' => $periodid], $inparms);
+            $parms = array_merge(['uid' => $uid, 'userid' => $USER->id, 'periodid' => $periodid], $inparms);
         } else {
-            $parms = ['userid' => $uid, 'periodid' => $periodid];
+            $parms = ['uid' => $uid, 'userid' => $USER->id, 'periodid' => $periodid];
         }
 
         $sql .= " GROUP BY sec.id
@@ -1859,7 +1940,7 @@ class wdsprefs {
        // Build the formatteddata array.
        $formatteddata = [];
 
-       // Loop through the records to buuild the formatted array.
+       // Loop through the records to build the formatted array.
        foreach ($records as $record) {
 
            // Build the period name.
@@ -2183,6 +2264,596 @@ class wdsprefs {
 
         // Return the value.
         return $student;
+    }
+
+    /**
+     * Gets sections taught by current user for all valid academic periods.
+     *
+     * @param string $targetperiodid The academic period ID of the target shell
+     * @return @array Formatted array of sections grouped by period and course.
+     */
+    public static function get_sections_across_periods($targetperiodid): array {
+        global $USER, $DB;
+
+        // Get the user's idnumber.
+        $uid = $USER->idnumber;
+
+        // Get the target period to match dates.
+        $targetperiod = self::get_period_from_id($targetperiodid);
+        if (!$targetperiod) {
+            return [];
+        }
+
+        // Get all sections that are already part of crosssplits.
+        $crosssplitsql = "SELECT section_id, crosssplit_id, moodle_course_id
+            FROM {block_wdsprefs_crosssplits} cs
+            INNER JOIN {block_wdsprefs_crosssplit_sections} css
+                ON cs.id = css.crosssplit_id
+            WHERE cs.userid = :userid
+                AND cs.universal_id = :uid";
+
+        $csparms = ['userid' => $USER->id, 'uid' => $uid];
+        $crosssplitsections = $DB->get_records_sql($crosssplitsql, $csparms);
+        $crosssplitmap = [];
+        foreach ($crosssplitsections as $cs) {
+            $crosssplitmap[$cs->section_id] = $cs;
+        }
+
+        // Build SQL query.
+        $sql = "SELECT sec.id AS sectionid,
+           p.period_year,
+           p.period_type,
+           p.academic_period_id,
+           c.course_subject_abbreviation,
+           c.course_number,
+           sec.section_number,
+           sec.section_listing_id,
+           COALESCE(t.preferred_firstname, t.firstname) AS firstname,
+           COALESCE(t.preferred_lastname, t.lastname) AS lastname
+           FROM {enrol_wds_periods} p
+               INNER JOIN {enrol_wds_sections} sec
+                   ON sec.academic_period_id = p.academic_period_id
+               INNER JOIN {enrol_wds_courses} c
+                   ON c.course_listing_id = sec.course_listing_id
+               INNER JOIN {enrol_wds_teacher_enroll} tenr
+                   ON tenr.section_listing_id = sec.section_listing_id
+               INNER JOIN {enrol_wds_teachers} t
+                   ON t.universal_id = tenr.universal_id
+           WHERE sec.delivery_mode IN ('Online','Web-Based')
+             AND t.userid = :userid
+             AND tenr.universal_id = :uid
+             AND p.start_date = :startdate
+             AND p.end_date = :enddate
+           GROUP BY sec.id, p.academic_period_id
+           ORDER BY p.start_date ASC, c.course_subject_abbreviation ASC, c.course_number ASC, sec.section_number ASC";
+
+        $parms = ['userid' => $USER->id, 'uid' => $uid, 'startdate' => $targetperiod->start_date, 'enddate' => $targetperiod->end_date];
+
+        $records = $DB->get_records_sql($sql, $parms);
+
+        $formatteddata = [];
+
+        foreach ($records as $record) {
+
+           // Build the period name.
+           $periodname = self::get_current_taught_periods($record->academic_period_id);
+           $periodname = reset($periodname);
+
+           // Group by Period -> Course,
+           if (!isset($formatteddata[$periodname])) {
+               $formatteddata[$periodname] = [];
+           }
+
+           $coursekey = "{$record->course_subject_abbreviation} {$record->course_number}";
+
+           if (!isset($formatteddata[$periodname][$coursekey])) {
+               $formatteddata[$periodname][$coursekey] = [];
+           }
+
+           $sectionvalue = "{$record->course_subject_abbreviation} {$record->course_number} {$record->section_number}";
+
+           $sectiondata = new stdClass();
+           $sectiondata->name = $sectionvalue;
+           $sectiondata->id = $record->sectionid;
+           $sectiondata->crosssplit_id = null;
+           $sectiondata->moodle_course_id = null;
+
+           if (isset($crosssplitmap[$record->sectionid])) {
+               $sectiondata->crosssplit_id = $crosssplitmap[$record->sectionid]->crosssplit_id;
+               $sectiondata->moodle_course_id = $crosssplitmap[$record->sectionid]->moodle_course_id;
+           }
+
+           $formatteddata[$periodname][$coursekey][$record->sectionid] = $sectiondata;
+        }
+
+        return $formatteddata;
+    }
+
+    /**
+     * Handles the submission of the crossenrollment form.
+     *
+     * @param object $data Form data
+     * @param string $period Period information
+     * @param string $teacher Teacher information
+     * @return array Array of results with shell information and assigned sections
+     */
+    public static function process_crossenroll_form($data, $period, $teacher) {
+        global $USER, $DB;
+
+        // Get the period id.
+        $periodid = $period->id;
+
+        // Build the period name.
+        $periodname = self::get_current_taught_periods($period->academic_period_id);
+        $periodname = reset($periodname);
+
+        // Prepare array to store results.
+        $results = [];
+
+        // Check if we have sections.
+        if (!empty($data->selectedsections)) {
+
+            // It might come as an array or comma separated string depending on form element.
+            $sectionids = $data->selectedsections;
+
+            // Should be array from select multiple.
+            if (!is_array($sectionids)) {
+                return [];
+            }
+
+            // Create the shell name.
+            $shellname = "$periodname for $teacher";
+
+            // Create the crossenrolled shell.
+            $crosssplitid = self::create_crosssplit_shell(
+                $USER->id,
+                $periodid,
+                $sectionids,
+                $shellname,
+                1
+            );
+
+            if ($crosssplitid) {
+
+                // Fetch the actual shell name from the DB.
+                $created_shell = $DB->get_record('block_wdsprefs_crosssplits', ['id' => $crosssplitid], 'shell_name');
+                if ($created_shell) {
+                    $shellname = $created_shell->shell_name;
+                }
+
+                // Get info about the sections.
+                $sections = [];
+
+                foreach ($sectionids as $sectionid) {
+
+                    // Build out the sql.
+                    $ssql = "SELECT sec.section_number,
+                            cou.course_subject_abbreviation,
+                            cou.course_number
+                     FROM {enrol_wds_sections} sec
+                     INNER JOIN {enrol_wds_courses} cou
+                         ON cou.course_listing_id = sec.course_listing_id
+                     WHERE sec.id = :sectionid";
+
+                     // Build the parms.
+                     $parms = ['sectionid' => $sectionid];
+
+                     // Get the data.
+                     $section = $DB->get_record_sql($ssql, $parms);
+
+                    if ($section) {
+                        $sections[] = $section->course_subject_abbreviation . ' ' .
+                                  $section->course_number . ' ' .
+                                  $section->section_number;
+                    }
+                }
+
+                // Store in results.
+                $results[$shellname] = [
+                    'crosssplit_id' => $crosssplitid,
+                    'sections' => $sections
+                ];
+            }
+        }
+
+        return $results;
+    }
+
+    /*
+     * Checks if the user is eligible for cross-enrollment (has available sections in >= 2 periods).
+     *
+     * @param int $userid The user ID.
+     * @return bool True if eligible.
+     */
+    public static function check_crossenroll_eligibility($userid): bool {
+        // Get cross-enroll eligible periods.
+        $periods = self::get_crossenroll_periods();
+        if (empty($periods)) {
+            return false;
+        }
+
+        $periods_with_sections = 0;
+
+        foreach ($periods as $periodid => $periodname) {
+
+            // Let's use get_sections_across_periods with one of the periods.
+            $sections_across = self::get_sections_across_periods($periodid);
+
+            // Count periods that have at least one available section.
+            $available_periods_count = 0;
+            foreach ($sections_across as $pname => $courses) {
+                $has_available_section = false;
+                foreach ($courses as $cname => $sections) {
+                    foreach ($sections as $section) {
+                         // Check if section is NOT cross-split/enrolled.
+                         if (empty($section->crosssplit_id)) {
+                             $has_available_section = true;
+                             break 2; // Break out of sections and courses loops
+                         }
+                    }
+                }
+                if ($has_available_section) {
+                    $available_periods_count++;
+                }
+            }
+
+            if ($available_periods_count >= 2) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Validates that selected sections span at least two different academic periods.
+     *
+     * @param array $sectionids Array of selected section IDs.
+     * @return bool True if valid.
+     */
+    public static function validate_crossenroll_selection($sectionids): bool {
+        global $DB;
+
+        if (empty($sectionids) || !is_array($sectionids)) {
+            return false;
+        }
+
+        // Get academic periods for these sections.
+        list($insql, $params) = $DB->get_in_or_equal($sectionids);
+        $sql = "SELECT DISTINCT academic_period_id FROM {enrol_wds_sections} WHERE id $insql";
+
+        $periods = $DB->get_records_sql($sql, $params);
+
+        return count($periods) >= 2;
+    }
+
+    /**
+     * Checks if the user has any periods eligible for cross-enrollment.
+     *
+     * @param object|null $user Unused, uses global $USER.
+     * @return bool True if eligible periods exist.
+     */
+    public static function has_crossenroll_periods($user = null): bool {
+        $periods = self::get_crossenroll_periods();
+        return !empty($periods);
+    }
+
+    /**
+     * Gets periods available for crossenrollment (sharing start/end dates).
+     *
+     * @return array Formatted array of periods.
+     */
+    public static function get_crossenroll_periods($include_counts = false): array {
+        global $USER, $DB;
+
+        // Get the user's idnumber.
+        $uid = $USER->idnumber;
+
+        // Get settings to limit semesters to current ones.
+        $s = workdaystudent::get_settings();
+
+        // Set the semester range for getting future and recent semesters.
+        $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
+
+        // Build the SQL.
+        $sql = "SELECT p.academic_period_id,
+                p.period_type,
+                p.period_year,
+                p.academic_period,
+                p.start_date,
+                p.end_date
+            FROM {enrol_wds_periods} p
+                INNER JOIN {enrol_wds_sections} sec
+                    ON sec.academic_period_id = p.academic_period_id
+                INNER JOIN {enrol_wds_teacher_enroll} tenr
+                    ON tenr.section_listing_id = sec.section_listing_id
+            WHERE tenr.universal_id = :uid
+                AND sec.delivery_mode IN ('Online','Web-Based')
+                AND p.start_date < UNIX_TIMESTAMP() + :fsemrange
+                AND p.end_date > UNIX_TIMESTAMP()
+            GROUP BY p.academic_period_id
+            ORDER BY p.start_date ASC, p.period_type ASC";
+
+        // Use named parameters for security.
+        $parms = [
+            'uid' => $uid,
+            'fsemrange' => $fsemrange
+        ];
+
+        // Get the actual data.
+        $records = $DB->get_records_sql($sql, $parms);
+
+        // Group by dates.
+        $dategroups = [];
+        foreach ($records as $record) {
+            $key = $record->start_date . '|' . $record->end_date;
+            if (!isset($dategroups[$key])) {
+                $dategroups[$key] = [];
+            }
+            $dategroups[$key][] = $record;
+        }
+
+        // Filter groups with < 2 periods.
+        $eligibleperiods = [];
+        foreach ($dategroups as $group) {
+            if (count($group) >= 2) {
+                foreach ($group as $record) {
+                    $eligibleperiods[$record->academic_period_id] = $record;
+                }
+            }
+        }
+
+        // Build the periods array maintaining order.
+        $periods = [];
+        foreach ($records as $record) {
+            if (isset($eligibleperiods[$record->academic_period_id])) {
+                // Determine if this is an online period or not.
+                $online = self::get_period_online($record->academic_period);
+
+                if (empty($online)) {
+                    continue;
+                }
+
+                // Get the academic period id.
+                $pid = $record->academic_period_id;
+
+                // Get the period name matching the course designation.
+                $pname = $record->period_year . ' ' . $record->period_type . $online;
+
+                if ($include_counts) {
+                    $sections_across = self::get_sections_across_periods($pid);
+                    $count = 0;
+                    foreach ($sections_across as $period_group) {
+                        foreach ($period_group as $course_group) {
+                            foreach ($course_group as $section) {
+                                if (empty($section->crosssplit_id)) {
+                                    $count++;
+                                }
+                            }
+                        }
+                    }
+
+                    $a = new stdClass();
+                    $a->name = $pname;
+                    $a->count = $count;
+                    $pname = get_string('wdsprefs:periodwithcount', 'block_wdsprefs', $a);
+                }
+
+                // Add the key/value pair to the array.
+                $periods[$pid] = $pname;
+            }
+        }
+
+        return $periods;
+    }
+
+    /**
+     * Title-cases a string while leaving the first word untouched for academic periods in scheduleview.
+     *
+     * @param string $string
+     * @return string
+     */
+    public static function titlecase_except_first(string $period): string {
+
+        // Get rid of the underscores.
+        $string = str_replace('_', ' ', $period);
+
+        // Split on whitespace but keep delimiters.
+        $parts = preg_split('/(\s+)/u', $string, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        $firstword = true;
+
+        foreach ($parts as &$part) {
+
+            // Skip pure whitespace.
+            if (trim($part) === '') {
+                continue;
+            }
+
+            if ($firstword) {
+
+                // Leave first word exactly as-is.
+                $firstword = false;
+                continue;
+            }
+
+            $part = mb_convert_case($part, MB_CASE_TITLE, 'UTF-8');
+        }
+
+        unset($part);
+
+        $prettyperiod = implode('', $parts);
+
+        return $prettyperiod;
+    }
+
+    /**
+     * Get the list of courses a student / teacher is enrolled in.
+     *
+     * @param @int $userid
+     * @return @array of @objects
+     */
+    public static function get_user_course_schedule(int $userid): array {
+        global $DB;
+
+        // SQL query to fetch schedule details.
+        $ssql = "SELECT CONCAT('s', sec.id) AS uniquer,
+            'student' AS role,
+            CONCAT(cou.course_subject_abbreviation, ' ',
+                    cou.course_number) AS courseno,
+            COALESCE(c.fullname,
+                CONCAT(per.period_year, ' ',
+                    per.period_type, ' ',
+                    cou.course_subject_abbreviation, ' ',
+                    cou.course_number, ' (', sec.class_type, ')'
+                )
+            ) AS course,
+            per.academic_period_id,
+            sec.section_number AS section,
+            IF(sec.controls_grading=0, 'Course not taught in Moodle',
+                IF(sec.idnumber IS NULL, 'Not created yet',
+                    IF(c.visible=0, 'Hidden', c.id)
+                )
+            ) AS moodlecourse,
+            count(secm.start_time) as timecount,
+            COALESCE(
+                CONCAT(
+                    COALESCE(tea.preferred_firstname, tea.firstname),
+                    ' ',
+                    COALESCE(tea.preferred_lastname, tea.lastname)
+                ),
+                'None assigned yet'
+            ) AS instructor,
+            COALESCE(
+                GROUP_CONCAT(secm.short_day ORDER BY secm.day ASC SEPARATOR '<br>'),
+                'Not provided'
+            ) AS days,
+            COALESCE(
+                GROUP_CONCAT(CONCAT(secm.start_time, ' - ', secm.end_time) ORDER BY secm.day ASC SEPARATOR '<br>'),
+                'Not provided'
+            ) AS times,
+            sec.wd_status AS workdaystatus,
+            sec.delivery_mode AS delivery
+            FROM {user} u
+                INNER JOIN {enrol_wds_students} stu
+                    ON stu.userid = u.id
+                INNER JOIN {enrol_wds_student_enroll} stuenr
+                    ON stuenr.universal_id = stu.universal_id
+                INNER JOIN {enrol_wds_sections} sec
+                    ON sec.section_listing_id = stuenr.section_listing_id
+                INNER JOIN {enrol_wds_courses} cou
+                    ON cou.course_listing_id = sec.course_listing_id
+                INNER JOIN {enrol_wds_periods} per
+                    ON per.academic_period_id = sec.academic_period_id
+                LEFT JOIN {enrol_wds_teacher_enroll} tenr
+                    ON sec.section_listing_id = tenr.section_listing_id
+                    AND tenr.role = 'Primary'
+                LEFT JOIN {enrol_wds_teachers} tea
+                    ON tea.universal_id = tenr.universal_id
+                LEFT JOIN {course} c
+                    ON c.idnumber = sec.idnumber
+                    AND sec.idnumber IS NOT NULL
+                    AND c.idnumber != ''
+                LEFT JOIN {enrol_wds_section_meta} secm
+                    ON secm.section_listing_id = sec.section_listing_id
+            WHERE stuenr.status = 'enrolled'
+                AND per.start_date < UNIX_TIMESTAMP() + (60 * 86400)
+                AND per.end_date > UNIX_TIMESTAMP()
+                AND u.id = :userid
+            GROUP BY sec.id, stuenr.id
+            ORDER BY per.start_date ASC,
+                 cou.course_subject_abbreviation ASC,
+                 cou.course_number ASC,
+                 sec.section_number ASC,
+                 secm.start_time ASC";
+
+        $tsql = "SELECT CONCAT('t', sec.id) AS uniquer,
+                'teacher' AS role,
+            CONCAT(cou.course_subject_abbreviation, ' ',
+                    cou.course_number) AS courseno,
+                COALESCE(c.fullname,
+                    CONCAT(per.period_year, ' ',
+                        per.period_type, ' ',
+                        cou.course_subject_abbreviation, ' ',
+                        cou.course_number, ' (', sec.class_type, ')'
+                    )
+                ) AS course,
+                per.academic_period_id,
+                sec.section_number AS section,
+                IF(sec.controls_grading=0, 'Course not taught in Moodle',
+                    IF(sec.idnumber IS NULL, 'Not created yet',
+                        c.id
+                    )
+                ) AS moodlecourse,
+                count(secm.start_time) as timecount,
+                COALESCE(
+                    CONCAT(
+                        COALESCE(tea.preferred_firstname, tea.firstname),
+                        ' ',
+                        COALESCE(tea.preferred_lastname, tea.lastname)
+                    ),
+                    'None assigned yet'
+                ) AS instructor,
+                COALESCE(
+                    GROUP_CONCAT(secm.short_day ORDER BY secm.day ASC SEPARATOR '<br>'),
+                    'Not provided'
+                ) AS days,
+                COALESCE(
+                    GROUP_CONCAT(CONCAT(secm.start_time, ' - ', secm.end_time) ORDER BY secm.day ASC SEPARATOR '<br>'),
+                    'Not provided'
+                ) AS times,
+                sec.wd_status AS workdaystatus,
+                sec.delivery_mode AS delivery
+                FROM {user} u
+                    INNER JOIN {enrol_wds_teachers} tea
+                                ON tea.userid = u.id
+                    INNER JOIN {enrol_wds_teacher_enroll} tenr
+                                ON tenr.universal_id = tea.universal_id
+                        AND tenr.role = 'Primary'
+                    INNER JOIN {enrol_wds_sections} sec
+                                ON sec.section_listing_id = tenr.section_listing_id
+                    INNER JOIN {enrol_wds_periods} per
+                                ON per.academic_period_id = sec.academic_period_id
+                    INNER JOIN {enrol_wds_courses} cou
+                        ON cou.course_listing_id = sec.course_listing_id
+                    LEFT JOIN {course} c
+                        ON c.idnumber = sec.idnumber
+                        AND sec.idnumber IS NOT NULL
+                        AND c.idnumber != ''
+                    LEFT JOIN {enrol_wds_section_meta} secm
+                        ON secm.section_listing_id = sec.section_listing_id
+                WHERE tenr.status = 'enrolled'
+                    AND per.start_date < UNIX_TIMESTAMP() + (60 * 86400)
+                    AND per.end_date > UNIX_TIMESTAMP()
+                    AND u.id = :userid
+                GROUP BY sec.id, tenr.id
+                ORDER BY per.start_date ASC,
+                     cou.course_subject_abbreviation ASC,
+                     cou.course_number ASC,
+                     sec.section_number ASC,
+                     secm.start_time ASC";
+
+        // Some parms.
+        $params = ['userid' => $userid];
+
+        // Prepare arrays.
+        $studentrecords = [];
+        $teacherrecords = [];
+
+        // Check student status.
+        if (self::faster_get_student_status($userid)) {
+            $studentrecords = $DB->get_records_sql($ssql, $params);
+        }
+
+        // Check teacher status.
+        if (self::faster_get_instructor_status($userid)) {
+            $teacherrecords = $DB->get_records_sql($tsql, $params);
+        }
+
+        // Merge the records like a heathen.
+        $records = array_merge($studentrecords, $teacherrecords);
+
+        return $records;
     }
 
 }
