@@ -38,13 +38,13 @@ $addons = [
                     'mobile_get_gapfill' => [], // Function in classes/output/mobile.php.
                 ], // Function needs caching for offline.
                 'styles' => [
-                    'url' => $CFG->wwwroot.'/question/type/gapfill/mobile/styles_app.css',
-                    'version' => '1.06'
-                ]
-            ]
+                    'url' => $CFG->wwwroot . '/question/type/gapfill/mobile/styles_app.css',
+                    'version' => '1.06',
+                ],
+            ],
         ],
         'lang' => [
                     ['pluginname', 'qtype_gapfill'], // Matching value in  lang/en/qtype_gapfill.
         ],
-    ]
+    ],
 ];

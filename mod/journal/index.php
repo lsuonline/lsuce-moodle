@@ -28,8 +28,12 @@ require_once('lib.php');
 
 $id = required_param('id', PARAM_INT);   // Course.
 
-if (! $course = $DB->get_record('course', array('id' => $id))) {
+if (!$course = $DB->get_record('course', ['id' => $id])) {
     throw new \moodle_exception(get_string('Course ID is incorrect'));
+}
+
+if ($CFG->version > 2025041400) {
+    \core_courseformat\activityoverviewbase::redirect_to_overview_page($id, 'journal');
 }
 
 require_course_login($course);
@@ -37,7 +41,7 @@ require_course_login($course);
 // Header.
 $strjournals = get_string('modulenameplural', 'journal');
 $PAGE->set_pagelayout('incourse');
-$PAGE->set_url('/mod/journal/index.php', array('id' => $id));
+$PAGE->set_url('/mod/journal/index.php', ['id' => $id]);
 $PAGE->navbar->add($strjournals);
 $PAGE->set_title($strjournals);
 $PAGE->set_heading($course->fullname);
@@ -45,7 +49,7 @@ $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($strjournals);
 
-if (! $journals = get_all_instances_in_course('journal', $course)) {
+if (!$journals = get_all_instances_in_course('journal', $course)) {
     notice(get_string('thereareno', 'moodle', get_string('modulenameplural', 'journal')), "../../course/view.php?id=$course->id");
     die;
 }
@@ -62,10 +66,10 @@ $timenow = time();
 // Table data.
 $table = new html_table();
 
-$table->head = array();
-$table->align = array();
+$table->head = [];
+$table->align = [];
 if ($usesections) {
-    $table->head[] = get_string('sectionname', 'format_'.$course->format);
+    $table->head[] = get_string('sectionname', 'format_' . $course->format);
     $table->align[] = 'center';
 }
 
@@ -77,7 +81,6 @@ $table->align[] = 'left';
 $currentsection = '';
 $i = 0;
 foreach ($journals as $journal) {
-
     $context = context_module::instance($journal->coursemodule);
     $entriesmanager = has_capability('mod/journal:manageentries', $context);
 
@@ -98,21 +101,20 @@ foreach ($journals as $journal) {
     }
 
     // Link.
-    $journalname = format_string($journal->name, true, array('context' => $context));
+    $journalname = format_string($journal->name, true, ['context' => $context]);
     if (!$journal->visible) {
         // Show dimmed if the mod is hidden.
-        $table->data[$i][] = "<a class=\"dimmed\" href=\"view.php?id=$journal->coursemodule\">".$journalname."</a>";
+        $table->data[$i][] = "<a class=\"dimmed\" href=\"view.php?id=$journal->coursemodule\">" . $journalname . "</a>";
     } else {
         // Show normal if the mod is visible.
-        $table->data[$i][] = "<a href=\"view.php?id=$journal->coursemodule\">".$journalname."</a>";
+        $table->data[$i][] = "<a href=\"view.php?id=$journal->coursemodule\">" . $journalname . "</a>";
     }
 
     // Description.
-    $table->data[$i][] = format_text($journal->intro,  $journal->introformat, array('context' => $context));
+    $table->data[$i][] = format_text($journal->intro, $journal->introformat, ['context' => $context]);
 
     // Entries info.
     if ($entriesmanager) {
-
         // Display the report.php col only if is a entries manager in some CONTEXT_MODULE.
         if (empty($managersomewhere)) {
             $table->head[] = get_string('viewentries', 'journal');
@@ -136,8 +138,8 @@ foreach ($journals as $journal) {
         }
 
         $entrycount = journal_count_entries($journal, $groupids);
-        $table->data[$i][] = "<a href=\"report.php?id=$journal->coursemodule\">".
-            get_string("viewallentries", "journal", $entrycount)."</a>";
+        $table->data[$i][] = "<a href=\"report.php?id=$journal->coursemodule\">" .
+            get_string("viewallentries", "journal", $entrycount) . "</a>";
     } else if (!empty($managersomewhere)) {
         $table->data[$i][] = '';
     }
@@ -150,9 +152,9 @@ echo '<br />';
 echo html_writer::table($table);
 
 // Trigger course module instance list event.
-$params = array(
-    'context' => context_course::instance($course->id)
-);
+$params = [
+    'context' => context_course::instance($course->id),
+];
 $event = \mod_journal\event\course_module_instance_list_viewed::create($params);
 $event->add_record_snapshot('course', $course);
 $event->trigger();

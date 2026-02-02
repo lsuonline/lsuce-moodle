@@ -29,18 +29,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
-
     /**
      * responses that would be correct if submitted
      * @var array
      */
-    public $correctresponses = array();
+    public $correctresponses = [];
     /**
      * correct and distractor answers
      *
      * @var array
      */
-    public $allanswers = array();
+    public $allanswers = [];
     /**
      * Used to store the per-gap settings, e.g. feedback
      * @var array
@@ -67,7 +66,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
         $this->displayoptions = $options;
         $question = $qa->get_question();
         if (!$options->readonly) {
-            $question->initjs((Boolean) $question->singleuse);
+            $question->initjs((bool) $question->singleuse);
         }
         $this->itemsettings = json_decode($question->itemsettings);
         $seranswers = $qa->get_step(0)->get_qt_var('_allanswers');
@@ -86,17 +85,22 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
             }
             // Format the non entry field parts of the question text.
             // This will also ensure images get displayed.
-            $questiontext .= $question->format_text($fragment, $question->questiontextformat,
-                $qa, 'question', 'questiontext', $question->id);
-
+            $questiontext .= $question->format_text(
+                $fragment,
+                $question->questiontextformat,
+                $qa,
+                'question',
+                'questiontext',
+                $question->id
+            );
         }
 
         if ($question->answerdisplay == 'dragdrop') {
             $questiontext = $this->app_connect($question, $questiontext);
             if ($question->optionsaftertext == true) {
-                $output .= '<div>'.$questiontext . '</div>' . $answeroptions;
+                $output .= '<div>' . $questiontext . '</div>' . $answeroptions;
             } else {
-                $output .= '<div>'.$answeroptions . '</div>' . $questiontext;
+                $output .= '<div>' . $answeroptions . '</div>' . $questiontext;
             }
         } else {
             // For gapfill and dropdown rendering.
@@ -104,8 +108,11 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
         }
 
         if ($qa->get_state() == question_state::$invalid) {
-            $output .= html_writer::nonempty_tag('div', $question->get_validation_error(array('answer' => $output)),
-             ['class' => 'validationerror']);
+            $output .= html_writer::nonempty_tag(
+                'div',
+                $question->get_validation_error(['answer' => $output]),
+                ['class' => 'validationerror']
+            );
         }
         $output = html_writer::tag('div', $output, ['class' => 'qtext']);
         return $output;
@@ -116,7 +123,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
      * @param question_attempt $qa
      * @return string
      */
-    public function setup_answeroptions(question_attempt $qa) : string {
+    public function setup_answeroptions(question_attempt $qa): string {
         $question = $qa->get_question();
         $answeroptions = '';
 
@@ -135,7 +142,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
                     $potentialanswer . " </span>";
             }
         }
-        $answeroptions = html_writer::tag('div', $answeroptions, array('class' => 'answeroptions'));
+        $answeroptions = html_writer::tag('div', $answeroptions, ['class' => 'answeroptions']);
         return $answeroptions;
     }
     /**
@@ -146,7 +153,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
      * @param  string $questiontext
      * @return string
      */
-    public function app_connect(qtype_gapfill_question $question, string $questiontext) : string {
+    public function app_connect(qtype_gapfill_question $question, string $questiontext): string {
         if ($question->optionsaftertext == true) {
             $questiontext .= "<div id='gapfill_optionsaftertext'></div>";
         }
@@ -213,23 +220,28 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
         $qprefix = $qa->get_qt_field_name('');
         $inputname = $qprefix . 'p' . $place;
 
-        $inputattributes = array(
+        $inputattributes = [
             'type' => "text",
             'name' => $inputname,
             'value' => $currentanswer,
             'id' => $inputname,
-            'size' => $size
-        );
+            'size' => $size,
+        ];
         /* When previewing after a quiz is complete */
         if ($options->readonly) {
-            $readonly = array('disabled' => 'true');
+            $readonly = ['disabled' => 'true'];
             $inputattributes = array_merge($inputattributes, $readonly);
         }
         if ($question->answerdisplay == "dropdown") {
             $inputattributes = $this->get_dropdown_attributes($inputattributes, $inputclass, $currentanswer);
             $selectoptions = $this->get_dropdown_list();
-            $selecthtml = html_writer::select($selectoptions, $inputname, $currentanswer,
-                array('' => ''), $inputattributes) . ' ' . $aftergaptext;
+            $selecthtml = html_writer::select(
+                $selectoptions,
+                $inputname,
+                $currentanswer,
+                ['' => ''],
+                $inputattributes
+            ) . ' ' . $aftergaptext;
             return $selecthtml;
         } else if ($question->answerdisplay == "gapfill") {
             /* it is a typetext (gapfill) question */
@@ -268,7 +280,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
         $aftergaptext = "";
         if (($fraction == 0) && ($rightanswer != "") && ($rightanswer != ".+")) {
             /* replace | operator with the word or */
-            $rightanswerdisplay = preg_replace("/\|/", " ".get_string("or", "qtype_gapfill")." ", $rightanswer);
+            $rightanswerdisplay = preg_replace("/\|/", " " . get_string("or", "qtype_gapfill") . " ", $rightanswer);
             /* replace !! with the 'blank' */
             $rightanswerdisplay = preg_replace("/\!!/", get_string("blank", "qtype_gapfill"), $rightanswerdisplay);
             $question = $qa->get_question();
@@ -296,7 +308,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
      * @param string $currentanswer
      * @return array
      */
-    private function get_dropdown_attributes(array $inputattributes, string $inputclass, string $currentanswer) : array {
+    private function get_dropdown_attributes(array $inputattributes, string $inputclass, string $currentanswer): array {
         $inputattributes['class'] = $inputclass;
         $inputattributes['type'] = "select";
         $inputattributes['selected'] = $currentanswer;
@@ -316,7 +328,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
      * @param bool   $correctness
      * @return string
      */
-    protected function get_feedback($settings, bool $correctness) :string {
+    protected function get_feedback($settings, bool $correctness): string {
         if ($settings == null) {
             return "";
         }
@@ -429,7 +441,7 @@ class qtype_gapfill_renderer extends qtype_with_combined_feedback_renderer {
      */
     protected function num_parts_correct(question_attempt $qa) {
         $a = new stdClass();
-        list($a->num, $a->outof) = $qa->get_question()->get_num_parts_right(
+        [$a->num, $a->outof] = $qa->get_question()->get_num_parts_right(
             $qa->get_last_qt_data()
         );
         if (is_null($a->outof)) {

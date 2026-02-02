@@ -19,8 +19,9 @@
  *
  * @package    qtype_gapfill
  * @copyright  2018 Marcus Green
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir . '/questionlib.php');
@@ -37,7 +38,6 @@ require_once($CFG->dirroot . '/question/engine/lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qtype_gapfill extends question_type {
-
     /**
      * Whether the quiz statistics report can analyse
      * all the student responses. See questiontypebase for more
@@ -64,7 +64,7 @@ class qtype_gapfill extends question_type {
      */
     public function get_question_options($question) {
         global $DB;
-        $question->options = $DB->get_record('question_gapfill', array('question' => $question->id), '*', MUST_EXIST);
+        $question->options = $DB->get_record('question_gapfill', ['question' => $question->id], '*', MUST_EXIST);
         $question->options->itemsettings = $this->get_itemsettings($question);
         parent::get_question_options($question);
     }
@@ -78,7 +78,7 @@ class qtype_gapfill extends question_type {
      * @param boolean $forceplaintextanswers
      */
     protected function initialise_question_answers(question_definition $question, $questiondata, $forceplaintextanswers = true) {
-        $question->answers = array();
+        $question->answers = [];
         if (empty($questiondata->options->answers)) {
             return;
         }
@@ -100,8 +100,13 @@ class qtype_gapfill extends question_type {
             /* answer in this context means correct answers, i.e. where
              * fraction contains a 1 */
             if (strpos($a->fraction, '1') !== false) {
-                $question->answers[$a->id] = new question_answer($a->id, $a->answer, $a->fraction,
-                        $a->feedback, $a->feedbackformat);
+                $question->answers[$a->id] = new question_answer(
+                    $a->id,
+                    $a->answer,
+                    $a->fraction,
+                    $a->feedback,
+                    $a->feedbackformat
+                );
                 $question->gapcount++;
                 if (!$forceplaintextanswers) {
                     $question->answers[$a->id]->answerformat = $a->answerformat;
@@ -118,7 +123,7 @@ class qtype_gapfill extends question_type {
      */
     public function get_itemsettings($question) {
         global $DB;
-        $itemsettings = json_encode($DB->get_records('question_gapfill_settings', array('question' => $question->id)));
+        $itemsettings = json_encode($DB->get_records('question_gapfill_settings', ['question' => $question->id]));
         return $itemsettings;
     }
 
@@ -134,7 +139,7 @@ class qtype_gapfill extends question_type {
         $this->initialise_question_answers($question, $questiondata, true);
         $this->initialise_combined_feedback($question, $questiondata);
         $question->itemsettings = $this->get_itemsettings($question);
-        $question->places = array();
+        $question->places = [];
         $counter = 1;
         $question->maxgapsize = 0;
         foreach ($questiondata->options->answers as $choicedata) {
@@ -192,7 +197,7 @@ class qtype_gapfill extends question_type {
      * @return array
      */
     public static function get_delimit_array($delimitchars) {
-        $delimitarray = array();
+        $delimitarray = [];
         $delimitarray["l"] = substr($delimitchars, 0, 1);
         $delimitarray["r"] = substr($delimitchars, 1, 1);
         return $delimitarray;
@@ -239,7 +244,7 @@ class qtype_gapfill extends question_type {
         // Fetch old answer ids so that we can reuse them.
         $this->update_question_answers($question, $answerfields);
 
-        $options = $DB->get_record('question_gapfill', array('question' => $question->id));
+        $options = $DB->get_record('question_gapfill', ['question' => $question->id]);
         $this->update_question_gapfill($question, $options, $context);
         $this->update_item_settings($question, 'question_gapfill_settings');
 
@@ -257,7 +262,7 @@ class qtype_gapfill extends question_type {
      */
     public function update_question_gapfill($question, $options, $context) {
         global $DB;
-        $options = $DB->get_record('question_gapfill', array('question' => $question->id));
+        $options = $DB->get_record('question_gapfill', ['question' => $question->id]);
         if (!$options) {
             $options = new stdClass();
             $options->question = $question->id;
@@ -298,7 +303,7 @@ class qtype_gapfill extends question_type {
      */
     public function update_question_answers($question, array $answerfields) {
         global $DB;
-        $oldanswers = $DB->get_records('question_answers', array('question' => $question->id), 'id ASC');
+        $oldanswers = $DB->get_records('question_answers', ['question' => $question->id], 'id ASC');
         // Insert all the new answers.
         foreach ($answerfields as $field) {
             // Save the true answer - update an existing answer if possible.
@@ -323,7 +328,7 @@ class qtype_gapfill extends question_type {
         }
         // Delete old answer records.
         foreach ($oldanswers as $oa) {
-            $DB->delete_records('question_answers', array('id' => $oa->id));
+            $DB->delete_records('question_answers', ['id' => $oa->id]);
         }
     }
 
@@ -344,7 +349,7 @@ class qtype_gapfill extends question_type {
          * comes from the import and from $question->wronganswers field which
          * comes from the question_editing form.
          */
-        $answerfields = array();
+        $answerfields = [];
         /* this next block runs when importing from xml */
         if (property_exists($question, 'answer')) {
             foreach ($question->answer as $key => $value) {
@@ -370,9 +375,13 @@ class qtype_gapfill extends question_type {
                 /* split by commas and trim white space */
                 $wronganswers = array_map('trim', explode(',', $question->wronganswers['text']));
                 $regex = '/(.*?[^\\\\](\\\\\\\\)*?),/';
-                $wronganswers = preg_split($regex, $question->wronganswers['text'],
-                        -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-                $wronganswerfields = array();
+                $wronganswers = preg_split(
+                    $regex,
+                    $question->wronganswers['text'],
+                    -1,
+                    PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE
+                );
+                $wronganswerfields = [];
                 foreach ($wronganswers as $key => $word) {
                     $wronganswerfields[$key]['value'] = $word;
                     $wronganswerfields[$key]['fraction'] = 0;
@@ -393,7 +402,7 @@ class qtype_gapfill extends question_type {
      */
     public function update_item_settings(stdClass $question, $table) {
         global $DB;
-        $oldsettings = $DB->get_records($table, array('question' => $question->id));
+        $oldsettings = $DB->get_records($table, ['question' => $question->id]);
         $newsettings = [];
         if (isset($question->itemsettings) && (!isset($question->isimport))) {
             $newsettings = json_decode($question->itemsettings, true);
@@ -413,7 +422,7 @@ class qtype_gapfill extends question_type {
             }
         }
         foreach ($oldsettings as $os) {
-            $DB->delete_records('question_gapfill_settings', array('id' => $os->id));
+            $DB->delete_records('question_gapfill_settings', ['id' => $os->id]);
         }
     }
 
@@ -480,17 +489,24 @@ class qtype_gapfill extends question_type {
         $question->itemsettings = [];
         if (isset($data['#']['gapsetting'])) {
             foreach ($data['#']['gapsetting'] as $key => $setxml) {
-                $question->itemsettings[$key]['gaptext'] = $format->getpath($setxml, array('#', 'gaptext', 0, '#'), 0);
-                $question->itemsettings[$key]['question'] = $format->getpath($setxml, array('#', 'question', 0, '#'), '', true);
-                $question->itemsettings[$key]['itemid'] = $format->getpath($setxml, array('#', 'itemid', 0, '#'), '', true);
-                $question->itemsettings[$key]['correctfeedback'] = $format->getpath($setxml, array('#', 'correctfeedback', 0, '#'),
-                        '', true);
-                $question->itemsettings[$key]['incorrectfeedback'] = $format->getpath($setxml,
-                        array('#', 'incorrectfeedback', 0, '#'), '', true);
+                $question->itemsettings[$key]['gaptext'] = $format->getpath($setxml, ['#', 'gaptext', 0, '#'], 0);
+                $question->itemsettings[$key]['question'] = $format->getpath($setxml, ['#', 'question', 0, '#'], '', true);
+                $question->itemsettings[$key]['itemid'] = $format->getpath($setxml, ['#', 'itemid', 0, '#'], '', true);
+                $question->itemsettings[$key]['correctfeedback'] = $format->getpath(
+                    $setxml,
+                    ['#', 'correctfeedback', 0, '#'],
+                    '',
+                    true
+                );
+                $question->itemsettings[$key]['incorrectfeedback'] = $format->getpath(
+                    $setxml,
+                    ['#', 'incorrectfeedback', 0, '#'],
+                    '',
+                    true
+                );
             }
         }
         return $question;
-
     }
 
     /**
@@ -541,5 +557,4 @@ class qtype_gapfill extends question_type {
         $output .= $format->write_combined_feedback($question->options, $question->id, $question->contextid);
         return $output;
     }
-
 }

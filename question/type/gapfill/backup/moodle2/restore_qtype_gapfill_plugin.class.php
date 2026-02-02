@@ -32,13 +32,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
-
     /**
      * Returns the paths to be handled by the plugin at question level
      */
     protected function define_question_plugin_structure() {
 
-        $paths = array();
+        $paths = [];
 
         // This qtype uses question_answers, add them.
         $this->add_question_question_answers($paths);
@@ -55,6 +54,7 @@ class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
 
         return $paths; // And we return the interesting paths.
     }
+
 
      /**
       * Process the qtype/gapfill element
@@ -108,19 +108,54 @@ class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
             // Create mapping (needed for decoding links).
             $this->set_mapping('question_gapfill_settings', $oldid, $newitemid);
         }
-
     }
     /**
      * Return the contents of this qtype to be processed by the links decoder
      */
     public static function define_decode_contents() {
 
-        $contents = array();
+        $contents = [];
 
-        $fields = array('correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback');
+        $fields = ['correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback'];
         $contents[] = new restore_decode_content('question_gapfill', $fields, 'question_gapfill');
 
         return $contents;
+    }
+
+    /**
+     * Convert the backup structure of this question type into a structure
+     * matching its question data
+     *
+     * When qtype only supports Moodle 5+ an override attribute should  go here.
+     *
+     *
+     * @param array $backupdata
+     * @return \stdClass
+     */
+    public static function convert_backup_to_questiondata(array $backupdata): \stdClass {
+        $questiondata = parent::convert_backup_to_questiondata($backupdata);
+        $questiondata->options->answers = array_map(
+            fn($answer) => (object) $answer,
+            $backupdata['plugin_qtype_gapfill_question']['answers']['answer'] ?? [],
+        );
+        return $questiondata;
+    }
+
+    /**
+     * Return a list of paths to fields to be removed from questiondata before creating an identity hash.
+     * We have to remove the id property from all answers.
+     *
+     * @return array
+     */
+    protected function define_excluded_identity_hash_fields(): array {
+        return [
+            '/options/question',
+            '/options/settings/itemid',
+            '/options/settings/gaptext',
+            '/options/settings/correctfeedback',
+            '/options/settings/incorrectfeedback',
+            '/options/itemsettings',
+        ];
     }
 
     /**
@@ -148,7 +183,7 @@ class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
         $questioncreated = $this->get_mappingid('question_created', $oldquestionid) ? true : false;
 
         // In the past, there were some sloppily rounded fractions around. Fix them up.
-        $changes = array(
+        $changes = [
             '-0.66666' => '-0.6666667',
             '-0.33333' => '-0.3333333',
             '-0.16666' => '-0.1666667',
@@ -159,7 +194,7 @@ class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
             '0.33333' => '0.3333333',
             '0.333333' => '0.3333333',
             '0.66666' => '0.6666667',
-        );
+        ];
         if (array_key_exists($data->fraction, $changes)) {
             $data->fraction = $changes[$data->fraction];
         }
@@ -179,13 +214,13 @@ class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
                       FROM {question_answers}
                      WHERE question = ?
                        AND ' . $DB->sql_compare_text('answer', 255) . ' = ' . $DB->sql_compare_text('?', 255);
-            $params = array($newquestionid, $data->answertext);
+            $params = [$newquestionid, $data->answertext];
             $newitemid = $DB->get_field_sql($sql, $params, IGNORE_MULTIPLE);
 
             // Not able to find the answer, let's try cleaning the answertext.
             // of all the question answers in DB as slower fallback. MDL-30018.
             if (!$newitemid) {
-                $params = array('question' => $newquestionid);
+                $params = ['question' => $newquestionid];
                 $answers = $DB->get_records('question_answers', $params, '', 'id, answer');
                 foreach ($answers as $answer) {
                     $clean = preg_replace('/[\x-\x8\xb-\xc\xe-\x1f\x7f]/is', '', $answer->answer); // Clean CTRL chars.
@@ -209,5 +244,4 @@ class restore_qtype_gapfill_plugin extends restore_qtype_plugin {
         /* Create mapping (we'll use this intensively when restoring question_states. And also answerfeedback files) */
         $this->set_mapping('question_answer', $oldid, $newitemid);
     }
-
 }
