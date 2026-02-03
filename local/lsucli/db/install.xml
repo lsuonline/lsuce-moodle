@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/lsucli/db" VERSION="20240514" COMMENT="XMLDB file for local_lsucli">
+  <TABLES>
+    <TABLE NAME="local_lsucli_helptext" COMMENT="Stores custom help text for CLI scripts">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scriptname" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="The script file name identifier"/>
+        <FIELD NAME="helptext" TYPE="text" NOTNULL="false" COMMENT="Custom help text content"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="scriptname" UNIQUE="true" FIELDS="scriptname"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
+
