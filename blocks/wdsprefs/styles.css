@@ -6,6 +6,10 @@
 .wds .menu-item {
 }
 
+.path-blocks-wdsprefs .btn {
+    min-height: unset;
+}
+
 .wds .menu-link {
     text-decoration: none;
 }
@@ -102,7 +106,7 @@
 
 .duallist-shell select {
     width: 100%;
-    min-height: 150px;
+    min-height: 2em;
     border: 1px solid #ccc;
     border-radius: 3px;
 }

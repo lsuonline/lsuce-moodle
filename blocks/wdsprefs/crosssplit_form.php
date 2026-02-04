@@ -131,18 +131,22 @@ class crosssplit_form extends moodleform {
                     ' . $OUTPUT->pix_icon('t/left', '') . ' Remove</button>
             </div>');
 
-        // Shell sections (multiple boxes on right).
-        $mform->addElement('html', '<div class="duallist-shells"><label>' .
+        // Shell sections (multiple boxes on right). Pass period/teacher for live preview.
+        $shelltagerror = get_string('wdsprefs:shelltaginvalid', 'block_wdsprefs');
+        $mform->addElement('html', '<div class="duallist-shells" data-period="' . s($period) . '" data-teacher="' . s($teacher) . '" data-shell-tag-error="' . s($shelltagerror) . '"><label>' .
             get_string('wdsprefs:availableshells', 'block_wdsprefs') . '</label>'
         );
 
-        // Create the shell select boxes.
+        // Create the shell select boxes: text input above, preview string below, then select.
         for ($i = 1; $i <= $shellcount; $i++) {
-            $mform->addElement('html', '
-                <div class="duallist-shell"><label>' .
-                "$period (Shell $i) for $teacher" .
-                '</label><select class="form-control shell-select" ' .
-                'id="shell_' . $i . '" data-shell-num="' . $i . '" multiple size="10"></select></div>');
+            $defaultname = "Shell $i";
+            $previewtext = s($period) . ' ' . s($teacher) . ' (' . $defaultname . ')';
+            $mform->addElement('html', '<div class="duallist-shell" data-shell-num="' . $i . '">');
+            $mform->addElement('html', '<div class="duallist-shell-preview" data-shell-num="' . $i . '">' . $previewtext . '</div>');
+            $mform->addElement('text', "shell_{$i}_tag", '', ['size' => 20, 'class' => 'shell-tag', 'placeholder' => $defaultname]);
+            $mform->setType("shell_{$i}_tag", PARAM_TEXT);
+            $mform->setDefault("shell_{$i}_tag", '');
+            $mform->addElement('html', '<select class="form-control shell-select" id="shell_' . $i . '" data-shell-num="' . $i . '" multiple size="2"></select></div>');
         }
 
         $mform->addElement('html', '</div></div>');
@@ -167,6 +171,82 @@ class crosssplit_form extends moodleform {
 
             // Initialize by setting first shell as active
             setActiveShell("shell_1");
+
+            // Update shell tag preview as user types
+            const shellsContainer = document.querySelector(".duallist-shells");
+            const period = shellsContainer ? shellsContainer.getAttribute("data-period") || "" : "";
+            const teacher = shellsContainer ? shellsContainer.getAttribute("data-teacher") || "" : "";
+            function updateShellPreview(shellNum, value) {
+                const preview = document.querySelector(".duallist-shell-preview[data-shell-num=\"" + shellNum + "\"]");
+                if (preview) {
+                    preview.textContent = period + " " + teacher + " (" + (value.trim() || "Shell " + shellNum) + ")";
+                }
+            }
+            var shellTagRegex = /^[a-zA-Z0-9_ -]*$/;
+            function validateShellTag(value) {
+                return value === "" || shellTagRegex.test(value);
+            }
+            function getShellTagErrorEl(input) {
+                var id = input.id || "";
+                var errorId = id.replace(/^id_/, "id_error_");
+                var el = document.getElementById(errorId);
+                if (!el && input.closest) {
+                    var felement = input.closest(".felement");
+                    if (felement) el = felement.querySelector(".invalid-feedback");
+                }
+                return el;
+            }
+            function showShellTagError(input, message) {
+                var fitem = input.closest(".fitem");
+                var errorEl = getShellTagErrorEl(input);
+                if (fitem) fitem.classList.add("has-danger");
+                input.classList.add("is-invalid");
+                if (errorEl) {
+                    errorEl.textContent = message;
+                    errorEl.style.display = "block";
+                }
+            }
+            function hideShellTagError(input) {
+                var fitem = input.closest(".fitem");
+                var errorEl = getShellTagErrorEl(input);
+                if (fitem) fitem.classList.remove("has-danger");
+                input.classList.remove("is-invalid");
+                if (errorEl) {
+                    errorEl.textContent = "";
+                    errorEl.style.display = "";
+                }
+            }
+            function bindShellTagInput(shellNum, input) {
+                if (!input || !shellNum || input.dataset.shellPreviewBound) return;
+                input.dataset.shellPreviewBound = "1";
+                var errorMsg = shellsContainer ? shellsContainer.getAttribute("data-shell-tag-error") || "" : "";
+                function onShellTagChange() {
+                    updateShellPreview(shellNum, this.value);
+                    if (validateShellTag(this.value)) {
+                        hideShellTagError(this);
+                    } else {
+                        showShellTagError(this, errorMsg);
+                    }
+                }
+                input.addEventListener("input", onShellTagChange);
+                input.addEventListener("change", onShellTagChange);
+                onShellTagChange.call(input);
+            }
+            document.querySelectorAll(".duallist-shell").forEach(function(shellBlock) {
+                const shellNum = shellBlock.getAttribute("data-shell-num");
+                var input = shellBlock.querySelector("input[type=\"text\"]");
+                if (!input) {
+                    input = shellBlock.querySelector("input[name*=\"shell_\"][name*=\"_tag\"]");
+                }
+                bindShellTagInput(shellNum, input);
+            });
+            document.querySelectorAll("input[type=\"text\"]").forEach(function(input) {
+                var name = input.getAttribute("name") || "";
+                var m = name.match(/shell_(\d+)_tag/);
+                if (m) {
+                    bindShellTagInput(m[1], input);
+                }
+            });
 
             // Add click event to shells
             document.querySelectorAll(".duallist-shell").forEach(shell => {
@@ -239,7 +319,51 @@ class crosssplit_form extends moodleform {
                     document.querySelector(`input[name="shell_${shellNum}_data"]`).value =
                         JSON.stringify(values);
                 });
+                updateShellSelectSizes();
             }
+            function updateShellSelectSizes() {
+                document.querySelectorAll(".shell-select").forEach(function(select) {
+                    const count = select.options.length;
+                    select.size = Math.max(2, count);
+                });
+            }
+
+            // Restore shell selections from hidden fields (e.g. after validation errors)
+            function restoreFromHiddenFields() {
+                const available = document.getElementById("available_sections");
+                if (!available) return;
+
+                document.querySelectorAll(".shell-select").forEach(function(shellSelect) {
+                    const shellNum = shellSelect.getAttribute("data-shell-num");
+                    let hiddenInput = document.querySelector("input[name=\"shell_" + shellNum + "_data\"]");
+                    if (!hiddenInput) {
+                        hiddenInput = document.querySelector("input[name$=\"shell_" + shellNum + "_data\"]");
+                    }
+                    if (!hiddenInput || !hiddenInput.value) return;
+
+                    let sectionIds;
+                    try {
+                        sectionIds = JSON.parse(hiddenInput.value);
+                    } catch (e) {
+                        return;
+                    }
+                    if (!Array.isArray(sectionIds)) return;
+
+                    sectionIds.forEach(function(sectionId) {
+                        const sid = String(sectionId);
+                        const opt = Array.from(available.options).find(function(o) { return o.value === sid || o.value === sectionId; });
+                        if (opt) {
+                            const newOpt = document.createElement("option");
+                            newOpt.value = opt.value;
+                            newOpt.text = opt.text;
+                            shellSelect.appendChild(newOpt);
+                            available.removeChild(opt);
+                        }
+                    });
+                });
+                updateShellSelectSizes();
+            }
+            restoreFromHiddenFields();
 
             // Handle form submission
             const form = document.querySelector("form.mform");
@@ -254,5 +378,27 @@ class crosssplit_form extends moodleform {
         ');
 
         $this->add_action_buttons(true, get_string('submit'));
+    }
+
+    /**
+     * Form validation. Shell tags may only contain alphanumeric characters, dashes and underscores.
+     *
+     * @param array $data Form data
+     * @param array $files Uploaded files
+     * @return array Validation errors
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        $shellcount = $this->_customdata['shellcount'] ?? 2;
+
+        for ($i = 1; $i <= $shellcount; $i++) {
+            $fieldname = "shell_{$i}_tag";
+            $value = isset($data[$fieldname]) ? trim($data[$fieldname]) : '';
+            if ($value !== '' && !preg_match('/^[a-zA-Z0-9_ -]+$/', $value)) {
+                $errors[$fieldname] = get_string('wdsprefs:shelltaginvalid', 'block_wdsprefs');
+            }
+        }
+
+        return $errors;
     }
 }

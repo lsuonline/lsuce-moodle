@@ -571,10 +571,15 @@ class wdsprefs {
         // Get period info.
         $period = self::get_period_from_periodid($periodid);
 
-        // Extract shell number from shell name.
-        $shellnum = 1;
-        if (preg_match('/Shell (\d+)/', $shellname, $matches)) {
-            $shellnum = $matches[1];
+        // Unique suffix for idnumber when shellcount > 1. Derived from section IDs so each shell gets a distinct idnumber.
+        $sortedids = $sectionids;
+        sort($sortedids);
+        $shellsuffix = substr(md5(implode(',', $sortedids)), 0, 12);
+
+        // Extract custom shell label from shellname (e.g. "2026 Spring 2 (Online) Carlos Lee (My Custom Name)" -> "My Custom Name").
+        $shelllabel = null;
+        if (preg_match('/\s*\(([^)]+)\)\s*$/', $shellname, $labelmatches)) {
+            $shelllabel = '(' . $labelmatches[1] . ')';
         }
 
         // Collect all course abbreviations and numbers in a structured way.
@@ -660,7 +665,6 @@ class wdsprefs {
         $fnidstring = implode(' / ', $fullnameidentifiers);
 
         // Build the period name.
-//        $periodname = self::get_current_taught_periods($section->academic_period_id);
         $periodname = self::get_current_taught_periods($period->academic_period_id);
         $periodname = reset($periodname);
 
@@ -674,18 +678,19 @@ class wdsprefs {
         $idnumber = $pname .
                     $idnumberidentifiers .
                     '-' . $universalid .
+                    '-' . $shellsuffix .
                     '-cl';
 
-        // Generate the fullname - only include (Shell X) if shellnum > 1.
+        // Generate the fullname - only include shell label if shellcount > 1.
         $fullname = $periodname .
                 ' ' . $fnidstring .
                 ' for ' . $user->firstname .
-                ' ' . $user->lastname;
+                ' ' . $user->lastname .
+                ' ' . $shelllabel ?? $shellsuffix;
 
-        // Add the shell number only if there's more than one shell.
+        // Add the shell label only if there's more than one shell. Use custom label from shellname when available.
         if ($shellcount > 1) {
-            $fullname .= ' (Shell ' . $shellnum . ')';
-            $idnumber .= '-shell_' . $shellnum;
+//            $fullname .= ' ' . ($shelllabel ?? '(Shell ' . $shellsuffix . ')');
         }
 
         // Set this for the course record and shortname.
@@ -759,7 +764,7 @@ class wdsprefs {
             // Get the category based on subject of first course.
             $cat = self::get_subject_category($courseinfo->course_subject_abbreviation);
 
-            // TODO: Build out this shit in settings.
+            // Use the configured categories.
             $course->category = get_config('block_wdsprefs', 'blueprint_category_forced') ?
                 get_config('block_wdsprefs', 'blueprint_category') :
                 $cat->id;
@@ -1298,8 +1303,21 @@ class wdsprefs {
                     continue;
                 }
 
-                // Create the shell name.
-                $shellname = "$periodname (Shell $i) for $teacher";
+                // Create the shell name (use custom tag from form if provided).
+                $shellnamefield = "shell_{$i}_tag";
+                $customname = '';
+                if (is_object($data) && isset($data->$shellnamefield)) {
+                    $customname = trim($data->$shellnamefield);
+                } elseif (is_array($data) && isset($data[$shellnamefield])) {
+                    $customname = trim($data[$shellnamefield]);
+                }
+                if ($customname !== '' && !preg_match('/^[a-zA-Z0-9_ -]+$/', $customname)) {
+                    throw new \core\exception\invalid_parameter_exception(
+                        get_string('wdsprefs:shelltaginvalid', 'block_wdsprefs')
+                    );
+                }
+                $shelllabel = '(' . ($customname !== '' ? $customname : "Shell $i") . ')';
+                $shellname = "$periodname $teacher $shelllabel";
 
                 // Create the crosssplited shell.
                 $crosssplitid = self::create_crosssplit_shell(
@@ -1307,7 +1325,7 @@ class wdsprefs {
                     $periodid,
                     $sectionids,
                     $shellname,
-                    $shellcount
+                    $shellcount,
                 );
 
                 if ($crosssplitid) {
