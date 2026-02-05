@@ -143,7 +143,12 @@ class crosssplit_form extends moodleform {
             $previewtext = s($period) . ' ' . s($teacher) . ' (' . $defaultname . ')';
             $mform->addElement('html', '<div class="duallist-shell" data-shell-num="' . $i . '">');
             $mform->addElement('html', '<div class="duallist-shell-preview" data-shell-num="' . $i . '">' . $previewtext . '</div>');
-            $mform->addElement('text', "shell_{$i}_tag", '', ['size' => 20, 'class' => 'shell-tag', 'placeholder' => $defaultname]);
+            $mform->addElement('text', "shell_{$i}_tag", '', [
+                'size' => 32,
+                'maxlength' => 64,
+                'class' => 'shell-tag',
+                'placeholder' => $defaultname
+            ]);
             $mform->setType("shell_{$i}_tag", PARAM_TEXT);
             $mform->setDefault("shell_{$i}_tag", '');
             $mform->addElement('html', '<select class="form-control shell-select" id="shell_' . $i . '" data-shell-num="' . $i . '" multiple size="2"></select></div>');
