@@ -18,15 +18,15 @@
  * Version information. When a new version is released the version is incremented
  *
  * @package    qtype_gapfill
- * @copyright  2024 Marcus Green
+ * @copyright  2026 Marcus Green
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'qtype_gapfill';
-$plugin->version = 2024101200;
-$plugin->requires = 2022040100;  // Moodle 4.0.
-$plugin->release = '2.141';
-$plugin->supported = [401, 405];
+$plugin->version = 2026012200; // YYYYMMDDHH (year, month, day, 24-hr time).
+$plugin->requires = 2024100700;  // Moodle 4.5.
+$plugin->release = '2.2';
+$plugin->supported = [405, 501];
 $plugin->maturity = MATURITY_STABLE;
