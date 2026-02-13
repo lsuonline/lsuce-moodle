@@ -142,11 +142,16 @@ if ($mform->is_cancelled()) {
     // Process the data.
     $fromform->assignid = $assigninstance->id;
 
-    // Replace unchanged values with null.
+    // Process override values.
     foreach ($keys as $key) {
-        if (!isset($fromform->{$key}) || $fromform->{$key} == $assigninstance->{$key}) {
+        if (!isset($fromform->{$key})) {
+            // Value not set in form - set to null to use assignment default.
+            $fromform->{$key} = null;
+        } else if ($fromform->{$key} == 0 && in_array($key, array('duedate', 'cutoffdate', 'allowsubmissionsfromdate'))) {
+            // For optional date fields, 0 means the field was disabled - set to null.
             $fromform->{$key} = null;
         }
+        // Otherwise, keep the value even if it matches the assignment default.
     }
 
     // See if we are replacing an existing override.
