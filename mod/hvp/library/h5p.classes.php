@@ -2053,8 +2053,8 @@ abstract class H5PContentStatus {
 }
 
 abstract class H5PHubEndpoints {
-  const CONTENT_TYPES = 'api.h5p.org/v1/content-types/';
-  const SITES = 'api.h5p.org/v1/sites';
+  const CONTENT_TYPES = 'hub-api.h5p.org/v1/content-types/';
+  const SITES = 'hub-api.h5p.org/v1/sites';
   const METADATA = 'hub-api.h5p.org/v1/metadata';
   const CONTENT = 'hub-api.h5p.org/v1/contents';
   const REGISTER = 'hub-api.h5p.org/v1/accounts';
@@ -4588,16 +4588,6 @@ class H5PContentValidator {
     if (isset($semantics->extraAttributes)) {
       $validKeys = array_merge($validKeys, $semantics->extraAttributes); // TODO: Validate extraAttributes
     }
-    
-    // Hack to sanitize quality name. Ideally we should not allow extraAttributes, or we must build
-    // functionality for generically sanitize it.
-    if (in_array('metadata', $validKeys) && isset($file->metadata)) {
-      $fileMetadata = $file->metadata;
-      if (isset($fileMetadata->qualityName)) {
-        $fileMetadata->qualityName = htmlspecialchars($fileMetadata->qualityName, ENT_QUOTES, 'UTF-8', FALSE);
-      }
-    }
-    
     $this->filterParams($file, $validKeys);
 
     if (isset($file->width)) {
@@ -5049,7 +5039,7 @@ class H5PContentValidator {
               // Allow certain styles
 
               // Prevent font family from getting split wrong because of the ; in &quot;
-              if (str_contains($match[1], 'font-family')) {
+              if (stripos($match[1], 'font-family') !== false) {
                 $match[1] = str_replace('&quot;', "'", $match[1]);
               }
 
