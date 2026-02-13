@@ -70,7 +70,8 @@ echo $OUTPUT->header();
 $isinstructor = true; //!is_siteadmin() ? wdsprefs::get_instructor($USER) : true;
 
 if (!$isinstructor) {
-    echo $OUTPUT->notification(get_string('wdsprefs:noinstructor', 'block_wdsprefs'), 'notifyproblem');
+    echo $OUTPUT->notification(get_string('wdsprefs:noinstructor', 'block_wdsprefs'),
+    \core\output\notification::NOTIFY_ERROR);
     echo $OUTPUT->footer();
     exit;
 }
@@ -124,7 +125,8 @@ if (!empty($existingblueprints)) {
 echo html_writer::tag('h3', get_string('wdsprefs:requestblueprint', 'block_wdsprefs'));
 
 if (empty($taughtcourses)) {
-    echo $OUTPUT->notification(get_string('wdsprefs:nocourses', 'block_wdsprefs'), 'notifyinfo');
+    echo $OUTPUT->notification(get_string('wdsprefs:nocourses', 'block_wdsprefs'),
+    \core\output\notification::NOTIFY_INFO);
     echo $OUTPUT->footer();
     exit;
 }

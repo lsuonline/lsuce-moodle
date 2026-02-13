@@ -1,0 +1,52 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * @package    block_wdsprefs
+ * @copyright  2025 onwards Louisiana State University
+ * @copyright  2025 onwards Robert Russo
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die;
+
+if ($ADMIN->fulltree) {
+    // Team Teach Settings.
+    $settings->add(new admin_setting_heading('block_wdsprefs/teamteach',
+        get_string('wdsprefs:teamteach', 'block_wdsprefs'),
+        get_string('wdsprefs:teamteach_desc', 'block_wdsprefs')));
+
+    // Expiry Hours.
+    $settings->add(new admin_setting_configtext('block_wdsprefs/teamteach_expiry_hours',
+        get_string('wdsprefs:teamteach_expiry_hours', 'block_wdsprefs'),
+        get_string('wdsprefs:teamteach_expiry_hours_desc', 'block_wdsprefs'),
+        48,
+        PARAM_INT));
+
+    // Email Subject.
+    $settings->add(new admin_setting_configtext('block_wdsprefs/teamteach_email_subject',
+        get_string('wdsprefs:teamteach_email_subject', 'block_wdsprefs'),
+        get_string('wdsprefs:teamteach_email_subject_desc', 'block_wdsprefs'),
+        get_string('wdsprefs:teamteach_email_subject_default', 'block_wdsprefs'),
+        PARAM_TEXT));
+
+    // Email Body.
+    $settings->add(new admin_setting_confightmleditor('block_wdsprefs/teamteach_email_body',
+        get_string('wdsprefs:teamteach_email_body', 'block_wdsprefs'),
+        get_string('wdsprefs:teamteach_email_body_desc', 'block_wdsprefs'),
+        get_string('wdsprefs:teamteach_email_body_default', 'block_wdsprefs'),
+        PARAM_RAW));
+}

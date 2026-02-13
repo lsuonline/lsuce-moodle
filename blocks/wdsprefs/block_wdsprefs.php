@@ -34,11 +34,22 @@ class block_wdsprefs extends block_base {
 
         require_once($CFG->dirroot . '/blocks/wdsprefs/classes/wdsprefs.php');
 
-        // Is the user an instructor?
-        $instructor = wdsprefs::get_instructor($USER);
+        // Ensure $USER is not null before accessing properties.
+        $userid = isset($USER->id) ? $USER->id : 0;
 
-        // Is the user a student?
-        $student = wdsprefs::get_student($USER);
+        if ($userid > 0) {
+
+            // Is the user an instructor?
+            $instructor = wdsprefs::faster_get_instructor_status($userid);
+
+            // Is the user a student?
+            $student = wdsprefs::faster_get_student_status($userid);
+
+        } else {
+
+            // We are a liars, retun nothing.
+            return $this->content;
+        }
 
         // Is this a crosssplittable system?
         $crosssplitable = wdsprefs::get_crosssplitable();
@@ -56,21 +67,8 @@ class block_wdsprefs extends block_base {
         // Build this content object out.
         $this->content = new stdClass();
 
-        // Ensure $USER is not null before accessing properties.
-        $userid = isset($USER->id) ? $USER->id : 0;
-
-        // Build out the list of items for everyone.
+        // Build out the list of items for both roles.
         $genericitems = [
-            [
-                'text' => get_string('wdsprefs:user', 'block_wdsprefs'),
-                'url' => new moodle_url('/blocks/wdsprefs/userview.php'),
-                'icontype' => 'fontawesome',
-                'icon' => 'fa-user'
-            ],
-        ];
-
-        // Build out student items.
-        $studentitems = [
             [
                 'text' => get_string('wdsprefs:schedule', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/scheduleview.php'),
@@ -80,8 +78,7 @@ class block_wdsprefs extends block_base {
             ],
         ];
 
-
-        // Build out the list of items for faculty.
+        // Build out the list of items for just faculty.
         if ($crosssplitable) {
             $facultyitems = [
                 [
@@ -89,34 +86,48 @@ class block_wdsprefs extends block_base {
                     'url' => new moodle_url('/blocks/wdsprefs/courseview.php'),
                     'icontype' => 'fontawesome',
                     'icon' => 'fa-landmark'
-                ],
-                [
-                    'text' => get_string('wdsprefs:crosssplit', 'block_wdsprefs'),
-                    'url' => new moodle_url('/blocks/wdsprefs/crosssplit.php'),
-                    'icontype' => 'fontawesome',
-                    'icon' => 'fa-folder-tree'
-                ],
-/*
-                [
-                    'text' => get_string('wdsprefs:teamteach', 'block_wdsprefs'),
-                    'url' => new moodle_url('/blocks/wdsprefs/teamteachview.php'),
-                    'icontype' => 'fontawesome',
-                    'icon' => 'fa-user-plus'
-                ],
-*/
-                [
-                    'text' => get_string('wdsprefs:blueprint', 'block_wdsprefs'),
-                    'url' => new moodle_url('/blocks/wdsprefs/blueprintview.php'),
-                    'icontype' => 'fontawesome',
-                    'icon' => 'fa-recycle'
-                ],
-                [
-                    'text' => get_string('wdsprefs:unwant', 'block_wdsprefs'),
-                    'url' => new moodle_url('/blocks/wdsprefs/unwantview.php'),
-                    'icontype' => 'fontawesome',
-                    'icon' => 'fa-ban'
-                ],
+                ]
             ];
+
+            $facultyitems[] = [
+                'text' => get_string('wdsprefs:crosssplit', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/crosssplit.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-folder-tree'
+            ];
+
+            if (wdsprefs::has_crossenroll_periods($USER) || is_siteadmin()) {
+                $facultyitems[] = [
+                    'text' => get_string('wdsprefs:crossenroll', 'block_wdsprefs'),
+                    'url' => new moodle_url('/blocks/wdsprefs/crossenroll.php'),
+                    'icontype' => 'fontawesome',
+                    'icon' => 'fa-compress'
+                ];
+            }
+
+/*
+            $facultyitems[] = [
+                'text' => get_string('wdsprefs:teamteach', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/teamteach.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-minimize'
+            ];
+*/
+
+            $facultyitems[] = [
+                'text' => get_string('wdsprefs:blueprint', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/blueprintview.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-recycle'
+            ];
+
+            $facultyitems[] = [
+                'text' => get_string('wdsprefs:unwant', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/unwantview.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-ban'
+            ];
+
         } else {
             $facultyitems = [
                 [
@@ -163,26 +174,13 @@ class block_wdsprefs extends block_base {
             }
         }
 
-        // If we're either an instructor or a student.
-        if ($student) {
-            // Loop through all the student items.
-            foreach ($studentitems as $item) {
-                $icon = html_writer::tag('i', '',
-                    ['class' => 'wds icon fa ' . $item['icon'], 'aria-hidden' => 'true']);
-                $link = html_writer::link($item['url'], $icon . $item['text'], ['class' => 'wds menu-link']);
-                $listitems .= html_writer::tag('li', $link, ['class' => 'menu-item']);
-            }
-        }
-
-        /*
         // Append these to the end possibru.
         foreach ($genericitems as $item) {
             $icon = html_writer::tag('i', '',
                 ['class' => 'wds icon fa ' . $item['icon'], 'aria-hidden' => 'true']);
             $link = html_writer::link($item['url'], $icon . $item['text'], ['class' => 'wds menu-link']);
-            $listitems .= html_writer::tag('li', $link, ['class' => 'menu-item']);
+            $listitems .= html_writer::tag('li', $link, ['class' => 'wds menu-item']);
         }
-        */
 
         // Build out the unordered list.
         $this->content->text = html_writer::tag('ul', $listitems, ['class' => 'wds menu-list']);
