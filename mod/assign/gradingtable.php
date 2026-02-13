@@ -210,9 +210,6 @@ class assign_grading_table extends table_sql implements renderable {
             $params = array_merge($params, $userparams2);
 
             $fields .= ', priority.priority, ';
-            // Use COALESCE to fall back to assignment defaults when override values are NULL.
-            // This ensures that when an override doesn't override a specific field, the assignment
-            // default is shown instead of a blank value.
             $fields .= 'COALESCE(effective.allowsubmissionsfromdate, ' .
                        '(SELECT a.allowsubmissionsfromdate FROM {assign} a WHERE a.id = :assignmentid10)) as allowsubmissionsfromdate, ';
 

@@ -144,10 +144,10 @@ if ($mform->is_cancelled()) {
 
     // Process override values.
     foreach ($keys as $key) {
-        if (!isset($fromform->{$key})) {
-            // Value not set in form - set to null to use assignment default.
-            $fromform->{$key} = null;
-        } else if ($fromform->{$key} == 0 && in_array($key, array('duedate', 'cutoffdate', 'allowsubmissionsfromdate'))) {
+        if (!isset($fromform->{$key}) || (
+            $fromform->{$key} == 0 && 
+            in_array($key, array('duedate', 'cutoffdate', 'allowsubmissionsfromdate')
+            ))) {
             // Set to null to use assignment default.
             $fromform->{$key} = null;
         }
