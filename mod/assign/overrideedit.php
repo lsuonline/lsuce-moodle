@@ -143,26 +143,14 @@ if ($mform->is_cancelled()) {
     $fromform->assignid = $assigninstance->id;
 
     // Process override values.
-    // The original buggy logic set values to null if they matched the assignment defaults,
-    // but this is incorrect - an override can legitimately have the same date as the
-    // assignment. We should only set to null if:
-    // 1. The value is not set in the form (field was not submitted), OR
-    // 2. The value is 0 (for optional date fields that were explicitly disabled via checkbox)
-    //
-    // If a value is explicitly set (even if it matches the original), preserve it.
-    // This allows overrides to explicitly set dates that match the assignment dates,
-    // which is useful for documentation and for cases where the assignment dates
-    // might change later but the override should remain fixed.
     foreach ($keys as $key) {
         if (!isset($fromform->{$key})) {
             // Value not set in form - set to null to use assignment default.
             $fromform->{$key} = null;
         } else if ($fromform->{$key} == 0 && in_array($key, array('duedate', 'cutoffdate', 'allowsubmissionsfromdate'))) {
-            // For optional date fields, 0 means the "enabled" checkbox was unchecked - set to null.
+            // Set to null to use assignment default.
             $fromform->{$key} = null;
         }
-        // Otherwise, the value is explicitly set (enabled checkbox was checked and date was provided).
-        // Preserve it even if it matches the assignment default - this is the fix for the bug.
     }
 
     // See if we are replacing an existing override.
