@@ -195,6 +195,11 @@ class assign_grading_table extends table_sql implements renderable {
             $params['assignmentid7'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid8'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid9'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid10'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid11'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid12'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid13'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid14'] = (int)$this->assignment->get_instance()->id;
 
             list($userwhere1, $userparams1) = $DB->get_in_or_equal($users, SQL_PARAMS_NAMED, 'priorityuser');
             list($userwhere2, $userparams2) = $DB->get_in_or_equal($users, SQL_PARAMS_NAMED, 'effectiveuser');
@@ -205,19 +210,21 @@ class assign_grading_table extends table_sql implements renderable {
             $params = array_merge($params, $userparams2);
 
             $fields .= ', priority.priority, ';
-            $fields .= 'effective.allowsubmissionsfromdate, ';
+            $fields .= 'COALESCE(effective.allowsubmissionsfromdate, ' .
+                       '(SELECT a.allowsubmissionsfromdate FROM {assign} a WHERE a.id = :assignmentid10)) as allowsubmissionsfromdate, ';
 
             if ($inrelativedatesmode) {
                 // If the priority is less than the 9999999 constant value it means it's an override
                 // and we should use that value directly. Otherwise we need to apply the uesr's course
                 // start date offset.
-                $fields .= 'CASE WHEN priority.priority < 9999999 THEN effective.duedate ELSE' .
-                           ' effective.duedate + enroloffset.enrolstartoffset END as duedate, ';
+                $fields .= 'CASE WHEN priority.priority < 9999999 THEN ' .
+                           'COALESCE(effective.duedate, (SELECT a.duedate FROM {assign} a WHERE a.id = :assignmentid11)) ELSE' .
+                           ' COALESCE(effective.duedate, (SELECT a.duedate FROM {assign} a WHERE a.id = :assignmentid12)) + enroloffset.enrolstartoffset END as duedate, ';
             } else {
-                $fields .= 'effective.duedate, ';
+                $fields .= 'COALESCE(effective.duedate, (SELECT a.duedate FROM {assign} a WHERE a.id = :assignmentid13)) as duedate, ';
             }
 
-            $fields .= 'effective.cutoffdate ';
+            $fields .= 'COALESCE(effective.cutoffdate, (SELECT a.cutoffdate FROM {assign} a WHERE a.id = :assignmentid14)) as cutoffdate ';
 
             $from .= ' LEFT JOIN (
                SELECT merged.userid, min(merged.priority) priority FROM (
