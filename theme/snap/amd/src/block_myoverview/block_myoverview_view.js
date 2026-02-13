@@ -71,9 +71,9 @@ let namespace = null;
  */
 const getFilterValues = root => {
     const courseRegion = root.find(SELECTORS.courseView.region);
+    // BEGIN LSU - filters for year and progress.
     let zyeardata = $('#yeardropdown > span').text(),
         zprogress = $('#progressdropdown > span').text();
-
     // If the filters aren't initially set, set them.
     if (zyeardata == '') {
         setUserPreference('snap_user_grouping_year_preference', 'all')
@@ -86,6 +86,7 @@ const getFilterValues = root => {
             .catch(Notification.exception);
             zprogress = 'all';
     }
+    // END LSU - filters for year and progress.
     return {
         display: courseRegion.attr('data-display'),
         grouping: courseRegion.attr('data-grouping'),
@@ -93,11 +94,13 @@ const getFilterValues = root => {
         displaycategories: courseRegion.attr('data-displaycategories'),
         customfieldname: courseRegion.attr('data-customfieldname'),
         customfieldvalue: courseRegion.attr('data-customfieldvalue'),
+        // BEGIN LSU - filters for year and progress.
         // This doesn't work at all!
         // yeardata: courseRegion.attr('data-year'),
         // progress: courseRegion.attr('data-progress'),
         yeardata: zyeardata,
         progress: zprogress,
+        // END LSU - filters for year and progress.
     };
 };
 
