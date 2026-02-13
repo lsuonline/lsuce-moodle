@@ -327,7 +327,12 @@ class enrol_d1_plugin extends enrol_plugin {
     $usstime = microtime(true);
 
     // Get the users.
-    $users = lsud1::get_d1_students_without_uids();
+    if (!isset($courseid)) {
+        $users = lsud1::get_d1_students_without_uids();
+    } else {
+        $ccontext = context_course::instance($courseid);
+        $users   = get_enrolled_users($context, '', 0, 'u.id, u.firstname, u.lastname, u.email');
+    }
 
     $t = 0;
 
