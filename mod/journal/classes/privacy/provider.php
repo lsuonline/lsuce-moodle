@@ -29,10 +29,13 @@ defined('MOODLE_INTERNAL') || die();
 use context;
 use context_module;
 use core_privacy\local\metadata\collection;
+use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\contextlist;
+use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\helper;
+use core_privacy\local\request\plugin\provider as plugin_provider;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
@@ -47,27 +50,26 @@ require_once($CFG->dirroot . '/mod/journal/lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements
-    \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\core_userlist_provider,
-    \core_privacy\local\request\plugin\provider {
-
+    core_userlist_provider,
+    metadata_provider,
+    plugin_provider {
     /**
      * Returns metadata.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.
      */
-    public static function get_metadata(collection $collection) : collection {
+    public static function get_metadata(collection $collection): collection {
         $collection->add_database_table(
             'journal_entries',
-             [
+            [
                 'userid' => 'privacy:metadata:journal_entries:userid',
                 'modified' => 'privacy:metadata:journal_entries:modified',
                 'text' => 'privacy:metadata:journal_entries:text',
                 'rating' => 'privacy:metadata:journal_entries:rating',
                 'entrycomment' => 'privacy:metadata:journal_entries:entrycomment',
                 'teacher' => 'privacy:metadata:journal_entries:teacher',
-             ],
+            ],
             'privacy:metadata:journal_entries'
         );
 
@@ -80,7 +82,7 @@ class provider implements
      * @param int $userid The user to search.
      * @return contextlist $contextlist The contextlist containing the list of contexts used in this plugin.
      */
-    public static function get_contexts_for_userid(int $userid) : contextlist {
+    public static function get_contexts_for_userid(int $userid): contextlist {
 
         $sql = "
             SELECT DISTINCT ctx.id
@@ -93,11 +95,11 @@ class provider implements
               JOIN {context} ctx
                 ON ctx.instanceid = cm.id
                AND ctx.contextlevel = :modulelevel
-         LEFT JOIN {journal_entries} je
+              JOIN {journal_entries} je
                 ON je.journal = j.id
-               AND je.userid = :userid";
+             WHERE je.userid = :userid OR je.teacher = :teacher";
 
-        $params = ['journal' => 'journal', 'modulelevel' => CONTEXT_MODULE, 'userid' => $userid];
+        $params = ['journal' => 'journal', 'modulelevel' => CONTEXT_MODULE, 'userid' => $userid, 'teacher' => $userid];
         $contextlist = new contextlist();
         $contextlist->add_from_sql($sql, $params);
 
@@ -117,10 +119,12 @@ class provider implements
             return;
         }
 
-        // Find users with journal entries.
+        // Find users with journal entries and teachers who gave feedback on them.
         $sql = "
-            SELECT j.userid
+            SELECT je.userid, je.teacher
               FROM {journal} j
+              JOIN {journal_entries} je
+                ON je.journal = j.id
               JOIN {modules} m
                 ON m.name = :journal
               JOIN {course_modules} cm
@@ -133,6 +137,7 @@ class provider implements
         $params = ['journal' => 'journal', 'modulelevel' => CONTEXT_MODULE, 'contextid' => $context->id];
 
         $userlist->add_from_sql('userid', $sql, $params);
+        $userlist->add_from_sql('teacher', $sql, $params);
     }
 
     /**
@@ -145,7 +150,7 @@ class provider implements
 
         $user = $contextlist->get_user();
         $userid = $user->id;
-        $cmids = array_reduce($contextlist->get_contexts(), function($carry, $context) {
+        $cmids = array_reduce($contextlist->get_contexts(), function ($carry, $context) {
             if ($context->contextlevel == CONTEXT_MODULE) {
                 $carry[] = $context->instanceid;
             }
@@ -167,15 +172,16 @@ class provider implements
         $journalidstocmids = static::get_journal_ids_to_cmids_from_cmids($cmids);
 
         // Prepare the common SQL fragments.
-        list($injournalsql, $injournalparams) = $DB->get_in_or_equal(array_keys($journalidstocmids), SQL_PARAMS_NAMED);
-        $sqluserjournal = "userid = :userid AND journal $injournalsql";
-        $paramsuserjournal = array_merge($injournalparams, ['userid' => $userid]);
+        [$injournalsql, $injournalparams] = $DB->get_in_or_equal(array_keys($journalidstocmids), SQL_PARAMS_NAMED);
+        $sqluserjournal = "(userid = :userid OR teacher = :teacher) AND journal $injournalsql";
+        $paramsuserjournal = array_merge($injournalparams, ['userid' => $userid, 'teacher' => $userid]);
 
         // Export the entries.
         $recordset = $DB->get_recordset_select('journal_entries', $sqluserjournal, $paramsuserjournal);
-        static::recordset_loop_and_export($recordset, 'journal', null, function($carry, $record) {
-            // We know that there is only one row per journal, so no need to use $carry.
-            return (object) [
+        static::recordset_loop_and_export($recordset, 'journal', [], function ($carry, $record) {
+            // There might be more than one row per journal if the user is a teacher, so we need to use $carry.
+            $carry[] = [
+                'userid' => $record->userid,
                 'modified' => $record->modified !== null ? transform::datetime($record->modified) : null,
                 'text' => $record->text,
                 'rating' => $record->rating,
@@ -183,7 +189,8 @@ class provider implements
                 'teacher' => $record->teacher,
                 'timemarked' => $record->timemarked !== null ? transform::datetime($record->timemarked) : null,
             ];
-        }, function($journalid, $data) use ($journalidstocmids) {
+            return $carry;
+        }, function ($journalid, $data) use ($journalidstocmids) {
             $context = context_module::instance($journalidstocmids[$journalid]);
             writer::with_context($context)->export_related_data([], 'entries', $data);
         });
@@ -217,7 +224,7 @@ class provider implements
         global $DB;
 
         $userid = $contextlist->get_user()->id;
-        $cmids = array_reduce($contextlist->get_contexts(), function($carry, $context) {
+        $cmids = array_reduce($contextlist->get_contexts(), function ($carry, $context) {
             if ($context->contextlevel == CONTEXT_MODULE) {
                 $carry[] = $context->instanceid;
             }
@@ -235,7 +242,7 @@ class provider implements
         }
 
         // Prepare the SQL we'll need below.
-        list($insql, $inparams) = $DB->get_in_or_equal($journalids, SQL_PARAMS_NAMED);
+        [$insql, $inparams] = $DB->get_in_or_equal($journalids, SQL_PARAMS_NAMED);
         $sql = "journal $insql AND userid = :userid";
         $params = array_merge($inparams, ['userid' => $userid]);
 
@@ -259,11 +266,10 @@ class provider implements
         }
 
         // Prepare the SQL we'll need below.
-        list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $sql = "journal = :journalid AND userid {$insql}";
         $params = array_merge($inparams, ['journalid' => $journalid]);
         $DB->delete_records_select('journal_entries', $sql, $params);
-
     }
 
     /**
@@ -285,7 +291,7 @@ class provider implements
      */
     protected static function get_journal_ids_to_cmids_from_cmids(array $cmids) {
         global $DB;
-        list($insql, $inparams) = $DB->get_in_or_equal($cmids, SQL_PARAMS_NAMED);
+        [$insql, $inparams] = $DB->get_in_or_equal($cmids, SQL_PARAMS_NAMED);
         $sql = "
             SELECT j.id, cm.id AS cmid
               FROM {journal} j
@@ -309,8 +315,13 @@ class provider implements
      * @param callable $export The function to export the dataset, receives the last value from $splitkey and the dataset.
      * @return void
      */
-    protected static function recordset_loop_and_export(\moodle_recordset $recordset, $splitkey, $initial,
-            callable $reducer, callable $export) {
+    protected static function recordset_loop_and_export(
+        \moodle_recordset $recordset,
+        $splitkey,
+        $initial,
+        callable $reducer,
+        callable $export
+    ) {
 
         $data = $initial;
         $lastid = null;
@@ -329,5 +340,4 @@ class provider implements
             $export($lastid, $data);
         }
     }
-
 }
