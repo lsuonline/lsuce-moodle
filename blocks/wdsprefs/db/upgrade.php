@@ -185,7 +185,40 @@ function xmldb_block_wdsprefs_upgrade($oldversion) {
         }
 
         // Update version
-        upgrade_block_savepoint(true, 20256010900, 'wdsprefs');
+        upgrade_block_savepoint(true, 2026010900, 'wdsprefs');
+    }
+
+    if ($oldversion < 2026012700) {
+        // Define table block_wdsprefs_teamteach to be created.
+        $table = new xmldb_table('block_wdsprefs_teamteach');
+
+        // Add fields.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('requester_userid', XMLDB_TYPE_INTEGER, '19', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('target_course_id', XMLDB_TYPE_INTEGER, '19', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('requested_userid', XMLDB_TYPE_INTEGER, '19', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('requested_section_ids', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('token', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, 'pending');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('expirytime', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Add keys.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Add indexes.
+        $table->add_index('teamteach_requester_ix', XMLDB_INDEX_NOTUNIQUE, ['requester_userid']);
+        $table->add_index('teamteach_requested_ix', XMLDB_INDEX_NOTUNIQUE, ['requested_userid']);
+        $table->add_index('teamteach_token_ix', XMLDB_INDEX_NOTUNIQUE, ['token']);
+
+        // Create the table.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Update version.
+        upgrade_block_savepoint(true, 2026012700, 'wdsprefs');
     }
 
     return true;

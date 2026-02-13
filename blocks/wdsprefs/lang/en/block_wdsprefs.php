@@ -18,6 +18,7 @@
  * @package    block_wdsprefs
  * @copyright  2025 onwards Louisiana State University
  * @copyright  2025 onwards Robert Russo
+ * @copyright  2026 onwards Steve Mattsen
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,7 +40,7 @@ $string['wdsprefs:coursename'] = 'Course';
 $string['wdsprefs:crossenroll'] = 'Cross-enroll';
 $string['wdsprefs:crosssplit'] = 'Cross-list & split';
 $string['wdsprefs:schedule'] = 'Course schedule';
-$string['wdsprefs:teamteach'] = 'Team teaching';
+$string['wdsprefs:teamteach'] = 'Team-teaching';
 $string['wdsprefs:unwant'] = 'Unwanted sections';
 $string['wdsprefs:user'] = 'User preferences';
 
@@ -105,6 +106,8 @@ $string['wdsprefs:periodwithcount'] = '{$a->name} &mdash; {$a->count} available 
 $string['wdsprefs:crosssplitfail'] = 'Cross-splitting failed';
 $string['wdsprefs:shellname'] = 'Shell name';
 $string['wdsprefs:shelltaginvalid'] = 'Shell tag may only contain letters, numbers, dashes, underscores and spaces.';
+$string['wdsprefs:shelltagunique'] = 'Two or more shells have the same name. Give each shell a different name.';
+$string['wdsprefs:shelltagunavailable'] = 'This name is already used by an existing course shell. Choose a different name.';
 $string['wdsprefs:datecreated'] = 'Date created';
 $string['wdsprefs:actions'] = 'Actions';
 $string['wdsprefs:viewcourse'] = 'View course';
@@ -145,7 +148,7 @@ $string['wdsprefs:blueprintstatus_created'] = 'Created';
 $string['wdsprefs:blueprintstatus_failed'] = 'Failed';
 
 // Undo cross-splitting strings.
-$string['wdsprefs:undo'] = 'Undo cross-listing, splitting & cross-enrollment';
+$string['wdsprefs:undo'] = 'Undo cross-listing, splitting, and cross-enrollment';
 $string['wdsprefs:undoconfirm'] = 'Are you sure you want to undo this cross-listing, splitting, or cross-enrollment? This will reset sections to their original course shells and move enrollments accordingly. This action cannot be undone.';
 $string['wdsprefs:undosuccess'] = 'Cross-listing, splitting, and cross-enrollment successfully undone. Sections have been reset to their original course shells.';
 $string['wdsprefs:undofailed'] = 'Failed to undo cross-listing, splitting, or cross-enrollment. Please contact support.';
@@ -165,3 +168,77 @@ $string['wdsprefs:alreadycrosssplit'] = 'This section is cross-split or cross-en
 $string['wdsprefs:undoaction'] = 'undo this action';
 $string['wdsprefs:notenoughsectionsforcrossenroll'] = 'You must have at least two sections across multiple academic periods to cross-enroll.';
 $string['wdsprefs:mustselectfromtwo'] = 'You must select at least one section from at least two different academic periods to cross-enroll.<br>If you are trying to cross-list courses within the same academic period, please use the {$a} tool.';
+
+// Team Teach strings.
+$string['wdsprefs:teamteach'] = 'Team-teaching';
+$string['wdsprefs:teamteach_desc'] = 'Team-teaching allows you to invite another instructor to teach one or more sections within your course shell.';
+$string['wdsprefs:teamteachheading'] = 'Team-teaching';
+$string['wdsprefs:teamteachsections'] = 'Team-teach sections';
+$string['wdsprefs:teamteach_expiry_hours'] = 'Request expiration (hours)';
+$string['wdsprefs:teamteach_expiry_hours_desc'] = 'Number of hours before a team-teach request expires.';
+$string['wdsprefs:teamteach_email_subject'] = 'Email subject';
+$string['wdsprefs:teamteach_email_subject_desc'] = 'Subject line for the team-teach invitation email.';
+$string['wdsprefs:teamteach_email_subject_default'] = 'Team Teach Request from {$a->requester}';
+$string['wdsprefs:teamteach_email_body'] = 'Email body';
+$string['wdsprefs:teamteach_email_body_desc'] = 'Body of the team-teach invitation email. Supported placeholders: {requester}, {course}, {sections}, {link}, {expiry}.';
+$string['wdsprefs:teamteach_email_body_default'] = '<p>Hello,</p>
+<p>{requester} has requested to add your section(s):</p>
+<p>{sections}</p>
+<p>to their course shell: <strong>{course}</strong>.</p>
+<p>Please click the link below to approve or decline this request. This link will expire in {expiry} hours.</p>
+<p><a href="{link}">{link}</a></p>';
+$string['wdsprefs:teamteach_select_target_course'] = 'Select target course shell';
+$string['wdsprefs:teamteach_search_teacher'] = 'Search for instructor';
+$string['wdsprefs:teamteach_search_placeholder'] = 'Search by First Name, Last Name, or Email';
+$string['wdsprefs:teamteach_select_sections'] = 'Select sections to request';
+$string['wdsprefs:teamteach_submit_request'] = 'Send Request';
+$string['wdsprefs:teamteach_request_created'] = 'Team-teach request sent successfully.';
+$string['wdsprefs:teamteach_request_failed'] = 'Failed to create team-teach request.';
+$string['wdsprefs:teamteach_no_sections_found'] = 'No eligible sections found for this instructor in the selected academic period.';
+$string['wdsprefs:teamteach_no_teacher_found'] = 'No instructor found matching your search.';
+$string['wdsprefs:teamteach_invalid_request'] = 'Invalid request.';
+$string['wdsprefs:teamteach_request_not_found'] = 'Request not found.';
+$string['wdsprefs:teamteach_request_expired'] = 'This request has expired.';
+$string['wdsprefs:teamteach_already_processed'] = 'This request has already been processed.';
+$string['wdsprefs:teamteach_approved'] = 'Request approved. Sections have been merged.';
+$string['wdsprefs:teamteach_declined'] = 'Request declined.';
+$string['wdsprefs:teamteach_approve'] = 'Approve Request';
+$string['wdsprefs:teamteach_decline'] = 'Decline Request';
+$string['wdsprefs:teamteach_request_details'] = 'Request Details';
+$string['wdsprefs:teamteach_requester'] = 'Requester';
+$string['wdsprefs:teamteach_target_course'] = 'Target Course';
+$string['wdsprefs:teamteach_requested_sections'] = 'Requested Sections';
+$string['wdsprefs:teamteach_confirm_approve'] = 'Are you sure you want to approve this request? This will merge your sections into the target course.';
+$string['wdsprefs:teamteach_confirm_decline'] = 'Are you sure you want to decline this request?';
+$string['wdsprefs:teamteach_self_request'] = 'You cannot send a request to yourself.';
+$string['wdsprefs:teamteach_pending'] = 'Pending';
+$string['wdsprefs:teamteach_link_sent'] = 'A request has been sent to {$a}.';
+$string['wdsprefs:teamteach_revoked_subject'] = 'Team-teach request revoked: {$a->course}';
+$string['wdsprefs:teamteach_revoked_body'] = 'Hello {$a->recipient},<br><br>
+The team-teaching arrangement for course "{$a->course}" has been {$a->action}.<br><br>
+The sections have been moved back to their original course shells.<br><br>
+Best regards,<br>{$a->actor}';
+$string['wdsprefs:revoked'] = 'revoked';
+$string['wdsprefs:undone'] = 'undone';
+$string['wdsprefs:teamteach_my_requests'] = 'My team-teach requests';
+$string['wdsprefs:teamteach_requests_for_me'] = 'My team-teach invitations';
+$string['wdsprefs:teamteach_status'] = 'Status';
+$string['wdsprefs:teamteach_action'] = 'Action';
+$string['wdsprefs:teamteach_cancel'] = 'Cancel';
+$string['wdsprefs:teamteach_undo'] = 'Undo';
+$string['wdsprefs:teamteach_revoke'] = 'Revoke';
+$string['wdsprefs:teamteach_confirm_cancel'] = 'Are you sure you want to cancel this pending team-teach request?';
+$string['wdsprefs:teamteach_confirm_undo'] = 'Are you sure you want to undo this team-teach? External sections will be returned to their original shells.';
+$string['wdsprefs:teamteach_confirm_revoke'] = 'Are you sure you want to revoke this team-teach? Your sections will be returned to their original shells if they exist, otherwise new shells will be created and your students will be enrolled.';
+$string['wdsprefs:teamteach_cancelled'] = 'Team-teach request cancelled.';
+$string['wdsprefs:teamteach_undone_success'] = 'Team-teach request undone successfully.';
+$string['wdsprefs:teamteach_revoked_success'] = 'Team-teach request revoked successfully.';
+$string['wdsprefs:teamteach_failed_action'] = 'Action failed.';
+$string['wdsprefs:teamteach_status_pending'] = 'Pending';
+$string['wdsprefs:teamteach_status_approved'] = 'Approved';
+$string['wdsprefs:teamteach_status_declined'] = 'Declined';
+$string['wdsprefs:teamteach_status_expired'] = 'Expired';
+$string['wdsprefs:teamteach_status_cancelled'] = 'Cancelled';
+$string['wdsprefs:teamteach_status_revoked'] = 'Revoked';
+$string['wdsprefs:section_already_crosslisted'] = 'This section is already cross-listed, split, or cross-enrolled in {$a}';
+$string['wdsprefs:section_already_teamtaught'] = 'This section is already being team-taught in {$a}';

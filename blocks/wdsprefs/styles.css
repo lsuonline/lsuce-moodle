@@ -154,6 +154,25 @@
     margin-left: 1em;
 }
 
+/* Team Teaching */
+#page-blocks-wdsprefs-teamteach_action div.tt-approve,
+#page-blocks-wdsprefs-teamteach_action div.tt-decline {
+    display: inline-block;
+    margin: auto 0.5em auto 0.5em;
+}
+
+#page-blocks-wdsprefs-teamteach_action div.tt-approve button:hover {
+    background-color: #006600;
+    border-color: #006600;
+    color: white;
+}
+
+#page-blocks-wdsprefs-teamteach_action div.tt-decline button:hover {
+    background-color: #660000;
+    border-color: #660000;
+    color: white;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .duallist-container {
@@ -173,6 +192,11 @@
     display: inline-block;
     animation: spin3dz 1s linear 1;
     transform-style: preserve-3d;
+}
+
+.block_wdsprefs .wds.menu-item:hover .fa-minimize {
+    display: inline-block;
+    animation: compresssqueeze 1s ease-in-out;
 }
 
 .block_wdsprefs .wds.menu-item:hover .fa-folder-tree {
@@ -202,6 +226,21 @@
     display: inline-block;
     animation: tick 6s steps(15, end) 1;
     transform-origin: center;
+}
+
+@keyframes compresssqueeze {
+    0% {
+        transform: scale(1, 1);
+    }
+    30% {
+        transform: scale(0.5, 1.0);
+    }
+    60% {
+        transform: scale(1.0, 0.5);
+    }
+    100% {
+        transform: scale(1, 1);
+    }
 }
 
 @keyframes tick {

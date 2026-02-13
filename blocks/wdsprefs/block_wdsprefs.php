@@ -105,6 +105,15 @@ class block_wdsprefs extends block_base {
                 ];
             }
 
+/*
+            $facultyitems[] = [
+                'text' => get_string('wdsprefs:teamteach', 'block_wdsprefs'),
+                'url' => new moodle_url('/blocks/wdsprefs/teamteach.php'),
+                'icontype' => 'fontawesome',
+                'icon' => 'fa-minimize'
+            ];
+*/
+
             $facultyitems[] = [
                 'text' => get_string('wdsprefs:blueprint', 'block_wdsprefs'),
                 'url' => new moodle_url('/blocks/wdsprefs/blueprintview.php'),

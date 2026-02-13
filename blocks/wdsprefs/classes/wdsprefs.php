@@ -18,6 +18,7 @@
  * @package    block_wdsprefs
  * @copyright  2025 onwards Louisiana State University
  * @copyright  2025 onwards Robert Russo
+ * @copyright  2026 onwards Steve Mattsen
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -1311,7 +1312,7 @@ class wdsprefs {
                 } elseif (is_array($data) && isset($data[$shellnamefield])) {
                     $customname = trim($data[$shellnamefield]);
                 }
-
+                $customname = core_text::substr($customname, 0, 64);
                 if ($customname !== '' && !preg_match('/^[a-zA-Z0-9_ -]+$/', $customname)) {
                     throw new \core\exception\invalid_parameter_exception(
                         get_string('wdsprefs:shelltaginvalid', 'block_wdsprefs')
@@ -2883,5 +2884,4 @@ class wdsprefs {
 
         return $records;
     }
-
 }
