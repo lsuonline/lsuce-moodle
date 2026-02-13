@@ -18,14 +18,14 @@
  * Contains the version information for the Panopto Student Submission mod
  *
  * @package mod_panoptosubmission
- * @copyright  Panopto 2021
+ * @copyright  Panopto 2025
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 // The current plugin version (Date: YYYYMMDDXX).
-$plugin->version = 2024120600;
+$plugin->version = 2025112600;
 
 // Requires this Moodle version - 4.1.0.
 $plugin->requires = 2022112800;
