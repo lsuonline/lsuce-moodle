@@ -34,7 +34,6 @@ namespace mod_customcert;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class certificate {
-
     /**
      * Send the file inline to the browser.
      */
@@ -293,7 +292,7 @@ class certificate {
     public static function download_all_for_site(): void {
         global $DB;
 
-        list($namefields, $nameparams) = \core_user\fields::get_sql_fullname();
+        [$namefields, $nameparams] = \core_user\fields::get_sql_fullname();
         $sql = "SELECT ci.*, $namefields as fullname, ct.id as templateid, ct.name as templatename, ct.contextid
                   FROM {customcert_issues} ci
                   JOIN {user} u
@@ -350,7 +349,7 @@ class certificate {
         global $DB;
 
         // Get the conditional SQL.
-        list($conditionssql, $conditionsparams) = self::get_conditional_issues_sql($cm, $groupmode);
+        [$conditionssql, $conditionsparams] = self::get_conditional_issues_sql($cm, $groupmode);
 
         // If it is empty then return an empty array.
         if (empty($conditionsparams)) {
@@ -389,7 +388,7 @@ class certificate {
         global $DB;
 
         // Get the conditional SQL.
-        list($conditionssql, $conditionsparams) = self::get_conditional_issues_sql($cm, $groupmode);
+        [$conditionssql, $conditionsparams] = self::get_conditional_issues_sql($cm, $groupmode);
 
         // If it is empty then return 0.
         if (empty($conditionsparams)) {
@@ -428,7 +427,7 @@ class certificate {
         // Get all users that can manage this certificate to exclude them from the report.
         $certmanagers = array_keys(get_users_by_capability($context, 'mod/customcert:manage', 'u.id'));
         $certmanagers = array_merge($certmanagers, array_keys(get_admins()));
-        list($sql, $params) = $DB->get_in_or_equal($certmanagers, SQL_PARAMS_NAMED, 'cert');
+        [$sql, $params] = $DB->get_in_or_equal($certmanagers, SQL_PARAMS_NAMED, 'cert');
         $conditionssql .= "AND NOT u.id $sql \n";
         $conditionsparams += $params;
 
@@ -464,7 +463,7 @@ class certificate {
                     return ['', []];
                 }
 
-                list($sql, $params) = $DB->get_in_or_equal($groupusers, SQL_PARAMS_NAMED, 'grp');
+                [$sql, $params] = $DB->get_in_or_equal($groupusers, SQL_PARAMS_NAMED, 'grp');
                 $conditionssql .= "AND u.id $sql ";
                 $conditionsparams += $params;
             }
@@ -535,27 +534,66 @@ class certificate {
         $issue->timecreated = time();
 
         // Insert the record into the database.
-        return $DB->insert_record('customcert_issues', $issue);
+        $issueid = $DB->insert_record('customcert_issues', $issue);
+
+        // Get course module context for event.
+        $cm = get_coursemodule_from_instance('customcert', $certificateid, 0, false, MUST_EXIST);
+        $context = \context_module::instance($cm->id);
+
+        // Trigger event.
+        $event = \mod_customcert\event\issue_created::create([
+            'objectid' => $issueid,
+            'context' => $context,
+            'relateduserid' => $userid,
+        ]);
+        $event->trigger();
+
+        return $issueid;
     }
 
     /**
-     * Generates a 10-digit code of random letters and numbers.
+     * Generates an unused code of random letters and numbers.
      *
      * @return string
      */
-    public static function generate_code() {
+    public static function generate_code(): string {
         global $DB;
 
-        $uniquecodefound = false;
-        $code = random_string(10);
-        while (!$uniquecodefound) {
-            if (!$DB->record_exists('customcert_issues', ['code' => $code])) {
-                $uniquecodefound = true;
-            } else {
-                $code = random_string(10);
-            }
-        }
+        // Get the user's selected method from settings.
+        $method = get_config('customcert', 'codegenerationmethod');
 
+        do {
+            $code = match ($method) {
+                '0' => self::generate_code_upper_lower_digits(),
+                '1' => self::generate_code_digits_with_hyphens(),
+                default => self::generate_code_upper_lower_digits(),
+            };
+        } while ($DB->record_exists('customcert_issues', ['code' => $code]));
         return $code;
+    }
+
+    /**
+     * Generate a random code of the format XXXXXXXXXX, where each X is a character from the set [A-Za-z0-9].
+     * Does not check that it is unused.
+     *
+     * @return string
+     */
+    private static function generate_code_upper_lower_digits(): string {
+        return random_string(10);
+    }
+
+    /**
+     * Generate an random code of the format XXXX-XXXX-XXXX, where each X is a random digit.
+     * Does not check that it is unused.
+     *
+     * @return string
+     */
+    private static function generate_code_digits_with_hyphens(): string {
+        return sprintf(
+            '%04d-%04d-%04d',
+            random_int(0, 9999),
+            random_int(0, 9999),
+            random_int(0, 9999)
+        );
     }
 }
