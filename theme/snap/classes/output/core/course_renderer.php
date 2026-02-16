@@ -623,7 +623,7 @@ class course_renderer extends \core_course_renderer {
         // Allow moving and rearranging multiple activities at once.
         if (has_capability('moodle/course:manageactivities', context_module::instance($mod->id))) {
             $movealt = s(get_string('move', 'theme_snap', $mod->get_formatted_name()));
-            $moveactivity = '<label class="snap-asset-move-label" aria-label="' . $movealt . '" for="snap-move-mod-' . $mod->id . 'role="button"">';
+            $moveactivity = '<label class="snap-asset-move-label" aria-label="' . $movealt . '" for="snap-move-mod-' . $mod->id . '">';
             $moveactivity .= '<input class="snap-asset-move-input js-snap-asset-move" id="snap-move-mod-' . $mod->id . '"
                                 role="button" type="checkbox">';
             $moveactivity .= '<span class="sr-only">' . $movealt . '</span></label>';
