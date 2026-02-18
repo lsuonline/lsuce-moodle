@@ -565,6 +565,10 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) {
         300 => '300',
         400 => '400'
     );
+    // BEGIN LSU - setting to force files to be deleted if they are older than the auto_delete_days.
+    $temp->add(new admin_setting_configcheckbox('backup/backup_force_delete', new lang_string('backup_force_delete', 'admin'), new lang_string('backup_force_deletehelp', 'admin'), 0));
+    // END LSU - setting to force files to be deleted if they are older than the auto_delete_days.
+
     $temp->add(new admin_setting_configselect('backup/backup_auto_min_kept', new lang_string('automatedminkept', 'backup'),
             new lang_string('automatedminkepthelp', 'backup'), 0, $minkeptoptions));
 
