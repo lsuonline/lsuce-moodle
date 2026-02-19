@@ -55,4 +55,36 @@ class event_observer {
             $DB->delete_records('report_content2fix', ['cmid' => $cmid]);
         }
     }
+
+    /**
+     * Remove report_content2fix entries for course intro/description when course is updated.
+     *
+     * @param \core\event\course_updated $event
+     */
+    public static function course_updated(\core\event\course_updated $event): void {
+        global $DB;
+        $courseid = $event->courseid;
+        if ($courseid) {
+            $DB->delete_records('report_content2fix', [
+                'courseid' => $courseid,
+                'component' => 'core_course',
+            ]);
+        }
+    }
+
+    /**
+     * Remove report_content2fix entries for section summary when section is updated.
+     *
+     * @param \core\event\course_section_updated $event
+     */
+    public static function course_section_updated(\core\event\course_section_updated $event): void {
+        global $DB;
+        $sectionid = $event->objectid;
+        if ($sectionid) {
+            $DB->delete_records('report_content2fix', [
+                'comptable' => 'course_sections',
+                'rowid' => $sectionid,
+            ]);
+        }
+    }
 }

@@ -29,12 +29,16 @@ defined('MOODLE_INTERNAL') || die();
 class html_scanner {
 
     /**
-     * Map of mod_* component => [ table => [ field names with HTML ] ].
-     * Only activity modules (mod_*) with known HTML fields.
+     * Map of component => [ table => [ field names with HTML ] ].
+     * Includes activity modules (mod_*) and course/section content (core_course, core_section).
      *
      * @var array
      */
     protected static $htmlfieldmap = [
+        // Course intro/description (summary) - component used for "Course page" filter.
+        'core_course'   => ['course' => ['summary']],
+        // Section summaries on course page.
+        'core_section'  => ['course_sections' => ['summary']],
         'mod_assign'   => ['assign' => ['intro']],
         'mod_book'     => ['book' => ['intro']],
         'mod_page'     => ['page' => ['intro', 'content']],
@@ -62,9 +66,11 @@ class html_scanner {
     public static function get_html_content_sources(): array {
         global $DB;
         $sources = [];
+        $corecomponents = ['core_course', 'core_section'];
         foreach (self::$htmlfieldmap as $component => $tablefields) {
             $modname = str_replace('mod_', '', $component);
-            if (\core_component::get_component_directory($component) === null) {
+            if (!in_array($component, $corecomponents, true) &&
+                    \core_component::get_component_directory($component) === null) {
                 continue;
             }
             foreach ($tablefields as $table => $fields) {

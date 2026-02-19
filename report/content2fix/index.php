@@ -30,6 +30,7 @@ use report_content2fix\reportbuilder\local\systemreports\malformed_content_repor
 use report_content2fix\local\html_formatter;
 use report_content2fix\task\format_all_html_task;
 use core_reportbuilder\system_report_factory;
+use core_reportbuilder\local\helpers\user_filter_manager;
 
 admin_externalpage_setup('reportcontent2fix', '', null, '', ['pagelayout' => 'report']);
 
@@ -44,7 +45,14 @@ $sesskey = optional_param('sesskey', '', PARAM_RAW);
 $redirecturl = new moodle_url('/report/content2fix/index.php');
 
 if ($canfix && $action === 'formatall' && confirm_sesskey($sesskey)) {
+    $report = system_report_factory::create(malformed_content_report::class, context_system::instance(), '', '', 0, [
+        'canfix' => $canfix,
+    ]);
+    $reportid = $report->get_report_persistent()->get('id');
+    $filtervalues = user_filter_manager::get($reportid);
+
     $task = new format_all_html_task();
+    $task->set_custom_data((object) ['filtervalues' => $filtervalues]);
     \core\task\manager::queue_adhoc_task($task);
 
     $tasklogsurl = new moodle_url('/admin/tool/task/adhoctasks.php');
@@ -89,10 +97,8 @@ $PAGE->set_heading(get_string('pluginname', 'report_content2fix'));
 echo $OUTPUT->header();
 
 if ($canfix) {
-    $formatallurl = new moodle_url('/report/content2fix/index.php', [
-        'action' => 'formatall',
-        'sesskey' => sesskey(),
-    ]);
+    $formatallparams = ['action' => 'formatall', 'sesskey' => sesskey()];
+    $formatallurl = new moodle_url('/report/content2fix/index.php', $formatallparams);
     echo html_writer::div(
         $OUTPUT->single_button($formatallurl, get_string('fixformatall', 'report_content2fix'), 'get'),
         'mb-3'

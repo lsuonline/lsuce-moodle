@@ -63,6 +63,7 @@ class html_formatter {
 
         self::repair_misplaced_list_after_li($dom, $container);
         self::repair_orphan_list_items($dom, $container);
+        self::repair_orphan_table_elements($dom, $container);
 
         $result = '';
         foreach ($container->childNodes as $child) {
@@ -160,6 +161,56 @@ class html_formatter {
     }
 
     /**
+     * Wrap orphan table elements (td, th, tr, thead, tbody, tfoot) in parent tags.
+     *
+     * @param \DOMDocument $dom
+     * @param \DOMElement $container
+     */
+    protected static function repair_orphan_table_elements(\DOMDocument $dom, \DOMElement $container): void {
+        self::wrap_orphan_elements_in_parent($dom, $container, 'td', ['tr']);
+        self::wrap_orphan_elements_in_parent($dom, $container, 'th', ['tr']);
+        self::wrap_orphan_elements_in_parent($dom, $container, 'tr', ['thead', 'tbody', 'tfoot']);
+        self::wrap_orphan_elements_in_parent($dom, $container, 'thead', ['table']);
+        self::wrap_orphan_elements_in_parent($dom, $container, 'tbody', ['table']);
+        self::wrap_orphan_elements_in_parent($dom, $container, 'tfoot', ['table']);
+    }
+
+    /**
+     * Wrap elements with tag $childtag that are not inside an allowed parent.
+     *
+     * @param \DOMDocument $dom
+     * @param \DOMElement $container
+     * @param string $childtag
+     * @param string[] $allowedparents
+     */
+    protected static function wrap_orphan_elements_in_parent(
+        \DOMDocument $dom,
+        \DOMElement $container,
+        string $childtag,
+        array $allowedparents
+    ): void {
+        $tofix = [];
+        $elements = $dom->getElementsByTagName($childtag);
+        foreach ($elements as $el) {
+            $parent = $el->parentNode;
+            if (!$parent || $parent->nodeType !== \XML_ELEMENT_NODE) {
+                $tofix[] = $el;
+                continue;
+            }
+            $parenttag = strtolower($parent->nodeName ?? '');
+            if (!in_array($parenttag, $allowedparents, true)) {
+                $tofix[] = $el;
+            }
+        }
+        $parenttag = $allowedparents[0];
+        foreach ($tofix as $el) {
+            $wrapper = $dom->createElement($parenttag);
+            $el->parentNode->insertBefore($wrapper, $el);
+            $wrapper->appendChild($el);
+        }
+    }
+
+    /**
      * Load HTML from a database row (component, comptable, compfield, rowid), format it,
      * and persist the cleaned version back to the source table.
      *
@@ -207,6 +258,11 @@ class html_formatter {
 
         if (isset($entry->id) && $entry->id) {
             $DB->delete_records('report_content2fix', ['id' => (int) $entry->id]);
+        }
+
+        $courseid = (int) ($entry->courseid ?? 0);
+        if ($courseid > 0) {
+            rebuild_course_cache($courseid, true);
         }
 
         return true;

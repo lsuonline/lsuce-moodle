@@ -22,6 +22,7 @@ use core_reportbuilder\local\helpers\format;
 use core_reportbuilder\local\report\column;
 use core_reportbuilder\local\report\filter;
 use core_reportbuilder\local\filters\date;
+use report_content2fix\reportbuilder\local\filters\component_select;
 use core_reportbuilder\local\filters\select;
 use core_reportbuilder\local\filters\text;
 use stdClass;
@@ -133,6 +134,12 @@ class malformed_content extends base {
                 if (empty($row->component)) {
                     return '';
                 }
+                if ($row->component === 'core_course') {
+                    return get_string('coursepage', 'report_content2fix') . ' (intro/description)';
+                }
+                if ($row->component === 'core_section') {
+                    return get_string('coursepage', 'report_content2fix') . ' (section ' . $row->rowid . ')';
+                }
                 $modname = str_replace('mod_', '', $row->component);
                 $name = get_string('pluginname', $row->component);
                 if (strpos($name, '[[') !== false) {
@@ -178,7 +185,7 @@ class malformed_content extends base {
             ->set_is_sortable(true)
             ->add_callback([format::class, 'userdate'], get_string('strftimedatetimeshort', 'core_langconfig'));
 
-        // Link column (view activity) - requires cmid and component.
+        // Link column (edit activity or course) - uses modedit.php for activities, course/edit.php for course page.
         $columns[] = (new column(
             'link',
             new lang_string('link', 'report_content2fix'),
@@ -186,17 +193,18 @@ class malformed_content extends base {
         ))
             ->add_joins($this->get_joins())
             ->set_type(column::TYPE_TEXT)
-            ->add_fields("{$tablealias}.id, {$tablealias}.cmid, {$tablealias}.component")
+            ->add_fields("{$tablealias}.id, {$tablealias}.cmid, {$tablealias}.component, {$tablealias}.courseid")
             ->set_is_sortable(false)
             ->add_callback(static function($value, stdClass $row): string {
-                if (empty($row->cmid)) {
-                    return '-';
+                if (!empty($row->cmid) && strpos($row->component ?? '', 'mod_') === 0) {
+                    $url = new \moodle_url('/course/modedit.php', ['update' => $row->cmid]);
+                    return \html_writer::link($url, get_string('view'));
                 }
-                $url = new \moodle_url(
-                    '/mod/' . str_replace('mod_', '', $row->component) . '/view.php',
-                    ['id' => $row->cmid]
-                );
-                return \html_writer::link($url, get_string('view'));
+                if (!empty($row->courseid) && in_array($row->component ?? '', ['core_course', 'core_section'], true)) {
+                    $url = new \moodle_url('/course/edit.php', ['id' => $row->courseid]);
+                    return \html_writer::link($url, get_string('view'));
+                }
+                return '-';
             });
 
         return $columns;
@@ -214,9 +222,9 @@ class malformed_content extends base {
 
         $filters = [];
 
-        // Component (activity type) filter.
+        // Component (activity type) filter - includes Course page option.
         $filters[] = (new filter(
-            select::class,
+            component_select::class,
             'component',
             new lang_string('column_component', 'report_content2fix'),
             $this->get_entity_name(),
@@ -225,17 +233,27 @@ class malformed_content extends base {
             ->add_joins($this->get_joins())
             ->set_options_callback(static function(): array {
                 global $DB;
-                $components = $DB->get_fieldset_sql(
-                    'SELECT DISTINCT component FROM {report_content2fix} ORDER BY component',
-                    []
-                );
-                $options = [];
-                foreach ($components as $component) {
-                    $name = get_string('pluginname', $component);
-                    if (strpos($name, '[[') !== false) {
-                        $name = $component;
+                $options = [
+                    component_select::VALUE_COURSEPAGE => get_string('coursepage', 'report_content2fix'),
+                ];
+                if ($DB->get_manager()->table_exists('report_content2fix')) {
+                    $components = $DB->get_fieldset_sql(
+                        'SELECT DISTINCT component FROM {report_content2fix} ORDER BY component',
+                        []
+                    );
+                    foreach ($components as $component) {
+                        if ($component === component_select::VALUE_COURSEPAGE) {
+                            continue;
+                        }
+                        if (in_array($component, ['core_course', 'core_section'], true)) {
+                            continue; // Covered by coursepage option.
+                        }
+                        $name = get_string('pluginname', $component);
+                        if (strpos($name, '[[') !== false) {
+                            $name = $component;
+                        }
+                        $options[$component] = $name;
                     }
-                    $options[$component] = $name;
                 }
                 return $options;
             });

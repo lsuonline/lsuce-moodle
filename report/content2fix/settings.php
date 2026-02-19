@@ -31,4 +31,26 @@ $ADMIN->add('reports', new \admin_externalpage(
     "$CFG->wwwroot/report/content2fix/index.php"
 ));
 
-$settings = null;
+$settings = new \admin_settingpage(
+    'report_content2fix_config',
+    get_string('settings', 'report_content2fix')
+);
+
+$settings->add(new \admin_setting_configtextarea(
+    'report_content2fix/courseids',
+    get_string('setting_courseids', 'report_content2fix'),
+    get_string('setting_courseids_desc', 'report_content2fix'),
+    '',
+    PARAM_RAW,
+    6,
+    60
+));
+
+$settings->add(new \admin_setting_configcheckbox(
+    'report_content2fix/mainpageonly',
+    get_string('setting_mainpageonly', 'report_content2fix'),
+    get_string('setting_mainpageonly_desc', 'report_content2fix'),
+    0
+));
+
+$ADMIN->add('reports', $settings);

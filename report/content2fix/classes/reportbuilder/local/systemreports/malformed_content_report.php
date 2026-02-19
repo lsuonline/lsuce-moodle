@@ -141,13 +141,75 @@ class malformed_content_report extends system_report {
     }
 
     /**
-     * Add filters: course, component (activity type), time checked.
+     * Add filters: course fullname (text), component (activity type), time checked.
      */
     protected function add_filters(): void {
         $this->add_filters_from_entities([
-            'course:courseselector',
+            'course:fullname',
             'malformed_content:component',
             'malformed_content:timechecked',
         ]);
+    }
+
+    /**
+     * Return report_content2fix entries matching the given filter values.
+     * Uses the same filter logic as the report table.
+     *
+     * @param array $filtervalues Filter values (e.g. from user_filter_manager::get)
+     * @return \stdClass[]
+     */
+    public function get_filtered_entries(array $filtervalues): array {
+        global $DB;
+
+        if (empty($filtervalues)) {
+            return $DB->get_records('report_content2fix');
+        }
+
+        [$where, $params] = $this->build_filter_sql($filtervalues);
+
+        $mainalias = $this->get_main_table_alias();
+        $entitycourse = $this->get_entity('course');
+        $coursealias = $entitycourse->get_table_alias('course');
+
+        $sql = "SELECT {$mainalias}.*
+                  FROM {" . $this->get_main_table() . "} {$mainalias}
+             LEFT JOIN {course} {$coursealias} ON {$coursealias}.id = {$mainalias}.courseid
+                 WHERE {$where}";
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Build SQL WHERE and params for the report's filters.
+     *
+     * @param array $filtervalues
+     * @return array [string $where, array $params]
+     */
+    protected function build_filter_sql(array $filtervalues): array {
+        $wheres = [];
+        $params = [];
+        $filterindex = 0;
+
+        foreach ($this->get_active_filters() as $filter) {
+            $filterclass = $filter->get_filter_class();
+            $filterinstance = $filterclass::create($filter);
+            [$filtersql, $filterparams] = $filterinstance->get_sql_filter($filtervalues);
+
+            if ($filtersql !== '') {
+                $paramprefix = 'f' . $filterindex++;
+                if (!empty($filterparams)) {
+                    [$filtersql, $filterparams] = \core_reportbuilder\local\helpers\database::sql_replace_parameters(
+                        $filtersql,
+                        $filterparams,
+                        fn(string $param) => "{$paramprefix}_{$param}",
+                    );
+                }
+                $wheres[] = "({$filtersql})";
+                $params = array_merge($params, $filterparams);
+            }
+        }
+
+        $where = empty($wheres) ? '1=1' : implode(' AND ', $wheres);
+        return [$where, $params];
     }
 }

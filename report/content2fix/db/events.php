@@ -35,4 +35,14 @@ $observers = [
         'callback'  => '\report_content2fix\event_observer::course_module_deleted',
         'internal'  => true,
     ],
+    [
+        'eventname' => \core\event\course_updated::class,
+        'callback'  => '\report_content2fix\event_observer::course_updated',
+        'internal'  => true,
+    ],
+    [
+        'eventname' => \core\event\course_section_updated::class,
+        'callback'  => '\report_content2fix\event_observer::course_section_updated',
+        'internal'  => true,
+    ],
 ];
