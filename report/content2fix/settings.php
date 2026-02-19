@@ -31,8 +31,11 @@ $ADMIN->add('reports', new \admin_externalpage(
     "$CFG->wwwroot/report/content2fix/index.php"
 ));
 
+// Create a uniquely named settings page. Do not use the default $settings from plugins.php
+// (name 'reportcontent2fix') as that would conflict with the external page above.
+// Add to 'reports' and set $settings = null so plugins.php does not add a duplicate.
 $settings = new \admin_settingpage(
-    'report_content2fix_config',
+    'reportcontent2fixsettings',
     get_string('settings', 'report_content2fix')
 );
 
@@ -54,3 +57,6 @@ $settings->add(new \admin_setting_configcheckbox(
 ));
 
 $ADMIN->add('reports', $settings);
+
+// Prevent plugins.php from adding the default report settings page (would duplicate).
+$settings = null;

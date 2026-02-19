@@ -46,7 +46,9 @@ class format_all_html_task extends \core\task\adhoc_task {
         }
 
         $customdata = $this->get_custom_data();
-        $filtervalues = ($customdata && isset($customdata->filtervalues)) ? $customdata->filtervalues : [];
+        $filtervalues = ($customdata && isset($customdata->filtervalues))
+            ? (array) $customdata->filtervalues
+            : [];
         $entries = $this->get_entries($filtervalues);
 
         foreach ($entries as $entry) {

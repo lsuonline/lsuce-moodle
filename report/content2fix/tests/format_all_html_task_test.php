@@ -131,4 +131,42 @@ class format_all_html_task_test extends \advanced_testcase {
         $this->assertFalse(local\html_scanner::is_malformed_html($intro ?? ''));
         $this->assertFalse(local\html_scanner::is_malformed_html($content ?? ''));
     }
+
+    /**
+     * Test task handles custom_data with filtervalues as stdClass (from JSON decode).
+     * When adhoc task custom_data is stored/restored via json_encode/decode, nested
+     * structures become stdClass. The task must cast filtervalues to array.
+     */
+    public function test_task_handles_filtervalues_as_stdclass(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        if (!$DB->get_manager()->table_exists('report_content2fix')) {
+            $this->markTestSkipped('report_content2fix table not installed.');
+        }
+
+        $malformed = '<p>Broken</div>';
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => $malformed,
+            'contentformat' => FORMAT_HTML,
+        ]);
+
+        $task = new task\scan_malformed_html_task();
+        $task->execute();
+
+        $this->assertGreaterThanOrEqual(1, $DB->count_records('report_content2fix'));
+
+        $formattask = new task\format_all_html_task();
+        $formattask->set_custom_data((object) [
+            'filtervalues' => (object) [
+                'malformed_content:component_operator' => '0',
+            ],
+        ]);
+
+        $formattask->execute();
+
+        $this->assertSame(0, $DB->count_records('report_content2fix'));
+    }
 }
