@@ -94,7 +94,8 @@ class html_scanner {
     }
 
     /**
-     * Check if HTML content is malformed (e.g. libxml errors when loading).
+     * Check if HTML content is malformed.
+     * Detects: libxml errors when loading, and invalid HTML structure (e.g. orphan li).
      *
      * @param string $html
      * @return bool true if malformed
@@ -112,7 +113,67 @@ class html_scanner {
         $errors = libxml_get_errors();
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
-        return !$loaded || !empty($errors);
+
+        if (!$loaded || !empty($errors)) {
+            return true;
+        }
+
+        return self::has_invalid_html_structure($dom);
+    }
+
+    /**
+     * HTML5 content model: elements that require specific parents.
+     * Key = child element (lowercase), value = allowed parent elements (lowercase).
+     * See https://html.spec.whatwg.org/ for full content model.
+     *
+     * @var array<string, array<string>>
+     */
+    protected static $contentmodel_parents = [
+        'li' => ['ol', 'ul', 'menu'],
+        'td' => ['tr'],
+        'th' => ['tr'],
+        'tr' => ['table', 'thead', 'tbody', 'tfoot'],
+        'thead' => ['table'],
+        'tbody' => ['table'],
+        'tfoot' => ['table'],
+        'dt' => ['dl'],
+        'dd' => ['dl'],
+        'option' => ['select', 'datalist', 'optgroup'],
+        'optgroup' => ['select'],
+        'col' => ['colgroup'],
+        'colgroup' => ['table'],
+        'legend' => ['fieldset'],
+        'figcaption' => ['figure'],
+        'summary' => ['details'],
+    ];
+
+    /**
+     * Check for invalid HTML structure using the content model map.
+     *
+     * @param \DOMDocument $dom
+     * @return bool true if invalid structure found
+     */
+    protected static function has_invalid_html_structure(\DOMDocument $dom): bool {
+        foreach (self::$contentmodel_parents as $childtag => $allowedparents) {
+            $elements = $dom->getElementsByTagName($childtag);
+            foreach ($elements as $el) {
+                $parent = $el->parentNode;
+                if (!$parent) {
+                    return true;
+                }
+                $parentname = $parent->nodeName ?? '';
+                if ($parentname === '#document') {
+                    return true;
+                }
+                if ($parent->nodeType === \XML_ELEMENT_NODE) {
+                    $parenttag = strtolower($parent->nodeName);
+                    if (!in_array($parenttag, $allowedparents, true)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**

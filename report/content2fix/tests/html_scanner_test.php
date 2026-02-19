@@ -39,6 +39,9 @@ class html_scanner_test extends \advanced_testcase {
             '<div><p>Nested</p></div>',
             '<p>With <strong>formatting</strong></p>',
             '<ul><li>One</li><li>Two</li></ul>',
+            '<ol><li>Item</li></ol>',
+            '<table><tr><td>Cell</td></tr></table>',
+            '<dl><dt>Term</dt><dd>Definition</dd></dl>',
             '<a href="http://example.com">Link</a>',
             '',  // Empty is not malformed.
             '   ',  // Whitespace-only is not malformed.
@@ -49,6 +52,86 @@ class html_scanner_test extends \advanced_testcase {
                 "Expected valid: " . \core_text::substr($html, 0, 50)
             );
         }
+    }
+
+    /**
+     * Test that valid HTML with iframe is not reported as malformed.
+     * Iframes would fail strict XML validation but are valid HTML.
+     */
+    public function test_is_malformed_html_valid_with_iframe(): void {
+        $this->resetAfterTest();
+
+        $html = '<p>Content</p><iframe src="https://example.com/embed" title="Video"></iframe><p>More</p>';
+        $this->assertFalse(
+            local\html_scanner::is_malformed_html($html),
+            'Valid HTML with iframe must not be flagged as malformed.'
+        );
+    }
+
+    /**
+     * Test that valid HTML with script tag is not reported as malformed.
+     * Script content with < and > can break XML validation but is valid HTML.
+     */
+    public function test_is_malformed_html_valid_with_script(): void {
+        $this->resetAfterTest();
+
+        $html = '<p>Before</p><script>if (a < b) { x = "test"; }</script><p>After</p>';
+        $this->assertFalse(
+            local\html_scanner::is_malformed_html($html),
+            'Valid HTML with script (including < and > in JS) must not be flagged as malformed.'
+        );
+    }
+
+    /**
+     * Test that invalid HTML structure (orphan li) is detected as malformed.
+     * This is valid in loose XML but invalid HTML - li must be inside ol or ul.
+     */
+    public function test_is_malformed_html_detects_invalid_list_structure(): void {
+        $this->resetAfterTest();
+
+        $invalid = '<ol><li>One</li></ol><ul><li>Two</li></ul><li>Orphan item</li>';
+        $this->assertTrue(
+            local\html_scanner::is_malformed_html($invalid),
+            'Orphan li (invalid HTML structure) must be detected as malformed.'
+        );
+    }
+
+    /**
+     * Test that invalid table structure (orphan td, tr outside table) is detected.
+     */
+    public function test_is_malformed_html_detects_invalid_table_structure(): void {
+        $this->resetAfterTest();
+
+        $orphantd = '<table><tr><td>OK</td></tr></table><td>Orphan cell</td>';
+        $this->assertTrue(
+            local\html_scanner::is_malformed_html($orphantd),
+            'Orphan td must be detected as malformed.'
+        );
+
+        $orphantr = '<tr><td>Orphan row</td></tr>';
+        $this->assertTrue(
+            local\html_scanner::is_malformed_html($orphantr),
+            'Orphan tr (outside table) must be detected as malformed.'
+        );
+    }
+
+    /**
+     * Test that invalid dl structure (orphan dt, dd) is detected.
+     */
+    public function test_is_malformed_html_detects_invalid_dl_structure(): void {
+        $this->resetAfterTest();
+
+        $orphandt = '<dl><dt>Term</dt></dl><dt>Orphan term</dt>';
+        $this->assertTrue(
+            local\html_scanner::is_malformed_html($orphandt),
+            'Orphan dt must be detected as malformed.'
+        );
+
+        $orphandd = '<dd>Orphan definition</dd>';
+        $this->assertTrue(
+            local\html_scanner::is_malformed_html($orphandd),
+            'Orphan dd must be detected as malformed.'
+        );
     }
 
     /**

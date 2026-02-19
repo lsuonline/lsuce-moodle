@@ -94,6 +94,80 @@ class scan_malformed_html_task_test extends \advanced_testcase {
     }
 
     /**
+     * Test task does not record valid HTML with iframes (XML-strict validation would fail).
+     */
+    public function test_task_does_not_record_valid_html_with_iframe(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        if (!$DB->get_manager()->table_exists('report_content2fix')) {
+            $this->markTestSkipped('report_content2fix table not installed.');
+        }
+
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<p>Watch the video</p><iframe src="https://example.com/video" title="Module intro"></iframe>',
+            'contentformat' => FORMAT_HTML,
+        ]);
+
+        $task = new task\scan_malformed_html_task();
+        $task->execute();
+
+        $this->assertSame(0, $DB->count_records('report_content2fix'));
+    }
+
+    /**
+     * Test task does not record valid HTML with script tags (script content can break XML).
+     */
+    public function test_task_does_not_record_valid_html_with_script(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        if (!$DB->get_manager()->table_exists('report_content2fix')) {
+            $this->markTestSkipped('report_content2fix table not installed.');
+        }
+
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<p>Before</p><script>if (x < 10) { alert("ok"); }</script><p>After</p>',
+            'contentformat' => FORMAT_HTML,
+        ]);
+
+        $task = new task\scan_malformed_html_task();
+        $task->execute();
+
+        $this->assertSame(0, $DB->count_records('report_content2fix'));
+    }
+
+    /**
+     * Test task records invalid HTML structure (orphan li) - malformed HTML, not just malformed XML.
+     */
+    public function test_task_records_invalid_html_list_structure(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        if (!$DB->get_manager()->table_exists('report_content2fix')) {
+            $this->markTestSkipped('report_content2fix table not installed.');
+        }
+
+        $invalid = '<ol><li>Item one</li></ol><ul><li>Item two</li></ul><li>Orphan item</li>';
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => $invalid,
+            'contentformat' => FORMAT_HTML,
+        ]);
+
+        $task = new task\scan_malformed_html_task();
+        $task->execute();
+
+        $rows = $DB->get_records('report_content2fix', ['rowid' => $page->id, 'compfield' => 'content']);
+        $this->assertCount(1, $rows, 'Invalid HTML list structure (orphan li) must be recorded.');
+    }
+
+    /**
      * Test task records multiple malformed items (e.g. intro and content on same page).
      */
     public function test_task_records_multiple_malformed_fields(): void {

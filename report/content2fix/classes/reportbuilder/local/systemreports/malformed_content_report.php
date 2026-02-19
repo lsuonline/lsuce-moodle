@@ -19,9 +19,12 @@ namespace report_content2fix\reportbuilder\local\systemreports;
 use context_system;
 use report_content2fix\reportbuilder\local\entities\malformed_content as malformed_content_entity;
 use core_reportbuilder\local\entities\course;
+use core_reportbuilder\local\report\action;
 use core_reportbuilder\system_report;
 use html_writer;
+use lang_string;
 use moodle_url;
+use pix_icon;
 use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -56,6 +59,7 @@ class malformed_content_report extends system_report {
 
         $this->add_columns();
         $this->add_filters();
+        $this->add_actions();
 
         $this->set_downloadable(true, get_string('pluginname', 'report_content2fix'));
     }
@@ -86,6 +90,8 @@ class malformed_content_report extends system_report {
 
         $this->add_columns_from_entities([
             'malformed_content:component',
+            'malformed_content:courseid',
+            'malformed_content:cmid',
             'course:fullname',
             'malformed_content:activity',
             'malformed_content:field',
@@ -108,6 +114,30 @@ class malformed_content_report extends system_report {
         }
 
         $this->set_initial_sort_column('malformed_content:timechecked', SORT_DESC);
+    }
+
+    /**
+     * Add per-row action: Format HTML.
+     */
+    protected function add_actions(): void {
+        $canfix = $this->get_parameter('canfix', false, PARAM_BOOL);
+        if (!$canfix) {
+            return;
+        }
+
+        $url = new moodle_url('/report/content2fix/index.php', [
+            'action' => 'fixone',
+            'id' => ':id',
+            'sesskey' => sesskey(),
+        ]);
+
+        $this->add_action(new action(
+            $url,
+            new pix_icon('t/edit', get_string('fixformatone', 'report_content2fix')),
+            [],
+            false,
+            new lang_string('fixformatone', 'report_content2fix')
+        ));
     }
 
     /**

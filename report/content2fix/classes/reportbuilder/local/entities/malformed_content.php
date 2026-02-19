@@ -97,15 +97,26 @@ class malformed_content extends base {
             ->add_field("{$tablealias}.component")
             ->set_is_sortable(true);
 
-        // Course column (display only - actual course name comes from joined course entity).
+        // Course ID column.
         $columns[] = (new column(
             'courseid',
-            new lang_string('course'),
+            new lang_string('courseid', 'report_content2fix'),
             $this->get_entity_name()
         ))
             ->add_joins($this->get_joins())
             ->set_type(column::TYPE_INTEGER)
             ->add_field("{$tablealias}.courseid")
+            ->set_is_sortable(true);
+
+        // Course module ID column.
+        $columns[] = (new column(
+            'cmid',
+            new lang_string('cmid', 'report_content2fix'),
+            $this->get_entity_name()
+        ))
+            ->add_joins($this->get_joins())
+            ->set_type(column::TYPE_INTEGER)
+            ->add_field("{$tablealias}.cmid")
             ->set_is_sortable(true);
 
         // Activity column (human-readable module name from component).

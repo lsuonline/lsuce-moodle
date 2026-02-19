@@ -35,4 +35,13 @@ $capabilities = [
             'editingteacher' => CAP_PREVENT,
         ],
     ],
+    'report/content2fix:fix' => [
+        'riskbitmask' => RISK_XSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_PREVENT,
+        ],
+    ],
 ];

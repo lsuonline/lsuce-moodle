@@ -24,6 +24,12 @@
  */
 
 $string['pluginname'] = 'Content to fix (malformed HTML)';
+$string['courseid'] = 'Course ID';
+$string['cmid'] = 'Course module ID';
+$string['fixformatall'] = 'Format HTML in all entries';
+$string['fixformatone'] = 'Format HTML';
+$string['task_queued_format_all'] = 'The task to format HTML in all entries has been queued. You can check its progress in the {$a}.';
+$string['fixformat_success'] = 'HTML formatted successfully for course {$a->courseid}, {$a->component} (cmid: {$a->cmid}).';
 $string['task_scan_malformed_html'] = 'Scan activity content for malformed HTML';
 $string['column_component'] = 'Component';
 $string['activity'] = 'Activity';
