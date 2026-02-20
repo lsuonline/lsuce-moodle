@@ -180,6 +180,32 @@ class malformed_content_report extends system_report {
     }
 
     /**
+     * Get summary stats for entries matching report filters.
+     *
+     * @param array $filtervalues Filter values (e.g. from user_filter_manager::get)
+     * @return stdClass Contains entrycount and distinctcoursecount.
+     */
+    public function get_filtered_entry_summary(array $filtervalues): stdClass {
+        global $DB;
+
+        [$where, $params] = $this->build_filter_sql($filtervalues);
+        $mainalias = $this->get_main_table_alias();
+        $entitycourse = $this->get_entity('course');
+        $coursealias = $entitycourse->get_table_alias('course');
+
+        $sql = "SELECT COUNT({$mainalias}.id) AS entrycount,
+                       COUNT(DISTINCT {$mainalias}.courseid) AS distinctcoursecount
+                  FROM {" . $this->get_main_table() . "} {$mainalias}
+             LEFT JOIN {course} {$coursealias} ON {$coursealias}.id = {$mainalias}.courseid
+                 WHERE {$where}";
+
+        return $DB->get_record_sql($sql, $params) ?: (object) [
+            'entrycount' => 0,
+            'distinctcoursecount' => 0,
+        ];
+    }
+
+    /**
      * Build SQL WHERE and params for the report's filters.
      *
      * @param array $filtervalues

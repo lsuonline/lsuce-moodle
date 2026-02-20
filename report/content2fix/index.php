@@ -27,8 +27,7 @@ require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
 use report_content2fix\reportbuilder\local\systemreports\malformed_content_report;
-use report_content2fix\local\html_formatter;
-use report_content2fix\task\format_all_html_task;
+use report_content2fix\local\format_helper;
 use core_reportbuilder\system_report_factory;
 use core_reportbuilder\local\helpers\user_filter_manager;
 
@@ -36,24 +35,39 @@ admin_externalpage_setup('reportcontent2fix', '', null, '', ['pagelayout' => 're
 
 require_capability('report/content2fix:view', context_system::instance());
 
-$canfix = has_capability('report/content2fix:fix', context_system::instance());
+$systemcontext = context_system::instance();
+$canfix = has_capability('report/content2fix:fix', $systemcontext);
+$canfixfiltered = has_capability('report/content2fix:fixfiltered', $systemcontext);
+$isadmin = is_siteadmin();
 
 $action = optional_param('action', '', PARAM_ALPHA);
 $id = optional_param('id', 0, PARAM_INT);
 $sesskey = optional_param('sesskey', '', PARAM_RAW);
 
 $redirecturl = new moodle_url('/report/content2fix/index.php');
+$report = system_report_factory::create(malformed_content_report::class, $systemcontext, '', '', 0, [
+    'canfix' => $canfix,
+]);
+$reportid = $report->get_report_persistent()->get('id');
+$filtervalues = user_filter_manager::get($reportid);
+$filteredsummary = $report->get_filtered_entry_summary($filtervalues);
 
-if ($canfix && $action === 'formatall' && confirm_sesskey($sesskey)) {
-    $report = system_report_factory::create(malformed_content_report::class, context_system::instance(), '', '', 0, [
-        'canfix' => $canfix,
-    ]);
-    $reportid = $report->get_report_persistent()->get('id');
-    $filtervalues = user_filter_manager::get($reportid);
+$canqueuefilteredformat = format_helper::can_queue_filtered_format(
+    $isadmin,
+    $canfixfiltered,
+    (int) $filteredsummary->distinctcoursecount
+);
 
-    $task = new format_all_html_task();
-    $task->set_custom_data((object) ['filtervalues' => $filtervalues]);
-    \core\task\manager::queue_adhoc_task($task);
+if ($action === 'formatall' && confirm_sesskey($sesskey)) {
+    if (!$canqueuefilteredformat) {
+        redirect(
+            $redirecturl,
+            get_string('fixformatall_unavailable', 'report_content2fix'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
+    }
+    format_helper::queue_filtered_format_task($filtervalues);
 
     $tasklogsurl = new moodle_url('/admin/tool/task/adhoctasks.php');
     $tasklogslink = html_writer::link(
@@ -70,44 +84,40 @@ if ($canfix && $action === 'formatall' && confirm_sesskey($sesskey)) {
 }
 
 if ($canfix && $action === 'fixone' && $id > 0 && confirm_sesskey($sesskey)) {
-    global $DB;
-    $entry = $DB->get_record('report_content2fix', ['id' => $id]);
+    $entry = format_helper::format_single_entry($id);
     if ($entry) {
-        $changed = html_formatter::format_and_persist_entry($entry);
-        if ($changed) {
-            $a = (object) [
-                'courseid' => $entry->courseid,
-                'component' => $entry->component,
-                'cmid' => $entry->cmid ?? '-',
-            ];
-            redirect(
-                $redirecturl,
-                get_string('fixformat_success', 'report_content2fix', $a),
-                null,
-                \core\output\notification::NOTIFY_SUCCESS
-            );
-        }
+        $a = (object) [
+            'courseid' => $entry->courseid,
+            'component' => $entry->component,
+            'cmid' => $entry->cmid ?? '-',
+        ];
+        redirect(
+            $redirecturl,
+            get_string('fixformat_success', 'report_content2fix', $a),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
     }
     redirect($redirecturl);
 }
 
 $PAGE->set_title(get_string('pluginname', 'report_content2fix'));
 $PAGE->set_heading(get_string('pluginname', 'report_content2fix'));
+$PAGE->requires->js_call_amd('report_content2fix/reporthandler-lazy', 'init');
 
 echo $OUTPUT->header();
 
-if ($canfix) {
+if ($canqueuefilteredformat) {
     $formatallparams = ['action' => 'formatall', 'sesskey' => sesskey()];
     $formatallurl = new moodle_url('/report/content2fix/index.php', $formatallparams);
+    $button = $OUTPUT->single_button($formatallurl, get_string('fixformatall', 'report_content2fix'), 'get');
+    $helpicon = $OUTPUT->help_icon('fixformatall', 'report_content2fix');
     echo html_writer::div(
-        $OUTPUT->single_button($formatallurl, get_string('fixformatall', 'report_content2fix'), 'get'),
-        'mb-3'
+        html_writer::span($button, 'me-2') . $helpicon,
+        'mb-3 d-flex align-items-center'
     );
 }
 
-$report = system_report_factory::create(malformed_content_report::class, context_system::instance(), '', '', 0, [
-    'canfix' => $canfix,
-]);
 echo $report->output();
 
 echo $OUTPUT->footer();

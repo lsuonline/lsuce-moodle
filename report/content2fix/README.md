@@ -27,7 +27,10 @@ A Moodle report plugin that scans HTML fields in activity modules (mod_*) and li
    - For each non-empty HTML value, checks whether it is malformed; if so, inserts a row into `report_content2fix` with component, table, field, row id, course id, course module id (for the “View” link), a short summary, and the scan time.
 
 2. **Report page**  
-   **Site administration → Reports → Content to fix (malformed HTML)** displays all stored rows in a sortable, paginated reportbuilder table. Users can filter by **course**, by **activity type (component)**, and by **time checked**. Users need the capability `report/content2fix:view` (by default granted to managers).
+   **Site administration → Reports → Content to fix (malformed HTML)** displays all stored rows in a sortable, paginated reportbuilder table. Users can filter by **course**, by **activity type (component)**, and by **time checked**. Users need the capability `report/content2fix:view` (by default granted to managers).  
+   The bulk action button (**Format HTML in filtered entries**) is shown when either of these is true:
+   - The current user is a site admin and has capability `report/content2fix:fixfiltered`.
+   - The current user is a site admin and the currently filtered result set contains entries from exactly one course.
 
 3. **Event observers**  
    When a course module is **updated** or **deleted**, the corresponding rows in `report_content2fix` are removed automatically so the report stays in sync. The next scheduled scan will re-check updated content.
