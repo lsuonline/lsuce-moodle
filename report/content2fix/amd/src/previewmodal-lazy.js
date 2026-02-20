@@ -21,7 +21,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import ModalFactory from 'core/modal_factory';
+import Modal from 'core/modal';
 
 const SELECTORS = {
     previewButton: '[data-action="report-content2fix-preview"]',
@@ -31,7 +31,7 @@ let modalPromise = null;
 
 const getModal = async() => {
     if (!modalPromise) {
-        modalPromise = ModalFactory.create({type: ModalFactory.types.DEFAULT});
+        modalPromise = Modal.create();
     }
     return modalPromise;
 };
