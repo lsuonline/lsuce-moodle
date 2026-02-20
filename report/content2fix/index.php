@@ -104,6 +104,7 @@ if ($canfix && $action === 'fixone' && $id > 0 && confirm_sesskey($sesskey)) {
 $PAGE->set_title(get_string('pluginname', 'report_content2fix'));
 $PAGE->set_heading(get_string('pluginname', 'report_content2fix'));
 $PAGE->requires->js_call_amd('report_content2fix/reporthandler-lazy', 'init');
+$PAGE->requires->js_call_amd('report_content2fix/previewmodal-lazy', 'init');
 
 echo $OUTPUT->header();
 

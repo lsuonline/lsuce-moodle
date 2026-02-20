@@ -107,9 +107,23 @@ class html_scanner {
      * @return bool true if malformed
      */
     public static function is_malformed_html(string $html): bool {
+        return self::analyse_html($html)['ismalformed'];
+    }
+
+    /**
+     * Analyse HTML and return malformed state plus detected errors.
+     *
+     * @param string $html
+     * @return array{ismalformed: bool, errors: string[]}
+     */
+    public static function analyse_html(string $html): array {
         if (trim($html) === '') {
-            return false;
+            return [
+                'ismalformed' => false,
+                'errors' => [],
+            ];
         }
+
         $previous = libxml_use_internal_errors(true);
         $dom = new \DOMDocument();
         $loaded = @$dom->loadHTML(
@@ -119,12 +133,57 @@ class html_scanner {
         $errors = libxml_get_errors();
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
+        $formattederrors = self::format_libxml_errors($errors);
 
-        if (!$loaded || !empty($errors)) {
-            return true;
+        if (!$loaded || !empty($formattederrors)) {
+            return [
+                'ismalformed' => true,
+                'errors' => empty($formattederrors)
+                    ? [get_string('html_parse_failed', 'report_content2fix')]
+                    : $formattederrors,
+            ];
         }
 
-        return self::has_invalid_html_structure($dom);
+        if (self::has_invalid_html_structure($dom)) {
+            return [
+                'ismalformed' => true,
+                'errors' => [get_string('html_invalid_structure', 'report_content2fix')],
+            ];
+        }
+
+        return [
+            'ismalformed' => false,
+            'errors' => [],
+        ];
+    }
+
+    /**
+     * Convert libxml parser errors to displayable text.
+     *
+     * @param array $errors
+     * @return string[]
+     */
+    protected static function format_libxml_errors(array $errors): array {
+        $messages = [];
+
+        foreach ($errors as $error) {
+            $message = trim((string) ($error->message ?? ''));
+            if ($message === '') {
+                continue;
+            }
+            $line = (int) ($error->line ?? 0);
+            $column = (int) ($error->column ?? 0);
+            if ($line > 0) {
+                $message .= " (line {$line}";
+                if ($column > 0) {
+                    $message .= ", column {$column}";
+                }
+                $message .= ')';
+            }
+            $messages[] = $message;
+        }
+
+        return array_values(array_unique($messages));
     }
 
     /**

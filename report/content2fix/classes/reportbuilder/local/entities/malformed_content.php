@@ -168,9 +168,17 @@ class malformed_content extends base {
             ->add_joins($this->get_joins())
             ->set_type(column::TYPE_TEXT)
             ->add_field("{$tablealias}.summary")
+            ->add_fields("{$tablealias}.id, {$tablealias}.htmlerrors, {$tablealias}.malformedhtml")
             ->set_is_sortable(true)
-            ->add_callback(static function(?string $summary): string {
-                return s($summary ?? '');
+            ->add_callback(static function($value, stdClass $row): string {
+                global $OUTPUT;
+
+                return $OUTPUT->render_from_template('report_content2fix/summary_preview', [
+                    'previewid' => 'report-content2fix-preview-' . (int) ($row->id ?? 0),
+                    'summary' => (string) ($row->summary ?? ''),
+                    'htmlerrors' => (string) ($row->htmlerrors ?? get_string('unknown', 'report_content2fix')),
+                    'malformedhtml' => (string) ($row->malformedhtml ?? ''),
+                ]);
             });
 
         // Time checked column.

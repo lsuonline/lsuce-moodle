@@ -66,6 +66,8 @@ class scan_malformed_html_task_test extends \advanced_testcase {
         $this->assertSame((int) $course->id, (int) $row->courseid);
         $this->assertSame((int) $page->cmid, (int) $row->cmid);
         $this->assertSame(self::EXPECTED_SUMMARY, $row->summary, 'Stored summary must match expected from malformed HTML.');
+        $this->assertNotEmpty($row->htmlerrors, 'HTML parser/structure errors should be stored for preview.');
+        $this->assertSame(self::MALFORMED_CONTENT, $row->malformedhtml, 'Original malformed HTML should be stored for preview.');
         $this->assertNotEmpty($row->timechecked);
     }
 

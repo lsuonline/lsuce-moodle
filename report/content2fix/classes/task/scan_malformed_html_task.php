@@ -101,7 +101,8 @@ class scan_malformed_html_task extends \core\task\scheduled_task {
             if ($component === 'core_section' && !$this->should_scan_section($courseid, (int) $row->id)) {
                 continue;
             }
-            if (html_scanner::is_malformed_html($html)) {
+            $analysis = html_scanner::analyse_html($html);
+            if ($analysis['ismalformed']) {
                 $cmid = (strpos($component, 'mod_') === 0)
                     ? html_scanner::get_cmid_for_instance($modname, (int) $row->id)
                     : null;
@@ -114,6 +115,8 @@ class scan_malformed_html_task extends \core\task\scheduled_task {
                     'courseid' => $courseid,
                     'cmid' => $cmid,
                     'summary' => $summary,
+                    'htmlerrors' => implode("\n", $analysis['errors']),
+                    'malformedhtml' => $html,
                     'timechecked' => $timerecorded,
                 ]);
             }

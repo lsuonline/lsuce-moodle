@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025021905;
+$plugin->version   = 2025021906;
 $plugin->requires  = 2024100100;
 $plugin->component = 'report_content2fix';
 $plugin->maturity  = MATURITY_ALPHA;
