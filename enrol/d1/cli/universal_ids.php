@@ -52,6 +52,11 @@ $t = 0;
 foreach ($users as $user) {
     $sinfo = itrulyhated1::get_universal_id($wstoken, $user->email);
 
+    if ($t % 100 == 0) {
+        $wstoken = lsud1::get_token();
+        mtrace("Fetched new token");
+    }
+
     $t++;
 
     if ($sinfo) {
@@ -89,20 +94,20 @@ class itrulyhated1 {
             'uidfield2' => $s->d1_uidfield
         ];
 
-        $sql = "SELECT u.*
+        $sql = "SELECT DISTINCT u.*
             FROM {user} u
                 INNER JOIN {user_enrolments} ue ON ue.userid = u.id
                 INNER JOIN {enrol} e ON e.id = ue.enrolid
                 INNER JOIN {course} c ON c.id = e.courseid
                 LEFT JOIN mdl_user_info_data uid ON uid.userid = u.id
                     AND uid.fieldid = :uidfield1
-                LEFT JOIN mdl_user_info_field uif ON uif.id = uid.fieldid
-                    AND uif.id = :uidfield2
-            WHERE c.category IN (:categories)
+                # LEFT JOIN mdl_user_info_field uif ON uif.id = uid.fieldid
+                #     AND uif.id = :uidfield2
+            WHERE 1 #c.category IN (:categories)
                 AND uid.id IS NULL
                 AND e.enrol = 'd1'
                 AND ue.status = 0
-            GROUP BY u.id";
+            ORDER BY RAND()";
 
         $users = $DB->get_records_sql($sql, $parms);
 
