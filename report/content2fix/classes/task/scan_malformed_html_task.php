@@ -102,7 +102,7 @@ class scan_malformed_html_task extends \core\task\scheduled_task {
                 continue;
             }
             $analysis = html_scanner::analyse_html($html);
-            if ($analysis['ismalformed']) {
+            if ($analysis['differs']) {
                 $cmid = (strpos($component, 'mod_') === 0)
                     ? html_scanner::get_cmid_for_instance($modname, (int) $row->id)
                     : null;

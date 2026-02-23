@@ -16,11 +16,16 @@
 
 namespace report_content2fix;
 
+use report_content2fix\local\format_helper;
+use report_content2fix\local\html_scanner;
+
 /**
  * Event observer for report_content2fix.
  *
- * Removes entries from report_content2fix when the associated course module
- * is updated or deleted, so the next scan can re-check or the entry is removed.
+ * Re-evaluates entries when the associated course module, course, or section
+ * is updated. Uses the scanner's logic to determine if content still differs
+ * after clean_text: if it does, the entry persists; if not, it is removed.
+ * Deleted course modules have their entries removed.
  *
  * @package   report_content2fix
  * @copyright 2026 LSU
@@ -29,17 +34,19 @@ namespace report_content2fix;
 class event_observer {
 
     /**
-     * Remove report_content2fix entries when a course module is updated.
-     *
-     * Content may have been fixed or changed; the next scheduled scan will re-check.
+     * Re-evaluate report_content2fix entries when a course module is updated.
      *
      * @param \core\event\course_module_updated $event
      */
     public static function course_module_updated(\core\event\course_module_updated $event): void {
         global $DB;
-        $cmid = $event->objectid;
-        if ($cmid) {
-            $DB->delete_records('report_content2fix', ['cmid' => $cmid]);
+        $cmid = (int) $event->objectid;
+        if ($cmid <= 0) {
+            return;
+        }
+        $entries = $DB->get_records('report_content2fix', ['cmid' => $cmid]);
+        foreach ($entries as $entry) {
+            self::reevaluate_entry($entry);
         }
     }
 
@@ -50,41 +57,91 @@ class event_observer {
      */
     public static function course_module_deleted(\core\event\course_module_deleted $event): void {
         global $DB;
-        $cmid = $event->objectid;
-        if ($cmid) {
+        $cmid = (int) $event->objectid;
+        if ($cmid > 0) {
             $DB->delete_records('report_content2fix', ['cmid' => $cmid]);
         }
     }
 
     /**
-     * Remove report_content2fix entries for course intro/description when course is updated.
+     * Re-evaluate report_content2fix entries for course intro when course is updated.
      *
      * @param \core\event\course_updated $event
      */
     public static function course_updated(\core\event\course_updated $event): void {
         global $DB;
-        $courseid = $event->courseid;
-        if ($courseid) {
-            $DB->delete_records('report_content2fix', [
-                'courseid' => $courseid,
-                'component' => 'core_course',
-            ]);
+        $courseid = (int) $event->courseid;
+        if ($courseid <= 0) {
+            return;
+        }
+        $entries = $DB->get_records('report_content2fix', [
+            'courseid' => $courseid,
+            'component' => 'core_course',
+        ]);
+        foreach ($entries as $entry) {
+            self::reevaluate_entry($entry);
         }
     }
 
     /**
-     * Remove report_content2fix entries for section summary when section is updated.
+     * Re-evaluate report_content2fix entries for section summary when section is updated.
      *
      * @param \core\event\course_section_updated $event
      */
     public static function course_section_updated(\core\event\course_section_updated $event): void {
         global $DB;
-        $sectionid = $event->objectid;
-        if ($sectionid) {
-            $DB->delete_records('report_content2fix', [
-                'comptable' => 'course_sections',
-                'rowid' => $sectionid,
-            ]);
+        $sectionid = (int) $event->objectid;
+        if ($sectionid <= 0) {
+            return;
         }
+        $entries = $DB->get_records('report_content2fix', [
+            'comptable' => 'course_sections',
+            'rowid' => $sectionid,
+        ]);
+        foreach ($entries as $entry) {
+            self::reevaluate_entry($entry);
+        }
+    }
+
+    /**
+     * Re-evaluate a single report entry using the scanner logic.
+     *
+     * @param object $entry report_content2fix record
+     */
+    protected static function reevaluate_entry(object $entry): void {
+        global $DB;
+
+        $html = format_helper::get_content_for_entry($entry);
+        $analysis = html_scanner::analyse_html($html);
+
+        if (!$analysis['differs']) {
+            $DB->delete_records('report_content2fix', ['id' => $entry->id]);
+            return;
+        }
+
+        $summary = self::summarise_issue($html);
+        $DB->update_record('report_content2fix', (object) [
+            'id' => $entry->id,
+            'summary' => $summary,
+            'htmlerrors' => implode("\n", $analysis['errors']),
+            'malformedhtml' => $html,
+            'timechecked' => time(),
+        ]);
+    }
+
+    /**
+     * Build a short summary string for malformed content.
+     *
+     * @param string $html
+     * @return string
+     */
+    protected static function summarise_issue(string $html): string {
+        $stripped = strip_tags($html);
+        $stripped = preg_replace('/\s+/', ' ', $stripped);
+        $stripped = trim($stripped);
+        if ($stripped === '') {
+            return get_string('malformed_no_text', 'report_content2fix');
+        }
+        return \core_text::substr($stripped, 0, 250);
     }
 }

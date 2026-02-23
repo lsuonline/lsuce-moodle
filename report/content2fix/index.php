@@ -105,16 +105,59 @@ $PAGE->set_title(get_string('pluginname', 'report_content2fix'));
 $PAGE->set_heading(get_string('pluginname', 'report_content2fix'));
 $PAGE->requires->js_call_amd('report_content2fix/reporthandler-lazy', 'init');
 $PAGE->requires->js_call_amd('report_content2fix/previewmodal-lazy', 'init');
+$PAGE->requires->js_call_amd('report_content2fix/format_tinymce_modal-lazy', 'init');
+
+if ($canqueuefilteredformat) {
+    $filtervaluesforjs = [];
+    foreach ($filtervalues as $k => $v) {
+        $filtervaluesforjs[] = [
+            'name' => $k,
+            'value' => is_array($v) ? json_encode($v) : (string) $v,
+        ];
+    }
+    $editorwaitseconds = (float) get_config('report_content2fix', 'editorwaitseconds');
+    if ($editorwaitseconds <= 0) {
+        $editorwaitseconds = 3.5;
+    }
+    $PAGE->requires->js_call_amd('report_content2fix/bulk_format_tinymce-lazy', 'init', [
+        'filterValues' => $filtervaluesforjs,
+        'entryCount' => (int) $filteredsummary->entrycount,
+        'editorWaitMs' => (int) round($editorwaitseconds * 1000),
+    ]);
+}
 
 echo $OUTPUT->header();
 
 if ($canqueuefilteredformat) {
     $formatallparams = ['action' => 'formatall', 'sesskey' => sesskey()];
     $formatallurl = new moodle_url('/report/content2fix/index.php', $formatallparams);
-    $button = $OUTPUT->single_button($formatallurl, get_string('fixformatall', 'report_content2fix'), 'get');
     $helpicon = $OUTPUT->help_icon('fixformatall', 'report_content2fix');
+
+    $dropdownid = html_writer::random_id('content2fix-format-dropdown-');
+    $dropdown = html_writer::start_div('dropdown me-2');
+    $dropdown .= html_writer::tag('button', get_string('fixformatall', 'report_content2fix') . ' ' .
+        html_writer::span('', 'dropdown-toggle-caret', ['aria-hidden' => 'true']),
+        [
+            'class' => 'btn btn-secondary dropdown-toggle',
+            'type' => 'button',
+            'id' => $dropdownid,
+            'data-toggle' => 'dropdown',
+            'aria-haspopup' => 'true',
+            'aria-expanded' => 'false',
+        ]
+    );
+    $dropdown .= html_writer::start_div('dropdown-menu', ['aria-labelledby' => $dropdownid]);
+    $dropdown .= html_writer::link($formatallurl, get_string('fixformatall_backend', 'report_content2fix'), ['class' => 'dropdown-item']);
+    $dropdown .= html_writer::tag('a', get_string('fixformatall_tinymce', 'report_content2fix'), [
+        'class' => 'dropdown-item',
+        'href' => '#',
+        'data-action' => 'format-tinymce-bulk',
+    ]);
+    $dropdown .= html_writer::end_div();
+    $dropdown .= html_writer::end_div();
+
     echo html_writer::div(
-        html_writer::span($button, 'me-2') . $helpicon,
+        html_writer::span($dropdown, 'd-inline-block') . $helpicon,
         'mb-3 d-flex align-items-center'
     );
 }

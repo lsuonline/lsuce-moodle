@@ -28,19 +28,20 @@ defined('MOODLE_INTERNAL') || die();
 class event_observer_test extends \advanced_testcase {
 
     /**
-     * Insert a row into report_content2fix for a given cmid.
+     * Insert a row into report_content2fix for a given page.
      *
      * @param int $cmid
      * @param int $courseid
+     * @param int $pageid page instance id (rowid)
      * @return \stdClass inserted record
      */
-    protected function insert_report_row(int $cmid, int $courseid): \stdClass {
+    protected function insert_report_row(int $cmid, int $courseid, int $pageid): \stdClass {
         global $DB;
         $row = (object) [
             'component' => 'mod_page',
             'comptable' => 'page',
             'compfield' => 'content',
-            'rowid' => 1,
+            'rowid' => $pageid,
             'courseid' => $courseid,
             'cmid' => $cmid,
             'summary' => 'Test malformed',
@@ -51,30 +52,61 @@ class event_observer_test extends \advanced_testcase {
     }
 
     /**
-     * Test course_module_updated observer removes entries for the given cmid.
+     * Test course_module_updated observer removes entries when content no longer differs.
      */
-    public function test_course_module_updated_removes_entries(): void {
+    public function test_course_module_updated_removes_entries_when_fixed(): void {
         global $DB;
 
         $this->resetAfterTest();
         $this->setAdminUser();
 
         $course = $this->getDataGenerator()->create_course();
-        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<p>Clean content</p>',
+            'contentformat' => FORMAT_HTML,
+        ]);
         $cm = get_coursemodule_from_instance('page', $page->id);
 
-        $row = $this->insert_report_row((int) $cm->id, (int) $course->id);
+        $row = $this->insert_report_row((int) $cm->id, (int) $course->id, (int) $page->id);
         $this->assertTrue($DB->record_exists('report_content2fix', ['id' => $row->id]));
 
         $event = \core\event\course_module_updated::create_from_cm($cm);
         $event->trigger();
 
         $this->assertFalse($DB->record_exists('report_content2fix', ['id' => $row->id]));
-        $this->assertFalse($DB->record_exists('report_content2fix', ['cmid' => $cm->id]));
     }
 
     /**
-     * Test course_module_updated observer only removes entries for the affected cmid.
+     * Test course_module_updated observer keeps entries when content still differs.
+     */
+    public function test_course_module_updated_persists_entries_when_still_malformed(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<li>Orphan list item</li>',
+            'contentformat' => FORMAT_HTML,
+        ]);
+        $cm = get_coursemodule_from_instance('page', $page->id);
+
+        $row = $this->insert_report_row((int) $cm->id, (int) $course->id, (int) $page->id);
+        $this->assertTrue($DB->record_exists('report_content2fix', ['id' => $row->id]));
+
+        $event = \core\event\course_module_updated::create_from_cm($cm);
+        $event->trigger();
+
+        $updated = $DB->get_record('report_content2fix', ['id' => $row->id]);
+        $this->assertNotFalse($updated);
+        $this->assertSame('<li>Orphan list item</li>', $updated->malformedhtml);
+    }
+
+    /**
+     * Test course_module_updated observer only affects entries for the given cmid.
      */
     public function test_course_module_updated_removes_only_affected_cmid(): void {
         global $DB;
@@ -83,13 +115,21 @@ class event_observer_test extends \advanced_testcase {
         $this->setAdminUser();
 
         $course = $this->getDataGenerator()->create_course();
-        $page1 = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $page1 = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<p>Clean</p>',
+            'contentformat' => FORMAT_HTML,
+        ]);
         $cm1 = get_coursemodule_from_instance('page', $page1->id);
-        $page2 = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $page2 = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'content' => '<li>Orphan</li>',
+            'contentformat' => FORMAT_HTML,
+        ]);
         $cm2 = get_coursemodule_from_instance('page', $page2->id);
 
-        $row1 = $this->insert_report_row((int) $cm1->id, (int) $course->id);
-        $row2 = $this->insert_report_row((int) $cm2->id, (int) $course->id);
+        $row1 = $this->insert_report_row((int) $cm1->id, (int) $course->id, (int) $page1->id);
+        $row2 = $this->insert_report_row((int) $cm2->id, (int) $course->id, (int) $page2->id);
 
         $event = \core\event\course_module_updated::create_from_cm($cm1);
         $event->trigger();
@@ -111,7 +151,7 @@ class event_observer_test extends \advanced_testcase {
         $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
         $cm = get_coursemodule_from_instance('page', $page->id);
 
-        $row = $this->insert_report_row((int) $cm->id, (int) $course->id);
+        $row = $this->insert_report_row((int) $cm->id, (int) $course->id, (int) $page->id);
         $this->assertTrue($DB->record_exists('report_content2fix', ['id' => $row->id]));
 
         $context = \context_module::instance($cm->id);
@@ -146,8 +186,8 @@ class event_observer_test extends \advanced_testcase {
         $page2 = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
         $cm2 = get_coursemodule_from_instance('page', $page2->id);
 
-        $row1 = $this->insert_report_row((int) $cm1->id, (int) $course->id);
-        $row2 = $this->insert_report_row((int) $cm2->id, (int) $course->id);
+        $row1 = $this->insert_report_row((int) $cm1->id, (int) $course->id, (int) $page1->id);
+        $row2 = $this->insert_report_row((int) $cm2->id, (int) $course->id, (int) $page2->id);
 
         $context = \context_module::instance($cm1->id);
         $event = \core\event\course_module_deleted::create([

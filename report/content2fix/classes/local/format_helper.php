@@ -77,4 +77,114 @@ class format_helper {
         $changed = html_formatter::format_and_persist_entry($entry);
         return $changed ? $entry : null;
     }
+
+    /**
+     * Get the current content for a report entry from the source table.
+     *
+     * @param object $entry report_content2fix entry with comptable, compfield, rowid
+     * @return string HTML content
+     */
+    public static function get_content_for_entry(object $entry): string {
+        global $DB;
+
+        $table = $entry->comptable ?? '';
+        $field = $entry->compfield ?? '';
+        $rowid = (int) ($entry->rowid ?? 0);
+
+        if (!$table || !$field || !$rowid || !$DB->get_manager()->table_exists($table)) {
+            return '';
+        }
+        $columns = $DB->get_columns($table);
+        if (!isset($columns[$field])) {
+            return '';
+        }
+
+        $row = $DB->get_record($table, ['id' => $rowid], $field);
+        if (!$row || !isset($row->$field)) {
+            return '';
+        }
+        return is_string($row->$field) ? $row->$field : '';
+    }
+
+    /**
+     * Persist TinyMCE-edited content to the mod_* or course entity.
+     * Clears course cache and does not remove report entries (event observer will re-evaluate).
+     *
+     * @param int $entryid report_content2fix.id
+     * @param array $editordata Editor data with 'text' and 'format' keys
+     * @return array{success: bool, message?: string}
+     */
+    public static function persist_tinymce_content(int $entryid, array $editordata): array {
+        global $DB;
+
+        $entry = $DB->get_record('report_content2fix', ['id' => $entryid]);
+        if (!$entry) {
+            return ['success' => false, 'message' => 'Entry not found'];
+        }
+
+        $content = $editordata['text'] ?? '';
+        if (!is_string($content)) {
+            return ['success' => false, 'message' => 'Invalid content'];
+        }
+
+        $table = $entry->comptable ?? '';
+        $field = $entry->compfield ?? '';
+        $rowid = (int) ($entry->rowid ?? 0);
+        $formatfield = $field . 'format';
+
+        if (!$DB->get_manager()->table_exists($table)) {
+            return ['success' => false, 'message' => 'Table not found'];
+        }
+        $columns = $DB->get_columns($table);
+        if (!isset($columns[$field]) || !isset($columns[$formatfield])) {
+            return ['success' => false, 'message' => 'Field not found'];
+        }
+
+        $DB->update_record($table, (object) [
+            'id' => $rowid,
+            $field => $content,
+        ]);
+
+        $courseid = (int) ($entry->courseid ?? 0);
+        if ($courseid > 0) {
+            rebuild_course_cache($courseid, true);
+        }
+
+        static::trigger_content_updated_event($entry);
+
+        return ['success' => true];
+    }
+
+    /**
+     * Trigger the appropriate event after content was updated.
+     *
+     * @param object $entry report_content2fix entry
+     */
+    public static function trigger_content_updated_event(object $entry): void {
+        if (!empty($entry->cmid)) {
+            $cm = get_coursemodule_from_id('', $entry->cmid, 0, false, MUST_EXIST);
+            $context = \context_module::instance($cm->id);
+            \core\event\course_module_updated::create_from_cm($cm, $context)->trigger();
+        } elseif (!empty($entry->courseid) && in_array($entry->component ?? '', ['core_course', 'core_section'], true)) {
+            $courseid = (int) $entry->courseid;
+            $context = \context_course::instance($courseid);
+            if ($entry->component === 'core_course') {
+                $course = get_course($courseid);
+                \core\event\course_updated::create([
+                    'objectid' => $course->id,
+                    'context' => $context,
+                    'other' => ['shortname' => $course->shortname, 'fullname' => $course->fullname],
+                ])->trigger();
+            } elseif ($entry->component === 'core_section') {
+                global $DB;
+                $section = $DB->get_record('course_sections', ['id' => (int) $entry->rowid]);
+                \core\event\course_section_updated::create([
+                    'objectid' => (int) $entry->rowid,
+                    'courseid' => $courseid,
+                    'context' => $context,
+                    'other' => ['sectionnum' => $section->section ?? 0],
+                ])->trigger();
+            }
+        }
+    }
 }

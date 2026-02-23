@@ -19,7 +19,8 @@ namespace report_content2fix\local;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Discovers HTML fields in activity modules (mod_*) and checks for malformed HTML.
+ * Discovers HTML fields in activity modules (mod_*) and checks whether content would be
+ * modified by Moodle's clean_text. Content that differs after clean_text is added to the report.
  *
  * @package   report_content2fix
  * @copyright 2026 LSU
@@ -100,145 +101,45 @@ class html_scanner {
     }
 
     /**
-     * Check if HTML content is malformed.
-     * Detects: libxml errors when loading, and invalid HTML structure (e.g. orphan li).
+     * Check if HTML content would be modified by Moodle clean_text.
+     * Uses clean_text and compares result to original; true if they differ.
      *
      * @param string $html
-     * @return bool true if malformed
+     * @return bool true if content differs after clean_text
      */
-    public static function is_malformed_html(string $html): bool {
-        return self::analyse_html($html)['ismalformed'];
+    public static function html_differs_after_clean(string $html): bool {
+        return self::analyse_html($html)['differs'];
     }
 
     /**
-     * Analyse HTML and return malformed state plus detected errors.
+     * Analyse HTML: run Moodle clean_text and compare with original.
+     * If the diff is non-empty, content would be modified by clean_text.
      *
      * @param string $html
-     * @return array{ismalformed: bool, errors: string[]}
+     * @return array{differs: bool, errors: string[], cleaned: string}
      */
     public static function analyse_html(string $html): array {
         if (trim($html) === '') {
             return [
-                'ismalformed' => false,
+                'differs' => false,
                 'errors' => [],
+                'cleaned' => '',
             ];
         }
 
-        $previous = libxml_use_internal_errors(true);
-        $dom = new \DOMDocument();
-        $loaded = @$dom->loadHTML(
-            '<?xml encoding="UTF-8">' . $html,
-            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
-        );
-        $errors = libxml_get_errors();
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-        $formattederrors = self::format_libxml_errors($errors);
+        $cleaned = clean_text($html, FORMAT_HTML, []);
+        $differs = $cleaned !== $html;
 
-        if (!$loaded || !empty($formattederrors)) {
-            return [
-                'ismalformed' => true,
-                'errors' => empty($formattederrors)
-                    ? [get_string('html_parse_failed', 'report_content2fix')]
-                    : $formattederrors,
-            ];
-        }
-
-        if (self::has_invalid_html_structure($dom)) {
-            return [
-                'ismalformed' => true,
-                'errors' => [get_string('html_invalid_structure', 'report_content2fix')],
-            ];
+        $errors = [];
+        if ($differs) {
+            $errors[] = get_string('content_differs_after_clean', 'report_content2fix');
         }
 
         return [
-            'ismalformed' => false,
-            'errors' => [],
+            'differs' => $differs,
+            'errors' => $errors,
+            'cleaned' => $cleaned,
         ];
-    }
-
-    /**
-     * Convert libxml parser errors to displayable text.
-     *
-     * @param array $errors
-     * @return string[]
-     */
-    protected static function format_libxml_errors(array $errors): array {
-        $messages = [];
-
-        foreach ($errors as $error) {
-            $message = trim((string) ($error->message ?? ''));
-            if ($message === '') {
-                continue;
-            }
-            $line = (int) ($error->line ?? 0);
-            $column = (int) ($error->column ?? 0);
-            if ($line > 0) {
-                $message .= " (line {$line}";
-                if ($column > 0) {
-                    $message .= ", column {$column}";
-                }
-                $message .= ')';
-            }
-            $messages[] = $message;
-        }
-
-        return array_values(array_unique($messages));
-    }
-
-    /**
-     * HTML5 content model: elements that require specific parents.
-     * Key = child element (lowercase), value = allowed parent elements (lowercase).
-     * See https://html.spec.whatwg.org/ for full content model.
-     *
-     * @var array<string, array<string>>
-     */
-    protected static $contentmodel_parents = [
-        'li' => ['ol', 'ul', 'menu'],
-        'td' => ['tr'],
-        'th' => ['tr'],
-        'tr' => ['table', 'thead', 'tbody', 'tfoot'],
-        'thead' => ['table'],
-        'tbody' => ['table'],
-        'tfoot' => ['table'],
-        'dt' => ['dl'],
-        'dd' => ['dl'],
-        'option' => ['select', 'datalist', 'optgroup'],
-        'optgroup' => ['select'],
-        'col' => ['colgroup'],
-        'colgroup' => ['table'],
-        'legend' => ['fieldset'],
-        'figcaption' => ['figure'],
-        'summary' => ['details'],
-    ];
-
-    /**
-     * Check for invalid HTML structure using the content model map.
-     *
-     * @param \DOMDocument $dom
-     * @return bool true if invalid structure found
-     */
-    protected static function has_invalid_html_structure(\DOMDocument $dom): bool {
-        foreach (self::$contentmodel_parents as $childtag => $allowedparents) {
-            $elements = $dom->getElementsByTagName($childtag);
-            foreach ($elements as $el) {
-                $parent = $el->parentNode;
-                if (!$parent) {
-                    return true;
-                }
-                $parentname = $parent->nodeName ?? '';
-                if ($parentname === '#document') {
-                    return true;
-                }
-                if ($parent->nodeType === \XML_ELEMENT_NODE) {
-                    $parenttag = strtolower($parent->nodeName);
-                    if (!in_array($parenttag, $allowedparents, true)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     /**

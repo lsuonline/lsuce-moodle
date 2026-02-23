@@ -117,7 +117,7 @@ class malformed_content_report extends system_report {
     }
 
     /**
-     * Add per-row action: Format HTML.
+     * Add per-row actions: Format HTML with Backend, Format with TinyMCE.
      */
     protected function add_actions(): void {
         $canfix = $this->get_parameter('canfix', false, PARAM_BOOL);
@@ -125,18 +125,30 @@ class malformed_content_report extends system_report {
             return;
         }
 
-        $url = new moodle_url('/report/content2fix/index.php', [
+        $backendurl = new moodle_url('/report/content2fix/index.php', [
             'action' => 'fixone',
             'id' => ':id',
             'sesskey' => sesskey(),
         ]);
 
         $this->add_action(new action(
-            $url,
-            new pix_icon('t/edit', get_string('fixformatone', 'report_content2fix')),
+            $backendurl,
+            new pix_icon('t/edit', get_string('fixformatbackend', 'report_content2fix')),
             [],
             false,
-            new lang_string('fixformatone', 'report_content2fix')
+            new lang_string('fixformatbackend', 'report_content2fix')
+        ));
+
+        $tinymceurl = new moodle_url('#');
+        $this->add_action(new action(
+            $tinymceurl,
+            new pix_icon('i/tinymce', get_string('fixformattinymce', 'report_content2fix'), 'report_content2fix'),
+            [
+                'data-action' => 'format-tinymce',
+                'data-entryid' => ':id',
+            ],
+            false,
+            new lang_string('fixformattinymce', 'report_content2fix')
         ));
     }
 
@@ -174,9 +186,38 @@ class malformed_content_report extends system_report {
         $sql = "SELECT {$mainalias}.*
                   FROM {" . $this->get_main_table() . "} {$mainalias}
              LEFT JOIN {course} {$coursealias} ON {$coursealias}.id = {$mainalias}.courseid
-                 WHERE {$where}";
+                 WHERE {$where}
+              ORDER BY {$mainalias}.id ASC";
 
         return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Get the next report_content2fix entry after the given ID, matching filters.
+     * Uses the same filter logic and ordering as get_filtered_entries.
+     *
+     * @param array $filtervalues Filter values (e.g. from user_filter_manager::get)
+     * @param int $afterid ID of the last processed entry (0 for first)
+     * @return stdClass|null The next entry, or null if none
+     */
+    public function get_next_filtered_entry(array $filtervalues, int $afterid): ?stdClass {
+        global $DB;
+
+        [$where, $params] = $this->build_filter_sql($filtervalues);
+        $mainalias = $this->get_main_table_alias();
+        $entitycourse = $this->get_entity('course');
+        $coursealias = $entitycourse->get_table_alias('course');
+
+        $params['content2fix_afterid'] = $afterid;
+        $idcondition = $afterid > 0 ? "AND {$mainalias}.id > :content2fix_afterid" : "";
+
+        $sql = "SELECT {$mainalias}.*
+                  FROM {" . $this->get_main_table() . "} {$mainalias}
+             LEFT JOIN {course} {$coursealias} ON {$coursealias}.id = {$mainalias}.courseid
+                 WHERE {$where} {$idcondition}
+              ORDER BY {$mainalias}.id ASC";
+
+        return $DB->get_record_sql($sql, $params);
     }
 
     /**

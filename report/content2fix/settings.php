@@ -56,6 +56,15 @@ $settings->add(new \admin_setting_configcheckbox(
     0
 ));
 
+$settings->add(new \admin_setting_configtext(
+    'report_content2fix/editorwaitseconds',
+    get_string('setting_editorwaitseconds', 'report_content2fix'),
+    get_string('setting_editorwaitseconds_desc', 'report_content2fix'),
+    '3.5',
+    PARAM_FLOAT,
+    5
+));
+
 $ADMIN->add('reports', $settings);
 
 // Prevent plugins.php from adding the default report settings page (would duplicate).

@@ -1,11 +1,11 @@
 # Content to fix (malformed HTML)
 
-A Moodle report plugin that scans HTML fields in activity modules (mod_*) and lists content that contains malformed HTML so administrators can find and fix it.
+A Moodle report plugin that scans HTML fields in activity modules (mod_*) and lists content that would be modified by Moodle's clean_text so administrators can find and fix it.
 
 ## What it does
 
 - **Scans** intro and content fields across activity modules (Page, Assign, Forum, Book, Label, and others) where the format is HTML.
-- **Detects** malformed HTML using PHP’s `DOMDocument` and libxml (e.g. mismatched or invalid tags).
+- **Detects** content that differs after Moodle clean_text: runs clean_text on each HTML value and compares with the original; if the diff is non-empty, the content is flagged.
 - **Stores** results in a dedicated table (`report_content2fix`) that is populated by a scheduled task.
 - **Report** under **Site administration → Reports** shows a paginated table (via the **reportbuilder** API) with component, course, activity, field, summary of the content, last checked time, and a link to the activity. The report supports **filters** by course, by activity type (component), and by time checked.
 
@@ -24,7 +24,7 @@ A Moodle report plugin that scans HTML fields in activity modules (mod_*) and li
    A task runs daily at **3:00 AM** (configurable in **Site administration → Server → Scheduled tasks**). It:
    - Clears the report table.
    - Iterates over known mod_* HTML sources (e.g. `mod_page` intro/content, `mod_assign` intro).
-   - For each non-empty HTML value, checks whether it is malformed; if so, inserts a row into `report_content2fix` with component, table, field, row id, course id, course module id (for the “View” link), a short summary, and the scan time.
+   - For each non-empty HTML value, runs Moodle clean_text and compares with the original; if they differ, inserts a row into `report_content2fix` with component, table, field, row id, course id, course module id (for the “View” link), a short summary, and the scan time.
 
 2. **Report page**  
    **Site administration → Reports → Content to fix (malformed HTML)** displays all stored rows in a sortable, paginated reportbuilder table. Users can filter by **course**, by **activity type (component)**, and by **time checked**. Users need the capability `report/content2fix:view` (by default granted to managers).  
