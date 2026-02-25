@@ -33,6 +33,7 @@ class format_all_html_task_test extends \advanced_testcase {
     public function test_task_processes_all_entries(): void {
         global $DB;
         $this->resetAfterTest();
+        $this->setAdminUser();
 
         if (!$DB->get_manager()->table_exists('report_content2fix')) {
             $this->markTestSkipped('report_content2fix table not installed.');
@@ -60,7 +61,7 @@ class format_all_html_task_test extends \advanced_testcase {
 
         $after = $DB->get_field('page', 'content', ['id' => $page->id]);
         $this->assertNotSame($malformed, $after);
-        $this->assertFalse(local\html_scanner::is_malformed_html($after));
+        $this->assertFalse(local\html_scanner::html_differs_after_clean($after));
     }
 
     /**
@@ -83,6 +84,7 @@ class format_all_html_task_test extends \advanced_testcase {
     public function test_task_handles_empty_table(): void {
         global $DB;
         $this->resetAfterTest();
+        $this->setAdminUser();
 
         if (!$DB->get_manager()->table_exists('report_content2fix')) {
             $this->markTestSkipped('report_content2fix table not installed.');
@@ -102,6 +104,7 @@ class format_all_html_task_test extends \advanced_testcase {
     public function test_task_processes_multiple_entries(): void {
         global $DB;
         $this->resetAfterTest();
+        $this->setAdminUser();
 
         if (!$DB->get_manager()->table_exists('report_content2fix')) {
             $this->markTestSkipped('report_content2fix table not installed.');
@@ -128,8 +131,8 @@ class format_all_html_task_test extends \advanced_testcase {
 
         $intro = $DB->get_field('page', 'intro', ['id' => $page->id]);
         $content = $DB->get_field('page', 'content', ['id' => $page->id]);
-        $this->assertFalse(local\html_scanner::is_malformed_html($intro ?? ''));
-        $this->assertFalse(local\html_scanner::is_malformed_html($content ?? ''));
+        $this->assertFalse(local\html_scanner::html_differs_after_clean($intro ?? ''));
+        $this->assertFalse(local\html_scanner::html_differs_after_clean($content ?? ''));
     }
 
     /**
@@ -140,6 +143,7 @@ class format_all_html_task_test extends \advanced_testcase {
     public function test_task_handles_filtervalues_as_stdclass(): void {
         global $DB;
         $this->resetAfterTest();
+        $this->setAdminUser();
 
         if (!$DB->get_manager()->table_exists('report_content2fix')) {
             $this->markTestSkipped('report_content2fix table not installed.');

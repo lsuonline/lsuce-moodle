@@ -33,7 +33,7 @@ export const init = () => {
     // container itself (non-bubbling), so listen directly on filter regions.
     document.querySelectorAll(SELECTORS.reportFiltersFormRegion).forEach(formregion => {
         formregion.addEventListener('core_form_dynamicform_formsubmitted', () => {
-            window.location.reload();
+            // window.location.reload();
         });
     });
 };

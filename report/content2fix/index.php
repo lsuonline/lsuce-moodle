@@ -58,31 +58,6 @@ $canqueuefilteredformat = format_helper::can_queue_filtered_format(
     (int) $filteredsummary->distinctcoursecount
 );
 
-if ($action === 'formatall' && confirm_sesskey($sesskey)) {
-    if (!$canqueuefilteredformat) {
-        redirect(
-            $redirecturl,
-            get_string('fixformatall_unavailable', 'report_content2fix'),
-            null,
-            \core\output\notification::NOTIFY_ERROR
-        );
-    }
-    format_helper::queue_filtered_format_task($filtervalues);
-
-    $tasklogsurl = new moodle_url('/admin/tool/task/adhoctasks.php');
-    $tasklogslink = html_writer::link(
-        $tasklogsurl,
-        get_string('adhoctasks', 'tool_task'),
-        ['target' => '_blank']
-    );
-    redirect(
-        $redirecturl,
-        get_string('task_queued_format_all', 'report_content2fix', $tasklogslink),
-        null,
-        \core\output\notification::NOTIFY_SUCCESS
-    );
-}
-
 if ($canfix && $action === 'fixone' && $id > 0 && confirm_sesskey($sesskey)) {
     $entry = format_helper::format_single_entry($id);
     if ($entry) {
@@ -119,18 +94,28 @@ if ($canqueuefilteredformat) {
     if ($editorwaitseconds <= 0) {
         $editorwaitseconds = 3.5;
     }
+    $maxentriesperrun = (int) get_config('report_content2fix', 'maxentriesperrun');
+    if ($maxentriesperrun <= 0) {
+        $maxentriesperrun = 100;
+    }
+    $tasklogsurl = new moodle_url('/admin/tool/task/adhoctasks.php');
+    $taskqueuedmodaltitle = get_string('task_queued_modal_title', 'report_content2fix');
+
     $PAGE->requires->js_call_amd('report_content2fix/bulk_format_tinymce-lazy', 'init', [
+        'reportId' => (int) $reportid,
         'filterValues' => $filtervaluesforjs,
         'entryCount' => (int) $filteredsummary->entrycount,
         'editorWaitMs' => (int) round($editorwaitseconds * 1000),
+        'maxEntriesPerRun' => $maxentriesperrun,
+        'taskQueuedModalTitle' => $taskqueuedmodaltitle,
+        'taskLogsUrl' => $tasklogsurl->out(false),
+        'taskLogsLinkText' => get_string('adhoctasks', 'tool_task'),
     ]);
 }
 
 echo $OUTPUT->header();
 
 if ($canqueuefilteredformat) {
-    $formatallparams = ['action' => 'formatall', 'sesskey' => sesskey()];
-    $formatallurl = new moodle_url('/report/content2fix/index.php', $formatallparams);
     $helpicon = $OUTPUT->help_icon('fixformatall', 'report_content2fix');
 
     $dropdownid = html_writer::random_id('content2fix-format-dropdown-');
@@ -147,7 +132,11 @@ if ($canqueuefilteredformat) {
         ]
     );
     $dropdown .= html_writer::start_div('dropdown-menu', ['aria-labelledby' => $dropdownid]);
-    $dropdown .= html_writer::link($formatallurl, get_string('fixformatall_backend', 'report_content2fix'), ['class' => 'dropdown-item']);
+    $dropdown .= html_writer::tag('a', get_string('fixformatall_backend', 'report_content2fix'), [
+        'class' => 'dropdown-item',
+        'href' => '#',
+        'data-action' => 'format-backend-bulk',
+    ]);
     $dropdown .= html_writer::tag('a', get_string('fixformatall_tinymce', 'report_content2fix'), [
         'class' => 'dropdown-item',
         'href' => '#',

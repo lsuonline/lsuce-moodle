@@ -217,7 +217,8 @@ class malformed_content_report extends system_report {
                  WHERE {$where} {$idcondition}
               ORDER BY {$mainalias}.id ASC";
 
-        return $DB->get_record_sql($sql, $params);
+        $record = $DB->get_record_sql($sql, $params);
+        return $record ?: null;
     }
 
     /**

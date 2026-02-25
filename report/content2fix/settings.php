@@ -65,6 +65,15 @@ $settings->add(new \admin_setting_configtext(
     5
 ));
 
+$settings->add(new \admin_setting_configtext(
+    'report_content2fix/maxentriesperrun',
+    get_string('setting_maxentriesperrun', 'report_content2fix'),
+    get_string('setting_maxentriesperrun_desc', 'report_content2fix'),
+    '100',
+    PARAM_INT,
+    5
+));
+
 $ADMIN->add('reports', $settings);
 
 // Prevent plugins.php from adding the default report settings page (would duplicate).
