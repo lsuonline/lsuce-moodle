@@ -215,6 +215,7 @@ class HTMLPurifier_Generator
             ksort($assoc_array_of_attributes);
         }
         foreach ($assoc_array_of_attributes as $key => $value) {
+            $value = $value ?? '';
             if (!$this->_xhtml) {
                 // Remove namespaced attributes
                 if (strpos($key, ':') !== false) {
@@ -279,7 +280,7 @@ class HTMLPurifier_Generator
         if ($quote === null) {
             $quote = ENT_COMPAT;
         }
-        return htmlspecialchars($string, $quote, 'UTF-8');
+        return htmlspecialchars($string ?? '', $quote, 'UTF-8');
     }
 }
 
