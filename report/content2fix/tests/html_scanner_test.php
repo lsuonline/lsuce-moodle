@@ -111,6 +111,53 @@ class html_scanner_test extends \advanced_testcase {
     }
 
     /**
+     * Test get_cmid_for_instance with courseid returns the cm for that course.
+     */
+    public function test_get_cmid_for_instance_with_courseid(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        $cmid = local\html_scanner::get_cmid_for_instance('page', (int) $page->id, $course->id);
+        $this->assertNotNull($cmid);
+        $cm = $DB->get_record('course_modules', ['id' => $cmid]);
+        $this->assertSame((int) $course->id, (int) $cm->course);
+        $this->assertSame($page->cmid, $cmid);
+    }
+
+    /**
+     * Test get_cmid_for_instance with duplicate (module, instance) returns the cm for given course.
+     */
+    public function test_get_cmid_for_instance_multiple_records_uses_courseid(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course1 = $this->getDataGenerator()->create_course();
+        $course2 = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course1->id]);
+        $moduleid = (int) $DB->get_field('modules', 'id', ['name' => 'page']);
+        $section2 = $DB->get_record('course_sections', ['course' => $course2->id, 'section' => 0], 'id', MUST_EXIST);
+
+        // Simulate duplicate: same (module, instance) in another course (e.g. after bad restore).
+        $cm2 = (object) [
+            'course' => $course2->id,
+            'module' => $moduleid,
+            'instance' => $page->id,
+            'section' => $section2->id,
+            'visible' => 1,
+            'visibleoncoursepage' => 1,
+        ];
+        $cm2->id = $DB->insert_record('course_modules', $cm2);
+
+        $cmid1 = local\html_scanner::get_cmid_for_instance('page', (int) $page->id, $course1->id);
+        $cmid2 = local\html_scanner::get_cmid_for_instance('page', (int) $page->id, $course2->id);
+        $this->assertSame($page->cmid, $cmid1);
+        $this->assertSame($cm2->id, $cmid2);
+    }
+
+    /**
      * Test get_cmid_for_instance returns null for invalid module name.
      */
     public function test_get_cmid_for_instance_invalid_module(): void {

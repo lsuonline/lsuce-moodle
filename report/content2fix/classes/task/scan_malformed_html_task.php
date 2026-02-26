@@ -104,7 +104,7 @@ class scan_malformed_html_task extends \core\task\scheduled_task {
             $analysis = html_scanner::analyse_html($html);
             if ($analysis['differs']) {
                 $cmid = (strpos($component, 'mod_') === 0)
-                    ? html_scanner::get_cmid_for_instance($modname, (int) $row->id)
+                    ? html_scanner::get_cmid_for_instance($modname, (int) $row->id, $courseid)
                     : null;
                 $summary = $this->summarise_issue($html);
                 $DB->insert_record('report_content2fix', (object) [
@@ -153,7 +153,7 @@ class scan_malformed_html_task extends \core\task\scheduled_task {
             return true;
         }
         $modname = str_replace('mod_', '', $component);
-        $cmid = html_scanner::get_cmid_for_instance($modname, $instanceid);
+        $cmid = html_scanner::get_cmid_for_instance($modname, $instanceid, $courseid);
         if ($cmid === null) {
             return true; // Cannot determine section, include it.
         }

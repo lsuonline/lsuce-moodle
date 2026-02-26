@@ -145,20 +145,32 @@ class html_scanner {
     /**
      * Get course_modules.id for a module instance (table + row id).
      *
+     * When multiple course_modules match (e.g. duplicate data), returns the one for $courseid
+     * if provided, otherwise the first match.
+     *
      * @param string $modname e.g. page
      * @param int $instanceid
+     * @param int|null $courseid optional course id to disambiguate when multiple records exist
      * @return int|null cmid or null
      */
-    public static function get_cmid_for_instance(string $modname, int $instanceid): ?int {
+    public static function get_cmid_for_instance(string $modname, int $instanceid, ?int $courseid = null): ?int {
         global $DB;
         $moduleid = $DB->get_field('modules', 'id', ['name' => $modname]);
         if ($moduleid === false) {
             return null;
         }
-        $cm = $DB->get_record('course_modules', [
+        $conditions = [
             'module' => $moduleid,
             'instance' => $instanceid,
-        ], 'id', IGNORE_MISSING);
-        return $cm ? (int) $cm->id : null;
+        ];
+        if ($courseid !== null) {
+            $conditions['course'] = $courseid;
+        }
+        $cms = $DB->get_records('course_modules', $conditions, 'id', 'id', 0, 2);
+        if (count($cms) === 0) {
+            return null;
+        }
+        $first = reset($cms);
+        return (int) $first->id;
     }
 }
