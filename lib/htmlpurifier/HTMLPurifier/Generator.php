@@ -215,7 +215,9 @@ class HTMLPurifier_Generator
             ksort($assoc_array_of_attributes);
         }
         foreach ($assoc_array_of_attributes as $key => $value) {
+            // BEGIN LSU strpos deprecation fix.
             $value = $value ?? '';
+            // END LSU strpos deprecation fix.
             if (!$this->_xhtml) {
                 // Remove namespaced attributes
                 if (strpos($key, ':') !== false) {
@@ -280,7 +282,9 @@ class HTMLPurifier_Generator
         if ($quote === null) {
             $quote = ENT_COMPAT;
         }
+        // BEGIN LSU htmlspecialchars deprecation fix.
         return htmlspecialchars($string ?? '', $quote, 'UTF-8');
+        // END LSU htmlspecialchars deprecation fix.
     }
 }
 
