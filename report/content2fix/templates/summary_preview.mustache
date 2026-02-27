@@ -1,0 +1,28 @@
+{{!
+    @template report_content2fix/summary_preview
+
+    Summary preview button and hidden modal content source.
+}}
+
+<div class="mb-1">{{summary}}</div>
+<button
+    type="button"
+    class="btn btn-secondary btn-sm"
+    data-action="report-content2fix-preview"
+    data-preview-id="{{previewid}}"
+>
+    {{#str}} preview, report_content2fix {{/str}}
+</button>
+<div
+    id="{{previewid}}"
+    class="d-none"
+    data-region="report-content2fix-preview-content"
+    data-title="{{#str}} preview_modal_title, report_content2fix {{/str}}"
+>
+    <div class="report-content2fix-preview-body">
+        <h6 class="mb-2">{{#str}} htmlerrors, report_content2fix {{/str}}</h6>
+        <pre class="mb-3">{{htmlerrors}}</pre>
+        <h6 class="mb-2">{{#str}} malformedhtml, report_content2fix {{/str}}</h6>
+        <code>{{malformedhtml}}</code>
+    </div>
+</div>

@@ -1,0 +1,19 @@
+{{!
+    @template report_content2fix/bulk_processing_modal
+
+    Overlay and control modal shown while bulk formatting is in progress.
+}}
+<div class="content2fix-bulk-overlay">
+    <div class="content2fix-bulk-control">
+        <h5 class="content2fix-bulk-title mb-3">{{processingTitle}}</h5>
+        <p class="content2fix-bulk-status mb-3" data-region="status">{{statusText}}</p>
+        <div id="content2fix-bulk-loading-widget" class="content2fix-bulk-loading d-flex align-items-center mb-3 content2fix-bulk-loading-hidden" data-region="loading">
+            <span class="fa fa-spinner fa-spin me-2" aria-hidden="true"></span>
+            <span class="content2fix-loading-text" data-region="loading-text"></span>
+        </div>
+        <div class="content2fix-bulk-actions">
+            <button type="button" class="btn btn-secondary content2fix-bulk-pause me-2" data-action="pause">{{pauseLabel}}</button>
+            <button type="button" class="btn btn-secondary content2fix-bulk-cancel" data-action="cancel">{{cancelLabel}}</button>
+        </div>
+    </div>
+</div>

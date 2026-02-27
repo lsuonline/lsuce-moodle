@@ -1,0 +1,17 @@
+{{!
+    @template report_content2fix/bulk_confirm_body
+
+    Body text for the "Format with TinyMCE" confirmation modal.
+    Optionally shows applied filters (Course full name, Component, Last checked) to match the report builder form.
+}}
+<p class="content2fix-bulk-confirm-body">{{body}}</p>
+{{#hasFiltersSummary}}
+<div class="content2fix-bulk-confirm-filters mt-2">
+    <strong>{{filtersAppliedLabel}}</strong>
+    <ul class="list-unstyled mb-0 mt-1">
+        {{#filtersSummary}}
+        <li>{{line}}</li>
+        {{/filtersSummary}}
+    </ul>
+</div>
+{{/hasFiltersSummary}}
