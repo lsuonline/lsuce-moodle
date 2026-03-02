@@ -48,7 +48,7 @@ $string['processing_summary'] = 'Successfully formatted {$a} entries.';
 $string['fixformatbackend'] = 'Format HTML with Backend';
 $string['fixformattinymce'] = 'Format with TinyMCE';
 $string['editcontent'] = 'Content';
-$string['task_queued_format_all'] = 'The task to format HTML in filtered entries has been queued. You can check its progress in the {$a}.';
+$string['task_queued_format_all'] = 'The task to format HTML in filtered entries has been queued. You can check its progress in the <a href="/admin/tool/task/adhoctasks.php" target="_blank" rel="noopener">task logs</a>.';
 $string['task_queued_modal_title'] = 'Task queued';
 $string['content2fix:fix'] = 'Format HTML in report entries';
 $string['content2fix:fixfiltered'] = 'Format HTML in filtered entries';

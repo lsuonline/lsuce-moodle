@@ -248,6 +248,32 @@ class malformed_content_report extends system_report {
     }
 
     /**
+     * Count report_content2fix entries matching filters with id strictly greater than $afterid.
+     * Used to determine whether more entries remain after the one just fetched.
+     *
+     * @param array $filtervalues Filter values (e.g. from user_filter_manager::get)
+     * @param int $afterid Count only entries with id > this value
+     * @return int Number of remaining entries
+     */
+    public function get_remaining_entry_count(array $filtervalues, int $afterid): int {
+        global $DB;
+
+        [$where, $params] = $this->build_filter_sql($filtervalues);
+        $mainalias = $this->get_main_table_alias();
+        $entitycourse = $this->get_entity('course');
+        $coursealias = $entitycourse->get_table_alias('course');
+
+        $params['content2fix_afterid'] = $afterid;
+
+        $sql = "SELECT COUNT({$mainalias}.id)
+                  FROM {" . $this->get_main_table() . "} {$mainalias}
+             LEFT JOIN {course} {$coursealias} ON {$coursealias}.id = {$mainalias}.courseid
+                 WHERE {$where} AND {$mainalias}.id > :content2fix_afterid";
+
+        return (int) $DB->count_records_sql($sql, $params);
+    }
+
+    /**
      * Build SQL WHERE and params for the report's filters.
      *
      * @param array $filtervalues
