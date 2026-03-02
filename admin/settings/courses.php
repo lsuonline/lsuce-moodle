@@ -763,6 +763,13 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) {
     $temp->add(new admin_setting_configcheckbox('enableasyncbackup', new lang_string('enableasyncbackup', 'backup'),
             new lang_string('enableasyncbackup_help', 'backup'), 1, 1, 0));
 
+    // BEGIN LSU IMS CC namespace fix setting.
+    $temp->add(new admin_setting_configcheckbox(
+            'backup/imscc_namespace_fix',
+            new lang_string('imscc_namespace_fix', 'backup'),
+            new lang_string('imscc_namespace_fix_help', 'backup'), 1));
+    // END LSU IMS CC namespace fix setting.
+
     $temp->add(new admin_setting_configcheckbox(
             'backup/backup_async_message_users',
             new lang_string('asyncemailenable', 'backup'),
