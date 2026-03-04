@@ -705,6 +705,21 @@ class completion_info {
                     return $customstate;
                 }
                 $completionstate[] = $customstate;
+
+                // BEGIN LSU Fix quiz completion blocking for pass-or-exhaust (MD-1364).
+                // Quiz "pass or exhaust attempts": when custom says complete (exhaust satisfied)
+                // but grade is COMPLETE_FAIL, treat as COMPLETE so availability conditions work.
+                if ($customstate == COMPLETION_COMPLETE &&
+                        $cminfo->modname === 'quiz' &&
+                        isset($completionstate['passgrade']) &&
+                        $completionstate['passgrade'] == COMPLETION_COMPLETE_FAIL) {
+                    $customdata = (array) ($cminfo->customdata ?? []);
+                    $rules = $customdata['customcompletionrules']['completionpassorattemptsexhausted'] ?? [];
+                    if (!empty($rules['completionattemptsexhausted'])) {
+                        return COMPLETION_COMPLETE;
+                    }
+                }
+                // END LSU Fix quiz completion blocking for pass-or-exhaust (MD-1364).
             }
         }
 
