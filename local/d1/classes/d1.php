@@ -363,7 +363,7 @@ class lsupgd1 {
                   AND (sub.timemodified > UNIX_TIMESTAMP() - (86400 * ' . $s->odl_dp .')
                   OR gg.timemodified > UNIX_TIMESTAMP() - (86400 * ' . $s->odl_dp .'))
                   AND cc.reaggregate = 0
-                  AND (a.name = "Final Examination" OR a.name = "Final Examination Verification" OR a.name = "Final Exam" OR a.name = "Final Quiz" OR a.name = "Final Capstone" OR a.name = "Capstone" OR a.name = "Final Project" OR a.name LIKE "Final Exam Part %" OR a.name LIKE "Final Exam V%")
+                  AND (a.name = "Final Activity" OR a.name = "Final Examination" OR a.name = "Final Examination Verification" OR a.name = "Final Exam" OR a.name = "Final Quiz" OR a.name = "Final Capstone" OR a.name = "Capstone" OR a.name = "Final Project" OR a.name LIKE "Final Exam Part %" OR a.name LIKE "Final Exam V%")
                   AND u.deleted = 0
                   AND c.category IN (' . $ocats . ')'
                   . $wheres . $grouper . '
@@ -404,7 +404,7 @@ class lsupgd1 {
                   AND cc.timecompleted IS NOT NULL
                   AND (qa.timefinish > UNIX_TIMESTAMP() - (86400 * ' . $s->odl_dp .')
                   OR gg.timemodified > UNIX_TIMESTAMP() - (86400 * ' . $s->odl_dp .'))
-                  AND (q.name = "Final Examination" OR q.name = "Final Exam" OR q.name = "Final Examination Verification" OR q.name = "Final Quiz" OR q.name = "Final Capstone" OR q.name = "Capstone" OR q.name = "Final Project" OR q.name LIKE "Final Exam Part %" OR q.name LIKE "Final Exam V%")
+                  AND (q.name = "Final Activity" OR q.name = "Final Examination" OR q.name = "Final Exam" OR q.name = "Final Examination Verification" OR q.name = "Final Quiz" OR q.name = "Final Capstone" OR q.name = "Capstone" OR q.name = "Final Project" OR q.name LIKE "Final Exam Part %" OR q.name LIKE "Final Exam V%")
                   AND u.deleted = 0
                   AND u.idnumber IS NOT NULL
                   AND u.idnumber <> ""
