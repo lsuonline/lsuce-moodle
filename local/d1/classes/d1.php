@@ -477,7 +477,7 @@ class lsupgd1 {
                  AND u.id = gg2.userid
                  AND c.fullname NOT LIKE "Master %"
                  AND gg1.finalgrade IS NOT NULL
-                 AND (gi1.itemname = "Final Examination" OR gi1.itemname = "Final Exam" OR gi1.itemname = "Final Quiz" OR gi1.itemname = "Final Capstone" OR gi1.itemname = "Capstone" OR gi1.itemname = "Final Project" OR gi1.itemname LIKE "Final Exam Part %")
+                 AND (gi1.itemname = "Final Activity" OR gi1.itemname = "Final Examination" OR gi1.itemname = "Final Exam" OR gi1.itemname = "Final Quiz" OR gi1.itemname = "Final Capstone" OR gi1.itemname = "Capstone" OR gi1.itemname = "Final Project" OR gi1.itemname LIKE "Final Exam Part %")
                  AND c.shortname NOT LIKE "LCCON.Online%"
                  AND c.shortname NOT LIKE "LCRES.Online%"
                  AND ((gg1.finalgrade/gg1.rawgrademax) >= .70)
