@@ -765,8 +765,18 @@ class cc2moodle {
     }
 
     public static function loadsheet($file) {
+        // BEGIN LSU Resolve IMS CC import sheet path from codebase when missing in package.
+        global $CFG;
 
-        $content = (is_readable($file) && ($content = file_get_contents($file))) ? $content : false;
+        $candidate = (strpos($file, '/') === 0 || preg_match('#^[A-Za-z]:#', $file))
+            ? $file
+            : static::$path_to_manifest_folder . DIRECTORY_SEPARATOR . $file;
+        $content = (is_readable($candidate) && ($content = file_get_contents($candidate))) ? $content : false;
+        if (!$content && !empty($CFG->dirroot) && (strpos($file, '/') !== 0)) {
+            $candidate = $CFG->dirroot . DIRECTORY_SEPARATOR . 'backup' . DIRECTORY_SEPARATOR . $file;
+            $content = (is_readable($candidate) && ($content = file_get_contents($candidate))) ? $content : false;
+        }
+        // END LSU Resolve IMS CC import sheet path from codebase when missing in package.
 
         static::log_action('Loading sheet: ' . $file);
 
