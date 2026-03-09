@@ -769,15 +769,25 @@ class helper {
                         $expiresvalue = $value;
                     }
                     $expires = (int) $expiresvalue;
+
                     // BEGIN LSU session cache purging limits.
-                    if ((int)$value['lastaccess'] < $purgetime) {
-                    // if ($expires > 0 && $expires < $purgetime) {
-                    // END LSU session cache purging limits.
-                        
-                        $prefix = substr($key, strlen(session_cache::LASTACCESS));
-                        $foundbyprefix = $store->find_by_prefix($prefix);
-                        $todelete = array_merge($todelete, [$key], $foundbyprefix);
+                    // Only attempt lastaccess logic if the normalized value is an array.
+                    if (is_array($value) && isset($value['lastaccess'])) {
+                        if ((int)$value['lastaccess'] < $purgetime) {
+                            $prefix = substr($key, strlen(session_cache::LASTACCESS));
+                            $foundbyprefix = $store->find_by_prefix($prefix);
+                            $todelete = array_merge($todelete, [$key], $foundbyprefix);
+                        }
+
+                    // We know that $value is not an array. Purge caches the normal way.
+                    } else {
+                        if ($expires > 0 && $expires < $purgetime) {
+                            $prefix = substr($key, strlen(session_cache::LASTACCESS));
+                            $foundbyprefix = $store->find_by_prefix($prefix);
+                            $todelete = array_merge($todelete, [$key], $foundbyprefix);
+                        }
                     }
+                    // END LSU session cache purging limits.
                 }
                 if ($todelete) {
                     $outcome = (int) $store->delete_many($todelete);
