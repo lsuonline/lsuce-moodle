@@ -737,6 +737,42 @@ abstract class backup_cron_automated_helper {
         }
     }
 
+    // BEGIN LSU - setting to force files to be deleted if they are older than the auto_delete_days.
+    /**
+     * Force delete backups that are older than the backup_auto_delete_days.
+     *
+     */
+    protected static function force_old_backup_deletion() {
+        $config = get_config('backup');
+        $dir = $config->backup_auto_destination;
+        $deletedays = (int)$config->backup_auto_delete_days;
+
+        $backups = scandir($dir);
+        $timestamp_delete_days = time() - $deletedays * DAYSECS;
+
+        foreach ($backups as $bf) {
+            // Extract the date from the end of the filename and convert to timestamp.
+            if (preg_match('/(\d{8})-(\d{4})\.mbz$/i', $bf, $matches)) {
+                $datepart = $matches[1];
+                $timepart = $matches[2];
+                $year = (int) substr($datepart, 0, 4);
+                $month = (int) substr($datepart, 4, 2);
+                $day = (int) substr($datepart, 6, 2);
+                $hour = (int) substr($timepart, 0, 2);
+                $minute = (int) substr($timepart, 2, 2);
+
+                $timestamp = mktime($hour, $minute, 0, $month, $day, $year);
+
+                if ($timestamp < $timestamp_delete_days) {
+                    // File IS OLDER than deleted days cutoff.
+                    unlink($dir . '/' . $bf);
+                    mtrace('File ' . $bf . ' is past the expiry of '.$deletedays.' days, removing.');
+                }
+            }
+        }
+    }
+    // END LSU - setting to force files to be deleted if they are older than the auto_delete_days.
+
     /**
      * Get the list of backup files to delete depending on the automated backup settings.
      *
@@ -769,6 +805,16 @@ abstract class backup_cron_automated_helper {
                 $tokeep = $minkept;
             }
         }
+        // BEGIN LSU - setting to force files to be deleted if they are older than the auto_delete_days.
+        if ($config->backup_force_delete) {
+            try {
+
+                self::force_old_backup_deletion();
+            } catch (Exception $e) {
+                mtrace('ERROR: Force deletion of backups failed, turn off and notify developer');
+            }
+        }
+        // END LSU - setting to force files to be deleted if they are older than the auto_delete_days.
 
         if (count($backupfiles) <= $tokeep) {
             // There are less or equal matching files than the desired number to keep, there is nothing to clean up.

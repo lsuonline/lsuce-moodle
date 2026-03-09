@@ -89,6 +89,10 @@ $string['availabletoanyone'] = 'Available to anyone visiting the site';
 $string['availabletoauthenticated'] = 'Limited to authenticated users';
 $string['backgroundcolour'] = 'Transparent colour';
 $string['backups'] = 'Backups';
+// BEGIN LSU - setting to force files to be deleted if they are older than the auto_delete_days.
+$string['backup_force_delete'] = 'Force delete files.';
+$string['backup_force_deletehelp'] = 'Backup files have the creation date in the filename and this will purge all files older than the option "Delete backups older than".';
+// END LSU - setting to force files to be deleted if they are older than the auto_delete_days.
 $string['backup_shortname'] = 'Use course name in backup filename';
 $string['backup_shortnamehelp'] = 'Use the course name as part of the backup filename.';
 $string['badwordsconfig'] = 'Enter your list of bad words separated by commas.';
