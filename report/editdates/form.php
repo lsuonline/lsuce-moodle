@@ -36,24 +36,69 @@ require_once(dirname(__FILE__) . '/lib.php');
  */
 class report_editdates_form extends moodleform {
 
+    // BEGIN LSU MD-1661: Add properties and public getters for form extensibility callbacks
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/51 (commit cd21173)
+    /**
+     * Mod info instance set for the form.
+     * @var \course_modinfo|null
+     */
+    protected $modinfo;
+
+    /**
+     * Course.
+     * @var \stdClass
+     */
+    protected $course;
+
+    /**
+     * Selected activity type.
+     * @var string
+     */
+    protected $activitytype;
+
+    /**
+     * Get course mod info instance set for the form.
+     * @return course_modinfo|null
+     */
+    public function get_modinfo(): ?course_modinfo {
+        return $this->modinfo;
+    }
+
+    /**
+     * Course object.
+     * @return \stdClass
+     */
+    public function get_course(): stdClass {
+        return $this->course;
+    }
+
+    /**
+     * Selected activity type.
+     * @return string
+     */
+    public function get_activitytype(): string {
+        return $this->activitytype;
+    }
+    // END LSU MD-1661: Add properties and public getters for form extensibility callbacks
+
     #[\Override]
     public function definition() {
         global $CFG, $DB, $PAGE;
         $mform = $this->_form;
 
-        $modinfo       = $this->_customdata['modinfo'];
-        $course        = $this->_customdata['course'];
-        $activitytype  = $this->_customdata['activitytype'];
+        $this->modinfo      = $this->_customdata['modinfo'];
+        $this->course       = $this->_customdata['course'];
+        $this->activitytype = $this->_customdata['activitytype'];
         $config = get_config('report_editdates');
 
         $coursehasavailability = !empty($CFG->enableavailability);
-        $coursehascompletion   = !empty($CFG->enablecompletion) && !empty($course->enablecompletion);
+        $coursehascompletion   = !empty($CFG->enablecompletion) && !empty($this->course->enablecompletion);
 
         // Context instance of the course.
-        $coursecontext = context_course::instance($course->id);
+        $coursecontext = context_course::instance($this->course->id);
 
         // Store current activity type.
-        $mform->addElement('hidden', 'activitytype', $activitytype);
+        $mform->addElement('hidden', 'activitytype', $this->activitytype);
         $mform->setType('activitytype', PARAM_PLUGIN);
 
         // Invisible static element. Used as the holder for a validation message sometimes.
@@ -69,11 +114,11 @@ class report_editdates_form extends moodleform {
 
         $mform->addElement('date_time_selector', 'coursestartdate', get_string('startdate'));
         $mform->addHelpButton('coursestartdate', 'startdate');
-        $mform->setDefault('coursestartdate', $course->startdate);
+        $mform->setDefault('coursestartdate', $this->course->startdate);
 
         $mform->addElement('date_time_selector', 'courseenddate', get_string('enddate'), ['optional' => true]);
         $mform->addHelpButton('courseenddate', 'enddate');
-        $mform->setDefault('courseenddate', $course->enddate);
+        $mform->setDefault('courseenddate', $this->course->enddate);
 
         // If user is not capable, make it read only.
         if (!has_capability('moodle/course:update', $coursecontext)) {
@@ -91,8 +136,8 @@ class report_editdates_form extends moodleform {
         $prevsectionnum = -1;
 
         // Cycle through all the sections in the course.
-        $cms = $modinfo->get_cms();
-        $sections = $modinfo->get_section_info_all();
+        $cms = $this->modinfo->get_cms();
+        $sections = $this->modinfo->get_section_info_all();
         $timeline = [];
         foreach ($sections as $sectionnum => $section) {
             $ismodadded = false;
@@ -105,7 +150,7 @@ class report_editdates_form extends moodleform {
 
             // New section, create header.
             if ($prevsectionnum != $sectionnum) {
-                $sectionname = get_section_name($course, $section);
+                $sectionname = get_section_name($this->course, $section);
                 $headername = 'section' . $sectionnum . 'header';
                 $mform->addElement('header', $headername, $sectionname);
                 $mform->setExpanded($headername, false);
@@ -163,8 +208,8 @@ class report_editdates_form extends moodleform {
             }
 
             // Cycle through each module in a section.
-            if (isset($modinfo->sections[$sectionnum])) {
-                foreach ($modinfo->sections[$sectionnum] as $cmid) {
+            if (isset($this->modinfo->sections[$sectionnum])) {
+                foreach ($this->modinfo->sections[$sectionnum] as $cmid) {
                     $cm = $cms[$cmid];
 
                     // No need to display/continue if this module is not visible to user.
@@ -173,7 +218,7 @@ class report_editdates_form extends moodleform {
                     }
 
                     // If activity filter is on, then filter module by activity type.
-                    if ($activitytype && ($cm->modname != $activitytype && $activitytype != "all")) {
+                    if ($this->activitytype && ($cm->modname != $this->activitytype && $this->activitytype != "all")) {
                         continue;
                     }
 
@@ -197,9 +242,18 @@ class report_editdates_form extends moodleform {
                             mt_rand( 0, 255 ) . ', .5)',
                     ];
 
+                    // BEGIN LSU MD-1661: Add editable activity name textbox for users with manage rights
+                    // See: https://github.com/moodleou/moodle-report_editdates/pull/56 (commit 48a7524)
+                    $elname = 'name_' . $cm->modname . '_' . $cm->id;
+                    $mform->addElement('text', $elname, get_string('activityname', 'report_editdates'),
+                        ['size' => '64']);
+                    $mform->setType($elname, PARAM_TEXT);
+                    $mform->setDefault($elname, $cm->name);
+                    // END LSU MD-1661: Add editable activity name textbox for users with manage rights
+
                     // Call get_settings method for the acitivity/module.
                     // Get instance of the mod's date exractor class.
-                    $mod = report_editdates_mod_date_extractor::make($cm->modname, $course);
+                    $mod = report_editdates_mod_date_extractor::make($cm->modname, $this->course);
                     if ($mod && ($cmdatesettings = $mod->get_settings($cm))) {
                         // Added activity name on the form.
                         foreach ($cmdatesettings as $cmdatetype => $cmdatesetting) {
@@ -304,7 +358,7 @@ class report_editdates_form extends moodleform {
 
             // Iterate though blocks array.
             foreach ($courseblocks as $blockid => $block) {
-                $blockdatextrator = report_editdates_block_date_extractor::make($block->blockname, $course);
+                $blockdatextrator = report_editdates_block_date_extractor::make($block->blockname, $this->course);
                 if ($blockdatextrator) {
                     // Create the block instance.
                     $blockobj = block_instance($block->blockname, $block, $PAGE);
@@ -354,16 +408,37 @@ class report_editdates_form extends moodleform {
             $mform->addElement('static', 'timelineview', '');
             $mform->addElement('html', self::render_timeline_view($timeline));
         }
+
+        // BEGIN LSU MD-1661: Invoke report_editdates_form_elements callbacks for extensibility
+        // See: https://github.com/moodleou/moodle-report_editdates/pull/51 (commit cd21173)
+        $callbacks = get_plugins_with_function('report_editdates_form_elements', 'lib.php');
+        foreach ($callbacks as $type => $plugins) {
+            foreach ($plugins as $plugin => $pluginfunction) {
+                $pluginfunction($this, $this->_form);
+            }
+        }
+        // END LSU MD-1661: Invoke report_editdates_form_elements callbacks for extensibility
     }
+
+    // BEGIN LSU MD-1661: definition_after_data callback for form extensibility
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/51 (commit cd21173)
+    /**
+     * Invoke callbacks after form data is set.
+     */
+    public function definition_after_data() {
+        $callbacks = get_plugins_with_function('report_editdates_form_definition_after_data', 'lib.php');
+        foreach ($callbacks as $type => $plugins) {
+            foreach ($plugins as $plugin => $pluginfunction) {
+                $pluginfunction($this, $this->_form);
+            }
+        }
+    }
+    // END LSU MD-1661: definition_after_data callback for form extensibility
 
     #[\Override]
     public function validation($data, $files) {
         global $CFG;
         $errors = parent::validation($data, $files);
-
-        $modinfo = $this->_customdata['modinfo'];
-        $course = $this->_customdata['course'];
-        $coursecontext = context_course::instance($course->id);
 
         $moddatesettings = [];
         $forceddatesettings = [];
@@ -399,7 +474,7 @@ class report_editdates_form extends moodleform {
             }
         }
 
-        $cms = $modinfo->get_cms();
+        $cms = $this->modinfo->get_cms();
 
         // Validating forced date settings.
         foreach ($forceddatesettings as $modid => $datesettings) {
@@ -420,7 +495,7 @@ class report_editdates_form extends moodleform {
             $cm = $cms[$modid];
             $moderrors = [];
 
-            if ($mod = report_editdates_mod_date_extractor::make($cm->modname, $course)) {
+            if ($mod = report_editdates_mod_date_extractor::make($cm->modname, $this->course)) {
                 $moderrors = $mod->validate_dates($cm, $datesettings);
                 if (!empty($moderrors)) {
                     foreach ($moderrors as $errorfield => $errorstr) {
@@ -429,6 +504,19 @@ class report_editdates_form extends moodleform {
                 }
             }
         }
+
+        // BEGIN LSU MD-1661: Invoke report_editdates_form_validation callbacks for extensibility
+        // See: https://github.com/moodleou/moodle-report_editdates/pull/51 (commit cd21173)
+        $callbacks = get_plugins_with_function('report_editdates_form_validation', 'lib.php');
+        foreach ($callbacks as $type => $plugins) {
+            foreach ($plugins as $plugin => $pluginfunction) {
+                $pluginerrors = $pluginfunction($this, $data);
+                if (!empty($pluginerrors)) {
+                    $errors = array_merge($errors, $pluginerrors);
+                }
+            }
+        }
+        // END LSU MD-1661: Invoke report_editdates_form_validation callbacks for extensibility
 
         if (!empty($errors)) {
             // If there are any validation errors, which may be hidden a long way down this
