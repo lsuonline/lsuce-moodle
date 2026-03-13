@@ -98,7 +98,6 @@ if ($canqueuefilteredformat) {
     if ($maxentriesperrun <= 0) {
         $maxentriesperrun = 100;
     }
-    $tasklogsurl = new moodle_url('/admin/tool/task/adhoctasks.php');
     $taskqueuedmodaltitle = get_string('task_queued_modal_title', 'report_content2fix');
 
     $PAGE->requires->js_call_amd('report_content2fix/bulk_format_tinymce-lazy', 'init', [
@@ -108,8 +107,6 @@ if ($canqueuefilteredformat) {
         'editorWaitMs' => (int) round($editorwaitseconds * 1000),
         'maxEntriesPerRun' => $maxentriesperrun,
         'taskQueuedModalTitle' => $taskqueuedmodaltitle,
-        'taskLogsUrl' => $tasklogsurl->out(false),
-        'taskLogsLinkText' => get_string('adhoctasks', 'tool_task'),
     ]);
 }
 

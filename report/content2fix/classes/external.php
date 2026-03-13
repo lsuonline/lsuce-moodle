@@ -208,11 +208,17 @@ class external extends external_api {
 
         $entry = $report->get_next_filtered_entry($filtermap, (int) $params['afterid']);
         $summary = $report->get_filtered_entry_summary($filtermap);
-        $totalcount = (int) $summary->entrycount;
-        $totalcount = min($totalcount, self::MAX_TOTALCOUNT);
+        $totalcount = min((int) $summary->entrycount, self::MAX_TOTALCOUNT);
+
+        // Count entries still to process after the fetched entry (id > entry->id).
+        // Returns 0 when the fetched entry is the last one, or when no entry was found.
+        $remainingcount = $entry
+            ? min($report->get_remaining_entry_count($filtermap, (int) $entry->id), self::MAX_TOTALCOUNT)
+            : 0;
 
         $result = [
             'totalcount' => $totalcount,
+            'remainingcount' => $remainingcount,
         ];
 
         if ($entry) {
@@ -245,6 +251,7 @@ class external extends external_api {
                 'field' => new external_value(PARAM_RAW, 'Field name'),
             ], 'Next entry to process', VALUE_OPTIONAL),
             'totalcount' => new external_value(PARAM_INT, 'Total entries matching filters'),
+            'remainingcount' => new external_value(PARAM_INT, 'Remaining entries to process'),
         ]);
     }
 

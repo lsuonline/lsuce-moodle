@@ -380,6 +380,10 @@ function startBulkFormatting(config) {
                                 showComplete(true);
                                 return;
                             }
+                            if (result.remainingcount === 0) {
+                                showComplete(false);
+                                return;
+                            }
                             runLoop(lastId ?? afterId);
                         });
                     } else {
@@ -456,17 +460,15 @@ function loadFiltersAndCount(effectiveReportId, fallbackFilterValues, entryCount
 
 /**
  * Show confirmation modal and queue backend format-all task on confirm.
- * On success, show a dismissible modal with task_queued_format_all message and link to task logs.
+ * On success, show a dismissible modal with task_queued_format_all message.
  *
  * @param {Object} config
  * @param {Array} config.filterValues
  * @param {number} config.entryCount
  * @param {string} config.taskQueuedModalTitle Title for the success modal
- * @param {string} config.taskLogsUrl URL to ad hoc tasks page
- * @param {string} config.taskLogsLinkText Link text (e.g. "Ad hoc tasks")
  */
 function showConfirmationAndQueueBackend(config) {
-    const {filterValues, entryCount, taskQueuedModalTitle, taskLogsUrl, taskLogsLinkText} = config;
+    const {filterValues, entryCount, taskQueuedModalTitle} = config;
 
     showBulkConfirmModal({
         filterValues,
@@ -484,9 +486,7 @@ function showConfirmationAndQueueBackend(config) {
             methodname: 'report_content2fix_queue_format_all_task',
             args: {filtervalues: result.filterValues},
         }])[0].then(() => {
-            const linkHtml = '<a href="' + (taskLogsUrl || '') + '" target="_blank" rel="noopener">' +
-                (taskLogsLinkText || '') + '</a>';
-            return getString('task_queued_format_all', 'report_content2fix', linkHtml);
+            return getString('task_queued_format_all', 'report_content2fix');
         }).then((message) => {
             const bodyHtml = '<p class="mb-0">' + message + '</p>';
             return showMessageModal(taskQueuedModalTitle || 'Task queued', bodyHtml);
@@ -504,8 +504,6 @@ function showConfirmationAndQueueBackend(config) {
  * @param {number} config.editorWaitMs Milliseconds to wait before auto-saving (from plugin setting)
  * @param {number} config.maxEntriesPerRun Max entries to process per run
  * @param {string} [config.taskQueuedModalTitle] Title for the dismissible success modal after queue
- * @param {string} [config.taskLogsUrl] URL to the ad hoc tasks page (for success message link)
- * @param {string} [config.taskLogsLinkText] Text for the task logs link (e.g. "Ad hoc tasks")
  */
 export const init = (config) => {
     const reportId = config?.reportId;
@@ -514,8 +512,6 @@ export const init = (config) => {
     const editorWaitMs = config?.editorWaitMs;
     const maxEntriesPerRun = config?.maxEntriesPerRun ?? 100;
     const taskQueuedModalTitle = config?.taskQueuedModalTitle ?? 'Task queued';
-    const taskLogsUrl = config?.taskLogsUrl ?? '';
-    const taskLogsLinkText = config?.taskLogsLinkText ?? '';
 
     document.addEventListener('click', (event) => {
         const triggerBackend = event.target.closest(SELECTORS.formatBackendBulkTrigger);
@@ -528,8 +524,6 @@ export const init = (config) => {
                     filterValues,
                     entryCount: count,
                     taskQueuedModalTitle,
-                    taskLogsUrl,
-                    taskLogsLinkText,
                 });
             });
             return;
