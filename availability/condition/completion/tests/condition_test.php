@@ -296,20 +296,21 @@ final class condition_test extends \advanced_testcase {
         $this->assertMatchesRegularExpression('~Assign!.*is complete and failed~', $information);
         $this->assertTrue($cond->is_available(true, $info, true, $user->id));
 
-        // Change the grade to be complete and failed.
+        // MD-1364: Grade 40 below gradepass 50, but completionpassgrade is NOT enabled.
+        // The activity only requires "receive a grade", so this is COMPLETION_COMPLETE.
         self::set_grade($assignrow, $user->id, 40);
 
         $cond = new condition((object)[
             'cm' => (int)$assigncm->id, 'e' => COMPLETION_INCOMPLETE
         ]);
-        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
-        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
 
         $cond = new condition((object)[
             'cm' => (int)$assigncm->id, 'e' => COMPLETION_COMPLETE
         ]);
-        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
-        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
 
         $cond = new condition((object)[
             'cm' => (int)$assigncm->id, 'e' => COMPLETION_COMPLETE_PASS
@@ -323,11 +324,11 @@ final class condition_test extends \advanced_testcase {
         $cond = new condition((object)[
             'cm' => (int)$assigncm->id, 'e' => COMPLETION_COMPLETE_FAIL
         ]);
-        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
-        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
-        $information = $cond->get_description(false, true, $info);
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
+        $information = $cond->get_description(false, false, $info);
         $information = \core_availability\info::format_info($information, $course);
-        $this->assertMatchesRegularExpression('~Assign!.*is not complete and failed~', $information);
+        $this->assertMatchesRegularExpression('~Assign!.*is complete and failed~', $information);
 
         // Now change it to pass.
         self::set_grade($assignrow, $user->id, 60);
@@ -531,17 +532,19 @@ final class condition_test extends \advanced_testcase {
                 0, COMPLETION_COMPLETE_FAIL, '', 'page3', false, true, '~Assign!.*is complete and failed~'
             ],
             // Depending on assign with grade.
+            // MD-1364: completionpassgrade is NOT enabled, so a failing grade (40 < 50)
+            // is treated as COMPLETION_COMPLETE (activity only requires "receive a grade").
             'Previous complete condition with previous fail grade' => [
-                40, COMPLETION_COMPLETE, '', 'page3', false, true, '~Assign!.*is marked complete~',
+                40, COMPLETION_COMPLETE, '', 'page3', true, false, '~Assign!.*is marked complete~',
             ],
             'Previous incomplete condition with previous fail grade' => [
-                40, COMPLETION_INCOMPLETE, '', 'page3', true, false, '~Assign!.*is incomplete~',
+                40, COMPLETION_INCOMPLETE, '', 'page3', false, true, '~Assign!.*is incomplete~',
             ],
             'Previous complete pass condition with previous fail grade' => [
                 40, COMPLETION_COMPLETE_PASS, '', 'page3', false, true, '~Assign!.*is complete and passed~'
             ],
             'Previous complete fail condition with previous fail grade' => [
-                40, COMPLETION_COMPLETE_FAIL, '', 'page3', true, false, '~Assign!.*is complete and failed~'
+                40, COMPLETION_COMPLETE_FAIL, '', 'page3', false, true, '~Assign!.*is complete and failed~'
             ],
             'Previous complete condition with previous pass grade' => [
                 60, COMPLETION_COMPLETE, '', 'page3', true, false, '~Assign!.*is marked complete~'

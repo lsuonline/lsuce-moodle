@@ -705,6 +705,21 @@ class completion_info {
                     return $customstate;
                 }
                 $completionstate[] = $customstate;
+
+                // BEGIN LSU Fix quiz completion blocking for pass-or-exhaust (MD-1364).
+                // Quiz "pass or exhaust attempts": when custom says complete (exhaust satisfied)
+                // but grade is COMPLETE_FAIL, treat as COMPLETE so availability conditions work.
+                if ($customstate == COMPLETION_COMPLETE &&
+                        $cminfo->modname === 'quiz' &&
+                        isset($completionstate['passgrade']) &&
+                        $completionstate['passgrade'] == COMPLETION_COMPLETE_FAIL) {
+                    $customdata = (array) ($cminfo->customdata ?? []);
+                    $rules = $customdata['customcompletionrules']['completionpassorattemptsexhausted'] ?? [];
+                    if (!empty($rules['completionattemptsexhausted'])) {
+                        return COMPLETION_COMPLETE;
+                    }
+                }
+                // END LSU Fix quiz completion blocking for pass-or-exhaust (MD-1364).
             }
         }
 
@@ -1161,6 +1176,14 @@ class completion_info {
                     }
                 }
                 $data['passgrade'] = $newstate;
+            } else if (in_array($newstate, [COMPLETION_COMPLETE_FAIL, COMPLETION_COMPLETE_FAIL_HIDDEN])) {
+                // BEGIN LSU Fix completion status when passing grade not required but gradepass exists (MD-1364).
+                // MD-1364: When passing grade is NOT required for completion but gradepass
+                // exists on the grade item, a failing grade still satisfies "receive a grade".
+                // Treat as COMPLETE so availability conditions and reports reflect the actual
+                // completion criteria rather than the irrelevant pass/fail distinction.
+                $data['completiongrade'] = COMPLETION_COMPLETE;
+                // END LSU Fix completion status when passing grade not required but gradepass exists (MD-1364).
             }
         }
 

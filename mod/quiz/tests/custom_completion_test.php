@@ -263,6 +263,14 @@ final class custom_completion_test extends advanced_testcase {
             $customcompletion->get_custom_rule_descriptions()['completionpassorattemptsexhausted']
         );
 
+        // BEGIN LSU MD-1364: Verify stored completion state is COMPLETION_COMPLETE (not COMPLETION_COMPLETE_FAIL).
+        // MDL-79631: Ensures activity completion restrictions (e.g. "must be marked complete") work correctly.
+        $completioninfo->update_state($cm, COMPLETION_UNKNOWN, $exhauststudent->id);
+        $completiondata = $completioninfo->get_data($cm, false, $exhauststudent->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $completiondata->completionstate,
+            'Quiz with pass-or-exhaust should store COMPLETION_COMPLETE when student exhausts attempts without passing');
+        // END LSU MD-1364: Verify stored completion state.
+
     }
 
     /**
