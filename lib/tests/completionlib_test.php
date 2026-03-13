@@ -457,6 +457,14 @@ final class completionlib_test extends advanced_testcase {
                 null,
                 COMPLETION_INCOMPLETE
             ],
+            "MD-1364: Passing grade not enabled with passing grade set. Student fails." => [
+                [
+                    'completionusegrade' => 1,
+                    'gradepass' => 50,
+                ],
+                40,
+                COMPLETION_COMPLETE
+            ],
         ];
     }
 
@@ -2234,6 +2242,242 @@ final class completionlib_test extends advanced_testcase {
             $nonexistinguserid = 123;
             $this->assertEquals($expectedcount, $completion->count_modules_completed($nonexistinguserid));
         }
+    }
+
+    /**
+     * MD-1364: When completionpassgrade is disabled but gradepass is saved on
+     * the grade item, a failing grade should still store COMPLETION_COMPLETE
+     * (not COMPLETION_COMPLETE_FAIL) so availability conditions work correctly.
+     *
+     * @covers ::get_core_completion_state
+     * @covers ::internal_get_state
+     */
+    public function test_grade_only_completion_with_gradepass_set_failing_grade(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = true;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => true]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionusegrade' => 1,
+            'gradepass' => 50,
+        ]);
+
+        $cm = get_coursemodule_from_instance('assign', $assign->id);
+        $cminfo = cm_info::create($cm, (int)$student->id);
+
+        // Grade the student with a failing grade.
+        $this->setUser($teacher);
+        $assignobj = new assign($cminfo->context, $cm, $course);
+        $assignobj->save_grade($student->id, (object)[
+            'sendstudentnotifications' => false,
+            'attemptnumber' => 1,
+            'grade' => 30,
+        ]);
+
+        // Verify core completion state has completiongrade = COMPLETE (not COMPLETE_FAIL).
+        $completioninfo = new completion_info($course);
+        $corestate = $completioninfo->get_core_completion_state($cminfo, (int)$student->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $corestate['completiongrade'],
+            'MD-1364: completiongrade should be COMPLETE when completionpassgrade is disabled');
+        $this->assertArrayNotHasKey('passgrade', $corestate,
+            'passgrade should not be set when completionpassgrade is disabled');
+
+        // Verify the overall stored state via internal_get_state.
+        $state = $completioninfo->internal_get_state($cm, (int)$student->id, null);
+        $this->assertEquals(COMPLETION_COMPLETE, $state,
+            'MD-1364: Overall state should be COMPLETE, not COMPLETE_FAIL');
+    }
+
+    /**
+     * MD-1364: When completionpassgrade is disabled and gradepass is saved,
+     * availability "must be marked complete" should be satisfied for a failing grade.
+     *
+     * @covers ::get_core_completion_state
+     */
+    public function test_availability_satisfied_grade_only_with_failing_grade(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = true;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => true]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionusegrade' => 1,
+            'gradepass' => 50,
+        ]);
+
+        $cm = get_coursemodule_from_instance('assign', $assign->id);
+        $cminfo = cm_info::create($cm, (int)$student->id);
+
+        $this->setUser($teacher);
+        $assignobj = new assign($cminfo->context, $cm, $course);
+        $assignobj->save_grade($student->id, (object)[
+            'sendstudentnotifications' => false,
+            'attemptnumber' => 1,
+            'grade' => 30,
+        ]);
+
+        $completioninfo = new completion_info($course);
+        $completioninfo->update_state($cm, COMPLETION_UNKNOWN, (int)$student->id);
+        $data = $completioninfo->get_data($cm, false, (int)$student->id);
+
+        $storedstate = (int)$data->completionstate;
+
+        // Simulate availability "must be marked complete": accepts COMPLETE and COMPLETE_PASS.
+        $allow = in_array($storedstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS]);
+        $this->assertTrue($allow,
+            'MD-1364: "must be marked complete" should be satisfied when only grade is required. State=' . $storedstate);
+    }
+
+    /**
+     * MD-1364: When completionpassgrade IS enabled, a failing grade should still
+     * produce COMPLETION_COMPLETE_FAIL. The fix must not affect this path.
+     *
+     * @covers ::get_core_completion_state
+     */
+    public function test_passgrade_enabled_failing_grade_still_complete_fail(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = true;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => true]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionusegrade' => 1,
+            'completionpassgrade' => 1,
+            'gradepass' => 50,
+        ]);
+
+        $cm = get_coursemodule_from_instance('assign', $assign->id);
+        $cminfo = cm_info::create($cm, (int)$student->id);
+
+        $this->setUser($teacher);
+        $assignobj = new assign($cminfo->context, $cm, $course);
+        $assignobj->save_grade($student->id, (object)[
+            'sendstudentnotifications' => false,
+            'attemptnumber' => 1,
+            'grade' => 30,
+        ]);
+
+        // With completionpassgrade enabled, failing should still be COMPLETE_FAIL.
+        $completioninfo = new completion_info($course);
+        $corestate = $completioninfo->get_core_completion_state($cminfo, (int)$student->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $corestate['completiongrade'],
+            'completiongrade should be COMPLETE (grade was received)');
+        $this->assertEquals(COMPLETION_COMPLETE_FAIL, $corestate['passgrade'],
+            'passgrade should be COMPLETE_FAIL');
+
+        $state = $completioninfo->internal_get_state($cm, (int)$student->id, null);
+        $this->assertEquals(COMPLETION_COMPLETE_FAIL, $state,
+            'Overall state should be COMPLETE_FAIL when passgrade is required');
+    }
+
+    /**
+     * MD-1364: When completionpassgrade is disabled with no gradepass saved at all,
+     * a grade should produce COMPLETION_COMPLETE (unchanged behavior).
+     *
+     * @covers ::get_core_completion_state
+     */
+    public function test_grade_only_no_gradepass_saved(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = true;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => true]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionusegrade' => 1,
+        ]);
+
+        $cm = get_coursemodule_from_instance('assign', $assign->id);
+        $cminfo = cm_info::create($cm, (int)$student->id);
+
+        $this->setUser($teacher);
+        $assignobj = new assign($cminfo->context, $cm, $course);
+        $assignobj->save_grade($student->id, (object)[
+            'sendstudentnotifications' => false,
+            'attemptnumber' => 1,
+            'grade' => 30,
+        ]);
+
+        $completioninfo = new completion_info($course);
+        $corestate = $completioninfo->get_core_completion_state($cminfo, (int)$student->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $corestate['completiongrade'],
+            'Should be COMPLETE when no gradepass is saved');
+        $this->assertArrayNotHasKey('passgrade', $corestate);
+
+        $state = $completioninfo->internal_get_state($cm, (int)$student->id, null);
+        $this->assertEquals(COMPLETION_COMPLETE, $state);
+    }
+
+    /**
+     * MD-1364: Passing student with completionpassgrade disabled but gradepass set
+     * should still get COMPLETION_COMPLETE_PASS (fix only changes FAIL, not PASS).
+     *
+     * @covers ::get_core_completion_state
+     */
+    public function test_grade_only_with_gradepass_set_passing_grade(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = true;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => true]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionusegrade' => 1,
+            'gradepass' => 50,
+        ]);
+
+        $cm = get_coursemodule_from_instance('assign', $assign->id);
+        $cminfo = cm_info::create($cm, (int)$student->id);
+
+        $this->setUser($teacher);
+        $assignobj = new assign($cminfo->context, $cm, $course);
+        $assignobj->save_grade($student->id, (object)[
+            'sendstudentnotifications' => false,
+            'attemptnumber' => 1,
+            'grade' => 80,
+        ]);
+
+        $completioninfo = new completion_info($course);
+        $corestate = $completioninfo->get_core_completion_state($cminfo, (int)$student->id);
+        $this->assertEquals(COMPLETION_COMPLETE_PASS, $corestate['completiongrade'],
+            'Passing grade should still be COMPLETE_PASS');
+
+        $state = $completioninfo->internal_get_state($cm, (int)$student->id, null);
+        $this->assertEquals(COMPLETION_COMPLETE_PASS, $state);
     }
 }
 
