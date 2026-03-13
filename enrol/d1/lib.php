@@ -331,7 +331,7 @@ class enrol_d1_plugin extends enrol_plugin {
         $users = lsud1::get_d1_students_without_uids();
     } else {
         $ccontext = context_course::instance($courseid);
-        $users   = get_enrolled_users($context, '', 0, 'u.id, u.firstname, u.lastname, u.email');
+        $users   = get_enrolled_users($ccontext, '', 0, 'u.id, u.firstname, u.lastname, u.email');
     }
 
     $t = 0;
