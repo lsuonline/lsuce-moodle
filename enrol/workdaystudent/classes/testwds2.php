@@ -48,37 +48,12 @@ class workdaystudent {
     }
 
     /**
-     * Resets enrollments prior to pulling from WDS.
-     *
-     * @param @string $sectionlistingid The section listing id.
-     * @return @book $reset
-     */
-    public static function reset_enrollments($sectionlistingid) {
-        global $DB;
-
-        // Build out the parms.
-        $parms = ['slid' => $sectionlistingid];
-
-        // Build out the SQL to update the records.
-        $sql = "UPDATE {enrol_wds_student_enroll}
-             SET registration_status = 'ToBeUpdated',
-             status = 'tobeupdated',
-             lastupdate = 0
-             WHERE section_listing_id = :slid";
-
-        // Do the nasty.
-        $reset = $DB->execute($sql, $parms);
-
-        return $reset;
-    }
-
-    /**
      * Retrieves faculty preferences for a given user.
      *
      * If personal preferences are missing, return the global settings or fallbacks.
      *
-     * @param @int $userid The user ID.
-     * @return @object An object containing the user's preferences.
+     * @param int $userid The user ID.
+     * @return stdClass An object containing the user's preferences.
      */
     public static function wds_get_faculty_preferences($mshell) {
         global $DB;
@@ -86,38 +61,19 @@ class workdaystudent {
         // Set this for use later.
         $userid = $mshell->userid;
 
-        // Validate and get user ID.
+        // Validate user ID.
         if (!is_numeric($userid) || $userid <= 0) {
-            mtrace("We did not get a valid userid: $userid. Try username.");
-            $user = $DB->get_record('user', ['username' => $mshell->username]);
-            $userid = $user ? $user->id : null;
+            var_dump($mshell);
+            throw new invalid_parameter_exception('Invalid user ID provided.');
         }
 
-        // Validate and get user ID.
-        if (!is_numeric($userid) || $userid <= 0) {
-            mtrace("We still did not get a valid userid: $userid. Try email.");
-            $user = $DB->get_record('user', ['email' => $mshell->email]);
-            $userid = $user ? $user->id : null;
-        }
+        // Retrieve user preferences related to 'wdspref_'.
+        $sql = "SELECT * FROM {user_preferences}
+            WHERE name LIKE 'wdspref_%'
+                AND userid = ?";
 
-        // Validate and get user ID.
-        if (!is_numeric($userid) || $userid <= 0) {
-            mtrace("We still did not get a valid userid: $userid. Try idnumber.");
-            $user = $DB->get_record('user', ['idnumber' => $mshell->universal_id]);
-            $userid = $user ? $user->id : null;
-        }
-
-        // Validate and get user ID.
-        if (is_numeric($userid) && $userid > 0) {
-
-            // Retrieve user preferences related to 'wdspref_'.
-            $sql = "SELECT * FROM {user_preferences}
-                WHERE name LIKE 'wdspref_%'
-                    AND userid = ?";
-
-            // Get the data.
-            $preferences = $DB->get_records_sql($sql, [$userid]);
-        }
+        // Get the data.
+        $preferences = $DB->get_records_sql($sql, [$userid]);
 
         // Get global settings.
         $s = self::get_settings();
@@ -141,84 +97,57 @@ class workdaystudent {
             }
         }
 
-        // Build out the unwant arrays.
+        // Override defaults with retrieved preferences.
+        foreach ($preferences as $pref) {
+            $shortkey = str_replace('wdspref_', '', $pref->name);
+            if ($shortkey == 'format') {
+                $userprefs->$shortkey = $pref->value;
+            } else {
+                $userprefs->$shortkey = (int) $pref->value;
+            }
+        }
+
+        // Get any unwants we might have that are relvant to this shell.
+        $unwants = self::wds_get_unwants($mshell);
+
+        // Get the unwanted or sepcifivally wanted count.
+        $uwcount = count($unwants);
+
+        // Build out the arrays.
         $userprefs->unwants = [];
         $userprefs->wants = [];
 
-        if (is_numeric($userid) && $userid > 0) {
+        // Loop through the data.
+        foreach($unwants as $unwant) {
 
-            // Override defaults with retrieved preferences.
-            foreach ($preferences as $pref) {
-                $shortkey = str_replace('wdspref_', '', $pref->name);
-                if ($shortkey == 'format') {
-                    $userprefs->$shortkey = $pref->value;
-                } else {
-                    $userprefs->$shortkey = (int) $pref->value;
-                }
+            // If the sectionid is unwanted add it to the unwants array.
+            if ($unwant->unwanted === "1") {
+                $userprefs->unwants[] = $unwant->sectionid;
             }
 
-            // Get any unwants we might have that are relvant to this shell.
-            $unwants = self::wds_get_unwants($mshell);
-
-            // Get the unwanted or sepcifivally wanted count.
-            $uwcount = count($unwants);
-
-            // Loop through the data.
-            foreach($unwants as $unwant) {
-
-                // If the sectionid is unwanted add it to the unwants array.
-                if ($unwant->unwanted === "1") {
-                    $userprefs->unwants[] = $unwant->sectionid;
-                }
-
-                // If the sectionid is wanted add it to the wants array.
-                if ($unwant->unwanted === "0") {
-                    $userprefs->wants[] = $unwant->sectionid;
-                }
+            // If the sectionid is wanted add it to the wants array.
+            if ($unwant->unwanted === "0") {
+                $userprefs->wants[] = $unwant->sectionid;
             }
         }
 
         return $userprefs;
     }
 
-    /**
-     * Retrieves unwanted section records for a given shell.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $mshell Object containing course shell information
-     * @return @array Array of unwanted section records
-     */
     public static function wds_get_unwants($mshell) {
         global $DB;
-
-        $parms = [
-            'userid' => $mshell->userid,
-            'sectionids' => $mshell->sectionids
-        ];
 
         // Build the SQL.
         $usql = "SELECT *
             FROM {block_wdsprefs_unwants}
-             WHERE userid = :userid
-                 AND sectionid IN (:sectionids)";
+             WHERE userid = $mshell->userid
+                 AND sectionid IN ($mshell->sectionids)";
 
-        if (is_numeric($mshell->userid)) {
-            $unwants = $DB->get_records_sql($usql, $parms);
-            return $unwants;
-        } else {
-            return [];
-        }
+        $unwants = $DB->get_records_sql($usql);
+
+        return $unwants;
     }
 
-    /**
-     * Retrieves student data from Workday webservice endpoint.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $s Settings object
-     * @param @string $periodid Academic period ID
-     * @param @string $studentid Optional student ID to filter results (empty string for all students)
-     * @return @array | @bool Array of student objects or false if no students found
-     */
     public static function get_students($s, $periodid, $studentid) {
 
         // Log what we're doing.
@@ -276,13 +205,6 @@ class workdaystudent {
         return $students;
     }
 
-    /**
-     * Retrieves GUILD data from Workday webservice.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $s Settings object
-     * @return @array Guild objects from Workday
-     */
     public static function get_guild($s) {
 
         // Set the endpoint.
@@ -300,13 +222,6 @@ class workdaystudent {
         return $guilds;
     }
 
-    /**
-     * Extracts UID from SFPR student information.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $guild Guild object containing SFPR_Student information
-     * @return @object Modified guild object with extracted SFPR_StudentName and SFPR_UID
-     */
     public static function get_uid_sfpr($guild) {
         $student = $guild->SFPR_Student;
 
@@ -321,57 +236,6 @@ class workdaystudent {
         return $guild;
     }
 
-    /**
-     * Sets GUILD flag in enrollment table.
-     *
-     * @package enrol_workdaystudent
-     * @param @array of @objects $guilds Guilds array of objects containing guild enrollment
-     * @return @void
-     */
-    public static function set_guild_data($guilds):void {
-        global $DB;
-
-        // Loop through the guilds.
-        foreach ($guilds as $guild) {
-
-            // Get the UID.
-            $guild = self::get_uid_sfpr($guild);
-
-            // Do not process if we don't have any guild enrollments.
-            if (!isset($guild->Student_Course_Registrations_group)) {
-                continue;
-            }
-
-            // Loop through the student's registrations.
-            foreach ($guild->Student_Course_Registrations_group as $registration) {
-
-                $uid = isset($guild->Universal_Id) ? $guild->Universal_Id : $guild->SFPR_UID;
-
-                // Build the parms for this update.
-                $parms = [
-                    'universal_id' => $uid,
-                    'section_listing_id' => $registration->Section_Listing_ID
-                ];
-
-                $sql = 'UPDATE {enrol_wds_student_enroll}
-                    SET guild = 1
-                    WHERE section_listing_id = :section_listing_id
-                        AND universal_id = :universal_id';
-
-                // Do the nasty.
-                $DB->execute($sql, $parms);
-            }
-        }
-    }
-
-    /**
-     * Retrieves period dates from Workday.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $s Settings object
-     * @param @object $period Period object containing Academic_Period_ID
-     * @return @array Date objects for the specified period
-     */
     public static function get_period_dates($s, $period) {
 
         // Set the endpoint.
@@ -391,14 +255,6 @@ class workdaystudent {
         return $dates;
     }
 
-    /**
-     * Retrieves post-grade dates from Workday.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $s Settings object
-     * @param @object $period Period object containing Academic_Period_ID
-     * @return @object Formatted dateobj with timestamp values for academic dates
-     */
     public static function get_pg_dates($s, $period) {
 
         // Set the endpoint.
@@ -445,6 +301,7 @@ class workdaystudent {
         return $dateobj;
     }
 
+    // TODO: Possibly deprecated, please remove.
     public static function clean_honors_grade($grade) {
 
         // First get universal ID.
@@ -592,7 +449,7 @@ class workdaystudent {
 
         // Compare the objects.
         if (get_object_vars($ap) === get_object_vars($ap2)) {
-            // self::dtrace("   - Academic period matched, skipping.");
+            self::dtrace("   - Academic period matched, skipping.");
             return $ap;
         } else {
 
@@ -603,7 +460,7 @@ class workdaystudent {
             $success = $DB->update_record($table, $ap2, false);
 
             if ($success) {
-                // self::dtrace("   - Academic period $ap->academic_period_id has been updated from the endpoint.");
+                self::dtrace("   - Academic period $ap->academic_period_id has been updated from the endpoint.");
 
                 // Return the updated object.
                 return $ap2;
@@ -676,7 +533,7 @@ class workdaystudent {
         $pd->date = strtotime($pdate->Date);
 
         $ap = $DB->insert_record($table, $pd);
-        // self::dtrace("    - Inserted $pd->academic_level $pd->date_type for $pd->academic_period_id.");
+        self::dtrace("    - Inserted $pd->academic_level $pd->date_type for $pd->academic_period_id.");
 
         return $ap;
     }
@@ -699,10 +556,10 @@ class workdaystudent {
 
         if (get_object_vars($pd) !== get_object_vars($pd2)) {
             $ap = $DB->update_record($table, $pd2, false);
-            // self::dtrace("    - Updated $pd2->academic_level $pd2->date_type for $pd2->academic_period_id.");
+            self::dtrace("    - Updated $pd2->academic_level $pd2->date_type for $pd2->academic_period_id.");
             return $pd2;
         } else {
-            // self::dtrace("    - $pd2->academic_level $pd2->date_type records matched perfectly, skipping.");
+            self::dtrace("    - $pd2->academic_level $pd2->date_type records matched perfectly, skipping.");
             return $pd2;
         }
     }
@@ -744,7 +601,6 @@ class workdaystudent {
         $as2 = unserialize(serialize($as));
 
         // Keep id, section_listing_id, idnumber, and status from $as and populate the rest from $section.
-
         $as2->course_section_definition_id = $section->Course_Section_Definition_ID;
         $as2->section_number = $section->Section_Number;
         $as2->course_definition_id = $section->Course_Definition_ID;
@@ -761,7 +617,7 @@ class workdaystudent {
 
         // Compare the objects.
         if (get_object_vars($as) === get_object_vars($as2)) {
-            // self::dtrace("Section $section->Section_Listing_ID matched stored value, skipping.");
+            self::dtrace("Section $section->Section_Listing_ID matched stored value, skipping.");
 
             return $as;
         } else {
@@ -836,7 +692,7 @@ class workdaystudent {
 
         // Compare the objects.
         if (get_object_vars($ac) === get_object_vars($ac2)) {
-            // self::dtrace("    Course $ac->course_listing_id matched $course->Course_Listing_ID, skipping.");
+            self::dtrace("    Course $ac->course_listing_id matched $course->Course_Listing_ID, skipping.");
             return $ac;
         } else {
 
@@ -934,7 +790,7 @@ class workdaystudent {
             $as->registered_date != $enrollment->Registered_Date ||
             $as->registration_status != $enrollment->Registration_Status)
         ) {
-            // self::dtrace("Found interstitial enrollment record that requires an update with id: $as->id.");
+            self::dtrace("Found interstitial enrollment record that requires an update with id: $as->id.");
             $as = self::update_student_enrollment($s, $enrollment, $unenrolls, $enrolls, $donothings, $as);
 
         } else if (isset($as->id) && !isset($enrollment->Registered_Date) && (
@@ -943,7 +799,7 @@ class workdaystudent {
             $as->credit_hrs != $enrollment->Units ||
             $as->registration_status != $enrollment->Registration_Status
         )) {
-            // self::dtrace("Found interstitial enrollment record that requires an update with id: $as->id.");
+            self::dtrace("Found interstitial enrollment record that requires an update with id: $as->id.");
             $as = self::update_student_enrollment($s, $enrollment, $unenrolls, $enrolls, $donothings, $as);
 
         // It does not exist, create it.
@@ -953,7 +809,7 @@ class workdaystudent {
 
         // It exists and matches, log it.
         } else {
-            // self::dtrace("Found interstitial enrollment record with id: $as->id. No update required.");
+            self::dtrace("Found interstitial enrollment record with id: $as->id. No update required.");
         }
 
         return $as;
@@ -984,22 +840,18 @@ class workdaystudent {
         $dropdate = isset($enrollment->Drop_Date)
                     ? self::dateconv($enrollment->Drop_Date)
                     : $wdate;
-        $lastupdate = isset($enrollment->Created_Moment)
-                      ? self::dateconv($enrollment->Created_Moment)
-                      : 0;
-
-        // Leave GUILD data alone.
-        unset($as->guild);
+        $lastupdate = isset($enrollment->Last_Functionally_Updated)
+                      ? self::dateconv($enrollment->Last_Functionally_Updated)
+                      : time();
 
         // Build the cloned object.
         $as2 = unserialize(serialize($as));
 
-        // TODO: Make sure we only care about this on enrollment and not unenrollment.
-        // if (!isset($enrollment->Grading_Basis)) {
-        //     mtrace("*** Grading basis not set for course: $enrollment->Section_Listing_ID and student: $enrollment->Universal_Id.");
-        // }
+        if (!isset($enrollment->Grading_Basis)) {
+            mtrace("*** Grading basis not set for course: $enrollment->Section_Listing_ID and student: $enrollment->Universal_Id.");
+        }
 
-        // Keep the id, section_listing_id, and universal_id from $as and populate the rest from aenrollment.
+        // Keep the id, section_listing_id, and $universal_id from $as and populate the rest from aenrollment.
         $as2->credit_hrs = $enrollment->Units;
         $as2->grading_scheme = isset($enrollment->Student_Grading_Scheme_ID)
                                ? $enrollment->Student_Grading_Scheme_ID
@@ -1009,9 +861,6 @@ class workdaystudent {
         $as2->registered_date = $regdate;
         $as2->drop_date = $dropdate;
         $as2->lastupdate = $lastupdate;
-
-        // This is grabbed as a string, convert.
-        $as->drop_date = (int) $as->drop_date;
 
         // Status gets complicated and is based on Registration Status.
         if (in_array($enrollment->Registration_Status, $unenrolls) && $as->status != 'unenrolled') {
@@ -1049,7 +898,7 @@ class workdaystudent {
             }
 
             if (isset($success) && $success == true) {
-                // self::dtrace("Enrollment for $as2->universal_id in $as2->section_listing_id has been updated from the endpoint.");
+                self::dtrace("Enrollment for $as2->universal_id in $as2->section_listing_id has been updated from the endpoint.");
 
                 // Return the updated object.
                 return $as2;
@@ -1092,9 +941,9 @@ class workdaystudent {
         $dropdate = isset($enrollment->Drop_Date)
                     ? self::dateconv($enrollment->Drop_Date)
                     : $wdate;
-        $lastupdate = isset($enrollment->Created_Moment)
-                      ? self::dateconv($enrollment->Created_Moment)
-                      : 0;
+        $lastupdate = isset($enrollment->Last_Functionally_Updated)
+                      ? self::dateconv($enrollment->Last_Functionally_Updated)
+                      : time();
 
         // Set the table.
         $table = 'enrol_wds_student_enroll';
@@ -1308,8 +1157,8 @@ class workdaystudent {
         if (count($times) < 2) {
 
             // If we don't have both start and end times, log the issue and exit.
-            self::dtrace("Error! Invalid time format: $schedule");
-            // var_dump($section);
+            self::dtrace("Invalid time format: $timepart");
+            var_dump($times);
             return [];
         }
 
@@ -1371,8 +1220,8 @@ class workdaystudent {
     /**
      * Store the schedule (add, update, or delete records) based on the provided data.
      *
-     * @param @array $schedule An array of stdClass objects containing the schedule data.
-     * @return @void
+     * @param array $schedule An array of stdClass objects containing the schedule data.
+     * @return void
      */
     public static function wds_store_schedules($section, $schedules) {
         global $DB;
@@ -1421,11 +1270,7 @@ class workdaystudent {
                     // Times differ, set them accordingly and update the record.
                     $existingrecord->start_time = $scheduleitem->start_time;
                     $existingrecord->end_time = $scheduleitem->end_time;
-                    try {
-                        $DB->update_record($table, $existingrecord);
-                    } catch (dml_exception $e) {
-                        mtrace('Database update failed: ' . $e->getMessage());
-                    }
+                    $DB->update_record($table, $existingrecord);
                 }
 
                 // Remove handled items from the existingmap.
@@ -1433,11 +1278,7 @@ class workdaystudent {
             } else {
 
                 // No record for this day. Insert one.
-                try {
-                    $DB->insert_record($table, $scheduleitem);
-                } catch (dml_exception $e) {
-                    mtrace('Database insert failed: ' . $e->getMessage());
-                }
+                $DB->insert_record($table, $scheduleitem);
 
                 // Remove handled items from the existingmap.
                 unset($existingmap[$scheduleitem->day]);
@@ -1573,7 +1414,7 @@ class workdaystudent {
 
         // Compare the objects.
         if (get_object_vars($au) === get_object_vars($au2)) {
-            // self::dtrace(" - Academic unit $au->academic_unit_id matched $unit->Academic_Unit_ID, skipping.");
+            self::dtrace(" - Academic unit $au->academic_unit_id matched $unit->Academic_Unit_ID, skipping.");
             return $au;
         } else {
 
@@ -2001,7 +1842,7 @@ class workdaystudent {
 
         $period = [reset($periods)];
 
-        return $periods;
+        return $period;
     }
 
     public static function get_current_periods($s) {
@@ -2090,7 +1931,7 @@ class workdaystudent {
 
         // Set some more parms up.
 
-        $parms['Institution!Academic_Unit_ID'] = $s->campus;
+        // TODO: Add me back! $parms['Institution!Academic_Unit_ID'] = $s->campus;
         $parms['format'] = 'json';
 
         // Build out the settins based on settings, endpoint, and parms.
@@ -2170,7 +2011,7 @@ class workdaystudent {
 
         // If the objects match.
         if (get_object_vars($pgm) === get_object_vars($pgm1)) {
-            // self::dtrace("  - Program object match, no update necessary.");
+            self::dtrace("  - Program object match, no update necessary.");
 
             // Return the original program.
             return $pgm;
@@ -2179,6 +2020,8 @@ class workdaystudent {
 
             // Update the record.
             $success = $DB->update_record($table, $pgm1, false);
+
+            // TODO: RETURN ERRORS.
 
             // Return the new record.
             return $pgm1;
@@ -2219,6 +2062,8 @@ class workdaystudent {
 
         // We may not need to fetch/send this. Revisit.
         $gs = $DB->get_record($table, ['id' => $gsid]);
+
+        // TODO: RETURN ERRORS.
 
         return $gs;
     }
@@ -2265,7 +2110,7 @@ class workdaystudent {
 
             // Get the grading schemas.
             foreach ($gradingschemes as $gradingschema) {
-                // self::dtrace("    Processing $gradingschema->Student_Grading_Scheme_ID.");
+                self::dtrace("    Processing $gradingschema->Student_Grading_Scheme_ID.");
 
                 // Get the grading schemes from each Grades_group.
                 foreach ($gradingschema->Grades_group as $gradingscheme) {
@@ -2286,7 +2131,7 @@ class workdaystudent {
 
                     // Increment the counter.
                     $counter++;
-                    // self::dtrace("      -($counter) Processing $gradingscheme->Grading_Basis - $gradingscheme->Student_Grade_Display.");
+                    self::dtrace("      -($counter) Processing $gradingscheme->Grading_Basis - $gradingscheme->Student_Grade_Display.");
 
                     // Insert each grading scheme and add it to the $gs array.
                     $gs = array_merge($gs, self::insert_grading_scheme($gradingscheme));
@@ -2630,12 +2475,10 @@ class workdaystudent {
     }
 
     public static function insert_all_studentmeta($s, $stu, $student, $period) {
-        global $DB;
 
         // Determine what data we're talking about.
         $metafields = explode(',', $s->metafields);
         $sportfield = $s->sportfield;
-        $cohortfield = isset($s->cohortfield) ? $s->cohortfield : 'Athletic_Cohort';
         $athletecounter = 0;
 
         self::dtrace("Beginning to process student metadata for $stu->universal_id.");
@@ -2652,122 +2495,27 @@ class workdaystudent {
             }
         }
 
-        // Sports!
-        if (isset($student->$sportfield)) {
-            $athletecounter++;
-            foreach ($student->$sportfield as $team) {
+        foreach ($metafields as $metafield) {
+            if (isset($student->$sportfield)) {
+                $athletecounter++;
+                foreach ($student->$sportfield as $team) {
 
-                // Update and insert sports and codes as needed.
-                $sport = self::create_update_sportcodes($s, $team);
-                $sports[] = $sport->code;
-                $supdated = self::insert_studentmeta($s, $stu, 'Athletic_Team_ID', $sport->code, $period);
-                if ($supdated) {
-                    self::dtrace("    $student->Universal_Id - $student->First_Name $student->Last_Name is on team $sport->code: $sport->name.");
-                } else {
-                    self::dtrace("    ERROR: $student->Universal_Id - $student->First_Name $student->Last_Name - $sport->code: $sport->name failed to populate.");
+                    // Update and insert sports and codes as needed.
+                    $sport = self::create_update_sportcodes($s, $team);
+                    $sports[] = $sport->code;
+                    $supdated = self::insert_studentmeta($s, $stu, 'Athletic_Team_ID', $sport->code, $period);
+                    if ($supdated) {
+                        self::dtrace("    $student->Universal_Id - $student->First_Name $student->Last_Name is on team $sport->code: $sport->name.");
+                    } else {
+                        self::dtrace("    ERROR: $student->Universal_Id - $student->First_Name $student->Last_Name - $sport->code: $sport->name failed to populate.");
+                    }
                 }
-            }
-        }
-
-        // Cohorts!
-        if (isset($student->$cohortfield)) {
-
-            // Build this out for later.
-            $cteam = new stdClass();
-
-            // Only get the name of the field.
-            $cparts = explode(" - ", $student->$cohortfield);
-            $cresult = trim(end($cparts));
-
-            // Build out the object.
-            $cteam->Athletic_Team = $cresult;
-
-            // Get the cohort code if we have one.
-            $ccode = $DB->get_record('enrol_wds_sport', ['name' => $cresult]);
-
-            // If we have a code, use it, if not generate a unique one.
-            if ($ccode) {
-                $cteam->Athletic_Team_ID = $ccode->code;
-            } else {
-                $cteam->Athletic_Team_ID = self::make_cohort_code($cresult);
-            }
-
-            // Update and insert cohort and code as needed.
-            $cohort = self::create_update_sportcodes($s, $cteam);
-
-            $cohorts[] = $cohort->code;
-            $cupdated = self::insert_studentmeta($s, $stu, 'Athletic_Team_ID', $cohort->code, $period);
-            if ($supdated) {
-                self::dtrace("    $student->Universal_Id - $student->First_Name $student->Last_Name is in cohort $cohort->code: $cohort->name.");
-            } else {
-                self::dtrace("    ERROR: $student->Universal_Id - $student->First_Name $student->Last_Name - $cohort->code: $cohort->name failed to populate.");
+                break;
             }
         }
 
         self::dtrace("Finished processing of student metadata for $stu->universal_id.");
-
         return $athletecounter;
-    }
-
-    /**
-     * Generate a unique 4-letter sport code that does not exist in mdl_enrol_wds_sport.
-     *
-     * @param @string $name The name of the sport or category.
-     * @return @string Unique 3-letter code.
-     */
-    public static function make_cohort_code(string $cohort): string {
-        global $DB;
-
-        // Get the words from the string.
-        $words = preg_split('/\s+/', trim($cohort));
-
-        // We need this for later.
-        $code = '';
-
-        // How many words to we have?
-        if (count($words) > 1) {
-
-            // Multi-word: take first letters until 3 chars.
-            foreach ($words as $w) {
-                if (mb_strlen($code) < 4) {
-                    $code .= mb_substr($w, 0, 1);
-                }
-            }
-            $code = strtoupper($code);
-
-            // If less than 4 chars, pad with more letters from first word.
-            $first = $words[0];
-            $i = 1;
-            while (mb_strlen($code) < 4 && $i < mb_strlen($first)) {
-                $code .= mb_strtoupper(mb_substr($first, $i, 1));
-                $i++;
-            }
-        } else {
-
-            // Single word: take first 3 letters (or pad if shorter).
-            $code = strtoupper(str_pad(mb_substr($words[0], 0, 4), 4, 'X'));
-        }
-
-        // Get all the existing codes.
-        $existing = $DB->get_fieldset_select('enrol_wds_sport', 'code', '', []);
-
-        $base = $code;
-        $suffix = 1;
-
-        while (in_array($code, $existing, true)) {
-
-            // First 3 letters + numeric suffix
-            $code = mb_substr($base, 0, 3) . $suffix;
-            $suffix++;
-
-            // Fallback if numeric suffix goes above 9
-            if ($suffix > 9) {
-                $code = mb_substr($base, 0, 1) . mb_substr($base, -2) . $suffix;
-                $suffix++;
-            }
-        }
-
-        return $code;
     }
 
     public static function truncate_studentmeta() {
@@ -2826,7 +2574,7 @@ class workdaystudent {
         // Set the parms.
         $parms = ['code' => $team->Athletic_Team_ID];
 
-        // Get the data.
+        // Get tthe data.
         $sport = $DB->get_record($table, $parms);
 
         return $sport;
@@ -2869,7 +2617,7 @@ class workdaystudent {
             && $sport->name == $team->Athletic_Team) {
 
             // Log we did not update anything.
-            // self::dtrace("  - Sport code matches team name, skipping.");
+            self::dtrace("  - Sport code matches team name, skipping.");
 
             return $sport;
         } else {
@@ -2902,7 +2650,7 @@ class workdaystudent {
             return $updated;
         } else {
 
-            // Create the sport.
+            // Create the student.
             $created = self::create_sportcode($s, $team);
             return $created;
         }
@@ -2911,7 +2659,8 @@ class workdaystudent {
     /**
      * Gets the data from the webservice endpoint.
      *
-     * @param @object $s
+     * @param  @object $s
+     *
      * @return @array of @objects
      */
     public static function get_data($s) {
@@ -2931,6 +2680,12 @@ class workdaystudent {
         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_setopt($ch, CURLOPT_TIMEOUT, 1800);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+
+        // Debug this connection.
+        if ($CFG->debugdisplay == 1) {
+
+// TODO: readd            curl_setopt($ch, CURLOPT_VERBOSE, true);
+        }
 
         // Get the data.
         $json_response = curl_exec($ch);
@@ -3058,21 +2813,14 @@ class workdaystudent {
         // Get the student legacy ID from the object.
         $lid = self::get_email_or_idnumber($s, $student, 'Legacy_ID');
 
-        // Build out the parms.
-        $parms = [
-            'uid' => $student->Universal_Id,
-            'username' => \core_text::strtolower($email),
-            'email' => \core_text::strtolower($email)
-        ];
-
         // Set up the SQL to look for the student in the LMS.
-        $sql = "SELECT *
-            FROM {enrol_wds_students} stu
-            WHERE stu.universal_id = :uid
-                OR stu.username = :username
-                OR stu.email = :email";
+        $sql = 'SELECT *
+                FROM {enrol_wds_students} stu
+                WHERE stu.universal_id = "' . $student->Universal_Id . '"
+                OR stu.username = "' . \core_text::strtolower($email) . '"
+                OR stu.email = "' . \core_text::strtolower($email) . '"';
 
-        $stus = $DB->get_records_sql($sql, $parms);
+        $stus = $DB->get_records_sql($sql);
         if (count($stus) > 1) {
             foreach ($stus as $stu) {
                 $schoolid = !is_null($stu->school_id) ?
@@ -3148,16 +2896,16 @@ class workdaystudent {
         $stu2->school_id = $lid;
         $stu2->firstname = $student->First_Name;
         $stu2->preferred_firstname = isset($student->Preferred_First_Name) ?
-            $student->Preferred_First_Name : $student->First_Name;
+            $student->Preferred_First_Name : null;
         $stu2->lastname = $student->Last_Name;
         $stu2->preferred_lastname = isset($student->Preferred_Last_Name) ?
-            $student->Preferred_Last_Name : $student->Last_Name;
+            $student->Preferred_Last_Name : null;
         $stu2->middlename = isset($student->Middle_Name) ?
             $student->Middle_Name : null;
 
         // If the objects match.
         if (get_object_vars($stu1) === get_object_vars($stu2)) {
-            // self::dtrace("  - Student objects match, no update necessary.");
+            self::dtrace("  - Student objects match, no update necessary.");
 
             // Return the original student.
             return $stu;
@@ -3203,10 +2951,10 @@ class workdaystudent {
         $data->userid = null;
         $data->firstname = $student->First_Name;
         $data->preferred_firstname = isset($student->Preferred_First_Name) ?
-            $student->Preferred_First_Name : $student->First_Name;
+            $student->Preferred_First_Name : null;
         $data->lastname = $student->Last_Name;
         $data->preferred_lastname = isset($student->Preferred_Last_Name) ?
-            $student->Preferred_Last_Name : $student->Last_Name;
+            $student->Preferred_Last_Name : null;
         $data->middlename = isset($student->Middle_Name) ?
             $student->Middle_Name : null;
         $data->lastupdate = time();
@@ -3302,17 +3050,12 @@ class workdaystudent {
             return false;
         }
 
-        $parms = [
-            'teacherid' => $teacher->Instructor_ID,
-            'email' => $teacher->Instructor_Email
-        ];
-
         $sql = 'SELECT *
                 FROM {enrol_wds_teachers} tea
-                WHERE tea.universal_id = :teacherid
-                OR tea.email = :email';
+                WHERE tea.universal_id = "' . $teacher->Instructor_ID . '"
+                OR tea.email = "' . $teacher->Instructor_Email . '"';
 
-        $teas = $DB->get_records_sql($sql, $parms);
+        $teas = $DB->get_records_sql($sql);
         if (count($teas) > 1) {
             foreach ($teas as $tea) {
                 mtrace('Error! IDB teacher ID: ' . $tea->id . ', ' .
@@ -3376,7 +3119,7 @@ class workdaystudent {
 
         // If the objects match.
         if (get_object_vars($tea1) === get_object_vars($tea2)) {
-            // self::dtrace(" User objects match, no update necessary.");
+            self::dtrace(" User objects match, no update necessary.");
 
             // Return the original teacher.
             return false;
@@ -3447,16 +3190,14 @@ class workdaystudent {
         // We do not have an instructor or a role.
         if (is_null($universalid) && is_null($role)) {
 
-            $parms = ['sectionid' => $sectionid];
-
             // Build the SQL to grab existing instructors.
             $usql = 'SELECT * FROM {enrol_wds_teacher_enroll} e
-                    WHERE e.section_listing_id = :sectionid
+                    WHERE e.section_listing_id = "' . $sectionid . '"
                         AND (e.status = "enroll" OR e.status = "enrolled")
                         AND (e.role = "teacher" OR e.role = "primary")';
 
             // Fetch the existing instructors.
-            $uenrs = $DB->get_records_sql($usql, $parms);
+            $uenrs = $DB->get_records_sql($usql);
 
             // Build an empty array for later use.
             $unenrolls = [];
@@ -3467,27 +3208,19 @@ class workdaystudent {
                 // Loop through them.
                 foreach ($uenrs as $uenr) {
 
-                    $uparms = [
-                        'status' => $uenr->status,
-                        'role' => $uenr->role,
-                        'prevrole' => $uenr->role,
-                        'sectionid' => $sectionid,
-                        'universalid' => $uenr->universal_id
-                    ];
-
                     // Build the sql to update their records.
                     $sql = 'UPDATE {enrol_wds_teacher_enroll} e
                                 SET e.status = "unenroll",
-                                    e.prevstatus = :status,
-                                    e.role = :role,
-                                    e.prevrole = :prevrole
-                            WHERE e.section_listing_id = :sectionid
-                                AND e.universal_id = :universalid
+                                    e.prevstatus = "' . $uenr->status . '",
+                                    e.role = "' . $uenr->role . '",
+                                    e.prevrole = "' . $uenr->role . '"
+                            WHERE e.section_listing_id = "' . $sectionid . '"
+                                AND e.universal_id = "' . $uenr->universal_id . '"
                                 AND (e.status = "enroll" OR e.status = "enrolled")
                                 AND (e.role = "teacher" OR e.role = "primary")';
 
                     // Execute the SQL.
-                    $unenrolls[] = $DB->execute($sql, $uparms);
+                    $unenrolls[] = $DB->execute($sql);
 
                     // Log what we did.
                     self::dtrace("  $uenr->universal_id set to unenroll in $sectionid.");
@@ -3550,8 +3283,8 @@ class workdaystudent {
 
                 // Compare the objects.
                 if (get_object_vars($data) === get_object_vars($enr)) {
-                    // self::dtrace(" - Enrollment entry: " .
-                    //    "$data->id matches exactly, skipping.");
+                    self::dtrace(" - Enrollment entry: " .
+                        "$data->id matches exactly, skipping.");
 
                     return $enr;
                 } else {
@@ -3694,8 +3427,8 @@ class workdaystudent {
             SET u.idnumber = stu.universal_id,
                 u.email = stu.email,
                 u.username = stu.username,
-                u.firstname = COALESCE(stu.preferred_firstname, stu.firstname),
-                u.lastname = COALESCE(stu.preferred_lastname, stu.lastname),
+                u.firstname = stu.preferred_firstname,
+                u.lastname = stu.preferred_lastname,
                 u.middlename = stu.middlename,
                 u.timemodified = stu.lastupdate,
                 u.auth = '$auth'
@@ -3705,8 +3438,8 @@ class workdaystudent {
                 AND (stu.universal_id != u.idnumber
                     OR stu.email != u.email
                     OR stu.username != u.username
-                    OR COALESCE(stu.preferred_firstname, stu.firstname) != u.firstname
-                    OR COALESCE(stu.preferred_lastname, stu.lastname) != u.lastname
+                    OR stu.preferred_firstname != u.firstname
+                    OR stu.preferred_lastname != u.lastname
                     OR stu.middlename != u.middlename
                     OR u.auth != '$auth')";
 
@@ -3769,8 +3502,8 @@ class workdaystudent {
                    AND (stu.universal_id != u.idnumber
                        OR stu.email != u.email
                        OR stu.username != u.username
-                       OR COALESCE(stu.preferred_firstname, stu.firstname) != u.firstname
-                       OR COALESCE(stu.preferred_lastname, stu.lastname) != u.lastname
+                       OR stu.preferred_firstname != u.firstname
+                       OR stu.preferred_lastname != u.lastname
                        OR stu.middlename != u.middlename
                        OR u.auth != '$auth')";
 
@@ -3843,6 +3576,8 @@ class workdaystudent {
         // Make sure we care only setting usernames and emails in lowecase.
         $user->username = \core_text::strtolower($student->username);
         $user->email = \core_text::strtolower($student->email);
+
+        // Idnumber is universal ID. TODO: Deal with school ID as well.
         $user->idnumber = $student->universal_id;
 
         // Make sure we're using their preferred names.
@@ -3962,6 +3697,8 @@ class workdaystudent {
         // Compare each field and track any changes.
         $changes = false;
 
+        // TODO: Deal with 'school_id' somehow.
+
         // List the fields to compare.
         $fields_to_check = [
             'username',
@@ -4021,8 +3758,8 @@ class workdaystudent {
                 return $updated;
             }
         } else {
-            // self::dtrace("No changes were found in the " .
-            //    "above user objects (case insensitive).");
+            self::dtrace("No changes were found in the " .
+                "above user objects (case insensitive).");
         }
 
         return false;
@@ -4135,7 +3872,6 @@ class workdaystudent {
             per.period_type,
             per.start_date,
             per.end_date,
-            per.academic_period_id,
             cou.course_subject_abbreviation,
             cou.course_subject,
             cou.course_abbreviated_title,
@@ -4169,8 +3905,7 @@ class workdaystudent {
                     ON sec.section_listing_id = tenr.section_listing_id
                 INNER JOIN {enrol_wds_teachers} tea
                     ON tenr.universal_id = tea.universal_id
-            WHERE per.enabled = 1
-                AND sec.controls_grading = 1
+            WHERE sec.controls_grading = 1
                 AND (
                     sec.wd_status = 'Open' OR
                     sec.wd_status = 'Closed' OR
@@ -4202,7 +3937,6 @@ class workdaystudent {
             '{period_type}' => $mshell->period_type,
             '{course_subject_abbreviation}' => $mshell->course_subject_abbreviation,
             '{course_number}' => $mshell->course_number,
-            '{section_number}' => $mshell->sections,
             '{course_type}' => $mshell->class_type,
             '{firstname}' => isset($mshell->preferred_firstname)
                 ? $mshell->preferred_firstname
@@ -4236,10 +3970,8 @@ class workdaystudent {
             }
         }
 
-        // Trim the formatted shell name.
-        $shellname = trim($shellname);
-
-        return $shellname;
+        // Return the formatted shell name.
+        return trim($shellname);
     }
 
     public static function wds_create_moodle_groups($course, $mshell) {
@@ -4250,50 +3982,25 @@ class workdaystudent {
         // Get the sections.
         $sections = explode(",", $mshell->sections);
 
-        // Array for all group IDs we keep/create.
-        $groupids = [];
-
         foreach ($sections as $section) {
 
             // Build out the groupname.
             $groupname = "$mshell->course_subject_abbreviation $mshell->course_number $section";
 
-            // Find all matching groups and count members.
-            $sql = "SELECT g.id,
-                COUNT(gm.userid) AS membercount
-                FROM {groups} g
-                    LEFT JOIN {groups_members} gm ON gm.groupid = g.id
-                WHERE g.courseid = :courseid
-                    AND g.name = :name
-                GROUP BY g.id
-               ORDER BY membercount DESC, g.id ASC";
+            // Build out an array of groupids.
+            $groupids = [];
 
-            // Build out the cheese.
-            $parms = ['courseid' => $course->id, 'name' => $groupname];
+            // Check if the group already exists in the course.
+            $existinggroup = $DB->get_record('groups',
+                ['courseid' => $course->id, 'name' => $groupname], 'id');
 
-            // Get the groups.
-            $matchinggroups = $DB->get_records_sql($sql, $parms);
+            if (isset($existinggroup->id)) {
+                self::dtrace("  Group '$groupname' already exists in $course->fullname. Skipping.");
 
-            if (!empty($matchinggroups)) {
+                // Add the existing groupid to the array.
+                $groupids[] = $existinggroup->id;
 
-            // Keep the first one (most members).
-                $keep = reset($matchinggroups);
-                $groupids[] = $keep->id;
-
-                // self::dtrace("  Group '$groupname' already exists in $course->fullname with {$keep->membercount} members. Keeping this one.");
-
-                // Remove the "keep" group from array.
-                array_shift($matchinggroups);
-
-                // Delete all other duplicates.
-                foreach ($matchinggroups as $dupe) {
-
-                    self::dtrace("    Deleting duplicate group ID {$dupe->id} ({$dupe->membercount} members).");
-
-                    // Delete the group.
-                    groups_delete_group($dupe->id);
-                }
-
+                continue;
             } else {
 
                 // Create the group and return the groupid.
@@ -4323,14 +4030,6 @@ class workdaystudent {
         return null;
     }
 
-    /**
-     * Creates or updates a Moodle course shell based on shell information.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $mshell Object containing shell information
-     * @param @object $userprefs Object containing user preferences for course creation
-     * @return @object | @bool The created/updated Moodle course object or false on failure
-     */
     public static function create_moodle_shell($mshell, $userprefs) {
         global $CFG, $DB;
 
@@ -4371,30 +4070,9 @@ class workdaystudent {
         $course->showgrades = 1;
         $course->lang = $CFG->lang;
 
-        // Check if either the shortname OR idnumber exists and deal.
-        $snexists = $DB->get_record('course', ['shortname' => $course->shortname]);
-        $idexists = $DB->get_record('course', ['idnumber' => $course->idnumber]);
+        $exists = $DB->get_record('course', ['shortname' => $course->shortname]);
 
-        // If the shortname exists.
-        if (isset($snexists->id)) {
-
-            // Set it.
-            $exists = $snexists;
-
-        // If the idnumber exists.
-        } else if (isset($idexists->id)) {
-
-            // Set it.
-            $exists = $idexists;
-
-        // We're dealing with a new course.
-        } else {
-
-            // Build a fake object to not error out later.
-            $exists = new stdClass();
-        }
-
-        // If the course exists create some groups.
+        // If it exists create some groups.
         if (isset($exists->id)) {
             self::dtrace("  $course->fullname already exists. Updating idb idnumber.");
 
@@ -4402,46 +4080,34 @@ class workdaystudent {
             $groups = self::wds_create_moodle_groups($exists, $mshell);
         }
 
-        // If the exists and the idnumbers or shortnames match, update the interstitial record.
-        if (isset($exists->id) && ($exists->idnumber == $course->idnumber || $exists->shortname == $course->shortname))  {
+        // If it exists and the idnumbers match, update the interstitial record.
+        if (isset($exists->id) && $exists->idnumber == $course->idnumber) {
             $sectiontable = 'enrol_wds_sections';
             $sectionids = explode(",", $mshell->sectionids);
 
             // Loop through the section ids.
             foreach ($sectionids as $sectionid) {
 
-                // Build the idb parms.
-                $idbparms = [
+                // Build the parms.
+                $parms = [
                     'id' => $sectionid,
                     'idnumber' => $course->idnumber,
                     'moodle_status' => $exists->id
                 ];
 
                 // Update the record.
-                $idbupdated = $DB->update_record($sectiontable, $idbparms);
+                $updated = $DB->update_record($sectiontable, $parms);
                 self::dtrace("   Course idumber / moodle_status updated in $sectiontable for id: $sectionid.");
             }
 
-            $coursetable = 'course';
-
-            // Build the idb parms.
-            $cparms = [
-                'id' => $exists->id,
-                'idnumber' => $course->idnumber
-            ];
-
-            // Update the record.
-            $cupdated = $DB->update_record($coursetable, $cparms);
-
-            // Everything is awesome, return the existing course.
             return $exists;
 
-        // We should never be here! The course exists but shortname and idnumber still do not match what they're supposed to be.
+        // This is not right!
         } else if (isset($exists->id) && $exists->idnumber != $course->idnumber) {
             mtrace(" Error! We should never have a matching " .
                 "shortname with a mismatched idnumber!");
-            mtrace(" - Error! Course Shell id: $exists->id, " .
-                "Interstitial record idnumber: $course->idnumber.");
+            mtrace(" - Error! Course Shell: $exists->idnumber, " .
+                "Interstitial record: $course->idnumber.");
             return false;
         }
 
@@ -4479,124 +4145,13 @@ class workdaystudent {
         return $moodlecourse;
     }
 
-    /**
-     * Gets future and current taught academic periods.
-     *
-     * @return @array Formatted array of periods.
-     */
-    public static function get_current_taught_periods($mshell): array {
-        global $DB;
-
-        // Set this.
-        $uid = $mshell->universal_id;
-
-        // Build the SQL.
-        $sql = "SELECT p.academic_period_id,
-                p.period_type,
-                p.period_year,
-                p.academic_period
-            FROM {enrol_wds_periods} p
-                INNER JOIN {enrol_wds_sections} sec
-                    ON sec.academic_period_id = p.academic_period_id
-                INNER JOIN {enrol_wds_teacher_enroll} tenr
-                    ON tenr.section_listing_id = sec.section_listing_id
-            WHERE tenr.universal_id = :userid
-                AND p.end_date > UNIX_TIMESTAMP()
-                AND p.academic_period_id = :periodid
-            GROUP BY p.academic_period_id
-            ORDER BY p.start_date ASC, p.period_type ASC";
-
-        // Use named parameters for security.
-        $parms = [
-            'userid' => $uid,
-            'periodid' => $mshell->academic_period_id
-        ];
-
-        // Get the actual data.
-        $records = $DB->get_records_sql($sql, $parms);
-
-        // Build the periods array.
-        $periods = [];
-
-        // Loop through the data.
-        foreach ($records as $record) {
-
-            // Determine if this is an online period or not.
-            $online = self::get_period_online($record->academic_period);
-
-            // Get the academic period id.
-            $pid = $record->academic_period_id;
-
-            // Get the period name matching the course designation.
-            $pname = $record->period_year . ' ' . $record->period_type . $online;
-
-            // Add the key/value pair to the array.
-            $periods[$pid] = $pname;
-        }
-
-        return $periods;
-    }
-
-    /**
-     * Determines if an academic period is an ONLINE period.
-     *
-     * @param @string $period The academic period ID to fetch idata for.
-     * @return @string ' (Online) or an empty string depending if it's online or not.
-     */
-    public static function get_period_online(string $period): string {
-
-        // If the period contains the term "online", desired string, otherwise empty.
-        $online = stripos($period, 'Online') !== false ? ' (Online)' : '';
-
-        // Return it.
-        return $online;
-    }
-
-    /**
-     * Builds a standardized idnumber for Moodle course shell.
-     *
-     * @package enrol_workdaystudent
-     * @param @object $mshell Shell information object
-     * @return @string Formatted idnumber for the course
-     */
     public static function build_mshell_idnumber($mshell) {
-        $s = self::get_settings();
-
-        $periodname = self::get_current_taught_periods($mshell);
-
-        $periodname = reset($periodname);
-
-        // Remove space between year and term.
-        $pname = preg_replace('/(\d{4}) /', '$1', $periodname);
-
-        // Remove space before (Online) and remove parentheses.
-        $pname = str_replace(' (Online)', 'Online', $pname);
-
-        // Initialize idnumbersectionpart.
-        $idnumbersectionpart = '';
-
-        // Check if course grouping is disabled.
-        if (isset($s->course_grouping) && $s->course_grouping == 0) {
-
-            // Check if sections are set and not empty.
-            if (isset($mshell->sections) && !empty($mshell->sections)) {
-
-                // Split sections by comma. This should never happen if grouping is disabled.
-                $sectionparts = explode(',', $mshell->sections);
-
-                // Take the first section number.
-                $sectionnumber = $sectionparts[0];
-
-                // Prepare the section part for idnumber.
-                $idnumbersectionpart = '_' . $sectionnumber;
-            }
-        }
 
         // Build out the idnumber.
-        $idnumber = $pname .
+        $idnumber = $mshell->period_year .
+            $mshell->period_type .
             $mshell->course_subject_abbreviation .
-            $mshell->course_number .
-            $idnumbersectionpart . '-' .
+            $mshell->course_number . '-' .
             $mshell->universal_id;
 
         return $idnumber;
@@ -4613,34 +4168,12 @@ class workdaystudent {
 
         // We might be trying to find or create a parent category.
         if ($s->autoparent === 1) {
-/*
             $parentcat = 0;
 
-            // Build out the parent name.
             $parentname = "$mshell->period_type $mshell->period_year";
-
-            // Search for the parent cat.
-            $parentcat = $DB->get_records('course_categories', ['name' => $parentname]); 
-
-            // Get teh first object in the array of objects.
-            $parentcat = reset($parentcat);
-
-            // We need this.
-            $pcid = $parentcat->id;
-
-            // Set this for the parent path.
-            $parentpathsql = "AND cc.path = CONCAT('/$pcid/', cc.id)";
-
+            $parentpathsql = "AND cc.path = CONCAT('/$parentname/', cc.id)";
             $catnamesql = "AND cc.name = '$parentname'";
-*/
-        // We're working in the topmost category.
-        } else if ($s->parentcat == 0) {
 
-            $parentcat = 0;
-            $parentpathsql = "AND cc.path = CONCAT('/', cc.id)";
-            $catnamesql = "AND cc.name = '$mshell->course_subject_abbreviation'";
-
-        // We are building out categories within a subcategory of top.
         } else {
 
             // Set this relative to the configured parent.
@@ -4658,13 +4191,13 @@ class workdaystudent {
             WHERE cc.parent = $parentcat
                 $parentpathsql
                 $catnamesql
-            ORDER BY cc.id ASC";
+            ORDER BY cc.name ASC";
 
         // Set the category object.
         $category = $DB->get_records_sql($ccsql);
 
         if (is_array($category) && !empty($category) && count($category) > 1) {
-            mtrace("  Multiple categories for $catname. Deal with it.");
+            mtrace("  ERROR! Multiple categories for $catname. Deal with it.");
         } else if (is_array($category) && !empty($category)) {
             $category = reset($category);
 
@@ -4690,6 +4223,8 @@ class workdaystudent {
             // Moodle wants an array for the new category.
             $categorydata = [
                 'name' => $catname,
+
+                // TODO: Use the settings value for parent category.
                 'parent' => $parentcat,
                 'description' => $catdesc,
                 'descriptionformat' => FORMAT_HTML,
@@ -4743,8 +4278,9 @@ class workdaystudent {
     /**
      * Finds similar objects.
      *
-     * @param @object $obj1
-     * @param @object $obj2
+     * @param  @object $obj1
+     * @param  @object $obj2
+     *
      * @return @float $similarity
      */
     public static function wdstu_compareobjects($obj1, $obj2) {
@@ -4804,9 +4340,10 @@ class workdaystudent {
      *
      * @package   enrol_workdaystudent
      *
-     * @param @object $emaildata
-     * @param @object $s
-     * @return @bool
+     * @param     @object $emaildata
+     * @param     @object $s
+     *
+     * @return    @bool
      */
     public static function send_wdstu_email($emaildata, $s) {
         global $CFG, $DB;
@@ -4976,23 +4513,10 @@ class workdaystudent {
         return true;
     }
 
-    public static function wds_get_faculty_enrollments($period, $courseid = null) {
+    public static function wds_get_faculty_enrollments($period) {
         global $DB;
 
-        // More safely handle this.
-        $parms = ['period' => $period->academic_period_id];
-
-        // Do not get stuipid random data.
-        if (is_null($courseid)) {
-            $enrollstatuses = "AND tenr.status IN ('enroll', 'unenroll')";
-            $courselevel = '';
-        } else {
-            $parms['courseid'] = $courseid;
-            $enrollstatuses = "AND tenr.status IN ('enroll', 'enrolled', 'unenroll', 'unenrolled')";
-            $courselevel = 'AND c.id = :courseid';
-        }
-
-	    $sql = "SELECT tenr.id AS enrollment_id,
+	$sql = "SELECT tenr.id AS enrollment_id,
             sec.id AS sectionid,
             sec.academic_period_id AS periodid,
             c.id AS courseid,
@@ -5024,13 +4548,12 @@ class workdaystudent {
                     ON u.id = tea.userid
                     AND u.idnumber = tea.universal_id
             WHERE sec.controls_grading = 1
-                $enrollstatuses
-                AND sec.academic_period_id = :period
-                $courselevel
+                AND tenr.status IN ('enroll', 'unenroll')
+                AND sec.academic_period_id = '$period->academic_period_id'
             GROUP BY tenr.id
             ORDER BY c.id ASC, tenr.id ASC";
 
-        $enrollments = $DB->get_records_sql($sql, $parms);
+        $enrollments = $DB->get_records_sql($sql);
 
         return $enrollments;
     }
@@ -5061,6 +4584,7 @@ class workdaystudent {
 
                 // Build out the reprocessectionsql.
                 $reprocesssection = ' AND sec.course_section_definition_id = :courseid';
+
             }
         }
 
@@ -5075,7 +4599,7 @@ class workdaystudent {
                 sec.idnumber AS section_idnumber,
                 stuenr.status AS moodle_enrollment_status,
                 stuenr.prevstatus AS moodle_prev_status,
-                IF(stuenr.registered_date = 0, stuenr.drop_date, stuenr.registered_date) AS wds_regdate,
+                stuenr.registered_date AS wds_regdate,
                 tenr.universal_id AS primary_id
             FROM {enrol_wds_sections} sec
                 INNER JOIN {enrol_wds_courses} cou
@@ -5087,18 +4611,16 @@ class workdaystudent {
                     ON sec.section_listing_id = stuenr.section_listing_id
                 INNER JOIN {enrol_wds_teacher_enroll} tenr
                     ON tenr.section_listing_id = sec.section_listing_id
+                    AND tenr.role = 'primary'
                 LEFT JOIN {enrol_wds_students} stu
                     ON stu.universal_id = stuenr.universal_id
             WHERE sec.academic_period_id = :apid
                 AND sec.idnumber IS NOT NULL
+                AND sec.controls_grading = 1
                 AND stuenr.status IN ('enroll', 'unenroll')
                 $reprocesssection
             GROUP BY stuenr.id
-            ORDER BY sec.idnumber ASC,
-                sec.controls_grading ASC,
-                stuenr.status DESC,
-                stuenr.registered_date ASC,
-                stuenr.lastupdate ASC";
+            ORDER BY sec.section_listing_id ASC";
 
             $enrollments = $DB->get_records_sql($sql, $parms);
 
@@ -5108,45 +4630,39 @@ class workdaystudent {
     public static function get_wds_groups($courseid, $userid, $periodid) {
         global $DB;
 
-        $parms = [
-            'courseid' => $courseid,
-            'userid' => $userid,
-            'periodid' => $periodid
-        ];
-
         $sql = "SELECT g.id AS groupid,
                 g.name AS groupname
-            FROM {course} c
-                INNER JOIN {enrol_wds_sections} sec
+            FROM mdl_course c
+                INNER JOIN mdl_enrol_wds_sections sec
                     ON sec.idnumber = c.idnumber
                     AND sec.moodle_status = c.id
-                INNER JOIN {enrol_wds_courses} cou
+                INNER JOIN mdl_enrol_wds_courses cou
                     ON cou.course_listing_id = sec.course_listing_id
-                INNER JOIN {enrol_wds_teacher_enroll} tenr
+                INNER JOIN mdl_enrol_wds_teacher_enroll tenr
                     ON sec.section_listing_id = tenr.section_listing_id
-                INNER JOIN {enrol_wds_teachers} tea
+                INNER JOIN mdl_enrol_wds_teachers tea
                     ON tea.universal_id = tenr.universal_id
-                INNER JOIN {groups} g
+                INNER JOIN mdl_groups g
                     ON g.courseid = c.id
                     AND g.name = CONCAT(
                         cou.course_subject_abbreviation, ' ',
                         cou.course_number, ' ',
                         sec.section_number
                     )
-                INNER JOIN {user} u
+                INNER JOIN mdl_user u
                     ON u.id = tea.userid
                     AND u.idnumber = tea.universal_id
-                INNER JOIN {groups_members} gm
+                INNER JOIN mdl_groups_members gm
                     ON g.id = gm.groupid
                     AND gm.userid = u.id
             WHERE sec.controls_grading = 1
-                AND c.id = :courseid
-                AND u.id = :userid
-                AND sec.academic_period_id = :periodid
+                AND c.id = $courseid
+                AND u.id = $userid
+                AND sec.academic_period_id = '$periodid'
             GROUP BY g.id
             ORDER BY c.id ASC, tenr.id ASC";
 
-        $fgroups = $DB->get_records_sql($sql, $parms);
+        $fgroups = $DB->get_records_sql($sql);
 
         return $fgroups;
     }
@@ -5320,37 +4836,12 @@ class workdaystudent {
      * Handles instructor changes for a section, properly unenrolling old instructors
      * and managing course shells.
      *
-     * @param @object $section The section object from Workday
-     * @param @object $existingsection The existing section from the database
-     * @return @bool Success status
+     * @param object $section The section object from Workday
+     * @param object $existingsection The existing section from the database
+     * @return bool Success status
      */
     public static function handle_instructor_change($section, $existingsection) {
         global $DB;
-
-        if (!isset($section->course_listing_id)) {
-
-            if (isset($section->Section_Listing_ID)) {
-
-                // Set the parms for getting the section obj.
-                $secrecparms = ['section_listing_id' => $section->Section_Listing_ID];
-
-                // Set this for later as we do not know which we have.
-                $seclistid = $section->Section_Listing_ID;
-            } else {
-
-                // Set the parms for getting the section obj.
-                $secrecparms = ['section_listing_id' => $section->section_listing_id];
-
-                // Set this for later as we do not know which we have.
-                $seclistid = $section->section_listing_id;
-            }
-
-            // Get the section record in full.
-            $secrec = $DB->get_record('enrol_wds_sections', $secrecparms);
-
-            // Set this to the section for future use.
-            $section->course_listing_id = $secrec->course_listing_id;
-        }
 
         // Check if PMI has changed.
         if (!isset($section->PMI_Universal_ID) || !isset($existingsection->id)) {
@@ -5358,15 +4849,13 @@ class workdaystudent {
         }
 
         // Get the old primary instructor for this section.
-        $oldisql = "SELECT tea.*, tenr.id AS enrollment_id
+        $sql = "SELECT tea.*, tenr.id AS enrollment_id
                 FROM {enrol_wds_teacher_enroll} tenr
                 JOIN {enrol_wds_teachers} tea ON tea.universal_id = tenr.universal_id
                 WHERE tenr.section_listing_id = :sectionid
                 AND tenr.role = 'primary'";
 
-        $oldiparms = ['sectionid' => $seclistid];
-
-        $oldinstructor = $DB->get_record_sql($oldisql, $oldiparms);
+        $oldinstructor = $DB->get_record_sql($sql, ['sectionid' => $section->Section_Listing_ID]);
 
         // If no old instructor or same instructor, no change needed.
         if (!$oldinstructor || $oldinstructor->universal_id === $section->PMI_Universal_ID) {
@@ -5374,8 +4863,8 @@ class workdaystudent {
         }
 
         // We have a change in PMI. Handle it.
-        workdaystudent::dtrace("PMI change detected for section {$seclistid}" .
-           " Old: {$oldinstructor->universal_id}, New: {$section->PMI_Universal_ID}");
+        workdaystudent::dtrace("PMI change detected for section {$section->Section_Listing_ID}
+            Old: {$oldinstructor->universal_id}, New: {$section->PMI_Universal_ID}");
 
         // Get the course ID if already created.
         $courseid = null;
@@ -5393,9 +4882,9 @@ class workdaystudent {
 
             // Update enrollment record.
             workdaystudent::insert_update_teacher_enrollment(
-                $seclistid,
+                $section->Section_Listing_ID,
                 $oldinstructor->universal_id,
-                'teacher',
+                'teacher', // Demote from primary.
                 'unenroll'
             );
 
@@ -5422,15 +4911,14 @@ class workdaystudent {
         // Get the plugin.
         $enrollplugin = enrol_get_plugin('workdaystudent');
 
-        $gnparms = ['courseid' => $courseid, 'userid' => $oldinstructor->userid];
-
-        $gnsql = "SELECT g.name FROM {groups} g
+        // Handle old instructor's groups.
+        $groupname = $DB->get_field_sql(
+            "SELECT g.name FROM {groups} g
              JOIN {groups_members} gm ON g.id = gm.groupid
              WHERE g.courseid = :courseid AND gm.userid = :userid
-             LIMIT 1";
-
-        // Handle old instructor's groups.
-        $groupname = $DB->get_field_sql($gnsql, $gnparms);
+             LIMIT 1",
+            ['courseid' => $courseid, 'userid' => $oldinstructor->userid]
+        );
 
         if ($groupname) {
             $group = $DB->get_record('groups', ['courseid' => $courseid, 'name' => $groupname]);
@@ -5446,61 +4934,6 @@ class workdaystudent {
                 groups_delete_group($group->id);
             }
         }
-
-        // Check if the instructor is still teaching other sections in this course.
-        $othersectionssql = "SELECT COUNT(*)
-            FROM {enrol_wds_teacher_enroll} tenr
-            INNER JOIN {enrol_wds_sections} sec
-                ON tenr.section_listing_id = sec.section_listing_id
-            WHERE sec.academic_period_id = :periodid
-                AND tenr.universal_id = :uid
-                AND tenr.role = 'primary'
-                AND sec.controls_grading = 1
-                AND sec.course_listing_id = :clid
-                AND tenr.section_listing_id != :currentsectionid
-                AND tenr.status IN ('enroll', 'enrolled')";
-
-        $othersectionsparms = [
-            'uid' => $oldinstructor->universal_id,
-            'periodid' => $section->Academic_Period_ID,
-            'courseid' => $courseid,
-            'clid' => $section->Course_Listing_ID,
-            'currentsectionid' => $seclistid
-        ];
-
-        $stillteachingothersections = $DB->count_records_sql($othersectionssql, $othersectionsparms) > 0;
-
-        if ($stillteachingothersections) {
-
-            // Instructor still teaches other sections in this course - just update the section record.
-            workdaystudent::dtrace("Keeping instructor {$oldinstructor->universal_id} enrolled in course {$courseid} as they still teach other sections.");
-
-            // Update the section record to move it to pending status
-            $sectionrecord = new stdClass();
-            $sectionrecord->id = $existingsection->id;
-            $sectionrecord->idnumber = null;
-            $sectionrecord->moodle_status = 'pending';
-            $DB->update_record('enrol_wds_sections', $sectionrecord);
-
-            // Update enrollment record for this specific section
-            workdaystudent::insert_update_teacher_enrollment(
-                $seclistid,
-                $oldinstructor->universal_id,
-                'teacher',
-                'unenrolled'
-            );
-
-            // We're teaching another section in this shell, so return now.
-            return true;
-        }
-
-        // Update enrollment record.
-        workdaystudent::insert_update_teacher_enrollment(
-            $seclistid,
-            $oldinstructor->universal_id,
-            'teacher',
-            'unenrolled'
-        );
 
         if (!$hasmaterials) {
 
@@ -5527,6 +4960,8 @@ class workdaystudent {
             // IMPORTANT: Unset the course's idnumber to prevent conflicts with new shells.
             $courseupdate = new stdClass();
             $courseupdate->id = $courseid;
+
+    // TODO: Do not do this if there are sections still being taught in this shell.
             $courseupdate->idnumber = '';
             $DB->update_record('course', $courseupdate);
 
@@ -5540,15 +4975,22 @@ class workdaystudent {
             workdaystudent::dtrace("Kept course {$courseid} with materials during PMI change. Course idnumber cleared.");
         }
 
-        // TODO: Set the students for the courses that were unenrolled to 'tobeupdated' so they can be processed properly JIC.
+        // Update enrollment record.
+        workdaystudent::insert_update_teacher_enrollment(
+            $section->Section_Listing_ID,
+            $oldinstructor->universal_id,
+            'teacher',
+            'unenrolled'
+        );
+
         return true;
     }
 
     /**
      * Reprocesses instructor enrollments for a specific course.
      *
-     * @param @int $courseid The course ID to reprocess
-     * @return @bool Success status
+     * @param int $courseid The course ID to reprocess
+     * @return bool Success status
      */
     public static function reprocess_instructor_enrollments($courseid) {
         global $DB;
@@ -5567,7 +5009,7 @@ class workdaystudent {
 
             // Get the section details from Workday.
             $s = workdaystudent::get_settings();
-            $parms = ['Section_Listing_ID' => $section->section_listing_id];
+            $parms = ['Course_Section_Definition_ID' => $section->course_section_definition_id];
             $updatedsections = workdaystudent::get_sections($s, $parms);
 
             if (empty($updatedsections)) {
@@ -5575,16 +5017,7 @@ class workdaystudent {
                 continue;
             }
 
-            if (is_array($updatedsections)) {
-                $updatedsection = reset($updatedsections);
-            } else {
-                if (is_object($updatedsections)) {
-                    $updatedsection = $updatedsections;
-                } else {
-                    mtrace("Could not fetch updated section data for: $section->section_listing_id");
-                    continue;
-                }
-            }
+            $updatedsection = reset($updatedsections);
 
             // Check and handle instructor changes.
             workdaystudent::handle_instructor_change($updatedsection, $section);
@@ -5596,11 +5029,11 @@ class workdaystudent {
         // Refresh faculty enrollments after processing.
         $periods = workdaystudent::get_specified_period($courseid);
         foreach ($periods as $period) {
-            $enrollments = workdaystudent::wds_get_faculty_enrollments($period, $courseid);
+            $enrollments = workdaystudent::wds_get_faculty_enrollments($period);
             enrol_workdaystudent::wds_bulk_faculty_enrollments($enrollments);
         }
 
-        mtrace("Completed faculty enrollment reprocessing for course ID: $courseid.\n");
+        mtrace("Completed instructor enrollment reprocessing for course ID: $courseid");
 
         return true;
     }
@@ -5989,9 +5422,6 @@ class wdscronhelper {
 
         $numgrabbed = 0;
 
-        // Set up some timing.
-        $processstart = microtime(true);
-
         foreach($periods as $period) {
 
             // Set upo the parameter array.
@@ -6019,7 +5449,7 @@ class wdscronhelper {
                 "$period->academic_period_id in $grabtime seconds. Processing.");
 
             // Set up some timing.
-            $periodstart = microtime(true);
+            $processstart = microtime(true);
 
             // Loop through the sections.
             foreach ($sections as $section) {
@@ -6027,54 +5457,50 @@ class wdscronhelper {
                 // Insert or update this section.
                 $sec = workdaystudent::insert_update_section($section);
 
-                // Only add section metadata for non combo courses.
-                if (isset($section->Class_Type) && $section->Class_Type != 'Combination') {
+                // If we have section components, add / update the schedule data.
+                if (isset($section->Meeting_Patterns) || isset($section->Section_Components)) {
 
-                    // If we have section components, add / update the schedule data.
-                    if (isset($section->Meeting_Patterns) || isset($section->Section_Components)) {
+                    // Because some people cannot consistently set shit up.
+                    if (isset($section->Meeting_Patterns)) {
 
-                        // Because some people cannot consistently set shit up.
-                        if (isset($section->Meeting_Patterns)) {
+                        // Set this for easier use.
+                        $mps = $section->Meeting_Patterns;
+                    } else {
 
-                            // Set this for easier use.
-                            $mps = $section->Meeting_Patterns;
-                        } else {
-
-                            // Set this for easier use.
-                            $mps = $section->Section_Components;
-                        }
-
-                        // Check to see if we have more than one meeting patterns.
-                        if (str_contains($mps, ';')) {
-
-                            // Split into two (or more) meeting patterns.
-                            $mpsa = array_map('trim', explode(';', $mps));
-
-                        // We do not have more than one meeting pattern.
-                        } else {
-
-                            // Return the original string as a single-item array.
-                            $mpsa = [trim($mps)];
-                        }
-
-                        // Set up an empty array for this.
-                        $schedules = [];
-
-                        // Loop through the meeting patterns array.
-                        foreach ($mpsa as $mp) {
-
-                            // Process the section schedule for this meeting pattern.
-                            $schedule = workdaystudent::process_section_schedule($section, $mp);
-
-                            // Merge this shit together.
-                            $schedules = array_merge($schedules, $schedule);
-                        }
-
-                        // Add these meeting patterns to the DB.
-                        $sectionschedule = workdaystudent::wds_store_schedules($section, $schedules);
+                        // Set this for easier use.
+                        $mps = $section->Section_Components;
                     }
 
+                    // Check to see if we have more than one meeting patterns.
+                    if (str_contains($mps, ';')) {
+
+                        // Split into two (or more) meeting patterns.
+                        $mpsa = array_map('trim', explode(';', $mps));
+
+                    // We do not have more than one meeting pattern.
+                    } else {
+
+                        // Return the original string as a single-item array.
+                        $mpsa = [trim($mps)];
+                    }
+
+                    // Set up an empty array for this.
+                    $schedules = [];
+
+                    // Loop through the meeting patterns array.
+                    foreach ($mpsa as $mp) {
+
+                        // Process the section schedule for this meeting pattern.
+                        $schedule = workdaystudent::process_section_schedule($section, $mp);
+
+                        // Merge this shit together.
+                        $schedules = array_merge($schedules, $schedule);
+                    }
+
+                    // Add these meeting patterns to the DB.
+                    $sectionschedule = workdaystudent::wds_store_schedules($section, $schedules);
                 }
+
                 // If we do not have an instructor, let us know.
                 if (!isset($section->Instructor_Info)) {
                     workdaystudent::dtrace("    - No instructors in " .
@@ -6104,7 +5530,7 @@ class wdscronhelper {
 
                         // If we have a primary instructor.
                         if (!is_null($pmi)) {
-                            workdaystudent::dtrace("    Primary instructor $pmi found for $secid.");
+                            workdaystudent::dtrace("    Primary instructor $pmi found!");
 
                             // Set the role to primary if the teacher matches the pmi.
                             $role = $tid == $pmi ? 'primary' : 'teacher';
@@ -6453,13 +5879,14 @@ class wdscronhelper {
             $periodelapsed = round($periodend - $periodstart, 2);
 
             // Log how long it took to process and how many enrollments were processed.
-            mtrace("\nWe took $periodelapsed seconds to process " .
+            mtrace("We took $periodelapsed seconds to process " .
                 "$enrollmentcount enrollments in $period->academic_period_id.");
         }
 
         $processend = microtime(true);
         $processtime = round($processend - $processstart, 2);
 
+        // TODO: DEAL WITH TIMES.
         mtrace("Processing $numgrabbed periods took $processtime seconds.");
     }
 
@@ -6745,44 +6172,6 @@ class wdscronhelper {
         }
     }
 
-    public static function cronguild():void {
-
-        // Get settings.
-        $s = workdaystudent::get_settings();
-
-        // Set the start time.
-        $starttime = microtime(true);
-
-        mtrace("Fetching GUILD data.");
-
-        // Get the courses.
-        $guilds = workdaystudent::get_guild($s);
-
-        // Set the end fetch time.
-        $fetchtime = microtime(true);
-
-        $elapsedfetch = round($fetchtime - $starttime, 2);
-
-        mtrace("Fetched GUILD data in $elapsedfetch seconds.");
-
-        mtrace("Setting GUILD data.");
-
-        // Set the data.
-        $doit = workdaystudent::set_guild_data($guilds);
-
-        // Set the finishtime.
-        $finishtime = microtime(true);
-
-        // Calculate the elapsed time to set the data.
-        $elapsedtime = round($finishtime - $fetchtime, 2);
-
-        // Calculate the total elapsed time.
-        $telapsedtime = round($finishtime - $starttime, 2);
-
-        mtrace("Set GUILD data in $elapsedtime seconds.");
-        mtrace("GUILD data fetch and set in $telapsedtime seconds.");
-    }
-
 // Class end.
 }
 
@@ -6790,9 +6179,9 @@ class enrol_workdaystudent extends enrol_plugin {
 
     /**
      * Add new instance of enrol plugin.
-     * @param @object $course
-     * @param @array $fields instance fields
-     * @return @int id of new instance, null if can not be created
+     * @param object $course
+     * @param array $fields instance fields
+     * @return int id of new instance, null if can not be created
      */
 
     public static function add_enroll_instance($course) {
@@ -6881,23 +6270,6 @@ class enrol_workdaystudent extends enrol_plugin {
         // Loop through the enrollments.
         foreach ($enrollments as $enrollment) {
 
-            // Sanity check to make sure course still exists.
-            if (!$DB->get_record('course', ['id' => $enrollment->courseid])) {
-                mtrace("Courseid: $enrollment->courseid already deleted, moving on. User: $enrollment->userid.");
-
-                // Set the section to not link to the course shell.
-                $section = new stdClass();
-                $section->id =  $enrollment->sectionid;
-                $section->idnumber = null;
-                $section->moodle_status = 'pending';
-
-                // Update the insterstitial status.
-                $feupdated = workdaystudent::update_interstitial_enrollment_status($enrollment, true);
-                $supdated = $DB->update_record('enrol_wds_sections', $section);
-
-                continue;
-            }
-
             // Set these for later.
             $periodid = $enrollment->periodid;
             $courseid = $enrollment->courseid;
@@ -6945,7 +6317,7 @@ class enrol_workdaystudent extends enrol_plugin {
             }
 
             // Enrollment follows.
-            if ($status == 'enroll' || $status == 'enrolled') {
+            if ($status == 'enroll') {
 
                 // If we don't have any enrollments for this course, set it to 0.
                 if (!isset($enrollmentcounts[$courseid])) {
@@ -7025,7 +6397,7 @@ class enrol_workdaystudent extends enrol_plugin {
                 }
 
             // Let's deal with unenrollments.
-            } else if ($status == 'unenroll' || $status == 'unenrolled') {
+            } else if ($status == 'unenroll') {
 
                 // Set the section to not link to the course shell.
                 $section = new stdClass();
@@ -7160,8 +6532,7 @@ class enrol_workdaystudent extends enrol_plugin {
             $enrolls = $enrollmentcounts[$coursed] ?? 0;
 
             if (isset($unenrollstucount)) {
-                $unenrolls = ($unenrollmentcounts[$coursed] ?? 0) + ($unenrollstucount[$courseid] ?? 0);
-
+                $unenrolls = $unenrollmentcounts[$coursed] + $unenrollstucount[$courseid] ?? 0;
             } else {
                 $unenrolls = $unenrollmentcounts[$coursed] ?? 0;
             }
@@ -7255,7 +6626,12 @@ class enrol_workdaystudent extends enrol_plugin {
             $groupid = isset($group->id) ? $group->id : $newgroupid;
 
             // Enrollment follows.
-            if ($enrollment->moodle_enrollment_status == 'enroll') {
+
+            // TODO: Go back to just enroll.
+
+            // if ($enrollment->moodle_enrollment_status == 'enroll') {
+            if ($enrollment->moodle_enrollment_status == 'enroll' ||
+                $enrollment->moodle_enrollment_status == 'completed') {
 
                 // If we don't have any enrollments for this course, set it to 0.
                 if (!isset($enrollmentcounts[$courseid])) {
