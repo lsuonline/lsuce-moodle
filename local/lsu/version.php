@@ -23,6 +23,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_lsu';
-$plugin->version = 2016040803;
+$plugin->version = 2016040804;
 $plugin->requires = 2015111600;
-$plugin->release = 'v3.0.0';
+$plugin->release = 'v3.0.1';

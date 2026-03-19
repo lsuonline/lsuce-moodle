@@ -92,3 +92,8 @@ $string['reprocess_confirm'] = 'You are about to reprocess student meta
 information for all recognized semesters in session. Continue?';
 
 $string['local_lsu'] = 'LSU Enrollment Provider';
+
+// Shell tag validation strings.
+$string['shelltaginvalid'] = 'Shell tag may only contain letters, numbers, dashes, underscores and spaces.';
+$string['shelltagunique'] = 'Two or more shells have the same name. Give each shell a different name.';
+$string['shelltagunavailable'] = 'This name is already used by an existing course shell. Choose a different name.';
