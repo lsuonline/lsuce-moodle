@@ -1,0 +1,125 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_myoverview/clear-filter
+    This template renders a button to clear filters.
+    Whole page is BEGIN LSU and END LSU
+
+}}
+
+<div class="clear-snap-filter mb-1 me-1">
+    <button type="button" class="snap-clear-filter-btn btn btn-outline-danger" aria-haspopup="true" aria-expanded="false" aria-label="Clear">Clear</button>    
+</div>
+
+{{#js}}
+require(
+[
+    'jquery',
+    'core_user/repository',
+    'theme_snap/block_myoverview/block_myoverview_view',
+],
+function(
+    $,
+    {setUserPreference},
+    View
+) {
+
+    $('.snap-clear-filter-btn').on('click', function() {
+        resetSnapFilterValues();
+    });
+
+    async function resetSnapFilterValues() {
+        try {
+            // Await the fetch call, the function pauses here
+            // grouping
+            const groupingProm = setUserPreference('block_myoverview_user_grouping_preference', 'all');
+            // year
+            const yearProm = setUserPreference('snap_user_grouping_year_preference', 'all');
+            // progress
+            const progressProm = setUserPreference('snap_user_grouping_progress_preference', 'all');
+            // sort
+            const sortProm = setUserPreference('block_myoverview_user_sort_preference', 'title');
+
+            const [grouping, year, progress, sort] = await Promise.all([groupingProm, yearProm, progressProm, sortProm]);
+
+            // Now reset dom elements
+            // console.log("All calls done! Now going to reset dom stuffs.");
+            // resetDomStuffs();
+            window.location.reload();
+        } catch (error) {
+            console.error("Trying to set user prefs for Snap filters and didn't go through, failed:", error);
+        }
+    }
+
+    /**
+     * Reset filter values.
+     *
+     * @param {object} root The root element for the courses view.
+     * @return {filters} Set filters.
+     */
+    
+    function resetDomStuffs() {
+
+        // -------------------------------------------
+        $('button#groupingdropdown a.dropdown-item').each(function() {
+            $(this).attr('aria-current', 'false');
+        });
+        $('button#groupingdropdown a.dropdown-item').first().attr('aria-current', 'true');
+        $('button#groupingdropdown span').text(
+            $('ul.dropdown-menu[aria-labelledby="groupingdropdown"] a.dropdown-item').first().text().trim()
+        );
+
+        $('button#yeardropdown a.dropdown-item').each(function() {
+            $(this).attr('aria-current', 'false');
+        });
+        $('button#yeardropdown a.dropdown-item').first().attr('aria-current', 'true');
+        $('button#yeardropdown span').text(
+            $('ul.dropdown-menu[aria-labelledby="yeardropdown"] a.dropdown-item').first().text().trim()
+        );
+
+        $('button#progressdropdown a.dropdown-item').each(function() {
+            $(this).attr('aria-current', 'false');
+        });
+        $('button#progressdropdown a.dropdown-item').first().attr('aria-current', 'true');
+        $('button#progressdropdown span').text(
+            $('ul.dropdown-menu[aria-labelledby="progressdropdown"] a.dropdown-item').first().text().trim()
+        );
+
+        $('button#sortingdropdown a.dropdown-item').each(function() {
+            $(this).attr('aria-current', 'false');
+        });
+        $('button#sortingdropdown a.dropdown-item').first().attr('aria-current', 'true');
+        $('button#sortingdropdown span').text(
+            $('ul.dropdown-menu[aria-labelledby="sortingdropdown"] a.dropdown-item').first().text().trim()
+        );
+
+        $('button#displaydropdown a.dropdown-item').each(function() {
+            $(this).attr('aria-current', 'false');
+        });
+        $('button#displaydropdown a.dropdown-item').first().attr('aria-current', 'true');
+        $('button#displaydropdown span').text(
+            $('ul.dropdown-menu[aria-labelledby="displaydropdown"] a.dropdown-item').first().text().trim()
+        );
+
+        // $('button#groupingdropdown a.dropdown-item').each
+        // $('.dropdown-menu li a').first().addClass('active'); 
+
+        window.location.reload();
+    };
+
+});
+{{/js}}
