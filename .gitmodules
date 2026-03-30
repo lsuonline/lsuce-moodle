@@ -1,0 +1,8 @@
+[submodule "enrol/workdaystudent"]
+	path = enrol/workdaystudent
+	url = https://github.com/lsuonline/moodle-enrol_workdaystudent.git
+	branch = main
+[submodule "blocks/wdsprefs"]
+	path = blocks/wdsprefs
+	url = https://github.com/lsuonline/moodle-block_wdsprefs.git
+	branch = main
