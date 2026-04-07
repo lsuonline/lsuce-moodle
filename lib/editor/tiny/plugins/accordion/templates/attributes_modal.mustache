@@ -1,0 +1,54 @@
+{{!
+    @template tiny_accordion/attributes_modal
+
+    Modal to edit class and optional inline style on accordion details/summary.
+}}
+{{< core/modal }}
+
+    {{$title}}
+        {{#str}} accordionattributestitle, tiny_accordion {{/str}}
+    {{/title}}
+
+    {{$body}}
+        <form class="mform" id="{{uniqid}}">
+            <p class="small text-muted mb-3">{{#str}} accordionattributesintro, tiny_accordion {{/str}}</p>
+            <fieldset class="mb-2">
+                <legend class="h6">{{#str}} accordiondetails, tiny_accordion {{/str}}</legend>
+                <div class="mb-2">
+                    <label class="w-100" for="{{elementid}}_tiny_accordion_dc">{{#str}} accordionclass, tiny_accordion {{/str}}</label>
+                    <input type="text" class="form-control tiny_accordion_details_class" id="{{elementid}}_tiny_accordion_dc"
+                           value="{{detailsclass}}"/>
+                </div>
+                {{#allowinlinestyle}}
+                <div class="mb-2">
+                    <label class="w-100" for="{{elementid}}_tiny_accordion_ds">{{#str}} accordioninlinestyle, tiny_accordion {{/str}}</label>
+                    <input type="text" class="form-control text-monospace tiny_accordion_details_style" id="{{elementid}}_tiny_accordion_ds"
+                           value="{{detailsstyle}}"/>
+                </div>
+                {{/allowinlinestyle}}
+            </fieldset>
+            <fieldset>
+                <legend class="h6">{{#str}} accordionsummary, tiny_accordion {{/str}}</legend>
+                <div class="mb-2">
+                    <label class="w-100" for="{{elementid}}_tiny_accordion_sc">{{#str}} accordionclass, tiny_accordion {{/str}}</label>
+                    <input type="text" class="form-control tiny_accordion_summary_class" id="{{elementid}}_tiny_accordion_sc"
+                           value="{{summaryclass}}"/>
+                </div>
+                {{#allowinlinestyle}}
+                <div class="mb-2">
+                    <label class="w-100" for="{{elementid}}_tiny_accordion_ss">{{#str}} accordioninlinestyle, tiny_accordion {{/str}}</label>
+                    <input type="text" class="form-control text-monospace tiny_accordion_summary_style" id="{{elementid}}_tiny_accordion_ss"
+                           value="{{summarystyle}}"/>
+                </div>
+                {{/allowinlinestyle}}
+            </fieldset>
+        </form>
+    {{/body}}
+
+    {{$footer}}
+        <button type="button" class="btn btn-primary" data-action="save">
+            {{#str}} accordionsaveattributes, tiny_accordion {{/str}}
+        </button>
+    {{/footer}}
+
+{{/ core/modal }}

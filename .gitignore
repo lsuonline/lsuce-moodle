@@ -48,6 +48,3 @@ atlassian-ide-plugin.xml
 /syllabus
 
 config_local.php
-
-# LSU Online: tiny_accordion is maintained in https://github.com/lsuonline/moodle-tiny_accordion (clone into this path).
-/lib/editor/tiny/plugins/accordion/
