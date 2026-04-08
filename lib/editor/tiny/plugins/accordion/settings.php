@@ -77,5 +77,14 @@ if ($hassiteconfig) {
             '',
             PARAM_RAW
         ));
+
+        $settings->add(new \tiny_accordion\admin\setting_style_presets(
+            'tiny_accordion/stylepresets',
+            new lang_string('settings_stylepresets', 'tiny_accordion'),
+            new lang_string('settings_stylepresets_desc', 'tiny_accordion'),
+            ''
+        ));
+
+        $PAGE->requires->js_call_amd('tiny_accordion/admin_presets_widget', 'init');
     }
 }

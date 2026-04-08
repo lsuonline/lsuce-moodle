@@ -1,0 +1,97 @@
+{{!
+    @template tiny_accordion/admin_style_presets
+
+    Dynamic repeating-rows widget for configuring accordion style presets on the
+    plugin admin settings page. Interactivity is provided by the AMD module
+    tiny_accordion/admin_presets_widget (loaded via js_call_amd from settings.php).
+
+    Context variables required for this template:
+    * fullname     {string}  The Moodle admin setting full name (s_tiny_accordion_stylepresets).
+    * id           {string}  HTML element id for the hidden input.
+    * presets      {array}   Array of preset row objects (may be empty).
+    * haspresets   {boolean} True when at least one preset row exists.
+    * currentjson  {string}  JSON-encoded presets for the hidden input's initial value.
+
+    Example context (json):
+    {
+        "fullname": "s_tiny_accordion_stylepresets",
+        "id": "id_s_tiny_accordion_stylepresets",
+        "haspresets": true,
+        "currentjson": "[{\"label\":\"Blue\",\"detailsclass\":\"acc-blue\",\"detailsstyle\":\"\",\"summaryclass\":\"acc-hdr-blue\",\"summarystyle\":\"\"}]",
+        "presets": [
+            {
+                "rowindex": 0,
+                "label": "Blue",
+                "detailsclass": "acc-blue",
+                "detailsstyle": "",
+                "summaryclass": "acc-hdr-blue",
+                "summarystyle": ""
+            }
+        ]
+    }
+}}
+<div data-widget="accordion-style-presets">
+    <table class="table table-sm table-bordered generaltable">
+        <thead>
+            <tr>
+                <th scope="col">{{#str}} setting_stylepresets_col_label, tiny_accordion {{/str}} *</th>
+                <th scope="col">{{#str}} setting_stylepresets_col_detailsclass, tiny_accordion {{/str}}</th>
+                <th scope="col">{{#str}} setting_stylepresets_col_detailsstyle, tiny_accordion {{/str}}</th>
+                <th scope="col">{{#str}} setting_stylepresets_col_summaryclass, tiny_accordion {{/str}}</th>
+                <th scope="col">{{#str}} setting_stylepresets_col_summarystyle, tiny_accordion {{/str}}</th>
+                <th scope="col"><span class="sr-only">{{#str}} delete {{/str}}</span></th>
+            </tr>
+        </thead>
+        <tbody data-presets-tbody>
+            {{#presets}}
+            <tr>
+                <td><input type="text" class="form-control form-control-sm" data-field="label"
+                           value="{{label}}" placeholder="e.g. Blue header" required /></td>
+                <td><input type="text" class="form-control form-control-sm" data-field="detailsclass"
+                           value="{{detailsclass}}" placeholder="accordion-blue" /></td>
+                <td><input type="text" class="form-control form-control-sm text-monospace" data-field="detailsstyle"
+                           value="{{detailsstyle}}" placeholder="border: 2px solid navy;" /></td>
+                <td><input type="text" class="form-control form-control-sm" data-field="summaryclass"
+                           value="{{summaryclass}}" placeholder="accordion-header" /></td>
+                <td><input type="text" class="form-control form-control-sm text-monospace" data-field="summarystyle"
+                           value="{{summarystyle}}" placeholder="font-weight: bold;" /></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            data-action="delete-row"
+                            aria-label="{{#str}} delete {{/str}}">
+                        &times;
+                    </button>
+                </td>
+            </tr>
+            {{/presets}}
+
+            {{! Hidden template row cloned by JS when adding new presets. Never submitted directly. }}
+            <tr data-template-row aria-hidden="true" style="display:none">
+                <td><input type="text" class="form-control form-control-sm" data-field="label"
+                           value="" placeholder="e.g. Blue header" /></td>
+                <td><input type="text" class="form-control form-control-sm" data-field="detailsclass"
+                           value="" placeholder="accordion-blue" /></td>
+                <td><input type="text" class="form-control form-control-sm text-monospace" data-field="detailsstyle"
+                           value="" placeholder="border: 2px solid navy;" /></td>
+                <td><input type="text" class="form-control form-control-sm" data-field="summaryclass"
+                           value="" placeholder="accordion-header" /></td>
+                <td><input type="text" class="form-control form-control-sm text-monospace" data-field="summarystyle"
+                           value="" placeholder="font-weight: bold;" /></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            data-action="delete-row"
+                            aria-label="{{#str}} delete {{/str}}">
+                        &times;
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button type="button" class="btn btn-sm btn-secondary mb-2" data-action="add-row">
+        + {{#str}} setting_stylepresets_addrow, tiny_accordion {{/str}}
+    </button>
+
+    {{! Hidden input holds the serialised JSON. Its name must match s_pluginname_settingname. }}
+    <input type="hidden" name="{{fullname}}" id="{{id}}" data-presets-json value="{{currentjson}}" />
+</div>

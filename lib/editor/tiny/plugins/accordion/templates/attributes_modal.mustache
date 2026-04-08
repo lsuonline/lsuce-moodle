@@ -2,6 +2,41 @@
     @template tiny_accordion/attributes_modal
 
     Modal to edit class and optional inline style on accordion details/summary.
+    When style presets are configured (haspresets=true), a preset <select> is
+    shown above each class input. Selecting a named preset auto-fills the class
+    and style inputs. Selecting "Custom" reveals the free-text class input.
+
+    Context variables required for this template:
+    * elementid        {string}  TinyMCE editor element id.
+    * uniqid           {string}  Unique id suffix to avoid DOM collisions.
+    * detailsclass     {string}  Current class on the <details> element.
+    * detailsstyle     {string}  Current style on the <details> element.
+    * summaryclass     {string}  Current class on the <summary> element.
+    * summarystyle     {string}  Current style on the <summary> element.
+    * allowinlinestyle {boolean} Whether inline style inputs are shown.
+    * haspresets       {boolean} Whether admin has configured style presets.
+    * stylepresets     {array}   Array of preset objects (label, detailsclass, etc.).
+
+    Example context (json):
+    {
+        "elementid": "id_editor",
+        "uniqid": "accattr_abc123",
+        "detailsclass": "accordion-blue",
+        "detailsstyle": "",
+        "summaryclass": "accordion-header-blue",
+        "summarystyle": "",
+        "allowinlinestyle": false,
+        "haspresets": true,
+        "stylepresets": [
+            {
+                "label": "Blue header",
+                "detailsclass": "accordion-blue",
+                "detailsstyle": "",
+                "summaryclass": "accordion-header-blue",
+                "summarystyle": ""
+            }
+        ]
+    }
 }}
 {{< core/modal }}
 
@@ -14,13 +49,37 @@
             <p class="small text-muted mb-3">{{#str}} accordionattributesintro, tiny_accordion {{/str}}</p>
             <fieldset class="mb-2">
                 <legend class="h6">{{#str}} accordiondetails, tiny_accordion {{/str}}</legend>
+                {{#haspresets}}
                 <div class="mb-2">
+                    <label class="w-100" for="{{elementid}}_tiny_accordion_dp">
+                        {{#str}} accordionstylepreset, tiny_accordion {{/str}}
+                    </label>
+                    <select class="form-control tiny_accordion_details_preset" id="{{elementid}}_tiny_accordion_dp">
+                        <option value="" data-detailsclass="" data-detailsstyle="" data-summaryclass="" data-summarystyle="">
+                            {{#str}} accordionstylepreset_none, tiny_accordion {{/str}}
+                        </option>
+                        {{#stylepresets}}
+                        <option value="{{label}}"
+                                data-detailsclass="{{detailsclass}}"
+                                data-detailsstyle="{{detailsstyle}}"
+                                data-summaryclass="{{summaryclass}}"
+                                data-summarystyle="{{summarystyle}}">
+                            {{label}}
+                        </option>
+                        {{/stylepresets}}
+                        <option value="__custom__" data-detailsclass="" data-detailsstyle="" data-summaryclass="" data-summarystyle="">
+                            {{#str}} accordionstylepreset_custom, tiny_accordion {{/str}}
+                        </option>
+                    </select>
+                </div>
+                {{/haspresets}}
+                <div class="mb-2{{#haspresets}} tiny_accordion_custom_details d-none{{/haspresets}}">
                     <label class="w-100" for="{{elementid}}_tiny_accordion_dc">{{#str}} accordionclass, tiny_accordion {{/str}}</label>
                     <input type="text" class="form-control tiny_accordion_details_class" id="{{elementid}}_tiny_accordion_dc"
                            value="{{detailsclass}}"/>
                 </div>
                 {{#allowinlinestyle}}
-                <div class="mb-2">
+                <div class="mb-2{{#haspresets}} tiny_accordion_custom_details d-none{{/haspresets}}">
                     <label class="w-100" for="{{elementid}}_tiny_accordion_ds">{{#str}} accordioninlinestyle, tiny_accordion {{/str}}</label>
                     <input type="text" class="form-control text-monospace tiny_accordion_details_style" id="{{elementid}}_tiny_accordion_ds"
                            value="{{detailsstyle}}"/>
@@ -29,13 +88,16 @@
             </fieldset>
             <fieldset>
                 <legend class="h6">{{#str}} accordionsummary, tiny_accordion {{/str}}</legend>
-                <div class="mb-2">
+                {{#haspresets}}
+                <p class="small text-muted">{{#str}} accordionstylepreset_synced, tiny_accordion {{/str}}</p>
+                {{/haspresets}}
+                <div class="mb-2{{#haspresets}} tiny_accordion_custom_summary d-none{{/haspresets}}">
                     <label class="w-100" for="{{elementid}}_tiny_accordion_sc">{{#str}} accordionclass, tiny_accordion {{/str}}</label>
                     <input type="text" class="form-control tiny_accordion_summary_class" id="{{elementid}}_tiny_accordion_sc"
                            value="{{summaryclass}}"/>
                 </div>
                 {{#allowinlinestyle}}
-                <div class="mb-2">
+                <div class="mb-2{{#haspresets}} tiny_accordion_custom_summary d-none{{/haspresets}}">
                     <label class="w-100" for="{{elementid}}_tiny_accordion_ss">{{#str}} accordioninlinestyle, tiny_accordion {{/str}}</label>
                     <input type="text" class="form-control text-monospace tiny_accordion_summary_style" id="{{elementid}}_tiny_accordion_ss"
                            value="{{summarystyle}}"/>

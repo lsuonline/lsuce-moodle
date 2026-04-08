@@ -22,6 +22,7 @@ use editor_tiny\plugin;
 use editor_tiny\plugin_with_buttons;
 use editor_tiny\plugin_with_configuration;
 use editor_tiny\plugin_with_menuitems;
+use tiny_accordion\preset_parser;
 
 /**
  * Tiny tiny_accordion plugin for Moodle.
@@ -65,6 +66,7 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_conf
         array $fpoptions,
         ?editor $editor = null
     ): array {
+        $parser = new preset_parser();
         return [
             // Controls visibility of both accordion toolbar icons.
             'showtoolbaricons' => get_config('tiny_accordion', 'showtoolbaricons') !== '0',
@@ -77,6 +79,10 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_conf
             'allowinlinestyle' => get_config('tiny_accordion', 'allowinlinestyle') === '1',
             // Comma-separated class prefixes; empty = any class allowed (subject to HTMLPurifier).
             'classprefixallowlist' => (string) (get_config('tiny_accordion', 'classprefixallowlist') ?? ''),
+            // Array of style preset objects for the author's dropdown; empty = no presets configured.
+            'stylepresets' => $parser->parse(
+                (string) (get_config('tiny_accordion', 'stylepresets') ?? '')
+            ),
         ];
     }
 }
