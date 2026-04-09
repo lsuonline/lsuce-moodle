@@ -6,6 +6,12 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/* Override theme styles that constrain the modal width */
+.tiny_phonetic_modal .modal-content {
+    margin: 0;
+    max-width: none;
+}
+
 .tiny_phonetic_library .tiny_phonetic_btn {
     min-width: 2.5em;
     font-size: 1.1em;
