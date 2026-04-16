@@ -214,6 +214,13 @@ if ($mform->is_cancelled()) {
     // Commit transaction and finish up.
     $transaction->allow_commit();
     rebuild_course_cache($course->id);
+
+    // Begin LSU Purge snap activity_deadlines cache on date save.
+    // MD-2145: Purge snap activity_deadlines cache so frontend gets fresh deadlines immediately.
+    $deadlinescache = \cache::make('theme_snap', 'activity_deadlines');
+    $deadlinescache->purge();
+    // End LSU Purge snap activity_deadlines cache on date save.
+
     redirect($PAGE->url, get_string('changessaved'));
 }
 

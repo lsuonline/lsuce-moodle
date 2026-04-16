@@ -2403,6 +2403,11 @@ SQL;
 
         $events = $eventsobj->events;
         $fromcache = $eventsobj->fromcache ? 1 : 0;
+        // BEGIN LSU MD-2145: Pass server-side MUC cache timestamp to frontend for localStorage cache invalidation.
+        // The timestamp represents when the server-side MUC cache was last populated.
+        // Passing it to the frontend lets the browser cache detect when server-side data has changed.
+        $cacheversion = isset($eventsobj->timestamp) ? (string) $eventsobj->timestamp : null;
+        // END LSU MD-2145.
 
         /** @var core_renderer $output */
         $output = $PAGE->get_renderer('theme_snap', 'core', RENDERER_TARGET_GENERAL);
@@ -2476,7 +2481,7 @@ SQL;
 
                 $snapfeedsurlparam = isset($CFG->theme_snap_feeds_url_parameter) ? $CFG->theme_snap_feeds_url_parameter : true;
 
-                $res[] = [
+                $item = [
                     'iconUrl'      => $modimage,
                     'iconDesc'     => $modname,
                     'iconClass'    => '',
@@ -2489,6 +2494,12 @@ SQL;
                     'urlParameter' => $snapfeedsurlparam,
                     'modName'      => $cm->modname
                 ];
+                // BEGIN LSU MD-2145: Include cacheVersion in API response so frontend can detect stale cache.
+                if (!$renderhtml && $cacheversion !== null) {
+                    $item['cacheVersion'] = $cacheversion;
+                }
+                // END LSU MD-2145.
+                $res[] = $item;
             }
             $id++;
         }
