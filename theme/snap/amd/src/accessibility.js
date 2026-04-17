@@ -24,9 +24,11 @@
 /**
  * JS code to assign attributes and expected behavior for elements in the Dom regarding accessibility.
  */
+// BEGIN LSU - Form fix to show popovers and proper focus.
 define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/bootstrap/tools/sanitizer', 'theme_boost/popover'],
     function($, str, Event, FormEvent, { DefaultWhitelist }) {
         let focusedAlready = false;
+// END LSU - Form fix to show popovers and proper focus.
         return {
             snapAxInit: function(localJouleGrader, allyReport, blockReports, localCatalogue) {
 
@@ -50,7 +52,9 @@ define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/boot
                     {key: 'viewmessaging', component: 'theme_snap'},
                     {key: 'viewforumposts', component: 'theme_snap'},
                     {key: 'editcoursesettings', component: 'theme_snap'},
+                    // BEGIN LSU - Removing unused libraries.
                     // {key: 'gradebook', component: 'local_joulegrader'},
+                    // END LSU - Removing unused libraries.
                     {key: 'gradebook', component: 'core_grades'},
                     {key: 'numparticipants', component: 'core_message'},
                     {key: 'pld', component: 'theme_snap'},
@@ -58,7 +62,9 @@ define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/boot
                     {key: 'outcomes', component: 'core_outcome'},
                     {key: 'badges', component: 'core_badges'},
                     {key: 'coursereport', component: 'report_allylti'},
+                    // BEGIN LSU - Removing unused libraries.
                     // {key: 'pluginname', component: 'local_catalogue'},
+                    // END LSU - Removing unused libraries.
                     {key: 'experimental', component: 'block_reports'}
                 ]).done(function(stringsjs) {
                     if ($("#page-mod-forum-discuss")) {
@@ -99,6 +105,7 @@ define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/boot
 
                     // Check if the plugins are installed to pass the strings. These parameters are being passed from
                     // $initaxvars in snap/classes/output/shared.php. More validations can be added if needed.
+                    // BEGIN LSU - Removing unused libraries.
                     /*
                     if (localJouleGrader) {
                         $('section#coursetools ul#coursetools-list a:contains("' + 'Open Grader' + '")')
@@ -107,6 +114,7 @@ define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/boot
                             .attr("id", "ct-course-gradebook");
                     } else {
                      */
+                    // END LSU - Removing unused libraries.
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[10] + '")')
                             .attr("id", "ct-course-gradebook");
                     // }
@@ -120,10 +128,12 @@ define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/boot
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[16] + '")')
                             .attr("id", "ct-ally");
                     }
+                    // BEGIN LSU - Removing unused libraries.
                     // if (localCatalogue) {
                     //     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[17] + '")')
                     //         .attr("id", "ct-open-catalogue");
                     // }
+                    // END LSU - Removing unused libraries.
 
                     // Add ARIA attributes.
                     $('div[role="main"] div.sitetopic ul.section.img-text').attr('role', 'presentation');
@@ -423,42 +433,6 @@ define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/boot
                             feedback.hide();
                         }
                     }
-
-                    /*
-                    event.preventDefault();
-                    var parent = $(element).closest('.form-group');
-                    var feedback = parent.find('.form-control-feedback');
-                    var invalidinput = parent.find('input.form-control.is-invalid');
-
-                    // Sometimes (atto) we have a hidden textarea backed by a real contenteditable div.
-                    if (($(element).prop("tagName") == 'TEXTAREA') && parent.find('[contenteditable]')) {
-                        element = parent.find('[contenteditable]');
-                    }
-                    if (msg !== '') {
-                        parent.addClass('has-danger');
-                        parent.data('client-validation-error', true);
-                        $(element).addClass('is-invalid');
-                        $(element).attr('aria-describedby', feedback.attr('id'));
-                        $(element).attr('aria-invalid', true);
-                        invalidinput.attr('tabindex', 0);
-                        feedback.html(msg);
-
-                        // Only display and focus when the error was not already visible.
-                        if (!feedback.is(':visible')) {
-                            feedback.show();
-                            feedback.focus();
-                        }
-                    } else {
-                        if (parent.data('client-validation-error') === true) {
-                            parent.removeClass('has-danger');
-                            parent.data('client-validation-error', false);
-                            $(element).removeClass('is-invalid');
-                            $(element).removeAttr('aria-describedby');
-                            $(element).attr('aria-invalid', false);
-                            feedback.hide();
-                        }
-                    }
-                    */
                    // END LSU - Fixing Snaps broken form.
                 });
             },
