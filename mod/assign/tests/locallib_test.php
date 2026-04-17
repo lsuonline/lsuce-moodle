@@ -2189,6 +2189,53 @@ final class locallib_test extends \advanced_testcase {
         $this->assertEquals(false, $assign->testable_submissions_open($student->id));
     }
 
+    // BEGIN LSU MD-2166: Regression test — override duedate extends past base cutoffdate should keep submissions open.
+    /**
+     * Test that a user override extending duedate past a base cutoffdate keeps submissions open.
+     *
+     * Regression test for MD-2166: if the base cutoffdate has passed but a user override
+     * extends the duedate, submissions_open() should return true for that student.
+     *
+     * @covers \assign::submissions_open
+     */
+    public function test_submissions_open_override_duedate_extends_past_cutoffdate(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        $this->setAdminUser();
+
+        $now = time();
+        $yesterday = $now - DAYSECS;
+        $tomorrow = $now + DAYSECS;
+
+        // Base assignment: duedate yesterday, cutoffdate yesterday (submissions closed).
+        $assign = $this->create_instance($course, [
+            'duedate' => $yesterday,
+            'cutoffdate' => $yesterday,
+        ]);
+
+        // Without override, submissions should be closed.
+        $this->assertFalse($assign->testable_submissions_open($student->id));
+
+        // Add a user override extending duedate to tomorrow (no cutoffdate override).
+        $DB->insert_record('assign_overrides', (object)[
+            'assignid' => $assign->get_instance()->id,
+            'userid' => $student->id,
+            'duedate' => $tomorrow,
+            'cutoffdate' => null,
+            'allowsubmissionsfromdate' => null,
+            'timelimit' => null,
+        ]);
+
+        // With the override, submissions should now be open for the student.
+        $this->assertTrue($assign->testable_submissions_open($student->id));
+    }
+    // END LSU MD-2166.
+
     public function test_get_graders(): void {
         global $DB;
 
