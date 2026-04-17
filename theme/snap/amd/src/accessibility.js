@@ -24,10 +24,18 @@
 /**
  * JS code to assign attributes and expected behavior for elements in the Dom regarding accessibility.
  */
-define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitizer', 'theme_boost/popover'],
-    function($, str, Event, { DefaultWhitelist }) {
+define(['jquery', 'core/str', 'core/event', 'core_form/events','theme_boost/bootstrap/tools/sanitizer', 'theme_boost/popover'],
+    function($, str, Event, FormEvent, { DefaultWhitelist }) {
+        let focusedAlready = false;
         return {
             snapAxInit: function(localJouleGrader, allyReport, blockReports, localCatalogue) {
+
+                // BEGIN LSU - Removing useless garbage from console logs.
+                // This is nothing, only here to compile with no errors.
+                var temp11 = localJouleGrader,
+                    temp11 = localCatalogue;
+                localJouleGrader = temp11;
+                // END LSU - Removing useless garbage from console logs.
 
                 /**
                  * Module to get the strings from Snap to add the aria-label attribute to new accessibility features.
@@ -42,7 +50,7 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
                     {key: 'viewmessaging', component: 'theme_snap'},
                     {key: 'viewforumposts', component: 'theme_snap'},
                     {key: 'editcoursesettings', component: 'theme_snap'},
-                    {key: 'gradebook', component: 'local_joulegrader'},
+                    // {key: 'gradebook', component: 'local_joulegrader'},
                     {key: 'gradebook', component: 'core_grades'},
                     {key: 'numparticipants', component: 'core_message'},
                     {key: 'pld', component: 'theme_snap'},
@@ -50,7 +58,7 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
                     {key: 'outcomes', component: 'core_outcome'},
                     {key: 'badges', component: 'core_badges'},
                     {key: 'coursereport', component: 'report_allylti'},
-                    {key: 'pluginname', component: 'local_catalogue'},
+                    // {key: 'pluginname', component: 'local_catalogue'},
                     {key: 'experimental', component: 'block_reports'}
                 ]).done(function(stringsjs) {
                     if ($("#page-mod-forum-discuss")) {
@@ -91,15 +99,17 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
 
                     // Check if the plugins are installed to pass the strings. These parameters are being passed from
                     // $initaxvars in snap/classes/output/shared.php. More validations can be added if needed.
+                    /*
                     if (localJouleGrader) {
                         $('section#coursetools ul#coursetools-list a:contains("' + 'Open Grader' + '")')
                             .attr("id", "ct-open-grader");
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[9] + '")')
                             .attr("id", "ct-course-gradebook");
                     } else {
+                     */
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[10] + '")')
                             .attr("id", "ct-course-gradebook");
-                    }
+                    // }
                     if (blockReports) {
                         $('section#coursetools ul#coursetools-list a:contains("' + 'Open Reports' + '")')
                             .attr("id", "ct-open-reports");
@@ -110,10 +120,10 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
                         $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[16] + '")')
                             .attr("id", "ct-ally");
                     }
-                    if (localCatalogue) {
-                        $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[17] + '")')
-                            .attr("id", "ct-open-catalogue");
-                    }
+                    // if (localCatalogue) {
+                    //     $('section#coursetools ul#coursetools-list a:contains("' + stringsjs[17] + '")')
+                    //         .attr("id", "ct-open-catalogue");
+                    // }
 
                     // Add ARIA attributes.
                     $('div[role="main"] div.sitetopic ul.section.img-text').attr('role', 'presentation');
@@ -327,7 +337,94 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
              */
             enhanceform: function(elementid) {
                 var element = document.getElementById(elementid);
-                $(element).on(Event.Events.FORM_FIELD_VALIDATION, function(event, msg) {
+                // BEGIN LSU - Fixing Snaps broken form.
+                $(element).on(FormEvent.eventTypes.formFieldValidationFailed, function(e) {
+
+                    // const msg = e.detail.message;
+                    const msg = e.detail.message;
+                    e.preventDefault();
+
+                    var parent = $(element).closest('.fitem');
+                    var feedback = parent.find('.form-control-feedback');
+                    const feedbackId = feedback.attr('id');
+
+                    // Get current aria-describedby value.
+                    let describedBy = $(element).attr('aria-describedby');
+                    if (typeof describedBy === "undefined") {
+                        describedBy = '';
+                    }
+                    // Split aria-describedby attribute into an array of IDs if necessary.
+                    let describedByIds = [];
+                    if (describedBy.length) {
+                        describedByIds = describedBy.split(" ");
+                    }
+                    // Find the the feedback container in the aria-describedby attribute.
+                    const feedbackIndex = describedByIds.indexOf(feedbackId);
+
+                    if (element.tagName === 'TEXTAREA') {
+                        // Check if the textarea is backed by a contenteditable div.
+                        const contentEditable = parent.find('[contenteditable]');
+                        if (contentEditable.length > 0) {
+                            // Use the contenteditable div as the target element.
+                            element = contentEditable[0];
+                        } else {
+                            // Use the TinyMCE iframe as the target element if it exists.
+                            element = document.getElementById(`${element.id}_ifr`) || element;
+                        }
+                    }
+
+                    if (msg !== '') {
+                        parent.addClass('has-danger');
+                        parent.data('client-validation-error', true);
+                        $(element).addClass('is-invalid');
+                        // Append the feedback ID to the aria-describedby attribute if it doesn't exist yet.
+                        if (feedbackIndex === -1) {
+                            describedByIds.push(feedbackId);
+                            $(element).attr('aria-describedby', describedByIds.join(" "));
+                        }
+                        $(element).attr('aria-invalid', true);
+                        feedback.html(msg);
+                        feedback.show();
+
+                        // If we haven't focused anything yet, focus this one.
+                        if (!focusedAlready) {
+                            element.scrollIntoView({behavior: "smooth", block: "center"});
+                            focusedAlready = true;
+                            setTimeout(()=> {
+                                // Actual focus happens later in case we need to do this in response to
+                                // a change event which happens in the middle of changing focus.
+                                element.focus({preventScroll: true});
+                                // Let it focus again next time they submit the form.
+                                focusedAlready = false;
+                            }, 0);
+                        }
+
+                    } else {
+                        if (parent.data('client-validation-error') === true) {
+                            parent.removeClass('has-danger');
+                            parent.data('client-validation-error', false);
+                            $(element).removeClass('is-invalid');
+                            // If the aria-describedby attribute contains the error container's ID, remove it.
+                            if (feedbackIndex > -1) {
+                                describedByIds.splice(feedbackIndex, 1);
+                            }
+                            // Check the remaining element IDs in the aria-describedby attribute.
+                            if (describedByIds.length) {
+                                // If there's at least one, combine them with a blank space and
+                                // update the aria-describedby attribute.
+                                describedBy = describedByIds.join(" ");
+                                // Put back the new describedby attribute.
+                                $(element).attr('aria-describedby', describedBy);
+                            } else {
+                                // If there's none, remove the aria-describedby attribute.
+                                $(element).removeAttr('aria-describedby');
+                            }
+                            $(element).attr('aria-invalid', false);
+                            feedback.hide();
+                        }
+                    }
+
+                    /*
                     event.preventDefault();
                     var parent = $(element).closest('.form-group');
                     var feedback = parent.find('.form-control-feedback');
@@ -361,6 +458,8 @@ define(['jquery', 'core/str', 'core/event', 'theme_boost/bootstrap/tools/sanitiz
                             feedback.hide();
                         }
                     }
+                    */
+                   // END LSU - Fixing Snaps broken form.
                 });
             },
 
