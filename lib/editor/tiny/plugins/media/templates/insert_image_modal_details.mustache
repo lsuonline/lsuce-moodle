@@ -76,7 +76,20 @@
                     <input type="radio" class="tiny_image_sizecustom" id="{{elementid}}_tiny_image_sizecustom" name="radioOptions">
                     <label class="form-check-label" for="{{elementid}}_tiny_image_sizecustom">{{#str}} sizecustom, tiny_media {{/str}}</label>
                 </div>
-                <!-- Row 4: Image size -->
+                {{! BEGIN LSU MD-2148 image swap + alignment }}
+                <!-- Row 4: Alignment -->
+                <div class="form-group mb-2">
+                    <label for="{{elementid}}_tiny_image_alignment">{{#str}} alignment, tiny_media {{/str}}</label>
+                    <select class="tiny_image_alignment form-select" id="{{elementid}}_tiny_image_alignment">
+                        <option value="">{{#str}} alignment_bottom, tiny_media {{/str}}</option>
+                        <option value="left">{{#str}} alignment_left, tiny_media {{/str}}</option>
+                        <option value="right">{{#str}} alignment_right, tiny_media {{/str}}</option>
+                        <option value="text-top">{{#str}} alignment_top, tiny_media {{/str}}</option>
+                        <option value="middle">{{#str}} alignment_middle, tiny_media {{/str}}</option>
+                    </select>
+                </div>
+                {{! END LSU MD-2148 image swap + alignment }}
+                <!-- Row 5: Image size -->
                 <div class="tiny_image_properties mb-2">
                     <!-- Row 1: Image width and height -->
                     <div id="{{elementid}}_tiny_image_size" class="tiny_image_size container ms-1">
