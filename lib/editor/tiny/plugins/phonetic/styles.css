@@ -1,0 +1,31 @@
+/**
+ * Tiny phonetic plugin styles.
+ *
+ * @package     tiny_phonetic
+ * @copyright   2026 LSU Online & Continuing Education
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* Override theme styles that constrain the modal width */
+.tiny_phonetic_modal .modal-content {
+    margin: 0;
+    max-width: none;
+}
+
+.tiny_phonetic_library .tiny_phonetic_btn {
+    min-width: 2.5em;
+    font-size: 1.1em;
+    padding: 0.2em 0.4em;
+    margin: 0.1em;
+    font-family: serif;
+}
+
+.tiny_phonetic_preview_char {
+    font-family: serif;
+    font-size: 2em;
+    min-height: 1.5em;
+}
+
+.tiny_phonetic_text {
+    font-family: serif;
+}
