@@ -1078,7 +1078,7 @@ function purify_html($text, $options = array()) {
         $config = HTMLPurifier_Config::createDefault();
 
         $config->set('HTML.DefinitionID', 'moodlehtml');
-        $config->set('HTML.DefinitionRev', 7);
+        $config->set('HTML.DefinitionRev', 8);
         $config->set('Cache.SerializerPath', $cachedir);
         $config->set('Cache.SerializerPermissions', $CFG->directorypermissions);
         $config->set('Core.NormalizeNewlines', false);
@@ -1162,6 +1162,16 @@ function purify_html($text, $options = array()) {
 
             // Use the built-in Ruby module to add annotation support.
             $def->manager->addModule(new HTMLPurifier_HTMLModule_Ruby());
+
+            // Begin LSU MD-2147
+            // Allow HTML5 accordion elements produced by the TinyMCE accordion plugin.
+            // https://html.spec.whatwg.org/#the-details-element
+            $def->addElement('details', 'Block', 'Flow', 'Common', [
+                'open' => 'Bool',
+            ]);
+            // https://html.spec.whatwg.org/#the-summary-element
+            $def->addElement('summary', 'Block', 'Flow', 'Common');
+            // End LSU MD-2147
         }
 
         $purifier = new HTMLPurifier($config);
