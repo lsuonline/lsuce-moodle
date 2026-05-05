@@ -81,4 +81,23 @@ class report_editdates_mod_forum_date_extractor
         }
         return $errors;
     }
+
+    // BEGIN LSU MD-1661: Call forum_update_calendar and forum_grade_item_update after saving dates
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/40 (commit b5508f9)
+    // Without this override the forum's calendar events remain stale after dates are updated
+    // via this report, because the base save_dates() only does a DB update_record().
+    #[\Override]
+    public function save_dates(cm_info $cm, array $dates) {
+        global $DB, $CFG;
+        parent::save_dates($cm, $dates);
+
+        require_once($CFG->dirroot . '/mod/forum/locallib.php');
+        $forum = $DB->get_record('forum', ['id' => $cm->instance]);
+        $forum->cmidnumber = $cm->id;
+
+        // Update the calendar events and grade item for this forum.
+        forum_update_calendar($forum, $cm->id);
+        forum_grade_item_update($forum);
+    }
+    // END LSU MD-1661: Call forum_update_calendar and forum_grade_item_update after saving dates
 }

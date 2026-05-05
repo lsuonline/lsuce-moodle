@@ -93,7 +93,22 @@ if ($mform->is_cancelled()) {
     redirect($returnurl);
 
 } else if ($data = $mform->get_data()) {
+    // BEGIN LSU MD-1661: Invoke report_editdates_form_post_actions callbacks before processing
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/51 (commit cd21173)
+    $callbacks = get_plugins_with_function('report_editdates_form_post_actions', 'lib.php');
+    foreach ($callbacks as $type => $plugins) {
+        foreach ($plugins as $plugin => $pluginfunction) {
+            $data = $pluginfunction($data, $course);
+        }
+    }
+    // END LSU MD-1661: Invoke report_editdates_form_post_actions callbacks before processing
+
     // Process submitted data.
+
+    // BEGIN LSU MD-1661: Start transaction before data parsing so name updates are transactional
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/56 (commit 48a7524)
+    $transaction = $DB->start_delegated_transaction();
+    // END LSU MD-1661: Start transaction before data parsing so name updates are transactional
 
     $moddatesettings = [];
     $blockdatesettings = [];
@@ -147,11 +162,25 @@ if ($mform->is_cancelled()) {
                     }
                 }
             }
+
+            // BEGIN LSU MD-1661: Update activity name if submitted via name_modtype_cmid field
+            // See: https://github.com/moodleou/moodle-report_editdates/pull/56 (commit 48a7524)
+            if (count($cmsettings) == 3 && $cmsettings[0] == 'name') {
+                $modcontext = context_module::instance($cmsettings[2]);
+                if (has_capability('moodle/course:manageactivities', $modcontext)) {
+                    $cm = $modinfo->get_cm($cmsettings[2]);
+                    $update = new stdClass();
+                    $update->id = $cm->instance;
+                    $update->name = $value;
+                    $update->timemodified = time();
+                    $DB->update_record($cmsettings[1], $update);
+                }
+            }
+            // END LSU MD-1661: Update activity name if submitted via name_modtype_cmid field
         }
     }
 
-    // Start transaction.
-    $transaction = $DB->start_delegated_transaction();
+    // Start transaction (moved earlier in PR #56 - see above).
     // Allow to update only if user is capable.
     if (has_capability('moodle/course:update', $coursecontext)) {
         $DB->set_field('course', 'startdate', $course->startdate, ['id' => $course->id]);
@@ -189,7 +218,10 @@ if ($mform->is_cancelled()) {
         $cm = $cms[$modid];
         $mod = report_editdates_mod_date_extractor::make($cm->modname, $course);
         if ($mod) {
-            $mod->save_dates($cm, $datesettings);
+            // BEGIN LSU MD-1661: Use save_new_dates to trigger course_module_updated event
+            // See: https://github.com/moodleou/moodle-report_editdates/pull/50 (commit bb1f9b3)
+            $mod->save_new_dates($cm, $datesettings);
+            // END LSU MD-1661: Use save_new_dates to trigger course_module_updated event
         }
     }
 
@@ -206,7 +238,10 @@ if ($mform->is_cancelled()) {
             $blockdatextrator =
             report_editdates_block_date_extractor::make($block->blockname, $course);
             if ($blockdatextrator) {
-                $blockdatextrator->save_dates($blockobj, $datesettings);
+                // BEGIN LSU MD-1661: Use save_new_dates for consistent API with mod extractors
+                // See: https://github.com/moodleou/moodle-report_editdates/pull/50 (commit bb1f9b3)
+                $blockdatextrator->save_new_dates($blockobj, $datesettings);
+                // END LSU MD-1661: Use save_new_dates for consistent API with mod extractors
             }
         }
     }
@@ -214,6 +249,12 @@ if ($mform->is_cancelled()) {
     // Commit transaction and finish up.
     $transaction->allow_commit();
     rebuild_course_cache($course->id);
+    // BEGIN LSU MD-1661: Queue adhoc task to refresh all mod calendar events after date update
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/40 (commit b5508f9)
+    $task = new \core\task\refresh_mod_calendar_events_task();
+    $task->set_custom_data(['courseid' => $course->id]);
+    \core\task\manager::queue_adhoc_task($task, true);
+    // END LSU MD-1661: Queue adhoc task to refresh all mod calendar events after date update
     redirect($PAGE->url, get_string('changessaved'));
 }
 

@@ -56,3 +56,7 @@ $string['timelinemax'] = 'Time-line limit (years)';
 $string['timelinemaxdesc'] = 'Maximum number of years shown on timeline.';
 $string['timeuntil'] = 'Time From cannot be less than Time Until';
 $string['toomuchtime'] = 'Timeline not created: Times were spread over {$a}+ years.';
+// BEGIN LSU MD-1661: Add 'Activity name' label string for editable name field
+// See: https://github.com/moodleou/moodle-report_editdates/pull/56 (commit 48a7524)
+$string['activityname'] = 'Activity name';
+// END LSU MD-1661: Add 'Activity name' label string for editable name field
