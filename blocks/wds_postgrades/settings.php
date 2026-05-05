@@ -43,6 +43,15 @@ if ($ADMIN->fulltree) {
         ]
     ));
 
+    // Add setting for Adhoc Threshold.
+    $settings->add(new admin_setting_configtext(
+        'block_wds_postgrades/adhocthreshold',
+        get_string('adhocthreshold', 'block_wds_postgrades'),
+        get_string('adhocthresholddesc', 'block_wds_postgrades'),
+        '100',
+        PARAM_INT
+    ));
+
     // Add setting for Workday username suffix.
     $settings->add(new admin_setting_configtext(
         'block_wds_postgrades/usernamesuffix',

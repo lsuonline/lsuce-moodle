@@ -98,6 +98,8 @@ $string['gradespast'] = '{$a} grades posting is no longer available for this per
 $string['gradesopen'] = '{$a->typeword} grades posting is available. Time remaining: {$a->time}.';
 $string['neverseen'] = 'Non-Engaged-Student Date Preferences';
 $string['neverseendesc'] = 'Number of days <strong>prior</strong> to the course\'s semester start date for the default date for students who\'ve never accessed the course.';
+$string['adhocthreshold'] = 'Background Posting Threshold';
+$string['adhocthresholddesc'] = 'When the number of grades to post exceeds this amount, the process will run in the background instead of making the user wait.';
 
 // Period configuration page strings
 $string['periodconfig'] = 'Grading Period Configuration';
@@ -132,3 +134,28 @@ $string['workdayapiversion'] = 'Workday API Version';
 $string['workdayapiversiondesc'] = 'Enter the Workday API version. Do not include the "v".';
 $string['usernamesuffix'] = 'Username suffix';
 $string['usernamesuffixdesc'] = 'Workday webservice requires a username suffix. We use @lsu.';
+
+// Adhoc Task & Notifications.
+$string['messageprovider:postgrades'] = 'Post Grades Messages';
+$string['postgradesadhoctask'] = 'Post Grades to Workday Student (Background Task)';
+$string['postgradesnotification_subject'] = 'Grades Posted: {$a->sectiontitle}';
+$string['postgradesnotification_final_html'] = '<p>The background final grade posting process for <strong>{$a->sectiontitle}</strong> has finished.</p>
+<p>Successfully posted {$a->successcount} grades.</p>
+<p>Failed to post {$a->failurecount} grades.</p>
+{$a->failureshtml}
+<p>Click the <a href="{$a->resultsurl}">post grades</a> link to view the section\'s grades and address any issues.</p>';
+$string['postgradesnotification_final_text'] = 'The background final grade posting process for {$a->sectiontitle} has finished.
+Successfully posted {$a->successcount} grades.
+Failed to post {$a->failurecount} grades.
+{$a->failureshtml}
+Visit the post grades link ({$a->resultsurl}) to view the section\'s grades and address any issues.';
+$string['postgradesnotification_interim_html'] = '<p>The background interim grade posting process for <strong>{$a->sectiontitle}</strong> has finished.</p>
+<p>Successfully posted {$a->successcount} grades.</p>
+<p>Failed to post {$a->failurecount} grades.</p>
+{$a->failureshtml}';
+$string['postgradesnotification_interim_text'] = 'The background interim grade posting process for {$a->sectiontitle} has finished.
+Successfully posted {$a->successcount} grades.
+Failed to post {$a->failurecount} grades.
+{$a->failures}';
+$string['failedstudents'] = 'Failed to post for: {$a}';
+$string['backgroundpostingmessage'] = 'Posting grades in the background. You will receive a notification when it completes.';
