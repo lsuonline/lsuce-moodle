@@ -143,6 +143,8 @@ if ($mform->is_cancelled()) {
     $fromform->assignid = $assigninstance->id;
 
     // Process override values.
+    // BEGIN LSU MD-2008: Date fields set to 0 (not enabled in the form) must be stored as NULL so
+    // that COALESCE in the grading table query correctly falls back to the base assignment date.
     foreach ($keys as $key) {
         if (!isset($fromform->{$key}) || (
             $fromform->{$key} == 0 && 
@@ -152,6 +154,7 @@ if ($mform->is_cancelled()) {
             $fromform->{$key} = null;
         }
     }
+    // END LSU MD-2008.
 
     // See if we are replacing an existing override.
     $userorgroupchanged = false;
