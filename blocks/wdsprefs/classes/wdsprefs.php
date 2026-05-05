@@ -23,6 +23,7 @@
  */
 
 require_once("$CFG->dirroot/enrol/workdaystudent/classes/workdaystudent.php");
+require_once($CFG->dirroot . '/blocks/wdsprefs/classes/shell_tag_helper.php');
 
 class wdsprefs {
 
@@ -43,7 +44,7 @@ class wdsprefs {
             return false;
         }
 
-        // Check 1: No active student enrollments in the course.
+        // No active student enrollments in the course.
         $sql = "SELECT COUNT(ue.id)
             FROM {user_enrolments} ue
                 INNER JOIN {enrol} e
@@ -69,7 +70,7 @@ class wdsprefs {
             return false;
         }
 
-        // Check 2: No grades or course materials.
+        // No grades or course materials.
         $materials = workdaystudent::wds_course_has_materials($courseid);
 
         // $materials is true if we have either materials or grades/grades history.
@@ -489,6 +490,126 @@ class wdsprefs {
     }
 
     /**
+     * Removes cross-split or team-teach records for an instructor no longer teaching a section.
+     *
+     * @param string $sectionid (enrol_wds_sections.id)
+     * @param string $universalid Instructor universal ID being removed from the section
+     * @return bool True if any records were removed or cleanup ran, false on invalid input
+     */
+    public static function remove_crosssplit_records_for_section_instructor($sectionid, $universalid):bool {
+        global $DB;
+
+        if (empty($sectionid) || empty($universalid)) {
+            return false;
+        }
+
+        // Get crosssplits.
+        $cssql = "SELECT css.id, css.crosssplit_id AS neededid, 'block_wdsprefs_crosssplit_sections' AS tablename
+                  FROM {block_wdsprefs_crosssplit_sections} css
+                  INNER JOIN {block_wdsprefs_crosssplits} cs ON cs.id = css.crosssplit_id
+                 WHERE css.section_id = :sectionid
+                   AND cs.universal_id = :universalid";
+
+        $csparams = [
+            'sectionid' => $sectionid,
+            'universalid' => $universalid,
+        ];
+
+        // Do the nasty.
+        $csrows = $DB->get_records_sql($cssql, $csparams);
+
+        // Get the team teaches.
+        $ttsql = "SELECT tt.id, tt.id AS neededid, 'block_wdsprefs_teamteach' AS tablename
+                  FROM {block_wdsprefs_teamteach} tt
+                 WHERE JSON_CONTAINS(requested_section_ids, CAST(:sectionid AS JSON))
+                 AND (tt.requested_userid = :requested OR tt.requester_userid = :requester)";
+
+        $ttparams = [
+            'sectionid' => $sectionid,
+            'requested' => $universalid,
+            'requester' => $universalid,
+        ];
+
+        // Do the nasty.
+        $ttrows = $DB->get_records_sql($ttsql, $ttparams);
+
+        // Merge these together so we don't waste time if nothing returns.
+        $rows = array_merge($csrows, $ttrows);
+
+        // Quick return because we don't have anything to do.
+        if (empty($rows)) {
+            return true;
+        }
+
+        // Only process crosssplits if we have them.
+        if (!empty($csrows)) {
+
+            // Set up this array for later.
+            $crosssplitids = [];
+
+            // Loop through the array.
+            foreach ($csrows as $csrow) {
+
+                // Delete the sections that have been reassigned.
+                $DB->delete_records('block_wdsprefs_crosssplit_sections', ['id' => $csrow->id]);
+                $crosssplitids[$csrow->neededid] = true;
+            }
+
+            // Loop through the crosssplits for this instructor / sections.
+            foreach (array_keys($crosssplitids) as $crosssplitid) {
+
+                // Count the remaining cross-split sections for this cross-split entry.
+                $cscount = $DB->count_records('block_wdsprefs_crosssplit_sections', ['crosssplit_id' => $crosssplitid]);
+
+                // If we have none, delete the actual cross-split itself.
+                if ($cscount === 0) {
+                    $DB->delete_records('block_wdsprefs_crosssplits', ['id' => $crosssplitid]);
+                }
+            }
+        }
+
+        // Only process team teach if we have records.
+        if (!empty($ttrows)) {
+
+            // Loop through all the team teaches for this section / instructor. We should only have one, but let's be consistent.
+            foreach ($ttrows as $ttrow) {
+
+                $neededid = $ttrow->neededid;
+
+                // Get the entire TT record.
+                $ttrecord = $DB->get_record('block_wdsprefs_teamteach', ['id' => $neededid], '*', MUST_EXIST);
+
+                // Decode the JSON data.
+                $ttsections = json_decode($ttrecord->requested_section_ids, true);
+
+                if (!is_array($ttsections)) {
+                    $ttsections = [];
+                }
+
+                // Remove the section ID.
+                $ttsections = array_values(array_filter($ttsections, function ($ttid) use ($neededid) {
+                    return (int)$ttid !== (int)$neededid;
+                }));
+
+                // If we have no sections left, delete the TT record.
+                if (empty($ttsections)) {
+                    $DB->delete_records('block_wdsprefs_teamteach', ['id' => $neededid]);
+                    return true;
+                }
+
+                // We have more than one section left, update the TT record accordingly.
+                $ttrecord->requested_section_ids = json_encode($ttsections);
+                $ttrecord->timemodified = time();
+
+                // Do the nasty.
+                $DB->update_record('block_wdsprefs_teamteach', $ttrecord);
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Creates a group for a section in a crosssplited course.
      *
      * @param @int $courseid The course ID.
@@ -550,6 +671,15 @@ class wdsprefs {
      */
     public static function create_crosssplit_shell($userid, $periodid, $sectionids, $shellname, $shellcount) {
         global $DB, $CFG;
+
+        // Require teamteach for eligibility check.
+        require_once($CFG->dirroot . '/blocks/wdsprefs/classes/teamteach.php');
+
+        // Check if any of the sections are part of a team teach request.
+        if (!block_wdsprefs_teamteach::check_shell_eligibility(0, $sectionids)) {
+            \core\notification::error(get_string('wdsprefs:section_already_teamtaught_generic', 'block_wdsprefs'));
+            return false;
+        }
 
         // Require workdaystudent for course creation functionality.
         require_once($CFG->dirroot . '/enrol/workdaystudent/classes/workdaystudent.php');
@@ -1001,10 +1131,10 @@ class wdsprefs {
             // Create a group for this section.
             $groupid = self::create_crosssplit_group($crosssplit->moodle_course_id, $section);
 
-            // Assign the section to the new course shell id.
-            $DB->set_field($stable, 'moodle_status', $crosssplit->moodle_course_id,
-                ['id' => $section->id]
-            );
+            // Assign the section to the new course shell id and sync idnumber from the course.
+            $section->moodle_status = $crosssplit->moodle_course_id;
+            $section->idnumber = $courseidnumber;
+            $DB->update_record($stable, $section);
 
             $senrollsql = "SELECT * FROM {enrol_wds_student_enroll}
                 WHERE section_listing_id = :slid
@@ -1312,8 +1442,10 @@ class wdsprefs {
                 } elseif (is_array($data) && isset($data[$shellnamefield])) {
                     $customname = trim($data[$shellnamefield]);
                 }
-                $customname = core_text::substr($customname, 0, 64);
-                if ($customname !== '' && !preg_match('/^[a-zA-Z0-9_ -]+$/', $customname)) {
+                // Normalize using helper.
+                $customname = \block_wdsprefs\shell_tag_helper::normalize($customname);
+                // Validate format using helper.
+                if ($customname !== '' && !\block_wdsprefs\shell_tag_helper::validate_format($customname)) {
                     throw new \core\exception\invalid_parameter_exception(
                         get_string('wdsprefs:shelltaginvalid', 'block_wdsprefs')
                     );
@@ -1899,7 +2031,7 @@ class wdsprefs {
      * @return @array Formatted array of sections grouped by course.
      */
     public static function get_sections_by_course_for_period(string $periodid): array {
-        global $USER, $DB;
+        global $CFG, $USER, $DB;
 
         // Get the user's idnumber.
         $uid = $USER->idnumber;
@@ -1912,19 +2044,19 @@ class wdsprefs {
         ];
 
         // Get all sections that are already part of crosssplits.
-        $crosssplitsql = "SELECT DISTINCT(section_id)
+        $crosssplitsql = "SELECT section_id, crosssplit_id, moodle_course_id
             FROM {block_wdsprefs_crosssplits} cs
             INNER JOIN {block_wdsprefs_crosssplit_sections} css
                 ON cs.id = css.crosssplit_id
-               #AND cs.academic_period_id = :periodid
-                AND cs.userid = :userid
+            WHERE cs.userid = :userid
                 AND cs.universal_id = :uid";
 
-        // Get the data.
-        $crosssplitsections = $DB->get_records_sql($crosssplitsql, $parms);
-
-        // Grab the sectionids for future use.
-        $excludeids = array_keys($crosssplitsections);
+        $csparms = ['userid' => $USER->id, 'uid' => $uid];
+        $crosssplitsections = $DB->get_records_sql($crosssplitsql, $csparms);
+        $crosssplitmap = [];
+        foreach ($crosssplitsections as $cs) {
+            $crosssplitmap[$cs->section_id] = $cs;
+        }
 
         // Build SQL query to get all relevant section information.
         $sql = "SELECT sec.id AS sectionid,
@@ -1951,14 +2083,7 @@ class wdsprefs {
              AND t.userid = :userid
              AND sec.academic_period_id = :periodid";
 
-        // Add condition to exclude already crosssplit sections if we have any.
-        if (!empty($excludeids)) {
-            list($insql, $inparms) = $DB->get_in_or_equal($excludeids, SQL_PARAMS_NAMED, 'exclude_', false);
-            $sql .= " AND sec.id " . $insql;
-            $parms = array_merge(['uid' => $uid, 'userid' => $USER->id, 'periodid' => $periodid], $inparms);
-        } else {
-            $parms = ['uid' => $uid, 'userid' => $USER->id, 'periodid' => $periodid];
-        }
+        $parms = ['uid' => $uid, 'userid' => $USER->id, 'periodid' => $periodid];
 
         $sql .= " GROUP BY sec.id
             ORDER BY sec.section_listing_id ASC";
@@ -1986,13 +2111,24 @@ class wdsprefs {
            $sectionvalue = "{$record->course_subject_abbreviation} ";
            $sectionvalue .= "{$record->course_number} {$record->section_number}";
 
+           $sectiondata = new stdClass();
+           $sectiondata->name = $sectionvalue;
+           $sectiondata->id = $record->sectionid;
+           $sectiondata->crosssplit_id = null;
+           $sectiondata->moodle_course_id = null;
+
+           if (isset($crosssplitmap[$record->sectionid])) {
+               $sectiondata->crosssplit_id = $crosssplitmap[$record->sectionid]->crosssplit_id;
+               $sectiondata->moodle_course_id = $crosssplitmap[$record->sectionid]->moodle_course_id;
+           }
+
            // Initialize the array for this course if it doesn't exist.
            if (!isset($formatteddata[$coursekey])) {
                $formatteddata[$coursekey] = [];
            }
 
            // Add this section to the course group.
-           $formatteddata[$coursekey][$record->sectionid] = $sectionvalue;
+           $formatteddata[$coursekey][$record->sectionid] = $sectiondata;
        }
 
        return $formatteddata;
@@ -2302,7 +2438,7 @@ class wdsprefs {
      * @return @array Formatted array of sections grouped by period and course.
      */
     public static function get_sections_across_periods($targetperiodid): array {
-        global $USER, $DB;
+        global $CFG, $USER, $DB;
 
         // Get the user's idnumber.
         $uid = $USER->idnumber;
@@ -2312,6 +2448,9 @@ class wdsprefs {
         if (!$targetperiod) {
             return [];
         }
+
+        // Get settings for fetching how many days we can fudge the semester dates.
+        $cpt = get_config('block_wdsprefs');
 
         // Get all sections that are already part of crosssplits.
         $crosssplitsql = "SELECT section_id, crosssplit_id, moodle_course_id
@@ -2327,6 +2466,10 @@ class wdsprefs {
         foreach ($crosssplitsections as $cs) {
             $crosssplitmap[$cs->section_id] = $cs;
         }
+
+        // Group by dates, allowing start/end dates to be off by the tolerance.
+        $tolerancedays = isset($cpt->crossperiodtolerance) ? (int) $cpt->crossperiodtolerance : (int) 0;
+        $tolerance = $tolerancedays * 86400;
 
         // Build SQL query.
         $sql = "SELECT sec.id AS sectionid,
@@ -2351,12 +2494,20 @@ class wdsprefs {
            WHERE sec.delivery_mode IN ('Online','Web-Based')
              AND t.userid = :userid
              AND tenr.universal_id = :uid
-             AND p.start_date = :startdate
-             AND p.end_date = :enddate
-           GROUP BY sec.id, p.academic_period_id
-           ORDER BY p.start_date ASC, c.course_subject_abbreviation ASC, c.course_number ASC, sec.section_number ASC";
+             AND p.start_date BETWEEN :startdate AND :startdate2
+             AND p.end_date BETWEEN :enddate AND :enddate2";
 
-        $parms = ['userid' => $USER->id, 'uid' => $uid, 'startdate' => $targetperiod->start_date, 'enddate' => $targetperiod->end_date];
+        $parms = [
+            'userid' => $USER->id,
+            'uid' => $uid,
+            'startdate' => $targetperiod->start_date - $tolerance,
+            'startdate2' => $targetperiod->start_date + $tolerance,
+            'enddate' => $targetperiod->end_date - $tolerance,
+            'enddate2' => $targetperiod->end_date + $tolerance
+        ];
+
+        $sql .= " GROUP BY sec.id, p.academic_period_id
+           ORDER BY p.start_date ASC, c.course_subject_abbreviation ASC, c.course_number ASC, sec.section_number ASC";
 
         $records = $DB->get_records_sql($sql, $parms);
 
@@ -2451,7 +2602,7 @@ class wdsprefs {
                 }
 
                 // Get info about the sections.
-                $sections = [];
+               $sections = [];
 
                 foreach ($sectionids as $sectionid) {
 
@@ -2514,10 +2665,13 @@ class wdsprefs {
                 $has_available_section = false;
                 foreach ($courses as $cname => $sections) {
                     foreach ($sections as $section) {
-                         // Check if section is NOT cross-split/enrolled.
+                         // Check if section is NOT cross-split/enrolled AND not team-taught.
                          if (empty($section->crosssplit_id)) {
-                             $has_available_section = true;
-                             break 2; // Break out of sections and courses loops
+                             $ttstatus = block_wdsprefs_teamteach::check_section_status($section->id, $userid);
+                             if ($ttstatus['available']) {
+                                 $has_available_section = true;
+                                 break 2; // Break out of sections and courses loops
+                             }
                          }
                     }
                 }
@@ -2581,6 +2735,9 @@ class wdsprefs {
         // Get settings to limit semesters to current ones.
         $s = workdaystudent::get_settings();
 
+        // Get settings for fetching how many days we can fudge the semester dates.
+        $cpt = get_config('block_wdsprefs');
+
         // Set the semester range for getting future and recent semesters.
         $fsemrange = isset($s->brange) ? ($s->brange * 86400) : 0;
 
@@ -2612,14 +2769,39 @@ class wdsprefs {
         // Get the actual data.
         $records = $DB->get_records_sql($sql, $parms);
 
+        // Group by dates, allowing start/end dates to be off by the tolerance.
+        $tolerancedays = isset($cpt->crossperiodtolerance) ? (int) $cpt->crossperiodtolerance : (int) 0;
+        $tolerance = $tolerancedays * 86400;
+
         // Group by dates.
         $dategroups = [];
+
+        // Loop through the returned periods.
         foreach ($records as $record) {
-            $key = $record->start_date . '|' . $record->end_date;
-            if (!isset($dategroups[$key])) {
-                $dategroups[$key] = [];
+
+            // Pre set this to false.
+            $matched = false;
+
+            // Build out a list of periods with start / end dates within the tolerance.
+            foreach ($dategroups as $key => $group) {
+                $groupstart = $group[0]->start_date;
+                $groupend = $group[0]->end_date;
+
+                // See if any of the start dates are within one another +/- the tolerance.
+                if (
+                    abs($record->start_date - $groupstart) <= $tolerance &&
+                    abs($record->end_date - $groupend) <= $tolerance
+                ) {
+
+                    // Add those to the group.
+                    $dategroups[$key][] = $record;
+                    $matched = true;
+                }
             }
-            $dategroups[$key][] = $record;
+
+            if (!$matched) {
+                $dategroups[] = [$record];
+            }
         }
 
         // Filter groups with < 2 periods.
@@ -2654,11 +2836,7 @@ class wdsprefs {
                     $count = 0;
                     foreach ($sections_across as $period_group) {
                         foreach ($period_group as $course_group) {
-                            foreach ($course_group as $section) {
-                                if (empty($section->crosssplit_id)) {
-                                    $count++;
-                                }
-                            }
+                            $count += count($course_group);
                         }
                     }
 
@@ -2884,4 +3062,5 @@ class wdsprefs {
 
         return $records;
     }
+
 }

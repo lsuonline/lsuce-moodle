@@ -200,7 +200,7 @@ class block_wdsprefs_teamteach {
         $sections_str = '';
         if (!empty($section_ids)) {
             list($insql, $inparams) = $DB->get_in_or_equal($section_ids);
-            $sql = "SELECT s.section_number, c.course_subject_abbreviation, c.course_number
+            $sql = "SELECT s.id, s.section_number, c.course_subject_abbreviation, c.course_number
                     FROM {enrol_wds_sections} s
                     JOIN {enrol_wds_courses} c ON s.course_listing_id = c.course_listing_id
                     WHERE s.id $insql";
@@ -794,6 +794,57 @@ class block_wdsprefs_teamteach {
     }
 
     /**
+     * Check the status of a shell to see if it is already team taught.
+     *
+     * @param int $section_id The ID of the section to check.
+     * @param int $teacher_id The ID of the teacher.
+     * @return array [available (bool), message (string)]
+     */
+    public static function check_shell_section_status(int $section_id, int $teacher_id): array {
+        global $DB;
+
+        $parms = ['teacherid' => $teacher_id, 'sectionid' => $section_id];
+
+        // Check if shell is already involved in a team teach request (pending or approved).
+        $sql = "SELECT s2.id AS sectionid, c.fullname, tt.*
+                  FROM mdl_course c
+                  INNER JOIN {enrol_wds_sections} s ON s.moodle_status = c.id
+                  INNER JOIN {enrol_wds_sections} s2 ON s2.moodle_status = c.id
+                  INNER JOIN {block_wdsprefs_teamteach} tt ON tt.target_course_id = c.id
+                  WHERE s.id = :sectionid
+                  AND (tt.status = 'pending' OR tt.status = 'approved')
+                  GROUP BY c.id";
+
+        // Do le nasty.
+        $requests = $DB->get_records_sql($sql, $parms);
+
+        // Loop through the data.
+        foreach ($requests as $request) {
+
+            // We have a matched section within this shell.
+            if ($section_id == $request->sectionid) {
+
+                // Ignore expired pending requests.
+                if ($request->status == 'pending' && $request->expirytime < time()) {
+                    continue;
+                }
+
+                // Set the course name and be sure we have one.
+                $course_name = $request->fullname ? $request->fullname : 'Unknown Course';
+
+                // Return that we have one and that this section is not available.
+                return [
+                    'available' => false,
+                    'message' => get_string('wdsprefs:section_already_teamtaught', 'block_wdsprefs', $course_name),
+                    'request_id' => $request->id
+                ];
+            }
+        }
+
+        return ['available' => true, 'message' => ''];
+    }
+
+    /**
      * Check the status of a section to see if it is already cross-listed, split, or team taught.
      *
      * @param int $section_id The ID of the section to check.
@@ -805,12 +856,14 @@ class block_wdsprefs_teamteach {
 
         // Check if section is cross-listed, split, or cross-enrolled.
         $cross_section = $DB->get_record('block_wdsprefs_crosssplit_sections', ['section_id' => $section_id]);
+
         if ($cross_section) {
             $crosssplit = $DB->get_record('block_wdsprefs_crosssplits', ['id' => $cross_section->crosssplit_id]);
             $shell_name = $crosssplit ? $crosssplit->shell_name : 'Unknown Shell';
             return [
                 'available' => false,
-                'message' => get_string('wdsprefs:section_already_crosslisted', 'block_wdsprefs', $shell_name)
+                'message' => get_string('wdsprefs:section_already_crosslisted', 'block_wdsprefs', $shell_name),
+                'crosssplit_id' => $cross_section->crosssplit_id
             ];
         }
 
@@ -833,12 +886,48 @@ class block_wdsprefs_teamteach {
                 $course_name = $course ? $course->fullname : 'Unknown Course';
                 return [
                     'available' => false,
-                    'message' => get_string('wdsprefs:section_already_teamtaught', 'block_wdsprefs', $course_name)
+                    'message' => get_string('wdsprefs:section_already_teamtaught', 'block_wdsprefs', $course_name),
+                    'request_id' => $request->id
                 ];
             }
         }
 
         return ['available' => true, 'message' => ''];
+    }
+
+    /**
+     * Get all section IDs involved in team teach requests (pending or approved) for a user.
+     *
+     * @param int $userid The user ID.
+     * @return array Array of section IDs.
+     */
+    public static function get_team_taught_section_ids(int $userid): array {
+        global $DB;
+
+        $sql = "SELECT requested_section_ids, status, expirytime
+                FROM {block_wdsprefs_teamteach}
+                WHERE requested_userid = :userid
+                  AND (status = 'pending' OR status = 'approved')";
+
+        $requests = $DB->get_records_sql($sql, ['userid' => $userid]);
+
+        $section_ids = [];
+        foreach ($requests as $request) {
+
+            // Ignore expired pending requests.
+            if ($request->status == 'pending' && $request->expirytime < time()) {
+                continue;
+            }
+
+            $ids = json_decode($request->requested_section_ids, true);
+            if (is_array($ids)) {
+                foreach ($ids as $id) {
+                    $section_ids[] = (int)$id;
+                }
+            }
+        }
+
+        return array_unique($section_ids);
     }
 
     /**
@@ -915,5 +1004,28 @@ class block_wdsprefs_teamteach {
         }
 
         return true;
+    }
+
+    /**
+     * Get all requests (pending and approved) where the user is either the requester or the requested teacher.
+     *
+     * @param int $userid
+     * @return array
+     */
+    public static function get_all_requests_for_user(int $userid): array {
+        global $DB;
+
+        $sql = "SELECT *
+                FROM {block_wdsprefs_teamteach}
+                WHERE (requester_userid = :userid1 OR requested_userid = :userid2)
+                  AND (status = 'pending' OR status = 'approved')
+                ORDER BY timecreated DESC";
+
+        $params = [
+            'userid1' => $userid,
+            'userid2' => $userid
+        ];
+
+        return $DB->get_records_sql($sql, $params);
     }
 }

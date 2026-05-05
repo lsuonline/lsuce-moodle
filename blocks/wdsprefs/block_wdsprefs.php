@@ -193,7 +193,7 @@ class block_wdsprefs extends block_base {
         return array('site' => true, 'course-view' => false, 'my' => false);
     }
 
-    // Do not allow multipls.
+    // Do not allow multiples.
     public function instance_allow_multiple() {
         return false;
     }

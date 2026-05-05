@@ -94,7 +94,7 @@ $string['wdsprefs:shellcount'] = 'Number of course shells';
 $string['wdsprefs:shell'] = 'Shell {$a}';
 $string['wdsprefs:onetoone'] = 'Splitting one (1) course with one (1) section will not do anything.';
 $string['wdsprefs:toomanyshells'] = 'You have selected more course shells: {$a->shellword} ({$a->shell}) than sections: {$a->secword} ({$a->sec}).';
-$string['wdsprefs:atleastonesections'] = 'You must select at least one section to enable Cross-listing & Splitting.';
+$string['wdsprefs:atleastonesection'] = 'You must select at least one section to enable Cross-listing & Splitting.';
 $string['wdsprefs:crosssplitsuccess'] = 'Cross-splitting setup successful.';
 $string['wdsprefs:duplicatesection'] = 'Each section can only be assigned to one shell.';
 $string['wdsprefs:availablesections'] = 'Available sections';
@@ -168,6 +168,8 @@ $string['wdsprefs:alreadycrosssplit'] = 'This section is cross-split or cross-en
 $string['wdsprefs:undoaction'] = 'undo this action';
 $string['wdsprefs:notenoughsectionsforcrossenroll'] = 'You must have at least two sections across multiple academic periods to cross-enroll.';
 $string['wdsprefs:mustselectfromtwo'] = 'You must select at least one section from at least two different academic periods to cross-enroll.<br>If you are trying to cross-list courses within the same academic period, please use the {$a} tool.';
+$string['wdsprefs:crossperiodtolerance'] = 'CrossEnroll Period Tolerance';
+$string['wdsprefs:crossperiodtolerance_desc'] = 'The number of days of start/end date fuzziness to be used to determine which semesters are eligible for cross enrollment.';
 
 // Team Teach strings.
 $string['wdsprefs:teamteach'] = 'Team-teaching';
@@ -242,3 +244,4 @@ $string['wdsprefs:teamteach_status_cancelled'] = 'Cancelled';
 $string['wdsprefs:teamteach_status_revoked'] = 'Revoked';
 $string['wdsprefs:section_already_crosslisted'] = 'This section is already cross-listed, split, or cross-enrolled in {$a}';
 $string['wdsprefs:section_already_teamtaught'] = 'This section is already being team-taught in {$a}';
+$string['wdsprefs:section_already_teamtaught_generic'] = 'One or more sections are already part of a team-teach request.';

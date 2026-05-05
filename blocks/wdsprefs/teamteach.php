@@ -159,7 +159,7 @@ if ($action && $request_id && confirm_sesskey()) {
 }
 
 if (!wdsprefs::faster_get_instructor_status($USER->id) && !is_siteadmin()) {
-    print_error('wdsprefs:noinstructor', 'block_wdsprefs');
+    throw new \moodle_exception('wdsprefs:noinstructor', 'block_wdsprefs');
 }
 
 echo $OUTPUT->header();

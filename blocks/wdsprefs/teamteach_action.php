@@ -32,6 +32,8 @@ $action = optional_param('action', '', PARAM_ALPHA);
 $confirm = optional_param('confirm', 0, PARAM_INT);
 
 $url = new moodle_url('/blocks/wdsprefs/teamteach_action.php', ['token' => $token]);
+$tthurl = new moodle_url('/blocks/wdsprefs/teamteach.php');
+
 $PAGE->set_url($url);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('wdsprefs:teamteach_request_details', 'block_wdsprefs'));
@@ -41,7 +43,7 @@ $PAGE->set_heading(get_string('wdsprefs:teamteachheading', 'block_wdsprefs'));
 $request = block_wdsprefs_teamteach::get_request_by_token($token);
 
 if (!$request) {
-    print_error('wdsprefs:teamteach_request_not_found', 'block_wdsprefs');
+    redirect($tthurl, get_string('wdsprefs:teamteach_request_not_found', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_INFO);
 }
 
 // Check User (Requested User must be logged in).
@@ -49,7 +51,8 @@ if ($request->requested_userid != $USER->id) {
 
     // If admin, maybe allow viewing? But for security, stick to user only.
     if (!is_siteadmin()) {
-        print_error('wdsprefs:teamteach_unauthorized', 'block_wdsprefs');
+        redirect($tthurl, get_string('wdsprefs:teamteach_unauthorized', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_INFO);
+
     }
 }
 
@@ -61,7 +64,7 @@ if ($request->expirytime < time()) {
         $request->status = 'expired';
         $DB->update_record('block_wdsprefs_teamteach', $request);
     }
-    print_error('wdsprefs:teamteach_request_expired', 'block_wdsprefs');
+    redirect($tthurl, get_string('wdsprefs:teamteach_request_expired', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_INFO);
 }
 
 // Check Status.
@@ -80,13 +83,13 @@ if ($request->status != 'pending') {
 if ($action && $confirm && confirm_sesskey()) {
     if ($action == 'approve') {
         if (block_wdsprefs_teamteach::approve_request($request->id)) {
-            redirect($url, get_string('wdsprefs:teamteach_approved', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect($tthurl, get_string('wdsprefs:teamteach_approved', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_SUCCESS);
         } else {
             echo $OUTPUT->notification(get_string('wdsprefs:teamteach_request_failed', 'block_wdsprefs'), 'error');
         }
     } elseif ($action == 'decline') {
         if (block_wdsprefs_teamteach::decline_request($request->id)) {
-            redirect($url, get_string('wdsprefs:teamteach_declined', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_INFO);
+            redirect($tthurl, get_string('wdsprefs:teamteach_declined', 'block_wdsprefs'), null, \core\output\notification::NOTIFY_INFO);
         } else {
             echo $OUTPUT->notification(get_string('wdsprefs:teamteach_request_failed', 'block_wdsprefs'), 'error');
         }
@@ -103,7 +106,7 @@ $section_ids = json_decode($request->requested_section_ids);
 $sections_str = '';
 if (!empty($section_ids)) {
     list($insql, $inparams) = $DB->get_in_or_equal($section_ids);
-    $sql = "SELECT s.section_number, c.course_subject_abbreviation, c.course_number
+    $sql = "SELECT s.id, s.section_number, c.course_subject_abbreviation, c.course_number
             FROM {enrol_wds_sections} s
             JOIN {enrol_wds_courses} c ON s.course_listing_id = c.course_listing_id
             WHERE s.id $insql";
