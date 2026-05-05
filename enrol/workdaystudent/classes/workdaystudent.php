@@ -1288,6 +1288,11 @@ class workdaystudent {
         string $schedule,
         string $timezone = 'America/Chicago'): array {
 
+        // Short circuit this if we don't have one or the other.
+        if ($schedule == '') {
+            return [];
+        }
+
         // Split the string into days and time.
         [$dayspart, $timepart] = explode('|', $schedule);
 
@@ -4907,8 +4912,15 @@ class workdaystudent {
         // Get current periods (all of them regardless of enabled status).
         $periods = workdaystudent::get_current_periods($s);
 
+        // Deal with already found and processed students.
+        $processed = [];
+
         // Loop through all the missing students and fetch their data.
         foreach ($missingstudents as $missingstudent) {
+
+            if (in_array($missingstudent->universal_id, $processed)) {
+                continue;
+            }
 
             // Loop through all the current the periods.
 
@@ -4923,7 +4935,7 @@ class workdaystudent {
                 // If any were found, do some stuff.
                 if ($foundstudents) {
 
-                    // I cannot believe we ahve to do this trash.
+                    // I cannot believe we have to do this trash.
                     if (count($foundstudents) > 1) {
 
                         // Loop through the duplicate foundstudents and id the reporting record.
@@ -4935,8 +4947,12 @@ class workdaystudent {
                                 // Set the student record.
                                 $student = $foundstudent;
 
+                                if (isset($foundstudent->id)) {
+                                    $processed[] = $foundstudent->Universal_Id;
+                                }
+
                                 // Drop out of the foreach.
-                                continue;
+                                break;
                             }
                         }
 
@@ -4945,6 +4961,10 @@ class workdaystudent {
 
                         // This will only be one student, so reset the array.
                         $student = reset($foundstudents);
+
+                        if (isset($student->id)) {
+                            $processed[] = $student->Universal_Id;
+                        }
                     }
 
                     // Get their email.
@@ -4952,6 +4972,7 @@ class workdaystudent {
 
                     // We do not have an email, try the next one.
                     if (is_null($email)) {
+                        mtrace("Nothing found for uid: $student->universal_id in period: $period->academic_period_id.");
                         continue;
                     }
 
@@ -4969,6 +4990,10 @@ class workdaystudent {
 
                         // Create or update the Moodle user and insert the userid into the itable.
                         $msuser = workdaystudent::create_update_msuser($nsuser, null);
+                    }
+
+                    if (!is_null($email)) {
+                        break;
                     }
                 }
             }
@@ -5325,7 +5350,7 @@ class workdaystudent {
      * @return @bool Success status
      */
     public static function handle_instructor_change($section, $existingsection) {
-        global $DB;
+        global $CFG, $DB;
 
         if (!isset($section->course_listing_id)) {
 
@@ -5376,6 +5401,34 @@ class workdaystudent {
         // We have a change in PMI. Handle it.
         workdaystudent::dtrace("PMI change detected for section {$seclistid}" .
            " Old: {$oldinstructor->universal_id}, New: {$section->PMI_Universal_ID}");
+
+        // Get the section listing id for futured use.
+        /* TODO: Why are we doing this? Nothing above happens without $seclistid being set to the appropriate section listing id.
+        $sli = isset($seclistid) ? $seclistid : (
+            $section->Section_Listing_ID ?? $section->section_listing_id ?? (
+                $existingsection->section_listing_id ?? null
+            )
+        );
+        */
+
+        // We should already have this, so use it.
+        $sli = $section->id;
+
+        // Remove wdsprefs cross split records for this section + removed instructor.
+        if ($sli && !empty($oldinstructor->universal_id)) {
+
+            // Make sure we ahve the class loaded.
+            if (class_exists('wdsprefs')) {
+
+                // Do the nasty.
+                wdsprefs::remove_crosssplit_records_for_section_instructor($sli, $oldinstructor->universal_id);
+            } else {
+                require_once($CFG->dirroot . '/blocks/wdsprefs/classes/wdsprefs.php');
+
+                // Do the nasty.
+                wdsprefs::remove_crosssplit_records_for_section_instructor($sli, $oldinstructor->universal_id);
+            }
+        }
 
         // Get the course ID if already created.
         $courseid = null;
@@ -6262,6 +6315,9 @@ class wdscronhelper {
         // Truncate metadata because it's WAY faster.
         $truncated = workdaystudent::truncate_studentmeta();
 
+        // Deal with already found and processed students.
+        $processed = [];
+
         // Loop through the periods.
         foreach ($periods as $period) {
 
@@ -6302,6 +6358,10 @@ class wdscronhelper {
                 // Loop through the students and insert / update their data.
                 foreach ($students as $student) {
 
+                    if (in_array($student->Universal_Id, $processed)) {
+                        continue;
+                    }
+
                     $email = workdaystudent::wds_email_finder($s, $student);
 
                     // GTFO if we don't have a UID or email.
@@ -6337,6 +6397,10 @@ class wdscronhelper {
 
                     // Add the above response to the number of athletes.
                     $numathletes = $numathletes + $meta;
+
+                    if (isset($stu->id)) {
+                        $processed[] = $stu->universal_id;
+                    }
                 }
 
                 // Count how many sports we have.

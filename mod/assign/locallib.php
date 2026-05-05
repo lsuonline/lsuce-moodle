@@ -6224,6 +6224,20 @@ class assign {
             }
         }
 
+        // BEGIN LSU MD-2166: When an override extends duedate past base cutoffdate with no explicit
+        // cutoffdate override, the base cutoffdate would otherwise close submissions prematurely.
+        $override = $this->override_exists($userid);
+        if (!empty($override->cutoffdate)) {
+            if (!$finaldate || $override->cutoffdate > $finaldate) {
+                $finaldate = $override->cutoffdate;
+            }
+        } else if (!empty($override->duedate)) {
+            if (!$finaldate || $override->duedate > $finaldate) {
+                $finaldate = $override->duedate;
+            }
+        }
+        // END LSU MD-2166.
+
         if ($finaldate) {
             $dateopen = ($this->get_instance()->allowsubmissionsfromdate <= $time && $time <= $finaldate);
         } else {

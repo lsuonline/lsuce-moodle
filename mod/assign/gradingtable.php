@@ -195,11 +195,13 @@ class assign_grading_table extends table_sql implements renderable {
             $params['assignmentid7'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid8'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid9'] = (int)$this->assignment->get_instance()->id;
+            // BEGIN LSU MD-2008: Extra subquery params for COALESCE fallback to base assignment dates.
             $params['assignmentid10'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid11'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid12'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid13'] = (int)$this->assignment->get_instance()->id;
             $params['assignmentid14'] = (int)$this->assignment->get_instance()->id;
+            // END LSU MD-2008.
 
             list($userwhere1, $userparams1) = $DB->get_in_or_equal($users, SQL_PARAMS_NAMED, 'priorityuser');
             list($userwhere2, $userparams2) = $DB->get_in_or_equal($users, SQL_PARAMS_NAMED, 'effectiveuser');
@@ -210,6 +212,8 @@ class assign_grading_table extends table_sql implements renderable {
             $params = array_merge($params, $userparams2);
 
             $fields .= ', priority.priority, ';
+            // BEGIN LSU MD-2008: COALESCE override date fields with base assignment defaults so null
+            // overrides display the correct assignment date instead of null in the grading table.
             $fields .= 'COALESCE(effective.allowsubmissionsfromdate, ' .
                        '(SELECT a.allowsubmissionsfromdate FROM {assign} a WHERE a.id = :assignmentid10)) as allowsubmissionsfromdate, ';
 
@@ -225,6 +229,7 @@ class assign_grading_table extends table_sql implements renderable {
             }
 
             $fields .= 'COALESCE(effective.cutoffdate, (SELECT a.cutoffdate FROM {assign} a WHERE a.id = :assignmentid14)) as cutoffdate ';
+            // END LSU MD-2008.
 
             $from .= ' LEFT JOIN (
                SELECT merged.userid, min(merged.priority) priority FROM (

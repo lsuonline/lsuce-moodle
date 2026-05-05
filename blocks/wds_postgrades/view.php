@@ -227,41 +227,70 @@ if ($action === 'postgrades' && confirm_sesskey()) {
         $grades[] = $gradeobj;
     }
 
-    // For final grades, use extended method to track succesful postings.
-    if ($gradetype === 'final') {
-        $resultdata = \block_wds_postgrades\wdspg::post_grades_with_method_extended(
-            $grades, $gradetype, $sectionlistingid, $courseid, $sectionid);
+    // Check if we exceed the adhoc threshold.
+    $settings = \block_wds_postgrades\wdspg::get_settings();
+    $adhocthreshold = isset($settings->adhocthreshold) ? $settings->adhocthreshold : 100;
+
+    if (count($grades) > $adhocthreshold) {
+
+        // Queue the adhoc task.
+        $task = new \block_wds_postgrades\task\post_grades_adhoc();
+
+        $customdata = new \stdClass();
+        $customdata->grades = $grades;
+        $customdata->gradetype = $gradetype;
+        $customdata->sectionlistingid = $sectionlistingid;
+        $customdata->courseid = $courseid;
+        $customdata->sectionid = $sectionid;
+        $customdata->sectiontitle = $sectiontitle;
+        $customdata->posteruserid = $USER->id;
+        
+        $task->set_custom_data($customdata);
+        $task->set_userid($USER->id);
+
+        \core\task\manager::queue_adhoc_task($task);
+
+        // Redirect back to course with a notification message.
+        $courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
+        redirect($courseurl, get_string('backgroundpostingmessage', 'block_wds_postgrades'), null, \core\output\notification::NOTIFY_INFO);
     } else {
-        $resultdata = \block_wds_postgrades\wdspg::post_grades_with_method(
-            $grades, $gradetype, $sectionlistingid);
+
+        // For final grades, use extended method to track succesful postings.
+        if ($gradetype === 'final') {
+            $resultdata = \block_wds_postgrades\wdspg::post_grades_with_method_extended(
+                $grades, $gradetype, $sectionlistingid, $courseid, $sectionid);
+        } else {
+            $resultdata = \block_wds_postgrades\wdspg::post_grades_with_method(
+                $grades, $gradetype, $sectionlistingid);
+        }
+
+        // Create results URL with appropriate parameters.
+        $resultsurl = new moodle_url(
+            '/blocks/wds_postgrades/results.php',
+            ['courseid' => $courseid, 'sectionid' => $section->id, 'gradetype' => $gradetype]);
+
+        // Add section title for context in results page.
+        $resultsurl->param('sectiontitle', $sectiontitle);
+        $resultsurl->param('typeword', $typeword);
+
+        // Determine overall result type.
+        if (empty($resultdata->failures) && !empty($resultdata->successes)) {
+            $resultsurl->param('resulttype', 'success');
+        } else if (!empty($resultdata->failures) && !empty($resultdata->successes)) {
+            $resultsurl->param('resulttype', 'partial');
+        } else {
+            $resultsurl->param('resulttype', 'error');
+        }
+
+        // Add section listing ID for reference.
+        $resultsurl->param('sectionlistingid', $sectionlistingid);
+
+        // Store result data in session for the results page.
+        $SESSION->wds_postgrades_results = $resultdata;
+
+        // Redirect to the results page.
+        redirect($resultsurl);
     }
-
-    // Create results URL with appropriate parameters.
-    $resultsurl = new moodle_url(
-        '/blocks/wds_postgrades/results.php',
-        ['courseid' => $courseid, 'sectionid' => $section->id, 'gradetype' => $gradetype]);
-
-    // Add section title for context in results page.
-    $resultsurl->param('sectiontitle', $sectiontitle);
-    $resultsurl->param('typeword', $typeword);
-
-    // Determine overall result type.
-    if (empty($resultdata->failures) && !empty($resultdata->successes)) {
-        $resultsurl->param('resulttype', 'success');
-    } else if (!empty($resultdata->failures) && !empty($resultdata->successes)) {
-        $resultsurl->param('resulttype', 'partial');
-    } else {
-        $resultsurl->param('resulttype', 'error');
-    }
-
-    // Add section listing ID for reference.
-    $resultsurl->param('sectionlistingid', $sectionlistingid);
-
-    // Store result data in session for the results page.
-    $SESSION->wds_postgrades_results = $resultdata;
-
-    // Redirect to the results page.
-    redirect($resultsurl);
 }
 
 // Start output.

@@ -55,12 +55,12 @@ $PAGE->navbar->add(
 $request = $DB->get_record('block_wdsprefs_teamteach', ['id' => $request_id]);
 
 if (!$request) {
-    print_error('wdsprefs:teamteach_request_not_found', 'block_wdsprefs');
+    throw new \moodle_exception('wdsprefs:teamteach_request_not_found', 'block_wdsprefs');
 }
 
 // Check permissions.
 if ($request->requester_userid != $USER->id && $request->requested_userid != $USER->id && !is_siteadmin()) {
-    print_error('nopermissions', 'error');
+    throw new \moodle_exception('nopermissions', 'error');
 }
 
 echo $OUTPUT->header();

@@ -174,6 +174,26 @@ abstract class report_editdates_mod_date_extractor {
      */
     abstract public function validate_dates(cm_info $cm, array $dates);
 
+    // BEGIN LSU MD-1661: Trigger course_module_updated event after saving mod dates
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/50 (commit bb1f9b3)
+    // This final wrapper ensures course_module_updated is always fired regardless of which
+    // activity type overrides save_dates(), enabling calendar and other observers to react.
+    /**
+     * Save the new dates for this course_module instance and trigger the updated event.
+     *
+     * Having this method final gives us a possibility to add any logic
+     * (e.g. triggering events) before or after saving dates for any activity.
+     *
+     * @param cm_info $cm the activity to save the dates for.
+     * @param array $dates a list of new dates.
+     * @throws \coding_exception
+     */
+    final public function save_new_dates(cm_info $cm, array $dates) {
+        $this->save_dates($cm, $dates);
+        \core\event\course_module_updated::create_from_cm($cm)->trigger();
+    }
+    // END LSU MD-1661: Trigger course_module_updated event after saving mod dates
+
     /**
      * Save the new dates for this course_module instance.
      * @param cm_info $cm the activity to save the dates for.
@@ -293,6 +313,22 @@ abstract class report_editdates_block_date_extractor {
      * Return an empty array if there are no erros.
      */
     abstract public function validate_dates(block_base $block, array $dates);
+
+    // BEGIN LSU MD-1661: Consistent save_new_dates API for block extractors
+    // See: https://github.com/moodleou/moodle-report_editdates/pull/50 (commit bb1f9b3)
+    /**
+     * Save the new dates for this block instance.
+     *
+     * Having this method final gives us a possibility to add any logic
+     * (e.g. triggering events) before or after saving dates for any block.
+     *
+     * @param \block_base $block the block to save the dates for.
+     * @param array $dates a list of new dates.
+     */
+    final public function save_new_dates(block_base $block, array $dates) {
+        $this->save_dates($block, $dates);
+    }
+    // END LSU MD-1661: Consistent save_new_dates API for block extractors
 
     /**
      * Save the new dates for this course_module instance.

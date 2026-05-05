@@ -49,4 +49,12 @@ if ($ADMIN->fulltree) {
         get_string('wdsprefs:teamteach_email_body_desc', 'block_wdsprefs'),
         get_string('wdsprefs:teamteach_email_body_default', 'block_wdsprefs'),
         PARAM_RAW));
+
+    // CrossEnroll Tolerance Days.
+    $settings->add(new admin_setting_configtext('block_wdsprefs/crossperiodtolerance',
+        get_string('wdsprefs:crossperiodtolerance', 'block_wdsprefs'),
+        get_string('wdsprefs:crossperiodtolerance_desc', 'block_wdsprefs'),
+        2,
+        PARAM_INT));
+
 }

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details for the WDS Post Grades block.
+ * Message providers for WDS Post Grades block.
  *
  * @package    block_wds_postgrades
  * @copyright  2025 onwards Louisiana State University
@@ -25,8 +25,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026042400;
-$plugin->requires  = 2023100900;
-$plugin->component = 'block_wds_postgrades';
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.7.0-Arduous_Archetype';
+$messageproviders = [
+    // Notify about grade posting results.
+    'postgrades' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ]
+    ]
+];

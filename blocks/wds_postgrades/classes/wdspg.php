@@ -737,6 +737,7 @@ class wdspg {
 
         $s->workdayapiurl = $bs->workdayapiurl;
         $s->workdayapiversion = $bs->workdayapiversion;
+        $s->adhocthreshold = isset($bs->adhocthreshold) ? $bs->adhocthreshold : 100;
 
         return $s;
     }
